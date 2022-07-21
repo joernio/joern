@@ -12,7 +12,7 @@ object MavenDependencies {
   private[dependency] def get(projectDir: Path): List[String] = {
     // we can't use -Dmdep.outputFile because that keeps overwriting its own output for each sub-project it's running for
     val lines = ExternalCommand.run(
-      s"mvn -B dependency:build-classpath -DincludeScope=compile -Dorg.slf4j.simpleLogger.defaultLogLevel=error -Dorg.slf4j.simpleLogger.log.org.apache.maven.plugins.dependency.fromDependencies.BuildClasspathMojo=info -Dorg.slf4j.simpleLogger.logFile=System.out",
+      s"mvn -B dependency:build-classpath -DincludeScope=compile -Dorg.slf4j.simpleLogger.defaultLogLevel=info -Dorg.slf4j.simpleLogger.logFile=System.out",
       projectDir.toString
     ) match {
       case Success(lines) => lines
