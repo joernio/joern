@@ -202,7 +202,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(block) = assignment.astChildren.isBlock.l
       checkObjectInitialization(block, ("key1", "\"value\""))
       checkObjectInitialization(block, ("key2", "2"))
-      checkObjectInitialization(block, ("rest", "...rest"))
+      checkObjectInitialization(block, ("rest", "rest"))
     }
 
     "have correct structure for 1 object with computed values" in AstFixture("""

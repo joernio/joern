@@ -496,12 +496,21 @@ trait AstForExpressionsCreator { this: AstCreator =>
             case _ => astForNode(spreadElementNodeInfo.json)
           }
           val defaultName = ast.nodes.collectFirst {
-            case id: IdentifierBase => id.name
+            case id: IdentifierBase => id.name.replace("...", "")
             case clazz: TypeRefBase => clazz.code.stripPrefix("class ")
           }
-          val keyName = codeForExportObject(nodeInfo, defaultName).headOption.getOrElse(spreadElementNodeInfo.code)
+          val keyName = codeForExportObject(nodeInfo, defaultName).headOption
+            .getOrElse {
+              if (defaultName.isEmpty) {
+                val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
+                val localNode = createLocalNode(tmpName, Defines.ANY.label)
+                diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+                tmpName
+              } else { defaultName.get }
+            }
+            .replace("...", "")
           val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
-          (keyNode, astForNode(nodeInfo.json))
+          (keyNode, ast)
         case _ =>
           // can't happen as per https://github.com/babel/babel/blob/main/packages/babel-types/src/ast-types/generated/index.ts#L573
           // just to make the compiler happy here.
