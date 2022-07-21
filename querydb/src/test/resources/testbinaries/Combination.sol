@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-contract Foo {
+contract Combination {
     address payable owner;
     uint256 public sum;
     function selfDestructSafe() public  {
@@ -11,4 +11,7 @@ contract Foo {
         selfdestruct(owner);
     }
 
+    function change(uint256 a) public {
+        sum = a;
+    }
 }
