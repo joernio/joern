@@ -9,7 +9,7 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{IdentifierBase, NewNamespaceBlock, TypeRefBase}
+import io.shiftleft.codepropertygraph.generated.nodes.{IdentifierBase, NewIdentifier, NewNamespaceBlock, TypeRefBase}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import ujson.Value
 
@@ -24,7 +24,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
   private def hasNoName(json: Value): Boolean = !hasKey(json, "id") || json("id").isNull
 
-  private def codeForExportObject(obj: BabelNodeInfo, defaultName: Option[String]): Seq[String] = obj.node match {
+  protected def codeForExportObject(obj: BabelNodeInfo, defaultName: Option[String]): Seq[String] = obj.node match {
     case Identifier                                 => Seq(obj.code)
     case VariableDeclaration                        => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
     case AssignmentExpression                       => Seq(code(obj.json("left")))
@@ -590,7 +590,66 @@ trait AstForDeclarationsCreator { this: AstCreator =>
         pattern.json("properties").arr.toList.map { element =>
           val nodeInfo = createBabelNodeInfo(element)
           nodeInfo.node match {
-            case RestElement => astForNode(nodeInfo.json)
+            case RestElement =>
+              val restElementNodeInfo = createBabelNodeInfo(nodeInfo.json("argument"))
+              val ast = restElementNodeInfo.node match {
+                case FunctionDeclaration =>
+                  astForFunctionDeclaration(
+                    restElementNodeInfo,
+                    shouldCreateFunctionReference = true,
+                    shouldCreateAssignmentCall = true
+                  )
+                case FunctionExpression =>
+                  astForFunctionDeclaration(
+                    restElementNodeInfo,
+                    shouldCreateFunctionReference = true,
+                    shouldCreateAssignmentCall = true
+                  )
+                case ArrowFunctionExpression =>
+                  astForFunctionDeclaration(
+                    restElementNodeInfo,
+                    shouldCreateFunctionReference = true,
+                    shouldCreateAssignmentCall = true
+                  )
+                case _ => astForNode(restElementNodeInfo.json)
+              }
+              val defaultName = ast.nodes.collectFirst {
+                case id: IdentifierBase => id.name.replace("...", "")
+                case clazz: TypeRefBase => clazz.code.stripPrefix("class ")
+              }
+              val keyName = codeForExportObject(nodeInfo, defaultName).headOption
+                .getOrElse {
+                  if (defaultName.isEmpty) {
+                    val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
+                    val localNode = createLocalNode(tmpName, Defines.ANY.label)
+                    diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+                    tmpName
+                  } else { defaultName.get }
+                }
+                .replace("...", "")
+              val assignmentHead = ast.root match {
+                case Some(_: NewIdentifier) => ast
+                case _ =>
+                  Ast.storeInDiffGraph(ast, diffGraph)
+                  Ast(createIdentifierNode(keyName, restElementNodeInfo))
+              }
+              val fieldAccessTmpNode = createIdentifierNode(localTmpName, restElementNodeInfo)
+              val keyNode =
+                createFieldIdentifierNode(keyName, restElementNodeInfo.lineNumber, restElementNodeInfo.columnNumber)
+              val accessAst = createFieldAccessCallAst(
+                fieldAccessTmpNode,
+                keyNode,
+                restElementNodeInfo.lineNumber,
+                restElementNodeInfo.columnNumber
+              )
+              Ast.storeInDiffGraph(accessAst, diffGraph)
+              createAssignmentCallAst(
+                assignmentHead.root.head,
+                accessAst.nodes.head,
+                s"$keyName = ${codeOf(accessAst.nodes.head)}",
+                restElementNodeInfo.lineNumber,
+                restElementNodeInfo.columnNumber
+              )
             case _ =>
               val nodeInfo = createBabelNodeInfo(element("value"))
               nodeInfo.node match {
@@ -611,6 +670,72 @@ trait AstForDeclarationsCreator { this: AstCreator =>
           case (element, index) if !element.isNull =>
             val nodeInfo = createBabelNodeInfo(element)
             nodeInfo.node match {
+              case RestElement =>
+                val restElementNodeInfo = createBabelNodeInfo(nodeInfo.json("argument"))
+                val ast = restElementNodeInfo.node match {
+                  case FunctionDeclaration =>
+                    astForFunctionDeclaration(
+                      restElementNodeInfo,
+                      shouldCreateFunctionReference = true,
+                      shouldCreateAssignmentCall = true
+                    )
+                  case FunctionExpression =>
+                    astForFunctionDeclaration(
+                      restElementNodeInfo,
+                      shouldCreateFunctionReference = true,
+                      shouldCreateAssignmentCall = true
+                    )
+                  case ArrowFunctionExpression =>
+                    astForFunctionDeclaration(
+                      restElementNodeInfo,
+                      shouldCreateFunctionReference = true,
+                      shouldCreateAssignmentCall = true
+                    )
+                  case _ => astForNode(restElementNodeInfo.json)
+                }
+                val defaultName = ast.nodes.collectFirst {
+                  case id: IdentifierBase => id.name.replace("...", "")
+                  case clazz: TypeRefBase => clazz.code.stripPrefix("class ")
+                }
+                val keyName = codeForExportObject(nodeInfo, defaultName).headOption
+                  .getOrElse {
+                    if (defaultName.isEmpty) {
+                      val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
+                      val localNode = createLocalNode(tmpName, Defines.ANY.label)
+                      diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+                      tmpName
+                    } else { defaultName.get }
+                  }
+                  .replace("...", "")
+                val assignmentHead = ast.root match {
+                  case Some(_: NewIdentifier) => ast
+                  case _ =>
+                    Ast.storeInDiffGraph(ast, diffGraph)
+                    Ast(createIdentifierNode(keyName, restElementNodeInfo))
+                }
+
+                val fieldAccessTmpNode = createIdentifierNode(localTmpName, restElementNodeInfo)
+                val keyNode =
+                  createLiteralNode(
+                    index.toString,
+                    Some(Defines.NUMBER.label),
+                    restElementNodeInfo.lineNumber,
+                    restElementNodeInfo.columnNumber
+                  )
+                val accessAst = createIndexAccessCallAst(
+                  fieldAccessTmpNode,
+                  keyNode,
+                  restElementNodeInfo.lineNumber,
+                  restElementNodeInfo.columnNumber
+                )
+                Ast.storeInDiffGraph(accessAst, diffGraph)
+                createAssignmentCallAst(
+                  assignmentHead.nodes.head,
+                  accessAst.nodes.head,
+                  s"$keyName = ${codeOf(accessAst.nodes.head)}",
+                  restElementNodeInfo.lineNumber,
+                  restElementNodeInfo.columnNumber
+                )
               case Identifier =>
                 convertDestructingArrayElement(nodeInfo, index, localTmpName)
               case AssignmentPattern =>

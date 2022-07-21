@@ -1,6 +1,5 @@
 package io.joern.x2cpg.testfixtures
 
-import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.Cpg
 import overflowdb.Graph
 

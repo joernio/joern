@@ -202,7 +202,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(block) = assignment.astChildren.isBlock.l
       checkObjectInitialization(block, ("key1", "\"value\""))
       checkObjectInitialization(block, ("key2", "2"))
-      // TODO: SpreadElement is not handled yet. It is put there as UNKNOWN.
       checkObjectInitialization(block, ("rest", "...rest"))
     }
 
@@ -328,6 +327,48 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
         lambdaBlock.astChildren.isLocal.nameExact("param").size shouldBe 1
         lambdaBlock.astChildren.isCall.codeExact("param = param1_0.param").size shouldBe 1
+    }
+
+    "have correct parameter in lambda function rest param in object" in AstFixture(
+      "var x = ({x, ...rest}) => x + rest"
+    ) { cpg =>
+      val lambdaFullName    = "code.js::program:anonymous"
+      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).l
+      val List(lambdaBlock) = lambda.astChildren.isBlock.l
+
+      val List(param1, param2) = lambda.parameter.l
+      param1.index shouldBe 0
+      param1.name shouldBe "this"
+      param1.code shouldBe "this"
+
+      param2.index shouldBe 1
+      param2.name shouldBe "param1_0"
+      param2.code shouldBe "{x, ...rest}"
+
+      lambdaBlock.astChildren.isLocal.nameExact("x").size shouldBe 1
+      lambdaBlock.astChildren.isLocal.nameExact("rest").size shouldBe 1
+      lambdaBlock.astChildren.isCall.codeExact("rest = param1_0.rest").size shouldBe 1
+    }
+
+    "have correct parameter in lambda function rest param in array" in AstFixture(
+      "var x = ([x, ...rest]) => x + rest"
+    ) { cpg =>
+      val lambdaFullName    = "code.js::program:anonymous"
+      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).l
+      val List(lambdaBlock) = lambda.astChildren.isBlock.l
+
+      val List(param1, param2) = lambda.parameter.l
+      param1.index shouldBe 0
+      param1.name shouldBe "this"
+      param1.code shouldBe "this"
+
+      param2.index shouldBe 1
+      param2.name shouldBe "param1_0"
+      param2.code shouldBe "[x, ...rest]"
+
+      lambdaBlock.astChildren.isLocal.nameExact("x").size shouldBe 1
+      lambdaBlock.astChildren.isLocal.nameExact("rest").size shouldBe 1
+      lambdaBlock.astChildren.isCall.codeExact("rest = param1_0.rest").size shouldBe 1
     }
 
     "have two lambda functions in same scope level with different full names" in AstFixture("""

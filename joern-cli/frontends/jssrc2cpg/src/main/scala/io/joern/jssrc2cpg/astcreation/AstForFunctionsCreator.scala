@@ -121,6 +121,24 @@ trait AstForFunctionsCreator { this: AstCreator =>
                   elementNodeInfo.lineNumber,
                   elementNodeInfo.columnNumber
                 )
+              case RestElement =>
+                val paramName      = code(elementNodeInfo.json("argument"))
+                val tpe            = typeFor(elementNodeInfo)
+                val localParamNode = createIdentifierNode(paramName, elementNodeInfo)
+                localParamNode.typeFullName = tpe
+                val paramNode = createIdentifierNode(name, elementNodeInfo)
+                val keyNode =
+                  createFieldIdentifierNode(paramName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
+                val accessAst =
+                  createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
+                Ast.storeInDiffGraph(accessAst, diffGraph)
+                createAssignmentCallAst(
+                  localParamNode,
+                  accessAst.nodes.head,
+                  s"$paramName = ${codeOf(accessAst.nodes.head)}",
+                  elementNodeInfo.lineNumber,
+                  elementNodeInfo.columnNumber
+                )
               case _ => astForNode(elementNodeInfo.json)
             }
           case _ => Ast()
@@ -143,6 +161,24 @@ trait AstForFunctionsCreator { this: AstCreator =>
           elementNodeInfo.node match {
             case ObjectProperty =>
               val paramName      = code(elementNodeInfo.json("key"))
+              val tpe            = typeFor(elementNodeInfo)
+              val localParamNode = createIdentifierNode(paramName, elementNodeInfo)
+              localParamNode.typeFullName = tpe
+              val paramNode = createIdentifierNode(name, elementNodeInfo)
+              val keyNode =
+                createFieldIdentifierNode(paramName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
+              val accessAst =
+                createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
+              Ast.storeInDiffGraph(accessAst, diffGraph)
+              createAssignmentCallAst(
+                localParamNode,
+                accessAst.nodes.head,
+                s"$paramName = ${codeOf(accessAst.nodes.head)}",
+                elementNodeInfo.lineNumber,
+                elementNodeInfo.columnNumber
+              )
+            case RestElement =>
+              val paramName      = code(elementNodeInfo.json("argument"))
               val tpe            = typeFor(elementNodeInfo)
               val localParamNode = createIdentifierNode(paramName, elementNodeInfo)
               localParamNode.typeFullName = tpe

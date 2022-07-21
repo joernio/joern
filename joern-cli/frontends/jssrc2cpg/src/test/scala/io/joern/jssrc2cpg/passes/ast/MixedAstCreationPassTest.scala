@@ -836,6 +836,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
       programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+      programBlock.astChildren.isLocal.nameExact("rest").size shouldBe 1
 
       val List(destructionBlock) = programBlock.astChildren.isBlock.l
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
@@ -847,10 +848,15 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(fieldAccessA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0.a").l
       fieldAccessA.name shouldBe Operators.fieldAccess
       fieldAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
-
       fieldAccessA.astChildren.isFieldIdentifier.canonicalNameExact("a").size shouldBe 1
 
-      destructionBlock.astChildren.codeExact("...rest").size shouldBe 1
+      val List(assignmentToRest) = destructionBlock.astChildren.isCall.codeExact("rest = _tmp_0.rest").l
+      assignmentToRest.astChildren.isIdentifier.size shouldBe 1
+
+      val List(fieldAccessRest) = assignmentToRest.astChildren.isCall.codeExact("_tmp_0.rest").l
+      fieldAccessRest.name shouldBe Operators.fieldAccess
+      fieldAccessRest.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      fieldAccessRest.astChildren.isFieldIdentifier.canonicalNameExact("rest").size shouldBe 1
 
       val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
       tmpReturnIdentifier.name shouldBe "_tmp_0"
@@ -1062,7 +1068,36 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       tmpReturnIdentifier.name shouldBe "_tmp_0"
     }
 
-    "have correct structure for array destruction assignment with rest" ignore AstFixture("var [a, ...rest] = x") { _ =>
+    "have correct structure for array destruction assignment with rest" in AstFixture("var [a, ...rest] = x") { cpg =>
+      val List(program)      = cpg.method.nameExact(":program").l
+      val List(programBlock) = program.astChildren.isBlock.l
+      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
+      programBlock.astChildren.isLocal.nameExact("rest").size shouldBe 1
+
+      val List(destructionBlock) = programBlock.astChildren.isBlock.l
+      destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+      destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+      val List(assignmentToA) = destructionBlock.astChildren.isCall.codeExact("a = _tmp_0[0]").l
+      assignmentToA.astChildren.isIdentifier.size shouldBe 1
+
+      val List(indexAccessA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0[0]").l
+      indexAccessA.name shouldBe Operators.indexAccess
+
+      indexAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      indexAccessA.astChildren.codeExact("0").size shouldBe 1
+
+      val List(assignmentToB) = destructionBlock.astChildren.isCall.codeExact("rest = _tmp_0[1]").l
+      assignmentToB.astChildren.isIdentifier.size shouldBe 1
+
+      val List(indexAccessB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0[1]").l
+      indexAccessB.name shouldBe Operators.indexAccess
+      indexAccessB.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      indexAccessB.astChildren.isLiteral.codeExact("1").size shouldBe 1
+
+      val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+      tmpReturnIdentifier.name shouldBe "_tmp_0"
+
     }
 
     "have correct structure for array destruction as parameter" in AstFixture("""
@@ -1077,7 +1112,23 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       userIdBlock.astChildren.isCall.codeExact("id = param1_0.id").size shouldBe 1
     }
 
-    "have correct structure for method spread argument" ignore AstFixture("foo(...args)") { _ => }
+    "have correct structure for method spread argument" in AstFixture("foo(...args)") { cpg =>
+      val List(fooCall) = cpg.call.codeExact("foo(...args)").l
+      fooCall.name shouldBe ""
+      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(receiver) = fooCall.receiver.isIdentifier.l
+      receiver.name shouldBe "foo"
+      receiver.order shouldBe 0
+
+      val List(argumentThis) = fooCall.astChildren.isIdentifier.nameExact("this").l
+      argumentThis.order shouldBe 1
+      argumentThis.argumentIndex shouldBe 0
+
+      val List(argument1) = fooCall.astChildren.isIdentifier.nameExact("args").l
+      argument1.order shouldBe 2
+      argument1.argumentIndex shouldBe 1
+    }
   }
 
   "AST generation for await/async" should {

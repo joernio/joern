@@ -1,15 +1,14 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.parser.BabelAst
+import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.jssrc2cpg.passes.EcmaBuiltins
 import io.joern.jssrc2cpg.passes.GlobalBuiltins
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes.{IdentifierBase, NewFieldIdentifier, NewNode, TypeRefBase}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
@@ -22,9 +21,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   private def createBuiltinStaticCall(callExpr: BabelNodeInfo, callee: BabelNodeInfo, methodFullName: String): Ast = {
     val methodName = callee.node match {
-      case BabelAst.MemberExpression => code(callee.json("property"))
-      case BabelAst.Identifier       => callee.code
-      case _                         => callee.code
+      case MemberExpression => code(callee.json("property"))
+      case Identifier       => callee.code
+      case _                => callee.code
     }
     val callNode =
       createStaticCallNode(callExpr.code, methodName, methodFullName, callee.lineNumber, callee.columnNumber)
@@ -63,11 +62,11 @@ trait AstForExpressionsCreator { this: AstCreator =>
       createBuiltinStaticCall(callExpr, callee, methodFullName)
     } else {
       val (functionBaseAst, functionPropertyNode, receiverAst, baseNode) = callee.node match {
-        case BabelAst.MemberExpression =>
+        case MemberExpression =>
           // "this" argument is coming from source.
           val base = createBabelNodeInfo(callee.json("object"))
           base.node match {
-            case BabelAst.Identifier =>
+            case Identifier =>
               val receiverAst = astForNodeWithFunctionReference(callee.json)
               Ast.storeInDiffGraph(receiverAst, diffGraph)
               val baseNode = createIdentifierNode(base.code, base)
@@ -202,7 +201,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     val nodeInfo = createBabelNodeInfo(assignment.json("left"))
     nodeInfo.node match {
-      case BabelAst.ObjectPattern | BabelAst.ArrayPattern =>
+      case ObjectPattern | ArrayPattern =>
         val rhsAst = astForNodeWithFunctionReference(assignment.json("right"))
         astForDeconstruction(nodeInfo, rhsAst)
       case _ =>
@@ -464,17 +463,43 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val propertiesAsts = objExpr.json("properties").arr.toList.map { property =>
       val nodeInfo = createBabelNodeInfo(property)
       val (lhsNode, rhsAst) = nodeInfo.node match {
-        case BabelAst.ObjectMethod =>
+        case ObjectMethod =>
           val keyName = nodeInfo.json("key")("name").str
           val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
           (keyNode, astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true))
-        case BabelAst.ObjectProperty =>
+        case ObjectProperty =>
           val keyName = code(nodeInfo.json("key"))
           val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
           val ast     = astForNodeWithFunctionReference(nodeInfo.json("value"))
           (keyNode, ast)
-        case BabelAst.SpreadElement =>
-          val keyName = code(nodeInfo.json("argument"))
+        case SpreadElement =>
+          val spreadElementNodeInfo = createBabelNodeInfo(nodeInfo.json("argument"))
+          val ast = spreadElementNodeInfo.node match {
+            case FunctionDeclaration =>
+              astForFunctionDeclaration(
+                spreadElementNodeInfo,
+                shouldCreateFunctionReference = true,
+                shouldCreateAssignmentCall = true
+              )
+            case FunctionExpression =>
+              astForFunctionDeclaration(
+                spreadElementNodeInfo,
+                shouldCreateFunctionReference = true,
+                shouldCreateAssignmentCall = true
+              )
+            case ArrowFunctionExpression =>
+              astForFunctionDeclaration(
+                spreadElementNodeInfo,
+                shouldCreateFunctionReference = true,
+                shouldCreateAssignmentCall = true
+              )
+            case _ => astForNode(spreadElementNodeInfo.json)
+          }
+          val defaultName = ast.nodes.collectFirst {
+            case id: IdentifierBase => id.name
+            case clazz: TypeRefBase => clazz.code.stripPrefix("class ")
+          }
+          val keyName = codeForExportObject(nodeInfo, defaultName).headOption.getOrElse(spreadElementNodeInfo.code)
           val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
           (keyNode, astForNode(nodeInfo.json))
         case _ =>
