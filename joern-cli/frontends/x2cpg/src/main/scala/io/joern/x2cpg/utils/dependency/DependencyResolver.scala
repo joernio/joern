@@ -24,8 +24,10 @@ object DependencyResolver {
     params: DependencyResolverParams = new DependencyResolverParams
   ): Option[collection.Seq[String]] = {
     if (isMavenBuild(projectDir)) {
+      logger.info("resolving Maven dependencies at {}", projectDir)
       Some(MavenDependencies.get(projectDir))
     } else if (isGradleBuild(projectDir)) {
+      logger.info("resolving Gradle dependencies at {}", projectDir)
       val gradleProjectName = params.forGradle.getOrElse(GradleConfigKeys.ProjectName, defaultGradleProjectName)
       val gradleConfiguration =
         params.forGradle.getOrElse(GradleConfigKeys.ConfigurationName, defaultGradleConfigurationName)
