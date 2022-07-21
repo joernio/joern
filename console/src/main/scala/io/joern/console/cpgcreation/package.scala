@@ -28,6 +28,7 @@ package object cpgcreation {
       case Languages.PHP                          => Some(PhpCpgGenerator(config.withArgs(args), rootPath))
       case Languages.GHIDRA                       => Some(GhidraCpgGenerator(config.withArgs(args), rootPath))
       case Languages.KOTLIN                       => Some(KotlinCpgGenerator(config.withArgs(args), rootPath))
+      case Languages.SOLIDITY                     => Some(SolidityCpgGenerator(config.withArgs(args), rootPath))
       case _                                      => None
     }
   }
@@ -84,6 +85,9 @@ package object cpgcreation {
   private def isCFile(filename: String): Boolean =
     Seq(".c", ".cc", ".cpp", ".h", ".hpp", ".hh").exists(filename.endsWith)
 
+  private def isSolFile(filename: String): Boolean =
+    Seq(".sol").exists(filename.endsWith)
+
   private def guessLanguageForRegularFile(file: File): Option[String] = {
     file.name.toLowerCase match {
       case f if isJavaBinary(f)      => Some(Languages.JAVA)
@@ -97,6 +101,7 @@ package object cpgcreation {
       case f if f.endsWith(".py")    => Some(Languages.PYTHONSRC)
       case f if isLlvmFile(f)        => Some(Languages.LLVM)
       case f if isCFile(f)           => Some(Languages.NEWC)
+      case f if isSolFile(f)         => Some(Languages.SOLIDITY)
       case _                         => None
     }
   }
