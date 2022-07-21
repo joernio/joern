@@ -36,15 +36,13 @@ object UnsafeReflection extends QueryBundle {
               targetSdkVersionMatch
                 .findAllIn(line)
                 .matchData
-                .toList
                 .filter { m =>
-                  if (m.groupCount > 0) m.group(1).toInt < minimumAndroidSdkVersionWhereNoAdditionalChecksRequired
-                  else false
+                  m.groupCount > 0 && m.group(1).toInt < minimumAndroidSdkVersionWhereNoAdditionalChecksRequired
                 }
                 .nonEmpty
             }
             .nonEmpty
-        }.l
+        }
       }),
       tags = List(QueryTags.android),
       multiFileCodeExamples = MultiFileCodeExamples(
