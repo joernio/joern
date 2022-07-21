@@ -7,7 +7,7 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.jssrc2cpg.passes.EcmaBuiltins
 import io.joern.jssrc2cpg.passes.GlobalBuiltins
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{IdentifierBase, NewFieldIdentifier, NewNode, TypeRefBase}
+import io.shiftleft.codepropertygraph.generated.nodes.{IdentifierBase, NewNode, TypeRefBase}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -31,27 +31,12 @@ trait AstForExpressionsCreator { this: AstCreator =>
     createCallAst(callNode, argAsts)
   }
 
-  private def handleCallNodeArgs(
-    callExpr: BabelNodeInfo,
-    receiverNode: NewNode,
-    baseNode: NewNode,
-    functionBaseNode: NewNode,
-    functionPropertyNode: Option[NewFieldIdentifier]
-  ): Ast = {
+  private def handleCallNodeArgs(callExpr: BabelNodeInfo, receiverNode: NewNode, baseNode: NewNode): Ast = {
     val args = astForNodes(callExpr.json("arguments").arr.toList)
-
-    val baseCode = codeOf(functionBaseNode)
-    val propertyCode = functionPropertyNode match {
-      case Some(id) => "." + codeOf(id)
-      case None     => ""
-    }
-
-    val argsCode = args.map(a => codeOf(a.nodes.head)).mkString("(", ", ", ")")
-    val code     = s"$baseCode$propertyCode$argsCode"
-
-    val callNode = createCallNode(code, "", DispatchTypes.DYNAMIC_DISPATCH, callExpr.lineNumber, callExpr.columnNumber)
-    val argAsts  = Ast(baseNode) +: args
-    val callAst  = createCallAst(callNode, argAsts, Some(Ast(receiverNode)))
+    val callNode =
+      createCallNode(callExpr.code, "", DispatchTypes.DYNAMIC_DISPATCH, callExpr.lineNumber, callExpr.columnNumber)
+    val argAsts = Ast(baseNode) +: args
+    val callAst = createCallAst(callNode, argAsts, Some(Ast(receiverNode)))
     callAst
   }
 
@@ -61,7 +46,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val callNode = if (GlobalBuiltins.builtins.contains(methodFullName)) {
       createBuiltinStaticCall(callExpr, callee, methodFullName)
     } else {
-      val (functionBaseAst, functionPropertyNode, receiverAst, baseNode) = callee.node match {
+      val (receiverAst, baseNode) = callee.node match {
         case MemberExpression =>
           // "this" argument is coming from source.
           val base = createBabelNodeInfo(callee.json("object"))
@@ -71,7 +56,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
               Ast.storeInDiffGraph(receiverAst, diffGraph)
               val baseNode = createIdentifierNode(base.code, base)
               scope.addVariableReference(base.code, baseNode)
-              (receiverAst, None, receiverAst, baseNode)
+              (receiverAst, baseNode)
             case _ =>
               val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
               val baseTmpNode = createIdentifierNode(tmpVarName, base)
@@ -96,16 +81,16 @@ trait AstForExpressionsCreator { this: AstCreator =>
               Ast.storeInDiffGraph(tmpAssignmentAst, diffGraph)
               Ast.storeInDiffGraph(fieldAccessAst, diffGraph)
 
-              (baseAst, Some(memberNode), fieldAccessAst, thisTmpNode)
+              (fieldAccessAst, thisTmpNode)
           }
         case _ =>
           val receiverAst = astForNodeWithFunctionReference(callee.json)
           Ast.storeInDiffGraph(receiverAst, diffGraph)
           val thisNode = createIdentifierNode("this", callee)
           scope.addVariableReference(thisNode.name, thisNode)
-          (receiverAst, None, receiverAst, thisNode)
+          (receiverAst, thisNode)
       }
-      handleCallNodeArgs(callExpr, receiverAst.nodes.head, baseNode, functionBaseAst.nodes.head, functionPropertyNode)
+      handleCallNodeArgs(callExpr, receiverAst.nodes.head, baseNode)
     }
     callNode
   }
@@ -149,7 +134,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     val receiverNode = astForNodeWithFunctionReference(callee)
     Ast.storeInDiffGraph(receiverNode, diffGraph)
-    val callNode = handleCallNodeArgs(newExpr, receiverNode.nodes.head, tmpAllocNode2, receiverNode.nodes.head, None)
+    val callNode = handleCallNodeArgs(newExpr, receiverNode.nodes.head, tmpAllocNode2)
 
     val tmpAllocReturnNode = Ast(createIdentifierNode(tmpAllocName, newExpr))
 
@@ -495,7 +480,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
               )
             case _ => astForNode(spreadElementNodeInfo.json)
           }
-          val defaultName = ast.nodes.collectFirst {
+          val defaultName = ast.root.collect {
             case id: IdentifierBase => id.name.replace("...", "")
             case clazz: TypeRefBase => clazz.code.stripPrefix("class ")
           }

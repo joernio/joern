@@ -613,7 +613,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
                   )
                 case _ => astForNode(restElementNodeInfo.json)
               }
-              val defaultName = ast.nodes.collectFirst {
+              val defaultName = ast.root.collectFirst {
                 case id: IdentifierBase => id.name.replace("...", "")
                 case clazz: TypeRefBase => clazz.code.stripPrefix("class ")
               }
@@ -693,7 +693,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
                     )
                   case _ => astForNode(restElementNodeInfo.json)
                 }
-                val defaultName = ast.nodes.collectFirst {
+                val defaultName = ast.root.collectFirst {
                   case id: IdentifierBase => id.name.replace("...", "")
                   case clazz: TypeRefBase => clazz.code.stripPrefix("class ")
                 }

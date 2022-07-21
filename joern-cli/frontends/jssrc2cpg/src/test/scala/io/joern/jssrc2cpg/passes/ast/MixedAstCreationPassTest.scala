@@ -1129,6 +1129,24 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       argument1.order shouldBe 2
       argument1.argumentIndex shouldBe 1
     }
+
+    "have correct structure for complex method spread argument" in AstFixture("foo(...x.bar())") { cpg =>
+      val List(fooCall) = cpg.call.codeExact("foo(...x.bar())").l
+      fooCall.name shouldBe ""
+      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(receiver) = fooCall.receiver.isIdentifier.l
+      receiver.name shouldBe "foo"
+      receiver.order shouldBe 0
+
+      val List(argumentThis) = fooCall.astChildren.isIdentifier.nameExact("this").l
+      argumentThis.order shouldBe 1
+      argumentThis.argumentIndex shouldBe 0
+
+      val List(argument1) = fooCall.astChildren.isCall.codeExact("x.bar()").l
+      argument1.order shouldBe 2
+      argument1.argumentIndex shouldBe 1
+    }
   }
 
   "AST generation for await/async" should {

@@ -12,8 +12,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
       succOf(".alloc") shouldBe expected(("_tmp_0 = .alloc", AlwaysEdge))
       succOf("_tmp_0 = .alloc") shouldBe expected(("MyClass", AlwaysEdge))
       succOf("MyClass") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
-      succOf("_tmp_0", 1) shouldBe expected(("MyClass()", AlwaysEdge))
-      succOf("MyClass()") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("_tmp_0", 1) shouldBe expected(("new MyClass()", AlwaysEdge))
+      succOf("new MyClass()", NodeTypes.CALL) shouldBe expected(("_tmp_0", 2, AlwaysEdge))
       succOf("_tmp_0", 2) shouldBe expected(("RET", AlwaysEdge))
     }
 
@@ -25,8 +25,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("MyClass") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
       succOf("_tmp_0", 1) shouldBe expected(("arg1", AlwaysEdge))
       succOf("arg1") shouldBe expected(("arg2", AlwaysEdge))
-      succOf("arg2") shouldBe expected(("MyClass(arg1, arg2)", AlwaysEdge))
-      succOf("MyClass(arg1, arg2)") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("arg2") shouldBe expected(("new MyClass(arg1, arg2)", AlwaysEdge))
+      succOf("new MyClass(arg1, arg2)", NodeTypes.CALL) shouldBe expected(("_tmp_0", 2, AlwaysEdge))
       succOf("_tmp_0", 2) shouldBe expected(("RET", AlwaysEdge))
     }
 
@@ -40,8 +40,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("foo.bar") shouldBe expected(("MyClass", AlwaysEdge))
       succOf("MyClass") shouldBe expected(("foo.bar.MyClass", AlwaysEdge))
       succOf("foo.bar.MyClass") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
-      succOf("_tmp_0", 1) shouldBe expected(("foo.bar.MyClass()", AlwaysEdge))
-      succOf("foo.bar.MyClass()") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("_tmp_0", 1) shouldBe expected(("new foo.bar.MyClass()", AlwaysEdge))
+      succOf("new foo.bar.MyClass()", NodeTypes.CALL) shouldBe expected(("_tmp_0", 2, AlwaysEdge))
       succOf("_tmp_0", 2) shouldBe expected(("RET", AlwaysEdge))
     }
 
@@ -51,8 +51,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
       succOf(".alloc") shouldBe expected(("_tmp_0 = .alloc", AlwaysEdge))
       succOf("_tmp_0 = .alloc") shouldBe expected(("Foo", AlwaysEdge))
       succOf("Foo") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
-      succOf("_tmp_0", 1) shouldBe expected(("Foo()", AlwaysEdge))
-      succOf("Foo()") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("_tmp_0", 1) shouldBe expected(("new Foo()", AlwaysEdge))
+      succOf("new Foo()", NodeTypes.CALL) shouldBe expected(("_tmp_0", 2, AlwaysEdge))
       succOf("_tmp_0", 2) shouldBe expected(("throw new Foo()", AlwaysEdge))
       succOf("throw new Foo()") shouldBe expected(("RET", AlwaysEdge))
     }

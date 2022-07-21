@@ -92,7 +92,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodBlock) = method.astChildren.isBlock.l
 
       val List(fooCall) = methodBlock.astChildren.isCall.l
-      fooCall.code shouldBe """foo(__Runtime.TO_STRING("Hello ", world, "!"))"""
+      fooCall.code shouldBe s"foo(`Hello $${world}!`)"
 
       val List(templateCall) = fooCall.astChildren.isCall.l
       templateCall.name shouldBe "__Runtime.TO_STRING"
@@ -203,6 +203,27 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       checkObjectInitialization(block, ("key1", "\"value\""))
       checkObjectInitialization(block, ("key2", "2"))
       checkObjectInitialization(block, ("rest", "rest"))
+    }
+
+    "have correct structure for 1 object with complex rest" in AstFixture("""
+       |var x = {
+       | key1: "value",
+       | key2: 2,
+       | ...x.foo()
+       |}
+       |""".stripMargin) { cpg =>
+      val List(methodBlock) = cpg.method.nameExact(":program").astChildren.isBlock.l
+      val List(localX)      = methodBlock.local.nameExact("x").l
+      val List(assignment)  = methodBlock.astChildren.isCall.l
+      val List(identifierX) = assignment.astChildren.isIdentifier.l
+
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+
+      val List(block) = assignment.astChildren.isBlock.l
+      checkObjectInitialization(block, ("key1", "\"value\""))
+      checkObjectInitialization(block, ("key2", "2"))
+      checkObjectInitialization(block, ("_tmp_1", "x.foo()"))
     }
 
     "have correct structure for 1 object with computed values" in AstFixture("""
