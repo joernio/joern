@@ -4,6 +4,7 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 
 trait AstForPrimitivesCreator { this: AstCreator =>
 
@@ -34,6 +35,12 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         stringLiteral.columnNumber
       )
     )
+
+  protected def astForSpreadElement(spreadElement: BabelNodeInfo): Ast = {
+    val ast = astForNode(spreadElement.json("argument"))
+    ast.nodes.collectFirst { case i: NewIdentifier => i }.foreach(_.code = spreadElement.code)
+    ast
+  }
 
   protected def astForTemplateElement(templateElement: BabelNodeInfo): Ast =
     Ast(

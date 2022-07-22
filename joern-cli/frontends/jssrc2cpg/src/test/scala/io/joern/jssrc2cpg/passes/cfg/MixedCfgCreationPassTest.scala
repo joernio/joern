@@ -133,9 +133,14 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("a", 1) shouldBe expected(("_tmp_0.a", AlwaysEdge))
       succOf("_tmp_0.a") shouldBe expected(("a = _tmp_0.a", AlwaysEdge))
 
-      succOf("a = _tmp_0.a") shouldBe expected(("...rest", AlwaysEdge))
-      succOf("...rest") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
-      succOf("_tmp_0", 2) shouldBe expected(("RET", AlwaysEdge))
+      succOf("a = _tmp_0.a") shouldBe expected(("rest", AlwaysEdge))
+      succOf("rest") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("rest", 1, AlwaysEdge))
+      succOf("rest", 1) shouldBe expected(("_tmp_0.rest", AlwaysEdge))
+      succOf("_tmp_0.rest") shouldBe expected(("rest = _tmp_0.rest", AlwaysEdge))
+      succOf("rest = _tmp_0.rest") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
+
+      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for object destruction assignment with computed property name" ignore CfgFixture(
@@ -311,7 +316,26 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for array destruction assignment with rest" ignore CfgFixture("var [a, ...rest] = x") { _ => }
+    "be correct for array destruction assignment with rest" in CfgFixture("var [a, ...rest] = x") { implicit cpg =>
+      succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
+      succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
+      succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
+
+      succOf("_tmp_0 = x") shouldBe expected(("a", AlwaysEdge))
+
+      succOf("a") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
+      succOf("_tmp_0", 1) shouldBe expected(("0", AlwaysEdge))
+      succOf("0") shouldBe expected(("_tmp_0[0]", AlwaysEdge))
+      succOf("_tmp_0[0]") shouldBe expected(("a = _tmp_0[0]", AlwaysEdge))
+
+      succOf("a = _tmp_0[0]") shouldBe expected(("rest", AlwaysEdge))
+      succOf("rest") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("1", AlwaysEdge))
+      succOf("1") shouldBe expected(("_tmp_0[1]", AlwaysEdge))
+      succOf("_tmp_0[1]") shouldBe expected(("rest = _tmp_0[1]", AlwaysEdge))
+      succOf("rest = _tmp_0[1]") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+    }
 
     "be correct for array destruction assignment as parameter" in CfgFixture("""
        |function userId([id]) {
@@ -329,7 +353,13 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
     }
 
     "CFG generation for spread arguments" should {
-      "have correct structure for method spread argument" ignore CfgFixture("foo(...args))") { _ => }
+      "have correct structure for method spread argument" in CfgFixture("foo(...args)") { implicit cpg =>
+        succOf(":program") shouldBe expected(("foo", AlwaysEdge))
+        succOf("foo") shouldBe expected(("this", AlwaysEdge))
+        succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("...args", AlwaysEdge))
+        succOf("...args") shouldBe expected(("foo(...args)", AlwaysEdge))
+        succOf("foo(...args)") shouldBe expected(("RET", AlwaysEdge))
+      }
     }
 
   }

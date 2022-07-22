@@ -92,7 +92,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodBlock) = method.astChildren.isBlock.l
 
       val List(fooCall) = methodBlock.astChildren.isCall.l
-      fooCall.code shouldBe """foo(__Runtime.TO_STRING("Hello ", world, "!"))"""
+      fooCall.code shouldBe s"foo(`Hello $${world}!`)"
 
       val List(templateCall) = fooCall.astChildren.isCall.l
       templateCall.name shouldBe "__Runtime.TO_STRING"
@@ -202,8 +202,28 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(block) = assignment.astChildren.isBlock.l
       checkObjectInitialization(block, ("key1", "\"value\""))
       checkObjectInitialization(block, ("key2", "2"))
-      // TODO: SpreadElement is not handled yet. It is put there as UNKNOWN.
-      checkObjectInitialization(block, ("rest", "...rest"))
+      checkObjectInitialization(block, ("rest", "rest"))
+    }
+
+    "have correct structure for 1 object with complex rest" in AstFixture("""
+       |var x = {
+       | key1: "value",
+       | key2: 2,
+       | ...x.foo()
+       |}
+       |""".stripMargin) { cpg =>
+      val List(methodBlock) = cpg.method.nameExact(":program").astChildren.isBlock.l
+      val List(localX)      = methodBlock.local.nameExact("x").l
+      val List(assignment)  = methodBlock.astChildren.isCall.l
+      val List(identifierX) = assignment.astChildren.isIdentifier.l
+
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+
+      val List(block) = assignment.astChildren.isBlock.l
+      checkObjectInitialization(block, ("key1", "\"value\""))
+      checkObjectInitialization(block, ("key2", "2"))
+      checkObjectInitialization(block, ("_tmp_1", "x.foo()"))
     }
 
     "have correct structure for 1 object with computed values" in AstFixture("""
@@ -328,6 +348,48 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
         lambdaBlock.astChildren.isLocal.nameExact("param").size shouldBe 1
         lambdaBlock.astChildren.isCall.codeExact("param = param1_0.param").size shouldBe 1
+    }
+
+    "have correct parameter in lambda function rest param in object" in AstFixture(
+      "var x = ({x, ...rest}) => x + rest"
+    ) { cpg =>
+      val lambdaFullName    = "code.js::program:anonymous"
+      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).l
+      val List(lambdaBlock) = lambda.astChildren.isBlock.l
+
+      val List(param1, param2) = lambda.parameter.l
+      param1.index shouldBe 0
+      param1.name shouldBe "this"
+      param1.code shouldBe "this"
+
+      param2.index shouldBe 1
+      param2.name shouldBe "param1_0"
+      param2.code shouldBe "{x, ...rest}"
+
+      lambdaBlock.astChildren.isLocal.nameExact("x").size shouldBe 1
+      lambdaBlock.astChildren.isLocal.nameExact("rest").size shouldBe 1
+      lambdaBlock.astChildren.isCall.codeExact("rest = param1_0.rest").size shouldBe 1
+    }
+
+    "have correct parameter in lambda function rest param in array" in AstFixture(
+      "var x = ([x, ...rest]) => x + rest"
+    ) { cpg =>
+      val lambdaFullName    = "code.js::program:anonymous"
+      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).l
+      val List(lambdaBlock) = lambda.astChildren.isBlock.l
+
+      val List(param1, param2) = lambda.parameter.l
+      param1.index shouldBe 0
+      param1.name shouldBe "this"
+      param1.code shouldBe "this"
+
+      param2.index shouldBe 1
+      param2.name shouldBe "param1_0"
+      param2.code shouldBe "[x, ...rest]"
+
+      lambdaBlock.astChildren.isLocal.nameExact("x").size shouldBe 1
+      lambdaBlock.astChildren.isLocal.nameExact("rest").size shouldBe 1
+      lambdaBlock.astChildren.isCall.codeExact("rest = param1_0.rest").size shouldBe 1
     }
 
     "have two lambda functions in same scope level with different full names" in AstFixture("""
