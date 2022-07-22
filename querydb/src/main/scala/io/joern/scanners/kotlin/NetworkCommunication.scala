@@ -29,11 +29,11 @@ object NetworkCommunication extends QueryBundle {
             .isExternal(false)
             .filter(_.inheritsFromTypeFullName.contains("javax.net.ssl.X509TrustManager"))
             .filter { node =>
-              node.method.name("checkClientTrusted").block.expressionDown.isEmpty ||
-              node.method.name("checkServerTrusted").block.expressionDown.isEmpty
+              node.method.nameExact("checkClientTrusted").block.expressionDown.isEmpty ||
+              node.method.nameExact("checkServerTrusted").block.expressionDown.isEmpty
             }
             .fullName
-            .l
+            .toSeq
         def nopTrustManagersAllocs =
           cpg.method.fullNameExact(Operators.alloc).callIn.typeFullNameExact(nopTrustManagerFullNames: _*)
         def sslCtxInitCalls = cpg.method
