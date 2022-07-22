@@ -24,7 +24,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
   private def hasNoName(json: Value): Boolean = !hasKey(json, "id") || json("id").isNull
 
-  private def codeForExportObject(obj: BabelNodeInfo, defaultName: Option[String]): Seq[String] = obj.node match {
+  protected def codeForExportObject(obj: BabelNodeInfo, defaultName: Option[String]): Seq[String] = obj.node match {
     case Identifier                                 => Seq(obj.code)
     case VariableDeclaration                        => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
     case AssignmentExpression                       => Seq(code(obj.json("left")))
@@ -590,7 +590,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
         pattern.json("properties").arr.toList.map { element =>
           val nodeInfo = createBabelNodeInfo(element)
           nodeInfo.node match {
-            case RestElement => astForNode(nodeInfo.json)
+            case RestElement =>
+              val restElementNodeInfo = createBabelNodeInfo(nodeInfo.json("argument"))
+              convertDestructingObjectElement(restElementNodeInfo, restElementNodeInfo, localTmpName)
             case _ =>
               val nodeInfo = createBabelNodeInfo(element("value"))
               nodeInfo.node match {
@@ -611,6 +613,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
           case (element, index) if !element.isNull =>
             val nodeInfo = createBabelNodeInfo(element)
             nodeInfo.node match {
+              case RestElement =>
+                val restElementNodeInfo = createBabelNodeInfo(nodeInfo.json("argument"))
+                convertDestructingArrayElement(restElementNodeInfo, index, localTmpName)
               case Identifier =>
                 convertDestructingArrayElement(nodeInfo, index, localTmpName)
               case AssignmentPattern =>

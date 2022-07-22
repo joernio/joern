@@ -60,9 +60,9 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
         succOf("world") shouldBe expected(("\"!\"", AlwaysEdge))
         succOf("\"!\"") shouldBe expected(("__Runtime.TO_STRING(\"Hello \", world, \"!\")", AlwaysEdge))
         succOf("__Runtime.TO_STRING(\"Hello \", world, \"!\")") shouldBe expected(
-          ("foo(__Runtime.TO_STRING(\"Hello \", world, \"!\"))", AlwaysEdge)
+          (s"foo(`Hello $${world}!`)", AlwaysEdge)
         )
-        succOf("foo(__Runtime.TO_STRING(\"Hello \", world, \"!\"))") shouldBe expected(("RET", AlwaysEdge))
+        succOf(s"foo(`Hello $${world}!`)") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "have correct structure for untagged runtime node" in CfgFixture(s"`$${x + 1}`") { implicit cpg =>
@@ -618,8 +618,8 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("MyClass") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
       succOf("_tmp_0", 1) shouldBe expected(("arg1", AlwaysEdge))
       succOf("arg1") shouldBe expected(("arg2", AlwaysEdge))
-      succOf("arg2") shouldBe expected(("MyClass(arg1, arg2)", AlwaysEdge))
-      succOf("MyClass(arg1, arg2)") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("arg2") shouldBe expected(("new MyClass(arg1, arg2)", AlwaysEdge))
+      succOf("new MyClass(arg1, arg2)", NodeTypes.CALL) shouldBe expected(("_tmp_0", 2, AlwaysEdge))
       succOf("_tmp_0", 2) shouldBe expected(("x = new MyClass(arg1, arg2)", AlwaysEdge))
       succOf("x = new MyClass(arg1, arg2)") shouldBe expected(("RET", AlwaysEdge))
     }
