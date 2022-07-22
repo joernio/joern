@@ -104,4 +104,93 @@ object AndroidMisconfigurations extends QueryBundle {
            |</manifest>""".stripMargin)
       )
     )
+
+  // todo: check for `android:filterTouchesWhenObscured="[true|false]"`
+  // todo: check for `onFilterTouchEventForSecurity`
+  // see: https://redfoxsec.com/blog/android-tapjacking-vulnerability/
+  // see: https://cwe.mitre.org/data/definitions/1021.html
+  // see: https://infinum.com/blog/pentesting-misc-cases/
+  // see: https://developer.android.com/reference/android/Manifest.permission.html#SYSTEM_ALERT_WINDOW
+  @q
+  def tapJacking(): Query =
+    Query.make(
+      name = "tap-jacking",
+      author = Crew.claudiu,
+      title = "Tap Jacking: target SDK <23 specified in `build.gradle` ",
+      description = """
+          |Android apps targeting API levels 22 and lower have the SYSTEM_ALERT_WINDOW permission enabled by default.
+          |This allows apps to draw overlays over other apps. Attackers can use this option to create an overlay that
+          |would essentially hijack user taps and use it to obtain sensitive user information.""".stripMargin,
+      score = 6,
+      withStrRep({ cpg =>
+        def groovyBuildGradleFiles = cpg.configFile.name(".*build.gradle")
+        val targetSdkVersionMatch  = """^[^t]+targetSdk[^0-9]+(\d+)""".r
+        val firstSecureSdkVersion  = 23
+        groovyBuildGradleFiles.filter { gradleFile =>
+          gradleFile.content
+            .split('\n')
+            .exists { line =>
+              targetSdkVersionMatch
+                .findAllIn(line)
+                .matchData
+                .exists { m =>
+                  m.groupCount > 0 && m.group(1).toInt < firstSecureSdkVersion
+                }
+            }
+        }
+      }),
+      tags = List(QueryTags.android, QueryTags.misconfiguration),
+      multiFileCodeExamples = MultiFileCodeExamples(
+        positive = List(
+          List(
+            CodeSnippet("fun main() = println(0xbadf00d)", "SomeActivity.kt"),
+            CodeSnippet(
+              """
+              |plugins {
+              |    id 'com.android.application'
+              |    id 'kotlin-android'
+              |}
+              |
+              |android {
+              |    compileSdk 22
+              |    defaultConfig {
+              |        applicationId "com.example.slimandroid"
+              |        minSdk 22
+              |        targetSdk 22
+              |        versionCode 1
+              |        versionName "1.0"
+              |    }
+              |}
+              |""".stripMargin,
+              "build.gradle"
+            )
+          )
+        ),
+        negative = List(
+          List(
+            CodeSnippet("fun main() = println(0xbadf00d)", "SomeActivity.kt"),
+            CodeSnippet(
+              """
+                |plugins {
+                |    id 'com.android.application'
+                |    id 'kotlin-android'
+                |}
+                |
+                |android {
+                |    compileSdk 23
+                |    defaultConfig {
+                |        applicationId "com.example.slimandroid"
+                |        minSdk 23
+                |        targetSdk 23
+                |        versionCode 1
+                |        versionName "1.0"
+                |    }
+                |}
+                |""".stripMargin,
+              "build.gradle"
+            )
+          )
+        )
+      )
+    )
 }

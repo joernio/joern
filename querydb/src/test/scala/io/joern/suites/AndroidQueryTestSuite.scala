@@ -7,6 +7,9 @@ import io.joern.kotlin2cpg.{Config, Kotlin2Cpg}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.utils.ProjectRoot
+import io.joern.console.scan._
+import io.shiftleft.codepropertygraph.generated.nodes.ConfigFile
+import io.shiftleft.semanticcpg.language._
 
 import java.io.File
 
@@ -34,5 +37,7 @@ class AndroidQueryTestSuite extends Code2CpgFixture(new Kotlin2CpgFrontend()) {
 
   def allQueries: List[Query] = QueryUtil.allQueries(queryBundle, argumentProvider)
 
-  protected val cpg: TestCpg = code("fun main() = println(0xff)")
+  def findMatchingConfigFiles(cpg: Cpg, q: Query): Set[String] = {
+    q(cpg).flatMap(_.evidence).collect { case c: ConfigFile => c }.name.toSetImmutable
+  }
 }
