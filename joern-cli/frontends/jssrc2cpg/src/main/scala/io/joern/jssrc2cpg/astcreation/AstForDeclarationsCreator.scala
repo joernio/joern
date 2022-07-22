@@ -9,7 +9,7 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{IdentifierBase, NewIdentifier, NewNamespaceBlock, TypeRefBase}
+import io.shiftleft.codepropertygraph.generated.nodes.{IdentifierBase, NewNamespaceBlock, TypeRefBase}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import ujson.Value
 
@@ -562,48 +562,6 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     createTernaryCallAst(testAst.nodes.head, sourceAst.nodes.head, falseNode, pattern.lineNumber, pattern.columnNumber)
   }
 
-  private def astAndKeyNameForDeconstructingRest(
-    restElementNodeInfo: BabelNodeInfo,
-    nodeInfo: BabelNodeInfo
-  ): (Ast, String) = {
-    val ast = restElementNodeInfo.node match {
-      case FunctionDeclaration =>
-        astForFunctionDeclaration(
-          restElementNodeInfo,
-          shouldCreateFunctionReference = true,
-          shouldCreateAssignmentCall = true
-        )
-      case FunctionExpression =>
-        astForFunctionDeclaration(
-          restElementNodeInfo,
-          shouldCreateFunctionReference = true,
-          shouldCreateAssignmentCall = true
-        )
-      case ArrowFunctionExpression =>
-        astForFunctionDeclaration(
-          restElementNodeInfo,
-          shouldCreateFunctionReference = true,
-          shouldCreateAssignmentCall = true
-        )
-      case _ => astForNode(restElementNodeInfo.json)
-    }
-    val defaultName = ast.root.collectFirst {
-      case id: IdentifierBase => id.name.replace("...", "")
-      case clazz: TypeRefBase => clazz.code.stripPrefix("class ")
-    }
-    val keyName = codeForExportObject(nodeInfo, defaultName).headOption
-      .getOrElse {
-        if (defaultName.isEmpty) {
-          val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
-          val localNode = createLocalNode(tmpName, Defines.ANY.label)
-          diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
-          tmpName
-        } else { defaultName.get }
-      }
-      .replace("...", "")
-    (ast, keyName)
-  }
-
   protected def astForDeconstruction(pattern: BabelNodeInfo, sourceAst: Ast, paramName: Option[String] = None): Ast = {
     val localTmpName = generateUnusedVariableName(usedVariableNames, "_tmp")
 
@@ -634,37 +592,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
           nodeInfo.node match {
             case RestElement =>
               val restElementNodeInfo = createBabelNodeInfo(nodeInfo.json("argument"))
-              val (ast, keyName)      = astAndKeyNameForDeconstructingRest(restElementNodeInfo, nodeInfo)
-              ast.root match {
-                case Some(id: NewIdentifier) =>
-                  val fieldAccessTmpNode = createIdentifierNode(localTmpName, restElementNodeInfo)
-                  val keyNode =
-                    createFieldIdentifierNode(keyName, restElementNodeInfo.lineNumber, restElementNodeInfo.columnNumber)
-                  val accessAst = createFieldAccessCallAst(
-                    fieldAccessTmpNode,
-                    keyNode,
-                    restElementNodeInfo.lineNumber,
-                    restElementNodeInfo.columnNumber
-                  )
-                  Ast.storeInDiffGraph(accessAst, diffGraph)
-                  createAssignmentCallAst(
-                    id,
-                    accessAst.nodes.head,
-                    s"$keyName = ${codeOf(accessAst.nodes.head)}",
-                    restElementNodeInfo.lineNumber,
-                    restElementNodeInfo.columnNumber
-                  )
-                case _ =>
-                  Ast.storeInDiffGraph(ast, diffGraph)
-                  val id = createIdentifierNode(keyName, restElementNodeInfo)
-                  createAssignmentCallAst(
-                    id,
-                    ast.nodes.head,
-                    s"$keyName = ${codeOf(ast.nodes.head)}",
-                    restElementNodeInfo.lineNumber,
-                    restElementNodeInfo.columnNumber
-                  )
-              }
+              convertDestructingObjectElement(restElementNodeInfo, restElementNodeInfo, localTmpName)
             case _ =>
               val nodeInfo = createBabelNodeInfo(element("value"))
               nodeInfo.node match {
@@ -687,42 +615,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
             nodeInfo.node match {
               case RestElement =>
                 val restElementNodeInfo = createBabelNodeInfo(nodeInfo.json("argument"))
-                val (ast, keyName)      = astAndKeyNameForDeconstructingRest(restElementNodeInfo, nodeInfo)
-                ast.root match {
-                  case Some(id: NewIdentifier) =>
-                    val fieldAccessTmpNode = createIdentifierNode(localTmpName, restElementNodeInfo)
-                    val keyNode =
-                      createLiteralNode(
-                        index.toString,
-                        Some(Defines.NUMBER.label),
-                        restElementNodeInfo.lineNumber,
-                        restElementNodeInfo.columnNumber
-                      )
-                    val accessAst = createIndexAccessCallAst(
-                      fieldAccessTmpNode,
-                      keyNode,
-                      restElementNodeInfo.lineNumber,
-                      restElementNodeInfo.columnNumber
-                    )
-                    Ast.storeInDiffGraph(accessAst, diffGraph)
-                    createAssignmentCallAst(
-                      id,
-                      accessAst.nodes.head,
-                      s"$keyName = ${codeOf(accessAst.nodes.head)}",
-                      restElementNodeInfo.lineNumber,
-                      restElementNodeInfo.columnNumber
-                    )
-                  case _ =>
-                    val id = createIdentifierNode(keyName, restElementNodeInfo)
-                    Ast.storeInDiffGraph(ast, diffGraph)
-                    createAssignmentCallAst(
-                      id,
-                      ast.nodes.head,
-                      s"$keyName = ${codeOf(ast.nodes.head)}",
-                      restElementNodeInfo.lineNumber,
-                      restElementNodeInfo.columnNumber
-                    )
-                }
+                convertDestructingArrayElement(restElementNodeInfo, index, localTmpName)
               case Identifier =>
                 convertDestructingArrayElement(nodeInfo, index, localTmpName)
               case AssignmentPattern =>
