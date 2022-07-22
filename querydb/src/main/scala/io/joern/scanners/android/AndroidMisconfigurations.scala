@@ -123,22 +123,20 @@ object AndroidMisconfigurations extends QueryBundle {
           |would essentially hijack user taps and use it to obtain sensitive user information.""".stripMargin,
       score = 6,
       withStrRep({ cpg =>
-        def groovyBuildGradleFiles                                  = cpg.configFile.name(".*build.gradle")
-        val targetSdkVersionMatch                                   = """^[^t]+targetSdk[^0-9]+(\d+)""".r
-        val minimumAndroidSdkVersionWhereNoAdditionalChecksRequired = 23
+        def groovyBuildGradleFiles = cpg.configFile.name(".*build.gradle")
+        val targetSdkVersionMatch  = """^[^t]+targetSdk[^0-9]+(\d+)""".r
+        val firstSecureSdkVersion  = 23
         groovyBuildGradleFiles.filter { gradleFile =>
           gradleFile.content
             .split('\n')
-            .filter { line =>
+            .exists { line =>
               targetSdkVersionMatch
                 .findAllIn(line)
                 .matchData
-                .filter { m =>
-                  m.groupCount > 0 && m.group(1).toInt < minimumAndroidSdkVersionWhereNoAdditionalChecksRequired
+                .exists { m =>
+                  m.groupCount > 0 && m.group(1).toInt < firstSecureSdkVersion
                 }
-                .nonEmpty
             }
-            .nonEmpty
         }
       }),
       tags = List(QueryTags.android, QueryTags.misconfiguration),
