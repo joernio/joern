@@ -1,18 +1,15 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve, toNodeTypeStarters}
+import io.shiftleft.semanticcpg.language.toNodeTypeStarters
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Ignore
 
-class ArithmeticOperationsTests extends JavaSrcCodeToCpgFixture {
+class ArithmeticOperationsTests extends JavaSrcCode2CpgFixture {
 
-  implicit val resolver: ICallResolver = NoResolve
-
-  override val code: String =
-    """
+  lazy val cpg: Cpg = code("""
       | class Foo {
       |   static void main(int argc, char argv) {
       |     int a = 1;
@@ -23,7 +20,7 @@ class ArithmeticOperationsTests extends JavaSrcCodeToCpgFixture {
       |     int f = b / a;
       |   }
       | }
-      |""".stripMargin
+      |""".stripMargin)
 
   val vars = Seq(("a", "int"), ("b", "int"), ("c", "int"), ("d", "int"), ("e", "int"), ("f", "int"))
 
@@ -45,7 +42,14 @@ class ArithmeticOperationsTests extends JavaSrcCodeToCpgFixture {
     val List(op)                           = cpg.call.nameExact(Operators.addition).l
     val List(a: Identifier, b: Identifier) = op.astOut.l
     a.name shouldBe "a"
+    a.code shouldBe "a"
+    a.typeFullName shouldBe "int"
+    a.argumentIndex shouldBe 1
+
     b.name shouldBe "b"
+    b.code shouldBe "b"
+    b.typeFullName shouldBe "int"
+    b.argumentIndex shouldBe 2
   }
 
   "should contain a call node for the subtraction operator" in {
