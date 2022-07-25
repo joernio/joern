@@ -1,16 +1,13 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
 
-class BooleanOperationsTests extends JavaSrcCodeToCpgFixture {
+class BooleanOperationsTests extends JavaSrcCode2CpgFixture {
 
-  implicit val resolver: ICallResolver = NoResolve
-
-  override val code: String =
-    """
+  lazy val cpg = code("""
       | public class Foo {
       |   public static void main(String[] args) {
       |     boolean a = 1 == 2;
@@ -26,7 +23,7 @@ class BooleanOperationsTests extends JavaSrcCodeToCpgFixture {
       |     boolean k = true;
       |   }
       | }
-      |""".stripMargin
+      |""".stripMargin)
 
   val vars = Seq(
     ("a", "boolean"),
