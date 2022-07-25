@@ -865,6 +865,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def exprNameFromStack(expr: Expression): Option[String] = {
     expr match {
+      case annotation: AnnotationExpr =>
+        scopeStack.lookupVariableType(annotation.getNameAsString, wildcardFallback = true)
+
       case namedExpr: NodeWithName[_] => scopeStack.lookupVariableType(namedExpr.getNameAsString)
 
       case namedExpr: NodeWithSimpleName[_] => scopeStack.lookupVariableType(namedExpr.getNameAsString)
@@ -971,8 +974,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         // This duplicates some code from TypeInfoCalculator.nameOrFullName, but provides a way to calculate
         // the expected return type above, re-use that here and avoid attempting to resolve unresolvable
         // types twice.
-        .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString))
-        .orElse(scopeStack.getWildcardType(methodDeclaration.getTypeAsString))
+        .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString, wildcardFallback = true))
 
     val parameterTypes = parameterAsts.map(rootType(_).getOrElse(TypeConstants.UnresolvedType))
     val signature = returnType map { typ =>
@@ -2011,8 +2013,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         typeInfoCalc
           .fullName(variable.getType)
           .orElse(scopeStack.lookupVariableType(name))
-          .orElse(scopeStack.lookupVariableType(javaParserVarType))
-          .orElse(scopeStack.getWildcardType(javaParserVarType))
+          .orElse(scopeStack.lookupVariableType(javaParserVarType, wildcardFallback = true))
 
       val typeFullName =
         variableTypeFullName.orElse(initializerTypeFullName).getOrElse(TypeConstants.UnresolvedType)
@@ -2988,8 +2989,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val typeFullName = {
       typeInfoCalc
         .fullName(parameter.getType)
-        .orElse(scopeStack.lookupVariableType(parameter.getTypeAsString))
-        .orElse(scopeStack.getWildcardType(parameter.getTypeAsString))
+        .orElse(scopeStack.lookupVariableType(parameter.getTypeAsString, wildcardFallback = true))
         .getOrElse(TypeConstants.UnresolvedType)
     }
     val parameterNode = NewMethodParameterIn()
