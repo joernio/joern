@@ -1785,24 +1785,25 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   def astForArrayCreationExpr(expr: ArrayCreationExpr, expectedType: Option[ExpectedType]): Ast = {
-    val typeFullName = expressionReturnTypeFullName(expr).orElse(expectedType.map(_.fullName))
-    val callNode     = operatorCallNode(Operators.alloc, code = expr.toString, typeFullName = typeFullName)
+    val maybeInitializerAst = expr.getInitializer.toScala.map(astForArrayInitializerExpr(_, expectedType))
 
-    val levelAsts = expr.getLevels.asScala.flatMap { lvl =>
-      lvl.getDimension.toScala match {
-        case Some(dimension) => astsForExpression(dimension, Some(ExpectedType.Int))
+    maybeInitializerAst match {
+      case Some(initializerAst) =>
+        initializerAst.root.collect { case call: NewCall => call.code(expr.toString) }
+        initializerAst
 
-        case None => Seq.empty
-      }
+      case None =>
+        val typeFullName = expressionReturnTypeFullName(expr).orElse(expectedType.map(_.fullName))
+        val callNode     = operatorCallNode(Operators.alloc, code = expr.toString, typeFullName = typeFullName)
+        val levelAsts = expr.getLevels.asScala.flatMap { lvl =>
+          lvl.getDimension.toScala match {
+            case Some(dimension) => astsForExpression(dimension, Some(ExpectedType.Int))
+
+            case None => Seq.empty
+          }
+        }.toSeq
+        callAst(callNode, levelAsts)
     }
-
-    val initializerAst =
-      expr.getInitializer.toScala
-        .map(astForArrayInitializerExpr(_, expectedType))
-
-    val args = (levelAsts ++ initializerAst.toList).toSeq
-
-    callAst(callNode, args)
   }
 
   def astForArrayInitializerExpr(expr: ArrayInitializerExpr, expectedType: Option[ExpectedType]): Ast = {
