@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.javasrc2cpg.util.NameConstants
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Binding,
@@ -10,13 +11,91 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   FieldIdentifier,
   Identifier,
   Literal,
-  Local
+  Local,
+  Return
 }
 import io.shiftleft.semanticcpg.language._
 
 import scala.jdk.CollectionConverters._
 
 class NewControlStructureTests extends JavaSrcCode2CpgFixture {
+  "try-with-resource blocks" should {
+    val cpg = code("""
+				|import java.io.FileReader;
+        |import java.io.IOException;
+        |import java.io.BufferedReader;
+				|
+        |public class Foo {
+        |
+        |    static String foo(String path) throws IOException {
+        |        try (FileReader fr = new FileReader(path);
+        |             BufferedReader br = new BufferedReader(fr)) {
+        |            return br.readLine();
+        |        }
+        |    }
+        |}
+        |""".stripMargin)
+
+    "create nodes for resources" in {
+      cpg.method.name("foo").body.astChildren.l match {
+        case List(
+              frLocal: Local,
+              frAssign: Call,
+              frInit: Call,
+              brLocal: Local,
+              brAssign: Call,
+              brInit: Call,
+              tryBlock: ControlStructure
+            ) =>
+          frLocal.name shouldBe "fr"
+          frLocal.code shouldBe "FileReader fr"
+          frLocal.typeFullName shouldBe "java.io.FileReader"
+
+          frAssign.name shouldBe Operators.assignment
+          val List(frAssignLhs: Identifier, frAssignRhs: Call) = frAssign.argument.l
+          frAssignLhs.name shouldBe "fr"
+          frAssignLhs.typeFullName shouldBe "java.io.FileReader"
+          frAssignRhs.name shouldBe Operators.alloc
+          frAssignRhs.typeFullName shouldBe "java.io.FileReader"
+
+          frInit.name shouldBe NameConstants.Init
+          val List(frInitThis: Identifier, frInitArg: Identifier) = frInit.argument.l
+          frInitThis.name shouldBe "fr"
+          frInitThis.typeFullName shouldBe "java.io.FileReader"
+          frInitArg.name shouldBe "path"
+          frInitArg.typeFullName shouldBe "java.lang.String"
+
+          brLocal.name shouldBe "br"
+          brLocal.code shouldBe "BufferedReader br"
+          brLocal.typeFullName shouldBe "java.io.BufferedReader"
+
+          brAssign.name shouldBe Operators.assignment
+          val List(brAssignLhs: Identifier, brAssignRhs: Call) = brAssign.argument.l
+          brAssignLhs.name shouldBe "br"
+          brAssignLhs.typeFullName shouldBe "java.io.BufferedReader"
+          brAssignRhs.name shouldBe Operators.alloc
+          brAssignRhs.typeFullName shouldBe "java.io.BufferedReader"
+
+          brInit.name shouldBe NameConstants.Init
+          val List(brInitThis: Identifier, brInitArg: Identifier) = brInit.argument.l
+          brInitThis.name shouldBe "br"
+          brInitThis.typeFullName shouldBe "java.io.BufferedReader"
+          brInitArg.name shouldBe "fr"
+          brInitArg.typeFullName shouldBe "java.io.FileReader"
+
+          tryBlock.controlStructureType shouldBe ControlStructureTypes.TRY
+          tryBlock.astChildren.l match {
+            case List(block: Block) =>
+              val List(returnStmt: Return) = block.astChildren.l
+              returnStmt.code shouldBe "return br.readLine();"
+
+            case result => fail(s"Expected single block as try body but got $result")
+          }
+
+        case result => fail(s"Expected resource assignments before try but got $result")
+      }
+    }
+  }
   "foreach loops over native array initialization expressions" should {
     val cpg = code("""
                      |public class Foo {
@@ -59,7 +138,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       assignment.order shouldBe 2
       assignment.typeFullName shouldBe "java.lang.String[]"
 
-      val (iterIdentifier, arrayAlloc) = assignment.argument.l match {
+      val (iterIdentifier, arrayInitializer) = assignment.argument.l match {
         case List(iterIdentifier: Identifier, arrayAlloc: Call) => (iterIdentifier, arrayAlloc)
         case result => fail(s"Expected arrayInitializer assign to iterLocal but got $result")
       }
@@ -70,22 +149,10 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       iterIdentifier.argumentIndex shouldBe 1
       iterIdentifier.refOut.toSet should contain(cpg.local.nameExact("$iterLocal0").head)
 
-      arrayAlloc.name shouldBe Operators.alloc
-      arrayAlloc.methodFullName shouldBe Operators.alloc
-      arrayAlloc.typeFullName shouldBe "java.lang.String[]"
-      arrayAlloc.order shouldBe 2
-      arrayAlloc.argumentIndex shouldBe 2
-
-      val arrayInitializer = arrayAlloc.argument.l match {
-        case List(arrayInitializer: Call) => arrayInitializer
-        case result                       => fail(s"Expected single argument ot arrayAlloc but got $result")
-      }
-
-      val allocChildren = arrayAlloc.astChildren.l
       arrayInitializer.name shouldBe Operators.arrayInitializer
       arrayInitializer.methodFullName shouldBe Operators.arrayInitializer
-      arrayInitializer.order shouldBe 1
-      arrayInitializer.argumentIndex shouldBe 1
+      arrayInitializer.order shouldBe 2
+      arrayInitializer.argumentIndex shouldBe 2
       arrayInitializer.astChildren.size shouldBe 3
       val expectedLiterals = List("\"a\"", "\"b\"", "\"c\"")
       arrayInitializer.astChildren.zip(expectedLiterals).foreach { case (initChild, expectedCode) =>
