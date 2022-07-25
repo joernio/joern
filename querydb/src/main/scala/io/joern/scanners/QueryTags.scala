@@ -31,5 +31,6 @@ object QueryTags {
   val incorrectShift       = "incorrect-shift-contract"
   val modifyingStorageArrayByValue = "modifying-storage-array-by-value-contract"
   val taintedPrivateVariable = "tainted-private-variable-contract"
+  val reentrancy = "reentrancy-contract"
 
 }
