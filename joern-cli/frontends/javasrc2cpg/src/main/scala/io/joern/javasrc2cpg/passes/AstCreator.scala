@@ -1793,22 +1793,22 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   def astForArrayCreationExpr(expr: ArrayCreationExpr, expectedType: Option[ExpectedType]): Ast = {
     val maybeInitializerAst = expr.getInitializer.toScala.map(astForArrayInitializerExpr(_, expectedType))
 
-    maybeInitializerAst match {
-      case Some(initializerAst) =>
-        initializerAst.root.collect { case call: NewCall => call.code(expr.toString) }
-        initializerAst
+    maybeInitializerAst.flatMap(_.root) match {
+      case Some(initializerRoot: NewCall) => initializerRoot.code(expr.toString)
+      case _                              => // This should never happen
+    }
 
-      case None =>
-        val typeFullName = expressionReturnTypeFullName(expr).orElse(expectedType.map(_.fullName))
-        val callNode     = operatorCallNode(Operators.alloc, code = expr.toString, typeFullName = typeFullName)
-        val levelAsts = expr.getLevels.asScala.flatMap { lvl =>
-          lvl.getDimension.toScala match {
-            case Some(dimension) => astsForExpression(dimension, Some(ExpectedType.Int))
+    maybeInitializerAst.getOrElse {
+      val typeFullName = expressionReturnTypeFullName(expr).orElse(expectedType.map(_.fullName))
+      val callNode     = operatorCallNode(Operators.alloc, code = expr.toString, typeFullName = typeFullName)
+      val levelAsts = expr.getLevels.asScala.flatMap { lvl =>
+        lvl.getDimension.toScala match {
+          case Some(dimension) => astsForExpression(dimension, Some(ExpectedType.Int))
 
-            case None => Seq.empty
-          }
-        }.toSeq
-        callAst(callNode, levelAsts)
+          case None => Seq.empty
+        }
+      }.toSeq
+      callAst(callNode, levelAsts)
     }
   }
 
