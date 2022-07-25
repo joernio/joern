@@ -1068,24 +1068,30 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     astForBlockStatement(catchClause.getBody)
   }
 
-  def astForTry(stmt: TryStmt): Ast = {
+  def astsForTry(stmt: TryStmt): Seq[Ast] = {
     val tryNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.TRY)
       .code("try")
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
 
+    val resources = stmt.getResources.asScala.flatMap(astsForExpression(_, expectedType = None)).toList
     val tryAst    = astForBlockStatement(stmt.getTryBlock, codeStr = "try")
     val catchAsts = stmt.getCatchClauses.asScala.map(astForCatchClause)
-    val catchBlock = Ast(NewBlock().code("catch"))
-      .withChildren(catchAsts)
+    val catchBlock = Option
+      .when(catchAsts.nonEmpty) {
+        Ast(NewBlock().code("catch")).withChildren(catchAsts)
+      }
+      .toList
     val finallyAst =
       stmt.getFinallyBlock.toScala.map(astForBlockStatement(_, "finally")).toList
 
-    Ast(tryNode)
+    val controlStructureAst = Ast(tryNode)
       .withChild(tryAst)
-      .withChild(catchBlock)
+      .withChildren(catchBlock)
       .withChildren(finallyAst)
+
+    resources.appended(controlStructureAst)
   }
 
   private def astsForStatement(statement: Statement): Seq[Ast] = {
@@ -1111,7 +1117,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case x: SwitchStmt       => Seq(astForSwitchStatement(x))
       case x: SynchronizedStmt => Seq(astForSynchronizedStatement(x))
       case x: ThrowStmt        => Seq(astForThrow(x))
-      case x: TryStmt          => Seq(astForTry(x))
+      case x: TryStmt          => astsForTry(x)
       case x: WhileStmt        => Seq(astForWhile(x))
       case x =>
         logger.warn(s"Attempting to generate AST for unknown statement $x")
@@ -1787,24 +1793,25 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   def astForArrayCreationExpr(expr: ArrayCreationExpr, expectedType: Option[ExpectedType]): Ast = {
-    val typeFullName = expressionReturnTypeFullName(expr).orElse(expectedType.map(_.fullName))
-    val callNode     = operatorCallNode(Operators.alloc, code = expr.toString, typeFullName = typeFullName)
+    val maybeInitializerAst = expr.getInitializer.toScala.map(astForArrayInitializerExpr(_, expectedType))
 
-    val levelAsts = expr.getLevels.asScala.flatMap { lvl =>
-      lvl.getDimension.toScala match {
-        case Some(dimension) => astsForExpression(dimension, Some(ExpectedType.Int))
-
-        case None => Seq.empty
-      }
+    maybeInitializerAst.flatMap(_.root) match {
+      case Some(initializerRoot: NewCall) => initializerRoot.code(expr.toString)
+      case _                              => // This should never happen
     }
 
-    val initializerAst =
-      expr.getInitializer.toScala
-        .map(astForArrayInitializerExpr(_, expectedType))
+    maybeInitializerAst.getOrElse {
+      val typeFullName = expressionReturnTypeFullName(expr).orElse(expectedType.map(_.fullName))
+      val callNode     = operatorCallNode(Operators.alloc, code = expr.toString, typeFullName = typeFullName)
+      val levelAsts = expr.getLevels.asScala.flatMap { lvl =>
+        lvl.getDimension.toScala match {
+          case Some(dimension) => astsForExpression(dimension, Some(ExpectedType.Int))
 
-    val args = (levelAsts ++ initializerAst.toList).toSeq
-
-    callAst(callNode, args)
+          case None => Seq.empty
+        }
+      }.toSeq
+      callAst(callNode, levelAsts)
+    }
   }
 
   def astForArrayInitializerExpr(expr: ArrayInitializerExpr, expectedType: Option[ExpectedType]): Ast = {
