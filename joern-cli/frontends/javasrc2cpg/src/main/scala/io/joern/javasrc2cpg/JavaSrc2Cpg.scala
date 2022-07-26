@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg
 
 import better.files.File
-import io.joern.javasrc2cpg.passes.AstCreationPass
+import io.joern.javasrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
@@ -36,6 +36,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
 
       val astCreator = new AstCreationPass(sourcesDir, sourceFileNames, config, cpg)
       astCreator.createAndApply()
+      new ConfigFileCreationPass(config.inputPath, cpg).createAndApply()
       new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
         .createAndApply()
     }
