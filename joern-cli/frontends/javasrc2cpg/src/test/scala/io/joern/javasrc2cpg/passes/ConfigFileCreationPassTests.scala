@@ -6,6 +6,8 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.ProjectRoot
 
+import java.nio.file.Paths
+
 class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
 
   private val testConfigDir: String =
@@ -15,19 +17,19 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
     val foundFiles        = new ConfigFileCreationPass(testConfigDir, new Cpg()).generateParts().map(_.canonicalPath)
     val absoluteConfigDir = File(testConfigDir).canonicalPath
     foundFiles should contain theSameElementsAs Array(
-      s"$absoluteConfigDir/application.conf",
-      s"$absoluteConfigDir/basic.jsp",
-      s"$absoluteConfigDir/basic.properties",
-      s"$absoluteConfigDir/routes",
-      s"$absoluteConfigDir/basic.tf",
-      s"$absoluteConfigDir/basic.tfvars",
-      s"$absoluteConfigDir/basic.vm",
-      s"$absoluteConfigDir/batis/conf.xml",
-      s"$absoluteConfigDir/dwr.xml",
-      s"$absoluteConfigDir/faces-config.xml",
-      s"$absoluteConfigDir/nested/nested.properties",
-      s"$absoluteConfigDir/struts.xml",
-      s"$absoluteConfigDir/web.xml"
+      Paths.get(absoluteConfigDir, "application.conf").toString,
+      Paths.get(absoluteConfigDir, "basic.jsp").toString,
+      Paths.get(absoluteConfigDir, "basic.properties").toString,
+      Paths.get(absoluteConfigDir, "routes").toString,
+      Paths.get(absoluteConfigDir, "basic.tf").toString,
+      Paths.get(absoluteConfigDir, "basic.tfvars").toString,
+      Paths.get(absoluteConfigDir, "basic.vm").toString,
+      Paths.get(absoluteConfigDir, "batis", "conf.xml").toString,
+      Paths.get(absoluteConfigDir, "dwr.xml").toString,
+      Paths.get(absoluteConfigDir, "faces-config.xml").toString,
+      Paths.get(absoluteConfigDir, "nested", "nested.properties").toString,
+      Paths.get(absoluteConfigDir, "struts.xml").toString,
+      Paths.get(absoluteConfigDir, "web.xml").toString
     )
   }
 
