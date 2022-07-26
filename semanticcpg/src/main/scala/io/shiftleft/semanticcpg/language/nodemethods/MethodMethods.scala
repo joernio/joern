@@ -63,6 +63,10 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
   def definingTypeDecl: Traversal[TypeDecl] =
     Traversal.fromSingle(method).definingTypeDecl
 
+  /** The type declaration associated with this method, e.g., the class it is defined in. Alias for 'definingTypeDecl'
+    */
+  def typeDecl: Traversal[TypeDecl] = definingTypeDecl
+
   /** Traverse to method body (alias for `block`) */
   def body: Traversal[Block] =
     method.block
