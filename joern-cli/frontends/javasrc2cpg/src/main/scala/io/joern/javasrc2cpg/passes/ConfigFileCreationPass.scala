@@ -10,8 +10,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
 
-class ConfigFileCreationPass(projectDir: String, cpg: Cpg)
-  extends ConcurrentWriterCpgPass[File](cpg) {
+class ConfigFileCreationPass(projectDir: String, cpg: Cpg) extends ConcurrentWriterCpgPass[File](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -32,8 +31,8 @@ class ConfigFileCreationPass(projectDir: String, cpg: Cpg)
   override def runOnPart(diffGraph: DiffGraphBuilder, file: File): Unit = {
     Try(IOUtils.readLinesInFile(file.path)) match {
       case Success(fileContentsLines) =>
-        val name = configFileName(file)
-        val content = fileContentsLines.mkString("\n")
+        val name       = configFileName(file)
+        val content    = fileContentsLines.mkString("\n")
         val configNode = NewConfigFile().name(name).content(content)
         logger.debug(s"Adding config file $name")
         diffGraph.addNode(configNode)

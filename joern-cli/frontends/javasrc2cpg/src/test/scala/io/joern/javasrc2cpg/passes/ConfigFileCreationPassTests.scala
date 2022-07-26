@@ -8,10 +8,11 @@ import io.shiftleft.utils.ProjectRoot
 
 class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
 
-  private val testConfigDir: String = ProjectRoot.relativise("joern-cli/frontends/javasrc2cpg/src/test/resources/config_tests")
+  private val testConfigDir: String =
+    ProjectRoot.relativise("joern-cli/frontends/javasrc2cpg/src/test/resources/config_tests")
 
   "it should find the correct config files" in {
-    val foundFiles = new ConfigFileCreationPass(testConfigDir, new Cpg()).generateParts().map(_.canonicalPath)
+    val foundFiles        = new ConfigFileCreationPass(testConfigDir, new Cpg()).generateParts().map(_.canonicalPath)
     val absoluteConfigDir = File(testConfigDir).canonicalPath
     foundFiles should contain theSameElementsAs Array(
       s"$absoluteConfigDir/application.conf",
@@ -26,7 +27,7 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
       s"$absoluteConfigDir/faces-config.xml",
       s"$absoluteConfigDir/nested/nested.properties",
       s"$absoluteConfigDir/struts.xml",
-      s"$absoluteConfigDir/web.xml",
+      s"$absoluteConfigDir/web.xml"
     )
   }
 
@@ -34,10 +35,7 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
     val cpg = code("""
         |public class Foo{}
 	    |""".stripMargin)
-      .moreCode(
-        code = "key=value",
-        fileName = "config.properties"
-      )
+      .moreCode(code = "key=value", fileName = "config.properties")
 
     cpg.typeDecl.name("Foo").nonEmpty shouldBe true
     cpg.configFile.l match {
