@@ -350,7 +350,8 @@ trait KtPsiToAst {
     expr: KtBlockExpression,
     argIdx: Option[Int],
     pushToScope: Boolean = true,
-    localsForCaptures: List[NewLocal] = List()
+    localsForCaptures: List[NewLocal] = List(),
+    implicitReturnAroundLastStatement: Boolean = false
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node = withArgumentIndex(
@@ -358,11 +359,19 @@ trait KtPsiToAst {
       argIdx
     )
     if (pushToScope) scope.pushNewScope(node)
-    val statementAsts = withIndex(expr.getStatements.asScala.toSeq) { (statement, idx) =>
-      astsForExpression(statement, Some(idx))
-    }.flatten
+
+    val statements               = expr.getStatements.asScala.toSeq
+    val allStatementsButLast     = statements.dropRight(1)
+    val allStatementsButLastAsts = allStatementsButLast.map(astsForExpression(_, None)).flatten
+    val lastStatementAsts =
+      if (implicitReturnAroundLastStatement) {
+        val _returnNode = returnNode(Constants.retCode, line(statements.last), column(statements.last))
+        Seq(returnAst(_returnNode, astsForExpression(statements.last, Some(1))))
+      } else if (statements.size > 0) astsForExpression(statements.last, None)
+      else Seq()
+
     if (pushToScope) scope.popScope()
-    blockAst(node, localsForCaptures.map(Ast(_)) ++ statementAsts)
+    blockAst(node, localsForCaptures.map(Ast(_)) ++ allStatementsButLastAsts ++ lastStatementAsts)
   }
 
   def astForReturnExpression(expr: KtReturnExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -466,8 +475,19 @@ trait KtPsiToAst {
         }
     }
 
+    val lastChildNotReturnExpression = !expr.getBodyExpression.getLastChild.isInstanceOf[KtReturnExpression]
+    val needsReturnExpression =
+      lastChildNotReturnExpression && !typeInfoProvider.hasApplyOrAlsoScopeFunctionParent(expr)
     val bodyAst = Option(expr.getBodyExpression)
-      .map(astForBlock(_, None, pushToScope = false, localsForCaptured))
+      .map(
+        astForBlock(
+          _,
+          None,
+          pushToScope = false,
+          localsForCaptured,
+          implicitReturnAroundLastStatement = needsReturnExpression
+        )
+      )
       .getOrElse(Ast(NewBlock()))
 
     val returnTypeFullName     = registerType(typeInfoProvider.returnTypeFullName(expr))

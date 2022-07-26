@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Return}
 import io.shiftleft.semanticcpg.language._
 
 class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
@@ -11,6 +12,15 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.name shouldBe "it"
     }
+
+    "should NOT contain a RETURN node around as the last child of the lambda's BLOCK" in {
+      val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
+      val hasReturnAsLastChild = b.astChildren.last match {
+        case _: Return => true
+        case _         => false
+      }
+      hasReturnAsLastChild shouldBe false
+    }
   }
 
   "CPG for code with call to `apply` scope function without an explicitly-defined parameter" should {
@@ -19,6 +29,15 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
     "should contain a METHOD_PARAMETER_IN node for the implicit parameter" in {
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.name shouldBe "this"
+    }
+
+    "should NOT contain a RETURN node around as the last child of the lambda's BLOCK" in {
+      val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
+      val hasReturnAsLastChild = b.astChildren.last match {
+        case _: Return => true
+        case _         => false
+      }
+      hasReturnAsLastChild shouldBe false
     }
   }
 
@@ -29,6 +48,15 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.name shouldBe "it"
     }
+
+    "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
+      val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
+      val hasReturnAsLastChild = b.astChildren.last match {
+        case _: Return => true
+        case _         => false
+      }
+      hasReturnAsLastChild shouldBe true
+    }
   }
 
   "CPG for code call to `run` scope function without an explicitly-defined parameter" should {
@@ -37,6 +65,15 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
     "should contain a METHOD_PARAMETER_IN node for the implicit parameter _this_" in {
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.name shouldBe "this"
+    }
+
+    "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
+      val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
+      val hasReturnAsLastChild = b.astChildren.last match {
+        case _: Return => true
+        case _         => false
+      }
+      hasReturnAsLastChild shouldBe true
     }
   }
 
