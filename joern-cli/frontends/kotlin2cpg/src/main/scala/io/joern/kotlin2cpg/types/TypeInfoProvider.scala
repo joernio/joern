@@ -80,6 +80,8 @@ trait TypeInfoProvider {
 
   def returnTypeFullName(expr: KtLambdaExpression): String
 
+  def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean
+
   def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind
 
   def isConstructorCall(expr: KtCallExpression): Option[Boolean]
