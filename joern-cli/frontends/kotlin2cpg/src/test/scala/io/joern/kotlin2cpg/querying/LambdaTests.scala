@@ -4,7 +4,7 @@ import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
-import io.shiftleft.codepropertygraph.generated.nodes.{Binding, ClosureBinding, MethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Block, ClosureBinding, MethodRef, Return}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
@@ -183,6 +183,15 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.typeFullName shouldBe "java.lang.String"
       c.signature shouldBe "java.lang.Object(kotlin.Function1)"
+    }
+
+    "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
+      val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
+      val hasReturnAsLastChild = b.astChildren.last match {
+        case _: Return => true
+        case _         => false
+      }
+      hasReturnAsLastChild shouldBe true
     }
 
     "should contain a TYPE_DECL node for the lambda with the correct props set" in {

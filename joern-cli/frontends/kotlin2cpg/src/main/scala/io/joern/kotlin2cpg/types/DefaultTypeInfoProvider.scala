@@ -463,6 +463,19 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     render.getOrElse(defaultValue)
   }
 
+  def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean = {
+    expr.getParent.getParent match {
+      case callExpr: KtCallExpression =>
+        resolvedCallDescriptor(callExpr) match {
+          case Some(desc) =>
+            val rendered = TypeRenderer.renderFqName(desc.getOriginal)
+            rendered.startsWith(TypeConstants.kotlinApplyPrefix) || rendered.startsWith(TypeConstants.kotlinAlsoPrefix)
+          case _ => false
+        }
+      case _ => false
+    }
+  }
+
   def returnTypeFullName(expr: KtLambdaExpression): String = {
     TypeConstants.javaLangObject
   }
