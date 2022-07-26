@@ -29,7 +29,7 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(c) = cpg.call.code("x.takeIf.*").l
       c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.signature shouldBe "java.lang.Object(kotlin.Function1)"
+      c.signature shouldBe "java.lang.Object(java.lang.Object)"
       c.typeFullName shouldBe "java.util.UUID"
     }
   }
