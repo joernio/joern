@@ -30,6 +30,11 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
       cb.outE.collectAll[Ref].size shouldBe 1
     }
+
+    "should contain a CALL node with the signature of the lambda" in {
+      val List(c) = cpg.call.code("1.let.*").l
+      c.signature shouldBe "java.lang.Object(java.lang.Object)"
+    }
   }
 
   "CPG for code with a simple lambda which captures a local" should {
@@ -182,7 +187,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.typeFullName shouldBe "java.lang.String"
-      c.signature shouldBe "java.lang.Object(kotlin.Function1)"
+      c.signature shouldBe "java.lang.Object(java.lang.Object,java.lang.Object)"
     }
 
     "should contain a RETURN node around as the last child of the lambda's BLOCK" in {

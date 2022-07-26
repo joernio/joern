@@ -38,7 +38,7 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     "should contain a CALL node for the `apply` with the correct props set" in {
       val List(c) = cpg.call.methodFullName(".*apply.*").l
       c.methodFullName shouldBe "java.lang.Object.apply:java.lang.Object(kotlin.Function1)"
-      c.signature shouldBe "java.lang.Object(kotlin.Function1)"
+      c.signature shouldBe "java.lang.Object(java.lang.Object)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
   }
