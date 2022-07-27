@@ -440,15 +440,21 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       closureBindingXAnon2.refOut.head shouldBe fooLocalX
     }
 
-    "have correct closure binding when using an external source file" in AstFixture(
-      File(getClass.getResource("/closurebinding/foobar.js").toURI)
-    ) { cpg =>
+    "have correct closure bindings" in AstFixture("""
+        |function foo()
+        |{
+        |    x = 1;
+        |    function bar() {
+        |        x = 2;
+        |    }
+        |}
+        |""".stripMargin) { cpg =>
       val List(fooMethod)      = cpg.method.nameExact("foo").l
       val List(fooBlock)       = fooMethod.astChildren.isBlock.l
       val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
       val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
       val List(closureBinding) = barRef.captureOut.l
-      closureBinding.closureBindingId shouldBe Some("foobar.js::program:foo:bar:x")
+      closureBinding.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
       closureBinding.closureOriginalName shouldBe Some("x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBinding.refOut.head shouldBe fooLocalX
@@ -456,29 +462,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
       val List(barLocals)      = barMethodBlock.astChildren.isLocal.l
-      barLocals.closureBindingId shouldBe Some("foobar.js::program:foo:bar:x")
-
-      val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      identifierX.refOut.head shouldBe barLocals
-    }
-
-    "have correct closure binding when using an external nested source file" in AstFixture(
-      File(getClass.getResource("/closurebinding/nested/a.js").toURI)
-    ) { cpg =>
-      val List(a1Method)       = cpg.method.nameExact("a1").l
-      val List(a1Block)        = a1Method.astChildren.isBlock.l
-      val List(a1LocalX)       = a1Block.astChildren.isLocal.nameExact("x").l
-      val List(a1Ref)          = a1Block.astChildren.isCall.astChildren.isMethodRef.l
-      val List(closureBinding) = a1Ref.captureOut.l
-      closureBinding.closureBindingId shouldBe Some("a.js::program:a1:a2:x")
-      closureBinding.closureOriginalName shouldBe Some("x")
-      closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBinding.refOut.head shouldBe a1LocalX
-
-      val List(method)         = cpg.method.nameExact("a2").l
-      val List(barMethodBlock) = method.astChildren.isBlock.l
-      val List(barLocals)      = barMethodBlock.astChildren.isLocal.l
-      barLocals.closureBindingId shouldBe Some("a.js::program:a1:a2:x")
+      barLocals.closureBindingId shouldBe Some("code.js::program:foo:bar:x")
 
       val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
       identifierX.refOut.head shouldBe barLocals

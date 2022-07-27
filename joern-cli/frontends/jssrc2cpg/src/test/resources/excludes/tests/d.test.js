@@ -1,1 +1,0 @@
-console.log("tests/d.test.js");
