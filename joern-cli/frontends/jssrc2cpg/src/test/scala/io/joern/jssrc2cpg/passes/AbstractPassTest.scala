@@ -27,16 +27,6 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         file.delete()
       }
     }
-
-    def apply(testFile: File)(f: Cpg => Unit): Unit = {
-      val file         = testFile
-      val dir          = file.parent
-      val cpg          = newEmptyCpg()
-      val config       = Config(inputPath = dir.toString(), outputPath = dir.toString())
-      val astgenResult = AstGenRunner.execute(config, dir)
-      new AstCreationPass(cpg, astgenResult, config).createAndApply()
-      f(cpg)
-    }
   }
 
   protected object CfgFixture extends Fixture {
