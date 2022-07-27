@@ -43,13 +43,10 @@ class ConfigFileCreationPass(projectDir: String, cpg: Cpg) extends ConcurrentWri
   }
 
   private def configFileName(configFile: File): String = {
-    Try(Paths.get(projectDir)) match {
-      case Success(basePath) =>
-        basePath.relativize(configFile.path).toString
-
-      case Failure(_) =>
-        configFile.name
-    }
+    Try(Paths.get(projectDir).toAbsolutePath)
+      .map(_.relativize(configFile.path.toAbsolutePath).toString)
+      .orElse(Try(configFile.pathAsString))
+      .getOrElse(configFile.name)
   }
 
   private def extensionFilter(extension: String)(file: File): Boolean = {
