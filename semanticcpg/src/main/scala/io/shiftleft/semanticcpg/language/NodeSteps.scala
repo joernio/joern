@@ -108,9 +108,9 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Traversal[NodeType]) exte
   }
 
   @Doc(info = "Tags attached to this node")
-  def tagList: List[List[TagBase]] =
+  def tagList: List[List[Tag]] =
     traversal.map { taggedNode =>
-      taggedNode.tagList.l
+      taggedNode.tag.l
     }.l
 
   @Doc(info = "Tags attached to this node")

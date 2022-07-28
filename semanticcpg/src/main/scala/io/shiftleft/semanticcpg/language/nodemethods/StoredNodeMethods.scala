@@ -9,22 +9,12 @@ import scala.jdk.CollectionConverters._
 
 class StoredNodeMethods(val node: StoredNode) extends AnyVal with NodeExtension {
   def tag: Traversal[Tag] = {
-    node._taggedByOut.asScala.map(_.asInstanceOf[Tag]).to(Traversal)
+    node._taggedByOut.asScala
+      .map(_.asInstanceOf[Tag])
+      .distinctBy(tag => (tag.name, tag.value))
+      .to(Traversal)
   }
 
   def file: Traversal[File] =
     Traversal.fromSingle(node).file
-
-  def tagList: Traversal[NewTag] = {
-    node._taggedByOut.asScala
-      .map { case tagNode: HasName with HasValue =>
-        (tagNode.name, Option(tagNode.value))
-      }
-      .distinct
-      .collect { case (name, Some(value)) =>
-        NewTag()
-          .name(name)
-          .value(value)
-      }
-  }
 }
