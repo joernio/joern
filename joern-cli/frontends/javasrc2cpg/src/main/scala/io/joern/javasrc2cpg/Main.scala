@@ -10,7 +10,11 @@ final case class Config(
   inputPath: String = "",
   outputPath: String = X2CpgConfig.defaultOutputPath,
   inferenceJarPaths: Set[String] = Set.empty,
-  fetchDependencies: Boolean = false
+  fetchDependencies: Boolean = false,
+  javaFeatureSetVersion: Option[String] = None,
+  analysisJavaHome: Option[String] = None,
+  runDelombok: Boolean = false,
+  runDelombokTypesOnly: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
@@ -32,7 +36,22 @@ private object Frontend {
         .action((path, c) => c.copy(inferenceJarPaths = c.inferenceJarPaths + path)),
       opt[Unit]("fetch-dependencies")
         .text("attempt to fetch dependencies jars for extra type information")
-        .action((_, c) => c.copy(fetchDependencies = true))
+        .action((_, c) => c.copy(fetchDependencies = true)),
+      opt[String]("feature-set-version")
+        .text(
+          "single integer value do determine which Java version's feature set should be supported, e.g. " +
+            "--feature-set-version 11"
+        )
+        .action((version, c) => c.copy(javaFeatureSetVersion = Some(version))),
+      opt[String]("analysis-java-home")
+        .text("Java root used to execute delombok during analysis")
+        .action((path, c) => c.copy(analysisJavaHome = Some(path))),
+      opt[Unit]("run-delombok")
+        .text("run delombok on source before scanning for more accurate methods and type results")
+        .action((_, c) => c.copy(runDelombok = true)),
+      opt[Unit]("run-delombok-types-only")
+        .text("run delombok but use results only for type information (methods will be missing)")
+        .action((_, c) => c.copy(runDelombokTypesOnly = true))
     )
   }
 }

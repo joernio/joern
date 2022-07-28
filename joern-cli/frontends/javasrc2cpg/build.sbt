@@ -10,7 +10,8 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j" % "log4j-slf4j-impl"  % Versions.log4j % Runtime,
   "io.joern" % "javaparser-symbol-solver-core" % "3.24.3-SL3", // custom build of our fork, sources at https://github.com/mpollmeier/javaparser
   "org.gradle"     % "gradle-tooling-api" % Versions.gradleTooling % Optional,
-  "org.scalatest" %% "scalatest"          % Versions.scalatest     % Test
+  "org.scalatest" %% "scalatest"          % Versions.scalatest     % Test,
+  "org.projectlombok" % "lombok" % "1.18.24"
 )
 
 scalacOptions ++= Seq(

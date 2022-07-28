@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.passes
 
 import better.files.File
+import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
@@ -32,9 +33,12 @@ class AstCreationPass(codeDir: String, filenames: List[String], config: Config, 
   override def generateParts(): Array[String] = filenames.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
-    val parserConfig = new ParserConfiguration().setSymbolResolver(symbolResolver)
-    val parser       = new JavaParser(parserConfig)
-    val parseResult  = parser.parse(new java.io.File(filename))
+    val parserConfig =
+      new ParserConfiguration()
+        .setSymbolResolver(symbolResolver)
+        .setLanguageLevel(javaLanguageLevel(config.javaFeatureSetVersion))
+    val parser      = new JavaParser(parserConfig)
+    val parseResult = parser.parse(new java.io.File(filename))
 
     parseResult.getProblems.asScala.toList match {
       case Nil => // Just carry on as usual
@@ -108,6 +112,33 @@ class AstCreationPass(codeDir: String, filenames: List[String], config: Config, 
       .foreach { combinedTypeSolver.add(_) }
 
     new JavaSymbolSolver(combinedTypeSolver)
+  }
+
+  private def javaLanguageLevel(maybeVersion: Option[String]): LanguageLevel = {
+    maybeVersion match {
+      case Some("0")  => LanguageLevel.JAVA_1_0
+      case Some("1")  => LanguageLevel.JAVA_1_1
+      case Some("2")  => LanguageLevel.JAVA_1_2
+      case Some("3")  => LanguageLevel.JAVA_1_3
+      case Some("4")  => LanguageLevel.JAVA_1_4
+      case Some("5")  => LanguageLevel.JAVA_5
+      case Some("6")  => LanguageLevel.JAVA_6
+      case Some("7")  => LanguageLevel.JAVA_7
+      case Some("8")  => LanguageLevel.JAVA_8
+      case Some("9")  => LanguageLevel.JAVA_9
+      case Some("10") => LanguageLevel.JAVA_10
+      case Some("11") => LanguageLevel.JAVA_11
+      case Some("12") => LanguageLevel.JAVA_12
+      case Some("13") => LanguageLevel.JAVA_13
+      case Some("14") => LanguageLevel.JAVA_14
+      case Some("15") => LanguageLevel.JAVA_15
+      case Some("16") => LanguageLevel.JAVA_16
+      case Some("17") => LanguageLevel.JAVA_17
+      case Some(version) =>
+        logger.warn(s"Unknown Java feature set version $version. Defaulting to current version.")
+        LanguageLevel.CURRENT
+      case None => LanguageLevel.CURRENT
+    }
   }
 
 }
