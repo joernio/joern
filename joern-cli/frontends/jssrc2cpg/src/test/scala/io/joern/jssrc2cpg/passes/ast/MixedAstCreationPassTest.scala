@@ -1,6 +1,5 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import better.files.File
 import io.joern.jssrc2cpg.passes.AbstractPassTest
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
