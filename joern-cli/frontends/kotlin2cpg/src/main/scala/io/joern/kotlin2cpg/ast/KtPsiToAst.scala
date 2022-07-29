@@ -80,7 +80,7 @@ trait KtPsiToAst {
       case d: KtProperty          => Seq(astForUnknown(d, None)) // TODO: these are globals, represent them correctly
       case unhandled =>
         logger.error(
-          "Unknown declaration type encountered with text `" + unhandled.getText + "` and class `" + unhandled.getClass + "`!"
+          s"Unknown declaration type encountered with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
         )
         Seq()
     }
@@ -545,7 +545,7 @@ trait KtPsiToAst {
     val operatorType = ktTokenToOperator(forPostfixExpr = true).applyOrElse(
       KtPsiUtil.getOperationToken(expr),
       { (token: KtToken) =>
-        logger.warn("Unsupported token type encountered: " + token)
+        logger.warn(s"Unsupported token type encountered: $token")
         Constants.unknownOperator
       }
     )
@@ -562,7 +562,7 @@ trait KtPsiToAst {
     val operatorType = ktTokenToOperator(forPostfixExpr = false).applyOrElse(
       KtPsiUtil.getOperationToken(expr),
       { (token: KtToken) =>
-        logger.warn("Unsupported token type encountered: " + token)
+        logger.warn(s"Unsupported token type encountered: $token")
         Constants.unknownOperator
       }
     )
@@ -1623,7 +1623,7 @@ trait KtPsiToAst {
         }
       case _ =>
         logger.warn(
-          "Unhandled operator token type `" + opRef.getOperationSignTokenType + "` for expression `" + expr.getText + "`."
+          s"Unhandled operator token type `${opRef.getOperationSignTokenType}` for expression `${expr.getText}`."
         )
         Some(Constants.unknownOperator)
     }

@@ -499,12 +499,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String) = {
-    val containingFile = expr.getContainingKtFile
-    val fileName       = containingFile.getName
-    val packageName    = containingFile.getPackageFqName.toString
-    val lambdaNum      = keyPool.next
-    val astDerivedFullName =
-      packageName + ":" + "<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">" + "()"
+    val containingFile      = expr.getContainingKtFile
+    val fileName            = containingFile.getName
+    val packageName         = containingFile.getPackageFqName.toString
+    val lambdaNum           = keyPool.next
+    val astDerivedFullName  = s"$packageName:<lambda><f_${fileName}_no${lambdaNum}>()"
     val astDerivedSignature = anySignature(expr.getValueParameters.asScala.toList)
 
     val render = for {
@@ -519,9 +518,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         if (args.isEmpty) ""
         else if (args.size == 1) TypeConstants.javaLangObject
         else s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (args.size - 1)}"
-      val signature = TypeConstants.javaLangObject + "(" + renderedArgs + ")"
-      val fullName =
-        packageName + ".<lambda><f_" + fileName + "_no" + lambdaNum.toString + ">" + ":" + signature
+      val signature = s"${TypeConstants.javaLangObject}($renderedArgs)"
+      val fullName  = s"$packageName.<lambda><f_${fileName}_no${lambdaNum.toString}>:$signature"
       (fullName, signature)
     }
     render.getOrElse((astDerivedFullName, astDerivedSignature))
@@ -753,13 +751,11 @@ object DefaultTypeInfoProvider {
     } catch {
       case noSuchField: NoSuchFieldException =>
         logger.debug(
-          "Encountered _no such field_ exception while retrieving type info for `" + entity.getName + "`: `" + noSuchField + "`."
+          s"Encountered _no such field_ exception while retrieving type info for `${entity.getName}`: `$noSuchField`."
         )
         KeyFMap.EMPTY_MAP
       case e if NonFatal(e) =>
-        logger.debug(
-          "Encountered general exception while retrieving type info for `" + entity.getName + "`: `" + e + "`."
-        )
+        logger.debug(s"Encountered general exception while retrieving type info for `${entity.getName}`: `$e`.")
         KeyFMap.EMPTY_MAP
     }
   }

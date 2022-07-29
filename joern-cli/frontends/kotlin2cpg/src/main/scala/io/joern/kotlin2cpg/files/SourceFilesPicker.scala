@@ -79,7 +79,7 @@ object SourceFilesPicker {
         val relativized = PathUtils.relativize(forDir, fileName)
         val willFilter  = SourceFilesPicker.shouldFilter(relativized)
         if (willFilter) {
-          logger.debug("Filtered file at `" + fileName + "`.")
+          logger.debug(s"Filtered file at `${fileName}`.")
         }
         willFilter
       }
