@@ -1,6 +1,5 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
@@ -14,7 +13,7 @@ class MethodParameterTraversal(val traversal: Traversal[MethodParameterIn]) exte
 
   /** Traverse to parameter annotations
     */
-  def annotation: Traversal[nodes.Annotation] =
+  def annotation: Traversal[Annotation] =
     traversal.flatMap(_._annotationViaAstOut)
 
   /** Traverse to all parameters with index greater or equal than `num`
@@ -33,7 +32,7 @@ class MethodParameterTraversal(val traversal: Traversal[MethodParameterIn]) exte
     for {
       paramIn <- traversal
       call    <- callResolver.getMethodCallsites(paramIn.method)
-      arg     <- call._argumentOut.asScala.collect { case node: Expression with HasArgumentIndex => node }
+      arg     <- Traversal.from(call._argumentOut).collectAll[Expression]
       if arg.argumentIndex == paramIn.index
     } yield arg
 
