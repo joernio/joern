@@ -14,10 +14,20 @@ case class TrackedLiteral(literal: Literal) extends TrackedBase {
     s"TrackedLiteral(${literal.code})"
   }
 }
-case class TrackedMethodOrTypeRef(methodOrTypeRef: StoredNode with HasCode) extends TrackedBase {
+
+sealed trait TrackedMethodOrTypeRef extends TrackedBase {
+  def code: String
+
   override def toString: String = {
-    s"TrackedMethodOrTypeRef(${methodOrTypeRef.code})"
+    s"TrackedMethodOrTypeRef($code)"
   }
+}
+
+case class TrackedMethod(method: MethodRef) extends TrackedMethodOrTypeRef {
+  override def code = method.code
+}
+case class TrackedTypeRef(typeRef: TypeRef) extends TrackedMethodOrTypeRef {
+  override def code = typeRef.code
 }
 
 case class TrackedAlias(argIndex: Int) extends TrackedBase {
