@@ -198,7 +198,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           try {
             IOUtils.readLinesInFile(Paths.get(fnm._1)).mkString("\n")
           } catch {
-            case t: Throwable => parsingError + "\n" + t.toString
+            case t: Throwable => s"$parsingError\n${t.toString}"
           }
         FileContentAtPath(fileContents, fnm._2, fnm._1)
       }
