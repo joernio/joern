@@ -114,8 +114,17 @@ object AstGenRunner {
     }
   }
 
-  private def runAstGenNative(in: File, out: File): Try[Seq[String]] =
-    ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t ts -o $out", in.toString())
+  private def runAstGenNative(in: File, out: File): Try[Seq[String]] = {
+    val jsFiles     = ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t ts -o $out", in.toString())
+    val hasVueFiles = SourceFiles.determine(in.pathAsString, Set(".vue")).nonEmpty
+    val vueFiles =
+      if (hasVueFiles) ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t vue -o $out", in.toString())
+      else Success(Seq.empty)
+    for {
+      jsResult  <- jsFiles
+      vueResult <- vueFiles
+    } yield jsResult ++ vueResult
+  }
 
   def execute(config: Config, out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)
