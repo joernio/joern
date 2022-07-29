@@ -1201,8 +1201,8 @@ trait KtPsiToAst {
 
     val stmtAsts             = astsForExpression(expr.getBody, Some(3))
     val controlStructureBody = blockNode("", "")
-    val controlStructureBodyAst = Ast(controlStructureBody)
-      .withChildren(List(loopParameterAst, loopParameterNextAssignmentAst) ++ stmtAsts)
+    val controlStructureBodyAst =
+      blockAst(controlStructureBody, List(loopParameterAst, loopParameterNextAssignmentAst) ++ stmtAsts)
 
     val controlStructureAst = Ast(controlStructure)
       .withChildren(List(controlStructureConditionAst, controlStructureBodyAst))
@@ -1318,7 +1318,8 @@ trait KtPsiToAst {
 
     val stmtAsts             = astsForExpression(expr.getBody, None)
     val controlStructureBody = blockNode("", "")
-    val controlStructureBodyAst = Ast(controlStructureBody).withChildren(
+    val controlStructureBodyAst = blockAst(
+      controlStructureBody,
       localsForDestructuringVars ++
         List(localForTmpAst, tmpParameterNextAssignmentAst) ++
         assignmentsForEntries ++
@@ -1344,17 +1345,16 @@ trait KtPsiToAst {
     val finalAstForSubject = expr.getSubjectExpression match {
       case _: KtProperty =>
         val block = blockNode("", "").argumentIndex(1)
-        Ast(block).withChild(astForSubject)
+        blockAst(block, List(astForSubject))
       case _ => astForSubject
     }
-    val astsForEntries = withIndex(expr.getEntries.asScala.toSeq) { (e, idx) =>
+    val astsForEntries = withIndex(expr.getEntries.asScala.toList) { (e, idx) =>
       astsForWhenEntry(e, idx)
     }.flatten
 
     val switchBlockNode =
       blockNode(expr.getEntries.asScala.map(_.getText).mkString("\n"), TypeConstants.any, line(expr), column(expr))
-    val astForBlock = Ast(switchBlockNode).withChildren(astsForEntries)
-
+    val astForBlock = blockAst(switchBlockNode, astsForEntries.toList)
     val codeForSwitch = Option(expr.getSubjectExpression)
       .map(_.getText)
       .map { text => s"${Constants.when}($text)" }
@@ -1450,9 +1450,8 @@ trait KtPsiToAst {
       .withRefEdge(assignmentLhsNode, tmpLocalNode)
       .withRefEdge(initReceiverNode, tmpLocalNode)
       .withRefEdge(lastIdentifier, tmpLocalNode)
-
-    Ast(withArgumentIndex(tmpBlockNode, argIdx))
-      .withChildren(List(tmpLocalAst, assignmentAst, initCallAst, lastIdentifierAst))
+    blockAst(withArgumentIndex(tmpBlockNode, argIdx),
+      List(tmpLocalAst, assignmentAst, initCallAst, lastIdentifierAst))
   }
 
   def astsForProperty(expr: KtProperty)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
