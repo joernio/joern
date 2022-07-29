@@ -1622,7 +1622,7 @@ trait KtPsiToAst {
       line(expr),
       column(expr)
     )
-    val args = astsForExpression(expr.getLeft, Some(1)) ++ astsForExpression(expr.getRight, Some(2))
+    val args = astsForExpression(expr.getLeft, None) ++ astsForExpression(expr.getRight, None)
     callAst(withArgumentIndex(node, argIdx), args.toList)
   }
 
