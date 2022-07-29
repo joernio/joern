@@ -229,8 +229,8 @@ trait AstNodeBuilder { this: AstCreator =>
   }
 
   protected def codeOf(node: NewNode): String = node match {
-    case code: HasCode => code.code
-    case _             => ""
+    case node: AstNodeNew => node.code
+    case _                => ""
   }
 
   protected def createIndexAccessCallAst(
