@@ -11,7 +11,8 @@ object Delombok {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private def systemJavaPath: String = {
-      sys.env.get("JAVA_HOME")
+    sys.env
+      .get("JAVA_HOME")
       .flatMap { javaHome =>
         val javaExecutable = File(javaHome, "bin", "java")
         Option.when(javaExecutable.exists && javaExecutable.isExecutable) {
@@ -22,7 +23,7 @@ object Delombok {
   }
 
   private def delombokToTempDirCommand(tempDir: File, analysisJavaHome: Option[String]) = {
-    val javaPath= analysisJavaHome.getOrElse(systemJavaPath)
+    val javaPath = analysisJavaHome.getOrElse(systemJavaPath)
     s"$javaPath -cp ${System.getProperty("java.class.path")} lombok.launch.Main delombok . -d ${tempDir.canonicalPath}"
   }
 

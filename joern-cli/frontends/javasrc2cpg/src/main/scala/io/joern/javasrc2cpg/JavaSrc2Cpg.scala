@@ -46,8 +46,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   /** JavaParser requires that the input path is a directory and not a single source file. This is inconvenient for
     * small-scale testing, so if a single source file is created, copy it to a temp directory.
     */
-  private def getSourcesFromDir(config: Config): (String, List[String])
-  = {
+  private def getSourcesFromDir(config: Config): (String, List[String]) = {
 
     val sourceCodePath =
       if (config.runDelombok)
