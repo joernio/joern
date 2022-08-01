@@ -41,7 +41,7 @@ private object Frontend {
         .action((path, c) => c.copy(analysisJavaHome = Some(path))),
       opt[Unit]("run-delombok")
         .text("run delombok on source before scanning for more accurate methods and type results")
-        .action((_, c) => c.copy(runDelombok = true)),
+        .action((_, c) => c.copy(runDelombok = true))
     )
   }
 }

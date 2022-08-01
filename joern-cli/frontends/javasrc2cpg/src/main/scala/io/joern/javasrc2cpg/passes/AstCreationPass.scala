@@ -111,5 +111,4 @@ class AstCreationPass(codeDir: String, filenames: List[String], config: Config, 
     new JavaSymbolSolver(combinedTypeSolver)
   }
 
-
 }
