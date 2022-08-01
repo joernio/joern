@@ -12,6 +12,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.Ast
+import overflowdb.traversal.toNodeTraversal
 
 class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
 
