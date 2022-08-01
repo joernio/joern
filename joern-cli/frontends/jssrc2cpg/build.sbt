@@ -67,33 +67,19 @@ enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
 astGenDlTask := {
-  val astGenDir       = baseDirectory.value / "bin" / "astgen"
-  val astgenWinDest   = astGenDir / "astgen-win.exe"
-  val astgenLinuxDest = astGenDir / "astgen-linux"
-  val astgenMacOsDest = astGenDir / "astgen-macos"
+  val astGenDir = baseDirectory.value / "bin" / "astgen"
+  astGenDir.mkdirs()
 
-  if (!astgenWinDest.exists) {
-    astGenDir.mkdirs()
-    val astgenWinUrl  = "https://github.com/max-leuthaeuser/astgen/releases/download/latest/astgen-win.exe"
-    val astgenWinFile = SimpleCache.downloadMaybe(astgenWinUrl)
-    IO.copyFile(astgenWinFile, astgenWinDest)
+  Seq("astgen-linux", "astgen-macos", "astgen-win.exe").foreach { fileName =>
+    val dest = astGenDir / fileName
+    if (!dest.exists) {
+      val url = s"https://github.com/max-leuthaeuser/astgen/releases/download/latest/$fileName"
+      val downloadedFile = SimpleCache.downloadMaybe(url)
+      IO.copyFile(downloadedFile, dest)
+    }
   }
 
-  if (!astgenLinuxDest.exists) {
-    astGenDir.mkdirs()
-    val astgenLinuxUrl  = "https://github.com/max-leuthaeuser/astgen/releases/download/latest/astgen-linux"
-    val astgenLinuxFile = SimpleCache.downloadMaybe(astgenLinuxUrl)
-    IO.copyFile(astgenLinuxFile, astgenLinuxDest)
-  }
-
-  if (!astgenMacOsDest.exists) {
-    astGenDir.mkdirs()
-    val astgenMacOsUrl  = "https://github.com/max-leuthaeuser/astgen/releases/download/latest/astgen-macos"
-    val astgenMacOsFile = SimpleCache.downloadMaybe(astgenMacOsUrl)
-    IO.copyFile(astgenMacOsFile, astgenMacOsDest)
-  }
-
-  val distDir = target.value / "universal" / "stage" / "bin" / "astgen"
+  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
   distDir.mkdirs()
   IO.copyDirectory(astGenDir, distDir)
 
