@@ -211,6 +211,3 @@ The Apache TinkerPop project bundles the following components under the MIT Lice
      jquery 1.11.0 (https://jquery.com/) - for details, see license/jquery
      normalize.css 2.1.2 (http://necolas.github.io/normalize.css/) - for details, see licenses/normalize
      prism.css/js (http://prismjs.com) - for details, see licenses/prism
-
-The javasrc2cpg module bundles project lombok (https://projectlombok.org/) under the MIT License.
-For details, see licenses/lombok
