@@ -3,16 +3,15 @@ package io.joern.c2cpg.passes
 import better.files.File
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.datastructures.CGlobal
-import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes, Properties, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.Ast
-import overflowdb.traversal._
 
 class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
 
@@ -24,13 +23,12 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
   private val globalName: String   = NamespaceTraversal.globalNamespaceName
   private val fullName: String     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
 
-  private val typeDeclFullNames: Set[String] =
-    cpg.graph.nodes(NodeTypes.TYPE_DECL).map(_.property(Properties.FULL_NAME)).toSetImmutable
+  private val typeDeclFullNames: Set[String] = cpg.typeDecl.fullName.toSetImmutable
 
-  private def setExternal(node: HasFilename, diffGraph: DiffGraphBuilder): Unit = {
-    if (node.isInstanceOf[HasIsExternal] && systemIncludePaths.exists(p => node.filename.startsWith(p.toString))) {
+  private def setExternal(node: HasFilename, diffGraph: DiffGraphBuilder): Unit = node match {
+    case matchingNode: HasIsExternal if systemIncludePaths.exists(p => matchingNode.filename.startsWith(p.toString)) =>
       diffGraph.setNodeProperty(node.asInstanceOf[StoredNode], PropertyNames.IS_EXTERNAL, Boolean.box(true))
-    }
+    case _ => // do nothing
   }
 
   private def createGlobalBlock(dstGraph: DiffGraphBuilder): NewBlock = {
@@ -70,8 +68,8 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
 
   private def createMissingAstEdges(dstGraph: DiffGraphBuilder): Unit = {
     val globalBlock = createGlobalBlock(dstGraph)
-    Traversal(cpg.graph.nodes()).whereNot(_.inE(EdgeTypes.AST)).foreach {
-      case srcNode: HasFilename if FileDefaults.isHeaderFile(srcNode.filename) =>
+    cpg.all.not(_.inE(EdgeTypes.AST)).foreach {
+      case srcNode: HasFilename =>
         dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
         setExternal(srcNode, dstGraph)
       case srcNode: Local =>
@@ -84,26 +82,23 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
     !typeDeclFullNames.contains(t.typeDeclFullName)
 
   private def createMissingTypeDecls(dstGraph: DiffGraphBuilder): Unit = {
-    Traversal(cpg.graph.nodes(NodeTypes.TYPE))
-      .foreach {
-        case t: Type if typeNeedsTypeDeclStub(t) =>
-          val newTypeDecl = NewTypeDecl()
-            .name(t.name)
-            .fullName(t.typeDeclFullName)
-            .code(t.name)
-            .isExternal(true)
-            .filename(filename)
-            .astParentType(NodeTypes.NAMESPACE_BLOCK)
-            .astParentFullName(fullName)
-          Ast.storeInDiffGraph(Ast(newTypeDecl), dstGraph)
-        case _ => // we are fine
-      }
+    cpg.typ.foreach {
+      case t if typeNeedsTypeDeclStub(t) =>
+        val newTypeDecl = NewTypeDecl()
+          .name(t.name)
+          .fullName(t.typeDeclFullName)
+          .code(t.name)
+          .isExternal(true)
+          .filename(filename)
+          .astParentType(NodeTypes.NAMESPACE_BLOCK)
+          .astParentFullName(fullName)
+        dstGraph.addNode(newTypeDecl)
+      case _ => // we are fine
+    }
   }
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
-    if (!CGlobal.shouldBeCleared()) {
-      ;
-    } else {
+    if (CGlobal.shouldBeCleared()) {
       createMissingAstEdges(dstGraph)
       createMissingTypeDecls(dstGraph)
     }
