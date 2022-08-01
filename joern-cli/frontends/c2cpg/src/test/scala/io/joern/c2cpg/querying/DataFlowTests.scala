@@ -1702,12 +1702,11 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         .reachableByFlows(source)
         .filter(path => path.elements.size > 1)
         .l
-      flow.elements match {
-        case List(i1: Identifier, i2: Identifier) =>
-          i1.name shouldBe "data"
-          i1.lineNumber shouldBe Some(19)
-          i2.name shouldBe "data"
-          i2.lineNumber shouldBe Some(20)
+      inside(flow.elements) { case List(i1: Identifier, i2: Identifier) =>
+        i1.name shouldBe "data"
+        i1.lineNumber shouldBe Some(19)
+        i2.name shouldBe "data"
+        i2.lineNumber shouldBe Some(20)
       }
     }
   }
