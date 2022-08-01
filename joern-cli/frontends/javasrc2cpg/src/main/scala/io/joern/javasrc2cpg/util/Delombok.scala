@@ -31,8 +31,10 @@ object Delombok {
         s"@${file.canonicalPath}"
 
       case Failure(t) =>
-        logger.warn(s"Failed to create classpath file for delombok execution. Results may be missing on Windows " +
-          s"systems: $t")
+        logger.warn(
+          s"Failed to create classpath file for delombok execution. Results may be missing on Windows " +
+            s"systems: $t"
+        )
         System.getProperty("java.class.path")
     }
     s"$javaPath -cp $classPathArg lombok.launch.Main delombok . -d ${tempDir.canonicalPath}"
