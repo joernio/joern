@@ -8,9 +8,8 @@ jobs:
     concurrency: release
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: nschloe/action-cached-lfs-checkout@v1
         with:
-          lfs: true
           fetch-depth: 0
       - uses: olafurpg/setup-scala@v10
         with:
