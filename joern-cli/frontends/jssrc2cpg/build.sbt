@@ -65,15 +65,46 @@ Test / fork := true
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
-lazy val astGenCopyTask = taskKey[Unit](s"Copy astgen binaries")
+lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
+astGenDlTask := {
+  val to              = baseDirectory.value / "bin" / "astgen"
+  val astgenWinDest   = to / "astgen-win.exe"
+  val astgenLinuxDest = to / "astgen-linux"
+  val astgenMacOsDest = to / "astgen-macos"
 
+  if (!astgenWinDest.exists) {
+    to.mkdirs()
+    val astgenWinUrl  = "https://github.com/max-leuthaeuser/astgen/releases/download/latest/astgen-win.exe"
+    val astgenWinFile = SimpleCache.downloadMaybe(astgenWinUrl)
+    IO.copyFile(astgenWinFile, astgenWinDest)
+  }
+
+  if (!astgenLinuxDest.exists) {
+    to.mkdirs()
+    val astgenLinuxUrl  = "https://github.com/max-leuthaeuser/astgen/releases/download/latest/astgen-linux"
+    val astgenLinuxFile = SimpleCache.downloadMaybe(astgenLinuxUrl)
+    IO.copyFile(astgenLinuxFile, astgenLinuxDest)
+    astgenLinuxDest.setExecutable(true, false)
+  }
+
+  if (!astgenMacOsDest.exists) {
+    to.mkdirs()
+    val astgenMacOsUrl  = "https://github.com/max-leuthaeuser/astgen/releases/download/latest/astgen-macos"
+    val astgenMacOsFile = SimpleCache.downloadMaybe(astgenMacOsUrl)
+    IO.copyFile(astgenMacOsFile, astgenMacOsDest)
+    astgenMacOsDest.setExecutable(true, false)
+  }
+}
+Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
+
+lazy val astGenCopyTask = taskKey[Unit](s"Copy astgen binaries")
 astGenCopyTask := {
   val to = target.value / "universal" / "stage" / "bin" / "astgen"
   to.mkdirs()
   val from = baseDirectory.value / "bin" / "astgen"
   IO.copyDirectory(from, to)
 }
-
+stage := (stage dependsOn astGenDlTask).value
 stage := (stage dependsOn astGenCopyTask).value
 
 Universal / packageName       := name.value

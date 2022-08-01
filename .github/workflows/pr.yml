@@ -7,7 +7,7 @@ jobs:
       matrix:
         os: [ubuntu-20.04, windows-2019, macos-11]
     steps:
-      - uses: nschloe/action-cached-lfs-checkout@v1
+      - uses: actions/checkout@v2
         with:
           fetch-depth: 1
       - name: Set up JDK 1.11
@@ -34,7 +34,7 @@ jobs:
   test-scripts:
     runs-on: ubuntu-20.04
     steps:
-      - uses: nschloe/action-cached-lfs-checkout@v1
+      - uses: actions/checkout@v2
         with:
           fetch-depth: 1
       - name: Set up JDK 1.11
