@@ -11,7 +11,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: nschloe/action-cached-lfs-checkout@v1
+      - uses: actions/checkout@v2
         with:
           fetch-depth: 1
       - name: Set up JDK 1.11
