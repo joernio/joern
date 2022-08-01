@@ -82,18 +82,16 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
     !typeDeclFullNames.contains(t.typeDeclFullName)
 
   private def createMissingTypeDecls(dstGraph: DiffGraphBuilder): Unit = {
-    cpg.typ.foreach {
-      case t if typeNeedsTypeDeclStub(t) =>
-        val newTypeDecl = NewTypeDecl()
-          .name(t.name)
-          .fullName(t.typeDeclFullName)
-          .code(t.name)
-          .isExternal(true)
-          .filename(filename)
-          .astParentType(NodeTypes.NAMESPACE_BLOCK)
-          .astParentFullName(fullName)
-        dstGraph.addNode(newTypeDecl)
-      case _ => // we are fine
+    cpg.typ.filter(typeNeedsTypeDeclStub).foreach { t =>
+      val newTypeDecl = NewTypeDecl()
+        .name(t.name)
+        .fullName(t.typeDeclFullName)
+        .code(t.name)
+        .isExternal(true)
+        .filename(filename)
+        .astParentType(NodeTypes.NAMESPACE_BLOCK)
+        .astParentFullName(fullName)
+      dstGraph.addNode(newTypeDecl)
     }
   }
 
