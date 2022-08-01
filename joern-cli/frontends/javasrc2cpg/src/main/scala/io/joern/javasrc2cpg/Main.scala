@@ -37,12 +37,6 @@ private object Frontend {
       opt[Unit]("fetch-dependencies")
         .text("attempt to fetch dependencies jars for extra type information")
         .action((_, c) => c.copy(fetchDependencies = true)),
-      opt[String]("feature-set-version")
-        .text(
-          "single integer value do determine which Java version's feature set should be supported, e.g. " +
-            "--feature-set-version 11"
-        )
-        .action((version, c) => c.copy(javaFeatureSetVersion = Some(version))),
       opt[String]("analysis-java-home")
         .text("Java root used to execute delombok during analysis")
         .action((path, c) => c.copy(analysisJavaHome = Some(path))),
