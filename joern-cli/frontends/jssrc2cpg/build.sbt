@@ -97,7 +97,7 @@ astGenDlTask := {
   distDir.mkdirs()
   IO.copyDirectory(astGenDir, distDir)
 
-  // sadly IO.copy* does not support copying permissions
+  // permissions are lost during the download; need to set them manually
   astGenDir.listFiles().foreach(_.setExecutable(true, false))
   distDir.listFiles().foreach(_.setExecutable(true, false))
 }
