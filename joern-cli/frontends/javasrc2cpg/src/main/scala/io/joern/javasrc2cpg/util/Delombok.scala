@@ -24,7 +24,18 @@ object Delombok {
 
   private def delombokToTempDirCommand(tempDir: File, analysisJavaHome: Option[String]) = {
     val javaPath = analysisJavaHome.getOrElse(systemJavaPath)
-    s"$javaPath -cp ${System.getProperty("java.class.path")} lombok.launch.Main delombok . -d ${tempDir.canonicalPath}"
+    val classPathArg = Try(File.newTemporaryFile("classpath").deleteOnExit()) match {
+      case Success(file) =>
+        // Write classpath to a file to work around Windows length limits.
+        file.write(System.getProperty("java.class.path"))
+        s"@${file.canonicalPath}"
+
+      case Failure(t) =>
+        logger.warn(s"Failed to create classpath file for delombok execution. Results may be missing on Windows " +
+          s"systems: $t")
+        System.getProperty("java.class.path")
+    }
+    s"$javaPath -cp $classPathArg lombok.launch.Main delombok . -d ${tempDir.canonicalPath}"
   }
 
   def run(projectDir: String, analysisJavaHome: Option[String]): String = {
