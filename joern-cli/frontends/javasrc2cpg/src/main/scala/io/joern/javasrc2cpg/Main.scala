@@ -13,8 +13,7 @@ final case class Config(
   fetchDependencies: Boolean = false,
   javaFeatureSetVersion: Option[String] = None,
   analysisJavaHome: Option[String] = None,
-  runDelombok: Boolean = false,
-  runDelombokTypesOnly: Boolean = false
+  runDelombok: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
@@ -43,9 +42,6 @@ private object Frontend {
       opt[Unit]("run-delombok")
         .text("run delombok on source before scanning for more accurate methods and type results")
         .action((_, c) => c.copy(runDelombok = true)),
-      opt[Unit]("run-delombok-types-only")
-        .text("run delombok but use results only for type information (methods will be missing)")
-        .action((_, c) => c.copy(runDelombokTypesOnly = true))
     )
   }
 }
