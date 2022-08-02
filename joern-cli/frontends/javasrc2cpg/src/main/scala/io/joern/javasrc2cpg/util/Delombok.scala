@@ -32,8 +32,8 @@ object Delombok {
 
       case Failure(t) =>
         logger.warn(
-          s"Failed to create classpath file for delombok execution. Results may be missing on Windows " +
-            s"systems: $t"
+          s"Failed to create classpath file for delombok execution. Results may be missing on Windows systems",
+          t
         )
         System.getProperty("java.class.path")
     }
@@ -48,13 +48,13 @@ object Delombok {
             tempDir.path.toAbsolutePath.toString
 
           case Failure(t) =>
-            logger.warn(s"Executing delombok failed with $t")
+            logger.warn(s"Executing delombok failed", t)
             logger.warn("Creating AST with original source instead. Some methods and type information will be missing.")
             projectDir
         }
 
       case Failure(e) =>
-        logger.warn(s"Failed to create temporary directory for delomboked source. Methods and types may be missing: $e")
+        logger.warn(s"Failed to create temporary directory for delomboked source. Methods and types may be missing", e)
         projectDir
     }
   }

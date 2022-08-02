@@ -12,7 +12,7 @@ final case class Config(
   inferenceJarPaths: Set[String] = Set.empty,
   fetchDependencies: Boolean = false,
   javaFeatureSetVersion: Option[String] = None,
-  analysisJavaHome: Option[String] = None,
+  delombokJavaHome: Option[String] = None,
   runDelombok: Boolean = false
 ) extends X2CpgConfig[Config] {
 
@@ -36,9 +36,9 @@ private object Frontend {
       opt[Unit]("fetch-dependencies")
         .text("attempt to fetch dependencies jars for extra type information")
         .action((_, c) => c.copy(fetchDependencies = true)),
-      opt[String]("analysis-java-home")
-        .text("Java root used to execute delombok during analysis")
-        .action((path, c) => c.copy(analysisJavaHome = Some(path))),
+      opt[String]("delombok-java-home")
+        .text("Optional override to set java home used to run Delombok. Java 17 is recommended for the best results.")
+        .action((path, c) => c.copy(delombokJavaHome = Some(path))),
       opt[Unit]("run-delombok")
         .text("run delombok on source before scanning for more accurate methods and type results")
         .action((_, c) => c.copy(runDelombok = true))

@@ -50,7 +50,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
 
     val sourceCodePath =
       if (config.runDelombok)
-        Delombok.run(config.inputPath, config.analysisJavaHome)
+        Delombok.run(config.inputPath, config.delombokJavaHome)
       else {
         config.inputPath
       }
