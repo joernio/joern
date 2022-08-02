@@ -6,14 +6,11 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Global
 
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 
 import scala.jdk.CollectionConverters._
 
 object CGlobal extends Global {
-
-  val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] = new ConcurrentHashMap()
 
   private val headerAstCache: mutable.HashMap[String, mutable.HashSet[(Integer, Integer)]] =
     mutable.HashMap.empty

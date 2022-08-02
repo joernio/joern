@@ -58,7 +58,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   private def fileOffsetTable(node: IASTNode): Array[Int] = {
     val f = fileName(node)
-    CGlobal.file2OffsetTable.computeIfAbsent(f, _ => genFileOffsetTable(Paths.get(f)))
+    file2OffsetTable.computeIfAbsent(f, _ => genFileOffsetTable(Paths.get(f)))
   }
 
   private def genFileOffsetTable(fileName: Path): Array[Int] = {
