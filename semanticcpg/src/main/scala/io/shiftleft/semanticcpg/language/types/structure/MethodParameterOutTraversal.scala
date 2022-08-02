@@ -31,7 +31,7 @@ class MethodParameterOutTraversal(val traversal: Traversal[MethodParameterOut]) 
       paramOut <- traversal
       method   <- paramOut.method
       call     <- method.callIn
-      arg <- call.argumentOut.collectAll[Expression]
+      arg      <- call.argumentOut.collectAll[Expression]
       if paramOut.parameterLinkIn.index.headOption.contains(arg.argumentIndex)
     } yield arg
 

@@ -64,7 +64,9 @@ object Ast {
 }
 
 case class Ast(
-  nodes: collection.Seq[NewNode], // technically this should be a Seq[AstNewNode], but we also use it for non-ast nodes like Binding...
+  nodes: collection.Seq[
+    NewNode
+  ], // technically this should be a Seq[AstNewNode], but we also use it for non-ast nodes like Binding...
   edges: collection.Seq[AstEdge] = Vector.empty,
   conditionEdges: collection.Seq[AstEdge] = Vector.empty,
   refEdges: collection.Seq[AstEdge] = Vector.empty,

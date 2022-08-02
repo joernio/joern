@@ -461,7 +461,8 @@ trait KtPsiToAst {
       }
 
     val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
-      val node = localNode(capturedNodeContext.name, capturedNodeContext.typeFullName, closureBindingNode.closureBindingId)
+      val node =
+        localNode(capturedNodeContext.name, capturedNodeContext.typeFullName, closureBindingNode.closureBindingId)
       scope.addToScope(capturedNodeContext.name, node)
       node
     }

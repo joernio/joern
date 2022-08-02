@@ -73,7 +73,7 @@ class AstTests extends AnyWordSpec with Matchers {
 
     "preserve order of nodes" in {
       copied.nodes.collect {
-        case node: NewCall => node.name
+        case node: NewCall       => node.name
         case node: NewIdentifier => node.name
       } shouldBe List("moo", "callincall", "leaf")
     }
