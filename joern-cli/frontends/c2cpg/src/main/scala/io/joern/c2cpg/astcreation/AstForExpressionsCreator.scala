@@ -8,9 +8,7 @@ import org.eclipse.cdt.core.dom.ast.cpp._
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTCompoundStatementExpression
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
 
-trait AstForExpressionsCreator {
-
-  this: AstCreator =>
+trait AstForExpressionsCreator { this: AstCreator =>
 
   private def astForBinaryExpression(bin: IASTBinaryExpression): Ast = {
     val op = bin.getOperator match {
@@ -253,32 +251,32 @@ trait AstForExpressionsCreator {
 
   protected def astForExpression(expression: IASTExpression): Ast = {
     val r = expression match {
-      case lit: IASTLiteralExpression   => astForLiteral(lit)
-      case un: IASTUnaryExpression      => astForUnaryExpression(un)
-      case bin: IASTBinaryExpression    => astForBinaryExpression(bin)
-      case exprList: IASTExpressionList => astForExpressionList(exprList)
-      case qualId: IASTIdExpression if qualId.getName.isInstanceOf[CPPASTQualifiedName] =>
-        astForQualifiedName(qualId.getName.asInstanceOf[CPPASTQualifiedName])
-      case ident: IASTIdExpression          => astForIdentifier(ident)
-      case call: IASTFunctionCallExpression => astForCallExpression(call)
-      case typeId: IASTTypeIdExpression     => astForTypeIdExpression(typeId)
-      case fieldRef: IASTFieldReference     => astForFieldReference(fieldRef)
-      case expr: IASTConditionalExpression  => astForConditionalExpression(expr)
-      case arrayIndexExpression: IASTArraySubscriptExpression =>
-        astForArrayIndexExpression(arrayIndexExpression)
+      case lit: IASTLiteralExpression                  => astForLiteral(lit)
+      case un: IASTUnaryExpression                     => astForUnaryExpression(un)
+      case bin: IASTBinaryExpression                   => astForBinaryExpression(bin)
+      case exprList: IASTExpressionList                => astForExpressionList(exprList)
+      case idExpr: IASTIdExpression                    => astForIdExpression(idExpr)
+      case call: IASTFunctionCallExpression            => astForCallExpression(call)
+      case typeId: IASTTypeIdExpression                => astForTypeIdExpression(typeId)
+      case fieldRef: IASTFieldReference                => astForFieldReference(fieldRef)
+      case expr: IASTConditionalExpression             => astForConditionalExpression(expr)
+      case arr: IASTArraySubscriptExpression           => astForArrayIndexExpression(arr)
       case castExpression: IASTCastExpression          => astForCastExpression(castExpression)
       case newExpression: ICPPASTNewExpression         => astForNewExpression(newExpression)
       case delExpression: ICPPASTDeleteExpression      => astForDeleteExpression(delExpression)
       case typeIdInit: IASTTypeIdInitializerExpression => astForTypeIdInitExpression(typeIdInit)
       case c: ICPPASTSimpleTypeConstructorExpression   => astForConstructorExpression(c)
       case lambdaExpression: ICPPASTLambdaExpression   => astForMethodRefForLambda(lambdaExpression)
-      case compoundExpression: IGNUASTCompoundStatementExpression =>
-        astForCompoundStatementExpression(compoundExpression)
-      case packExpansionExpression: ICPPASTPackExpansionExpression =>
-        astForPackExpansionExpression(packExpansionExpression)
-      case _ => notHandledYet(expression)
+      case cExpr: IGNUASTCompoundStatementExpression   => astForCompoundStatementExpression(cExpr)
+      case pExpr: ICPPASTPackExpansionExpression       => astForPackExpansionExpression(pExpr)
+      case _                                           => notHandledYet(expression)
     }
     asChildOfMacroCall(expression, r)
+  }
+
+  private def astForIdExpression(idExpression: IASTIdExpression): Ast = idExpression.getName match {
+    case name: CPPASTQualifiedName => astForQualifiedName(name)
+    case _                         => astForIdentifier(idExpression)
   }
 
   protected def astForStaticAssert(a: ICPPASTStaticAssertDeclaration): Ast = {

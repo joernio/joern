@@ -18,9 +18,7 @@ import org.eclipse.cdt.internal.core.parser.scanner.MacroArgumentExtractor
 import scala.annotation.nowarn
 import scala.collection.mutable
 
-trait MacroHandler {
-
-  this: AstCreator =>
+trait MacroHandler { this: AstCreator =>
 
   /** For the given node, determine if it is expanded from a macro, and if so, create a Call node to represent the macro
     * invocation and attach `ast` as its child.

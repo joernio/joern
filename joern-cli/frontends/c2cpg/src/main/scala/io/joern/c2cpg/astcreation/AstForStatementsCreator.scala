@@ -11,9 +11,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIfStatement
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTNamespaceAlias
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
-trait AstForStatementsCreator {
-
-  this: AstCreator =>
+trait AstForStatementsCreator { this: AstCreator =>
 
   import AstCreatorHelper.OptionSafeAst
 

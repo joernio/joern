@@ -2,7 +2,6 @@ package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.joern.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp._
@@ -10,9 +9,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTAliasDeclaration
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.datastructures.Stack._
 
-trait AstForTypesCreator {
-
-  this: AstCreator =>
+trait AstForTypesCreator { this: AstCreator =>
 
   private def parentIsClassDef(node: IASTNode): Boolean = Option(node.getParent) match {
     case Some(_: IASTCompositeTypeSpecifier) => true
@@ -318,7 +315,7 @@ trait AstForTypesCreator {
     if (calls.isEmpty) {
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
-      val init = astForFakeStaticInitMethod(fullname, line(typeSpecifier), NodeTypes.TYPE_DECL, fullname, calls)
+      val init = astForFakeStaticInitMethod(fullname, line(typeSpecifier), fullname, calls)
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
   }
@@ -389,7 +386,7 @@ trait AstForTypesCreator {
     if (calls.isEmpty) {
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
-      val init = astForFakeStaticInitMethod(fullname, line(typeSpecifier), NodeTypes.TYPE_DECL, fullname, calls)
+      val init = astForFakeStaticInitMethod(fullname, line(typeSpecifier), fullname, calls)
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
   }

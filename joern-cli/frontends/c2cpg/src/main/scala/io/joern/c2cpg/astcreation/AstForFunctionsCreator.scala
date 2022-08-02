@@ -14,9 +14,7 @@ import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
 
-trait AstForFunctionsCreator {
-
-  this: AstCreator =>
+trait AstForFunctionsCreator { this: AstCreator =>
 
   private def createFunctionTypeAndTypeDecl(
     method: NewMethod,
@@ -72,11 +70,12 @@ trait AstForFunctionsCreator {
   private def parameterListSignature(func: IASTNode, includeParamNames: Boolean): String = {
     val variadic = if (isVariadic(func)) "..." else ""
     val elements =
-      if (!includeParamNames) parameters(func).map {
-        case p: IASTParameterDeclaration => typeForDeclSpecifier(p.getDeclSpecifier)
-        case other                       => typeForDeclSpecifier(other)
-      }
-      else {
+      if (!includeParamNames) {
+        parameters(func).map {
+          case p: IASTParameterDeclaration => typeForDeclSpecifier(p.getDeclSpecifier)
+          case other                       => typeForDeclSpecifier(other)
+        }
+      } else {
         parameters(func).map(p => nodeSignature(p))
       }
     s"(${elements.mkString(",")}$variadic)"
@@ -276,12 +275,10 @@ trait AstForFunctionsCreator {
     parameterNode
   }
 
-  private def astForMethodBody(body: Option[IASTStatement]): Ast = {
-    body match {
-      case Some(b: IASTCompoundStatement) => astForBlockStatement(b)
-      case None                           => Ast(NewBlock())
-      case Some(b)                        => astForNode(b)
-    }
+  private def astForMethodBody(body: Option[IASTStatement]): Ast = body match {
+    case Some(b: IASTCompoundStatement) => astForBlockStatement(b)
+    case None                           => Ast(NewBlock())
+    case Some(b)                        => astForNode(b)
   }
 
   private def methodReturnNode(func: IASTNode, tpe: String): NewMethodReturn =
