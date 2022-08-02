@@ -10,7 +10,10 @@ final case class Config(
   inputPath: String = "",
   outputPath: String = X2CpgConfig.defaultOutputPath,
   inferenceJarPaths: Set[String] = Set.empty,
-  fetchDependencies: Boolean = false
+  fetchDependencies: Boolean = false,
+  javaFeatureSetVersion: Option[String] = None,
+  delombokJavaHome: Option[String] = None,
+  runDelombok: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
@@ -32,7 +35,13 @@ private object Frontend {
         .action((path, c) => c.copy(inferenceJarPaths = c.inferenceJarPaths + path)),
       opt[Unit]("fetch-dependencies")
         .text("attempt to fetch dependencies jars for extra type information")
-        .action((_, c) => c.copy(fetchDependencies = true))
+        .action((_, c) => c.copy(fetchDependencies = true)),
+      opt[String]("delombok-java-home")
+        .text("Optional override to set java home used to run Delombok. Java 17 is recommended for the best results.")
+        .action((path, c) => c.copy(delombokJavaHome = Some(path))),
+      opt[Unit]("run-delombok")
+        .text("run delombok on source before scanning for more accurate methods and type results")
+        .action((_, c) => c.copy(runDelombok = true))
     )
   }
 }
