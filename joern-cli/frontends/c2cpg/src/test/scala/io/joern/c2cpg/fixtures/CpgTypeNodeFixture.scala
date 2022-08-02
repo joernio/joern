@@ -2,6 +2,7 @@ package io.joern.c2cpg.fixtures
 
 import better.files.File
 import io.joern.c2cpg.Config
+import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.passes.AstCreationPass
 import io.joern.x2cpg.layers.Base
 import io.shiftleft.codepropertygraph.Cpg
@@ -18,10 +19,8 @@ object CpgTypeNodeFixture {
       val config = Config(inputPath = dir.path.toString, includePathsAutoDiscovery = false)
 
       new MetaDataPass(cpg, Languages.NEWC, config.inputPath).createAndApply()
-      val astCreationPass =
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, config)
-      astCreationPass.createAndApply()
-      new TypeNodePass(astCreationPass.usedTypes(), cpg).createAndApply()
+      new AstCreationPass(cpg, AstCreationPass.SourceFiles, config).createAndApply()
+      new TypeNodePass(CGlobal.typesSeen(), cpg).createAndApply()
 
       val context = new LayerCreatorContext(cpg)
       new Base().run(context)

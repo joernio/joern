@@ -1455,9 +1455,8 @@ class AstCreationPassTests
         ident.order shouldBe 1
         call.code shouldBe "{0, 1, 2, 3}"
         call.order shouldBe 2
-        // TODO: "<operator>.arrayInitializer" is not part of Operators
-        call.name shouldBe "<operator>.arrayInitializer"
-        call.methodFullName shouldBe "<operator>.arrayInitializer"
+        call.name shouldBe Operators.arrayInitializer
+        call.methodFullName shouldBe Operators.arrayInitializer
         val children = call.astChildren.l
         val args     = call.argument.l
         inside(children) { case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
@@ -1482,9 +1481,8 @@ class AstCreationPassTests
         ident.order shouldBe 1
         call.code shouldBe "{0, 1, 2, 3}"
         call.order shouldBe 2
-        // TODO: "<operator>.arrayInitializer" is not part of Operators
-        call.name shouldBe "<operator>.arrayInitializer"
-        call.methodFullName shouldBe "<operator>.arrayInitializer"
+        call.name shouldBe Operators.arrayInitializer
+        call.methodFullName shouldBe Operators.arrayInitializer
         val children = call.astChildren.l
         val args     = call.argument.l
         inside(children) { case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
@@ -1509,9 +1507,8 @@ class AstCreationPassTests
         ident.order shouldBe 1
         call.code shouldBe "{0, 1, 2, 3}"
         call.order shouldBe 2
-        // TODO: "<operator>.arrayInitializer" is not part of Operators
-        call.name shouldBe "<operator>.arrayInitializer"
-        call.methodFullName shouldBe "<operator>.arrayInitializer"
+        call.name shouldBe Operators.arrayInitializer
+        call.methodFullName shouldBe Operators.arrayInitializer
         val children = call.astChildren.l
         val args     = call.argument.l
         inside(children) { case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
@@ -1536,9 +1533,8 @@ class AstCreationPassTests
         ident.order shouldBe 1
         call.code shouldBe "{0, 1, 2, 3}"
         call.order shouldBe 2
-        // TODO: "<operator>.arrayInitializer" is not part of Operators
-        call.name shouldBe "<operator>.arrayInitializer"
-        call.methodFullName shouldBe "<operator>.arrayInitializer"
+        call.name shouldBe Operators.arrayInitializer
+        call.methodFullName shouldBe Operators.arrayInitializer
         val children = call.astChildren.l
         val args     = call.argument.l
         inside(children) { case List(a: Literal, b: Literal, c: Literal, d: Literal) =>
@@ -1593,9 +1589,8 @@ class AstCreationPassTests
           identFoo.order shouldBe 1
           callFoo.code shouldBe "{1}"
           callFoo.order shouldBe 2
-          // TODO: "<operator>.arrayInitializer" is not part of Operators
-          callFoo.name shouldBe "<operator>.arrayInitializer"
-          callFoo.methodFullName shouldBe "<operator>.arrayInitializer"
+          callFoo.name shouldBe Operators.arrayInitializer
+          callFoo.methodFullName shouldBe Operators.arrayInitializer
           val childrenFoo = callFoo.astChildren.l
           val argsFoo     = callFoo.argument.l
           inside(childrenFoo) { case List(a: Literal) =>
@@ -1608,9 +1603,8 @@ class AstCreationPassTests
           identBar.order shouldBe 1
           barCall.code shouldBe "{0, 1, 2}"
           barCall.order shouldBe 2
-          // TODO: "<operator>.arrayInitializer" is not part of Operators
-          barCall.name shouldBe "<operator>.arrayInitializer"
-          barCall.methodFullName shouldBe "<operator>.arrayInitializer"
+          barCall.name shouldBe Operators.arrayInitializer
+          barCall.methodFullName shouldBe Operators.arrayInitializer
           val childrenBar = barCall.astChildren.l
           val argsBar     = barCall.argument.l
           inside(childrenBar) { case List(a: Literal, b: Literal, c: Literal) =>
@@ -1720,9 +1714,8 @@ class AstCreationPassTests
         ident.order shouldBe 1
         call.code shouldBe "{ [1] = 5, [2] = 10 }"
         call.order shouldBe 2
-        // TODO: "<operator>.arrayInitializer" is not part of Operators
-        call.name shouldBe "<operator>.arrayInitializer"
-        call.methodFullName shouldBe "<operator>.arrayInitializer"
+        call.name shouldBe Operators.arrayInitializer
+        call.methodFullName shouldBe Operators.arrayInitializer
         val children = call.astMinusRoot.isCall.l
         val args     = call.argument.astChildren.l
         inside(children) { case List(call1, call2) =>
@@ -1749,9 +1742,8 @@ class AstCreationPassTests
         ident.order shouldBe 1
         call.code shouldBe "{ .a = 1, .b = 2 }"
         call.order shouldBe 2
-        // TODO: "<operator>.arrayInitializer" is not part of Operators
-        call.name shouldBe "<operator>.arrayInitializer"
-        call.methodFullName shouldBe "<operator>.arrayInitializer"
+        call.name shouldBe Operators.arrayInitializer
+        call.methodFullName shouldBe Operators.arrayInitializer
         val children = call.astMinusRoot.isCall.l
         val args     = call.argument.astChildren.l
         inside(children) { case List(call1, call2) =>
@@ -1788,9 +1780,8 @@ class AstCreationPassTests
         call.methodFullName shouldBe "point3D"
         inside(call.astChildren.l) { case List(initCall: Call) =>
           initCall.code shouldBe "{ .x = 1, .y = 2, .z = 3 }"
-          // TODO: "<operator>.arrayInitializer" is not part of Operators
-          initCall.name shouldBe "<operator>.arrayInitializer"
-          initCall.methodFullName shouldBe "<operator>.arrayInitializer"
+          initCall.name shouldBe Operators.arrayInitializer
+          initCall.methodFullName shouldBe Operators.arrayInitializer
           val children = initCall.astMinusRoot.isCall.l
           val args     = initCall.argument.astChildren.l
           inside(children) { case List(call1, call2, call3) =>

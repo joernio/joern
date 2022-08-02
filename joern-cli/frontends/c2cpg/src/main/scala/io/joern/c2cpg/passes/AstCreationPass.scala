@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.astcreation.{AstCreator, Defines}
+import io.joern.c2cpg.astcreation.AstCreator
 import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.joern.c2cpg.passes.AstCreationPass.InputFiles
@@ -12,7 +12,6 @@ import io.shiftleft.utils.IOUtils
 import io.joern.x2cpg.SourceFiles
 
 import java.nio.file.Paths
-import scala.jdk.CollectionConverters._
 
 object AstCreationPass {
   sealed trait InputFiles
@@ -23,7 +22,6 @@ object AstCreationPass {
 class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Report = new Report())
     extends ConcurrentWriterCpgPass[String](cpg) {
 
-  private val global: CGlobal   = new CGlobal()
   private val parser: CdtParser = new CdtParser(config)
 
   private def sourceFiles: Set[String] =
@@ -34,9 +32,6 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
     val alreadySeenHeaderFiles = CGlobal.headerFiles
     allHeaderFiles -- alreadySeenHeaderFiles
   }
-
-  def usedTypes(): List[String] =
-    global.usedTypes.keys().asScala.filterNot(_ == Defines.anyTypeName).toList
 
   override def generateParts(): Array[String] = forFiles match {
     case AstCreationPass.HeaderFiles => headerFiles.toArray
@@ -51,7 +46,7 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
       parseResult match {
         case Some(translationUnit) =>
           report.addReportInfo(filename, fileLOC, parsed = true)
-          val localDiff = new AstCreator(filename, config, global, translationUnit).createAst()
+          val localDiff = new AstCreator(filename, config, translationUnit).createAst()
           diffGraph.absorb(localDiff)
           true
         case None =>

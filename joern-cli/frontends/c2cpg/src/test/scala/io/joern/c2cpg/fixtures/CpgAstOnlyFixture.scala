@@ -12,8 +12,7 @@ object CpgAstOnlyFixture {
       val config = Config(inputPath = dir.path.toString, includePathsAutoDiscovery = false)
       val file   = dir / fileName
       file.write(code)
-      new AstCreationPass(cpg, AstCreationPass.SourceFiles, config)
-        .createAndApply()
+      new AstCreationPass(cpg, AstCreationPass.SourceFiles, config).createAndApply()
     }
     cpg
   }

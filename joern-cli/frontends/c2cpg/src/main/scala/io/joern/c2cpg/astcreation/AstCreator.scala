@@ -16,7 +16,7 @@ import scala.collection.mutable
 
 /** Translates the Eclipse CDT AST into a CPG AST.
   */
-class AstCreator(val filename: String, val config: Config, val global: CGlobal, val cdtAst: IASTTranslationUnit)
+class AstCreator(val filename: String, val config: Config, val cdtAst: IASTTranslationUnit)
     extends AstCreatorBase(filename)
     with AstForTypesCreator
     with AstForFunctionsCreator

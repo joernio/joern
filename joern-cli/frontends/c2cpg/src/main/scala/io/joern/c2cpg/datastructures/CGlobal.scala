@@ -1,5 +1,6 @@
 package io.joern.c2cpg.datastructures
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.joern.x2cpg.Ast
@@ -8,19 +9,22 @@ import io.joern.x2cpg.datastructures.Global
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 
-class CGlobal extends Global {
+import scala.jdk.CollectionConverters._
 
-  val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] =
-    new ConcurrentHashMap()
+object CGlobal extends Global {
 
-}
-
-object CGlobal {
+  val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] = new ConcurrentHashMap()
 
   private val headerAstCache: mutable.HashMap[String, mutable.HashSet[(Integer, Integer)]] =
     mutable.HashMap.empty
 
   def headerFiles: Set[String] = headerAstCache.keySet.toSet
+
+  def typesSeen(): List[String] = {
+    val types = usedTypes.keys().asScala.filterNot(_ == Defines.anyTypeName).toList
+    usedTypes.clear()
+    types
+  }
 
   def shouldBeCleared(): Boolean = {
     if (headerAstCache.nonEmpty) {

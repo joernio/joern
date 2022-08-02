@@ -1,5 +1,6 @@
 package io.joern.c2cpg.astcreation
 
+import io.joern.c2cpg.datastructures.CGlobal
 import io.shiftleft.codepropertygraph.generated.nodes.{
   ExpressionNew,
   NewBlock,
@@ -11,6 +12,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.joern.x2cpg.Ast
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast._
@@ -36,17 +38,10 @@ object AstCreatorHelper {
       case Some(value) => ast.withConditionEdge(src, value)
       case None        => ast
     }
-
-    def withArgEdges(src: NewNode, dsts: Seq[Ast]): Ast = {
-      val args = dsts.collect { case a if a.root.isDefined => a.root.get }
-      ast.withArgEdges(src, args)
-    }
   }
 }
 
-trait AstCreatorHelper {
-
-  this: AstCreator =>
+trait AstCreatorHelper { this: AstCreator =>
 
   private var usedNames: Int = 0
 
@@ -63,7 +58,7 @@ trait AstCreatorHelper {
 
   private def fileOffsetTable(node: IASTNode): Array[Int] = {
     val f = fileName(node)
-    global.file2OffsetTable.computeIfAbsent(f, _ => genFileOffsetTable(Paths.get(f)))
+    CGlobal.file2OffsetTable.computeIfAbsent(f, _ => genFileOffsetTable(Paths.get(f)))
   }
 
   private def genFileOffsetTable(fileName: Path): Array[Int] = {
@@ -126,7 +121,7 @@ trait AstCreatorHelper {
 
   protected def registerType(typeName: String): String = {
     val fixedTypeName = fixQualifiedName(StringUtils.normalizeSpace(typeName))
-    global.usedTypes.putIfAbsent(fixedTypeName, true)
+    CGlobal.usedTypes.putIfAbsent(fixedTypeName, true)
     fixedTypeName
   }
 
@@ -406,7 +401,6 @@ trait AstCreatorHelper {
   protected def astForFakeStaticInitMethod(
     name: String,
     lineNumber: Option[Integer],
-    astParentType: String,
     astParentFullName: String,
     childrenAsts: Seq[Ast]
   ): Ast = {
@@ -418,7 +412,7 @@ trait AstCreatorHelper {
         .code(code)
         .filename(filename)
         .lineNumber(lineNumber)
-        .astParentType(astParentType)
+        .astParentType(NodeTypes.TYPE_DECL)
         .astParentFullName(astParentFullName)
 
     val blockNode = NewBlock()
