@@ -445,23 +445,25 @@ trait KtPsiToAst {
     val lambdaMethodNode =
       methodNode(Constants.lambdaName, fullName, signature, relativizedPath, line(expr), column(expr))
 
+    case class NodeContext(node: NewNode, name: String, typeFullName: String)
     val closureBindingEntriesForCaptured = scope
       .pushClosureScope(lambdaMethodNode)
       .collect {
-        case node: NewMethodParameterIn => node
-        case node: NewLocal             => node
-        case node: NewMember            => node
+        case node: NewMethodParameterIn => NodeContext(node, node.name, node.typeFullName)
+        case node: NewLocal             => NodeContext(node, node.name, node.typeFullName)
+        case node: NewMember            => NodeContext(node, node.name, node.typeFullName)
       }
-      .map { capturedNode =>
+      .map { capturedNodeContext =>
         // TODO: remove the randomness here, two CPGs created from the same codebase should be the same
         val closureBindingId   = randomUUID().toString
-        val closureBindingNode = closureBinding(closureBindingId, capturedNode.name)
-        (closureBindingNode, capturedNode)
+        val closureBindingNode = closureBinding(closureBindingId, capturedNodeContext.name)
+        (closureBindingNode, capturedNodeContext)
       }
 
-    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNode) =>
-      val node = localNode(capturedNode.name, capturedNode.typeFullName, closureBindingNode.closureBindingId)
-      scope.addToScope(capturedNode.name, node)
+    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
+      val node =
+        localNode(capturedNodeContext.name, capturedNodeContext.typeFullName, closureBindingNode.closureBindingId)
+      scope.addToScope(capturedNodeContext.name, node)
       node
     }
     val parametersAsts = typeInfoProvider.implicitParameterName(expr) match {
@@ -516,7 +518,7 @@ trait KtPsiToAst {
     )
     scope.popScope()
     val closureBindingDefs = closureBindingEntriesForCaptured.collect { case (closureBinding, node) =>
-      ClosureBindingDef(closureBinding, _methodRefNode, node)
+      ClosureBindingDef(closureBinding, _methodRefNode, node.node)
     }
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
     lambdaBindingInfoQueue.prepend(bindingInfo)

@@ -27,9 +27,7 @@ class AccessPathUsageTests extends AnyWordSpec {
   private def genCALL(graph: Graph, op: String, args: Node*): Call = {
     val ret = graph + NodeTypes.CALL // (NodeTypes.CALL, Properties.NAME -> op)
     ret.setProperty(Properties.NAME, op)
-    args.reverse.zipWithIndex.foreach { argTup =>
-      val arg = argTup._1
-      val idx = argTup._2
+    args.reverse.zipWithIndex.foreach { case (arg, idx) =>
       ret --- EdgeTypes.ARGUMENT --> arg
       arg.setProperty(Properties.ARGUMENT_INDEX, idx + 1)
     }

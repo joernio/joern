@@ -26,12 +26,6 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
 
   private val typeDeclFullNames: Set[String] = cpg.typeDecl.fullName.toSetImmutable
 
-  private def setExternal(node: HasFilename, diffGraph: DiffGraphBuilder): Unit = node match {
-    case matchingNode: HasIsExternal if systemIncludePaths.exists(p => matchingNode.filename.startsWith(p.toString)) =>
-      diffGraph.setNodeProperty(node.asInstanceOf[StoredNode], PropertyNames.IS_EXTERNAL, Boolean.box(true))
-    case _ => // do nothing
-  }
-
   private def createGlobalBlock(dstGraph: DiffGraphBuilder): NewBlock = {
     val includesFile = NewFile().name(filename)
 
@@ -70,12 +64,23 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
   private def createMissingAstEdges(dstGraph: DiffGraphBuilder): Unit = {
     val globalBlock = createGlobalBlock(dstGraph)
     cpg.all.not(_.inE(EdgeTypes.AST)).foreach {
-      case srcNode: HasFilename =>
+      case srcNode: Comment =>
         dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
-        setExternal(srcNode, dstGraph)
+      case srcNode: NamespaceBlock =>
+        dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
+      case srcNode: Method =>
+        dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
+        if (systemIncludePaths.exists(p => srcNode.filename.startsWith(p.toString))) {
+          dstGraph.setNodeProperty(srcNode, PropertyNames.IS_EXTERNAL, true)
+        }
+      case srcNode: TypeDecl =>
+        dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
+        if (systemIncludePaths.exists(p => srcNode.filename.startsWith(p.toString))) {
+          dstGraph.setNodeProperty(srcNode, PropertyNames.IS_EXTERNAL, true)
+        }
       case srcNode: Local =>
         dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
-      case _ =>
+      case _ => // do nothing
     }
   }
 
