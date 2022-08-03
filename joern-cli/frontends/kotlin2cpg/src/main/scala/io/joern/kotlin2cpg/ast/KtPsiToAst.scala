@@ -728,10 +728,8 @@ trait KtPsiToAst {
     )
 
     val componentNIdentifierAst = astWithRefEdgeMaybe(componentNIdentifierNode.name, componentNIdentifierNode)
-    val componentNAst = Ast(componentNCallNode)
-      .withChild(componentNIdentifierAst)
-      .withArgEdge(componentNCallNode, componentNIdentifierNode)
-      .withReceiverEdge(componentNCallNode, componentNIdentifierNode)
+    val componentNAst =
+      callAst(componentNCallNode, Seq(), Some(componentNIdentifierAst), withRecvArgEdge = true)
 
     val assignmentCallNode = operatorCallNode(
       Operators.assignment,
@@ -869,12 +867,7 @@ trait KtPsiToAst {
         ),
         argIdx
       )
-    val receiverNode = receiverAst.root.get
-    Ast(node)
-      .withChild(receiverAst)
-      .withArgEdge(node, receiverNode)
-      .withChildren(argAsts)
-      .withArgEdges(node, argAsts.map(_.root.get))
+    callAst(node, argAsts, Some(receiverAst), withRecvArgEdge = true)
   }
 
   private def selectorExpressionArgAsts(
@@ -918,12 +911,7 @@ trait KtPsiToAst {
         ),
         argIdx
       )
-    val receiverNode = receiverAst.root.get
-    Ast(node)
-      .withChild(receiverAst)
-      .withArgEdge(node, receiverNode)
-      .withChildren(argAsts)
-      .withArgEdges(node, argAsts.map(_.root.get))
+    callAst(node, argAsts, Some(receiverAst), withRecvArgEdge = true)
   }
 
   private def astForQualifiedExpressionWithNoAstForReceiver(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
@@ -944,10 +932,7 @@ trait KtPsiToAst {
       callNode(expr.getText, methodName, fullName, signature, retType, dispatchType, line(expr), column(expr)),
       argIdx
     )
-    Ast(node)
-      .withChild(receiverAst)
-      .withChildren(argAsts)
-      .withArgEdges(node, argAsts.map(_.root.get))
+    callAst(node, List(receiverAst) ++ argAsts)
   }
 
   private def astForQualifiedExpressionWithReceiverEdge(
@@ -1142,10 +1127,8 @@ trait KtPsiToAst {
       DispatchTypes.DYNAMIC_DISPATCH
     )
 
-    val iteratorAssignmentRhsAst = Ast(iteratorAssignmentRhs)
-      .withChild(Ast(iteratorAssignmentRhsIdentifier))
-      .withArgEdge(iteratorAssignmentRhs, iteratorAssignmentRhsIdentifier)
-      .withReceiverEdge(iteratorAssignmentRhs, iteratorAssignmentRhsIdentifier)
+    val iteratorAssignmentRhsAst =
+      callAst(iteratorAssignmentRhs, Seq(), Some(Ast(iteratorAssignmentRhsIdentifier)), withRecvArgEdge = true)
     val iteratorAssignment =
       operatorCallNode(Operators.assignment, s"$iteratorName = ${iteratorAssignmentRhs.code}", None)
 
@@ -1164,10 +1147,8 @@ trait KtPsiToAst {
       TypeConstants.javaLangBoolean,
       DispatchTypes.DYNAMIC_DISPATCH
     ).argumentIndex(0)
-    val controlStructureConditionAst = Ast(controlStructureCondition)
-      .withChild(Ast(conditionIdentifier))
-      .withArgEdge(controlStructureCondition, conditionIdentifier)
-      .withReceiverEdge(controlStructureCondition, conditionIdentifier)
+    val controlStructureConditionAst =
+      callAst(controlStructureCondition, List(), Some(Ast(conditionIdentifier)), withRecvArgEdge = true)
 
     val loopParameterTypeFullName = registerType(
       typeInfoProvider.typeFullName(expr.getLoopParameter, TypeConstants.any)
@@ -1190,10 +1171,8 @@ trait KtPsiToAst {
       TypeConstants.javaLangObject,
       DispatchTypes.DYNAMIC_DISPATCH
     )
-    val iteratorNextCallAst = Ast(iteratorNextCall)
-      .withChild(iteratorNextIdentifierAst)
-      .withArgEdge(iteratorNextCall, iteratorNextIdentifier)
-      .withReceiverEdge(iteratorNextCall, iteratorNextIdentifier)
+    val iteratorNextCallAst =
+      callAst(iteratorNextCall, Seq(), Some(iteratorNextIdentifierAst), withRecvArgEdge = true)
     val loopParameterNextAssignment =
       operatorCallNode(Operators.assignment, s"$loopParameterName = ${iteratorNextCall.code}", None)
     val loopParameterNextAssignmentAst =
@@ -1201,8 +1180,8 @@ trait KtPsiToAst {
 
     val stmtAsts             = astsForExpression(expr.getBody, Some(3))
     val controlStructureBody = blockNode("", "")
-    val controlStructureBodyAst = Ast(controlStructureBody)
-      .withChildren(List(loopParameterAst, loopParameterNextAssignmentAst) ++ stmtAsts)
+    val controlStructureBodyAst =
+      blockAst(controlStructureBody, List(loopParameterAst, loopParameterNextAssignmentAst) ++ stmtAsts)
 
     val controlStructureAst = Ast(controlStructure)
       .withChildren(List(controlStructureConditionAst, controlStructureBodyAst))
@@ -1249,10 +1228,8 @@ trait KtPsiToAst {
       DispatchTypes.DYNAMIC_DISPATCH
     )
 
-    val iteratorAssignmentRhsAst = Ast(iteratorAssignmentRhs)
-      .withChild(Ast(iteratorAssignmentRhsIdentifier))
-      .withArgEdge(iteratorAssignmentRhs, iteratorAssignmentRhsIdentifier)
-      .withReceiverEdge(iteratorAssignmentRhs, iteratorAssignmentRhsIdentifier)
+    val iteratorAssignmentRhsAst =
+      callAst(iteratorAssignmentRhs, Seq(), Some(Ast(iteratorAssignmentRhsIdentifier)), withRecvArgEdge = true)
 
     val iteratorAssignment =
       operatorCallNode(Operators.assignment, s"$iteratorName = ${iteratorAssignmentRhs.code}", None)
@@ -1271,10 +1248,8 @@ trait KtPsiToAst {
       TypeConstants.javaLangBoolean,
       DispatchTypes.DYNAMIC_DISPATCH
     ).argumentIndex(0)
-    val controlStructureConditionAst = Ast(controlStructureCondition)
-      .withChild(Ast(conditionIdentifier))
-      .withArgEdge(controlStructureCondition, conditionIdentifier)
-      .withReceiverEdge(controlStructureCondition, conditionIdentifier)
+    val controlStructureConditionAst =
+      callAst(controlStructureCondition, List(), Some(Ast(conditionIdentifier)), withRecvArgEdge = true)
 
     val destructuringDeclEntries = expr.getDestructuringDeclaration.getEntries
     val localsForDestructuringVars = destructuringDeclEntries.asScala.map { entry =>
@@ -1304,10 +1279,8 @@ trait KtPsiToAst {
       DispatchTypes.DYNAMIC_DISPATCH
     )
 
-    val iteratorNextCallAst = Ast(iteratorNextCall)
-      .withChild(iteratorNextIdentifierAst)
-      .withArgEdge(iteratorNextCall, iteratorNextIdentifier)
-      .withReceiverEdge(iteratorNextCall, iteratorNextIdentifier)
+    val iteratorNextCallAst =
+      callAst(iteratorNextCall, Seq(), Some(iteratorNextIdentifierAst), withRecvArgEdge = true)
     val tmpParameterNextAssignment    = operatorCallNode(Operators.assignment, s"$tmpName = ${iteratorNextCall.code}")
     val tmpParameterNextAssignmentAst = callAst(tmpParameterNextAssignment, List(tmpIdentifierAst, iteratorNextCallAst))
 
@@ -1318,7 +1291,8 @@ trait KtPsiToAst {
 
     val stmtAsts             = astsForExpression(expr.getBody, None)
     val controlStructureBody = blockNode("", "")
-    val controlStructureBodyAst = Ast(controlStructureBody).withChildren(
+    val controlStructureBodyAst = blockAst(
+      controlStructureBody,
       localsForDestructuringVars ++
         List(localForTmpAst, tmpParameterNextAssignmentAst) ++
         assignmentsForEntries ++
@@ -1344,17 +1318,16 @@ trait KtPsiToAst {
     val finalAstForSubject = expr.getSubjectExpression match {
       case _: KtProperty =>
         val block = blockNode("", "").argumentIndex(1)
-        Ast(block).withChild(astForSubject)
+        blockAst(block, List(astForSubject))
       case _ => astForSubject
     }
-    val astsForEntries = withIndex(expr.getEntries.asScala.toSeq) { (e, idx) =>
+    val astsForEntries = withIndex(expr.getEntries.asScala.toList) { (e, idx) =>
       astsForWhenEntry(e, idx)
     }.flatten
 
     val switchBlockNode =
       blockNode(expr.getEntries.asScala.map(_.getText).mkString("\n"), TypeConstants.any, line(expr), column(expr))
-    val astForBlock = Ast(switchBlockNode).withChildren(astsForEntries)
-
+    val astForBlock = blockAst(switchBlockNode, astsForEntries.toList)
     val codeForSwitch = Option(expr.getSubjectExpression)
       .map(_.getText)
       .map { text => s"${Constants.when}($text)" }
@@ -1439,10 +1412,7 @@ trait KtPsiToAst {
       line(expr),
       column(expr)
     )
-    val initCallAst = Ast(initCallNode)
-      .withChildren(List(initReceiverAst) ++ argAsts)
-      .withArgEdges(initCallNode, Seq(initReceiverNode) ++ argAsts.flatMap(_.root))
-
+    val initCallAst       = callAst(initCallNode, argAsts, Some(initReceiverAst), withRecvArgEdge = true)
     val lastIdentifier    = identifierNode(tmpName, typeFullName, line(expr), column(expr))
     val lastIdentifierAst = Ast(lastIdentifier)
 
@@ -1450,9 +1420,7 @@ trait KtPsiToAst {
       .withRefEdge(assignmentLhsNode, tmpLocalNode)
       .withRefEdge(initReceiverNode, tmpLocalNode)
       .withRefEdge(lastIdentifier, tmpLocalNode)
-
-    Ast(withArgumentIndex(tmpBlockNode, argIdx))
-      .withChildren(List(tmpLocalAst, assignmentAst, initCallAst, lastIdentifierAst))
+    blockAst(withArgumentIndex(tmpBlockNode, argIdx), List(tmpLocalAst, assignmentAst, initCallAst, lastIdentifierAst))
   }
 
   def astsForProperty(expr: KtProperty)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
@@ -1586,41 +1554,41 @@ trait KtPsiToAst {
 
     // TODO: add the rest of the operators
     val operatorOption = opRef.getOperationSignTokenType match {
-      case KtTokens.PLUS       => Some(Operators.addition)
+      case KtTokens.ANDAND     => Some(Operators.logicalAnd)
+      case KtTokens.DIVEQ      => Some(Operators.assignmentDivision)
+      case KtTokens.DIV        => Some(Operators.division)
+      case KtTokens.ELVIS      => Some(Operators.elvis)
+      case KtTokens.EQEQEQ     => Some(Operators.equals)
+      case KtTokens.EQEQ       => Some(Operators.equals)
+      case KtTokens.EQ         => Some(Operators.assignment)
+      case KtTokens.EXCLEQEQEQ => Some(Operators.notEquals)
+      case KtTokens.EXCLEQ     => Some(Operators.notEquals)
+      case KtTokens.GTEQ       => Some(Operators.greaterEqualsThan)
+      case KtTokens.GT         => Some(Operators.greaterThan)
+      case KtTokens.IN_KEYWORD => Some(Operators.in)
+      case KtTokens.LTEQ       => Some(Operators.lessEqualsThan)
+      case KtTokens.LT         => Some(Operators.lessThan)
+      case KtTokens.MINUSEQ    => Some(Operators.assignmentMinus)
       case KtTokens.MINUS      => Some(Operators.subtraction)
       case KtTokens.MUL        => Some(Operators.multiplication)
-      case KtTokens.DIV        => Some(Operators.division)
-      case KtTokens.LT         => Some(Operators.lessThan)
-      case KtTokens.LTEQ       => Some(Operators.lessEqualsThan)
-      case KtTokens.GT         => Some(Operators.greaterThan)
-      case KtTokens.GTEQ       => Some(Operators.greaterEqualsThan)
-      case KtTokens.EXCLEQ     => Some(Operators.notEquals)
-      case KtTokens.EXCLEQEQEQ => Some(Operators.notEquals)
-      case KtTokens.EQ         => Some(Operators.assignment)
-      case KtTokens.EQEQ       => Some(Operators.equals)
-      case KtTokens.EQEQEQ     => Some(Operators.equals)
-      case KtTokens.ANDAND     => Some(Operators.logicalAnd)
-      case KtTokens.OROR       => Some(Operators.logicalOr)
-      case KtTokens.PLUSEQ     => Some(Operators.assignmentPlus)
-      case KtTokens.MINUSEQ    => Some(Operators.assignmentMinus)
       case KtTokens.MULTEQ     => Some(Operators.assignmentMultiplication)
-      case KtTokens.DIVEQ      => Some(Operators.assignmentDivision)
+      case KtTokens.NOT_IN     => Some(Operators.notIn)
+      case KtTokens.OROR       => Some(Operators.logicalOr)
       case KtTokens.PERCEQ     => Some(Operators.assignmentModulo)
       case KtTokens.PERC       => Some(Operators.modulo)
-      case KtTokens.ELVIS      => Some(Operators.elvis)
+      case KtTokens.PLUSEQ     => Some(Operators.assignmentPlus)
+      case KtTokens.PLUS       => Some(Operators.addition)
       case KtTokens.RANGE      => Some(Operators.range)
-      case KtTokens.NOT_IN     => Some(Operators.notIn)
-      case KtTokens.IN_KEYWORD => Some(Operators.in)
       case null =>
         val opElement = expr.getOperationReference.getReferencedNameElement
         opElement.getText match {
           case "and"  => Some(Operators.and)
           case "or"   => Some(Operators.or)
-          case "xor"  => Some(Operators.xor)
           case "shl"  => Some(Operators.shiftLeft)
-          case "ushl" => Some(Operators.shiftLeft)
           case "shr"  => Some(Operators.arithmeticShiftRight)
+          case "ushl" => Some(Operators.shiftLeft)
           case "ushr" => Some(Operators.logicalShiftRight)
+          case "xor"  => Some(Operators.xor)
           case _      => None
         }
       case _ =>
@@ -1653,7 +1621,7 @@ trait KtPsiToAst {
       line(expr),
       column(expr)
     )
-    val args = astsForExpression(expr.getLeft, Some(1)) ++ astsForExpression(expr.getRight, Some(2))
+    val args = astsForExpression(expr.getLeft, None) ++ astsForExpression(expr.getRight, None)
     callAst(withArgumentIndex(node, argIdx), args.toList)
   }
 
