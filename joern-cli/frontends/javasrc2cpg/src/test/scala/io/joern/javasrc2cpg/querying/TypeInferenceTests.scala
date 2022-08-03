@@ -79,36 +79,36 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
 
   "type information for members" should {
     val cpg = code("""
-        |import org.slf4j.Logger;
-        |import org.slf4j.LoggerFactory;
-        |import org.springframework.core.env.Environment;
+        |import a.Logger;
+        |import a.LoggerFactory;
+        |import b.Environment;
         |
         |public class Foo {
         |  Environment env;
         |  private static Logger log = LoggerFactory.getLogger(Foo.class);
         |
         |  public void foo() {
-        |    log.info("UserName is {}", env.getProperty("sfdc.username"));
+        |    log.info("UserName is {}", env.getProperty("property"));
         |  }
         |}
         |""".stripMargin)
 
     "be inferred from imports" in {
-      cpg.member.name("env").typeFullName.head shouldBe "org.springframework.core.env.Environment"
-      cpg.member.name("log").typeFullName.head shouldBe "org.slf4j.Logger"
+      cpg.member.name("env").typeFullName.head shouldBe "b.Environment"
+      cpg.member.name("log").typeFullName.head shouldBe "a.Logger"
     }
 
     "be used in calls" in {
       cpg.call.name("info").methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "org.slf4j.Logger.info:void(java.lang.String,<unresolvedType>)"
+          fullName shouldBe "a.Logger.info:void(java.lang.String,codepropertygraph.Unresolved)"
 
         case result => fail(s"Expected single call to info but got $result")
       }
 
       cpg.call.name("getProperty").methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "org.springframework.core.env.Environment.getProperty:<unresolvedType>(java.lang.String)"
+          fullName shouldBe "b.Environment.getProperty:codepropertygraph.Unresolved(java.lang.String)"
 
         case result => fail(s"Expected single call to getProperty but got $result")
       }

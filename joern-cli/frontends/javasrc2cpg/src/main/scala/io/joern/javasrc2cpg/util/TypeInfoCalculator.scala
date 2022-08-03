@@ -242,7 +242,7 @@ object TypeInfoCalculator {
     val Class: String          = "java.lang.Class"
     val Iterator: String       = "java.util.Iterator"
     val Void: String           = "void"
-    val UnresolvedType: String = "<unresolvedType>"
+    val UnresolvedType: String = "codepropertygraph.Unresolved"
   }
 
   object TypeNameConstants {
