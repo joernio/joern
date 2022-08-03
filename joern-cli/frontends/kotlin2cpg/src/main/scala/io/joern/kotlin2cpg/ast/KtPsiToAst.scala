@@ -1420,8 +1420,7 @@ trait KtPsiToAst {
       .withRefEdge(assignmentLhsNode, tmpLocalNode)
       .withRefEdge(initReceiverNode, tmpLocalNode)
       .withRefEdge(lastIdentifier, tmpLocalNode)
-    blockAst(withArgumentIndex(tmpBlockNode, argIdx),
-      List(tmpLocalAst, assignmentAst, initCallAst, lastIdentifierAst))
+    blockAst(withArgumentIndex(tmpBlockNode, argIdx), List(tmpLocalAst, assignmentAst, initCallAst, lastIdentifierAst))
   }
 
   def astsForProperty(expr: KtProperty)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
