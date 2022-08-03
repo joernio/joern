@@ -7,6 +7,114 @@ import io.shiftleft.semanticcpg.language._
 
 class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
 
+  "type information for constructor invocations" should {
+
+    "be found for constructor invocations at the start of a call chain" in {
+      val cpg = code("""
+          |import a.Bar;
+          |
+          |public class Foo {
+          |  public void foo() {
+          |    String s = new Bar().getValue();
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.call.nameExact("<init>").methodFullName.l match {
+        case List(fullName) =>
+          fullName shouldBe "a.Bar.<init>:void()"
+
+        case result => fail(s"Expected single constructor invocation for Bar but found $result")
+      }
+
+      cpg.call.nameExact("getValue").methodFullName.l match {
+        case List(fullName) =>
+          fullName shouldBe "a.Bar.getValue:java.lang.String()"
+
+        case result => fail(s"Expected single call to getValue but found $result")
+      }
+    }
+
+    "be found for constructor invocations as arguments" in {
+      val cpg = code("""
+          |import a.Bar;
+          |
+          |public class Foo {
+          |
+          |  public static void foo() {
+          |    useBar(new Bar());
+          |  }
+          |
+          |  public static void useBar(Bar b) {}
+          |}
+          |""".stripMargin)
+
+      cpg.call.nameExact("<init>").methodFullName.l match {
+        case List(fullName) =>
+          fullName shouldBe "a.Bar.<init>:void()"
+
+        case result => fail(s"Expected single constructor invocation for Bar but found $result")
+      }
+    }
+
+    "be found for constructor invocations as return args" in {
+      val cpg = code("""
+          |import a.Bar;
+          |
+          |public class Foo {
+          |  public Bar getBar() {
+          |    return new Bar();
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.call.nameExact("<init>").methodFullName.l match {
+        case List(fullName) =>
+          fullName shouldBe "a.Bar.<init>:void()"
+
+        case result => fail(s"Expected single constructor invocation for Bar but found $result")
+      }
+    }
+  }
+
+  "type information for members" should {
+    val cpg = code("""
+        |import org.slf4j.Logger;
+        |import org.slf4j.LoggerFactory;
+        |import org.springframework.core.env.Environment;
+        |
+        |public class Foo {
+        |  Environment env;
+        |  private static Logger log = LoggerFactory.getLogger(Foo.class);
+        |
+        |  public void foo() {
+        |    log.info("UserName is {}", env.getProperty("sfdc.username"));
+        |  }
+        |}
+        |""".stripMargin)
+
+    "be inferred from imports" in {
+      cpg.member.name("env").typeFullName.head shouldBe "org.springframework.core.env.Environment"
+      cpg.member.name("log").typeFullName.head shouldBe "org.slf4j.Logger"
+    }
+
+    "be used in calls" in {
+      cpg.call.name("info").methodFullName.l match {
+        case List(fullName) =>
+          fullName shouldBe "org.slf4j.Logger.info:void(java.lang.String,<unresolvedType>)"
+
+        case result => fail(s"Expected single call to info but got $result")
+      }
+
+      cpg.call.name("getProperty").methodFullName.l match {
+        case List(fullName) =>
+          fullName shouldBe "org.springframework.core.env.Environment.getProperty:<unresolvedType>(java.lang.String)"
+
+        case result => fail(s"Expected single call to getProperty but got $result")
+      }
+    }
+  }
+
   "constructors created from import info" should {
     val cpg = code("""
         |import a.b.c.Bar;

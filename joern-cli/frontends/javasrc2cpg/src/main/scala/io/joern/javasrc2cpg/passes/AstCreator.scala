@@ -96,7 +96,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{
   operatorCallNode
 }
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
-import io.joern.javasrc2cpg.util.Scope.WildcardImportName
+import io.joern.javasrc2cpg.util.Scope.{ScopeTypes, WildcardImportName}
 import io.joern.javasrc2cpg.util.{
   BindingTable,
   BindingTableAdapterForJavaparser,
@@ -708,7 +708,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val typeFullName =
       typeInfoCalc
         .fullName(v.getType)
-        .orElse(scopeStack.getWildcardType(v.getTypeAsString))
+        .orElse(scopeStack.lookupVariableType(v.getTypeAsString, wildcardFallback = true))
         .getOrElse(TypeConstants.UnresolvedType)
     val name = v.getName.toString
     val memberNode =
@@ -918,9 +918,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def getMethodFullName(typeDecl: Option[NewTypeDecl], methodName: String, maybeSignature: Option[String]) = {
-    val typeName  = typeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
-    val signature = maybeSignature.getOrElse(TypeConstants.UnresolvedSignature)
+  private def getMethodFullName(typeDecl: Option[NewTypeDecl], methodName: String, signature: String) = {
+    val typeName = typeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
 
     composeMethodFullName(typeName, methodName, signature)
   }
@@ -956,7 +955,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val expectedReturnType = Try(
       symbolResolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])
     ).toOption
-    val expectedReturnTypeName = expectedReturnType.map(typeInfoCalc.fullName)
+    val expectedReturnTypeName = expectedReturnType
+      .map(typeInfoCalc.fullName)
+      .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString))
 
     scopeStack.pushNewScope(
       MethodScope(ExpectedType(expectedReturnTypeName.getOrElse(TypeConstants.UnresolvedType), expectedReturnType))
@@ -975,17 +976,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         // the expected return type above, re-use that here and avoid attempting to resolve unresolvable
         // types twice.
         .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString, wildcardFallback = true))
+        .getOrElse(TypeConstants.UnresolvedType)
 
     val parameterTypes = parameterAsts.map(rootType(_).getOrElse(TypeConstants.UnresolvedType))
-    val signature = returnType map { typ =>
-      s"$typ(${parameterTypes.mkString(",")})"
-    }
+    val signature      = composeMethodLikeSignature(returnType, parameterTypes)
     val methodFullName =
       getMethodFullName(scopeStack.getEnclosingTypeDecl, methodDeclaration.getNameAsString, signature)
 
     val methodNode = createPartialMethod(methodDeclaration)
       .fullName(methodFullName)
-      .signature(signature.getOrElse(""))
+      .signature(signature)
 
     val thisNode = if (methodDeclaration.isStatic) {
       Seq()
@@ -2251,6 +2251,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeFullName = typeInfoCalc
       .fullName(expr.getType)
+      .orElse(scopeStack.lookupVariableType(expr.getTypeAsString))
       .orElse(expectedType.map(_.fullName))
       .getOrElse(TypeConstants.UnresolvedType)
 
@@ -2452,12 +2453,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def createObjectNode(typeFullName: String, call: MethodCallExpr, callNode: NewCall): Option[NewIdentifier] = {
+  private def createObjectNode(
+    typeFullName: String,
+    call: MethodCallExpr,
+    dispatchType: String
+  ): Option[NewIdentifier] = {
     val maybeScope = call.getScope.toScala
 
-    Option.when(maybeScope.isDefined || callNode.dispatchType == DispatchTypes.DYNAMIC_DISPATCH) {
+    Option.when(maybeScope.isDefined || dispatchType == DispatchTypes.DYNAMIC_DISPATCH) {
       val name = maybeScope.map(_.toString).getOrElse(NameConstants.This)
-      identifierNode(name, typeFullName, callNode.lineNumber, callNode.columnNumber)
+      identifierNode(name, typeFullName, line(call), column(call))
     }
   }
 
@@ -2939,10 +2944,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }
       .getOrElse(expressionTypeFullName)
 
-    val receiverTypeOption = targetTypeForCall(call)
-    val receiverType       = receiverTypeOption.getOrElse(TypeConstants.UnresolvedReceiver)
-
     val dispatchType = dispatchTypeForCall(maybeResolvedCall, call.getScope.toScala)
+
+    val receiverTypeOption = targetTypeForCall(call)
+    val scopeAsts = call.getScope.toScala match {
+      case Some(scope) =>
+        astsForExpression(scope, receiverTypeOption.map(ExpectedType(_)))
+
+      case None =>
+        val objectNode =
+          createObjectNode(receiverTypeOption.getOrElse(TypeConstants.UnresolvedType), call, dispatchType)
+        objectNode.map(Ast(_)).toList
+    }
+
+    val receiverType =
+      receiverTypeOption
+        .orElse(scopeAsts.headOption.flatMap(rootType))
+        .getOrElse(TypeConstants.UnresolvedType)
 
     val argumentsCode = getArgumentCodeString(call.getArguments)
     val codePrefix    = codePrefixForMethodCall(call)
@@ -2958,16 +2976,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       line(call),
       column(call)
     ).typeFullName(expressionTypeFullName) // Use concrete return type but `Object` in signature for generics
-
-    val scopeAsts = call.getScope.toScala match {
-      case Some(scope) =>
-        astsForExpression(scope, receiverTypeOption.map(ExpectedType(_)))
-
-      case None =>
-        val objectNode =
-          createObjectNode(receiverTypeOption.getOrElse(TypeConstants.UnresolvedType), call, callRoot)
-        objectNode.map(Ast(_)).toList
-    }
 
     callAst(callRoot, argumentAsts, scopeAsts.headOption, withRecvArgEdge = true)
   }

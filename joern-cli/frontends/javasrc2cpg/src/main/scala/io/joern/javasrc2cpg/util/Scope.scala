@@ -120,7 +120,7 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
       )
   }
 
-  def getWildcardType(identifier: String): Option[String] = {
+  private def getWildcardType(identifier: String): Option[String] = {
     lookupVariableType(WildcardImportName) map { importName =>
       s"$importName.$identifier"
     }
