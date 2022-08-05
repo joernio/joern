@@ -12,9 +12,9 @@ class DumpCpg14Tests extends DataFlowCodeToCpgSuite {
 
   "DumpCpg14" should {
     val cpg = code("""
-                     |int foo() {}
-                     |int bar() {}
-                     |""".stripMargin)
+      |int foo() {}
+      |int bar() {}
+      |""".stripMargin)
 
     "create two dot files for a CPG containing two methods" in {
       File.usingTemporaryDirectory("dumpast") { tmpDir =>

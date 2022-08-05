@@ -1,21 +1,20 @@
 package io.joern.c2cpg
 
-import io.joern.c2cpg.fixtures.CompleteCpgFixture
+import io.joern.c2cpg.parser.FileDefaults
+import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Inside
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-class TemplateTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFixture {
+class TemplateTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
 
   "Templates" should {
 
-    "be correct for class templates" in CompleteCpgFixture("""
+    "be correct for class templates" in {
+      val cpg = code("""
         |template<class T> class X {};
         |template<typename A, typename B> class Y;
         |using A = X<int>;
         |using B = Y<int, char>;
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.typeDecl.nameNot("<global>").filter(x => !x.isExternal).l) { case List(x, y, a, b) =>
         x.name shouldBe "X"
         x.fullName shouldBe "X"
@@ -32,10 +31,11 @@ class TemplateTests extends AnyWordSpec with Matchers with Inside with CompleteC
       }
     }
 
-    "be correct for class templates with inheritance" in CompleteCpgFixture("""
+    "be correct for class templates with inheritance" in {
+      val cpg = code("""
         |template<typename T> class X;
         |template<typename A, typename B> class Y : public X<A> {};
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.typeDecl.nameNot("<global>").filter(x => !x.isExternal).l) { case List(x, y) =>
         x.name shouldBe "X"
         x.fullName shouldBe "X"
@@ -47,9 +47,10 @@ class TemplateTests extends AnyWordSpec with Matchers with Inside with CompleteC
       }
     }
 
-    "be correct for struct templates" in CompleteCpgFixture("""
+    "be correct for struct templates" in {
+      val cpg = code("""
         |template<typename A, typename B> struct Foo;
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.typeDecl.nameNot("<global>").filter(x => !x.isExternal).l) { case List(foo) =>
         foo.name shouldBe "Foo"
         foo.fullName shouldBe "Foo"
@@ -57,13 +58,14 @@ class TemplateTests extends AnyWordSpec with Matchers with Inside with CompleteC
       }
     }
 
-    "be correct for function templates" in CompleteCpgFixture("""
+    "be correct for function templates" in {
+      val cpg = code("""
        |template<class T, class U>
        |void x(T a, U b) {};
        |
        |template<class T, class U>
        |void y(T a, U b);
-       |""".stripMargin) { cpg =>
+       |""".stripMargin)
       inside(cpg.method.internal.l) { case List(_, x, y) =>
         x.name shouldBe "x"
         x.fullName shouldBe "x"

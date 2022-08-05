@@ -1,25 +1,95 @@
 package io.joern.c2cpg.passes
 
-import io.joern.c2cpg.fixtures.CpgTypeNodeFixture
+import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Inside
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTypeNodeFixture {
+class TypeNodePassTests extends CCodeToCpgSuite {
 
   "TypeNodePass" should {
-    "create TYPE nodes for used types" in CpgTypeNodeFixture("""
+    "be correct for static decl assignment" in {
+      val cpg = code("""
+          |void method() {
+          |  static int local = 1;
+          |}
+          |""".stripMargin)
+      inside(cpg.method.name("method").block.astChildren.l) { case List(local: Local, call: Call) =>
+        local.name shouldBe "local"
+        local.typeFullName shouldBe "int"
+        call.name shouldBe Operators.assignment
+        inside(call.astChildren.l) { case List(identifier: Identifier, literal: Literal) =>
+          identifier.name shouldBe "local"
+          identifier.typeFullName shouldBe "int"
+          identifier.order shouldBe 1
+          identifier.argumentIndex shouldBe 1
+          literal.code shouldBe "1"
+          literal.typeFullName shouldBe "int"
+          literal.order shouldBe 2
+          literal.argumentIndex shouldBe 2
+        }
+      }
+    }
+
+    "be correct for const decl assignment" in {
+      val cpg = code("""
+        |void method() {
+        |  const int local = 1;
+        |}
+        |""".stripMargin)
+      inside(cpg.method.name("method").block.astChildren.l) { case List(local: Local, call: Call) =>
+        local.name shouldBe "local"
+        local.typeFullName shouldBe "int"
+        call.name shouldBe Operators.assignment
+        inside(call.astChildren.l) { case List(identifier: Identifier, literal: Literal) =>
+          identifier.name shouldBe "local"
+          identifier.typeFullName shouldBe "int"
+          identifier.order shouldBe 1
+          identifier.argumentIndex shouldBe 1
+          literal.code shouldBe "1"
+          literal.typeFullName shouldBe "int"
+          literal.order shouldBe 2
+          literal.argumentIndex shouldBe 2
+        }
+      }
+    }
+
+    "be correct for static const decl assignment" in {
+      val cpg = code("""
+        |void method() {
+        |  static const int local = 1;
+        |}
+        |""".stripMargin)
+      inside(cpg.method.name("method").block.astChildren.l) { case List(local: Local, call: Call) =>
+        local.name shouldBe "local"
+        local.typeFullName shouldBe "int"
+        call.name shouldBe Operators.assignment
+        inside(call.astChildren.l) { case List(identifier: Identifier, literal: Literal) =>
+          identifier.name shouldBe "local"
+          identifier.typeFullName shouldBe "int"
+          identifier.order shouldBe 1
+          identifier.argumentIndex shouldBe 1
+          literal.code shouldBe "1"
+          literal.typeFullName shouldBe "int"
+          literal.order shouldBe 2
+          literal.argumentIndex shouldBe 2
+        }
+      }
+    }
+
+    "create TYPE nodes for used types" in {
+      val cpg = code("""
         |int main() {
         |  int x;
-        |}""".stripMargin) { cpg =>
+        |}""".stripMargin)
       cpg.typ.name.toSetMutable shouldBe Set("int", "void", "ANY")
     }
 
-    "create correct types for locals" in CpgTypeNodeFixture("""
+    "create correct types for locals" in {
+      val cpg = code("""
        |int main() {
        |  char test[1024];
-       |}""".stripMargin) { cpg =>
+       |}""".stripMargin)
       inside(cpg.local.l) { case List(test) =>
         test.typeFullName shouldBe "char[1024]"
         test.evalType.l shouldBe List("char[1024]")
@@ -31,7 +101,8 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
       }
     }
 
-    "create correct types for structs" in CpgTypeNodeFixture("""
+    "create correct types for structs" in {
+      val cpg = code("""
         |struct test {
         |  int a;
         |};
@@ -41,7 +112,7 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         |  ptr = kzalloc(sizeof(struct test), GFP_KERNEL);
         |  free(ptr);
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.call("free").argument(1).l) { case List(arg) =>
         arg.evalType.l shouldBe List("test")
         arg.code shouldBe "ptr"
@@ -63,18 +134,20 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
       }
     }
 
-    "create correct types for arrays" in CpgTypeNodeFixture("""
+    "create correct types for arrays" in {
+      val cpg = code("""
         |void bad1(size_t a) {
         |  uint8_t src[1], dst[1];
         |  memcpy(dst, src, a);
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.call("memcpy").argument(1).evalType.l) { case List(tpe) =>
         tpe shouldBe "uint8_t[1]"
       }
     }
 
-    "create correct types for locals with struct type" in CpgTypeNodeFixture("""
+    "create correct types for locals with struct type" in {
+      val cpg = code("""
         |struct Foo {
         |  int x;
         |};
@@ -82,18 +155,19 @@ class TypeNodePassTests extends AnyWordSpec with Matchers with Inside with CpgTy
         |int foo() {
         | struct Foo *ptr;
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.local.typ.referencedTypeDecl.l) { case List(tpe) =>
         tpe.fullName shouldBe "Foo"
       }
     }
 
-    "create correct types for identifiers" in CpgTypeNodeFixture("""
+    "create correct types for identifiers" in {
+      val cpg = code("""
        |void test_func() {
        |  char * badChar = malloc(0x100);
        |  free(badChar);
        |  return;
-       |}""".stripMargin) { cpg =>
+       |}""".stripMargin)
       inside(cpg.call("free").argument(1).isIdentifier.l) { case List(badChar) =>
         badChar.name shouldBe "badChar"
         badChar.typeFullName shouldBe "char"
