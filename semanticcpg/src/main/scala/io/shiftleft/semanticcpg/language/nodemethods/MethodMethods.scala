@@ -68,8 +68,9 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
   def typeDecl: Traversal[TypeDecl] = definingTypeDecl
 
   /** Traverse to method body (alias for `block`) */
+  // TODO MP: return a `Block` rather than `Traversal[Block]` - it's guaranteed to be there and exactly one...
   def body: Traversal[Block] =
-    method.block
+    Traversal.fromSingle(method.block)
 
   override def location: NewLocation = {
     LocationCreator(method, method.name, method.label, method.lineNumber, method)

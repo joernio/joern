@@ -16,8 +16,8 @@ class TsAstCreationPassTest extends AbstractPassTest {
       "code.ts"
     ) { cpg =>
       inside(cpg.call(Operators.cast).l) { case List(call) =>
-        call.argument(1).head.code shouldBe "string"
-        call.argument(2).head.code shouldBe "\"foo\""
+        call.argument(1).code shouldBe "string"
+        call.argument(2).code shouldBe "\"foo\""
       }
     }
 

@@ -13,5 +13,5 @@ class LocalMethods(val local: Local) extends AnyVal with NodeExtension with HasL
   /** The method hosting this local variable
     */
   def method: Traversal[Method] =
-    toTraversal(local).method
+    Traversal.fromSingle(local).method
 }

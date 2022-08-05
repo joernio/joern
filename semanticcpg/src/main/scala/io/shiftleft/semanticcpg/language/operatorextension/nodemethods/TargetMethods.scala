@@ -13,9 +13,10 @@ class TargetMethods(val expr: Expression) extends AnyVal {
       .collectFirst { case x if allArrayAccessTypes.contains(x.name) => x }
       .map(new OpNodes.ArrayAccess(_))
 
+  // TODO MP: return an `Option[Expression]` rather than `Traversal[Expression]`
   def pointer: Traversal[Expression] = {
     expr match {
-      case call: Call if call.name == Operators.indirection => call.argument(1)
+      case call: Call if call.name == Operators.indirection => Traversal.fromSingle(call.argument(1))
       case _                                                => Traversal()
     }
   }

@@ -23,7 +23,7 @@ class CfgNodeTraversalTests extends AnyWordSpec with Matchers {
       graph.addEdge(method, call1, EdgeTypes.CFG)
       graph.addEdge(call1, call2, EdgeTypes.CFG)
       graph.addEdge(call2, call3, EdgeTypes.CFG)
-      graph.addEdge(call2, method.methodReturn.head, EdgeTypes.CFG)
+      graph.addEdge(call2, method.methodReturn, EdgeTypes.CFG)
     }
     .cpg
 

@@ -29,9 +29,9 @@ class MethodParameterOutTraversal(val traversal: Traversal[MethodParameterOut]) 
   def argument: Traversal[Expression] =
     for {
       paramOut <- traversal
-      method   <- paramOut.method
-      call     <- method.callIn
-      arg      <- call.argumentOut.collectAll[Expression]
+      method = paramOut.method
+      call <- method.callIn
+      arg  <- call.argumentOut.collectAll[Expression]
       if paramOut.parameterLinkIn.index.headOption.contains(arg.argumentIndex)
     } yield arg
 

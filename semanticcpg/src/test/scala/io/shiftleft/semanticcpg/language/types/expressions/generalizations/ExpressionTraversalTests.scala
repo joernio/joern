@@ -19,7 +19,7 @@ class ExpressionTraversalTests extends AnyWordSpec with Matchers {
       val call2  = cpg.call.name("call2").head
       graph.addEdge(method, call1, EdgeTypes.CFG)
       graph.addEdge(call1, call2, EdgeTypes.CFG)
-      graph.addEdge(call2, method.methodReturn.head, EdgeTypes.CFG)
+      graph.addEdge(call2, method.methodReturn, EdgeTypes.CFG)
     }
     .cpg
 
