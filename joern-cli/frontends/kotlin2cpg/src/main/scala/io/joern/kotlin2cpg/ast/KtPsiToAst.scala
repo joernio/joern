@@ -932,7 +932,10 @@ trait KtPsiToAst {
       callNode(expr.getText, methodName, fullName, signature, retType, dispatchType, line(expr), column(expr)),
       argIdx
     )
-    callAst(node, List(receiverAst) ++ argAsts)
+    Ast(node)
+      .withChild(receiverAst)
+      .withChildren(argAsts)
+      .withArgEdges(node, argAsts.map(_.root.get))
   }
 
   private def astForQualifiedExpressionWithReceiverEdge(
