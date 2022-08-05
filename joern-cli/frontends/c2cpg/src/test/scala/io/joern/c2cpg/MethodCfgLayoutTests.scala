@@ -1,65 +1,59 @@
 package io.joern.c2cpg
 
-import io.joern.c2cpg.fixtures.{TestProjectFixture, TraversalUtils}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, Properties}
-import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.traversal._
-import overflowdb.{Node, PropertyKey}
+import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.language._
 
-class MethodCfgLayoutTests extends AnyWordSpec with TraversalUtils {
-
-  override val fixture: TestProjectFixture = TestProjectFixture("methodcfglayout")
-
-  implicit class VertexListWrapper(vertexList: List[Node]) {
-    def expandCfg(): List[Node] = {
-      vertexList.flatMap(_.out(EdgeTypes.CFG).l)
-    }
-
-    def checkForSingleProperty(label: String, propertyKey: PropertyKey[String], value: String): Unit = {
-      vertexList.size shouldBe 1
-      vertexList.head.label shouldBe label
-      vertexList.head.property(propertyKey) shouldBe value
-    }
-
-    def checkForSingle(label: String): Unit = {
-      vertexList.size shouldBe 1
-      vertexList.head.label shouldBe label
-    }
-  }
+class MethodCfgLayoutTests extends CCodeToCpgSuite {
 
   "CFG layout" should {
+    val cpg = code("""
+        |void method1() {
+        |  int x = 1;
+        |}
+        |
+        |void method2() {
+        |  int x;
+        |  int y;
+        |  int z;
+        |
+        |  x = y + z;
+        |}
+        |""".stripMargin)
+
     "be correct for decl assignment in method1" in {
-      var result = getMethod("method1").expandCfg()
-      result.checkForSingleProperty(NodeTypes.IDENTIFIER, Properties.NAME, "x")
+      val x = cpg.method.nameExact("method1").cfgNext.collectAll[Identifier].head
+      x.name shouldBe "x"
 
-      result = result.expandCfg()
-      result.checkForSingleProperty(NodeTypes.LITERAL, Properties.CODE, "1")
+      val one = x.cfgOut.collectAll[Literal].head
+      one.code shouldBe "1"
 
-      result = result.expandCfg()
-      result.checkForSingleProperty(NodeTypes.CALL, Properties.NAME, Operators.assignment)
+      val call = one.cfgOut.collectAll[Call].head
+      call.name shouldBe Operators.assignment
 
-      result = result.expandCfg()
-      result.checkForSingle(NodeTypes.METHOD_RETURN)
+      val ret = call.cfgOut.collectAll[MethodReturn].head
+      ret.code shouldBe "void"
     }
 
     "be correct for nested expression in method2" in {
-      var result = getMethod("method2").expandCfg()
-      result.checkForSingleProperty(NodeTypes.IDENTIFIER, Properties.NAME, "x")
+      val x = cpg.method.nameExact("method2").cfgNext.collectAll[Identifier].head
+      x.name shouldBe "x"
 
-      result = result.expandCfg()
-      result.checkForSingleProperty(NodeTypes.IDENTIFIER, Properties.NAME, "y")
+      val y = x.cfgNext.collectAll[Identifier].head
+      y.name shouldBe "y"
 
-      result = result.expandCfg()
-      result.checkForSingleProperty(NodeTypes.IDENTIFIER, Properties.NAME, "z")
+      val z = y.cfgNext.collectAll[Identifier].head
+      z.name shouldBe "z"
 
-      result = result.expandCfg()
-      result.checkForSingleProperty(NodeTypes.CALL, Properties.NAME, Operators.addition)
+      val call1 = z.cfgOut.collectAll[Call].head
+      call1.name shouldBe Operators.addition
 
-      result = result.expandCfg()
-      result.checkForSingleProperty(NodeTypes.CALL, Properties.NAME, Operators.assignment)
+      val call2 = call1.cfgOut.collectAll[Call].head
+      call2.name shouldBe Operators.assignment
 
-      result = result.expandCfg()
-      result.checkForSingle(NodeTypes.METHOD_RETURN)
+      val ret = call2.cfgOut.collectAll[MethodReturn].head
+      ret.code shouldBe "void"
     }
   }
 

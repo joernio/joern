@@ -1,16 +1,16 @@
 package io.joern.c2cpg
 
-import io.joern.c2cpg.fixtures.TestAstOnlyFixture
+import io.joern.c2cpg.testfixtures.AstFixture
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Inside
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class CallConventionsTests extends AnyWordSpec with Matchers with Inside with TestAstOnlyFixture {
+class CallConventionsTests extends AnyWordSpec with Matchers with Inside with AstFixture {
 
   "Using calling conventions" should {
 
-    "be correct for methods" in TestAstOnlyFixture("""
+    "be correct for methods" in AstFixture("""
         |int __stdcall foo1() {
         |	strstr(a, "a");
         |}

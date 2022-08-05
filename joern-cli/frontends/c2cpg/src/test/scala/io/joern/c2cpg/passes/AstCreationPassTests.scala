@@ -2,7 +2,7 @@ package io.joern.c2cpg.passes
 
 import better.files.File
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.fixtures.{CpgAstOnlyFixture, CpgTypeNodeFixture, TestAstOnlyFixture}
+import io.joern.c2cpg.testfixtures.AstFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, NodeTypes, Operators}
@@ -14,12 +14,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.traversal.NodeOps
 import overflowdb.traversal.toNodeTraversal
 
-class AstCreationPassTests
-    extends AnyWordSpec
-    with Matchers
-    with Inside
-    with CpgAstOnlyFixture
-    with TestAstOnlyFixture {
+class AstCreationPassTests extends AnyWordSpec with Matchers with Inside with AstFixture {
 
   "AstCreationPass" should {
 
@@ -43,7 +38,7 @@ class AstCreationPassTests
 
   "Method AST layout" should {
 
-    "be correct for method signature" in TestAstOnlyFixture("""
+    "be correct for method signature" in AstFixture("""
        |char *foo() {};
        |char *hello();
        |""".stripMargin) { cpg =>
@@ -56,7 +51,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for packed args" in TestAstOnlyFixture(
+    "be correct for packed args" in AstFixture(
       """
        |void foo(int x, int*... args) {};
        |""".stripMargin,
@@ -79,7 +74,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for varargs" in TestAstOnlyFixture(
+    "be correct for varargs" in AstFixture(
       """
        |void foo(int x, int args...) {};
        |""".stripMargin,
@@ -101,7 +96,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for knr function declarations" in TestAstOnlyFixture("""
+    "be correct for knr function declarations" in AstFixture("""
         |int handler(x, y)
         | int *x;
         | int *y;
@@ -121,7 +116,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for simple lambda expressions" in TestAstOnlyFixture(
+    "be correct for simple lambda expressions" in AstFixture(
       """
         |auto x = [] (int a, int b) -> int
         |{
@@ -181,7 +176,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for simple lambda expression in class" in TestAstOnlyFixture(
+    "be correct for simple lambda expression in class" in AstFixture(
       """
         |class Foo {
         | auto x = [] (int a, int b) -> int
@@ -222,7 +217,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for simple lambda expression in class under namespaces" in TestAstOnlyFixture(
+    "be correct for simple lambda expression in class under namespaces" in AstFixture(
       """
         |namespace A { class B {
         |class Foo {
@@ -264,7 +259,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct when calling a lambda" in TestAstOnlyFixture(
+    "be correct when calling a lambda" in AstFixture(
       """
         |auto x = [](int n) -> int
         |{
@@ -353,7 +348,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for empty method" in TestAstOnlyFixture("void method(int x) { }") { cpg =>
+    "be correct for empty method" in AstFixture("void method(int x) { }") { cpg =>
       inside(cpg.method.name("method").astChildren.l) {
         case List(param: MethodParameterIn, _: Block, ret: MethodReturn) =>
           ret.typeFullName shouldBe "void"
@@ -362,7 +357,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct parameter in nodes as pointer" in TestAstOnlyFixture("""
+    "be correct parameter in nodes as pointer" in AstFixture("""
         |void method(a_struct_type *a_struct) {
         |  void *x = NULL;
         |  a_struct->foo = x;
@@ -376,7 +371,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct parameter in nodes as pointer with struct" in TestAstOnlyFixture("""
+    "be correct parameter in nodes as pointer with struct" in AstFixture("""
        |void method(struct date *date) {
        |  void *x = NULL;
        |  a_struct->foo = x;
@@ -390,7 +385,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct parameter in nodes as array" in TestAstOnlyFixture("""
+    "be correct parameter in nodes as array" in AstFixture("""
        |void method(int x[]) {
        |  void *x = NULL;
        |  a_struct->foo = x;
@@ -403,7 +398,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct parameter in nodes as array ptr" in TestAstOnlyFixture("""
+    "be correct parameter in nodes as array ptr" in AstFixture("""
        |void method(int []) {
        |  void *x = NULL;
        |  a_struct->foo = x;
@@ -416,7 +411,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct parameter in nodes as struct array" in TestAstOnlyFixture("""
+    "be correct parameter in nodes as struct array" in AstFixture("""
        |void method(a_struct_type a_struct[]) {
        |  void *x = NULL;
        |  a_struct->foo = x;
@@ -429,7 +424,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct parameter in nodes as struct array with ptr" in TestAstOnlyFixture("""
+    "be correct parameter in nodes as struct array with ptr" in AstFixture("""
       |void method(a_struct_type *a_struct[]) {
       |  void *x = NULL;
       |  a_struct->foo = x;
@@ -442,7 +437,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for decl assignment" in TestAstOnlyFixture("""
+    "be correct for decl assignment" in AstFixture("""
         |void method() {
         |  int local = 1;
         |}
@@ -466,73 +461,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for static decl assignment" in CpgTypeNodeFixture("""
-        |void method() {
-        |  static int local = 1;
-        |}
-        |""".stripMargin) { cpg =>
-      inside(cpg.method.name("method").block.astChildren.l) { case List(local: Local, call: Call) =>
-        local.name shouldBe "local"
-        local.typeFullName shouldBe "int"
-        call.name shouldBe Operators.assignment
-        inside(call.astChildren.l) { case List(identifier: Identifier, literal: Literal) =>
-          identifier.name shouldBe "local"
-          identifier.typeFullName shouldBe "int"
-          identifier.order shouldBe 1
-          identifier.argumentIndex shouldBe 1
-          literal.code shouldBe "1"
-          literal.typeFullName shouldBe "int"
-          literal.order shouldBe 2
-          literal.argumentIndex shouldBe 2
-        }
-      }
-    }
-
-    "be correct for const decl assignment" in CpgTypeNodeFixture("""
-        |void method() {
-        |  const int local = 1;
-        |}
-        |""".stripMargin) { cpg =>
-      inside(cpg.method.name("method").block.astChildren.l) { case List(local: Local, call: Call) =>
-        local.name shouldBe "local"
-        local.typeFullName shouldBe "int"
-        call.name shouldBe Operators.assignment
-        inside(call.astChildren.l) { case List(identifier: Identifier, literal: Literal) =>
-          identifier.name shouldBe "local"
-          identifier.typeFullName shouldBe "int"
-          identifier.order shouldBe 1
-          identifier.argumentIndex shouldBe 1
-          literal.code shouldBe "1"
-          literal.typeFullName shouldBe "int"
-          literal.order shouldBe 2
-          literal.argumentIndex shouldBe 2
-        }
-      }
-    }
-
-    "be correct for static const decl assignment" in CpgTypeNodeFixture("""
-        |void method() {
-        |  static const int local = 1;
-        |}
-        |""".stripMargin) { cpg =>
-      inside(cpg.method.name("method").block.astChildren.l) { case List(local: Local, call: Call) =>
-        local.name shouldBe "local"
-        local.typeFullName shouldBe "int"
-        call.name shouldBe Operators.assignment
-        inside(call.astChildren.l) { case List(identifier: Identifier, literal: Literal) =>
-          identifier.name shouldBe "local"
-          identifier.typeFullName shouldBe "int"
-          identifier.order shouldBe 1
-          identifier.argumentIndex shouldBe 1
-          literal.code shouldBe "1"
-          literal.typeFullName shouldBe "int"
-          literal.order shouldBe 2
-          literal.argumentIndex shouldBe 2
-        }
-      }
-    }
-
-    "be correct for decl assignment with typedecl" in TestAstOnlyFixture(
+    "be correct for decl assignment with typedecl" in AstFixture(
       """
        |void method() {
        |  int local = 1;
@@ -563,7 +492,7 @@ class AstCreationPassTests
     }
 
     "be correct for decl assignment with identifier on the right" in
-      TestAstOnlyFixture("""
+      AstFixture("""
           |void method(int x) {
           |  int local = x;
           |}""".stripMargin) { cpg =>
@@ -577,7 +506,7 @@ class AstCreationPassTests
       }
 
     "be correct for decl assignment of multiple locals" in
-      TestAstOnlyFixture("""
+      AstFixture("""
           |void method(int x, int y) {
           |  int local = x, local2 = y;
           |}""".stripMargin) { cpg =>
@@ -603,7 +532,7 @@ class AstCreationPassTests
         }
       }
 
-    "be correct for nested expression" in TestAstOnlyFixture("""
+    "be correct for nested expression" in AstFixture("""
         |void method() {
         |  int x;
         |  int y;
@@ -632,7 +561,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for nested block" in TestAstOnlyFixture("""
+    "be correct for nested block" in AstFixture("""
         |void method() {
         |  int x;
         |  {
@@ -650,7 +579,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for while-loop" in TestAstOnlyFixture("""
+    "be correct for while-loop" in AstFixture("""
         |void method(int x) {
         |  while (x < 1) {
         |    x += 1;
@@ -668,7 +597,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for if" in TestAstOnlyFixture("""
+    "be correct for if" in AstFixture("""
         |void method(int x) {
         |  int y;
         |  if (x > 0) {
@@ -687,7 +616,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for if-else" in TestAstOnlyFixture("""
+    "be correct for if-else" in AstFixture("""
         |void method(int x) {
         |  int y;
         |  if (x > 0) {
@@ -716,7 +645,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for conditional expression in call" in TestAstOnlyFixture("""
+    "be correct for conditional expression in call" in AstFixture("""
          | void method() {
          |   int x = (true ? vlc_dccp_CreateFD : vlc_datagram_CreateFD)(fd);
          | }
@@ -726,7 +655,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for conditional expression" in TestAstOnlyFixture("""
+    "be correct for conditional expression" in AstFixture("""
         | void method() {
         |   int x = (foo == 1) ? bar : 0;
         | }
@@ -748,7 +677,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for ranged for-loop" in TestAstOnlyFixture(
+    "be correct for ranged for-loop" in AstFixture(
       """
        |void method() {
        |  for (int x : list) {
@@ -773,7 +702,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for ranged for-loop with structured binding" in TestAstOnlyFixture(
+    "be correct for ranged for-loop with structured binding" in AstFixture(
       """
         |void method() {
         |  int foo[2] = {1, 2};
@@ -798,7 +727,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for for-loop with multiple initializations" in TestAstOnlyFixture("""
+    "be correct for for-loop with multiple initializations" in AstFixture("""
         |void method(int x, int y) {
         |  for ( x = 0, y = 0; x < 1; x += 1) {
         |    int z = 0;
@@ -825,7 +754,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for unary expression '++'" in TestAstOnlyFixture("""
+    "be correct for unary expression '++'" in AstFixture("""
         |void method(int x) {
         |  ++x;
         |}
@@ -840,7 +769,7 @@ class AstCreationPassTests
         .l shouldBe List("x")
     }
 
-    "be correct for call expression" in TestAstOnlyFixture("""
+    "be correct for call expression" in AstFixture("""
         |void method(int x) {
         |  foo(x);
         |}
@@ -855,7 +784,7 @@ class AstCreationPassTests
         .l shouldBe List("x")
     }
 
-    "be correct for call expression returning pointer" in TestAstOnlyFixture("""
+    "be correct for call expression returning pointer" in AstFixture("""
         |int * foo(int arg);
         |int * method(int x) {
         |  foo(x);
@@ -870,7 +799,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for field access" in TestAstOnlyFixture("""
+    "be correct for field access" in AstFixture("""
         |void method(struct someUndefinedStruct x) {
         |  x.a;
         |}
@@ -888,7 +817,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for indirect field access" in TestAstOnlyFixture("""
+    "be correct for indirect field access" in AstFixture("""
         |void method(struct someUndefinedStruct *x) {
         |  x->a;
         |}
@@ -906,7 +835,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for indirect field access in call" in TestAstOnlyFixture("""
+    "be correct for indirect field access in call" in AstFixture("""
           |void method(struct someUndefinedStruct *x) {
           |  return (x->a)(1, 2);
           |}
@@ -924,7 +853,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for indirection on call" in TestAstOnlyFixture("""
+    "be correct for indirection on call" in AstFixture("""
        |typedef long unsigned int (*hStrLenFunc)(const char *str);
        |int main() {
        |  hStrLenFunc strLenFunc = &strlen;
@@ -937,7 +866,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for sizeof operator on identifier with brackets" in TestAstOnlyFixture("""
+    "be correct for sizeof operator on identifier with brackets" in AstFixture("""
         |void method() {
         |  int a;
         |  sizeof(a);
@@ -955,7 +884,7 @@ class AstCreationPassTests
         .size shouldBe 1
     }
 
-    "be correct for sizeof operator on identifier without brackets" in TestAstOnlyFixture("""
+    "be correct for sizeof operator on identifier without brackets" in AstFixture("""
         |void method() {
         |  int a;
         |  sizeof a ;
@@ -973,7 +902,7 @@ class AstCreationPassTests
         .size shouldBe 1
     }
 
-    "be correct for sizeof operator on type" in TestAstOnlyFixture(
+    "be correct for sizeof operator on type" in AstFixture(
       """
         |void method() {
         |  sizeof(int);
@@ -995,27 +924,27 @@ class AstCreationPassTests
 
   "Structural AST layout" should {
 
-    "be correct for empty method" in TestAstOnlyFixture("""
+    "be correct for empty method" in AstFixture("""
        | void method() {
        | };
       """.stripMargin) { cpg =>
       cpg.method.name("method").size shouldBe 1
     }
 
-    "be correct for empty named struct" in TestAstOnlyFixture("""
+    "be correct for empty named struct" in AstFixture("""
        | struct foo {
        | };
       """.stripMargin) { cpg =>
       cpg.typeDecl.name("foo").size shouldBe 1
     }
 
-    "be correct for struct decl" in TestAstOnlyFixture("""
+    "be correct for struct decl" in AstFixture("""
        | struct foo;
       """.stripMargin) { cpg =>
       cpg.typeDecl.name("foo").size shouldBe 1
     }
 
-    "be correct for named struct with single field" in TestAstOnlyFixture("""
+    "be correct for named struct with single field" in AstFixture("""
        | struct foo {
        |   int x;
        | };
@@ -1029,7 +958,7 @@ class AstCreationPassTests
         .size shouldBe 1
     }
 
-    "be correct for named struct with multiple fields" in TestAstOnlyFixture("""
+    "be correct for named struct with multiple fields" in AstFixture("""
         | struct foo {
         |   int x;
         |   int y;
@@ -1039,7 +968,7 @@ class AstCreationPassTests
       cpg.typeDecl.name("foo").member.code.toSetMutable shouldBe Set("x", "y", "z")
     }
 
-    "be correct for named struct with nested struct" in TestAstOnlyFixture("""
+    "be correct for named struct with nested struct" in AstFixture("""
         | struct foo {
         |   int x;
         |   struct bar {
@@ -1061,14 +990,14 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for typedef struct" in TestAstOnlyFixture("""
+    "be correct for typedef struct" in AstFixture("""
         |typedef struct foo {
         |} abc;
       """.stripMargin) { cpg =>
       cpg.typeDecl.name("abc").aliasTypeFullName("foo").size shouldBe 1
     }
 
-    "be correct for struct with local" in TestAstOnlyFixture("""
+    "be correct for struct with local" in AstFixture("""
         |struct A {
         |  int x;
         |} a;
@@ -1089,7 +1018,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for global struct" in TestAstOnlyFixture("""
+    "be correct for global struct" in AstFixture("""
         |struct filesystem {
         |	void (*open)(int a);
         |};
@@ -1123,14 +1052,14 @@ class AstCreationPassTests
       cpg.typeDecl.nameNot("<global>").fullName.l.distinct shouldBe List("filesystem")
     }
 
-    "be correct for typedef enum" in TestAstOnlyFixture("""
+    "be correct for typedef enum" in AstFixture("""
         |typedef enum foo {
         |} abc;
       """.stripMargin) { cpg =>
       cpg.typeDecl.name("abc").aliasTypeFullName("foo").size shouldBe 1
     }
 
-    "be correct for classes with friends" in TestAstOnlyFixture(
+    "be correct for classes with friends" in AstFixture(
       """
         |class Bar {};
         |class Foo {
@@ -1145,7 +1074,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for single inheritance" in TestAstOnlyFixture(
+    "be correct for single inheritance" in AstFixture(
       """
         |class Base {public: int i;};
         |class Derived : public Base{
@@ -1161,7 +1090,7 @@ class AstCreationPassTests
         .count(_.inheritsFromTypeFullName == List("Base")) shouldBe 1
     }
 
-    "be correct for field access" in TestAstOnlyFixture(
+    "be correct for field access" in AstFixture(
       """
         |class Foo {
         |public:
@@ -1185,7 +1114,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for type initializer expression" in TestAstOnlyFixture(
+    "be correct for type initializer expression" in AstFixture(
       """
         |int x = (int){ 1 };
       """.stripMargin,
@@ -1197,7 +1126,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for static assert" in TestAstOnlyFixture(
+    "be correct for static assert" in AstFixture(
       """
         |void foo(){
         | int a = 0;
@@ -1213,7 +1142,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for try catch" in TestAstOnlyFixture(
+    "be correct for try catch" in AstFixture(
       """
         |void bar();
         |int foo(){
@@ -1229,7 +1158,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for constructor initializer" in TestAstOnlyFixture(
+    "be correct for constructor initializer" in AstFixture(
       """
         |class Foo {
         |public:
@@ -1249,7 +1178,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for template class" in TestAstOnlyFixture(
+    "be correct for template class" in AstFixture(
       """
         | template<class T>
         | class Y
@@ -1267,7 +1196,7 @@ class AstCreationPassTests
         .size shouldBe 1
     }
 
-    "be correct for template function" in TestAstOnlyFixture(
+    "be correct for template function" in AstFixture(
       """
         | template<typename T>
         | void f(T s)
@@ -1285,7 +1214,7 @@ class AstCreationPassTests
         .size shouldBe 1
     }
 
-    "be correct for constructor expression" in TestAstOnlyFixture(
+    "be correct for constructor expression" in AstFixture(
       """
         |class Foo {
         |public:
@@ -1305,7 +1234,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for method calls" in TestAstOnlyFixture("""
+    "be correct for method calls" in AstFixture("""
         |void foo(int x) {
         |  bar(x);
         |}
@@ -1320,7 +1249,7 @@ class AstCreationPassTests
         .size shouldBe 1
     }
 
-    "be correct for method returns" in TestAstOnlyFixture("""
+    "be correct for method returns" in AstFixture("""
         |int d(int x) {
         |  return x * 2;
         |}
@@ -1339,7 +1268,7 @@ class AstCreationPassTests
         .code shouldBe "x * 2"
     }
 
-    "be correct for binary method calls" in TestAstOnlyFixture("""
+    "be correct for binary method calls" in AstFixture("""
         |int d(int x) {
         |  return x * 2;
         |}
@@ -1347,7 +1276,7 @@ class AstCreationPassTests
       cpg.call.name(Operators.multiplication).code.l shouldBe List("x * 2")
     }
 
-    "be correct for unary method calls" in TestAstOnlyFixture("""
+    "be correct for unary method calls" in AstFixture("""
         |bool invert(bool b) {
         |  return !b;
         |}
@@ -1355,7 +1284,7 @@ class AstCreationPassTests
       cpg.call.name(Operators.logicalNot).argument(1).code.l shouldBe List("b")
     }
 
-    "be correct for unary expr" in TestAstOnlyFixture("""
+    "be correct for unary expr" in AstFixture("""
         |int strnlen (const char *str, int max)
         |    {
         |      const char *end = memchr(str, 0, max);
@@ -1370,7 +1299,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for post increment method calls" in TestAstOnlyFixture("""
+    "be correct for post increment method calls" in AstFixture("""
         |int foo(int x) {
         |  int sub = x--;
         |  int pos = x++;
@@ -1381,7 +1310,7 @@ class AstCreationPassTests
       cpg.call.name(Operators.postDecrement).argument(1).code("x").size shouldBe 1
     }
 
-    "be correct for conditional expressions containing calls" in TestAstOnlyFixture("""
+    "be correct for conditional expressions containing calls" in AstFixture("""
         |int abs(int x) {
         |  return x > 0 ? x : -x;
         |}
@@ -1389,7 +1318,7 @@ class AstCreationPassTests
       cpg.call.name(Operators.conditional).argument.code.l shouldBe List("x > 0", "x", "-x")
     }
 
-    "be correct for sizeof expressions" in TestAstOnlyFixture("""
+    "be correct for sizeof expressions" in AstFixture("""
         |size_t int_size() {
         |  return sizeof(int);
         |}
@@ -1400,11 +1329,11 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for label" in TestAstOnlyFixture("void foo() { label:; }") { cpg =>
+    "be correct for label" in AstFixture("void foo() { label:; }") { cpg =>
       cpg.jumpTarget.code("label:;").size shouldBe 1
     }
 
-    "be correct for array indexing" in TestAstOnlyFixture("""
+    "be correct for array indexing" in AstFixture("""
         |int head(int x[]) {
         |  return x[0];
         |}
@@ -1412,7 +1341,7 @@ class AstCreationPassTests
       cpg.call.name(Operators.indirectIndexAccess).argument.code.l shouldBe List("x", "0")
     }
 
-    "be correct for type casts" in TestAstOnlyFixture("""
+    "be correct for type casts" in AstFixture("""
         |int trunc(long x) {
         |  return (int) x;
         |}
@@ -1420,7 +1349,7 @@ class AstCreationPassTests
       cpg.call.name(Operators.cast).argument.code.l shouldBe List("int", "x")
     }
 
-    "be correct for 'new' array" in TestAstOnlyFixture(
+    "be correct for 'new' array" in AstFixture(
       """
         |int * alloc(int n) {
         |   int * arr = new int[n];
@@ -1434,7 +1363,7 @@ class AstCreationPassTests
     }
 
     // for: https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1526
-    "be correct for array size" in TestAstOnlyFixture("""
+    "be correct for array size" in AstFixture("""
         |int main() {
         |  char buf[256];
         |  printf("%s", buf);
@@ -1447,7 +1376,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for array init" in TestAstOnlyFixture("""
+    "be correct for array init" in AstFixture("""
         |int x[] = {0, 1, 2, 3};
         |""".stripMargin) { cpg =>
       inside(cpg.assignment.astChildren.l) { case List(ident: Identifier, call: Call) =>
@@ -1473,7 +1402,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for static array init" in TestAstOnlyFixture("""
+    "be correct for static array init" in AstFixture("""
         |static int x[] = {0, 1, 2, 3};
         |""".stripMargin) { cpg =>
       inside(cpg.assignment.astChildren.l) { case List(ident: Identifier, call: Call) =>
@@ -1499,7 +1428,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for const array init" in TestAstOnlyFixture("""
+    "be correct for const array init" in AstFixture("""
         |const int x[] = {0, 1, 2, 3};
         |""".stripMargin) { cpg =>
       inside(cpg.assignment.astChildren.l) { case List(ident: Identifier, call: Call) =>
@@ -1525,7 +1454,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for static const array init" in TestAstOnlyFixture("""
+    "be correct for static const array init" in AstFixture("""
         |static const int x[] = {0, 1, 2, 3};
         |""".stripMargin) { cpg =>
       inside(cpg.assignment.astChildren.l) { case List(ident: Identifier, call: Call) =>
@@ -1551,7 +1480,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for locals for array init" in TestAstOnlyFixture("""
+    "be correct for locals for array init" in AstFixture("""
         |bool x[2] = { TRUE, FALSE };
         |""".stripMargin) { cpg =>
       inside(cpg.local.l) { case List(x) =>
@@ -1560,7 +1489,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for array init without actual assignment" in TestAstOnlyFixture(
+    "be correct for array init without actual assignment" in AstFixture(
       """
         |int foo{1};
         |int bar[]{0, 1, 2};
@@ -1619,7 +1548,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for 'new' object" in TestAstOnlyFixture(
+    "be correct for 'new' object" in AstFixture(
       """
         |Foo* alloc(int n) {
         |   Foo* foo = new Foo(n, 42);
@@ -1631,7 +1560,7 @@ class AstCreationPassTests
       cpg.call.name("<operator>.new").codeExact("new Foo(n, 42)").argument.code("Foo").size shouldBe 1
     }
 
-    "be correct for simple 'delete'" in TestAstOnlyFixture(
+    "be correct for simple 'delete'" in AstFixture(
       """
         |int delete_number(int* n) {
         |  delete n;
@@ -1642,7 +1571,7 @@ class AstCreationPassTests
       cpg.call.name(Operators.delete).code("delete n").argument.code("n").size shouldBe 1
     }
 
-    "be correct for array 'delete'" in TestAstOnlyFixture(
+    "be correct for array 'delete'" in AstFixture(
       """
         |void delete_number(int n[]) {
         |  delete[] n;
@@ -1653,7 +1582,7 @@ class AstCreationPassTests
       cpg.call.name(Operators.delete).codeExact("delete[] n").argument.code("n").size shouldBe 1
     }
 
-    "be correct for const_cast" in TestAstOnlyFixture(
+    "be correct for const_cast" in AstFixture(
       """
         |void foo() {
         |  int y = const_cast<int>(n);
@@ -1665,7 +1594,7 @@ class AstCreationPassTests
       cpg.call.name(Operators.cast).codeExact("const_cast<int>(n)").argument.code.l shouldBe List("int", "n")
     }
 
-    "be correct for static_cast" in TestAstOnlyFixture(
+    "be correct for static_cast" in AstFixture(
       """
         |void foo() {
         |  int y = static_cast<int>(n);
@@ -1677,7 +1606,7 @@ class AstCreationPassTests
       cpg.call.name(Operators.cast).codeExact("static_cast<int>(n)").argument.code.l shouldBe List("int", "n")
     }
 
-    "be correct for dynamic_cast" in TestAstOnlyFixture(
+    "be correct for dynamic_cast" in AstFixture(
       """
         |void foo() {
         |  int y = dynamic_cast<int>(n);
@@ -1689,7 +1618,7 @@ class AstCreationPassTests
       cpg.call.name(Operators.cast).codeExact("dynamic_cast<int>(n)").argument.code.l shouldBe List("int", "n")
     }
 
-    "be correct for reinterpret_cast" in TestAstOnlyFixture(
+    "be correct for reinterpret_cast" in AstFixture(
       """
         |void foo() {
         |  int y = reinterpret_cast<int>(n);
@@ -1704,7 +1633,7 @@ class AstCreationPassTests
 
   "AST" should {
 
-    "be correct for designated initializers in plain C" in TestAstOnlyFixture("""
+    "be correct for designated initializers in plain C" in AstFixture("""
        |void foo() {
        |  int a[3] = { [1] = 5, [2] = 10 };
        |};
@@ -1732,7 +1661,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for struct designated initializers in plain C" in TestAstOnlyFixture("""
+    "be correct for struct designated initializers in plain C" in AstFixture("""
         |void foo() {
         |  struct foo b = { .a = 1, .b = 2 };
         |};
@@ -1760,7 +1689,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for designated initializers in C++" in TestAstOnlyFixture(
+    "be correct for designated initializers in C++" in AstFixture(
       """
        |class Point3D {
        | public:
@@ -1803,7 +1732,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for call with pack expansion" in TestAstOnlyFixture(
+    "be correct for call with pack expansion" in AstFixture(
       """
        |void foo(int x, int*... args) {
        |  foo(x, args...);
@@ -1822,7 +1751,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for embedded ASM code" in TestAstOnlyFixture("""
+    "be correct for embedded ASM code" in AstFixture("""
         |asm(
         | "  push %ebp       \n"
         | "  movl %esp, %ebp \n"
@@ -1834,7 +1763,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for embedded ASM calls" in TestAstOnlyFixture("""
+    "be correct for embedded ASM calls" in AstFixture("""
        |void foo() {
        |  asm("paddh %0, %1, %2\n\t"
        |	  : "=f" (x)
@@ -1847,7 +1776,7 @@ class AstCreationPassTests
       }
     }
 
-    "be correct for compound statement expressions" in TestAstOnlyFixture("""
+    "be correct for compound statement expressions" in AstFixture("""
         |int x = ({int y = 1; y;}) + ({int z = 2; z;});
         |""".stripMargin) { cpg =>
       inside(cpg.call(Operators.addition).l) { case List(add) =>
@@ -1868,7 +1797,7 @@ class AstCreationPassTests
       }
     }
 
-    "have correct line number for method content" in TestAstOnlyFixture("""
+    "have correct line number for method content" in AstFixture("""
        |
        |
        |
@@ -1883,7 +1812,7 @@ class AstCreationPassTests
     }
 
     // for https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1321
-    "have correct line numbers example 1" in TestAstOnlyFixture("""
+    "have correct line numbers example 1" in AstFixture("""
        |int main() {
        |int a = 0;
        |statementthatdoesnothing();
@@ -1904,15 +1833,15 @@ class AstCreationPassTests
     // for https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1321
     "have correct line/column numbers on all platforms" in {
       val windowsNewline = "\r\n"
-      val windowsFixture: Cpg = CpgAstOnlyFixture(
+      val windowsFixture: Cpg = AstFixture.createCpg(
         s"void offset() {${windowsNewline}char * data = NULL;${windowsNewline}memset(data, 'A', 100-1); /* fill with 'A's */${windowsNewline}data = dataBuffer;$windowsNewline}"
       )
       val macNewline = "\r"
-      val macFixture: Cpg = CpgAstOnlyFixture(
+      val macFixture: Cpg = AstFixture.createCpg(
         s"void offset() {${macNewline}char * data = NULL;${macNewline}memset(data, 'A', 100-1); /* fill with 'A's */${macNewline}data = dataBuffer;$macNewline}"
       )
       val linuxNewline = "\n"
-      val linuxFixture: Cpg = CpgAstOnlyFixture(
+      val linuxFixture: Cpg = AstFixture.createCpg(
         s"void offset() {${linuxNewline}char * data = NULL;${linuxNewline}memset(data, 'A', 100-1); /* fill with 'A's */${linuxNewline}data = dataBuffer;$linuxNewline}"
       )
 
@@ -1939,6 +1868,10 @@ class AstCreationPassTests
       windowsColumnNumbers shouldBe macColumnNumbers
       windowsColumnNumbers shouldBe linuxColumnNumbers
       macColumnNumbers shouldBe linuxColumnNumbers
+
+      windowsFixture.close()
+      macFixture.close()
+      linuxFixture.close()
     }
   }
 
