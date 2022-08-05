@@ -22,12 +22,12 @@ class DataClassTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       firstMethod.name shouldBe "component1"
       firstMethod.fullName shouldBe "mypkg.Result.component1:int()"
       firstMethod.signature shouldBe "int()"
-      firstMethod.block.size shouldBe 1
+      Option(firstMethod.block).isDefined shouldBe true
 
       secondMethod.name shouldBe "component2"
       secondMethod.fullName shouldBe "mypkg.Result.component2:java.lang.String()"
       secondMethod.signature shouldBe "java.lang.String()"
-      secondMethod.block.size shouldBe 1
+      Option(secondMethod.block).isDefined shouldBe true
     }
   }
 }

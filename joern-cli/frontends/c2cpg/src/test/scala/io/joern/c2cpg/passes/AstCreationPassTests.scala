@@ -552,12 +552,12 @@ class AstCreationPassTests
           call.order shouldBe 2
           call.methodFullName shouldBe Operators.fieldAccess
           call.argument(2).code shouldBe "value"
-          inside(call.argument(1).l) { case List(fa: Call) =>
+          val ca = call.argument(1)
+          inside(call.argument(1)) { case fa: Call =>
             fa.code shouldBe "decltype(local)"
             fa.methodFullName shouldBe "<operator>.typeOf"
             fa.argument(1).code shouldBe "local"
           }
-
         }
       }
     }

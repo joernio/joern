@@ -19,7 +19,7 @@ class MethodParameterTests extends AnyWordSpec with Matchers {
           cpg.method.name("foo").parameter.toList
 
         args.size shouldBe 1
-        args.sortBy(_.order).map(_.typ.head.name) shouldBe
+        args.sortBy(_.order).map(_.typ.name) shouldBe
           List("paramtype")
       }
 
@@ -35,21 +35,21 @@ class MethodParameterTests extends AnyWordSpec with Matchers {
             cpg.method.name("foo").parameter.index(1).toList
 
           args.size shouldBe 1
-          args.head.typ.head.name shouldBe "paramtype"
+          args.head.typ.name shouldBe "paramtype"
         }
 
         "specifying index >= x" in {
           val args: List[MethodParameterIn] =
             cpg.method.name("foo").parameter.indexFrom(1).toList
 
-          args.map(_.typ.head.name).toSet shouldBe Set("paramtype")
+          args.map(_.typ.name).toSet shouldBe Set("paramtype")
         }
 
         "specifying index <= x" in {
           val args: List[MethodParameterIn] =
             cpg.method.name("foo").parameter.indexTo(2).toList
 
-          args.map(_.typ.head.name).toSet shouldBe Set("paramtype")
+          args.map(_.typ.name).toSet shouldBe Set("paramtype")
         }
       }
     }

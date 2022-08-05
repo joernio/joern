@@ -131,7 +131,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           fallbackClosureBinding.outE.collectAll[Ref].map(_.inNode()).l match {
             case List(capturedParam: MethodParameterIn) =>
               capturedParam.name shouldBe "fallback"
-              capturedParam.method.head.fullName shouldBe "Foo.test1:void(java.lang.String,java.lang.String)"
+              capturedParam.method.fullName shouldBe "Foo.test1:void(java.lang.String,java.lang.String)"
             case result => fail(s"Expected single capturedParam but got $result")
           }
 
@@ -564,7 +564,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           capturedClosureBinding.outE.collectAll[Ref].map(_.inNode()).l match {
             case List(capturedParam: MethodParameterIn) =>
               capturedParam.name shouldBe "captured"
-              capturedParam.method.head.fullName shouldBe "TestClass.test:Foo(java.lang.String)"
+              capturedParam.method.fullName shouldBe "TestClass.test:Foo(java.lang.String)"
             case result => fail(s"Expected single capturedParam but got $result")
           }
 

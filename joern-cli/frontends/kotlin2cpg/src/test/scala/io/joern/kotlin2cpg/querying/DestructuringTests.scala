@@ -40,11 +40,11 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       firstDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       firstDestructAssignment.methodFullName shouldBe Operators.assignment
 
-      val List(firstDestructLHSIdentifier: Identifier) = firstDestructAssignment.argument(1).l
+      val firstDestructLHSIdentifier = firstDestructAssignment.argument(1).asInstanceOf[Identifier]
       firstDestructLHSIdentifier.name shouldBe "myA"
       firstDestructLHSIdentifier.typeFullName shouldBe "java.lang.String"
 
-      val List(firstDestructRHSCall: Call) = firstDestructAssignment.argument(2).l
+      val firstDestructRHSCall = firstDestructAssignment.argument(2).asInstanceOf[Call]
       firstDestructRHSCall.code shouldBe "aClass.component1()"
       firstDestructRHSCall.name shouldBe "component1"
       firstDestructRHSCall.methodFullName shouldBe "main.AClass.component1:java.lang.String()"
@@ -63,11 +63,11 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       secondDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       secondDestructAssignment.methodFullName shouldBe Operators.assignment
 
-      val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
+      val secondDestructLHSIdentifier = secondDestructAssignment.argument(1).asInstanceOf[Identifier]
       secondDestructLHSIdentifier.name shouldBe "myB"
       secondDestructLHSIdentifier.typeFullName shouldBe "int"
 
-      val List(secondDestructRHSCall: Call) = secondDestructAssignment.argument(2).l
+      val secondDestructRHSCall = secondDestructAssignment.argument(2).asInstanceOf[Call]
       secondDestructRHSCall.code shouldBe "aClass.component2()"
       secondDestructRHSCall.methodFullName shouldBe "main.AClass.component2:int()"
       secondDestructRHSCall.signature shouldBe "int()"
@@ -184,11 +184,11 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       firstDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       firstDestructAssignment.methodFullName shouldBe Operators.assignment
 
-      val List(firstDestructLHSIdentifier: Identifier) = firstDestructAssignment.argument(1).l
+      val firstDestructLHSIdentifier = firstDestructAssignment.argument(1).asInstanceOf[Identifier]
       firstDestructLHSIdentifier.name shouldBe "myA"
       firstDestructLHSIdentifier.typeFullName shouldBe "java.lang.String"
 
-      val List(firstDestructRHSCall: Call) = firstDestructAssignment.argument(2).l
+      val firstDestructRHSCall = firstDestructAssignment.argument(2).asInstanceOf[Call]
       firstDestructRHSCall.code should startWith("tmp_")
       firstDestructRHSCall.code should endWith("component1()")
       firstDestructRHSCall.name shouldBe "component1"
@@ -207,11 +207,11 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       secondDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       secondDestructAssignment.methodFullName shouldBe Operators.assignment
 
-      val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
+      val secondDestructLHSIdentifier = secondDestructAssignment.argument(1).asInstanceOf[Identifier]
       secondDestructLHSIdentifier.name shouldBe "myB"
       secondDestructLHSIdentifier.typeFullName shouldBe "int"
 
-      val List(secondDestructRHSCall: Call) = secondDestructAssignment.argument(2).l
+      val secondDestructRHSCall = secondDestructAssignment.argument(2).asInstanceOf[Call]
       secondDestructRHSCall.code should startWith("tmp_")
       secondDestructRHSCall.code should endWith("component2()")
       secondDestructRHSCall.name shouldBe "component2"
@@ -319,11 +319,11 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       firstDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       firstDestructAssignment.methodFullName shouldBe Operators.assignment
 
-      val List(firstDestructLHSIdentifier: Identifier) = firstDestructAssignment.argument(1).l
+      val firstDestructLHSIdentifier = firstDestructAssignment.argument(1).asInstanceOf[Identifier]
       firstDestructLHSIdentifier.name shouldBe "myA"
       firstDestructLHSIdentifier.typeFullName shouldBe "java.lang.String"
 
-      val List(firstDestructRHSCall: Call) = firstDestructAssignment.argument(2).l
+      val firstDestructRHSCall = firstDestructAssignment.argument(2).asInstanceOf[Call]
       firstDestructRHSCall.code should startWith("tmp_")
       firstDestructRHSCall.code should endWith("component1()")
       firstDestructRHSCall.name shouldBe "component1"
@@ -342,11 +342,11 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       secondDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       secondDestructAssignment.methodFullName shouldBe Operators.assignment
 
-      val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
+      val secondDestructLHSIdentifier = secondDestructAssignment.argument(1).asInstanceOf[Identifier]
       secondDestructLHSIdentifier.name shouldBe "myB"
       secondDestructLHSIdentifier.typeFullName shouldBe "int"
 
-      val List(secondDestructRHSCall: Call) = secondDestructAssignment.argument(2).l
+      val secondDestructRHSCall = secondDestructAssignment.argument(2).asInstanceOf[Call]
       secondDestructRHSCall.code should startWith("tmp_")
       secondDestructRHSCall.code should endWith("component2()")
       secondDestructRHSCall.name shouldBe "component2"
@@ -471,11 +471,11 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       firstDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       firstDestructAssignment.methodFullName shouldBe Operators.assignment
 
-      val List(firstDestructLHSIdentifier: Identifier) = firstDestructAssignment.argument(1).l
+      val firstDestructLHSIdentifier = firstDestructAssignment.argument(1).asInstanceOf[Identifier]
       firstDestructLHSIdentifier.name shouldBe "myA"
       firstDestructLHSIdentifier.typeFullName shouldBe "java.lang.String"
 
-      val List(firstDestructRHSCall: Call) = firstDestructAssignment.argument(2).l
+      val firstDestructRHSCall = firstDestructAssignment.argument(2).asInstanceOf[Call]
       firstDestructRHSCall.code should startWith("tmp_")
       firstDestructRHSCall.code should endWith("component1()")
       firstDestructRHSCall.name shouldBe "component1"
@@ -494,11 +494,11 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       secondDestructAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       secondDestructAssignment.methodFullName shouldBe Operators.assignment
 
-      val List(secondDestructLHSIdentifier: Identifier) = secondDestructAssignment.argument(1).l
+      val secondDestructLHSIdentifier = secondDestructAssignment.argument(1).asInstanceOf[Identifier]
       secondDestructLHSIdentifier.name shouldBe "myB"
       secondDestructLHSIdentifier.typeFullName shouldBe "int"
 
-      val List(secondDestructRHSCall: Call) = secondDestructAssignment.argument(2).l
+      val secondDestructRHSCall = secondDestructAssignment.argument(2).asInstanceOf[Call]
       secondDestructRHSCall.code should startWith("tmp_")
       secondDestructRHSCall.code should endWith("component2()")
       secondDestructRHSCall.name shouldBe "component2"

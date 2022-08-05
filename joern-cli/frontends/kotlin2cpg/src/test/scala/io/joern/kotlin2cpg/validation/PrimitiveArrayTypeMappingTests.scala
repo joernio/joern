@@ -18,8 +18,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      val List(i) = cpg.identifier.nameExact("nums").head.l
-      i.typeFullName shouldBe "boolean[]"
+      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "boolean[]"
     }
   }
 
@@ -37,8 +36,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      val List(i) = cpg.identifier.nameExact("nums").head.l
-      i.typeFullName shouldBe "byte[]"
+      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "byte[]"
     }
   }
 
@@ -73,8 +71,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      val List(i) = cpg.identifier.nameExact("nums").head.l
-      i.typeFullName shouldBe "char[]"
+      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "char[]"
     }
   }
 
@@ -92,8 +89,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      val List(i) = cpg.identifier.nameExact("nums").head.l
-      i.typeFullName shouldBe "double[]"
+      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "double[]"
     }
   }
 
@@ -111,8 +107,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      val List(i) = cpg.identifier.nameExact("nums").head.l
-      i.typeFullName shouldBe "float[]"
+      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "float[]"
     }
   }
 
@@ -130,8 +125,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      val List(i) = cpg.identifier.nameExact("nums").head.l
-      i.typeFullName shouldBe "int[]"
+      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "int[]"
     }
   }
 
@@ -149,8 +143,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      val List(i) = cpg.identifier.nameExact("nums").head.l
-      i.typeFullName shouldBe "long[]"
+      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "long[]"
     }
   }
 
@@ -168,8 +161,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      val List(i) = cpg.identifier.nameExact("nums").head.l
-      i.typeFullName shouldBe "short[]"
+      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "short[]"
     }
   }
 }

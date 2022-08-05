@@ -134,7 +134,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       td.isExternal shouldBe false
       td.code shouldBe "LAMBDA_TYPE_DECL"
       td.inheritsFromTypeFullName shouldBe Seq("kotlin.Function1")
-      td.astParent.size shouldBe 1
+      Option(td.astParent).isDefined shouldBe true
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
       bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
@@ -203,7 +203,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       val List(td) = cpg.typeDecl.fullName(".*lambda.*").l
       td.isExternal shouldBe false
       td.code shouldBe "LAMBDA_TYPE_DECL"
-      td.astParent.size shouldBe 1
+      Option(td.astParent).isDefined shouldBe true
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
       bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
