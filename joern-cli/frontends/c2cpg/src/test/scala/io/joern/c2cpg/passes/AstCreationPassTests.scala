@@ -481,7 +481,6 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with Inside with As
           call.order shouldBe 2
           call.methodFullName shouldBe Operators.fieldAccess
           call.argument(2).code shouldBe "value"
-          val ca = call.argument(1)
           inside(call.argument(1)) { case fa: Call =>
             fa.code shouldBe "decltype(local)"
             fa.methodFullName shouldBe "<operator>.typeOf"
