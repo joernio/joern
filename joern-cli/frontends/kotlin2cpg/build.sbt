@@ -9,7 +9,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft"            %% "codepropertygraph"          % Versions.cpg,
   "org.apache.logging.log4j" % "log4j-slf4j-impl"           % Versions.log4j         % Runtime,
   "org.slf4j"                % "slf4j-api"                  % "1.7.35",
-  "org.gradle"               % "gradle-tooling-api"         % Versions.gradleTooling % Optional,
+  "org.gradle"               % "gradle-tooling-api"         % Versions.gradleTooling,
   "org.jetbrains.kotlin"     % "kotlin-stdlib-jdk8"         % kotlinVersion,
   "org.jetbrains.kotlin"     % "kotlin-stdlib"              % kotlinVersion,
   "org.jetbrains.kotlin"     % "kotlin-compiler-embeddable" % kotlinVersion,
