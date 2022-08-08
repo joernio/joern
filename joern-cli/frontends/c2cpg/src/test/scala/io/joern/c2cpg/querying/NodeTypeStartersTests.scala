@@ -3,6 +3,7 @@ package io.joern.c2cpg.querying
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.{Languages, NodeTypes}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.traversal._
 
 /** The following tests show in detail how queries can be started. For all node types, for which it seems reasonable,
@@ -27,7 +28,7 @@ class NodeTypeStartersTests extends CCodeToCpgSuite {
     * `cpg.method.external`.
     */
   "should allow retrieving methods" in {
-    cpg.method.internal.name.l shouldBe List("<global>", "main")
+    cpg.method.internal.name.l shouldBe List(NamespaceTraversal.globalNamespaceName, "main")
     cpg.method.external.name.l shouldBe List("libfunc")
   }
 
@@ -56,7 +57,7 @@ class NodeTypeStartersTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving type declarations" in {
-    cpg.typeDecl.nameNot("<global>").internal.name.toSetMutable shouldBe Set("foo")
+    cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.name.toSetMutable shouldBe Set("foo")
   }
 
   "should allow retrieving members" in {
@@ -68,11 +69,11 @@ class NodeTypeStartersTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving namespaces" in {
-    cpg.namespace.name.l shouldBe List("<global>")
+    cpg.namespace.name.l shouldBe List(NamespaceTraversal.globalNamespaceName)
   }
 
   "should allow retrieving namespace blocks" in {
-    cpg.namespaceBlock.name.toSetMutable shouldBe Set("<global>")
+    cpg.namespaceBlock.name.toSetMutable shouldBe Set(NamespaceTraversal.globalNamespaceName)
   }
 
   "should allow retrieving of method returns" in {

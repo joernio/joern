@@ -5,12 +5,10 @@ import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.traversal._
 
-trait AbstractCfgPassTest extends AnyWordSpec with Matchers {
-  object CfgFixture {
+trait AbstractCfgPassTest extends AbstractPassTest {
+  protected object CfgFixture {
     def apply(code: String, fileExtension: String = ".c")(f: Cpg => Unit): Unit = {
       AstFixture(s"RET func() { $code }", s"file1$fileExtension") { cpg =>
         new CfgCreationPass(cpg).createAndApply()

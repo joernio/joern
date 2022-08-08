@@ -1,11 +1,7 @@
 package io.joern.scanners.c
 
 import io.joern.suites.CQueryTestSuite
-import io.shiftleft.codepropertygraph.generated.nodes
-import io.joern.console.scan._
 import io.joern.x2cpg.testfixtures.TestCpg
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.iterableToTraversal
 
 class SocketApiTests extends CQueryTestSuite {
 

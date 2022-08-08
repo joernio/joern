@@ -28,19 +28,26 @@ class NamespaceBlockTests extends CCodeToCpgSuite {
   "should contain correct namespace block for known file" in {
     val List(x) = cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).l
     x.name shouldBe NamespaceTraversal.globalNamespaceName
-    x.filename should not be ""
+    x.filename should not be empty
     x.fullName shouldBe s"${x.filename}:${NamespaceTraversal.globalNamespaceName}"
     x.order shouldBe 1
   }
 
   "should allow traversing from namespace block to method" in {
-    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).ast.isMethod.name.l shouldBe List("<global>", "foo")
+    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).ast.isMethod.name.l shouldBe List(
+      NamespaceTraversal.globalNamespaceName,
+      "foo"
+    )
   }
 
   "should allow traversing from namespace block to type declaration" in {
-    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).ast.isTypeDecl.nameNot("<global>").name.l shouldBe List(
-      "my_struct"
-    )
+    cpg.namespaceBlock
+      .filenameNot(FileTraversal.UNKNOWN)
+      .ast
+      .isTypeDecl
+      .nameNot(NamespaceTraversal.globalNamespaceName)
+      .name
+      .l shouldBe List("my_struct")
   }
 
   "should allow traversing from namespace block to namespace" in {

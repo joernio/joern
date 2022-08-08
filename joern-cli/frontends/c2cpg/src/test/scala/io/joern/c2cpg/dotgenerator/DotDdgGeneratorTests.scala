@@ -2,7 +2,6 @@ package io.joern.c2cpg.dotgenerator
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language._
 
 class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
@@ -21,8 +20,7 @@ class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
       |""".stripMargin)
 
     "create correct dot graph" in {
-      implicit val s: Semantics = semantics
-      inside(cpg.method.name("foo").dotDdg.l) { case List(elem) =>
+      inside(cpg.method.name("foo").dotDdg(semantics).l) { case List(elem) =>
         val lines = elem.split("\n")
         lines.head should startWith("digraph \"foo\"")
         lines.count(x => x.contains("->")) shouldBe 32
@@ -42,8 +40,7 @@ class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
 
     "A DdgDotGenerator" should {
       "create correct dot graph" in {
-        implicit val s: Semantics = semantics
-        inside(cpg.method.name("foo").dotDdg.l) { case List(elem) =>
+        inside(cpg.method.name("foo").dotDdg(semantics).l) { case List(elem) =>
           val lines = elem.split("\n")
           lines.count(x => x.contains("->") && x.contains("\"x\"")) shouldBe 3
         }

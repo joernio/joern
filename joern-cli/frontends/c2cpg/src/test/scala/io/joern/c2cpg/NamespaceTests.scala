@@ -5,6 +5,7 @@ import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class NamespaceTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
 
@@ -353,19 +354,20 @@ class NamespaceTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) 
         |  return 0;
         |};
         |""".stripMargin)
-      inside(cpg.namespace.nameNot("<global>").sortBy(_.name).toList) {
+      inside(cpg.namespace.nameNot(NamespaceTraversal.globalNamespaceName).sortBy(_.name).toList) {
         case List(baseClasses, finalClasses, interClasses) =>
           baseClasses.name shouldBe "BaseClasses"
           interClasses.name shouldBe "IntermediateClasses"
           finalClasses.name shouldBe "FinalClasses"
       }
-      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(baseClasses, interClasses, finalClasses) =>
-        baseClasses.name shouldBe "BaseClasses"
-        baseClasses.fullName shouldBe "BaseClasses"
-        interClasses.name shouldBe "IntermediateClasses"
-        interClasses.fullName shouldBe "IntermediateClasses"
-        finalClasses.name shouldBe "FinalClasses"
-        finalClasses.fullName shouldBe "FinalClasses"
+      inside(cpg.namespaceBlock.nameNot(NamespaceTraversal.globalNamespaceName).l) {
+        case List(baseClasses, interClasses, finalClasses) =>
+          baseClasses.name shouldBe "BaseClasses"
+          baseClasses.fullName shouldBe "BaseClasses"
+          interClasses.name shouldBe "IntermediateClasses"
+          interClasses.fullName shouldBe "IntermediateClasses"
+          finalClasses.name shouldBe "FinalClasses"
+          finalClasses.fullName shouldBe "FinalClasses"
       }
       inside(cpg.typ.name("A").derivedTypeTransitive.l) { case List(b1, c11, c12, b2, c21, c22, c23) =>
         b1.name shouldBe "B1"
