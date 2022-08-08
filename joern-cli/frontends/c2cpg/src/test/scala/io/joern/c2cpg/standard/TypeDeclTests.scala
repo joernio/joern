@@ -4,6 +4,7 @@ import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.io.File
 
@@ -61,7 +62,7 @@ class TypeDeclTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
   }
 
   "should find exactly 1 internal type" in {
-    cpg.typeDecl.nameNot("<global>").internal.name.toSetMutable shouldBe Set("foo")
+    cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.name.toSetMutable shouldBe Set("foo")
   }
 
   "should find five external types (`bar`, `char`, `int`, `void`, `ANY`)" in {

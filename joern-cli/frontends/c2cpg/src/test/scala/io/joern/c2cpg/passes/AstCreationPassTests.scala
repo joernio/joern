@@ -1,40 +1,16 @@
 package io.joern.c2cpg.passes
 
-import better.files.File
-import io.joern.c2cpg.Config
-import io.joern.c2cpg.testfixtures.AstFixture
+import io.joern.c2cpg.testfixtures.AbstractPassTest
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
-import org.scalatest.Inside
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.traversal.NodeOps
 import overflowdb.traversal.toNodeTraversal
 
-class AstCreationPassTests extends AnyWordSpec with Matchers with Inside with AstFixture {
-
-  "AstCreationPass" should {
-
-    "create one NamespaceBlock per file" in {
-      val cpg = Cpg.emptyCpg
-      File.usingTemporaryDirectory("astCreationTests") { dir =>
-        val filenames = List("foo.c", "woo.c")
-        val expectedFilenames = filenames.map { filename =>
-          val file = dir / filename
-          file.write("//foo")
-          file.path.toAbsolutePath.toString
-        }
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, Config(inputPath = dir.path.toString))
-          .createAndApply()
-        val expectedNamespaceFullNames = expectedFilenames.map(f => s"$f:<global>")
-        cpg.namespaceBlock.fullName.l shouldBe expectedNamespaceFullNames
-      }
-    }
-
-  }
+class AstCreationPassTests extends AbstractPassTest {
 
   "Method AST layout" should {
 
@@ -158,21 +134,22 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with Inside with As
         l2.signature shouldBe "string anonymous_lambda_1 (string,string)"
       }
 
-      inside(cpg.typeDecl("<global>").head.bindsOut.l) { case List(bX: Binding, bY: Binding) =>
-        bX.name shouldBe lambda1FullName
-        bX.signature shouldBe "int anonymous_lambda_0 (int,int)"
-        inside(bX.refOut.l) { case List(method: Method) =>
-          method.name shouldBe lambda1FullName
-          method.fullName shouldBe lambda1FullName
-          method.signature shouldBe "int anonymous_lambda_0 (int,int)"
-        }
-        bY.name shouldBe lambda2FullName
-        bY.signature shouldBe "string anonymous_lambda_1 (string,string)"
-        inside(bY.refOut.l) { case List(method: Method) =>
-          method.name shouldBe lambda2FullName
-          method.fullName shouldBe lambda2FullName
-          method.signature shouldBe "string anonymous_lambda_1 (string,string)"
-        }
+      inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {
+        case List(bX: Binding, bY: Binding) =>
+          bX.name shouldBe lambda1FullName
+          bX.signature shouldBe "int anonymous_lambda_0 (int,int)"
+          inside(bX.refOut.l) { case List(method: Method) =>
+            method.name shouldBe lambda1FullName
+            method.fullName shouldBe lambda1FullName
+            method.signature shouldBe "int anonymous_lambda_0 (int,int)"
+          }
+          bY.name shouldBe lambda2FullName
+          bY.signature shouldBe "string anonymous_lambda_1 (string,string)"
+          inside(bY.refOut.l) { case List(method: Method) =>
+            method.name shouldBe lambda2FullName
+            method.fullName shouldBe lambda2FullName
+            method.signature shouldBe "string anonymous_lambda_1 (string,string)"
+          }
       }
     }
 
@@ -298,21 +275,22 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with Inside with As
         l1.signature shouldBe signature1
       }
 
-      inside(cpg.typeDecl("<global>").head.bindsOut.l) { case List(b1: Binding, b2: Binding) =>
-        b1.name shouldBe lambda1Name
-        b1.signature shouldBe signature1
-        inside(b1.refOut.l) { case List(method: Method) =>
-          method.name shouldBe lambda1Name
-          method.fullName shouldBe lambda1Name
-          method.signature shouldBe signature1
-        }
-        b2.name shouldBe lambda2Name
-        b2.signature shouldBe signature2
-        inside(b2.refOut.l) { case List(method: Method) =>
-          method.name shouldBe lambda2Name
-          method.fullName shouldBe lambda2Name
-          method.signature shouldBe signature2
-        }
+      inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {
+        case List(b1: Binding, b2: Binding) =>
+          b1.name shouldBe lambda1Name
+          b1.signature shouldBe signature1
+          inside(b1.refOut.l) { case List(method: Method) =>
+            method.name shouldBe lambda1Name
+            method.fullName shouldBe lambda1Name
+            method.signature shouldBe signature1
+          }
+          b2.name shouldBe lambda2Name
+          b2.signature shouldBe signature2
+          inside(b2.refOut.l) { case List(method: Method) =>
+            method.name shouldBe lambda2Name
+            method.fullName shouldBe lambda2Name
+            method.signature shouldBe signature2
+          }
       }
 
       inside(cpg.call("x").l) { case List(lambda1call) =>
@@ -1048,7 +1026,7 @@ class AstCreationPassTests extends AnyWordSpec with Matchers with Inside with As
       val List(localMyFs) = cpg.local.name("my_fs").l
       localMyFs.order shouldBe 4
       localMyFs.referencingIdentifiers.name.l shouldBe List("my_fs")
-      cpg.typeDecl.nameNot("<global>").fullName.l.distinct shouldBe List("filesystem")
+      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.l.distinct shouldBe List("filesystem")
     }
 
     "be correct for typedef enum" in AstFixture("""

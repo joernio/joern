@@ -5,6 +5,7 @@ import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class EnumTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
 
@@ -19,7 +20,7 @@ class EnumTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         |    green = 20,
         |    blue
         |};""".stripMargin)
-      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(color) =>
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(color) =>
         color.name shouldBe "color"
         color.code should startWith("enum color")
         inside(color.member.l) { case List(red, yellow, green, blue) =>
@@ -48,26 +49,27 @@ class EnumTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         |    green = 20,
         |    blue
         |} C;""".stripMargin)
-      inside(cpg.typeDecl.nameNot("<global>").filter(x => !x.isExternal).l) { case List(color, c) =>
-        color.name shouldBe "color"
-        color.code should startWith("typedef enum color")
-        color.aliasTypeFullName shouldBe None
-        c.name shouldBe "C"
-        c.aliasTypeFullName shouldBe Some("color")
-        inside(color.astChildren.isMember.l) { case List(red, yellow, green, blue) =>
-          red.name shouldBe "red"
-          yellow.name shouldBe "yellow"
-          green.name shouldBe "green"
-          blue.name shouldBe "blue"
-        }
-        inside(color.astChildren.isMethod.l) { case List(sinit) =>
-          sinit.name shouldBe "<sinit>"
-          sinit.fullName shouldBe "color:<sinit>"
-          sinit.code shouldBe "green = 20"
-          inside(sinit.ast.isCall.l) { case List(greenInit) =>
-            greenInit.code shouldBe "green = 20"
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).filter(x => !x.isExternal).l) {
+        case List(color, c) =>
+          color.name shouldBe "color"
+          color.code should startWith("typedef enum color")
+          color.aliasTypeFullName shouldBe None
+          c.name shouldBe "C"
+          c.aliasTypeFullName shouldBe Some("color")
+          inside(color.astChildren.isMember.l) { case List(red, yellow, green, blue) =>
+            red.name shouldBe "red"
+            yellow.name shouldBe "yellow"
+            green.name shouldBe "green"
+            blue.name shouldBe "blue"
           }
-        }
+          inside(color.astChildren.isMethod.l) { case List(sinit) =>
+            sinit.name shouldBe "<sinit>"
+            sinit.fullName shouldBe "color:<sinit>"
+            sinit.code shouldBe "green = 20"
+            inside(sinit.ast.isCall.l) { case List(greenInit) =>
+              greenInit.code shouldBe "green = 20"
+            }
+          }
       }
     }
 
@@ -78,7 +80,7 @@ class EnumTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         |     high='h',
         |     low='l', // C++11 allows the extra comma
         |}; """.stripMargin)
-      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(altitude) =>
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(altitude) =>
         altitude.name shouldBe "altitude"
         altitude.code should startWith("enum class altitude")
         inside(altitude.member.l) { case List(high, low) =>
@@ -107,7 +109,7 @@ class EnumTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         |    b,
         |    c
         |};""".stripMargin)
-      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(smallenum) =>
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(smallenum) =>
         smallenum.name shouldBe "smallenum"
         smallenum.code should startWith("enum smallenum")
         inside(smallenum.member.l) { case List(a, b, c) =>
@@ -130,7 +132,7 @@ class EnumTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
          |    e,
          |    f
          |};""".stripMargin)
-      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(anon) =>
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(anon) =>
         anon.name shouldBe "anonymous_enum_0"
         anon.code should startWith("enum")
         inside(anon.member.l) { case List(d, e, f) =>
@@ -151,7 +153,7 @@ class EnumTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
        |};
        |int x = X::a;
        |""".stripMargin)
-      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(x) =>
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(x) =>
         x.name shouldBe "X"
         x.code should startWith("enum X")
         inside(x.member.l) { case List(a, b) =>

@@ -3,6 +3,7 @@ package io.joern.c2cpg
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class TemplateTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
 
@@ -15,19 +16,20 @@ class TemplateTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         |using A = X<int>;
         |using B = Y<int, char>;
         |""".stripMargin)
-      inside(cpg.typeDecl.nameNot("<global>").filter(x => !x.isExternal).l) { case List(x, y, a, b) =>
-        x.name shouldBe "X"
-        x.fullName shouldBe "X"
-        x.aliasTypeFullName shouldBe Some("X<T>")
-        y.name shouldBe "Y"
-        y.fullName shouldBe "Y"
-        y.aliasTypeFullName shouldBe Some("Y<A,B>")
-        a.name shouldBe "A"
-        a.fullName shouldBe "A"
-        a.aliasTypeFullName shouldBe Some("X<int>")
-        b.name shouldBe "B"
-        b.fullName shouldBe "B"
-        b.aliasTypeFullName shouldBe Some("Y<int, char>")
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).filter(x => !x.isExternal).l) {
+        case List(x, y, a, b) =>
+          x.name shouldBe "X"
+          x.fullName shouldBe "X"
+          x.aliasTypeFullName shouldBe Some("X<T>")
+          y.name shouldBe "Y"
+          y.fullName shouldBe "Y"
+          y.aliasTypeFullName shouldBe Some("Y<A,B>")
+          a.name shouldBe "A"
+          a.fullName shouldBe "A"
+          a.aliasTypeFullName shouldBe Some("X<int>")
+          b.name shouldBe "B"
+          b.fullName shouldBe "B"
+          b.aliasTypeFullName shouldBe Some("Y<int, char>")
       }
     }
 
@@ -36,14 +38,15 @@ class TemplateTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         |template<typename T> class X;
         |template<typename A, typename B> class Y : public X<A> {};
         |""".stripMargin)
-      inside(cpg.typeDecl.nameNot("<global>").filter(x => !x.isExternal).l) { case List(x, y) =>
-        x.name shouldBe "X"
-        x.fullName shouldBe "X"
-        x.aliasTypeFullName shouldBe Some("X<T>")
-        y.name shouldBe "Y"
-        y.fullName shouldBe "Y"
-        y.aliasTypeFullName shouldBe Some("Y<A,B>")
-        y.inheritsFromTypeFullName shouldBe Seq("X<A>")
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).filter(x => !x.isExternal).l) {
+        case List(x, y) =>
+          x.name shouldBe "X"
+          x.fullName shouldBe "X"
+          x.aliasTypeFullName shouldBe Some("X<T>")
+          y.name shouldBe "Y"
+          y.fullName shouldBe "Y"
+          y.aliasTypeFullName shouldBe Some("Y<A,B>")
+          y.inheritsFromTypeFullName shouldBe Seq("X<A>")
       }
     }
 
@@ -51,10 +54,11 @@ class TemplateTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
       val cpg = code("""
         |template<typename A, typename B> struct Foo;
         |""".stripMargin)
-      inside(cpg.typeDecl.nameNot("<global>").filter(x => !x.isExternal).l) { case List(foo) =>
-        foo.name shouldBe "Foo"
-        foo.fullName shouldBe "Foo"
-        foo.aliasTypeFullName shouldBe Some("Foo<A,B>")
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).filter(x => !x.isExternal).l) {
+        case List(foo) =>
+          foo.name shouldBe "Foo"
+          foo.fullName shouldBe "Foo"
+          foo.aliasTypeFullName shouldBe Some("Foo<A,B>")
       }
     }
 

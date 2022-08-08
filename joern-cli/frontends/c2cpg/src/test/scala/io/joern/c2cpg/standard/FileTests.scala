@@ -3,6 +3,7 @@ package io.joern.c2cpg.standard
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.io.File
 
@@ -37,19 +38,30 @@ class FileTests extends CCodeToCpgSuite {
   }
 
   "should allow traversing from file to its namespace blocks" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSetMutable shouldBe Set("<global>")
+    cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSetMutable shouldBe Set(
+      NamespaceTraversal.globalNamespaceName
+    )
   }
 
   "should allow traversing from file to its methods via namespace block" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).method.name.toSetMutable shouldBe Set("<global>", "foo", "bar")
+    cpg.file.nameNot(FileTraversal.UNKNOWN).method.name.toSetMutable shouldBe Set(
+      NamespaceTraversal.globalNamespaceName,
+      "foo",
+      "bar"
+    )
   }
 
   "should allow traversing from file to its type declarations via namespace block" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.nameNot("<global>").name.toSetMutable shouldBe Set("my_struct")
+    cpg.file
+      .nameNot(FileTraversal.UNKNOWN)
+      .typeDecl
+      .nameNot(NamespaceTraversal.globalNamespaceName)
+      .name
+      .toSetMutable shouldBe Set("my_struct")
   }
 
   "should allow traversing to namespaces" in {
-    cpg.file.namespace.name("<global>").l.size shouldBe 2
+    cpg.file.namespace.name(NamespaceTraversal.globalNamespaceName).l.size shouldBe 2
   }
 
 }
