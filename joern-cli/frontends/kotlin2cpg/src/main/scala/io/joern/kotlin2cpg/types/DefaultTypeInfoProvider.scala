@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.psi.{
   KtCallExpression,
   KtClassLiteralExpression,
   KtClassOrObject,
+  KtDeclaration,
   KtDestructuringDeclarationEntry,
   KtElement,
   KtExpression,
@@ -33,6 +34,7 @@ import org.jetbrains.kotlin.psi.{
   KtParameter,
   KtPrimaryConstructor,
   KtProperty,
+  KtPsiUtil,
   KtQualifiedExpression,
   KtSecondaryConstructor,
   KtSuperExpression,
@@ -615,8 +617,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         s"$renderedType.${expr.getName}"
       }
     }
+
+    val nameNoParent = s"${methodName.getOrElse(expr.getFqName)}"
+    val name = if (expr.isLocal) {
+      KtPsiUtil.getTopmostParentOfTypes(expr, classOf[KtDeclaration]) match {
+        case parentFn: KtNamedFunction => s"${parentFn.getFqName}.${expr.getName}"
+        case _                         => nameNoParent
+      }
+    } else nameNoParent
     val signature = s"$returnTypeFullName$paramListSignature"
-    val fullname  = s"${methodName.getOrElse(expr.getFqName)}:$signature"
+    val fullname  = s"$name:$signature"
     (fullname, signature)
   }
 
