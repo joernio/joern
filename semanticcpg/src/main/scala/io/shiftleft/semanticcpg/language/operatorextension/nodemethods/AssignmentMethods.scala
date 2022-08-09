@@ -9,11 +9,10 @@ class AssignmentMethods(val assignment: OpNodes.Assignment) extends AnyVal {
   def target: Expression = assignment.argument(1)
 
   def source: Expression = {
-    val numberOfArguments = assignment.argument.size
-    numberOfArguments match {
+    assignment.argument.size match {
       case 1 => assignment.argument(1)
       case 2 => assignment.argument(2)
-      case _ => throw new RuntimeException(s"Assignment statement with $numberOfArguments arguments")
+      case numberOfArguments => throw new RuntimeException(s"Assignment statement with $numberOfArguments arguments")
     }
   }
 }
