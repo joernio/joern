@@ -1,7 +1,8 @@
 package io.shiftleft.semanticcpg.language.types.propertyaccessors
 
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Modifier
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes, Properties}
+import io.shiftleft.codepropertygraph.generated.traversal.toModifierTraversalExtGen
 import overflowdb._
 import overflowdb.traversal._
 
@@ -40,10 +41,10 @@ class ModifierAccessors[A <: Node](val traversal: Traversal[A]) extends AnyVal {
     hasModifier(ModifierTypes.VIRTUAL)
 
   def hasModifier(modifier: String): Traversal[A] =
-    traversal.where(_.out.hasLabel(NodeTypes.MODIFIER).has(Properties.MODIFIER_TYPE -> modifier))
+    traversal.where(_.out.collectAll[Modifier].modifierType(modifier))
 
   /** Traverse to modifiers, e.g., "static", "public".
     */
   def modifier: Traversal[Modifier] =
-    traversal.out.hasLabel(NodeTypes.MODIFIER).cast[Modifier]
+    traversal.out.collectAll[Modifier]
 }
