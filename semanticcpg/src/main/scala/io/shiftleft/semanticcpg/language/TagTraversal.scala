@@ -1,79 +1,39 @@
 package io.shiftleft.semanticcpg.language
 
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import overflowdb.traversal._
 
 class TagTraversal(val traversal: Traversal[Tag]) extends AnyVal {
 
   def member: Traversal[Member] =
-    traversal
-      .in(EdgeTypes.TAGGED_BY)
-      .hasLabel(NodeTypes.MEMBER)
-      .sortBy(_.id)
-      .cast[Member]
+    traversal.in(EdgeTypes.TAGGED_BY).collectAll[Member]
 
   def method: Traversal[Method] =
-    traversal
-      .in(EdgeTypes.TAGGED_BY)
-      .hasLabel(NodeTypes.METHOD)
-      .sortBy(_.id)
-      .cast[Method]
+    traversal.in(EdgeTypes.TAGGED_BY).collectAll[Method]
 
   def methodReturn: Traversal[MethodReturn] =
-    traversal
-      .in(EdgeTypes.TAGGED_BY)
-      .hasLabel(NodeTypes.METHOD_RETURN)
-      .sortBy(_.id)
-      .cast[MethodReturn]
+    traversal.in(EdgeTypes.TAGGED_BY).collectAll[MethodReturn]
 
   def parameter: Traversal[MethodParameterIn] =
-    traversal
-      .in(EdgeTypes.TAGGED_BY)
-      .hasLabel(NodeTypes.METHOD_PARAMETER_IN)
-      .sortBy(_.id)
-      .cast[MethodParameterIn]
+    traversal.in(EdgeTypes.TAGGED_BY).collectAll[MethodParameterIn]
 
   def parameterOut: Traversal[MethodParameterOut] =
-    traversal
-      .in(EdgeTypes.TAGGED_BY)
-      .hasLabel(NodeTypes.METHOD_PARAMETER_OUT)
-      .sortBy(_.id)
-      .cast[MethodParameterOut]
+    traversal.in(EdgeTypes.TAGGED_BY).collectAll[MethodParameterOut]
 
   def call: Traversal[Call] =
-    traversal
-      .in(EdgeTypes.TAGGED_BY)
-      .hasLabel(NodeTypes.CALL)
-      .sortBy(_.id)
-      .cast[Call]
+    traversal.in(EdgeTypes.TAGGED_BY).collectAll[Call]
 
   def identifier: Traversal[Identifier] =
-    traversal
-      .in(EdgeTypes.TAGGED_BY)
-      .hasLabel(NodeTypes.IDENTIFIER)
-      .sortBy(_.id)
-      .cast[Identifier]
+    traversal.in(EdgeTypes.TAGGED_BY).collectAll[Identifier]
 
   def literal: Traversal[Literal] =
-    traversal
-      .in(EdgeTypes.TAGGED_BY)
-      .hasLabel(NodeTypes.LITERAL)
-      .sortBy(_.id)
-      .cast[Literal]
+    traversal.in(EdgeTypes.TAGGED_BY).collectAll[Literal]
 
   def local: Traversal[Local] =
-    traversal
-      .in(EdgeTypes.TAGGED_BY)
-      .hasLabel(NodeTypes.LOCAL)
-      .sortBy(_.id)
-      .cast[Local]
+    traversal.in(EdgeTypes.TAGGED_BY).collectAll[Local]
 
   def file: Traversal[File] =
-    traversal
-      .in(EdgeTypes.TAGGED_BY)
-      .hasLabel(NodeTypes.FILE)
-      .sortBy(_.id)
-      .cast[File]
+    traversal.in(EdgeTypes.TAGGED_BY).collectAll[File]
 
 }
