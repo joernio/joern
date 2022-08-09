@@ -3,7 +3,7 @@
 # This script abstracts away API calls to sdkman's HTTP API for publishing new candidate versions.
 #
 # Example usage:
-# ./sdkman_release_new_candidate_version.sh 1.2.3
+# ./sdkman_publish.sh 1.2.3
 
 set -o errexit
 set -o pipefail
