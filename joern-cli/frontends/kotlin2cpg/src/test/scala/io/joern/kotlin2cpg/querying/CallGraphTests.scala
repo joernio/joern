@@ -7,7 +7,7 @@ class CallGraphTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   implicit val resolver = NoResolve
 
-  "CPG for code with simple function definition" should {
+  "CPG for code with simple function declaration" should {
 
     val cpg = code("""
         |package mypkg

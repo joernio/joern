@@ -30,7 +30,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   protected val bindingInfoQueue: mutable.ArrayBuffer[BindingInfo]             = mutable.ArrayBuffer.empty
   protected val lambdaAstQueue: mutable.ArrayBuffer[Ast]                       = mutable.ArrayBuffer.empty
   protected val lambdaBindingInfoQueue: mutable.ArrayBuffer[BindingInfo]       = mutable.ArrayBuffer.empty
-  protected val nestedDeclarationQueue: mutable.ArrayBuffer[NestedDeclaration] = mutable.ArrayBuffer.empty
   protected val methodAstParentStack: Stack[NewNode]                           = new Stack()
 
   protected val lambdaKeyPool   = new IntervalKeyPool(first = 1, last = Long.MaxValue)
@@ -75,15 +74,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       _ = diffGraph.addNode(bindingInfo.node)
       (src, dst, label) <- bindingInfo.edgeMeta
     } diffGraph.addEdge(src, dst, label)
-
-    nestedDeclarationQueue.foreach { case NestedDeclaration(parent, child) =>
-      child match {
-        case _: NewMethod =>
-        case _: NewTypeDecl =>
-          diffGraph.addEdge(parent, child, EdgeTypes.AST)
-        case _ =>
-      }
-    }
 
     closureBindingDefQueue.foreach { case ClosureBindingDef(node, captureEdgeTo, refEdgeTo) =>
       diffGraph.addNode(node)

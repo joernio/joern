@@ -359,7 +359,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
-  "CPG for code with call with lambda inside method definition" should {
+  "CPG for code with call with lambda inside method declaration" should {
     val cpg = code("""
         |package mypkg
         |

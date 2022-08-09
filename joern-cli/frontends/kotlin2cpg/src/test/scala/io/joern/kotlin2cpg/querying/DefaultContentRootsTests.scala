@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class DefaultContentRootsTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
 
-  "CPG for code with a simple function definition with parameters of stdlib types, but not fully specified" should {
+  "CPG for code with a simple function declaration with parameters of stdlib types, but not fully specified" should {
     val cpg = code("""
         |package mypkg
         |
@@ -76,7 +76,7 @@ class DefaultContentRootsTests extends KotlinCode2CpgFixture(withOssDataflow = f
     }
   }
 
-  "CPG for code with a class definition" should {
+  "CPG for code with a class declaration" should {
     val cpg = code("""
         |package mypkg
         |
