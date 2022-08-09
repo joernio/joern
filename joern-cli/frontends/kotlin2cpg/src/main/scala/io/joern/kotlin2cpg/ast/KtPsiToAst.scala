@@ -158,8 +158,10 @@ trait KtPsiToAst {
         methodNode(Constants.init, fullName, signature, relativizedPath, line(ctor), column(ctor))
       scope.pushNewScope(secondaryCtorMethodNode)
 
-      val typeFullName  = registerType(typeInfoProvider.typeFullName(ctor, TypeConstants.any))
-      val ctorThisParam = methodParameterNode(Constants.this_, classFullName).order(0)
+      val typeFullName = registerType(typeInfoProvider.typeFullName(ctor, TypeConstants.any))
+      val ctorThisParam = methodParameterNode(Constants.this_, classFullName)
+        .dynamicTypeHintFullName(Seq(classFullName))
+        .order(0)
       scope.addToScope(Constants.this_, ctorThisParam)
 
       val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++
@@ -168,7 +170,7 @@ trait KtPsiToAst {
       scope.popScope()
 
       val ctorMethodReturnNode =
-        methodReturnNode(typeFullName, Some(classFullName), Some(line(ctor)), Some(column(ctor)))
+        methodReturnNode(TypeConstants.void, None, Some(line(ctor)), Some(column(ctor)))
       val ctorParams = constructorParamsAsts.flatMap(_.root.collectAll[NewMethodParameterIn])
 
       // TODO: see if necessary to take the other asts for the ctorMethodBlock
@@ -235,7 +237,10 @@ trait KtPsiToAst {
       line(ktClass.getPrimaryConstructor),
       column(ktClass.getPrimaryConstructor)
     )
-    val ctorThisParam = methodParameterNode(Constants.this_, classFullName).order(0)
+    val ctorThisParam =
+      methodParameterNode(Constants.this_, classFullName)
+        .dynamicTypeHintFullName(Seq(classFullName))
+        .order(0)
     scope.addToScope(Constants.this_, ctorThisParam)
 
     val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++ withIndex(constructorParams) { (p, idx) =>
@@ -249,8 +254,8 @@ trait KtPsiToAst {
 
     val typeFullName = typeInfoProvider.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
     val constructorMethodReturn = methodReturnNode(
-      typeFullName,
-      Some(classFullName),
+      TypeConstants.void,
+      None,
       Some(line(ktClass.getPrimaryConstructor)),
       Some(column(ktClass.getPrimaryConstructor))
     )
@@ -290,7 +295,7 @@ trait KtPsiToAst {
       .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
       .getOrElse(List())
     val methodAsts = classFunctions.toSeq.flatMap { classFn =>
-      astsForMethod(classFn, needsThisParameter = true)
+      astsForMethod(classFn, needsThisParameter = true, withVirtualModifier = true)
     }
     val bindingsInfo = methodAsts.flatMap(_.root.collectAll[NewMethod]).map { _methodNode =>
       val node = bindingNode(_methodNode.name, _methodNode.signature, _methodNode.fullName)
@@ -321,8 +326,8 @@ trait KtPsiToAst {
     Seq(finalAst) ++ companionObjectAsts
   }
 
-  def astsForMethod(ktFn: KtNamedFunction, needsThisParameter: Boolean = false)(implicit
-    typeInfoProvider: TypeInfoProvider
+  def astsForMethod(ktFn: KtNamedFunction, needsThisParameter: Boolean = false, withVirtualModifier: Boolean = false)(
+    implicit typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ktFn, ("", ""))
     val _methodNode = methodNode(
@@ -340,7 +345,10 @@ trait KtPsiToAst {
 
     val thisParameterMaybe = if (needsThisParameter) {
       val typeDeclFullName = registerType(typeInfoProvider.containingTypeDeclFullName(ktFn, TypeConstants.any))
-      val node             = methodParameterNode(Constants.this_, typeDeclFullName, line(ktFn), column(ktFn)).order(0)
+      val node =
+        methodParameterNode(Constants.this_, typeDeclFullName, line(ktFn), column(ktFn))
+          .dynamicTypeHintFullName(Seq(typeDeclFullName))
+          .order(0)
       scope.addToScope(Constants.this_, node)
       Some(node)
     } else None
@@ -364,7 +372,15 @@ trait KtPsiToAst {
     val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
     val _methodReturnNode = methodReturnNode(typeFullName, None, Some(line(ktFn)), Some(column(ktFn)))
-    Seq(methodAst(_methodNode, parameters, bodyAst, _methodReturnNode).withChildren(otherBodyAsts))
+
+    val modifierAsts =
+      if (withVirtualModifier) Seq(Ast(modifierNode(ModifierTypes.VIRTUAL)))
+      else Seq()
+    Seq(
+      methodAst(_methodNode, parameters, bodyAst, _methodReturnNode)
+        .withChildren(modifierAsts)
+        .withChildren(otherBodyAsts)
+    )
   }
 
   def astsForBlock(

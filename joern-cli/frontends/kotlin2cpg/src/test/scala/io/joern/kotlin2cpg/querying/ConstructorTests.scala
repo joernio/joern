@@ -173,7 +173,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.take(1).l
       m.lineNumber shouldBe Some(4)
       m.columnNumber shouldBe Some(9)
-      m.methodReturn.code shouldBe "mypkg.Foo"
+      m.methodReturn.code shouldBe "void"
       m.methodReturn.lineNumber shouldBe Some(4)
       m.methodReturn.columnNumber shouldBe Some(9)
 
@@ -186,7 +186,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.name shouldBe "<init>"
       m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(4)
-      m.methodReturn.code shouldBe "mypkg.Foo"
+      m.methodReturn.code shouldBe "void"
       m.methodReturn.lineNumber shouldBe Some(6)
       m.methodReturn.columnNumber shouldBe Some(4)
 
