@@ -66,7 +66,7 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
     for {
       call          <- node._argumentIn.asScala
       calledMethods <- callResolver.getCalledMethods(call.asInstanceOf[CallRepr])
-      paramIn       <- calledMethods._astOut.asScala.collect { case node: MethodParameterIn => node }
+      paramIn       <- calledMethods._astOut.asScala.collectAll[MethodParameterIn]
       if paramIn.index == node.argumentIndex
     } yield paramIn
 
