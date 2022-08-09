@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinToJVMBytecodeCompiler,
   NoScopeRecordCliBindingTrace
 }
+import org.jetbrains.kotlin.com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
 import org.jetbrains.kotlin.descriptors.impl.{
@@ -21,7 +22,9 @@ import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
 import org.jetbrains.kotlin.psi.{
   KtArrayAccessExpression,
   KtBinaryExpression,
+  KtBlockExpression,
   KtCallExpression,
+  KtClassBody,
   KtClassLiteralExpression,
   KtClassOrObject,
   KtDeclaration,
@@ -224,11 +227,21 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def fullName(expr: KtClassOrObject, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.CLASS.getKey))
+    val nonLocalFullName = Option(mapForEntity.get(BindingContext.CLASS.getKey))
       .map(_.getDefaultType)
       .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
+    if (expr.isLocal) {
+
+      val fnDescMaybe = Option(mapForEntity.get(BindingContext.CLASS.getKey))
+      fnDescMaybe
+        .map(_.getContainingDeclaration)
+        .map { containingDecl =>
+          s"${TypeRenderer.renderFqName(containingDecl.getOriginal)}.${expr.getName}"
+        }
+        .getOrElse(nonLocalFullName)
+    } else nonLocalFullName
   }
 
   def isCompanionObject(expr: KtClassOrObject): Boolean = {
@@ -619,11 +632,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     }
 
     val nameNoParent = s"${methodName.getOrElse(expr.getFqName)}"
-    val name = if (expr.isLocal) {
-      KtPsiUtil.getTopmostParentOfTypes(expr, classOf[KtDeclaration]) match {
-        case parentFn: KtNamedFunction => s"${parentFn.getFqName}.${expr.getName}"
-        case _                         => nameNoParent
-      }
+    val name = if (expr.getContext.isInstanceOf[KtClassBody] || expr.isLocal) {
+      fnDescMaybe
+        .map(_.getContainingDeclaration)
+        .map { containingDecl =>
+          s"${TypeRenderer.renderFqName(containingDecl.getOriginal)}.${expr.getName}"
+        }
+        .getOrElse(nameNoParent)
     } else nameNoParent
     val signature = s"$returnTypeFullName$paramListSignature"
     val fullname  = s"$name:$signature"

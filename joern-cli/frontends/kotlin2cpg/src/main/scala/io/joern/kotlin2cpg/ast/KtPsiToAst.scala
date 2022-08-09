@@ -364,7 +364,7 @@ trait KtPsiToAst {
     val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
     val _methodReturnNode = methodReturnNode(typeFullName, None, Some(line(ktFn)), Some(column(ktFn)))
-    Seq(methodAst(_methodNode, parameters, bodyAst, _methodReturnNode)) ++ otherBodyAsts
+    Seq(methodAst(_methodNode, parameters, bodyAst, _methodReturnNode).withChildren(otherBodyAsts))
   }
 
   def astsForBlock(
@@ -387,11 +387,7 @@ trait KtPsiToAst {
       case fn: KtNamedFunction         => fn
       case classOrObj: KtClassOrObject => classOrObj
     }
-    val declarationAsts = declarations.flatMap(astsForDeclaration)
-    declarationAsts.foreach { declAst =>
-      nestedDeclarationQueue.prepend(NestedDeclaration(methodAstParentStack.head, declAst.root.get))
-    }
-
+    val declarationAsts          = declarations.flatMap(astsForDeclaration)
     val allStatementsButLast     = statements.dropRight(1)
     val allStatementsButLastAsts = allStatementsButLast.map(astsForExpression(_, None)).flatten
     val lastStatementAsts =

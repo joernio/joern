@@ -300,7 +300,7 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain a TYPE_DECL node for the class with the correct props set" in {
       val List(td) = cpg.typeDecl.nameExact("AClass").l
       td.isExternal shouldBe false
-      td.fullName shouldBe "mypkg.AClass$doSomething"
+      td.fullName shouldBe "mypkg.doSomething.AClass"
     }
   }
 }
