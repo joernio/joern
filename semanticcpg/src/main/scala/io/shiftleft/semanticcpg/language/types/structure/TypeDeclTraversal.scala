@@ -1,10 +1,9 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Properties, nodes}
 import io.shiftleft.semanticcpg.language._
-import overflowdb._
-import overflowdb.traversal.{Traversal, toElementTraversal, toNodeTraversal}
+import overflowdb.traversal.Traversal
 
 /** Type declaration - possibly a template that requires instantiation
   */
@@ -44,12 +43,12 @@ class TypeDeclTraversal(val traversal: Traversal[TypeDecl]) extends AnyVal {
   /** Member variables
     */
   def member: Traversal[Member] =
-    canonicalType.out.hasLabel(NodeTypes.MEMBER).cast[Member]
+    canonicalType.flatMap(_._memberViaAstOut)
 
   /** Direct base types in the inheritance graph.
     */
   def baseType: Traversal[Type] =
-    canonicalType.out(EdgeTypes.INHERITS_FROM).cast[Type]
+    canonicalType.flatMap(_._typeViaInheritsFromOut)
 
   /** Direct base type declaration.
     */
