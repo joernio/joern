@@ -9,7 +9,7 @@ class LocalClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   implicit val resolver = NoResolve
 
-  "CPG for code with a simple local fn definition" should {
+  "CPG for code with a simple local fn declaration" should {
     val cpg = code("""
         |package mypkg
         |
@@ -31,7 +31,7 @@ class LocalClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
-  "CPG for code with a deeply-nested local class definition" should {
+  "CPG for code with a deeply-nested local class declaration" should {
     val cpg = code("""
         |package mypkg
         |fun sink(x: String) = println(x)

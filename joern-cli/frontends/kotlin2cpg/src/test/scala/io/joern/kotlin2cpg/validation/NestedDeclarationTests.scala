@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
 class NestedDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
-  "CPG for code with a simple local fn definition" should {
+  "CPG for code with a simple local fn declaration" should {
     val cpg = code("""
         |package mypkg
         |
@@ -28,7 +28,7 @@ class NestedDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
     }
   }
 
-  "CPG for code with deeply-nested local fn definitions" should {
+  "CPG for code with deeply-nested local fn declarations" should {
     val cpg = code("""
         |package mypkg
         |
@@ -61,7 +61,7 @@ class NestedDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
     }
   }
 
-  "CPG for code with a simple local class definition" should {
+  "CPG for code with a simple local class declaration" should {
     val cpg = code("""
         |package mypkg
         |
@@ -82,7 +82,7 @@ class NestedDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
     }
   }
 
-  "CPG for code with deeply nested local class definitions" should {
+  "CPG for code with deeply nested local class declarations" should {
     val cpg = code("""
         |package mypkg
         |

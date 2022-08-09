@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class MethodParameterTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with a simple function definition" should {
+  "CPG for code with a simple function declaration" should {
     val cpg = code("""
         |package mypkg
         |
@@ -38,7 +38,7 @@ class MethodParameterTests extends KotlinCode2CpgFixture(withOssDataflow = false
     }
   }
 
-  "CPG for code with a simple class definition" should {
+  "CPG for code with a simple class declaration" should {
     val cpg = code("""
         |package mypkg
         |

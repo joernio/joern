@@ -30,7 +30,7 @@ class TypeAliasTests extends KotlinCode2CpgFixture(withOssDataflow = false, with
   }
 
   // _seemingly_ because adding the springframework jar to the classpath will give the
-  // compiler enough information to detect that there is no recursion in the typealias definition
+  // compiler enough information to detect that there is no recursion in the typealias declaration
   "CPG for code with seemingly-recursive type alias" should {
     val cpg = code("""
         |package mypkg

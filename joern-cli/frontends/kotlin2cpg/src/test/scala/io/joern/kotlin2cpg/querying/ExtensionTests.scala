@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
 class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
-  "CPG for code with simple extension function definitions" should {
+  "CPG for code with simple extension function declarations" should {
     implicit val resolver = NoResolve
 
     val cpg = code("""
@@ -37,7 +37,7 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     implicit val resolver = NoResolve
 
     // TODO: add test cases after the lowering is clear:
-    //   --> right now we cannot differentiate between the fn definitions at different scopes
+    //   --> right now we cannot differentiate between the fn declarations at different scopes
     val cpg = code("""
         |package mypkg
         |
