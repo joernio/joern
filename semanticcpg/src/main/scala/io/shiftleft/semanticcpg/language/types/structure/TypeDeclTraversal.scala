@@ -19,31 +19,27 @@ class TypeDeclTraversal(val traversal: Traversal[TypeDecl]) extends AnyVal {
   /** Types referencing to this type declaration.
     */
   def referencingType: Traversal[Type] =
-    traversal.in(EdgeTypes.REF).cast[Type]
+    traversal.flatMap(_.refIn)
 
   /** Namespace in which this type declaration is defined
     */
   def namespace: Traversal[Namespace] =
-    traversal
-      .in(EdgeTypes.AST)
-      .hasLabel(NodeTypes.NAMESPACE_BLOCK)
-      .out(EdgeTypes.REF)
-      .cast[Namespace]
+    traversal.flatMap(_.namespaceBlock).namespace
 
   /** Methods defined as part of this type
     */
   def method: Traversal[Method] =
-    canonicalType.out(EdgeTypes.AST).hasLabel(NodeTypes.METHOD).cast[Method]
+    canonicalType.flatMap(_._methodViaAstOut)
 
   /** Filter for type declarations contained in the analyzed code.
     */
   def internal: Traversal[TypeDecl] =
-    canonicalType.has(Properties.IS_EXTERNAL -> false)
+    canonicalType.isExternal(false)
 
   /** Filter for type declarations not contained in the analyzed code.
     */
   def external: Traversal[TypeDecl] =
-    canonicalType.has(Properties.IS_EXTERNAL -> true)
+    canonicalType.isExternal(true)
 
   /** Member variables
     */
