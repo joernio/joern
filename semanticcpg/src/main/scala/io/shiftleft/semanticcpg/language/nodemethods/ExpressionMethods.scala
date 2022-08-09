@@ -71,7 +71,7 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
     } yield paramIn
 
   def typ: Traversal[Type] = {
-    Traversal(node._evalTypeOut).cast[Type]
+    node._evalTypeOut.cast[Type]
   }
 
 }

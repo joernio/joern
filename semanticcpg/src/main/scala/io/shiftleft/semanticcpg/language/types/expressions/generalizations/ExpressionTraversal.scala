@@ -64,6 +64,6 @@ class ExpressionTraversal[NodeType <: Expression](val traversal: Traversal[NodeT
   /** Traverse to expression evaluation type
     */
   def typ: Traversal[Type] =
-    traversal.out(EdgeTypes.EVAL_TYPE).cast[Type]
+    traversal.flatMap(_._evalTypeOut).cast[Type]
 
 }
