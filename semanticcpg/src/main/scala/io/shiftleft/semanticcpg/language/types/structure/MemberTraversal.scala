@@ -16,6 +16,6 @@ class MemberTraversal(val traversal: Traversal[Member]) extends AnyVal {
   /** Places where
     */
   def ref: Traversal[Call] =
-    traversal.in(EdgeTypes.REF).cast[Call]
+    traversal.flatMap(_._callViaRefIn)
 
 }

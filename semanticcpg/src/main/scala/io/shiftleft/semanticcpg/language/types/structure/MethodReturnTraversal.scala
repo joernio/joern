@@ -1,6 +1,5 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
@@ -11,7 +10,7 @@ class MethodReturnTraversal(val traversal: Traversal[MethodReturn]) extends AnyV
 
   @Doc(info = "traverse to parent method")
   def method: Traversal[Method] =
-    traversal.in(EdgeTypes.AST).cast[Method]
+    traversal.flatMap(_._methodViaAstIn)
 
   def returnUser(implicit callResolver: ICallResolver): Traversal[Call] =
     traversal.flatMap(_.returnUser)
@@ -20,7 +19,7 @@ class MethodReturnTraversal(val traversal: Traversal[MethodReturn]) extends AnyV
     */
   @Doc(info = "traverse to last expressions in CFG (can be multiple)")
   def cfgLast: Traversal[CfgNode] =
-    traversal.in(EdgeTypes.CFG).cast[Expression]
+    traversal.flatMap(_.cfgIn)
 
   /** Traverse to return type
     */

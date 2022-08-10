@@ -1,7 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.expressions
 
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
@@ -39,8 +38,6 @@ class CallTraversal(val traversal: Traversal[Call]) extends AnyVal {
   def toMethodReturn(implicit callResolver: ICallResolver): Traversal[MethodReturn] =
     traversal
       .flatMap(callResolver.getCalledMethodsAsTraversal)
-      .out(EdgeTypes.AST)
-      .hasLabel(NodeTypes.METHOD_RETURN)
-      .cast[MethodReturn]
+      .flatMap(_.methodReturn)
 
 }

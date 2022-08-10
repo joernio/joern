@@ -1,15 +1,6 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Annotation,
-  Block,
-  CfgNode,
-  ControlStructure,
-  Local,
-  Method,
-  NewLocation,
-  TypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.{Traversal, jIteratortoTraversal}
@@ -22,7 +13,7 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
     method._annotationViaAstOut
 
   def local: Traversal[Local] =
-    method._blockViaContainsOut.flatMap(_._localViaAstOut)
+    method._blockViaContainsOut.local
 
   /** All control structures of this method
     */
@@ -60,17 +51,16 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
 
   /** The type declaration associated with this method, e.g., the class it is defined in.
     */
-  def definingTypeDecl: Traversal[TypeDecl] =
-    Traversal.fromSingle(method).definingTypeDecl
+  def definingTypeDecl: Option[TypeDecl] =
+    Traversal.fromSingle(method).definingTypeDecl.headOption
 
   /** The type declaration associated with this method, e.g., the class it is defined in. Alias for 'definingTypeDecl'
     */
-  def typeDecl: Traversal[TypeDecl] = definingTypeDecl
+  def typeDecl: Option[TypeDecl] = definingTypeDecl
 
   /** Traverse to method body (alias for `block`) */
-  // TODO MP: return a `Block` rather than `Traversal[Block]` - it's guaranteed to be there and exactly one...
-  def body: Traversal[Block] =
-    Traversal.fromSingle(method.block)
+  def body: Block =
+    method.block
 
   override def location: NewLocation = {
     LocationCreator(method, method.name, method.label, method.lineNumber, method)

@@ -1,15 +1,7 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.Implicits.JavaIteratorDeco
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNode,
-  Call,
-  CallRepr,
-  Expression,
-  Local,
-  MethodParameterIn,
-  Type
-}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.ICallResolver
@@ -43,19 +35,19 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
   }
 
   def expressionUp: Traversal[Expression] = {
-    Traversal(node._astIn.asScala.filterNot(_.isInstanceOf[Local])).cast[Expression]
+    node._astIn.filterNot(_.isInstanceOf[Local]).cast[Expression]
   }
 
   def expressionDown: Traversal[Expression] = {
-    Traversal(node._astOut.asScala.filterNot(_.isInstanceOf[Local])).cast[Expression]
+    node._astOut.filterNot(_.isInstanceOf[Local]).cast[Expression]
   }
 
   def receivedCall: Traversal[Call] = {
-    Traversal(node._receiverIn.asScala).cast[Call]
+    node._receiverIn.cast[Call]
   }
 
   def isArgument: Traversal[Expression] = {
-    Traversal(node._argumentIn.asScala).cast[Expression]
+    node._argumentIn.cast[Expression]
   }
 
   def inCall: Traversal[Call] = {
@@ -66,12 +58,11 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
     for {
       call          <- node._argumentIn.asScala
       calledMethods <- callResolver.getCalledMethods(call.asInstanceOf[CallRepr])
-      paramIn       <- calledMethods._astOut.asScala.collect { case node: MethodParameterIn => node }
+      paramIn       <- calledMethods._astOut.asScala.collectAll[MethodParameterIn]
       if paramIn.index == node.argumentIndex
     } yield paramIn
 
-  def typ: Traversal[Type] = {
-    Traversal(node._evalTypeOut).cast[Type]
-  }
+  def typ: Traversal[Type] =
+    node._evalTypeOut.cast[Type]
 
 }
