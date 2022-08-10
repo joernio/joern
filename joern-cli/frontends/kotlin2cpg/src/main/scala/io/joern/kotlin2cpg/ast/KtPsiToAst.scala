@@ -406,11 +406,12 @@ trait KtPsiToAst {
     val declarationAsts          = declarations.flatMap(astsForDeclaration)
     val allStatementsButLast     = statements.dropRight(1)
     val allStatementsButLastAsts = allStatementsButLast.map(astsForExpression(_, None)).flatten
+
     val lastStatementAsts =
-      if (implicitReturnAroundLastStatement) {
+      if (implicitReturnAroundLastStatement && statements.nonEmpty) {
         val _returnNode = returnNode(Constants.retCode, line(statements.last), column(statements.last))
         Seq(returnAst(_returnNode, astsForExpression(statements.last, Some(1))))
-      } else if (statements.size > 0) astsForExpression(statements.last, None)
+      } else if (statements.nonEmpty) astsForExpression(statements.last, None)
       else Seq()
 
     if (pushToScope) scope.popScope()
