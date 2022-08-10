@@ -414,4 +414,16 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cpg.method.fullName(".*lambda.*2.*").block.astChildren.isLocal.size shouldBe 2
     }
   }
+
+  "CPG for code with lambda with no statements in its block" should {
+    val cpg = code("""
+        |package mypkg
+        |fun nopnopnopnopnopnopnopnop() {
+        |    1.let { _ -> }
+        |}
+        |""".stripMargin)
+    "contain a METHOD node for the lambda" in {
+      cpg.method.fullName(".*lambda.*").l should not be empty
+    }
+  }
 }

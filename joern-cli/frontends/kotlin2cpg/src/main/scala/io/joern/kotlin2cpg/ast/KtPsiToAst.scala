@@ -158,7 +158,6 @@ trait KtPsiToAst {
         methodNode(Constants.init, fullName, signature, relativizedPath, line(ctor), column(ctor))
       scope.pushNewScope(secondaryCtorMethodNode)
 
-      val typeFullName = registerType(typeInfoProvider.typeFullName(ctor, TypeConstants.any))
       val ctorThisParam = methodParameterNode(Constants.this_, classFullName)
         .dynamicTypeHintFullName(Seq(classFullName))
         .order(0)
@@ -252,7 +251,6 @@ trait KtPsiToAst {
         memberSetCallAst(ctorParam, classFullName)
     }
 
-    val typeFullName = typeInfoProvider.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
     val constructorMethodReturn = methodReturnNode(
       TypeConstants.void,
       None,
@@ -406,11 +404,12 @@ trait KtPsiToAst {
     val declarationAsts          = declarations.flatMap(astsForDeclaration)
     val allStatementsButLast     = statements.dropRight(1)
     val allStatementsButLastAsts = allStatementsButLast.map(astsForExpression(_, None)).flatten
+
     val lastStatementAsts =
-      if (implicitReturnAroundLastStatement) {
+      if (implicitReturnAroundLastStatement && statements.nonEmpty) {
         val _returnNode = returnNode(Constants.retCode, line(statements.last), column(statements.last))
         Seq(returnAst(_returnNode, astsForExpression(statements.last, Some(1))))
-      } else if (statements.size > 0) astsForExpression(statements.last, None)
+      } else if (statements.nonEmpty) astsForExpression(statements.last, None)
       else Seq()
 
     if (pushToScope) scope.popScope()
