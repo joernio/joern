@@ -158,7 +158,6 @@ trait KtPsiToAst {
         methodNode(Constants.init, fullName, signature, relativizedPath, line(ctor), column(ctor))
       scope.pushNewScope(secondaryCtorMethodNode)
 
-      val typeFullName = registerType(typeInfoProvider.typeFullName(ctor, TypeConstants.any))
       val ctorThisParam = methodParameterNode(Constants.this_, classFullName)
         .dynamicTypeHintFullName(Seq(classFullName))
         .order(0)
@@ -252,7 +251,6 @@ trait KtPsiToAst {
         memberSetCallAst(ctorParam, classFullName)
     }
 
-    val typeFullName = typeInfoProvider.typeFullName(ktClass.getPrimaryConstructor, TypeConstants.any)
     val constructorMethodReturn = methodReturnNode(
       TypeConstants.void,
       None,
