@@ -1851,6 +1851,27 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
 
   }
+
+  "DataFlowTests69" should {
+    val cpg = code("""
+                     |char *foo() {
+                     |  return "abc" + "firstName";
+                     |}
+                     |
+                     |void bar() {
+                     | log(foo());
+                     |}
+                     |""".stripMargin)
+
+    "find a flow where the first element is a literal" in {
+      val source           = cpg.literal.code(".*firstName.*").l
+      val sink             = cpg.call.methodFullName(".*log.*").l
+      val List(flow)       = sink.reachableByFlows(source).l
+      val literal: Literal = flow.elements.head.asInstanceOf[Literal]
+      literal.code shouldBe "\"firstName\""
+    }
+  }
+
 }
 
 class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
@@ -2109,27 +2130,4 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       freeArg.reachableByFlows(freeArg).count(path => path.elements.size > 1) shouldBe 1
     }
   }
-
-  "DataFlowTests69" should {
-
-    val cpg = code("""
-        |char *foo() {
-        |  return "abc" + "firstName";
-        |}
-        |
-        |void bar() {
-        | log(foo());
-        |}
-        |""".stripMargin)
-
-    "find a flow where the first element is a literal" in {
-      val source           = cpg.literal.code(".*firstName.*").l
-      val sink             = cpg.call.methodFullName(".*log.*").l
-      val List(flow)       = sink.reachableByFlows(source).l
-      val literal: Literal = flow.elements.head.asInstanceOf[Literal]
-      literal.code shouldBe "firstName"
-    }
-
-  }
-
 }
