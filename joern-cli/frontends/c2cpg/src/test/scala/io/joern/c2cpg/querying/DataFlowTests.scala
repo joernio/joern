@@ -1864,7 +1864,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
                      |""".stripMargin)
 
     "find a flow where the first element is a literal" in {
-      val source           = cpg.literal.code(".*firstName.*").l
+      val source           = cpg.literal.code(".*firstName.*")
       val sink             = cpg.call.methodFullName(".*log.*").l
       val List(flow)       = sink.reachableByFlows(source).l
       val literal: Literal = flow.elements.head.asInstanceOf[Literal]
