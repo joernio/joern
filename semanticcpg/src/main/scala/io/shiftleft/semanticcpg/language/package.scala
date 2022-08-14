@@ -165,6 +165,12 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   implicit def graphToInterproceduralDot(cpg: Cpg): InterproceduralNodeDot =
     new InterproceduralNodeDot(cpg)
 
+  /** Warning: implicitly lifting `Node -> Traversal` opens a broad space with a lot of accidental complexity and is
+    * considered a historical accident. We only keep it around because we want to preserve `reachableBy(Node*)`, which
+    * unfortunately (due to type erasure) can't be an overload of `reachableBy(Traversal*)`.
+    *
+    * In most places you should explicitly call `Traversal.fromSingle` instead of relying on this implicit.
+    */
   implicit def toTraversal[NodeType <: StoredNode](node: NodeType): Traversal[NodeType] =
     Traversal.fromSingle(node)
 

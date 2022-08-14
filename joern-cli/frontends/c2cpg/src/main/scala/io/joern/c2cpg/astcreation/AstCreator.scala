@@ -12,12 +12,17 @@ import io.joern.x2cpg.datastructures.Stack._
 import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
 import org.slf4j.{Logger, LoggerFactory}
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 
 /** Translates the Eclipse CDT AST into a CPG AST.
   */
-class AstCreator(val filename: String, val config: Config, val global: CGlobal, val cdtAst: IASTTranslationUnit)
-    extends AstCreatorBase(filename)
+class AstCreator(
+  val filename: String,
+  val config: Config,
+  val cdtAst: IASTTranslationUnit,
+  val file2OffsetTable: ConcurrentHashMap[String, Array[Int]]
+) extends AstCreatorBase(filename)
     with AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator

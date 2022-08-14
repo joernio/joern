@@ -318,7 +318,7 @@ private class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[St
       case param: MethodParameterIn =>
         nodeToString(use).contains(param.name)
       case call: Call if indirectionAccessSet.contains(call.name) =>
-        call.argument(1).headOption.exists(x => nodeToString(use).contains(x.code))
+        call.argumentOption(1).exists(x => nodeToString(use).contains(x.code))
       case call: Call =>
         nodeToString(use).contains(call.code)
       case identifier: Identifier => nodeToString(use).contains(identifier.code)

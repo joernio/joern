@@ -22,6 +22,7 @@ object QueryTags {
   val compilerOptimization   = "compiler-optimization"
   val misconfiguration       = "misconfiguration"
   val insecureNetworkTraffic = "insecure-network-traffic"
+  val pathTraversal          = "path-traversal"
 
   val selfDestruct         = "selfdestruct-contract"
   val overflow             = "overflow-contract"

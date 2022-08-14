@@ -32,9 +32,10 @@ class AstCreationPass(codeDir: String, filenames: List[String], config: Config, 
   override def generateParts(): Array[String] = filenames.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
-    val parserConfig = new ParserConfiguration().setSymbolResolver(symbolResolver)
-    val parser       = new JavaParser(parserConfig)
-    val parseResult  = parser.parse(new java.io.File(filename))
+    val parserConfig =
+      new ParserConfiguration().setSymbolResolver(symbolResolver)
+    val parser      = new JavaParser(parserConfig)
+    val parseResult = parser.parse(new java.io.File(filename))
 
     parseResult.getProblems.asScala.toList match {
       case Nil => // Just carry on as usual

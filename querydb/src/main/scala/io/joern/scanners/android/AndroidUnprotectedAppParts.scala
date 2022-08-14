@@ -7,6 +7,7 @@ import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.Traversal
 
 object AndroidUnprotectedAppParts extends QueryBundle {
   implicit val engineContext: EngineContext = EngineContext(Semantics.empty)

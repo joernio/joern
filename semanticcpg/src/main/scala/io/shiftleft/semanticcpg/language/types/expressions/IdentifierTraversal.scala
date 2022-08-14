@@ -1,6 +1,5 @@
 package io.shiftleft.semanticcpg.language.types.expressions
 
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Declaration, Identifier}
 import overflowdb.traversal._
 
@@ -10,7 +9,8 @@ class IdentifierTraversal(val traversal: Traversal[Identifier]) extends AnyVal {
 
   /** Traverse to all declarations of this identifier
     */
-  def refsTo: Traversal[Declaration] =
-    traversal.out(EdgeTypes.REF).cast[Declaration]
+  def refsTo: Traversal[Declaration] = {
+    traversal.flatMap(_.refOut).cast[Declaration]
+  }
 
 }

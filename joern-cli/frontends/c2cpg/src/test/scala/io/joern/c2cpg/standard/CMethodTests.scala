@@ -3,6 +3,7 @@ package io.joern.c2cpg.standard
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.io.File
 
@@ -54,7 +55,7 @@ class CMethodTests extends CCodeToCpgSuite {
     val cpg = code("int foo(); int bar() { return woo(); }")
 
     "should identify method as stub" in {
-      cpg.method.isStub.name.toSetMutable shouldBe Set("<global>", "foo", "woo")
+      cpg.method.isStub.name.toSetMutable shouldBe Set(NamespaceTraversal.globalNamespaceName, "foo", "woo")
       cpg.method.isNotStub.name.l shouldBe List("bar")
     }
   }
@@ -67,7 +68,7 @@ class CMethodTests extends CCodeToCpgSuite {
         x.name shouldBe "doFoo"
         x.fullName shouldBe "doFoo"
         x.astParentType shouldBe NodeTypes.TYPE_DECL
-        x.astParentFullName should endWith("<global>")
+        x.astParentFullName should endWith(NamespaceTraversal.globalNamespaceName)
       }
       cpg.typeDecl.fullName.l should not contain "doFoo"
     }
@@ -81,7 +82,7 @@ class CMethodTests extends CCodeToCpgSuite {
         x.name shouldBe "doFoo"
         x.fullName shouldBe "doFoo"
         x.astParentType shouldBe NodeTypes.TYPE_DECL
-        x.astParentFullName should endWith("<global>")
+        x.astParentFullName should endWith(NamespaceTraversal.globalNamespaceName)
       }
       cpg.typeDecl.fullName.l should not contain "doFoo"
     }

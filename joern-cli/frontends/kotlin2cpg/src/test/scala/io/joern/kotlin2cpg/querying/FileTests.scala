@@ -8,7 +8,7 @@ import java.io.File
 
 class FileTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with simple class definition and one method" should {
+  "CPG for code with simple class declaration and one method" should {
     val cpg = code("""
         |package mypkg.bar
         |

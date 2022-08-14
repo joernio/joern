@@ -23,3 +23,7 @@ joern-cli/workspace
 /.bsp
 /gnupg-*
 /joern-cli/${sys:LOG_DIR}/
+.local
+**/astgen-win.exe
+**/astgen-macos
+**/astgen-linux

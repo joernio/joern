@@ -112,15 +112,14 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
   /** Traverse to external methods, that is, methods not present but only referenced in the CPG.
     */
   @Doc(info = "External methods (called, but no body available)")
-  def external: Traversal[Method] = {
-    traversal.has(Properties.IS_EXTERNAL -> true)
-  }
+  def external: Traversal[Method] =
+    traversal.isExternal(true)
 
   /** Traverse to internal methods, that is, methods for which code is included in this CPG.
     */
   @Doc(info = "Internal methods, i.e., a body is available")
   def internal: Traversal[Method] =
-    traversal.has(Properties.IS_EXTERNAL -> false)
+    traversal.isExternal(false)
 
   /** Traverse to the methods local variables
     */

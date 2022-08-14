@@ -1,72 +1,53 @@
 package io.joern.c2cpg
 
-import io.joern.c2cpg.fixtures.TestProjectFixture
-import io.shiftleft.codepropertygraph.generated._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import overflowdb._
-import overflowdb.traversal._
+import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.semanticcpg.language._
 
-class MethodHeaderTests extends AnyWordSpec with Matchers {
-
-  private val fixture: TestProjectFixture = TestProjectFixture("methodheader")
+class MethodHeaderTests extends CCodeToCpgSuite {
 
   "Method header" should {
+    val cpg = code("""
+        |int foo(int x, int y) {
+        |
+        |}
+        |""".stripMargin)
 
     "have correct METHOD node for method foo" in {
-      val methods = fixture.traversalSource.label(NodeTypes.METHOD).has(Properties.NAME -> "foo").l
-      methods.size shouldBe 1
-      val method = methods.head
-      method.property(Properties.IS_EXTERNAL) shouldBe false
-      method.property(Properties.FULL_NAME) shouldBe "foo"
-      method.property(Properties.SIGNATURE) shouldBe "int foo (int,int)"
-      method.property(Properties.LINE_NUMBER) shouldBe 1
-      method.property(Properties.COLUMN_NUMBER) shouldBe 1
-      method.property(Properties.LINE_NUMBER_END) shouldBe 3
-      method.property(Properties.COLUMN_NUMBER_END) shouldBe 1
-      method.property(Properties.CODE) shouldBe "int foo (int x,int y)"
+      val List(method) = cpg.method.nameExact("foo").l
+      method.isExternal shouldBe false
+      method.fullName shouldBe "foo"
+      method.signature shouldBe "int foo (int,int)"
+      method.lineNumber shouldBe Some(2)
+      method.columnNumber shouldBe Some(1)
+      method.lineNumberEnd shouldBe Some(4)
+      method.columnNumberEnd shouldBe Some(1)
+      method.code shouldBe "int foo (int x,int y)"
     }
 
     "have correct METHOD_PARAMETER_IN nodes for method foo" in {
-      val parameters = fixture.traversalSource
-        .label(NodeTypes.METHOD)
-        .has(Properties.NAME -> "foo")
-        .out(EdgeTypes.AST)
-        .hasLabel(NodeTypes.METHOD_PARAMETER_IN)
-        .l
+      val List(param1, param2) = cpg.method.nameExact("foo").parameter.l
+      param1.order shouldBe 1
+      param1.code shouldBe "int x"
+      param1.name shouldBe "x"
+      param1.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+      param1.lineNumber shouldBe Some(2)
+      param1.columnNumber shouldBe Some(9)
 
-      parameters.size shouldBe 2
-      val param1Option = parameters.find(_.property(Properties.ORDER) == 1)
-      param1Option.isDefined shouldBe true
-      param1Option.get.property(Properties.CODE) shouldBe "int x"
-      param1Option.get.property(Properties.NAME) shouldBe "x"
-      param1Option.get.property(Properties.EVALUATION_STRATEGY) shouldBe EvaluationStrategies.BY_VALUE
-      param1Option.get.property(Properties.LINE_NUMBER) shouldBe 1
-      param1Option.get.property(Properties.COLUMN_NUMBER) shouldBe 9
-
-      val param2Option = parameters.find(_.property(PropertyNames.ORDER) == 2)
-      param2Option.isDefined shouldBe true
-      param2Option.isDefined shouldBe true
-      param2Option.get.property(Properties.CODE) shouldBe "int y"
-      param2Option.get.property(Properties.NAME) shouldBe "y"
-      param2Option.get.property(Properties.EVALUATION_STRATEGY) shouldBe EvaluationStrategies.BY_VALUE
-      param2Option.get.property(Properties.LINE_NUMBER) shouldBe 1
-      param2Option.get.property(Properties.COLUMN_NUMBER) shouldBe 16
+      param2.order shouldBe 2
+      param2.code shouldBe "int y"
+      param2.name shouldBe "y"
+      param2.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+      param2.lineNumber shouldBe Some(2)
+      param2.columnNumber shouldBe Some(16)
     }
 
     "have correct METHOD_RETURN node for method foo" in {
-      val methodReturn = fixture.traversalSource
-        .label(NodeTypes.METHOD)
-        .has(Properties.NAME -> "foo")
-        .out(EdgeTypes.AST)
-        .hasLabel(NodeTypes.METHOD_RETURN)
-        .l
-
-      methodReturn.size shouldBe 1
-      methodReturn.head.property(Properties.CODE) shouldBe "int"
-      methodReturn.head.property(Properties.EVALUATION_STRATEGY) shouldBe EvaluationStrategies.BY_VALUE
-      methodReturn.head.property(Properties.LINE_NUMBER) shouldBe 1
-      methodReturn.head.property(Properties.COLUMN_NUMBER) shouldBe 1
+      val List(ret) = cpg.method.nameExact("foo").methodReturn.l
+      ret.code shouldBe "int"
+      ret.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+      ret.lineNumber shouldBe Some(2)
+      ret.columnNumber shouldBe Some(1)
     }
 
   }

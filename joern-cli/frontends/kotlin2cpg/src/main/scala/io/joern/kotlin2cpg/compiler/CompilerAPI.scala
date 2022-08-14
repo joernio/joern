@@ -46,9 +46,9 @@ object CompilerAPI {
         val f = new File(path.path)
         if (f.exists()) {
           config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JvmClasspathRoot(f))
-          logger.debug("Added dependency from path `" + path.path + "`.")
+          logger.debug(s"Added dependency from path `${path.path}`.")
         } else {
-          logger.warn("Path to dependency does not point to existing file `" + path.path + "`.")
+          logger.warn(s"Path to dependency does not point to existing file `${path.path}`.")
         }
       } else {
         val resourceStream = getClass.getClassLoader.getResourceAsStream(path.path)
@@ -66,9 +66,9 @@ object CompilerAPI {
           outStream.close()
 
           config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JvmClasspathRoot(tempFile))
-          logger.debug("Added dependency from resources `" + path.path + "`.")
+          logger.debug(s"Added dependency from resources `${path.path}`.")
         } else {
-          logger.warn("Path to default dependency does not point to existing resource `" + path.path + "`.")
+          logger.warn(s"Path to default dependency does not point to existing resource `${path.path}`.")
         }
       }
     }

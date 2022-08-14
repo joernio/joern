@@ -21,7 +21,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.fullName shouldBe "mypkg.Foo.<init>:void()"
       m.name shouldBe "<init>"
       m.parameter.size shouldBe 1
-      m.block.size shouldBe 1
+      Option(m.block).isDefined shouldBe true
     }
   }
 
@@ -37,7 +37,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.fullName shouldBe "mypkg.AClass.<init>:void(java.lang.String)"
       m.name shouldBe "<init>"
       m.parameter.size shouldBe 2
-      m.block.size shouldBe 1
+      Option(m.block).isDefined shouldBe true
       m.block.expressionDown.size shouldBe 0
     }
   }
@@ -65,7 +65,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.fullName shouldBe "mypkg.AClass.<init>:void(java.lang.String)"
       m.name shouldBe "<init>"
       m.parameter.size shouldBe 2
-      m.block.size shouldBe 1
+      Option(m.block).isDefined shouldBe true
 
       val List(firstParam: MethodParameterIn, secondParam: MethodParameterIn) = m.parameter.l
       firstParam.name shouldBe "this"
@@ -121,7 +121,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String)"
       m.name shouldBe "<init>"
       m.parameter.size shouldBe 2
-      m.block.size shouldBe 1
+      Option(m.block).isDefined shouldBe true
     }
   }
 
@@ -138,7 +138,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String)"
       m.name shouldBe "<init>"
       m.parameter.size shouldBe 2
-      m.block.size shouldBe 1
+      Option(m.block).isDefined shouldBe true
     }
   }
 
@@ -173,11 +173,10 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.take(1).l
       m.lineNumber shouldBe Some(4)
       m.columnNumber shouldBe Some(9)
-      m.methodReturn.code shouldBe "mypkg.Foo"
+      m.methodReturn.code shouldBe "void"
       m.methodReturn.lineNumber shouldBe Some(4)
       m.methodReturn.columnNumber shouldBe Some(9)
 
-      m.block.size shouldBe 1
       m.block.astChildren.size shouldBe 0
     }
 
@@ -187,11 +186,10 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.name shouldBe "<init>"
       m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(4)
-      m.methodReturn.code shouldBe "mypkg.Foo"
+      m.methodReturn.code shouldBe "void"
       m.methodReturn.lineNumber shouldBe Some(6)
       m.methodReturn.columnNumber shouldBe Some(4)
 
-      m.block.size shouldBe 1
       m.block.astChildren.map(_.code).l shouldBe List("this.bar = bar")
 
       val List(mThisParam: MethodParameterIn, firstParam: MethodParameterIn, secondParam: MethodParameterIn) =
@@ -200,7 +198,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       firstParam.name shouldBe "foo"
       secondParam.name shouldBe "bar"
 
-      val List(b)                     = m.block.l
+      val b                           = m.block
       val List(firstBlockChild: Call) = b.astChildren.l
       firstBlockChild.methodFullName shouldBe Operators.assignment
       firstBlockChild.code shouldBe "this.bar = bar"

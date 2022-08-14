@@ -1,11 +1,9 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.passes.AbstractPassTest
-import io.shiftleft.codepropertygraph.generated.nodes.Expression
-import io.shiftleft.codepropertygraph.generated.nodes.TemplateDom
+import io.joern.jssrc2cpg.passes.AbstractDomPassTest
 import io.shiftleft.semanticcpg.language._
 
-class TemplateDomAstCreationPassTest extends AbstractPassTest {
+class TemplateDomAstCreationPassTest extends AbstractDomPassTest {
 
   "AST generation for template DOM" should {
 
@@ -27,8 +25,6 @@ class TemplateDomAstCreationPassTest extends AbstractPassTest {
         |""".stripMargin,
       "test.tsx"
     ) { cpg =>
-      def parentTemplateDom(c: Expression): TemplateDom = c.parentExpression.get.asInstanceOf[TemplateDom]
-
       inside(cpg.call.code("formatName.*").l) { case List(call) =>
         parentTemplateDom(call).code shouldBe "{formatName(user)}"
         parentTemplateDom(call).name shouldBe "JSXExpressionContainer"

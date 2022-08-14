@@ -2,6 +2,7 @@ package io.joern.javasrc2cpg
 
 import better.files.File
 import io.joern.javasrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass}
+import io.joern.javasrc2cpg.util.Delombok
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
@@ -27,7 +28,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, language, config.inputPath).createAndApply()
-      val (sourcesDir, sourceFileNames) = getSourcesFromDir(config.inputPath)
+      val (sourcesDir, sourceFileNames) = getSourcesFromDir(config)
       if (sourceFileNames.isEmpty) {
         logger.error(s"no source files found in $sourcesDir")
       } else {
@@ -45,7 +46,15 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   /** JavaParser requires that the input path is a directory and not a single source file. This is inconvenient for
     * small-scale testing, so if a single source file is created, copy it to a temp directory.
     */
-  private def getSourcesFromDir(sourceCodePath: String): (String, List[String]) = {
+  private def getSourcesFromDir(config: Config): (String, List[String]) = {
+
+    val sourceCodePath =
+      if (config.runDelombok)
+        Delombok.run(config.inputPath, config.delombokJavaHome)
+      else {
+        config.inputPath
+      }
+
     val sourceFile = File(sourceCodePath)
     if (sourceFile.isDirectory) {
       val sourceFileNames = SourceFiles.determine(sourceCodePath, sourceFileExtensions)

@@ -26,9 +26,9 @@ class AstCreationPass(filesWithMeta: Iterable[KtFileWithMeta], typeInfoProvider:
     fileWithMeta match {
       case Some(fm) =>
         diffGraph.absorb(new AstCreator(fm, typeInfoProvider, global).createAst())
-        logger.debug("AST created for file at `" + filename + "`.")
+        logger.debug(s"AST created for file at `$filename`.")
       case None =>
-        logger.info("Could not find file at `" + filename + "`.")
+        logger.info(s"Could not find file at `$filename`.")
     }
   }
 

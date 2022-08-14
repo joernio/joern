@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class EnumTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for code with simple enum definition" should {
+  "CPG for code with simple enum declaration" should {
     val cpg = code("""
         |package mypkg
         |

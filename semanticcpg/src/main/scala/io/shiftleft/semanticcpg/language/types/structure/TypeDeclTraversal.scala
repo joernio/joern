@@ -1,10 +1,9 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Properties, nodes}
 import io.shiftleft.semanticcpg.language._
-import overflowdb._
-import overflowdb.traversal.{Traversal, toElementTraversal, toNodeTraversal}
+import overflowdb.traversal.Traversal
 
 /** Type declaration - possibly a template that requires instantiation
   */
@@ -19,41 +18,37 @@ class TypeDeclTraversal(val traversal: Traversal[TypeDecl]) extends AnyVal {
   /** Types referencing to this type declaration.
     */
   def referencingType: Traversal[Type] =
-    traversal.in(EdgeTypes.REF).cast[Type]
+    traversal.flatMap(_.refIn)
 
   /** Namespace in which this type declaration is defined
     */
   def namespace: Traversal[Namespace] =
-    traversal
-      .in(EdgeTypes.AST)
-      .hasLabel(NodeTypes.NAMESPACE_BLOCK)
-      .out(EdgeTypes.REF)
-      .cast[Namespace]
+    traversal.flatMap(_.namespaceBlock).namespace
 
   /** Methods defined as part of this type
     */
   def method: Traversal[Method] =
-    canonicalType.out(EdgeTypes.AST).hasLabel(NodeTypes.METHOD).cast[Method]
+    canonicalType.flatMap(_._methodViaAstOut)
 
   /** Filter for type declarations contained in the analyzed code.
     */
   def internal: Traversal[TypeDecl] =
-    canonicalType.has(Properties.IS_EXTERNAL -> false)
+    canonicalType.isExternal(false)
 
   /** Filter for type declarations not contained in the analyzed code.
     */
   def external: Traversal[TypeDecl] =
-    canonicalType.has(Properties.IS_EXTERNAL -> true)
+    canonicalType.isExternal(true)
 
   /** Member variables
     */
   def member: Traversal[Member] =
-    canonicalType.out.hasLabel(NodeTypes.MEMBER).cast[Member]
+    canonicalType.flatMap(_._memberViaAstOut)
 
   /** Direct base types in the inheritance graph.
     */
   def baseType: Traversal[Type] =
-    canonicalType.out(EdgeTypes.INHERITS_FROM).cast[Type]
+    canonicalType.flatMap(_._typeViaInheritsFromOut)
 
   /** Direct base type declaration.
     */

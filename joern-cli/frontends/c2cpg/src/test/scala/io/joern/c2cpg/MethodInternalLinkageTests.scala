@@ -1,101 +1,92 @@
 package io.joern.c2cpg
 
-import io.joern.c2cpg.fixtures.{TestProjectFixture, TraversalUtils}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Properties}
-import org.scalatest.wordspec.AnyWordSpec
-import overflowdb._
-import overflowdb.traversal._
+import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.shiftleft.semanticcpg.language._
 
-class MethodInternalLinkageTests extends AnyWordSpec with TraversalUtils {
-
-  override val fixture: TestProjectFixture = TestProjectFixture("methodinternallinkage")
-
-  implicit class VertexListWrapper(vertexList: List[Node]) {
-    def expandAst(filterLabels: String*): List[Node] = {
-      if (filterLabels.nonEmpty) {
-        vertexList.flatMap(_.out(EdgeTypes.AST).hasLabel(filterLabels: _*).l)
-      } else {
-        vertexList.flatMap(_.out(EdgeTypes.AST).l)
-      }
-    }
-
-    def expandRef(): List[Node] = {
-      vertexList.flatMap(_.out(EdgeTypes.REF).l)
-    }
-
-    def filterOrder(order: Int): List[Node] = {
-      vertexList.to(Traversal).has(Properties.ORDER -> order).l
-    }
-
-    def filterName(name: String): List[Node] = {
-      vertexList.to(Traversal).has(Properties.NAME -> name).l
-    }
-
-    def checkForSingle[T](label: String, propertyKey: PropertyKey[T], value: T): Unit = {
-      vertexList.size shouldBe 1
-      vertexList.head.label() shouldBe label
-      vertexList.head.property(propertyKey) shouldBe value
-    }
-
-    def checkForSingle[T](propertyKey: PropertyKey[T], value: T): Unit = {
-      vertexList.size shouldBe 1
-      vertexList.head.property(propertyKey) shouldBe value
-    }
-  }
+class MethodInternalLinkageTests extends CCodeToCpgSuite {
 
   "REF edges" should {
-    "be correct for local x in method1" in {
-      val method       = getMethod("method1")
-      val indentifierX = method.expandAst().expandAst().expandAst(NodeTypes.IDENTIFIER)
-      indentifierX.checkForSingle(Properties.NAME, "x")
+    val cpg = code("""
+        |void method1() {
+        |  int x;
+        |  x = 1;
+        |}
+        |
+        |void method2(int x) {
+        |  x = 1;
+        |}
+        |
+        |void method3(int x) {
+        |  int y;
+        |  {
+        |    int x;
+        |    int y;
+        |
+        |    x = 1;
+        |    y = 1;
+        |  }
+        |
+        |  x = 1;
+        |  y = 1;
+        |}
+        |""".stripMargin)
 
-      val localX = indentifierX.expandRef()
-      localX.checkForSingle(NodeTypes.LOCAL, Properties.NAME, "x")
+    "be correct for local x in method1" in {
+      val List(method)       = cpg.method.nameExact("method1").l
+      val List(indentifierX) = method.block.ast.isIdentifier.l
+      indentifierX.name shouldBe "x"
+
+      val Some(localX) = indentifierX._localViaRefOut
+      localX.name shouldBe "x"
     }
 
     "be correct for parameter x in method2" in {
-      val method       = getMethod("method2")
-      val indentifierX = method.expandAst().expandAst().expandAst(NodeTypes.IDENTIFIER)
-      indentifierX.checkForSingle(Properties.NAME, "x")
+      val List(method)       = cpg.method.nameExact("method2").l
+      val List(indentifierX) = method.block.ast.isIdentifier.l
+      indentifierX.name shouldBe "x"
 
-      val parameterX = indentifierX.expandRef()
-      parameterX.checkForSingle(NodeTypes.METHOD_PARAMETER_IN, Properties.NAME, "x")
+      val Some(parameterX) = indentifierX._methodParameterInViaRefOut
+      parameterX.name shouldBe "x"
     }
 
     "be correct for all identifiers x, y in method3" in {
-      val method           = getMethod("method3")
-      val outerIdentifierX = method.expandAst().expandAst().filterOrder(3).expandAst(NodeTypes.IDENTIFIER)
-      outerIdentifierX.checkForSingle(Properties.NAME, "x")
-      val parameterX = outerIdentifierX.expandRef()
-      parameterX.checkForSingle(NodeTypes.METHOD_PARAMETER_IN, Properties.NAME, "x")
-      val expectedParameterX = method.expandAst(NodeTypes.METHOD_PARAMETER_IN)
-      expectedParameterX.checkForSingle(Properties.NAME, "x")
+      val List(method)           = cpg.method.nameExact("method3").l
+      val List(outerIdentifierX) = method.block.astChildren.astChildren.isIdentifier.nameExact("x").l
+
+      val Some(parameterX) = outerIdentifierX._methodParameterInViaRefOut
+      parameterX.name shouldBe "x"
+
+      val List(expectedParameterX) = method.parameter.l
+      expectedParameterX.name shouldBe "x"
       parameterX shouldBe expectedParameterX
 
-      val outerIdentifierY = method.expandAst().expandAst().filterOrder(4).expandAst(NodeTypes.IDENTIFIER)
-      outerIdentifierY.checkForSingle(Properties.NAME, "y")
-      val outerLocalY = outerIdentifierY.expandRef()
-      outerLocalY.checkForSingle(NodeTypes.LOCAL, Properties.NAME, "y")
-      val expectedOuterLocalY = method.expandAst().expandAst(NodeTypes.LOCAL)
-      expectedOuterLocalY.checkForSingle(Properties.NAME, "y")
+      val List(outerIdentifierY) = method.block.astChildren.astChildren.isIdentifier.nameExact("y").l
+
+      val Some(outerLocalY) = outerIdentifierY._localViaRefOut
+      outerLocalY.name shouldBe "y"
+
+      val List(expectedOuterLocalY) = method.block.astChildren.isLocal.l
+      expectedOuterLocalY.name shouldBe "y"
       outerLocalY shouldBe expectedOuterLocalY
 
-      val nestedBlock = method.expandAst().expandAst(NodeTypes.BLOCK)
+      val List(nestedBlock) = method.block.astChildren.isBlock.l
 
-      val nestedIdentifierX = nestedBlock.expandAst().filterOrder(3).expandAst(NodeTypes.IDENTIFIER)
-      nestedIdentifierX.checkForSingle(Properties.NAME, "x")
-      val nestedLocalX = nestedIdentifierX.expandRef()
-      nestedLocalX.checkForSingle(NodeTypes.LOCAL, Properties.NAME, "x")
-      val expectedNestedLocalX = nestedBlock.expandAst(NodeTypes.LOCAL).filterName("x")
-      expectedNestedLocalX.checkForSingle(Properties.NAME, "x")
+      val List(nestedIdentifierX) = nestedBlock.ast.isIdentifier.nameExact("x").l
+      nestedIdentifierX.name shouldBe "x"
+
+      val Some(nestedLocalX) = nestedIdentifierX._localViaRefOut
+      nestedLocalX.name shouldBe "x"
+
+      val List(expectedNestedLocalX) = nestedBlock.ast.isLocal.nameExact("x").l
       nestedLocalX shouldBe expectedNestedLocalX
 
-      val nestedIdentifierY = nestedBlock.expandAst().filterOrder(4).expandAst(NodeTypes.IDENTIFIER)
-      nestedIdentifierY.checkForSingle(Properties.NAME, "y")
-      val nestedLocalY = nestedIdentifierY.expandRef()
-      nestedLocalY.checkForSingle(NodeTypes.LOCAL, Properties.NAME, "y")
-      val expectedNestedLocalY = nestedBlock.expandAst(NodeTypes.LOCAL).filterName("y")
-      expectedNestedLocalY.checkForSingle(Properties.NAME, "y")
+      val List(nestedIdentifierY) = nestedBlock.ast.isIdentifier.nameExact("y").l
+      nestedIdentifierY.name shouldBe "y"
+
+      val Some(nestedLocalY) = nestedIdentifierY._localViaRefOut
+      nestedLocalY.name shouldBe "y"
+
+      val List(expectedNestedLocalY) = nestedBlock.ast.isLocal.nameExact("y").l
       nestedLocalY shouldBe expectedNestedLocalY
     }
   }

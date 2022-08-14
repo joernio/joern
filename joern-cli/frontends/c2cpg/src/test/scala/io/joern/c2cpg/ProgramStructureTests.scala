@@ -1,35 +1,36 @@
 package io.joern.c2cpg
 
-import io.joern.c2cpg.fixtures.TestProjectFixture
-import io.shiftleft.codepropertygraph.generated.Properties
-import io.shiftleft.codepropertygraph.generated.nodes.{NamespaceBlock, TypeDecl}
+import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import overflowdb._
-import overflowdb.traversal._
 
-class ProgramStructureTests extends AnyWordSpec with Matchers {
+class ProgramStructureTests extends CCodeToCpgSuite {
 
-  private val fixture: TestProjectFixture = TestProjectFixture("structure")
+  "Program structure" should {
 
-  "Program structure of test project" should {
-
-    "contain <global> namespace block node" in {
-      val namespaceBlocks =
-        fixture.traversalSource
-          .label(NamespaceBlock.Label)
-          .has(Properties.FULL_NAME -> NamespaceTraversal.globalNamespaceName)
-          .l
-
-      namespaceBlocks.size shouldBe 1
+    "be correct for a simple test program" in {
+      val cpg = code("""
+          |struct Foo {
+          |  int x, y;
+          |};
+          |
+          |int main(int argc, char **argv) {
+          |  return 0;
+          |}
+          |""".stripMargin)
+      cpg.namespaceBlock.fullNameExact(NamespaceTraversal.globalNamespaceName).size shouldBe 1
+      cpg.typeDecl.size should be > 0
     }
 
-    "contain type-decl node" in {
-      val nodes = fixture.traversalSource.label(TypeDecl.Label).l
-      nodes.size should be > 0
+    "create one NamespaceBlock per file" in {
+      val cpg                        = code("", "foo.c").moreCode("", "woo.c")
+      val expectedFilenames          = Seq("foo.c", "woo.c")
+      val expectedNamespaceFullNames = expectedFilenames.map(f => s"$f:${NamespaceTraversal.globalNamespaceName}")
+      val allNamespaceBlockFullNames = cpg.namespaceBlock.fullNameNot(NamespaceTraversal.globalNamespaceName).fullName.l
+      allNamespaceBlockFullNames.zip(expectedNamespaceFullNames).foreach { case (actual, expected) =>
+        actual should endWith(expected)
+      }
     }
-
   }
 
 }

@@ -2,6 +2,7 @@ package io.joern.c2cpg.standard
 
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class MethodReturnTests extends CCodeToCpgSuite {
 
@@ -23,7 +24,7 @@ class MethodReturnTests extends CCodeToCpgSuite {
     }
 
     "should allow traversing to method" in {
-      cpg.methodReturn.method.name.l shouldBe List("foo", "<global>")
+      cpg.methodReturn.method.name.l shouldBe List("foo", NamespaceTraversal.globalNamespaceName)
     }
 
   }

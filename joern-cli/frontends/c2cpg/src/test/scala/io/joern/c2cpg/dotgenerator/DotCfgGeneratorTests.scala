@@ -6,7 +6,6 @@ import io.shiftleft.semanticcpg.language._
 class DotCfgGeneratorTests extends CCodeToCpgSuite {
 
   "DotCfgGeneratorTest1" should {
-
     val cpg = code("""
       |int main(int argc, char **argv) {
       |   int i = 0;

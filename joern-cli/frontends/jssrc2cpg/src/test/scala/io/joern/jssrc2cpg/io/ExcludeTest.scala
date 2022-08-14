@@ -9,12 +9,39 @@ import io.shiftleft.semanticcpg.language._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.BeforeAndAfterAll
 
 import java.util.regex.Pattern
 
-class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChecks {
+class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChecks with BeforeAndAfterAll {
 
-  private val projectUnderTest = File(getClass.getResource("/excludes").toURI)
+  private val testFiles: List[String] = List(
+    ".sub/e.js",
+    "folder/b.js",
+    "folder/c.js",
+    "foo.bar/d.js",
+    "tests/a.spec.js",
+    "tests/b.mock.js",
+    "tests/c.e2e.js",
+    "tests/d.test.js",
+    "a.js",
+    "b-min.js",
+    "c.spec.js",
+    "d.chunk.js",
+    "index.js"
+  )
+
+  private val projectUnderTest: File = {
+    val dir = File.newTemporaryDirectory("jssrc2cpgTestsExludeTest")
+    testFiles.foreach { testFile =>
+      val file = dir / testFile
+      file.createIfNotExists(createParents = true)
+      file.write(s"""console.log("${file.canonicalPath}");""")
+    }
+    dir
+  }
+
+  override def afterAll(): Unit = projectUnderTest.delete(swallowIOExceptions = true)
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
     File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>

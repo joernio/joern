@@ -368,7 +368,7 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
-  "CPG for code with call with lambda inside method definition" should {
+  "CPG for code with call with lambda inside method declaration" should {
     lazy val cpg = code("""
         |package mypkg
         |

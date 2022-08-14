@@ -1,10 +1,6 @@
 package io.joern.scanners.c
 
 import io.joern.suites.CQueryTestSuite
-import io.shiftleft.codepropertygraph.generated.nodes
-import io.joern.console.Query
-import io.shiftleft.semanticcpg.language._
-import io.joern.console.scan._
 
 class DangerousFunctionsTests extends CQueryTestSuite {
 
@@ -14,7 +10,7 @@ class DangerousFunctionsTests extends CQueryTestSuite {
     val query   = queryBundle.getsUsed()
     val results = findMatchingCalls(query)
 
-    results shouldBe (Set("insecure_gets"))
+    results shouldBe Set("insecure_gets")
   }
 
   "find insecure printf() function usage" in {

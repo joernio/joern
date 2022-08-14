@@ -16,20 +16,24 @@ package object cpgcreation {
     rootPath: Path,
     args: List[String]
   ): Option[CpgGenerator] = {
+    lazy val conf = config.withArgs(args)
     language match {
-      case Languages.CSHARP                       => Some(CSharpCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.C | Languages.NEWC           => Some(CCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.LLVM                         => Some(LlvmCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.GOLANG                       => Some(GoCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.JAVA                         => Some(JavaCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.JAVASRC                      => Some(JavaSrcCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.JSSRC | Languages.JAVASCRIPT => Some(JsSrcCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.PYTHONSRC                    => Some(PythonSrcCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.PHP                          => Some(PhpCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.GHIDRA                       => Some(GhidraCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.KOTLIN                       => Some(KotlinCpgGenerator(config.withArgs(args), rootPath))
-      case Languages.SOLIDITY                     => Some(SolidityCpgGenerator(config.withArgs(args), rootPath))
-      case _                                      => None
+      case Languages.CSHARP             => Some(CSharpCpgGenerator(conf, rootPath))
+      case Languages.C | Languages.NEWC => Some(CCpgGenerator(conf, rootPath))
+      case Languages.LLVM               => Some(LlvmCpgGenerator(conf, rootPath))
+      case Languages.GOLANG             => Some(GoCpgGenerator(conf, rootPath))
+      case Languages.JAVA               => Some(JavaCpgGenerator(conf, rootPath))
+      case Languages.JAVASRC            => Some(JavaSrcCpgGenerator(conf, rootPath))
+      case Languages.JSSRC | Languages.JAVASCRIPT =>
+        val jssrc = JsSrcCpgGenerator(conf, rootPath)
+        if (jssrc.isAvailable) Some(jssrc)
+        else Some(JsCpgGenerator(conf, rootPath))
+      case Languages.PYTHONSRC => Some(PythonSrcCpgGenerator(conf, rootPath))
+      case Languages.PHP       => Some(PhpCpgGenerator(conf, rootPath))
+      case Languages.GHIDRA    => Some(GhidraCpgGenerator(conf, rootPath))
+      case Languages.KOTLIN    => Some(KotlinCpgGenerator(conf, rootPath))
+      case Languages.SOLIDITY  => Some(SolidityCpgGenerator(config.withArgs(args), rootPath))
+      case _                   => None
     }
   }
 

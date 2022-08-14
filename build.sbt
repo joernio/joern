@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "2.13.8"
 
-val cpgVersion = "1.3.556"
+val cpgVersion = "1.3.558"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -39,6 +39,9 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   kotlin2cpg,
   solidity2cpg
 )
+
+ThisBuild / libraryDependencies += 
+  "org.apache.logging.log4j" % "log4j-slf4j-impl" % Versions.log4j % Test
 
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols

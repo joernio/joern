@@ -1,5 +1,6 @@
 package io.joern.c2cpg
 
+import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.passes.{AstCreationPass, HeaderContentPass, PreprocessorPass}
 import io.joern.c2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
@@ -17,15 +18,9 @@ class C2Cpg extends X2CpgFrontend[Config] {
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       new MetaDataPass(cpg, Languages.NEWC, config.inputPath).createAndApply()
-      val astCreationPass =
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, config, report)
-      astCreationPass.createAndApply()
-      val headerAstCreationPass =
-        new AstCreationPass(cpg, AstCreationPass.HeaderFiles, config, report)
-      headerAstCreationPass.createAndApply()
-
-      val types = astCreationPass.usedTypes() ++ headerAstCreationPass.usedTypes()
-      new TypeNodePass(types.distinct, cpg).createAndApply()
+      new AstCreationPass(cpg, AstCreationPass.SourceFiles, config, report).createAndApply()
+      new AstCreationPass(cpg, AstCreationPass.HeaderFiles, config, report).createAndApply()
+      new TypeNodePass(CGlobal.typesSeen(), cpg).createAndApply()
       new HeaderContentPass(cpg, config).createAndApply()
       report.print()
     }

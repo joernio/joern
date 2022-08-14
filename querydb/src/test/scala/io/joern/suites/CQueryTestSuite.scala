@@ -10,12 +10,8 @@ import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.semanticcpg.language._
 
 class CQueryTestSuite extends DataFlowCodeToCpgSuite {
-  val argumentProvider = new QDBArgumentProvider(3)
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    semanticsFilename = argumentProvider.testSemanticsFilename
-  }
+  private val argumentProvider = new QDBArgumentProvider(3)
 
   def queryBundle: QueryBundle = QueryUtil.EmptyBundle
 

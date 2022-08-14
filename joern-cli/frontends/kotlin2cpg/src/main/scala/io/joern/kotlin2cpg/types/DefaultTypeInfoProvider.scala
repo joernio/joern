@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinToJVMBytecodeCompiler,
   NoScopeRecordCliBindingTrace
 }
+import org.jetbrains.kotlin.com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
 import org.jetbrains.kotlin.descriptors.impl.{
@@ -21,9 +22,12 @@ import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
 import org.jetbrains.kotlin.psi.{
   KtArrayAccessExpression,
   KtBinaryExpression,
+  KtBlockExpression,
   KtCallExpression,
+  KtClassBody,
   KtClassLiteralExpression,
   KtClassOrObject,
+  KtDeclaration,
   KtDestructuringDeclarationEntry,
   KtElement,
   KtExpression,
@@ -33,6 +37,7 @@ import org.jetbrains.kotlin.psi.{
   KtParameter,
   KtPrimaryConstructor,
   KtProperty,
+  KtPsiUtil,
   KtQualifiedExpression,
   KtSecondaryConstructor,
   KtSuperExpression,
@@ -222,11 +227,21 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def fullName(expr: KtClassOrObject, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.CLASS.getKey))
+    val nonLocalFullName = Option(mapForEntity.get(BindingContext.CLASS.getKey))
       .map(_.getDefaultType)
       .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
+    if (expr.isLocal) {
+
+      val fnDescMaybe = Option(mapForEntity.get(BindingContext.CLASS.getKey))
+      fnDescMaybe
+        .map(_.getContainingDeclaration)
+        .map { containingDecl =>
+          s"${TypeRenderer.renderFqName(containingDecl.getOriginal)}.${expr.getName}"
+        }
+        .getOrElse(nonLocalFullName)
+    } else nonLocalFullName
   }
 
   def isCompanionObject(expr: KtClassOrObject): Boolean = {
@@ -499,12 +514,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String) = {
-    val containingFile = expr.getContainingKtFile
-    val fileName       = containingFile.getName
-    val packageName    = containingFile.getPackageFqName.toString
-    val lambdaNum      = keyPool.next
-    val astDerivedFullName =
-      packageName + ":" + "<lambda>" + "<f_" + fileName + "_no" + lambdaNum + ">" + "()"
+    val containingFile      = expr.getContainingKtFile
+    val fileName            = containingFile.getName
+    val packageName         = containingFile.getPackageFqName.toString
+    val lambdaNum           = keyPool.next
+    val astDerivedFullName  = s"$packageName:<lambda><f_${fileName}_no${lambdaNum}>()"
     val astDerivedSignature = anySignature(expr.getValueParameters.asScala.toList)
 
     val render = for {
@@ -519,9 +533,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         if (args.isEmpty) ""
         else if (args.size == 1) TypeConstants.javaLangObject
         else s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (args.size - 1)}"
-      val signature = TypeConstants.javaLangObject + "(" + renderedArgs + ")"
-      val fullName =
-        packageName + ".<lambda><f_" + fileName + "_no" + lambdaNum.toString + ">" + ":" + signature
+      val signature = s"${TypeConstants.javaLangObject}($renderedArgs)"
+      val fullName  = s"$packageName.<lambda><f_${fileName}_no${lambdaNum.toString}>:$signature"
       (fullName, signature)
     }
     render.getOrElse((astDerivedFullName, astDerivedSignature))
@@ -617,8 +630,18 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         s"$renderedType.${expr.getName}"
       }
     }
+
+    val nameNoParent = s"${methodName.getOrElse(expr.getFqName)}"
+    val name = if (expr.getContext.isInstanceOf[KtClassBody] || expr.isLocal) {
+      fnDescMaybe
+        .map(_.getContainingDeclaration)
+        .map { containingDecl =>
+          s"${TypeRenderer.renderFqName(containingDecl.getOriginal)}.${expr.getName}"
+        }
+        .getOrElse(nameNoParent)
+    } else nameNoParent
     val signature = s"$returnTypeFullName$paramListSignature"
-    val fullname  = s"${methodName.getOrElse(expr.getFqName)}:$signature"
+    val fullname  = s"$name:$signature"
     (fullname, signature)
   }
 
@@ -753,13 +776,11 @@ object DefaultTypeInfoProvider {
     } catch {
       case noSuchField: NoSuchFieldException =>
         logger.debug(
-          "Encountered _no such field_ exception while retrieving type info for `" + entity.getName + "`: `" + noSuchField + "`."
+          s"Encountered _no such field_ exception while retrieving type info for `${entity.getName}`: `$noSuchField`."
         )
         KeyFMap.EMPTY_MAP
       case e if NonFatal(e) =>
-        logger.debug(
-          "Encountered general exception while retrieving type info for `" + entity.getName + "`: `" + e + "`."
-        )
+        logger.debug(s"Encountered general exception while retrieving type info for `${entity.getName}`: `$e`.")
         KeyFMap.EMPTY_MAP
     }
   }

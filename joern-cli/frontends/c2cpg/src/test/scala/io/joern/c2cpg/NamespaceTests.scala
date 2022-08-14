@@ -1,18 +1,18 @@
 package io.joern.c2cpg
 
-import io.joern.c2cpg.fixtures.CompleteCpgFixture
+import io.joern.c2cpg.parser.FileDefaults
+import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Inside
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class NamespaceTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFixture {
+class NamespaceTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
 
   "Namespaces" should {
 
-    "be correct for nested namespaces" in CompleteCpgFixture("""
+    "be correct for nested namespaces" in {
+      val cpg = code("""
         |namespace Q {
         |  namespace V {   // V is a member of Q, and is fully defined within Q
         |    class C { int m(); }; // C is a member of V and is fully defined within V
@@ -31,7 +31,7 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
         |                // enclosing namespaces are the global namespace, Q, and Q::V
         |  { return 0 ; }
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.method.isNotStub.fullName.l) { case List(f, m) =>
         f shouldBe "Q.V.f"
         m shouldBe "Q.V.C.m"
@@ -56,7 +56,8 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
 
     }
 
-    "be correct for nested namespaces in C++17 style" in CompleteCpgFixture("""
+    "be correct for nested namespaces in C++17 style" in {
+      val cpg = code("""
         |namespace Q::V {
         |  class C { int m(); }; // C is a member of V and is fully defined within V
         |                        // C::m is only declared
@@ -73,7 +74,7 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
         |int V::C::m() // definition of V::C::m outside of the namespace (and the class body)
         |              // enclosing namespaces are the global namespace, Q, and Q::V
         |{ return 0; }
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.method.fullName.l) { case List(_, m1, f1, f2, h, m2) =>
         // TODO: this looks strange too it first glance. But as Eclipse CDT does not provide any
         //  mapping from definitions outside of namespace into them we cant reconstruct proper full-names.
@@ -95,7 +96,8 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
       }
     }
 
-    "be correct for unnamed namespaces" in CompleteCpgFixture("""
+    "be correct for unnamed namespaces" in {
+      val cpg = code("""
         |namespace {
         |  int i; // defines ::(unique)::i
         |}
@@ -117,7 +119,7 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
         |  i++;    // error: ::(unique)::i and ::A::(unique)::i are both in scope
         |  A::i++; // ok, increments ::A::(unique)::i
         |  j++;    // ok, increments ::A::(unique)::j
-        |}""".stripMargin) { cpg =>
+        |}""".stripMargin)
       inside(cpg.namespaceBlock.l) { case List(_, _, unnamed1, a, unnamed2) =>
         unnamed1.fullName shouldBe "anonymous_namespace_0"
         a.fullName shouldBe "A"
@@ -138,7 +140,8 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
       }
     }
 
-    "be correct for namespaces with using" in CompleteCpgFixture("""
+    "be correct for namespaces with using" in {
+      val cpg = code("""
         |void f();
         |
         |namespace A {
@@ -153,7 +156,7 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
         |void h() {
         |  X::f(); // calls ::f
         |  X::g(); // calls A::g
-        |}""".stripMargin) { cpg =>
+        |}""".stripMargin)
       inside(cpg.namespaceBlock.l) { case List(_, _, a, x) =>
         a.fullName shouldBe "A"
         x.fullName shouldBe "X"
@@ -173,7 +176,8 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
       }
     }
 
-    "be correct for namespaces with using and synonyms" in CompleteCpgFixture("""
+    "be correct for namespaces with using and synonyms" in {
+      val cpg = code("""
         |namespace A {
         |  void f(int);
         |}
@@ -190,7 +194,7 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
         |void bar() {
         |  using A::f; // this f is a synonym for both A::f(int) and A::f(char)
         |  f('a');     // calls f(char)
-        |}""".stripMargin) { cpg =>
+        |}""".stripMargin)
       inside(cpg.namespaceBlock.l) { case List(_, _, a1, a2) =>
         // TODO: how to handle namespace extension?
         a1.fullName shouldBe "A"
@@ -214,7 +218,8 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
       }
     }
 
-    "be correct for namespaces with alias" in CompleteCpgFixture("""
+    "be correct for namespaces with alias" in {
+      val cpg = code("""
         |namespace foo {
         |  namespace bar {
         |    namespace baz {
@@ -227,7 +232,7 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
         | 
         |int main() {
         |  int x = fbz::qux;
-        |}""".stripMargin) { cpg =>
+        |}""".stripMargin)
       inside(cpg.namespaceBlock.l) { case List(_, _, foo, bar, baz, fbz) =>
         foo.name shouldBe "foo"
         foo.fullName shouldBe "foo"
@@ -259,14 +264,15 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
       }
     }
 
-    "be correct for namespaces with alias inside of methods" in CompleteCpgFixture("""
+    "be correct for namespaces with alias inside of methods" in {
+      val cpg = code("""
        |namespace foo {
        |  namespace bar {};
        |};
        | 
        |int main() {
        |  namespace x = foo::bar;
-       |};""".stripMargin) { cpg =>
+       |};""".stripMargin)
       inside(cpg.namespaceBlock.l) { case List(_, _, foo, bar, x) =>
         foo.name shouldBe "foo"
         foo.fullName shouldBe "foo"
@@ -277,14 +283,15 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
       }
     }
 
-    "be correct for using namespaces inside of methods" in CompleteCpgFixture("""
+    "be correct for using namespaces inside of methods" in {
+      val cpg = code("""
        |namespace foo {
        |  namespace bar {};
        |};
        | 
        |int main() {
        |  using namespace foo::bar;
-       |};""".stripMargin) { cpg =>
+       |};""".stripMargin)
       inside(cpg.namespaceBlock.l) { case List(_, _, foo, bar) =>
         foo.name shouldBe "foo"
         foo.fullName shouldBe "foo"
@@ -293,7 +300,8 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
       }
     }
 
-    "be correct for derived classes in namespaces" in CompleteCpgFixture("""
+    "be correct for derived classes in namespaces" in {
+      val cpg = code("""
         |namespace BaseClasses {
         |
         |class A {
@@ -345,20 +353,21 @@ class NamespaceTests extends AnyWordSpec with Matchers with Inside with Complete
         |
         |  return 0;
         |};
-        |""".stripMargin) { cpg =>
-      inside(cpg.namespace.nameNot("<global>").sortBy(_.name).toList) {
+        |""".stripMargin)
+      inside(cpg.namespace.nameNot(NamespaceTraversal.globalNamespaceName).sortBy(_.name).toList) {
         case List(baseClasses, finalClasses, interClasses) =>
           baseClasses.name shouldBe "BaseClasses"
           interClasses.name shouldBe "IntermediateClasses"
           finalClasses.name shouldBe "FinalClasses"
       }
-      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(baseClasses, interClasses, finalClasses) =>
-        baseClasses.name shouldBe "BaseClasses"
-        baseClasses.fullName shouldBe "BaseClasses"
-        interClasses.name shouldBe "IntermediateClasses"
-        interClasses.fullName shouldBe "IntermediateClasses"
-        finalClasses.name shouldBe "FinalClasses"
-        finalClasses.fullName shouldBe "FinalClasses"
+      inside(cpg.namespaceBlock.nameNot(NamespaceTraversal.globalNamespaceName).l) {
+        case List(baseClasses, interClasses, finalClasses) =>
+          baseClasses.name shouldBe "BaseClasses"
+          baseClasses.fullName shouldBe "BaseClasses"
+          interClasses.name shouldBe "IntermediateClasses"
+          interClasses.fullName shouldBe "IntermediateClasses"
+          finalClasses.name shouldBe "FinalClasses"
+          finalClasses.fullName shouldBe "FinalClasses"
       }
       inside(cpg.typ.name("A").derivedTypeTransitive.l) { case List(b1, c11, c12, b2, c21, c22, c23) =>
         b1.name shouldBe "B1"

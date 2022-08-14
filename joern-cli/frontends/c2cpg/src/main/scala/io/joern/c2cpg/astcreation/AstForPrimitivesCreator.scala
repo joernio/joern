@@ -7,9 +7,7 @@ import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
-trait AstForPrimitivesCreator {
-
-  this: AstCreator =>
+trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForComment(comment: IASTComment): Ast =
     Ast(NewComment().code(nodeSignature(comment)).filename(fileName(comment)).lineNumber(line(comment)))
@@ -76,8 +74,7 @@ trait AstForPrimitivesCreator {
   }
 
   protected def astForInitializerList(l: IASTInitializerList): Ast = {
-    // TODO re-use from Operators once it there
-    val op           = "<operator>.arrayInitializer"
+    val op           = Operators.arrayInitializer
     val initCallNode = newCallNode(l, op, op, DispatchTypes.STATIC_DISPATCH)
 
     val MAX_INITIALIZERS = 1000

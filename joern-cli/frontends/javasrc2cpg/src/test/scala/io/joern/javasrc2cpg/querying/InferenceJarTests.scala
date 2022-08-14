@@ -47,7 +47,7 @@ class InferenceJarTests extends AnyFreeSpec with Matchers {
 
     "it should fail to resolve the type for Deps" in {
       val call = cpg.method.name("test1").call.name("foo").head
-      call.methodFullName shouldBe s"${TypeConstants.UnresolvedReceiver}.foo:${TypeConstants.UnresolvedType}()"
+      call.methodFullName shouldBe s"${TypeConstants.UnresolvedType}.foo:${TypeConstants.UnresolvedType}()"
       call.signature shouldBe s"${TypeConstants.UnresolvedType}()"
       call.typeFullName shouldBe s"${TypeConstants.UnresolvedType}"
     }

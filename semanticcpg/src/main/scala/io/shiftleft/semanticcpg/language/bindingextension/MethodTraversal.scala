@@ -1,7 +1,6 @@
 package io.shiftleft.semanticcpg.language.bindingextension
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Method, TypeDecl}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
@@ -15,5 +14,5 @@ class MethodTraversal(val traversal: Traversal[Method]) extends AnyVal {
   /** Traverse to bindings which reference to this method.
     */
   def referencingBinding: Traversal[Binding] =
-    traversal.in(EdgeTypes.REF).where(_.hasLabel(NodeTypes.BINDING)).cast[Binding]
+    traversal.flatMap(_._bindingViaRefIn)
 }

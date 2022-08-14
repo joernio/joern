@@ -455,7 +455,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(receiver)       = barCall.receiver.isCall.l
       val List(receiverViaAst) = barCall.astChildren.isCall.l
 
-      receiver.head shouldBe receiverViaAst.head
+      receiver shouldBe receiverViaAst
       receiver.code shouldBe "(_tmp_0 = x.foo(y)).bar"
       receiver.name shouldBe Operators.fieldAccess
       receiver.order shouldBe 0
@@ -537,7 +537,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     "have local variable for function with correct type full name" in AstFixture("function method(x) {}") { cpg =>
       val List(method) = cpg.method.nameExact(":program").l
-      val List(block)  = method.block.l
+      val block        = method.block
       val localFoo     = block.local.head
       localFoo.name shouldBe "method"
       localFoo.typeFullName should endWith("code.js::program:method")
@@ -778,7 +778,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(method)      = cpg.method.nameExact(":program").l
       val List(methodBlock) = method.astChildren.isBlock.l
       val List(loopBlock)   = methodBlock.astChildren.isBlock.l
-      checkForInOrOf(loopBlock.head)
+      checkForInOrOf(loopBlock)
     }
 
     "be correct for for-loop with for-of" in AstFixture("""
@@ -789,7 +789,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(method)      = cpg.method.nameExact(":program").l
       val List(methodBlock) = method.astChildren.isBlock.l
       val List(loopBlock)   = methodBlock.astChildren.isBlock.l
-      checkForInOrOf(loopBlock.head)
+      checkForInOrOf(loopBlock)
     }
 
     "be correct for for-loop with empty test" in AstFixture("for(;;){}") { cpg =>
@@ -1249,7 +1249,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "be correct for empty method" in AstFixture("function method() {}") { cpg =>
       val List(program) = cpg.method.nameExact("method").l
       program.astChildren.isBlock.size shouldBe 1
-      val List(blockMethodReturn) = program.methodReturn.l
+      val blockMethodReturn = program.methodReturn
       blockMethodReturn.code shouldBe "RET"
       blockMethodReturn.typeFullName shouldBe Defines.ANY.label
     }
@@ -1268,12 +1268,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     val List(call) = node.astChildren.isCall.codeExact(s"_tmp_0.$keyName = $assignedValue").l
     call.methodFullName shouldBe Operators.assignment
 
-    val List(tmpAccess: Call, value: HasCode with HasArgumentIndex) = call.astChildren.l
+    val List(tmpAccess: Call, value) = call.astChildren.l
     tmpAccess.code shouldBe s"_tmp_0.$keyName"
     tmpAccess.methodFullName shouldBe Operators.fieldAccess
     tmpAccess.argumentIndex shouldBe 1
     value.code shouldBe assignedValue
-    value.argumentIndex shouldBe 2
+    value.property(Properties.ARGUMENT_INDEX) shouldBe 2
 
     val List(leftHandSideTmpId) = tmpAccess.astChildren.isIdentifier.nameExact("_tmp_0").l
     leftHandSideTmpId.code shouldBe "_tmp_0"
@@ -1315,7 +1315,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     objectKeysCall.code shouldBe "Object.keys(arr)"
     objectKeysCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-    val List(objectKeysCallArg: Identifier) = objectKeysCall.argument(1).l
+    val objectKeysCallArg = objectKeysCall.argument(1).asInstanceOf[Identifier]
     objectKeysCallArg.name shouldBe "arr"
     objectKeysCallArg.order shouldBe 1
 
@@ -1381,19 +1381,19 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     pushCallReceiver.name shouldBe Operators.fieldAccess
     pushCallReceiver.argumentIndex shouldBe 0
 
-    val List(pushCallReceiverBase: Identifier) = pushCallReceiver.argument(1).l
+    val pushCallReceiverBase = pushCallReceiver.argument(1).asInstanceOf[Identifier]
     pushCallReceiverBase.name shouldBe "_tmp_0"
     pushCallReceiverBase.order shouldBe 1
 
-    val List(pushCallReceiverMember: FieldIdentifier) = pushCallReceiver.argument(2).l
+    val pushCallReceiverMember = pushCallReceiver.argument(2).asInstanceOf[FieldIdentifier]
     pushCallReceiverMember.canonicalName shouldBe "push"
     pushCallReceiverMember.order shouldBe 2
 
-    val List(pushCallThis: Identifier) = pushCall.argument(1).l
+    val pushCallThis = pushCall.argument(1).asInstanceOf[Identifier]
     pushCallThis.name shouldBe "_tmp_0"
     pushCallThis.order shouldBe 1
 
-    val List(pushCallArg: Literal) = pushCall.argument(2).l
+    val pushCallArg = pushCall.argument(2).asInstanceOf[Literal]
     pushCallArg.code shouldBe element.toString
     pushCallArg.order shouldBe 2
   }

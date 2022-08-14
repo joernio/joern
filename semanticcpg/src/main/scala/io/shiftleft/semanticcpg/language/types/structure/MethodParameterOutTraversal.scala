@@ -29,10 +29,10 @@ class MethodParameterOutTraversal(val traversal: Traversal[MethodParameterOut]) 
   def argument: Traversal[Expression] =
     for {
       paramOut <- traversal
-      method   <- paramOut.method
-      call     <- method._callViaCallIn
-      arg      <- call._argumentOut.asScala.collect { case node: Expression with HasArgumentIndex => node }
-      if paramOut._parameterLinkIn.property("INDEX").headOption.contains(arg.argumentIndex)
+      method = paramOut.method
+      call <- method.callIn
+      arg  <- call.argumentOut.collectAll[Expression]
+      if paramOut.parameterLinkIn.index.headOption.contains(arg.argumentIndex)
     } yield arg
 
 }

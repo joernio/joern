@@ -5,9 +5,7 @@ import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTLabelStatement, IASTNode}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
-trait AstNodeBuilder {
-
-  this: AstCreator =>
+trait AstNodeBuilder { this: AstCreator =>
 
   protected def newUnknown(node: IASTNode): NewUnknown =
     NewUnknown()

@@ -1,26 +1,26 @@
 package io.joern.c2cpg
 
-import io.joern.c2cpg.fixtures.CompleteCpgFixture
+import io.joern.c2cpg.parser.FileDefaults
+import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Inside
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFixture {
+class EnumTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
 
   "Enums" should {
 
-    "be correct for simple enum" in CompleteCpgFixture("""
+    "be correct for simple enum" in {
+      val cpg = code("""
         |enum color
         |{
         |    red,
         |    yellow,
         |    green = 20,
         |    blue
-        |};""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(color) =>
+        |};""".stripMargin)
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(color) =>
         color.name shouldBe "color"
         color.code should startWith("enum color")
         inside(color.member.l) { case List(red, yellow, green, blue) =>
@@ -40,44 +40,47 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
       }
     }
 
-    "be correct for simple enum typedef" in CompleteCpgFixture("""
+    "be correct for simple enum typedef" in {
+      val cpg = code("""
         |typedef enum color
         |{
         |    red,
         |    yellow,
         |    green = 20,
         |    blue
-        |} C;""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.nameNot("<global>").filter(x => !x.isExternal).l) { case List(color, c) =>
-        color.name shouldBe "color"
-        color.code should startWith("typedef enum color")
-        color.aliasTypeFullName shouldBe None
-        c.name shouldBe "C"
-        c.aliasTypeFullName shouldBe Some("color")
-        inside(color.astChildren.isMember.l) { case List(red, yellow, green, blue) =>
-          red.name shouldBe "red"
-          yellow.name shouldBe "yellow"
-          green.name shouldBe "green"
-          blue.name shouldBe "blue"
-        }
-        inside(color.astChildren.isMethod.l) { case List(sinit) =>
-          sinit.name shouldBe "<sinit>"
-          sinit.fullName shouldBe "color:<sinit>"
-          sinit.code shouldBe "green = 20"
-          inside(sinit.ast.isCall.l) { case List(greenInit) =>
-            greenInit.code shouldBe "green = 20"
+        |} C;""".stripMargin)
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).filter(x => !x.isExternal).l) {
+        case List(color, c) =>
+          color.name shouldBe "color"
+          color.code should startWith("typedef enum color")
+          color.aliasTypeFullName shouldBe None
+          c.name shouldBe "C"
+          c.aliasTypeFullName shouldBe Some("color")
+          inside(color.astChildren.isMember.l) { case List(red, yellow, green, blue) =>
+            red.name shouldBe "red"
+            yellow.name shouldBe "yellow"
+            green.name shouldBe "green"
+            blue.name shouldBe "blue"
           }
-        }
+          inside(color.astChildren.isMethod.l) { case List(sinit) =>
+            sinit.name shouldBe "<sinit>"
+            sinit.fullName shouldBe "color:<sinit>"
+            sinit.code shouldBe "green = 20"
+            inside(sinit.ast.isCall.l) { case List(greenInit) =>
+              greenInit.code shouldBe "green = 20"
+            }
+          }
       }
     }
 
-    "be correct for simple enum class" in CompleteCpgFixture("""
+    "be correct for simple enum class" in {
+      val cpg = code("""
         |enum class altitude: char
         |{ 
         |     high='h',
         |     low='l', // C++11 allows the extra comma
-        |}; """.stripMargin) { cpg =>
-      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(altitude) =>
+        |}; """.stripMargin)
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(altitude) =>
         altitude.name shouldBe "altitude"
         altitude.code should startWith("enum class altitude")
         inside(altitude.member.l) { case List(high, low) =>
@@ -98,14 +101,15 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
       }
     }
 
-    "be correct for simple enum with type" in CompleteCpgFixture("""
+    "be correct for simple enum with type" in {
+      val cpg = code("""
         |enum smallenum: int
         |{
         |    a,
         |    b,
         |    c
-        |};""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(smallenum) =>
+        |};""".stripMargin)
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(smallenum) =>
         smallenum.name shouldBe "smallenum"
         smallenum.code should startWith("enum smallenum")
         inside(smallenum.member.l) { case List(a, b, c) =>
@@ -120,14 +124,15 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
       }
     }
 
-    "be correct for anonymous enum" in CompleteCpgFixture("""
+    "be correct for anonymous enum" in {
+      val cpg = code("""
          |enum
          |{
          |    d,
          |    e,
          |    f
-         |};""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(anon) =>
+         |};""".stripMargin)
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(anon) =>
         anon.name shouldBe "anonymous_enum_0"
         anon.code should startWith("enum")
         inside(anon.member.l) { case List(d, e, f) =>
@@ -139,15 +144,16 @@ class EnumTests extends AnyWordSpec with Matchers with Inside with CompleteCpgFi
       }
     }
 
-    "be correct for enum access" in CompleteCpgFixture("""
+    "be correct for enum access" in {
+      val cpg = code("""
        |enum X: int
        |{
        |    a,
        |    b
        |};
        |int x = X::a;
-       |""".stripMargin) { cpg =>
-      inside(cpg.typeDecl.nameNot("<global>").internal.l) { case List(x) =>
+       |""".stripMargin)
+      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(x) =>
         x.name shouldBe "X"
         x.code should startWith("enum X")
         inside(x.member.l) { case List(a, b) =>

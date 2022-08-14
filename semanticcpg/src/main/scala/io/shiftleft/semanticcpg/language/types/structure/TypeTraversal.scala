@@ -1,9 +1,9 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.{Traversal, toElementTraversal, toNodeTraversal}
+import overflowdb.traversal.Traversal
 
 class TypeTraversal(val traversal: Traversal[Type]) extends AnyVal {
 
@@ -60,7 +60,7 @@ class TypeTraversal(val traversal: Traversal[Type]) extends AnyVal {
   /** Type declarations which derive from this type.
     */
   def derivedTypeDecl: Traversal[TypeDecl] =
-    traversal.in(EdgeTypes.INHERITS_FROM).cast[TypeDecl]
+    traversal.flatMap(_.inheritsFromIn)
 
   /** Direct alias types.
     */
@@ -73,30 +73,23 @@ class TypeTraversal(val traversal: Traversal[Type]) extends AnyVal {
     traversal.repeat(_.aliasType)(_.emitAllButFirst)
 
   def localOfType: Traversal[Local] =
-    traversal.in(EdgeTypes.EVAL_TYPE).hasLabel(NodeTypes.LOCAL).cast[Local]
+    traversal.flatMap(_._localViaEvalTypeIn)
 
   def memberOfType: Traversal[Member] =
-    traversal.in(EdgeTypes.EVAL_TYPE).hasLabel(NodeTypes.MEMBER).cast[Member]
+    traversal.flatMap(_.evalTypeIn).collectAll[Member]
 
   @deprecated("Please use `parameterOfType`")
   def parameter: Traversal[MethodParameterIn] = parameterOfType
 
   def parameterOfType: Traversal[MethodParameterIn] =
-    traversal
-      .in(EdgeTypes.EVAL_TYPE)
-      .collectAll[MethodParameterIn]
+    traversal.flatMap(_.evalTypeIn).collectAll[MethodParameterIn]
 
   def methodReturnOfType: Traversal[MethodReturn] =
-    traversal
-      .in(EdgeTypes.EVAL_TYPE)
-      .hasLabel(NodeTypes.METHOD_RETURN)
-      .cast[MethodReturn]
+    traversal.flatMap(_.evalTypeIn).collectAll[MethodReturn]
 
   def expressionOfType: Traversal[Expression] = expression
 
   def expression: Traversal[Expression] =
-    traversal
-      .in(EdgeTypes.EVAL_TYPE)
-      .collectAll[Expression]
+    traversal.flatMap(_.evalTypeIn).collectAll[Expression]
 
 }

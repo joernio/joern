@@ -16,7 +16,7 @@ class ControlStructureTraversal(val traversal: Traversal[ControlStructure]) exte
 
   @Doc(info = "The condition associated with this control structure")
   def condition: Traversal[Expression] =
-    traversal.out(EdgeTypes.CONDITION).cast[Expression]
+    traversal.flatMap(_.conditionOut).collectAll[Expression]
 
   @Doc(info = "Control structures where condition.code matches regex")
   def condition(regex: String): Traversal[ControlStructure] =

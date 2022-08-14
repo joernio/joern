@@ -8,7 +8,7 @@ case class Path(elements: List[CfgNode]) {
   def resultPairs(): List[(String, Option[Integer])] = {
     val pairs = elements.map {
       case point: MethodParameterIn =>
-        val method      = point.method.head
+        val method      = point.method
         val method_name = method.name
         val code        = s"$method_name(${method.parameter.l.sortBy(_.order).map(_.code).mkString(", ")})"
         (code, point.lineNumber)

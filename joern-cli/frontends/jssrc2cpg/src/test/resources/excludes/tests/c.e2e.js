@@ -1,1 +1,0 @@
-console.log("tests/c.e2e.js");

@@ -10,17 +10,11 @@ import io.shiftleft.utils.ProjectRoot
 
 class DataFlowCodeToCpgSuite extends CCodeToCpgSuite {
 
-  var semanticsFilename: String = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
+  private val semanticsFilename: String = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
 
-  var semantics: Semantics = _
+  protected val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
 
-  implicit var context: EngineContext = _
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
-    context = EngineContext(semantics)
-  }
+  protected implicit val context: EngineContext = EngineContext(semantics)
 
   override def applyPasses(cpg: Cpg): Unit = {
     super.applyPasses(cpg)
