@@ -4,7 +4,7 @@ import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.toNodeTraversal
 
@@ -1851,6 +1851,27 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
 
   }
+
+  "DataFlowTests69" should {
+    val cpg = code("""
+                     |char *foo() {
+                     |  return "abc" + "firstName";
+                     |}
+                     |
+                     |void bar() {
+                     | log(foo());
+                     |}
+                     |""".stripMargin)
+
+    "find a flow where the first element is a literal" in {
+      val source           = cpg.literal.code(".*firstName.*")
+      val sink             = cpg.call.methodFullName(".*log.*").l
+      val List(flow)       = sink.reachableByFlows(source).l
+      val literal: Literal = flow.elements.head.asInstanceOf[Literal]
+      literal.code shouldBe "\"firstName\""
+    }
+  }
+
 }
 
 class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
@@ -2108,7 +2129,5 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       def freeArg = cpg.call("free").argument(1)
       freeArg.reachableByFlows(freeArg).count(path => path.elements.size > 1) shouldBe 1
     }
-
   }
-
 }

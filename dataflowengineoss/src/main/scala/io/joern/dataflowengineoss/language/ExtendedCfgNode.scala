@@ -43,7 +43,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
         if (first.isDefined && !first.get.visible && !sources.contains(first.get.node)) {
           None
         } else {
-          val visiblePathElements = result.path.filter(_.visible)
+          val visiblePathElements = result.path.filter(x => sources.contains(x.node) || x.visible)
           Some(Path(removeConsecutiveDuplicates(visiblePathElements.map(_.node))))
         }
       }
