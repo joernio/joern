@@ -1,12 +1,14 @@
 package io.joern.suites
 
 import io.joern.util.QueryUtil
-import io.joern.console.QueryBundle
-import io.joern.console.Query
+import io.joern.console.{CodeSnippet, Query, QueryBundle}
 import io.joern.kotlin2cpg.{Config, Kotlin2Cpg}
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.utils.ProjectRoot
+import io.joern.console.scan._
+import io.shiftleft.codepropertygraph.generated.nodes.ConfigFile
+import io.shiftleft.semanticcpg.language._
 
 import java.io.File
 
@@ -34,5 +36,15 @@ class AndroidQueryTestSuite extends Code2CpgFixture(new Kotlin2CpgFrontend()) {
 
   def allQueries: List[Query] = QueryUtil.allQueries(queryBundle, argumentProvider)
 
-  protected val cpg: TestCpg = code("fun main() = println(0xff)")
+  protected def cpgForSnippets(snippets: List[CodeSnippet]): Cpg = {
+    val first = snippets(0)
+    val cpg   = code(first.content, first.filename)
+    snippets.drop(1).foldLeft(cpg) { (foldCpg, e) =>
+      foldCpg.moreCode(e.content, e.filename)
+    }
+  }
+
+  def findMatchingConfigFiles(cpg: Cpg, q: Query): Set[String] = {
+    q(cpg).flatMap(_.evidence).collect { case c: ConfigFile => c }.name.toSetImmutable
+  }
 }

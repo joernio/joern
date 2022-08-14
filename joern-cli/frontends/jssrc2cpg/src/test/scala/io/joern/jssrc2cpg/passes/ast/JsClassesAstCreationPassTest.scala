@@ -105,7 +105,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       allocCall.name shouldBe Operators.alloc
       allocCall.code shouldBe ".alloc"
 
-      val List(constructorCall) = newCallBlock.astChildren.isCall.codeExact("MyClass()").l
+      val List(constructorCall) = newCallBlock.astChildren.isCall.codeExact("new MyClass()").l
       constructorCall.astChildren.isIdentifier.nameExact("MyClass").size shouldBe 1
 
       val List(receiver) = constructorCall.receiver.isIdentifier.nameExact("MyClass").l
@@ -143,7 +143,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       allocCall.name shouldBe Operators.alloc
       allocCall.code shouldBe ".alloc"
 
-      val List(constructorCall) = newCallBlock.astChildren.isCall.codeExact("MyClass(arg1, arg2)").l
+      val List(constructorCall) = newCallBlock.astChildren.isCall.codeExact("new MyClass(arg1, arg2)").l
       constructorCall.astChildren.isIdentifier.nameExact("MyClass").size shouldBe 1
 
       val List(receiver) = constructorCall.receiver.isIdentifier.nameExact("MyClass").l
@@ -195,7 +195,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       allocCall.name shouldBe Operators.alloc
       allocCall.code shouldBe ".alloc"
 
-      val List(constructorCall) = newCallBlock.astChildren.isCall.codeExact("foo.bar.MyClass()").l
+      val List(constructorCall) = newCallBlock.astChildren.isCall.codeExact("new foo.bar.MyClass()").l
       val List(path)            = constructorCall.astChildren.isCall.codeExact("foo.bar.MyClass").l
       path.name shouldBe Operators.fieldAccess
 
@@ -237,7 +237,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       allocCall.name shouldBe Operators.alloc
       allocCall.code shouldBe ".alloc"
 
-      val List(constructorCall) = newCallBlock.astChildren.isCall.codeExact("Foo()").l
+      val List(constructorCall) = newCallBlock.astChildren.isCall.codeExact("new Foo()").l
       constructorCall.astChildren.isIdentifier.nameExact("Foo").size shouldBe 1
 
       val List(receiver) = constructorCall.receiver.isIdentifier.nameExact("Foo").l

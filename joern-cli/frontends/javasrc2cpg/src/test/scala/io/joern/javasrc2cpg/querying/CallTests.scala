@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language._
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
   "call to method in different class" should {
-    val cpg = code(
+    lazy val cpg = code(
       """
         |class Base {
         |  void method(int aaa) {}
@@ -35,7 +35,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
   }
 
   "call to method in same class" should {
-    val cpg = code(
+    lazy val cpg = code(
       """
         |class Base {
         |  void method(int aaa) {}
@@ -62,7 +62,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
 
   "code fields" should {
     "be correct for chained calls starting at a constructor invocation" in {
-      val cpg = code("""
+      lazy val cpg = code("""
           |class Foo {
           |  private String value;
           |
@@ -85,7 +85,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
     }
 
     "be correct for constructor invocations" in {
-      val cpg = code("""
+      lazy val cpg = code("""
           |class Foo {
           |
           |  public static void test() {
@@ -103,7 +103,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
   }
 
   "call to method with generic return type" should {
-    val cpg = code("""
+    lazy val cpg = code("""
         |class Foo {
         |  void method(java.util.function.Function<String, Integer> supplier) {
         |     supplier.apply("abc");
@@ -121,7 +121,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
   }
 
   "call to generic method of generic type" should {
-    val cpg = code("""
+    lazy val cpg = code("""
         |class Foo <T extends Number> {
         |  <S extends T> void foo(S i) {}
         |
@@ -138,7 +138,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
   }
 
   "call to method with generic array parameter" should {
-    val cpg = code("""
+    lazy val cpg = code("""
         |class Foo <T> {
         |  void foo(T[] aaa) {}
         |

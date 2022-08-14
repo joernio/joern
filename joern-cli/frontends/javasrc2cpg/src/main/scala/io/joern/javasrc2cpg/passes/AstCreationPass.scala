@@ -96,6 +96,7 @@ class AstCreationPass(codeDir: String, filenames: List[String], config: Config, 
           Seq()
       }
     } else {
+      logger.info("dependency resolving disabled")
       Seq()
     }
 

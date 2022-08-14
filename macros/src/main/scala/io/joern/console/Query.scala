@@ -4,6 +4,8 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import overflowdb.traversal.Traversal
 
+case class CodeSnippet(content: String, filename: String)
+case class MultiFileCodeExamples(positive: List[List[CodeSnippet]], negative: List[List[CodeSnippet]])
 case class CodeExamples(positive: List[String], negative: List[String])
 
 case class Query(
@@ -16,7 +18,8 @@ case class Query(
   traversalAsString: String = "",
   tags: List[String] = List(),
   language: String = "",
-  codeExamples: CodeExamples = CodeExamples(List(), List())
+  codeExamples: CodeExamples = CodeExamples(List(), List()),
+  multiFileCodeExamples: MultiFileCodeExamples = MultiFileCodeExamples(List(), List())
 )
 
 object Query {
@@ -28,7 +31,8 @@ object Query {
     score: Double,
     traversalWithStrRep: TraversalWithStrRep,
     tags: List[String] = List(),
-    codeExamples: CodeExamples = CodeExamples(List(), List())
+    codeExamples: CodeExamples = CodeExamples(List(), List()),
+    multiFileCodeExamples: MultiFileCodeExamples = MultiFileCodeExamples(List(), List())
   ): Query = {
     Query(
       name = name,
@@ -39,7 +43,8 @@ object Query {
       traversal = traversalWithStrRep.traversal,
       traversalAsString = traversalWithStrRep.strRep,
       tags = tags,
-      codeExamples = codeExamples
+      codeExamples = codeExamples,
+      multiFileCodeExamples = multiFileCodeExamples
     )
   }
 }

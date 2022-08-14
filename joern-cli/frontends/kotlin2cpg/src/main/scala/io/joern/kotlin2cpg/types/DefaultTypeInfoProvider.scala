@@ -443,10 +443,28 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val renderedReturnType =
           if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) TypeConstants.javaLangObject
           else TypeRenderer.render(originalDesc.getReturnType)
-        val signature = s"$renderedReturnType($renderedParameterTypes)"
-        (s"$renderedFqName:$signature", signature)
+
+        val singleLambdaArgExprMaybe = expr.getSelectorExpression match {
+          case c: KtCallExpression if c.getLambdaArguments.size() == 1 =>
+            Some(c.getLambdaArguments.get(0).getLambdaExpression)
+          case _ => None
+        }
+        val fullNameSignature = s"$renderedReturnType($renderedParameterTypes)"
+        val signature =
+          singleLambdaArgExprMaybe
+            .map(lambdaInvocationSignature(_))
+            .getOrElse(fullNameSignature)
+        (s"$renderedFqName:$fullNameSignature", signature)
       case None => defaultValue
     }
+  }
+
+  def lambdaInvocationSignature(expr: KtLambdaExpression): String = {
+    val paramsString =
+      if (expr.getValueParameters.isEmpty) TypeConstants.javaLangObject
+      else
+        s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject).repeat(expr.getValueParameters.size())}"
+    s"${TypeConstants.javaLangObject}($paramsString)"
   }
 
   def parameterType(expr: KtParameter, defaultValue: String): String = {
@@ -461,6 +479,19 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     } yield render
 
     render.getOrElse(defaultValue)
+  }
+
+  def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean = {
+    expr.getParent.getParent match {
+      case callExpr: KtCallExpression =>
+        resolvedCallDescriptor(callExpr) match {
+          case Some(desc) =>
+            val rendered = TypeRenderer.renderFqName(desc.getOriginal)
+            rendered.startsWith(TypeConstants.kotlinApplyPrefix) || rendered.startsWith(TypeConstants.kotlinAlsoPrefix)
+          case _ => false
+        }
+      case _ => false
+    }
   }
 
   def returnTypeFullName(expr: KtLambdaExpression): String = {

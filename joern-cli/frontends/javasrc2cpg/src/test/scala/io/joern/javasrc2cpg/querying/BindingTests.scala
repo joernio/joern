@@ -5,7 +5,7 @@ import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 
 class BindingTests extends JavaSrcCode2CpgFixture {
   "override for generic method" should {
-    val cpg = code("""
+    lazy val cpg = code("""
         |import java.util.function.Consumer;
         |
         |class SomeConsumer implements Consumer<Integer> {
@@ -27,7 +27,7 @@ class BindingTests extends JavaSrcCode2CpgFixture {
   }
 
   "override for generic method" should {
-    val cpg = code(
+    lazy val cpg = code(
       """
         |import java.util.function.Consumer;
         |

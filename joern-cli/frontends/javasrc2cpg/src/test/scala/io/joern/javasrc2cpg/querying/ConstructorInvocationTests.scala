@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language._
 
 class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   "constructor init method call" should {
-    val cpg = code("""
+    lazy val cpg = code("""
         |class Foo {
         |  Foo(long aaa) {
         |  }
@@ -22,6 +22,38 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       val initCall = cpg.call.nameExact("<init>").head
       initCall.signature shouldBe "void(long)"
       initCall.methodFullName shouldBe "Foo.<init>:void(long)"
+    }
+  }
+
+  "a simple single argument constructor" should {
+    lazy val fooCpg = code("""
+        |class Foo {
+        |  int x;
+        |
+        |  public Foo(int x) {
+        |    this.x = x;
+        |  }
+        |}
+        |""".stripMargin)
+    "create the correct Ast for the constructor" in {
+      fooCpg.method.name("Foo").l match {
+        case List(cons: Method) =>
+          cons.fullName shouldBe "Foo.<init>:void(int)"
+          cons.signature shouldBe "void(int)"
+          cons.code shouldBe "public Foo(int x)"
+          cons.parameter.size shouldBe 2
+          val objParam = cons.parameter.index(0).head
+          objParam.name shouldBe "this"
+          objParam.typeFullName shouldBe "Foo"
+          objParam.dynamicTypeHintFullName shouldBe Seq("Foo")
+          val otherParam = cons.parameter.index(1).head
+          otherParam.name shouldBe "x"
+          otherParam.typeFullName shouldBe "int"
+          otherParam.dynamicTypeHintFullName shouldBe Seq()
+
+        case res =>
+          fail(s"Expected single Foo constructor, but got $res")
+      }
     }
   }
 }
@@ -74,24 +106,6 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
       |""".stripMargin
 
   "it should create correct method nodes for constructors" in {
-    cpg.method.name("Foo").l match {
-      case List(cons: Method) =>
-        cons.fullName shouldBe "Foo.<init>:void(int)"
-        cons.signature shouldBe "void(int)"
-        cons.code shouldBe "public Foo(int x)"
-        cons.parameter.size shouldBe 2
-        val objParam = cons.parameter.index(0).head
-        objParam.name shouldBe "this"
-        objParam.typeFullName shouldBe "Foo"
-        objParam.dynamicTypeHintFullName shouldBe Seq("Foo")
-        val otherParam = cons.parameter.index(1).head
-        otherParam.name shouldBe "x"
-        otherParam.typeFullName shouldBe "int"
-        otherParam.dynamicTypeHintFullName shouldBe Seq()
-
-      case res =>
-        fail(s"Expected single Foo constructor, but got $res")
-    }
 
     cpg.method.name("Bar").l match {
       case List(cons1: Method, cons2: Method) =>

@@ -80,6 +80,11 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
       .repeat(_.in(EdgeTypes.AST))(_.until(_.hasLabel(NodeTypes.TYPE_DECL)))
       .cast[TypeDecl]
 
+  /** The type declaration associated with this method, e.g., the class it is defined in. Alias for 'definingTypeDecl'
+    */
+  @Doc(info = "Type this method is defined in - alias for 'definingTypeDecl'")
+  def typeDecl: Traversal[TypeDecl] = definingTypeDecl
+
   /** The method in which this method is defined
     */
   @Doc(info = "Method this method is defined in")

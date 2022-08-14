@@ -1,12 +1,11 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-class CfgTests extends JavaSrcCodeToCpgFixture {
+class CfgTests extends JavaSrcCode2CpgFixture {
 
-  override val code =
-    """
+  lazy val cpg = code("""
       |class Foo {
       | int foo(int x, int y) {
       |  if (y < 10)
@@ -18,7 +17,7 @@ class CfgTests extends JavaSrcCodeToCpgFixture {
       |  return 0;
       | }
       |}
-    """.stripMargin
+    """.stripMargin)
 
   "should find that sink is control dependent on condition" in {
 //    println(cpg.method())

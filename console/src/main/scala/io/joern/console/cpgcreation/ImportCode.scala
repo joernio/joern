@@ -17,6 +17,12 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   private val workspace          = console.workspace
   protected val generatorFactory = new CpgGeneratorFactory(config)
 
+  private def checkInputPath(inputPath: String): Unit = {
+    if (!File(inputPath).exists) {
+      throw new ConsoleException(s"Input path does not exist: '$inputPath'")
+    }
+  }
+
   /** This is the `importCode(...)` method exposed on the console. It attempts to find a suitable CPG generator first by
     * looking at the `language` parameter and if no generator is found for the language, looking the contents at
     * `inputPath` to determine heuristically which generator to use.
@@ -27,6 +33,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
     namespaces: List[String] = List(),
     language: String = ""
   ): Cpg = {
+    checkInputPath(inputPath)
     if (language != "") {
       generatorFactory.forLanguage(language) match {
         case None           => throw new ConsoleException(s"No CPG generator exists for language: $language")
@@ -126,6 +133,8 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   }
 
   private def apply(frontend: CpgGenerator, inputPath: String, projectName: String, namespaces: List[String]): Cpg = {
+    checkInputPath(inputPath)
+
     val name = Option(projectName).filter(_.nonEmpty).getOrElse(deriveNameFromInputPath(inputPath, workspace))
     report(s"Creating project `$name` for code at `$inputPath`")
 

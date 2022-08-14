@@ -108,8 +108,16 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
     }
   }
 
-  def lookupVariableType(identifier: String): Option[String] = {
-    lookupVariable(identifier).map(_.typeFullName)
+  def lookupVariableType(identifier: String, wildcardFallback: Boolean = false): Option[String] = {
+    lookupVariable(identifier)
+      .map(_.typeFullName)
+      .orElse(
+        Option
+          .when(wildcardFallback) {
+            getWildcardType(identifier)
+          }
+          .flatten
+      )
   }
 
   def getWildcardType(identifier: String): Option[String] = {
