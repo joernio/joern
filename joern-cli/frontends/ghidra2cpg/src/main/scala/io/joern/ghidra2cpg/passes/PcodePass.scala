@@ -16,13 +16,13 @@ import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
 class PcodePass(
-                 currentProgram: Program,
-                 address2Literal: Map[Long, String],
-                 fileName: String,
-                 functions: List[Function],
-                 cpg: Cpg,
-                 decompiler: Decompiler
-               ) extends ConcurrentWriterCpgPass[Function](cpg) {
+  currentProgram: Program,
+  address2Literal: Map[Long, String],
+  fileName: String,
+  functions: List[Function],
+  cpg: Cpg,
+  decompiler: Decompiler
+) extends ConcurrentWriterCpgPass[Function](cpg) {
 
   private val logger = LoggerFactory.getLogger(classOf[PcodePass])
 
@@ -112,22 +112,22 @@ class PcodePass(
   // }
 
   def handleStore(
-                   diffGraphBuilder: DiffGraphBuilder,
-                   instruction: Instruction,
-                   callNode: CfgNodeNew,
-                   pcodeOp: PcodeOp
-                 ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    pcodeOp: PcodeOp
+  ): Unit = {
     val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
     val secondOp = resolveVarNode(instruction, pcodeOp.getInput(2), 1)
     connectCallToArgument(diffGraphBuilder, callNode, firstOp)
     connectCallToArgument(diffGraphBuilder, callNode, secondOp)
   }
   def handleAssignment(
-                        diffGraphBuilder: DiffGraphBuilder,
-                        instruction: Instruction,
-                        callNode: CfgNodeNew,
-                        pcodeOp: PcodeOp
-                      ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    pcodeOp: PcodeOp
+  ): Unit = {
     val firstOp  = resolveVarNode(instruction, pcodeOp.getOutput, 2)
     val secondOp = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
     connectCallToArgument(diffGraphBuilder, callNode, firstOp)
@@ -135,13 +135,13 @@ class PcodePass(
   }
 
   def handleTwoArguments(
-                          diffGraphBuilder: DiffGraphBuilder,
-                          instruction: Instruction,
-                          callNode: CfgNodeNew,
-                          pcodeOp: PcodeOp,
-                          operand: String,
-                          name: String
-                        ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    pcodeOp: PcodeOp,
+    operand: String,
+    name: String
+  ): Unit = {
     val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
     val secondOp = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
     val code     = s"${firstOp.code} $operand ${secondOp.code}"
@@ -153,12 +153,12 @@ class PcodePass(
   }
 
   def handlePtrSub(
-                    diffGraphBuilder: DiffGraphBuilder,
-                    instruction: Instruction,
-                    callNode: CfgNodeNew,
-                    varNode: Varnode,
-                    index: Int
-                  ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    varNode: Varnode,
+    index: Int
+  ): Unit = {
     val arg = resolveVarNode(instruction, varNode, index)
     connectCallToArgument(diffGraphBuilder, callNode, arg)
   }
@@ -230,10 +230,10 @@ class PcodePass(
   }
 
   def handleInstruction(
-                         diffGraphBuilder: DiffGraphBuilder,
-                         instruction: Instruction,
-                         function: Function
-                       ): CfgNodeNew = {
+    diffGraphBuilder: DiffGraphBuilder,
+    instruction: Instruction,
+    function: Function
+  ): CfgNodeNew = {
     new PCodeMapper(
       diffGraphBuilder,
       instruction,
@@ -245,11 +245,11 @@ class PcodePass(
   }
 
   def handleBody(
-                  diffGraphBuilder: DiffGraphBuilder,
-                  function: Function,
-                  methodNode: NewMethod,
-                  blockNode: NewBlock
-                ): Unit = {
+    diffGraphBuilder: DiffGraphBuilder,
+    function: Function,
+    methodNode: NewMethod,
+    blockNode: NewBlock
+  ): Unit = {
     // get asm instructions
     val instructionNodes = currentProgram.getListing
       .getInstructions(function.getBody, true)

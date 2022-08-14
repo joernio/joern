@@ -24,7 +24,8 @@ class PCodeMapper(
 ) {
   private val logger                                 = LoggerFactory.getLogger(getClass)
   var nodeStack: mutable.HashMap[String, CfgNodeNew] = new mutable.HashMap[String, CfgNodeNew]()
-  private val pcodeOps: List[PcodeOp]               = nativeInstruction.getPcode().toList//highFunction.getPcodeOps(nativeInstruction.getAddress).asScala.toList//
+  private val pcodeOps: List[PcodeOp] =
+    nativeInstruction.getPcode().toList // highFunction.getPcodeOps(nativeInstruction.getAddress).asScala.toList//
   val codeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
       CodeUnitFormatOptions.ShowBlockName.NEVER,
@@ -52,7 +53,7 @@ class PCodeMapper(
     val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
     _connectCallToArgument(callNode, firstOp)
     _connectCallToArgument(callNode, secondOp)
-   callNode
+    callNode
   }
 
   def getCallNode: CfgNodeNew = {
@@ -65,12 +66,12 @@ class PCodeMapper(
         nativeInstruction.toString,
         nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue()
       )
-      //} else if (pcodeOps.length == 1) {
+      // } else if (pcodeOps.length == 1) {
       //  // we don't need to fill the hashmap for one PcodeOp
       //  // map to node and return
       //  mapCallNode(pcodeOps.head)
-    } else if(nativeInstruction.getMnemonicString.startsWith("CMP")){
-      //mapCallNode(pcodeOps.head)
+    } else if (nativeInstruction.getMnemonicString.startsWith("CMP")) {
+      // mapCallNode(pcodeOps.head)
       handleCompare(pcodeOps.head)
     } else {
       mapCallNode(pcodeOps.last)
@@ -455,4 +456,3 @@ class PCodeMapper(
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
   }
 }
-
