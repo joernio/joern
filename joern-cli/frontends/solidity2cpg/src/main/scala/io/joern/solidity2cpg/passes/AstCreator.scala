@@ -1,6 +1,4 @@
 package io.joern.solidity2cpg.passes
-
-import io.joern.solidity2cpg.domain.SuryaJsonProtocol.BaseASTNodeJsonFormat
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
