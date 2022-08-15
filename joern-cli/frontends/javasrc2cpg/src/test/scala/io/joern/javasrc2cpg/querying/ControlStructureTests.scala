@@ -2,6 +2,7 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
 import io.joern.javasrc2cpg.util.NameConstants
+import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Binding,
@@ -96,6 +97,41 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       }
     }
   }
+
+  "foreach loops over arrays imported through static imports" should {
+    val cpg = code("""
+		|import static Bar.STATIC_ARR;
+		|public class Foo {
+		|  public static void sink(String s) {}
+		|
+		|  public static void foo() {
+		|    for (String s : STATIC_ARR) {
+		|      sink(s);
+		|    }
+		|  }
+		|}
+		|""".stripMargin)
+      .moreCode(
+        """
+        |public class Bar {
+        |  public static String[] STATIC_ARR = new String[10];
+        |}
+        |""".stripMargin,
+        fileName = "Bar.java"
+      )
+
+    "create the correct number of STATIC_ARR identifiers" in {
+      // One in definition in class Bar
+      // One in fieldAccess STATIC_ARR.length
+      // One in indexAccess STATIC_ARR[tmpIdx]
+      cpg.identifier.name("STATIC_ARR").size shouldBe 3
+    }
+
+    "not create REF edges from the STATIC_ARR identifiers to the import identifier used only during AST generation" in {
+      cpg.typeDecl.name("Foo").ast.isIdentifier.name("STATIC_ARR").outE.collectAll[Ref].isEmpty shouldBe true
+    }
+  }
+
   "foreach loops over native array initialization expressions" should {
     val cpg = code("""
                      |public class Foo {
