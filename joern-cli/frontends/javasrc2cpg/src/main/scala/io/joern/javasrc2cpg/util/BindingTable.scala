@@ -154,7 +154,7 @@ object BindingTable {
     // This become necessary because calls in the JVM executed via erased signatures.
     adapter.allParentsWithTypeMap(typeDecl).foreach { case (parentTypeDecl, typeParameterInDerivedContext) =>
       directTableEntries.foreach { directTableEntry =>
-        val parentMethods = parentTypeDecl.getDeclaredMethods.asScala
+        val parentMethods = getDeclaredMethods(parentTypeDecl)
         parentMethods.foreach { parentMethodDecl =>
           if (directTableEntry.name == parentMethodDecl.getName) {
             val parentSigInDerivedContext = methodSignature(parentMethodDecl, typeParameterInDerivedContext)
