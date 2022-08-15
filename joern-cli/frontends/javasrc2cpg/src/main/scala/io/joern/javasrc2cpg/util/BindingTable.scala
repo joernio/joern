@@ -57,18 +57,19 @@ class BindingTableAdapterForJavaparser(
     typeDeclFullName: String,
     typeDecl: ResolvedReferenceTypeDeclaration
   ): collection.Seq[BindingTableEntry] = {
-    BindingTable.getDeclaredMethods(typeDecl)
-          .filter(methodDecl => !methodDecl.isStatic)
-          .map { methodDecl =>
-            val signature = methodSignature(methodDecl, ResolvedTypeParametersMap.empty())
-            BindingTableEntry.apply(
-              methodDecl.getName,
-              signature,
-              composeMethodFullName(typeDeclFullName, methodDecl.getName, signature)
-            )
-          }
-          .toBuffer
-    }
+    BindingTable
+      .getDeclaredMethods(typeDecl)
+      .filter(methodDecl => !methodDecl.isStatic)
+      .map { methodDecl =>
+        val signature = methodSignature(methodDecl, ResolvedTypeParametersMap.empty())
+        BindingTableEntry.apply(
+          methodDecl.getName,
+          signature,
+          composeMethodFullName(typeDeclFullName, methodDecl.getName, signature)
+        )
+      }
+      .toBuffer
+  }
 }
 
 case class LambdaBindingInfo(
@@ -112,7 +113,7 @@ object BindingTable {
       // See https://github.com/javaparser/javaparser/issues/1838 for details.
       case _: JavaParserAnnotationDeclaration => Set.empty
       case _: ReflectionAnnotationDeclaration => Set.empty
-      case _: JavassistAnnotationDeclaration => Set.empty
+      case _: JavassistAnnotationDeclaration  => Set.empty
 
       case _ => typeDecl.getDeclaredMethods.asScala
     }
