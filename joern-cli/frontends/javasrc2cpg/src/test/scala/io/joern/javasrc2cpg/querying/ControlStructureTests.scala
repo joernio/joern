@@ -5,7 +5,6 @@ import io.joern.javasrc2cpg.util.NameConstants
 import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
-  Binding,
   Block,
   Call,
   ControlStructure,
@@ -16,6 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Return
 }
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.toNodeTraversal
 
 import scala.jdk.CollectionConverters._
 
