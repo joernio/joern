@@ -36,6 +36,7 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       } else {
         File.usingTemporaryDirectory("DependencyResolverTests") { tmpDir =>
           val outFile = tmpDir / fileName
+          outFile.createIfNotExists(createParents = true)
           outFile.write(content)
           val dependenciesResult = DependencyResolver.getDependencies(tmpDir.path, params)
           testFunc(dependenciesResult)
@@ -194,7 +195,7 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
         |    </dependencies>
         |</project>
         |""".stripMargin,
-      "pom.xml"
+      "subdir/pom.xml"
     )
 
     fixture.test { dependenciesResult =>
