@@ -3,6 +3,9 @@ package io.joern.javasrc2cpg.util
 import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration, ResolvedReferenceTypeDeclaration}
 import com.github.javaparser.resolution.types.ResolvedReferenceType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserAnnotationDeclaration
+import com.github.javaparser.symbolsolver.javassistmodel.JavassistAnnotationDeclaration
+import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionAnnotationDeclaration
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, getAllParents}
 import io.shiftleft.codepropertygraph.generated.nodes.{Binding, NewBinding, NewTypeDecl, TypeDecl}
 
@@ -54,19 +57,18 @@ class BindingTableAdapterForJavaparser(
     typeDeclFullName: String,
     typeDecl: ResolvedReferenceTypeDeclaration
   ): collection.Seq[BindingTableEntry] = {
-
-    typeDecl.getDeclaredMethods.asScala.iterator
-      .filter(methodDecl => !methodDecl.isStatic)
-      .map { methodDecl =>
-        val signature = methodSignature(methodDecl, ResolvedTypeParametersMap.empty())
-        BindingTableEntry.apply(
-          methodDecl.getName,
-          signature,
-          composeMethodFullName(typeDeclFullName, methodDecl.getName, signature)
-        )
-      }
-      .toBuffer
-  }
+    BindingTable.getDeclaredMethods(typeDecl)
+          .filter(methodDecl => !methodDecl.isStatic)
+          .map { methodDecl =>
+            val signature = methodSignature(methodDecl, ResolvedTypeParametersMap.empty())
+            BindingTableEntry.apply(
+              methodDecl.getName,
+              signature,
+              composeMethodFullName(typeDeclFullName, methodDecl.getName, signature)
+            )
+          }
+          .toBuffer
+    }
 }
 
 case class LambdaBindingInfo(
@@ -103,6 +105,19 @@ class BindingTableAdapterForLambdas(
 }
 
 object BindingTable {
+
+  def getDeclaredMethods(typeDecl: ResolvedReferenceTypeDeclaration): Iterable[ResolvedMethodDeclaration] = {
+    typeDecl match {
+      // Attempting to get declared methods for annotations throws an UnsupportedOperationException.
+      // See https://github.com/javaparser/javaparser/issues/1838 for details.
+      case _: JavaParserAnnotationDeclaration => Set.empty
+      case _: ReflectionAnnotationDeclaration => Set.empty
+      case _: JavassistAnnotationDeclaration => Set.empty
+
+      case _ => typeDecl.getDeclaredMethods.asScala
+    }
+  }
+
   def createBindingTable[T](
     typeDeclFullName: String,
     typeDecl: T,
