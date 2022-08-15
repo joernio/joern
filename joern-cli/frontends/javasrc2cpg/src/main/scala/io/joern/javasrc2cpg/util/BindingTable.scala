@@ -3,6 +3,9 @@ package io.joern.javasrc2cpg.util
 import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration, ResolvedReferenceTypeDeclaration}
 import com.github.javaparser.resolution.types.ResolvedReferenceType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserAnnotationDeclaration
+import com.github.javaparser.symbolsolver.javassistmodel.JavassistAnnotationDeclaration
+import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionAnnotationDeclaration
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, getAllParents}
 import io.shiftleft.codepropertygraph.generated.nodes.{Binding, NewBinding, NewTypeDecl, TypeDecl}
 
@@ -54,8 +57,8 @@ class BindingTableAdapterForJavaparser(
     typeDeclFullName: String,
     typeDecl: ResolvedReferenceTypeDeclaration
   ): collection.Seq[BindingTableEntry] = {
-
-    typeDecl.getDeclaredMethods.asScala.iterator
+    BindingTable
+      .getDeclaredMethods(typeDecl)
       .filter(methodDecl => !methodDecl.isStatic)
       .map { methodDecl =>
         val signature = methodSignature(methodDecl, ResolvedTypeParametersMap.empty())
@@ -103,6 +106,19 @@ class BindingTableAdapterForLambdas(
 }
 
 object BindingTable {
+
+  def getDeclaredMethods(typeDecl: ResolvedReferenceTypeDeclaration): Iterable[ResolvedMethodDeclaration] = {
+    typeDecl match {
+      // Attempting to get declared methods for annotations throws an UnsupportedOperationException.
+      // See https://github.com/javaparser/javaparser/issues/1838 for details.
+      case _: JavaParserAnnotationDeclaration => Set.empty
+      case _: ReflectionAnnotationDeclaration => Set.empty
+      case _: JavassistAnnotationDeclaration  => Set.empty
+
+      case _ => typeDecl.getDeclaredMethods.asScala
+    }
+  }
+
   def createBindingTable[T](
     typeDeclFullName: String,
     typeDecl: T,
@@ -138,7 +154,7 @@ object BindingTable {
     // This become necessary because calls in the JVM executed via erased signatures.
     adapter.allParentsWithTypeMap(typeDecl).foreach { case (parentTypeDecl, typeParameterInDerivedContext) =>
       directTableEntries.foreach { directTableEntry =>
-        val parentMethods = parentTypeDecl.getDeclaredMethods.asScala
+        val parentMethods = getDeclaredMethods(parentTypeDecl)
         parentMethods.foreach { parentMethodDecl =>
           if (directTableEntry.name == parentMethodDecl.getName) {
             val parentSigInDerivedContext = methodSignature(parentMethodDecl, typeParameterInDerivedContext)
