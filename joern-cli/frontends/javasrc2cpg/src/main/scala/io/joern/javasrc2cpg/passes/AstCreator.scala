@@ -590,7 +590,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       astWithInits.ast
     }
 
-    val defaultConstructorAst = if (typ.getConstructors.isEmpty) {
+    val defaultConstructorAst = if (!isInterface && typ.getConstructors.isEmpty) {
       Some(astForDefaultConstructor())
     } else {
       None
