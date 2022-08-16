@@ -93,7 +93,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
 
     def fromString(str: String, args: List[String] = List()): Cpg = {
       withCodeInTmpFile(str, "tmp." + extension) { dir =>
-        apply(dir.path.toString, args = args)
+        super.apply(dir.path.toString, args = args)
       } match {
         case Failure(exception) => throw new ConsoleException(s"unable to generate cpg from given String", exception)
         case Success(value)     => value

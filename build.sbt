@@ -1,6 +1,6 @@
 name                     := "joern"
 ThisBuild / organization := "io.joern"
-ThisBuild / scalaVersion := "2.13.8"
+ThisBuild / scalaVersion := "3.2.1"
 
 val cpgVersion = "1.3.600"
 
@@ -64,6 +64,10 @@ ThisBuild / scalacOptions ++= Seq(
   "--release",
   "11"
 )
+
+// we want to consume this from a java8 build
+compile / javacOptions ++= Seq("--release", "8")
+scalacOptions += "-Xtarget:8"
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
