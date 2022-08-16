@@ -2,11 +2,13 @@ name := "console"
 
 enablePlugins(JavaAppPackaging)
 
+// crossScalaVersions := Seq("2.13.8", "3.1.3")
+
 val ScoptVersion          = "4.0.1"
 val BetterFilesVersion    = "3.9.1"
 val CaskVersion           = "0.8.3"
 val CirceVersion          = "0.14.3"
-val AmmoniteVersion       = "2.5.3"
+val AmmoniteVersion       = "2.5.4-14-dc4c47bc"
 val ZeroturnaroundVersion = "1.15"
 
 dependsOn(
