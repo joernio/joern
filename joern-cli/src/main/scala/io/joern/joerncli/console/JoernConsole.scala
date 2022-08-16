@@ -20,7 +20,7 @@ class JoernWorkspaceLoader extends WorkspaceLoader[JoernProject] {
   }
 }
 
-class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new JoernWorkspaceLoader) {
+class JoernConsole extends Console[JoernProject](new JoernWorkspaceLoader) {
 
   override val config: ConsoleConfig = JoernConsole.defaultConfig
 
@@ -33,25 +33,6 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
     workspace.getActiveProject
       .map(x => x.asInstanceOf[JoernProject].context)
       .getOrElse(EngineContext())
-
-  def banner(): Unit = {
-    println(s"""
-        |     ██╗ ██████╗ ███████╗██████╗ ███╗   ██╗
-        |     ██║██╔═══██╗██╔════╝██╔══██╗████╗  ██║
-        |     ██║██║   ██║█████╗  ██████╔╝██╔██╗ ██║
-        |██   ██║██║   ██║██╔══╝  ██╔══██╗██║╚██╗██║
-        |╚█████╔╝╚██████╔╝███████╗██║  ██║██║ ╚████║
-        | ╚════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝
-        |Version: $version
-        |$helpMsg
-      """.stripMargin)
-  }
-
-  private def helpMsg: String =
-    s"""Type `help` or `browse(help)` to begin""".stripMargin
-
-  def version: String =
-    getClass.getPackage.getImplementationVersion
 
   def loadCpg(inputPath: String): Option[Cpg] = {
     report("Deprecated. Please use `importCpg` instead")
@@ -67,20 +48,24 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
 
 object JoernConsole {
 
-  def defaultConfig: ConsoleConfig = new ConsoleConfig()
+  def banner(): String =
+    s"""
+        |     ██╗ ██████╗ ███████╗██████╗ ███╗   ██╗
+        |     ██║██╔═══██╗██╔════╝██╔══██╗████╗  ██║
+        |     ██║██║   ██║█████╗  ██████╔╝██╔██╗ ██║
+        |██   ██║██║   ██║██╔══╝  ██╔══██╗██║╚██╗██║
+        |╚█████╔╝╚██████╔╝███████╗██║  ██║██║ ╚████║
+        | ╚════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝
+        |Version: $version
+        |$helpMsg
+      """.stripMargin
 
-  def runScriptTest(scriptName: String, params: Map[String, String], cpg: Cpg): Any = {
-    class TempConsole(workspaceDir: String) extends JoernConsole {
-      override def context: EngineContext = EngineContext()
-      override val config =
-        new ConsoleConfig(install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir)))
-    }
-    val workspaceDir = File.newTemporaryDirectory("console")
-    try {
-      new TempConsole(workspaceDir.toString).runScript(scriptName, params, cpg)
-    } finally {
-      workspaceDir.delete()
-    }
-  }
+  def version: String =
+    getClass.getPackage.getImplementationVersion
+
+  private def helpMsg: String =
+    s"""Type `help` to begin""".stripMargin
+
+  def defaultConfig: ConsoleConfig = new ConsoleConfig()
 
 }
