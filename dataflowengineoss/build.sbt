@@ -1,7 +1,5 @@
 name := "dataflowengineoss"
 
-crossScalaVersions := Seq("2.13.8", "3.2.2")
-
 dependsOn(Projects.semanticcpg, Projects.x2cpg)
 
 libraryDependencies ++= Seq(

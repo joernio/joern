@@ -1,5 +1,5 @@
 /*
- * Utility script fed into ammonite before testing each individual script.
+ * Utility script fed into joern before testing each individual script.
  */
 
 import io.joern.joerncli.console.JoernConsole._

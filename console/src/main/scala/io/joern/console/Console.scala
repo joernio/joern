@@ -1,9 +1,10 @@
 package io.joern.console
 
-import better.files.Dsl._
 import better.files.File
+import dotty.tools.repl.State
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.joern.console.cpgcreation.ImportCode
-import io.joern.console.scripting.{AmmoniteExecutor, ScriptManager}
 import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceManager}
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.shiftleft.codepropertygraph.Cpg
@@ -17,12 +18,8 @@ import scala.sys.process.Process
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
-class Console[T <: Project](
-  executor: AmmoniteExecutor,
-  loader: WorkspaceLoader[T],
-  baseDir: File = File.currentWorkingDirectory
-) extends ScriptManager(executor)
-    with Reporting {
+class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.currentWorkingDirectory)
+    extends Reporting {
 
   import Console._
 
@@ -349,7 +346,7 @@ class Console[T <: Project](
           return None
       }
     } else {
-      cp(cpgFile, cpgDestinationPath)
+      cpgFile.copyTo(cpgDestinationPath, overwrite = true)
     }
 
     val cpgOpt = open(name).flatMap(_.cpg)
@@ -409,7 +406,7 @@ class Console[T <: Project](
       if (projectOpt.get.appliedOverlays.contains(creator.overlayName)) {
         report(s"Overlay ${creator.overlayName} already exists - skipping")
       } else {
-        mkdirs(File(overlayDirName))
+        File(overlayDirName).createDirectories
         runCreator(creator, Some(overlayDirName))
       }
     }

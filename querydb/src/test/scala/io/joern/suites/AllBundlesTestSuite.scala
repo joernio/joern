@@ -2,8 +2,6 @@ package io.joern.suites
 
 import io.joern.console.QueryDatabase
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
-
 import org.scalatest.matchers.should.Matchers._
 
 class AllBundlesTestSuite extends AnyWordSpec {

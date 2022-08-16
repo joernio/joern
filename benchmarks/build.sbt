@@ -1,7 +1,5 @@
 name := "benchmarks"
 
-crossScalaVersions := Seq("2.13.8", "3.2.2")
-
 dependsOn(Projects.dataflowengineoss)
 dependsOn(Projects.semanticcpg)
 dependsOn(Projects.console)

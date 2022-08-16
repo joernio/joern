@@ -47,7 +47,7 @@ object Run {
       .filterNot(t => t.isAnonymousClass || t.isLocalClass || t.isMemberClass || t.isSynthetic)
       .filterNot(t => t.getName.startsWith("io.joern.console.Run"))
       .toList
-      .map(t => (t.getSimpleName.toLowerCase, t.getName))
+      .map(t => (t.getSimpleName.toLowerCase, s"_root_.${t.getName}"))
       .filter(t => !exclude.contains(t._2))
   }
 
@@ -59,46 +59,45 @@ object Run {
     val optsCode =
       s"""
          |class OptsDynamic {
-         | $optsMembersCode
+         |$optsMembersCode
          |}
          |
          |val opts = new OptsDynamic()
          |
-         | import overflowdb.BatchedUpdate.DiffGraphBuilder
+         | import _root_.overflowdb.BatchedUpdate.DiffGraphBuilder
          | implicit def _diffGraph: DiffGraphBuilder = opts.commit.diffGraphBuilder
          | def diffGraph = _diffGraph
          |""".stripMargin
 
     val membersCode = layerCreatorTypeNames
-      .map { case (varName, typeName) => s"def $varName: Cpg = _runAnalyzer(new $typeName(opts.$varName))" }
+      .map { case (varName, typeName) => s"  def $varName: Cpg = _runAnalyzer(new $typeName(opts.$varName))" }
       .mkString("\n")
 
     val toStringCode =
       s"""
-         | import overflowdb.traversal.help.Table
-         | override def toString() : String = {
-         |  val columnNames = List("name", "description")
-         |  val rows =
-         |   ${layerCreatorTypeNames.map { case (varName, typeName) =>
+         |  import overflowdb.traversal.help.Table
+         |  override def toString() : String = {
+         |    val columnNames = List("name", "description")
+         |    val rows =
+         |      ${layerCreatorTypeNames.map { case (varName, typeName) =>
           s"""List("$varName",$typeName.description.trim)"""
         }}
-         | "\\n" + Table(columnNames, rows).render
-         | }
+         |    "\\n" + Table(columnNames, rows).render
+         |  }
          |""".stripMargin
 
     optsCode +
       s"""
-         | class OverlaysDynamic {
+         |class OverlaysDynamic {
          |
-         | def apply(query : io.shiftleft.semanticcpg.language.HasStoreMethod) {
-         |   io.joern.console.Run.runCustomQuery(console, query)
-         | }
+         |  def apply(query: _root_.io.shiftleft.semanticcpg.language.HasStoreMethod) =
+         |    _root_.io.joern.console.Run.runCustomQuery(console, query)
          |
-         | $membersCode
+         |$membersCode
          |
-         | $toStringCode
-         | }
-         | val run = new OverlaysDynamic()
+         |$toStringCode
+         |}
+         |val run = new OverlaysDynamic()
          |""".stripMargin
   }
 
