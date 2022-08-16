@@ -52,8 +52,9 @@ private object Frontend {
 object Main extends X2CpgMain(cmdLineParser, new JsSrc2Cpg()) {
 
   def run(config: Config, jssrc2cpg: JsSrc2Cpg): Unit = {
-    if (Environment.pathExists(config.inputPath)) {
-      jssrc2cpg.run(config)
+    val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
+    if (Environment.pathExists(absPath)) {
+      jssrc2cpg.run(config.copy(inputPath = absPath))
     } else {
       System.exit(1)
     }
