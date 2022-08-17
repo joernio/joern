@@ -503,7 +503,7 @@ class DataflowTests extends DataFlowCodeToCpgSuite {
     def sink   = cpg.call.code("g.*").argument
     def flows  = sink.reachableByFlows(source)
 
-    sink.size shouldBe 4   // incl. this and receiver
+    sink.size shouldBe 3   // incl. this
     source.size shouldBe 3 // incl. this
 
     flows.map(flowToResultPairs).toSetMutable shouldBe

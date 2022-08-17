@@ -131,7 +131,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .withChild(baseAst)
       .withChildren(arguments)
       .withArgEdges(callNode, arguments.flatMap(_.root))
-      .withArgEdges(callNode, receiverRoot)
       .withArgEdges(callNode, baseRoot)
       .withReceiverEdges(callNode, receiverRoot)
   }

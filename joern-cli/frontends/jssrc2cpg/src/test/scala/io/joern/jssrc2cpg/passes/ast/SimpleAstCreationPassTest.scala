@@ -530,19 +530,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       receiver.code shouldBe "a.b"
       receiver.methodFullName shouldBe Operators.fieldAccess
 
-      val List(receiverAsArg) = call.argument(0).cast[Call].l
-      receiver shouldBe receiverAsArg
-
       val List(base) = receiver.astChildren.isIdentifier.argumentIndex(1).l
       base.name shouldBe "a"
 
       val List(accessElement) = receiver.astChildren.isFieldIdentifier.argumentIndex(2).l
       accessElement.canonicalName shouldBe "b"
 
-      val List(recvArg, baseArg, arg) = call.argument.l.sortBy(_.order)
-      recvArg shouldBe receiver
-      recvArg.argumentIndex shouldBe 0
-      recvArg.order shouldBe 0
+      val List(baseArg, arg) = call.argument.l.sortBy(_.order)
       baseArg.code shouldBe "a"
       baseArg.argumentIndex shouldBe 0
       baseArg.order shouldBe 1
