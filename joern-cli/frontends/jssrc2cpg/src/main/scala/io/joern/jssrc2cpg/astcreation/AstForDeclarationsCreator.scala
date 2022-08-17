@@ -281,7 +281,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
     val declAsts = declaration.json("declarations").arr.toList.map(astForVariableDeclarator(_, scopeType))
     declAsts match {
-      case ::(head, tail) =>
+      case head :: tail =>
         setIndices(declAsts)
         tail.foreach { declAst =>
           declAst.root.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
