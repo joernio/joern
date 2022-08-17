@@ -59,7 +59,8 @@ trait AstForTypesCreator { this: AstCreator =>
           .getOrElse(Ast())
       }
 
-    Ast(aliasTypeDeclNode).merge(typeDeclNodeAst)
+    typeDeclNodeAst.root.foreach(diffGraph.addEdge(methodAstParentStack.head, _, EdgeTypes.AST))
+    Ast(aliasTypeDeclNode)
   }
 
   private def isConstructor(json: Value): Boolean = createBabelNodeInfo(json).node match {
