@@ -62,6 +62,12 @@ createDistribution := {
   distributionFile
 }
 
+
+ThisBuild / excludeDependencies ++= Seq(
+  // TODO this should only be excluded if the scala version is 3
+  ExclusionRule("com.lihaoyi", "fansi_2.13"),
+)
+
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
