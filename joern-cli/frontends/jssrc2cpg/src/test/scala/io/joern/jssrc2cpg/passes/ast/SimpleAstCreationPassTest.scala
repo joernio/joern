@@ -21,6 +21,26 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       typeDecls.filename shouldBe "code.js"
     }
 
+    "have correct structure for multiple declarators in one place" in AstFixture("let x = 1, y = 2, z = 3;") { cpg =>
+      val List(xAssignment, yAssignment, zAssignment) = cpg.call.l.sortBy(_.code)
+      xAssignment.code shouldBe "x = 1"
+      yAssignment.code shouldBe "y = 2"
+      zAssignment.code shouldBe "z = 3"
+
+      val List(program) = cpg.method.nameExact(":program").l
+      program.ast.isCall.l.sortBy(_.code) shouldBe cpg.call.l.sortBy(_.code)
+    }
+
+    "have correct structure for call on require" in AstFixture("var x = require(\"foo\").bar;") { cpg =>
+      val List(reqCall, barCall, xAssignment) = cpg.call.l.sortBy(_.code)
+      reqCall.code shouldBe "require(\"foo\")"
+      barCall.code shouldBe "require(\"foo\").bar"
+      xAssignment.code shouldBe "x = require(\"foo\").bar"
+
+      val List(program) = cpg.method.nameExact(":program").l
+      program.ast.isCall.l.sortBy(_.code) shouldBe cpg.call.l.sortBy(_.code)
+    }
+
     "have correct structure for block expression" in AstFixture("let x = (class Foo {}, bar())") { cpg =>
       val List(program) = cpg.method.nameExact(":program").l
 
