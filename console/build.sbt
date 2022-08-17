@@ -2,8 +2,6 @@ name := "console"
 
 enablePlugins(JavaAppPackaging)
 
-crossScalaVersions := Seq("2.13.8", "3.1.3")
-
 val ScoptVersion          = "4.0.1"
 val CaskVersion           = "0.8.3"
 val CirceVersion          = "0.14.2"
@@ -19,7 +17,8 @@ libraryDependencies ++= Seq(
   "io.circe"             %% "circe-generic"     % CirceVersion,
   "io.circe"             %% "circe-parser"      % CirceVersion,
   "org.zeroturnaround"    % "zt-zip"            % ZeroturnaroundVersion,
-  "com.lihaoyi"          %% "ammonite"          % AmmoniteVersion cross CrossVersion.full,
+  // "com.lihaoyi"          %% "ammonite"          % AmmoniteVersion cross CrossVersion.full,
+  "com.lihaoyi"          %  "ammonite_3.1.3"    % AmmoniteVersion,
   "com.lihaoyi"          %% "os-lib"            % "0.8.1",
   "com.lihaoyi"          %% "cask"              % CaskVersion,
   "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
