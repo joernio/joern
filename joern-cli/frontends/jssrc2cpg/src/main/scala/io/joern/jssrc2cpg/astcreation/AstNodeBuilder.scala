@@ -76,22 +76,16 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column)
   }
 
-  protected def setIndices(asts: List[Ast], receiver: Option[Ast] = None, countEmpty: Boolean = false): Unit = {
+  protected def setIndices(
+    asts: List[Ast],
+    receiver: Option[Ast] = None,
+    countEmpty: Boolean = false,
+    base: Option[Ast] = None
+  ): Unit = {
     var currIndex = 1
-    var currOrder = 1
+    var currOrder = if (base.isDefined) 2 else 1
 
-    val remainingAsts = asts match {
-      case head :: rest
-          if head.root.exists(x => x.isInstanceOf[NewIdentifier] && x.asInstanceOf[NewIdentifier].code == "this") =>
-        val x = head.root.get.asInstanceOf[NewIdentifier]
-        x.argumentIndex = 0
-        x.order = 1
-        currOrder = currOrder + 1
-        rest
-      case others => others
-    }
-
-    remainingAsts.foreach { a =>
+    asts.foreach { a =>
       a.root match {
         case Some(x: ExpressionNew) =>
           x.argumentIndex = currIndex
@@ -104,6 +98,13 @@ trait AstNodeBuilder { this: AstCreator =>
           currOrder = currOrder + 1
       }
     }
+    val baseRoot = base.flatMap(_.root).toList
+    baseRoot match {
+      case List(x: ExpressionNew) =>
+        x.argumentIndex = 0
+        x.order = 1
+      case _ =>
+    }
     val receiverRoot = receiver.flatMap(_.root).toList
     receiverRoot match {
       case List(x: ExpressionNew) =>
@@ -113,15 +114,25 @@ trait AstNodeBuilder { this: AstCreator =>
     }
   }
 
-  protected def createCallAst(callNode: NewCall, arguments: List[Ast], receiver: Option[Ast] = None): Ast = {
-    setIndices(arguments, receiver)
+  protected def createCallAst(
+    callNode: NewCall,
+    arguments: List[Ast],
+    receiver: Option[Ast] = None,
+    base: Option[Ast] = None
+  ): Ast = {
+    setIndices(arguments, receiver, base = base)
 
     val receiverRoot = receiver.flatMap(_.root).toList
-    val rcv          = receiver.getOrElse(Ast())
+    val rcvAst       = receiver.getOrElse(Ast())
+    val baseRoot     = base.flatMap(_.root).toList
+    val baseAst      = base.getOrElse(Ast())
     Ast(callNode)
-      .withChild(rcv)
+      .withChild(rcvAst)
+      .withChild(baseAst)
       .withChildren(arguments)
       .withArgEdges(callNode, arguments.flatMap(_.root))
+      .withArgEdges(callNode, receiverRoot)
+      .withArgEdges(callNode, baseRoot)
       .withReceiverEdges(callNode, receiverRoot)
   }
 
