@@ -141,6 +141,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodReturn,
   NewModifier,
   NewNamespaceBlock,
+  NewNode,
   NewReturn,
   NewTypeDecl,
   NewTypeRef,
@@ -589,7 +590,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       astWithInits.ast
     }
 
-    val defaultConstructorAst = if (typ.getConstructors.isEmpty) {
+    val defaultConstructorAst = if (!isInterface && typ.getConstructors.isEmpty) {
       Some(astForDefaultConstructor())
     } else {
       None
@@ -1335,31 +1336,38 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withRefEdge(idxIdentifierArg, idxLocal)
   }
 
-  private def nativeForEachCompareAst(lineNo: Option[Integer], iterableLocal: NodeTypeInfo, idxLocal: NewLocal): Ast = {
+  private def nativeForEachCompareAst(
+    lineNo: Option[Integer],
+    iterableSource: NodeTypeInfo,
+    idxLocal: NewLocal
+  ): Ast = {
     val idxName = idxLocal.name
 
     val compareNode = operatorCallNode(
       Operators.lessThan,
-      code = s"$idxName < ${iterableLocal.name}.length",
+      code = s"$idxName < ${iterableSource.name}.length",
       typeFullName = Some(TypeConstants.Boolean),
       line = lineNo
     )
     val comparisonIdxIdentifier = identifierNode(idxName, idxLocal.typeFullName, lineNo)
     val comparisonFieldAccess = operatorCallNode(
       Operators.fieldAccess,
-      code = s"${iterableLocal.name}.length",
+      code = s"${iterableSource.name}.length",
       typeFullName = Some(TypeConstants.Int),
       line = lineNo
     )
-    val fieldAccessIdentifier      = identifierNode(iterableLocal.name, iterableLocal.typeFullName, lineNo)
+    val fieldAccessIdentifier      = identifierNode(iterableSource.name, iterableSource.typeFullName, lineNo)
     val fieldAccessFieldIdentifier = fieldIdentifierNode("length", lineNo)
     val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
     val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
     val compareArgs                = List(Ast(comparisonIdxIdentifier), fieldAccessAst)
 
+    // TODO: This is a workaround for a crash when looping over statically imported members. Handle those properly.
+    val iterableSourceNode = localParamOrMemberFromNode(iterableSource)
+
     callAst(compareNode, compareArgs)
       .withRefEdge(comparisonIdxIdentifier, idxLocal)
-      .withRefEdge(fieldAccessIdentifier, iterableLocal.node)
+      .withRefEdges(fieldAccessIdentifier, iterableSourceNode.toList)
   }
 
   private def nativeForEachIncrementAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
@@ -1407,6 +1415,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
+  private def localParamOrMemberFromNode(nodeTypeInfo: NodeTypeInfo): Option[NewNode] = {
+    nodeTypeInfo.node match {
+      case localNode: NewLocal                 => Some(localNode)
+      case memberNode: NewMember               => Some(memberNode)
+      case parameterNode: NewMethodParameterIn => Some(parameterNode)
+      case _                                   => None
+    }
+  }
   private def variableAssignForNativeForEachBody(
     variableLocal: NewLocal,
     idxLocal: NewLocal,
@@ -1430,10 +1446,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val indexAccessArgsAsts = List(indexAccessIdentifier, indexAccessIndex).map(Ast(_))
     val indexAccessAst      = callAst(indexAccess, indexAccessArgsAsts)
 
+    val iterableSourceNode = localParamOrMemberFromNode(iterable)
+
     val assignArgsAsts = List(Ast(targetNode), indexAccessAst)
     callAst(varAssignNode, assignArgsAsts)
       .withRefEdge(targetNode, variableLocal)
-      .withRefEdge(indexAccessIdentifier, iterable.node)
+      .withRefEdges(indexAccessIdentifier, iterableSourceNode.toList)
       .withRefEdge(indexAccessIndex, idxLocal)
   }
 
@@ -2249,8 +2267,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val maybeResolvedExpr = Try(expr.resolve())
     val argumentAsts      = argAstsForCall(expr, maybeResolvedExpr, expr.getArguments)
 
-    val typeFullName = typeInfoCalc
-      .fullName(expr.getType)
+    val typeFullName = tryWithSafeStackOverflow(typeInfoCalc.fullName(expr.getType)).toOption.flatten
       .orElse(scopeStack.lookupVariableType(expr.getTypeAsString))
       .orElse(expectedType.map(_.fullName))
       .getOrElse(TypeConstants.UnresolvedType)

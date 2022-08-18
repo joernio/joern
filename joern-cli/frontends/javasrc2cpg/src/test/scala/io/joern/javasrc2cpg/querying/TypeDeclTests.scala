@@ -9,6 +9,19 @@ import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 import java.io.File
 
+class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
+  "the AST for an interface declaration" should {
+    "not have a default constructor defined" in {
+      val cpg = code("""
+          |interface Foo {
+          |  public void foo();
+          |}
+          |""".stripMargin)
+
+      cpg.typeDecl.name("Foo").method.fullName.l shouldBe List("Foo.foo:void()")
+    }
+  }
+}
 class TypeDeclTests extends JavaSrcCodeToCpgFixture {
 
   override val code: String =

@@ -44,7 +44,9 @@ object DependencyResolver {
   }
 
   def isMavenBuild(codeDir: Path): Boolean = {
-    Files.exists(codeDir.resolve("pom.xml"))
+    Files
+      .walk(codeDir)
+      .anyMatch(file => file.toString.endsWith("pom.xml"))
   }
 
   def isGradleBuild(codeDir: Path): Boolean = {

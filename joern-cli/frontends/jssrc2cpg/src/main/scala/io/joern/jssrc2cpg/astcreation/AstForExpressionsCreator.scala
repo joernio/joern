@@ -35,9 +35,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val args = astForNodes(callExpr.json("arguments").arr.toList)
     val callNode =
       createCallNode(callExpr.code, "", DispatchTypes.DYNAMIC_DISPATCH, callExpr.lineNumber, callExpr.columnNumber)
-    val argAsts = Ast(baseNode) +: args
-    val callAst = createCallAst(callNode, argAsts, Some(Ast(receiverNode)))
-    callAst
+    createCallAst(callNode, args, Some(Ast(receiverNode)), Some(Ast(baseNode)))
   }
 
   protected def astForCallExpression(callExpr: BabelNodeInfo): Ast = {

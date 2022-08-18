@@ -21,6 +21,26 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       typeDecls.filename shouldBe "code.js"
     }
 
+    "have correct structure for multiple declarators in one place" in AstFixture("let x = 1, y = 2, z = 3;") { cpg =>
+      val List(xAssignment, yAssignment, zAssignment) = cpg.call.l.sortBy(_.code)
+      xAssignment.code shouldBe "x = 1"
+      yAssignment.code shouldBe "y = 2"
+      zAssignment.code shouldBe "z = 3"
+
+      val List(program) = cpg.method.nameExact(":program").l
+      program.ast.isCall.l.sortBy(_.code) shouldBe cpg.call.l.sortBy(_.code)
+    }
+
+    "have correct structure for call on require" in AstFixture("var x = require(\"foo\").bar;") { cpg =>
+      val List(reqCall, barCall, xAssignment) = cpg.call.l.sortBy(_.code)
+      reqCall.code shouldBe "require(\"foo\")"
+      barCall.code shouldBe "require(\"foo\").bar"
+      xAssignment.code shouldBe "x = require(\"foo\").bar"
+
+      val List(program) = cpg.method.nameExact(":program").l
+      program.ast.isCall.l.sortBy(_.code) shouldBe cpg.call.l.sortBy(_.code)
+    }
+
     "have correct structure for block expression" in AstFixture("let x = (class Foo {}, bar())") { cpg =>
       val List(program) = cpg.method.nameExact(":program").l
 
@@ -480,11 +500,11 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       // barBaseTree constructs is tested for in another test.
 
-      val List(thisArg) = barCall.astChildren.isIdentifier.argumentIndex(1).l
+      val List(thisArg) = barCall.astChildren.isIdentifier.argumentIndex(0).l
       thisArg.name shouldBe "_tmp_0"
       thisArg.order shouldBe 1
 
-      val List(zArg) = barCall.astChildren.isIdentifier.argumentIndex(2).l
+      val List(zArg) = barCall.astChildren.isIdentifier.argumentIndex(1).l
       zArg.name shouldBe "z"
       zArg.order shouldBe 2
     }
@@ -498,13 +518,11 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(block)  = method.astChildren.isBlock.l
 
       val List(fooCall) = block.astChildren.isCall.l
-
       fooCall.code shouldBe "x.foo()"
       fooCall.name shouldBe ""
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
       val List(receiver) = fooCall.astChildren.isCall.l
-
       receiver.code shouldBe "x.foo"
       receiver.methodFullName shouldBe Operators.fieldAccess
 
@@ -513,6 +531,38 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(accessElement) = receiver.astChildren.isFieldIdentifier.argumentIndex(2).l
       accessElement.canonicalName shouldBe "foo"
+    }
+
+    "be correct for call on object with argument" in AstFixture("""
+        |function method(x) {
+        |  a.b(x);
+        |}
+        """.stripMargin) { cpg =>
+      val List(method) = cpg.method.nameExact("method").l
+      val List(block)  = method.astChildren.isBlock.l
+
+      val List(call) = block.astChildren.isCall.l
+      call.code shouldBe "a.b(x)"
+      call.name shouldBe ""
+      call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(receiver) = call.receiver.isCall.l
+      receiver.code shouldBe "a.b"
+      receiver.methodFullName shouldBe Operators.fieldAccess
+
+      val List(base) = receiver.astChildren.isIdentifier.argumentIndex(1).l
+      base.name shouldBe "a"
+
+      val List(accessElement) = receiver.astChildren.isFieldIdentifier.argumentIndex(2).l
+      accessElement.canonicalName shouldBe "b"
+
+      val List(baseArg, arg) = call.argument.l.sortBy(_.order)
+      baseArg.code shouldBe "a"
+      baseArg.argumentIndex shouldBe 0
+      baseArg.order shouldBe 1
+      arg.code shouldBe "x"
+      arg.argumentIndex shouldBe 1
+      arg.order shouldBe 2
     }
 
     "have block for while body for while statement with brackets" in AstFixture("while (x < 0) {}") { cpg =>

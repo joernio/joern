@@ -242,22 +242,25 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |export let name7, name8, name9;
         |export let name10 = "10", name11 = "11", name12;
         |""".stripMargin) { cpg =>
-      cpg.local.code.l shouldBe List(
+      cpg.local.code.l.sorted shouldBe List(
         "name1",
+        "name10",
+        "name11",
+        "name12",
         "name2",
         "name3",
         "name6",
-        "variable4",
-        "variable5",
         "name7",
         "name8",
         "name9",
-        "name10",
-        "name11",
-        "name12"
+        "variable4",
+        "variable5"
       )
-      cpg.call(Operators.assignment).code.l shouldBe List(
+      cpg.call(Operators.assignment).code.l.sorted shouldBe List(
         "exports.name1 = name1",
+        "exports.name10 = name10",
+        "exports.name11 = name11",
+        "exports.name12 = name12",
         "exports.name2 = name2",
         "exports.name3 = name3",
         "exports.name4 = variable4",
@@ -267,10 +270,7 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         "exports.name8 = name8",
         "exports.name9 = name9",
         "name10 = \"10\"",
-        "name11 = \"11\"",
-        "exports.name10 = name10",
-        "exports.name11 = name11",
-        "exports.name12 = name12"
+        "name11 = \"11\""
       )
     }
 
