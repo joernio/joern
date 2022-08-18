@@ -279,4 +279,11 @@ object SuryaObject {
   case class DecimalNumber(value: String) extends  BaseASTNode("  DecimalNumber") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
+  case class ThrowStatement() extends BaseASTNode(" ThrowStatement") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
+  case class Conditional(condition: BaseASTNode) extends BaseASTNode(" Conditional") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
+
 }

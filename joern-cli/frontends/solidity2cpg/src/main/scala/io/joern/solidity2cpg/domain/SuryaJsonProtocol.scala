@@ -112,6 +112,10 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           AssemblyCallJsonFormat.read(json)
         case "DecimalNumber" =>
           DecimalNumberJsonFormat.read(json)
+        case "ThrowStatement" =>
+          ThrowStatementJsonFormat.read(json)
+        case "Conditional" =>
+          ConditionalJsonFormat.read(json)
         case _ =>
           logger.warn(s"Unhandled type '$typ' parsed from JSON AST.");
           new BaseASTNode(`type` = fields("type").convertTo[String])
@@ -961,6 +965,36 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       } else {
         DecimalNumber(
           fields("value").convertTo[String]
+        )
+      }
+    }
+  }
+
+  implicit object ThrowStatementJsonFormat extends JsonFormat[ThrowStatement] with DefaultJsonProtocol {
+
+    def write(c: ThrowStatement): JsValue = JsNull
+
+    def read(json: JsValue): ThrowStatement = {
+      val fields = json.asJsObject("Unable to decode JSON as ThrowStatement").fields
+      if (fields("type").convertTo[String] != "ThrowStatement") {
+        throw new RuntimeException("ThrowStatement object expected")
+      } else {
+        ThrowStatement()
+      }
+    }
+  }
+
+  implicit object ConditionalJsonFormat extends JsonFormat[Conditional] with DefaultJsonProtocol {
+
+    def write(c: Conditional): JsValue = JsNull
+
+    def read(json: JsValue): Conditional = {
+      val fields = json.asJsObject("Unable to decode JSON as Conditional").fields
+      if (fields("type").convertTo[String] != "Conditional") {
+        throw new RuntimeException("Conditional object expected")
+      } else {
+        Conditional(
+          fields("condition").convertTo[BaseASTNode]
         )
       }
     }

@@ -541,7 +541,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 //            case x: ElementaryTypeName => x.name
 //            case _=> "something went wrong"
 //          })
-          case _ => println(x.baseTypeName)
+          case x: UserDefinedTypeName => typefullName = registerType(x.namePath)
+//          case _ => println(x.baseTypeName)
         }
       case x: UserDefinedTypeName => typefullName = registerType(x.namePath)
       case x: FunctionTypeName    => typefullName = registerType("function(" + getParameters(x.parameterTypes) + ")")
@@ -628,6 +629,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           case x: ArrayTypeName => x.baseTypeName match {
             case x:  ElementaryTypeName => typefullName = registerType(x.name)
           }
+          case x: UserDefinedTypeName => typefullName = registerType(x.namePath)
+
         }
       }
       case x: UserDefinedTypeName => typefullName = registerType(x.namePath)
@@ -738,7 +741,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForExpression(expr: BaseASTNode, order: Int): Ast = {
-
     expr match {
       case x: MemberAccess       => astForMemberAccess(x, order)
       case x: Identifier         => astForIdentifier(x, order)
@@ -887,6 +889,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val opNode = operation.condition match {
       case x: BinaryOperation => astForBinaryOperation(x, 1)
       case x: FunctionCall    => astForFunctionCall(x, 1)
+      case x: Identifier      => astForIdentifier(x, 1)
     }
 
     var tb     = Ast()
@@ -1089,7 +1092,28 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForIndexAccess(x: IndexAccess, order : Int): Ast = {
-    Ast()
+    val name = Operators.indexAccess
+    val base = x.base match {
+      case x: Identifier => astForIdentifier(x, 1)
+    }
+    val index = x.index match {
+      case x: MemberAccess => astForMemberAccess(x, 2)
+      case x: NumberLiteral => astForNumberLiteral(x,2)
+    }
+    val baseName = base.root.map(_.properties(PropertyNames.CODE)).mkString("")
+    val indexName = index.root.map(_.properties(PropertyNames.CODE)).mkString("")
+    val code = baseName+"["+indexName+"]"
+    Ast(NewCall()
+      .name(name)
+      .methodFullName(name)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(code)
+//      .typeFullName(typeFullName)
+      .order(order)
+      .argumentIndex(order)
+      )
+      .withChild(base)
+      .withChild(index)
   }
 
   private def astForTupleExpression(expression: TupleExpression, order : Int): Ast = {
