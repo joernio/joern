@@ -58,10 +58,6 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
     */
   def typeDecl: Option[TypeDecl] = definingTypeDecl
 
-  /** The type declaration associated with this method, e.g., the class it is defined in. Alias for 'definingTypeDecl'
-    */
-  def typeDecl: Traversal[TypeDecl] = definingTypeDecl
-
   /** Traverse to method body (alias for `block`) */
   def body: Block =
     method.block
