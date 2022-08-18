@@ -31,10 +31,21 @@ trait AstForExpressionsCreator { this: AstCreator =>
     createCallAst(callNode, argAsts)
   }
 
-  private def handleCallNodeArgs(callExpr: BabelNodeInfo, receiverNode: NewNode, baseNode: NewNode): Ast = {
+  private def handleCallNodeArgs(
+    callExpr: BabelNodeInfo,
+    receiverNode: NewNode,
+    baseNode: NewNode,
+    callName: String = ""
+  ): Ast = {
     val args = astForNodes(callExpr.json("arguments").arr.toList)
     val callNode =
-      createCallNode(callExpr.code, "", DispatchTypes.DYNAMIC_DISPATCH, callExpr.lineNumber, callExpr.columnNumber)
+      createCallNode(
+        callExpr.code,
+        callName,
+        DispatchTypes.DYNAMIC_DISPATCH,
+        callExpr.lineNumber,
+        callExpr.columnNumber
+      )
     createCallAst(callNode, args, Some(Ast(receiverNode)), Some(Ast(baseNode)))
   }
 
@@ -132,7 +143,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     val receiverNode = astForNodeWithFunctionReference(callee)
     Ast.storeInDiffGraph(receiverNode, diffGraph)
-    val callNode = handleCallNodeArgs(newExpr, receiverNode.nodes.head, tmpAllocNode2)
+
+    // TODO: place "<operator>.new" into the schema
+    val callNode = handleCallNodeArgs(newExpr, receiverNode.nodes.head, tmpAllocNode2, callName = "<operator>.new")
 
     val tmpAllocReturnNode = Ast(createIdentifierNode(tmpAllocName, newExpr))
 
