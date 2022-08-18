@@ -106,6 +106,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       allocCall.code shouldBe ".alloc"
 
       val List(constructorCall) = newCallBlock.astChildren.isCall.codeExact("new MyClass()").l
+      constructorCall.name shouldBe "<operator>.new"
       constructorCall.astChildren.isIdentifier.nameExact("MyClass").size shouldBe 1
 
       val List(receiver) = constructorCall.receiver.isIdentifier.nameExact("MyClass").l
@@ -194,7 +195,9 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       allocCall.code shouldBe ".alloc"
 
       val List(constructorCall) = newCallBlock.astChildren.isCall.codeExact("new foo.bar.MyClass()").l
-      val List(path)            = constructorCall.astChildren.isCall.codeExact("foo.bar.MyClass").l
+      constructorCall.name shouldBe "<operator>.new"
+
+      val List(path) = constructorCall.astChildren.isCall.codeExact("foo.bar.MyClass").l
       path.name shouldBe Operators.fieldAccess
 
       val List(receiver) = constructorCall.receiver.isCall.codeExact("foo.bar.MyClass").l
@@ -236,6 +239,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       allocCall.code shouldBe ".alloc"
 
       val List(constructorCall) = newCallBlock.astChildren.isCall.codeExact("new Foo()").l
+      constructorCall.name shouldBe "<operator>.new"
       constructorCall.astChildren.isIdentifier.nameExact("Foo").size shouldBe 1
 
       val List(receiver) = constructorCall.receiver.isIdentifier.nameExact("Foo").l
