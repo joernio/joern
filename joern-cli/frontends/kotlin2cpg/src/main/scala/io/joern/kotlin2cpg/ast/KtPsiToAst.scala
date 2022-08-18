@@ -114,7 +114,7 @@ trait KtPsiToAst {
   }
 
   def componentNMethodAsts(typeDecl: NewTypeDecl, parameters: Seq[KtParameter])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     parameters.zipWithIndex.map { case (valueParam, idx) =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(valueParam, TypeConstants.any))
@@ -147,7 +147,7 @@ trait KtPsiToAst {
   }
 
   def secondaryCtorAsts(ctors: Seq[KtSecondaryConstructor], classFullName: String)(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                   typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     ctors.map { ctor =>
       val constructorParams     = ctor.getValueParameters.asScala.toList
@@ -339,6 +339,7 @@ trait KtPsiToAst {
       columnEnd(ktFn)
     )
     scope.pushNewScope(_methodNode)
+    methodAstParentStack.push(_methodNode)
 
     val thisParameterMaybe = if (needsThisParameter) {
       val typeDeclFullName = registerType(typeInfoProvider.containingTypeDeclFullName(ktFn, TypeConstants.any))
@@ -381,12 +382,12 @@ trait KtPsiToAst {
   }
 
   def astsForBlock(
-    expr: KtBlockExpression,
-    argIdx: Option[Int],
-    pushToScope: Boolean = true,
-    localsForCaptures: List[NewLocal] = List(),
-    implicitReturnAroundLastStatement: Boolean = false
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+                    expr: KtBlockExpression,
+                    argIdx: Option[Int],
+                    pushToScope: Boolean = true,
+                    localsForCaptures: List[NewLocal] = List(),
+                    implicitReturnAroundLastStatement: Boolean = false
+                  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node = withArgumentIndex(
       blockNode(expr.getStatements.asScala.map(_.getText).mkString("\n"), typeFullName, line(expr), column(expr)),
@@ -423,7 +424,7 @@ trait KtPsiToAst {
   }
 
   def astForIsExpression(expr: KtIsExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                    typeInfoProvider: TypeInfoProvider
   ): Ast = {
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val args = astsForExpression(expr.getLeftHandSide, None) ++
@@ -433,7 +434,7 @@ trait KtPsiToAst {
   }
 
   def astForBinaryExprWithTypeRHS(expr: KtBinaryExpressionWithTypeRHS, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                            typeInfoProvider: TypeInfoProvider
   ): Ast = {
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val args = astsForExpression(expr.getLeft, None) ++ Seq(astForTypeReference(expr.getRight, None))
@@ -442,7 +443,7 @@ trait KtPsiToAst {
   }
 
   def astForTypeReference(expr: KtTypeReference, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                      typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
     val node         = typeRefNode(expr.getText, typeFullName, line(expr), column(expr))
@@ -450,7 +451,7 @@ trait KtPsiToAst {
   }
 
   def astForSuperExpression(expr: KtSuperExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                          typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node         = withArgumentIndex(identifierNode(expr.getText, typeFullName, line(expr), column(expr)), argIdx)
@@ -458,7 +459,7 @@ trait KtPsiToAst {
   }
 
   def astForThisExpression(expr: KtThisExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                        typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node         = withArgumentIndex(identifierNode(expr.getText, typeFullName, line(expr), column(expr)), argIdx)
@@ -466,7 +467,7 @@ trait KtPsiToAst {
   }
 
   def astForClassLiteral(expr: KtClassLiteralExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                              typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, ("", "")) // TODO: fix the fallback names
     val typeFullName          = registerType(typeInfoProvider.expressionType(expr, TypeConstants.javaLangObject))
@@ -572,7 +573,7 @@ trait KtPsiToAst {
   }
 
   def astForArrayAccess(expr: KtArrayAccessExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                            typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val arrayExpr     = expr.getArrayExpression
     val typeFullName  = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
@@ -587,7 +588,7 @@ trait KtPsiToAst {
   }
 
   def astForPostfixExpression(expr: KtPostfixExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                              typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val operatorType = ktTokenToOperator(forPostfixExpr = true).applyOrElse(
       KtPsiUtil.getOperationToken(expr),
@@ -604,7 +605,7 @@ trait KtPsiToAst {
   }
 
   def astForPrefixExpression(expr: KtPrefixExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                            typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val operatorType = ktTokenToOperator(forPostfixExpr = false).applyOrElse(
       KtPsiUtil.getOperationToken(expr),
@@ -632,8 +633,8 @@ trait KtPsiToAst {
   |__________________________________
    */
   private def astsForDestructuringDeclarationWithNonCtorCallRHS(
-    expr: KtDestructuringDeclaration
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+                                                                 expr: KtDestructuringDeclaration
+                                                               )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val initExpr             = expr.getInitializer
     val destructuringEntries = nonUnderscoreDestructuringEntries(expr)
     val localsForEntries = destructuringEntries.map { entry =>
@@ -674,8 +675,8 @@ trait KtPsiToAst {
   |__________________________________
    */
   private def astsForDestructuringDeclarationWithCtorRHS(
-    expr: KtDestructuringDeclaration
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+                                                          expr: KtDestructuringDeclaration
+                                                        )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val typedInit = Option(expr.getInitializer).collect { case e: KtCallExpression => e }
     if (typedInit.isEmpty) {
       logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}`.")
@@ -738,11 +739,11 @@ trait KtPsiToAst {
   }
 
   private def assignmentAstForDestructuringEntry(
-    entry: KtDestructuringDeclarationEntry,
-    componentNReceiverName: String,
-    componentNTypeFullName: String,
-    componentIdx: Integer
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+                                                  entry: KtDestructuringDeclarationEntry,
+                                                  componentNReceiverName: String,
+                                                  componentNTypeFullName: String,
+                                                  componentIdx: Integer
+                                                )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
     val assignmentLHSNode = identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
     val assignmentLHSAst =
@@ -797,8 +798,8 @@ trait KtPsiToAst {
   |__________________________________
    */
   private def astsForDestructuringDeclarationWithVarRHS(
-    expr: KtDestructuringDeclaration
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+                                                         expr: KtDestructuringDeclaration
+                                                       )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val typedInit = Option(expr.getInitializer).collect { case e: KtNameReferenceExpression => e }
     if (typedInit.isEmpty) {
       logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}`.")
@@ -821,8 +822,8 @@ trait KtPsiToAst {
   }
 
   def astsForDestructuringDeclaration(
-    expr: KtDestructuringDeclaration
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+                                       expr: KtDestructuringDeclaration
+                                     )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val hasNonRefExprRHS = expr.getInitializer match {
       case _: KtNameReferenceExpression => false
       case _: KtExpression              => true
@@ -848,7 +849,7 @@ trait KtPsiToAst {
   }
 
   def astForStringTemplate(expr: KtStringTemplateExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                  typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     if (expr.hasInterpolation) {
@@ -873,7 +874,7 @@ trait KtPsiToAst {
   }
 
   private def astForQualifiedExpressionFieldAccess(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                                     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(1)).head
     val argAsts     = selectorExpressionArgAsts(expr)
@@ -887,7 +888,7 @@ trait KtPsiToAst {
   }
 
   private def astForQualifiedExpressionExtensionCall(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                                       typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).head
     val argAsts     = selectorExpressionArgAsts(expr)
@@ -916,8 +917,8 @@ trait KtPsiToAst {
   }
 
   private def selectorExpressionArgAsts(
-    expr: KtQualifiedExpression
-  )(implicit typeInfoProvider: TypeInfoProvider): List[Ast] = {
+                                         expr: KtQualifiedExpression
+                                       )(implicit typeInfoProvider: TypeInfoProvider): List[Ast] = {
     expr.getSelectorExpression match {
       case typedExpr: KtCallExpression =>
         withIndex(typedExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
@@ -931,7 +932,7 @@ trait KtPsiToAst {
   }
 
   private def astForQualifiedExpressionCallToSuper(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                                     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).head
     val argAsts     = selectorExpressionArgAsts(expr)
@@ -960,7 +961,7 @@ trait KtPsiToAst {
   }
 
   private def astForQualifiedExpressionWithNoAstForReceiver(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                                              typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(1)).head
     val argAsts     = selectorExpressionArgAsts(expr)
@@ -984,10 +985,10 @@ trait KtPsiToAst {
   }
 
   private def astForQualifiedExpressionWithReceiverEdge(
-    expr: KtQualifiedExpression,
-    callKind: CallKinds.CallKind,
-    argIdx: Option[Int]
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+                                                         expr: KtQualifiedExpression,
+                                                         callKind: CallKinds.CallKind,
+                                                         argIdx: Option[Int]
+                                                       )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val isDynamicCall = callKind == CallKinds.DynamicCall
     val isStaticCall  = callKind == CallKinds.StaticCall
     val argIdxForReceiver =
@@ -1025,7 +1026,7 @@ trait KtPsiToAst {
   }
 
   private def astDerivedFullNameWithSignature(expr: KtQualifiedExpression, argAsts: List[Ast])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                               typeInfoProvider: TypeInfoProvider
   ): (String, String) = {
     val astDerivedMethodFullName = expr.getSelectorExpression match {
       case expression: KtCallExpression =>
@@ -1046,7 +1047,7 @@ trait KtPsiToAst {
 
   // TODO: clean up this whole fn
   def astForQualifiedExpression(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                  typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val callKind        = typeInfoProvider.bindingKind(expr)
     val isExtensionCall = callKind == CallKinds.ExtensionCall
@@ -1109,7 +1110,7 @@ trait KtPsiToAst {
   }
 
   private def astForTryAsExpression(expr: KtTryExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(
       // TODO: remove the `last`
@@ -1416,7 +1417,7 @@ trait KtPsiToAst {
   }
 
   def astForIfAsExpression(expr: KtIfExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                      typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val conditionAsts = astsForExpression(expr.getCondition, None)
     val thenAsts      = astsForExpression(expr.getThen, None)
@@ -1428,7 +1429,7 @@ trait KtPsiToAst {
   }
 
   private def astForCtorCall(expr: KtCallExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                          typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.cpgUnresolved))
     val tmpBlockNode = blockNode("", typeFullName)
@@ -1529,7 +1530,7 @@ trait KtPsiToAst {
   }
 
   def astForNameReference(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                typeInfoProvider: TypeInfoProvider
   ): Ast = {
     if (typeInfoProvider.isReferenceToClass(expr)) astForNameReferenceToType(expr, argIdx)
     else
@@ -1540,7 +1541,7 @@ trait KtPsiToAst {
   }
 
   private def astForNameReferenceToType(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                              typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName              = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
     val referencesCompanionObject = typeInfoProvider.isRefToCompanionObject(expr)
@@ -1559,7 +1560,7 @@ trait KtPsiToAst {
   }
 
   private def astForNameReferenceToMember(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                                typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
     val referenceTargetTypeFullName = registerType(
@@ -1579,7 +1580,7 @@ trait KtPsiToAst {
   }
 
   private def astForNonSpecialNameReference(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                                                  typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
     val name         = expr.getIdentifier.getText
@@ -1588,7 +1589,7 @@ trait KtPsiToAst {
   }
 
   def astForLiteral(expr: KtConstantExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node         = literalNode(expr.getText, typeFullName, line(expr), column(expr))
@@ -1596,7 +1597,7 @@ trait KtPsiToAst {
   }
 
   def astForBinaryExpr(expr: KtBinaryExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                      typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val opRef = expr.getOperationReference
 
@@ -1651,7 +1652,7 @@ trait KtPsiToAst {
       else typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
 
     val finalSignature =
-      // TODO: add test case for this situation
+    // TODO: add test case for this situation
       if (fullName.startsWith(Constants.operatorSuffix)) Constants.empty
       else signature
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
@@ -1680,7 +1681,7 @@ trait KtPsiToAst {
   }
 
   private def astForNonCtorCall(expr: KtCallExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
+                                                                             typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val declFullNameOption = typeInfoProvider.containingDeclFullName(expr)
     declFullNameOption.foreach(registerType)
