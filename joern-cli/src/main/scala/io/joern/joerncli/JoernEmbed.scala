@@ -1,5 +1,7 @@
 package io.joern.joerncli
 
+import io.joern.joerncli.CpgBasedTool.exitIfInvalid
+
 object JoernEmbed extends App {
 
   case class Config(cpgFileName: String = "cpg.bin", outDir: String = "out")
@@ -18,6 +20,7 @@ object JoernEmbed extends App {
     }.parse(args, Config())
 
   parseConfig.foreach { config =>
+    exitIfInvalid(config.outDir, config.cpgFileName)
     println(config)
   }
 

@@ -52,4 +52,16 @@ object CpgBasedTool {
     }
   }
 
+  def exitIfInvalid(outDir: String, cpgFileName: String): Unit = {
+    if (File(outDir).exists)
+      exitWithError(s"Output directory `$outDir` already exists.")
+    if (File(cpgFileName).notExists)
+      exitWithError(s"CPG at $cpgFileName does not exist.")
+  }
+
+  def exitWithError(msg: String): Unit = {
+    System.err.println(s"error: $msg")
+    System.exit(1)
+  }
+
 }
