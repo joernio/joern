@@ -143,7 +143,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     val receiverNode = astForNodeWithFunctionReference(callee)
     Ast.storeInDiffGraph(receiverNode, diffGraph)
-    
+
     // TODO: place "<operator>.new" into the schema
     val callNode = handleCallNodeArgs(newExpr, receiverNode.nodes.head, tmpAllocNode2, callName = "<operator>.new")
 
