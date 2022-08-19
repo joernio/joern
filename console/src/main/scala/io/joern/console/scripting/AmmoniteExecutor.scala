@@ -74,7 +74,11 @@ trait AmmoniteExecutor {
     *   The result of running the script.
     */
   def runScript(scriptPath: Path, parameters: Map[String, String], cpg: Cpg): IO[Any] = {
-    runScript(scriptPath, parameters, bindings = IndexedSeq("cpg" -> cpg))
+    /** TODO try to find a different way for runScript - TypeTags got dropped from scala 3...
+     * https://contributors.scala-lang.org/t/scala-3-and-reflection/3627/10
+     */
+//    runScript(scriptPath, parameters, bindings = IndexedSeq("cpg" -> cpg))
+    ???
   }
 
   /** Runs multiple scripts in the order they are specified in `scriptPaths`.
@@ -113,7 +117,11 @@ trait AmmoniteExecutor {
     *   A list containing the results of running each script, in order.
     */
   def runScripts(scriptPaths: List[Path], parameters: Map[Path, Map[String, String]], cpg: Cpg): IO[Any] = {
-    runScripts(scriptPaths, parameters, bindings = IndexedSeq("cpg" -> cpg))
+    /** TODO try to find a different way for runScript - TypeTags got dropped from scala 3...
+     * https://contributors.scala-lang.org/t/scala-3-and-reflection/3627/10
+     */
+//    runScripts(scriptPaths, parameters, bindings = IndexedSeq("cpg" -> cpg))
+    ???
   }
 
   /** Runs a query against the provided CPG.

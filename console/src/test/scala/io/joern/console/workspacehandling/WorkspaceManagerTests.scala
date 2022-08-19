@@ -90,7 +90,7 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
         val manager = new WorkspaceManager[Project](workspaceFile.toString)
         manager.openProject(
           projectName,
-          { fileName: String =>
+          (fileName: String) => {
             fileName.endsWith("cpg.bin.tmp") shouldBe true
             Some(Cpg.emptyCpg)
           }
@@ -178,9 +178,7 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
       val manager = new WorkspaceManager[Project](workspaceFile.toString)
       manager.openProject(
         projectName,
-        { _: String =>
-          Some(Cpg.emptyCpg)
-        }
+        (_: String) => Some(Cpg.emptyCpg)
       )
       manager
     }
