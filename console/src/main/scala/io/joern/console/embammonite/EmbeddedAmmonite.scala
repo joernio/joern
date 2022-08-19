@@ -33,20 +33,20 @@ class EmbeddedAmmonite(predef: String = "") {
 
   val userThread = new Thread(new UserRunnable(jobQueue, writer, reader, errReader))
 
-  val shellThread = new Thread(() => {
-    val ammoniteShell =
-      ammonite
-        .Main(
-          predefCode = EmbeddedAmmonite.predef + predef,
-          welcomeBanner = None,
-          remoteLogging = false,
-          colors = Colors.BlackWhite,
-          inputStream = inStream,
-          outputStream = outStream,
-          errorStream = errStream
-        )
-    ammoniteShell.run()
-  })
+  val shellThread = new Thread(
+    new Runnable {
+      override def run(): Unit = {
+            ammonite.Main(
+              predefCode = EmbeddedAmmonite.predef + predef,
+              welcomeBanner = None,
+              remoteLogging = false,
+              colors = Colors.BlackWhite,
+              inputStream = inStream,
+              outputStream = outStream,
+              errorStream = errStream)
+              .run()
+      }
+    })
 
   private def pipePair(): (PipedInputStream, PipedOutputStream) = {
     val out = new PipedOutputStream()
