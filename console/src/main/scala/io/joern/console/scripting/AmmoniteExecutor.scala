@@ -1,8 +1,8 @@
 package io.joern.console.scripting
 
-import ammonite.Main
-import ammonite.runtime.Storage
-import ammonite.util.{Bind, Res}
+// import ammonite.Main
+// import ammonite.runtime.Storage
+// import ammonite.util.{Bind, Res}
 import cats.effect.IO
 import cats.instances.list._
 import cats.syntax.traverse._
@@ -19,13 +19,13 @@ trait AmmoniteExecutor {
 
   protected def predef: String
 
-  protected lazy val ammoniteMain: Main = ammonite.Main(
-    predefCode = predef,
-    remoteLogging = false,
-    verboseOutput = false,
-    welcomeBanner = None,
-    storageBackend = Storage.InMemory()
-  )
+  // protected lazy val ammoniteMain: Main = ammonite.Main(
+  //   predefCode = predef,
+  //   remoteLogging = false,
+  //   verboseOutput = false,
+  //   welcomeBanner = None,
+  //   storageBackend = Storage.InMemory()
+  // )
 
   /** Runs the given script, passing any defined parameters in addition to bringing the provided variable bindings into
     * scope.
@@ -39,28 +39,28 @@ trait AmmoniteExecutor {
     * @return
     *   The result of running the script.
     */
-  def runScript(scriptPath: Path, parameters: Map[String, String], bindings: IndexedSeq[Bind[_]]): IO[Any] = {
-    val args: Seq[String] = parameters.flatMap { case (key, value) => Seq(s"--$key", value) }.toSeq
-    for {
-      replInstance <- IO(ammoniteMain.instantiateRepl(bindings))
-      repl         <- IO.fromEither(replInstance.left.map { case (err, _) => new RuntimeException(err.msg) })
-      ammoniteResult <- IO {
-        repl.initializePredef()
-        val wd = if (ammoniteMain.wd.wrapped.getRoot != scriptPath.getRoot) {
-          os.Path(scriptPath.getParent)
-        } else {
-          ammoniteMain.wd
-        }
-        ammonite.main.Scripts.runScript(wd, os.Path(scriptPath), repl.interp, args)
-      }
-      result <- ammoniteResult match {
-        case Res.Success(res)     => IO.pure(res)
-        case Res.Exception(ex, _) => IO.raiseError(ex)
-        case Res.Failure(msg)     => IO.raiseError(new RuntimeException(msg))
-        case _                    => IO.unit
-      }
-    } yield result
-  }
+  // def runScript(scriptPath: Path, parameters: Map[String, String], bindings: IndexedSeq[Bind[_]]): IO[Any] = {
+  //   val args: Seq[String] = parameters.flatMap { case (key, value) => Seq(s"--$key", value) }.toSeq
+  //   for {
+  //     replInstance <- IO(ammoniteMain.instantiateRepl(bindings))
+  //     repl         <- IO.fromEither(replInstance.left.map { case (err, _) => new RuntimeException(err.msg) })
+  //     ammoniteResult <- IO {
+  //       repl.initializePredef()
+  //       val wd = if (ammoniteMain.wd.wrapped.getRoot != scriptPath.getRoot) {
+  //         os.Path(scriptPath.getParent)
+  //       } else {
+  //         ammoniteMain.wd
+  //       }
+  //       ammonite.main.Scripts.runScript(wd, os.Path(scriptPath), repl.interp, args)
+  //     }
+  //     result <- ammoniteResult match {
+  //       case Res.Success(res)     => IO.pure(res)
+  //       case Res.Exception(ex, _) => IO.raiseError(ex)
+  //       case Res.Failure(msg)     => IO.raiseError(new RuntimeException(msg))
+  //       case _                    => IO.unit
+  //     }
+  //   } yield result
+  // }
 
   /** Runs the given script, passing any defined parameters in addition to bringing a cpg into scope.
     *
@@ -93,16 +93,16 @@ trait AmmoniteExecutor {
     * @return
     *   A list containing the results of running each script, in order.
     */
-  def runScripts(
-    scriptPaths: List[Path],
-    parameters: Map[Path, Map[String, String]],
-    bindings: IndexedSeq[Bind[_]]
-  ): IO[List[Any]] = {
-    scriptPaths.map { scriptPath =>
-      val scriptParams = parameters.getOrElse(scriptPath, Map.empty)
-      runScript(scriptPath, scriptParams, bindings)
-    }.sequence
-  }
+  // def runScripts(
+  //   scriptPaths: List[Path],
+  //   parameters: Map[Path, Map[String, String]],
+  //   bindings: IndexedSeq[Bind[_]]
+  // ): IO[List[Any]] = {
+  //   scriptPaths.map { scriptPath =>
+  //     val scriptParams = parameters.getOrElse(scriptPath, Map.empty)
+  //     runScript(scriptPath, scriptParams, bindings)
+  //   }.sequence
+  // }
 
   /** Runs multiple scripts in the order they are specified in `scriptPaths`.
     *
@@ -117,9 +117,6 @@ trait AmmoniteExecutor {
     *   A list containing the results of running each script, in order.
     */
   def runScripts(scriptPaths: List[Path], parameters: Map[Path, Map[String, String]], cpg: Cpg): IO[Any] = {
-    /** TODO try to find a different way for runScript - TypeTags got dropped from scala 3...
-     * https://contributors.scala-lang.org/t/scala-3-and-reflection/3627/10
-     */
 //    runScripts(scriptPaths, parameters, bindings = IndexedSeq("cpg" -> cpg))
     ???
   }
