@@ -140,14 +140,18 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     methodOrModifierOrder: Int
   ): Ast = {
     val name = if (methodOrModifier.name != null) methodOrModifier.name else "<init>"
-    val parameters = {
-      (if (methodOrModifier.isVirtual) createThisParameterNode(contractName)
-       else
-        createThisParameterNode(contractName)) +: withOrder(methodOrModifier.parameters.collect { case x: VariableDeclaration => x }) {
-        case (x, order) =>
-          astForParameter(x, order)
+    val parameters =
+      if (methodOrModifier.isVirtual) Seq(createThisParameterNode(contractName))
+      else {
+        if (methodOrModifier.parameters != null)
+          createThisParameterNode(contractName) +: withOrder(methodOrModifier.parameters.collect { case x: VariableDeclaration => x }) {
+          case (x, order) =>
+            astForParameter(x, order)
+          }
+        else {
+          Seq(createThisParameterNode(contractName))
+        }
       }
-    }
     val body = astForBody(methodOrModifier.body.asInstanceOf[Block], parameters.size)
     val methodNode = NewMethod()
       .name(name)
@@ -375,6 +379,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: ReturnStatement              => astForReturn(x, order)
       case x: VariableDeclarationStatement => astForVarDeclStmt(x, order)
       case x: InlineAssemblyStatement      => astForInlineAssemblyStatement(x.body, order)
+      case x: ThrowStatement               => astForThrow(x, order)
       case x =>
         logger.warn(s"Unhandled statement of type ${x.getClass}")
         Ast() // etc
@@ -391,6 +396,22 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     }
 
   }
+
+    def astForThrow(stmt: ThrowStatement, order: Int): Ast = {
+      val throwNode = NewCall()
+        .name("<operator>.throw")
+        .methodFullName("<operator>.throw")
+//        .lineNumber(line(stmt))
+//        .columnNumber(column(stmt))
+        .code(stmt.toString())
+        .order(order)
+        .argumentIndex(order)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+
+//      val args = astsForExpression(stmt.getExpression, order = 1, None)
+
+      Ast(throwNode)
+    }
 
   private def astForAsmBody(body: AssemblyBlock, order: Int): Ast = {
     val blockNode = NewBlock().order(order).argumentIndex(order).code("Assembly")
@@ -585,6 +606,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val value = mapping.valueType match {
       case x: ElementaryTypeName => x.name
       case x: Mapping            => (getMappingKeyAndValue(x))
+      case x: UserDefinedTypeName => x.namePath
     }
     (" (" + key + " => " + value + ")")
   }
@@ -754,11 +776,16 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: TupleExpression    => astForTupleExpression(x, order)
       case x: NewExpression      => astForNewExpression(x, order)
       case x: TypeNameExpression => astForTypeNameExpression(x, order)
+      case x: Conditional        => astForConditional(x,order)
       case _ => {
         println("name: " + expr.getType)
         Ast()
       }
     }
+  }
+
+  private def astForConditional(x:Conditional, order: Int):Ast = {
+    astForExpression(x.condition,order)
   }
 
   private def astForForStatement(statement: ForStatement, order: Int): Ast = {
@@ -1124,12 +1151,13 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astsForDefinition(x: BaseASTNode, order: Int): Ast = {
-    x match {
-      case x: NumberLiteral   => astForNumberLiteral(x, order)
-      case x: BinaryOperation => astForBinaryOperation(x, order)
-      case x: FunctionCall    => astForFunctionCall(x, order)
-      case x: TupleExpression => astForTupleExpression(x, order)
-    }
+    astForExpression(x,order)
+//    x match {
+//      case x: NumberLiteral   => astForNumberLiteral(x, order)
+//      case x: BinaryOperation => astForBinaryOperation(x, order)
+//      case x: FunctionCall    => astForFunctionCall(x, order)
+//      case x: TupleExpression => astForTupleExpression(x, order)
+//    }
   }
 
   private def astForVarDeclStmt(statement: VariableDeclarationStatement, order: Int): Ast = {
@@ -1236,21 +1264,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     (params)
   }
 
-//  def astForThrow(stmt: ThrowStmt, order: Int): Ast = {
-//    val throwNode = NewCall()
-//      .name("<operator>.throw")
-//      .methodFullName("<operator>.throw")
-//      .lineNumber(line(stmt))
-//      .columnNumber(column(stmt))
-//      .code(stmt.toString())
-//      .order(order)
-//      .argumentIndex(order)
-//      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-//
-//    val args = astsForExpression(stmt.getExpression, order = 1, None)
-//
-//    callAst(throwNode, args)
-//  }
+
   object AstCreator {
 
     def withOrder[T <: Any, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {

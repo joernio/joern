@@ -272,17 +272,16 @@ object SuryaObject {
   case class AssemblyAssignment(names: List[BaseASTNode], expression: BaseASTNode) extends BaseASTNode("  AssemblyAssignment") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
-
   case class AssemblyCall(functionName: String, arguments: List[BaseASTNode]) extends BaseASTNode("  AssemblyCall") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
   case class DecimalNumber(value: String) extends  BaseASTNode("  DecimalNumber") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
-  case class ThrowStatement() extends BaseASTNode(" ThrowStatement") {
+  case class ThrowStatement() extends BaseASTNode("  ThrowStatement") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
-  case class Conditional(condition: BaseASTNode) extends BaseASTNode(" Conditional") {
+  case class Conditional(condition: BaseASTNode) extends BaseASTNode("  Conditional") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
 

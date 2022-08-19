@@ -1,7 +1,8 @@
 package io.joern.solidity2cpg.domain
 import io.joern.solidity2cpg.domain.SuryaObject._
+import org.json4s.native.Json
 import org.slf4j.LoggerFactory
-import spray.json.{DefaultJsonProtocol, JsArray, JsBoolean, JsFalse, JsNull, JsNumber, JsObject, JsString, JsValue, JsonFormat}
+import spray.json.{DefaultJsonProtocol, JsArray, JsBoolean, JsFalse, JsNull, JsNumber, JsObject, JsString, JsValue, JsonFormat, jsonReader}
 
 /** Manually decodes Surya generated JSON objects to their assigned case classes. For more information see:
   * @see
@@ -25,6 +26,11 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       *   a specific [[SuryaObject]] case class or a [[BaseASTNode]] if the class is unhandled.
       */
     def read(json: JsValue): BaseASTNode = {
+      println()
+      println("json: ",json.convertTo[JsValue])
+//      if (json == "null") {
+//          json = JsNull
+//      }
       val fields = json.asJsObject("BaseASTNode object expected").fields
       val typ    = fields("type").convertTo[String]
       typ match {
@@ -253,7 +259,10 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       } else {
         ModifierDefinition(
           fields("name").convertTo[String],
-          fields("parameters").convertTo[List[BaseASTNode]],
+          fields("parameters") match {
+            case x: JsArray => x.convertTo[List[BaseASTNode]]
+            case _          => null
+          },
           fields("body").convertTo[BaseASTNode],
           fields("isVirtual").convertTo[Boolean],
           fields("override") match {
@@ -286,6 +295,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
               case _ => null
             },
             fields("expression") match {
+              case JsNull => null
               case x: JsObject => x.convertTo[BaseASTNode]
               case _ => null
             },
@@ -317,7 +327,6 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           )
         } catch {
           case e : NoSuchElementException => {
-//            println("var: "+fields("name") + " : "+e)
             VariableDeclaration(
               fields("typeName").convertTo[BaseASTNode],
               fields("name") match {
@@ -629,11 +638,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "VariableDeclarationStatement") {
         throw new RuntimeException("VariableDeclarationStatement object expected")
       } else {
+//        print(fields("variables"))
         VariableDeclarationStatement(
           fields("variables").convertTo[List[BaseASTNode]],
           fields("initialValue") match {
+            case JsNull => null
             case x: JsObject => x.convertTo[BaseASTNode]
-            case _ => null
 
           }
         )
