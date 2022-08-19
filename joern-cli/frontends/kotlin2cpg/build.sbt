@@ -5,7 +5,6 @@ val kotlinVersion = "1.6.21"
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "com.github.pathikrit"    %% "better-files"               % "3.9.1",
   "io.shiftleft"            %% "codepropertygraph"          % Versions.cpg,
   "org.apache.logging.log4j" % "log4j-slf4j-impl"           % Versions.log4j         % Runtime,
   "org.slf4j"                % "slf4j-api"                  % "1.7.35",

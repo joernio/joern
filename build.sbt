@@ -23,7 +23,7 @@ lazy val kotlin2cpg        = Projects.kotlin2cpg
 
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   joerncli,
-  // querydb,
+  querydb,
   console,
   dataflowengineoss,
   macros,
@@ -35,7 +35,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   jssrc2cpg,
   javasrc2cpg,
   jimple2cpg,
-  // kotlin2cpg
+  kotlin2cpg
 )
 
 ThisBuild / libraryDependencies += 
