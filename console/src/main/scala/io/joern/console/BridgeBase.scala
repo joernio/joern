@@ -1,7 +1,7 @@
 package io.joern.console
 
 import os.{Path, pwd}
-import ammonite.util.{Colors, Res}
+// import ammonite.util.{Colors, Res}
 import better.files._
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
@@ -215,15 +215,16 @@ trait ScriptExecution {
          |openForInputPath(\"$name\")
          |""".stripMargin
     }
-    ammonite
-      .Main(
-        predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks),
-        welcomeBanner = None,
-        storageBackend = new StorageBackend(slProduct),
-        remoteLogging = false,
-        colors = ammoniteColors(config)
-      )
-      .run()
+    // ammonite
+    //   .Main(
+    //     predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks),
+    //     welcomeBanner = None,
+    //     storageBackend = new StorageBackend(slProduct),
+    //     remoteLogging = false,
+    //     colors = ammoniteColors(config)
+    //   )
+    //   .run()
+    ???
   }
 
   protected def runScript(scriptFile: Path, config: Config) = {
@@ -240,19 +241,20 @@ trait ScriptExecution {
 
     val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config) ++ shutdownHooks)
 
-    ammonite
-      .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))
-      .runScript(actualScriptFile, scriptArgs)
-      ._1 match {
-      case Res.Success(r) =>
-        System.err.println(s"script finished successfully")
-        System.err.println(r)
-      case Res.Failure(msg) =>
-        throw new AssertionError(s"script failed: $msg")
-      case Res.Exception(e, msg) =>
-        throw new AssertionError(s"script errored: $msg", e)
-      case _ => ???
-    }
+    // ammonite
+    //   .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))
+    //   .runScript(actualScriptFile, scriptArgs)
+    //   ._1 match {
+    //   case Res.Success(r) =>
+    //     System.err.println(s"script finished successfully")
+    //     System.err.println(r)
+    //   case Res.Failure(msg) =>
+    //     throw new AssertionError(s"script failed: $msg")
+    //   case Res.Exception(e, msg) =>
+    //     throw new AssertionError(s"script errored: $msg", e)
+    //   case _ => ???
+    // }
+    ???
     /* minimizing exposure time by deleting the decrypted script straight away */
     if (isEncryptedScript) actualScriptFile.toIO.delete
   }
@@ -269,9 +271,9 @@ trait ScriptExecution {
     }
   }
 
-  private def ammoniteColors(config: Config) =
-    if (config.nocolors) Colors.BlackWhite
-    else Colors.Default
+  // private def ammoniteColors(config: Config) =
+  //   if (config.nocolors) Colors.BlackWhite
+  //   else Colors.Default
 
 }
 

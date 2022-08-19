@@ -49,6 +49,7 @@ object pprinter {
     }
 
   private def myAdditionalHandlers(original: PPrinter): PartialFunction[Any, Tree] = { case node: nodes.StoredNode =>
+    // import sourcecode.Text.generate
     Tree.Apply(
       node.productPrefix,
       Iterator.range(0, node.productArity).map { n =>

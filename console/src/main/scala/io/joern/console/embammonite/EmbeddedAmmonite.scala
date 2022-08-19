@@ -1,6 +1,6 @@
 package io.joern.console.embammonite
 
-import ammonite.util.Colors
+// import ammonite.util.Colors
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.io.{BufferedReader, InputStreamReader, PipedInputStream, PipedOutputStream, PrintWriter}
@@ -36,15 +36,16 @@ class EmbeddedAmmonite(predef: String = "") {
   val shellThread = new Thread(
     new Runnable {
       override def run(): Unit = {
-            ammonite.Main(
-              predefCode = EmbeddedAmmonite.predef + predef,
-              welcomeBanner = None,
-              remoteLogging = false,
-              colors = Colors.BlackWhite,
-              inputStream = inStream,
-              outputStream = outStream,
-              errorStream = errStream)
-              .run()
+            // ammonite.Main(
+            //   predefCode = EmbeddedAmmonite.predef + predef,
+            //   welcomeBanner = None,
+            //   remoteLogging = false,
+            //   colors = Colors.BlackWhite,
+            //   inputStream = inStream,
+            //   outputStream = outStream,
+            //   errorStream = errStream)
+            //   .run()
+        ???
       }
     })
 
