@@ -1,14 +1,21 @@
 package io.joern.joerncli
 
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
+import io.shiftleft.codepropertygraph.generated.nodes.Method
+
+import scala.util.Using
+import io.shiftleft.semanticcpg.language._
+
+import scala.collection.View
+import scala.util.hashing.MurmurHash3
 
 object JoernEmbed extends App {
 
   case class Config(cpgFileName: String = "cpg.bin", outDir: String = "out")
 
   private def parseConfig: Option[Config] =
-    new scopt.OptionParser[Config]("joern-export") {
-      head("Dump intermediate graph representations (or entire graph) of code in a given export format")
+    new scopt.OptionParser[Config]("joern-embed") {
+      head("Extract vector representations of code from CPG")
       help("help")
       arg[String]("cpg")
         .text("input CPG file name - defaults to `cpg.bin`")
@@ -21,7 +28,15 @@ object JoernEmbed extends App {
 
   parseConfig.foreach { config =>
     exitIfInvalid(config.outDir, config.cpgFileName)
-    println(config)
+    Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
+      cpg.method.map(toVector).foreach(println)
+    }
+  }
+
+  private def toVector(method: Method): Map[Int, Int] = {
+    method.ast.code.l.groupBy(identity).view.mapValues(_.size).map { case (k, v) =>
+      MurmurHash3.stringHash(k) -> v
+    }.toMap
   }
 
 }
