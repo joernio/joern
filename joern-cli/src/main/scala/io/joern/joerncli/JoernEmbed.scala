@@ -5,8 +5,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.Method
 
 import scala.util.Using
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal._
 
-import scala.collection.View
 import scala.util.hashing.MurmurHash3
 
 object JoernEmbed extends App {
@@ -29,14 +29,22 @@ object JoernEmbed extends App {
   parseConfig.foreach { config =>
     exitIfInvalid(config.outDir, config.cpgFileName)
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
-      cpg.method.map(toVector).foreach(println)
+      println(cpg.method.map { m =>
+        val vector = toVector(m)
+        (m.fullName, vector)
+      }.toJsonPretty)
     }
   }
 
   private def toVector(method: Method): Map[Int, Int] = {
-    method.ast.code.l.groupBy(identity).view.mapValues(_.size).map { case (k, v) =>
-      MurmurHash3.stringHash(k) -> v
-    }.toMap
+    method.ast.code.l
+      .groupBy(identity)
+      .view
+      .mapValues(_.size)
+      .map { case (k, v) =>
+        MurmurHash3.stringHash(k) -> v
+      }
+      .toMap
   }
 
 }
