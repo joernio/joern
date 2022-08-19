@@ -1,8 +1,7 @@
 package io.joern.solidity2cpg.domain
 import io.joern.solidity2cpg.domain.SuryaObject._
-import org.json4s.native.Json
 import org.slf4j.LoggerFactory
-import spray.json.{DefaultJsonProtocol, JsArray, JsBoolean, JsFalse, JsNull, JsNumber, JsObject, JsString, JsValue, JsonFormat, jsonReader}
+import spray.json._
 
 /** Manually decodes Surya generated JSON objects to their assigned case classes. For more information see:
   * @see
@@ -26,106 +25,109 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       *   a specific [[SuryaObject]] case class or a [[BaseASTNode]] if the class is unhandled.
       */
     def read(json: JsValue): BaseASTNode = {
-      println()
-      println("json: ",json.convertTo[JsValue])
-//      if (json == "null") {
-//          json = JsNull
-//      }
-      val fields = json.asJsObject("BaseASTNode object expected").fields
-      val typ    = fields("type").convertTo[String]
-      typ match {
-        case "SourceUnit" =>
-          SourceUnitJsonFormat.read(json)
-        case "PragmaDirective" =>
-          PragmaDirectiveJsonFormat.read(json)
-        case "ImportDirective" =>
-          ImportDirectiveJsonFormat.read(json)
-        case "ContractDefinition" =>
-          ContractDefinitionJsonFormat.read(json)
-        case "InheritanceSpecifier" =>
-          InheritanceSpecifierJsonFormat.read(json)
-        case "UserDefinedTypeName" =>
-          UserDefinedTypeNameJsonFormat.read(json)
-        case "ModifierDefinition" =>
-          ModifierDefinitionJsonFormat.read(json)
-        case "VariableDeclaration" =>
-          VariableDeclarationJsonFormat.read(json)
-        case "ElementaryTypeName" =>
-          ElementaryTypeNameJsonFormat.read(json)
-        case "Identifier" =>
-          IdentifierJsonFormat.read(json)
-        case "Block" =>
-          BlockJsonFormat.read(json)
-        case "ExpressionStatement" =>
-          ExpressionStatementJsonFormat.read(json)
-        case "FunctionCall" =>
-          FunctionCallJsonFormat.read(json)
-        case "MemberAccess" =>
-          MemberAccessJsonFormat.read(json)
-        case "IndexAccess" =>
-          IndexAccessJsonFormat.read(json)
-        case "BinaryOperation" =>
-          BinaryOperationJsonFormat.read(json)
-        case "StringLiteral" =>
-          StringLiteralJsonFormat.read(json)
-        case "EventDefinition" =>
-          EventDefinitionJsonFormat.read(json)
-        case "FunctionDefinition" =>
-          FunctionDefinitionJsonFormat.read(json)
-        case "ModifierInvocation" =>
-          ModifierInvocationJsonFormat.read(json)
-        case "EmitStatement" =>
-          EmitStatementJsonFormat.read(json)
-        case "ForStatement" =>
-          ForStatementJsonFormat.read(json)
-        case "VariableDeclarationStatement" =>
-          VariableDeclarationStatementJsonFormat.read(json)
-        case "UnaryOperation" =>
-          UnaryOperationJsonFormat.read(json)
-        case "IfStatement" =>
-          IfStatementJsonFormat.read(json)
-        case "BooleanLiteral" =>
-          BooleanLiteralJsonFormat.read(json)
-        case "ArrayTypeName" =>
-          ArrayTypeNameJsonFormat.read(json)
-        case "NumberLiteral" =>
-          NumberLiteralJsonFormat.read(json)
-        case "StateVariableDeclaration" =>
-          StateVariableDeclarationJsonFormat.read(json)
-        case "Mapping" =>
-          MappingJsonFormat.read(json)
-        case "StructDefinition" =>
-          StructDefinitionJsonFormat.read(json)
-        case "UsingForDeclaration" =>
-          UsingForDeclarationJsonFormat.read(json)
-        case "ReturnStatement" =>
-          ReturnStatementJsonFormat.read(json)
-        case "TupleExpression" =>
-          TupleExpressionJsonFormat.read(json)
-        case "FunctionTypeName" =>
-          FunctionTypeNameJsonFormat.read(json)
-        case "NewExpression" =>
-          NewExpressionJsonFormat.read(json)
-        case "TypeNameExpression" =>
-          TypeNameExpressionJsonFormat.read(json)
-        case "InlineAssemblyStatement" =>
-          InlineAssemblyStatementJsonFormat.read(json)
-        case "AssemblyBlock" =>
-          AssemblyBlockJsonFormat.read(json)
-        case "AssemblyAssignment" =>
-          AssemblyAssignmentJsonFormat.read(json)
-        case "AssemblyCall" =>
-          AssemblyCallJsonFormat.read(json)
-        case "DecimalNumber" =>
-          DecimalNumberJsonFormat.read(json)
-        case "ThrowStatement" =>
-          ThrowStatementJsonFormat.read(json)
-        case "Conditional" =>
-          ConditionalJsonFormat.read(json)
-        case _ =>
-          logger.warn(s"Unhandled type '$typ' parsed from JSON AST.");
-          new BaseASTNode(`type` = fields("type").convertTo[String])
+      if (json.toString() == "null") {
+        val nullType = """{"type": "null"}"""
+        val jsonAst = nullType.parseJson
+        null
+      } else {
+        val fields = json.asJsObject("BaseASTNode object expected").fields
+        val typ = fields("type").convertTo[String]
+        typ match {
+          case "SourceUnit" =>
+            SourceUnitJsonFormat.read(json)
+          case "PragmaDirective" =>
+            PragmaDirectiveJsonFormat.read(json)
+          case "ImportDirective" =>
+            ImportDirectiveJsonFormat.read(json)
+          case "ContractDefinition" =>
+            ContractDefinitionJsonFormat.read(json)
+          case "InheritanceSpecifier" =>
+            InheritanceSpecifierJsonFormat.read(json)
+          case "UserDefinedTypeName" =>
+            UserDefinedTypeNameJsonFormat.read(json)
+          case "ModifierDefinition" =>
+            ModifierDefinitionJsonFormat.read(json)
+          case "VariableDeclaration" =>
+            VariableDeclarationJsonFormat.read(json)
+          case "ElementaryTypeName" =>
+            ElementaryTypeNameJsonFormat.read(json)
+          case "Identifier" =>
+            IdentifierJsonFormat.read(json)
+          case "Block" =>
+            BlockJsonFormat.read(json)
+          case "ExpressionStatement" =>
+            ExpressionStatementJsonFormat.read(json)
+          case "FunctionCall" =>
+            FunctionCallJsonFormat.read(json)
+          case "MemberAccess" =>
+            MemberAccessJsonFormat.read(json)
+          case "IndexAccess" =>
+            IndexAccessJsonFormat.read(json)
+          case "BinaryOperation" =>
+            BinaryOperationJsonFormat.read(json)
+          case "StringLiteral" =>
+            StringLiteralJsonFormat.read(json)
+          case "EventDefinition" =>
+            EventDefinitionJsonFormat.read(json)
+          case "FunctionDefinition" =>
+            FunctionDefinitionJsonFormat.read(json)
+          case "ModifierInvocation" =>
+            ModifierInvocationJsonFormat.read(json)
+          case "EmitStatement" =>
+            EmitStatementJsonFormat.read(json)
+          case "ForStatement" =>
+            ForStatementJsonFormat.read(json)
+          case "VariableDeclarationStatement" =>
+            VariableDeclarationStatementJsonFormat.read(json)
+          case "UnaryOperation" =>
+            UnaryOperationJsonFormat.read(json)
+          case "IfStatement" =>
+            IfStatementJsonFormat.read(json)
+          case "BooleanLiteral" =>
+            BooleanLiteralJsonFormat.read(json)
+          case "ArrayTypeName" =>
+            ArrayTypeNameJsonFormat.read(json)
+          case "NumberLiteral" =>
+            NumberLiteralJsonFormat.read(json)
+          case "StateVariableDeclaration" =>
+            StateVariableDeclarationJsonFormat.read(json)
+          case "Mapping" =>
+            MappingJsonFormat.read(json)
+          case "StructDefinition" =>
+            StructDefinitionJsonFormat.read(json)
+          case "UsingForDeclaration" =>
+            UsingForDeclarationJsonFormat.read(json)
+          case "ReturnStatement" =>
+            ReturnStatementJsonFormat.read(json)
+          case "TupleExpression" =>
+            TupleExpressionJsonFormat.read(json)
+          case "FunctionTypeName" =>
+            FunctionTypeNameJsonFormat.read(json)
+          case "NewExpression" =>
+            NewExpressionJsonFormat.read(json)
+          case "TypeNameExpression" =>
+            TypeNameExpressionJsonFormat.read(json)
+          case "InlineAssemblyStatement" =>
+            InlineAssemblyStatementJsonFormat.read(json)
+          case "AssemblyBlock" =>
+            AssemblyBlockJsonFormat.read(json)
+          case "AssemblyAssignment" =>
+            AssemblyAssignmentJsonFormat.read(json)
+          case "AssemblyCall" =>
+            AssemblyCallJsonFormat.read(json)
+          case "DecimalNumber" =>
+            DecimalNumberJsonFormat.read(json)
+          case "ThrowStatement" =>
+            ThrowStatementJsonFormat.read(json)
+          case "Conditional" =>
+            ConditionalJsonFormat.read(json)
+          case "WhileStatement" =>
+            WhileStatementJsonFormat.read(json)
+          case _ =>
+            logger.warn(s"Unhandled type '$typ' parsed from JSON AST.");
+            new BaseASTNode(`type` = fields("type").convertTo[String])
 
+        }
       }
     }
   }
@@ -642,8 +644,8 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         VariableDeclarationStatement(
           fields("variables").convertTo[List[BaseASTNode]],
           fields("initialValue") match {
-            case JsNull => null
             case x: JsObject => x.convertTo[BaseASTNode]
+            case JsNull => null
 
           }
         )
@@ -1009,5 +1011,24 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       }
     }
   }
+
+  implicit object WhileStatementJsonFormat extends JsonFormat[WhileStatement] with DefaultJsonProtocol {
+
+    def write(c: WhileStatement): JsValue = JsNull
+
+    def read(json: JsValue): WhileStatement = {
+      val fields = json.asJsObject("Unable to decode JSON as WhileStatement").fields
+      if (fields("type").convertTo[String] != "WhileStatement") {
+        throw new RuntimeException("WhileStatement object expected")
+      } else {
+        WhileStatement(
+          fields("condition").convertTo[BaseASTNode],
+          fields("body").convertTo[BaseASTNode]
+        )
+      }
+    }
+  }
+
+
 
 }

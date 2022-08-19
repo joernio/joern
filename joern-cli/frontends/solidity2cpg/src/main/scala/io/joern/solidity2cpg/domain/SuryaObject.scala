@@ -284,5 +284,7 @@ object SuryaObject {
   case class Conditional(condition: BaseASTNode) extends BaseASTNode("  Conditional") {
     override def toString: String = scala.runtime.ScalaRunTime._toString(this)
   }
-
+  case class WhileStatement(condition: BaseASTNode, body: BaseASTNode) extends BaseASTNode("  WhileStatement") {
+    override def toString: String = scala.runtime.ScalaRunTime._toString(this)
+  }
 }

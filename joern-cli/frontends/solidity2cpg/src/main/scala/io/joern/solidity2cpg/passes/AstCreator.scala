@@ -139,6 +139,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     contractName: String,
     methodOrModifierOrder: Int
   ): Ast = {
+    var body = Ast()
     val name = if (methodOrModifier.name != null) methodOrModifier.name else "<init>"
     val parameters =
       if (methodOrModifier.isVirtual) Seq(createThisParameterNode(contractName))
@@ -152,7 +153,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           Seq(createThisParameterNode(contractName))
         }
       }
-    val body = astForBody(methodOrModifier.body.asInstanceOf[Block], parameters.size)
+    if (methodOrModifier.body != null) {
+       body = astForBody(methodOrModifier.body.asInstanceOf[Block], parameters.size)
+    }
+
     val methodNode = NewMethod()
       .name(name)
       .order(methodOrModifierOrder)
@@ -177,10 +181,20 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         val returnParams = if (x.returnParameters != null) x.returnParameters else List()
         val funcType = if (returnParams.nonEmpty) {
           ":" ++ returnParams
-            .collect { case y: VariableDeclaration =>
-              y.typeName match {
-                case z: ElementaryTypeName => z.name
+            .collect {
+
+              case y: ArrayTypeName => {
+                y.baseTypeName match {
+                  case z: ElementaryTypeName => z.name
+                }
               }
+              case y: VariableDeclaration => {
+                y.typeName match {
+                  case z: ElementaryTypeName => z.name
+                }
+              }
+
+              case _ => throw new Exception(s"Unsupported return type ${returnParams}")
             }
             .mkString(":")
         } else {
@@ -337,7 +351,13 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 //TODO: fix vars
   private def astForBody(body: Block, order: Int): Ast = {
     val blockNode = NewBlock().order(order).argumentIndex(order)
+    try  {
+      val stmts     = body.statements
+    } catch {
+        case e: Exception => logger.warn(s"HERE Unhandled statement of type ${body}")
+    }
     val stmts     = body.statements
+
 
     val vars = withOrder(stmts) {case (x, order) =>
       astForLocalDeclaration(x, order)
@@ -380,10 +400,27 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: VariableDeclarationStatement => astForVarDeclStmt(x, order)
       case x: InlineAssemblyStatement      => astForInlineAssemblyStatement(x.body, order)
       case x: ThrowStatement               => astForThrow(x, order)
+      case x: WhileStatement               => astForWhileStatement(x, order)
+      case x: Block                        => astForBody(x, order)
       case x =>
         logger.warn(s"Unhandled statement of type ${x.getClass}")
         Ast() // etc
     }
+  }
+
+  private def astForWhileStatement(statement: WhileStatement, order: Int): Ast ={
+    val condition = astForExpression(statement.condition, order)
+    val body = astForStatement(statement.body, order + 1)
+//    val code = "for (" + initial.root.map(_.properties(PropertyNames.CODE)).mkString("") +"; "+ conditionExpr.root.map(_.properties(PropertyNames.CODE)).mkString("") + "; " + loopExpr.root.map(_.properties(PropertyNames.CODE)).mkString("")+")"
+    val code = s"while (${condition.root.map(_.properties(PropertyNames.CODE)).mkString("")})"
+    val whileNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.WHILE)
+      .order(order)
+      .argumentIndex(order)
+      .code(code)
+    Ast(whileNode)
+      .withChild(condition)
+      .withChild(body)
   }
 
   private def astForInlineAssemblyStatement(block: BaseASTNode, order: Int): Ast = {
@@ -840,11 +877,14 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case "!"  => Operators.logicalNot
       case "++" => Operators.preIncrement
       case "--" => Operators.preDecrement
+      case "delete" => Operators.delete
+      case _   => throw new Exception("Unsupported unary prefix operator: " + operation.operator)
     }
     else operation.operator match {
       case "!" => Operators.logicalNot
       case "++" => Operators.postIncrement
       case "--" => Operators.postDecrement
+      case _   => throw new Exception("Unsupported unary operator: " + operation.operator)
     }
     val code = if (operation.isPrefix)
       operation.operator + subExpression.root.map(_.properties(PropertyNames.CODE)).mkString("")
@@ -913,12 +953,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withArgEdges(callNode, children.flatMap(_.root))
   }
   private def astForIfStatement(operation: IfStatement, order: Int): Ast = {
-    val opNode = operation.condition match {
-      case x: BinaryOperation => astForBinaryOperation(x, 1)
-      case x: FunctionCall    => astForFunctionCall(x, 1)
-      case x: Identifier      => astForIdentifier(x, 1)
-    }
-
+    val opNode = astForExpression(operation.condition, 1)
     var tb     = Ast()
     var fb     = Ast()
     var foundt = false
@@ -1011,11 +1046,21 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       call.methodFullName != null && !call.methodFullName.contains("null") && !call.methodFullName.contains("undefined")
     ) {
       methodFullName = call.methodFullName
-      sig = call.methodFullName.split(":")(1)
+      if (call.methodFullName.split(":").length >1) {
+        sig = call.methodFullName.split(":")(1)
+      } else {
+        sig = ""
+      }
+
+
     }
     code = expr.root.map(_.properties(PropertyNames.CODE)).mkString("") + "(" + args + ")"
     val typeFullName = if (methodFullName != null & !methodFullName.equals("")) {
-      methodFullName.substring(0, methodFullName.indexOf("."))
+      if (call.methodFullName.split(":").length >1) {
+        methodFullName.substring(0, methodFullName.indexOf("."))
+      } else {
+        methodFullName
+      }
     } else {
       ""
     }
@@ -1120,13 +1165,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astForIndexAccess(x: IndexAccess, order : Int): Ast = {
     val name = Operators.indexAccess
-    val base = x.base match {
-      case x: Identifier => astForIdentifier(x, 1)
-    }
-    val index = x.index match {
-      case x: MemberAccess => astForMemberAccess(x, 2)
-      case x: NumberLiteral => astForNumberLiteral(x,2)
-    }
+    val base = astForExpression(x.base, 1)
+    val index = astForExpression(x.index, 2)
     val baseName = base.root.map(_.properties(PropertyNames.CODE)).mkString("")
     val indexName = index.root.map(_.properties(PropertyNames.CODE)).mkString("")
     val code = baseName+"["+indexName+"]"
