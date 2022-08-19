@@ -72,20 +72,18 @@ class StaticMemberTests extends JavaDataflowFixture {
     val source = getSources
     val sink   = cpg.method(".*test1.*").call.name(".*println.*").argument(1)
 
-    sink.reachableBy(source).size shouldBe 0
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "find a path for `MALICIOUS` data from a different class directly" in {
     val source = getSources
     val sink   = cpg.method(".*test2.*").call.name(".*println.*").argument(1)
-
-    sink.reachableBy(source).size shouldBe 0
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "not find a path for `SAFE` data directly" in {
     val source = getSources
     val sink   = cpg.method(".*test3.*").call.name(".*println.*").argument(1)
-
     sink.reachableBy(source).size shouldBe 0
   }
 
@@ -93,7 +91,7 @@ class StaticMemberTests extends JavaDataflowFixture {
     val source = getSources
     val sink   = cpg.method(".*test4.*").call.name(".*println.*").argument(1)
 
-    sink.reachableBy(source).size shouldBe 0
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "not find a path for `SAFE` data in the same class" in {
