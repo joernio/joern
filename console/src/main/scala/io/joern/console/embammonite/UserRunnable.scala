@@ -12,7 +12,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[UserRunnable])
 
-  private val magicEchoSeq: Seq[Char] = List(27, 91, 57, 57, 57, 57, 68, 27, 91, 48, 74, 64, 32).map(_.toChar)
+  private val magicEchoSeq: String = new String(Array(27, 91, 57, 57, 57, 57, 68, 27, 91, 48, 74, 64, 32).map(_.toChar))
   private val endMarker               = """.*END: ([0-9a-f\-]+)""".r
 
   override def run(): Unit = {
