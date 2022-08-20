@@ -180,27 +180,15 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         var modifierMethod = Ast()
         val returnParams = if (x.returnParameters != null) x.returnParameters else List()
         val funcType = if (returnParams.nonEmpty) {
-          ":" ++ returnParams
-            .collect {
-
-              case y: ArrayTypeName => {
-                y.baseTypeName match {
-                  case z: ElementaryTypeName => z.name
-                }
+            ":" ++ returnParams
+              .collect {
+                case x: VariableDeclaration => getTypeName(x.typeName,x.storageLocation)
+                case x => getTypeName(x, "")
               }
-              case y: VariableDeclaration => {
-                y.typeName match {
-                  case z: ElementaryTypeName => z.name
-                }
-              }
-
-              case _ => throw new Exception(s"Unsupported return type ${returnParams}")
-            }
-            .mkString(":")
+              .mkString(":")
         } else {
           ":void"
         }
-
         val modifiers =
           if (x.modifiers.nonEmpty) astForModifiers(x.modifiers)
           else Seq()
@@ -304,30 +292,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     var code               = ""
     var visibility         = ""
     var storage            = ""
-    varDecl.typeName match {
-      case x: ElementaryTypeName => typefullName = registerType(x.name)
-      case x: Mapping => {
-        typefullName = registerType("mapping")
-        code = getMappingKeyAndValue(x)
-      }
-      case x: ArrayTypeName => {
-        x.baseTypeName match {
-          case x: ElementaryTypeName => typefullName += x.name
-        }
-        typefullName += "["
-        if (x.length != null) {
-          typefullName += x.length
-        }
-        typefullName += "]"
-        if (varDecl.storageLocation != null) {
-          typefullName += " "+varDecl.storageLocation
-          registerType(typefullName)
-        } else {
-          registerType(typefullName)
-        }
-      }
-//      case x:
-    }
+    typefullName = getTypeName(varDecl.typeName, varDecl.storageLocation)
 
     varDecl.visibility match {
       case x: String => visibility = " " + x
@@ -341,7 +306,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
     NewMethodParameter
       .name(varDecl.name)
-      .code(typefullName + code + visibility /*+ storage*/ + " " + varDecl.name)
+      .code(typefullName + code + visibility /*+storage */+ " " + varDecl.name)
       .typeFullName(typefullName)
       .order(order)
       .evaluationStrategy(getEvaluationStrategy(varDecl.typeName.getType))
@@ -392,7 +357,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     // TODO : Finish all of these statements
     statement match {
       case x: ExpressionStatement          => astForExpression(x.expression, order)
-//      case x: VariableDeclaration          => astForVarDecl(x, order) // TODO: This is not a statement
       case x: EmitStatement                => Ast()
       case x: ForStatement                 => astForForStatement(x, order)
       case x: IfStatement                  => astForIfStatement(x, order)
@@ -411,7 +375,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForWhileStatement(statement: WhileStatement, order: Int): Ast ={
     val condition = astForExpression(statement.condition, order)
     val body = astForStatement(statement.body, order + 1)
-//    val code = "for (" + initial.root.map(_.properties(PropertyNames.CODE)).mkString("") +"; "+ conditionExpr.root.map(_.properties(PropertyNames.CODE)).mkString("") + "; " + loopExpr.root.map(_.properties(PropertyNames.CODE)).mkString("")+")"
     val code = s"while (${condition.root.map(_.properties(PropertyNames.CODE)).mkString("")})"
     val whileNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.WHILE)
@@ -445,21 +408,13 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .argumentIndex(order)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
 
-//      val args = astsForExpression(stmt.getExpression, order = 1, None)
-
       Ast(throwNode)
     }
 
   private def astForAsmBody(body: AssemblyBlock, order: Int): Ast = {
     val blockNode = NewBlock().order(order).argumentIndex(order).code("Assembly")
     val operations     = body.operations
-
-//    val vars = withOrder(operations) {case (x, order) =>
-//      astForLocalDeclaration(x, order)
-//    }
-
     Ast(blockNode)
-//      .withChildren(vars)
       .withChildren(withOrder(operations) { case (x, order) =>
         astForAsmStatement(x, order)
       })
@@ -546,9 +501,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
           .order(order)
           .argumentIndex(order)
-//          .methodFullName(methodFullName)
-//          .signature(sig)
-//          .typeFullName(typeFullName)
         Ast(func)
           .withChild(expr)
           .withChildren(arguments)
@@ -561,17 +513,13 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     Ast(
       NewLiteral()
         .code(number.value)
-//        .typeFullName(typeFullName)
         .order(order)
         .argumentIndex(order)
     )
   }
 
   private def astForLocal(varDecl: VariableDeclaration, order: Int): Ast = {
-    val fullTypeName = varDecl.typeName match {
-      case x: ElementaryTypeName => registerType(x.name)
-      case _                     => ""
-    }
+    val fullTypeName = getTypeName(varDecl.typeName,varDecl.storageLocation)
     Ast(
       NewLocal()
         .name(varDecl.name)
@@ -585,26 +533,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForVarDecl(varDecl: VariableDeclaration, order: Int): Ast = {
     val newID        = NewIdentifier()
     var typefullName = ""
-    var code         = ""
-    varDecl.typeName match {
-      case x: ElementaryTypeName => typefullName = registerType(x.name)
-      case x: Mapping => {
-        typefullName = registerType("mapping")
-        code = getMappingKeyAndValue(x) + " "
-      }
-      case x: ArrayTypeName =>
-        x.baseTypeName match {
-          case x: ElementaryTypeName => typefullName = registerType(x.name)
-//          case x: ArrayTypeName      => typefullName = registerType(x.baseTypeName match {
-//            case x: ElementaryTypeName => x.name
-//            case _=> "something went wrong"
-//          })
-          case x: UserDefinedTypeName => typefullName = registerType(x.namePath)
-//          case _ => println(x.baseTypeName)
-        }
-      case x: UserDefinedTypeName => typefullName = registerType(x.namePath)
-      case x: FunctionTypeName    => typefullName = registerType("function(" + getParameters(x.parameterTypes) + ")")
-    }
+    typefullName = getTypeName(varDecl.typeName, varDecl.storageLocation)
     var visibility = "";
     varDecl.visibility match {
       case x: String => visibility = x + " "
@@ -615,7 +544,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     }
     newID
       .name(varDecl.name)
-      .code(code + visibility + varDecl.name)
+      .code(typefullName + visibility + varDecl.name)
       .typeFullName(typefullName)
       .order(order)
       .argumentIndex(order)
@@ -641,6 +570,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: Mapping            => (getMappingKeyAndValue(x))
     }
     val value = mapping.valueType match {
+
       case x: ElementaryTypeName => x.name
       case x: Mapping            => (getMappingKeyAndValue(x))
       case x: UserDefinedTypeName => x.namePath
@@ -655,8 +585,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .name("this")
           .code("this")
           .typeFullName(str)
-          //        .typeFullName(registerType(method.getType.toQuotedString))
-          //        .dynamicTypeHintFullName(Seq(registerType(method.getType.toQuotedString)))
           .order(0)
           .evaluationStrategy(getEvaluationStrategy("constructor"))
       )
@@ -665,8 +593,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         NewMethodParameterIn()
           .name("this")
           .code("this")
-          //        .typeFullName(registerType(method.getType.toQuotedString))
-          //        .dynamicTypeHintFullName(Seq(registerType(method.getType.toQuotedString)))
           .order(0)
       )
     }
@@ -675,26 +601,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForMemberVarDecl(varDecl: VariableDeclaration, order: Int): Ast = {
     val newMember    = NewMember()
     var typefullName = ""
-    var code         = ""
-    varDecl.typeName match {
-      case x: ElementaryTypeName => typefullName = registerType(x.name)
-      case x: Mapping => {
-        typefullName = registerType("mapping")
-        code = getMappingKeyAndValue(x)
-      }
-      case x: ArrayTypeName => {
-        x.baseTypeName match {
-          case x: ElementaryTypeName => typefullName = registerType(x.name)
-          case x: ArrayTypeName => x.baseTypeName match {
-            case x:  ElementaryTypeName => typefullName = registerType(x.name)
-          }
-          case x: UserDefinedTypeName => typefullName = registerType(x.namePath)
-
-        }
-      }
-      case x: UserDefinedTypeName => typefullName = registerType(x.namePath)
-      case x: FunctionTypeName    => typefullName = registerType("function(" + getParameters(x.parameterTypes) + ")")
-    }
+    typefullName = getTypeName(varDecl.typeName, varDecl.storageLocation)
     var visibility = "";
 
     varDecl.visibility match {
@@ -712,7 +619,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     membersList = membersList :+ (varDecl.name)
     newMember
       .name(varDecl.name)
-      .code(typefullName + code + visibility + " " + varDecl.name)
+      .code(typefullName + visibility + " " + varDecl.name)
       .typeFullName(typefullName)
       .order(order)
 
@@ -724,18 +631,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   /** TODO: This needs some refinement, can methods really return more than one base type?
     */
   private def astForMethodReturn(value: List[BaseASTNode], order: Int): Ast = {
-    var mapkey     = ""
     var visibility = ""
     var name       = ""
     value.collect { case x: VariableDeclaration => x }.foreach { x =>
-      x.typeName match {
-        case x: ElementaryTypeName => name = registerType(x.name)
-        case x: Mapping => {
-          name = registerType("mapping")
-          mapkey = getMappingKeyAndValue(x)
-        }
-      }
-
+      name = getTypeName(x.typeName, x.storageLocation)
       x.visibility match {
         case x: String => visibility = " " + x
         case _         =>
@@ -814,11 +713,32 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: NewExpression      => astForNewExpression(x, order)
       case x: TypeNameExpression => astForTypeNameExpression(x, order)
       case x: Conditional        => astForConditional(x,order)
+      case x: ElementaryTypeName => astForCastExpr(x,order)
       case _ => {
-        println("name: " + expr.getType)
+        println("astForExpression not matched type : " + expr.getType)
         Ast()
       }
     }
+  }
+
+  def astForCastExpr(expr: ElementaryTypeName, order:Int): Ast = {
+  val callBack = NewCall()
+    .name(Operators.cast)
+    .methodFullName(Operators.cast)
+    .code(expr.name)
+    .dispatchType(DispatchTypes.STATIC_DISPATCH)
+    .order(order)
+    .typeFullName(registerType(expr.name))
+    .argumentIndex(order)
+    val value = Seq(Ast(NewTypeRef()
+      .code(expr.name)
+      .order(1)
+      .argumentIndex(1)
+      .typeFullName(expr.name)
+    ))
+  Ast(callBack)
+    .withChildren(value)
+    .withArgEdges(callBack, value.flatMap(_.root))
   }
 
   private def astForConditional(x:Conditional, order: Int):Ast = {
@@ -979,7 +899,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .code("else"))
       operation.falseBody match {
         case x: Block => {
-//          fb = astForBody(x, 3)
           fb = elseNode.withChild(astForBody(x, 1))
           foundf = true
         }
@@ -1140,10 +1059,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withChild(expr)
       .withReceiverEdge(fieldAccess, expr.root.get)
       .withArgEdges(fieldAccess, expr.root.toList)
-
-//    expr1
-
-
   }
 
   private def astForBooleanLiteral(literal: BooleanLiteral, order : Int): Ast = {
@@ -1192,12 +1107,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   private def astsForDefinition(x: BaseASTNode, order: Int): Ast = {
     astForExpression(x,order)
-//    x match {
-//      case x: NumberLiteral   => astForNumberLiteral(x, order)
-//      case x: BinaryOperation => astForBinaryOperation(x, order)
-//      case x: FunctionCall    => astForFunctionCall(x, order)
-//      case x: TupleExpression => astForTupleExpression(x, order)
-//    }
   }
 
   private def astForVarDeclStmt(statement: VariableDeclarationStatement, order: Int): Ast = {
@@ -1213,20 +1122,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val call = if (statement.initialValue != null) {
       val lhsCode = vars.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString
       val rhsCode = initial.root.flatMap(_.properties.get(PropertyNames.CODE)).mkString
-//      val methodName = if (initial.){
-//        case Operator.ASSIGN               => Operators.assignment
-//        case Operator.PLUS                 => Operators.assignmentPlus
-//        case Operator.MINUS                => Operators.assignmentMinus
-//        case Operator.MULTIPLY             => Operators.assignmentMultiplication
-//        case Operator.DIVIDE               => Operators.assignmentDivision
-//        case Operator.BINARY_AND           => Operators.assignmentAnd
-//        case Operator.BINARY_OR            => Operators.assignmentOr
-//        case Operator.XOR                  => Operators.assignmentXor
-//        case Operator.REMAINDER            => Operators.assignmentModulo
-//        case Operator.LEFT_SHIFT           => Operators.assignmentShiftLeft
-//        case Operator.SIGNED_RIGHT_SHIFT   => Operators.assignmentArithmeticShiftRight
-//        case Operator.UNSIGNED_RIGHT_SHIFT => Operators.assignmentLogicalShiftRight
-//      }
       NewCall()
         .name(Operators.assignment)
         .methodFullName(Operators.assignment)
@@ -1287,23 +1182,30 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def getParameters(paramlist: List[BaseASTNode]): String = {
     var params = ""
     paramlist.collect { case x: VariableDeclaration =>
-      x.typeName match {
-        case x: ElementaryTypeName => params += registerType(x.name)
-        case x: Mapping => {
-          params += registerType("mapping")
-        }
-        case x: ArrayTypeName =>
-          x.baseTypeName match {
-            case x: ElementaryTypeName => params += registerType(x.name)
-          }
-        case x: UserDefinedTypeName => params += registerType(x.namePath)
-        case x: FunctionTypeName    => params += registerType("function(" + getParameters(x.parameterTypes) + ")")
-
-      }
+      params += getTypeName(x.typeName, x.storageLocation)
     }
     (params)
   }
 
+  private def getTypeName(base : BaseASTNode,storage : String): String = {
+    var sto = storage
+    if (sto != "" && sto != null) {
+      sto = " "+storage
+    } else {
+      sto = ""
+    }
+    base match {
+      case x: ElementaryTypeName  => registerType(x.name)
+      case x: ArrayTypeName       => if (x.length != null){
+                                        registerType(getTypeName(x.baseTypeName,"") + "[" + x.length+ "]"+sto )
+                                      } else {
+                                        registerType(getTypeName(x.baseTypeName,"") + "[]"+sto )
+                                      }
+      case x: Mapping             => registerType("mapping") + getMappingKeyAndValue(x) +sto
+      case x: UserDefinedTypeName => registerType(x.namePath) +sto
+      case x: FunctionTypeName    => registerType("function("+getParameters(x.parameterTypes)+")" +sto)
+    }
+  }
 
   object AstCreator {
 

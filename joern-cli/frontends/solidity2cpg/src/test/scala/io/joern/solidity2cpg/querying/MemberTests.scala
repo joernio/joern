@@ -36,7 +36,7 @@ class MemberTests extends SolidityCodeToCpgFixture {
 
     y.name shouldBe "balances"
     y.code shouldBe "mapping (address => uint) public balances"
-    y.typeFullName shouldBe "mapping" // don't worry about dynamic key-val types for now
+    y.typeFullName shouldBe "mapping (address => uint)" // don't worry about dynamic key-val types for now
     y.order shouldBe 3
     hasMod(y, ModifierTypes.PUBLIC)
 
