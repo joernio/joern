@@ -3,6 +3,7 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.utils.NodeBuilders.modifierNode
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewFile, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import org.slf4j.LoggerFactory
@@ -624,8 +625,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .order(order)
 
     Ast(newMember)
+      .withChild(Ast(modifierNode(ModifierTypes.STATIC)))
       .withChild(modifierMethod)
-
   }
 
   /** TODO: This needs some refinement, can methods really return more than one base type?

@@ -14,9 +14,20 @@ class TaintedPrivateVariable extends SolidityDataflowFixture {
       |contract Foo {
       |
       |  uint private a ;
-      |
+      |  uint256 public b;
+      |  uint8 c;
+      |  address newOwner;
+      |  address owner = msg.sender;
       |  function editVariable(uint _a) public {
       |      a = _a;
+      |  }
+      |  function confirmOwner()
+      |  public
+      |  {
+      |        if(msg.sender==newOwner)
+      |        {
+      |            owner=newOwner;
+      |        }
       |  }
       |
       |}""".stripMargin
@@ -27,13 +38,17 @@ class TaintedPrivateVariable extends SolidityDataflowFixture {
   it should "should find a is tainted" in {
 
     {
+//      println(cpg.typeDecl.dotAst.l)
+      def privateMembers = cpg.member
+        .where(_.hasModifier(ModifierTypes.PRIVATE))
       def sink = cpg.method
         .where(_.hasModifier(ModifierTypes.PUBLIC))
         .call
         .name(s"${Operators.assignment}.*")
-        .where(_.argument.isCall.nameExact(Operators.fieldAccess))
+        .where(_.argument.isCall.nameExact(Operators.fieldAccess).where(_.argument.isFieldIdentifier))
+//      sink.foreach(x => x.code.split(" ")(0) != privateMembers.code.l)
       def source = cpg.method.parameter
-      println(sink.reachableByFlows(source).p)
+      sink.reachableByFlows(source).p
     }
 
   }
