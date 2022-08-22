@@ -22,7 +22,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       constructorBinding.name shouldBe ""
       constructorBinding.signature shouldBe ""
       val List(boundMethod) = constructorBinding.refOut.l
-      boundMethod.fullName shouldBe "code.js::program:ClassA<constructor>"
+      boundMethod.fullName shouldBe "code.js::program:ClassA:<constructor>"
       boundMethod.code shouldBe "constructor() {}"
     }
 

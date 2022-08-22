@@ -44,6 +44,10 @@ trait AstForStatementsCreator { this: AstCreator =>
       nodeInfo.node match {
         case FunctionDeclaration =>
           astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
+        case FunctionExpression =>
+          astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
+        case ArrowFunctionExpression =>
+          astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
         case _ => astForNode(nodeInfo.json)
       }
     }

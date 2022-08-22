@@ -51,7 +51,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       classFooTypeDecl.fullName shouldBe "code.js::program:Foo"
 
       // constructor
-      val List(classFooMethod) = classFooTypeDecl.astChildren.isMethod.nameExact("Foo<constructor>").l
+      val List(classFooMethod) = classFooTypeDecl.astChildren.isMethod.nameExact("<constructor>").l
       classFooMethod.code shouldBe "constructor() {}"
 
       val List(programBlock) = program.astChildren.isBlock.l
