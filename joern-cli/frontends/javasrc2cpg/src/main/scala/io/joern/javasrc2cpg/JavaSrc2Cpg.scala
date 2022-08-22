@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.Try
 
+case class SourceDirectoryInfo(typeSolverSourceDir: String, sourceFiles: List[String])
 object JavaSrc2Cpg {
   val language: String = Languages.JAVASRC
 
@@ -28,14 +29,14 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, language, config.inputPath).createAndApply()
-      val (sourcesDir, sourceFileNames) = getSourcesFromDir(config)
-      if (sourceFileNames.isEmpty) {
-        logger.error(s"no source files found in $sourcesDir")
+      val sourcesInfo = getSourcesFromDir(config)
+      if (sourcesInfo.sourceFiles.isEmpty) {
+        logger.error(s"no source files found at path ${config.inputPath}")
       } else {
-        logger.info(s"found ${sourceFileNames.size} source files")
+        logger.info(s"found ${sourcesInfo.sourceFiles.size} source files")
       }
 
-      val astCreator = new AstCreationPass(sourcesDir, sourceFileNames, config, cpg)
+      val astCreator = new AstCreationPass(sourcesInfo.typeSolverSourceDir, sourcesInfo.sourceFiles, config, cpg)
       astCreator.createAndApply()
       new ConfigFileCreationPass(config.inputPath, cpg).createAndApply()
       new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
@@ -46,24 +47,37 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   /** JavaParser requires that the input path is a directory and not a single source file. This is inconvenient for
     * small-scale testing, so if a single source file is created, copy it to a temp directory.
     */
-  private def getSourcesFromDir(config: Config): (String, List[String]) = {
+  private def getSourcesFromDir(config: Config): SourceDirectoryInfo = {
 
-    val sourceCodePath =
-      if (config.runDelombok)
-        Delombok.run(config.inputPath, config.delombokJavaHome)
-      else {
-        config.inputPath
-      }
+    val inputPathAsFile = File(config.inputPath)
 
-    val sourceFile = File(sourceCodePath)
-    if (sourceFile.isDirectory) {
-      val sourceFileNames = SourceFiles.determine(sourceCodePath, sourceFileExtensions)
-      (sourceCodePath, sourceFileNames)
+    val originalSourcesDir = if (inputPathAsFile.isDirectory) {
+      config.inputPath
     } else {
       val dir = File.newTemporaryDirectory("javasrc").deleteOnExit()
-      sourceFile.copyToDirectory(dir).deleteOnExit()
-      (dir.pathAsString, List(sourceFile.pathAsString))
+      inputPathAsFile.copyToDirectory(dir).deleteOnExit()
+      dir.pathAsString
     }
+
+    val delombokSourcesDir = Option.when(config.runDelombok || config.delombokTypesOnly) {
+      Delombok.run(originalSourcesDir, config.delombokJavaHome)
+    }
+
+    val analysisSourceFilePath =
+      if (config.runDelombok)
+        delombokSourcesDir.get
+      else
+        originalSourcesDir
+
+    val typeSourcesPath =
+      if (config.runDelombok || config.delombokTypesOnly)
+        delombokSourcesDir.get
+      else
+        originalSourcesDir
+
+    val sourceFileNames = SourceFiles.determine(analysisSourceFilePath, sourceFileExtensions)
+
+    SourceDirectoryInfo(typeSourcesPath, sourceFileNames)
   }
 
 }
