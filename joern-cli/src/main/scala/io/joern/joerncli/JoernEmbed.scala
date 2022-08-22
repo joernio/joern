@@ -6,8 +6,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 
 import scala.util.Using
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import overflowdb.traversal._
 
+import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
 /** Creates an embedding from a code property graph by following three steps: (1) Objects are extracted from the graph,
@@ -19,13 +20,25 @@ trait EmbeddingGenerator[T, S] {
 
   type SparseVector = Map[Int, (Double, S)]
 
-  case class Embedding(vectors: Map[T, SparseVector]) {
-    lazy val dimToStructure: Map[Int, S] = vectors.flatMap { case (_, vector) =>
-      vector.map { case (hash, (_, structure)) => hash -> structure }
+  case class Embedding(data: Traversal[(T, SparseVector)]) {
+    lazy val dimToStructure: Map[Int, S] = {
+      val m = mutable.HashMap[Int, S]()
+      clone(data).foreach { case (_, vector) =>
+        vector.foreach { case (hash, (_, structure)) =>
+          m.put(hash, structure)
+        }
+      }
+      m.toMap
     }
-    lazy val structureToDim: Map[S, Int] = vectors.flatMap { case (_, vector) =>
-      vector.map { case (hash, (_, structure)) => structure -> hash }
+
+    lazy val structureToDim: Map[S, Int] = for ((k, v) <- dimToStructure) yield (v, k)
+
+    def vectors: Traversal[Map[Int, Double]] = clone(data).map { case (_, vector) =>
+      vector.map { case (dim, (v, _)) => dim -> v }
     }
+
+    private def clone[X](x: Traversal[X]) = Traversal.from(x.iterator.duplicate._2)
+
   }
 
   /** Extract a sequence of (object, vector) pairs from a cpg.
@@ -37,7 +50,6 @@ trait EmbeddingGenerator[T, S] {
         .map { case (obj, substructures) =>
           obj -> vectorize(substructures)
         }
-        .toMap
     )
 
   }
@@ -55,7 +67,7 @@ trait EmbeddingGenerator[T, S] {
 
   /** A function that creates a sequence of objects from a CPG
     */
-  def extractObjects(cpg: Cpg): Seq[T]
+  def extractObjects(cpg: Cpg): Traversal[T]
 
   /** A function that, for a given object, extracts its sub structures
     */
@@ -71,7 +83,7 @@ class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, String] {
 
   /** A function that creates a sequence of objects from a CPG
     */
-  override def extractObjects(cpg: Cpg): Seq[Method] = cpg.method.l
+  override def extractObjects(cpg: Cpg): Traversal[Method] = cpg.method
 
   /** A function that, for a given object, extracts its sub structures
     */
@@ -104,9 +116,7 @@ object JoernEmbed extends App {
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
       val embedding = new BagOfAPISymbolsForMethods().embed(cpg)
       val json = Traversal
-        .from(embedding.vectors.map { case (m, sparseVector) =>
-          m.fullName -> sparseVector.map { case (dim, (v, _)) => dim -> v }
-        })
+        .from(embedding.vectors)
         .toJsonPretty
       println(json)
     }
