@@ -1279,6 +1279,16 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       identifierA.canonicalName shouldBe "a"
     }
 
+    "be correct for function used as return" in AstFixture("""
+        |function method(x) {
+        |  return function foo() {};
+        |}
+        """.stripMargin) { cpg =>
+      val List(method) = cpg.method.nameExact("method").l
+      val List(ref)    = method.ast.isReturn.astChildren.isMethodRef.l
+      ref.code shouldBe "foo"
+    }
+
     "be correct for member access as useless statement" in AstFixture("""
           |function method(x) {
           |  x.a;

@@ -66,7 +66,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val retNode = createReturnNode(ret)
     safeObj(ret.json, "argument")
       .map { argument =>
-        val argAst = astForNode(Obj(argument))
+        val argAst = astForNodeWithFunctionReference(Obj(argument))
         createReturnAst(retNode, List(argAst))
       }
       .getOrElse(Ast(retNode))
