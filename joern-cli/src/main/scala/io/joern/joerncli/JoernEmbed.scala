@@ -2,10 +2,11 @@ package io.joern.joerncli
 
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Method, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 
 import scala.util.Using
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.Traversal
 
 import scala.util.hashing.MurmurHash3
 
@@ -66,6 +67,21 @@ trait EmbeddingGenerator[T, S] {
 
 }
 
+class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, AstNode] {
+
+  /** A function that creates a sequence of objects from a CPG
+    */
+  override def extractObjects(cpg: Cpg): Seq[Method] = cpg.method.l
+
+  /** A function that, for a given object, extracts its sub structures
+    */
+  override def enumerateSubStructures(method: Method): List[AstNode] = method.ast.l
+
+  /** A function that allows hashing of a sub structure
+    */
+  override def hash(astNode: AstNode): Int = MurmurHash3.stringHash(astNode.code)
+}
+
 object JoernEmbed extends App {
 
   case class Config(cpgFileName: String = "cpg.bin", outDir: String = "out")
@@ -86,22 +102,14 @@ object JoernEmbed extends App {
   parseConfig.foreach { config =>
     exitIfInvalid(config.outDir, config.cpgFileName)
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
-      println(cpg.method.map { m =>
-        val vector = toVector(m)
-        (m.fullName, vector)
-      }.toJsonPretty)
+      val embedding = new BagOfAPISymbolsForMethods().embed(cpg)
+      val json = Traversal
+        .from(embedding.vectors.map { case (m, sparseVector) =>
+          m.fullName -> sparseVector.map { case (dim, (v, _)) => dim -> v }
+        })
+        .toJsonPretty
+      println(json)
     }
-  }
-
-  private def toVector(method: Method): Map[Int, Int] = {
-    method.ast.code.l
-      .groupBy(identity)
-      .view
-      .mapValues(_.size)
-      .map { case (k, v) =>
-        MurmurHash3.stringHash(k) -> v
-      }
-      .toMap
   }
 
 }
