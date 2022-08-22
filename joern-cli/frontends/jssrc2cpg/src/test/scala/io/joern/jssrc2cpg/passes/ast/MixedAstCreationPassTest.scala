@@ -22,14 +22,14 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
     }
     "anonymous constructor full name 1" in AstFixture("class X { constructor(){} }") { cpg =>
-      cpg.method.fullName.toSetMutable should contain("code.js::program:X<constructor>")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:X:<constructor>")
     }
     "anonymous constructor of anonymous class full name" in AstFixture("""
                                                                          |var x = class {
                                                                          |  constructor(y) {
                                                                          |  }
                                                                          |}""".stripMargin) { cpg =>
-      cpg.method.fullName.toSetMutable should contain("code.js::program:_anon_cdecl<constructor>")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:_anon_cdecl:<constructor>")
     }
   }
 

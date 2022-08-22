@@ -135,13 +135,12 @@ trait AstCreatorHelper { this: AstCreator =>
     (positionToLineNumber, positionToFirstPositionInLine)
   }
 
-  private def computeScopePath(stack: Option[ScopeElement]): String = new ScopeElementIterator(stack)
-    .to(Seq)
-    .reverse
-    .collect { case methodScopeElement: MethodScopeElement =>
-      methodScopeElement.name
-    }
-    .mkString(":")
+  private def computeScopePath(stack: Option[ScopeElement]): String =
+    new ScopeElementIterator(stack)
+      .to(Seq)
+      .reverse
+      .collect { case methodScopeElement: MethodScopeElement => methodScopeElement.name }
+      .mkString(":")
 
   private def calcMethodName(func: BabelNodeInfo): String = func.node match {
     case TSCallSignatureDeclaration                              => "anonymous"
