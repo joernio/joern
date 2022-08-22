@@ -67,7 +67,7 @@ trait EmbeddingGenerator[T, S] {
 
 }
 
-class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, AstNode] {
+class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, String] {
 
   /** A function that creates a sequence of objects from a CPG
     */
@@ -75,11 +75,11 @@ class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, AstNode] {
 
   /** A function that, for a given object, extracts its sub structures
     */
-  override def enumerateSubStructures(method: Method): List[AstNode] = method.ast.l
+  override def enumerateSubStructures(method: Method): List[String] = method.ast.code.l
 
   /** A function that allows hashing of a sub structure
     */
-  override def hash(astNode: AstNode): Int = MurmurHash3.stringHash(astNode.code)
+  override def hash(code: String): Int = MurmurHash3.stringHash(code)
 }
 
 object JoernEmbed extends App {
