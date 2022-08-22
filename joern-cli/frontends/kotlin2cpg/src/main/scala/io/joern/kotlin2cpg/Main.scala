@@ -14,7 +14,8 @@ final case class Config(
   withStdlibJarsInClassPath: Boolean = true,
   downloadDependencies: Boolean = false,
   gradleProjectName: Option[String] = None,
-  gradleConfigurationName: Option[String] = None
+  gradleConfigurationName: Option[String] = None,
+  jar4importServiceUrl: Option[String] = None
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
@@ -43,6 +44,9 @@ private object Frontend {
       opt[Unit]("no-stdlib-jars")
         .text("Do not add local versions of Kotlin stdlib jars to classpath")
         .action((_, c) => c.copy(withStdlibJarsInClassPath = false)),
+      opt[String]("jar4import-url")
+        .text("Set URL of service which fetches necessary dependency jars for import names found in the project")
+        .action((value, c) => c.copy(jar4importServiceUrl = Some(value))),
       opt[Unit]("download-dependencies")
         .text("Download the dependencies of the target project and add them to the classpath")
         .action((_, c) => c.copy(downloadDependencies = true)),

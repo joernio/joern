@@ -6,6 +6,9 @@ dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->t
 
 libraryDependencies ++= Seq(
   "com.github.pathikrit"    %% "better-files"               % "3.9.1",
+  "com.lihaoyi"             %% "requests"                   % "0.7.0",
+  "com.lihaoyi"             %% "ujson"                      % "2.0.0",
+  "com.squareup.tools.build" % "maven-archeologist"         % "0.0.10",
   "io.shiftleft"            %% "codepropertygraph"          % Versions.cpg,
   "org.apache.logging.log4j" % "log4j-slf4j-impl"           % Versions.log4j         % Runtime,
   "org.slf4j"                % "slf4j-api"                  % "1.7.35",
