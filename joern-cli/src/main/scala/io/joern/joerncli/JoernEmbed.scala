@@ -2,7 +2,7 @@ package io.joern.joerncli
 
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 
 import scala.util.Using
 import io.shiftleft.semanticcpg.language._
@@ -10,6 +10,12 @@ import overflowdb.traversal._
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
+
+class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, String] {
+  override def extractObjects(cpg: Cpg): Traversal[Method]          = cpg.method
+  override def enumerateSubStructures(method: Method): List[String] = method.ast.code.l
+  override def hash(code: String): Int                              = MurmurHash3.stringHash(code)
+}
 
 /** Creates an embedding from a code property graph by following three steps: (1) Objects are extracted from the graph,
   * each of which is ultimately to be mapped to one vector (2) For each object, enumerate its sub structures. (3) Employ
@@ -77,21 +83,6 @@ trait EmbeddingGenerator[T, S] {
     */
   def hash(s: S): Int
 
-}
-
-class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, String] {
-
-  /** A function that creates a sequence of objects from a CPG
-    */
-  override def extractObjects(cpg: Cpg): Traversal[Method] = cpg.method
-
-  /** A function that, for a given object, extracts its sub structures
-    */
-  override def enumerateSubStructures(method: Method): List[String] = method.ast.code.l
-
-  /** A function that allows hashing of a sub structure
-    */
-  override def hash(code: String): Int = MurmurHash3.stringHash(code)
 }
 
 object JoernEmbed extends App {
