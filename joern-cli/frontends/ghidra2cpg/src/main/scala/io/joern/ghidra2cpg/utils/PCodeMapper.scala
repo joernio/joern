@@ -4,12 +4,12 @@ import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Func
 import ghidra.program.model.pcode.PcodeOp._
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, PcodeOpAST, Varnode}
 import io.joern.ghidra2cpg.Types
-import io.joern.ghidra2cpg.utils.Utils.{createCallNode, createIdentifier, createLiteral}
+//import io.joern.ghidra2cpg.utils.Utils.{createCallNode, createIdentifier, createLiteral}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-
+import Utils._
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
@@ -24,7 +24,8 @@ class PCodeMapper(
 ) {
   private val logger                                 = LoggerFactory.getLogger(getClass)
   var nodeStack: mutable.HashMap[String, CfgNodeNew] = new mutable.HashMap[String, CfgNodeNew]()
-  private val pcodeOps: List[PcodeOp]               = nativeInstruction.getPcode().toList//highFunction.getPcodeOps(nativeInstruction.getAddress).asScala.toList//
+  private val pcodeOps: List[PcodeOp] =
+    nativeInstruction.getPcode().toList // highFunction.getPcodeOps(nativeInstruction.getAddress).asScala.toList//
   val codeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
       CodeUnitFormatOptions.ShowBlockName.NEVER,
@@ -52,7 +53,7 @@ class PCodeMapper(
     val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
     connectCallToArgument(callNode, firstOp)
     connectCallToArgument(callNode, secondOp)
-   callNode
+    callNode
   }
 
   def getCallNode: CfgNodeNew = {
@@ -65,12 +66,12 @@ class PCodeMapper(
         nativeInstruction.toString,
         nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue()
       )
-      //} else if (pcodeOps.length == 1) {
+      // } else if (pcodeOps.length == 1) {
       //  // we don't need to fill the hashmap for one PcodeOp
       //  // map to node and return
       //  mapCallNode(pcodeOps.head)
-    } else if(nativeInstruction.getMnemonicString.startsWith("CMP")){
-      //mapCallNode(pcodeOps.head)
+    } else if (nativeInstruction.getMnemonicString.startsWith("CMP")) {
+      // mapCallNode(pcodeOps.head)
       handleCompare(pcodeOps.head)
     } else {
       mapCallNode(pcodeOps.last)

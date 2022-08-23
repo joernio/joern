@@ -46,7 +46,7 @@ object Utils {
       .order(index)
       .argumentIndex(index)
       .typeFullName(Types.registerType(typ))
-      //.lineNumber(lineNumber)
+    // .lineNumber(lineNumber)
   }
 
   def createReturnNode(code: String, lineNumber: Integer): NewReturn = {
@@ -64,7 +64,7 @@ object Utils {
       .order(order)
       .argumentIndex(argumentIndex)
       .typeFullName(typeFullName)
-      //.lineNumber(lineNumber)
+    // .lineNumber(lineNumber)
   }
   def createReturnNode(): NewMethodReturn = {
     nodes.NewMethodReturn().order(1)
