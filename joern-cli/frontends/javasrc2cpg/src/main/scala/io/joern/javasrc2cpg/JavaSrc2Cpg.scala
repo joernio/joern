@@ -59,18 +59,18 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       dir.pathAsString
     }
 
-    val delombokSourcesDir = Option.when(config.runDelombok || config.delombokTypesOnly) {
+    val delombokSourcesDir = Option.when(config.delombokFullAnalysis || config.delombokTypesOnly) {
       Delombok.run(originalSourcesDir, config.delombokJavaHome)
     }
 
     val analysisSourceFilePath =
-      if (config.runDelombok)
+      if (config.delombokFullAnalysis)
         delombokSourcesDir.get
       else
         originalSourcesDir
 
     val typeSourcesPath =
-      if (config.runDelombok || config.delombokTypesOnly)
+      if (config.delombokFullAnalysis || config.delombokTypesOnly)
         delombokSourcesDir.get
       else
         originalSourcesDir
