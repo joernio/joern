@@ -72,6 +72,25 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
     }
   }
 
+  "test gradle dependency resolution for a simple `build.gradle` in a nested project" in {
+    val fixture = new Fixture(
+      """
+       |apply plugin: 'java'
+       |repositories { mavenCentral() }
+       |dependencies { implementation 'log4j:log4j:1.2.17' }
+       |""".stripMargin,
+      "project/build.gradle",
+      isRunningOnWindowsGithubAction
+    )
+
+    fixture.test { dependenciesResult =>
+      dependenciesResult should not be empty
+      val dependencyFiles = dependenciesResult.getOrElse(Seq())
+      dependencyFiles.find(_.endsWith("log4j-1.2.17.jar")) should not be empty
+    }
+
+  }
+
   "test gradle dependency resolution for a simple `build.gradle.kts`" in {
     val fixture = new Fixture(
       """
