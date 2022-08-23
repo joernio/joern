@@ -53,8 +53,8 @@ class CallNodeTests extends GhidraBinToCpgSuite {
       .name("test")
       .map(x => s"${x.code} ${x.argument.size} ${x.argument.map(_.code).mkString(" ")}")
       .l // .mkString("\n")
-    println(y)
-    println(x)
+    println("Y " + y)
+    println("X " + x)
     x match {
       case List(x) =>
         x.name shouldBe "test"
