@@ -304,7 +304,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       // This is really, really ugly, but there's a bug in the JavaParser symbol solver that can lead to
       // unterminated recursion in some cases where types cannot be resolved.
       case e: StackOverflowError =>
-        logger.warn(s"Caught StackOverflowError in $filename")
+        logger.debug(s"Caught StackOverflowError in $filename")
         Failure(e)
     }
   }
