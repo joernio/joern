@@ -38,12 +38,12 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   def reachableBy[NodeType <: CfgNode](
     sourceTravs: Traversal[NodeType]*
   )(implicit context: EngineContext): Traversal[NodeType] = {
-    val reachedSources = reachableByInternal(sourceTravsToList(sourceTravs)).map(_.source)
+    val reachedSources = reachableByInternal(sourceTravsToStartingPoints(sourceTravs)).map(_.source)
     Traversal.from(reachedSources).cast[NodeType]
   }
 
   def reachableByFlows[A <: CfgNode](sourceTravs: Traversal[A]*)(implicit context: EngineContext): Traversal[Path] = {
-    val sources = sourceTravsToList(sourceTravs)
+    val sources = sourceTravsToStartingPoints(sourceTravs)
     val paths = reachableByInternal(sources)
       .map { result =>
         // We can get back results that start in nodes that are invisible
@@ -66,7 +66,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   def reachableByDetailed[NodeType <: CfgNode](
     sourceTravs: Traversal[NodeType]*
   )(implicit context: EngineContext): List[ReachableByResult] = {
-    reachableByInternal(sourceTravsToList(sourceTravs))
+    reachableByInternal(sourceTravsToStartingPoints(sourceTravs))
   }
 
   private def removeConsecutiveDuplicates[T](l: Vector[T]): List[T] = {
@@ -81,14 +81,14 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     result
   }
 
-  def sourceTravsToList[NodeType <: CfgNode](sourceTravs: Seq[Traversal[NodeType]]): List[CfgNode] = {
-    val startingPoints = sourceTravs
+  def sourceTravsToStartingPoints[NodeType <: CfgNode](sourceTravs: Seq[Traversal[NodeType]]): List[CfgNode] = {
+    val sources = sourceTravs
       .flatMap(_.toList)
       .collect { case n: CfgNode => n }
       .dedup
       .toList
       .sortBy(_.id)
-    sources(startingPoints)
+    startingPoints(sources)
   }
 
   /** The code below deals with static member variables in Java, and specifically with the situation where literals that
@@ -96,8 +96,8 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     * this member in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements
     * would be problematic, but it works quite well in practice.
     */
-  private def sources(startingPoints: List[CfgNode]): List[CfgNode] = {
-    startingPoints.flatMap {
+  private def startingPoints(sources: List[CfgNode]): List[CfgNode] = {
+    sources.flatMap {
       case lit: Literal =>
         List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
       case member: Member =>
