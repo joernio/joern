@@ -1,6 +1,7 @@
 package io.joern.joerncli
 
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
+import io.joern.joerncli.EmbeddingGenerator.SparseVector
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 
@@ -17,6 +18,12 @@ class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, AstNode] {
   override def extractObjects(cpg: Cpg): Traversal[Method]           = cpg.method
   override def enumerateSubStructures(method: Method): List[AstNode] = method.ast.l
   override def structureToString(astNode: AstNode): String           = astNode.code
+  override def objectToString(method: Method): String                = method.fullName
+}
+
+object EmbeddingGenerator {
+  type SparseVectorWithExplicitFeature = Map[Int, (Double, String)]
+  type SparseVector                    = Map[Int, Double]
 }
 
 /** Creates an embedding from a code property graph by following three steps: (1) Objects are extracted from the graph,
@@ -25,13 +32,12 @@ class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, AstNode] {
   * Chapter 3"
   */
 trait EmbeddingGenerator[T, S] {
+  import EmbeddingGenerator._
 
-  type SparseVector = Map[Int, (Double, String)]
-
-  case class Embedding(data: Traversal[(T, SparseVector)]) {
+  case class Embedding(data: (() => Traversal[(T, SparseVectorWithExplicitFeature)])) {
     lazy val dimToStructure: Map[Int, String] = {
       val m = mutable.HashMap[Int, String]()
-      clone(data).foreach { case (_, vector) =>
+      data().foreach { case (_, vector) =>
         vector.foreach { case (hash, (_, structureAsString)) =>
           m.put(hash, structureAsString)
         }
@@ -41,28 +47,27 @@ trait EmbeddingGenerator[T, S] {
 
     lazy val structureToDim: Map[String, Int] = for ((k, v) <- dimToStructure) yield (v, k)
 
-    def vectors: Traversal[Map[Int, Double]] = clone(data).map { case (_, vector) =>
+    def objects: Traversal[String] = data().map { case (obj, _) => objectToString(obj) }
+
+    def vectors: Traversal[Map[Int, Double]] = data().map { case (_, vector) =>
       vector.map { case (dim, (v, _)) => dim -> v }
     }
-
-    private def clone[X](x: Traversal[X]) = Traversal.from(x.iterator.duplicate._2)
 
   }
 
   /** Extract a sequence of (object, vector) pairs from a cpg.
     */
   def embed(cpg: Cpg): Embedding = {
-    Embedding(
+    Embedding({ () =>
       extractObjects(cpg)
         .map { obj => (obj, enumerateSubStructures(obj)) }
         .map { case (obj, substructures) =>
           obj -> vectorize(substructures)
         }
-    )
-
+    })
   }
 
-  private def vectorize(substructures: List[S]): SparseVector = {
+  private def vectorize(substructures: List[S]): SparseVectorWithExplicitFeature = {
     substructures
       .map(structureToString)
       .groupBy(identity)
@@ -85,6 +90,8 @@ trait EmbeddingGenerator[T, S] {
   /** A function that, for a given object, extracts its sub structures
     */
   def enumerateSubStructures(obj: T): List[S]
+
+  def objectToString(t: T): String
 
 }
 
@@ -109,14 +116,21 @@ object JoernEmbed extends App {
     exitIfInvalid(config.outDir, config.cpgFileName)
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
       val embedding = new BagOfAPISymbolsForMethods().embed(cpg)
-
-      val vectors                               = embedding.vectors
-      implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
-      println("[")
-      vectors.nextOption().foreach { vector => print(Serialization.write(vector)) }
-      vectors.foreach { vector => println(",\n" + Serialization.write(vector)) }
-      println("]")
+      println("{")
+      println("objects:")
+      traversalToJson(embedding.objects)
+      println("vectors:")
+      traversalToJson(embedding.vectors)
+      println("}")
     }
+  }
+
+  private def traversalToJson[X](trav: Traversal[X]): Unit = {
+    println("[")
+    implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
+    trav.nextOption().foreach { vector => print(Serialization.write(vector)) }
+    trav.foreach { vector => print(",\n" + Serialization.write(vector)) }
+    println("]")
   }
 
 }
