@@ -2,7 +2,7 @@ package io.joern.joerncli
 
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Method
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 
 import scala.util.Using
 import io.shiftleft.semanticcpg.language._
@@ -11,10 +11,10 @@ import overflowdb.traversal._
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
-class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, String] {
-  override def extractObjects(cpg: Cpg): Traversal[Method]          = cpg.method
-  override def enumerateSubStructures(method: Method): List[String] = method.ast.code.l
-  override def hash(code: String): Int                              = MurmurHash3.stringHash(code)
+class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, AstNode] {
+  override def extractObjects(cpg: Cpg): Traversal[Method]           = cpg.method
+  override def enumerateSubStructures(method: Method): List[AstNode] = method.ast.l
+  override def structureToString(astNode: AstNode): String           = astNode.code
 }
 
 /** Creates an embedding from a code property graph by following three steps: (1) Objects are extracted from the graph,
@@ -24,20 +24,20 @@ class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, String] {
   */
 trait EmbeddingGenerator[T, S] {
 
-  type SparseVector = Map[Int, (Double, S)]
+  type SparseVector = Map[Int, (Double, String)]
 
   case class Embedding(data: Traversal[(T, SparseVector)]) {
-    lazy val dimToStructure: Map[Int, S] = {
-      val m = mutable.HashMap[Int, S]()
+    lazy val dimToStructure: Map[Int, String] = {
+      val m = mutable.HashMap[Int, String]()
       clone(data).foreach { case (_, vector) =>
-        vector.foreach { case (hash, (_, structure)) =>
-          m.put(hash, structure)
+        vector.foreach { case (hash, (_, structureAsString)) =>
+          m.put(hash, structureAsString)
         }
       }
       m.toMap
     }
 
-    lazy val structureToDim: Map[S, Int] = for ((k, v) <- dimToStructure) yield (v, k)
+    lazy val structureToDim: Map[String, Int] = for ((k, v) <- dimToStructure) yield (v, k)
 
     def vectors: Traversal[Map[Int, Double]] = clone(data).map { case (_, vector) =>
       vector.map { case (dim, (v, _)) => dim -> v }
@@ -62,6 +62,7 @@ trait EmbeddingGenerator[T, S] {
 
   private def vectorize(substructures: List[S]): SparseVector = {
     substructures
+      .map(structureToString)
       .groupBy(identity)
       .view
       .mapValues(_.size)
@@ -71,6 +72,10 @@ trait EmbeddingGenerator[T, S] {
       .toMap
   }
 
+  def hash(label: String): Int = MurmurHash3.stringHash(label)
+
+  def structureToString(s: S): String
+
   /** A function that creates a sequence of objects from a CPG
     */
   def extractObjects(cpg: Cpg): Traversal[T]
@@ -78,10 +83,6 @@ trait EmbeddingGenerator[T, S] {
   /** A function that, for a given object, extracts its sub structures
     */
   def enumerateSubStructures(obj: T): List[S]
-
-  /** A function that allows hashing of a sub structure
-    */
-  def hash(s: S): Int
 
 }
 
