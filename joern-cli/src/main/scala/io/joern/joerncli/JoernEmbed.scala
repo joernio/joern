@@ -6,6 +6,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 
 import scala.util.Using
 import io.shiftleft.semanticcpg.language._
+import org.json4s.DefaultFormats
+import org.json4s.native.Serialization
 import overflowdb.traversal._
 
 import scala.collection.mutable
@@ -107,10 +109,13 @@ object JoernEmbed extends App {
     exitIfInvalid(config.outDir, config.cpgFileName)
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
       val embedding = new BagOfAPISymbolsForMethods().embed(cpg)
-      val json = Traversal
-        .from(embedding.vectors)
-        .toJsonPretty
-      println(json)
+
+      val vectors                               = embedding.vectors
+      implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
+      println("[")
+      vectors.nextOption().foreach { vector => print(Serialization.write(vector)) }
+      vectors.foreach { vector => println(",\n" + Serialization.write(vector)) }
+      println("]")
     }
   }
 
