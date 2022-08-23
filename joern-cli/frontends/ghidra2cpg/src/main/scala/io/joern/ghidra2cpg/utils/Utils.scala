@@ -1,23 +1,24 @@
 package io.joern.ghidra2cpg.utils
 
-import ghidra.program.model.listing.{Function, Program}
-import io.joern.ghidra2cpg.utils.Util._
+import ghidra.program.model.listing.{Function, Instruction, Program}
 import io.joern.ghidra2cpg.Types
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{NodeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.jdk.CollectionConverters._
-import scala.language.implicitConversions
+import scala.language.{higherKinds, implicitConversions}
 
-object Util {
-  def createCallNode(code: String, mnemonic: String, lineNumber: Integer): NewCall = {
+object Utils {
+  def createCallNode(code: String, name: String, lineNumber: Integer, index: Int = -1): NewCall = {
     nodes
       .NewCall()
-      .name(mnemonic)
+      .name(name)
       .code(code)
       .order(0)
-      .methodFullName(mnemonic)
+      .argumentIndex(index)
+      .methodFullName(name)
       .dispatchType(DispatchTypes.STATIC_DISPATCH.name())
       .lineNumber(lineNumber)
   }
@@ -32,7 +33,7 @@ object Util {
     nodes
       .NewMethodParameterIn()
       .code(code)
-      .name(code)
+      .name(name)
       .order(order)
       .typeFullName(Types.registerType(typ))
       .lineNumber(lineNumber)
@@ -42,11 +43,11 @@ object Util {
     nodes
       .NewIdentifier()
       .code(code)
-      .name(name) // parameter.getName)
+      .name(name)
       .order(index)
       .argumentIndex(index)
       .typeFullName(Types.registerType(typ))
-      .lineNumber(lineNumber)
+    // .lineNumber(lineNumber)
   }
 
   def createReturnNode(code: String, lineNumber: Integer): NewReturn = {
@@ -64,7 +65,7 @@ object Util {
       .order(order)
       .argumentIndex(argumentIndex)
       .typeFullName(typeFullName)
-      .lineNumber(lineNumber)
+    // .lineNumber(lineNumber)
   }
   def createReturnNode(): NewMethodReturn = {
     nodes.NewMethodReturn().order(1)
@@ -77,6 +78,7 @@ object Util {
       .flatMap(x => Option(x.getOffsetAsBigInteger))
       .flatMap(x => Option(x.intValue()))
       .getOrElse(-1)
+
     nodes
       .NewMethod()
       .code(code)
@@ -99,4 +101,15 @@ object Util {
       .map(_.getName)
       .contains(functionName)
   }
+  def getInstructions(program: Program, function: Function): Seq[Instruction] =
+    program.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
+
+  def connectCallToArgument(diffGraphBuilder: DiffGraphBuilder, call: CfgNodeNew, argument: CfgNodeNew): Unit = {
+    diffGraphBuilder.addNode(argument)
+    diffGraphBuilder.addEdge(call, argument, EdgeTypes.ARGUMENT)
+    diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
+  }
+
+  def sanitizeMethodName(methodName: String): String =
+    methodName.split(">").lastOption.getOrElse(methodName).replace("[", "").replace("]", "")
 }

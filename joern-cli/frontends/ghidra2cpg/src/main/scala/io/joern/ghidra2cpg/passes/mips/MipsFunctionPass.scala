@@ -7,7 +7,7 @@ import ghidra.program.model.pcode.{HighFunction, PcodeOp, PcodeOpAST, Varnode}
 import ghidra.program.model.scalar.Scalar
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
-import io.joern.ghidra2cpg.utils.Util._
+import io.joern.ghidra2cpg.utils.Utils._
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.utils.Decompiler
 import io.shiftleft.codepropertygraph.Cpg
