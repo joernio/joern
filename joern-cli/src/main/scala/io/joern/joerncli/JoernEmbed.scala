@@ -59,8 +59,8 @@ trait EmbeddingGenerator[T, S] {
   def embed(cpg: Cpg): Embedding = {
     Embedding({ () =>
       extractObjects(cpg)
-        .map { obj => (obj, enumerateSubStructures(obj)) }
-        .map { case (obj, substructures) =>
+        .map { obj =>
+          val substructures = enumerateSubStructures(obj)
           obj -> vectorize(substructures)
         }
     })
