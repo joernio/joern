@@ -1,7 +1,6 @@
 package io.joern.joerncli
 
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
-import io.joern.joerncli.EmbeddingGenerator.SparseVector
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 
@@ -97,7 +96,9 @@ trait EmbeddingGenerator[T, S] {
 
 object JoernEmbed extends App {
 
-  case class Config(cpgFileName: String = "cpg.bin", outDir: String = "out")
+  implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
+
+  case class Config(cpgFileName: String = "cpg.bin", outDir: String = "out", dimToFeature: Boolean = false)
 
   private def parseConfig: Option[Config] =
     new scopt.OptionParser[Config]("joern-embed") {
@@ -110,6 +111,9 @@ object JoernEmbed extends App {
       opt[String]('o', "out")
         .text("output directory - will be created and must not yet exist")
         .action((x, c) => c.copy(outDir = x))
+      opt[Unit]("features")
+        .text("Provide map from dimensions to features")
+        .action((_, c) => c.copy(dimToFeature = true))
     }.parse(args, Config())
 
   parseConfig.foreach { config =>
@@ -119,6 +123,11 @@ object JoernEmbed extends App {
       println("{")
       println("objects:")
       traversalToJson(embedding.objects)
+      if (config.dimToFeature) {
+        println("dimToFeature: ")
+        println(Serialization.write(embedding.dimToStructure))
+        println(",")
+      }
       println("vectors:")
       traversalToJson(embedding.vectors)
       println("}")
@@ -127,7 +136,6 @@ object JoernEmbed extends App {
 
   private def traversalToJson[X](trav: Traversal[X]): Unit = {
     println("[")
-    implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
     trav.nextOption().foreach { vector => print(Serialization.write(vector)) }
     trav.foreach { vector => print(",\n" + Serialization.write(vector)) }
     println("]")
