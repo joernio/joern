@@ -81,6 +81,21 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     result
   }
 
+  /** The code below deals with static member variables in Java, and specifically with the situation where literals that
+    * initialize static members are passed to `reachableBy` as sources. In this case, we determine the first usages of
+    * this member in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements
+    * would be problematic, but it works quite well in practice.
+    */
+  def sourceToStartingPoints[NodeType <: CfgNode](src: NodeType): List[CfgNode] = {
+    src match {
+      case lit: Literal =>
+        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
+      case member: Member =>
+        usages(targetsToClassIdentifierPair(memberToInitializedMembers(member)))
+      case x => List(x)
+    }
+  }
+
   def sourceTravsToStartingPoints[NodeType <: CfgNode](sourceTravs: Seq[Traversal[NodeType]]): List[CfgNode] = {
     val sources = sourceTravs
       .flatMap(_.toList)
@@ -88,21 +103,8 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
       .dedup
       .toList
       .sortBy(_.id)
-    startingPoints(sources)
-  }
-
-  /** The code below deals with static member variables in Java, and specifically with the situation where literals that
-    * initialize static members are passed to `reachableBy` as sources. In this case, we determine the first usages of
-    * this member in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements
-    * would be problematic, but it works quite well in practice.
-    */
-  private def startingPoints(sources: List[CfgNode]): List[CfgNode] = {
-    sources.flatMap {
-      case lit: Literal =>
-        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
-      case member: Member =>
-        usages(targetsToClassIdentifierPair(memberToInitializedMembers(member)))
-      case x => List(x)
+    sources.flatMap { src =>
+      sourceToStartingPoints(src)
     }
   }
 
