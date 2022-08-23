@@ -66,20 +66,13 @@ class PCodeMapper(
         nativeInstruction.toString,
         nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue()
       )
-      // } else if (pcodeOps.length == 1) {
-      //  // we don't need to fill the hashmap for one PcodeOp
-      //  // map to node and return
-      //  mapCallNode(pcodeOps.head)
-    } else if (nativeInstruction.getMnemonicString.startsWith("CMP")) {
-      // mapCallNode(pcodeOps.head)
-      handleCompare(pcodeOps.head)
     } else {
       mapCallNode(pcodeOps.last)
     }
   }
 
-  def createCall(name: String, code: String): CfgNodeNew = {
-    createCallNode(code, name, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue)
+  def createCall(name: String, code: String, index: Int = 1): CfgNodeNew = {
+    createCallNode(code, name, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue, index)
   }
 
   def handleSingleArgument(pcodeOp: PcodeOp, cpgOperationName: String, operation: String): CfgNodeNew = {
@@ -89,9 +82,9 @@ class PCodeMapper(
     callNode
   }
 
-  def handleTwoArguments(pcodeOp: PcodeOp, cpgOperationName: String, code: String): CfgNodeNew = {
+  def handleTwoArguments(pcodeOp: PcodeOp, cpgOperationName: String, code: String, callIndex: Int = -1): CfgNodeNew = {
     val callNode =
-      createCall(cpgOperationName, nativeInstruction.toString)
+      createCall(cpgOperationName, nativeInstruction.toString, callIndex)
     // we need this for MIPS
     if (pcodeOp.getOutput.isRegister) {
       val firstOp  = resolveVarNode(pcodeOp.getOutput, 1)
@@ -272,7 +265,7 @@ class PCodeMapper(
     }
   }
 
-  private def mapCallNode(pcodeOp: PcodeOp): CfgNodeNew = {
+  private def mapCallNode(pcodeOp: PcodeOp, index: Int = -1): CfgNodeNew = {
     // var callNode: CfgNodeNew = createCallNode("UNKNOWN", "UNKNOWN", -1)
     val callNode = pcodeOp.getOpcode match {
       // TODO add more pcode ops like CALL.*
@@ -313,16 +306,14 @@ class PCodeMapper(
               resolveArgument(diffGraphBuilder, nativeInstruction, _callNode, value.getDef, index)
             else {
               // could/should be a constant
-              //resolveArgument(diffGraphBuilder, nativeInstruction, _callNode, value.getDef, index)
-
-              val x = createLiteral(
-                "0x"+value.getWordOffset.toHexString,
-                index+1,
-                index+1,
-                "0x"+value.getWordOffset.toHexString,
+              val literalNode = createLiteral(
+                "0x" + value.getWordOffset.toHexString,
+                index + 1,
+                index + 1,
+                "0x" + value.getWordOffset.toHexString,
                 nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
               )
-              connectCallToArgument(_callNode, x)
+              connectCallToArgument(_callNode, literalNode)
             }
           }
         _callNode
@@ -368,7 +359,7 @@ class PCodeMapper(
       case INT_2COMP =>
         handleSingleArgument(pcodeOp, "<operator>.int2comp", pcodeOp.getMnemonic)
       case INT_ADD | FLOAT_ADD | PTRADD =>
-        handleTwoArguments(pcodeOp, "<operator>.addition", "+")
+        handleTwoArguments(pcodeOp, "<operator>.addition", "+", index)
       case INT_AND =>
         handleTwoArguments(pcodeOp, "<operator>.and", "TODO: AND")
       case INT_CARRY =>
@@ -442,14 +433,14 @@ class PCodeMapper(
           nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
         )
       } else {
-        val uniques = pcodeOps.toList
+        val uniques = pcodeOps
           // If the argument is a unique,
           // we try to resolve it
           .filter(x => x.getOutput == input)
           // Sometimes the first parameter is equal to the return value
           // filtering those out for now
           .filterNot(x => x.getInput(0) == input)
-        mapCallNode(uniques.last)
+        mapCallNode(uniques.last, index)
       }
     } else {
       // input.isConstant || input.isAddress || input.isUnique

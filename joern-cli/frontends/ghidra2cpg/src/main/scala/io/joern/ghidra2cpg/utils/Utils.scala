@@ -11,12 +11,13 @@ import scala.jdk.CollectionConverters._
 import scala.language.{higherKinds, implicitConversions}
 
 object Utils {
-  def createCallNode(code: String, name: String, lineNumber: Integer): NewCall = {
+  def createCallNode(code: String, name: String, lineNumber: Integer, index: Int = -1): NewCall = {
     nodes
       .NewCall()
       .name(name)
       .code(code)
       .order(0)
+      .argumentIndex(index)
       .methodFullName(name)
       .dispatchType(DispatchTypes.STATIC_DISPATCH.name())
       .lineNumber(lineNumber)

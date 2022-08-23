@@ -259,11 +259,6 @@ class PcodePass(
       .map { instruction =>
         handleInstruction(diffGraphBuilder, instruction, function: Function)
       }
-    if(function.getName == "main") {
-      println("MAIN")
-      instructionNodes.map(_.code).foreach(x=>println("\t"+x))
-      println("SIZE " + diffGraphBuilder.iterator().asScala.toList.size)
-    }
     instructionNodes.foreach(diffGraphBuilder.addNode)
     if (instructionNodes.nonEmpty) {
       diffGraphBuilder.addEdge(blockNode, instructionNodes.head, EdgeTypes.AST)
@@ -274,11 +269,6 @@ class PcodePass(
         diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
         diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
       }
-    }
-    if(function.getName == "main") {
-      println("=======")
-      println(diffGraphBuilder.iterator().asScala.toList.size)
-      println("=======")
     }
   }
 

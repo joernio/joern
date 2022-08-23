@@ -38,7 +38,7 @@ class CallNodeTests extends GhidraBinToCpgSuite {
     // we are interested in 0x14
     // mov        w0,#0x14
     // bl         test
-    def x = cpg.call
+    def results = cpg.call
       .name("test")
       .where(_.method.name("main"))
       .where(
@@ -47,7 +47,7 @@ class CallNodeTests extends GhidraBinToCpgSuite {
           .code("0x14")
       )
       .l
-    x match {
+    results match {
       case List(x) =>
         x.name shouldBe "test"
       case _ => fail()
