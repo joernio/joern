@@ -311,6 +311,19 @@ class PCodeMapper(
           .foreach { case (value, index) =>
             if (value.getDef != null)
               resolveArgument(diffGraphBuilder, nativeInstruction, _callNode, value.getDef, index)
+            else {
+              // could/should be a constant
+              //resolveArgument(diffGraphBuilder, nativeInstruction, _callNode, value.getDef, index)
+
+              val x = createLiteral(
+                "0x"+value.getWordOffset.toHexString,
+                index+1,
+                index+1,
+                "0x"+value.getWordOffset.toHexString,
+                nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
+              )
+              connectCallToArgument(_callNode, x)
+            }
           }
         _callNode
       case BOOL_AND =>

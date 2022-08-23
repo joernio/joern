@@ -35,7 +35,7 @@ class CallNodeTests extends GhidraBinToCpgSuite {
   }
 
   "A call to 'test' in 'main' should have 'w0' as argument" in {
-    // TODO this technically correct but we are interested in the 0x14
+    // we are interested in 0x14
     // mov        w0,#0x14
     // bl         test
     def x = cpg.call
@@ -44,17 +44,9 @@ class CallNodeTests extends GhidraBinToCpgSuite {
       .where(
         _.argument
           .order(1)
-          .code("w0")
+          .code("0x14")
       )
       .l
-    def y = cpg.method
-      .name("main")
-      .call
-      .name("test")
-      .map(x => s"${x.code} ${x.argument.size} ${x.argument.map(_.code).mkString(" ")}")
-      .l // .mkString("\n")
-    println("Y " + y)
-    println("X " + x)
     x match {
       case List(x) =>
         x.name shouldBe "test"
