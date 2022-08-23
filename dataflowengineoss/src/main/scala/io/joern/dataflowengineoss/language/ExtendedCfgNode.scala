@@ -1,14 +1,6 @@
 package io.joern.dataflowengineoss.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  CfgNode,
-  Expression,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  Member,
-  TypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Identifier, Literal, Member, TypeDecl}
 import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement, ReachableByResult}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.Cpg
@@ -16,6 +8,8 @@ import overflowdb.traversal._
 import io.shiftleft.semanticcpg.language._
 
 import scala.collection.mutable
+
+case class StartingPointWithSource(startingPoint: CfgNode, source: CfgNode)
 
 /** Base class for nodes that can occur in data flows
   */
@@ -38,22 +32,24 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   def reachableBy[NodeType <: CfgNode](
     sourceTravs: Traversal[NodeType]*
   )(implicit context: EngineContext): Traversal[NodeType] = {
-    val reachedSources = reachableByInternal(sourceTravsToList(sourceTravs)).map(_.source)
+    val reachedSources =
+      reachableByInternal(sourceTravsToStartingPoints(sourceTravs)).map(_.startingPoint)
     Traversal.from(reachedSources).cast[NodeType]
   }
 
   def reachableByFlows[A <: CfgNode](sourceTravs: Traversal[A]*)(implicit context: EngineContext): Traversal[Path] = {
-    val sources = sourceTravsToList(sourceTravs)
+    val sources        = sourceTravsToStartingPoints(sourceTravs)
+    val startingPoints = sources.map(_.startingPoint)
     val paths = reachableByInternal(sources)
       .map { result =>
         // We can get back results that start in nodes that are invisible
         // according to the semantic, e.g., arguments that are only used
         // but not defined. We filter these results here prior to returning
         val first = result.path.headOption
-        if (first.isDefined && !first.get.visible && !sources.contains(first.get.node)) {
+        if (first.isDefined && !first.get.visible && !startingPoints.contains(first.get.node)) {
           None
         } else {
-          val visiblePathElements = result.path.filter(x => sources.contains(x.node) || x.visible)
+          val visiblePathElements = result.path.filter(x => startingPoints.contains(x.node) || x.visible)
           Some(Path(removeConsecutiveDuplicates(visiblePathElements.map(_.node))))
         }
       }
@@ -66,29 +62,30 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   def reachableByDetailed[NodeType <: CfgNode](
     sourceTravs: Traversal[NodeType]*
   )(implicit context: EngineContext): List[ReachableByResult] = {
-    reachableByInternal(sourceTravsToList(sourceTravs))
+    reachableByInternal(sourceTravsToStartingPoints(sourceTravs))
   }
 
   private def removeConsecutiveDuplicates[T](l: Vector[T]): List[T] = {
     l.headOption.map(x => x :: l.sliding(2).collect { case Seq(a, b) if a != b => b }.toList).getOrElse(List())
   }
 
-  private def reachableByInternal(sources: List[CfgNode])(implicit context: EngineContext): List[ReachableByResult] = {
+  private def reachableByInternal(
+    startingPointsWithSources: List[StartingPointWithSource]
+  )(implicit context: EngineContext): List[ReachableByResult] = {
     val sinks  = traversal.dedup.toList.sortBy(_.id)
     val engine = new Engine(context)
-    val result = engine.backwards(sinks, sources)
-    engine.shutdown()
-    result
-  }
+    val result = engine.backwards(sinks, startingPointsWithSources.map(_.startingPoint))
 
-  def sourceTravsToList[NodeType <: CfgNode](sourceTravs: Seq[Traversal[NodeType]]): List[CfgNode] = {
-    val startingPoints = sourceTravs
-      .flatMap(_.toList)
-      .collect { case n: CfgNode => n }
-      .dedup
-      .toList
-      .sortBy(_.id)
-    sources(startingPoints)
+    engine.shutdown()
+    val sources               = startingPointsWithSources.map(_.source)
+    val startingPointToSource = startingPointsWithSources.map { x => x.startingPoint -> x.source }.toMap
+    result.map { r =>
+      if (sources.contains(r.startingPoint)) {
+        r
+      } else {
+        r.copy(path = PathElement(startingPointToSource(r.startingPoint)) +: r.path)
+      }
+    }
   }
 
   /** The code below deals with static member variables in Java, and specifically with the situation where literals that
@@ -96,13 +93,27 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     * this member in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements
     * would be problematic, but it works quite well in practice.
     */
-  private def sources(startingPoints: List[CfgNode]): List[CfgNode] = {
-    startingPoints.flatMap {
+  def sourceToStartingPoints[NodeType <: CfgNode](src: NodeType): List[CfgNode] = {
+    src match {
       case lit: Literal =>
         List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
       case member: Member =>
         usages(targetsToClassIdentifierPair(memberToInitializedMembers(member)))
       case x => List(x)
+    }
+  }
+
+  def sourceTravsToStartingPoints[NodeType <: CfgNode](
+    sourceTravs: Seq[Traversal[NodeType]]
+  ): List[StartingPointWithSource] = {
+    val sources = sourceTravs
+      .flatMap(_.toList)
+      .collect { case n: CfgNode => n }
+      .dedup
+      .toList
+      .sortBy(_.id)
+    sources.flatMap { src =>
+      sourceToStartingPoints(src).map(s => StartingPointWithSource(s, src))
     }
   }
 

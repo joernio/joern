@@ -69,7 +69,7 @@ case class ReachableByResult(
   callDepth: Int = 0,
   partial: Boolean = false
 ) {
-  def source: CfgNode = path.head.node
+  def startingPoint: CfgNode = path.head.node
 
   /** If the result begins in an output argument, return it.
     */
