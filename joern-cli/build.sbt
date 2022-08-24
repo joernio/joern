@@ -28,14 +28,14 @@ def frontendMappings(frontendName: String, stagedProject: File): Seq[(File, Stri
 }
 
 lazy val x2cpg       = project.in(file("frontends/x2cpg"))
-lazy val kotlin2cpg  = project.in(file("frontends/kotlin2cpg"))
+// lazy val kotlin2cpg  = project.in(file("frontends/kotlin2cpg"))
 lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg"))
 lazy val pysrc2cpg   = project.in(file("frontends/pysrc2cpg"))
 lazy val php2cpg     = project.in(file("frontends/php2cpg"))
 lazy val jimple2cpg  = project.in(file("frontends/jimple2cpg"))
 lazy val jssrc2cpg   = project.in(file("frontends/jssrc2cpg"))
 
-Universal / mappings ++= frontendMappings("kotlin2cpg", (kotlin2cpg / stage).value)
+// Universal / mappings ++= frontendMappings("kotlin2cpg", (kotlin2cpg / stage).value)
 Universal / mappings ++= frontendMappings("javasrc2cpg", (javasrc2cpg / stage).value)
 Universal / mappings ++= frontendMappings("c2cpg", (Projects.c2cpg / stage).value)
 Universal / mappings ++= frontendMappings("ghidra2cpg", (Projects.ghidra2cpg / stage).value)
