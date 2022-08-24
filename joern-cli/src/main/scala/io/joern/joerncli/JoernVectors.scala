@@ -94,14 +94,14 @@ trait EmbeddingGenerator[T, S] {
 
 }
 
-object JoernEmbed extends App {
+object JoernVectors extends App {
 
   implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
 
   case class Config(cpgFileName: String = "cpg.bin", outDir: String = "out", dimToFeature: Boolean = false)
 
   private def parseConfig: Option[Config] =
-    new scopt.OptionParser[Config]("joern-embed") {
+    new scopt.OptionParser[Config]("joern-vectors") {
       head("Extract vector representations of code from CPG")
       help("help")
       arg[String]("cpg")
