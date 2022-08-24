@@ -1,5 +1,6 @@
 package io.joern.x2cpg.utils.dependency
 
+import better.files.File
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
@@ -9,7 +10,7 @@ import scala.util.{Failure, Success}
 object MavenDependencies {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private[dependency] def get(projectDir: Path): List[String] = {
+  private[dependency] def get(projectDir: Path): Option[collection.Seq[String]] = {
     // we can't use -Dmdep.outputFile because that keeps overwriting its own output for each sub-project it's running for
     val lines = ExternalCommand.run(
       s"mvn -B dependency:build-classpath -DincludeScope=compile -Dorg.slf4j.simpleLogger.defaultLogLevel=info -Dorg.slf4j.simpleLogger.logFile=System.out",
@@ -37,9 +38,8 @@ object MavenDependencies {
       }
       .distinct
       .toList
+
     logger.info("got {} Maven dependencies", deps.size)
-
-    deps
+    Some(deps)
   }
-
 }

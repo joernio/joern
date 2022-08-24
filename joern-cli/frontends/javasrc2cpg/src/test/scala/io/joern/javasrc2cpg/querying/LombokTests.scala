@@ -1,9 +1,10 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
+import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
 import io.shiftleft.semanticcpg.language._
 
-class LombokTests extends JavaSrcCode2CpgFixture(runDelombok = true) {
+class LombokTests extends JavaSrcCode2CpgFixture(delombokFullAnalysis = true) {
 
   "source with lombok annotations should be successfully delomboked" in {
     val cpg = code(
@@ -23,5 +24,127 @@ class LombokTests extends JavaSrcCode2CpgFixture(runDelombok = true) {
 
       case result => fail(s"Expected single getValue method but got $result")
     }
+  }
+
+  "source with lombok annotations should have correct type information" in {
+    val cpg = code(
+      """
+		|import lombok.extern.java.Log;
+		|import lombok.Getter;
+		|
+		|@Log
+		|public class Foo {
+		|  @Getter
+		|  private String firstName;
+		|
+		|  public Foo() {
+		|    firstName = "WALLY";
+		|  }
+		|}""".stripMargin,
+      fileName = "Foo.java"
+    ).moreCode(
+      """
+	    |public class Bar {
+        |
+        |  public void printObject(Object o) {
+        |    System.out.println(o.toString());
+        |  }
+        |
+        |  public void bar() {
+        |    Foo f = new Foo();
+        |    printObject(f.getFirstName());
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "Bar.java"
+    )
+
+    // Getter type should be resolved since the getter code is included in the delombok source.
+    cpg.call.name("getFirstName").head.methodFullName shouldBe "Foo.getFirstName:java.lang.String()"
+    // Member should be created since we're processing full delombok source.
+    cpg.member.name("log").head.typeFullName shouldBe "java.util.logging.Logger"
+  }
+}
+
+class LombokTypesOnlyTests extends JavaSrcCode2CpgFixture(delombokTypesOnly = true) {
+  "source with some lombok annotations should have correct type information" in {
+    val cpg = code(
+      """
+       |import lombok.Getter;
+       |import lombok.extern.java.Log;
+       |
+       |@Log
+       |public class Foo {
+       |  @Getter
+       |  private String firstName;
+       |
+       |  public Foo() {
+       |    firstName = "WALLY";
+       |  }
+       |}""".stripMargin,
+      fileName = "Foo.java"
+    ).moreCode(
+      """
+       |public class Bar {
+       |
+       |  public void printObject(Object o) {
+       |    System.out.println(o.toString());
+       |  }
+       |
+       |  public void bar() {
+       |    Foo f = new Foo();
+       |    printObject(f.getFirstName());
+       |  }
+       |}
+       |""".stripMargin,
+      fileName = "Bar.java"
+    )
+
+    // Getter type should be resolved since the getter code is included in the delombok source used for type info.
+    cpg.call.name("getFirstName").head.methodFullName shouldBe "Foo.getFirstName:java.lang.String()"
+    // Log member should not be found since it hasn't been generated in the source we scan.
+    cpg.member.name("log").isEmpty shouldBe true
+  }
+}
+
+class NoLombokTests extends JavaSrcCode2CpgFixture() {
+  "source with some lombok annotations should have correct type information" in {
+    val cpg = code(
+      """
+       |import lombok.Getter;
+       |import lombok.extern.java.Log;
+       |
+       |@Log
+       |public class Foo {
+       |  @Getter
+       |  private String firstName;
+       |
+       |  public Foo() {
+       |    firstName = "WALLY";
+       |  }
+       |}""".stripMargin,
+      fileName = "Foo.java"
+    ).moreCode(
+      """
+       |public class Bar {
+       |
+       |  public void printObject(Object o) {
+       |    System.out.println(o.toString());
+       |  }
+       |
+       |  public void bar() {
+       |    Foo f = new Foo();
+       |    printObject(f.getFirstName());
+       |  }
+       |}
+       |""".stripMargin,
+      fileName = "Bar.java"
+    )
+
+    // Getter type should be unresolved since it's not available in source processed or in type info source.
+    val unresolvedName = s"Foo.getFirstName:${TypeConstants.UnresolvedType}()"
+    cpg.call.name("getFirstName").head.methodFullName shouldBe unresolvedName
+    // Log member should not be found since it hasn't been generated in the source we scan.
+    cpg.member.name("log").isEmpty shouldBe true
   }
 }

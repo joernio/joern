@@ -59,7 +59,8 @@ trait AstForTypesCreator { this: AstCreator =>
           .getOrElse(Ast())
       }
 
-    Ast(aliasTypeDeclNode).merge(typeDeclNodeAst)
+    typeDeclNodeAst.root.foreach(diffGraph.addEdge(methodAstParentStack.head, _, EdgeTypes.AST))
+    Ast(aliasTypeDeclNode)
   }
 
   private def isConstructor(json: Value): Boolean = createBabelNodeInfo(json).node match {
@@ -76,12 +77,18 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
-  private def createFakeConstructor(code: String): NewMethod = {
-    val fakeConstructorCode = """{
+  private def createFakeConstructor(code: String, forElem: BabelNodeInfo): NewMethod = {
+    val fakeConstructorCode = s"""{
       | "type": "ClassMethod",
       | "key": {
       |   "type": "Identifier",
-      |   "name": "constructor"
+      |   "name": "constructor",
+      |   "loc": {
+      |     "start": {
+      |       "line": ${forElem.lineNumber.getOrElse(-1)},
+      |       "column": ${forElem.columnNumber.getOrElse(-1)}
+      |     }
+      |   }
       | },
       | "kind": "constructor",
       | "id": null,
@@ -91,37 +98,28 @@ trait AstForTypesCreator { this: AstCreator =>
       |   "body": []
       | }
       |}""".stripMargin
-    createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode))).methodNode.code(code)
+    createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode))).methodNode
+      .code(code)
   }
 
-  private def fixMethodNames(methodNode: NewMethod, withTypeName: String): NewMethod = {
-    val name     = methodNode.name.replace("<", s"$withTypeName<")
-    val fullName = methodNode.fullName.replace("<", s"$withTypeName<")
-    methodNode.name(name).fullName(fullName)
-  }
-
-  private def classConstructor(clazz: BabelNodeInfo): Option[Value] =
+  private def findClassConstructor(clazz: BabelNodeInfo): Option[Value] =
     classMembers(clazz).find(isConstructor)
 
-  private def classConstructor(typeName: String, classExpr: BabelNodeInfo): NewMethod = {
-    val methodNode = classConstructor(classExpr) match {
+  private def createClassConstructor(classExpr: BabelNodeInfo): NewMethod =
+    findClassConstructor(classExpr) match {
       case Some(classConstructor) if hasKey(classConstructor, "body") =>
         createMethodAstAndNode(createBabelNodeInfo(classConstructor)).methodNode
       case Some(classConstructor) =>
         createMethodDefinitionNode(createBabelNodeInfo(classConstructor))
       case _ =>
-        createFakeConstructor("constructor() {}")
+        createFakeConstructor("constructor() {}", classExpr)
     }
-    fixMethodNames(methodNode, typeName)
-  }
 
-  private def interfaceConstructor(typeName: String, tsInterface: BabelNodeInfo): NewMethod = {
-    val methodNode = classConstructor(tsInterface) match {
+  private def interfaceConstructor(typeName: String, tsInterface: BabelNodeInfo): NewMethod =
+    findClassConstructor(tsInterface) match {
       case Some(interfaceConstructor) => createMethodDefinitionNode(createBabelNodeInfo(interfaceConstructor))
-      case _                          => createFakeConstructor(s"new: $typeName")
+      case _                          => createFakeConstructor(s"new: $typeName", tsInterface)
     }
-    fixMethodNames(methodNode, typeName)
-  }
 
   private def astsForEnumMember(tsEnumMember: BabelNodeInfo): Seq[Ast] = {
     val name       = code(tsEnumMember.json("id"))
@@ -184,9 +182,6 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
-  protected def fixMethodFullName(method: NewMethod, withTypeName: String): NewMethod =
-    method.fullName(method.fullName.replace(s":${method.name}", s":$withTypeName:${method.name}"))
-
   protected def astForClass(clazz: BabelNodeInfo): Ast = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(clazz)
     val metaTypeName             = s"$typeName<meta>"
@@ -233,8 +228,10 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.push(typeDeclNode)
     dynamicInstanceTypeStack.push(typeFullName)
     metaTypeRefIdStack.push(metaTypeRefNode)
+    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
+    scope.pushNewBlockScope(typeDeclNode)
 
-    val constructorNode = classConstructor(typeName, clazz)
+    val constructorNode = createClassConstructor(clazz)
     diffGraph.addEdge(constructorNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
 
     val constructorBindingNode = createBindingNode()
@@ -249,9 +246,8 @@ trait AstForTypesCreator { this: AstCreator =>
         case ClassMethod | ClassPrivateMethod =>
           val function = createMethodAstAndNode(nodeInfo).methodNode
           addModifier(function, nodeInfo.json)
-          val classMethod             = fixMethodFullName(function, typeName)
-          val dynamicTypeHintFullName = Some(classMethod.fullName)
-          createMemberNode(classMethod.name, nodeInfo.code, dynamicTypeHintFullName)
+          val dynamicTypeHintFullName = Some(function.fullName)
+          createMemberNode(function.name, nodeInfo.code, dynamicTypeHintFullName)
         case _ =>
           val name = nodeInfo.node match {
             case ClassProperty        => code(nodeInfo.json("key"))
@@ -272,6 +268,8 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
     metaTypeRefIdStack.pop()
+    scope.popScope()
+    scope.popScope()
 
     Ast(metaTypeRefNode)
   }
@@ -302,10 +300,10 @@ trait AstForTypesCreator { this: AstCreator =>
       .name(name)
       .fullName(fullName)
 
-    scope.pushNewMethodScope(fullName, name, namespaceNode, None)
-    scope.pushNewBlockScope(namespaceNode)
     methodAstParentStack.push(namespaceNode)
     dynamicInstanceTypeStack.push(fullName)
+    scope.pushNewMethodScope(fullName, name, namespaceNode, None)
+    scope.pushNewBlockScope(namespaceNode)
 
     val blockAst = if (hasKey(tsModuleDecl.json, "body")) {
       val nodeInfo = createBabelNodeInfo(tsModuleDecl.json("body"))
@@ -349,6 +347,8 @@ trait AstForTypesCreator { this: AstCreator =>
 
     methodAstParentStack.push(typeDeclNode)
     dynamicInstanceTypeStack.push(typeFullName)
+    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
+    scope.pushNewBlockScope(typeDeclNode)
 
     val constructorNode = interfaceConstructor(typeName, tsInterface)
     diffGraph.addEdge(constructorNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
@@ -364,13 +364,12 @@ trait AstForTypesCreator { this: AstCreator =>
       val memberNodes = nodeInfo.node match {
         case TSCallSignatureDeclaration =>
           val functionNode            = createMethodDefinitionNode(nodeInfo)
-          val classMethod             = fixMethodFullName(functionNode, typeName)
-          val dynamicTypeHintFullName = Some(classMethod.fullName)
+          val dynamicTypeHintFullName = Some(functionNode.fullName)
           val bindingNode             = createBindingNode()
           diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
           diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
           addModifier(functionNode, nodeInfo.json)
-          Seq(createMemberNode(classMethod.name, nodeInfo.code, dynamicTypeHintFullName))
+          Seq(createMemberNode(functionNode.name, nodeInfo.code, dynamicTypeHintFullName))
         case _ =>
           val names = nodeInfo.node match {
             case TSPropertySignature =>
@@ -393,6 +392,8 @@ trait AstForTypesCreator { this: AstCreator =>
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
+    scope.popScope()
+    scope.popScope()
 
     Ast(typeDeclNode)
   }

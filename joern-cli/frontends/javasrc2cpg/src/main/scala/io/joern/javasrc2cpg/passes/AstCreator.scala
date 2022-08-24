@@ -141,6 +141,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodReturn,
   NewModifier,
   NewNamespaceBlock,
+  NewNode,
   NewReturn,
   NewTypeDecl,
   NewTypeRef,
@@ -303,7 +304,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       // This is really, really ugly, but there's a bug in the JavaParser symbol solver that can lead to
       // unterminated recursion in some cases where types cannot be resolved.
       case e: StackOverflowError =>
-        logger.warn(s"Caught StackOverflowError in $filename")
+        logger.debug(s"Caught StackOverflowError in $filename")
         Failure(e)
     }
   }
@@ -533,7 +534,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       List.empty[String]
     }
 
-    val resolvedType = Try(typ.resolve())
+    val resolvedType = tryWithSafeStackOverflow(typ.resolve())
     val name         = resolvedType.map(typeInfoCalc.name).getOrElse(typ.getNameAsString)
     val typeFullName = resolvedType.map(typeInfoCalc.fullName).getOrElse(typ.getNameAsString)
 
@@ -552,7 +553,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def addTypeDeclTypeParamsToScope(typ: TypeDeclaration[_]): Unit = {
-    Try(typ.resolve()).map(_.getTypeParameters.asScala) match {
+    tryWithSafeStackOverflow(typ.resolve()).map(_.getTypeParameters.asScala) match {
       case Success(resolvedTypeParams) =>
         resolvedTypeParams
           .map(identifierForResolvedTypeParameter)
@@ -589,7 +590,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       astWithInits.ast
     }
 
-    val defaultConstructorAst = if (typ.getConstructors.isEmpty) {
+    val defaultConstructorAst = if (!isInterface && typ.getConstructors.isEmpty) {
       Some(astForDefaultConstructor())
     } else {
       None
@@ -624,7 +625,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     // Furthermore the parser library throws an exception when trying to
     // access e.g. the declared methods of an annotation declaration.
     if (!typ.isInstanceOf[AnnotationDeclaration]) {
-      Try(typ.resolve()).toOption.foreach { resolvedTypeDecl =>
+      tryWithSafeStackOverflow(typ.resolve()).toOption.foreach { resolvedTypeDecl =>
         val bindingTable = getBindingTable(resolvedTypeDecl)
         defaultConstructorBindingEntry.foreach(bindingTable.add)
         createBindingNodes(typeDeclNode, bindingTable)
@@ -659,7 +660,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForEnumEntry(entry: EnumConstantDeclaration): Ast = {
     val typeFullName =
-      Try(entry.resolve().getType).toOption.map(typeInfoCalc.fullName).getOrElse(TypeConstants.UnresolvedType)
+      tryWithSafeStackOverflow(entry.resolve().getType).toOption
+        .map(typeInfoCalc.fullName)
+        .getOrElse(TypeConstants.UnresolvedType)
     val entryNode = NewMember()
       .lineNumber(line(entry))
       .columnNumber(column(entry))
@@ -1335,31 +1338,38 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withRefEdge(idxIdentifierArg, idxLocal)
   }
 
-  private def nativeForEachCompareAst(lineNo: Option[Integer], iterableLocal: NodeTypeInfo, idxLocal: NewLocal): Ast = {
+  private def nativeForEachCompareAst(
+    lineNo: Option[Integer],
+    iterableSource: NodeTypeInfo,
+    idxLocal: NewLocal
+  ): Ast = {
     val idxName = idxLocal.name
 
     val compareNode = operatorCallNode(
       Operators.lessThan,
-      code = s"$idxName < ${iterableLocal.name}.length",
+      code = s"$idxName < ${iterableSource.name}.length",
       typeFullName = Some(TypeConstants.Boolean),
       line = lineNo
     )
     val comparisonIdxIdentifier = identifierNode(idxName, idxLocal.typeFullName, lineNo)
     val comparisonFieldAccess = operatorCallNode(
       Operators.fieldAccess,
-      code = s"${iterableLocal.name}.length",
+      code = s"${iterableSource.name}.length",
       typeFullName = Some(TypeConstants.Int),
       line = lineNo
     )
-    val fieldAccessIdentifier      = identifierNode(iterableLocal.name, iterableLocal.typeFullName, lineNo)
+    val fieldAccessIdentifier      = identifierNode(iterableSource.name, iterableSource.typeFullName, lineNo)
     val fieldAccessFieldIdentifier = fieldIdentifierNode("length", lineNo)
     val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
     val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
     val compareArgs                = List(Ast(comparisonIdxIdentifier), fieldAccessAst)
 
+    // TODO: This is a workaround for a crash when looping over statically imported members. Handle those properly.
+    val iterableSourceNode = localParamOrMemberFromNode(iterableSource)
+
     callAst(compareNode, compareArgs)
       .withRefEdge(comparisonIdxIdentifier, idxLocal)
-      .withRefEdge(fieldAccessIdentifier, iterableLocal.node)
+      .withRefEdges(fieldAccessIdentifier, iterableSourceNode.toList)
   }
 
   private def nativeForEachIncrementAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
@@ -1407,6 +1417,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
+  private def localParamOrMemberFromNode(nodeTypeInfo: NodeTypeInfo): Option[NewNode] = {
+    nodeTypeInfo.node match {
+      case localNode: NewLocal                 => Some(localNode)
+      case memberNode: NewMember               => Some(memberNode)
+      case parameterNode: NewMethodParameterIn => Some(parameterNode)
+      case _                                   => None
+    }
+  }
   private def variableAssignForNativeForEachBody(
     variableLocal: NewLocal,
     idxLocal: NewLocal,
@@ -1430,10 +1448,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val indexAccessArgsAsts = List(indexAccessIdentifier, indexAccessIndex).map(Ast(_))
     val indexAccessAst      = callAst(indexAccess, indexAccessArgsAsts)
 
+    val iterableSourceNode = localParamOrMemberFromNode(iterable)
+
     val assignArgsAsts = List(Ast(targetNode), indexAccessAst)
     callAst(varAssignNode, assignArgsAsts)
       .withRefEdge(targetNode, variableLocal)
-      .withRefEdge(indexAccessIdentifier, iterable.node)
+      .withRefEdges(indexAccessIdentifier, iterableSourceNode.toList)
       .withRefEdge(indexAccessIndex, idxLocal)
   }
 
@@ -2156,7 +2176,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .orElse(expectedType.map(_.fullName))
       .getOrElse(TypeConstants.UnresolvedType)
 
-    Try(nameExpr.resolve()) match {
+    tryWithSafeStackOverflow(nameExpr.resolve()) match {
       case Success(value) if value.isField =>
         val identifierName = if (value.asField.isStatic) {
           // A static field represented by a NameExpr must belong to the class in which it's used. Static fields
@@ -2246,11 +2266,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     * being consistent with the Java bytecode frontend.
     */
   def astForObjectCreationExpr(expr: ObjectCreationExpr, expectedType: Option[ExpectedType]): Ast = {
-    val maybeResolvedExpr = Try(expr.resolve())
+    val maybeResolvedExpr = tryWithSafeStackOverflow(expr.resolve())
     val argumentAsts      = argAstsForCall(expr, maybeResolvedExpr, expr.getArguments)
 
-    val typeFullName = typeInfoCalc
-      .fullName(expr.getType)
+    val typeFullName = tryWithSafeStackOverflow(typeInfoCalc.fullName(expr.getType)).toOption.flatten
       .orElse(scopeStack.lookupVariableType(expr.getTypeAsString))
       .orElse(expectedType.map(_.fullName))
       .getOrElse(TypeConstants.UnresolvedType)
@@ -2334,14 +2353,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def astForExplicitConstructorInvocation(stmt: ExplicitConstructorInvocationStmt): Ast = {
-    val maybeResolved = Try(stmt.resolve())
+    val maybeResolved = tryWithSafeStackOverflow(stmt.resolve())
     val args          = argAstsForCall(stmt, maybeResolved, stmt.getArguments)
 
-    val typeFullName = Try(stmt.resolve())
+    val typeFullName = tryWithSafeStackOverflow(stmt.resolve())
       .map(_.declaringType())
       .map(typeInfoCalc.fullName)
       .getOrElse(TypeConstants.UnresolvedType)
-    val argTypes = argumentTypesForCall(Try(stmt.resolve()), args)
+    val argTypes = argumentTypesForCall(tryWithSafeStackOverflow(stmt.resolve()), args)
 
     val callRoot = callNode(
       NameConstants.Init,
@@ -2731,7 +2750,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def getLambdaImplementedInfo(expr: LambdaExpr, expectedType: Option[ExpectedType]): LambdaImplementedInfo = {
     val maybeImplementedType = {
-      val maybeResolved = Try(expr.calculateResolvedType())
+      val maybeResolved = tryWithSafeStackOverflow(expr.calculateResolvedType())
       maybeResolved.toOption
         .orElse(expectedType.flatMap(_.resolvedType))
         .collect { case refType: ResolvedReferenceType => refType }

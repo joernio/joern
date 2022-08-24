@@ -44,6 +44,10 @@ trait AstForStatementsCreator { this: AstCreator =>
       nodeInfo.node match {
         case FunctionDeclaration =>
           astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
+        case FunctionExpression =>
+          astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
+        case ArrowFunctionExpression =>
+          astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
         case _ => astForNode(nodeInfo.json)
       }
     }
@@ -66,7 +70,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val retNode = createReturnNode(ret)
     safeObj(ret.json, "argument")
       .map { argument =>
-        val argAst = astForNode(Obj(argument))
+        val argAst = astForNodeWithFunctionReference(Obj(argument))
         createReturnAst(retNode, List(argAst))
       }
       .getOrElse(Ast(retNode))

@@ -279,8 +279,16 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     } else {
       MethodScope
     }
-    declaration.json("declarations").arr.foldLeft(Ast()) { (ast, d) =>
-      ast.merge(astForVariableDeclarator(d, scopeType))
+    val declAsts = declaration.json("declarations").arr.toList.map(astForVariableDeclarator(_, scopeType))
+    declAsts match {
+      case head :: tail =>
+        setIndices(declAsts)
+        tail.foreach { declAst =>
+          declAst.root.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
+          Ast.storeInDiffGraph(declAst, diffGraph)
+        }
+        head
+      case Nil => Ast()
     }
   }
 

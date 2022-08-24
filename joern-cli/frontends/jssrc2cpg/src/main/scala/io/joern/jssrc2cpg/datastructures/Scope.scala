@@ -15,8 +15,6 @@ class Scope {
 
   def getScopeHead: Option[ScopeElement] = stack
 
-  def getPendingReferences: List[PendingReference] = pendingReferences.toList
-
   def isEmpty: Boolean = stack.isEmpty
 
   def pushNewMethodScope(

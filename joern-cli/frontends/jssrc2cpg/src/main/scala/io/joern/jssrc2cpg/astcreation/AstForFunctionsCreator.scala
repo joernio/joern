@@ -351,7 +351,6 @@ trait AstForFunctionsCreator { this: AstCreator =>
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
   ): MethodAst = {
-
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodRefNode = if (!shouldCreateFunctionReference) {
       None

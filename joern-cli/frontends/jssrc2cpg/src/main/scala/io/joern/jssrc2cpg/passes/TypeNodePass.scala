@@ -8,11 +8,16 @@ class TypeNodePass(usedTypes: List[(String, String)], cpg: Cpg) extends SimpleCp
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     diffGraph.addNode(
       NewType()
-        .name("ANY")
-        .fullName("ANY")
-        .typeDeclFullName("ANY")
+        .name(Defines.ANY.label)
+        .fullName(Defines.ANY.label)
+        .typeDeclFullName(Defines.ANY.label)
     )
-    usedTypes.sortBy(_._2).foreach { case (name, fullName) =>
+
+    val filteredTypes = usedTypes.filterNot { case (name, _) =>
+      name == "ANY" || Defines.values.map { case typeName: Defines.Tpe => typeName.label }.contains(name)
+    }
+
+    filteredTypes.sortBy(_._2).foreach { case (name, fullName) =>
       val typeNode = NewType().name(name).fullName(fullName).typeDeclFullName(fullName)
       diffGraph.addNode(typeNode)
     }
