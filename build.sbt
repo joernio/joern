@@ -38,7 +38,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   kotlin2cpg
 )
 
-ThisBuild / libraryDependencies += 
+ThisBuild / libraryDependencies +=
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % Versions.log4j % Test
 
 ThisBuild / compile / javacOptions ++= Seq(

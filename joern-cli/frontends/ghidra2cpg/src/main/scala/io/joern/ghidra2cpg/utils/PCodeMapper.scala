@@ -43,7 +43,6 @@ class PCodeMapper(
 
   def getOpcode: Int = pcodeOps.lastOption.get.getOpcode
 
-
   def getCallNode: CfgNodeNew = {
     if (pcodeOps.isEmpty) {
       // It looks like that for some instructions,
