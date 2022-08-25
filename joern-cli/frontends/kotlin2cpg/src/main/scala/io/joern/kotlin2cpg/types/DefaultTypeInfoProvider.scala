@@ -6,7 +6,6 @@ import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinToJVMBytecodeCompiler,
   NoScopeRecordCliBindingTrace
 }
-import org.jetbrains.kotlin.com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
 import org.jetbrains.kotlin.descriptors.impl.{
@@ -22,12 +21,10 @@ import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
 import org.jetbrains.kotlin.psi.{
   KtArrayAccessExpression,
   KtBinaryExpression,
-  KtBlockExpression,
   KtCallExpression,
   KtClassBody,
   KtClassLiteralExpression,
   KtClassOrObject,
-  KtDeclaration,
   KtDestructuringDeclarationEntry,
   KtElement,
   KtExpression,
@@ -37,7 +34,6 @@ import org.jetbrains.kotlin.psi.{
   KtParameter,
   KtPrimaryConstructor,
   KtProperty,
-  KtPsiUtil,
   KtQualifiedExpression,
   KtSecondaryConstructor,
   KtSuperExpression,
@@ -46,7 +42,7 @@ import org.jetbrains.kotlin.psi.{
   KtTypeReference
 }
 import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorUtils}
-import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
+import org.jetbrains.kotlin.resolve.DescriptorUtils.{getSuperclassDescriptors}
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
 import org.jetbrains.kotlin.types.UnresolvedType
@@ -325,9 +321,10 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def fullNameWithSignature(expr: KtCallExpression, defaultValue: (String, String)): (String, String) = {
-    resolvedCallDescriptor(expr)
-      .map(_.getOriginal)
-      .map { originalDesc =>
+
+    resolvedCallDescriptor(expr) match {
+      case Some(desc) =>
+        val originalDesc = desc.getOriginal
         val relevantDesc = originalDesc match {
           case typedDesc: TypeAliasConstructorDescriptorImpl =>
             typedDesc.getUnderlyingConstructorDescriptor
@@ -354,8 +351,22 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           else s"$renderedFqName:$signature"
         if (!isValidRender(fullName) || !isValidRender(signature)) defaultValue
         else (fullName, signature)
-      }
-      .getOrElse(defaultValue)
+      case None =>
+        val relevantSubexpression = subexpressionForResolvedCallInfo(expr)
+        val numArgs               = expr.getValueArguments.size
+        val ambiguousReferences =
+          Option(bindingContext.get(BindingContext.AMBIGUOUS_REFERENCE_TARGET, relevantSubexpression))
+            .map(_.toArray.toSeq.collect { case desc: FunctionDescriptor => desc })
+            .getOrElse(Seq())
+        val chosenAmbiguousReference = ambiguousReferences.find(_.getValueParameters.size == numArgs)
+        chosenAmbiguousReference
+          .map { desc =>
+            val signature = TypeConstants.cpgUnresolvedSignature
+            val fullName  = s"${TypeRenderer.renderFqName(desc)}:$signature($numArgs)"
+            (fullName, signature)
+          }
+          .getOrElse(defaultValue)
+    }
   }
 
   def typeFullName(expr: KtBinaryExpression, defaultValue: String): String = {
@@ -470,7 +481,21 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
             .map(lambdaInvocationSignature(_))
             .getOrElse(fullNameSignature)
         (s"$renderedFqName:$fullNameSignature", signature)
-      case None => defaultValue
+      case None =>
+        resolvedCallDescriptor(expr.getReceiverExpression) match {
+          case Some(desc) =>
+            val originalDesc = desc.getOriginal
+            val lhsName      = TypeRenderer.render(originalDesc.getReturnType)
+            val name         = expr.getSelectorExpression.getFirstChild.getText
+            val numArgs = expr.getSelectorExpression match {
+              case c: KtCallExpression => c.getValueArguments.size()
+              case _                   => 0
+            }
+            val signature = s"${TypeConstants.cpgUnresolvedSignature}($numArgs)"
+            val fullName  = s"$lhsName.$name:$signature"
+            (fullName, signature)
+          case None => defaultValue
+        }
     }
   }
 
