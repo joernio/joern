@@ -8,9 +8,9 @@ import io.shiftleft.semanticcpg.language._
 object AndroidMisconfigurations extends QueryBundle {
 
   @q
-  def manifestXmlDebuggableEnabled(): Query =
+  def manifestXmlBackupEnabled(): Query =
     Query.make(
-      name = "manifest-debuggable-enabled",
+      name = "manifest-backup-enabled",
       author = Crew.claudiu,
       title = "Backups enabled in Android Manifest File",
       description = """

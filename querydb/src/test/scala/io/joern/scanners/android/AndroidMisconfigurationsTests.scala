@@ -6,7 +6,7 @@ class AndroidMisconfigurationsTests extends AndroidQueryTestSuite {
 
   override def queryBundle = AndroidMisconfigurations
 
-  "the `manifestXmlDebuggableEnabled` query" when {
+  "the `manifestXmlBackupEnabled` query" when {
     def makeAndroidXml(allowBackup: Boolean): String = {
       s"""|<?xml version="1.0" encoding="utf-8"?>
           |<manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -32,28 +32,28 @@ class AndroidMisconfigurationsTests extends AndroidQueryTestSuite {
     "should match a config file when `allowBackup` is set to `true`" in {
       val cpg = code("fun main() = println(0xbadf00d)")
         .moreCode(makeAndroidXml(true), "AndroidManifest.xml")
-      val query = queryBundle.manifestXmlDebuggableEnabled()
+      val query = queryBundle.manifestXmlBackupEnabled()
       findMatchingConfigFiles(cpg, query) shouldBe Set("AndroidManifest.xml")
     }
 
     "should not match a config file when `allowBackup` is set to `false`" in {
       val cpg = code("fun main() = println(0xbadf00d)")
         .moreCode(makeAndroidXml(false), "AndroidManifest.xml")
-      val query = queryBundle.manifestXmlDebuggableEnabled()
+      val query = queryBundle.manifestXmlBackupEnabled()
       findMatchingConfigFiles(cpg, query) shouldBe Set()
     }
 
     "should not match anything when there is no file named `AndroidManifest.xml` in the cpg" in {
       val cpg = code("fun main() = println(0xbadf00d)")
         .moreCode(makeAndroidXml(false), "NOPNOPNOPNOPNOPNOP.xml")
-      val query = queryBundle.manifestXmlDebuggableEnabled()
+      val query = queryBundle.manifestXmlBackupEnabled()
       findMatchingConfigFiles(cpg, query) shouldBe Set()
     }
 
     "should not match anything when the file named `AndroidManifest.xml` is empty" in {
       val cpg = code("fun main() = println(0xbadf00d)")
         .moreCode("", "AndroidManifest.xml")
-      val query = queryBundle.manifestXmlDebuggableEnabled()
+      val query = queryBundle.manifestXmlBackupEnabled()
       findMatchingConfigFiles(cpg, query) shouldBe Set()
     }
 
@@ -71,7 +71,7 @@ class AndroidMisconfigurationsTests extends AndroidQueryTestSuite {
           |""".stripMargin
       val cpg = code("fun main() = println(0xbadf00d)")
         .moreCode(invalidXml, "AndroidManifest.xml")
-      val query = queryBundle.manifestXmlDebuggableEnabled()
+      val query = queryBundle.manifestXmlBackupEnabled()
       findMatchingConfigFiles(cpg, query) shouldBe Set()
     }
   }
