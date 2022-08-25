@@ -3,10 +3,11 @@ name := "php2cpg"
 scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.1.3")
 
-dependsOn(Projects.x2cpg)
+dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "com.lihaoyi"   %% "ujson"             % "1.6.0",
+  "com.lihaoyi"   %% "ujson"             % "2.0.0",
+  "com.lihaoyi"   %% "upickle"           % "2.0.0",
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
   "org.apache.logging.log4j" % "log4j-slf4j-impl"  % Versions.log4j % Runtime,
