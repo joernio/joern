@@ -22,9 +22,9 @@ class PocTest extends PhpCode2CpgFixture {
     )
 
     "have the correct namespace set" in {
-      cpg.namespaceBlock.l match {
+      cpg.namespaceBlock.fullName(".*printhello.php.*").l match {
         case namespaceBlock :: Nil =>
-          namespaceBlock.name.endsWith("printhello.php") shouldBe true
+          namespaceBlock.name shouldBe "<global>"
         case result => fail(s"expected namespaceBlock found $result")
       }
     }

@@ -88,12 +88,24 @@ object Domain {
   }
   final case class PhpAssign(target: PhpExpr, source: PhpExpr, attributes: PhpAttributes) extends PhpAssignment
 
-  sealed abstract class PhpScalar                                              extends PhpExpr
-  final case class PhpString(value: String, attributes: PhpAttributes)         extends PhpScalar
+  sealed abstract class PhpScalar                                      extends PhpExpr
+  final case class PhpString(value: String, attributes: PhpAttributes) extends PhpScalar
+  object PhpString {
+    def withQuotes(value: String, attributes: PhpAttributes): PhpString = {
+      PhpString(s"\"${value.replaceAll(System.lineSeparator(), "\\n")}\"", attributes)
+    }
+  }
+
   final case class PhpInt(value: String, attributes: PhpAttributes)            extends PhpScalar
   final case class PhpFloat(value: String, attributes: PhpAttributes)          extends PhpScalar
   final case class PhpEncapsed(parts: Seq[PhpExpr], attributes: PhpAttributes) extends PhpScalar
   final case class PhpEncapsedPart(value: String, attributes: PhpAttributes)   extends PhpScalar
+  object PhpEncapsedPart {
+    def withQuotes(value: String, attributes: PhpAttributes): PhpEncapsedPart = {
+      val valueWithCorrectNewline = value.replaceAll(System.lineSeparator(), raw"\\n")
+      PhpEncapsedPart(s"\"$valueWithCorrectNewline\"", attributes)
+    }
+  }
 
   private def readFile(json: Value): PhpFile = {
     json match {
@@ -113,19 +125,26 @@ object Domain {
         PhpEchoStmt(values, PhpAttributes(json))
       case "Stmt_Expression" => readExpr(json("expr"))
       case "Stmt_Function"   => readFunction(json)
+      case "Stmt_InlineHTML" => readInlineHtml(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
     }
   }
 
+  private def readInlineHtml(json: Value): PhpStmt = {
+    val attributes = PhpAttributes(json)
+    val value      = PhpString.withQuotes(json("value").str, attributes)
+    PhpEchoStmt(List(value), attributes)
+  }
+
   private def readExpr(json: Value): PhpExpr = {
     json("nodeType").str match {
-      case "Scalar_String"             => PhpString(json("value").str, PhpAttributes(json))
+      case "Scalar_String"             => PhpString.withQuotes(json("value").str, PhpAttributes(json))
       case "Scalar_DNumber"            => PhpFloat(json("value").toString, PhpAttributes(json))
       case "Scalar_LNumber"            => PhpInt(json("value").toString, PhpAttributes(json))
       case "Scalar_Encapsed"           => PhpEncapsed(json("parts").arr.map(readExpr).toSeq, PhpAttributes(json))
-      case "Scalar_EncapsedStringPart" => PhpEncapsedPart(json("value").str, PhpAttributes(json))
+      case "Scalar_EncapsedStringPart" => PhpEncapsedPart.withQuotes(json("value").str, PhpAttributes(json))
 
       case "Expr_Assign" => PhpAssign(readExpr(json("var")), readExpr(json("expr")), PhpAttributes(json))
       // TODO Figure out when the variable has an expr name
