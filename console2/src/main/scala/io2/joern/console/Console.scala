@@ -10,12 +10,8 @@ object Console:
     // new ReplDriver(replArgs).tryRunning
     val repl = new ReplDriver(replArgs)
     val state = repl.initialState
-    println("imports: " + state.imports)
-    println(state.valIndex)
-    println(state.objectIndex)
-    val state2 = repl.run("def foo = 42")(state)
-    println(state2.valIndex)
-    println(state2.objectIndex)
-    repl.runUntilQuit(state2)
+    val state2 = repl.run("def foo = 43")(state)
+    val state3 = repl.run("import Int.MaxValue")(state2)
+    repl.runUntilQuit(state3)
 
     
