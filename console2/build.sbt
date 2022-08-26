@@ -1,4 +1,4 @@
-name := "console"
+name := "console2"
 
 enablePlugins(JavaAppPackaging)
 
@@ -12,8 +12,6 @@ enablePlugins(JavaAppPackaging)
 libraryDependencies ++= Seq(
   // "org.scala-lang" %% "scala3-compiler" % "3.1.3-bin-SNAPSHOT-nonbootstrapped",
   "org.scala-lang" %% "scala3-compiler" % "3.1.3",
-  //"org.scala-lang" %% "scala3-library" % "3.1.3",
-  //"org.scala-lang" %% "scala3-library" % stdlibVersion(Bootstrapped) % "sourcedeps"),
 
 //   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
 //   "com.github.scopt"     %% "scopt"             % ScoptVersion,
