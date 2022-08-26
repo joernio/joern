@@ -9,9 +9,13 @@ object Console:
     val replArgs = args ++ Array("-classpath", System.getProperty("java.class.path"))
     // new ReplDriver(replArgs).tryRunning
     val repl = new ReplDriver(replArgs)
-    val state = repl.initialState
-    val state2 = repl.run("def foo = 43")(state)
-    val state3 = repl.run("import Int.MaxValue")(state2)
-    repl.runUntilQuit(state3)
+    val predefCode =
+      """
+        |def foo = 42
+        |import Int.MaxValue
+        |""".stripMargin
+
+    val state = repl.run(predefCode)(repl.initialState)
+    repl.runUntilQuit(state)
 
     
