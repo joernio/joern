@@ -70,7 +70,7 @@ class Solidity2Cpg {
       .determine(Set(dir.pathAsString), sourceFileExtensions)
       .map { fName => fName.stripPrefix(s"${dir.pathAsString}$sep") }
       .foreach(fileName => {
-        ExternalCommand.run(s"surya parse -jc $fileName", dir.pathAsString) match {
+        ExternalCommand.run(s"surya parse -jlc $fileName", dir.pathAsString) match {
           case Success(stdOut: Seq[String]) =>
             val path = s"${dir.pathAsString}$sep${fileName.stripSuffix(".sol")}.json"
             Using.resource(new PrintWriter(new JFile(path))) { writer =>

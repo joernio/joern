@@ -33,7 +33,7 @@ class CallTests extends SolidityCodeToCpgFixture {
     x.methodFullName shouldBe "Foo.add:uint256(uint256,uint256)"
     x.signature shouldBe "uint256(uint256,uint256)"
     x.argumentIndex shouldBe 2
-//    x.lineNumber shouldBe Some(8)
+    x.lineNumber shouldBe Some(15)
   }
 
   "should allow traversing from call to arguments" in {

@@ -141,7 +141,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "SourceUnit") {
         throw new RuntimeException("SourceUnit object expected")
       } else {
-        SourceUnit(fields("children").convertTo[List[BaseASTNode]])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        SourceUnit(
+          fields("children").convertTo[List[BaseASTNode]],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -155,7 +160,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "PragmaDirective") {
         throw new RuntimeException("PragmaDirective object expected")
       } else {
-        PragmaDirective(fields("name").convertTo[String], fields("value").convertTo[String])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        PragmaDirective(
+          fields("name").convertTo[String],
+          fields("value").convertTo[String],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -169,6 +180,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ImportDirective") {
         throw new RuntimeException("ImportDirective object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         ImportDirective(
           fields("path").convertTo[String],
           fields("unitAlias") match {
@@ -186,7 +198,9 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("symbolAliasesIdentifiers") match {
             case x: JsString => x.convertTo[String]
             case _           => null
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -201,11 +215,14 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ContractDefinition") {
         throw new RuntimeException("ContractDefinition object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         ContractDefinition(
           fields("name").convertTo[String],
           fields("baseContracts").convertTo[List[BaseASTNode]],
           fields("subNodes").convertTo[List[BaseASTNode]],
-          fields("kind").convertTo[String]
+          fields("kind").convertTo[String],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -217,7 +234,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
 
     def read(json: JsValue): BaseName = {
       val fields = json.asJsObject("Unable to decode JSON as BaseName").fields
-      BaseName(fields("type").convertTo[String], fields("namePath").convertTo[String])
+      val loc = fields("loc").asJsObject.fields("start").asJsObject
+      BaseName(
+        fields("type").convertTo[String],
+        fields("namePath").convertTo[String],
+        loc.fields("line").convertTo[Option[Int]],
+        loc.fields("column").convertTo[Option[Int]]
+      )
     }
 
   }
@@ -231,7 +254,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "InheritanceSpecifier") {
         throw new RuntimeException("InheritanceSpecifier object expected")
       } else {
-        InheritanceSpecifier(fields("baseName").convertTo[BaseName], fields("arguments").convertTo[List[BaseASTNode]])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        InheritanceSpecifier(
+          fields("baseName").convertTo[BaseName],
+          fields("arguments").convertTo[List[BaseASTNode]],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -245,7 +274,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "UserDefinedTypeName") {
         throw new RuntimeException("UserDefinedTypeName object expected")
       } else {
-        UserDefinedTypeName(fields("namePath").convertTo[String])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        UserDefinedTypeName(
+          fields("namePath").convertTo[String],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -259,6 +293,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ModifierDefinition") {
         throw new RuntimeException("ModifierDefinition object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         ModifierDefinition(
           fields("name").convertTo[String],
           fields("parameters") match {
@@ -270,7 +305,9 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("override") match {
             case x: JsObject => x.convertTo[BaseASTNode]
             case _           => null
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -286,6 +323,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         throw new RuntimeException("VariableDeclaration object expected")
       } else {
         try {
+          val loc = fields("loc").asJsObject.fields("start").asJsObject
           VariableDeclaration(
             fields("typeName").convertTo[BaseASTNode],
             fields("name") match {
@@ -316,19 +354,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
             fields("override") match {
               case x: JsObject => x.convertTo[BaseASTNode]
               case _ => null
-            }
-//            ,
-//            fields("lineNumber") match {
-//              case JsNumber(value) => Option(value.toIntExact)
-//              case JsNull => None
-//            },
-//            fields("columnNumber") match {
-//              case JsNumber(value) => Option(value.toIntExact)
-//              case JsNull => None
-//            }
+            },
+            loc.fields("line").convertTo[Option[Int]],
+            loc.fields("column").convertTo[Option[Int]]
           )
         } catch {
           case e : NoSuchElementException => {
+            val loc = fields("loc").asJsObject.fields("start").asJsObject
             VariableDeclaration(
               fields("typeName").convertTo[BaseASTNode],
               fields("name") match {
@@ -352,7 +384,9 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
               isDeclaredConst = false,
               isIndexed = fields("isIndexed").convertTo[Boolean],
               isImmutable = false,
-              null
+              null,
+              loc.fields("line").convertTo[Option[Int]],
+              loc.fields("column").convertTo[Option[Int]]
             )
           }
         }
@@ -370,6 +404,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ElementaryTypeName") {
         throw new RuntimeException("ElementaryTypeName object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         ElementaryTypeName(
           fields("name") match {
             case x: JsString => x.convertTo[String]
@@ -378,7 +413,9 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("stateMutability") match {
             case x: JsString => x.convertTo[String]
             case _           => null
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -393,7 +430,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "Identifier") {
         throw new RuntimeException("Identifier object expected")
       } else {
-        Identifier(fields("name").convertTo[String])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        Identifier(
+          fields("name").convertTo[String],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -407,7 +449,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "Block") {
         throw new RuntimeException("Block object expected")
       } else {
-        Block(fields("statements").convertTo[List[BaseASTNode]])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        Block(
+          fields("statements").convertTo[List[BaseASTNode]],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -421,7 +468,19 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ExpressionStatement") {
         throw new RuntimeException("ExpressionStatement object expected")
       } else {
-        ExpressionStatement(fields("expression").convertTo[BaseASTNode])
+        val loc : JsObject = if (fields.contains("loc")) {
+          fields("loc").asJsObject.fields("start").asJsObject
+        } else {
+          "{\"column\":null,\"line\":null}".parseJson.asJsObject
+        }
+//        println(fields("loc").asJsObject.fields("start"))
+//        val loc = fields("loc").asJsObject.fields("start").asJsObject
+//        println(loc)
+        ExpressionStatement(
+          fields("expression").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -435,6 +494,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "FunctionCall") {
         throw new RuntimeException("FunctionCall object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         FunctionCall(
           fields("expression").convertTo[BaseASTNode],
           fields("arguments") match {
@@ -446,7 +506,9 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields.getOrElse("methodFullName", null) match {
             case x: JsString => x.convertTo[String]
             case _ => null
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -461,7 +523,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "MemberAccess") {
         throw new RuntimeException("MemberAccess object expected")
       } else {
-        MemberAccess(fields("expression").convertTo[BaseASTNode], fields("memberName").convertTo[String])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        MemberAccess(
+          fields("expression").convertTo[BaseASTNode],
+          fields("memberName").convertTo[String],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -475,7 +543,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "IndexAccess") {
         throw new RuntimeException("IndexAccess object expected")
       } else {
-        IndexAccess(fields("base").convertTo[BaseASTNode], fields("index").convertTo[BaseASTNode])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        IndexAccess(
+          fields("base").convertTo[BaseASTNode],
+          fields("index").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -489,10 +563,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "BinaryOperation") {
         throw new RuntimeException("BinaryOperation object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         BinaryOperation(
           fields("operator").convertTo[String],
           fields("left").convertTo[BaseASTNode],
-          fields("right").convertTo[BaseASTNode]
+          fields("right").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -507,13 +584,16 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "StringLiteral") {
         throw new RuntimeException("StringLiteral object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         StringLiteral(
           fields("value").convertTo[String],
           fields("parts").convertTo[List[String]],
           fields("isUnicode") match {
             case x: List[JsBoolean] => x
             case _                  => null
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -528,10 +608,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "EventDefinition") {
         throw new RuntimeException("EventDefinition object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         EventDefinition(
           fields("name").convertTo[String],
           fields("parameters").convertTo[List[BaseASTNode]],
-          fields("isAnonymous").convertTo[Boolean]
+          fields("isAnonymous").convertTo[Boolean],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -546,6 +629,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "FunctionDefinition") {
         throw new RuntimeException("FunctionDefinition object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         FunctionDefinition(
           fields("name") match {
             case x: JsString => x.convertTo[String]
@@ -570,7 +654,9 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("stateMutability") match {
             case x: JsString => x.convertTo[String]
             case _           => null
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -585,12 +671,15 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ModifierInvocation") {
         throw new RuntimeException("ModifierInvocation object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         ModifierInvocation(
           fields("name").convertTo[String],
           fields("arguments") match {
             case x: JsArray => x.convertTo[List[BaseASTNode]]
             case _           => null
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -605,7 +694,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "EmitStatement") {
         throw new RuntimeException("EmitStatement object expected")
       } else {
-        EmitStatement(fields("eventCall").convertTo[BaseASTNode])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        EmitStatement(
+          fields("eventCall").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -619,11 +713,14 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ForStatement") {
         throw new RuntimeException("ForStatement object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         ForStatement(
           fields("initExpression").convertTo[BaseASTNode],
           fields("conditionExpression").convertTo[BaseASTNode],
           fields("loopExpression").convertTo[BaseASTNode],
-          fields("body").convertTo[BaseASTNode]
+          fields("body").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -640,14 +737,16 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "VariableDeclarationStatement") {
         throw new RuntimeException("VariableDeclarationStatement object expected")
       } else {
-//        print(fields("variables"))
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         VariableDeclarationStatement(
           fields("variables").convertTo[List[BaseASTNode]],
           fields("initialValue") match {
             case x: JsObject => x.convertTo[BaseASTNode]
             case JsNull => null
 
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -662,10 +761,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "UnaryOperation") {
         throw new RuntimeException("UnaryOperation object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         UnaryOperation(
           fields("operator").convertTo[String],
           fields("subExpression").convertTo[BaseASTNode],
-          fields("isPrefix").convertTo[Boolean]
+          fields("isPrefix").convertTo[Boolean],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -680,13 +782,16 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "IfStatement") {
         throw new RuntimeException("IfStatement object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         IfStatement(
           fields("condition").convertTo[BaseASTNode],
           fields("trueBody").convertTo[BaseASTNode],
           fields("falseBody") match {
             case x: JsObject => x.convertTo[BaseASTNode]
             case _           => null
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -701,7 +806,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "BooleanLiteral") {
         throw new RuntimeException("BooleanLiteral object expected")
       } else {
-        BooleanLiteral(fields("value").convertTo[Boolean])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        BooleanLiteral(
+          fields("value").convertTo[Boolean],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -715,12 +825,15 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ArrayTypeName") {
         throw new RuntimeException("ArrayTypeName object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         ArrayTypeName(
           fields("baseTypeName").convertTo[BaseASTNode],
           fields("length") match {
             case x: JsString => x.convertTo[String]
             case _           => null
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -735,12 +848,15 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "NumberLiteral") {
         throw new RuntimeException("NumberLiteral object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         NumberLiteral(
           fields("number").convertTo[String],
           fields("subdenomination") match {
             case x: JsString => x.convertTo[String]
             case _           => null
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -757,13 +873,16 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "StateVariableDeclaration") {
         throw new RuntimeException("StateVariableDeclaration object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         StateVariableDeclaration(
           fields("variables").convertTo[List[BaseASTNode]],
           fields("initialValue") match {
             case x: JsObject => x.convertTo[BaseASTNode]
             case _ => null
 
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -779,7 +898,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "Mapping") {
         throw new RuntimeException("Mapping object expected")
       } else {
-        Mapping(fields("keyType").convertTo[BaseASTNode], fields("valueType").convertTo[BaseASTNode])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        Mapping(
+          fields("keyType").convertTo[BaseASTNode],
+          fields("valueType").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -793,7 +918,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "StructDefinition") {
         throw new RuntimeException("StructDefinition object expected")
       } else {
-        StructDefinition(fields("name").convertTo[String], fields("members").convertTo[List[BaseASTNode]])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        StructDefinition(
+          fields("name").convertTo[String],
+          fields("members").convertTo[List[BaseASTNode]],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -807,7 +938,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "UsingForDeclaration") {
         throw new RuntimeException("UsingForDeclaration object expected")
       } else {
-        UsingForDeclaration(fields("typeName").convertTo[BaseASTNode], fields("libraryName").convertTo[String])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        UsingForDeclaration(
+          fields("typeName").convertTo[BaseASTNode],
+          fields("libraryName").convertTo[String],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -821,7 +958,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ReturnStatement") {
         throw new RuntimeException("ReturnStatement object expected")
       } else {
-        ReturnStatement(fields("expression").convertTo[BaseASTNode])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        ReturnStatement(
+          fields("expression").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -835,7 +977,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "TupleExpression") {
         throw new RuntimeException("TupleExpression object expected")
       } else {
-        TupleExpression(fields("components").convertTo[List[BaseASTNode]], fields("isArray").convertTo[Boolean])
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        TupleExpression(
+          fields("components").convertTo[List[BaseASTNode]],
+          fields("isArray").convertTo[Boolean],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -849,6 +997,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "FunctionTypeName") {
         throw new RuntimeException("FunctionTypeName object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         FunctionTypeName(
           fields("parameterTypes").convertTo[List[BaseASTNode]],
           fields("returnTypes").convertTo[List[BaseASTNode]],
@@ -859,7 +1008,9 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("stateMutability") match {
             case x : JsString => x.convertTo[String]
             case _ => null
-          }
+          },
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -873,8 +1024,11 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "NewExpression") {
         throw new RuntimeException("NewExpression object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         NewExpression(
-          fields("typeName").convertTo[BaseASTNode]
+          fields("typeName").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -889,8 +1043,11 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "TypeNameExpression") {
         throw new RuntimeException("TypeNameExpression object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         TypeNameExpression(
-          fields("typeName").convertTo[BaseASTNode]
+          fields("typeName").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -905,12 +1062,15 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "InlineAssemblyStatement") {
         throw new RuntimeException("InlineAssemblyStatement object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         InlineAssemblyStatement(
           fields("language") match {
             case x: JsObject => x.convertTo[BaseASTNode]
             case _ => null
           },
-          fields("body").convertTo[BaseASTNode]
+          fields("body").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -925,8 +1085,11 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "AssemblyBlock") {
         throw new RuntimeException("AssemblyBlock object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         AssemblyBlock(
-          fields("operations").convertTo[List[BaseASTNode]]
+          fields("operations").convertTo[List[BaseASTNode]],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -941,9 +1104,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "AssemblyAssignment") {
         throw new RuntimeException("AssemblyAssignment object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         AssemblyAssignment(
           fields("names").convertTo[List[BaseASTNode]],
-          fields("expression").convertTo[BaseASTNode]
+          fields("expression").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -958,9 +1124,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "AssemblyCall") {
         throw new RuntimeException("AssemblyCall object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         AssemblyCall(
           fields("functionName").convertTo[String],
-          fields("arguments").convertTo[List[BaseASTNode]]
+          fields("arguments").convertTo[List[BaseASTNode]],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -975,8 +1144,11 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "DecimalNumber") {
         throw new RuntimeException("DecimalNumber object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         DecimalNumber(
-          fields("value").convertTo[String]
+          fields("value").convertTo[String],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -991,7 +1163,11 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ThrowStatement") {
         throw new RuntimeException("ThrowStatement object expected")
       } else {
-        ThrowStatement()
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
+        ThrowStatement(
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
+        )
       }
     }
   }
@@ -1005,8 +1181,11 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "Conditional") {
         throw new RuntimeException("Conditional object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         Conditional(
-          fields("condition").convertTo[BaseASTNode]
+          fields("condition").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }
@@ -1021,9 +1200,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "WhileStatement") {
         throw new RuntimeException("WhileStatement object expected")
       } else {
+        val loc = fields("loc").asJsObject.fields("start").asJsObject
         WhileStatement(
           fields("condition").convertTo[BaseASTNode],
-          fields("body").convertTo[BaseASTNode]
+          fields("body").convertTo[BaseASTNode],
+          loc.fields("line").convertTo[Option[Int]],
+          loc.fields("column").convertTo[Option[Int]]
         )
       }
     }

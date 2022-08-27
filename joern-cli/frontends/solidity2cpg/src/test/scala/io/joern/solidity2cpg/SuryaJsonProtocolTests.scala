@@ -78,19 +78,6 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
    }
  }
 
-// "should be able to decode a string JSON input to a root ContractDefinition" in {
-//   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
-//   import io.joern.solidity2cpg.domain.SuryaObject._
-//   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
-//
-//   val newRoot = oldRoot.elements(3)
-//         val astRoot = Try(newRoot.convertTo[ContractDefinition]) match {
-//           case Failure(e)          => fail(s"Unable to convert JSON to ContractDefinition due to an exception", e)
-//           case Success(pragmaDirective) => pragmaDirective
-//         }
-//
-// }
-
  "should be able to decode a string JSON input to a root InheritanceSpecifier" in {
    import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
    import io.joern.solidity2cpg.domain.SuryaObject._
@@ -131,42 +118,22 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
    }
  }
 
- "should be able to decode a string JSON input to a root VariableDeclaration" in {
-   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
-   import io.joern.solidity2cpg.domain.SuryaObject._
-   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
-   val newRoot = oldRoot.elements(3).convertTo[JsObject].fields("subNodes").convertTo[JsArray];
-   var counter = 0
-   while (counter < newRoot.elements.size) {
-     try {
-       var counter2 = 0;
-       val newVariable = newRoot.elements(counter).convertTo[JsObject].fields("parameters").convertTo[JsArray];
-       while (counter2 < newVariable.elements.size) {
-         val astRoot = Try(newVariable.elements(counter2).convertTo[VariableDeclaration]) match {
-           case Failure(e)          => fail(s"Unable to convert JSON to VariableDeclaration due to an exception", e)
-           case Success(variableDeclaration) => variableDeclaration
-         }
-         counter2 += 1
-       }
-       counter += 1
-     }
-
-   }
- }
-//
-// "should be able to decode a string JSON input to a root Block" in {
+// "should be able to decode a string JSON input to a root VariableDeclaration" in {
 //   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
 //   import io.joern.solidity2cpg.domain.SuryaObject._
-//   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
+//   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray]
 //   val newRoot = oldRoot.elements(3).convertTo[JsObject].fields("subNodes").convertTo[JsArray]
-//   println(newRoot)
 //   var counter = 0
 //   while (counter < newRoot.elements.size) {
 //     try {
-//       val newBlock = newRoot.elements(counter).convertTo[JsObject].fields("body");
-//       val astRoot = Try(newBlock.convertTo[Block]) match {
-//         case Failure(e)          => fail(s"Unable to convert JSON to Block due to an exception", e)
-//         case Success(block) => block
+//       var counter2 = 0;
+//       val newVariable = newRoot.elements(counter).convertTo[JsObject].fields("parameters").convertTo[JsArray];
+//       while (counter2 < newVariable.elements.size) {
+//         val astRoot = Try(newVariable.elements(counter2).convertTo[VariableDeclaration]) match {
+//           case Failure(e)          => fail(s"Unable to convert JSON to VariableDeclaration due to an exception", e)
+//           case Success(variableDeclaration) => variableDeclaration
+//         }
+//         counter2 += 1
 //       }
 //       counter += 1
 //     }
@@ -174,28 +141,5 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
 //   }
 // }
 
-//  "should be able to decode a string JSON input to a root FunctionDefinition" in {
-//    import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
-//    import io.joern.solidity2cpg.domain.SuryaObject._
-//    val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
-//    val newRoot = oldRoot.elements(3).convertTo[JsObject].fields("subNodes").convertTo[JsArray]
-//    var counter = 0
-//    while (counter < newRoot.elements.size) {
-//      try {
-//
-//        val newBlock = newRoot.elements(counter).convertTo[JsObject]
-//        if (newBlock.toString().contains("FunctionDefinition")) {
-//          val astRoot = Try(newBlock.convertTo[FunctionDefinition]) match {
-//                     case Failure(e)          => fail(s"Unable to convert JSON to FunctionDefinition due to an exception", e)
-//                     case Success(block) => block
-//                   }
-////          println(astRoot.getType)
-//        }
-//        counter += 1
-//      }
-//
-//    }
-//  }
 }
-//
-//
+
