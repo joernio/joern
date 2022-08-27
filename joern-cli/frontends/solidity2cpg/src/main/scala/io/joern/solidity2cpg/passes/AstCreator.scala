@@ -657,7 +657,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .typeFullName(typefullName)
       .order(order)
       .columnNumber(varDecl.columnNumber.get)
-      .lineNumber(varDecl.columnNumber.get)
+      .lineNumber(varDecl.lineNumber.get)
 
     Ast(newMember)
       .withChild(Ast(modifierNode(ModifierTypes.STATIC)))
@@ -695,7 +695,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .typeFullName(name)
         .order(order)
 //        .columnNumber(value.columnNumber.get)
-//        .lineNumber(value.columnNumber.get)
+//        .lineNumber(value.lineNumber.get)
     )
 
   }
@@ -708,7 +708,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .order(order)
       .argumentIndex(order)
       .columnNumber(returnStatement.columnNumber.get)
-      .lineNumber(returnStatement.columnNumber.get)
+      .lineNumber(returnStatement.lineNumber.get)
     Ast(returnNode)
       .withChild(exprAst)
       .withArgEdges(returnNode, exprAst.root.toList)
@@ -776,7 +776,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .argumentIndex(1)
       .typeFullName(expr.name)
       .columnNumber(expr.columnNumber.get)
-      .lineNumber(expr.columnNumber.get)
+      .lineNumber(expr.lineNumber.get)
     ))
   Ast(callBack)
     .withChildren(value)
@@ -804,7 +804,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .argumentIndex(order)
       .code(code)
       .columnNumber(statement.columnNumber.get)
-      .lineNumber(statement.columnNumber.get)
+      .lineNumber(statement.lineNumber.get)
  val ast = Ast(forNode)
     .withChild(initial)
     .withChild(conditionExpr)
@@ -833,7 +833,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(order)
         .argumentIndex(order)
         .columnNumber(numberLiteral.columnNumber.get)
-        .lineNumber(numberLiteral.columnNumber.get)
+        .lineNumber(numberLiteral.lineNumber.get)
     )
   }
 
@@ -864,7 +864,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .order(order)
       .argumentIndex(order)
       .columnNumber(operation.columnNumber.get)
-      .lineNumber(operation.columnNumber.get)
+      .lineNumber(operation.lineNumber.get)
 
     Ast(callNode).withChild(subExpression)
   }
@@ -915,7 +915,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .argumentIndex(order)
       .order(order)
       .columnNumber(operation.columnNumber.get)
-      .lineNumber(operation.columnNumber.get)
+      .lineNumber(operation.lineNumber.get)
     val children = Seq(lft, rht)
 
     Ast(callNode)
@@ -948,7 +948,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .argumentIndex(3)
           .code("else")
           .columnNumber(operation.columnNumber.get)
-          .lineNumber(operation.columnNumber.get)
+          .lineNumber(operation.lineNumber.get)
         )
 
       operation.falseBody match {
@@ -971,7 +971,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(order)
         .argumentIndex(order)
         .columnNumber(operation.columnNumber.get)
-        .lineNumber(operation.columnNumber.get)
+        .lineNumber(operation.lineNumber.get)
     if (foundt && foundf) {
       ast = Ast(ifNode)
         .withChild(opNode)
@@ -1049,7 +1049,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .signature(sig)
       .typeFullName(typeFullName)
       .columnNumber(call.columnNumber.get)
-      .lineNumber(call.columnNumber.get)
+      .lineNumber(call.lineNumber.get)
     Ast(func)
       .withChild(expr)
       .withChildren(arguments)
@@ -1073,7 +1073,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(order)
         .argumentIndex(order)
         .columnNumber(identifier.columnNumber.get)
-        .lineNumber(identifier.columnNumber.get)
+        .lineNumber(identifier.lineNumber.get)
       val thisID = Ast(NewIdentifier()
         .name("this")
         .code("this")
@@ -1081,7 +1081,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(1)
         .argumentIndex(1)
         .columnNumber(identifier.columnNumber.get)
-        .lineNumber(identifier.columnNumber.get)
+        .lineNumber(identifier.lineNumber.get)
       )
       val fieldID = Ast(NewFieldIdentifier()
         .canonicalName(identifier.name)
@@ -1089,7 +1089,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(2)
         .code(identifier.name)
         .columnNumber(identifier.columnNumber.get)
-        .lineNumber(identifier.columnNumber.get)
+        .lineNumber(identifier.lineNumber.get)
       )
       val children = Seq(thisID, fieldID)
       Ast(fieldAccessBlock)
@@ -1103,7 +1103,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(order)
         .argumentIndex(order)
         .columnNumber(identifier.columnNumber.get)
-        .lineNumber(identifier.columnNumber.get)
+        .lineNumber(identifier.lineNumber.get)
       )
     }
 
@@ -1123,7 +1123,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .order(order)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .columnNumber(memberAccess.columnNumber.get)
-      .lineNumber(memberAccess.columnNumber.get)
+      .lineNumber(memberAccess.lineNumber.get)
 
     Ast(fieldAccess)
       .withChild(expr)
@@ -1142,7 +1142,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(order)
         .argumentIndex(order)
         .columnNumber(literal.columnNumber.get)
-        .lineNumber(literal.columnNumber.get)
+        .lineNumber(literal.lineNumber.get)
     )
   }
 
@@ -1165,7 +1165,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .order(order)
       .argumentIndex(order)
       .columnNumber(x.columnNumber.get)
-      .lineNumber(x.columnNumber.get)
+      .lineNumber(x.lineNumber.get)
       )
       .withChild(base)
       .withChild(index)
@@ -1204,10 +1204,10 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .order(vars.size + order)
         .argumentIndex(vars.size + order)
         .columnNumber(statement.columnNumber.get)
-        .lineNumber(statement.columnNumber.get)
+        .lineNumber(statement.lineNumber.get)
     } else {
       NewCall().dispatchType(DispatchTypes.STATIC_DISPATCH).columnNumber(statement.columnNumber.get)
-        .lineNumber(statement.columnNumber.get)
+        .lineNumber(statement.lineNumber.get)
     }
 
     if (statement.initialValue != null) {
@@ -1231,7 +1231,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .fullName(typeFullName)
       .order(order)
       .columnNumber(structDefinition.columnNumber.get)
-      .lineNumber(structDefinition.columnNumber.get)
+      .lineNumber(structDefinition.lineNumber.get)
 
     val members = structDefinition.members.collect { case x: VariableDeclaration =>
       astForVarDecl(x, order)
