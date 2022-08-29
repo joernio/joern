@@ -10,7 +10,7 @@ val ZeroturnaroundVersion = "1.15"
 dependsOn(Projects.semanticcpg, Projects.macros, Projects.c2cpg % Test, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "org.scala-lang" %% "scala3-compiler" % "3.1.3", // for scala3 repl
+  "org.scala-lang"       %% "scala3-compiler"   % "3.1.3", // for scala3 repl
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
   "com.github.scopt"     %% "scopt"             % ScoptVersion,
   "org.typelevel"        %% "cats-effect"       % Versions.cats,
