@@ -27,3 +27,5 @@ joern-cli/workspace
 **/astgen-win.exe
 **/astgen-macos
 **/astgen-linux
+**/php2cpg/vendor/
+**/php2cpg/composer*

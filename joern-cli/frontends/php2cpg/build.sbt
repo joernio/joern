@@ -1,3 +1,4 @@
+import scala.sys.process._
 name := "php2cpg"
 
 scalaVersion       := "2.13.8"
@@ -17,6 +18,17 @@ libraryDependencies ++= Seq(
 scalacOptions ++= Seq(
   "-deprecation" // Emit warning and location for usages of deprecated APIs.
 )
+
+lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
+phpParseInstallTask := {
+  val phpParseBinary = baseDirectory.value / "vendor" / "nikic" / "php-parser" / "bin" / "php-parse"
+  if (!phpParseBinary.exists) {
+    val installSciptPath = (baseDirectory.value / "installdeps.sh").getPath
+    Process(installSciptPath, baseDirectory.value) !
+  }
+}
+
+Compile / compile := ((Compile / compile) dependsOn phpParseInstallTask).value
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 Global / onChangedBuildSource := ReloadOnSourceChanges
