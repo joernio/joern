@@ -4,10 +4,13 @@ import dotty.tools.repl._
 
 object Console {
 
+  def bar = "barz"
+
   val predefCode =
     """
       |def foo = 42
       |import Int.MaxValue
+      |import _root_.io2.joern.console.Console.bar
       |""".stripMargin
 
   def main(args: Array[String]): Unit = {
