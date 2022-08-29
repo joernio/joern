@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg.types
 
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.passes.KeyPool
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
@@ -42,7 +43,7 @@ import org.jetbrains.kotlin.psi.{
   KtTypeReference
 }
 import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorUtils}
-import org.jetbrains.kotlin.resolve.DescriptorUtils.{getSuperclassDescriptors}
+import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
 import org.jetbrains.kotlin.types.UnresolvedType
@@ -484,16 +485,24 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       case None =>
         resolvedCallDescriptor(expr.getReceiverExpression) match {
           case Some(desc) =>
-            val originalDesc = desc.getOriginal
-            val lhsName      = TypeRenderer.render(originalDesc.getReturnType)
-            val name         = expr.getSelectorExpression.getFirstChild.getText
-            val numArgs = expr.getSelectorExpression match {
-              case c: KtCallExpression => c.getValueArguments.size()
-              case _                   => 0
+            desc match {
+              case _: ClassConstructorDescriptorImpl | _: TypeAliasConstructorDescriptorImpl =>
+                expr.getSelectorExpression match {
+                  case _: KtNameReferenceExpression => (Operators.fieldAccess, "")
+                  case _                            => defaultValue
+                }
+              case _ =>
+                val originalDesc = desc.getOriginal
+                val lhsName      = TypeRenderer.render(originalDesc.getReturnType)
+                val name         = expr.getSelectorExpression.getFirstChild.getText
+                val numArgs = expr.getSelectorExpression match {
+                  case c: KtCallExpression => c.getValueArguments.size()
+                  case _                   => 0
+                }
+                val signature = s"${TypeConstants.cpgUnresolvedSignature}($numArgs)"
+                val fullName  = s"$lhsName.$name:$signature"
+                (fullName, signature)
             }
-            val signature = s"${TypeConstants.cpgUnresolvedSignature}($numArgs)"
-            val fullName  = s"$lhsName.$name:$signature"
-            (fullName, signature)
           case None => defaultValue
         }
     }

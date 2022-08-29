@@ -166,4 +166,37 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       secondInitArg.code shouldBe "\"AMESSAGE\""
     }
   }
+
+  "CPG for code with fieldAccess call on ctor" should {
+    lazy val cpg = code("""
+      |package mypkg
+      |fun sink(x: String) = println(x)
+      |class AClass(val x: String)
+      |fun f1(p: String) {
+      |    sink(AClass(p).x)
+      |}
+      |""".stripMargin)
+
+    "contain a CALL node with the correct METHOD_FULL_NAME set" in {
+      val List(c: Call) = cpg.call.codeExact("AClass(p).x").l
+      c.methodFullName shouldBe "<operator>.fieldAccess"
+      c.signature shouldBe ""
+    }
+  }
+
+  "CPG for code with fn call on ctor" should {
+    lazy val cpg = code("""
+      |package mypkg
+      |fun sink(x: String) = println(x)
+      |class AClass { fun appendX(to: String): String { return to + "X" } }
+      |fun f1(p: String) { sink(AClass().appendX(p)) }
+      |fun main() { f1("XXXX") }
+      |""".stripMargin)
+
+    "contain a CALL node with the correct METHOD_FULL_NAME set" in {
+      val List(c: Call) = cpg.call.codeExact("AClass().appendX(p)").l
+      c.methodFullName shouldBe "mypkg.AClass.appendX:java.lang.String(java.lang.String)"
+      c.signature shouldBe "java.lang.String(java.lang.String)"
+    }
+  }
 }
