@@ -1,7 +1,7 @@
 # solidity2cpg
 
 This is a [CPG](https://docs.joern.io/code-property-graph/) frontend for Solidity source code powered by
-[Surya](https://github.com/ConsenSys/surya).
+[Surya](https://github.com/MatthewEthanTam/surya).
 
 Surya outputs the Solidity contract AST as JSON which is then parsed using [Circe](https://circe.github.io/circe/).
 
@@ -13,6 +13,10 @@ Requirements:
 
 - \>= JDK 11. We recommend OpenJDK 11.
 - sbt (https://www.scala-sbt.org/)
+- Surya (forked version)
+
+### Download Forked Surya version
+`sudo npm -g install @matthewethantam/Surya`
 
 ### Quickstart
 
