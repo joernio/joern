@@ -25,7 +25,8 @@ object CpgGeneratorFactory {
     Languages.PHP,
     Languages.KOTLIN,
     Languages.NEWC,
-    Languages.JAVASRC
+    Languages.JAVASRC,
+    Languages.SOLIDITY
   )
 }
 
