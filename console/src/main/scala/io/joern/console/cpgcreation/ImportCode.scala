@@ -63,8 +63,8 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   def jssrc: Frontend  = new Frontend("jssrc", Languages.JSSRC, "Javascript/Typescript Source Frontend based on astgen")
   def csharp: Frontend = new Frontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
 
-  def llvm: Frontend = new Frontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
-  def php: Frontend  = new Frontend("php", Languages.PHP, "PHP bytecode frontend")
+  def llvm: Frontend     = new Frontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
+  def php: Frontend      = new Frontend("php", Languages.PHP, "PHP bytecode frontend")
   def solidity: Frontend = new Frontend("solidity", Languages.SOLIDITY, "Solidity Source Frontend")
 
   class Frontend(val name: String, val language: String, val description: String = "") {

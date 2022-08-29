@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.ControlStructure
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve, toNodeTypeStarters, _}
 class ControlledLoopIteration extends SolidityDataflowFixture {
-  override val code : String = {
+  override val code: String = {
     """
       |contract C{
       |    uint n;

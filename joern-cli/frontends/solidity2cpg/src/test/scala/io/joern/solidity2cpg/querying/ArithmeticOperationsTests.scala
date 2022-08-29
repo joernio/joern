@@ -28,15 +28,7 @@ class ArithmeticOperationsTests extends SolidityCodeToCpgFixture {
       | }
       |""".stripMargin
 
-  val vars = Seq(
-    ("a", "uint8"),
-    ("b", "uint256"),
-    ("c", "int"),
-    ("e", "uint"),
-    ("f", "int256")
-  )
-
-
+  val vars = Seq(("a", "uint8"), ("b", "uint256"), ("c", "int"), ("e", "uint"), ("f", "int256"))
 
   "should contain call nodes with <operation>.assignment for all variables" in {
     val assignments = cpg.assignment

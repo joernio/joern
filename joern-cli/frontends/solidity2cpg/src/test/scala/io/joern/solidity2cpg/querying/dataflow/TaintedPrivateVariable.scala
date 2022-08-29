@@ -33,8 +33,6 @@ class TaintedPrivateVariable extends SolidityDataflowFixture {
       |}""".stripMargin
   }
 
-
-
   it should "should find a is tainted" in {
 
     {
@@ -53,8 +51,4 @@ class TaintedPrivateVariable extends SolidityDataflowFixture {
 
   }
 
-  }
-
-
-
-
+}

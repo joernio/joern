@@ -82,5 +82,4 @@ class ConstructorInvocationTests extends SolidityCodeToCpgFixture {
     }
   }
 
-
 }

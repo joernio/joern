@@ -40,11 +40,8 @@ class CfgTests extends SolidityCodeToCpgFixture {
     controllers.map(_.code) should contain("x < 5")
   }
 
-
   "should find sink(x) is dominated by `x < 5` and `y < 10`" in {
     cpg.call("sink").dominatedBy.isCall.code.toSetMutable shouldBe Set("x < 5", "y < 10")
   }
-
-
 
 }

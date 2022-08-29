@@ -27,11 +27,11 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
     def read(json: JsValue): BaseASTNode = {
       if (json.toString() == "null") {
         val nullType = """{"type": "null"}"""
-        val jsonAst = nullType.parseJson
+        val jsonAst  = nullType.parseJson
         null
       } else {
         val fields = json.asJsObject("BaseASTNode object expected").fields
-        val typ = fields("type").convertTo[String]
+        val typ    = fields("type").convertTo[String]
         typ match {
           case "SourceUnit" =>
             SourceUnitJsonFormat.read(json)
@@ -234,7 +234,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
 
     def read(json: JsValue): BaseName = {
       val fields = json.asJsObject("Unable to decode JSON as BaseName").fields
-      val loc = fields("loc").asJsObject.fields("start").asJsObject
+      val loc    = fields("loc").asJsObject.fields("start").asJsObject
       BaseName(
         fields("type").convertTo[String],
         fields("namePath").convertTo[String],
@@ -328,24 +328,24 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
             fields("typeName").convertTo[BaseASTNode],
             fields("name") match {
               case x: JsString => x.convertTo[String]
-              case _ => null
+              case _           => null
             },
             fields("identifier") match {
               case x: JsObject => x.convertTo[BaseASTNode]
-              case _ => null
+              case _           => null
             },
             fields("expression") match {
-              case JsNull => null
+              case JsNull      => null
               case x: JsObject => x.convertTo[BaseASTNode]
-              case _ => null
+              case _           => null
             },
             fields("visibility") match {
               case x: JsString => x.convertTo[String]
-              case _ => null
+              case _           => null
             },
             fields("storageLocation") match {
               case x: JsString => x.convertTo[String]
-              case _ => null
+              case _           => null
             },
             fields("isStateVar").convertTo[Boolean],
             fields("isDeclaredConst").convertTo[Boolean],
@@ -353,32 +353,32 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
             fields("isImmutable").convertTo[Boolean],
             fields("override") match {
               case x: JsObject => x.convertTo[BaseASTNode]
-              case _ => null
+              case _           => null
             },
             loc.fields("line").convertTo[Option[Int]],
             loc.fields("column").convertTo[Option[Int]]
           )
         } catch {
-          case e : NoSuchElementException => {
+          case e: NoSuchElementException => {
             val loc = fields("loc").asJsObject.fields("start").asJsObject
             VariableDeclaration(
               fields("typeName").convertTo[BaseASTNode],
               fields("name") match {
                 case x: JsString => x.convertTo[String]
-                case _ => null
+                case _           => null
               },
               fields("identifier") match {
                 case x: JsObject => x.convertTo[BaseASTNode]
-                case _ => null
+                case _           => null
               },
               fields("expression") match {
                 case x: JsObject => x.convertTo[BaseASTNode]
-                case _ => null
+                case _           => null
               },
               null,
               fields("storageLocation") match {
                 case x: JsString => x.convertTo[String]
-                case _ => null
+                case _           => null
               },
               fields("isStateVar").convertTo[Boolean],
               isDeclaredConst = false,
@@ -468,7 +468,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       if (fields("type").convertTo[String] != "ExpressionStatement") {
         throw new RuntimeException("ExpressionStatement object expected")
       } else {
-        val loc : JsObject = if (fields.contains("loc")) {
+        val loc: JsObject = if (fields.contains("loc")) {
           fields("loc").asJsObject.fields("start").asJsObject
         } else {
           "{\"column\":null,\"line\":null}".parseJson.asJsObject
@@ -499,13 +499,13 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("expression").convertTo[BaseASTNode],
           fields("arguments") match {
             case x: JsArray => x.convertTo[List[BaseASTNode]]
-            case _           => null
+            case _          => null
           },
           fields("names").convertTo[List[String]],
           fields("identifiers").convertTo[List[String]],
           fields.getOrElse("methodFullName", null) match {
             case x: JsString => x.convertTo[String]
-            case _ => null
+            case _           => null
           },
           loc.fields("line").convertTo[Option[Int]],
           loc.fields("column").convertTo[Option[Int]]
@@ -633,12 +633,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         FunctionDefinition(
           fields("name") match {
             case x: JsString => x.convertTo[String]
-            case _ => null
+            case _           => null
           },
           fields("parameters").convertTo[List[BaseASTNode]],
           fields("returnParameters") match {
             case x: JsArray => x.convertTo[List[BaseASTNode]]
-            case _ => null
+            case _          => null
           },
           fields("body").convertTo[BaseASTNode],
           fields("visibility").convertTo[String],
@@ -676,7 +676,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("name").convertTo[String],
           fields("arguments") match {
             case x: JsArray => x.convertTo[List[BaseASTNode]]
-            case _           => null
+            case _          => null
           },
           loc.fields("line").convertTo[Option[Int]],
           loc.fields("column").convertTo[Option[Int]]
@@ -742,7 +742,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("variables").convertTo[List[BaseASTNode]],
           fields("initialValue") match {
             case x: JsObject => x.convertTo[BaseASTNode]
-            case JsNull => null
+            case JsNull      => null
 
           },
           loc.fields("line").convertTo[Option[Int]],
@@ -878,7 +878,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("variables").convertTo[List[BaseASTNode]],
           fields("initialValue") match {
             case x: JsObject => x.convertTo[BaseASTNode]
-            case _ => null
+            case _           => null
 
           },
           loc.fields("line").convertTo[Option[Int]],
@@ -1002,12 +1002,12 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
           fields("parameterTypes").convertTo[List[BaseASTNode]],
           fields("returnTypes").convertTo[List[BaseASTNode]],
           fields("visibility") match {
-            case x : JsString => x.convertTo[String]
-            case _ => null
+            case x: JsString => x.convertTo[String]
+            case _           => null
           },
           fields("stateMutability") match {
-            case x : JsString => x.convertTo[String]
-            case _ => null
+            case x: JsString => x.convertTo[String]
+            case _           => null
           },
           loc.fields("line").convertTo[Option[Int]],
           loc.fields("column").convertTo[Option[Int]]
@@ -1053,7 +1053,9 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit object InlineAssemblyStatementJsonFormat extends JsonFormat[InlineAssemblyStatement] with DefaultJsonProtocol {
+  implicit object InlineAssemblyStatementJsonFormat
+      extends JsonFormat[InlineAssemblyStatement]
+      with DefaultJsonProtocol {
 
     def write(c: InlineAssemblyStatement): JsValue = JsNull
 
@@ -1066,7 +1068,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         InlineAssemblyStatement(
           fields("language") match {
             case x: JsObject => x.convertTo[BaseASTNode]
-            case _ => null
+            case _           => null
           },
           fields("body").convertTo[BaseASTNode],
           loc.fields("line").convertTo[Option[Int]],
@@ -1164,10 +1166,7 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
         throw new RuntimeException("ThrowStatement object expected")
       } else {
         val loc = fields("loc").asJsObject.fields("start").asJsObject
-        ThrowStatement(
-          loc.fields("line").convertTo[Option[Int]],
-          loc.fields("column").convertTo[Option[Int]]
-        )
+        ThrowStatement(loc.fields("line").convertTo[Option[Int]], loc.fields("column").convertTo[Option[Int]])
       }
     }
   }
@@ -1210,7 +1209,5 @@ object SuryaJsonProtocol extends DefaultJsonProtocol {
       }
     }
   }
-
-
 
 }

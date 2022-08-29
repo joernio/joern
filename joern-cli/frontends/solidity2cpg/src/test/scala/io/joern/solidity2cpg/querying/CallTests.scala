@@ -23,7 +23,6 @@ class CallTests extends SolidityCodeToCpgFixture {
       |}
       |""".stripMargin
 
-
   "should contain a call node for `add` with correct fields" in {
 
     val List(x) = cpg.call("add").l

@@ -36,7 +36,7 @@ class Solidity2Cpg {
   def createCpg(sourceCodePath: String, outputPath: Option[String] = None): Cpg = {
     val cpg = newEmptyCpg(outputPath)
 
-    new MetaDataPass(cpg, language,"").createAndApply()
+    new MetaDataPass(cpg, language, "").createAndApply()
 
     val (sourcesDir, sourceFileNames) = getSourcesFromDir(sourceCodePath)
     val astCreator                    = new AstCreationPass(sourcesDir, sourceFileNames, cpg)
@@ -84,6 +84,5 @@ class Solidity2Cpg {
     val outFileNames = SourceFiles.determine(Set(dir.pathAsString), suryaOutputFileExtensions)
     (dir.pathAsString, outFileNames)
   }
-
 
 }

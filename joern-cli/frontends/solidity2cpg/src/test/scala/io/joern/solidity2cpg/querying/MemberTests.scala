@@ -53,6 +53,5 @@ class MemberTests extends SolidityCodeToCpgFixture {
       x.name shouldBe "Coin"
     })
 
-
   }
 }

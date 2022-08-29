@@ -2,7 +2,6 @@ package io.joern.solidity2cpg.querying
 import io.shiftleft.semanticcpg.language._
 import io.joern.solidity2cpg.testfixtures.SolidityCodeToCpgFixture
 
-
 import java.io.File
 
 class MethodTests extends SolidityCodeToCpgFixture {

@@ -12,10 +12,10 @@ case class SolidityCpgGenerator(config: FrontendConfig, rootPath: Path) extends 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
   override def generate(
-                         inputPath: String,
-                         outputPath: String = "cpg.bin",
-                         namespaces: List[String] = List()
-                       ): Option[String] = {
+    inputPath: String,
+    outputPath: String = "cpg.bin",
+    namespaces: List[String] = List()
+  ): Option[String] = {
     val arguments = config.cmdLineParams.toSeq ++ Seq(inputPath, "--output", outputPath)
     runShellCommand(command.toString, arguments).map(_ => outputPath)
   }

@@ -20,9 +20,10 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
   }
 
   "should be able to parse a solidity file to a json format file" in {
-    val sampleSolFile : String = ProjectRoot.relativise("joern-cli/frontends/solidity2cpg/src/test/resources/Reentrancy.sol")
+    val sampleSolFile: String =
+      ProjectRoot.relativise("joern-cli/frontends/solidity2cpg/src/test/resources/Reentrancy.sol")
     val json = new Solidity2Cpg().getSourcesFromDir(sampleSolFile)
-    
+
 //    println(json._1)
 //    println(json._2)
   }
@@ -36,87 +37,86 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
 //  }
 // }
 
+  // TODO: Write tests to spot check that important things are here in the AST ROOT
+  "should be able to decode a string JSON input to a root PragmaDirective" in {
+    import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
+    import io.joern.solidity2cpg.domain.SuryaObject._
+    val newRoot = code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
+    var counter = 0;
 
-   // TODO: Write tests to spot check that important things are here in the AST ROOT
- "should be able to decode a string JSON input to a root PragmaDirective" in {
-   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
-   import io.joern.solidity2cpg.domain.SuryaObject._
-   val newRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
-   var counter = 0;
+    while (counter < newRoot.elements.size) {
+      try {
+        val newPrag = newRoot.elements(counter);
+        val astRoot = Try(newPrag.convertTo[PragmaDirective]) match {
+          case Failure(e)               => fail(s"Unable to convert JSON to PragmaDirective due to an exception", e)
+          case Success(pragmaDirective) => pragmaDirective
+        }
+        counter += 1
+      } catch {
+        case _ => counter += 1
+      }
+    }
+  }
 
-   while (counter < newRoot.elements.size) {
-     try {
-       val newPrag = newRoot.elements(counter);
-         val astRoot = Try(newPrag.convertTo[PragmaDirective]) match {
-           case Failure(e)          => fail(s"Unable to convert JSON to PragmaDirective due to an exception", e)
-           case Success(pragmaDirective) => pragmaDirective
-         }
-       counter += 1
-     } catch {
-       case _ => counter += 1
-     }
-   }
- }
+  "should be able to decode a string JSON input to a root ImportDirective" in {
+    import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
+    import io.joern.solidity2cpg.domain.SuryaObject._
+    val newRoot = code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
+    var counter = 0;
 
- "should be able to decode a string JSON input to a root ImportDirective" in {
-   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
-   import io.joern.solidity2cpg.domain.SuryaObject._
-   val newRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
-   var counter = 0;
+    while (counter < newRoot.elements.size) {
+      try {
+        val newImport = newRoot.elements(counter);
+        val astRoot = Try(newImport.convertTo[ImportDirective]) match {
+          case Failure(e) => fail(s"Unable to convert JSON to ImportDirective due to an exception", e)
+          case Success(pragmaImportDirective) => pragmaImportDirective
+        }
+        counter += 1
+      } catch {
+        case _ => counter += 1
+      }
+    }
+  }
 
-   while (counter < newRoot.elements.size) {
-     try {
-       val newImport = newRoot.elements(counter);
-         val astRoot = Try(newImport.convertTo[ImportDirective]) match {
-           case Failure(e)          => fail(s"Unable to convert JSON to ImportDirective due to an exception", e)
-           case Success(pragmaImportDirective) => pragmaImportDirective
-         }
-       counter += 1
-     } catch {
-       case _ => counter += 1
-     }
-   }
- }
+  "should be able to decode a string JSON input to a root InheritanceSpecifier" in {
+    import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
+    import io.joern.solidity2cpg.domain.SuryaObject._
+    val oldRoot = code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
+    val newRoot = oldRoot.elements(3).convertTo[JsObject].fields("baseContracts").convertTo[JsArray]
+    var counter = 0
+    while (counter < newRoot.elements.size) {
+      try {
+        val newInheritanceSpecifier = newRoot.elements(counter);
+        val astRoot = Try(newInheritanceSpecifier.convertTo[InheritanceSpecifier]) match {
+          case Failure(e) => fail(s"Unable to convert JSON to ImportDirective due to an exception", e)
+          case Success(inheritanceSpecifier) => inheritanceSpecifier
+        }
+        counter += 1
+      } catch {
+        case _ => counter += 1
+      }
+    }
+  }
 
- "should be able to decode a string JSON input to a root InheritanceSpecifier" in {
-   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
-   import io.joern.solidity2cpg.domain.SuryaObject._
-   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
-   val newRoot = oldRoot.elements(3).convertTo[JsObject].fields("baseContracts").convertTo[JsArray]
-   var counter = 0
-   while (counter < newRoot.elements.size) {
-     try {
-       val newInheritanceSpecifier = newRoot.elements(counter);
-         val astRoot = Try(newInheritanceSpecifier.convertTo[InheritanceSpecifier]) match {
-           case Failure(e)          => fail(s"Unable to convert JSON to ImportDirective due to an exception", e)
-           case Success(inheritanceSpecifier) => inheritanceSpecifier
-         }
-       counter += 1
-     } catch {
-       case _ => counter += 1
-     }
-   }
- }
-
- "should be able to decode a string JSON input to a root ModifierDefinition" in {
-   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
-   import io.joern.solidity2cpg.domain.SuryaObject._
-   val oldRoot =  code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
-   val newRoot = oldRoot.elements(3).convertTo[JsObject].fields("subNodes").convertTo[JsArray]
-   var counter = 0
-   while (counter < newRoot.elements.size) {
-     try {
-       val newModifierDefinition = newRoot.elements(counter);
-         val astRoot = Try(newModifierDefinition.convertTo[ModifierDefinition]) match {
-           case Failure(e)          => fail(s"Unable to convert JSON to ModifierDefinition due to an exception", e)
-           case Success(modifierDefinition) => modifierDefinition
-         }
-       counter += 1
-     } catch {
-       case _ => counter += 1
-     }
-   }
- }
+  "should be able to decode a string JSON input to a root ModifierDefinition" in {
+    import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
+    import io.joern.solidity2cpg.domain.SuryaObject._
+    val oldRoot = code.parseJson.convertTo[JsObject].fields("children").convertTo[JsArray];
+    val newRoot = oldRoot.elements(3).convertTo[JsObject].fields("subNodes").convertTo[JsArray]
+    var counter = 0
+    while (counter < newRoot.elements.size) {
+      try {
+        val newModifierDefinition = newRoot.elements(counter);
+        val astRoot = Try(newModifierDefinition.convertTo[ModifierDefinition]) match {
+          case Failure(e) => fail(s"Unable to convert JSON to ModifierDefinition due to an exception", e)
+          case Success(modifierDefinition) => modifierDefinition
+        }
+        counter += 1
+      } catch {
+        case _ => counter += 1
+      }
+    }
+  }
 
 // "should be able to decode a string JSON input to a root VariableDeclaration" in {
 //   import io.joern.solidity2cpg.domain.SuryaJsonProtocol._
@@ -142,4 +142,3 @@ class SuryaJsonProtocolTests extends AnyWordSpec with Matchers with BeforeAndAft
 // }
 
 }
-

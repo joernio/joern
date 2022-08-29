@@ -58,7 +58,7 @@ class TypeDeclTests extends SolidityCodeToCpgFixture {
     x.filename should (
       startWith(File.separator) or // Unix
         startWith regex "[A-Z]:"   // Windows
-      )
+    )
     x.filename.endsWith(".sol") shouldBe true
   }
 
