@@ -1,19 +1,19 @@
 package io.joern.kotlin2cpg.types
 
+import io.joern.x2cpg.Defines
 import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, SimpleFunctionDescriptor}
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, TypeUtils, UnresolvedType}
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
 import org.jetbrains.kotlin.types.typeUtil.TypeUtilsKt
-
 import org.jetbrains.kotlin.resolve.jvm.JvmPrimitiveType
 
 import scala.jdk.CollectionConverters._
 
 object TypeRenderer {
 
-  private val cpgUnresolvedType = ErrorUtils.createUnresolvedType(TypeConstants.cpgUnresolved, List().asJava)
+  private val cpgUnresolvedType = ErrorUtils.createUnresolvedType(Defines.UnresolvedNamespace, List().asJava)
 
   val primitiveArrayMappings = Map[String, String](
     "kotlin.BooleanArray" -> "boolean[]",
