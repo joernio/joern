@@ -1,4 +1,6 @@
 import scala.sys.process._
+import scala.util.Properties.isWin
+
 name := "php2cpg"
 
 scalaVersion       := "2.13.8"
@@ -23,7 +25,11 @@ lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Compos
 phpParseInstallTask := {
   val phpParseBinary = baseDirectory.value / "vendor" / "nikic" / "php-parser" / "bin" / "php-parse"
   if (!phpParseBinary.exists) {
-    val installSciptPath = (baseDirectory.value / "installdeps.sh").getPath
+    val installSciptPath =
+      if (isWin)
+        (baseDirectory.value / "installdeps.bat").getPath
+      else
+        (baseDirectory.value / "installdeps.sh").getPath
     Process(installSciptPath, baseDirectory.value) !
   }
 }
