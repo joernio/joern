@@ -1,0 +1,4414 @@
+{
+  "type": "SourceUnit",
+  "children": [
+    {
+      "type": "PragmaDirective",
+      "name": "solidity",
+      "value": "^0.8.0"
+    },
+    {
+      "type": "ImportDirective",
+      "path": "./StorageOrg.sol",
+      "unitAlias": null,
+      "unitAliasIdentifier": null,
+      "symbolAliases": null,
+      "symbolAliasesIdentifiers": null
+    },
+    {
+      "type": "ImportDirective",
+      "path": "@openzeppelin/contracts/proxy/utils/Initializable.sol",
+      "unitAlias": null,
+      "unitAliasIdentifier": null,
+      "symbolAliases": null,
+      "symbolAliasesIdentifiers": null
+    },
+    {
+      "type": "ContractDefinition",
+      "name": "Organisation",
+      "baseContracts": [
+        {
+          "type": "InheritanceSpecifier",
+          "baseName": {
+            "type": "UserDefinedTypeName",
+            "namePath": "OrgStorage"
+          },
+          "arguments": []
+        },
+        {
+          "type": "InheritanceSpecifier",
+          "baseName": {
+            "type": "UserDefinedTypeName",
+            "namePath": "Initializable"
+          },
+          "arguments": []
+        }
+      ],
+      "subNodes": [
+        {
+          "type": "ModifierDefinition",
+          "name": "onlyRole",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "bytes32",
+                "stateMutability": null
+              },
+              "name": "roleTicker",
+              "identifier": {
+                "type": "Identifier",
+                "name": "roleTicker"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "account",
+              "identifier": {
+                "type": "Identifier",
+                "name": "account"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "role"
+                    },
+                    "memberName": "checkRole"
+                  },
+                  "arguments": [
+                    {
+                      "type": "Identifier",
+                      "name": "roleTicker"
+                    },
+                    {
+                      "type": "Identifier",
+                      "name": "account"
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "Identifier",
+                  "name": "_"
+                }
+              }
+            ]
+          },
+          "isVirtual": false,
+          "override": null
+        },
+        {
+          "type": "ModifierDefinition",
+          "name": "hasBeenCreated",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "string",
+                "stateMutability": null
+              },
+              "name": "name",
+              "identifier": {
+                "type": "Identifier",
+                "name": "name"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "require"
+                  },
+                  "arguments": [
+                    {
+                      "type": "BinaryOperation",
+                      "operator": "==",
+                      "left": {
+                        "type": "MemberAccess",
+                        "expression": {
+                          "type": "IndexAccess",
+                          "base": {
+                            "type": "Identifier",
+                            "name": "departmentMap"
+                          },
+                          "index": {
+                            "type": "Identifier",
+                            "name": "name"
+                          }
+                        },
+                        "memberName": "departmentContract"
+                      },
+                      "right": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "TypeNameExpression",
+                          "typeName": {
+                            "type": "ElementaryTypeName",
+                            "name": "address",
+                            "stateMutability": null
+                          }
+                        },
+                        "arguments": [
+                          {
+                            "type": "NumberLiteral",
+                            "number": "0",
+                            "subdenomination": null
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    },
+                    {
+                      "type": "StringLiteral",
+                      "value": "department has been created already",
+                      "parts": [
+                        "department has been created already"
+                      ],
+                      "isUnicode": [
+                        false
+                      ]
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "Identifier",
+                  "name": "_"
+                }
+              }
+            ]
+          },
+          "isVirtual": false,
+          "override": null
+        },
+        {
+          "type": "EventDefinition",
+          "name": "CEOGranted",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "bytes32",
+                "stateMutability": null
+              },
+              "name": "CEO",
+              "identifier": {
+                "type": "Identifier",
+                "name": "CEO"
+              },
+              "isStateVar": false,
+              "isIndexed": false,
+              "storageLocation": null,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "bytes32",
+                "stateMutability": null
+              },
+              "name": "CTO",
+              "identifier": {
+                "type": "Identifier",
+                "name": "CTO"
+              },
+              "isStateVar": false,
+              "isIndexed": false,
+              "storageLocation": null,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "bytes32",
+                "stateMutability": null
+              },
+              "name": "CFO",
+              "identifier": {
+                "type": "Identifier",
+                "name": "CFO"
+              },
+              "isStateVar": false,
+              "isIndexed": false,
+              "storageLocation": null,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "bytes32",
+                "stateMutability": null
+              },
+              "name": "HOD",
+              "identifier": {
+                "type": "Identifier",
+                "name": "HOD"
+              },
+              "isStateVar": false,
+              "isIndexed": false,
+              "storageLocation": null,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "CEOaddress",
+              "identifier": {
+                "type": "Identifier",
+                "name": "CEOaddress"
+              },
+              "isStateVar": false,
+              "isIndexed": false,
+              "storageLocation": null,
+              "expression": null
+            }
+          ],
+          "isAnonymous": false
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "__orgs__init",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "_addressCEO",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_addressCEO"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "_roleAddress",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_roleAddress"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "_scout",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_scout"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "MemberAccess",
+                      "expression": {
+                        "type": "Identifier",
+                        "name": "OrgStorage"
+                      },
+                      "memberName": "_addressOrgStorage"
+                    },
+                    "index": {
+                      "type": "StringLiteral",
+                      "value": "CEO",
+                      "parts": [
+                        "CEO"
+                      ],
+                      "isUnicode": [
+                        false
+                      ]
+                    }
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "name": "_addressCEO"
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "MemberAccess",
+                      "expression": {
+                        "type": "Identifier",
+                        "name": "OrgStorage"
+                      },
+                      "memberName": "_addressOrgStorage"
+                    },
+                    "index": {
+                      "type": "StringLiteral",
+                      "value": "Role",
+                      "parts": [
+                        "Role"
+                      ],
+                      "isUnicode": [
+                        false
+                      ]
+                    }
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "name": "_roleAddress"
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "OrgStorage"
+                    },
+                    "memberName": "role"
+                  },
+                  "right": {
+                    "type": "FunctionCall",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "Roles"
+                    },
+                    "arguments": [
+                      {
+                        "type": "IndexAccess",
+                        "base": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "OrgStorage"
+                          },
+                          "memberName": "_addressOrgStorage"
+                        },
+                        "index": {
+                          "type": "StringLiteral",
+                          "value": "Role",
+                          "parts": [
+                            "Role"
+                          ],
+                          "isUnicode": [
+                            false
+                          ]
+                        }
+                      }
+                    ],
+                    "names": [],
+                    "identifiers": []
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "grantCEO"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "grantOwner"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "Identifier",
+                    "name": "scout"
+                  },
+                  "right": {
+                    "type": "FunctionCall",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "SCOUTCOIN"
+                    },
+                    "arguments": [
+                      {
+                        "type": "Identifier",
+                        "name": "_scout"
+                      }
+                    ],
+                    "names": [],
+                    "identifiers": []
+                  }
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "initializer",
+              "arguments": null
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "grantCEO",
+          "parameters": [],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "MemberAccess",
+                      "expression": {
+                        "type": "Identifier",
+                        "name": "OrgStorage"
+                      },
+                      "memberName": "role"
+                    },
+                    "memberName": "grantAllCEO"
+                  },
+                  "arguments": [
+                    {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "MemberAccess",
+                        "expression": {
+                          "type": "Identifier",
+                          "name": "OrgStorage"
+                        },
+                        "memberName": "_addressOrgStorage"
+                      },
+                      "index": {
+                        "type": "StringLiteral",
+                        "value": "CEO",
+                        "parts": [
+                          "CEO"
+                        ],
+                        "isUnicode": [
+                          false
+                        ]
+                      }
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "EmitStatement",
+                "eventCall": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "CEOGranted"
+                  },
+                  "arguments": [
+                    {
+                      "type": "Identifier",
+                      "name": "CEO"
+                    },
+                    {
+                      "type": "Identifier",
+                      "name": "CTO"
+                    },
+                    {
+                      "type": "Identifier",
+                      "name": "CFO"
+                    },
+                    {
+                      "type": "Identifier",
+                      "name": "HOD"
+                    },
+                    {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "MemberAccess",
+                        "expression": {
+                          "type": "Identifier",
+                          "name": "OrgStorage"
+                        },
+                        "memberName": "_addressOrgStorage"
+                      },
+                      "index": {
+                        "type": "StringLiteral",
+                        "value": "CEO",
+                        "parts": [
+                          "CEO"
+                        ],
+                        "isUnicode": [
+                          false
+                        ]
+                      }
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              }
+            ]
+          },
+          "visibility": "private",
+          "modifiers": [],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "grantChangeCEO",
+          "parameters": [],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "role"
+                    },
+                    "memberName": "changeCEO"
+                  },
+                  "arguments": [
+                    {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "Identifier",
+                        "name": "_addressOrgStorage"
+                      },
+                      "index": {
+                        "type": "StringLiteral",
+                        "value": "CEO",
+                        "parts": [
+                          "CEO"
+                        ],
+                        "isUnicode": [
+                          false
+                        ]
+                      }
+                    },
+                    {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "Identifier",
+                        "name": "_addressOrgStorage"
+                      },
+                      "index": {
+                        "type": "StringLiteral",
+                        "value": "oldCEO",
+                        "parts": [
+                          "oldCEO"
+                        ],
+                        "isUnicode": [
+                          false
+                        ]
+                      }
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "grantOwner",
+          "parameters": [],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "MemberAccess",
+                      "expression": {
+                        "type": "Identifier",
+                        "name": "OrgStorage"
+                      },
+                      "memberName": "role"
+                    },
+                    "memberName": "grantAllOwner"
+                  },
+                  "arguments": [
+                    {
+                      "type": "FunctionCall",
+                      "expression": {
+                        "type": "Identifier",
+                        "name": "owner"
+                      },
+                      "arguments": [],
+                      "names": [],
+                      "identifiers": []
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              }
+            ]
+          },
+          "visibility": "private",
+          "modifiers": [],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "changeCEO",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "newCEO",
+              "identifier": {
+                "type": "Identifier",
+                "name": "newCEO"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "_addressOrgStorage"
+                    },
+                    "index": {
+                      "type": "StringLiteral",
+                      "value": "oldCEO",
+                      "parts": [
+                        "oldCEO"
+                      ],
+                      "isUnicode": [
+                        false
+                      ]
+                    }
+                  },
+                  "right": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "_addressOrgStorage"
+                    },
+                    "index": {
+                      "type": "StringLiteral",
+                      "value": "CEO",
+                      "parts": [
+                        "CEO"
+                      ],
+                      "isUnicode": [
+                        false
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "_addressOrgStorage"
+                    },
+                    "index": {
+                      "type": "StringLiteral",
+                      "value": "CEO",
+                      "parts": [
+                        "CEO"
+                      ],
+                      "isUnicode": [
+                        false
+                      ]
+                    }
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "name": "newCEO"
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "grantChangeCEO"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "assert"
+                  },
+                  "arguments": [
+                    {
+                      "type": "BinaryOperation",
+                      "operator": "==",
+                      "left": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "role"
+                          },
+                          "memberName": "checkCEO"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "newCEO"
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      },
+                      "right": {
+                        "type": "BooleanLiteral",
+                        "value": true
+                      }
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "onlyOwner",
+              "arguments": null
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "grantCTOs",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ArrayTypeName",
+                "baseTypeName": {
+                  "type": "ElementaryTypeName",
+                  "name": "address",
+                  "stateMutability": null
+                },
+                "length": null
+              },
+              "name": "_newCTOs",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_newCTOs"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ForStatement",
+                "initExpression": {
+                  "type": "VariableDeclarationStatement",
+                  "variables": [
+                    {
+                      "type": "VariableDeclaration",
+                      "typeName": {
+                        "type": "ElementaryTypeName",
+                        "name": "uint",
+                        "stateMutability": null
+                      },
+                      "name": "i",
+                      "identifier": {
+                        "type": "Identifier",
+                        "name": "i"
+                      },
+                      "storageLocation": null,
+                      "isStateVar": false,
+                      "isIndexed": false,
+                      "expression": null
+                    }
+                  ],
+                  "initialValue": {
+                    "type": "NumberLiteral",
+                    "number": "0",
+                    "subdenomination": null
+                  }
+                },
+                "conditionExpression": {
+                  "type": "BinaryOperation",
+                  "operator": "<",
+                  "left": {
+                    "type": "Identifier",
+                    "name": "i"
+                  },
+                  "right": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "_newCTOs"
+                    },
+                    "memberName": "length"
+                  }
+                },
+                "loopExpression": {
+                  "type": "ExpressionStatement",
+                  "expression": {
+                    "type": "UnaryOperation",
+                    "operator": "++",
+                    "subExpression": {
+                      "type": "Identifier",
+                      "name": "i"
+                    },
+                    "isPrefix": false
+                  }
+                },
+                "body": {
+                  "type": "Block",
+                  "statements": [
+                    {
+                      "type": "IfStatement",
+                      "condition": {
+                        "type": "BinaryOperation",
+                        "operator": "==",
+                        "left": {
+                          "type": "FunctionCall",
+                          "expression": {
+                            "type": "MemberAccess",
+                            "expression": {
+                              "type": "Identifier",
+                              "name": "role"
+                            },
+                            "memberName": "checkCTO"
+                          },
+                          "arguments": [
+                            {
+                              "type": "IndexAccess",
+                              "base": {
+                                "type": "Identifier",
+                                "name": "_newCTOs"
+                              },
+                              "index": {
+                                "type": "Identifier",
+                                "name": "i"
+                              }
+                            }
+                          ],
+                          "names": [],
+                          "identifiers": []
+                        },
+                        "right": {
+                          "type": "BooleanLiteral",
+                          "value": false
+                        }
+                      },
+                      "trueBody": {
+                        "type": "Block",
+                        "statements": [
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "MemberAccess",
+                                "expression": {
+                                  "type": "Identifier",
+                                  "name": "role"
+                                },
+                                "memberName": "grantRole"
+                              },
+                              "arguments": [
+                                {
+                                  "type": "Identifier",
+                                  "name": "CTO"
+                                },
+                                {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "_newCTOs"
+                                  },
+                                  "index": {
+                                    "type": "Identifier",
+                                    "name": "i"
+                                  }
+                                }
+                              ],
+                              "names": [],
+                              "identifiers": []
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "MemberAccess",
+                                "expression": {
+                                  "type": "Identifier",
+                                  "name": "role"
+                                },
+                                "memberName": "grantRole"
+                              },
+                              "arguments": [
+                                {
+                                  "type": "Identifier",
+                                  "name": "HOD"
+                                },
+                                {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "_newCTOs"
+                                  },
+                                  "index": {
+                                    "type": "Identifier",
+                                    "name": "i"
+                                  }
+                                }
+                              ],
+                              "names": [],
+                              "identifiers": []
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "Identifier",
+                                "name": "assert"
+                              },
+                              "arguments": [
+                                {
+                                  "type": "BinaryOperation",
+                                  "operator": "==",
+                                  "left": {
+                                    "type": "FunctionCall",
+                                    "expression": {
+                                      "type": "MemberAccess",
+                                      "expression": {
+                                        "type": "Identifier",
+                                        "name": "role"
+                                      },
+                                      "memberName": "checkCTO"
+                                    },
+                                    "arguments": [
+                                      {
+                                        "type": "IndexAccess",
+                                        "base": {
+                                          "type": "Identifier",
+                                          "name": "_newCTOs"
+                                        },
+                                        "index": {
+                                          "type": "Identifier",
+                                          "name": "i"
+                                        }
+                                      }
+                                    ],
+                                    "names": [],
+                                    "identifiers": []
+                                  },
+                                  "right": {
+                                    "type": "BooleanLiteral",
+                                    "value": true
+                                  }
+                                }
+                              ],
+                              "names": [],
+                              "identifiers": []
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "Identifier",
+                                "name": "assert"
+                              },
+                              "arguments": [
+                                {
+                                  "type": "BinaryOperation",
+                                  "operator": "==",
+                                  "left": {
+                                    "type": "FunctionCall",
+                                    "expression": {
+                                      "type": "MemberAccess",
+                                      "expression": {
+                                        "type": "Identifier",
+                                        "name": "role"
+                                      },
+                                      "memberName": "checkHOD"
+                                    },
+                                    "arguments": [
+                                      {
+                                        "type": "IndexAccess",
+                                        "base": {
+                                          "type": "Identifier",
+                                          "name": "_newCTOs"
+                                        },
+                                        "index": {
+                                          "type": "Identifier",
+                                          "name": "i"
+                                        }
+                                      }
+                                    ],
+                                    "names": [],
+                                    "identifiers": []
+                                  },
+                                  "right": {
+                                    "type": "BooleanLiteral",
+                                    "value": true
+                                  }
+                                }
+                              ],
+                              "names": [],
+                              "identifiers": []
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "MemberAccess",
+                                "expression": {
+                                  "type": "Identifier",
+                                  "name": "ctoArray"
+                                },
+                                "memberName": "push"
+                              },
+                              "arguments": [
+                                {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "_newCTOs"
+                                  },
+                                  "index": {
+                                    "type": "Identifier",
+                                    "name": "i"
+                                  }
+                                }
+                              ],
+                              "names": [],
+                              "identifiers": []
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "BinaryOperation",
+                              "operator": "=",
+                              "left": {
+                                "type": "IndexAccess",
+                                "base": {
+                                  "type": "Identifier",
+                                  "name": "ctoToken"
+                                },
+                                "index": {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "_newCTOs"
+                                  },
+                                  "index": {
+                                    "type": "Identifier",
+                                    "name": "i"
+                                  }
+                                }
+                              },
+                              "right": {
+                                "type": "Identifier",
+                                "name": "ctoCounter"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "UnaryOperation",
+                              "operator": "++",
+                              "subExpression": {
+                                "type": "Identifier",
+                                "name": "ctoCounter"
+                              },
+                              "isPrefix": false
+                            }
+                          }
+                        ]
+                      },
+                      "falseBody": {
+                        "type": "Block",
+                        "statements": [
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "Identifier",
+                                "name": "require"
+                              },
+                              "arguments": [
+                                {
+                                  "type": "BinaryOperation",
+                                  "operator": "==",
+                                  "left": {
+                                    "type": "FunctionCall",
+                                    "expression": {
+                                      "type": "MemberAccess",
+                                      "expression": {
+                                        "type": "Identifier",
+                                        "name": "role"
+                                      },
+                                      "memberName": "checkCTO"
+                                    },
+                                    "arguments": [
+                                      {
+                                        "type": "IndexAccess",
+                                        "base": {
+                                          "type": "Identifier",
+                                          "name": "_newCTOs"
+                                        },
+                                        "index": {
+                                          "type": "Identifier",
+                                          "name": "i"
+                                        }
+                                      }
+                                    ],
+                                    "names": [],
+                                    "identifiers": []
+                                  },
+                                  "right": {
+                                    "type": "BooleanLiteral",
+                                    "value": true
+                                  }
+                                },
+                                {
+                                  "type": "StringLiteral",
+                                  "value": "address already CTO",
+                                  "parts": [
+                                    "address already CTO"
+                                  ],
+                                  "isUnicode": [
+                                    false
+                                  ]
+                                }
+                              ],
+                              "names": [],
+                              "identifiers": []
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "CEO"
+                },
+                {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              ]
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "removeCTOs",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ArrayTypeName",
+                "baseTypeName": {
+                  "type": "ElementaryTypeName",
+                  "name": "address",
+                  "stateMutability": null
+                },
+                "length": null
+              },
+              "name": "_removeCTOs",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_removeCTOs"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ForStatement",
+                "initExpression": {
+                  "type": "VariableDeclarationStatement",
+                  "variables": [
+                    {
+                      "type": "VariableDeclaration",
+                      "typeName": {
+                        "type": "ElementaryTypeName",
+                        "name": "uint",
+                        "stateMutability": null
+                      },
+                      "name": "i",
+                      "identifier": {
+                        "type": "Identifier",
+                        "name": "i"
+                      },
+                      "storageLocation": null,
+                      "isStateVar": false,
+                      "isIndexed": false,
+                      "expression": null
+                    }
+                  ],
+                  "initialValue": {
+                    "type": "NumberLiteral",
+                    "number": "0",
+                    "subdenomination": null
+                  }
+                },
+                "conditionExpression": {
+                  "type": "BinaryOperation",
+                  "operator": "<",
+                  "left": {
+                    "type": "Identifier",
+                    "name": "i"
+                  },
+                  "right": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "_removeCTOs"
+                    },
+                    "memberName": "length"
+                  }
+                },
+                "loopExpression": {
+                  "type": "ExpressionStatement",
+                  "expression": {
+                    "type": "UnaryOperation",
+                    "operator": "++",
+                    "subExpression": {
+                      "type": "Identifier",
+                      "name": "i"
+                    },
+                    "isPrefix": false
+                  }
+                },
+                "body": {
+                  "type": "Block",
+                  "statements": [
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "role"
+                          },
+                          "memberName": "revokeRole"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "CTO"
+                          },
+                          {
+                            "type": "IndexAccess",
+                            "base": {
+                              "type": "Identifier",
+                              "name": "_removeCTOs"
+                            },
+                            "index": {
+                              "type": "Identifier",
+                              "name": "i"
+                            }
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    },
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "role"
+                          },
+                          "memberName": "revokeRole"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "HOD"
+                          },
+                          {
+                            "type": "IndexAccess",
+                            "base": {
+                              "type": "Identifier",
+                              "name": "_removeCTOs"
+                            },
+                            "index": {
+                              "type": "Identifier",
+                              "name": "i"
+                            }
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    },
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "Identifier",
+                          "name": "assert"
+                        },
+                        "arguments": [
+                          {
+                            "type": "BinaryOperation",
+                            "operator": "==",
+                            "left": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "MemberAccess",
+                                "expression": {
+                                  "type": "Identifier",
+                                  "name": "role"
+                                },
+                                "memberName": "checkCTO"
+                              },
+                              "arguments": [
+                                {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "_removeCTOs"
+                                  },
+                                  "index": {
+                                    "type": "Identifier",
+                                    "name": "i"
+                                  }
+                                }
+                              ],
+                              "names": [],
+                              "identifiers": []
+                            },
+                            "right": {
+                              "type": "BooleanLiteral",
+                              "value": false
+                            }
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    },
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "Identifier",
+                          "name": "assert"
+                        },
+                        "arguments": [
+                          {
+                            "type": "BinaryOperation",
+                            "operator": "==",
+                            "left": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "MemberAccess",
+                                "expression": {
+                                  "type": "Identifier",
+                                  "name": "role"
+                                },
+                                "memberName": "checkHOD"
+                              },
+                              "arguments": [
+                                {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "_removeCTOs"
+                                  },
+                                  "index": {
+                                    "type": "Identifier",
+                                    "name": "i"
+                                  }
+                                }
+                              ],
+                              "names": [],
+                              "identifiers": []
+                            },
+                            "right": {
+                              "type": "BooleanLiteral",
+                              "value": false
+                            }
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    },
+                    {
+                      "type": "IfStatement",
+                      "condition": {
+                        "type": "BinaryOperation",
+                        "operator": "==",
+                        "left": {
+                          "type": "IndexAccess",
+                          "base": {
+                            "type": "Identifier",
+                            "name": "ctoToken"
+                          },
+                          "index": {
+                            "type": "IndexAccess",
+                            "base": {
+                              "type": "Identifier",
+                              "name": "_removeCTOs"
+                            },
+                            "index": {
+                              "type": "Identifier",
+                              "name": "i"
+                            }
+                          }
+                        },
+                        "right": {
+                          "type": "BinaryOperation",
+                          "operator": "-",
+                          "left": {
+                            "type": "Identifier",
+                            "name": "ctoCounter"
+                          },
+                          "right": {
+                            "type": "NumberLiteral",
+                            "number": "1",
+                            "subdenomination": null
+                          }
+                        }
+                      },
+                      "trueBody": {
+                        "type": "Block",
+                        "statements": [
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "MemberAccess",
+                                "expression": {
+                                  "type": "Identifier",
+                                  "name": "ctoArray"
+                                },
+                                "memberName": "pop"
+                              },
+                              "arguments": [],
+                              "names": [],
+                              "identifiers": []
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "UnaryOperation",
+                              "operator": "--",
+                              "subExpression": {
+                                "type": "Identifier",
+                                "name": "ctoCounter"
+                              },
+                              "isPrefix": false
+                            }
+                          }
+                        ]
+                      },
+                      "falseBody": {
+                        "type": "Block",
+                        "statements": [
+                          {
+                            "type": "VariableDeclarationStatement",
+                            "variables": [
+                              {
+                                "type": "VariableDeclaration",
+                                "typeName": {
+                                  "type": "ElementaryTypeName",
+                                  "name": "address",
+                                  "stateMutability": null
+                                },
+                                "name": "temp",
+                                "identifier": {
+                                  "type": "Identifier",
+                                  "name": "temp"
+                                },
+                                "storageLocation": null,
+                                "isStateVar": false,
+                                "isIndexed": false,
+                                "expression": null
+                              }
+                            ],
+                            "initialValue": {
+                              "type": "IndexAccess",
+                              "base": {
+                                "type": "Identifier",
+                                "name": "ctoArray"
+                              },
+                              "index": {
+                                "type": "BinaryOperation",
+                                "operator": "-",
+                                "left": {
+                                  "type": "Identifier",
+                                  "name": "ctoCounter"
+                                },
+                                "right": {
+                                  "type": "NumberLiteral",
+                                  "number": "1",
+                                  "subdenomination": null
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "BinaryOperation",
+                              "operator": "=",
+                              "left": {
+                                "type": "IndexAccess",
+                                "base": {
+                                  "type": "Identifier",
+                                  "name": "ctoToken"
+                                },
+                                "index": {
+                                  "type": "Identifier",
+                                  "name": "temp"
+                                }
+                              },
+                              "right": {
+                                "type": "IndexAccess",
+                                "base": {
+                                  "type": "Identifier",
+                                  "name": "ctoToken"
+                                },
+                                "index": {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "_removeCTOs"
+                                  },
+                                  "index": {
+                                    "type": "Identifier",
+                                    "name": "i"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "BinaryOperation",
+                              "operator": "=",
+                              "left": {
+                                "type": "IndexAccess",
+                                "base": {
+                                  "type": "Identifier",
+                                  "name": "ctoArray"
+                                },
+                                "index": {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "ctoToken"
+                                  },
+                                  "index": {
+                                    "type": "IndexAccess",
+                                    "base": {
+                                      "type": "Identifier",
+                                      "name": "_removeCTOs"
+                                    },
+                                    "index": {
+                                      "type": "Identifier",
+                                      "name": "i"
+                                    }
+                                  }
+                                }
+                              },
+                              "right": {
+                                "type": "Identifier",
+                                "name": "temp"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "MemberAccess",
+                                "expression": {
+                                  "type": "Identifier",
+                                  "name": "ctoArray"
+                                },
+                                "memberName": "pop"
+                              },
+                              "arguments": [],
+                              "names": [],
+                              "identifiers": []
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "UnaryOperation",
+                              "operator": "--",
+                              "subExpression": {
+                                "type": "Identifier",
+                                "name": "ctoCounter"
+                              },
+                              "isPrefix": false
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "CEO"
+                },
+                {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              ]
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "grantCFOs",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ArrayTypeName",
+                "baseTypeName": {
+                  "type": "ElementaryTypeName",
+                  "name": "address",
+                  "stateMutability": null
+                },
+                "length": null
+              },
+              "name": "_newCFOs",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_newCFOs"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ForStatement",
+                "initExpression": {
+                  "type": "VariableDeclarationStatement",
+                  "variables": [
+                    {
+                      "type": "VariableDeclaration",
+                      "typeName": {
+                        "type": "ElementaryTypeName",
+                        "name": "uint",
+                        "stateMutability": null
+                      },
+                      "name": "i",
+                      "identifier": {
+                        "type": "Identifier",
+                        "name": "i"
+                      },
+                      "storageLocation": null,
+                      "isStateVar": false,
+                      "isIndexed": false,
+                      "expression": null
+                    }
+                  ],
+                  "initialValue": {
+                    "type": "NumberLiteral",
+                    "number": "0",
+                    "subdenomination": null
+                  }
+                },
+                "conditionExpression": {
+                  "type": "BinaryOperation",
+                  "operator": "<",
+                  "left": {
+                    "type": "Identifier",
+                    "name": "i"
+                  },
+                  "right": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "_newCFOs"
+                    },
+                    "memberName": "length"
+                  }
+                },
+                "loopExpression": {
+                  "type": "ExpressionStatement",
+                  "expression": {
+                    "type": "UnaryOperation",
+                    "operator": "++",
+                    "subExpression": {
+                      "type": "Identifier",
+                      "name": "i"
+                    },
+                    "isPrefix": false
+                  }
+                },
+                "body": {
+                  "type": "Block",
+                  "statements": [
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "role"
+                          },
+                          "memberName": "grantRole"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "CFO"
+                          },
+                          {
+                            "type": "IndexAccess",
+                            "base": {
+                              "type": "Identifier",
+                              "name": "_newCFOs"
+                            },
+                            "index": {
+                              "type": "Identifier",
+                              "name": "i"
+                            }
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    },
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "Identifier",
+                          "name": "assert"
+                        },
+                        "arguments": [
+                          {
+                            "type": "BinaryOperation",
+                            "operator": "==",
+                            "left": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "MemberAccess",
+                                "expression": {
+                                  "type": "Identifier",
+                                  "name": "role"
+                                },
+                                "memberName": "checkCFO"
+                              },
+                              "arguments": [
+                                {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "_newCFOs"
+                                  },
+                                  "index": {
+                                    "type": "Identifier",
+                                    "name": "i"
+                                  }
+                                }
+                              ],
+                              "names": [],
+                              "identifiers": []
+                            },
+                            "right": {
+                              "type": "BooleanLiteral",
+                              "value": true
+                            }
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    },
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "cfoArray"
+                          },
+                          "memberName": "push"
+                        },
+                        "arguments": [
+                          {
+                            "type": "IndexAccess",
+                            "base": {
+                              "type": "Identifier",
+                              "name": "_newCFOs"
+                            },
+                            "index": {
+                              "type": "Identifier",
+                              "name": "i"
+                            }
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    },
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "BinaryOperation",
+                        "operator": "=",
+                        "left": {
+                          "type": "IndexAccess",
+                          "base": {
+                            "type": "Identifier",
+                            "name": "cfoToken"
+                          },
+                          "index": {
+                            "type": "IndexAccess",
+                            "base": {
+                              "type": "Identifier",
+                              "name": "_newCFOs"
+                            },
+                            "index": {
+                              "type": "Identifier",
+                              "name": "i"
+                            }
+                          }
+                        },
+                        "right": {
+                          "type": "Identifier",
+                          "name": "cfoCounter"
+                        }
+                      }
+                    },
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "UnaryOperation",
+                        "operator": "++",
+                        "subExpression": {
+                          "type": "Identifier",
+                          "name": "cfoCounter"
+                        },
+                        "isPrefix": false
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "CEO"
+                },
+                {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              ]
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "removeCFOs",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ArrayTypeName",
+                "baseTypeName": {
+                  "type": "ElementaryTypeName",
+                  "name": "address",
+                  "stateMutability": null
+                },
+                "length": null
+              },
+              "name": "_removeCFOs",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_removeCFOs"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ForStatement",
+                "initExpression": {
+                  "type": "VariableDeclarationStatement",
+                  "variables": [
+                    {
+                      "type": "VariableDeclaration",
+                      "typeName": {
+                        "type": "ElementaryTypeName",
+                        "name": "uint",
+                        "stateMutability": null
+                      },
+                      "name": "i",
+                      "identifier": {
+                        "type": "Identifier",
+                        "name": "i"
+                      },
+                      "storageLocation": null,
+                      "isStateVar": false,
+                      "isIndexed": false,
+                      "expression": null
+                    }
+                  ],
+                  "initialValue": {
+                    "type": "NumberLiteral",
+                    "number": "0",
+                    "subdenomination": null
+                  }
+                },
+                "conditionExpression": {
+                  "type": "BinaryOperation",
+                  "operator": "<",
+                  "left": {
+                    "type": "Identifier",
+                    "name": "i"
+                  },
+                  "right": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "_removeCFOs"
+                    },
+                    "memberName": "length"
+                  }
+                },
+                "loopExpression": {
+                  "type": "ExpressionStatement",
+                  "expression": {
+                    "type": "UnaryOperation",
+                    "operator": "++",
+                    "subExpression": {
+                      "type": "Identifier",
+                      "name": "i"
+                    },
+                    "isPrefix": false
+                  }
+                },
+                "body": {
+                  "type": "Block",
+                  "statements": [
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "role"
+                          },
+                          "memberName": "revokeRole"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "CFO"
+                          },
+                          {
+                            "type": "IndexAccess",
+                            "base": {
+                              "type": "Identifier",
+                              "name": "_removeCFOs"
+                            },
+                            "index": {
+                              "type": "Identifier",
+                              "name": "i"
+                            }
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    },
+                    {
+                      "type": "ExpressionStatement",
+                      "expression": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "Identifier",
+                          "name": "assert"
+                        },
+                        "arguments": [
+                          {
+                            "type": "BinaryOperation",
+                            "operator": "==",
+                            "left": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "MemberAccess",
+                                "expression": {
+                                  "type": "Identifier",
+                                  "name": "role"
+                                },
+                                "memberName": "checkCFO"
+                              },
+                              "arguments": [
+                                {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "_removeCFOs"
+                                  },
+                                  "index": {
+                                    "type": "Identifier",
+                                    "name": "i"
+                                  }
+                                }
+                              ],
+                              "names": [],
+                              "identifiers": []
+                            },
+                            "right": {
+                              "type": "BooleanLiteral",
+                              "value": false
+                            }
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    },
+                    {
+                      "type": "IfStatement",
+                      "condition": {
+                        "type": "BinaryOperation",
+                        "operator": "==",
+                        "left": {
+                          "type": "IndexAccess",
+                          "base": {
+                            "type": "Identifier",
+                            "name": "cfoToken"
+                          },
+                          "index": {
+                            "type": "IndexAccess",
+                            "base": {
+                              "type": "Identifier",
+                              "name": "_removeCFOs"
+                            },
+                            "index": {
+                              "type": "Identifier",
+                              "name": "i"
+                            }
+                          }
+                        },
+                        "right": {
+                          "type": "BinaryOperation",
+                          "operator": "-",
+                          "left": {
+                            "type": "Identifier",
+                            "name": "cfoCounter"
+                          },
+                          "right": {
+                            "type": "NumberLiteral",
+                            "number": "1",
+                            "subdenomination": null
+                          }
+                        }
+                      },
+                      "trueBody": {
+                        "type": "Block",
+                        "statements": [
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "MemberAccess",
+                                "expression": {
+                                  "type": "Identifier",
+                                  "name": "cfoArray"
+                                },
+                                "memberName": "pop"
+                              },
+                              "arguments": [],
+                              "names": [],
+                              "identifiers": []
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "UnaryOperation",
+                              "operator": "--",
+                              "subExpression": {
+                                "type": "Identifier",
+                                "name": "cfoCounter"
+                              },
+                              "isPrefix": false
+                            }
+                          }
+                        ]
+                      },
+                      "falseBody": {
+                        "type": "Block",
+                        "statements": [
+                          {
+                            "type": "VariableDeclarationStatement",
+                            "variables": [
+                              {
+                                "type": "VariableDeclaration",
+                                "typeName": {
+                                  "type": "ElementaryTypeName",
+                                  "name": "address",
+                                  "stateMutability": null
+                                },
+                                "name": "temp",
+                                "identifier": {
+                                  "type": "Identifier",
+                                  "name": "temp"
+                                },
+                                "storageLocation": null,
+                                "isStateVar": false,
+                                "isIndexed": false,
+                                "expression": null
+                              }
+                            ],
+                            "initialValue": {
+                              "type": "IndexAccess",
+                              "base": {
+                                "type": "Identifier",
+                                "name": "cfoArray"
+                              },
+                              "index": {
+                                "type": "BinaryOperation",
+                                "operator": "-",
+                                "left": {
+                                  "type": "Identifier",
+                                  "name": "cfoCounter"
+                                },
+                                "right": {
+                                  "type": "NumberLiteral",
+                                  "number": "1",
+                                  "subdenomination": null
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "BinaryOperation",
+                              "operator": "=",
+                              "left": {
+                                "type": "IndexAccess",
+                                "base": {
+                                  "type": "Identifier",
+                                  "name": "cfoToken"
+                                },
+                                "index": {
+                                  "type": "Identifier",
+                                  "name": "temp"
+                                }
+                              },
+                              "right": {
+                                "type": "IndexAccess",
+                                "base": {
+                                  "type": "Identifier",
+                                  "name": "cfoToken"
+                                },
+                                "index": {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "_removeCFOs"
+                                  },
+                                  "index": {
+                                    "type": "Identifier",
+                                    "name": "i"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "BinaryOperation",
+                              "operator": "=",
+                              "left": {
+                                "type": "IndexAccess",
+                                "base": {
+                                  "type": "Identifier",
+                                  "name": "cfoArray"
+                                },
+                                "index": {
+                                  "type": "IndexAccess",
+                                  "base": {
+                                    "type": "Identifier",
+                                    "name": "cfoToken"
+                                  },
+                                  "index": {
+                                    "type": "IndexAccess",
+                                    "base": {
+                                      "type": "Identifier",
+                                      "name": "_removeCFOs"
+                                    },
+                                    "index": {
+                                      "type": "Identifier",
+                                      "name": "i"
+                                    }
+                                  }
+                                }
+                              },
+                              "right": {
+                                "type": "Identifier",
+                                "name": "temp"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "FunctionCall",
+                              "expression": {
+                                "type": "MemberAccess",
+                                "expression": {
+                                  "type": "Identifier",
+                                  "name": "cfoArray"
+                                },
+                                "memberName": "pop"
+                              },
+                              "arguments": [],
+                              "names": [],
+                              "identifiers": []
+                            }
+                          },
+                          {
+                            "type": "ExpressionStatement",
+                            "expression": {
+                              "type": "UnaryOperation",
+                              "operator": "--",
+                              "subExpression": {
+                                "type": "Identifier",
+                                "name": "cfoCounter"
+                              },
+                              "isPrefix": false
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "CEO"
+                },
+                {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              ]
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "changeHOD",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "_newHOD",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_newHOD"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "string",
+                "stateMutability": null
+              },
+              "name": "deptName",
+              "identifier": {
+                "type": "Identifier",
+                "name": "deptName"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "role"
+                    },
+                    "memberName": "revokeRole"
+                  },
+                  "arguments": [
+                    {
+                      "type": "Identifier",
+                      "name": "HOD"
+                    },
+                    {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "Identifier",
+                        "name": "_departmentHOD"
+                      },
+                      "index": {
+                        "type": "Identifier",
+                        "name": "deptName"
+                      }
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "assert"
+                  },
+                  "arguments": [
+                    {
+                      "type": "BinaryOperation",
+                      "operator": "==",
+                      "left": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "role"
+                          },
+                          "memberName": "checkHOD"
+                        },
+                        "arguments": [
+                          {
+                            "type": "IndexAccess",
+                            "base": {
+                              "type": "Identifier",
+                              "name": "_departmentHOD"
+                            },
+                            "index": {
+                              "type": "Identifier",
+                              "name": "deptName"
+                            }
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      },
+                      "right": {
+                        "type": "BooleanLiteral",
+                        "value": false
+                      }
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "_HODtoDept"
+                    },
+                    "index": {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "Identifier",
+                        "name": "_departmentHOD"
+                      },
+                      "index": {
+                        "type": "Identifier",
+                        "name": "deptName"
+                      }
+                    }
+                  },
+                  "right": {
+                    "type": "StringLiteral",
+                    "value": "",
+                    "parts": [
+                      ""
+                    ],
+                    "isUnicode": [
+                      false
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "AddressToDepartment"
+                    },
+                    "index": {
+                      "type": "MemberAccess",
+                      "expression": {
+                        "type": "IndexAccess",
+                        "base": {
+                          "type": "Identifier",
+                          "name": "departmentMap"
+                        },
+                        "index": {
+                          "type": "Identifier",
+                          "name": "deptName"
+                        }
+                      },
+                      "memberName": "HOD"
+                    }
+                  },
+                  "right": {
+                    "type": "StringLiteral",
+                    "value": "",
+                    "parts": [
+                      ""
+                    ],
+                    "isUnicode": [
+                      false
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "Identifier",
+                        "name": "departmentMap"
+                      },
+                      "index": {
+                        "type": "Identifier",
+                        "name": "deptName"
+                      }
+                    },
+                    "memberName": "HOD"
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "name": "_newHOD"
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "AddressToDepartment"
+                    },
+                    "index": {
+                      "type": "Identifier",
+                      "name": "_newHOD"
+                    }
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "name": "deptName"
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "_departmentHOD"
+                    },
+                    "index": {
+                      "type": "Identifier",
+                      "name": "deptName"
+                    }
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "name": "_newHOD"
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "_HODtoDept"
+                    },
+                    "index": {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "Identifier",
+                        "name": "_departmentHOD"
+                      },
+                      "index": {
+                        "type": "Identifier",
+                        "name": "deptName"
+                      }
+                    }
+                  },
+                  "right": {
+                    "type": "FunctionCall",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "keccak256"
+                    },
+                    "arguments": [
+                      {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "abi"
+                          },
+                          "memberName": "encodePacked"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "deptName"
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    ],
+                    "names": [],
+                    "identifiers": []
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "role"
+                    },
+                    "memberName": "grantRole"
+                  },
+                  "arguments": [
+                    {
+                      "type": "Identifier",
+                      "name": "HOD"
+                    },
+                    {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "Identifier",
+                        "name": "_departmentHOD"
+                      },
+                      "index": {
+                        "type": "Identifier",
+                        "name": "deptName"
+                      }
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "assert"
+                  },
+                  "arguments": [
+                    {
+                      "type": "BinaryOperation",
+                      "operator": "==",
+                      "left": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "role"
+                          },
+                          "memberName": "checkHOD"
+                        },
+                        "arguments": [
+                          {
+                            "type": "IndexAccess",
+                            "base": {
+                              "type": "Identifier",
+                              "name": "_departmentHOD"
+                            },
+                            "index": {
+                              "type": "Identifier",
+                              "name": "deptName"
+                            }
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      },
+                      "right": {
+                        "type": "BooleanLiteral",
+                        "value": true
+                      }
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "CTO"
+                },
+                {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              ]
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "createDepartment",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "HODaddress",
+              "identifier": {
+                "type": "Identifier",
+                "name": "HODaddress"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "string",
+                "stateMutability": null
+              },
+              "name": "deptName",
+              "identifier": {
+                "type": "Identifier",
+                "name": "deptName"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "require"
+                  },
+                  "arguments": [
+                    {
+                      "type": "BinaryOperation",
+                      "operator": "==",
+                      "left": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "Identifier",
+                          "name": "checkDepartment"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "deptName"
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      },
+                      "right": {
+                        "type": "BooleanLiteral",
+                        "value": true
+                      }
+                    },
+                    {
+                      "type": "StringLiteral",
+                      "value": "department name already used",
+                      "parts": [
+                        "department name already used"
+                      ],
+                      "isUnicode": [
+                        false
+                      ]
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "departmentMap"
+                    },
+                    "index": {
+                      "type": "Identifier",
+                      "name": "deptName"
+                    }
+                  },
+                  "right": {
+                    "type": "FunctionCall",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "departDetails"
+                    },
+                    "arguments": [
+                      {
+                        "type": "Identifier",
+                        "name": "deptName"
+                      },
+                      {
+                        "type": "NumberLiteral",
+                        "number": "0",
+                        "subdenomination": null
+                      },
+                      {
+                        "type": "Identifier",
+                        "name": "HODaddress"
+                      },
+                      {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "TypeNameExpression",
+                          "typeName": {
+                            "type": "ElementaryTypeName",
+                            "name": "address",
+                            "stateMutability": null
+                          }
+                        },
+                        "arguments": [
+                          {
+                            "type": "NumberLiteral",
+                            "number": "0",
+                            "subdenomination": null
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      },
+                      {
+                        "type": "Identifier",
+                        "name": "departmentCounter"
+                      }
+                    ],
+                    "names": [],
+                    "identifiers": []
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "_departmentHOD"
+                    },
+                    "index": {
+                      "type": "Identifier",
+                      "name": "deptName"
+                    }
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "name": "HODaddress"
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "AddressToDepartment"
+                    },
+                    "index": {
+                      "type": "Identifier",
+                      "name": "HODaddress"
+                    }
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "name": "deptName"
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "_HODtoDept"
+                    },
+                    "index": {
+                      "type": "Identifier",
+                      "name": "HODaddress"
+                    }
+                  },
+                  "right": {
+                    "type": "FunctionCall",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "keccak256"
+                    },
+                    "arguments": [
+                      {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "abi"
+                          },
+                          "memberName": "encodePacked"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "deptName"
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      }
+                    ],
+                    "names": [],
+                    "identifiers": []
+                  }
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "role"
+                    },
+                    "memberName": "grantRole"
+                  },
+                  "arguments": [
+                    {
+                      "type": "Identifier",
+                      "name": "HOD"
+                    },
+                    {
+                      "type": "Identifier",
+                      "name": "HODaddress"
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "assert"
+                  },
+                  "arguments": [
+                    {
+                      "type": "BinaryOperation",
+                      "operator": "==",
+                      "left": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "MemberAccess",
+                          "expression": {
+                            "type": "Identifier",
+                            "name": "role"
+                          },
+                          "memberName": "checkHOD"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "HODaddress"
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      },
+                      "right": {
+                        "type": "BooleanLiteral",
+                        "value": true
+                      }
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "departArray"
+                    },
+                    "memberName": "push"
+                  },
+                  "arguments": [
+                    {
+                      "type": "MemberAccess",
+                      "expression": {
+                        "type": "IndexAccess",
+                        "base": {
+                          "type": "Identifier",
+                          "name": "departmentMap"
+                        },
+                        "index": {
+                          "type": "Identifier",
+                          "name": "deptName"
+                        }
+                      },
+                      "memberName": "departmentName"
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "UnaryOperation",
+                  "operator": "++",
+                  "subExpression": {
+                    "type": "Identifier",
+                    "name": "departmentCounter"
+                  },
+                  "isPrefix": false
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "CTO"
+                },
+                {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              ]
+            },
+            {
+              "type": "ModifierInvocation",
+              "name": "hasBeenCreated",
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "deptName"
+                }
+              ]
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "linkDepartment",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "_departmentContract",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_departmentContract"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "string",
+                "stateMutability": null
+              },
+              "name": "deptName",
+              "identifier": {
+                "type": "Identifier",
+                "name": "deptName"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "require"
+                  },
+                  "arguments": [
+                    {
+                      "type": "FunctionCall",
+                      "expression": {
+                        "type": "MemberAccess",
+                        "expression": {
+                          "type": "Identifier",
+                          "name": "Address"
+                        },
+                        "memberName": "isContract"
+                      },
+                      "arguments": [
+                        {
+                          "type": "Identifier",
+                          "name": "_departmentContract"
+                        }
+                      ],
+                      "names": [],
+                      "identifiers": []
+                    },
+                    {
+                      "type": "StringLiteral",
+                      "value": "Address is not a contract",
+                      "parts": [
+                        "Address is not a contract"
+                      ],
+                      "isUnicode": [
+                        false
+                      ]
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "Identifier",
+                        "name": "departmentMap"
+                      },
+                      "index": {
+                        "type": "Identifier",
+                        "name": "deptName"
+                      }
+                    },
+                    "memberName": "departmentContract"
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "name": "_departmentContract"
+                  }
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "CTO"
+                },
+                {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              ]
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "checkDepartment",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "string",
+                "stateMutability": null
+              },
+              "name": "deptName",
+              "identifier": {
+                "type": "Identifier",
+                "name": "deptName"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "bool",
+                "stateMutability": null
+              },
+              "name": null,
+              "identifier": null,
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "IfStatement",
+                "condition": {
+                  "type": "BinaryOperation",
+                  "operator": "!=",
+                  "left": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "Identifier",
+                        "name": "departmentMap"
+                      },
+                      "index": {
+                        "type": "Identifier",
+                        "name": "deptName"
+                      }
+                    },
+                    "memberName": "HOD"
+                  },
+                  "right": {
+                    "type": "FunctionCall",
+                    "expression": {
+                      "type": "TypeNameExpression",
+                      "typeName": {
+                        "type": "ElementaryTypeName",
+                        "name": "address",
+                        "stateMutability": null
+                      }
+                    },
+                    "arguments": [
+                      {
+                        "type": "NumberLiteral",
+                        "number": "0",
+                        "subdenomination": null
+                      }
+                    ],
+                    "names": [],
+                    "identifiers": []
+                  }
+                },
+                "trueBody": {
+                  "type": "Block",
+                  "statements": [
+                    {
+                      "type": "ReturnStatement",
+                      "expression": {
+                        "type": "BooleanLiteral",
+                        "value": false
+                      }
+                    }
+                  ]
+                },
+                "falseBody": {
+                  "type": "Block",
+                  "statements": [
+                    {
+                      "type": "ReturnStatement",
+                      "expression": {
+                        "type": "BooleanLiteral",
+                        "value": true
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "visibility": "private",
+          "modifiers": [],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": "view"
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "checkHOD",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "_HODAddress",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_HODAddress"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "bytes32",
+                "stateMutability": null
+              },
+              "name": "deptName",
+              "identifier": {
+                "type": "Identifier",
+                "name": "deptName"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "bool",
+                "stateMutability": null
+              },
+              "name": null,
+              "identifier": null,
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "IfStatement",
+                "condition": {
+                  "type": "BinaryOperation",
+                  "operator": "==",
+                  "left": {
+                    "type": "FunctionCall",
+                    "expression": {
+                      "type": "MemberAccess",
+                      "expression": {
+                        "type": "Identifier",
+                        "name": "role"
+                      },
+                      "memberName": "checkCTO"
+                    },
+                    "arguments": [
+                      {
+                        "type": "Identifier",
+                        "name": "_HODAddress"
+                      }
+                    ],
+                    "names": [],
+                    "identifiers": []
+                  },
+                  "right": {
+                    "type": "BooleanLiteral",
+                    "value": true
+                  }
+                },
+                "trueBody": {
+                  "type": "Block",
+                  "statements": [
+                    {
+                      "type": "ReturnStatement",
+                      "expression": {
+                        "type": "BooleanLiteral",
+                        "value": true
+                      }
+                    }
+                  ]
+                },
+                "falseBody": null
+              },
+              {
+                "type": "IfStatement",
+                "condition": {
+                  "type": "BinaryOperation",
+                  "operator": "==",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "_HODtoDept"
+                    },
+                    "index": {
+                      "type": "Identifier",
+                      "name": "_HODAddress"
+                    }
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "name": "deptName"
+                  }
+                },
+                "trueBody": {
+                  "type": "Block",
+                  "statements": [
+                    {
+                      "type": "ReturnStatement",
+                      "expression": {
+                        "type": "BooleanLiteral",
+                        "value": true
+                      }
+                    }
+                  ]
+                },
+                "falseBody": {
+                  "type": "Block",
+                  "statements": [
+                    {
+                      "type": "ReturnStatement",
+                      "expression": {
+                        "type": "BooleanLiteral",
+                        "value": false
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "visibility": "external",
+          "modifiers": [],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": "view"
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "addDepartmentToStorage",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "_department",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_department"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "string",
+                "stateMutability": null
+              },
+              "name": "deptName",
+              "identifier": {
+                "type": "Identifier",
+                "name": "deptName"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "_departmentStorage"
+                    },
+                    "index": {
+                      "type": "Identifier",
+                      "name": "deptName"
+                    }
+                  },
+                  "right": {
+                    "type": "FunctionCall",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "department"
+                    },
+                    "arguments": [
+                      {
+                        "type": "Identifier",
+                        "name": "_department"
+                      }
+                    ],
+                    "names": [],
+                    "identifiers": []
+                  }
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "CTO"
+                },
+                {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              ]
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "increaseFunds",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "dept",
+              "identifier": {
+                "type": "Identifier",
+                "name": "dept"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "uint",
+                "stateMutability": null
+              },
+              "name": "amount",
+              "identifier": {
+                "type": "Identifier",
+                "name": "amount"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "string",
+                "stateMutability": null
+              },
+              "name": "deptName",
+              "identifier": {
+                "type": "Identifier",
+                "name": "deptName"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "require"
+                  },
+                  "arguments": [
+                    {
+                      "type": "BinaryOperation",
+                      "operator": "==",
+                      "left": {
+                        "type": "FunctionCall",
+                        "expression": {
+                          "type": "Identifier",
+                          "name": "checkDepartment"
+                        },
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "name": "deptName"
+                          }
+                        ],
+                        "names": [],
+                        "identifiers": []
+                      },
+                      "right": {
+                        "type": "BooleanLiteral",
+                        "value": false
+                      }
+                    },
+                    {
+                      "type": "StringLiteral",
+                      "value": "Department has not been made yet",
+                      "parts": [
+                        "Department has not been made yet"
+                      ],
+                      "isUnicode": [
+                        false
+                      ]
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "require"
+                  },
+                  "arguments": [
+                    {
+                      "type": "BinaryOperation",
+                      "operator": "==",
+                      "left": {
+                        "type": "MemberAccess",
+                        "expression": {
+                          "type": "IndexAccess",
+                          "base": {
+                            "type": "Identifier",
+                            "name": "departmentMap"
+                          },
+                          "index": {
+                            "type": "Identifier",
+                            "name": "deptName"
+                          }
+                        },
+                        "memberName": "departmentContract"
+                      },
+                      "right": {
+                        "type": "Identifier",
+                        "name": "dept"
+                      }
+                    },
+                    {
+                      "type": "StringLiteral",
+                      "value": "incorrect department address given",
+                      "parts": [
+                        "incorrect department address given"
+                      ],
+                      "isUnicode": [
+                        false
+                      ]
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              },
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "MemberAccess",
+                    "expression": {
+                      "type": "Identifier",
+                      "name": "scout"
+                    },
+                    "memberName": "mint"
+                  },
+                  "arguments": [
+                    {
+                      "type": "Identifier",
+                      "name": "dept"
+                    },
+                    {
+                      "type": "Identifier",
+                      "name": "amount"
+                    }
+                  ],
+                  "names": [],
+                  "identifiers": []
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "onlyRole",
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "CFO"
+                },
+                {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "_msgSender"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              ]
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "getDepartmentHOD",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "string",
+                "stateMutability": null
+              },
+              "name": "_deptName",
+              "identifier": {
+                "type": "Identifier",
+                "name": "_deptName"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": null,
+              "identifier": null,
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ReturnStatement",
+                "expression": {
+                  "type": "TupleExpression",
+                  "components": [
+                    {
+                      "type": "IndexAccess",
+                      "base": {
+                        "type": "Identifier",
+                        "name": "_departmentHOD"
+                      },
+                      "index": {
+                        "type": "Identifier",
+                        "name": "_deptName"
+                      }
+                    }
+                  ],
+                  "isArray": false
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": "view"
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "getAdmin",
+          "parameters": [],
+          "returnParameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": null,
+              "identifier": null,
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ReturnStatement",
+                "expression": {
+                  "type": "FunctionCall",
+                  "expression": {
+                    "type": "Identifier",
+                    "name": "owner"
+                  },
+                  "arguments": [],
+                  "names": [],
+                  "identifiers": []
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": "view"
+        },
+        {
+          "type": "FunctionDefinition",
+          "name": "addToHODMap",
+          "parameters": [
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "address",
+                "stateMutability": null
+              },
+              "name": "HOD",
+              "identifier": {
+                "type": "Identifier",
+                "name": "HOD"
+              },
+              "storageLocation": null,
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            },
+            {
+              "type": "VariableDeclaration",
+              "typeName": {
+                "type": "ElementaryTypeName",
+                "name": "string",
+                "stateMutability": null
+              },
+              "name": "Name",
+              "identifier": {
+                "type": "Identifier",
+                "name": "Name"
+              },
+              "storageLocation": "memory",
+              "isStateVar": false,
+              "isIndexed": false,
+              "expression": null
+            }
+          ],
+          "returnParameters": null,
+          "body": {
+            "type": "Block",
+            "statements": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "BinaryOperation",
+                  "operator": "=",
+                  "left": {
+                    "type": "IndexAccess",
+                    "base": {
+                      "type": "Identifier",
+                      "name": "AddressToDepartment"
+                    },
+                    "index": {
+                      "type": "Identifier",
+                      "name": "HOD"
+                    }
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "name": "Name"
+                  }
+                }
+              }
+            ]
+          },
+          "visibility": "public",
+          "modifiers": [
+            {
+              "type": "ModifierInvocation",
+              "name": "onlyOwner",
+              "arguments": null
+            }
+          ],
+          "override": null,
+          "isConstructor": false,
+          "isReceiveEther": false,
+          "isFallback": false,
+          "isVirtual": false,
+          "stateMutability": null
+        }
+      ],
+      "kind": "contract"
+    }
+  ]
+}

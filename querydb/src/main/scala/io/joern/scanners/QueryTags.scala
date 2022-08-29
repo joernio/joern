@@ -24,4 +24,14 @@ object QueryTags {
   val insecureNetworkTraffic = "insecure-network-traffic"
   val pathTraversal          = "path-traversal"
 
+  // TODO: collect these tags under bigger categories
+  val selfDestruct                 = "selfdestruct-contract"
+  val overflow                     = "overflow-contract"
+  val controlLoopIteration         = "control-loop-iteration-contract"
+  val abiEncoder                   = "abi-encoder-contract"
+  val delegateCall                 = "delegateCall-contract"
+  val incorrectShift               = "incorrect-shift-contract"
+  val modifyingStorageArrayByValue = "modifying-storage-array-by-value-contract"
+  val taintedPrivateVariable       = "tainted-private-variable-contract"
+  val reentrancy                   = "reentrancy-contract"
 }
