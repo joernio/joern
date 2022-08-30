@@ -22,7 +22,7 @@ import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters._
 import scala.util.{Success, Try}
 
-class AstCreationPass(codeDir: String, filenames: List[String], config: Config, cpg: Cpg)
+class AstCreationPass(codeDir: String, filenames: List[String], config: Config, cpg: Cpg, dependencies: Seq[String])
     extends ConcurrentWriterCpgPass[String](cpg) {
 
   val global: Global              = new Global()
@@ -89,20 +89,8 @@ class AstCreationPass(codeDir: String, filenames: List[String], config: Config, 
       combinedTypeSolver.add(javaParserTypeSolver)
     }
 
-    val resolvedDeps = if (config.fetchDependencies) {
-      DependencyResolver.getDependencies(Paths.get(codeDir)) match {
-        case Some(deps) => deps
-        case None =>
-          logger.warn(s"Could not fetch dependencies for project at path $codeDir")
-          Seq()
-      }
-    } else {
-      logger.info("dependency resolving disabled")
-      Seq()
-    }
-
     // Add solvers for inference jars
-    (jarsList ++ resolvedDeps)
+    (jarsList ++ dependencies)
       .flatMap { path =>
         Try(new JarTypeSolver(path)).toOption
       }
