@@ -42,8 +42,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
         logger.info(s"found ${sourcesInfo.sourceFiles.size} source files")
       }
 
-      val astCreator =
-        new AstCreationPass(sourcesInfo, config, cpg, dependencies)
+      val astCreator = new AstCreationPass(sourcesInfo, config, cpg, dependencies)
       astCreator.createAndApply()
       new ConfigFileCreationPass(config.inputPath, cpg).createAndApply()
       new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
