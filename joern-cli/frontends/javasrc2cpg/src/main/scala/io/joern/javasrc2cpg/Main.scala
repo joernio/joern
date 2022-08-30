@@ -41,7 +41,7 @@ private object Frontend {
         .action((path, c) => c.copy(delombokJavaHome = Some(path))),
       opt[String]("delombok-mode")
         .text("""Specifies how delombok should be executed. Options are
-				 | no-delombok => to not run delombok under any circumstances.
+				| no-delombok => to not run delombok under any circumstances.
                  | default => run delombok if a lombok dependency is found and analyse delomboked code.
                  | types-only => to run delombok, but use it for type information only
                  | run-delombok => to force run delombok and analyse delomboked code.""".stripMargin)
