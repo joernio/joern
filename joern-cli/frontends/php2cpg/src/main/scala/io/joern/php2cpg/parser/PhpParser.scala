@@ -16,8 +16,9 @@ object PhpParser {
 
   private val ExecutablePath: String = {
     val dir = Paths.get(PhpParser.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
+    val fixedDir   = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
     val executable = if (isWin) "php-parse.bat" else "php-parse"
-    Paths.get(dir, "php2cpg", executable).toAbsolutePath.toString
+    Paths.get(fixedDir, "php2cpg", "bin", executable).toAbsolutePath.toString
   }
 
   private def phpParseCommand(filename: String): String = {

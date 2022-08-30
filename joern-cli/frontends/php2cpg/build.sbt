@@ -23,15 +23,20 @@ scalacOptions ++= Seq(
 
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
 phpParseInstallTask := {
-  val phpParseBinary = baseDirectory.value / "vendor" / "nikic" / "php-parser" / "bin" / "php-parse"
+  val phpBinDir = baseDirectory.value / "bin"
+  val phpParseBinary = phpBinDir / "vendor" / "bin" / "php-parse"
   if (!phpParseBinary.exists) {
     val installSciptPath =
       if (isWin)
-        (baseDirectory.value / "installdeps.bat").getPath
+        (phpBinDir / "installdeps.bat").getPath
       else
-        (baseDirectory.value / "installdeps.sh").getPath
-    Process(installSciptPath, baseDirectory.value) !
+        (phpBinDir / "installdeps.sh").getPath
+    Process(installSciptPath, phpBinDir) !
   }
+
+  val distDir = (Universal / stagingDirectory).value / "bin"
+  distDir.mkdirs()
+  IO.copyDirectory(phpBinDir, distDir)
 }
 
 Compile / compile := ((Compile / compile) dependsOn phpParseInstallTask).value
