@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import ujson.Value.Value
 
 import java.nio.file.Paths
+import scala.util.Properties.isWin
 import scala.util.{Failure, Success, Try}
 
 object PhpParser {
@@ -14,9 +15,9 @@ object PhpParser {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private val ExecutablePath: String = {
-    val dir      = PhpParser.getClass.getProtectionDomain.getCodeSource.getLocation.toString
-    val fixedDir = File(dir.substring("file:".length, dir.indexOf("php2cpg"))).toString
-    Paths.get(fixedDir, "php2cpg", "php-parse").toAbsolutePath.toString
+    val dir = Paths.get(PhpParser.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
+    val executable = if (isWin) "php-parse.bat" else "php-parse"
+    Paths.get(dir, "php2cpg", executable).toAbsolutePath.toString
   }
 
   private def phpParseCommand(filename: String): String = {
