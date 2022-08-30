@@ -83,12 +83,13 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
     */
   private def getSourcesFromDir(config: Config, hasLombokDependency: Boolean): SourceDirectoryInfo = {
     val delombokMode = getDelombokMode(config)
-    if (hasLombokDependency) {
-      logger.info(s"Analysing delomboked code as lombok dependency was found.")
-    }
     val runDelombok = delombokMode match {
-      case DelombokMode.NoDelombok  => false
-      case DelombokMode.Default     => hasLombokDependency
+      case DelombokMode.NoDelombok => false
+      case DelombokMode.Default =>
+        if (hasLombokDependency) {
+          logger.info(s"Analysing delomboked code as lombok dependency was found.")
+        }
+        hasLombokDependency
       case DelombokMode.RunDelombok => true
       case DelombokMode.TypesOnly   => true
     }
@@ -113,11 +114,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       else
         originalSourcesDir
 
-    val typeSourcesPath =
-      if (runDelombok)
-        delombokSourcesDir.get
-      else
-        originalSourcesDir
+    val typeSourcesPath = delombokSourcesDir.getOrElse(originalSourcesDir)
 
     val sourceFileNames = SourceFiles.determine(analysisSourceFilePath, sourceFileExtensions)
     val sourceFileInfo = delombokSourcesDir match {
