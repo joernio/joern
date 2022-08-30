@@ -1,7 +1,5 @@
 package io.joern.console
 
-import dotty.tools.repl._
-
 object Console {
 
   def bar = "barz"
