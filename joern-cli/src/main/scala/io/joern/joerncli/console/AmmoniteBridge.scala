@@ -2,9 +2,12 @@ package io.joern.joerncli.console
 
 import io.joern.console.{BridgeBase, JoernProduct}
 
-object AmmoniteBridge extends App with BridgeBase {
+object AmmoniteBridge extends BridgeBase {
 
-  runAmmonite(parseConfig(args), JoernProduct)
+  def main(args: Array[String]): Unit = {
+    runAmmonite(parseConfig(args), JoernProduct)
+  }
+
 
   /** Code that is executed when starting the shell
     */
