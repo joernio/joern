@@ -1,5 +1,7 @@
 package io.joern.console
 
+import dotty.tools.repl.State
+
 object Console {
 
   def bar = "barz"
@@ -12,13 +14,15 @@ object Console {
       |""".stripMargin
 
   def main(args: Array[String]): Unit = {
-    // pass classpath on into the repl
-    val replArgs = args ++ Array("-classpath", System.getProperty("java.class.path"))
-    val repl = new ReplDriver(replArgs)
+    val additionalArgs = Array(
+      "-classpath", // pass classpath on into the repl
+      System.getProperty("java.class.path"),
+      "-explain", // verbose scalac error messages
+    )
+    val repl = new ReplDriver(args ++ additionalArgs)
 
-    // val stateAfterPredef = repl.run(predefCode)(repl.initialState)
-    // repl.runUntilQuit(stateAfterPredef)
-    repl.runUntilQuit()
+    val stateAfterPredef = repl.run(predefCode)(using repl.initialState)
+    repl.runUntilQuit(using stateAfterPredef)()
   }
 
 }
