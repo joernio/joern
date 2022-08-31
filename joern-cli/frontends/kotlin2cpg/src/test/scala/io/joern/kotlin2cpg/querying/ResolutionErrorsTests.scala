@@ -134,7 +134,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a METHOD node with a MFN property starting with `kotlin.Any`" in {
       val List(m) = cpg.method.fullName(".*getFileSize.*").l
-      m.fullName shouldBe "codepropertygraph.Unresolved.getFileSize:int(boolean)"
+      m.fullName shouldBe s"${Defines.UnresolvedNamespace}.getFileSize:int(boolean)"
     }
   }
 

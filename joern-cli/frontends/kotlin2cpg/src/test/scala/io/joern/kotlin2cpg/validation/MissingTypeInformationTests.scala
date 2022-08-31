@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.validation
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language._
 
@@ -16,7 +17,7 @@ class MissingTypeInformationTests extends KotlinCode2CpgFixture(withOssDataflow 
 
     "contain a CALL node with the correct METHOD_FULL_NAME set" in {
       val List(c: Call) = cpg.call.codeExact("Runtime.getRuntime().exec(cmd)").l
-      c.methodFullName shouldBe "java.lang.Runtime.exec:codepropertygraph.SignatureUnresolved(1)"
+      c.methodFullName shouldBe s"java.lang.Runtime.exec:${Defines.UnresolvedSignature}(1)"
     }
   }
 
@@ -31,7 +32,7 @@ class MissingTypeInformationTests extends KotlinCode2CpgFixture(withOssDataflow 
 
     "contain a CALL node with the correct METHOD_FULL_NAME set" in {
       val List(c: Call) = cpg.call.codeExact("println(fixedUrl)").l
-      c.methodFullName shouldBe "kotlin.io.println:codepropertygraph.SignatureUnresolved(1)"
+      c.methodFullName shouldBe s"kotlin.io.println:${Defines.UnresolvedSignature}(1)"
     }
   }
 }
