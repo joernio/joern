@@ -1,6 +1,6 @@
 name := "joern-cli"
 
-dependsOn(Projects.console, Projects.console % "test->test", Projects.c2cpg, Projects.dataflowengineoss, Projects.x2cpg)
+dependsOn(Projects.console2, Projects.c2cpg, Projects.dataflowengineoss, Projects.x2cpg)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"            %% "codepropertygraph" % Versions.cpg,
@@ -30,7 +30,7 @@ def frontendMappings(frontendName: String, stagedProject: File): Seq[(File, Stri
 lazy val x2cpg       = project.in(file("frontends/x2cpg"))
 // lazy val kotlin2cpg  = project.in(file("frontends/kotlin2cpg"))
 lazy val javasrc2cpg = project.in(file("frontends/javasrc2cpg"))
-lazy val pysrc2cpg   = project.in(file("frontends/pysrc2cpg"))
+// lazy val pysrc2cpg   = project.in(file("frontends/pysrc2cpg"))
 lazy val php2cpg     = project.in(file("frontends/php2cpg"))
 lazy val jimple2cpg  = project.in(file("frontends/jimple2cpg"))
 lazy val jssrc2cpg   = project.in(file("frontends/jssrc2cpg"))
@@ -41,7 +41,7 @@ Universal / mappings ++= frontendMappings("c2cpg", (Projects.c2cpg / stage).valu
 Universal / mappings ++= frontendMappings("ghidra2cpg", (Projects.ghidra2cpg / stage).value)
 Universal / mappings ++= frontendMappings("jssrc2cpg", (jssrc2cpg / stage).value)
 Universal / mappings ++= frontendMappings("jimple2cpg", (jimple2cpg / stage).value)
-Universal / mappings ++= frontendMappings("pysrc2cpg", (pysrc2cpg / stage).value)
+//Universal / mappings ++= frontendMappings("pysrc2cpg", (pysrc2cpg / stage).value)
 Universal / mappings ++= frontendMappings("php2cpg", (php2cpg / stage).value)
 
 lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
