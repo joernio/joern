@@ -35,26 +35,29 @@ trait X2CpgConfig[R] {
   */
 abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](cmdLineParser: OParser[Unit, T], frontend: X)(
   implicit defaultConfig: T
-) extends App {
+) {
 
   /** method that evaluates frontend with configuration
     */
   def run(config: T, frontend: X): Unit
 
-  X2Cpg.parseCommandLine(args, cmdLineParser, defaultConfig) match {
-    case Some(config) =>
-      try {
-        run(config, frontend)
-      } catch {
-        case ex: Throwable =>
-          println(ex.getMessage)
-          ex.printStackTrace()
-          System.exit(1)
-      }
-    case None =>
-      println("Error parsing the command line")
-      System.exit(1)
+  def main(args: Array[String]): Unit = {
+    X2Cpg.parseCommandLine(args, cmdLineParser, defaultConfig) match {
+      case Some(config) =>
+        try {
+          run(config, frontend)
+        } catch {
+          case ex: Throwable =>
+            println(ex.getMessage)
+            ex.printStackTrace()
+            System.exit(1)
+        }
+      case None =>
+        println("Error parsing the command line")
+        System.exit(1)
+    }
   }
+
 }
 
 /** Trait that represents a CPG generator, where T is the frontend configuration class.
