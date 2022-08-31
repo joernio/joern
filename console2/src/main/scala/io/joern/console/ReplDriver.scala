@@ -31,9 +31,11 @@ class ReplDriver(args: Array[String],
         val line = terminal.readLine(completer)
         ParseResult(line)
       } catch {
-        case _: EndOfFileException |
-            _: UserInterruptException => // Ctrl+D or Ctrl+C
+        case _: EndOfFileException => // Ctrl+D
+          out.println("bye!")
           Quit
+        case _: UserInterruptException => // Ctrl+C
+          Newline
       }
     }
 
