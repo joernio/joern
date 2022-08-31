@@ -16,8 +16,9 @@ object Console {
     val replArgs = args ++ Array("-classpath", System.getProperty("java.class.path"))
     val repl = new ReplDriver(replArgs)
 
-    val stateAfterPredef = repl.run(predefCode)(repl.initialState)
-    repl.runUntilQuit(stateAfterPredef)
+    // val stateAfterPredef = repl.run(predefCode)(repl.initialState)
+    // repl.runUntilQuit(stateAfterPredef)
+    repl.runUntilQuit()
   }
 
 }
