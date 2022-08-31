@@ -4,6 +4,8 @@ import io.joern.console.{BridgeBase, JoernProduct}
 
 object AmmoniteBridge extends BridgeBase {
 
+  override def greeting(): String = JoernConsole.banner()
+
   def main(args: Array[String]): Unit = {
     runAmmonite(parseConfig(args), JoernProduct)
   }
@@ -17,16 +19,18 @@ object AmmoniteBridge extends BridgeBase {
 
   override def promptStr(): String = "joern> "
 
-  override def shutdownHooks: List[String] = List("""interp.beforeExitHooks.append{_ =>
-      |println("Would you like to save changes? (y/N)")
-      |val answer = scala.Console.in.read.toChar
-      |if (answer == 'Y' || answer == 'y') {
-      |  System.err.println("saving.")
-      |  workspace.projects.foreach { p =>
-      |        p.close
-      |  }
-      | }
-      |}
-      |""".stripMargin)
+  override def shutdownHooks: List[String] =
+    Nil // TODO
+    // List("""interp.beforeExitHooks.append{_ =>
+    //   |println("Would you like to save changes? (y/N)")
+    //   |val answer = scala.Console.in.read.toChar
+    //   |if (answer == 'Y' || answer == 'y') {
+    //   |  System.err.println("saving.")
+    //   |  workspace.projects.foreach { p =>
+    //   |        p.close
+    //   |  }
+    //   | }
+    //   |}
+    //   |""".stripMargin)
 
 }

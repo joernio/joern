@@ -39,6 +39,8 @@ case class JoernScanConfig(
 
 object JoernScan extends App with BridgeBase {
 
+  override def greeting(): String = ""
+
   val implementationVersion = getClass.getPackage.getImplementationVersion
 
   val (scanArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
