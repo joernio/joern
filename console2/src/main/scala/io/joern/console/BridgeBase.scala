@@ -215,6 +215,21 @@ trait ScriptExecution {
          |openForInputPath(\"$name\")
          |""".stripMargin
     }
+
+    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks)
+    println(predefCode)
+
+    val replArgs = Array(
+      "-classpath", // pass classpath on into the repl
+      System.getProperty("java.class.path"),
+      "-explain", // verbose scalac error messages
+    )
+    val greeting = "hey there!"
+    val repl = new ReplDriver(replArgs, scala.Console.out, greeting)
+
+    val stateAfterPredef = repl.run(predefCode)(using repl.initialState)
+    repl.runUntilQuit(using stateAfterPredef)()
+
     // ammonite
     //   .Main(
     //     predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks),
@@ -224,7 +239,6 @@ trait ScriptExecution {
     //     colors = ammoniteColors(config)
     //   )
     //   .run()
-    ???
   }
 
   protected def runScript(scriptFile: Path, config: Config) = {
