@@ -92,7 +92,7 @@ object Run {
       s"""
          | class OverlaysDynamic {
          |
-         | def apply(query : io.shiftleft.semanticcpg.language.HasStoreMethod) {
+         | def apply(query : io.shiftleft.semanticcpg.language.HasStoreMethod) = {
          |   io.joern.console.Run.runCustomQuery(console, query)
          | }
          |
