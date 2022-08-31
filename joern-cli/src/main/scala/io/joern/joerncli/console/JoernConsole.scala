@@ -34,25 +34,6 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
       .map(x => x.asInstanceOf[JoernProject].context)
       .getOrElse(EngineContext())
 
-  def banner(): Unit = {
-    println(s"""
-        |     ██╗ ██████╗ ███████╗██████╗ ███╗   ██╗
-        |     ██║██╔═══██╗██╔════╝██╔══██╗████╗  ██║
-        |     ██║██║   ██║█████╗  ██████╔╝██╔██╗ ██║
-        |██   ██║██║   ██║██╔══╝  ██╔══██╗██║╚██╗██║
-        |╚█████╔╝╚██████╔╝███████╗██║  ██║██║ ╚████║
-        | ╚════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝
-        |Version: $version
-        |$helpMsg
-      """.stripMargin)
-  }
-
-  private def helpMsg: String =
-    s"""Type `help` or `browse(help)` to begin""".stripMargin
-
-  def version: String =
-    getClass.getPackage.getImplementationVersion
-
   def loadCpg(inputPath: String): Option[Cpg] = {
     report("Deprecated. Please use `importCpg` instead")
     importCpg(inputPath)
@@ -66,6 +47,24 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
 }
 
 object JoernConsole {
+
+  def banner(): String =
+    s"""
+        |     ██╗ ██████╗ ███████╗██████╗ ███╗   ██╗
+        |     ██║██╔═══██╗██╔════╝██╔══██╗████╗  ██║
+        |     ██║██║   ██║█████╗  ██████╔╝██╔██╗ ██║
+        |██   ██║██║   ██║██╔══╝  ██╔══██╗██║╚██╗██║
+        |╚█████╔╝╚██████╔╝███████╗██║  ██║██║ ╚████║
+        | ╚════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝
+        |Version: $version
+        |$helpMsg
+      """.stripMargin
+
+  def version: String =
+    getClass.getPackage.getImplementationVersion
+
+  private def helpMsg: String =
+    s"""Type `help` to begin""".stripMargin
 
   def defaultConfig: ConsoleConfig = new ConsoleConfig()
 
