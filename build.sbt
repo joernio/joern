@@ -1,6 +1,6 @@
 name                     := "joern"
 ThisBuild / organization := "io.joern"
-ThisBuild / scalaVersion := "3.1.3"
+ThisBuild / scalaVersion := "3.2.1-RC1-bin-20220830-76ee951-NIGHTLY"
 
 val cpgVersion = "1.3.577"
 
@@ -50,6 +50,9 @@ ThisBuild / compile / javacOptions ++= Seq(
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation" // Emit warning and location for usages of deprecated APIs.
 )
+
+
+ThisBuild/Compile/packageDoc/publishArtifact := false
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
