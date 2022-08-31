@@ -19,7 +19,11 @@ object Console {
       System.getProperty("java.class.path"),
       "-explain", // verbose scalac error messages
     )
-    val repl = new ReplDriver(args ++ additionalArgs)
+    val greeting = "hey there!"
+    val repl = new ReplDriver(
+      args ++ additionalArgs,
+      scala.Console.out,
+      greeting)
 
     val stateAfterPredef = repl.run(predefCode)(using repl.initialState)
     repl.runUntilQuit(using stateAfterPredef)()
