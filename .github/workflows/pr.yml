@@ -15,8 +15,7 @@ jobs:
         with:
           java-version: 1.11
       - name: Compile and run tests
-        run: joern-cli/frontends/php2cpg/installdeps.sh
-      - run: sbt clean +test
+        run: sbt clean +test
   formatting:
     runs-on: ubuntu-20.04
     steps:
