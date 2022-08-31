@@ -14,25 +14,21 @@ import overflowdb.traversal.Traversal
 
 import java.io.File
 
-class JavaSrcFrontend(delombokFullAnalysis: Boolean = false, delombokTypesOnly: Boolean = false)
-    extends LanguageFrontend {
+class JavaSrcFrontend(delombokMode: String) extends LanguageFrontend {
 
   override val fileSuffix: String = ".java"
 
   override def execute(sourceCodeFile: File): Cpg = {
     implicit val defaultConfig: Config =
-      Config(delombokFullAnalysis = delombokFullAnalysis, delombokTypesOnly = delombokTypesOnly)
+      Config(delombokMode = Some(delombokMode))
     new JavaSrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 }
 
-class JavaSrcCodeToCpgFixture extends CodeToCpgFixture(new JavaSrcFrontend) {}
+class JavaSrcCodeToCpgFixture extends CodeToCpgFixture(new JavaSrcFrontend(delombokMode = "default")) {}
 
-class JavaSrcCode2CpgFixture(
-  withOssDataflow: Boolean = false,
-  delombokFullAnalysis: Boolean = false,
-  delombokTypesOnly: Boolean = false
-) extends Code2CpgFixture(new JavaSrcFrontend(delombokFullAnalysis, delombokTypesOnly)) {
+class JavaSrcCode2CpgFixture(withOssDataflow: Boolean = false, delombokMode: String = "default")
+    extends Code2CpgFixture(new JavaSrcFrontend(delombokMode)) {
 
   val semanticsFile: String            = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
   lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))

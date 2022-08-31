@@ -13,8 +13,7 @@ final case class Config(
   fetchDependencies: Boolean = false,
   javaFeatureSetVersion: Option[String] = None,
   delombokJavaHome: Option[String] = None,
-  delombokFullAnalysis: Boolean = false,
-  delombokTypesOnly: Boolean = false
+  delombokMode: Option[String] = None
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
@@ -40,12 +39,13 @@ private object Frontend {
       opt[String]("delombok-java-home")
         .text("Optional override to set java home used to run Delombok. Java 17 is recommended for the best results.")
         .action((path, c) => c.copy(delombokJavaHome = Some(path))),
-      opt[Unit]("delombok-full-analysis")
-        .text("run delombok on source before scanning for more accurate methods and type results")
-        .action((_, c) => c.copy(delombokFullAnalysis = true)),
-      opt[Unit]("run-delombok-types-only")
-        .text("run delombok on source but use output only for type information")
-        .action((_, c) => c.copy(delombokTypesOnly = true))
+      opt[String]("delombok-mode")
+        .text("""Specifies how delombok should be executed. Options are
+				| no-delombok => to not run delombok under any circumstances.
+                 | default => run delombok if a lombok dependency is found and analyse delomboked code.
+                 | types-only => to run delombok, but use it for type information only
+                 | run-delombok => to force run delombok and analyse delomboked code.""".stripMargin)
+        .action((mode, c) => c.copy(delombokMode = Some(mode)))
     )
   }
 }
