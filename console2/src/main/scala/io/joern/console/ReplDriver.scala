@@ -1,6 +1,7 @@
 package io.joern.console
 
 import dotty.tools.dotc.core.Contexts.Context
+import dotty.tools.repl.{Newline, ParseResult, State, Quit}
 import java.io.PrintStream
 import org.jline.reader._
 import scala.annotation.tailrec
@@ -8,15 +9,15 @@ import scala.jdk.CollectionConverters._
 
 class ReplDriver(args: Array[String],
                  out: PrintStream = scala.Console.out,
-                 greeting: String) extends dotty.tools.repl.ReplDriver(args, out) {
-  import dotty.tools.repl._
+                 greeting: String,
+                 prompt: String) extends dotty.tools.repl.ReplDriver(args, out) {
 
   /** Run REPL with `state` until `:quit` command found
 
     * Main difference to the 'original': different greeting, trap Ctrl-c
    */
   override def runUntilQuit(using initialState: State = initialState)(): State = {
-    val terminal = new JLineTerminal
+    val terminal = new JLineTerminal(prompt)
 
     out.println(greeting)
 

@@ -34,7 +34,8 @@ case class Config(
   */
 trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling {
 
-  def greeting(): String
+  def greeting: String
+  def prompt: String
 
   protected def parseConfig(args: Array[String]): Config = {
     implicit def pathRead: scopt.Read[Path] =
@@ -223,7 +224,7 @@ trait ScriptExecution { this: BridgeBase =>
       System.getProperty("java.class.path"),
       "-explain", // verbose scalac error messages
     )
-    val repl = new ReplDriver(replArgs, scala.Console.out, greeting())
+    val repl = new ReplDriver(replArgs, scala.Console.out, greeting, prompt)
 
     given State = repl.run(predefCode)(using repl.initialState)
     repl.runUntilQuit()
