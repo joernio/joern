@@ -39,9 +39,6 @@ case class JoernScanConfig(
 
 object JoernScan extends App with BridgeBase {
 
-  override def greeting: String = ""
-  override def prompt: String = ""
-
   val implementationVersion = getClass.getPackage.getImplementationVersion
 
   val (scanArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
@@ -237,7 +234,10 @@ object JoernScan extends App with BridgeBase {
 
   override protected def predefPlus(lines: List[String]): String = AmmoniteBridge.predefPlus(lines)
   override protected def shutdownHooks: List[String]             = AmmoniteBridge.shutdownHooks
-  override protected def promptStr()                             = AmmoniteBridge.promptStr()
+  override protected def promptStr                             = AmmoniteBridge.promptStr
+
+  override protected def greeting: String = AmmoniteBridge.greeting
+
 }
 
 object Scan {
