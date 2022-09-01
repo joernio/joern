@@ -4,7 +4,8 @@ import io.joern.console.{BridgeBase, JoernProduct}
 
 object AmmoniteBridge extends BridgeBase {
 
-  override def greeting(): String = JoernConsole.banner()
+  override def greeting = JoernConsole.banner()
+  override def prompt = "joern> "
 
   def main(args: Array[String]): Unit = {
     runAmmonite(parseConfig(args), JoernProduct)

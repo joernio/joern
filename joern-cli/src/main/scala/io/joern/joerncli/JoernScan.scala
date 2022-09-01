@@ -40,7 +40,8 @@ case class JoernScanConfig(
 
 object JoernScan extends BridgeBase {
 
-  override def greeting(): String = ""
+  override def greeting: String = ""
+  override def prompt: String = ""
 
   val implementationVersion = getClass.getPackage.getImplementationVersion
 
