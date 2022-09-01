@@ -187,8 +187,6 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
   protected def predefPlus(lines: List[String]): String
 
-  protected def shutdownHooks: List[String]
-
   protected def greeting: String
 
   protected def promptStr: String
@@ -215,7 +213,7 @@ trait ScriptExecution { this: BridgeBase =>
          |""".stripMargin
     }
 
-    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks)
+    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
 
     val replArgs = Array(
       "-classpath", // pass classpath on into the repl
@@ -252,7 +250,7 @@ trait ScriptExecution { this: BridgeBase =>
       if (isEncryptedScript) decryptedScript(scriptFile)
       else scriptFile
 
-    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config) ++ shutdownHooks)
+    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
 
     // ammonite
     //   .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))
