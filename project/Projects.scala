@@ -6,7 +6,6 @@ object Projects {
   lazy val joerncli          = project.in(file("joern-cli"))
   lazy val querydb           = project.in(file("querydb"))
   lazy val console           = project.in(file("console"))
-  lazy val console2          = project.in(file("console2"))
   lazy val dataflowengineoss = project.in(file("dataflowengineoss"))
   lazy val macros            = project.in(file("macros"))
   lazy val semanticcpg       = project.in(file("semanticcpg"))
