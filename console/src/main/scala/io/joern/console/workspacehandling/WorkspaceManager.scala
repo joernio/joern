@@ -98,7 +98,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
 
   /** Delete the workspace from disk, then initialize it again.
     */
-  def reset(): Unit = {
+  def reset: Unit = {
     Try(cpg.close())
     deleteWorkspace()
     workspace = loader.load(path)

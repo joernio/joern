@@ -17,6 +17,7 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
+  "org.scala-lang"       %% "scala3-compiler"   % scalaVersion.value, // for scala3 repl
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
   "com.github.scopt"     %% "scopt"             % ScoptVersion,
   "org.typelevel"        %% "cats-effect"       % Versions.cats,
