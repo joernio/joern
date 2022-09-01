@@ -34,9 +34,6 @@ case class Config(
   */
 trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling {
 
-  def greeting: String
-  def prompt: String
-
   protected def parseConfig(args: Array[String]): Config = {
     implicit def pathRead: scopt.Read[Path] =
       scopt.Read.stringRead
@@ -192,7 +189,9 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
   protected def shutdownHooks: List[String]
 
-  protected def promptStr(): String
+  protected def greeting: String
+
+  protected def promptStr: String
 
 }
 
@@ -206,7 +205,6 @@ trait ScriptExecution { this: BridgeBase =>
     //          |""".stripMargin
 
     val replConfig = List(
-      // "repl.prompt() = \"" + promptStr() + "\"",
       // configurePPrinterMaybe,
       // "implicit val implicitPPrinter = repl.pprinter()",
     ) ++ config.cpgToLoad.map { cpgFile =>
@@ -224,7 +222,7 @@ trait ScriptExecution { this: BridgeBase =>
       System.getProperty("java.class.path"),
       "-explain", // verbose scalac error messages
     )
-    val repl = new ReplDriver(replArgs, scala.Console.out, greeting, prompt)
+    val repl = new ReplDriver(replArgs, scala.Console.out, greeting, promptStr)
 
     given State = repl.run(predefCode)(using repl.initialState)
     repl.runUntilQuit()
