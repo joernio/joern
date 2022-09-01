@@ -92,7 +92,7 @@ object Domain {
   final case class PhpString(value: String, attributes: PhpAttributes) extends PhpScalar
   object PhpString {
     def withQuotes(value: String, attributes: PhpAttributes): PhpString = {
-      PhpString(s"\"${value.replaceAll(System.lineSeparator(), "\\n")}\"", attributes)
+      PhpString(s"\"${escapeString(value)}\"", attributes)
     }
   }
 
@@ -102,9 +102,20 @@ object Domain {
   final case class PhpEncapsedPart(value: String, attributes: PhpAttributes)   extends PhpScalar
   object PhpEncapsedPart {
     def withQuotes(value: String, attributes: PhpAttributes): PhpEncapsedPart = {
-      val valueWithCorrectNewline = value.replaceAll(System.lineSeparator(), raw"\\n")
-      PhpEncapsedPart(s"\"$valueWithCorrectNewline\"", attributes)
+      PhpEncapsedPart(s"\"${escapeString(value)}\"", attributes)
     }
+  }
+
+  private def escapeString(value: String): String = {
+    value
+      .replace("\\", "\\\\")
+      .replace("\n", "\\n")
+      .replace("\b", "\\b")
+      .replace("\r", "\\r")
+      .replace("\t", "\\t")
+      .replace("\'", "\\'")
+      .replace("\f", "\\f")
+      .replace("\"", "\\\"")
   }
 
   private def readFile(json: Value): PhpFile = {

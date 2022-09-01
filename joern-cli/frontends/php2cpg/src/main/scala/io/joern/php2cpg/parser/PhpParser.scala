@@ -16,9 +16,8 @@ object PhpParser {
 
   private val ExecutablePath: String = {
     val dir = Paths.get(PhpParser.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
-    val fixedDir   = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
-    val executable = if (isWin) "php-parse.bat" else "php-parse"
-    Paths.get(fixedDir, "php2cpg", "bin", executable).toAbsolutePath.toString
+    val fixedDir = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
+    Paths.get(fixedDir, "php2cpg", "bin", "vendor", "bin", "php-parse").toAbsolutePath.toString
   }
 
   private def phpParseCommand(filename: String): String = {
@@ -35,8 +34,6 @@ object PhpParser {
           outputLines
             .dropWhile(_.charAt(0) != '[')
             .mkString("\n")
-
-        println(jsonString)
 
         val jsonValue = ujson.read(jsonString)
         if (jsonValue == null) {
