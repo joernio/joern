@@ -161,6 +161,22 @@ class TypeNodePassTests extends CCodeToCpgSuite {
       }
     }
 
+    "create correct types for locals when declared in one statement" in {
+      val cpg = code("""
+          |char* buf1, buf2;
+          |int count = 20;
+          |""".stripMargin)
+      inside(cpg.local.typ.dedup.l) { case List(charTpe, intTpe) =>
+        charTpe.fullName shouldBe "char"
+        intTpe.fullName shouldBe "int"
+      }
+      inside(cpg.local.l) { case List(buf1, buf2, count) =>
+        buf1.code shouldBe "char* buf1"
+        buf2.code shouldBe "char* buf2"
+        count.code shouldBe "int count"
+      }
+    }
+
     "create correct types for identifiers" in {
       val cpg = code("""
        |void test_func() {

@@ -335,8 +335,17 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def pointersAsString(spec: IASTDeclSpecifier, parentDecl: IASTDeclarator, stripKeywords: Boolean): String = {
-    val tpe      = typeFor(spec, stripKeywords)
-    val pointers = parentDecl.getPointerOperators
+    val tpe = typeFor(spec, stripKeywords)
+    val pointers = if (parentDecl.getPointerOperators.isEmpty) {
+      parentDecl.getParent match {
+        case s: IASTSimpleDeclaration =>
+          s.getDeclarators.headOption.map(_.getPointerOperators).getOrElse(parentDecl.getPointerOperators)
+        case _ => parentDecl.getPointerOperators
+      }
+    } else {
+      parentDecl.getPointerOperators
+    }
+
     val arr = parentDecl match {
       case p: IASTArrayDeclarator => "[]" * p.getArrayModifiers.length
       case _                      => ""
