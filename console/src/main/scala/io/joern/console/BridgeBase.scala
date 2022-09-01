@@ -1,8 +1,8 @@
 package io.joern.console
 
 import os.{Path, pwd}
-// import ammonite.util.{Colors, Res}
 import better.files._
+import dotty.tools.repl.State
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
 
@@ -187,27 +187,24 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
   protected def predefPlus(lines: List[String]): String
 
-  protected def shutdownHooks: List[String]
+  protected def greeting: String
 
-  protected def promptStr(): String
+  protected def promptStr: String
 
 }
 
-trait ScriptExecution {
-  this: BridgeBase =>
+trait ScriptExecution { this: BridgeBase =>
 
   protected def startInteractiveShell(config: Config, slProduct: SLProduct) = {
-    val configurePPrinterMaybe =
-      if (config.nocolors) ""
-      else """val originalPPrinter = repl.pprinter()
-             |repl.pprinter.update(io.joern.console.pprinter.create(originalPPrinter))
-             |""".stripMargin
+    // val configurePPrinterMaybe =
+    //   if (config.nocolors) ""
+    //   else """val originalPPrinter = repl.pprinter()
+    //          |repl.pprinter.update(io.joern.console.pprinter.create(originalPPrinter))
+    //          |""".stripMargin
 
     val replConfig = List(
-      "repl.prompt() = \"" + promptStr() + "\"",
-      configurePPrinterMaybe,
-      "implicit val implicitPPrinter = repl.pprinter()",
-      "banner()"
+      // configurePPrinterMaybe,
+      // "implicit val implicitPPrinter = repl.pprinter()",
     ) ++ config.cpgToLoad.map { cpgFile =>
       "importCpg(\"" + cpgFile + "\")"
     } ++ config.forInputPath.map { name =>
@@ -215,6 +212,21 @@ trait ScriptExecution {
          |openForInputPath(\"$name\")
          |""".stripMargin
     }
+
+    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
+
+    val replArgs = Array(
+      "-classpath", // pass classpath on into the repl
+      System.getProperty("java.class.path"),
+      "-explain", // verbose scalac error messages
+    )
+    val repl = new ReplDriver(replArgs, scala.Console.out, greeting, promptStr)
+
+    given State = repl.run(predefCode)(using repl.initialState)
+    repl.runUntilQuit()
+
+    // repl.runUntilQuit(using repl.initialState)()
+
     // ammonite
     //   .Main(
     //     predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks),
@@ -224,7 +236,6 @@ trait ScriptExecution {
     //     colors = ammoniteColors(config)
     //   )
     //   .run()
-    ???
   }
 
   protected def runScript(scriptFile: Path, config: Config) = {
@@ -239,7 +250,7 @@ trait ScriptExecution {
       if (isEncryptedScript) decryptedScript(scriptFile)
       else scriptFile
 
-    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config) ++ shutdownHooks)
+    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
 
     // ammonite
     //   .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))

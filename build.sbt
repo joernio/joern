@@ -7,7 +7,6 @@ val cpgVersion = "1.3.559"
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
 lazy val console           = Projects.console
-lazy val console2          = Projects.console2
 lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
