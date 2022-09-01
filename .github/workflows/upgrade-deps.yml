@@ -19,7 +19,7 @@ jobs:
         with:
           java-version: 1.11
       - name: Install php deps for php2cpg
-        run: joern-cli/frontends/php2cpg/installdeps.sh
+        run: joern-cli/frontends/php2cpg/bin/installdeps.sh
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
       - run: sbt clean +test

@@ -117,7 +117,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   }
 
   private def allFrontends: List[Frontend] =
-    List(c, cpp, ghidra, kotlin, java, jvm, javascript, golang, llvm, python, csharp)
+    List(c, cpp, ghidra, kotlin, java, jvm, javascript, golang, llvm, php, python, csharp)
 
   /** Provide an overview of the available CPG generators (frontends)
     */
