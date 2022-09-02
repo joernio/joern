@@ -3,11 +3,12 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.solidity2cpg.domain.SuryaObject._
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.NodeBuilders.modifierNode
+import io.joern.x2cpg.utils.NodeBuilders.{identifierNode, modifierNode, operatorCallNode}
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier.{PropertyDefaults => IdentifierDefaults}
+import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.{PropertyDefaults => ParameterDefaults}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
-  EdgeTypes,
   EvaluationStrategies,
   ModifierTypes,
   NodeTypes,
@@ -15,39 +16,26 @@ import io.shiftleft.codepropertygraph.generated.{
   PropertyNames
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewAnnotation,
-  NewAnnotationLiteral,
-  NewAnnotationParameter,
-  NewAnnotationParameterAssign,
-  NewArrayInitializer,
-  NewBinding,
   NewBlock,
   NewCall,
-  NewClosureBinding,
   NewControlStructure,
   NewFieldIdentifier,
-  NewFile,
   NewIdentifier,
-  NewJumpTarget,
   NewLiteral,
   NewLocal,
   NewMember,
   NewMethod,
   NewMethodParameterIn,
-  NewMethodRef,
   NewMethodReturn,
   NewModifier,
   NewNamespaceBlock,
-  NewNode,
   NewReturn,
   NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
+  NewTypeRef
 }
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-import java.util
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
@@ -135,10 +123,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val fullName  = registerType(contractDef.name)
     val shortName = fullName.split("\\.").lastOption.getOrElse(contractDef).toString
     // TODO: Should look out for inheritance/implemented types I think this is in baseContracts? Make sure
-    val superTypes = contractDef.baseContracts.map {
-      case x: InheritanceSpecifier => {
-        x.baseName.namePath
-      }
+    // TODO: Changed this to collect for safety. Look at which other cases should be handled here.
+    val superTypes = contractDef.baseContracts.collect { case x: InheritanceSpecifier =>
+      x.baseName.namePath
     }
     val typeDecl = NewTypeDecl()
       .name(shortName)
@@ -187,17 +174,16 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     var body = Ast()
     val name = if (methodOrModifier.name != null) methodOrModifier.name else "<init>"
     val parameters =
-      if (methodOrModifier.isVirtual) Seq(createThisParameterNode(contractName))
-      else {
-        if (methodOrModifier.parameters != null)
-          createThisParameterNode(contractName) +: withOrder(methodOrModifier.parameters.collect {
-            case x: VariableDeclaration => x
-          }) { case (x, order) =>
-            astForParameter(x, order)
-          }
-        else {
-          Seq(createThisParameterNode(contractName))
+      if (methodOrModifier.isVirtual) {
+        Seq(createThisParameterNode(contractName))
+      } else if (methodOrModifier.parameters != null) {
+        createThisParameterNode(contractName) +: withOrder(methodOrModifier.parameters.collect {
+          case x: VariableDeclaration => x
+        }) { case (x, order) =>
+          astForParameter(x, order)
         }
+      } else {
+        Seq(createThisParameterNode(contractName))
       }
     if (methodOrModifier.body != null) {
       body = astForBody(methodOrModifier.body.asInstanceOf[Block], parameters.size)
@@ -341,7 +327,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
         mAst
       case x =>
-        logger.warn(s"Unhandled statement of tyvar modifierMethod = Ast()pe ${x.getClass}")
+        logger.warn(s"Unhandled statement of type ${x.getClass}")
         Ast() // etc
     }
 
@@ -349,44 +335,31 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   // TODO: I assume the only types coming into parameter are var decls but it's worth making sure in tests
   private def astForParameter(varDecl: VariableDeclaration, order: Int): Ast = {
-    val NewMethodParameter = NewMethodParameterIn();
-    var typefullName       = ""
-    var code               = ""
-    var visibility         = ""
-    var storage            = ""
-    typefullName = getTypeName(varDecl.typeName, varDecl.storageLocation)
+    var storage = ""
 
-    varDecl.visibility match {
-      case x: String => visibility = " " + x
-      case _         => visibility = ""
+    // TODO: I assume the original match exists because of a possible null value. Fix that during parsing.
+    val visibility = Option(varDecl.visibility) match {
+      case Some(x) => " " + x
+      case None    => ""
     }
 
-    varDecl.storageLocation match {
-      case x: String => storage = " " + x
-      case _         => storage = ""
-    }
-
-    NewMethodParameter
+    val typefullName = getTypeName(varDecl.typeName, varDecl.storageLocation)
+    val paramNode = NewMethodParameterIn()
       .name(varDecl.name)
-      .code(typefullName + code + visibility /*+storage */ + " " + varDecl.name)
+      .code(typefullName + visibility /*+storage */ + " " + varDecl.name)
       .typeFullName(typefullName)
       .order(order)
       .evaluationStrategy(getEvaluationStrategy(varDecl.typeName.getType))
       .lineNumber(varDecl.lineNumber.get)
       .columnNumber(varDecl.columnNumber.get)
 
-    Ast(NewMethodParameter)
+    Ast(paramNode)
   }
-//TODO: fix vars
   private def astForBody(body: Block, order: Int): Ast = {
     val blockNode = NewBlock().order(order).argumentIndex(order)
-    try {
-      val stmts = body.statements
-    } catch {
-      case e: Exception => logger.warn(s"HERE Unhandled statement of type ${body}")
-    }
-    val stmts = body.statements
+    val stmts     = body.statements
 
+    // TODO: Create locals as part of teh vardecl ast.
     val vars = withOrder(stmts) { case (x, order) =>
       astForLocalDeclaration(x, order)
     }
@@ -399,32 +372,27 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
   private def astForLocalDeclaration(statement: BaseASTNode, order: Int): Ast = {
     val locals = statement match {
-      case x: VariableDeclarationStatement => {
+      case x: VariableDeclarationStatement =>
         withOrder(x.variables.collect { case x: VariableDeclaration => x }) { (x, varOrder) =>
           astForLocal(x, varOrder - 1 + order)
         }
-      }
-      case _ => null
-    }
-    if (locals != null) {
-      Ast()
-        .withChildren(locals)
-    } else {
-      Ast()
+      case _ => Seq.empty
     }
 
+    // TODO Have method return a sequence of asts instead.
+    Ast().withChildren(locals)
   }
 
   private def astForStatement(statement: BaseASTNode, order: Int): Ast = {
     // TODO : Finish all of these statements
     statement match {
       case x: ExpressionStatement          => astForExpression(x.expression, order)
-      case x: EmitStatement                => Ast()
+      case _: EmitStatement                => Ast()
       case x: ForStatement                 => astForForStatement(x, order)
       case x: IfStatement                  => astForIfStatement(x, order)
       case x: ReturnStatement              => astForReturn(x, order)
       case x: VariableDeclarationStatement => astForVarDeclStmt(x, order)
-      case x: InlineAssemblyStatement      => astForInlineAssemblyStatement(x.body, order)
+      case x: InlineAssemblyStatement      => astForInlineAssemblyStatement(x, order)
       case x: ThrowStatement               => astForThrow(x, order)
       case x: WhileStatement               => astForWhileStatement(x, order)
       case x: Block                        => astForBody(x, order)
@@ -445,30 +413,24 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .code(code)
       .lineNumber(statement.lineNumber.get)
       .columnNumber(statement.columnNumber.get)
-    Ast(whileNode)
-      .withChild(condition)
-      .withChild(body)
+    controlStructureAst(whileNode, Some(condition), List(body))
   }
 
-  private def astForInlineAssemblyStatement(block: BaseASTNode, order: Int): Ast = {
-    block match {
+  private def astForInlineAssemblyStatement(assemblyStmt: InlineAssemblyStatement, order: Int): Ast = {
+    assemblyStmt.body match {
       case x: AssemblyBlock => astForAsmBody(x, order)
-      case _ => {
-        println("InlineAssemblyStatement type not found: " + block.getType)
+      case unhandled =>
+        logger.warn(s"Expected AssemblyBlock for InlineAssemblyStatement but got ${unhandled.getType}")
         Ast()
-      }
     }
-
   }
 
   def astForThrow(stmt: ThrowStatement, order: Int): Ast = {
-    val throwNode = NewCall()
-      .name("<operator>.throw")
-      .methodFullName("<operator>.throw")
-      .code(stmt.toString())
+    val throwNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.THROW)
+      .code(stmt.toString)
       .order(order)
       .argumentIndex(order)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .lineNumber(stmt.lineNumber.get)
       .columnNumber(stmt.columnNumber.get)
 
@@ -482,11 +444,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .code("Assembly")
       .lineNumber(body.lineNumber.get)
       .columnNumber(body.columnNumber.get)
-    val operations = body.operations
-    Ast(blockNode)
-      .withChildren(withOrder(operations) { case (x, order) =>
-        astForAsmStatement(x, order)
-      })
+
+    val operations = withOrder(body.operations) { case (x, order) =>
+      astForAsmStatement(x, order)
+    }
+
+    Ast(blockNode).withChildren(operations)
   }
 
   private def astForAsmStatement(statement: BaseASTNode, order: Int): Ast = {
@@ -503,81 +466,61 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForAsmAssignment(assignment: AssemblyAssignment, order: Int): Ast = {
-    val names = withOrder(assignment.names) { case (x, order) =>
+    val targetAsts = withOrder(assignment.names) { case (x, order) =>
       x match {
         case y: Identifier => astForIdentifier(y, order)
-        case _ => {
-          println("type in AsmAssignment: " + x.getType)
+        case unhandled =>
+          logger.warn(s"Expected Identifier type as assignment name but got $unhandled")
           Ast()
-        }
       }
     }
-    val expr  = astForAsmStatement(assignment.expression, names.size)
-    val lfteq = names.flatMap(_.root.map(_.properties(PropertyNames.CODE)).mkString(""))
-    val rhteq = expr.root.map(_.properties(PropertyNames.CODE)).mkString("")
-    val callNode = NewCall()
-      .name(Operators.assignment)
-      .methodFullName(Operators.assignment)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(lfteq.head + " " + ":=" + " " + rhteq)
-      .argumentIndex(order)
-      .order(order)
-      .lineNumber(assignment.lineNumber.get)
-      .columnNumber(assignment.columnNumber.get)
-    val children = names :+ expr
+    val sourceExpr = astForAsmStatement(assignment.expression, targetAsts.size)
+    val targetCode = targetAsts.flatMap(_.root.map(_.properties(PropertyNames.CODE)).mkString(""))
+    val sourceCode = sourceExpr.root.map(_.properties(PropertyNames.CODE)).mkString("")
+
+    val lineNumber   = assignment.lineNumber.map(Integer.valueOf)
+    val columnNumber = assignment.columnNumber.map(Integer.valueOf)
+
+    val callNode = operatorCallNode(
+      name = Operators.assignment,
+      code = s"$targetCode := $sourceCode",
+      line = lineNumber,
+      column = columnNumber
+    ).order(order).argumentIndex(order)
+
+    // TODO: Having more than one target will mess with assignment semantics.
+    //  Splitting these into a sequence of single target assignments may be better.
+    val children = targetAsts :+ sourceExpr
     Ast(callNode)
       .withChildren(children)
       .withArgEdges(callNode, children.flatMap(_.root))
   }
 
   private def astForAsmCall(call: AssemblyCall, order: Int): Ast = {
-    var name = ""
-    var code = ""
-    var args = ""
-    val expr = call.functionName match {
-      case "shr" => {
-        name = Operators.arithmeticShiftRight
-        Ast(
-          NewIdentifier()
-            .name(name)
-            .code(call.functionName)
-            .order(order + 1)
-            .argumentIndex(order + 1)
-        )
-      }
-      case "shl" => {
-        name = Operators.shiftLeft
-        Ast(
-          NewIdentifier()
-            .name(name)
-            .code(call.functionName)
-            .order(order + 1)
-            .argumentIndex(order + 1)
-        )
-      }
-      case _ =>
-        Ast(
-          NewIdentifier()
-            .name(call.functionName)
-            .code(call.functionName)
-            .order(order + 1)
-            .argumentIndex(order + 1)
-        )
 
+    val name = call.functionName match {
+      case "shr" => Operators.arithmeticShiftRight
+      case "shl" => Operators.shiftLeft
+      case _     => call.functionName
     }
+
+    // TODO This shouldn't be an identifier
+    val exprNode = NewIdentifier()
+      .name(name)
+      .code(call.functionName)
+      .order(order + 1)
+      .argumentIndex(order + 1)
+    val exprAst = Ast(exprNode)
+
     val arguments = withOrder(call.arguments) { case (x, order) =>
       astForAsmStatement(x, order)
-    }
-    if (name.isEmpty) {
-      name = expr.root.map(_.properties(PropertyNames.NAME)).mkString("")
-    }
-    args = arguments.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString(", ")
-    code = if (args.isEmpty) {
-      expr.root.map(_.properties(PropertyNames.CODE)).mkString("")
-    } else {
-      expr.root.map(_.properties(PropertyNames.CODE)).mkString("") + "(" + args + ")"
-    }
-    val func = NewCall()
+    }.toList
+
+    // TODO Move rootCode method to x2cpg for this.
+    val argsCode = arguments.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString(", ")
+    val code     = s"${call.functionName}($argsCode)"
+
+    val callNode = NewCall()
       .name(name)
       .code(code)
       .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
@@ -585,12 +528,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .argumentIndex(order)
       .lineNumber(call.lineNumber.get)
       .columnNumber(call.columnNumber.get)
-    Ast(func)
-      .withChild(expr)
-      .withChildren(arguments)
-      .withArgEdges(func, expr.root.toList)
-      .withArgEdges(func, arguments.flatMap(_.root))
 
+    // TODO I don't think exprAst should be added here.
+    callAst(callNode, exprAst :: arguments)
   }
 
   private def astForDecimalNumber(number: DecimalNumber, order: Int): Ast = {
@@ -605,12 +545,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForLocal(varDecl: VariableDeclaration, order: Int): Ast = {
-    val fullTypeName = getTypeName(varDecl.typeName, varDecl.storageLocation)
+    val typeFullName = getTypeName(varDecl.typeName, varDecl.storageLocation)
     Ast(
       NewLocal()
         .name(varDecl.name)
-        .code(fullTypeName + " " + varDecl.name)
-        .typeFullName(fullTypeName)
+        .code(s"$typeFullName ${varDecl.name}")
+        .typeFullName(typeFullName)
         .order(order)
         .lineNumber(varDecl.lineNumber.get)
         .columnNumber(varDecl.columnNumber.get)
@@ -618,6 +558,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   }
 
+  // TODO Leaving this one untouched since it'll most likely be completely rewritten.
   private def astForVarDecl(varDecl: VariableDeclaration, order: Int): Ast = {
     val newID        = NewIdentifier()
     var typefullName = ""
@@ -648,80 +589,93 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForField(stateVariableDeclaration: StateVariableDeclaration, order: Int): Ast = {
-    val fieldType =
+    val memberAsts =
       stateVariableDeclaration.variables.collect { case x: VariableDeclaration => astForMemberVarDecl(x, order) }
 
-    Ast().withChildren(fieldType)
+    // TODO Return a sequence of Asts here.
+    Ast().withChildren(memberAsts)
   }
 
   private def getMappingKeyAndValue(mapping: Mapping): String = {
+    // TODO Are these matches comprehensive?
     val key = mapping.keyType match {
       case x: ElementaryTypeName => x.name
-      case x: Mapping            => (getMappingKeyAndValue(x))
+      case x: Mapping            => getMappingKeyAndValue(x)
     }
     val value = mapping.valueType match {
-
       case x: ElementaryTypeName  => x.name
-      case x: Mapping             => (getMappingKeyAndValue(x))
+      case x: Mapping             => getMappingKeyAndValue(x)
       case x: UserDefinedTypeName => x.namePath
     }
-    (" (" + key + " => " + value + ")")
+    // TODO Should there be a space here.
+    s" ($key => $value)"
   }
 
   private def createThisParameterNode(str: String): Ast = {
-    if (str != null) {
-      Ast(
-        NewMethodParameterIn()
-          .name("this")
-          .code("this")
-          .typeFullName(str)
-          .order(0)
-          .evaluationStrategy(getEvaluationStrategy("constructor"))
-      )
-    } else {
-      Ast(
-        NewMethodParameterIn()
-          .name("this")
-          .code("this")
-          .order(0)
-      )
+    // TODO Replace nullable String with option
+    val typeFullName = Option(str).getOrElse(ParameterDefaults.TypeFullName)
+    val evaluationStrategy = Option(str) match {
+      // TODO Keeping this for consistency with the original, but having these 2 cases seems weird.
+      case Some(_) => EvaluationStrategies.BY_SHARING
+      case None    => ParameterDefaults.EvaluationStrategy
     }
+
+    val paramNode = NewMethodParameterIn()
+      .name("this")
+      .code("this")
+      .typeFullName(typeFullName)
+      .evaluationStrategy(evaluationStrategy)
+      .order(0)
+      .index(0)
+
+    Ast(paramNode)
+  }
+
+  private def accessModifier(visibility: String): Option[NewModifier] = {
+    val modifierType = visibility match {
+      case "public"  => Some(ModifierTypes.PUBLIC)
+      case "private" => Some(ModifierTypes.PRIVATE)
+      case unhandled =>
+        logger.warn(s"Found unhandled modifier type $unhandled in accessModifier")
+        None
+    }
+
+    modifierType.map(modifierNode)
   }
 
   private def astForMemberVarDecl(varDecl: VariableDeclaration, order: Int): Ast = {
     val newMember    = NewMember()
-    var typefullName = ""
-    typefullName = getTypeName(varDecl.typeName, varDecl.storageLocation)
-    var visibility = "";
+    val typeFullName = getTypeName(varDecl.typeName, varDecl.storageLocation)
 
-    varDecl.visibility match {
-      case x: String => visibility = " " + x
-      case _         => visibility = ""
+    // TODO Make visibility non-nullable
+    val visibilityCodeStr = Option(varDecl.visibility) match {
+      case Some(visibility) => " " + visibility
+      case None             => ""
     }
 
-    val modifierMethod = varDecl.visibility match {
-      case "public"  => Ast(NewModifier().modifierType(ModifierTypes.PUBLIC).code(varDecl.visibility))
-      case "private" => Ast(NewModifier().modifierType(ModifierTypes.PRIVATE).code(varDecl.visibility))
-      case _         => Ast()
-    }
+    val accessModifierNode = accessModifier(varDecl.visibility)
+    val accessModifierAst  = accessModifierNode.map(Ast(_)).toList
 
-    typeMap.addOne(varDecl.name, typefullName)
-    membersList = membersList :+ (varDecl.name)
+    // TODO Replace these with a scope stack kind of thing.
+    typeMap.addOne(varDecl.name, typeFullName)
+    membersList = membersList :+ varDecl.name
+
     newMember
       .name(varDecl.name)
-      .code(typefullName + visibility + " " + varDecl.name)
-      .typeFullName(typefullName)
+      .code(s"$typeFullName$visibilityCodeStr ${varDecl.name}")
+      .typeFullName(typeFullName)
       .order(order)
       .columnNumber(varDecl.columnNumber.get)
       .lineNumber(varDecl.lineNumber.get)
 
     Ast(newMember)
       .withChild(Ast(modifierNode(ModifierTypes.STATIC)))
-      .withChild(modifierMethod)
+      .withChildren(accessModifierAst)
   }
 
   /** TODO: This needs some refinement, can methods really return more than one base type?
     */
+  // TODO Methods with multiple return values should probably return some tuple type.
   private def astForMethodReturn(value: List[BaseASTNode], order: Int): Ast = {
     var visibility = ""
     var name       = ""
@@ -761,7 +715,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
     val exprAst = astForExpression(returnStatement.expression, order + 1)
     val returnNode = NewReturn()
-      .code(s"return ${(exprAst.root).map(_.properties(PropertyNames.CODE)).mkString(" ")};")
+      // TODO Replace with rootCode
+      .code(s"return ${exprAst.root.map(_.properties(PropertyNames.CODE)).mkString(" ")};")
       .order(order)
       .argumentIndex(order)
       .columnNumber(returnStatement.columnNumber.get)
@@ -772,6 +727,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   }
 
+  // TODO Handle modifiers in a way similar to Python2Cpg
   private def astForModifiers(modifiers: List[BaseASTNode]): Seq[Ast] = {
     var args = ""
     modifiers
@@ -811,39 +767,38 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case x: TypeNameExpression => astForTypeNameExpression(x, order)
       case x: Conditional        => astForConditional(x, order)
       case x: ElementaryTypeName => astForCastExpr(x, order)
-      case _ => {
-        println("astForExpression not matched type : " + expr.getType)
+      case unhandled =>
+        logger.warn(s"Unhandled expression type $unhandled")
         Ast()
-      }
     }
   }
 
   def astForCastExpr(expr: ElementaryTypeName, order: Int): Ast = {
-    val callBack = NewCall()
-      .name(Operators.cast)
-      .methodFullName(Operators.cast)
-      .code(expr.name)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .order(order)
-      .typeFullName(registerType(expr.name))
-      .argumentIndex(order)
-    val value = Seq(
-      Ast(
-        NewTypeRef()
-          .code(expr.name)
-          .order(1)
-          .argumentIndex(1)
-          .typeFullName(expr.name)
-          .columnNumber(expr.columnNumber.get)
-          .lineNumber(expr.lineNumber.get)
-      )
-    )
-    Ast(callBack)
-      .withChildren(value)
-      .withArgEdges(callBack, value.flatMap(_.root))
+    val lineNumber   = expr.lineNumber.map(Integer.valueOf)
+    val columnNumber = expr.columnNumber.map(Integer.valueOf)
+    val callNode = operatorCallNode(
+      name = Operators.cast,
+      code = expr.name,
+      typeFullName = Some(registerType(expr.name)),
+      line = lineNumber,
+      column = columnNumber
+    ).order(order).argumentIndex(order)
+    val typeRef =
+      NewTypeRef()
+        .code(expr.name)
+        .order(1)
+        .argumentIndex(1)
+        .typeFullName(expr.name)
+        .columnNumber(expr.columnNumber.get)
+        .lineNumber(expr.lineNumber.get)
+
+    // TODO It feels like the second half of the cast is missing. Check if that's added somewhere else.
+    val args = Seq(Ast(typeRef))
+    callAst(callNode, args)
   }
 
   private def astForConditional(x: Conditional, order: Int): Ast = {
+    // TODO The true/false branches aren't handled here.
     astForExpression(x.condition, order)
   }
 
@@ -857,6 +812,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         case x: BaseASTNode => astForExpression(x, 4)
       }
     }
+    // TODO Use rootCode here
     val code = "for (" + initial.root.map(_.properties(PropertyNames.CODE)).mkString("") + "; " + conditionExpr.root
       .map(_.properties(PropertyNames.CODE))
       .mkString("") + "; " + loopExpr.root.map(_.properties(PropertyNames.CODE)).mkString("") + ")"
@@ -867,36 +823,29 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .code(code)
       .columnNumber(statement.columnNumber.get)
       .lineNumber(statement.lineNumber.get)
-    val ast = Ast(forNode)
+    Ast(forNode)
       .withChild(initial)
       .withChild(conditionExpr)
       .withChild(loopExpr)
       .withChild(body)
-
-    conditionExpr.root match {
-      case Some(r) => ast.withConditionEdge(forNode, r)
-      case None    => ast
-    }
-
+      .withConditionEdges(forNode, conditionExpr.root.toList)
   }
 
   private def astForNumberLiteral(numberLiteral: NumberLiteral, order: Int): Ast = {
-    var code         = ""
     val typeFullName = registerType(numberLiteral.number)
-    if (numberLiteral.subdenomination != null) {
-      code = numberLiteral.number + numberLiteral.subdenomination
-    } else {
-      code = numberLiteral.number
-    }
-    Ast(
-      NewLiteral()
-        .code(code)
-        .typeFullName(typeFullName)
-        .order(order)
-        .argumentIndex(order)
-        .columnNumber(numberLiteral.columnNumber.get)
-        .lineNumber(numberLiteral.lineNumber.get)
-    )
+    val code =
+      if (numberLiteral.subdenomination != null)
+        numberLiteral.number + numberLiteral.subdenomination
+      else
+        numberLiteral.number
+    val literalNode = NewLiteral()
+      .code(code)
+      .typeFullName(typeFullName)
+      .order(order)
+      .argumentIndex(order)
+      .columnNumber(numberLiteral.columnNumber.get)
+      .lineNumber(numberLiteral.lineNumber.get)
+    Ast(literalNode)
   }
 
   private def astForUnaryOperation(operation: UnaryOperation, order: Int): Ast = {
@@ -910,29 +859,30 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     }
     else
       operation.operator match {
+        // TODO Can `NOT` really be postfix?
         case "!"  => Operators.logicalNot
         case "++" => Operators.postIncrement
         case "--" => Operators.postDecrement
         case _    => throw new Exception("Unsupported unary operator: " + operation.operator)
       }
-    val code =
-      if (operation.isPrefix)
-        operation.operator + subExpression.root.map(_.properties(PropertyNames.CODE)).mkString("")
-      else
-        subExpression.root.map(_.properties(PropertyNames.CODE)).mkString("") + operation.operator
-    val callNode = NewCall()
-      .name(operatorName)
-      .methodFullName(operatorName)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(code)
+
+    // TODO
+    //  - Replace with rootCode
+    //  - Find better default
+    val subExprCode  = subExpression.root.map(_.properties(PropertyNames.CODE)).getOrElse("")
+    val opCode       = operation.operator
+    val code         = if (operation.isPrefix) s"$opCode$subExprCode" else s"$subExprCode$opCode"
+    val lineNumber   = operation.lineNumber.map(Integer.valueOf)
+    val columnNumber = operation.columnNumber.map(Integer.valueOf)
+
+    val callNode = operatorCallNode(operatorName, code = code, line = lineNumber, column = columnNumber)
       .order(order)
       .argumentIndex(order)
-      .columnNumber(operation.columnNumber.get)
-      .lineNumber(operation.lineNumber.get)
 
     Ast(callNode).withChild(subExpression)
   }
   private def astForTypeNameExpression(expression: TypeNameExpression, order: Int): Ast = {
+    // TODO If this really should be empty, remove the method.
     Ast()
   }
 
@@ -967,70 +917,41 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 //      case _: EqExpr   => Operators.equals
         case _ => ""
       }
-    val lft   = astForExpression(operation.left, 1)
-    val rht   = astForExpression(operation.right, 2)
-    val lfteq = lft.root.map(_.properties(PropertyNames.CODE)).mkString("")
-    val rhteq = rht.root.map(_.properties(PropertyNames.CODE)).mkString("")
-    val callNode = NewCall()
-      .name(operatorName)
-      .methodFullName(operatorName)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(lfteq + " " + operation.operator + " " + rhteq)
-      .argumentIndex(order)
-      .order(order)
-      .columnNumber(operation.columnNumber.get)
-      .lineNumber(operation.lineNumber.get)
-    val children = Seq(lft, rht)
+    val left  = astForExpression(operation.left, 1)
+    val right = astForExpression(operation.right, 2)
+    // TODO Replace with rootCode
+    val leftCode     = left.root.map(_.properties(PropertyNames.CODE)).mkString("")
+    val rightCode    = right.root.map(_.properties(PropertyNames.CODE)).mkString("")
+    val lineNumber   = operation.lineNumber.map(Integer.valueOf)
+    val columnNumber = operation.columnNumber.map(Integer.valueOf)
 
+    val callNode = operatorCallNode(
+      operatorName,
+      code = s"$leftCode ${operation.operator} $rightCode",
+      line = lineNumber,
+      column = columnNumber
+    ).order(order).argumentIndex(order)
+
+    val args = List(left, right)
     Ast(callNode)
-      .withChildren(children)
-      .withArgEdges(callNode, children.flatMap(_.root))
+      .withChildren(args)
+      .withArgEdges(callNode, args.flatMap(_.root))
   }
   private def astForIfStatement(operation: IfStatement, order: Int): Ast = {
-    val opNode = astForExpression(operation.condition, 1)
-    var tb     = Ast()
-    var fb     = Ast()
-    var foundt = false
-    var foundf = false
-    if (operation.trueBody != null) {
-      operation.trueBody match {
-        case x: Block => {
+    val conditionAst = astForExpression(operation.condition, 1)
 
-          tb = astForBody(x, 2)
-          foundt = true
-        }
-        case x => {
-          tb = astForStatement(x, 2)
-          foundt = true
-        }
-      }
+    // TODO Replace nullable type with Option
+    // TODO Wrap body in block if necessary
+    val thenAst = Option(operation.trueBody).map {
+      case body: Block => astForBody(body, 2)
+      case body        => astForStatement(body, 2)
     }
-    if (operation.falseBody != null) {
-      val elseNode =
-        Ast(
-          NewControlStructure()
-            .controlStructureType(ControlStructureTypes.ELSE)
-            .order(3)
-            .argumentIndex(3)
-            .code("else")
-            .columnNumber(operation.columnNumber.get)
-            .lineNumber(operation.lineNumber.get)
-        )
+    val elseAst = Option(operation.falseBody).map {
+      case body: Block => astForBody(body, 3)
+      case body        => astForStatement(body, 3)
+    }
 
-      operation.falseBody match {
-        case x: Block => {
-          fb = elseNode.withChild(astForBody(x, 1))
-          foundf = true
-        }
-        case x => {
-          fb = astForStatement(x, 3)
-          fb = elseNode.withChild(astForStatement(x, 1))
-          foundf = true
-        }
-      }
-    }
-    val code = opNode.root.map(_.properties(PropertyNames.CODE)).mkString("")
-    var ast  = Ast()
+    val code = conditionAst.root.map(_.properties(PropertyNames.CODE)).getOrElse("")
     val ifNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.IF)
@@ -1039,34 +960,12 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .argumentIndex(order)
         .columnNumber(operation.columnNumber.get)
         .lineNumber(operation.lineNumber.get)
-    if (foundt && foundf) {
-      ast = Ast(ifNode)
-        .withChild(opNode)
-        .withChild(tb)
-        .withChild(fb)
 
-    } else if (foundt && !foundf) {
-      ast = Ast(ifNode)
-        .withChild(opNode)
-        .withChild(tb)
-    } else if (!foundt && foundf) {
-
-      ast = Ast(ifNode)
-        .withChild(opNode)
-        .withChild(fb)
-
-    } else {
-      ast = Ast(ifNode)
-        .withChild(opNode)
-    }
-    val ifAst = opNode.root match {
-      case Some(r) =>
-        ast.withConditionEdge(ifNode, r)
-      case None => ast
-    }
-    ifAst
+    controlStructureAst(ifNode, Some(conditionAst), List(thenAst, elseAst).flatten)
   }
+
   private def astForNewExpression(x: NewExpression, order: Int): Ast = {
+    // TODO Implement or remove this.
     Ast()
   }
 
@@ -1123,12 +1022,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForIdentifier(identifier: Identifier, order: Int): Ast = {
-    val typeFullName = {
-      if (typeMap.contains(identifier.name))
-        typeMap.get(identifier.name).toList(typeMap.get(identifier.name).size - 1)
-      else
-        ""
-    }
+    val typeFullName = typeMap.getOrElse(identifier.name, IdentifierDefaults.TypeFullName)
+    // TODO Is the field access here correct and necessary? I think in theory it shouldn't be
+    //  but in practice is at the moment.
     if (membersList.contains(identifier.name)) {
       val fieldAccessBlock = NewCall()
         .name(Operators.fieldAccess)
@@ -1179,6 +1075,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForMemberAccess(memberAccess: MemberAccess, order: Int): Ast = {
+    // TODO None of the open source frontends currently use <operator>.memberAccess, so this
+    //  should probably just be a fieldAccess instead.
     val expr = astForExpression(memberAccess.expression, order)
     val name = if (expr.root.map(_.properties(PropertyNames.NAME)).mkString("").equals(Operators.fieldAccess)) {
       expr.nodes(2).properties(PropertyNames.CANONICAL_NAME) + ""
@@ -1201,12 +1099,11 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForBooleanLiteral(literal: BooleanLiteral, order: Int): Ast = {
-    var code         = ""
+    // TODO Use type constant
     val typeFullName = registerType("bool")
-    code = literal.value + ""
     Ast(
       NewLiteral()
-        .code(code)
+        .code(literal.value.toString)
         .typeFullName(typeFullName)
         .order(order)
         .argumentIndex(order)
@@ -1220,35 +1117,30 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForIndexAccess(x: IndexAccess, order: Int): Ast = {
-    val name      = Operators.indexAccess
     val base      = astForExpression(x.base, 1)
     val index     = astForExpression(x.index, 2)
-    val baseName  = base.root.map(_.properties(PropertyNames.CODE)).mkString("")
-    val indexName = index.root.map(_.properties(PropertyNames.CODE)).mkString("")
-    val code      = baseName + "[" + indexName + "]"
-    Ast(
-      NewCall()
-        .name(name)
-        .methodFullName(name)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .code(code)
-        .order(order)
-        .argumentIndex(order)
-        .columnNumber(x.columnNumber.get)
-        .lineNumber(x.lineNumber.get)
-    )
-      .withChild(base)
-      .withChild(index)
+    val baseCode  = base.root.map(_.properties(PropertyNames.CODE)).mkString("")
+    val indexCode = index.root.map(_.properties(PropertyNames.CODE)).mkString("")
+    val code      = s"$baseCode[$indexCode]"
+    val lineNo    = x.lineNumber.map(Integer.valueOf)
+    val columnNo  = x.columnNumber.map(Integer.valueOf)
+    val callNode = operatorCallNode(name = Operators.indexAccess, code = code, line = lineNo, column = columnNo)
+      .order(order)
+      .argumentIndex(order)
+
+    callAst(callNode, List(base, index))
   }
 
   private def astForTupleExpression(expression: TupleExpression, order: Int): Ast = {
     val components = withOrder(expression.components) { case (x, size) =>
       astForExpression(x, size + order - 1)
     }
+    // TODO Return sequence of asts here
     Ast().withChildren(components)
   }
 
   private def astsForDefinition(x: BaseASTNode, order: Int): Ast = {
+    // TODO Can astsForDefinition just be replaced with astForExpression?
     astForExpression(x, order)
   }
 
@@ -1310,7 +1202,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     Ast(memberNode).withChildren(members)
   }
 
-  private def getEvaluationStrategy(typ: String): String =
+  private def getEvaluationStrategy(typ: String): String = {
+    // TODO Refactor this once sure typ isn't nullable.
     typ match {
       case x: String => {
         if (x.equals("ElementaryTypeName")) {
@@ -1327,44 +1220,39 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       }
       case _ => EvaluationStrategies.BY_SHARING
     }
+  }
 
   private def getParameters(paramlist: List[BaseASTNode]): String = {
-    var params = ""
-    paramlist.collect { case x: VariableDeclaration =>
-      params += getTypeName(x.typeName, x.storageLocation)
-    }
-    (params)
+    // TODO Shouldn't these be comma separated?
+    paramlist
+      .collect { case x: VariableDeclaration =>
+        getTypeName(x.typeName, x.storageLocation)
+      }
+      .mkString("")
   }
 
   private def getTypeName(base: BaseASTNode, storage: String): String = {
-    var sto = storage
-    if (sto != "" && sto != null) {
-      sto = " " + storage
-    } else {
-      sto = ""
+    val storageString = Option(storage) match {
+      case None     => ""
+      case Some("") => ""
+      case Some(s)  => s" $s"
     }
+    // TODO Double check these type names, especially last 3.
     base match {
       case x: ElementaryTypeName => registerType(x.name)
       case x: ArrayTypeName =>
         if (x.length != null) {
-          registerType(getTypeName(x.baseTypeName, "") + "[" + x.length + "]" + sto)
+          registerType(getTypeName(x.baseTypeName, "") + "[" + x.length + "]" + storageString)
         } else {
-          registerType(getTypeName(x.baseTypeName, "") + "[]" + sto)
+          registerType(getTypeName(x.baseTypeName, "") + "[]" + storageString)
         }
-      case x: Mapping             => registerType("mapping") + getMappingKeyAndValue(x) + sto
-      case x: UserDefinedTypeName => registerType(x.namePath) + sto
-      case x: FunctionTypeName    => registerType("function(" + getParameters(x.parameterTypes) + ")" + sto)
+      case x: Mapping             => registerType("mapping") + getMappingKeyAndValue(x) + storageString
+      case x: UserDefinedTypeName => registerType(x.namePath) + storageString
+      case x: FunctionTypeName    => registerType("function(" + getParameters(x.parameterTypes) + ")" + storageString)
     }
   }
 
   object AstCreator {
-
-    def withOrder[T <: Any, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {
-      nodeList.asScala.zipWithIndex.map { case (x, i) =>
-        f(x, i + 1)
-      }.toSeq
-    }
-
     def withOrder[T <: Any, X](nodeList: Iterable[T])(f: (T, Int) => X): Seq[X] = {
       nodeList.zipWithIndex.map { case (x, i) =>
         f(x, i + 1)
