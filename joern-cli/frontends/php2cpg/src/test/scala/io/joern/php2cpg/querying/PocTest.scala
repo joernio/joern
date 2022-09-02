@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language._
 
 class PocTest extends PhpCode2CpgFixture {
 
-  "The CPG generated for a very simple example" should {
+  "The CPG generated for a very simple example" ignore {
     val cpg = code(
       """
         |<?php

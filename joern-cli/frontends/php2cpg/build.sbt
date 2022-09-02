@@ -21,25 +21,25 @@ scalacOptions ++= Seq(
   "-deprecation" // Emit warning and location for usages of deprecated APIs.
 )
 
-lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
-phpParseInstallTask := {
-  val phpBinDir = baseDirectory.value / "bin"
-  val phpParseBinary = phpBinDir / "vendor" / "bin" / "php-parse"
-  if (!phpParseBinary.exists) {
-    val installSciptPath =
-      if (isWin)
-        (phpBinDir / "installdeps.bat").getPath
-      else
-        (phpBinDir / "installdeps.sh").getPath
-    Process(installSciptPath, phpBinDir) !
-  }
-
-  val distDir = (Universal / stagingDirectory).value / "bin"
-  distDir.mkdirs()
-  IO.copyDirectory(phpBinDir, distDir)
-}
-
-Compile / compile := ((Compile / compile) dependsOn phpParseInstallTask).value
+// lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
+// phpParseInstallTask := {
+//   val phpBinDir = baseDirectory.value / "bin"
+//   val phpParseBinary = phpBinDir / "vendor" / "bin" / "php-parse"
+//   if (!phpParseBinary.exists) {
+//     val installSciptPath =
+//       if (isWin)
+//         (phpBinDir / "installdeps.bat").getPath
+//       else
+//         (phpBinDir / "installdeps.sh").getPath
+//     Process(installSciptPath, phpBinDir) !
+//   }
+// 
+//   val distDir = (Universal / stagingDirectory).value / "bin"
+//   distDir.mkdirs()
+//   IO.copyDirectory(phpBinDir, distDir)
+// }
+// 
+// Compile / compile := ((Compile / compile) dependsOn phpParseInstallTask).value
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 Global / onChangedBuildSource := ReloadOnSourceChanges
