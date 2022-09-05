@@ -9,6 +9,7 @@ import scala.jdk.CollectionConverters._
 
 class ReplDriver(args: Array[String],
                  out: PrintStream = scala.Console.out,
+                 onExit: Option[PrintStream => Unit] = None,
                  greeting: String,
                  prompt: String) extends dotty.tools.repl.ReplDriver(args, out) {
 
@@ -33,7 +34,7 @@ class ReplDriver(args: Array[String],
         ParseResult(line)(state)
       } catch {
         case _: EndOfFileException => // Ctrl+D
-          out.println("bye!")
+          onExit.foreach(_.apply(out))
           Quit
         case _: UserInterruptException => // Ctrl+C
           Newline
