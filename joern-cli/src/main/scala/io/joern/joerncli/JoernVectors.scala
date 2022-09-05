@@ -121,14 +121,13 @@ object JoernVectors extends App {
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
       val embedding = new BagOfAPISymbolsForMethods().embed(cpg)
       println("{")
-      println("objects:")
+      println("\"objects\":")
       traversalToJson(embedding.objects)
       if (config.dimToFeature) {
-        println("dimToFeature: ")
+        println(",\"dimToFeature\": ")
         println(Serialization.write(embedding.dimToStructure))
-        println(",")
       }
-      println("vectors:")
+      println(",\"vectors\":")
       traversalToJson(embedding.vectors)
       println("}")
     }
