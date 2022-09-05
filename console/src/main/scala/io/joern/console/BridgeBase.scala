@@ -162,7 +162,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
           } else if (config.pluginToRun.isDefined) {
             runPlugin(config, slProduct.name)
           } else {
-            startInteractiveShell(config, slProduct)
+            startInteractiveShell(config)
           }
         case Some(scriptFile) =>
           runScript(scriptFile, config)
@@ -199,7 +199,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
 trait ScriptExecution { this: BridgeBase =>
 
-  protected def startInteractiveShell(config: Config, slProduct: SLProduct): (Res[Any], Seq[(Watchable, Long)]) = {
+  protected def startInteractiveShell(config: Config) = {
     // val configurePPrinterMaybe =
     //   if (config.nocolors) ""
     //   else """val originalPPrinter = repl.pprinter()
