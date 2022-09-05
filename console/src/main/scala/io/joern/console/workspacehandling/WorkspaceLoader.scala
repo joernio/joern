@@ -21,10 +21,7 @@ abstract class WorkspaceLoader[ProjectType <: Project] {
     val dirFile = File(path)
     val dirPath = dirFile.path.toAbsolutePath
 
-    if (!dirFile.exists) {
-      println(s"creating workspace directory: ${dirFile.path.toString}")
-      mkdirs(dirFile)
-    }
+    mkdirs(dirFile)
     new Workspace(ListBuffer.from(loadProjectsFromFs(dirPath)))
   }
 
