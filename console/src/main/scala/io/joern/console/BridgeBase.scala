@@ -38,8 +38,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
   protected def parseConfig(args: Array[String]): Config = {
     implicit def pathRead: scopt.Read[Path] =
-      scopt.Read.stringRead
-        .map(Path(_, pwd)) // support both relative and absolute paths
+      scopt.Read.stringRead.map(Path(_, pwd)) // support both relative and absolute paths
 
     val parser = new scopt.OptionParser[Config]("(joern|ocular)") {
       override def errorOnUnknownArgument = false
@@ -193,6 +192,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
   protected def promptStr: String
 
+  protected def onExit(out: PrintStream): Unit
 }
 
 trait ScriptExecution { this: BridgeBase =>
@@ -216,6 +216,7 @@ trait ScriptExecution { this: BridgeBase =>
     }
 
     val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
+//    println(predefCode)
 
     val replArgs = Array(
       "-classpath", // pass classpath on into the repl
@@ -278,16 +279,9 @@ trait ScriptExecution { this: BridgeBase =>
   // private def ammoniteColors(config: Config) =
   //   if (config.nocolors) Colors.BlackWhite
   //   else Colors.Default
-
-  protected def onExit(out: PrintStream): Unit = {
-    out.println("saving...")
-    // workspace.projects.foreach(_.close())
-    out.println("all done. bye!")
-  }
 }
 
-trait PluginHandling {
-  this: BridgeBase =>
+trait PluginHandling { this: BridgeBase =>
 
   /** Print a summary of the available plugins and layer creators to the terminal.
     */
