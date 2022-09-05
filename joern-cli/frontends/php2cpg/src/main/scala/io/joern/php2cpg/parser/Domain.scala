@@ -1,9 +1,12 @@
 package io.joern.php2cpg.parser
 
+import io.joern.php2cpg.parser.Domain.PhpBinaryOp.BinOpPattern
+import io.shiftleft.codepropertygraph.generated.Operators
 import org.slf4j.LoggerFactory
 import ujson.{Arr, Obj, Str, Value}
 
 import scala.collection.mutable
+import scala.util.matching.Regex
 import scala.util.{Success, Try}
 
 object Domain {
@@ -81,6 +84,11 @@ object Domain {
   final case class PhpFuncCall(name: PhpExpr, args: Seq[PhpArgument], attributes: PhpAttributes) extends PhpExpr
   final case class PhpVariable(value: PhpExpr, attributes: PhpAttributes)                        extends PhpExpr
   final case class PhpNameExpr(name: String, attributes: PhpAttributes)                          extends PhpExpr
+  final case class PhpBinaryOp(operator: String, left: PhpExpr, right: PhpExpr, attributes: PhpAttributes)
+      extends PhpExpr
+  object PhpBinaryOp {
+    val BinOpPattern: Regex = raw"Expr_BinaryOp_.*".r
+  }
 
   sealed abstract class PhpAssignment extends PhpExpr {
     def target: PhpExpr
@@ -157,12 +165,13 @@ object Domain {
       case "Scalar_Encapsed"           => PhpEncapsed(json("parts").arr.map(readExpr).toSeq, PhpAttributes(json))
       case "Scalar_EncapsedStringPart" => PhpEncapsedPart.withQuotes(json("value").str, PhpAttributes(json))
 
+      case BinOpPattern(_*) => readBinaryOp(json.obj)
       case "Expr_Assign" => PhpAssign(readExpr(json("var")), readExpr(json("expr")), PhpAttributes(json))
       // TODO Figure out when the variable has an expr name
-      case "Expr_Variable" => PhpVariable(readName(json("name")), PhpAttributes(json))
       case "Expr_FuncCall" =>
         val args = json("args").arr.map(readCallArg).toSeq
         PhpFuncCall(readName(json("name")), args, PhpAttributes(json))
+      case "Expr_Variable" => PhpVariable(readName(json("name")), PhpAttributes(json))
 
       case unhandled =>
         logger.error(s"Found unhandled expr type: $unhandled")
@@ -200,6 +209,36 @@ object Domain {
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name_FullyQualified") =>
         val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
         PhpNameExpr(name, PhpAttributes(json))
+    }
+  }
+
+  private def readBinaryOp(json: mutable.LinkedHashMap[String, Value]): PhpBinaryOp = {
+    val opType = json("nodeType") match {
+      case "Expr_BinaryOp_BitwiseAnd" => Operators.and
+      case "Expr_BinaryOp_BitwiseOr" => Operators.or
+      case "Expr_BinaryOp_BitwiseXor" => Operators.xor
+      case "Expr_BinaryOp_BooleanAnd" => Operators.logicalAnd
+      case "Expr_BinaryOp_BooleanOr" => Operators.logicalOr
+      case "Expr_BinaryOp_Coalesce" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
+      case "Expr_BinaryOp_" => Operators.and
     }
   }
 
