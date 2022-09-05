@@ -226,8 +226,9 @@ trait ScriptExecution { this: BridgeBase =>
     )
     val repl = new ReplDriver(replArgs, scala.Console.out, greeting, promptStr)
 
-    given State = repl.run(predefCode)(using repl.initialState)
-    repl.runUntilQuit()
+    // `given State` for scala 3.2.1
+    val state = repl.run(predefCode)(using repl.initialState)
+    repl.runUntilQuit(state)
 
     // repl.runUntilQuit(using repl.initialState)()
 
