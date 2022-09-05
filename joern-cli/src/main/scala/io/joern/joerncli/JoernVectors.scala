@@ -126,7 +126,6 @@ object JoernVectors extends App {
       if (config.dimToFeature) {
         println(",\"dimToFeature\": ")
         println(Serialization.write(embedding.dimToStructure))
-        println(",")
       }
       println(",\"vectors\":")
       traversalToJson(embedding.vectors)
