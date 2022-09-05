@@ -7,7 +7,7 @@ dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"               %% "upickle"           % "2.0.0",
-  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.13.3",
+  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.13.4",
   "org.apache.logging.log4j"   % "log4j-slf4j-impl"  % Versions.log4j     % Runtime,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
 )
@@ -73,7 +73,7 @@ astGenDlTask := {
   Seq("astgen-linux", "astgen-macos", "astgen-win.exe").foreach { fileName =>
     val dest = astGenDir / fileName
     if (!dest.exists) {
-      val url = s"https://github.com/max-leuthaeuser/astgen/releases/download/latest/$fileName"
+      val url            = s"https://github.com/max-leuthaeuser/astgen/releases/download/latest/$fileName"
       val downloadedFile = SimpleCache.downloadMaybe(url)
       IO.copyFile(downloadedFile, dest)
     }
