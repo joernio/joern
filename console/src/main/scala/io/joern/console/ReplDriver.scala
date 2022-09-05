@@ -9,10 +9,9 @@ import scala.jdk.CollectionConverters._
 
 class ReplDriver(args: Array[String],
                  out: PrintStream = scala.Console.out,
-                 onExit: Option[PrintStream => Unit] = None,
+                 onExitCode: Option[String] = None,
                  greeting: String,
                  prompt: String) extends dotty.tools.repl.ReplDriver(args, out) {
-
   /** Run REPL with `state` until `:quit` command found
 
     * Main difference to the 'original': different greeting, trap Ctrl-c
@@ -34,12 +33,9 @@ class ReplDriver(args: Array[String],
         ParseResult(line)(state)
       } catch {
         case _: EndOfFileException => // Ctrl+D
-          onExit.foreach(_.apply(out))
+          onExitCode.foreach(code => run(code)(state))
           Quit
         case _: UserInterruptException => // Ctrl+C
-          println("XXXXXX0 debug code start")
-          run("workspace.projects.foreach(_.close)")(state)
-          println("XXXXXX0 debug code end")
           Newline
       }
     }

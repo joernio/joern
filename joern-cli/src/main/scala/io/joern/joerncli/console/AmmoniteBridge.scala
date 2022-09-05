@@ -20,10 +20,6 @@ object AmmoniteBridge extends BridgeBase {
 
   override def promptStr: String = "joern> "
 
-  override protected def onExit(out: PrintStream): Unit = {
-    out.println("saving...")
-    Joern.workspace.projects.foreach(_.close)
-    out.println("all done. bye!")
-  }
+  override def onExitCode: String = "workspace.projects.foreach(_.close)"
 
 }
