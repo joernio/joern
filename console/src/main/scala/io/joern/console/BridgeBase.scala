@@ -196,7 +196,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
   protected def promptStr: String
 
-  protected def onExit(out: PrintStream): Unit
+  protected def onExitCode: String
 }
 
 trait ScriptExecution { this: BridgeBase =>
@@ -227,7 +227,7 @@ trait ScriptExecution { this: BridgeBase =>
       System.getProperty("java.class.path"),
       "-explain", // verbose scalac error messages
     )
-    val repl = new ReplDriver(replArgs, scala.Console.out, Option(onExit), greeting, promptStr)
+    val repl = new ReplDriver(replArgs, scala.Console.out, Option(onExitCode), greeting, promptStr)
 
     // `given State` for scala 3.2.1
     val state = repl.run(predefCode)(using repl.initialState)
