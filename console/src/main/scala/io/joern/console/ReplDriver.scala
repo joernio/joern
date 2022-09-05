@@ -16,13 +16,13 @@ class ReplDriver(args: Array[String],
 
     * Main difference to the 'original': different greeting, trap Ctrl-c
    */
-  override def runUntilQuit(using initialState: State = initialState)(): State = {
+  override def runUntilQuit(initialState: State = initialState): State = {
     val terminal = new JLineTerminal(prompt)
 
     out.println(greeting)
 
     /** Blockingly read a line, getting back a parse result */
-    def readLine()(using state: State): ParseResult = {
+    def readLine(state: State): ParseResult = {
       val completer: Completer = { (_, line, candidates) =>
         val comps = completions(line.cursor, line.line, state)
         candidates.addAll(comps.asJava)
@@ -30,7 +30,7 @@ class ReplDriver(args: Array[String],
       given Context = state.context
       try {
         val line = terminal.readLine(completer)
-        ParseResult(line)
+        ParseResult(line)(state)
       } catch {
         case _: EndOfFileException => // Ctrl+D
           out.println("bye!")
@@ -40,13 +40,13 @@ class ReplDriver(args: Array[String],
       }
     }
 
-    @tailrec def loop(using state: State)(): State = {
-      val res = readLine()
+    @tailrec def loop(state: State): State = {
+      val res = readLine(state)
       if (res == Quit) state
-      else loop(using interpret(res))()
+      else loop(interpret(res)(state))
     }
 
-    try runBody { loop() }
+    try runBody { loop(initialState) }
     finally terminal.close()
   }
 
