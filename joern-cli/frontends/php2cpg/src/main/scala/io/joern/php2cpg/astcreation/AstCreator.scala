@@ -97,6 +97,7 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
       case nameExpr: PhpNameExpr         => astForNameExpr(nameExpr)
       case assignExpr: PhpAssignment     => astForAssignment(assignExpr)
       case scalarExpr: PhpScalar         => astForScalar(scalarExpr)
+      case binaryOp: PhpBinaryOp         => astForBinOp(binaryOp)
 
       case unhandled =>
         logger.warn(s"Unhandled expr: $unhandled")
@@ -141,18 +142,15 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
   private def astForNameExpr(expr: PhpNameExpr): Ast = {
     val identifier = NewIdentifier()
       .name(expr.name)
+      .code(expr.name)
       .lineNumber(expr.attributes.lineNumber)
 
     Ast(identifier)
   }
 
   private def astForAssignment(assignment: PhpAssignment): Ast = {
-    val operatorName = assignment match {
-      case _: PhpAssign => Operators.assignment
-    }
-
-    val callNode =
-      operatorCallNode(operatorName, operatorName, line = assignment.attributes.lineNumber)
+    val operatorName = assignment.assignOp
+    val callNode     = operatorCallNode(operatorName, operatorName, line = assignment.attributes.lineNumber)
 
     val targetAst = astForExpr(assignment.target)
     val sourceAst = astForExpr(assignment.source)
@@ -169,8 +167,9 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
       case PhpFloat(value, attributes) =>
         Ast(NewLiteral().code(value).typeFullName(TypeConstants.Float).lineNumber(attributes.lineNumber))
       case PhpEncapsed(parts, attributes) =>
-        val callNode = operatorCallNode("<operator>.encaps", code = "TODO", line = attributes.lineNumber)
-        val args     = parts.map(astForExpr)
+        val callNode =
+          operatorCallNode(PhpOperators.encaps, code = /* TODO */ PhpOperators.encaps, line = attributes.lineNumber)
+        val args = parts.map(astForExpr)
         callAst(callNode, args)
       case PhpEncapsedPart(value, attributes) =>
         Ast(NewLiteral().code(value).typeFullName(TypeConstants.String).lineNumber(attributes.lineNumber))
@@ -179,6 +178,19 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
         logger.warn(s"Unhandled scalar: $unhandled")
         ???
     }
+  }
+
+  private def astForBinOp(binOp: PhpBinaryOp): Ast = {
+    val leftAst  = astForExpr(binOp.left)
+    val rightAst = astForExpr(binOp.right)
+
+    val callNode = operatorCallNode(
+      binOp.operator,
+      /* TODO CODE */ binOp.operator,
+      line = binOp.attributes.lineNumber
+    )
+
+    callAst(callNode, List(leftAst, rightAst))
   }
 }
 

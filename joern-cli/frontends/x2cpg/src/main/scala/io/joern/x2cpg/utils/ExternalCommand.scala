@@ -22,5 +22,4 @@ object ExternalCommand {
         Failure(new RuntimeException(result.mkString(System.lineSeparator())))
     }
   }
-
 }

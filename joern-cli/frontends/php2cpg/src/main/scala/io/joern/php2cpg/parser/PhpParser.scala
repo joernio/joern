@@ -8,7 +8,7 @@ import ujson.Value.Value
 
 import java.nio.file.Paths
 import scala.util.Properties.isWin
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 object PhpParser {
 
@@ -24,6 +24,11 @@ object PhpParser {
     s"$ExecutablePath --with-recovery --resolve-names --json-dump $filename"
   }
 
+  // TODO Don't merge this
+  val random = new Random()
+  def getRandomElement[A](seq: Seq[A]): A =
+    seq(random.nextInt(seq.length))
+
   def parseFile(inputPath: String): Option[PhpFile] = {
     val inputFile      = File(inputPath)
     val inputDirectory = inputFile.parent.canonicalPath
@@ -34,6 +39,16 @@ object PhpParser {
           outputLines
             .dropWhile(_.charAt(0) != '[')
             .mkString("\n")
+
+        val colors = List(
+          Console.BLUE,
+          Console.BLACK,
+          Console.GREEN,
+          Console.CYAN,
+          Console.YELLOW,
+          Console.MAGENTA,
+        )
+        println(getRandomElement(colors), filename, jsonString, Console.BLACK)
 
         val jsonValue = ujson.read(jsonString)
         if (jsonValue == null) {

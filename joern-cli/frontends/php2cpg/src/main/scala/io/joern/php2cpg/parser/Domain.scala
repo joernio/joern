@@ -1,5 +1,6 @@
 package io.joern.php2cpg.parser
 
+import io.joern.php2cpg.parser.Domain.PhpAssignment.AssignPattern
 import io.joern.php2cpg.parser.Domain.PhpBinaryOp.BinOpPattern
 import io.shiftleft.codepropertygraph.generated.Operators
 import org.slf4j.LoggerFactory
@@ -10,6 +11,21 @@ import scala.util.matching.Regex
 import scala.util.{Success, Try}
 
 object Domain {
+
+  object PhpOperators {
+    // TODO Decide which of these should be moved to codepropertygraph
+    val coalesce     = "<operator>.coalesce"
+    val concat       = "<operator>.concat"
+    val identical    = "<operator>.identical"
+    val logicalXor   = "<operator>.logicalXor"
+    val notIdentical = "<operator>.notIdentical"
+    val spaceship    = "<operator>.spaceship"
+
+    val assignmentCoalesce = "<operator>.assignmentCoalesce"
+    val assignmentConcat   = "<operator>.assignmentConcat"
+
+    val encaps = "<operator>.encaps"
+  }
 
   private val logger                      = LoggerFactory.getLogger(Domain.getClass)
   private val NamespaceDelimiter          = "."
@@ -90,11 +106,11 @@ object Domain {
     val BinOpPattern: Regex = raw"Expr_BinaryOp_.*".r
   }
 
-  sealed abstract class PhpAssignment extends PhpExpr {
-    def target: PhpExpr
-    def source: PhpExpr
+  object PhpAssignment {
+    val AssignPattern: Regex = raw"Expr_Assign.*".r
   }
-  final case class PhpAssign(target: PhpExpr, source: PhpExpr, attributes: PhpAttributes) extends PhpAssignment
+  final case class PhpAssignment(assignOp: String, target: PhpExpr, source: PhpExpr, attributes: PhpAttributes)
+      extends PhpExpr
 
   sealed abstract class PhpScalar                                      extends PhpExpr
   final case class PhpString(value: String, attributes: PhpAttributes) extends PhpScalar
@@ -165,8 +181,9 @@ object Domain {
       case "Scalar_Encapsed"           => PhpEncapsed(json("parts").arr.map(readExpr).toSeq, PhpAttributes(json))
       case "Scalar_EncapsedStringPart" => PhpEncapsedPart.withQuotes(json("value").str, PhpAttributes(json))
 
-      case BinOpPattern(_*) => readBinaryOp(json.obj)
-      case "Expr_Assign" => PhpAssign(readExpr(json("var")), readExpr(json("expr")), PhpAttributes(json))
+      case BinOpPattern(_*)  => readBinaryOp(json)
+      case AssignPattern(_*) => readAssign(json)
+      // PhpAssign(readExpr(json("var")), readExpr(json("expr")), PhpAttributes(json))
       // TODO Figure out when the variable has an expr name
       case "Expr_FuncCall" =>
         val args = json("args").arr.map(readCallArg).toSeq
@@ -212,34 +229,67 @@ object Domain {
     }
   }
 
-  private def readBinaryOp(json: mutable.LinkedHashMap[String, Value]): PhpBinaryOp = {
-    val opType = json("nodeType") match {
-      case "Expr_BinaryOp_BitwiseAnd" => Operators.and
-      case "Expr_BinaryOp_BitwiseOr" => Operators.or
-      case "Expr_BinaryOp_BitwiseXor" => Operators.xor
-      case "Expr_BinaryOp_BooleanAnd" => Operators.logicalAnd
-      case "Expr_BinaryOp_BooleanOr" => Operators.logicalOr
-      case "Expr_BinaryOp_Coalesce" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
-      case "Expr_BinaryOp_" => Operators.and
+  private def readBinaryOp(json: Value): PhpBinaryOp = {
+    val opType = json("nodeType").str match {
+      case "Expr_BinaryOp_BitwiseAnd"     => Operators.and
+      case "Expr_BinaryOp_BitwiseOr"      => Operators.or
+      case "Expr_BinaryOp_BitwiseXor"     => Operators.xor
+      case "Expr_BinaryOp_BooleanAnd"     => Operators.logicalAnd
+      case "Expr_BinaryOp_BooleanOr"      => Operators.logicalOr
+      case "Expr_BinaryOp_Coalesce"       => PhpOperators.coalesce
+      case "Expr_BinaryOp_Concat"         => PhpOperators.concat
+      case "Expr_BinaryOp_Div"            => Operators.division
+      case "Expr_BinaryOp_Equal"          => Operators.equals
+      case "Expr_BinaryOp_GreaterOrEqual" => Operators.greaterEqualsThan
+      case "Expr_BinaryOp_Greater"        => Operators.greaterThan
+      case "Expr_BinaryOp_Identical"      => PhpOperators.identical
+      case "Expr_BinaryOp_LogicalAnd"     => Operators.logicalAnd
+      case "Expr_BinaryOp_LogicalOr"      => Operators.logicalOr
+      case "Expr_BinaryOp_LogicalXor"     => PhpOperators.logicalXor
+      case "Expr_BinaryOp_Minus"          => Operators.minus
+      case "Expr_BinaryOp_Mod"            => Operators.modulo
+      case "Expr_BinaryOp_Mul"            => Operators.multiplication
+      case "Expr_BinaryOp_NotEqual"       => Operators.notEquals
+      case "Expr_BinaryOp_NotIdentical"   => PhpOperators.notIdentical
+      case "Expr_BinaryOp_Plus"           => Operators.plus
+      case "Expr_BinaryOp_Pow"            => Operators.exponentiation
+      case "Expr_BinaryOp_ShiftLeft"      => Operators.shiftLeft
+      case "Expr_BinaryOp_ShiftRight"     => Operators.arithmeticShiftRight
+      case "Expr_BinaryOp_SmallerOrEqual" => Operators.lessEqualsThan
+      case "Expr_BinaryOp_Smaller"        => Operators.lessThan
+      case "Expr_BinaryOp_Spaceship"      => PhpOperators.spaceship
     }
+
+    val leftExpr  = readExpr(json("left"))
+    val rightExpr = readExpr(json("right"))
+
+    PhpBinaryOp(opType, leftExpr, rightExpr, PhpAttributes(json))
+  }
+
+  private def readAssign(json: Value): PhpAssignment = {
+    val opType = json("nodeType").str match {
+      case "Expr_Assign" => Operators.assignment
+      // Double check this one.
+      case "Expr_AssignRef"           => Operators.assignment
+      case "Expr_AssignOp_BitwiseAnd" => Operators.assignmentAnd
+      case "Expr_AssignOp_BitwiseOr"  => Operators.assignmentOr
+      case "Expr_AssignOp_BitwiseXor" => Operators.assignmentXor
+      case "Expr_AssignOp_Coalesce"   => PhpOperators.assignmentCoalesce
+      case "Expr_AssignOp_Concat"     => PhpOperators.assignmentConcat
+      case "Expr_AssignOp_Div"        => Operators.assignmentDivision
+      case "Expr_AssignOp_Minus"      => Operators.assignmentMinus
+      case "Expr_AssignOp_Mod"        => Operators.assignmentModulo
+      case "Expr_AssignOp_Mul"        => Operators.assignmentMultiplication
+      case "Expr_AssignOp_Plus"       => Operators.assignmentPlus
+      case "Expr_AssignOp_Pow"        => Operators.assignmentExponentiation
+      case "Expr_AssignOp_ShiftLeft"  => Operators.assignmentShiftLeft
+      case "Expr_AssignOp_ShiftRight" => Operators.assignmentArithmeticShiftRight
+    }
+
+    val target = readExpr(json("var"))
+    val source = readExpr(json("expr"))
+
+    PhpAssignment(opType, target, source, PhpAttributes(json))
   }
 
   private def readCallArg(json: Value): PhpArgument = {
