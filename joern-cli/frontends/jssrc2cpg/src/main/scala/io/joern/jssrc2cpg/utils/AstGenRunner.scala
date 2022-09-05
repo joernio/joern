@@ -27,9 +27,19 @@ object AstGenRunner {
   }
 
   private val EXECUTABLE_DIR: String = {
-    val dir      = AstGenRunner.getClass.getProtectionDomain.getCodeSource.getLocation.toString
-    val fixedDir = new java.io.File(dir.substring("file:".length, dir.indexOf("jssrc2cpg"))).toString
-    Paths.get(fixedDir, "jssrc2cpg/bin/astgen").toAbsolutePath.toString
+    val dir        = AstGenRunner.getClass.getProtectionDomain.getCodeSource.getLocation.toString
+    val indexOfLib = dir.lastIndexOf("lib")
+    val fixedDir = if (indexOfLib != -1) {
+      new java.io.File(dir.substring("file:".length, indexOfLib)).toString
+    } else {
+      val indexOfTarget = dir.lastIndexOf("target")
+      if (indexOfTarget != -1) {
+        new java.io.File(dir.substring("file:".length, indexOfTarget)).toString
+      } else {
+        new java.io.File(dir.substring("file:".length, dir.length)).toString
+      }
+    }
+    Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
   }
 
   private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
