@@ -37,6 +37,9 @@ class ReplDriver(args: Array[String],
           onExit.foreach(_.apply(out))
           Quit
         case _: UserInterruptException => // Ctrl+C
+          println("XXXXXX0 debug code start")
+          run("workspace.projects.foreach(_.close)")(state)
+          println("XXXXXX0 debug code end")
           Newline
       }
     }
