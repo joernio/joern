@@ -1,6 +1,6 @@
 package io.joern.joerncli
 
-import better.files._
+import better.files.*
 import io.joern.console.scan.{ScanPass, outputFindings}
 import io.joern.console.{BridgeBase, DefaultArgumentProvider, JoernProduct, Query, QueryDatabase}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -11,9 +11,9 @@ import io.joern.joerncli.console.AmmoniteBridge
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
+import java.io.PrintStream
 import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
-
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
@@ -241,6 +241,8 @@ object JoernScan extends BridgeBase {
 
   override protected def greeting: String = AmmoniteBridge.greeting
 
+  override protected def onExit(out: PrintStream): Unit =
+    out.println("bye!")
 }
 
 object Scan {
