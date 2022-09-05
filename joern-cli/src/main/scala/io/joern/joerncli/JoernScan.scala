@@ -241,8 +241,7 @@ object JoernScan extends BridgeBase {
 
   override protected def greeting: String = AmmoniteBridge.greeting
 
-  override protected def onExit(out: PrintStream): Unit =
-    out.println("bye!")
+  override protected def onExitCode = AmmoniteBridge.onExitCode
 }
 
 object Scan {
