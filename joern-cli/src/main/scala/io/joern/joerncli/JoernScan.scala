@@ -1,6 +1,6 @@
 package io.joern.joerncli
 
-import better.files._
+import better.files.*
 import io.joern.console.scan.{ScanPass, outputFindings}
 import io.joern.console.{BridgeBase, DefaultArgumentProvider, JoernProduct, Query, QueryDatabase}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -14,7 +14,8 @@ import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, Layer
 import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
 
-import scala.jdk.CollectionConverters._
+import java.io.PrintStream
+import scala.jdk.CollectionConverters.*
 
 object JoernScanConfig {
   val defaultDbVersion: String    = "latest"
@@ -237,6 +238,8 @@ object JoernScan extends App with BridgeBase {
 
   override protected def greeting: String = AmmoniteBridge.greeting
 
+  override protected def onExit(out: PrintStream): Unit =
+    out.println("bye!")
 }
 
 object Scan {
