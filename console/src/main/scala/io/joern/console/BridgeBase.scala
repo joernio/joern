@@ -9,6 +9,8 @@ import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
 import os.{pwd, Path}
 
+import java.io.PrintStream
+
 case class Config(
   scriptFile: Option[Path] = None,
   command: Option[String] = None,
@@ -224,23 +226,13 @@ trait ScriptExecution { this: BridgeBase =>
       System.getProperty("java.class.path"),
       "-explain", // verbose scalac error messages
     )
-    val repl = new ReplDriver(replArgs, scala.Console.out, greeting, promptStr)
+    val repl = new ReplDriver(replArgs, scala.Console.out, Option(onExit), greeting, promptStr)
 
     // `given State` for scala 3.2.1
     val state = repl.run(predefCode)(using repl.initialState)
     repl.runUntilQuit(state)
 
     // repl.runUntilQuit(using repl.initialState)()
-
-    // ammonite
-    //   .Main(
-    //     predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks),
-    //     welcomeBanner = None,
-    //     storageBackend = new StorageBackend(slProduct),
-    //     remoteLogging = false,
-    //     colors = ammoniteColors(config)
-    //   )
-    //   .run()
   }
 
   protected def runScript(scriptFile: Path, config: Config): AnyVal = {
@@ -291,6 +283,11 @@ trait ScriptExecution { this: BridgeBase =>
   //   if (config.nocolors) Colors.BlackWhite
   //   else Colors.Default
 
+  protected def onExit(out: PrintStream): Unit = {
+    out.println("saving...")
+    // workspace.projects.foreach(_.close())
+    out.println("all done. bye!")
+  }
 }
 
 trait PluginHandling {
