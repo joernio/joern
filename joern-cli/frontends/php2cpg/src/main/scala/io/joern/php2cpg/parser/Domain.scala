@@ -183,7 +183,6 @@ object Domain {
 
       case BinOpPattern(_*)  => readBinaryOp(json)
       case AssignPattern(_*) => readAssign(json)
-      // PhpAssign(readExpr(json("var")), readExpr(json("expr")), PhpAttributes(json))
       // TODO Figure out when the variable has an expr name
       case "Expr_FuncCall" =>
         val args = json("args").arr.map(readCallArg).toSeq
