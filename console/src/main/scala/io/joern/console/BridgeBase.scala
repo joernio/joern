@@ -207,7 +207,7 @@ trait ScriptExecution {
     val replConfig = List(
       "repl.prompt() = \"" + promptStr() + "\"",
       configurePPrinterMaybe,
-      "implicit val implicitPPrinter = repl.pprinter()",
+      "implicit val implicitPPrinter: pprint.PPrinter = repl.pprinter()",
       "banner()"
     ) ++ config.cpgToLoad.map { cpgFile =>
       "importCpg(\"" + cpgFile + "\")"
