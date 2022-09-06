@@ -36,11 +36,13 @@ case class Config(
   */
 trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling {
 
+  def slProduct: SLProduct
+
   protected def parseConfig(args: Array[String]): Config = {
     implicit def pathRead: scopt.Read[Path] =
       scopt.Read.stringRead.map(Path(_, pwd)) // support both relative and absolute paths
 
-    val parser = new scopt.OptionParser[Config]("(joern|ocular)") {
+    val parser = new scopt.OptionParser[Config](slProduct.name) {
       override def errorOnUnknownArgument = false
 
       note("Script execution")
@@ -144,9 +146,9 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
   /** Entry point for Joern's integrated ammonite shell
     */
-  protected def runAmmonite(config: Config, slProduct: SLProduct = OcularProduct): Unit = {
+  protected def runAmmonite(config: Config): Unit = {
     if (config.listPlugins) {
-      printPluginsAndLayerCreators(config, slProduct)
+      printPluginsAndLayerCreators(config)
     } else if (config.addPlugin.isDefined) {
       new PluginManager(InstallConfig().rootPath).add(config.addPlugin.get)
     } else if (config.rmPlugin.isDefined) {
@@ -283,7 +285,7 @@ trait PluginHandling { this: BridgeBase =>
 
   /** Print a summary of the available plugins and layer creators to the terminal.
     */
-  protected def printPluginsAndLayerCreators(config: Config, slProduct: SLProduct): Unit = {
+  protected def printPluginsAndLayerCreators(config: Config): Unit = {
     println("Installed plugins:")
     println("==================")
     new PluginManager(InstallConfig().rootPath).listPlugins().foreach(println)

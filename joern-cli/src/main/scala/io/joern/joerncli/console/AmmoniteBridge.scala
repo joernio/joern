@@ -6,8 +6,10 @@ import java.io.PrintStream
 
 object AmmoniteBridge extends BridgeBase {
 
+  override val slProduct = JoernProduct
+
   def main(args: Array[String]): Unit = {
-    runAmmonite(parseConfig(args), JoernProduct)
+    runAmmonite(parseConfig(args))
   }
 
   /** Code that is executed when starting the shell
