@@ -4,11 +4,9 @@ import better.files.File
 import io.joern.php2cpg.parser.Domain.PhpFile
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
-import ujson.Value.Value
 
 import java.nio.file.Paths
-import scala.util.Properties.isWin
-import scala.util.{Failure, Random, Success, Try}
+import scala.util.{Failure, Success, Try}
 
 object PhpParser {
 
