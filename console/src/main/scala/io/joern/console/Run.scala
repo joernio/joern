@@ -55,7 +55,7 @@ object Run {
 
   private def codeForLayerCreators(layerCreatorTypeNames: List[(String, String)]): String = {
     val optsMembersCode = layerCreatorTypeNames
-      .map { case (varName, typeName) => s"  val $varName = $typeName.defaultOpts" }
+      .map { case (varName, typeName) => s"val $varName = $typeName.defaultOpts" }
       .mkString("\n")
 
     val optsCode =
@@ -72,20 +72,18 @@ object Run {
          |""".stripMargin
 
     val membersCode = layerCreatorTypeNames
-      .map { case (varName, typeName) => s"def $varName: Cpg = _runAnalyzer(new $typeName(opts.$varName))" }
+      .map { case (varName, typeName) => s"  def $varName: Cpg = _runAnalyzer(new $typeName(opts.$varName))" }
       .mkString("\n")
 
     val toStringCode =
       s"""
-         | import overflowdb.traversal.help.Table
-         | override def toString() : String = {
-         |  val columnNames = List("name", "description")
-         |  val rows =
-         |   ${layerCreatorTypeNames.map { case (varName, typeName) =>
-          s"""List("$varName",$typeName.description.trim)"""
-        }}
-         | "\\n" + Table(columnNames, rows).render
-         | }
+         |  import overflowdb.traversal.help.Table
+         |  override def toString() : String = {
+         |    val columnNames = List("name", "description")
+         |    val rows =
+         |      ${layerCreatorTypeNames.map { case (varName, typeName) => s"""List("$varName",$typeName.description.trim)""" }}
+         |    "\\n" + Table(columnNames, rows).render
+         |  }
          |""".stripMargin
 
     optsCode +
