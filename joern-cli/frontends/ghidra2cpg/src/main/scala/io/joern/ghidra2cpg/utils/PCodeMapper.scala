@@ -52,7 +52,7 @@ class PCodeMapper(
     val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
     _connectCallToArgument(callNode, firstOp)
     _connectCallToArgument(callNode, secondOp)
-   callNode
+    callNode
   }
 
   def getCallNode: CfgNodeNew = {
