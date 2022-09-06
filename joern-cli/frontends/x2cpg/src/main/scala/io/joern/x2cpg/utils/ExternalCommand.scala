@@ -1,8 +1,9 @@
 package io.joern.x2cpg.utils
 
-import scala.collection.mutable
+import java.util.concurrent.ConcurrentLinkedQueue
 import scala.sys.process.{Process, ProcessLogger}
 import scala.util.{Failure, Success, Try}
+import scala.jdk.CollectionConverters._
 
 object ExternalCommand {
 
@@ -12,14 +13,16 @@ object ExternalCommand {
   private val shellPrefix: Seq[String] =
     if (IS_WIN) "cmd" :: "/c" :: Nil else "sh" :: "-c" :: Nil
 
-  def run(command: String, cwd: String): Try[Seq[String]] = {
-    val result                      = mutable.ArrayBuffer.empty[String]
-    val lineHandler: String => Unit = result.addOne
-    Process(shellPrefix :+ command, new java.io.File(cwd)).!(ProcessLogger(lineHandler, lineHandler)) match {
+  def run(command: String, cwd: String, separateStdErr: Boolean = false): Try[Seq[String]] = {
+    val stdOutOutput  = new ConcurrentLinkedQueue[String]
+    val stdErrOutput  = if (separateStdErr) new ConcurrentLinkedQueue[String] else stdOutOutput
+    val processLogger = ProcessLogger(stdOutOutput.add, stdErrOutput.add)
+
+    Process(shellPrefix :+ command, new java.io.File(cwd)).!(processLogger) match {
       case 0 =>
-        Success(result.toSeq)
+        Success(stdOutOutput.asScala.toSeq)
       case _ =>
-        Failure(new RuntimeException(result.mkString(System.lineSeparator())))
+        Failure(new RuntimeException(stdErrOutput.asScala.mkString(System.lineSeparator())))
     }
   }
 }
