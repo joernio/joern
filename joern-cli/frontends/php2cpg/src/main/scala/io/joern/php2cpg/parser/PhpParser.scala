@@ -4,10 +4,8 @@ import better.files.File
 import io.joern.php2cpg.parser.Domain.PhpFile
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
-import ujson.Value.Value
 
 import java.nio.file.Paths
-import scala.util.Properties.isWin
 import scala.util.{Failure, Success, Try}
 
 object PhpParser {
@@ -28,28 +26,47 @@ object PhpParser {
     val inputFile      = File(inputPath)
     val inputDirectory = inputFile.parent.canonicalPath
     val filename       = inputFile.name
-    ExternalCommand.run(phpParseCommand(filename), inputDirectory) match {
-      case Success(outputLines) =>
-        val jsonString =
-          outputLines
-            .dropWhile(_.charAt(0) != '[')
-            .mkString("\n")
 
-        val jsonValue = ujson.read(jsonString)
-        if (jsonValue == null) {
-          logger.error(s"ujson returned null value for $filename")
-          return None
-        }
-        Try(Domain.fromJson(jsonValue)) match {
-          case Success(phpFile) => Some(phpFile)
-
-          case Failure(e) =>
-            logger.error(s"Failed to generate intermediate AST for $inputPath", e)
-            None
-        }
+    ExternalCommand.run(phpParseCommand(filename), inputDirectory, separateStdErr = true) match {
+      case Success(outputLines) => processParserOutput(outputLines, filename)
 
       case Failure(exception) =>
         logger.error(s"php-parser failed to parse input file $inputPath", exception)
+        None
+    }
+  }
+
+  private def processParserOutput(lines: Seq[String], filename: String): Option[PhpFile] = {
+    val maybeJson = linesToJsonValue(lines, filename)
+
+    maybeJson.flatMap(jsonValueToPhpFile(_, filename))
+  }
+
+  private def linesToJsonValue(lines: Seq[String], filename: String): Option[ujson.Value] = {
+    val jsonString =
+      lines
+        .dropWhile(_.charAt(0) != '[')
+        .mkString("\n")
+
+    Try(Option(ujson.read(jsonString))) match {
+      case Success(Some(value)) => Some(value)
+
+      case Success(None) =>
+        logger.error(s"Parsing json string for $filename resulted in null return value")
+        None
+
+      case Failure(exception) =>
+        logger.error(s"Parsing json string for $filename failed with exception", exception)
+        None
+    }
+  }
+
+  private def jsonValueToPhpFile(json: ujson.Value, filename: String): Option[PhpFile] = {
+    Try(Domain.fromJson(json)) match {
+      case Success(phpFile) => Some(phpFile)
+
+      case Failure(e) =>
+        logger.error(s"Failed to generate intermediate AST for $filename", e)
         None
     }
   }
