@@ -39,6 +39,8 @@ case class JoernScanConfig(
 )
 
 object JoernScan extends App with BridgeBase {
+  
+  override val slProduct = JoernProduct
 
   val implementationVersion = getClass.getPackage.getImplementationVersion
 
@@ -170,7 +172,7 @@ object JoernScan extends App with BridgeBase {
         language = config.language,
         frontendArgs = frontendArgs.toArray
       )
-    runAmmonite(shellConfig, JoernProduct)
+    runAmmonite(shellConfig)
     println(s"Run `joern --for-input-path ${config.src}` to explore interactively")
   }
 
@@ -214,7 +216,7 @@ object JoernScan extends App with BridgeBase {
     val rmPluginConfig = io.joern.console
       .Config()
       .copy(rmPlugin = Some("querydb"))
-    runAmmonite(rmPluginConfig, JoernProduct)
+    runAmmonite(rmPluginConfig)
   }
 
   private def addQueryDatabase(absPath: String): Unit = {
@@ -222,7 +224,7 @@ object JoernScan extends App with BridgeBase {
     val addPluginConfig = io.joern.console
       .Config()
       .copy(addPlugin = Some(absPath))
-    runAmmonite(addPluginConfig, JoernProduct)
+    runAmmonite(addPluginConfig)
   }
 
   private def urlForVersion(version: String): String = {
