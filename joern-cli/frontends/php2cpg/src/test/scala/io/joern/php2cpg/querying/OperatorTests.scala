@@ -62,6 +62,47 @@ class OperatorTests extends PhpCode2CpgFixture {
     }
   }
 
+  "unary operators" should {
+    "have the correct arguments set" in {
+      val cpg = code("""<?php
+                      |+$a
+                      |""".stripMargin)
+
+      val addition = cpg.call.l match {
+        case List(call) if call.name == Operators.plus => call
+        case result                                    => fail(s"Expected plus call but found $result")
+      }
+
+      addition.argument.l match {
+        case List(expr: Identifier) =>
+          expr.name shouldBe "a"
+          expr.code shouldBe "a"
+          expr.argumentIndex shouldBe 1
+
+        case result => s"Found unexpected call args $result"
+      }
+    }
+
+    "have the correct method names set" in {
+      val testData = List(
+        ("~$a", Operators.not),
+        ("!$a", Operators.logicalNot),
+        ("$a--", Operators.postDecrement),
+        ("$a++", Operators.postIncrement),
+        ("--$a", Operators.preDecrement),
+        ("++$a", Operators.preIncrement),
+        ("-$a", Operators.minus),
+        ("+$a", Operators.plus)
+      )
+
+      testData.foreach { case (testCode, expectedType) =>
+        val cpg = code(s"<?php\n$testCode", fileName = s"Test${filenameKeyPool.next}.php")
+        cpg.call.name.l shouldBe expectedType :: Nil
+        cpg.call.methodFullName.l shouldBe expectedType :: Nil
+      }
+    }
+  }
+
   "binary operators" should {
     "have the correct arguments set" in {
       val cpg = code("""<?php
@@ -70,7 +111,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
       val addition = cpg.call.l match {
         case List(call) if call.name == Operators.plus => call
-        case result                                    => fail(s"Expected assign call but found $result")
+        case result                                    => fail(s"Expected plus call but found $result")
       }
 
       addition.argument.l match {

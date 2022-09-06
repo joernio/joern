@@ -98,6 +98,7 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
       case assignExpr: PhpAssignment     => astForAssignment(assignExpr)
       case scalarExpr: PhpScalar         => astForScalar(scalarExpr)
       case binaryOp: PhpBinaryOp         => astForBinOp(binaryOp)
+      case unaryOp: PhpUnaryOp           => astForUnaryOp(unaryOp)
 
       case unhandled =>
         logger.warn(s"Unhandled expr: $unhandled")
@@ -191,6 +192,18 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
     )
 
     callAst(callNode, List(leftAst, rightAst))
+  }
+
+  private def astForUnaryOp(unaryOp: PhpUnaryOp): Ast = {
+    val exprAst = astForExpr(unaryOp.expr)
+
+    val callNode = operatorCallNode(
+      unaryOp.operator,
+      /* TODO CODE */ unaryOp.operator,
+      line = unaryOp.attributes.lineNumber
+    )
+
+    callAst(callNode, exprAst :: Nil)
   }
 }
 
