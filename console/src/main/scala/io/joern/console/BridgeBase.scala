@@ -222,12 +222,12 @@ trait ScriptExecution { this: BridgeBase =>
          |""".stripMargin
     }
 
-    val replArgs = Array(
-      "-classpath", // pass classpath on into the repl
-      System.getProperty("java.class.path"),
-      "-explain", // verbose scalac error messages
-    )
-    val repl = new ReplDriver(replArgs, scala.Console.out, Option(onExitCode), greeting, promptStr)
+    val replArgs = Array.newBuilder[String]
+    replArgs ++= Array("-classpath", System.getProperty("java.class.path")) // pass classpath over
+    replArgs += "-explain" // verbose scalac error messages
+    if (config.nocolors) replArgs ++= Array("-color", "never")
+
+    val repl = new ReplDriver(replArgs.result, scala.Console.out, Option(onExitCode), greeting, promptStr)
 
     // `given State` for scala 3.2.1
     val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
