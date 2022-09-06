@@ -220,7 +220,6 @@ trait ScriptExecution { this: BridgeBase =>
     }
 
     val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-//    println(predefCode)
 
     val replArgs = Array(
       "-classpath", // pass classpath on into the repl
@@ -230,10 +229,9 @@ trait ScriptExecution { this: BridgeBase =>
     val repl = new ReplDriver(replArgs, scala.Console.out, Option(onExitCode), greeting, promptStr)
 
     // `given State` for scala 3.2.1
-    val state = repl.run(predefCode)(using repl.initialState)
+    // TODO if config.verbose { repl.run} else {}
+    val state = repl.runQuietly(predefCode)(using repl.initialState)
     repl.runUntilQuit(state)
-
-    // repl.runUntilQuit(using repl.initialState)()
   }
 
   protected def runScript(scriptFile: Path, config: Config): AnyVal = {
