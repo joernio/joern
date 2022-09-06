@@ -32,7 +32,8 @@ case class Config(
   nocolors: Boolean = false,
   cpgToLoad: Option[File] = None,
   forInputPath: Option[String] = None,
-  frontendArgs: Array[String] = Array.empty
+  frontendArgs: Array[String] = Array.empty,
+  verbose: Boolean = false,
 )
 
 /** Base class for Ammonite Bridge, split by topic into multiple self types.
@@ -139,6 +140,10 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
         .action((_, c) => c.copy(nocolors = true))
         .text("turn off colors")
 
+      opt[Unit]("verbose")
+        .action((_, c) => c.copy(verbose = true))
+        .text("enable verbose output")
+
       help("help")
         .text("Print this help text")
     }
@@ -221,8 +226,6 @@ trait ScriptExecution { this: BridgeBase =>
          |""".stripMargin
     }
 
-    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-
     val replArgs = Array(
       "-classpath", // pass classpath on into the repl
       System.getProperty("java.class.path"),
@@ -231,9 +234,16 @@ trait ScriptExecution { this: BridgeBase =>
     val repl = new ReplDriver(replArgs, scala.Console.out, Option(onExitCode), greeting, promptStr)
 
     // `given State` for scala 3.2.1
+    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
+    val stateAfterPredef = 
+      if (config.verbose) {
+        println(predefCode)
+        repl.run(predefCode)(using repl.initialState)
+      } else {
+        repl.runQuietly(predefCode)(using repl.initialState)
+      }
     // TODO if config.verbose { repl.run} else {}
-    val state = repl.runQuietly(predefCode)(using repl.initialState)
-    repl.runUntilQuit(state)
+    repl.runUntilQuit(stateAfterPredef)
   }
 
   protected def runScript(scriptFile: Path, config: Config): AnyVal = {
