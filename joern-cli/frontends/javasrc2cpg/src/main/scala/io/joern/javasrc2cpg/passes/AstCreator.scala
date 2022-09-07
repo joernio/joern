@@ -953,36 +953,30 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     List(accessModifier, abstractModifier, staticVirtualModifier).flatten
   }
 
+  private def addTypeParametersToScope(methodDeclaration: MethodDeclaration): Unit = {
+    methodDeclaration.getTypeParameters.asScala.foreach { typeParam =>
+      val identifier = identifierForTypeParameter(typeParam)
+      scopeStack.addToScope(identifier, identifier.name, identifier.typeFullName)
+    }
+  }
+
   private def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
 
     val expectedReturnType = Try(
       symbolResolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])
     ).toOption
-    val expectedReturnTypeName = expectedReturnType
+    val returnTypeFullName = expectedReturnType
       .map(typeInfoCalc.fullName)
-      .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString))
+      .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString, wildcardFallback = true))
+      .getOrElse(TypeConstants.UnresolvedType)
 
-    scopeStack.pushNewScope(
-      MethodScope(ExpectedType(expectedReturnTypeName.getOrElse(TypeConstants.UnresolvedType), expectedReturnType))
-    )
+    scopeStack.pushNewScope(MethodScope(ExpectedType(returnTypeFullName, expectedReturnType)))
 
-    methodDeclaration.getTypeParameters.asScala.foreach { typeParam =>
-      val identifier = identifierForTypeParameter(typeParam)
-      scopeStack.addToScope(identifier, identifier.name, identifier.typeFullName)
-    }
+    addTypeParametersToScope(methodDeclaration)
 
-    val parameterAsts = astsForParameterList(methodDeclaration.getParameters)
-
-    val returnType =
-      expectedReturnTypeName
-        // This duplicates some code from TypeInfoCalculator.nameOrFullName, but provides a way to calculate
-        // the expected return type above, re-use that here and avoid attempting to resolve unresolvable
-        // types twice.
-        .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString, wildcardFallback = true))
-        .getOrElse(TypeConstants.UnresolvedType)
-
+    val parameterAsts  = astsForParameterList(methodDeclaration.getParameters)
     val parameterTypes = parameterAsts.map(rootType(_).getOrElse(TypeConstants.UnresolvedType))
-    val signature      = composeMethodLikeSignature(returnType, parameterTypes)
+    val signature      = composeMethodLikeSignature(returnTypeFullName, parameterTypes)
     val methodFullName =
       getMethodFullName(scopeStack.getEnclosingTypeDecl, methodDeclaration.getNameAsString, signature)
 
@@ -990,15 +984,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .fullName(methodFullName)
       .signature(signature)
 
-    val thisNode = if (methodDeclaration.isStatic) {
-      Seq()
-    } else {
-      val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
-      Seq(Ast(thisNodeForMethod(typeFullName, line(methodDeclaration))))
-    }
+    val thisNode = Option
+      .when(!methodDeclaration.isStatic) {
+        val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
+        Ast(thisNodeForMethod(typeFullName, line(methodDeclaration)))
+      }
+      .toSeq
 
-    val bodyAst            = astForMethodBody(methodDeclaration.getBody.toScala)
-    val returnTypeFullName = typeInfoCalc.fullName(methodDeclaration.getType).getOrElse(TypeConstants.UnresolvedType)
+    val bodyAst = astForMethodBody(methodDeclaration.getBody.toScala)
     val methodReturn =
       methodReturnNode(returnTypeFullName, None, line(methodDeclaration.getType), column(methodDeclaration.getType))
 
