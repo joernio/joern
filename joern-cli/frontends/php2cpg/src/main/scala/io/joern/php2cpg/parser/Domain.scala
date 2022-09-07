@@ -2,6 +2,7 @@ package io.joern.php2cpg.parser
 
 import io.joern.php2cpg.parser.Domain.PhpAssignment.{AssignTypeMap, isAssignType}
 import io.joern.php2cpg.parser.Domain.PhpBinaryOp.{BinaryOpTypeMap, isBinaryOpType}
+import io.joern.php2cpg.parser.Domain.PhpCast.{CastTypeMap, isCastType}
 import io.joern.php2cpg.parser.Domain.PhpUnaryOp.{UnaryOpTypeMap, isUnaryOpType}
 import io.shiftleft.codepropertygraph.generated.Operators
 import org.slf4j.LoggerFactory
@@ -26,6 +27,16 @@ object Domain {
     val assignmentConcat   = "<operator>.assignmentConcat"
 
     val encaps = "<operator>.encaps"
+  }
+
+  object PhpDomainTypeConstants {
+    val array  = "array"
+    val bool   = "bool"
+    val double = "double"
+    val int    = "int"
+    val obj    = "object"
+    val string = "string"
+    val unset  = "unset"
   }
 
   private val logger                      = LoggerFactory.getLogger(Domain.getClass)
@@ -182,6 +193,23 @@ object Domain {
   final case class PhpAssignment(assignOp: String, target: PhpExpr, source: PhpExpr, attributes: PhpAttributes)
       extends PhpExpr
 
+  final case class PhpCast(typ: String, expr: PhpExpr, attributes: PhpAttributes) extends PhpExpr
+  object PhpCast {
+    val CastTypeMap: Map[String, String] = Map(
+      "Expr_Cast_Array"  -> PhpDomainTypeConstants.array,
+      "Expr_Cast_Bool"   -> PhpDomainTypeConstants.bool,
+      "Expr_Cast_Double" -> PhpDomainTypeConstants.double,
+      "Expr_Cast_Int"    -> PhpDomainTypeConstants.int,
+      "Expr_Cast_Object" -> PhpDomainTypeConstants.obj,
+      "Expr_Cast_String" -> PhpDomainTypeConstants.string,
+      "Expr_Cast_Unset"  -> PhpDomainTypeConstants.unset
+    )
+
+    def isCastType(typeName: String): Boolean = {
+      CastTypeMap.contains(typeName)
+    }
+  }
+
   sealed abstract class PhpScalar                                      extends PhpExpr
   final case class PhpString(value: String, attributes: PhpAttributes) extends PhpScalar
   object PhpString {
@@ -257,6 +285,7 @@ object Domain {
       case typ if isUnaryOpType(typ)  => readUnaryOp(json)
       case typ if isBinaryOpType(typ) => readBinaryOp(json)
       case typ if isAssignType(typ)   => readAssign(json)
+      case typ if isCastType(typ)     => readCast(json)
 
       case unhandled =>
         logger.error(s"Found unhandled expr type: $unhandled")
@@ -337,6 +366,13 @@ object Domain {
     val source = readExpr(json("expr"))
 
     PhpAssignment(opType, target, source, PhpAttributes(json))
+  }
+
+  private def readCast(json: Value): PhpCast = {
+    val typ  = CastTypeMap(json("nodeType").str)
+    val expr = readExpr(json("expr"))
+
+    PhpCast(typ, expr, PhpAttributes(json))
   }
 
   private def readCallArg(json: Value): PhpArgument = {

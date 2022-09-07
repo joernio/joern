@@ -5,6 +5,7 @@ import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.utils.NodeBuilders.operatorCallNode
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
@@ -12,7 +13,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewIdentifier,
   NewLiteral,
   NewMethod,
-  NewMethodParameterIn
+  NewMethodParameterIn,
+  NewTypeRef
 }
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
@@ -25,6 +27,11 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
     val ast = astForPhpFile(phpAst)
     storeInDiffGraph(ast, diffGraph)
     diffGraph
+  }
+
+  private def registerType(typ: String): String = {
+    // TODO Actually register type
+    typ
   }
 
   private def astForPhpFile(file: PhpFile): Ast = {
@@ -99,6 +106,7 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
       case scalarExpr: PhpScalar         => astForScalar(scalarExpr)
       case binaryOp: PhpBinaryOp         => astForBinOp(binaryOp)
       case unaryOp: PhpUnaryOp           => astForUnaryOp(unaryOp)
+      case castExpr: PhpCast             => astForCastExpr(castExpr)
 
       case unhandled =>
         logger.warn(s"Unhandled expr: $unhandled")
@@ -204,6 +212,24 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
     )
 
     callAst(callNode, exprAst :: Nil)
+  }
+
+  // TODO Move to x2cpg
+  private def rootCode(ast: Ast, default: String = ""): String = {
+    ast.root.flatMap(_.properties.get(PropertyNames.CODE).map(_.toString)).getOrElse(default)
+  }
+  private def astForCastExpr(castExpr: PhpCast): Ast = {
+    val typ = NewTypeRef()
+      .typeFullName(registerType(castExpr.typ))
+      .code(castExpr.typ)
+      .lineNumber(castExpr.attributes.lineNumber)
+
+    val expr    = astForExpr(castExpr.expr)
+    val codeStr = s"(${castExpr.typ}) ${rootCode(expr)}"
+
+    val callNode = operatorCallNode(name = Operators.cast, codeStr, Some(castExpr.typ), castExpr.attributes.lineNumber)
+
+    callAst(callNode, Ast(typ) :: expr :: Nil)
   }
 }
 

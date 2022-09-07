@@ -1,9 +1,9 @@
 package io.joern.php2cpg.querying
 
-import io.joern.php2cpg.parser.Domain.PhpOperators
+import io.joern.php2cpg.parser.Domain.{PhpDomainTypeConstants, PhpOperators}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
 
@@ -163,6 +163,55 @@ class OperatorTests extends PhpCode2CpgFixture {
         val cpg = code(s"<?php\n$testCode", fileName = s"Test${filenameKeyPool.next}.php")
         cpg.call.name.l shouldBe expectedType :: Nil
         cpg.call.methodFullName.l shouldBe expectedType :: Nil
+      }
+    }
+  }
+
+  "cast operations" should {
+    "have the correct arguments set" in {
+      val cpg = code("<?php\n(int) $a")
+
+      val cast = cpg.call.nameExact(Operators.cast).l match {
+        case List(cast) => cast
+        case result     => fail(s"Expected cast call but got $result")
+      }
+
+      cast.typeFullName shouldBe "int"
+      // TODO Still need to fix variable code
+      cast.code shouldBe "(int) a"
+      cast.lineNumber shouldBe Some(2)
+      cast.argument.l match {
+        case List(typeRef: TypeRef, expr: Identifier) =>
+          typeRef.typeFullName shouldBe "int"
+          typeRef.argumentIndex shouldBe 1
+
+          expr.name shouldBe "a"
+          expr.argumentIndex shouldBe 2
+
+        case result => fail(s"Expected cast args but got $result")
+      }
+    }
+
+    "have the correct types" in {
+      val testData = List(
+        ("(array) $x", PhpDomainTypeConstants.array),
+        ("(bool) $x", PhpDomainTypeConstants.bool),
+        ("(double) $x", PhpDomainTypeConstants.double),
+        ("(int) $x", PhpDomainTypeConstants.int),
+        ("(object) $x", PhpDomainTypeConstants.obj),
+        ("(string) $x", PhpDomainTypeConstants.string),
+        ("(unset) $x", PhpDomainTypeConstants.unset)
+      )
+
+      testData.foreach { case (testCode, expectedType) =>
+        val cpg = code(s"<?php\n$testCode", fileName = s"Test${filenameKeyPool.next}.php")
+        cpg.call.nameExact(Operators.cast).argument(1).l match {
+          case List(typeRef: TypeRef) =>
+            typeRef.typeFullName shouldBe expectedType
+            typeRef.code shouldBe expectedType
+
+          case result => fail(s"Expected typeRef arg for $testCode but found $result")
+        }
       }
     }
   }
