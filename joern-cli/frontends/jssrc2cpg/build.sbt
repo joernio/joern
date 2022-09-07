@@ -1,6 +1,6 @@
 name               := "jssrc2cpg"
 scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.1.3")
+crossScalaVersions := Seq("2.13.8", "3.2.0")
 
 dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
 
@@ -73,7 +73,7 @@ astGenDlTask := {
   Seq("astgen-linux", "astgen-macos", "astgen-win.exe").foreach { fileName =>
     val dest = astGenDir / fileName
     if (!dest.exists) {
-      val url = s"https://github.com/max-leuthaeuser/astgen/releases/download/latest/$fileName"
+      val url            = s"https://github.com/max-leuthaeuser/astgen/releases/download/latest/$fileName"
       val downloadedFile = SimpleCache.downloadMaybe(url)
       IO.copyFile(downloadedFile, dest)
     }
