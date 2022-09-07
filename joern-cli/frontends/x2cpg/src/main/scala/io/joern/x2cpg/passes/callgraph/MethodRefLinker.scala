@@ -40,17 +40,27 @@ object MethodRefLinker {
   import overflowdb.BatchedUpdate.DiffGraphBuilder
   val logger: Logger = LoggerFactory.getLogger(classOf[MethodRefLinker])
 
+  def onlyOption[T <: NodeRef[_]](x: IterableOnce[T]): Option[T] = {
+    val iter = x.iterator
+    val res  = iter.nextOption()
+    if (iter.hasNext)
+      logger.warn(
+        s"""Invalid CPG. Collision at label = ${res.get.label()} FULL_NAME = ${res.get.property("FULL_NAME")}"""
+      )
+    res
+  }
+
   def typeDeclFullNameToNode(cpg: Cpg, x: String): Option[TypeDecl] =
-    nodesWithFullName(cpg, x).collectFirst { case x: TypeDecl => x }
+    onlyOption(nodesWithFullName(cpg, x).collect { case x: TypeDecl => x })
 
   def typeFullNameToNode(cpg: Cpg, x: String): Option[Type] =
-    nodesWithFullName(cpg, x).collectFirst { case x: Type => x }
+    onlyOption(nodesWithFullName(cpg, x).collect { case x: Type => x })
 
   def methodFullNameToNode(cpg: Cpg, x: String): Option[Method] =
-    nodesWithFullName(cpg, x).collectFirst { case x: Method => x }
+    onlyOption(nodesWithFullName(cpg, x).collect { case x: Method => x })
 
   def namespaceBlockFullNameToNode(cpg: Cpg, x: String): Option[NamespaceBlock] =
-    nodesWithFullName(cpg, x).collectFirst { case x: NamespaceBlock => x }
+    onlyOption(nodesWithFullName(cpg, x).collect { case x: NamespaceBlock => x })
 
   def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[_ <: NodeDb]] =
     cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
