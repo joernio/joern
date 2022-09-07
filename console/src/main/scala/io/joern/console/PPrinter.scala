@@ -24,7 +24,11 @@ object pprinter {
       ) // `[00;38;05;70m` is encoded as `[38;5;70m` in fansi - 8bit color encoding
 
   def create(original: PPrinter): PPrinter =
-    new PPrinter(defaultHeight = 99999, additionalHandlers = myAdditionalHandlers(original)) {
+    new PPrinter(
+      defaultHeight = 99999,
+      colorLiteral = fansi.Attrs.Empty, // leave color highlighting to the repl
+      colorApplyPrefix = fansi.Attrs.Empty,
+      additionalHandlers = myAdditionalHandlers(original)) {
       override def tokenize(
         x: Any,
         width: Int = defaultWidth,

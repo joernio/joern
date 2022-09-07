@@ -227,19 +227,45 @@ trait ScriptExecution { this: BridgeBase =>
     replArgs += "-explain" // verbose scalac error messages
     if (config.nocolors) replArgs ++= Array("-color", "never")
 
-    val repl = new ReplDriver(replArgs.result, scala.Console.out, Option(onExitCode), greeting, promptStr)
+    val replDriver = new ReplDriver(replArgs.result, scala.Console.out, Option(onExitCode), greeting, promptStr)
 
     // `given State` for scala 3.2.1
     val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-    val stateAfterPredef = 
+    val stateAfterPredef: State =
       if (config.verbose) {
         println(predefCode)
-        repl.run(predefCode)(using repl.initialState)
+        replDriver.run(predefCode)(using replDriver.initialState)
       } else {
-        repl.runQuietly(predefCode)(using repl.initialState)
+        replDriver.runQuietly(predefCode)(using replDriver.initialState)
       }
-    // TODO if config.verbose { repl.run} else {}
-    repl.runUntilQuit(stateAfterPredef)
+
+    val myClassLoader = replDriver.rendering.myClassLoader
+    replDriver.rendering.myReplStringOf = {
+      // val MaxStringElements = 1000
+
+      // val scalaRuntime = Class.forName("scala.runtime.ScalaRunTime", true, myClassLoader)
+      // val renderer = "stringOf"
+      // val meth = scalaRuntime.getMethod(renderer, classOf[Object], classOf[Int])
+
+      (value: Object) => {
+        println(s"YY0 $value of class ${value.getClass}")
+        // pprint.pprintln(value)
+        // val myPP = pprinter.create(pprint.PPrinter.Color)
+        val myPP = pprinter.create(pprint.PPrinter.BlackWhite)
+        // val myPP = pprint.PPrinter.BlackWhite // works - let the repl do the color coding
+        val fansiStr: fansi.Str = myPP.apply(value)
+        println(s"YY1 $fansiStr")
+        // pprinter.create().pprintln(value)
+        // val oldRes = meth.invoke(null, value, Integer.valueOf(MaxStringElements)).asInstanceOf[String]
+        // println(s"YY2: meth=$meth; res=$oldRes")
+        fansiStr.toString
+      }
+      // val res = obj.toString
+      // println(s"YY9: $res")
+      // res
+    }
+
+    replDriver.runUntilQuit(stateAfterPredef)
   }
 
   protected def runScript(scriptFile: Path, config: Config) = {

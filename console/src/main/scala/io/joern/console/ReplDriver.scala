@@ -51,4 +51,26 @@ class ReplDriver(args: Array[String],
     finally terminal.close()
   }
 
+
+  // TODO drop debug stuff
+  import dotty.tools.dotc.reporting.{ConsoleReporter, Diagnostic}
+  import dotty.tools.dotc.interfaces
+  import dotty.tools.dotc.util.SourcePosition
+
+  /** Like ConsoleReporter, but without file paths, -Xprompt displaying,
+   *  and using a PrintStream rather than a PrintWriter so messages aren't re-encoded. */
+  private object ReplConsoleReporter extends ConsoleReporter.AbstractConsoleReporter {
+    override def posFileStr(pos: SourcePosition) = "" // omit file paths
+    override def printMessage(msg: String): Unit = out.println(msg)
+    override def flush()(using Context): Unit    = out.flush()
+  }
+
+  /** Print warnings & errors using ReplConsoleReporter, and info straight to out */
+  override protected def printDiagnostic(dia: Diagnostic)(implicit state: State) = dia.level match
+    case interfaces.Diagnostic.INFO => out.println(dia.msg) // print REPL's special info diagnostics directly to out
+    case _                          => ReplConsoleReporter.doReport(dia)(using state.context)
+
+
+
+
 }
