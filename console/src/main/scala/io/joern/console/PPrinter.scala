@@ -3,6 +3,8 @@ package io.joern.console
 import pprint.{PPrinter, Renderer, Result, Tree, Truncated}
 import scala.util.matching.Regex
 
+import scala.util.Try
+
 object PPrinter {
   private val printer = pprinter.create(pprint.PPrinter.BlackWhite)
 
@@ -36,7 +38,7 @@ object pprinter {
       defaultHeight = 99999,
       colorLiteral = fansi.Attrs.Empty, // leave color highlighting to the repl
       colorApplyPrefix = fansi.Attrs.Empty,
-      additionalHandlers = myAdditionalHandlers(original)) {
+      additionalHandlers = handleProduct(original)) {
       override def tokenize(
         x: Any,
         width: Int = defaultWidth,
@@ -60,23 +62,42 @@ object pprinter {
       }
     }
 
-  private def myAdditionalHandlers(original: PPrinter): PartialFunction[Any, Tree] = {
+  private def handleProduct(original: PPrinter): PartialFunction[Any, Tree] = {
     case product: Product =>
       Tree.Apply(
         product.productPrefix,
-        Iterator.range(0, product.productArity).map { n =>
-          Tree.Infix(
-            // TODO use productElementLabel if available - check standard type hierarchy
-  //          Tree.Literal(product.productElementLabel(n)),
-            Tree.Literal(s"TODO $n"),
-            "->",
-            original.treeify(
-              product.productElement(n),
+        Iterator.range(0, product.productArity).map { elementIdx =>
+          val rightSide = original.treeify(
+              product.productElement(elementIdx),
               escapeUnicode = original.defaultEscapeUnicode,
               showFieldNames = original.defaultShowFieldNames
             )
-          )
+          productElementNameMaybe(product, elementIdx) match {
+            case Some(name) => Tree.Infix(Tree.Literal(name), "->", rightSide)
+            case None => rightSide
+          }
         }
       )
   }
+
+  private def productElementNameMaybe(product: Product, elementIdx: Int): Option[String] =
+    try {
+      // this may fail, e.g. if product doesn't override `productElementName`...
+      val a = product.productElementName(elementIdx)
+      println(s"AAAA0 a=$a;")
+      Some("foooooo")
+//      Some(a)
+    } catch {
+      case t: Throwable =>
+        println("AAAA1")
+        t.printStackTrace()
+        None
+    }
+
+//  private def productElementNameMaybe(product: Product, elementIdx: Int): Option[String] =
+//    Try {
+//      // this may fail, e.g. if product doesn't override `productElementName`...
+////      product.productElementName(elementIdx)
+//      "foooooo"
+//    }.toOption
 }
