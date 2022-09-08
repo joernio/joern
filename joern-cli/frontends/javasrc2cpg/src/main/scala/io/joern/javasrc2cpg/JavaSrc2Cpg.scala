@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg
 
 import better.files.File
-import io.joern.javasrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass}
+import io.joern.javasrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, TypeInferencePass}
 import io.joern.javasrc2cpg.util.Delombok
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.shiftleft.codepropertygraph.Cpg
@@ -47,6 +47,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       new ConfigFileCreationPass(config.inputPath, cpg).createAndApply()
       new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
         .createAndApply()
+      new TypeInferencePass(cpg).createAndApply()
     }
   }
 
