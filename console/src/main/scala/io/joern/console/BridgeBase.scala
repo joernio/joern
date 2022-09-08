@@ -243,39 +243,17 @@ trait ScriptExecution { this: BridgeBase =>
         replDriver.runQuietly(predefCode)(using replDriver.initialState)
       }
 
-    val myClassLoader = replDriver.rendering.myClassLoader
-
-    // We need to use the ScalaRunTime class coming from the scala-library
-    // on the user classpath, and not the one available in the current
-    // classloader, so we use reflection instead of simply calling
-    // `ScalaRunTime.replStringOf`. Probe for new API without extraneous newlines.
-    // For old API, try to clean up extraneous newlines by stripping suffix and maybe prefix newline.
     replDriver.rendering.myReplStringOf = {
-      val MaxStringElements = 1000
-      val pprinter = Class.forName("io.joern.console.PPrinter", true, myClassLoader)
-      val meth = pprinter.getMethod("apply", classOf[Object], classOf[Int])
-      (value: Object) => meth.invoke(null, value, Integer.valueOf(MaxStringElements)).asInstanceOf[String]
+      val MaxStringElements: Integer = 1000
+      // We need to use the ScalaRunTime class coming from the scala-library
+      // on the user classpath, and not the one available in the current
+      // classloader, so we use reflection instead of simply calling
+      // `ScalaRunTime.replStringOf`. Probe for new API without extraneous newlines.
+      // For old API, try to clean up extraneous newlines by stripping suffix and maybe prefix newline.
+      val pprinter = Class.forName("io.joern.console.PPrinter", true, replDriver.rendering.myClassLoader)
+      val renderer = pprinter.getMethod("apply", classOf[Object], classOf[Int])
+      (value: Object) => renderer.invoke(null, value, MaxStringElements).asInstanceOf[String]
     }
-//    replDriver.rendering.myReplStringOf = {
-//      // val MaxStringElements = 1000
-//
-//      (value: Object) => {
-//        // println(s"YY0 $value of class ${value.getClass}")
-//        // pprint.pprintln(value)
-//        // val myPP = pprinter.create(pprint.PPrinter.Color)
-//        val myPP = pprinter.create(pprint.PPrinter.BlackWhite)
-//        // val myPP = pprint.PPrinter.BlackWhite // works - let the repl do the color coding
-//        val fansiStr: fansi.Str = myPP.apply(value)
-//        println(s"YY1 fansiStr=$fansiStr")
-//        // pprinter.create().pprintln(value)
-//        // val oldRes = meth.invoke(null, value, Integer.valueOf(MaxStringElements)).asInstanceOf[String]
-//        // println(s"YY2: meth=$meth; res=$oldRes")
-//        fansiStr.toString
-//      }
-//      // val res = obj.toString
-//      // println(s"YY9: $res")
-//      // res
-//    }
 
     replDriver.runUntilQuit(stateAfterPredef)
   }
