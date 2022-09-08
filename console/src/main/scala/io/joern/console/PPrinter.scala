@@ -2,6 +2,10 @@ package io.joern.console
 
 import pprint.{PPrinter, Renderer, Result, Tree, Truncated}
 
+object PPrinter {
+  def apply(obj: Object, maxElements: Int): String = s"BBB PPrinter0 ${obj.isInstanceOf[Product]}"
+}
+
 object pprinter {
 
   val AnsiEncodedRegexp = "\u001b\\[[\\d;]+m".r
