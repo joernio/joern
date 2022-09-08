@@ -1,6 +1,5 @@
 package io.joern.console
 
-import io.shiftleft.codepropertygraph.generated.nodes
 import pprint.{PPrinter, Renderer, Result, Tree, Truncated}
 
 object pprinter {
@@ -38,6 +37,13 @@ object pprinter {
         escapeUnicode: Boolean,
         showFieldNames: Boolean
       ): Iterator[fansi.Str] = {
+        println(s"AAA0 $x; class=${x.getClass} isProduct=${x.isInstanceOf[Product]}")
+        x.getClass.getInterfaces.foreach(println)
+//        println("+============+")
+//        println("aSampleProduct direct:")
+//        println(s"cls=${aSampleProduct.getClass}")
+//        aSampleProduct.getClass.getInterfaces.foreach(println)
+        println("<=============")
         val tree = this.treeify(x, escapeUnicode = escapeUnicode, showFieldNames = showFieldNames)
         val renderer = new Renderer(width, colorApplyPrefix, colorLiteral, indent) {
           override def rec(x: Tree, leftOffset: Int, indentCount: Int): Result = x match {
@@ -52,21 +58,48 @@ object pprinter {
       }
     }
 
-  private def myAdditionalHandlers(original: PPrinter): PartialFunction[Any, Tree] = { case node: nodes.StoredNode =>
-    // import sourcecode.Text.generate
-    Tree.Apply(
-      node.productPrefix,
-      Iterator.range(0, node.productArity).map { n =>
-        Tree.Infix(
-          Tree.Literal(node.productElementLabel(n)),
-          "->",
-          original.treeify(
-            node.productElement(n),
-            escapeUnicode = original.defaultEscapeUnicode,
-            showFieldNames = original.defaultShowFieldNames
+  private def myAdditionalHandlers(original: PPrinter): PartialFunction[Any, Tree] = {
+    case product: Product =>
+      println("AAA1 yay we found a product!")
+      Tree.Apply(
+        product.productPrefix,
+        Iterator.range(0, product.productArity).map { n =>
+          Tree.Infix(
+  //          Tree.Literal(product.productElementLabel(n)),
+            Tree.Literal(s"TODO $n"),
+            "->",
+            original.treeify(
+              product.productElement(n),
+              escapeUnicode = original.defaultEscapeUnicode,
+              showFieldNames = original.defaultShowFieldNames
+            )
           )
-        )
-      }
-    )
+        }
+      )
+    case other if other.getClass.getInterfaces.contains(classOf[Product]) =>
+      println(s"AAA3 $other; class=${other.getClass} isProduct=${other.isInstanceOf[Product]}")
+      Tree.Literal(other.toString)
+    case other =>
+      println(s"AAA2 $other; class=${other.getClass} isProduct=${other.isInstanceOf[Product]}")
+      other.getClass.getInterfaces.foreach(println)
+      println(other.getClass.getInterfaces.contains(classOf[Product]))
+      Tree.Literal(other.toString)
   }
+
+  class ASampleProduct(str: String) extends Product {
+    override def canEqual(that: Any): Boolean = true
+
+    override def productArity: Int = 1
+
+    override def productElement(n: Int): Any = n match {
+      case 0 => str
+    }
+
+    def productElementLabel(n: Int): String = n match {
+      case 0 => "str"
+    }
+  }
+
+  val aSampleProduct: ASampleProduct = new ASampleProduct("example product")
+
 }
