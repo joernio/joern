@@ -238,7 +238,7 @@ trait ScriptExecution { this: BridgeBase =>
       // We need to use the ScalaRunTime class coming from the scala-library
       // on the user classpath, and not the one available in the current
       // classloader, so we use reflection instead of simply calling
-      // `ScalaRunTime.replStringOf`. Probe for new API without extraneous newlines.
+      // `ScalaRunTime.replStringOf | io.joern.console.PPrinter.apply`. Probe for new API without extraneous newlines.
       // For old API, try to clean up extraneous newlines by stripping suffix and maybe prefix newline.
       val pprinter = Class.forName("io.joern.console.PPrinter", true, replDriver.rendering.myClassLoader)
       val renderer = pprinter.getMethod("apply", classOf[Object])
