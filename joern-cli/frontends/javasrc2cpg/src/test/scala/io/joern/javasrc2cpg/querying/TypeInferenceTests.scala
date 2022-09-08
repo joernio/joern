@@ -7,6 +7,46 @@ import io.shiftleft.semanticcpg.language._
 
 class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
 
+  "methodFullNames for unresolved methods in source" should {
+    val cpg = code(
+      """
+        |package org.codeminers.controller;
+        |
+        |import org.codeminers.thirdparty.ThirdParty;
+        |
+        |public class Controller {
+        |
+        |    public void foo() {
+        |        Request request = new Request();
+        |        ThirdParty.getSgClient().api(request);
+        |    }
+        |}""".stripMargin,
+      fileName = "Controller.java"
+    ).moreCode("""
+        |package org.codeminers.thirdparty;
+        |
+        |import com.sendgrid.SendGrid;
+        |
+        |public class ThirdParty {
+        |    public static SendGrid getSgClient() {
+        |	     return new SendGrid("Dummy-api-key");
+        |    }
+        |}""".stripMargin)
+
+    "should correctly infer the return type for getSgClient" in {
+      // This is the simple case that can be solved with just import information.
+      val List(method) = cpg.typeDecl.name("ThirdParty").method.name("getSgClient").l
+      method.methodReturn.typeFullName shouldBe "com.sendgrid.SendGrid"
+      method.fullName shouldBe "org.codeminers.thirdparty.ThirdParty.getSgClient:com.sendgrid.SendGrid()"
+    }
+
+    "have the correct signature if the method parameter and return types can be inferred" ignore {
+      // This is the more complex case that relies on type information across compilation units.
+      val methodFullName = cpg.call.name("getSgClient").head.methodFullName
+      methodFullName shouldBe "org.codeminers.thirdparty.ThirdParty.getSgClient:com.sendgrid.SendGrid()"
+    }
+  }
+
   "type information for constructor invocations" should {
 
     "be found for constructor invocations at the start of a call chain" in {
