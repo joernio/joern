@@ -5,9 +5,8 @@ import pprint.{Renderer, Result, Tree, Truncated}
 object PPrinter {
   private val pprinter = create()
 
-  def apply(obj: Object): String = {
+  def apply(obj: Object): String =
     pprinter(obj).toString
-  }
 
   private def create(): pprint.PPrinter = {
     new pprint.PPrinter(
