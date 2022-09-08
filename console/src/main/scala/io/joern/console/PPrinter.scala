@@ -6,7 +6,6 @@ object PPrinter {
   private val printer = pprinter.create(pprint.PPrinter.BlackWhite)
 
   def apply(obj: Object, maxElements: Int): String = {
-//    s"BBB PPrinter0 ${obj.isInstanceOf[Product]}"
     printer.apply(obj).toString
   }
 }
@@ -46,13 +45,6 @@ object pprinter {
         escapeUnicode: Boolean,
         showFieldNames: Boolean
       ): Iterator[fansi.Str] = {
-        println(s"AAA0 $x; class=${x.getClass} isProduct=${x.isInstanceOf[Product]}")
-        x.getClass.getInterfaces.foreach(println)
-//        println("+============+")
-//        println("aSampleProduct direct:")
-//        println(s"cls=${aSampleProduct.getClass}")
-//        aSampleProduct.getClass.getInterfaces.foreach(println)
-        println("<=============")
         val tree = this.treeify(x, escapeUnicode = escapeUnicode, showFieldNames = showFieldNames)
         val renderer = new Renderer(width, colorApplyPrefix, colorLiteral, indent) {
           override def rec(x: Tree, leftOffset: Int, indentCount: Int): Result = x match {
@@ -69,11 +61,11 @@ object pprinter {
 
   private def myAdditionalHandlers(original: PPrinter): PartialFunction[Any, Tree] = {
     case product: Product =>
-      println("AAA1 yay we found a product!")
       Tree.Apply(
         product.productPrefix,
         Iterator.range(0, product.productArity).map { n =>
           Tree.Infix(
+            // TODO use productElementLabel if available - check standard type hierarchy
   //          Tree.Literal(product.productElementLabel(n)),
             Tree.Literal(s"TODO $n"),
             "->",
@@ -85,13 +77,5 @@ object pprinter {
           )
         }
       )
-    case other if other.getClass.getInterfaces.contains(classOf[Product]) =>
-      println(s"AAA3 $other; class=${other.getClass} isProduct=${other.isInstanceOf[Product]}")
-      Tree.Literal(other.toString)
-    case other =>
-      println(s"AAA2 $other; class=${other.getClass} isProduct=${other.isInstanceOf[Product]}")
-      other.getClass.getInterfaces.foreach(println)
-      println(other.getClass.getInterfaces.contains(classOf[Product]))
-      Tree.Literal(other.toString)
   }
 }
