@@ -4,14 +4,40 @@ import pprint.{PPrinter, Renderer, Result, Tree, Truncated}
 import scala.util.matching.Regex
 
 object PPrinter {
-  private val printer = pprinter.create(pprint.PPrinter.BlackWhite)
+  private val printer = create()
 
-  def apply(obj: Object, maxElements: Int): String = {
+  def stringOf(obj: Object): String = {
     printer.apply(obj).toString
   }
-}
 
-object pprinter {
+  private def create(): pprint.PPrinter = {
+    new pprint.PPrinter(
+      defaultHeight = 99999,
+      colorLiteral = fansi.Attrs.Empty, // leave color highlighting to the repl
+      colorApplyPrefix = fansi.Attrs.Empty,
+      additionalHandlers = handleProduct(pprint.PPrinter.BlackWhite)) {
+
+      override def tokenize(x: Any,
+                            width: Int = defaultWidth,
+                            height: Int = defaultHeight,
+                            indent: Int = defaultIndent,
+                            initialOffset: Int = 0,
+                            escapeUnicode: Boolean,
+                            showFieldNames: Boolean): Iterator[fansi.Str] = {
+        val tree = this.treeify(x, escapeUnicode = escapeUnicode, showFieldNames = showFieldNames)
+        val renderer = new Renderer(width, colorApplyPrefix, colorLiteral, indent) {
+          override def rec(x: Tree, leftOffset: Int, indentCount: Int): Result = x match {
+            case Tree.Literal(body) if isAnsiEncoded(body) =>
+              // this is the part we're overriding, everything else is just boilerplate
+              Result.fromString(fixForFansi(body))
+            case _ => super.rec(x, leftOffset, indentCount)
+          }
+        }
+        val rendered = renderer.rec(tree, initialOffset, 0).iter
+        new Truncated(rendered, width, height)
+      }
+    }
+  }
 
   val AnsiEncodedRegexp: Regex = "\u001b\\[[\\d;]+m".r
   def isAnsiEncoded(s: String): Boolean =
@@ -31,45 +57,16 @@ object pprinter {
         "\u001b[$1;$2;$3m"
       ) // `[00;38;05;70m` is encoded as `[38;5;70m` in fansi - 8bit color encoding
 
-  def create(original: PPrinter): PPrinter =
-    new PPrinter(
-      defaultHeight = 99999,
-      colorLiteral = fansi.Attrs.Empty, // leave color highlighting to the repl
-      colorApplyPrefix = fansi.Attrs.Empty,
-      additionalHandlers = handleProduct(original)) {
-      override def tokenize(
-        x: Any,
-        width: Int = defaultWidth,
-        height: Int = defaultHeight,
-        indent: Int = defaultIndent,
-        initialOffset: Int = 0,
-        escapeUnicode: Boolean,
-        showFieldNames: Boolean
-      ): Iterator[fansi.Str] = {
-        val tree = this.treeify(x, escapeUnicode = escapeUnicode, showFieldNames = showFieldNames)
-        val renderer = new Renderer(width, colorApplyPrefix, colorLiteral, indent) {
-          override def rec(x: Tree, leftOffset: Int, indentCount: Int): Result = x match {
-            case Tree.Literal(body) if isAnsiEncoded(body) =>
-              // this is the part we're overriding, everything else is just boilerplate
-              Result.fromString(fixForFansi(body))
-            case _ => super.rec(x, leftOffset, indentCount)
-          }
-        }
-        val rendered = renderer.rec(tree, initialOffset, 0).iter
-        new Truncated(rendered, width, height)
-      }
-    }
-
-  private def handleProduct(original: PPrinter): PartialFunction[Any, Tree] = {
+  private def handleProduct(original: pprint.PPrinter): PartialFunction[Any, Tree] = {
     case product: Product =>
       Tree.Apply(
         product.productPrefix,
         Iterator.range(0, product.productArity).map { elementIdx =>
           val elementValueTree = original.treeify(
-              product.productElement(elementIdx),
-              escapeUnicode = original.defaultEscapeUnicode,
-              showFieldNames = original.defaultShowFieldNames
-            )
+            product.productElement(elementIdx),
+            escapeUnicode = original.defaultEscapeUnicode,
+            showFieldNames = original.defaultShowFieldNames
+          )
           product.productElementName(elementIdx) match {
             case "" => elementValueTree
             case name => Tree.Infix(Tree.Literal(name), "->", elementValueTree)
