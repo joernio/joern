@@ -1,8 +1,11 @@
 package io.joern.console
 
 import pprint.{PPrinter, Renderer, Result, Tree, Truncated}
-
 import scala.util.matching.Regex
+
+object PPrinter {
+  def apply(obj: Object, maxElements: Int): String = s"BBB PPrinter0 ${obj.isInstanceOf[Product]}"
+}
 
 object pprinter {
 
