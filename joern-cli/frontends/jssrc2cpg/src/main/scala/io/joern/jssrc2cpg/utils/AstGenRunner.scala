@@ -36,7 +36,7 @@ object AstGenRunner {
       if (indexOfTarget != -1) {
         new java.io.File(dir.substring("file:".length, indexOfTarget)).toString
       } else {
-        new java.io.File(dir.substring("file:".length, dir.length)).toString
+        "."
       }
     }
     Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
