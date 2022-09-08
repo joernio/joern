@@ -3,8 +3,6 @@ package io.joern.console
 import pprint.{PPrinter, Renderer, Result, Tree, Truncated}
 import scala.util.matching.Regex
 
-import scala.util.Try
-
 object PPrinter {
   private val printer = pprinter.create(pprint.PPrinter.BlackWhite)
 
@@ -67,37 +65,17 @@ object pprinter {
       Tree.Apply(
         product.productPrefix,
         Iterator.range(0, product.productArity).map { elementIdx =>
-          val rightSide = original.treeify(
+          val elementValueTree = original.treeify(
               product.productElement(elementIdx),
               escapeUnicode = original.defaultEscapeUnicode,
               showFieldNames = original.defaultShowFieldNames
             )
-          productElementNameMaybe(product, elementIdx) match {
-            case Some(name) => Tree.Infix(Tree.Literal(name), "->", rightSide)
-            case None => rightSide
+          product.productElementName(elementIdx) match {
+            case "" => elementValueTree
+            case name => Tree.Infix(Tree.Literal(name), "->", elementValueTree)
           }
         }
       )
   }
 
-  private def productElementNameMaybe(product: Product, elementIdx: Int): Option[String] =
-    try {
-      // this may fail, e.g. if product doesn't override `productElementName`...
-      val a = product.productElementName(elementIdx)
-      println(s"AAAA0 a=$a;")
-      Some("foooooo")
-//      Some(a)
-    } catch {
-      case t: Throwable =>
-        println("AAAA1")
-        t.printStackTrace()
-        None
-    }
-
-//  private def productElementNameMaybe(product: Product, elementIdx: Int): Option[String] =
-//    Try {
-//      // this may fail, e.g. if product doesn't override `productElementName`...
-////      product.productElementName(elementIdx)
-//      "foooooo"
-//    }.toOption
 }
