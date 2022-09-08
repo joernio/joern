@@ -209,16 +209,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 trait ScriptExecution { this: BridgeBase =>
 
   protected def startInteractiveShell(config: Config) = {
-    // val configurePPrinterMaybe =
-    //   if (config.nocolors) ""
-    //   else """val originalPPrinter = repl.pprinter()
-    //          |repl.pprinter.update(io.joern.console.pprinter.create(originalPPrinter))
-    //          |""".stripMargin
-
-    val replConfig = List(
-      // configurePPrinterMaybe,
-      // "implicit val implicitPPrinter = repl.pprinter()",
-    ) ++ config.cpgToLoad.map { cpgFile =>
+    val replConfig = config.cpgToLoad.map { cpgFile =>
       "importCpg(\"" + cpgFile + "\")"
     } ++ config.forInputPath.map { name =>
       s"""
@@ -250,7 +241,7 @@ trait ScriptExecution { this: BridgeBase =>
       // `ScalaRunTime.replStringOf`. Probe for new API without extraneous newlines.
       // For old API, try to clean up extraneous newlines by stripping suffix and maybe prefix newline.
       val pprinter = Class.forName("io.joern.console.PPrinter", true, replDriver.rendering.myClassLoader)
-      val renderer = pprinter.getMethod("stringOf", classOf[Object])
+      val renderer = pprinter.getMethod("apply", classOf[Object])
       (value: Object) => renderer.invoke(null, value).asInstanceOf[String]
     }
 

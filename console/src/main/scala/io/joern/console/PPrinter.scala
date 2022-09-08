@@ -4,10 +4,10 @@ import pprint.{PPrinter, Renderer, Result, Tree, Truncated}
 import scala.util.matching.Regex
 
 object PPrinter {
-  private val printer = create()
+  private val pprinter = create()
 
-  def stringOf(obj: Object): String = {
-    printer.apply(obj).toString
+  def apply(obj: Object): String = {
+    pprinter(obj).toString
   }
 
   private def create(): pprint.PPrinter = {
