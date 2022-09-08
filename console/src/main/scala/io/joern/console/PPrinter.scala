@@ -4,7 +4,12 @@ import pprint.{PPrinter, Renderer, Result, Tree, Truncated}
 import scala.util.matching.Regex
 
 object PPrinter {
-  def apply(obj: Object, maxElements: Int): String = s"BBB PPrinter0 ${obj.isInstanceOf[Product]}"
+  private val printer = pprinter.create(pprint.PPrinter.BlackWhite)
+
+  def apply(obj: Object, maxElements: Int): String = {
+//    s"BBB PPrinter0 ${obj.isInstanceOf[Product]}"
+    printer.apply(obj).toString
+  }
 }
 
 object pprinter {
@@ -90,21 +95,4 @@ object pprinter {
       println(other.getClass.getInterfaces.contains(classOf[Product]))
       Tree.Literal(other.toString)
   }
-
-  class ASampleProduct(str: String) extends Product {
-    override def canEqual(that: Any): Boolean = true
-
-    override def productArity: Int = 1
-
-    override def productElement(n: Int): Any = n match {
-      case 0 => str
-    }
-
-    def productElementLabel(n: Int): String = n match {
-      case 0 => "str"
-    }
-  }
-
-  val aSampleProduct: ASampleProduct = new ASampleProduct("example product")
-
 }
