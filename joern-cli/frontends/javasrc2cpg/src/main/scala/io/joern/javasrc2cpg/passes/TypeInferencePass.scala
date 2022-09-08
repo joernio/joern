@@ -3,7 +3,7 @@ package io.joern.javasrc2cpg.passes
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
@@ -16,32 +16,26 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
     cpg.call.methodFullName(s".*${TypeConstants.UnresolvedType}.*").toArray
   }
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, call: Call): Unit = {
-    val candidateMethods = cpg.method.internal.nameExact(call.name).l
+  private def isMatchingMethod(method: Method, call: Call): Boolean = {
+    val receiverOffset = call.receiver.size
+    method.parameter.size == (call.argument.size - receiverOffset)
+  }
 
-    candidateMethods match {
-      case Nil           => // Call is to an unresolved external method, so we can't get any more information here.
-      case method :: Nil =>
-        // This is probably the correct method if the number of arguments is correct.
-        if (method.parameter.size == call.argument.size) {
+  override def runOnPart(diffGraph: DiffGraphBuilder, call: Call): Unit = {
+    val candidateMethods = cpg.method.internal.nameExact(call.name)
+
+    candidateMethods.find(isMatchingMethod(_, call)) match {
+      case Some(method) =>
+        val otherMatchingMethod = candidateMethods.find(isMatchingMethod(_, call))
+        if (otherMatchingMethod.isEmpty) {
           diffGraph.setNodeProperty(call, PropertyNames.MethodFullName, method.fullName)
           diffGraph.setNodeProperty(call, PropertyNames.Signature, method.signature)
-
+          diffGraph.setNodeProperty(call, PropertyNames.TypeFullName, method.methodReturn.typeFullName)
         } else {
-          logger.info(
-            s"Found non-matching internal method for unresolved call: ${method.fullName} - ${call.methodFullName}"
-          )
+          logger.info(s"Found multiple matching internal methods for unresolved call ${call.methodFullName}")
         }
 
-      case methods =>
-        methods.filter(_.parameter.size == call.argument.size) match {
-          case method :: Nil =>
-            diffGraph.setNodeProperty(call, PropertyNames.MethodFullName, method.fullName)
-            diffGraph.setNodeProperty(call, PropertyNames.Signature, method.signature)
-
-          case _ =>
-            logger.info(s"Found multiple matching internal methods for unresolved call ${call.methodFullName}")
-        }
+      case None => // Call is to and unresolved external method, so we can't get any more information here.
     }
   }
 }

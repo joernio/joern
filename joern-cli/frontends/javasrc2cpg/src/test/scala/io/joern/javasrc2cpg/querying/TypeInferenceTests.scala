@@ -40,7 +40,7 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
       method.fullName shouldBe "org.codeminers.thirdparty.ThirdParty.getSgClient:com.sendgrid.SendGrid()"
     }
 
-    "have the correct signature if the method parameter and return types can be inferred" ignore {
+    "have the correct signature if the method parameter and return types can be inferred" in {
       // This is the more complex case that relies on type information across compilation units.
       val methodFullName = cpg.call.name("getSgClient").head.methodFullName
       methodFullName shouldBe "org.codeminers.thirdparty.ThirdParty.getSgClient:com.sendgrid.SendGrid()"
