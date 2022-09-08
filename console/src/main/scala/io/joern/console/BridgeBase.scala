@@ -252,13 +252,13 @@ trait ScriptExecution { this: BridgeBase =>
       // val meth = scalaRuntime.getMethod(renderer, classOf[Object], classOf[Int])
 
       (value: Object) => {
-        println(s"YY0 $value of class ${value.getClass}")
+        // println(s"YY0 $value of class ${value.getClass}")
         // pprint.pprintln(value)
         // val myPP = pprinter.create(pprint.PPrinter.Color)
         val myPP = pprinter.create(pprint.PPrinter.BlackWhite)
         // val myPP = pprint.PPrinter.BlackWhite // works - let the repl do the color coding
         val fansiStr: fansi.Str = myPP.apply(value)
-        println(s"YY1 $fansiStr")
+        println(s"YY1 fansiStr=$fansiStr")
         // pprinter.create().pprintln(value)
         // val oldRes = meth.invoke(null, value, Integer.valueOf(MaxStringElements)).asInstanceOf[String]
         // println(s"YY2: meth=$meth; res=$oldRes")
