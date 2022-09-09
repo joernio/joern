@@ -13,8 +13,16 @@ class ReplDriver(args: Array[String],
                  onExitCode: Option[String] = None,
                  greeting: String,
                  prompt: String) extends dotty.tools.repl.ReplDriver(args, out) {
-  /** Run REPL with `state` until `:quit` command found
 
+  override def initCtx: Context = {
+    val x = super.initCtx
+    val maxPrintElementsSetting: dotty.tools.dotc.config.Settings.Setting[Int] = x.settings.XreplMaxPrintElements
+    val newContext = x.fresh.setSetting(maxPrintElementsSetting, 2000)
+    println("XX2:" + maxPrintElementsSetting.valueIn(x.settingsState))
+    newContext
+  }
+
+  /** Run REPL with `state` until `:quit` command found
     * Main difference to the 'original': different greeting, trap Ctrl-c
    */
   override def runUntilQuit(initialState: State = initialState): State = {

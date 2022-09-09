@@ -3,7 +3,8 @@ package io.joern.console
 import os.{Path, pwd}
 // import ammonite.interp.Watchable
 // import ammonite.util.{Colors, Res}
-import better.files._
+import better.files.*
+import dotty.tools.Settings
 import dotty.tools.repl.State
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
@@ -223,29 +224,46 @@ trait ScriptExecution { this: BridgeBase =>
     if (config.nocolors) replArgs ++= Array("-color", "never")
 
     val replDriver = new ReplDriver(replArgs.result, scala.Console.out, Option(onExitCode), greeting, promptStr)
+    val initialState: State = replDriver.initialState
 
     // `given State` for scala 3.2.1
     val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-    val stateAfterPredef: State =
+    val state: State =
       if (config.verbose) {
         println(predefCode)
-        replDriver.run(predefCode)(using replDriver.initialState)
+        replDriver.run(predefCode)(using initialState)
       } else {
-        replDriver.runQuietly(predefCode)(using replDriver.initialState)
+        replDriver.runQuietly(predefCode)(using initialState)
       }
 
+    // use out pprinter for displaying results
     replDriver.rendering.myReplStringOf = {
-      // We need to use the ScalaRunTime class coming from the scala-library
-      // on the user classpath, and not the one available in the current
-      // classloader, so we use reflection instead of simply calling
-      // `ScalaRunTime.replStringOf | io.joern.console.PPrinter.apply`. Probe for new API without extraneous newlines.
-      // For old API, try to clean up extraneous newlines by stripping suffix and maybe prefix newline.
+      // We need to use the PPrinter class from the on the user classpath, and not the one available in the current
+      // classloader, so we use reflection instead of simply calling `io.joern.console.PPrinter:apply`.
+      // This is analogous to what happens in dotty.tools.repl.Rendering.
       val pprinter = Class.forName("io.joern.console.PPrinter", true, replDriver.rendering.myClassLoader)
       val renderer = pprinter.getMethod("apply", classOf[Object])
       (value: Object) => renderer.invoke(null, value).asInstanceOf[String]
     }
 
-    replDriver.runUntilQuit(stateAfterPredef)
+    // configure `-XreplMaxPrintElements` - display without limits...
+    val maxPrintElementsSetting: dotty.tools.dotc.config.Settings.Setting[Int] = state.context.settings.XreplMaxPrintElements
+//    println(maxPrintElementsSetting)
+    val newContext = state.context.fresh.setSetting(maxPrintElementsSetting, 2000)
+//    val settingsStateUpdated = maxPrintElementsSetting.updateIn(oldContext.settingsState, 2000)
+    // TODO use updated settings in state.context... how can i update that? alternative: use different 'initialState'
+//    oldContext.settingsState
+    val state1 = state.copy(context = newContext)
+    println("XX1:" + maxPrintElementsSetting.valueIn(state1.context.settingsState))
+  //    val newContext = oldContext.settingsState.up
+
+
+//    state.copy(settingsState = settingsStateUpdated)
+//state.copy(context = )
+
+//    println(maxPrintElementsSetting.valueIn(settingsStateUpdated))
+
+    replDriver.runUntilQuit(state1)
   }
 
   protected def runScript(scriptFile: Path, config: Config): AnyVal = {
