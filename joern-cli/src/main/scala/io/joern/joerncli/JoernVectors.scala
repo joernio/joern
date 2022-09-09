@@ -141,6 +141,10 @@ object JoernVectors extends App {
       }
       println(",\"vectors\":")
       traversalToJson(embedding.vectors)
+      println(",\"edges\":")
+      traversalToJson(cpg.graph.edges().map { x =>
+        Map("src" -> x.outNode().id(), "dst" -> x.inNode().id(), "label" -> x.label())
+      })
       println("}")
     }
   }
