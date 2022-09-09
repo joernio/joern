@@ -21,21 +21,21 @@ object Definition {
 }
 
 object ReachingDefProblem {
-  def create(method: Method): DataFlowProblem[mutable.BitSet] = {
+  def create(method: Method): DataFlowProblem[StoredNode, mutable.BitSet] = {
     val flowGraph = new ReachingDefFlowGraph(method)
     val transfer  = new OptimizedReachingDefTransferFunction(flowGraph)
     val init      = new ReachingDefInit(transfer.gen)
     def meet: (mutable.BitSet, mutable.BitSet) => mutable.BitSet =
       (x: mutable.BitSet, y: mutable.BitSet) => { x.union(y) }
 
-    new DataFlowProblem[mutable.BitSet](flowGraph, transfer, meet, init, true, mutable.BitSet())
+    new DataFlowProblem[StoredNode, mutable.BitSet](flowGraph, transfer, meet, init, true, mutable.BitSet())
   }
 
 }
 
 /** The control flow graph as viewed by the data flow solver.
   */
-class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
+class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -150,7 +150,8 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
 
 /** For each node of the graph, this transfer function defines how it affects the propagation of definitions.
   */
-class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends TransferFunction[mutable.BitSet] {
+class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
+    extends TransferFunction[StoredNode, mutable.BitSet] {
 
   private val nodeToNumber = flowGraph.nodeToNumber
 
@@ -354,7 +355,7 @@ class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
   }
 }
 
-class ReachingDefInit(gen: Map[StoredNode, mutable.BitSet]) extends InOutInit[mutable.BitSet] {
+class ReachingDefInit(gen: Map[StoredNode, mutable.BitSet]) extends InOutInit[StoredNode, mutable.BitSet] {
   override def initIn: Map[StoredNode, mutable.BitSet] =
     Map
       .empty[StoredNode, mutable.BitSet]
