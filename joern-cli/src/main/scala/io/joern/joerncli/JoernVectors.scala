@@ -14,9 +14,6 @@ import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
-import org.json4s._
-import org.json4s.native.JsonMethods._
-
 class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, String] {
   override def structureToString(s: String): String         = s
   override def extractObjects(cpg: Cpg): Traversal[AstNode] = cpg.method.ast
@@ -83,7 +80,7 @@ trait EmbeddingGenerator[T, S] {
 
   private def vectorize(substructures: List[S]): SparseVectorWithExplicitFeature = {
     substructures
-      .map(x => compact(render(JString(structureToString(x)))))
+      .map(x => structureToString(x))
       .groupBy(identity)
       .view
       .mapValues(_.size)
