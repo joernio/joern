@@ -7,6 +7,7 @@ val CaskVersion           = "0.8.3"
 val CirceVersion          = "0.14.3"
 val AmmoniteVersion       = "2.5.4-14-dc4c47bc"
 val ZeroturnaroundVersion = "1.15"
+val Scala3ReplForkVersion = "3.1.3-bin-20220911-4dfbeec-NIGHTLY-nonbootstrapped"
 
 dependsOn(
   Projects.semanticcpg,
@@ -17,7 +18,7 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
-  "org.scala-lang"       %% "scala3-compiler"   % scalaVersion.value, // for scala3 repl
+  "com.michaelpollmeier" %% "scala3-compiler"   % Scala3ReplForkVersion,
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
   "com.github.scopt"     %% "scopt"             % ScoptVersion,
   "org.typelevel"        %% "cats-effect"       % Versions.cats,
