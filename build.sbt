@@ -3,7 +3,7 @@ ThisBuild / organization := "io.joern"
 
 // Note that the console subproject depends on a fork of scala3-compiler (with some adaptations to the scala3-repl).
 // In order to upgrade the scalaVersion, we first need to publish a new version of our [fork](https://github.com/mpollmeier/dotty).
-ThisBuild / scalaVersion := "3.1.3-bin-20220911-4a76fc3-NIGHTLY"
+ThisBuild / scalaVersion := "3.1.3"
 
 val cpgVersion = "1.3.577"
 
