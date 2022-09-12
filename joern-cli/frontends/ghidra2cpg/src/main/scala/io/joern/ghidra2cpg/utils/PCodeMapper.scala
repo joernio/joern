@@ -14,7 +14,9 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
-class State(argumentIndex: Int) {}
+class State(argumentIndex: Int) {
+  var argument: Int = argumentIndex
+}
 
 class PCodeMapper(
   diffGraphBuilder: DiffGraphBuilder,
@@ -28,6 +30,9 @@ class PCodeMapper(
   var nodeStack: mutable.HashMap[String, CfgNodeNew] = new mutable.HashMap[String, CfgNodeNew]()
   private val pcodeOps: List[PcodeOp] =
     nativeInstruction.getPcode().toList // highFunction.getPcodeOps(nativeInstruction.getAddress).asScala.toList//
+
+  val state = new State(argumentIndex = -1)
+  println(s"STATE ${state.argument}")
   val codeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
       CodeUnitFormatOptions.ShowBlockName.NEVER,

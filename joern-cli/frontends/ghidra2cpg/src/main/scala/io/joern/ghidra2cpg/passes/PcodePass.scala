@@ -1,7 +1,6 @@
 package io.joern.ghidra2cpg.passes
 
-import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Program}
-import ghidra.program.model.pcode.PcodeOp._
+import ghidra.program.model.listing.{Function, Instruction, Program}
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, Varnode}
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.utils.Utils._
@@ -24,36 +23,11 @@ class PcodePass(
   decompiler: Decompiler
 ) extends ConcurrentWriterCpgPass[Function](cpg) {
 
-  private val logger = LoggerFactory.getLogger(classOf[PcodePass])
-
-  // needed by ghidra for decompiling reasons
-  protected val codeUnitFormat = new CodeUnitFormat(
-    new CodeUnitFormatOptions(
-      CodeUnitFormatOptions.ShowBlockName.NEVER,
-      CodeUnitFormatOptions.ShowNamespace.NEVER,
-      "",
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    )
-  )
-
   def getHighFunction(function: Function): HighFunction = decompiler.toHighFunction(function).orNull
 
   def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
-    var returnNode: CfgNodeNew = createIdentifier(
-      "TODO",
-      "TODO",
-      index + 1,
-      Types.registerType("TODO"),
-      instruction.getMinAddress.getOffsetAsBigInteger.intValue
-    )
     if (input.isRegister) {
-      returnNode = createIdentifier(
+      createIdentifier(
         currentProgram.getRegister(input).getName,
         currentProgram.getRegister(input).getName,
         index + 1,
@@ -61,7 +35,7 @@ class PcodePass(
         instruction.getMinAddress.getOffsetAsBigInteger.intValue
       )
     } else if (input.isConstant)
-      returnNode = createLiteral(
+      createLiteral(
         "0x" + input.getWordOffset.toHexString,
         index + 1,
         index + 1,
@@ -78,18 +52,26 @@ class PcodePass(
 
         val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset, valueString)
 
-        returnNode = createLiteral(
+        createLiteral(
           value,
           index + 1,
           index + 1,
           input.getWordOffset.toHexString,
           instruction.getMinAddress.getOffsetAsBigInteger.intValue
         )
+      } else {
+        createIdentifier(
+          "TODO",
+          "TODO",
+          index + 1,
+          Types.registerType("TODO"),
+          instruction.getMinAddress.getOffsetAsBigInteger.intValue
+        )
       }
     } else {
       // we default to literal
       // identifier could be useful too
-      returnNode = createLiteral(
+      createLiteral(
         input.toString(),
         index + 1,
         index + 1,
@@ -97,7 +79,6 @@ class PcodePass(
         instruction.getMinAddress.getOffsetAsBigInteger.intValue
       )
     }
-    returnNode
   }
 
   def handleStore(
@@ -139,21 +120,6 @@ class PcodePass(
     connectCallToArgument(diffGraphBuilder, opNode, firstOp)
     connectCallToArgument(diffGraphBuilder, opNode, secondOp)
     // connectCallToArgument(diffGraphBuilder, callNode, opNode)
-  }
-
-  def handlePtrSub(
-    diffGraphBuilder: DiffGraphBuilder,
-    instruction: Instruction,
-    callNode: CfgNodeNew,
-    varNode: Varnode,
-    index: Int
-  ): Unit = {
-    val arg = resolveVarNode(instruction, varNode, index)
-    connectCallToArgument(diffGraphBuilder, callNode, arg)
-  }
-
-  def handleDefault(varNode: PcodeOp): Unit = {
-    println("Unsupported " + varNode.toString + " " + varNode.getOpcode)
   }
 
   def handleParameters(diffGraphBuilder: DiffGraphBuilder, function: Function, methodNode: NewMethod): Unit = {
