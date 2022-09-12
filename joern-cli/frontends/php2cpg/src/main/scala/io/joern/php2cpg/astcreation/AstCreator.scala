@@ -3,6 +3,7 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
+import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.utils.NodeBuilders.operatorCallNode
 import io.shiftleft.codepropertygraph.generated.PropertyNames
@@ -20,7 +21,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filename) {
+class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstCreatorBase(filename) {
 
   private val logger = LoggerFactory.getLogger(AstCreator.getClass)
 
@@ -31,7 +32,7 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
   }
 
   private def registerType(typ: String): String = {
-    // TODO Actually register type
+    global.usedTypes.putIfAbsent(typ, true)
     typ
   }
 
