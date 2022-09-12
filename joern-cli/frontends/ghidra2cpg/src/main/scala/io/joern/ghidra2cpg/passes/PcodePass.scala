@@ -100,17 +100,6 @@ class PcodePass(
     returnNode
   }
 
-  // def handleAssignment(
-  //                      diffGraphBuilder: DiffGraphBuilder,
-  //                      instruction: Instruction,
-  //                      callNode: CfgNodeNew,
-  //                      to: Varnode,
-  //                      index: Int
-  //                    ): Unit = {
-  //  val node = resolveVarNode(instruction, to, index)
-  //  connectCallToArgument(diffGraphBuilder, callNode, node)
-  // }
-
   def handleStore(
     diffGraphBuilder: DiffGraphBuilder,
     instruction: Instruction,
