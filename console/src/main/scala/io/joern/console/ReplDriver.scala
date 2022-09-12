@@ -17,7 +17,7 @@ class ReplDriver(args: Array[String],
 
   override def initCtx: Context = {
     val ctx = super.initCtx
-    ctx.fresh.setSetting(ctx.settings.XreplMaxPrintElements, maxPrintElements)
+    ctx.fresh.setSetting(ctx.settings.VreplMaxPrintElements, maxPrintElements)
   }
 
   /** Run REPL with `state` until `:quit` command found
