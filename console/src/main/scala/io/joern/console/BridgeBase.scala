@@ -4,9 +4,11 @@ import os.{Path, pwd}
 import better.files.*
 import dotty.tools.Settings
 import dotty.tools.repl.State
+import dotty.tools.scripting.ScriptingDriver
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
 
+import java.io.{File => JFile}
 import java.io.PrintStream
 
 case class Config(
@@ -260,28 +262,37 @@ trait ScriptExecution { this: BridgeBase =>
     replArgs += "-explain" // verbose scalac error messages
     if (config.nocolors) replArgs ++= Array("-color", "never")
 
-    val replDriver = new ReplDriver(
-      replArgs.result,
-      onExitCode = Option(onExitCode),
-      greeting = greeting,
-      prompt = promptStr,
-      maxPrintElements = Int.MaxValue
+    val scriptingDriver = new ScriptingDriver(
+      compilerArgs = replArgs.result(),
+      scriptFile = new JFile("/home/mp/Projects/shiftleft/joern/joernscript2.sc"),
+      scriptArgs = Array.empty
     )
 
-    val initialState: State = replDriver.initialState
-    val state: State =
-      if (config.verbose) {
-        println(predefCode)
-        replDriver.run(predefCode)(using initialState)
-      } else {
-        replDriver.runQuietly(predefCode)(using initialState)
-      }
+    scriptingDriver.compileAndRun()
+    println("XXXX9 after ScriptingDriver")
 
-    val src = """@main def exec: Unit = {
-                |  println("hello world")
-                |}
-                |""".stripMargin
-    replDriver.run(src)(state)
+//    val replDriver = new ReplDriver(
+//      replArgs.result,
+//      onExitCode = Option(onExitCode),
+//      greeting = greeting,
+//      prompt = promptStr,
+//      maxPrintElements = Int.MaxValue
+//    )
+//
+//    val initialState: State = replDriver.initialState
+//    val state: State =
+//      if (config.verbose) {
+//        println(predefCode)
+//        replDriver.run(predefCode)(using initialState)
+//      } else {
+//        replDriver.runQuietly(predefCode)(using initialState)
+//      }
+//
+//    val src = """@main def exec: Unit = {
+//                |  println("hello world")
+//                |}
+//                |""".stripMargin
+//    replDriver.run(src)(state)
 
     // ammonite
     //   .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))
