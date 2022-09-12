@@ -99,14 +99,15 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
 
   private def astForExpr(expr: PhpExpr): Ast = {
     expr match {
-      case functionCallExpr: PhpFuncCall => astForFunctionCall(functionCallExpr)
-      case variableExpr: PhpVariable     => astForVariableExpr(variableExpr)
-      case nameExpr: PhpNameExpr         => astForNameExpr(nameExpr)
-      case assignExpr: PhpAssignment     => astForAssignment(assignExpr)
-      case scalarExpr: PhpScalar         => astForScalar(scalarExpr)
-      case binaryOp: PhpBinaryOp         => astForBinOp(binaryOp)
-      case unaryOp: PhpUnaryOp           => astForUnaryOp(unaryOp)
-      case castExpr: PhpCast             => astForCastExpr(castExpr)
+      case funcCallExpr: PhpFuncCall => astForFunctionCall(funcCallExpr)
+      case variableExpr: PhpVariable => astForVariableExpr(variableExpr)
+      case nameExpr: PhpNameExpr     => astForNameExpr(nameExpr)
+      case assignExpr: PhpAssignment => astForAssignment(assignExpr)
+      case scalarExpr: PhpScalar     => astForScalar(scalarExpr)
+      case binaryOp: PhpBinaryOp     => astForBinOp(binaryOp)
+      case unaryOp: PhpUnaryOp       => astForUnaryOp(unaryOp)
+      case castExpr: PhpCast         => astForCastExpr(castExpr)
+      case issetExpr: PhpIsset       => astForIssetExpr(issetExpr)
 
       case unhandled =>
         logger.warn(s"Unhandled expr: $unhandled")
@@ -231,6 +232,20 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
 
     callAst(callNode, Ast(typ) :: expr :: Nil)
   }
+
+  private def astForIssetExpr(issetExpr: PhpIsset): Ast = {
+    val args = issetExpr.vars.map(astForExpr)
+    val code = s"isset(${args.map(rootCode(_).mkString(","))})"
+
+    val callNode = operatorCallNode(
+      PhpOperators.isset,
+      code,
+      typeFullName = Some(TypeConstants.Bool),
+      line = issetExpr.attributes.lineNumber
+    )
+
+    callAst(callNode, args)
+  }
 }
 
 object AstCreator {
@@ -238,6 +253,7 @@ object AstCreator {
     val String: String     = "string"
     val Int: String        = "int"
     val Float: String      = "float"
+    val Bool: String       = "bool"
     val Unresolved: String = "codepropertygraph.Unresolved"
   }
 

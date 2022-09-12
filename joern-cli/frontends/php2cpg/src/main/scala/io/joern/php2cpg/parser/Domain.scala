@@ -27,6 +27,7 @@ object Domain {
     val assignmentConcat   = "<operator>.assignmentConcat"
 
     val encaps = "<operator>.encaps"
+    val isset  = "<operator>.isset"
   }
 
   object PhpDomainTypeConstants {
@@ -210,6 +211,8 @@ object Domain {
     }
   }
 
+  final case class PhpIsset(vars: Seq[PhpExpr], attributes: PhpAttributes) extends PhpExpr
+
   sealed abstract class PhpScalar                                      extends PhpExpr
   final case class PhpString(value: String, attributes: PhpAttributes) extends PhpScalar
   object PhpString {
@@ -281,6 +284,7 @@ object Domain {
 
       case "Expr_FuncCall" => readFunctionCall(json)
       case "Expr_Variable" => readVariable(json)
+      case "Expr_Isset"    => readIsset(json)
 
       case typ if isUnaryOpType(typ)  => readUnaryOp(json)
       case typ if isBinaryOpType(typ) => readBinaryOp(json)
@@ -296,6 +300,11 @@ object Domain {
   private def readVariable(json: Value): PhpVariable = {
     // TODO Figure out when the variable has an expr name
     PhpVariable(readName(json("name")), PhpAttributes(json))
+  }
+
+  private def readIsset(json: Value): PhpIsset = {
+    val vars = json("vars").arr.map(readExpr).toList
+    PhpIsset(vars, PhpAttributes(json))
   }
 
   private def readFunctionCall(json: Value): PhpFuncCall = {

@@ -1,5 +1,6 @@
 package io.joern.php2cpg.querying
 
+import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.{PhpDomainTypeConstants, PhpOperators}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -212,6 +213,56 @@ class OperatorTests extends PhpCode2CpgFixture {
 
           case result => fail(s"Expected typeRef arg for $testCode but found $result")
         }
+      }
+    }
+  }
+
+  "isset calls" should {
+    "handle a single argument" in {
+      val cpg = code("<?php\nisset($a)")
+
+      val call = cpg.call.nameExact(PhpOperators.isset).l match {
+        case List(call) => call
+        case result     => fail(s"Expected isset call but found $result")
+      }
+
+      call.methodFullName shouldBe PhpOperators.isset
+      call.typeFullName shouldBe TypeConstants.Bool
+      call.lineNumber shouldBe Some(2)
+
+      call.argument.l match {
+        case List(arg: Identifier) =>
+          arg.name shouldBe "a"
+          arg.argumentIndex shouldBe 1
+
+        case result => fail(s"Expected isset argument but got $result")
+      }
+    }
+
+    "handle multiple arguments" in {
+      val cpg = code("<?php\nisset($a, $b, $c)")
+
+      val call = cpg.call.nameExact(PhpOperators.isset).l match {
+        case List(call) => call
+        case result     => fail(s"Expected isset call but found $result")
+      }
+
+      call.methodFullName shouldBe PhpOperators.isset
+      call.typeFullName shouldBe TypeConstants.Bool
+      call.lineNumber shouldBe Some(2)
+
+      call.argument.l match {
+        case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
+          aArg.name shouldBe "a"
+          aArg.argumentIndex shouldBe 1
+
+          bArg.name shouldBe "b"
+          bArg.argumentIndex shouldBe 2
+
+          cArg.name shouldBe "c"
+          cArg.argumentIndex shouldBe 3
+
+        case result => fail(s"Expected isset arguments but got $result")
       }
     }
   }
