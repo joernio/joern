@@ -235,34 +235,10 @@ trait ScriptExecution { this: BridgeBase =>
         println(predefCode)
         replDriver.run(predefCode)(using initialState)
       } else {
-        // old code
-//        replDriver.runQuietly(predefCode)(using initialState)
-
-        val ctx0 = initialState.context
-        val ctx1 = ctx0.fresh.setSetting(ctx0.settings.XreplDisableDisplay, true)
-        println(s"XXXX0 ${ctx1.settings.XreplDisableDisplay.valueIn(ctx0.settingsState)}")
-        val state1 = initialState.copy(context = ctx1)
-        val state2 = replDriver.run(predefCode)(using state1)
-
-        val ctx2 = state2.context
-        val ctx3 = ctx2.fresh.setSetting(ctx2.settings.XreplDisableDisplay, false)
-
-        println(s"XXXX1 ${ctx2.settings.XreplDisableDisplay.valueIn(ctx2.settingsState)}")
-        state2.copy(context = ctx3)
+        replDriver.runQuietly(predefCode)(using initialState)
       }
 
-    println(s"XXXX2 ${state.context.settings.XreplDisableDisplay.valueIn(state.context.settingsState)}")
-
-
-    val replDriver2 = new ReplDriver(
-      replArgs.result,
-      onExitCode = Option(onExitCode),
-      greeting = greeting,
-      prompt = promptStr,
-      maxPrintElements = Int.MaxValue
-    )
-    replDriver2.runUntilQuit(state)
-//    replDriver.runUntilQuit(state)
+    replDriver.runUntilQuit(state)
   }
 
   protected def runScript(scriptFile: Path, config: Config) = {
