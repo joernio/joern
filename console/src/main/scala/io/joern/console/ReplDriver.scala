@@ -12,14 +12,12 @@ class ReplDriver(args: Array[String],
                  out: PrintStream = scala.Console.out,
                  onExitCode: Option[String] = None,
                  greeting: String,
-                 prompt: String) extends dotty.tools.repl.ReplDriver(args, out) {
+                 prompt: String,
+                 maxPrintElements: Int) extends dotty.tools.repl.ReplDriver(args, out) {
 
   override def initCtx: Context = {
-    val x = super.initCtx
-    val maxPrintElementsSetting: dotty.tools.dotc.config.Settings.Setting[Int] = x.settings.XreplMaxPrintElements
-    val newContext = x.fresh.setSetting(maxPrintElementsSetting, 2000)
-    println("XX2:" + maxPrintElementsSetting.valueIn(x.settingsState))
-    newContext
+    val ctx = super.initCtx
+    ctx.fresh.setSetting(ctx.settings.XreplMaxPrintElements, maxPrintElements)
   }
 
   /** Run REPL with `state` until `:quit` command found
@@ -27,6 +25,7 @@ class ReplDriver(args: Array[String],
    */
   override def runUntilQuit(initialState: State = initialState): State = {
     val terminal = new JLineTerminal(prompt)
+    initializeRenderer()
 
     out.println(greeting)
 
@@ -58,27 +57,18 @@ class ReplDriver(args: Array[String],
     try runBody { loop(initialState) }
     finally terminal.close()
   }
-
-
-  // TODO drop debug stuff
-  import dotty.tools.dotc.reporting.{ConsoleReporter, Diagnostic}
-  import dotty.tools.dotc.interfaces
-  import dotty.tools.dotc.util.SourcePosition
-
-  /** Like ConsoleReporter, but without file paths, -Xprompt displaying,
-   *  and using a PrintStream rather than a PrintWriter so messages aren't re-encoded. */
-  private object ReplConsoleReporter extends ConsoleReporter.AbstractConsoleReporter {
-    override def posFileStr(pos: SourcePosition) = "" // omit file paths
-    override def printMessage(msg: String): Unit = out.println(msg)
-    override def flush()(using Context): Unit    = out.flush()
+  
+  /** configure rendering to use our pprinter for displaying results */
+  private def initializeRenderer() = {
+    rendering.myReplStringOf = {
+      // We need to use the PPrinter class from the on the user classpath, and not the one available in the current
+      // classloader, so we use reflection instead of simply calling `io.joern.console.PPrinter:apply`.
+      // This is analogous to what happens in dotty.tools.repl.Rendering.
+      val pprinter = Class.forName("io.joern.console.PPrinter", true, rendering.myClassLoader)
+      val renderer = pprinter.getMethod("apply", classOf[Object])
+      (value: Object) => renderer.invoke(null, value).asInstanceOf[String]
+    }
   }
-
-  /** Print warnings & errors using ReplConsoleReporter, and info straight to out */
-  override protected def printDiagnostic(dia: Diagnostic)(implicit state: State) = dia.level match
-    case interfaces.Diagnostic.INFO => out.println(dia.msg) // print REPL's special info diagnostics directly to out
-    case _                          => ReplConsoleReporter.doReport(dia)(using state.context)
-
-
 
 
 }
