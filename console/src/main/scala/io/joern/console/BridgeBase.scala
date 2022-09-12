@@ -257,7 +257,35 @@ trait ScriptExecution { this: BridgeBase =>
       if (isEncryptedScript) decryptedScript(scriptFile)
       else scriptFile
 
+    // TODO deduplicate between `runScript` and `startInteractiveRepl`
     val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
+    val replArgs = Array.newBuilder[String]
+    replArgs ++= Array("-classpath", System.getProperty("java.class.path")) // pass classpath over
+    replArgs += "-explain" // verbose scalac error messages
+    if (config.nocolors) replArgs ++= Array("-color", "never")
+
+    val replDriver = new ReplDriver(
+      replArgs.result,
+      onExitCode = Option(onExitCode),
+      greeting = greeting,
+      prompt = promptStr,
+      maxPrintElements = Int.MaxValue
+    )
+
+    val initialState: State = replDriver.initialState
+    val state: State =
+      if (config.verbose) {
+        println(predefCode)
+        replDriver.run(predefCode)(using initialState)
+      } else {
+        replDriver.runQuietly(predefCode)(using initialState)
+      }
+
+    val src = """@main def exec: Unit = {
+                |  println("hello world")
+                |}
+                |""".stripMargin
+    replDriver.run(src)(state)
 
     // ammonite
     //   .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))
@@ -272,7 +300,7 @@ trait ScriptExecution { this: BridgeBase =>
     //     throw new AssertionError(s"script errored: $msg", e)
     //   case _ => ???
     // }
-    ???
+
     /* minimizing exposure time by deleting the decrypted script straight away */
     if (isEncryptedScript) actualScriptFile.toIO.delete
   }
