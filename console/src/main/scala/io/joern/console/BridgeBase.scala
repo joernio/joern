@@ -262,6 +262,8 @@ trait ScriptExecution { this: BridgeBase =>
     replArgs += "-explain" // verbose scalac error messages
     if (config.nocolors) replArgs ++= Array("-color", "never")
 
+    replArgs += "/home/mp/Projects/shiftleft/joern/joernscript1.sc"
+
     val scriptingDriver = new ScriptingDriver(
       compilerArgs = replArgs.result(),
       scriptFile = new JFile("/home/mp/Projects/shiftleft/joern/joernscript2.sc"),
