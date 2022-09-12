@@ -266,6 +266,7 @@ class PcodePass(
       instructionNodes.sliding(2).foreach { nodes =>
         val prevInstructionNode = nodes.head
         val instructionNode     = nodes.last
+        println(instructionNode.code)
         diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
         diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
       }

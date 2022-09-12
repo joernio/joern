@@ -5,14 +5,16 @@ import ghidra.program.model.pcode.PcodeOp._
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, PcodeOpAST, Varnode}
 import io.joern.ghidra2cpg.Types
 //import io.joern.ghidra2cpg.utils.Utils.{createCallNode, createIdentifier, createLiteral}
+import io.joern.ghidra2cpg.utils.Utils._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import Utils._
+
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
+class State(argumentIndex: Int) {}
 
 class PCodeMapper(
   diffGraphBuilder: DiffGraphBuilder,
@@ -41,20 +43,7 @@ class PCodeMapper(
     )
   )
 
-  def getInstruction: Instruction = nativeInstruction
-
-  def getPcodeOps: List[PcodeOp] = pcodeOps
-
   def getOpcode: Int = pcodeOps.lastOption.get.getOpcode
-
-  def handleCompare(pcodeOp: PcodeOp): CfgNodeNew = {
-    val callNode = createCall("<operator>.equal", nativeInstruction.toString)
-    val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
-    val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
-    connectCallToArgument(callNode, firstOp)
-    connectCallToArgument(callNode, secondOp)
-    callNode
-  }
 
   def getCallNode: CfgNodeNew = {
     if (pcodeOps.isEmpty) {
@@ -279,7 +268,7 @@ class PCodeMapper(
         connectCallToArgument(callNode, destination)
         callNode
       case RETURN =>
-        createCall("TODO RET", "TODO RET")
+        createCall("ret", "ret")
       case CALL | CALLOTHER | CALLIND =>
         val calledFunction = codeUnitFormat
           .getOperandRepresentationString(nativeInstruction, 0)

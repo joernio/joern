@@ -23,6 +23,9 @@ class JumpPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg) {
         sourceCall.argument.order(1).code.l.headOption.flatMap(parseAddress) match {
           case Some(destinationAddress) =>
             method.ast.filter(_.isInstanceOf[Call]).lineNumber(destinationAddress).foreach { destination =>
+              if(method.name == "main") {
+                println(s"${sourceCall.code} ${destination.code}")
+              }
               diffGraph.addEdge(sourceCall, destination, EdgeTypes.CFG)
             }
           case _ => // Ignore for now
