@@ -219,7 +219,13 @@ trait ScriptExecution { this: BridgeBase =>
     replArgs += "-explain" // verbose scalac error messages
     if (config.nocolors) replArgs ++= Array("-color", "never")
 
-    val replDriver = new ReplDriver(replArgs.result, scala.Console.out, Option(onExitCode), greeting, promptStr)
+    val replDriver = new ReplDriver(
+      replArgs.result,
+      onExitCode = Option(onExitCode),
+      greeting = greeting,
+      prompt = promptStr,
+      maxPrintElements = Int.MaxValue
+    )
     val initialState: State = replDriver.initialState
 
     // `given State` for scala 3.2.1
@@ -232,34 +238,7 @@ trait ScriptExecution { this: BridgeBase =>
         replDriver.runQuietly(predefCode)(using initialState)
       }
 
-    // use out pprinter for displaying results
-    replDriver.rendering.myReplStringOf = {
-      // We need to use the PPrinter class from the on the user classpath, and not the one available in the current
-      // classloader, so we use reflection instead of simply calling `io.joern.console.PPrinter:apply`.
-      // This is analogous to what happens in dotty.tools.repl.Rendering.
-      val pprinter = Class.forName("io.joern.console.PPrinter", true, replDriver.rendering.myClassLoader)
-      val renderer = pprinter.getMethod("apply", classOf[Object])
-      (value: Object) => renderer.invoke(null, value).asInstanceOf[String]
-    }
-
-    // configure `-XreplMaxPrintElements` - display without limits...
-    val maxPrintElementsSetting: dotty.tools.dotc.config.Settings.Setting[Int] = state.context.settings.XreplMaxPrintElements
-//    println(maxPrintElementsSetting)
-    val newContext = state.context.fresh.setSetting(maxPrintElementsSetting, 2000)
-//    val settingsStateUpdated = maxPrintElementsSetting.updateIn(oldContext.settingsState, 2000)
-    // TODO use updated settings in state.context... how can i update that? alternative: use different 'initialState'
-//    oldContext.settingsState
-    val state1 = state.copy(context = newContext)
-    println("XX1:" + maxPrintElementsSetting.valueIn(state1.context.settingsState))
-  //    val newContext = oldContext.settingsState.up
-
-
-//    state.copy(settingsState = settingsStateUpdated)
-//state.copy(context = )
-
-//    println(maxPrintElementsSetting.valueIn(settingsStateUpdated))
-
-    replDriver.runUntilQuit(state1)
+    replDriver.runUntilQuit(state)
   }
 
   protected def runScript(scriptFile: Path, config: Config) = {
