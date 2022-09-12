@@ -6,6 +6,7 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.utils.NodeBuilders.operatorCallNode
 import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
@@ -108,6 +109,8 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
       case unaryOp: PhpUnaryOp       => astForUnaryOp(unaryOp)
       case castExpr: PhpCast         => astForCastExpr(castExpr)
       case issetExpr: PhpIsset       => astForIssetExpr(issetExpr)
+      case printExpr: PhpPrint       => astForPrintExpr(printExpr)
+      case ternaryOp: PhpTernaryOp   => astForTernaryOp(ternaryOp)
 
       case unhandled =>
         logger.warn(s"Unhandled expr: $unhandled")
@@ -178,7 +181,7 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
         Ast(NewLiteral().code(value).typeFullName(TypeConstants.Float).lineNumber(attributes.lineNumber))
       case PhpEncapsed(parts, attributes) =>
         val callNode =
-          operatorCallNode(PhpOperators.encaps, code = /* TODO */ PhpOperators.encaps, line = attributes.lineNumber)
+          operatorCallNode(PhpBuiltins.encaps, code = /* TODO */ PhpBuiltins.encaps, line = attributes.lineNumber)
         val args = parts.map(astForExpr)
         callAst(callNode, args)
       case PhpEncapsedPart(value, attributes) =>
@@ -235,15 +238,45 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
 
   private def astForIssetExpr(issetExpr: PhpIsset): Ast = {
     val args = issetExpr.vars.map(astForExpr)
-    val code = s"isset(${args.map(rootCode(_).mkString(","))})"
+    val code = s"${PhpBuiltins.issetFunc}(${args.map(rootCode(_).mkString(","))})"
 
     val callNode = operatorCallNode(
-      PhpOperators.isset,
+      PhpBuiltins.issetFunc,
       code,
       typeFullName = Some(TypeConstants.Bool),
       line = issetExpr.attributes.lineNumber
     )
 
+    callAst(callNode, args)
+  }
+  private def astForPrintExpr(printExpr: PhpPrint): Ast = {
+    val arg  = astForExpr(printExpr.expr)
+    val code = s"${PhpBuiltins.printFunc}(${rootCode(arg)})"
+
+    val callNode = operatorCallNode(
+      PhpBuiltins.printFunc,
+      code,
+      typeFullName = Some(TypeConstants.Int),
+      line = printExpr.attributes.lineNumber
+    )
+
+    callAst(callNode, arg :: Nil)
+  }
+
+  private def astForTernaryOp(ternaryOp: PhpTernaryOp): Ast = {
+    val conditionAst = astForExpr(ternaryOp.condition)
+    val maybeThenAst = ternaryOp.thenExpr.map(astForExpr)
+    val elseAst      = astForExpr(ternaryOp.elseExpr)
+
+    val operatorName = if (maybeThenAst.isDefined) Operators.conditional else PhpBuiltins.elvisOp
+
+    val callNode = operatorCallNode(
+      operatorName,
+      /* TODO */ PropertyDefaults.Code,
+      line = ternaryOp.attributes.lineNumber
+    )
+
+    val args = List(Some(conditionAst), maybeThenAst, Some(elseAst)).flatten
     callAst(callNode, args)
   }
 }

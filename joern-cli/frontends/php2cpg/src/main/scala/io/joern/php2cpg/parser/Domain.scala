@@ -14,20 +14,22 @@ import scala.util.{Success, Try}
 
 object Domain {
 
-  object PhpOperators {
+  object PhpBuiltins {
     // TODO Decide which of these should be moved to codepropertygraph
-    val coalesce     = "<operator>.coalesce"
-    val concat       = "<operator>.concat"
-    val identical    = "<operator>.identical"
-    val logicalXor   = "<operator>.logicalXor"
-    val notIdentical = "<operator>.notIdentical"
-    val spaceship    = "<operator>.spaceship"
+    val coalesceOp     = "<operator>.coalesce"
+    val concatOp       = "<operator>.concat"
+    val identicalOp    = "<operator>.identical"
+    val logicalXorOp   = "<operator>.logicalXor"
+    val notIdenticalOp = "<operator>.notIdentical"
+    val spaceshipOp    = "<operator>.spaceship"
+    val elvisOp        = "<operator>.elvis"
 
-    val assignmentCoalesce = "<operator>.assignmentCoalesce"
-    val assignmentConcat   = "<operator>.assignmentConcat"
+    val assignmentCoalesceOp = "<operator>.assignmentCoalesce"
+    val assignmentConcatOp   = "<operator>.assignmentConcat"
 
-    val encaps = "<operator>.encaps"
-    val isset  = "<operator>.isset"
+    val encaps    = "encaps"
+    val issetFunc = "isset"
+    val printFunc = "print"
   }
 
   object PhpDomainTypeConstants {
@@ -122,28 +124,28 @@ object Domain {
       "Expr_BinaryOp_BitwiseXor"     -> Operators.xor,
       "Expr_BinaryOp_BooleanAnd"     -> Operators.logicalAnd,
       "Expr_BinaryOp_BooleanOr"      -> Operators.logicalOr,
-      "Expr_BinaryOp_Coalesce"       -> PhpOperators.coalesce,
-      "Expr_BinaryOp_Concat"         -> PhpOperators.concat,
+      "Expr_BinaryOp_Coalesce"       -> PhpBuiltins.coalesceOp,
+      "Expr_BinaryOp_Concat"         -> PhpBuiltins.concatOp,
       "Expr_BinaryOp_Div"            -> Operators.division,
       "Expr_BinaryOp_Equal"          -> Operators.equals,
       "Expr_BinaryOp_GreaterOrEqual" -> Operators.greaterEqualsThan,
       "Expr_BinaryOp_Greater"        -> Operators.greaterThan,
-      "Expr_BinaryOp_Identical"      -> PhpOperators.identical,
+      "Expr_BinaryOp_Identical"      -> PhpBuiltins.identicalOp,
       "Expr_BinaryOp_LogicalAnd"     -> Operators.logicalAnd,
       "Expr_BinaryOp_LogicalOr"      -> Operators.logicalOr,
-      "Expr_BinaryOp_LogicalXor"     -> PhpOperators.logicalXor,
+      "Expr_BinaryOp_LogicalXor"     -> PhpBuiltins.logicalXorOp,
       "Expr_BinaryOp_Minus"          -> Operators.minus,
       "Expr_BinaryOp_Mod"            -> Operators.modulo,
       "Expr_BinaryOp_Mul"            -> Operators.multiplication,
       "Expr_BinaryOp_NotEqual"       -> Operators.notEquals,
-      "Expr_BinaryOp_NotIdentical"   -> PhpOperators.notIdentical,
+      "Expr_BinaryOp_NotIdentical"   -> PhpBuiltins.notIdenticalOp,
       "Expr_BinaryOp_Plus"           -> Operators.plus,
       "Expr_BinaryOp_Pow"            -> Operators.exponentiation,
       "Expr_BinaryOp_ShiftLeft"      -> Operators.shiftLeft,
       "Expr_BinaryOp_ShiftRight"     -> Operators.arithmeticShiftRight,
       "Expr_BinaryOp_SmallerOrEqual" -> Operators.lessEqualsThan,
       "Expr_BinaryOp_Smaller"        -> Operators.lessThan,
-      "Expr_BinaryOp_Spaceship"      -> PhpOperators.spaceship
+      "Expr_BinaryOp_Spaceship"      -> PhpBuiltins.spaceshipOp
     )
 
     def isBinaryOpType(typeName: String): Boolean = {
@@ -167,6 +169,12 @@ object Domain {
       UnaryOpTypeMap.contains(typeName)
     }
   }
+  final case class PhpTernaryOp(
+    condition: PhpExpr,
+    thenExpr: Option[PhpExpr],
+    elseExpr: PhpExpr,
+    attributes: PhpAttributes
+  ) extends PhpExpr
 
   object PhpAssignment {
     val AssignTypeMap: Map[String, String] = Map(
@@ -175,8 +183,8 @@ object Domain {
       "Expr_AssignOp_BitwiseAnd" -> Operators.assignmentAnd,
       "Expr_AssignOp_BitwiseOr"  -> Operators.assignmentOr,
       "Expr_AssignOp_BitwiseXor" -> Operators.assignmentXor,
-      "Expr_AssignOp_Coalesce"   -> PhpOperators.assignmentCoalesce,
-      "Expr_AssignOp_Concat"     -> PhpOperators.assignmentConcat,
+      "Expr_AssignOp_Coalesce"   -> PhpBuiltins.assignmentCoalesceOp,
+      "Expr_AssignOp_Concat"     -> PhpBuiltins.assignmentConcatOp,
       "Expr_AssignOp_Div"        -> Operators.assignmentDivision,
       "Expr_AssignOp_Minus"      -> Operators.assignmentMinus,
       "Expr_AssignOp_Mod"        -> Operators.assignmentModulo,
@@ -212,6 +220,7 @@ object Domain {
   }
 
   final case class PhpIsset(vars: Seq[PhpExpr], attributes: PhpAttributes) extends PhpExpr
+  final case class PhpPrint(expr: PhpExpr, attributes: PhpAttributes)      extends PhpExpr
 
   sealed abstract class PhpScalar                                      extends PhpExpr
   final case class PhpString(value: String, attributes: PhpAttributes) extends PhpScalar
@@ -285,6 +294,8 @@ object Domain {
       case "Expr_FuncCall" => readFunctionCall(json)
       case "Expr_Variable" => readVariable(json)
       case "Expr_Isset"    => readIsset(json)
+      case "Expr_Print"    => readPrint(json)
+      case "Expr_Ternary"  => readTernaryOp(json)
 
       case typ if isUnaryOpType(typ)  => readUnaryOp(json)
       case typ if isBinaryOpType(typ) => readBinaryOp(json)
@@ -305,6 +316,19 @@ object Domain {
   private def readIsset(json: Value): PhpIsset = {
     val vars = json("vars").arr.map(readExpr).toList
     PhpIsset(vars, PhpAttributes(json))
+  }
+
+  private def readPrint(json: Value): PhpPrint = {
+    val expr = readExpr(json("expr"))
+    PhpPrint(expr, PhpAttributes(json))
+  }
+
+  private def readTernaryOp(json: Value): PhpTernaryOp = {
+    val condition     = readExpr(json("cond"))
+    val maybeThenExpr = Option.unless(json("if").isNull)(readExpr(json("if")))
+    val elseExpr      = readExpr(json("else"))
+
+    PhpTernaryOp(condition, maybeThenExpr, elseExpr, PhpAttributes(json))
   }
 
   private def readFunctionCall(json: Value): PhpFuncCall = {

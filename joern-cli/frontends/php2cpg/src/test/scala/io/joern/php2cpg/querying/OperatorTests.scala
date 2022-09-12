@@ -1,9 +1,9 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
-import io.joern.php2cpg.parser.Domain.{PhpDomainTypeConstants, PhpOperators}
+import io.joern.php2cpg.parser.Domain.{PhpBuiltins, PhpDomainTypeConstants}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
@@ -43,8 +43,8 @@ class OperatorTests extends PhpCode2CpgFixture {
         ("$a &= $b", Operators.assignmentAnd),
         ("$a |= $b", Operators.assignmentOr),
         ("$a ^= $b", Operators.assignmentXor),
-        ("$a ??= $b", PhpOperators.assignmentCoalesce),
-        ("$a .= $b", PhpOperators.assignmentConcat),
+        ("$a ??= $b", PhpBuiltins.assignmentCoalesceOp),
+        ("$a .= $b", PhpBuiltins.assignmentConcatOp),
         ("$a /= $b", Operators.assignmentDivision),
         ("$a -= $b", Operators.assignmentMinus),
         ("$a %= $b", Operators.assignmentModulo),
@@ -135,29 +135,29 @@ class OperatorTests extends PhpCode2CpgFixture {
         ("1 ^ 2", Operators.xor),
         ("$a && $b", Operators.logicalAnd),
         ("$a || $b", Operators.logicalOr),
-        ("$a ?? $b", PhpOperators.coalesce),
-        ("$a . $b", PhpOperators.concat),
+        ("$a ?? $b", PhpBuiltins.coalesceOp),
+        ("$a . $b", PhpBuiltins.concatOp),
         ("$a / $b", Operators.division),
         ("$a == $b", Operators.equals),
         ("$a >= $b", Operators.greaterEqualsThan),
         ("$a > $b", Operators.greaterThan),
-        ("$a === $b", PhpOperators.identical),
+        ("$a === $b", PhpBuiltins.identicalOp),
         ("$a and $b", Operators.logicalAnd),
         ("$a or $b", Operators.logicalOr),
-        ("$a xor $b", PhpOperators.logicalXor),
+        ("$a xor $b", PhpBuiltins.logicalXorOp),
         ("$a - $b", Operators.minus),
         ("$a % $b", Operators.modulo),
         ("$a * $b", Operators.multiplication),
         ("$a != $b", Operators.notEquals),
         ("$a <> $b", Operators.notEquals),
-        ("$a !== $b", PhpOperators.notIdentical),
+        ("$a !== $b", PhpBuiltins.notIdenticalOp),
         ("$a + $b", Operators.plus),
         ("$a ** $b", Operators.exponentiation),
         ("$a << $b", Operators.shiftLeft),
         ("$a >> $b", Operators.arithmeticShiftRight),
         ("$a <= $b", Operators.lessEqualsThan),
         ("$a < $b", Operators.lessThan),
-        ("$a <=> $b", PhpOperators.spaceship)
+        ("$a <=> $b", PhpBuiltins.spaceshipOp)
       )
 
       testData.foreach { case (testCode, expectedType) =>
@@ -221,12 +221,12 @@ class OperatorTests extends PhpCode2CpgFixture {
     "handle a single argument" in {
       val cpg = code("<?php\nisset($a)")
 
-      val call = cpg.call.nameExact(PhpOperators.isset).l match {
+      val call = cpg.call.nameExact(PhpBuiltins.issetFunc).l match {
         case List(call) => call
         case result     => fail(s"Expected isset call but found $result")
       }
 
-      call.methodFullName shouldBe PhpOperators.isset
+      call.methodFullName shouldBe PhpBuiltins.issetFunc
       call.typeFullName shouldBe TypeConstants.Bool
       call.lineNumber shouldBe Some(2)
 
@@ -242,13 +242,14 @@ class OperatorTests extends PhpCode2CpgFixture {
     "handle multiple arguments" in {
       val cpg = code("<?php\nisset($a, $b, $c)")
 
-      val call = cpg.call.nameExact(PhpOperators.isset).l match {
+      val call = cpg.call.nameExact(PhpBuiltins.issetFunc).l match {
         case List(call) => call
         case result     => fail(s"Expected isset call but found $result")
       }
 
-      call.methodFullName shouldBe PhpOperators.isset
+      call.methodFullName shouldBe PhpBuiltins.issetFunc
       call.typeFullName shouldBe TypeConstants.Bool
+      call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       call.lineNumber shouldBe Some(2)
 
       call.argument.l match {
@@ -263,6 +264,74 @@ class OperatorTests extends PhpCode2CpgFixture {
           cArg.argumentIndex shouldBe 3
 
         case result => fail(s"Expected isset arguments but got $result")
+      }
+    }
+  }
+
+  "print calls should be created correctly" in {
+    val cpg = code("<?php\nprint(\"Hello, world\");")
+
+    cpg.call.nameExact(PhpBuiltins.printFunc).l match {
+      case List(printCall) =>
+        printCall.methodFullName shouldBe "print"
+        printCall.typeFullName shouldBe TypeConstants.Int
+        printCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        printCall.lineNumber shouldBe Some(2)
+
+        printCall.argument.l match {
+          case List(arg: Literal) => arg.code shouldBe "\"Hello, world\""
+          case result             => fail(s"Expected string argument but found $result")
+        }
+
+      case result => fail(s"Expected print call but found $result")
+    }
+  }
+
+  "ternary operators" should {
+    "be created correctly for general cond ? then : else style operators" in {
+      val cpg = code("<?php\n$a ? $b : $c")
+      val call = cpg.call.nameExact(Operators.conditional).l match {
+        case List(conditionalOp) => conditionalOp
+        case result              => fail(s"Expected conditional operator but found $result")
+      }
+
+      call.methodFullName shouldBe Operators.conditional
+      call.lineNumber shouldBe Some(2)
+
+      call.argument.l match {
+        case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
+          aArg.name shouldBe "a"
+          aArg.argumentIndex shouldBe 1
+
+          bArg.name shouldBe "b"
+          bArg.argumentIndex shouldBe 2
+
+          cArg.name shouldBe "c"
+          cArg.argumentIndex shouldBe 3
+
+        case result => fail(s"Expected 3 conditional args but found $result")
+      }
+    }
+
+    "be created correctly for the shorthand elvis operator" in {
+      val cpg = code("<?php\n$a ?: $b")
+      val call = cpg.call.nameExact(PhpBuiltins.elvisOp).l match {
+        case List(elvisOp) => elvisOp
+        case result        => fail(s"Expected elvis operator but found $result")
+      }
+
+      call.methodFullName shouldBe PhpBuiltins.elvisOp
+      call.lineNumber shouldBe Some(2)
+
+      call.argument.l match {
+        case List(aArg: Identifier, bArg: Identifier) =>
+          aArg.name shouldBe "a"
+          aArg.argumentIndex shouldBe 1
+
+          bArg.name shouldBe "b"
+          bArg.argumentIndex shouldBe 2
+
+        case result => fail(s"Expected 2 elvis operator args but found $result")
       }
     }
   }
