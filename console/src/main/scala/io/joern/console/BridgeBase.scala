@@ -269,7 +269,10 @@ trait ScriptExecution { this: BridgeBase =>
     replArgs += "-explain" // verbose scalac error messages
     if (config.nocolors) replArgs ++= Array("-color", "never")
 
-    // ScriptingDriver treats given compilerArgs as a file and try to compile it...
+    // Our predef code includes import statements... I didn't find a nice way to add them to the context of the
+    // script file, so instead we'll just write it to the beginning of the script file.
+    // That's obviously suboptimal, e.g. because it messes with the line numbers.
+    // Therefor, we'll display the temp script file name to the user and not delete it, in case the script errors.
     val predefCode =
       """
         |object WS1 {
@@ -281,52 +284,59 @@ trait ScriptExecution { this: BridgeBase =>
 //    val predefCode = """def bar(i: Int): String = s"bar $i"
 //                       |
 //                       |""".stripMargin
-//    val predefTmpFile = Files.createTempFile("joern-predef", ".sc")
-    // TODO delete file
+    val predefPlusScriptFileTmp = Files.createTempFile("joern-script-with-predef", ".sc")
+    // TODO delete file?
 //    predefTmpFile.toFile.deleteOnExit()
-//    Files.writeString(predefTmpFile, predefCode)
+    val scriptCode = Files.readString(actualScriptFile.toNIO)
+    val predefPlusScriptCode =
+      s"""
+         |$predefCode
+         |$scriptCode
+         |""".stripMargin
+    Files.writeString(predefPlusScriptFileTmp, predefPlusScriptCode)
+//    val predefPlusScriptFileTmp0 = os.temp
+//    os.write(predefPlusScriptFileTmp0, Seq())
 //    println(s"XXX1 predef written to ${predefTmpFile.toFile.getAbsolutePath}")
 //    replArgs += predefTmpFile.toFile.getAbsolutePath
 
-//    val scriptingDriver = new ScriptingDriver(
-////      predefCode = predefCode,
-//      compilerArgs = replArgs.result(),
-//      scriptFile = actualScriptFile.toIO,
-//      scriptArgs = Array.empty
-//    )
-//    scriptingDriver.compileAndRun()
-
-    val replDriver = new ReplDriver(
-      replArgs.result,
-      onExitCode = Option(onExitCode),
-      greeting = greeting,
-      prompt = promptStr,
-      maxPrintElements = Int.MaxValue
+    val scriptingDriver = new dotty.tools.scripting.ScriptingDriver(
+      compilerArgs = replArgs.result(),
+      scriptFile = predefPlusScriptFileTmp.toFile,
+      scriptArgs = Array.empty
     )
+    scriptingDriver.compileAndRun()
 
-    val initialState: State = replDriver.initialState
-    val state: State =
-      if (config.verbose) {
-        println(predefCode)
-        replDriver.run(predefCode)(using initialState)
-      } else {
-        replDriver.runQuietly(predefCode)(using initialState)
-      }
-
-    val scriptContent = Files.readString(actualScriptFile.toNIO)
-
-    import dotty.tools.scripting.Util.pathsep
-//    given Context = state.context
-    val outDir = Files.createTempDirectory("scala3-scripting")
-    println(s"XXX3 $outDir")
-//    outDir.toFile.deleteOnExit()
-
-    given Context = state.context.fresh.setSetting(state.context.settings.outputDir, new PlainDirectory(Directory(outDir)))
-    val classpath = s"${ctx.settings.classpath.value}${pathsep}${sys.props("java.class.path")}"
-    val classpathEntries: Seq[Path] = ClassPath.expandPath(classpath, expandStar=true).map { Paths.get(_) }
-    val mainMethod = Util.detectMainClassAndMethod(outDir, classpathEntries, scriptFile.toString)._2
-    val ret = mainMethod.invoke(null, scriptArgs)
-    println(s"XXXX4 $ret")
+//    val replDriver = new ReplDriver(
+//      replArgs.result,
+//      onExitCode = Option(onExitCode),
+//      greeting = greeting,
+//      prompt = promptStr,
+//      maxPrintElements = Int.MaxValue
+//    )
+//
+//    val initialState: State = replDriver.initialState
+//    val state: State =
+//      if (config.verbose) {
+//        println(predefCode)
+//        replDriver.run(predefCode)(using initialState)
+//      } else {
+//        replDriver.runQuietly(predefCode)(using initialState)
+//      }
+//
+//    val scriptContent = Files.readString(actualScriptFile.toNIO)
+//
+//    import dotty.tools.scripting.Util.pathsep
+////    given Context = state.context
+//    val outDir = Files.createTempDirectory("scala3-scripting")
+//    println(s"XXX3 $outDir")
+////    outDir.toFile.deleteOnExit()
+//
+//    given Context = state.context.fresh.setSetting(state.context.settings.outputDir, new PlainDirectory(Directory(outDir)))
+//    val classpath = s"${ctx.settings.classpath.value}${pathsep}${sys.props("java.class.path")}"
+//    val classpathEntries: Seq[Path] = ClassPath.expandPath(classpath, expandStar=true).map { Paths.get(_) }
+//    val mainMethod = Util.detectMainClassAndMethod(outDir, classpathEntries, scriptFile.toString)._2
+//    val ret = mainMethod.invoke(null, scriptArgs)
+//    println(s"XXXX4 $ret")
 //
 //    val src = """@main def exec: Unit = {
 //                |  println("hello world")
