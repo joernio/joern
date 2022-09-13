@@ -5,20 +5,23 @@ import ghidra.program.model.pcode.PcodeOp._
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, PcodeOpAST, Varnode}
 import io.joern.ghidra2cpg.Types
 //import io.joern.ghidra2cpg.utils.Utils.{createCallNode, createIdentifier, createLiteral}
+import io.joern.ghidra2cpg.utils.Utils._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import Utils._
+
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
+class State(argumentIndex: Int) {
+  var argument: Int = argumentIndex
+}
 
 class PCodeMapper(
   diffGraphBuilder: DiffGraphBuilder,
   nativeInstruction: Instruction,
   functions: List[Function],
-  decompiler: Decompiler,
   highFunction: HighFunction,
   address2Literal: Map[Long, String]
 ) {
@@ -26,6 +29,9 @@ class PCodeMapper(
   var nodeStack: mutable.HashMap[String, CfgNodeNew] = new mutable.HashMap[String, CfgNodeNew]()
   private val pcodeOps: List[PcodeOp] =
     nativeInstruction.getPcode().toList // highFunction.getPcodeOps(nativeInstruction.getAddress).asScala.toList//
+
+  val state = new State(argumentIndex = -1)
+  println(s"STATE ${state.argument}")
   val codeUnitFormat = new CodeUnitFormat(
     new CodeUnitFormatOptions(
       CodeUnitFormatOptions.ShowBlockName.NEVER,
@@ -43,8 +49,8 @@ class PCodeMapper(
 
   def getOpcode: Int = pcodeOps.lastOption.get.getOpcode
 
-
-  def getCallNode: CfgNodeNew = {
+  // Entry point
+  def getNode: CfgNodeNew = {
     if (pcodeOps.isEmpty) {
       // It looks like that for some instructions,
       // like "bti c" getPcode() returns nothing
@@ -91,10 +97,10 @@ class PCodeMapper(
   }
 
   def handleStore(pcodeOp: PcodeOp): CfgNodeNew = {
-    val firstop  = resolveVarNode(pcodeOp.getInput(1), 1)
+    val firstOp  = resolveVarNode(pcodeOp.getInput(1), 1)
     val secondOp = resolveVarNode(pcodeOp.getInput(2), 2)
     val callNode = createCall("<operator>.assignment", nativeInstruction.toString)
-    connectCallToArgument(callNode, firstop)
+    connectCallToArgument(callNode, firstOp)
     connectCallToArgument(callNode, secondOp)
     callNode
   }
@@ -267,7 +273,7 @@ class PCodeMapper(
         connectCallToArgument(callNode, destination)
         callNode
       case RETURN =>
-        createCall("TODO RET", "TODO RET")
+        createCall("ret", "ret")
       case CALL | CALLOTHER | CALLIND =>
         val calledFunction = codeUnitFormat
           .getOperandRepresentationString(nativeInstruction, 0)
