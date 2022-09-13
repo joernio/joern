@@ -248,21 +248,21 @@ trait ScriptExecution { this: BridgeBase =>
     val isEncryptedScript = scriptFile.ext == "enc"
     System.err.println(s"executing $scriptFile with params=${config.params}")
 
-    // TODO pass to script
+    // TODO pass script args
     val scriptArgs: Seq[String] = {
       val commandArgs   = config.command.toList
       val parameterArgs = config.params.flatMap { case (key, value) => Seq(s"--$key", value) }
       commandArgs ++ parameterArgs
     }
-    val actualScriptFile =
+    val decodedScriptFile =
       if (isEncryptedScript) decryptedScript(scriptFile)
       else scriptFile
 
     // TODO deduplicate between `runScript` and `startInteractiveRepl`
-    val replArgs = Array.newBuilder[String]
-    replArgs ++= Array("-classpath", System.getProperty("java.class.path")) // pass classpath over
-    replArgs += "-explain" // verbose scalac error messages
-    if (config.nocolors) replArgs ++= Array("-color", "never")
+    val compilerArgs = Array.newBuilder[String]
+    compilerArgs ++= Array("-classpath", System.getProperty("java.class.path")) // pass classpath over
+    compilerArgs += "-explain" // verbose scalac error messages
+    if (config.nocolors) compilerArgs ++= Array("-color", "never")
 
     // Our predef code includes import statements... I didn't find a nice way to add them to the context of the
     // script file, so instead we'll just write it to the beginning of the script file.
@@ -277,38 +277,34 @@ trait ScriptExecution { this: BridgeBase =>
         |""".stripMargin
 //    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
     val predefPlusScriptFileTmp = Files.createTempFile("joern-script-with-predef", ".sc")
-    predefPlusScriptFileTmp.toFile.deleteOnExit()
-    val scriptCode = Files.readString(actualScriptFile.toNIO)
-    val predefPlusScriptCode =
-      s"""
-         |$predefCode
+    val scriptCode = Files.readString(decodedScriptFile.toNIO)
+    Files.writeString(
+      predefPlusScriptFileTmp,
+      s"""$predefCode
          |$scriptCode
-         |""".stripMargin
-    Files.writeString(predefPlusScriptFileTmp, predefPlusScriptCode)
+         |""".stripMargin)
+    println(s"XXXX5 $predefPlusScriptFileTmp")
 
-    val scriptingDriver = new ScriptingDriver(
-      compilerArgs = replArgs.result(),
-      scriptFile = predefPlusScriptFileTmp.toFile,
-      scriptArgs = Array.empty
-    )
-    scriptingDriver.compileAndRun()
+    try {
+      new ScriptingDriver(
+        compilerArgs = compilerArgs.result(),
+        scriptFile = predefPlusScriptFileTmp.toFile,
+        scriptArgs = Array.empty
+      ).compileAndRun()
 
-    // ammonite
-    //   .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))
-    //   .runScript(actualScriptFile, scriptArgs)
-    //   ._1 match {
-    //   case Res.Success(r) =>
-    //     System.err.println(s"script finished successfully")
-    //     System.err.println(r)
-    //   case Res.Failure(msg) =>
-    //     throw new AssertionError(s"script failed: $msg")
-    //   case Res.Exception(e, msg) =>
-    //     throw new AssertionError(s"script errored: $msg", e)
-    //   case _ => ???
-    // }
-
-    /* minimizing exposure time by deleting the decrypted script straight away */
-    if (isEncryptedScript) actualScriptFile.toIO.delete
+      // if the script failed: don't delete the temporary file which includes the predef,
+      // so that the line numbers are accurate and the user can properly debug
+      predefPlusScriptFileTmp.toFile.delete()
+      System.err.println(s"script finished successfully")
+    } catch {
+      case t: Throwable =>
+        if (isEncryptedScript) {
+          /* minimizing exposure time by deleting the decrypted script straight away */
+          decodedScriptFile.toIO.delete()
+          predefPlusScriptFileTmp.toFile.delete()
+        }
+        throw t
+    }
   }
 
   /** For the given config, generate a list of commands to import the CPG
