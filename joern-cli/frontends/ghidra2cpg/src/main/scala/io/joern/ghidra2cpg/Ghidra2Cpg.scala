@@ -109,7 +109,7 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
 
     new NamespacePass(cpg, flatProgramAPI.getProgramFile).createAndApply()
 
-    new PcodePass(program, fileAbsolutePath, functions, cpg, decompiler).createAndApply()
+    new PCodePass(program, fileAbsolutePath, functions, cpg, decompiler).createAndApply()
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
         new LoHiPass(cpg).createAndApply()
