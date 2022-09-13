@@ -13,7 +13,7 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
-class PcodePass(currentProgram: Program, fileName: String, functions: List[Function], cpg: Cpg, decompiler: Decompiler)
+class PCodePass(currentProgram: Program, fileName: String, functions: List[Function], cpg: Cpg, decompiler: Decompiler)
     extends ConcurrentWriterCpgPass[Function](cpg) {
 
   val address2Literals: Map[Long, String] = DefinedDataIterator
@@ -109,7 +109,6 @@ class PcodePass(currentProgram: Program, fileName: String, functions: List[Funct
       instructionNodes.sliding(2).foreach { nodes =>
         val prevInstructionNode = nodes.head
         val instructionNode     = nodes.last
-        println(instructionNode.code)
         diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
         diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
       }
