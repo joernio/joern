@@ -14,6 +14,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 class State(argumentIndex: Int) {
+  // argument index
   var argument: Int = argumentIndex
 }
 

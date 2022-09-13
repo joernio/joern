@@ -14,7 +14,7 @@ class JumpPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg) {
     cpg.method.toArray
   override def runOnPart(diffGraph: DiffGraphBuilder, method: Method): Unit = {
     method.ast
-      .filter(_.isInstanceOf[Call])
+      .filter(_.isCall)
       .map(_.asInstanceOf[Call])
       .nameExact("<operator>.goto")
       .where(_.argument.order(1).isLiteral)
