@@ -11,7 +11,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   JarTypeSolver,
   JavaParserTypeSolver
 }
-import io.joern.javasrc2cpg.Config
+import io.joern.javasrc2cpg.{Config, SourceDirectoryInfo, SourceFileInfo}
 import io.joern.javasrc2cpg.util.{CachingReflectionTypeSolver, SourceRootFinder}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.dependency.DependencyResolver
@@ -22,25 +22,25 @@ import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters._
 import scala.util.{Success, Try}
 
-class AstCreationPass(codeDir: String, filenames: List[String], config: Config, cpg: Cpg)
-    extends ConcurrentWriterCpgPass[String](cpg) {
+class AstCreationPass(sourceInfo: SourceDirectoryInfo, config: Config, cpg: Cpg, dependencies: Seq[String])
+    extends ConcurrentWriterCpgPass[SourceFileInfo](cpg) {
 
   val global: Global              = new Global()
   private val logger              = LoggerFactory.getLogger(classOf[AstCreationPass])
   lazy private val symbolResolver = createSymbolSolver()
 
-  override def generateParts(): Array[String] = filenames.toArray
+  override def generateParts(): Array[SourceFileInfo] = sourceInfo.sourceFiles.toArray
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
+  override def runOnPart(diffGraph: DiffGraphBuilder, fileInfo: SourceFileInfo): Unit = {
     val parserConfig =
       new ParserConfiguration().setSymbolResolver(symbolResolver)
     val parser      = new JavaParser(parserConfig)
-    val parseResult = parser.parse(new java.io.File(filename))
+    val parseResult = parser.parse(new java.io.File(fileInfo.analysisFileName))
 
     parseResult.getProblems.asScala.toList match {
       case Nil => // Just carry on as usual
       case problems =>
-        logger.warn(s"Encountered problems while parsing file $filename:")
+        logger.warn(s"Encountered problems while parsing file ${fileInfo.analysisFileName}:")
         problems.foreach { problem =>
           logger.warn(s"- ${problem.getMessage}")
         }
@@ -48,9 +48,9 @@ class AstCreationPass(codeDir: String, filenames: List[String], config: Config, 
 
     parseResult.getResult.toScala match {
       case Some(result) if result.getParsed == Parsedness.PARSED =>
-        diffGraph.absorb(new AstCreator(filename, result, global, symbolResolver).createAst())
+        diffGraph.absorb(new AstCreator(fileInfo.originalFileName, result, global, symbolResolver).createAst())
       case _ =>
-        logger.warn("Failed to parse file " + filename)
+        logger.warn("Failed to parse file " + fileInfo.analysisFileName)
         Iterator()
     }
   }
@@ -76,7 +76,7 @@ class AstCreationPass(codeDir: String, filenames: List[String], config: Config, 
   }
 
   private def createSymbolSolver(): JavaSymbolSolver = {
-
+    val codeDir = sourceInfo.typeSolverSourceDir
     SourceRootFinder.getSourceRoots(codeDir)
 
     val combinedTypeSolver   = new CombinedTypeSolver()
@@ -89,20 +89,8 @@ class AstCreationPass(codeDir: String, filenames: List[String], config: Config, 
       combinedTypeSolver.add(javaParserTypeSolver)
     }
 
-    val resolvedDeps = if (config.fetchDependencies) {
-      DependencyResolver.getDependencies(Paths.get(codeDir)) match {
-        case Some(deps) => deps
-        case None =>
-          logger.warn(s"Could not fetch dependencies for project at path $codeDir")
-          Seq()
-      }
-    } else {
-      logger.info("dependency resolving disabled")
-      Seq()
-    }
-
     // Add solvers for inference jars
-    (jarsList ++ resolvedDeps)
+    (jarsList ++ dependencies)
       .flatMap { path =>
         Try(new JarTypeSolver(path)).toOption
       }

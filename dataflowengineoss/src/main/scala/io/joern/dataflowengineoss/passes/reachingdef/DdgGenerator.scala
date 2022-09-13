@@ -41,8 +41,8 @@ class DdgGenerator {
     */
   def addReachingDefEdges(
     dstGraph: DiffGraphBuilder,
-    problem: DataFlowProblem[mutable.BitSet],
-    solution: Solution[mutable.BitSet]
+    problem: DataFlowProblem[StoredNode, mutable.BitSet],
+    solution: Solution[StoredNode, mutable.BitSet]
   ): Unit = {
     implicit val implicitDst: DiffGraphBuilder = dstGraph
     val numberToNode                           = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
@@ -225,7 +225,10 @@ class DdgGenerator {
   * `n` of the flow graph. This component determines those of the incoming definitions that are relevant as the value
   * they define is actually used by `n`.
   */
-private class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode, Set[Definition]]) {
+private class UsageAnalyzer(
+  problem: DataFlowProblem[StoredNode, mutable.BitSet],
+  in: Map[StoredNode, Set[Definition]]
+) {
 
   val numberToNode                 = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
   private val allNodes             = in.keys.toList

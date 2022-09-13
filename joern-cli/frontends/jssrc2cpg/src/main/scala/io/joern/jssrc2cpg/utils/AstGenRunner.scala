@@ -2,8 +2,10 @@ package io.joern.jssrc2cpg.utils
 
 import better.files.File
 import io.joern.jssrc2cpg.Config
+import io.joern.jssrc2cpg.preprocessing.EjsPreprocessor
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
@@ -25,9 +27,19 @@ object AstGenRunner {
   }
 
   private val EXECUTABLE_DIR: String = {
-    val dir      = AstGenRunner.getClass.getProtectionDomain.getCodeSource.getLocation.toString
-    val fixedDir = new java.io.File(dir.substring("file:".length, dir.indexOf("jssrc2cpg"))).toString
-    Paths.get(fixedDir, "jssrc2cpg/bin/astgen").toAbsolutePath.toString
+    val dir        = AstGenRunner.getClass.getProtectionDomain.getCodeSource.getLocation.toString
+    val indexOfLib = dir.lastIndexOf("lib")
+    val fixedDir = if (indexOfLib != -1) {
+      new java.io.File(dir.substring("file:".length, indexOfLib)).toString
+    } else {
+      val indexOfTarget = dir.lastIndexOf("target")
+      if (indexOfTarget != -1) {
+        new java.io.File(dir.substring("file:".length, indexOfTarget)).toString
+      } else {
+        "."
+      }
+    }
+    Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
   }
 
   private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
@@ -114,17 +126,56 @@ object AstGenRunner {
     }
   }
 
-  private def runAstGenNative(in: File, out: File): Try[Seq[String]] = {
-    val jsFiles     = ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t ts -o $out", in.toString())
-    val hasVueFiles = SourceFiles.determine(in.pathAsString, Set(".vue")).nonEmpty
-    val vueFiles =
-      if (hasVueFiles) ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t vue -o $out", in.toString())
-      else Success(Seq.empty)
-    for {
-      jsResult  <- jsFiles
-      vueResult <- vueFiles
-    } yield jsResult ++ vueResult
+  private def processEjsFiles(in: File, out: File, ejsFiles: List[String]): Try[Seq[String]] = {
+    val tmpJsFiles = ejsFiles.map { ejsFilePath =>
+      val ejsFile           = File(ejsFilePath)
+      val ls                = SourceFiles.retrieveLineSeparator(ejsFilePath)
+      val sourceFileContent = IOUtils.readLinesInFile(ejsFile.path).mkString("", ls, ls)
+      val preprocessContent = new EjsPreprocessor().preprocess(sourceFileContent)
+      (out / in.relativize(ejsFile).toString).parent.createDirectoryIfNotExists(createParents = true)
+      val newEjsFile = ejsFile.copyTo(out / in.relativize(ejsFile).toString)
+      val jsFile     = newEjsFile.changeExtensionTo(".js").writeText(preprocessContent)
+      newEjsFile.createFile().writeText(sourceFileContent)
+      jsFile
+    }
+
+    val result = ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t ts -o $out", out.toString())
+
+    val jsons = SourceFiles.determine(out.toString(), Set(".json"))
+    jsons.foreach { jsonPath =>
+      val jsonFile    = File(jsonPath)
+      val jsonContent = IOUtils.readLinesInFile(jsonFile.path).mkString
+      val json        = ujson.read(jsonContent)
+      val fileName    = json("relativeName").str
+      val newFileName = fileName.replace(".js", ".ejs")
+      json("relativeName") = newFileName
+      jsonFile.writeText(json.toString())
+    }
+
+    tmpJsFiles.foreach(_.delete())
+    result
   }
+
+  private def ejsFiles(in: File, out: File): Try[Seq[String]] = {
+    val files = SourceFiles.determine(in.pathAsString, Set(".ejs"))
+    if (files.nonEmpty) processEjsFiles(in, out, files)
+    else Success(Seq.empty)
+  }
+
+  private def vueFiles(in: File, out: File): Try[Seq[String]] = {
+    val files = SourceFiles.determine(in.pathAsString, Set(".vue"))
+    if (files.nonEmpty) ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t vue -o $out", in.toString())
+    else Success(Seq.empty)
+  }
+
+  private def jsFiles(in: File, out: File): Try[Seq[String]] =
+    ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t ts -o $out", in.toString())
+
+  private def runAstGenNative(in: File, out: File): Try[Seq[String]] = for {
+    ejsResult <- ejsFiles(in, out)
+    vueResult <- vueFiles(in, out)
+    jsResult  <- jsFiles(in, out)
+  } yield jsResult ++ vueResult ++ ejsResult
 
   def execute(config: Config, out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)

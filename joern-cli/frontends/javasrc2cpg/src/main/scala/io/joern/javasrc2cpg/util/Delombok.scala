@@ -8,6 +8,16 @@ import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
 
 object Delombok {
+
+  sealed trait DelombokMode
+  // Don't run delombok at all.
+  object DelombokMode {
+    case object NoDelombok  extends DelombokMode
+    case object Default     extends DelombokMode
+    case object TypesOnly   extends DelombokMode
+    case object RunDelombok extends DelombokMode
+  }
+
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private def systemJavaPath: String = {

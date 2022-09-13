@@ -2,7 +2,6 @@ package io.joern.kotlin2cpg.types
 
 object TypeConstants {
   val any                               = "ANY"
-  val cpgUnresolved                     = "codepropertygraph.Unresolved"
   val classLiteralReplacementMethodName = "getClass"
   val initPrefix                        = "<init>"
   val kotlinFunctionXPrefix             = "kotlin.Function"

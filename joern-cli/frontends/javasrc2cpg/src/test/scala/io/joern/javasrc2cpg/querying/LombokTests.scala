@@ -4,9 +4,9 @@ import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
 import io.shiftleft.semanticcpg.language._
 
-class LombokTests extends JavaSrcCode2CpgFixture(delombokFullAnalysis = true) {
+class LombokTests extends JavaSrcCode2CpgFixture(delombokMode = "run-delombok") {
 
-  "source with lombok annotations should be successfully delomboked" in {
+  "basic source with lombok annotations" should {
     val cpg = code(
       """
         |import lombok.Getter;
@@ -17,12 +17,19 @@ class LombokTests extends JavaSrcCode2CpgFixture(delombokFullAnalysis = true) {
       fileName = "Foo.java"
     )
 
-    cpg.method.name("getValue").l match {
-      case method :: Nil =>
-        method.fullName shouldBe "Foo.getValue:int()"
-        method.body.astChildren.size shouldBe 1
+    "delombok the source correctly" in {
+      cpg.method.name("getValue").l match {
+        case method :: Nil =>
+          method.fullName shouldBe "Foo.getValue:int()"
+          method.body.astChildren.size shouldBe 1
+          method.filename.contains("delombok") shouldBe false
 
-      case result => fail(s"Expected single getValue method but got $result")
+        case result => fail(s"Expected single getValue method but got $result")
+      }
+    }
+
+    "not give the delomboked filename" in {
+      cpg.typeDecl.name("Foo").filename.head.contains("lombok") shouldBe false
     }
   }
 
@@ -66,7 +73,7 @@ class LombokTests extends JavaSrcCode2CpgFixture(delombokFullAnalysis = true) {
   }
 }
 
-class LombokTypesOnlyTests extends JavaSrcCode2CpgFixture(delombokTypesOnly = true) {
+class LombokTypesOnlyTests extends JavaSrcCode2CpgFixture(delombokMode = "types-only") {
   "source with some lombok annotations should have correct type information" in {
     val cpg = code(
       """

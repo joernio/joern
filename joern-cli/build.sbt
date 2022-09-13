@@ -43,7 +43,7 @@ Universal / mappings ++= frontendMappings("ghidra2cpg", (Projects.ghidra2cpg / s
 Universal / mappings ++= frontendMappings("jssrc2cpg", (jssrc2cpg / stage).value)
 Universal / mappings ++= frontendMappings("jimple2cpg", (jimple2cpg / stage).value)
 Universal / mappings ++= frontendMappings("pysrc2cpg", (pysrc2cpg / stage).value)
-Universal / mappings ++= frontendMappings("phpcpg", (php2cpg / stage).value)
+Universal / mappings ++= frontendMappings("php2cpg", (php2cpg / stage).value)
 
 lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
 cpgVersionFile := {

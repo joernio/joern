@@ -4,6 +4,7 @@ import better.files.Dsl._
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.joerncli.CpgBasedTool.{exitIfInvalid, exitWithError}
 import io.joern.joerncli.console.JoernWorkspaceLoader
 import io.joern.x2cpg.layers._
 import io.shiftleft.semanticcpg.layers._
@@ -55,10 +56,7 @@ object JoernExport extends App {
     }.parse(args, Config())
 
   parseConfig.foreach { config =>
-    if (File(config.outDir).exists)
-      exitWithError(s"Output directory `${config.outDir}` already exists.")
-    if (File(config.cpgFileName).notExists)
-      exitWithError(s"CPG at ${config.cpgFileName} does not exist.")
+    exitIfInvalid(config.outDir, config.cpgFileName)
 
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
       CpgBasedTool.addDataFlowOverlayIfNonExistent(cpg)
@@ -99,11 +97,6 @@ object JoernExport extends App {
     val ExportResult(nodeCount, edgeCount, files, additionalInfo) = exporter.runExport(graph, outDir)
     println(s"export completed successfully: $nodeCount nodes, $edgeCount edges in ${files.size} files")
     additionalInfo.foreach(println)
-  }
-
-  private def exitWithError(msg: String): Unit = {
-    System.err.println(s"error: $msg")
-    System.exit(1)
   }
 
 }

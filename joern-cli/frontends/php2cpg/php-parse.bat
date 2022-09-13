@@ -1,0 +1,1 @@
+vendor/bin/php-parse.bat
