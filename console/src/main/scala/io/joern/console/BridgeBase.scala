@@ -1,21 +1,23 @@
 package io.joern.console
 
-import os.{Path, pwd}
 import better.files.*
 import dotty.tools.Settings
 import dotty.tools.repl.State
+import dotty.tools.dotc.core.Contexts.{Context, ctx}
+import dotty.tools.io.{ClassPath, Directory, PlainDirectory}
+import dotty.tools.scripting.Util
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
 
 import java.io.File as JFile
 import java.io.PrintStream
-import java.nio.file.Files
+import java.nio.file.{Files, Path, Paths}
 
 case class Config(
-  scriptFile: Option[Path] = None,
+  scriptFile: Option[os.Path] = None,
   command: Option[String] = None,
   params: Map[String, String] = Map.empty,
-  additionalImports: List[Path] = Nil,
+  additionalImports: List[os.Path] = Nil,
   addPlugin: Option[String] = None,
   rmPlugin: Option[String] = None,
   pluginToRun: Option[String] = None,
@@ -43,15 +45,15 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
   def slProduct: SLProduct
 
   protected def parseConfig(args: Array[String]): Config = {
-    implicit def pathRead: scopt.Read[Path] =
-      scopt.Read.stringRead.map(Path(_, pwd)) // support both relative and absolute paths
+    implicit def pathRead: scopt.Read[os.Path] =
+      scopt.Read.stringRead.map(os.Path(_, os.pwd)) // support both relative and absolute paths
 
     val parser = new scopt.OptionParser[Config](slProduct.name) {
       override def errorOnUnknownArgument = false
 
       note("Script execution")
 
-      opt[Path]("script")
+      opt[os.Path]("script")
         .action((x, c) => c.copy(scriptFile = Some(x)))
         .text("path to script file: will execute and exit")
 
@@ -60,7 +62,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
         .action((x, c) => c.copy(params = x))
         .text("key values for script")
 
-      opt[Seq[Path]]("import")
+      opt[Seq[os.Path]]("import")
         .valueName("script1.sc,script2.sc,...")
         .action((x, c) => c.copy(additionalImports = x.toList))
         .text("import additional additional script(s): will execute and keep console open")
@@ -186,9 +188,8 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
   /** Override this method to implement script decryption
     */
-  protected def decryptedScript(scriptFile: Path): Path = {
+  protected def decryptedScript(scriptFile: os.Path): os.Path =
     scriptFile
-  }
 
   private def readScript(scriptFile: File): List[String] = {
     val code = scriptFile.lines.toList
@@ -243,7 +244,7 @@ trait ScriptExecution { this: BridgeBase =>
     replDriver.runUntilQuit(state)
   }
 
-  protected def runScript(scriptFile: Path, config: Config) = {
+  protected def runScript(scriptFile: os.Path, config: Config): Unit = {
     val isEncryptedScript = scriptFile.ext == "enc"
     System.err.println(s"executing $scriptFile with params=${config.params}")
 
@@ -264,6 +265,13 @@ trait ScriptExecution { this: BridgeBase =>
     if (config.nocolors) replArgs ++= Array("-color", "never")
 
     // ScriptingDriver treats given compilerArgs as a file and try to compile it...
+    val predefCode =
+      """
+        |object WS1 {
+        |  def bar(i: Int): String = "ws1 bar " + i
+        |}
+        |import WS1.bar
+        |""".stripMargin
 //    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
 //    val predefCode = """def bar(i: Int): String = s"bar $i"
 //                       |
@@ -275,32 +283,45 @@ trait ScriptExecution { this: BridgeBase =>
 //    println(s"XXX1 predef written to ${predefTmpFile.toFile.getAbsolutePath}")
 //    replArgs += predefTmpFile.toFile.getAbsolutePath
 
-    val scriptingDriver = new ScriptingDriver(
-//      predefCode = predefCode,
-      predefCode = "",
-      compilerArgs = replArgs.result(),
-      scriptFile = actualScriptFile.toIO,
-      scriptArgs = Array.empty
+//    val scriptingDriver = new ScriptingDriver(
+////      predefCode = predefCode,
+//      compilerArgs = replArgs.result(),
+//      scriptFile = actualScriptFile.toIO,
+//      scriptArgs = Array.empty
+//    )
+//    scriptingDriver.compileAndRun()
+
+    val replDriver = new ReplDriver(
+      replArgs.result,
+      onExitCode = Option(onExitCode),
+      greeting = greeting,
+      prompt = promptStr,
+      maxPrintElements = Int.MaxValue
     )
 
-    scriptingDriver.compileAndRun()
+    val initialState: State = replDriver.initialState
+    val state: State =
+      if (config.verbose) {
+        println(predefCode)
+        replDriver.run(predefCode)(using initialState)
+      } else {
+        replDriver.runQuietly(predefCode)(using initialState)
+      }
 
-//    val replDriver = new ReplDriver(
-//      replArgs.result,
-//      onExitCode = Option(onExitCode),
-//      greeting = greeting,
-//      prompt = promptStr,
-//      maxPrintElements = Int.MaxValue
-//    )
-//
-//    val initialState: State = replDriver.initialState
-//    val state: State =
-//      if (config.verbose) {
-//        println(predefCode)
-//        replDriver.run(predefCode)(using initialState)
-//      } else {
-//        replDriver.runQuietly(predefCode)(using initialState)
-//      }
+    val scriptContent = Files.readString(actualScriptFile.toNIO)
+
+    import dotty.tools.scripting.Util.pathsep
+//    given Context = state.context
+    val outDir = Files.createTempDirectory("scala3-scripting")
+    println(s"XXX3 $outDir")
+//    outDir.toFile.deleteOnExit()
+
+    given Context = state.context.fresh.setSetting(state.context.settings.outputDir, new PlainDirectory(Directory(outDir)))
+    val classpath = s"${ctx.settings.classpath.value}${pathsep}${sys.props("java.class.path")}"
+    val classpathEntries: Seq[Path] = ClassPath.expandPath(classpath, expandStar=true).map { Paths.get(_) }
+    val mainMethod = Util.detectMainClassAndMethod(outDir, classpathEntries, scriptFile.toString)._2
+    val ret = mainMethod.invoke(null, scriptArgs)
+    println(s"XXXX4 $ret")
 //
 //    val src = """@main def exec: Unit = {
 //                |  println("hello world")
