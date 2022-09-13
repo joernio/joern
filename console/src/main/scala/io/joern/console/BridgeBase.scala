@@ -8,7 +8,7 @@ import dotty.tools.Settings
 import dotty.tools.repl.State
 import dotty.tools.dotc.core.Contexts.{Context, ctx}
 import dotty.tools.io.{ClassPath, Directory, PlainDirectory}
-import dotty.tools.scripting.Util
+import dotty.tools.scripting.{Util, ScriptingDriver}
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
 import os.{pwd, Path}
@@ -281,12 +281,8 @@ trait ScriptExecution { this: BridgeBase =>
         |import WS1.bar
         |""".stripMargin
 //    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
-//    val predefCode = """def bar(i: Int): String = s"bar $i"
-//                       |
-//                       |""".stripMargin
     val predefPlusScriptFileTmp = Files.createTempFile("joern-script-with-predef", ".sc")
-    // TODO delete file?
-//    predefTmpFile.toFile.deleteOnExit()
+    predefPlusScriptFileTmp.toFile.deleteOnExit()
     val scriptCode = Files.readString(actualScriptFile.toNIO)
     val predefPlusScriptCode =
       s"""
@@ -294,55 +290,13 @@ trait ScriptExecution { this: BridgeBase =>
          |$scriptCode
          |""".stripMargin
     Files.writeString(predefPlusScriptFileTmp, predefPlusScriptCode)
-//    val predefPlusScriptFileTmp0 = os.temp
-//    os.write(predefPlusScriptFileTmp0, Seq())
-//    println(s"XXX1 predef written to ${predefTmpFile.toFile.getAbsolutePath}")
-//    replArgs += predefTmpFile.toFile.getAbsolutePath
 
-    val scriptingDriver = new dotty.tools.scripting.ScriptingDriver(
+    val scriptingDriver = new ScriptingDriver(
       compilerArgs = replArgs.result(),
       scriptFile = predefPlusScriptFileTmp.toFile,
       scriptArgs = Array.empty
     )
     scriptingDriver.compileAndRun()
-
-//    val replDriver = new ReplDriver(
-//      replArgs.result,
-//      onExitCode = Option(onExitCode),
-//      greeting = greeting,
-//      prompt = promptStr,
-//      maxPrintElements = Int.MaxValue
-//    )
-//
-//    val initialState: State = replDriver.initialState
-//    val state: State =
-//      if (config.verbose) {
-//        println(predefCode)
-//        replDriver.run(predefCode)(using initialState)
-//      } else {
-//        replDriver.runQuietly(predefCode)(using initialState)
-//      }
-//
-//    val scriptContent = Files.readString(actualScriptFile.toNIO)
-//
-//    import dotty.tools.scripting.Util.pathsep
-////    given Context = state.context
-//    val outDir = Files.createTempDirectory("scala3-scripting")
-//    println(s"XXX3 $outDir")
-////    outDir.toFile.deleteOnExit()
-//
-//    given Context = state.context.fresh.setSetting(state.context.settings.outputDir, new PlainDirectory(Directory(outDir)))
-//    val classpath = s"${ctx.settings.classpath.value}${pathsep}${sys.props("java.class.path")}"
-//    val classpathEntries: Seq[Path] = ClassPath.expandPath(classpath, expandStar=true).map { Paths.get(_) }
-//    val mainMethod = Util.detectMainClassAndMethod(outDir, classpathEntries, scriptFile.toString)._2
-//    val ret = mainMethod.invoke(null, scriptArgs)
-//    println(s"XXXX4 $ret")
-//
-//    val src = """@main def exec: Unit = {
-//                |  println("hello world")
-//                |}
-//                |""".stripMargin
-//    replDriver.run(src)(state)
 
     // ammonite
     //   .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))
