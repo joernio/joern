@@ -265,7 +265,6 @@ trait ScriptExecution { this: BridgeBase =>
 
     // ScriptingDriver treats given compilerArgs as a file and try to compile it...
 //    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
-    val predefCode = """def bar(i: Int): String = s"bar $i" """
 //    val predefCode = """def bar(i: Int): String = s"bar $i"
 //                       |
 //                       |""".stripMargin
@@ -277,7 +276,8 @@ trait ScriptExecution { this: BridgeBase =>
 //    replArgs += predefTmpFile.toFile.getAbsolutePath
 
     val scriptingDriver = new ScriptingDriver(
-      predefCode = predefCode,
+//      predefCode = predefCode,
+      predefCode = "",
       compilerArgs = replArgs.result(),
       scriptFile = actualScriptFile.toIO,
       scriptArgs = Array.empty

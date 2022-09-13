@@ -5,7 +5,9 @@
 @main def exec: Unit = {
   //import WS0._
   println("hello world")
-  //workspace.reset()
+  //workspace // .reset()
   //println(workspace0)
+  
+  //import WS1.bar
   println(bar(4))
 }
