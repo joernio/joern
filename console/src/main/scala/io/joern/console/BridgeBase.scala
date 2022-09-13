@@ -257,21 +257,15 @@ trait ScriptExecution { this: BridgeBase =>
     // script file, so instead we'll just write it to the beginning of the script file.
     // That's obviously suboptimal, e.g. because it messes with the line numbers.
     // Therefor, we'll display the temp script file name to the user and not delete it, in case the script errors.
-    val predefCode =
-      """
-        |object WS1 {
-        |  def bar(i: Int): String = "ws1 bar " + i
-        |}
-        |import WS1.bar
-        |""".stripMargin
-//    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
+    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
     val predefPlusScriptFileTmp = Files.createTempFile("joern-script-with-predef", ".sc")
     val scriptCode = Files.readString(decodedScriptFile.toNIO)
     Files.writeString(
       predefPlusScriptFileTmp,
       s"""$predefCode
          |$scriptCode
-         |""".stripMargin)
+         |""".stripMargin
+    )
 
     try {
       new ScriptingDriver(
