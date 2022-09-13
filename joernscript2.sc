@@ -10,4 +10,5 @@
   
   //import WS1.bar
   println(bar(4))
+  //println(foo(4))
 }
