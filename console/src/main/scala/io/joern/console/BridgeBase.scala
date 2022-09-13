@@ -11,8 +11,9 @@ import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
 import os.{pwd, Path}
 
-import java.io.{File => JFile}
+import java.io.File as JFile
 import java.io.PrintStream
+import java.nio.file.Files
 
 case class Config(
   scriptFile: Option[Path] = None,
@@ -250,6 +251,8 @@ trait ScriptExecution { this: BridgeBase =>
   protected def runScript(scriptFile: Path, config: Config): AnyVal = {
     val isEncryptedScript = scriptFile.ext == "enc"
     System.err.println(s"executing $scriptFile with params=${config.params}")
+
+    // TODO pass to script
     val scriptArgs: Seq[String] = {
       val commandArgs   = config.command.toList
       val parameterArgs = config.params.flatMap { case (key, value) => Seq(s"--$key", value) }
@@ -260,17 +263,23 @@ trait ScriptExecution { this: BridgeBase =>
       else scriptFile
 
     // TODO deduplicate between `runScript` and `startInteractiveRepl`
-    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
     val replArgs = Array.newBuilder[String]
     replArgs ++= Array("-classpath", System.getProperty("java.class.path")) // pass classpath over
     replArgs += "-explain" // verbose scalac error messages
     if (config.nocolors) replArgs ++= Array("-color", "never")
 
-    replArgs += "/home/mp/Projects/shiftleft/joern/joernscript1.sc"
+    // ScriptingDriver treats given compilerArgs as a file and try to compile it...
+    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
+    val predefTmpFile = Files.createTempFile("joern-predef", ".sc")
+    // TODO delete file
+//    predefTmpFile.toFile.deleteOnExit()
+    Files.writeString(predefTmpFile, predefCode)
+    println(s"XXX1 predef written to ${predefTmpFile.toFile.getAbsolutePath}")
+    replArgs += predefTmpFile.toFile.getAbsolutePath
 
     val scriptingDriver = new ScriptingDriver(
       compilerArgs = replArgs.result(),
-      scriptFile = new JFile("/home/mp/Projects/shiftleft/joern/joernscript2.sc"),
+      scriptFile = actualScriptFile.toIO,
       scriptArgs = Array.empty
     )
 
