@@ -66,9 +66,12 @@ object Run {
          |
          |val opts = new OptsDynamic()
          |
-         | import io.shiftleft.passes.DiffGraph
-         | implicit def _diffGraph: DiffGraph.Builder = opts.commit.diffGraphBuilder
-         | def diffGraph = _diffGraph
+         |import _root_.io.shiftleft.passes.DiffGraph
+         |
+         |@scala.annotation.nowarn
+         |implicit def _diffGraph: DiffGraph.Builder = opts.commit.diffGraphBuilder
+         |@scala.annotation.nowarn
+         |def diffGraph = _diffGraph
          |""".stripMargin
 
     val membersCode = layerCreatorTypeNames
