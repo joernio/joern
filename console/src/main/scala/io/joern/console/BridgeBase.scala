@@ -217,13 +217,8 @@ trait ScriptExecution { this: BridgeBase =>
          |""".stripMargin
     }
 
-    val replArgs = Array.newBuilder[String]
-    replArgs ++= Array("-classpath", System.getProperty("java.class.path")) // pass classpath over
-    replArgs += "-explain" // verbose scalac error messages
-    if (config.nocolors) replArgs ++= Array("-color", "never")
-
     val replDriver = new ReplDriver(
-      replArgs.result,
+      compilerArgs(config),
       onExitCode = Option(onExitCode),
       greeting = greeting,
       prompt = promptStr,
@@ -231,7 +226,7 @@ trait ScriptExecution { this: BridgeBase =>
     )
     val initialState: State = replDriver.initialState
 
-    // `given State` for scala 3.2.1
+    // when upgrading to Scala 3.2.1: change to `given State`
     val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
     val state: State =
       if (config.verbose) {
@@ -258,12 +253,6 @@ trait ScriptExecution { this: BridgeBase =>
       if (isEncryptedScript) decryptedScript(scriptFile)
       else scriptFile
 
-    // TODO deduplicate between `runScript` and `startInteractiveRepl`
-    val compilerArgs = Array.newBuilder[String]
-    compilerArgs ++= Array("-classpath", System.getProperty("java.class.path")) // pass classpath over
-    compilerArgs += "-explain" // verbose scalac error messages
-    if (config.nocolors) compilerArgs ++= Array("-color", "never")
-
     // Our predef code includes import statements... I didn't find a nice way to add them to the context of the
     // script file, so instead we'll just write it to the beginning of the script file.
     // That's obviously suboptimal, e.g. because it messes with the line numbers.
@@ -283,11 +272,10 @@ trait ScriptExecution { this: BridgeBase =>
       s"""$predefCode
          |$scriptCode
          |""".stripMargin)
-    println(s"XXXX5 $predefPlusScriptFileTmp")
 
     try {
       new ScriptingDriver(
-        compilerArgs = compilerArgs.result(),
+        compilerArgs(config),
         scriptFile = predefPlusScriptFileTmp.toFile,
         scriptArgs = Array.empty
       ).compileAndRun()
@@ -319,9 +307,14 @@ trait ScriptExecution { this: BridgeBase =>
     }
   }
 
-  // private def ammoniteColors(config: Config) =
-  //   if (config.nocolors) Colors.BlackWhite
-  //   else Colors.Default
+  private def compilerArgs(config: Config): Array[String] = {
+    val compilerArgs = Array.newBuilder[String]
+    compilerArgs ++= Array("-classpath", System.getProperty("java.class.path")) // pass classpath over
+    compilerArgs += "-explain" // verbose scalac error messages
+    if (config.nocolors) compilerArgs ++= Array("-color", "never")
+    compilerArgs.result()
+  }
+
 }
 
 trait PluginHandling { this: BridgeBase =>
