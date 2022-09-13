@@ -74,8 +74,9 @@ class PCodePass(currentProgram: Program, fileName: String, functions: List[Funct
         .name(local.getName)
         .code(local.toString)
         .typeFullName(Types.registerType(local.getDataType.toString))
+      // Todo fix lineNumber
       val identifier =
-        createIdentifier(local.getName, local.getSymbol.getName, 1000, local.getDataType.toString, 1000)
+        createIdentifier(local.getName, local.getSymbol.getName, -1, local.getDataType.toString, -1)
 
       diffGraphBuilder.addNode(localNode)
       diffGraphBuilder.addNode(identifier)
