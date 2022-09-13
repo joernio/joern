@@ -6,7 +6,6 @@ import os.{Path, pwd}
 import better.files.*
 import dotty.tools.Settings
 import dotty.tools.repl.State
-import dotty.tools.scripting.ScriptingDriver
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
 import os.{pwd, Path}
@@ -269,22 +268,26 @@ trait ScriptExecution { this: BridgeBase =>
     if (config.nocolors) replArgs ++= Array("-color", "never")
 
     // ScriptingDriver treats given compilerArgs as a file and try to compile it...
-    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
-    val predefTmpFile = Files.createTempFile("joern-predef", ".sc")
+//    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
+    val predefCode = """def bar(i: Int): String = s"bar $i" """
+//    val predefCode = """def bar(i: Int): String = s"bar $i"
+//                       |
+//                       |""".stripMargin
+//    val predefTmpFile = Files.createTempFile("joern-predef", ".sc")
     // TODO delete file
 //    predefTmpFile.toFile.deleteOnExit()
-    Files.writeString(predefTmpFile, predefCode)
-    println(s"XXX1 predef written to ${predefTmpFile.toFile.getAbsolutePath}")
-    replArgs += predefTmpFile.toFile.getAbsolutePath
+//    Files.writeString(predefTmpFile, predefCode)
+//    println(s"XXX1 predef written to ${predefTmpFile.toFile.getAbsolutePath}")
+//    replArgs += predefTmpFile.toFile.getAbsolutePath
 
     val scriptingDriver = new ScriptingDriver(
+      predefCode = predefCode,
       compilerArgs = replArgs.result(),
       scriptFile = actualScriptFile.toIO,
       scriptArgs = Array.empty
     )
 
     scriptingDriver.compileAndRun()
-    println("XXXX9 after ScriptingDriver")
 
 //    val replDriver = new ReplDriver(
 //      replArgs.result,
