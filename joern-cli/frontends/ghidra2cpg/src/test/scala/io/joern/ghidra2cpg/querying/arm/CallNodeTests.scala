@@ -57,14 +57,16 @@ class CallNodeTests extends GhidraBinToCpgSuite {
   "The function 'main' should have the following list of calls" in {
     // TODO: resolve locals
     //    eg. #0x10 => #local_10
-    cpg.method
+    def calls = cpg.method
       .name("main")
       .call
       .code
       .l
       .mkString(
         " "
-      ) shouldBe """stp x29,x30,[sp, #-0x20]! mov x29,sp str w0,[sp, #0x1c] str x1,[sp, #0x10] adrp x0,0x400000 add x0,x0,#0x770 puts mov w0,#0x14 test mov w0,#0x0 ldp x29,x30,[sp], #0x20"""
+      )
+    //cpg.method.name("main").dotAst |> "/tmp/foo.dot"
+    calls shouldBe """stp x29,x30,[sp, #-0x20]! mov x29,sp str w0,[sp, #0x1c] str x1,[sp, #0x10] adrp x0,0x400000 add x0,x0,#0x770 puts mov w0,#0x14 test mov w0,#0x0 ldp x29,x30,[sp], #0x20"""
   }
 
 }

@@ -22,7 +22,6 @@ class PCodeMapper(
   diffGraphBuilder: DiffGraphBuilder,
   nativeInstruction: Instruction,
   functions: List[Function],
-  decompiler: Decompiler,
   highFunction: HighFunction,
   address2Literal: Map[Long, String]
 ) {
@@ -50,7 +49,8 @@ class PCodeMapper(
 
   def getOpcode: Int = pcodeOps.lastOption.get.getOpcode
 
-  def getCallNode: CfgNodeNew = {
+  // Entry point
+  def getNode: CfgNodeNew = {
     if (pcodeOps.isEmpty) {
       // It looks like that for some instructions,
       // like "bti c" getPcode() returns nothing
@@ -97,10 +97,10 @@ class PCodeMapper(
   }
 
   def handleStore(pcodeOp: PcodeOp): CfgNodeNew = {
-    val firstop  = resolveVarNode(pcodeOp.getInput(1), 1)
+    val firstOp  = resolveVarNode(pcodeOp.getInput(1), 1)
     val secondOp = resolveVarNode(pcodeOp.getInput(2), 2)
     val callNode = createCall("<operator>.assignment", nativeInstruction.toString)
-    connectCallToArgument(callNode, firstop)
+    connectCallToArgument(callNode, firstOp)
     connectCallToArgument(callNode, secondOp)
     callNode
   }

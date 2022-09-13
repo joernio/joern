@@ -1,127 +1,28 @@
 package io.joern.ghidra2cpg.passes
 
-import ghidra.program.model.listing.{Function, Instruction, Program}
-import ghidra.program.model.pcode.{HighFunction, PcodeOp, Varnode}
+import ghidra.program.model.listing.{Function, Program}
+import ghidra.program.util.DefinedDataIterator
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.utils.Utils._
 import io.joern.ghidra2cpg.utils.{Decompiler, PCodeMapper}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
-import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
-class PcodePass(
-  currentProgram: Program,
-  address2Literal: Map[Long, String],
-  fileName: String,
-  functions: List[Function],
-  cpg: Cpg,
-  decompiler: Decompiler
-) extends ConcurrentWriterCpgPass[Function](cpg) {
+class PcodePass(currentProgram: Program, fileName: String, functions: List[Function], cpg: Cpg, decompiler: Decompiler)
+    extends ConcurrentWriterCpgPass[Function](cpg) {
 
-  def getHighFunction(function: Function): HighFunction = decompiler.toHighFunction(function).orNull
-
-  def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
-    if (input.isRegister) {
-      createIdentifier(
-        currentProgram.getRegister(input).getName,
-        currentProgram.getRegister(input).getName,
-        index + 1,
-        Types.registerType(name),
-        instruction.getMinAddress.getOffsetAsBigInteger.intValue
-      )
-    } else if (input.isConstant)
-      createLiteral(
-        "0x" + input.getWordOffset.toHexString,
-        index + 1,
-        index + 1,
-        "0x" + input.getWordOffset.toHexString,
-        instruction.getMinAddress.getOffsetAsBigInteger.intValue
-      )
-    else if (input.isUnique) {
-      var valueString = ""
-      if (input.getDescendants != null) {
-
-        if (input.getDescendants.asScala.toList.head.getOutput == null)
-          valueString = input.getDef.getInputs.toList.head.getAddress.getOffset.toString
-        else valueString = input.getDescendants.asScala.toList.head.getOutput.getHigh.getName
-
-        val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset, valueString)
-
-        createLiteral(
-          value,
-          index + 1,
-          index + 1,
-          input.getWordOffset.toHexString,
-          instruction.getMinAddress.getOffsetAsBigInteger.intValue
-        )
-      } else {
-        createIdentifier(
-          "TODO",
-          "TODO",
-          index + 1,
-          Types.registerType("TODO"),
-          instruction.getMinAddress.getOffsetAsBigInteger.intValue
-        )
-      }
-    } else {
-      // we default to literal
-      // identifier could be useful too
-      createLiteral(
-        input.toString(),
-        index + 1,
-        index + 1,
-        input.toString(),
-        instruction.getMinAddress.getOffsetAsBigInteger.intValue
-      )
-    }
-  }
-
-  def handleStore(
-    diffGraphBuilder: DiffGraphBuilder,
-    instruction: Instruction,
-    callNode: CfgNodeNew,
-    pcodeOp: PcodeOp
-  ): Unit = {
-    val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
-    val secondOp = resolveVarNode(instruction, pcodeOp.getInput(2), 1)
-    connectCallToArgument(diffGraphBuilder, callNode, firstOp)
-    connectCallToArgument(diffGraphBuilder, callNode, secondOp)
-  }
-  def handleAssignment(
-    diffGraphBuilder: DiffGraphBuilder,
-    instruction: Instruction,
-    callNode: CfgNodeNew,
-    pcodeOp: PcodeOp
-  ): Unit = {
-    val firstOp  = resolveVarNode(instruction, pcodeOp.getOutput, 2)
-    val secondOp = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
-    connectCallToArgument(diffGraphBuilder, callNode, firstOp)
-    connectCallToArgument(diffGraphBuilder, callNode, secondOp)
-  }
-
-  def handleTwoArguments(
-    diffGraphBuilder: DiffGraphBuilder,
-    instruction: Instruction,
-    callNode: CfgNodeNew,
-    pcodeOp: PcodeOp,
-    operand: String,
-    name: String
-  ): Unit = {
-    val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
-    val secondOp = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
-    val code     = s"${firstOp.code} $operand ${secondOp.code}"
-    val opNode   = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-
-    connectCallToArgument(diffGraphBuilder, opNode, firstOp)
-    connectCallToArgument(diffGraphBuilder, opNode, secondOp)
-    // connectCallToArgument(diffGraphBuilder, callNode, opNode)
-  }
-
+  val address2Literals: Map[Long, String] = DefinedDataIterator
+    .definedStrings(currentProgram)
+    .iterator()
+    .asScala
+    .toList
+    .map(x => x.getAddress().getOffset -> x.getValue.toString)
+    .toMap
   def handleParameters(diffGraphBuilder: DiffGraphBuilder, function: Function, methodNode: NewMethod): Unit = {
     if (function.isThunk)
       function
@@ -183,38 +84,25 @@ class PcodePass(
       diffGraphBuilder.addEdge(identifier, localNode, EdgeTypes.REF)
     }
   }
-
-  def handleInstruction(
-    diffGraphBuilder: DiffGraphBuilder,
-    instruction: Instruction,
-    function: Function
-  ): CfgNodeNew = {
-    new PCodeMapper(
-      diffGraphBuilder,
-      instruction,
-      functions,
-      decompiler,
-      getHighFunction(function),
-      address2Literal
-    ).getCallNode
-  }
-
   def handleBody(
     diffGraphBuilder: DiffGraphBuilder,
     function: Function,
     methodNode: NewMethod,
     blockNode: NewBlock
   ): Unit = {
-    // get asm instructions
+    // Map instructions to nodes
     val instructionNodes = currentProgram.getListing
       .getInstructions(function.getBody, true)
       .iterator()
       .asScala
       .toList
       .map { instruction =>
-        handleInstruction(diffGraphBuilder, instruction, function: Function)
+        val highFunction = decompiler.toHighFunction(function).orNull
+        new PCodeMapper(diffGraphBuilder, instruction, functions, highFunction, address2Literals).getNode
       }
+    // Adding all nodes to the graph
     instructionNodes.foreach(diffGraphBuilder.addNode)
+    // connections between nodes
     if (instructionNodes.nonEmpty) {
       diffGraphBuilder.addEdge(blockNode, instructionNodes.head, EdgeTypes.AST)
       diffGraphBuilder.addEdge(methodNode, instructionNodes.head, EdgeTypes.CFG)
