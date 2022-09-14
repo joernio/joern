@@ -6,10 +6,34 @@ object AmmoniteBridge extends App with BridgeBase {
 
   runAmmonite(parseConfig(args), JoernProduct)
 
+
   /** Code that is executed when starting the shell
     */
   override def predefPlus(lines: List[String]): String = {
-    lines.foldLeft(Predefined.forInteractiveShell) { case (res, line) => res + s"\n$line" }
+    // TODO cleanup, find simple solution, e.g. `def isServer` or `def reportOutStream` in BridgeBase
+    println("XXXXXXXX1")
+    // lines.foldLeft(Predefined.forInteractiveShell) { case (res, line) => res + s"\n$line" }
+    Predefined.forInteractiveShell) { case (res, line) => res + s"\n$line" }
+    s"""
+      |import io.joern.console.{`package` => _, _}
+      |import io.joern.joerncli.console.JoernConsole._
+      |import io.shiftleft.codepropertygraph.Cpg
+      |import io.shiftleft.codepropertygraph.Cpg.docSearchPackages
+      |import io.shiftleft.codepropertygraph.cpgloading._
+      |import io.shiftleft.codepropertygraph.generated._
+      |import io.shiftleft.codepropertygraph.generated.nodes._
+      |import io.shiftleft.codepropertygraph.generated.edges._
+      |import io.joern.dataflowengineoss.language.{`package` => _, _}
+      |import io.shiftleft.semanticcpg.language.{`package` => _, _}
+      |import overflowdb.{`package` => _, _}
+      |import overflowdb.traversal.{`package` => _, help => _, _}
+      |import scala.jdk.CollectionConverters._
+      |implicit val resolver: ICallResolver = NoResolve
+      |implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
+      |import io.joern.joerncli.console.Joern._
+      |def script(x: String) : Any = console.runScript(x, Map(), cpg)
+      |${lines.mkString("\n")}
+    """.stripMargin
   }
 
   override def promptStr(): String = "joern> "

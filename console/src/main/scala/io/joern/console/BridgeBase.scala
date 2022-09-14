@@ -380,9 +380,7 @@ trait PluginHandling {
 
 }
 
-trait ServerHandling {
-
-  this: BridgeBase =>
+trait ServerHandling { this: BridgeBase =>
 
   protected def startHttpServer(config: Config): Unit = {
     val predef   = predefPlus(additionalImportCode(config))

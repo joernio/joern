@@ -40,6 +40,15 @@ object Predefined {
       """.stripMargin +
       dynamicPredef()
 
+  val forServer: String =
+    shared +
+      """
+        |val joernConsole = new io.joern.joerncli.console.JoernConsole(reportOutStream(System.err))
+        |import joernConsole._
+        |
+      """.stripMargin +
+      dynamicPredef()
+
   def dynamicPredef(): String = {
     Run.codeForRunCommand() +
       Help.codeForHelpCommand(classOf[io.joern.joerncli.console.JoernConsole])
