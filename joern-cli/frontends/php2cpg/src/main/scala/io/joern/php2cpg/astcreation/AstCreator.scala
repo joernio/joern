@@ -3,8 +3,11 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
+import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.utils.NodeBuilders.operatorCallNode
+import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
@@ -12,12 +15,13 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewIdentifier,
   NewLiteral,
   NewMethod,
-  NewMethodParameterIn
+  NewMethodParameterIn,
+  NewTypeRef
 }
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filename) {
+class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstCreatorBase(filename) {
 
   private val logger = LoggerFactory.getLogger(AstCreator.getClass)
 
@@ -25,6 +29,11 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
     val ast = astForPhpFile(phpAst)
     storeInDiffGraph(ast, diffGraph)
     diffGraph
+  }
+
+  private def registerType(typ: String): String = {
+    global.usedTypes.putIfAbsent(typ, true)
+    typ
   }
 
   private def astForPhpFile(file: PhpFile): Ast = {
@@ -92,13 +101,17 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
 
   private def astForExpr(expr: PhpExpr): Ast = {
     expr match {
-      case functionCallExpr: PhpFuncCall => astForFunctionCall(functionCallExpr)
-      case variableExpr: PhpVariable     => astForVariableExpr(variableExpr)
-      case nameExpr: PhpNameExpr         => astForNameExpr(nameExpr)
-      case assignExpr: PhpAssignment     => astForAssignment(assignExpr)
-      case scalarExpr: PhpScalar         => astForScalar(scalarExpr)
-      case binaryOp: PhpBinaryOp         => astForBinOp(binaryOp)
-      case unaryOp: PhpUnaryOp           => astForUnaryOp(unaryOp)
+      case funcCallExpr: PhpFuncCall => astForFunctionCall(funcCallExpr)
+      case variableExpr: PhpVariable => astForVariableExpr(variableExpr)
+      case nameExpr: PhpNameExpr     => astForNameExpr(nameExpr)
+      case assignExpr: PhpAssignment => astForAssignment(assignExpr)
+      case scalarExpr: PhpScalar     => astForScalar(scalarExpr)
+      case binaryOp: PhpBinaryOp     => astForBinOp(binaryOp)
+      case unaryOp: PhpUnaryOp       => astForUnaryOp(unaryOp)
+      case castExpr: PhpCast         => astForCastExpr(castExpr)
+      case issetExpr: PhpIsset       => astForIssetExpr(issetExpr)
+      case printExpr: PhpPrint       => astForPrintExpr(printExpr)
+      case ternaryOp: PhpTernaryOp   => astForTernaryOp(ternaryOp)
 
       case unhandled =>
         logger.warn(s"Unhandled expr: $unhandled")
@@ -169,7 +182,7 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
         Ast(NewLiteral().code(value).typeFullName(TypeConstants.Float).lineNumber(attributes.lineNumber))
       case PhpEncapsed(parts, attributes) =>
         val callNode =
-          operatorCallNode(PhpOperators.encaps, code = /* TODO */ PhpOperators.encaps, line = attributes.lineNumber)
+          operatorCallNode(PhpBuiltins.encaps, code = /* TODO */ PhpBuiltins.encaps, line = attributes.lineNumber)
         val args = parts.map(astForExpr)
         callAst(callNode, args)
       case PhpEncapsedPart(value, attributes) =>
@@ -205,6 +218,68 @@ class AstCreator(filename: String, phpAst: PhpFile) extends AstCreatorBase(filen
 
     callAst(callNode, exprAst :: Nil)
   }
+
+  // TODO Move to x2cpg
+  private def rootCode(ast: Ast, default: String = ""): String = {
+    ast.root.flatMap(_.properties.get(PropertyNames.CODE).map(_.toString)).getOrElse(default)
+  }
+  private def astForCastExpr(castExpr: PhpCast): Ast = {
+    val typ = NewTypeRef()
+      .typeFullName(registerType(castExpr.typ))
+      .code(castExpr.typ)
+      .lineNumber(castExpr.attributes.lineNumber)
+
+    val expr    = astForExpr(castExpr.expr)
+    val codeStr = s"(${castExpr.typ}) ${rootCode(expr)}"
+
+    val callNode = operatorCallNode(name = Operators.cast, codeStr, Some(castExpr.typ), castExpr.attributes.lineNumber)
+
+    callAst(callNode, Ast(typ) :: expr :: Nil)
+  }
+
+  private def astForIssetExpr(issetExpr: PhpIsset): Ast = {
+    val args = issetExpr.vars.map(astForExpr)
+    val code = s"${PhpBuiltins.issetFunc}(${args.map(rootCode(_).mkString(","))})"
+
+    val callNode = operatorCallNode(
+      PhpBuiltins.issetFunc,
+      code,
+      typeFullName = Some(TypeConstants.Bool),
+      line = issetExpr.attributes.lineNumber
+    )
+
+    callAst(callNode, args)
+  }
+  private def astForPrintExpr(printExpr: PhpPrint): Ast = {
+    val arg  = astForExpr(printExpr.expr)
+    val code = s"${PhpBuiltins.printFunc}(${rootCode(arg)})"
+
+    val callNode = operatorCallNode(
+      PhpBuiltins.printFunc,
+      code,
+      typeFullName = Some(TypeConstants.Int),
+      line = printExpr.attributes.lineNumber
+    )
+
+    callAst(callNode, arg :: Nil)
+  }
+
+  private def astForTernaryOp(ternaryOp: PhpTernaryOp): Ast = {
+    val conditionAst = astForExpr(ternaryOp.condition)
+    val maybeThenAst = ternaryOp.thenExpr.map(astForExpr)
+    val elseAst      = astForExpr(ternaryOp.elseExpr)
+
+    val operatorName = if (maybeThenAst.isDefined) Operators.conditional else PhpBuiltins.elvisOp
+
+    val callNode = operatorCallNode(
+      operatorName,
+      /* TODO */ PropertyDefaults.Code,
+      line = ternaryOp.attributes.lineNumber
+    )
+
+    val args = List(Some(conditionAst), maybeThenAst, Some(elseAst)).flatten
+    callAst(callNode, args)
+  }
 }
 
 object AstCreator {
@@ -212,6 +287,7 @@ object AstCreator {
     val String: String     = "string"
     val Int: String        = "int"
     val Float: String      = "float"
+    val Bool: String       = "bool"
     val Unresolved: String = "codepropertygraph.Unresolved"
   }
 
