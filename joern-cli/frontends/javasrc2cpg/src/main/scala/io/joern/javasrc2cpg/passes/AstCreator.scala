@@ -984,12 +984,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .fullName(methodFullName)
       .signature(signature)
 
-    val thisNode = Option
-      .when(!methodDeclaration.isStatic) {
-        val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
-        Ast(thisNodeForMethod(typeFullName, line(methodDeclaration)))
-      }
-      .toSeq
+    val thisNode = Option.when(!methodDeclaration.isStatic) {
+      val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
+      thisNodeForMethod(typeFullName, line(methodDeclaration))
+    }
+    val thisAst = thisNode.map(Ast(_)).toList
+
+    thisNode.foreach { node =>
+      scopeStack.addToScope(node, node.name, node.typeFullName)
+    }
 
     val bodyAst = astForMethodBody(methodDeclaration.getBody.toScala)
     val methodReturn =
@@ -1001,7 +1004,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     scopeStack.popScope()
 
-    methodAstWithAnnotations(methodNode, thisNode ++ parameterAsts, bodyAst, methodReturn, modifiers, annotationAsts)
+    methodAstWithAnnotations(methodNode, thisAst ++ parameterAsts, bodyAst, methodReturn, modifiers, annotationAsts)
   }
 
   private def constructorReturnNode(constructorDeclaration: ConstructorDeclaration): NewMethodReturn = {
@@ -2341,6 +2344,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .getOrElse(TypeConstants.UnresolvedType)
 
     val identifier = identifierNode(expr.toString, typeFullName, line(expr), column(expr))
+    val thisParam  = scopeStack.lookupVariable(NameConstants.This)
+
+    thisParam.foreach { nodeTypeInfo =>
+      diffGraph.addEdge(identifier, nodeTypeInfo.node, EdgeTypes.REF)
+    }
 
     Ast(identifier)
   }
@@ -2966,6 +2974,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case None =>
         val objectNode =
           createObjectNode(receiverTypeOption.getOrElse(TypeConstants.UnresolvedType), call, dispatchType)
+        for {
+          obj       <- objectNode
+          thisParam <- scopeStack.lookupVariable(NameConstants.This)
+        } diffGraph.addEdge(obj, thisParam.node, EdgeTypes.REF)
         objectNode.map(Ast(_)).toList
     }
 

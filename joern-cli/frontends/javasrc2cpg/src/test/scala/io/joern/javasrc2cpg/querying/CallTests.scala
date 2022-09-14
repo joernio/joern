@@ -1,12 +1,65 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
+  "calls to instance methods in same class" should {
+    "have ref edges from implicit `this` to method parameter" in {
+      val cpg = code("""
+			 |class Foo {
+			 |  public void test() {
+			 |    foo(42);
+			 |  }
+			 |
+			 |  public void foo(int x) {}
+			 |}""".stripMargin)
+
+      cpg.method.name("test").call.name("foo").receiver.outE.collectAll[Ref].l match {
+        case List(ref) =>
+          ref.inNode match {
+            case param: MethodParameterIn =>
+              param.name shouldBe "this"
+              param.index shouldBe 0
+              param.method.fullName shouldBe "Foo.test:void()"
+
+            case result => fail(s"Expected ref edge to method param but found $result")
+          }
+
+        case result => fail(s"Expected out ref edge but got $result")
+      }
+    }
+
+    "have ref edges from explicit `this` to method parameter" in {
+      val cpg = code("""
+                      |class Foo {
+                      |  public void test() {
+                      |    this.foo(42);
+                      |  }
+                      |
+                      |  public void foo(int x) {}
+                      |}""".stripMargin)
+
+      cpg.method.name("test").call.name("foo").receiver.outE.collectAll[Ref].l match {
+        case List(ref) =>
+          ref.inNode match {
+            case param: MethodParameterIn =>
+              param.name shouldBe "this"
+              param.index shouldBe 0
+              param.method.fullName shouldBe "Foo.test:void()"
+
+            case result => fail(s"Expected ref edge to method param but found $result")
+          }
+
+        case result => fail(s"Expected out ref edge but got $result")
+      }
+    }
+  }
+
   "call to method in different class" should {
     lazy val cpg = code(
       """
