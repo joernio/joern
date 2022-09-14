@@ -243,6 +243,13 @@ trait AstNodeBuilder { this: AstCreator =>
     case _                => ""
   }
 
+  protected def nameOf(node: NewNode): String = node match {
+    case node: NewCall            => node.name
+    case node: NewIdentifier      => node.name
+    case node: NewFieldIdentifier => node.canonicalName
+    case _                        => codeOf(node)
+  }
+
   protected def createIndexAccessCallAst(
     baseNode: NewNode,
     partNode: NewNode,
@@ -295,11 +302,12 @@ trait AstNodeBuilder { this: AstCreator =>
     callName: String,
     dispatchType: String,
     line: Option[Integer],
-    column: Option[Integer]
+    column: Option[Integer],
+    fullName: Option[String] = None
   ): NewCall = NewCall()
     .code(code)
     .name(callName)
-    .methodFullName(callName)
+    .methodFullName(fullName.getOrElse(callName))
     .dispatchType(dispatchType)
     .lineNumber(line)
     .columnNumber(column)
@@ -411,13 +419,13 @@ trait AstNodeBuilder { this: AstCreator =>
 
   protected def createStaticCallNode(
     code: String,
-    methodName: String,
+    callName: String,
     fullName: String,
     line: Option[Integer],
     column: Option[Integer]
   ): NewCall = NewCall()
     .code(code)
-    .name(methodName)
+    .name(callName)
     .methodFullName(fullName)
     .dispatchType(DispatchTypes.STATIC_DISPATCH)
     .signature("")
