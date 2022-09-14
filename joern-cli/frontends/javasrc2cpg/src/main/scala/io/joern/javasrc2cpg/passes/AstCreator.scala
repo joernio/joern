@@ -758,7 +758,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }
     }
 
-    val thisAst = Ast(thisNodeForMethod(typeFullName, line(constructorDeclaration)))
+    val thisNode = thisNodeForMethod(typeFullName, line(constructorDeclaration))
+    scopeStack.addToScope(thisNode, thisNode.name, thisNode.typeFullName)
+    val thisAst = Ast(thisNode)
 
     val bodyAst      = astForMethodBody(Some(constructorDeclaration.getBody))
     val methodReturn = constructorReturnNode(constructorDeclaration)
@@ -2375,7 +2377,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     )
 
     val thisNode = identifierNode(NameConstants.This, typeFullName)
-    val thisAst  = Ast(thisNode)
+    scopeStack.lookupVariable(NameConstants.This).foreach { thisParam =>
+      diffGraph.addEdge(thisNode, thisParam.node, EdgeTypes.REF)
+    }
+    val thisAst = Ast(thisNode)
 
     callAst(callRoot, args, Some(thisAst), withRecvArgEdge = true)
   }

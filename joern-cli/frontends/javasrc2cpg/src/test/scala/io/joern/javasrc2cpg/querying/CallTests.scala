@@ -6,9 +6,34 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.jIteratortoTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
   "calls to instance methods in same class" should {
+    "have ref edges from implicit `this` for an explicit constructor invocation" in {
+      val cpg = code("""
+			 |class Foo {
+			 |  public Foo() {
+			 |    this(42);
+			 |  }
+			 |
+			 |  public Foo(int x) {}
+			 |}
+			 |""".stripMargin)
+
+      cpg.method.fullNameExact("Foo.<init>:void()").call.nameExact("<init>").receiver.l match {
+        case List(thisNode: Identifier) =>
+          thisNode.outE.collectAll[Ref].map(_.inNode).l match {
+            case List(paramNode: MethodParameterIn) =>
+              paramNode.name shouldBe "this"
+              paramNode.method.fullName shouldBe "Foo.<init>:void()"
+
+            case result => fail(s"Expected REF edge to method parameter but found $result")
+          }
+
+        case result => fail(s"Expected <init> call with `this` receiver but found $result")
+      }
+    }
     "have ref edges from implicit `this` to method parameter" in {
       val cpg = code("""
 			 |class Foo {
