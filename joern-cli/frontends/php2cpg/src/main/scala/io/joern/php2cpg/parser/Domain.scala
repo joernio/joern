@@ -100,6 +100,15 @@ object Domain {
   final case class PhpBreakStmt(num: Option[Int], attributes: PhpAttributes)                    extends PhpStmt
   final case class PhpContinueStmt(num: Option[Int], attributes: PhpAttributes)                 extends PhpStmt
   final case class PhpWhileStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
+  final case class PhpIfStmt(
+    cond: PhpExpr,
+    stmts: List[PhpStmt],
+    elseIfs: List[PhpElseIfStmt],
+    elseStmt: Option[PhpElseStmt],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+  final case class PhpElseIfStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
+  final case class PhpElseStmt(stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
 
   final case class PhpMethodDecl(
     name: String,
@@ -276,6 +285,7 @@ object Domain {
       case "Stmt_Break"      => readBreak(json)
       case "Stmt_Continue"   => readContinue(json)
       case "Stmt_While"      => readWhile(json)
+      case "Stmt_If"         => readIf(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -305,6 +315,28 @@ object Domain {
     val cond  = readExpr(json("cond"))
     val stmts = json("stmts").arr.toList.map(readStmt)
     PhpWhileStmt(cond, stmts, PhpAttributes(json))
+  }
+
+  private def readIf(json: Value): PhpIfStmt = {
+    val condition = readExpr(json("cond"))
+    val stmts = json("stmts").arr.map(readStmt).toList
+    val elseIfs = json("elseifs").arr.map(readElseIf).toList
+    val elseStmt = Option.when(!json("else").isNull)(readElse(json("else")))
+
+    PhpIfStmt(condition, stmts, elseIfs, elseStmt, PhpAttributes(json))
+  }
+
+  private def readElseIf(json: Value): PhpElseIfStmt = {
+    val condition = readExpr(json("cond"))
+    val stmts = json("stmts").arr.map(readStmt).toList
+
+    PhpElseIfStmt(condition, stmts, PhpAttributes(json))
+  }
+
+  private def readElse(json: Value): PhpElseStmt = {
+    val stmts = json("stmts").arr.map(readStmt).toList
+
+    PhpElseStmt(stmts, PhpAttributes(json))
   }
 
   private def readExpr(json: Value): PhpExpr = {
