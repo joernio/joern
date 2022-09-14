@@ -32,21 +32,28 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   private def handleCallNodeArgs(
     callExpr: BabelNodeInfo,
-    receiverNode: NewNode,
+    receiverAst: Ast,
     baseNode: NewNode,
     callName: Option[String] = None
   ): Ast = {
+    val name = callName.getOrElse {
+      nameOf(receiverAst.nodes.head) match {
+        case Operators.fieldAccess => nameOf(receiverAst.nodes(2))
+        case _                     => nameOf(receiverAst.nodes.head)
+      }
+    }
+
     val args = astForNodes(callExpr.json("arguments").arr.toList)
     val callNode =
       createCallNode(
         callExpr.code,
-        callName.getOrElse(nameOf(receiverNode)),
+        name,
         DispatchTypes.DYNAMIC_DISPATCH,
         callExpr.lineNumber,
         callExpr.columnNumber,
         fullName = Some("")
       )
-    createCallAst(callNode, args, Some(Ast(receiverNode)), Some(Ast(baseNode)))
+    createCallAst(callNode, args, Some(Ast(receiverAst.nodes.head)), Some(Ast(baseNode)))
   }
 
   protected def astForCallExpression(callExpr: BabelNodeInfo): Ast = {
@@ -99,7 +106,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           scope.addVariableReference(thisNode.name, thisNode)
           (receiverAst, thisNode)
       }
-      handleCallNodeArgs(callExpr, receiverAst.nodes.head, baseNode)
+      handleCallNodeArgs(callExpr, receiverAst, baseNode)
     }
     callNode
   }
@@ -146,7 +153,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     // TODO: place "<operator>.new" into the schema
     val callNode =
-      handleCallNodeArgs(newExpr, receiverNode.nodes.head, tmpAllocNode2, callName = Some("<operator>.new"))
+      handleCallNodeArgs(newExpr, receiverNode, tmpAllocNode2, callName = Some("<operator>.new"))
 
     val tmpAllocReturnNode = Ast(createIdentifierNode(tmpAllocName, newExpr))
 

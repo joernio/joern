@@ -470,7 +470,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(barCall) = block.astChildren.isCall.l
       barCall.code shouldBe "x.foo(y).bar(z)"
-      barCall.name shouldBe Operators.fieldAccess
+      barCall.name shouldBe "bar"
 
       val List(receiver)       = barCall.receiver.isCall.l
       val List(receiverViaAst) = barCall.astChildren.isCall.l
@@ -495,7 +495,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(barBaseTree) = tmpAssignment.astChildren.isCall.l
       barBaseTree.code shouldBe "x.foo(y)"
-      barBaseTree.name shouldBe Operators.fieldAccess
+      barBaseTree.name shouldBe "foo"
       barBaseTree.argumentIndex shouldBe 2
 
       // barBaseTree constructs is tested for in another test.
@@ -519,7 +519,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(fooCall) = block.astChildren.isCall.l
       fooCall.code shouldBe "x.foo()"
-      fooCall.name shouldBe Operators.fieldAccess
+      fooCall.name shouldBe "foo"
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
       val List(receiver) = fooCall.astChildren.isCall.l
@@ -543,7 +543,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(call) = block.astChildren.isCall.l
       call.code shouldBe "a.b(x)"
-      call.name shouldBe Operators.fieldAccess
+      call.name shouldBe "b"
       call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
       val List(receiver) = call.receiver.isCall.l
@@ -1229,7 +1229,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       identifierZ.name shouldBe "z"
 
       val List(right) = assignment.astChildren.isCall.l
-      right.name shouldBe Operators.fieldAccess
+      right.name shouldBe "c"
 
       val List(callToC) = right.astChildren.isCall.l
       callToC.methodFullName shouldBe Operators.fieldAccess
