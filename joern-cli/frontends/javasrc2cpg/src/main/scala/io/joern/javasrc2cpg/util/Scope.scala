@@ -41,8 +41,8 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
   def getCapturedVariables: List[NodeTypeInfo] = {
     stack.flatMap(_.variables.values).filter { nodeTypeInfo =>
       val node = nodeTypeInfo.node
-      node.isInstanceOf[NewMethodParameterIn] ||
-      node.isInstanceOf[NewLocal]
+      (node.isInstanceOf[NewMethodParameterIn] || node
+        .isInstanceOf[NewLocal]) && nodeTypeInfo.name != NameConstants.This
     }
   }
 
