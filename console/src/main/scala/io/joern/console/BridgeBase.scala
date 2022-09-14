@@ -16,7 +16,7 @@ import java.nio.file.{Files, Path, Paths}
 case class Config(
   scriptFile: Option[os.Path] = None,
   command: Option[String] = None,
-  params: Map[String, String] = Map.empty,
+  params: Seq[String] = Seq.empty,
   additionalImports: List[os.Path] = Nil,
   addPlugin: Option[String] = None,
   rmPlugin: Option[String] = None,
@@ -57,10 +57,10 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
         .action((x, c) => c.copy(scriptFile = Some(x)))
         .text("path to script file: will execute and exit")
 
-      opt[Map[String, String]]('p', "params")
-        .valueName("k1=v1,k2=v2")
+      opt[Seq[String]]('p', "params")
+        .valueName("value1,value2")
         .action((x, c) => c.copy(params = x))
-        .text("key values for script")
+        .text("parameter values for main function in script")
 
       opt[Seq[os.Path]]("import")
         .valueName("script1.sc,script2.sc,...")
@@ -243,12 +243,8 @@ trait ScriptExecution { this: BridgeBase =>
     val isEncryptedScript = scriptFile.ext == "enc"
     System.err.println(s"executing $scriptFile with params=${config.params}")
 
-    // TODO pass script args
-    val scriptArgs: Seq[String] = {
-      val commandArgs   = config.command.toList
-      val parameterArgs = config.params.flatMap { case (key, value) => Seq(s"--$key", value) }
-      commandArgs ++ parameterArgs
-    }
+    val scriptArgs: Array[String] = config.command.toArray ++ config.params
+
     val decodedScriptFile =
       if (isEncryptedScript) decryptedScript(scriptFile)
       else scriptFile
@@ -269,9 +265,9 @@ trait ScriptExecution { this: BridgeBase =>
 
     try {
       new ScriptingDriver(
-        compilerArgs(config),
+        compilerArgs = compilerArgs(config),
         scriptFile = predefPlusScriptFileTmp.toFile,
-        scriptArgs = Array.empty
+        scriptArgs = scriptArgs
       ).compileAndRun()
 
       // if the script failed: don't delete the temporary file which includes the predef,
