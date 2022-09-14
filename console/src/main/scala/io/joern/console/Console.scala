@@ -14,6 +14,7 @@ import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import overflowdb.traversal.help.Doc
 
+import java.io.OutputStream
 import scala.sys.process.Process
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
@@ -21,8 +22,9 @@ import scala.util.{Failure, Success, Try}
 class Console[T <: Project](
   executor: AmmoniteExecutor,
   loader: WorkspaceLoader[T],
-  baseDir: File = File.currentWorkingDirectory
-) extends ScriptManager(executor) {
+  baseDir: File = File.currentWorkingDirectory,
+  val reportOutStream: OutputStream = System.err
+) extends ScriptManager(executor) with Reporting {
 
   import Console._
 
@@ -473,12 +475,9 @@ class Console[T <: Project](
     projectName
   }
 
-  def report(string: String): Unit = Console.report(string)
-
 }
 
 object Console {
-  def report(string: String): Unit = System.err.println(string)
   val nameOfLegacyCpgInProject     = "cpg.bin.zip"
 
   def deriveNameFromInputPath[T <: Project](inputPath: String, workspace: WorkspaceManager[T]): String = {
