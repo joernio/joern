@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory
 import ujson.{Arr, Obj, Str, Value}
 
 import scala.collection.mutable
-import scala.util.matching.Regex
 import scala.util.{Success, Try}
 
 object Domain {
@@ -97,7 +96,10 @@ object Domain {
 
   sealed abstract class PhpStmt extends PhpNode
 
-  final case class PhpEchoStmt(exprs: Seq[PhpExpr], attributes: PhpAttributes) extends PhpStmt
+  final case class PhpEchoStmt(exprs: Seq[PhpExpr], attributes: PhpAttributes)                  extends PhpStmt
+  final case class PhpBreakStmt(num: Option[Int], attributes: PhpAttributes)                    extends PhpStmt
+  final case class PhpContinueStmt(num: Option[Int], attributes: PhpAttributes)                 extends PhpStmt
+  final case class PhpWhileStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
 
   final case class PhpMethodDecl(
     name: String,
@@ -271,6 +273,9 @@ object Domain {
       case "Stmt_Expression" => readExpr(json("expr"))
       case "Stmt_Function"   => readFunction(json)
       case "Stmt_InlineHTML" => readInlineHtml(json)
+      case "Stmt_Break"      => readBreak(json)
+      case "Stmt_Continue"   => readContinue(json)
+      case "Stmt_While"      => readWhile(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -281,6 +286,25 @@ object Domain {
     val attributes = PhpAttributes(json)
     val value      = PhpString.withQuotes(json("value").str, attributes)
     PhpEchoStmt(List(value), attributes)
+  }
+
+  private def readBreakContinueNum(json: Value): Option[Int] = {
+    Option.unless(json("num").isNull)(json("num")("value").toString).flatMap(_.toIntOption)
+  }
+  private def readBreak(json: Value): PhpBreakStmt = {
+    val num = readBreakContinueNum(json)
+    PhpBreakStmt(num, PhpAttributes(json))
+  }
+
+  private def readContinue(json: Value): PhpContinueStmt = {
+    val num = readBreakContinueNum(json)
+    PhpContinueStmt(num, PhpAttributes(json))
+  }
+
+  private def readWhile(json: Value): PhpWhileStmt = {
+    val cond  = readExpr(json("cond"))
+    val stmts = json("stmts").arr.toList.map(readStmt)
+    PhpWhileStmt(cond, stmts, PhpAttributes(json))
   }
 
   private def readExpr(json: Value): PhpExpr = {
