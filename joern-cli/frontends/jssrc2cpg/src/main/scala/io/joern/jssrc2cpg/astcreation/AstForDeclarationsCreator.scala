@@ -85,13 +85,10 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       .map { d =>
         val nodeInfo = createBabelNodeInfo(d)
         val ast = nodeInfo.node match {
-          case FunctionDeclaration =>
+          case FunctionDeclaration | FunctionExpression | ArrowFunctionExpression =>
             astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-          case FunctionExpression =>
-            astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-          case ArrowFunctionExpression =>
-            astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-          case _ => astForNode(d)
+          case _ =>
+            astForNode(d)
         }
         val defaultName = ast.nodes.collectFirst {
           case id: IdentifierBase =>
@@ -309,13 +306,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val init = Try(createBabelNodeInfo(declarator("init"))).toOption
 
     val typeFullName = init match {
-      case Some(f: BabelNodeInfo) if f.node == FunctionExpression =>
-        val (_, methodFullName) = calcMethodNameAndFullName(f)
-        methodFullName
-      case Some(f: BabelNodeInfo) if f.node == FunctionDeclaration =>
-        val (_, methodFullName) = calcMethodNameAndFullName(f)
-        methodFullName
-      case Some(f: BabelNodeInfo) if f.node == ArrowFunctionExpression =>
+      case Some(
+            f @ BabelNodeInfo(_ @FunctionExpression | FunctionDeclaration | ArrowFunctionExpression, _, _, _, _, _, _)
+          ) =>
         val (_, methodFullName) = calcMethodNameAndFullName(f)
         methodFullName
       case _ => init.map(typeFor).getOrElse(Defines.ANY.label)
@@ -337,9 +330,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       }
       val nodeInfo = createBabelNodeInfo(id.json)
       nodeInfo.node match {
-        case ObjectPattern =>
-          astForDeconstruction(nodeInfo, sourceAst)
-        case ArrayPattern =>
+        case ObjectPattern | ArrayPattern =>
           astForDeconstruction(nodeInfo, sourceAst)
         case _ =>
           val destAst = astForNode(id.json)
@@ -445,10 +436,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val lhsElement = element.json("left")
     val nodeInfo   = createBabelNodeInfo(lhsElement)
     val lhsAst = nodeInfo.node match {
-      case ObjectPattern =>
-        val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        astForDeconstruction(nodeInfo, sourceAst)
-      case ArrayPattern =>
+      case ObjectPattern | ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
         astForDeconstruction(nodeInfo, sourceAst)
       case _ => astForNode(lhsElement)
@@ -503,10 +491,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val lhsElement = element.json("left")
     val nodeInfo   = createBabelNodeInfo(lhsElement)
     val lhsAst = nodeInfo.node match {
-      case ObjectPattern =>
-        val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        astForDeconstruction(nodeInfo, sourceAst)
-      case ArrayPattern =>
+      case ObjectPattern | ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
         astForDeconstruction(nodeInfo, sourceAst)
       case _ => astForNode(lhsElement)

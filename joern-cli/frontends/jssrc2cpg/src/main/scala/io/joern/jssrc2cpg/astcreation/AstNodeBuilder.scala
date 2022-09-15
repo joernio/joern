@@ -243,13 +243,6 @@ trait AstNodeBuilder { this: AstCreator =>
     case _                => ""
   }
 
-  protected def nameOf(node: NewNode): String = node match {
-    case node: NewCall            => node.name
-    case node: NewIdentifier      => node.name
-    case node: NewFieldIdentifier => node.canonicalName
-    case _                        => codeOf(node)
-  }
-
   protected def createIndexAccessCallAst(
     baseNode: NewNode,
     partNode: NewNode,
