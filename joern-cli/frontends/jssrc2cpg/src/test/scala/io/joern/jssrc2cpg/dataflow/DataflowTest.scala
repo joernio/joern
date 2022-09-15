@@ -510,6 +510,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
       Set(List(("f(this, x, y)", 2), ("g(x, y)", 3)))
   }
 
+
   "Flow from non-static member to sink" in {
     val cpg: Cpg = code("""
         |class Foo {
@@ -542,6 +543,16 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     sink.size shouldBe 1
     source.size shouldBe 1
     sink.reachableBy(source).size shouldBe 1
+  }
+
+  "Flow from receiver to closure parameters" in {
+    val cpg: Cpg = code("""
+        |foo.bar( (x,y) => { sink1(x); sink2(y); } )
+        |""".stripMargin)
+
+    val sink = cpg.call("sink1").argument(1).l
+    val src  = cpg.identifier.name("foo").l
+    sink.reachableBy(src).size shouldBe 1
   }
 
 }
