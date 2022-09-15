@@ -1,16 +1,16 @@
 package io.joern.console.cpgcreation
 
 import better.files.File
-import io.joern.console.{ConsoleException, FrontendConfig}
+import io.joern.console.workspacehandling.Project
+import io.joern.console.{ConsoleException, FrontendConfig, Reporting}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.joern.console.workspacehandling.Project
 import overflowdb.traversal.help.Table
 
 import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
 
-class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
+class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Reporting {
   import io.joern.console.Console._
 
   private val config             = console.config
