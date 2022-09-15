@@ -84,12 +84,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     safeObj(declaration.json, key)
       .map { d =>
         val nodeInfo = createBabelNodeInfo(d)
-        val ast = nodeInfo.node match {
-          case FunctionDeclaration | FunctionExpression | ArrowFunctionExpression =>
-            astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-          case _ =>
-            astForNode(d)
-        }
+        val ast      = astForNodeWithFunctionReferenceAndCall(d)
         val defaultName = ast.nodes.collectFirst {
           case id: IdentifierBase =>
             // we will have the Identifier in the assignment call generated for a function (see above)
@@ -307,9 +302,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val init = Try(createBabelNodeInfo(declarator("init"))).toOption
 
     val typeFullName = init match {
-      case Some(
-            f @ BabelNodeInfo(_ @FunctionExpression | FunctionDeclaration | ArrowFunctionExpression, _, _, _, _, _, _)
-          ) =>
+      case Some(f @ BabelNodeInfo(_: FunctionLike, _, _, _, _, _, _)) =>
         val (_, methodFullName) = calcMethodNameAndFullName(f)
         methodFullName
       case _ => init.map(typeFor).getOrElse(Defines.ANY.label)
