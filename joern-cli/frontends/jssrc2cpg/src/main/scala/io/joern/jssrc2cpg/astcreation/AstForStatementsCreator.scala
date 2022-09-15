@@ -40,14 +40,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   protected def createBlockStatementAsts(json: Value): List[Ast] = {
     val blockStmts = sortBlockStatements(json.arr.map(createBabelNodeInfo).toList)
-    val blockAsts = blockStmts.map { nodeInfo =>
-      nodeInfo.node match {
-        case FunctionDeclaration | FunctionExpression | ArrowFunctionExpression =>
-          astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
-        case _ =>
-          astForNode(nodeInfo.json)
-      }
-    }
+    val blockAsts  = blockStmts.map(stmt => astForNodeWithFunctionReferenceAndCall(stmt.json))
     setIndices(blockAsts)
     blockAsts
   }

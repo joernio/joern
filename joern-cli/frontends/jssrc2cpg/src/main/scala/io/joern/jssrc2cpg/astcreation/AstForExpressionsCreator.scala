@@ -467,16 +467,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           val ast     = astForNodeWithFunctionReference(nodeInfo.json("value"))
           (keyNode, ast)
         case SpreadElement =>
-          val spreadElementNodeInfo = createBabelNodeInfo(nodeInfo.json("argument"))
-          val ast = spreadElementNodeInfo.node match {
-            case FunctionDeclaration | FunctionExpression | ArrowFunctionExpression =>
-              astForFunctionDeclaration(
-                spreadElementNodeInfo,
-                shouldCreateFunctionReference = true,
-                shouldCreateAssignmentCall = true
-              )
-            case _ => astForNode(spreadElementNodeInfo.json)
-          }
+          val ast = astForNodeWithFunctionReferenceAndCall(nodeInfo.json("argument"))
           val defaultName = ast.root.collect {
             case id: IdentifierBase => id.name.replace("...", "")
             case clazz: TypeRefBase => clazz.code.stripPrefix("class ")

@@ -29,13 +29,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     paramNodeInfo: BabelNodeInfo,
     paramName: String
   ): Ast = {
-    val restNodeInfo = createBabelNodeInfo(elementNodeInfo.json("argument"))
-    val ast = restNodeInfo.node match {
-      case FunctionDeclaration | FunctionExpression | ArrowFunctionExpression =>
-        astForFunctionDeclaration(restNodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-      case _ =>
-        astForNode(restNodeInfo.json)
-    }
+    val ast = astForNodeWithFunctionReferenceAndCall(elementNodeInfo.json("argument"))
     val defaultName = ast.nodes.collectFirst {
       case id: IdentifierBase => id.name.replace("...", "")
       case clazz: TypeRefBase => clazz.code.stripPrefix("class ")

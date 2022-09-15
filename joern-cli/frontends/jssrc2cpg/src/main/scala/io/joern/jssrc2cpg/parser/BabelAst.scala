@@ -20,12 +20,14 @@ object BabelAst {
 
   sealed trait TSType extends BabelNode
 
+  sealed trait FunctionLike extends BabelNode
+
   object AnyTypeAnnotation               extends FlowType
   object ArgumentPlaceholder             extends BabelNode
   object ArrayExpression                 extends BabelNode
   object ArrayPattern                    extends BabelNode
   object ArrayTypeAnnotation             extends FlowType
-  object ArrowFunctionExpression         extends BabelNode
+  object ArrowFunctionExpression         extends FunctionLike
   object AssignmentExpression            extends BabelNode
   object AssignmentPattern               extends BabelNode
   object AwaitExpression                 extends BabelNode
@@ -91,8 +93,8 @@ object BabelAst {
   object ForInStatement                  extends BabelNode
   object ForOfStatement                  extends BabelNode
   object ForStatement                    extends BabelNode
-  object FunctionDeclaration             extends BabelNode
-  object FunctionExpression              extends BabelNode
+  object FunctionDeclaration             extends FunctionLike
+  object FunctionExpression              extends FunctionLike
   object FunctionTypeAnnotation          extends FlowType
   object FunctionTypeParam               extends BabelNode
   object GenericTypeAnnotation           extends FlowType
