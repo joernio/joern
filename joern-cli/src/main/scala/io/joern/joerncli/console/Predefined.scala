@@ -40,19 +40,6 @@ object Predefined {
       """.stripMargin +
       dynamicPredef()
 
-  val forServer: String =
-    shared +
-      """
-        |import io.joern.joerncli.console.Joern._
-        |def script(x: String) : Any = console.runScript(x, Map(), cpg)
-        |println("in forServer...")
-        |val stdOutFile = new java.io.FileOutputStream("stdout.txt")
-        |stdOutFile.write("i was here".getBytes("UTF-8"))
-        |stdOutFile.flush()
-        |
-      """.stripMargin +
-      dynamicPredef()
-
   def dynamicPredef(): String = {
     Run.codeForRunCommand() +
       Help.codeForHelpCommand(classOf[io.joern.joerncli.console.JoernConsole])
