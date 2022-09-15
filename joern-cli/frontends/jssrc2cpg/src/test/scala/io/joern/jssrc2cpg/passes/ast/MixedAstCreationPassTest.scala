@@ -497,7 +497,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       localSource.typeFullName shouldBe "code.js::program:source"
       localL.name shouldBe "l"
 
-      val List(callToSource) = programBlock.astChildren.isCall.codeExact("l = source(3)").l
+      val List(callToSource) = programBlock.astChildren.isCall.codeExact("var l = source(3)").l
 
       val List(identifierL) = callToSource.astChildren.isIdentifier.l
       identifierL.name shouldBe "l"

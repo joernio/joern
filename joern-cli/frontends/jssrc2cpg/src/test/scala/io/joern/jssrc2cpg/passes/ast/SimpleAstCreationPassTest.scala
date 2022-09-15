@@ -23,9 +23,9 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     "have correct structure for multiple declarators in one place" in AstFixture("let x = 1, y = 2, z = 3;") { cpg =>
       val List(xAssignment, yAssignment, zAssignment) = cpg.call.l.sortBy(_.code)
-      xAssignment.code shouldBe "x = 1"
-      yAssignment.code shouldBe "y = 2"
-      zAssignment.code shouldBe "z = 3"
+      xAssignment.code shouldBe "let x = 1"
+      yAssignment.code shouldBe "let y = 2"
+      zAssignment.code shouldBe "let z = 3"
 
       val List(program) = cpg.method.nameExact(":program").l
       program.ast.isCall.l.sortBy(_.code) shouldBe cpg.call.l.sortBy(_.code)
@@ -35,7 +35,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(reqCall, barCall, xAssignment) = cpg.call.l.sortBy(_.code)
       reqCall.code shouldBe "require(\"foo\")"
       barCall.code shouldBe "require(\"foo\").bar"
-      xAssignment.code shouldBe "x = require(\"foo\").bar"
+      xAssignment.code shouldBe "var x = require(\"foo\").bar"
 
       val List(program) = cpg.method.nameExact(":program").l
       program.ast.isCall.l.sortBy(_.code) shouldBe cpg.call.l.sortBy(_.code)
@@ -697,8 +697,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       secondLocal.name shouldBe "local2"
 
       val List(firstAssigment, secondAssigment) = block.astChildren.isCall.l
-      firstAssigment.code shouldBe "local1 = x"
-      secondAssigment.code shouldBe "local2 = y"
+      firstAssigment.code shouldBe "var local1 = x"
+      secondAssigment.code shouldBe "var local2 = y"
 
       val List(outLocal1, outRight1) = firstAssigment.astChildren.isIdentifier.l
       outLocal1.name shouldBe "local1"
