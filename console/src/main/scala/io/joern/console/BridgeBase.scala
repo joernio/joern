@@ -5,9 +5,10 @@ import dotty.tools.Settings
 import dotty.tools.repl.State
 import dotty.tools.dotc.core.Contexts.{Context, ctx}
 import dotty.tools.io.{ClassPath, Directory, PlainDirectory}
-import dotty.tools.scripting.{Util, ScriptingDriver}
+import dotty.tools.scripting.{ScriptingDriver, Util}
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
+import io.joern.x2cpg.utils.dependency.DependencyResolver
 
 import java.io.File as JFile
 import java.io.PrintStream
@@ -36,6 +37,7 @@ case class Config(
   forInputPath: Option[String] = None,
   frontendArgs: Array[String] = Array.empty,
   verbose: Boolean = false,
+  dependencies: Seq[String] = Seq.empty
 )
 
 /** Base class for Ammonite Bridge, split by topic into multiple self types.
@@ -66,6 +68,11 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
         .valueName("script1.sc,script2.sc,...")
         .action((x, c) => c.copy(additionalImports = x.toList))
         .text("import additional additional script(s): will execute and keep console open")
+
+      opt[Seq[String]]("dependency")
+        .valueName("com.michaelpollmeier:versionsort:1.0.7,...")
+        .action((x, c) => c.copy(dependencies = x.toList))
+        .text("resolve dependency (and it's transitive dependencies) for given maven coordinate(s)")
 
       opt[String]("command")
         .action((x, c) => c.copy(command = Some(x)))
@@ -164,6 +171,10 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
     } else if (config.rmPlugin.isDefined) {
       new PluginManager(InstallConfig().rootPath).rm(config.rmPlugin.get)
     } else {
+      // TODO invoke Dependencies.resolve, flatten
+//      val dependencies = config.dependencies.flatMap(Dependencies.resolve)
+      // TODO pass to script/repl/server below
+
       config.scriptFile match {
         case None =>
           if (config.server) {
@@ -206,6 +217,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
   protected def onExitCode: String
 }
 
+// TODO rename - why is this called `ScriptExecution` if it really implements scripts and repl?
 trait ScriptExecution { this: BridgeBase =>
 
   protected def startInteractiveShell(config: Config) = {
