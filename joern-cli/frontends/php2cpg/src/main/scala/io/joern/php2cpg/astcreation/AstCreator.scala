@@ -51,6 +51,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case breakStmt: PhpBreakStmt   => astForBreakStmt(breakStmt)
       case contStmt: PhpContinueStmt => astForContinueStmt(contStmt)
       case whileStmt: PhpWhileStmt   => astForWhileStmt(whileStmt)
+      case ifStmt: PhpIfStmt         => astForIfStmt(ifStmt)
 
       case unhandled =>
         logger.warn(s"Unhandled stmt: $unhandled")
@@ -162,6 +163,29 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     controlStructureAst(whileNode, Some(condition), List(body))
   }
+
+  private def astForIfStmt(ifStmt: PhpIfStmt): Ast = {
+    val condition = astForExpr(ifStmt.cond)
+
+    val thenAst = stmtBlockAst(ifStmt.stmts, line(ifStmt))
+
+    val elseAst = ifStmt.elseIfs match {
+      case Nil => ifStmt.elseStmt.map(els => stmtBlockAst(els.stmts, line(els))).toList
+
+      case elseIf :: rest =>
+        val newIfStmt = PhpIfStmt(elseIf.cond, elseIf.stmts, rest, ifStmt.elseStmt, elseIf.attributes)
+        astForIfStmt(newIfStmt) :: Nil
+    }
+
+    val conditionCode = rootCode(condition)
+    val ifNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.IF)
+      .code(s"if ($conditionCode)")
+      .lineNumber(line(ifStmt))
+
+    controlStructureAst(ifNode, Some(condition), thenAst :: elseAst)
+  }
+
 
   private def astForFunctionCall(call: PhpFuncCall): Ast = {
     val name = call.name match {

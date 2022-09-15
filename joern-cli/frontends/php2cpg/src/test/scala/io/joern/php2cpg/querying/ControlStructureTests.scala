@@ -8,6 +8,33 @@ import io.shiftleft.semanticcpg.language._
 
 class ControlStructureTests extends PhpCode2CpgFixture {
 
+  "if statements" should {
+    "work without a body, an elseif or an else" in {
+      val cpg = code("<?php\nif ($a) {}")
+
+      val ifAst = cpg.controlStructure.l match {
+        case List(ast) =>
+          ast.controlStructureType shouldBe ControlStructureTypes.IF
+          ast
+
+        case result => fail(s"Expected single control structure but found $result")
+      }
+
+      ifAst.condition.l match {
+        case List(aIdent: Identifier) =>
+          aIdent.name shouldBe "a"
+
+        case result => fail(s"Expected identifier argument but found $result")
+      }
+
+      ifAst.astChildren.l match {
+        case List(_, thenBlock: Block) =>
+          thenBlock.astChildren.size shouldBe 0
+        case result => fail(s"Expected only then body but found $result")
+      }
+    }
+  }
+
   "break statements" should {
     "support the default depth 1 break" in {
       val cpg = code("<?php\nbreak;")
