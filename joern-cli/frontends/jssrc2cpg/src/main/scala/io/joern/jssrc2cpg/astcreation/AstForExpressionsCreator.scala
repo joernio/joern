@@ -32,47 +32,40 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   private def handleCallNodeArgs(
     callExpr: BabelNodeInfo,
-    receiverAst: Ast,
+    receiverNode: NewNode,
     baseNode: NewNode,
-    callName: Option[String] = None
+    callName: String
   ): Ast = {
-    val name = callName.getOrElse {
-      nameOf(receiverAst.nodes.head) match {
-        case Operators.fieldAccess => nameOf(receiverAst.nodes(2))
-        case _                     => nameOf(receiverAst.nodes.head)
-      }
-    }
-
     val args = astForNodes(callExpr.json("arguments").arr.toList)
     val callNode =
       createCallNode(
         callExpr.code,
-        name,
+        callName,
         DispatchTypes.DYNAMIC_DISPATCH,
         callExpr.lineNumber,
         callExpr.columnNumber,
         fullName = Some("")
       )
-    createCallAst(callNode, args, Some(Ast(receiverAst.nodes.head)), Some(Ast(baseNode)))
+    createCallAst(callNode, args, Some(Ast(receiverNode)), Some(Ast(baseNode)))
   }
 
   protected def astForCallExpression(callExpr: BabelNodeInfo): Ast = {
     val callee     = createBabelNodeInfo(callExpr.json("callee"))
     val calleeCode = callee.code
-    val callNode = if (GlobalBuiltins.builtins.contains(calleeCode)) {
+    if (GlobalBuiltins.builtins.contains(calleeCode)) {
       createBuiltinStaticCall(callExpr, callee, calleeCode)
     } else {
-      val (receiverAst, baseNode) = callee.node match {
+      val (receiverAst, baseNode, callName) = callee.node match {
         case MemberExpression =>
-          // "this" argument is coming from source.
-          val base = createBabelNodeInfo(callee.json("object"))
+          val base   = createBabelNodeInfo(callee.json("object"))
+          val member = createBabelNodeInfo(callee.json("property"))
           base.node match {
             case Identifier =>
               val receiverAst = astForNodeWithFunctionReference(callee.json)
               Ast.storeInDiffGraph(receiverAst, diffGraph)
               val baseNode = createIdentifierNode(base.code, base)
               scope.addVariableReference(base.code, baseNode)
-              (receiverAst, baseNode)
+              (receiverAst, baseNode, member.code)
             case _ =>
               val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
               val baseTmpNode = createIdentifierNode(tmpVarName, base)
@@ -82,7 +75,6 @@ trait AstForExpressionsCreator { this: AstCreator =>
               val code = s"(${codeOf(baseTmpNode)} = ${base.code})"
               val tmpAssignmentAst =
                 createAssignmentCallAst(baseTmpNode, baseAst.nodes.head, code, base.lineNumber, base.columnNumber)
-              val member     = createBabelNodeInfo(callee.json("property"))
               val memberNode = createFieldIdentifierNode(member.code, member.lineNumber, member.columnNumber)
               val fieldAccessAst =
                 createFieldAccessCallAst(
@@ -97,18 +89,17 @@ trait AstForExpressionsCreator { this: AstCreator =>
               Ast.storeInDiffGraph(tmpAssignmentAst, diffGraph)
               Ast.storeInDiffGraph(fieldAccessAst, diffGraph)
 
-              (fieldAccessAst, thisTmpNode)
+              (fieldAccessAst, thisTmpNode, member.code)
           }
         case _ =>
           val receiverAst = astForNodeWithFunctionReference(callee.json)
           Ast.storeInDiffGraph(receiverAst, diffGraph)
           val thisNode = createIdentifierNode("this", callee)
           scope.addVariableReference(thisNode.name, thisNode)
-          (receiverAst, thisNode)
+          (receiverAst, thisNode, callee.code)
       }
-      handleCallNodeArgs(callExpr, receiverAst, baseNode)
+      handleCallNodeArgs(callExpr, receiverAst.nodes.head, baseNode, callName)
     }
-    callNode
   }
 
   protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast =
@@ -152,8 +143,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     Ast.storeInDiffGraph(receiverNode, diffGraph)
 
     // TODO: place "<operator>.new" into the schema
-    val callNode =
-      handleCallNodeArgs(newExpr, receiverNode, tmpAllocNode2, callName = Some("<operator>.new"))
+    val callNode = handleCallNodeArgs(newExpr, receiverNode.nodes.head, tmpAllocNode2, "<operator>.new")
 
     val tmpAllocReturnNode = Ast(createIdentifierNode(tmpAllocName, newExpr))
 
@@ -479,19 +469,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         case SpreadElement =>
           val spreadElementNodeInfo = createBabelNodeInfo(nodeInfo.json("argument"))
           val ast = spreadElementNodeInfo.node match {
-            case FunctionDeclaration =>
-              astForFunctionDeclaration(
-                spreadElementNodeInfo,
-                shouldCreateFunctionReference = true,
-                shouldCreateAssignmentCall = true
-              )
-            case FunctionExpression =>
-              astForFunctionDeclaration(
-                spreadElementNodeInfo,
-                shouldCreateFunctionReference = true,
-                shouldCreateAssignmentCall = true
-              )
-            case ArrowFunctionExpression =>
+            case FunctionDeclaration | FunctionExpression | ArrowFunctionExpression =>
               astForFunctionDeclaration(
                 spreadElementNodeInfo,
                 shouldCreateFunctionReference = true,
