@@ -12,12 +12,23 @@ class TsAstCreationPassTest extends AbstractPassTest {
     "have correct structure for casts" in AstFixture(
       """
         | const x = "foo" as string;
+        | var y = 1 as int;
+        | let z = true as boolean;
         |""".stripMargin,
       "code.ts"
     ) { cpg =>
-      inside(cpg.call(Operators.cast).l) { case List(call) =>
-        call.argument(1).code shouldBe "string"
-        call.argument(2).code shouldBe "\"foo\""
+      cpg.call(Operators.assignment).code.l shouldBe List(
+        "const x = \"foo\" as string",
+        "var y = 1 as int",
+        "let z = true as boolean"
+      )
+      inside(cpg.call(Operators.cast).l) { case List(callX, callY, callZ) =>
+        callX.argument(1).code shouldBe "string"
+        callX.argument(2).code shouldBe "\"foo\""
+        callY.argument(1).code shouldBe "int"
+        callY.argument(2).code shouldBe "1"
+        callZ.argument(1).code shouldBe "boolean"
+        callZ.argument(2).code shouldBe "true"
       }
     }
 
