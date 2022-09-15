@@ -26,11 +26,8 @@ object DefaultLoader extends WorkspaceLoader[Project] {
   * @param path
   *   path to to workspace.
   */
-class WorkspaceManager[ProjectType <: Project](
-  path: String,
-  loader: WorkspaceLoader[ProjectType] = DefaultLoader,
-  val reportOutStream: OutputStream = System.err
-) extends Reporting {
+class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLoader[ProjectType] = DefaultLoader)
+    extends Reporting {
 
   def getPath: String = path
 
