@@ -87,8 +87,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
     "be correct for outer method of anonymous class declaration" in CfgFixture("var a = class {}") { implicit cpg =>
       succOf(":program") shouldBe expected(("a", AlwaysEdge))
       succOf("a") shouldBe expected(("class _anon_cdecl", AlwaysEdge))
-      succOf("class _anon_cdecl") shouldBe expected(("a = class {}", AlwaysEdge))
-      succOf("a = class {}") shouldBe expected(("RET", AlwaysEdge))
+      succOf("class _anon_cdecl") shouldBe expected(("var a = class {}", AlwaysEdge))
+      succOf("var a = class {}") shouldBe expected(("RET", AlwaysEdge))
     }
   }
 

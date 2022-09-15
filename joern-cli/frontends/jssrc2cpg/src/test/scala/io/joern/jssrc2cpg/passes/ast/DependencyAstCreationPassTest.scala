@@ -269,8 +269,8 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         "exports.name7 = name7",
         "exports.name8 = name8",
         "exports.name9 = name9",
-        "name10 = \"10\"",
-        "name11 = \"11\""
+        "let name10 = \"10\"",
+        "let name11 = \"11\""
       )
     }
 
@@ -285,8 +285,8 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       cpg.local.code.l shouldBe List("foo", "bar", "func")
       cpg.typeDecl.name.l should contain allElementsOf List("func", "ClassA", "ClassA<meta>")
       cpg.call(Operators.assignment).code.l shouldBe List(
-        "foo = 1",
-        "bar = 2",
+        "var foo = 1",
+        "var bar = 2",
         "exports.foo = foo",
         "exports.bar = bar",
         "function func = function func(param) {}",

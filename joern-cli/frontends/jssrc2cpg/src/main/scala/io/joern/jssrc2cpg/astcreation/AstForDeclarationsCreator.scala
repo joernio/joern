@@ -271,12 +271,13 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   }
 
   protected def astForVariableDeclaration(declaration: BabelNodeInfo): Ast = {
-    val scopeType = if (declaration.json("kind").str == "let") {
+    val kind = declaration.json("kind").str
+    val scopeType = if (kind == "let") {
       BlockScope
     } else {
       MethodScope
     }
-    val declAsts = declaration.json("declarations").arr.toList.map(astForVariableDeclarator(_, scopeType))
+    val declAsts = declaration.json("declarations").arr.toList.map(astForVariableDeclarator(_, scopeType, kind))
     declAsts match {
       case head :: tail =>
         setIndices(declAsts)
@@ -301,7 +302,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     names.foreach(name => diffGraph.addNode(createDependencyNode(name, groupId, REQUIRE_KEYWORD)))
   }
 
-  private def astForVariableDeclarator(declarator: Value, scopeType: ScopeType): Ast = {
+  private def astForVariableDeclarator(declarator: Value, scopeType: ScopeType, kind: String): Ast = {
     val id   = createBabelNodeInfo(declarator("id"))
     val init = Try(createBabelNodeInfo(declarator("init"))).toOption
 
@@ -338,7 +339,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
             createAssignmentCallAst(
               destAst.nodes.head,
               sourceAst.nodes.head,
-              code(declarator),
+              s"$kind ${code(declarator)}",
               line = line(declarator),
               column = column(declarator)
             )
