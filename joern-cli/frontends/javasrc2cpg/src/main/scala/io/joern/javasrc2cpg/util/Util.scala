@@ -3,7 +3,7 @@ package io.joern.javasrc2cpg.util
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
 import com.github.javaparser.resolution.types.ResolvedReferenceType
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier}
 
@@ -31,6 +31,10 @@ object Util {
 
   def composeMethodLikeSignature(returnType: String, parameterTypes: collection.Seq[String]): String = {
     s"$returnType(${parameterTypes.mkString(",")})"
+  }
+
+  def composeUnresolvedSignature(paramCount: Int): String = {
+    s"${Defines.UnresolvedSignature}($paramCount)"
   }
 
   def rootCode(ast: Seq[Ast]): String = {
