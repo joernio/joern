@@ -22,7 +22,8 @@ class Console[T <: Project](
   executor: AmmoniteExecutor,
   loader: WorkspaceLoader[T],
   baseDir: File = File.currentWorkingDirectory
-) extends ScriptManager(executor) with Reporting {
+) extends ScriptManager(executor)
+    with Reporting {
 
   import Console._
 
@@ -476,7 +477,7 @@ class Console[T <: Project](
 }
 
 object Console {
-  val nameOfLegacyCpgInProject     = "cpg.bin.zip"
+  val nameOfLegacyCpgInProject = "cpg.bin.zip"
 
   def deriveNameFromInputPath[T <: Project](inputPath: String, workspace: WorkspaceManager[T]): String = {
     val name    = File(inputPath).name

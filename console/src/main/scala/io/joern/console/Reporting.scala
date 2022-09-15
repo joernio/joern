@@ -13,13 +13,13 @@ trait Reporting {
   }
 }
 
-/** A dirty hack to capture the reported output for the server-mode.
- * Context: server mode is a bit tricky, because the reporting happens inside the repl, but we want to retrieve it
- * from the context _outside_ the repl, and the two have separate classloaders.
- * There's probably a cleaner way, but for now this serves our needs.
- *
- * Note that this convolutes the output from concurrently-running jobs - so we should not run UserRunnables concurrently.
- *  */
+/** A dirty hack to capture the reported output for the server-mode. Context: server mode is a bit tricky, because the
+  * reporting happens inside the repl, but we want to retrieve it from the context _outside_ the repl, and the two have
+  * separate classloaders. There's probably a cleaner way, but for now this serves our needs.
+  *
+  * Note that this convolutes the output from concurrently-running jobs - so we should not run UserRunnables
+  * concurrently.
+  */
 object GlobalReporting {
   private var enabled = false
 
