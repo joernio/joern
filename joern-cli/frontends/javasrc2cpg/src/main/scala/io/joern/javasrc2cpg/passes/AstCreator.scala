@@ -2,151 +2,24 @@ package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.`type`.TypeParameter
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.body.{
-  AnnotationDeclaration,
-  BodyDeclaration,
-  CallableDeclaration,
-  ClassOrInterfaceDeclaration,
-  ConstructorDeclaration,
-  EnumConstantDeclaration,
-  FieldDeclaration,
-  InitializerDeclaration,
-  MethodDeclaration,
-  Parameter,
-  TypeDeclaration,
-  VariableDeclarator
-}
+import com.github.javaparser.ast.body.{AnnotationDeclaration, BodyDeclaration, CallableDeclaration, ClassOrInterfaceDeclaration, ConstructorDeclaration, EnumConstantDeclaration, FieldDeclaration, InitializerDeclaration, MethodDeclaration, Parameter, TypeDeclaration, VariableDeclarator}
 import com.github.javaparser.ast.expr.AssignExpr.Operator
-import com.github.javaparser.ast.expr.{
-  AnnotationExpr,
-  ArrayAccessExpr,
-  ArrayCreationExpr,
-  ArrayInitializerExpr,
-  AssignExpr,
-  BinaryExpr,
-  BooleanLiteralExpr,
-  CastExpr,
-  CharLiteralExpr,
-  ClassExpr,
-  ConditionalExpr,
-  DoubleLiteralExpr,
-  EnclosedExpr,
-  Expression,
-  FieldAccessExpr,
-  InstanceOfExpr,
-  IntegerLiteralExpr,
-  LambdaExpr,
-  LiteralExpr,
-  LongLiteralExpr,
-  MarkerAnnotationExpr,
-  MethodCallExpr,
-  NameExpr,
-  NormalAnnotationExpr,
-  NullLiteralExpr,
-  ObjectCreationExpr,
-  SingleMemberAnnotationExpr,
-  StringLiteralExpr,
-  SuperExpr,
-  TextBlockLiteralExpr,
-  ThisExpr,
-  UnaryExpr,
-  VariableDeclarationExpr
-}
+import com.github.javaparser.ast.expr.{AnnotationExpr, ArrayAccessExpr, ArrayCreationExpr, ArrayInitializerExpr, AssignExpr, BinaryExpr, BooleanLiteralExpr, CastExpr, CharLiteralExpr, ClassExpr, ConditionalExpr, DoubleLiteralExpr, EnclosedExpr, Expression, FieldAccessExpr, InstanceOfExpr, IntegerLiteralExpr, LambdaExpr, LiteralExpr, LongLiteralExpr, MarkerAnnotationExpr, MethodCallExpr, NameExpr, NormalAnnotationExpr, NullLiteralExpr, ObjectCreationExpr, SingleMemberAnnotationExpr, StringLiteralExpr, SuperExpr, TextBlockLiteralExpr, ThisExpr, UnaryExpr, VariableDeclarationExpr}
 import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
-import com.github.javaparser.ast.stmt.{
-  AssertStmt,
-  BlockStmt,
-  BreakStmt,
-  CatchClause,
-  ContinueStmt,
-  DoStmt,
-  EmptyStmt,
-  ExplicitConstructorInvocationStmt,
-  ExpressionStmt,
-  ForEachStmt,
-  ForStmt,
-  IfStmt,
-  LabeledStmt,
-  ReturnStmt,
-  Statement,
-  SwitchEntry,
-  SwitchStmt,
-  SynchronizedStmt,
-  ThrowStmt,
-  TryStmt,
-  WhileStmt
-}
+import com.github.javaparser.ast.stmt.{AssertStmt, BlockStmt, BreakStmt, CatchClause, ContinueStmt, DoStmt, EmptyStmt, ExplicitConstructorInvocationStmt, ExpressionStmt, ForEachStmt, ForStmt, IfStmt, LabeledStmt, ReturnStmt, Statement, SwitchEntry, SwitchStmt, SynchronizedStmt, ThrowStmt, TryStmt, WhileStmt}
 import com.github.javaparser.resolution.{SymbolResolver, UnsolvedSymbolException}
-import com.github.javaparser.resolution.declarations.{
-  ResolvedFieldDeclaration,
-  ResolvedMethodDeclaration,
-  ResolvedMethodLikeDeclaration,
-  ResolvedReferenceTypeDeclaration,
-  ResolvedTypeParameterDeclaration
-}
+import com.github.javaparser.resolution.declarations.{ResolvedFieldDeclaration, ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration, ResolvedReferenceTypeDeclaration, ResolvedTypeParameterDeclaration}
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import io.joern.x2cpg.utils.NodeBuilders.{
-  annotationLiteralNode,
-  callNode,
-  fieldIdentifierNode,
-  identifierNode,
-  modifierNode,
-  operatorCallNode
-}
+import io.joern.x2cpg.utils.NodeBuilders.{annotationLiteralNode, callNode, fieldIdentifierNode, identifierNode, modifierNode, operatorCallNode}
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
 import io.joern.javasrc2cpg.util.Scope.{ScopeTypes, WildcardImportName}
-import io.joern.javasrc2cpg.util.{
-  BindingTable,
-  BindingTableAdapterForJavaparser,
-  BindingTableAdapterForLambdas,
-  BindingTableEntry,
-  LambdaBindingInfo,
-  NameConstants,
-  NodeTypeInfo,
-  Scope,
-  TypeInfoCalculator
-}
+import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForJavaparser, BindingTableAdapterForLambdas, BindingTableEntry, LambdaBindingInfo, NameConstants, NodeTypeInfo, Scope, TypeInfoCalculator}
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
-import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, rootCode, rootType}
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  NodeTypes,
-  Operators
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewAnnotation,
-  NewAnnotationParameter,
-  NewAnnotationParameterAssign,
-  NewArrayInitializer,
-  NewBinding,
-  NewBlock,
-  NewCall,
-  NewClosureBinding,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewMethodReturn,
-  NewModifier,
-  NewNamespaceBlock,
-  NewNode,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
-}
+import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature, rootCode, rootType}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.TypeNodePass
@@ -962,6 +835,20 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
+  private def paramsToTypeList(parameterAsts: Seq[Ast]): Option[List[String]] = {
+    parameterAsts.map(rootType).foldLeft[Option[List[String]]](Some(Nil)) {
+      case (Some(acc), Some(value)) if value != TypeConstants.UnresolvedType => Some(acc :+ value)
+      case _ => None
+    }
+  }
+
+  private def composeSignature(maybeReturnType: Option[String], maybeParameterTypes: Option[List[String]], paramCount: Int) : String = {
+    (maybeReturnType, maybeParameterTypes) match {
+      case (Some(returnType), Some(paramTypes)) => composeMethodLikeSignature(returnType, paramTypes)
+      case _ => composeUnresolvedSignature(paramCount)
+    }
+  }
+
   private def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
 
     val expectedReturnType = Try(
@@ -970,15 +857,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val returnTypeFullName = expectedReturnType
       .map(typeInfoCalc.fullName)
       .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString, wildcardFallback = true))
-      .getOrElse(TypeConstants.UnresolvedType)
 
-    scopeStack.pushNewScope(MethodScope(ExpectedType(returnTypeFullName, expectedReturnType)))
+    scopeStack.pushNewScope(MethodScope(ExpectedType(returnTypeFullName.getOrElse(TypeConstants.UnresolvedType), expectedReturnType)))
 
     addTypeParametersToScope(methodDeclaration)
 
     val parameterAsts  = astsForParameterList(methodDeclaration.getParameters)
-    val parameterTypes = parameterAsts.map(rootType(_).getOrElse(TypeConstants.UnresolvedType))
-    val signature      = composeMethodLikeSignature(returnTypeFullName, parameterTypes)
+    val maybeParameterTypes = paramsToTypeList(parameterAsts)
+    val signature = composeSignature(returnTypeFullName, maybeParameterTypes, parameterAsts.size)
     val methodFullName =
       getMethodFullName(scopeStack.getEnclosingTypeDecl, methodDeclaration.getNameAsString, signature)
 
@@ -998,7 +884,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val bodyAst = astForMethodBody(methodDeclaration.getBody.toScala)
     val methodReturn =
-      methodReturnNode(returnTypeFullName, None, line(methodDeclaration.getType), column(methodDeclaration.getType))
+      methodReturnNode(returnTypeFullName.getOrElse(TypeConstants.UnresolvedType), None, line(methodDeclaration.getType), column (methodDeclaration.getType))
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
 
@@ -2231,10 +2117,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case Success(resolvedMethodLike) =>
         calcParameterTypes(resolvedMethodLike, ResolvedTypeParametersMap.empty())
       case _ =>
-        // Fall back to actual argument types instead of expected parameter types if the method
-        // could not be resolved. This could lead to methodFullName and signature mismatches between
-        // call nodes and the corresponding method nodes.
-        argumentAsts.map(arg => rootType(arg).getOrElse(TypeConstants.UnresolvedType))
+        argumentAsts.map(_ => TypeConstants.UnresolvedType)
     }
   }
 
@@ -2269,17 +2152,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeFullName = tryWithSafeStackOverflow(typeInfoCalc.fullName(expr.getType)).toOption.flatten
       .orElse(scopeStack.lookupVariableType(expr.getTypeAsString))
-      .orElse(expectedType.map(_.fullName))
-      .getOrElse(TypeConstants.UnresolvedType)
 
     val argumentTypes = argumentTypesForMethodLike(maybeResolvedExpr, argumentAsts)
 
-    val allocNode = operatorCallNode(Operators.alloc, expr.toString, Some(typeFullName), line(expr), column(expr))
-      .signature(composeMethodLikeSignature(typeFullName, Nil))
+    val signature = typeFullName.map(composeMethodLikeSignature(_, Nil)).getOrElse(composeUnresolvedSignature(0))
+    val allocNode = operatorCallNode(Operators.alloc, expr.toString, typeFullName, line(expr), column(expr))
+      .signature(signature)
 
     val initNode = callNode(
       NameConstants.Init,
-      Some(typeFullName),
+      typeFullName,
       TypeConstants.Void,
       DispatchTypes.STATIC_DISPATCH,
       argumentTypes,
@@ -2573,7 +2455,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     maybeResolvedLambdaType: Option[ResolvedType],
     maybeBoundMethod: Option[ResolvedMethodDeclaration],
     expectedTypeParamTypes: ResolvedTypeParametersMap
-  ): String = {
+  ): Option[String] = {
     val maybeBoundMethodReturnType = maybeBoundMethod.flatMap { boundMethod =>
       Try(boundMethod.getReturnType).collect {
         case returnType: ResolvedTypeVariable =>
@@ -2583,8 +2465,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       }.toOption
     }
 
-    val returnType = maybeBoundMethodReturnType.orElse(maybeResolvedLambdaType)
-    returnType.map(typeInfoCalc.fullName).getOrElse(TypeConstants.UnresolvedType)
+    maybeBoundMethodReturnType
+      .orElse(maybeResolvedLambdaType)
+      .map(typeInfoCalc.fullName)
   }
 
   def closureBinding(closureBindingId: String, originalName: String): NewClosureBinding = {
@@ -2619,21 +2502,21 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     localsForCaptured
   }
 
-  private def astForLambdaBody(body: Statement, localsForCapturedVars: Seq[NewLocal], returnType: String): Ast = {
+  private def astForLambdaBody(body: Statement, localsForCapturedVars: Seq[NewLocal], returnType: Option[String]): Ast = {
     body match {
       case block: BlockStmt => astForBlockStatement(block, prefixAsts = localsForCapturedVars.map(Ast(_)))
 
       case stmt =>
         val blockAst = Ast(NewBlock().lineNumber(line(body)))
-        val bodyAst = if (returnType == TypeConstants.Void) {
-          astsForStatement(stmt)
-        } else {
+        val bodyAst = if (!returnType.contains(TypeConstants.Void)) {
           val returnNode =
             NewReturn()
               .code(s"return ${body.toString}")
               .lineNumber(line(body))
           val returnArgs = astsForStatement(stmt)
           Seq(returnAst(returnNode, returnArgs))
+        } else {
+          astsForStatement(stmt)
         }
 
         blockAst
@@ -2642,11 +2525,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def createLambdaMethodNode(lambdaName: String, parameters: Seq[Ast], returnType: String): NewMethod = {
+  private def createLambdaMethodNode(lambdaName: String, parameters: Seq[Ast], returnType: Option[String]): NewMethod = {
     val enclosingTypeName =
       scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
-    val signature =
-      s"$returnType(${parameters.map(rootType).map(_.getOrElse(TypeConstants.UnresolvedType)).mkString(",")})"
+    val parameterTypes = paramsToTypeList(parameters)
+
+    val signature = composeSignature(returnType, parameterTypes, parameters.size)
     val lambdaFullName = composeMethodFullName(enclosingTypeName, lambdaName, signature)
 
     NewMethod()
@@ -2699,7 +2583,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val parameters = thisParam ++ parametersWithoutThis
 
     val lambdaMethodNode = createLambdaMethodNode(lambdaMethodName, parametersWithoutThis, returnType)
-    val returnNode       = methodReturnNode(returnType, None, line(expr), column(expr))
+    val returnNode       = methodReturnNode(returnType.getOrElse("<empty>"), None, line(expr), column(expr))
     val virtualModifier  = Some(modifierNode(ModifierTypes.VIRTUAL))
     val staticModifier   = Option.when(thisParam.isEmpty)(modifierNode(ModifierTypes.STATIC))
     val privateModifier  = Some(modifierNode(ModifierTypes.PRIVATE))

@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, MethodParameterIn}
@@ -368,8 +369,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
   "should handle unresolved calls with appropriate defaults" in {
     val List(call: Call) = cpg.typeDecl.name("Foo").ast.isCall.name("foo").l
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-    call.methodFullName shouldBe "test.Foo.foo:void(int)"
-    call.signature shouldBe "void(int)"
+    call.methodFullName shouldBe s"test.Foo.foo:${Defines.UnresolvedSignature}(1)"
+    call.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
     call.code shouldBe "foo(argc)"
   }
 

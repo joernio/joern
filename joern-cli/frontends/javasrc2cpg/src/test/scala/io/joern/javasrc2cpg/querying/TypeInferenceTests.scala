@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
@@ -141,14 +142,14 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
     "be used in calls" in {
       cpg.call.name("info").methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "a.Logger.info:void(java.lang.String,codepropertygraph.Unresolved)"
+          fullName shouldBe s"a.Logger.info:${Defines.UnresolvedSignature}(2)"
 
         case result => fail(s"Expected single call to info but got $result")
       }
 
       cpg.call.name("getProperty").methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "b.Environment.getProperty:codepropertygraph.Unresolved(java.lang.String)"
+          fullName shouldBe s"b.Environment.getProperty:${Defines.UnresolvedSignature}(1)"
 
         case result => fail(s"Expected single call to getProperty but got $result")
       }
@@ -184,8 +185,8 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
       }
 
       init.typeFullName shouldBe "void"
-      init.signature shouldBe "void(int)"
-      init.methodFullName shouldBe "a.b.c.Bar.<init>:void(int)"
+      init.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
+      init.methodFullName shouldBe s"a.b.c.Bar.<init>:${Defines.UnresolvedSignature}(1)"
 
       init.argument.size shouldBe 2
 
@@ -313,7 +314,7 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
     }
   }
 
-  "should find methodFullName for unresolved call with unresolved argument" in {
+  "not guess signature for call with unresolved argument" in {
     val call = cpg.method.name("test7").call.name("bar").l match {
       case call :: Nil => call
 
@@ -321,8 +322,8 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
     }
 
     call.typeFullName shouldBe "void"
-    call.signature shouldBe "void(d.Baz,int)"
-    call.methodFullName shouldBe "a.b.c.Bar.bar:void(d.Baz,int)"
+    call.signature shouldBe s"${Defines.UnresolvedSignature}(2)"
+    call.methodFullName shouldBe s"a.b.c.Bar.bar:${Defines.UnresolvedSignature}(2)"
 
     call.argument.l match {
       case List(obj: Identifier, arg1: Identifier, arg2: Literal) =>
