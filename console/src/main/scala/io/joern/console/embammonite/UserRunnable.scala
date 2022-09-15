@@ -1,5 +1,6 @@
 package io.joern.console.embammonite
 
+import io.joern.console.GlobalReporting
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.io.{BufferedReader, PrintWriter}
@@ -25,7 +26,8 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
         } else {
           sendQueryToAmmonite(job)
           val stdoutPair = stdOutUpToMarker()
-          val stdOutput  = stdoutPair.get
+          val stdOutput  = GlobalReporting.getAndClearGlobalStdOut() + stdoutPair.get
+
           val errOutput  = exhaustStderr()
           val result     = new QueryResult(stdOutput, errOutput, job.uuid)
           job.observer(result)

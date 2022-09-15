@@ -43,8 +43,12 @@ object Predefined {
   val forServer: String =
     shared +
       """
-        |val joernConsole = new io.joern.joerncli.console.JoernConsole(reportOutStream(System.err))
-        |import joernConsole._
+        |import io.joern.joerncli.console.Joern._
+        |def script(x: String) : Any = console.runScript(x, Map(), cpg)
+        |println("in forServer...")
+        |val stdOutFile = new java.io.FileOutputStream("stdout.txt")
+        |stdOutFile.write("i was here".getBytes("UTF-8"))
+        |stdOutFile.flush()
         |
       """.stripMargin +
       dynamicPredef()

@@ -2,19 +2,18 @@ package io.joern.console
 
 import better.files.Dsl._
 import better.files.File
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.joern.console.cpgcreation.ImportCode
 import io.joern.console.scripting.{AmmoniteExecutor, ScriptManager}
 import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceManager}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.Overlays
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import overflowdb.traversal.help.Doc
 
-import java.io.OutputStream
 import scala.sys.process.Process
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
@@ -22,8 +21,7 @@ import scala.util.{Failure, Success, Try}
 class Console[T <: Project](
   executor: AmmoniteExecutor,
   loader: WorkspaceLoader[T],
-  baseDir: File = File.currentWorkingDirectory,
-  val reportOutStream: OutputStream = System.err
+  baseDir: File = File.currentWorkingDirectory
 ) extends ScriptManager(executor) with Reporting {
 
   import Console._
