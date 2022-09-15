@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Id
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
+import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
   "calls to instance methods in same class" should {
