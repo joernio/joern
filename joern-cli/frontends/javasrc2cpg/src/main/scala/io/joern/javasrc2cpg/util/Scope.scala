@@ -15,7 +15,8 @@ case class NodeTypeInfo(
   name: String,
   typeFullName: String,
   isField: Boolean = false,
-  isStatic: Boolean = false
+  isStatic: Boolean = false,
+  isImport: Boolean = false
 )
 
 class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {

@@ -2,24 +2,157 @@ package io.joern.javasrc2cpg.passes
 
 import com.github.javaparser.ast.`type`.TypeParameter
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.body.{AnnotationDeclaration, BodyDeclaration, CallableDeclaration, ClassOrInterfaceDeclaration, ConstructorDeclaration, EnumConstantDeclaration, FieldDeclaration, InitializerDeclaration, MethodDeclaration, Parameter, TypeDeclaration, VariableDeclarator}
+import com.github.javaparser.ast.body.{
+  AnnotationDeclaration,
+  BodyDeclaration,
+  CallableDeclaration,
+  ClassOrInterfaceDeclaration,
+  ConstructorDeclaration,
+  EnumConstantDeclaration,
+  FieldDeclaration,
+  InitializerDeclaration,
+  MethodDeclaration,
+  Parameter,
+  TypeDeclaration,
+  VariableDeclarator
+}
 import com.github.javaparser.ast.expr.AssignExpr.Operator
-import com.github.javaparser.ast.expr.{AnnotationExpr, ArrayAccessExpr, ArrayCreationExpr, ArrayInitializerExpr, AssignExpr, BinaryExpr, BooleanLiteralExpr, CastExpr, CharLiteralExpr, ClassExpr, ConditionalExpr, DoubleLiteralExpr, EnclosedExpr, Expression, FieldAccessExpr, InstanceOfExpr, IntegerLiteralExpr, LambdaExpr, LiteralExpr, LongLiteralExpr, MarkerAnnotationExpr, MethodCallExpr, NameExpr, NormalAnnotationExpr, NullLiteralExpr, ObjectCreationExpr, SingleMemberAnnotationExpr, StringLiteralExpr, SuperExpr, TextBlockLiteralExpr, ThisExpr, UnaryExpr, VariableDeclarationExpr}
+import com.github.javaparser.ast.expr.{
+  AnnotationExpr,
+  ArrayAccessExpr,
+  ArrayCreationExpr,
+  ArrayInitializerExpr,
+  AssignExpr,
+  BinaryExpr,
+  BooleanLiteralExpr,
+  CastExpr,
+  CharLiteralExpr,
+  ClassExpr,
+  ConditionalExpr,
+  DoubleLiteralExpr,
+  EnclosedExpr,
+  Expression,
+  FieldAccessExpr,
+  InstanceOfExpr,
+  IntegerLiteralExpr,
+  LambdaExpr,
+  LiteralExpr,
+  LongLiteralExpr,
+  MarkerAnnotationExpr,
+  MethodCallExpr,
+  NameExpr,
+  NormalAnnotationExpr,
+  NullLiteralExpr,
+  ObjectCreationExpr,
+  SingleMemberAnnotationExpr,
+  StringLiteralExpr,
+  SuperExpr,
+  TextBlockLiteralExpr,
+  ThisExpr,
+  UnaryExpr,
+  VariableDeclarationExpr
+}
 import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
-import com.github.javaparser.ast.stmt.{AssertStmt, BlockStmt, BreakStmt, CatchClause, ContinueStmt, DoStmt, EmptyStmt, ExplicitConstructorInvocationStmt, ExpressionStmt, ForEachStmt, ForStmt, IfStmt, LabeledStmt, ReturnStmt, Statement, SwitchEntry, SwitchStmt, SynchronizedStmt, ThrowStmt, TryStmt, WhileStmt}
+import com.github.javaparser.ast.stmt.{
+  AssertStmt,
+  BlockStmt,
+  BreakStmt,
+  CatchClause,
+  ContinueStmt,
+  DoStmt,
+  EmptyStmt,
+  ExplicitConstructorInvocationStmt,
+  ExpressionStmt,
+  ForEachStmt,
+  ForStmt,
+  IfStmt,
+  LabeledStmt,
+  ReturnStmt,
+  Statement,
+  SwitchEntry,
+  SwitchStmt,
+  SynchronizedStmt,
+  ThrowStmt,
+  TryStmt,
+  WhileStmt
+}
 import com.github.javaparser.resolution.{SymbolResolver, UnsolvedSymbolException}
-import com.github.javaparser.resolution.declarations.{ResolvedFieldDeclaration, ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration, ResolvedReferenceTypeDeclaration, ResolvedTypeParameterDeclaration}
+import com.github.javaparser.resolution.declarations.{
+  ResolvedFieldDeclaration,
+  ResolvedMethodDeclaration,
+  ResolvedMethodLikeDeclaration,
+  ResolvedReferenceTypeDeclaration,
+  ResolvedTypeParameterDeclaration
+}
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import io.joern.x2cpg.utils.NodeBuilders.{annotationLiteralNode, callNode, fieldIdentifierNode, identifierNode, modifierNode, operatorCallNode}
+import io.joern.x2cpg.utils.NodeBuilders.{
+  annotationLiteralNode,
+  callNode,
+  fieldIdentifierNode,
+  identifierNode,
+  modifierNode,
+  operatorCallNode
+}
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
 import io.joern.javasrc2cpg.util.Scope.{ScopeTypes, WildcardImportName}
-import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForJavaparser, BindingTableAdapterForLambdas, BindingTableEntry, LambdaBindingInfo, NameConstants, NodeTypeInfo, Scope, TypeInfoCalculator}
+import io.joern.javasrc2cpg.util.{
+  BindingTable,
+  BindingTableAdapterForJavaparser,
+  BindingTableAdapterForLambdas,
+  BindingTableEntry,
+  LambdaBindingInfo,
+  NameConstants,
+  NodeTypeInfo,
+  Scope,
+  TypeInfoCalculator
+}
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
-import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature, rootCode, rootType}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
+import io.joern.javasrc2cpg.util.Util.{
+  composeMethodFullName,
+  composeMethodLikeSignature,
+  composeUnresolvedSignature,
+  rootCode,
+  rootType
+}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EdgeTypes,
+  EvaluationStrategies,
+  ModifierTypes,
+  NodeTypes,
+  Operators
+}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewAnnotation,
+  NewAnnotationParameter,
+  NewAnnotationParameterAssign,
+  NewArrayInitializer,
+  NewBinding,
+  NewBlock,
+  NewCall,
+  NewClosureBinding,
+  NewControlStructure,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewJumpTarget,
+  NewLiteral,
+  NewLocal,
+  NewMember,
+  NewMethod,
+  NewMethodParameterIn,
+  NewMethodRef,
+  NewMethodReturn,
+  NewModifier,
+  NewNamespaceBlock,
+  NewNode,
+  NewReturn,
+  NewTypeDecl,
+  NewTypeRef,
+  NewUnknown
+}
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.TypeNodePass
@@ -105,7 +238,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val name         = importStmt.getName.getIdentifier
       val typeFullName = importStmt.getNameAsString // fully qualified name
       val importNode   = identifierNode(name, typeFullName)
-      scopeStack.addToScope(importNode, name, typeFullName)
+      val nodeTypeInfo = NodeTypeInfo(importNode, name, typeFullName, isImport = true)
+      scopeStack.addToScope(name, nodeTypeInfo)
     }
 
     asteriskImports match {
@@ -113,7 +247,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         val name         = WildcardImportName
         val typeFullName = imp.getNameAsString
         val importNode   = identifierNode(name, typeFullName)
-        scopeStack.addToScope(importNode, name, typeFullName)
+        val nodeTypeInfo = NodeTypeInfo(importNode, name, typeFullName, isImport = true)
+        scopeStack.addToScope(name, nodeTypeInfo)
 
       case _ => // Only try to guess a wildcard import if exactly one is defined
     }
@@ -838,14 +973,18 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def paramsToTypeList(parameterAsts: Seq[Ast]): Option[List[String]] = {
     parameterAsts.map(rootType).foldLeft[Option[List[String]]](Some(Nil)) {
       case (Some(acc), Some(value)) if value != TypeConstants.UnresolvedType => Some(acc :+ value)
-      case _ => None
+      case _                                                                 => None
     }
   }
 
-  private def composeSignature(maybeReturnType: Option[String], maybeParameterTypes: Option[List[String]], paramCount: Int) : String = {
+  private def composeSignature(
+    maybeReturnType: Option[String],
+    maybeParameterTypes: Option[List[String]],
+    paramCount: Int
+  ): String = {
     (maybeReturnType, maybeParameterTypes) match {
       case (Some(returnType), Some(paramTypes)) => composeMethodLikeSignature(returnType, paramTypes)
-      case _ => composeUnresolvedSignature(paramCount)
+      case _                                    => composeUnresolvedSignature(paramCount)
     }
   }
 
@@ -858,13 +997,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .map(typeInfoCalc.fullName)
       .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString, wildcardFallback = true))
 
-    scopeStack.pushNewScope(MethodScope(ExpectedType(returnTypeFullName.getOrElse(TypeConstants.UnresolvedType), expectedReturnType)))
+    scopeStack.pushNewScope(
+      MethodScope(ExpectedType(returnTypeFullName.getOrElse(TypeConstants.UnresolvedType), expectedReturnType))
+    )
 
     addTypeParametersToScope(methodDeclaration)
 
-    val parameterAsts  = astsForParameterList(methodDeclaration.getParameters)
+    val parameterAsts       = astsForParameterList(methodDeclaration.getParameters)
     val maybeParameterTypes = paramsToTypeList(parameterAsts)
-    val signature = composeSignature(returnTypeFullName, maybeParameterTypes, parameterAsts.size)
+    val signature           = composeSignature(returnTypeFullName, maybeParameterTypes, parameterAsts.size)
     val methodFullName =
       getMethodFullName(scopeStack.getEnclosingTypeDecl, methodDeclaration.getNameAsString, signature)
 
@@ -884,7 +1025,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val bodyAst = astForMethodBody(methodDeclaration.getBody.toScala)
     val methodReturn =
-      methodReturnNode(returnTypeFullName.getOrElse(TypeConstants.UnresolvedType), None, line(methodDeclaration.getType), column (methodDeclaration.getType))
+      methodReturnNode(
+        returnTypeFullName.getOrElse(TypeConstants.UnresolvedType),
+        None,
+        line(methodDeclaration.getType),
+        column(methodDeclaration.getType)
+      )
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
 
@@ -2502,7 +2648,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     localsForCaptured
   }
 
-  private def astForLambdaBody(body: Statement, localsForCapturedVars: Seq[NewLocal], returnType: Option[String]): Ast = {
+  private def astForLambdaBody(
+    body: Statement,
+    localsForCapturedVars: Seq[NewLocal],
+    returnType: Option[String]
+  ): Ast = {
     body match {
       case block: BlockStmt => astForBlockStatement(block, prefixAsts = localsForCapturedVars.map(Ast(_)))
 
@@ -2525,12 +2675,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def createLambdaMethodNode(lambdaName: String, parameters: Seq[Ast], returnType: Option[String]): NewMethod = {
+  private def createLambdaMethodNode(
+    lambdaName: String,
+    parameters: Seq[Ast],
+    returnType: Option[String]
+  ): NewMethod = {
     val enclosingTypeName =
       scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
     val parameterTypes = paramsToTypeList(parameters)
 
-    val signature = composeSignature(returnType, parameterTypes, parameters.size)
+    val signature      = composeSignature(returnType, parameterTypes, parameters.size)
     val lambdaFullName = composeMethodFullName(enclosingTypeName, lambdaName, signature)
 
     NewMethod()
@@ -2857,6 +3011,18 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val receiverTypeOption = targetTypeForCall(call)
     val scopeAsts = call.getScope.toScala match {
+      case Some(scope: NameExpr) =>
+        val isImportedType = scopeStack.lookupVariable(scope.getNameAsString).exists(_.isImport)
+        if (isImportedType) {
+          // This handles static method calls to different classes without creating an explicit scope node, for example:
+          // import a.b.Foo;
+          // Foo.foo() <-- this won't have a `Foo` receiver.
+          // TODO: This doesn't handle fully qualified names.
+          Seq()
+        } else {
+          astsForExpression(scope, receiverTypeOption.map(ExpectedType(_)))
+        }
+
       case Some(scope) =>
         astsForExpression(scope, receiverTypeOption.map(ExpectedType(_)))
 

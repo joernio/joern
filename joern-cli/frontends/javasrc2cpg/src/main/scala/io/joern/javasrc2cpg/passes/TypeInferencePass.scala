@@ -18,17 +18,28 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
   private val NamePartsPattern = raw"(.*\.)*.*:(.+\(.*\))".r
 
   override def generateParts(): Array[Call] = {
-    cpg.call.methodFullName(s".*${TypeConstants.UnresolvedType}.*").toArray
+    val parts = cpg.call.filter { call =>
+      call.methodFullName.contains(TypeConstants.UnresolvedType) || call.methodFullName.contains(
+        Defines.UnresolvedSignature
+      ) || call.methodFullName.contains(Defines.UnresolvedNamespace)
+    }.toArray
+    parts
   }
 
-  private def isMatchingMethod(method: Method, call: Call): Boolean = {
-    method.parameter.size == call.argument.size
+  private def isMatchingMethod(method: Method, call: Call, callNameParts: NameParts): Boolean = {
+    if (method.parameter.size != call.argument.size || callNameParts.typeDecl.contains(TypeConstants.UnresolvedType)) {
+      false
+    } else {
+      val methodNameParts = getNameParts(method.fullName)
+      callNameParts.typeDecl == methodNameParts.typeDecl
+    }
+
   }
 
   private def getNameParts(fullName: String): NameParts = {
     fullName match {
       case NamePartsPattern(maybeTd, maybeSig) =>
-        val typeDecl = Option(maybeTd).map(_.init)
+        val typeDecl  = Option(maybeTd).map(_.init)
         val signature = Option(maybeSig)
         NameParts(typeDecl, signature)
 
@@ -45,8 +56,7 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
     val paramCount = call.argument.size - call.receiver.size
 
     val newTypeDecl =
-      nameParts
-        .typeDecl
+      nameParts.typeDecl
         .map(_.replaceAll(TypeConstants.UnresolvedType, Defines.UnresolvedNamespace))
         .getOrElse(Defines.UnresolvedNamespace)
 
@@ -70,11 +80,12 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, call: Call): Unit = {
+    val callNameParts    = getNameParts(call.methodFullName)
     val candidateMethods = cpg.method.internal.nameExact(call.name)
 
-    candidateMethods.find(isMatchingMethod(_, call)) match {
+    candidateMethods.find(isMatchingMethod(_, call, callNameParts)) match {
       case Some(method) =>
-        val otherMatchingMethod = candidateMethods.find(isMatchingMethod(_, call))
+        val otherMatchingMethod = candidateMethods.find(isMatchingMethod(_, call, callNameParts))
         if (otherMatchingMethod.isEmpty) {
           diffGraph.setNodeProperty(call, PropertyNames.MethodFullName, method.fullName)
           diffGraph.setNodeProperty(call, PropertyNames.Signature, method.signature)
@@ -85,8 +96,8 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
         }
 
       case None =>
-      // Call is to and unresolved external method, so we can't get any more information here.
-      updateUnresolvedName(diffGraph, call)
+        // Call is to and unresolved external method, so we can't get any more information here.
+        updateUnresolvedName(diffGraph, call)
     }
   }
 }
