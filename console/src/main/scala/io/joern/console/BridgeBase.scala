@@ -269,7 +269,11 @@ trait ScriptExecution { this: BridgeBase =>
 //      }
 
   // TODO test idea: if quit with C-c: restart with old state but new classloader - go via addDependency
-    replDriver.runUntilQuit(state)
+    val state2 = replDriver.runUntilQuit(state)
+    println("running again...")
+    val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+    replDriver.addDependency(versionSortJar)
+    replDriver.runUntilQuit(state2)
   }
 
   protected def runScript(scriptFile: os.Path, config: Config): Unit = {
