@@ -266,9 +266,14 @@ trait AstForTypesCreator { this: AstCreator =>
 
     val initAsts = decl match {
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
-        withIndex(declaration.getDeclarators) {
-          case (d: IASTDeclarator, _) if d.getInitializer != null =>
+        declaration.getDeclarators.toList.map {
+          case d: IASTDeclarator if d.getInitializer != null =>
             astForInitializer(d, d.getInitializer)
+          case arrayDecl: IASTArrayDeclarator =>
+            val op           = Operators.arrayInitializer
+            val initCallNode = newCallNode(arrayDecl, op, op, DispatchTypes.STATIC_DISPATCH)
+            val initArgs     = arrayDecl.getArrayModifiers.toList.map(astForNode)
+            callAst(initCallNode, initArgs)
           case _ => Ast()
         }
       case _ => Nil
@@ -304,9 +309,7 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
-    val memberAsts = withIndex(typeSpecifier.getDeclarations(true)) { (m, _) =>
-      astsForDeclaration(m)
-    }.flatten
+    val memberAsts = typeSpecifier.getDeclarations(true).flatMap(astsForDeclaration)
 
     methodAstParentStack.pop()
     scope.popScope()
