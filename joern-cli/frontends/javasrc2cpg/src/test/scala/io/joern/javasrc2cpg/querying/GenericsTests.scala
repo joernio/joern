@@ -110,15 +110,12 @@ class GenericsTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should erase generic types in parameters" in {
-    cpg.method.name("map").l match {
-      case method :: Nil =>
-        method.fullName shouldBe "Box.map:Box(java.util.function.Function)"
-        method.signature shouldBe "Box(java.util.function.Function)"
-    }
+    val List(method) = cpg.method.name("map").l
+    method.fullName shouldBe "Box.map:Box(java.util.function.Function)"
+    method.signature shouldBe "Box(java.util.function.Function)"
 
-    cpg.method.name("map").parameter.name("f").l match {
-      case param :: Nil => param.typeFullName shouldBe "java.util.function.Function"
-    }
+    val List(param) = cpg.method.name("map").parameter.name("f").l
+    param.typeFullName shouldBe "java.util.function.Function"
   }
 
   "it should create correct constructor calls" in {

@@ -8,37 +8,37 @@ class StructTypeTests extends CCodeToCpgSuite {
 
   "Struct with array members" should {
     val cpg = code("""
-        |#define BYTES_COUNT 5
+        |#define SIZE 5
         |struct Foo {
-        |  unsigned char id[BYTES_COUNT];
-        |  unsigned char extended[BYTES_COUNT - 2];
-        |  unsigned char data[20];
+        |  char a[SIZE];
+        |  char b[SIZE - 1];
+        |  char c[10];
         |};
         |""".stripMargin)
 
     "contain correct fields for all members" in {
       val List(typeDeclNode) = cpg.typeDecl.nameExact("Foo").l
-      typeDeclNode.member.name.toSetImmutable shouldBe Set("id", "extended", "data")
-      typeDeclNode.member.code.toSetImmutable shouldBe Set("id[BYTES_COUNT]", "extended[BYTES_COUNT - 2]", "data[20]")
+      typeDeclNode.member.name.toSetImmutable shouldBe Set("a", "b", "c")
+      typeDeclNode.member.code.toSetImmutable shouldBe Set("a[SIZE]", "b[SIZE - 1]", "c[10]")
     }
 
     "initialize array members correctly" in {
-      val List(fakeInitMethod)                        = cpg.method.nameExact("<sinit>").l
-      val List(idInitCall, extInitCall, dataInitCall) = fakeInitMethod.call.nameExact(Operators.arrayInitializer).l
+      val List(fakeInitMethod)                  = cpg.method.nameExact("<sinit>").l
+      val List(aInitCall, bInitCall, cInitCall) = fakeInitMethod.call.nameExact(Operators.arrayInitializer).l
 
-      idInitCall.code shouldBe "id[BYTES_COUNT]"
-      val List(argIdInit) = idInitCall.argument.l
-      argIdInit.code shouldBe "BYTES_COUNT"
+      aInitCall.code shouldBe "a[SIZE]"
+      val List(argAInit) = aInitCall.argument.l
+      argAInit.code shouldBe "SIZE"
 
-      extInitCall.code shouldBe "extended[BYTES_COUNT - 2]"
-      val List(argExtInit) = extInitCall.argument.l
-      argExtInit.code shouldBe "BYTES_COUNT - 2"
-      val List(subtractionCall) = extInitCall.ast.isCall.nameExact(Operators.subtraction).l
-      subtractionCall.code shouldBe "5 - 2"
+      bInitCall.code shouldBe "b[SIZE - 1]"
+      val List(argBInit) = bInitCall.argument.l
+      argBInit.code shouldBe "SIZE - 1"
+      val List(subtractionCall) = bInitCall.ast.isCall.nameExact(Operators.subtraction).l
+      subtractionCall.code shouldBe "5 - 1"
 
-      dataInitCall.code shouldBe "data[20]"
-      val List(argDataInit) = dataInitCall.argument.l
-      argDataInit.code shouldBe "20"
+      cInitCall.code shouldBe "c[10]"
+      val List(argCInit) = cInitCall.argument.l
+      argCInit.code shouldBe "10"
     }
 
   }
