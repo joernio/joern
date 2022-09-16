@@ -1,25 +1,27 @@
 package io.joern.console
 
 import coursier.parse.DependencyParser
+
 import java.io.File
 import java.nio.file.Path
 import scala.util.Try
 
 object Dependencies {
 
-  // TODO drop
-  def main(args: Array[String]) = {
-//    val coordinateString = "com.michaelpollmeier:versionsort:1.0.7"
-    val coordinateString = "com.michaelpollmeier:gremlin-scala_2.13:3.5.1.5"
-//    println(coursier.parse.ModuleParser.javaOrScalaModule(coordinateString))
-//    println(coursier.parse.DependencyParser.dependency(coordinateString, defaultScalaVersion = "3"))
-    println(resolve(coordinateString))
-  }
-
-  def resolve(coordinate: String): Either[String, Seq[File]] = {
+  def resolve(coordinate: String): Either[String, Seq[File]] =
     DependencyParser.dependency(coordinate, defaultScalaVersion = "3").map { dependency =>
       coursier.Fetch().addDependencies(dependency).run()
     }
-  }
+
+  /** try to resolve all given coordinates. report failures to stderr, but continue anyway  */
+  def resolveOptimistically(coordinates: Seq[String]): Seq[File] =
+    coordinates.flatMap { coordinate =>
+      resolve(coordinate) match {
+        case Left(error) =>
+          System.err.println(s"cannot resolve $coordinate: $error")
+          Seq.empty //that's why this method is called `optimistic`: we don't fail the entire resolution
+        case Right(files) => files
+      }
+    }
 
 }
