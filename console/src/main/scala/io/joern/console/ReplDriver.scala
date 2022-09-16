@@ -1,23 +1,47 @@
 package io.joern.console
 
-import dotty.tools.dotc.core.Contexts.Context
+import dotty.tools.dotc.core.Contexts.{Context, ContextBase}
 import dotty.tools.dotc.ast.{tpd, untpd}
-import dotty.tools.repl.{CollectTopLevelImports, Newline, Parsed, ParseResult, State, Quit}
+import dotty.tools.dotc.classpath.{AggregateClassPath, ClassPathFactory}
+import dotty.tools.dotc.config.{JavaPlatform, Platform}
+import dotty.tools.dotc.core.Contexts
+import dotty.tools.io.{AbstractFile, ClassPath}
+import dotty.tools.repl.{CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
+
 import java.io.PrintStream
-import org.jline.reader._
+import org.jline.reader.*
+
 import scala.annotation.tailrec
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class ReplDriver(args: Array[String],
                  out: PrintStream = scala.Console.out,
                  onExitCode: Option[String] = None,
                  greeting: String,
                  prompt: String,
-                 maxPrintElements: Int) extends dotty.tools.repl.ReplDriver(args, out) {
+                 maxPrintElements: Int,
+                 classLoader: Option[ClassLoader] = None) extends dotty.tools.repl.ReplDriver(args, out, classLoader) {
 
   override def initCtx: Context = {
     val ctx = super.initCtx
     ctx.fresh.setSetting(ctx.settings.VreplMaxPrintElements, maxPrintElements)
+//    val base: ContextBase = ctx.base
+    val base: ContextBase = new ContextBase {
+      override def newPlatform(using Context): Platform = {
+        new JavaPlatform {
+          override def classPath(using Context): ClassPath = {
+            val original = super.classPath
+            val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+            val newCp = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
+//            println("XXX original.asClassPathString: " + original.asClassPathString)
+//            println("XXX original.getClass: " + original.getClass) // AggregateClassPath
+            new AggregateClassPath(Seq(original, newCp))
+          }
+        }
+      }
+    }
+
+    new Contexts.InitialContext(base, ctx.settings)
   }
 
   /** Run REPL with `state` until `:quit` command found
@@ -28,6 +52,7 @@ class ReplDriver(args: Array[String],
     initializeRenderer()
 
     out.println(greeting)
+//    println(s"XXXXX classloader: ${rendering.myClassLoader.findClass("foobar")}")
 
     /** Blockingly read a line, getting back a parse result */
     def readLine(state: State): ParseResult = {
@@ -38,6 +63,11 @@ class ReplDriver(args: Array[String],
       given Context = state.context
       try {
         val line = terminal.readLine(completer)
+        // TODO extract, handle elsewhere
+        if (line.startsWith("//> using")) {
+          // TODO impl properly
+//          classL
+        }
         ParseResult(line)(state)
       } catch {
         case _: EndOfFileException => // Ctrl+D
