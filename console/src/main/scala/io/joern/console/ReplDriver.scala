@@ -12,7 +12,13 @@ import java.io.PrintStream
 import org.jline.reader.*
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
+
+object HackyGlobalState {
+  var jp: JavaPlatform = null
+  var swap = false
+}
 
 class ReplDriver(args: Array[String],
                  out: PrintStream = scala.Console.out,
@@ -22,25 +28,36 @@ class ReplDriver(args: Array[String],
                  maxPrintElements: Int,
                  classLoader: Option[ClassLoader] = None) extends dotty.tools.repl.ReplDriver(args, out, classLoader) {
 
+  private val additionalDependencyJars: mutable.Set[String] = mutable.Set.empty
+
+  def addDependency(jarPath: String): Unit = additionalDependencyJars.add(jarPath)
+
   override def initCtx: Context = {
     val ctx = super.initCtx
     ctx.fresh.setSetting(ctx.settings.VreplMaxPrintElements, maxPrintElements)
 //    val base: ContextBase = ctx.base
     val base: ContextBase = new ContextBase {
       override def newPlatform(using Context): Platform = {
-        new JavaPlatform {
+        val jp = new JavaPlatform {
           override def classPath(using Context): ClassPath = {
             val original = super.classPath
+            val hppcJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/carrotsearch/hppc/0.7.1/hppc-0.7.1.jar"
             val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-            val newCp = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
-//            println("XXX original.asClassPathString: " + original.asClassPathString)
-//            println("XXX original.getClass: " + original.getClass) // AggregateClassPath
-            new AggregateClassPath(Seq(original, newCp))
+            val jar = if (!HackyGlobalState.swap) hppcJar else versionSortJar
+            val initialCp = ClassPathFactory.newClassPath(AbstractFile.getFile(jar))
+//            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
+//            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
+//            val newCp = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
+            println(s"XXX1 new aggregate classpath created with $jar")
+            new AggregateClassPath(Seq(original, initialCp))
           }
         }
+        HackyGlobalState.jp = jp
+        jp
       }
     }
 
+    println("XXX2 ReplDriver.initCtx called")
     new Contexts.InitialContext(base, ctx.settings)
   }
 
@@ -65,6 +82,15 @@ class ReplDriver(args: Array[String],
         val line = terminal.readLine(completer)
         // TODO extract, handle elsewhere
         if (line.startsWith("//> using")) {
+          println("foo bar hacky state") // todo update ClassPath
+          HackyGlobalState.swap = true
+//          HackyGlobalState.jp.newClassLoader()
+          val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+          val newCp = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
+          HackyGlobalState.jp.updateClassPath(
+            Map(HackyGlobalState.jp.classPath -> newCp)
+          )
+          println("foo bar hacky state end") // todo update ClassPath
           // TODO impl properly
 //          classL
         }
