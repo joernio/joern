@@ -234,28 +234,11 @@ trait ScriptExecution { this: BridgeBase =>
       import java.net.{URL, URLClassLoader}
       val parent = this.getClass.getClassLoader
       new ClassLoader(parent) {
-        override def findClass(moduleName: String, name: String): Class[_] = {
-          val ret = super.findClass(moduleName, name)
-          println(s"XXXX findClass $moduleName $name=$ret")
-          ret
-        }
-
-        override def findClass(name: String): Class[_] = {
-          val ret = super.findClass(name)
-          println(s"XXXX findClass $name=$ret")
-          ret
-        }
-
-        override def loadClass(name: String): Class[_] = {
-          val ret = super.loadClass(name)
-          println(s"XXXX loadClass $name=$ret")
-          ret
-        }
 
         override def loadClass(name: String, resolve: Boolean): Class[_] = {
           val ret = super.loadClass(name, resolve)
 //          os.write.append(os.Path("/home/mp/Projects/shiftleft/joern/foo.txt"), s"$name\n")
-          println(s"XXXX loadClass resolve=$resolve $name=$ret")
+//          println(s"XXXX loadClass resolve=$resolve $name=$ret")
           ret
         }
       }
@@ -269,6 +252,10 @@ trait ScriptExecution { this: BridgeBase =>
       maxPrintElements = Int.MaxValue,
       Option(classLoader)
     )
+
+    // TODO cleanup
+//    val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+//    replDriver.addDependency(versionSortJar)
     val initialState: State = replDriver.initialState
 
     // when upgrading to Scala 3.2.1: change to `given State`
@@ -287,6 +274,7 @@ trait ScriptExecution { this: BridgeBase =>
 //        replDriver.runQuietly(predefCode)(using initialState)
 //      }
 
+  // TODO test idea: if quit with C-c: restart with old state but new classloader - go via addDependency
     replDriver.runUntilQuit(state)
   }
 
