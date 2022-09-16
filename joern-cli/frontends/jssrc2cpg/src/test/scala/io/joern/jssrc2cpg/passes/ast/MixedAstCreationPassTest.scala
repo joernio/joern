@@ -497,7 +497,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       localSource.typeFullName shouldBe "code.js::program:source"
       localL.name shouldBe "l"
 
-      val List(callToSource) = programBlock.astChildren.isCall.codeExact("l = source(3)").l
+      val List(callToSource) = programBlock.astChildren.isCall.codeExact("var l = source(3)").l
 
       val List(identifierL) = callToSource.astChildren.isIdentifier.l
       identifierL.name shouldBe "l"
@@ -1097,7 +1097,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
 
     "have correct structure for method spread argument" in AstFixture("foo(...args)") { cpg =>
       val List(fooCall) = cpg.call.codeExact("foo(...args)").l
-      fooCall.name shouldBe ""
+      fooCall.name shouldBe "foo"
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
       val List(receiver) = fooCall.receiver.isIdentifier.l
@@ -1115,7 +1115,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
 
     "have correct structure for complex method spread argument" in AstFixture("foo(...x.bar())") { cpg =>
       val List(fooCall) = cpg.call.codeExact("foo(...x.bar())").l
-      fooCall.name shouldBe ""
+      fooCall.name shouldBe "foo"
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
       val List(receiver) = fooCall.receiver.isIdentifier.l

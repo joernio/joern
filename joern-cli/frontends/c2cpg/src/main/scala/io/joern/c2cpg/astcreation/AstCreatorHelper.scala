@@ -190,6 +190,10 @@ trait AstCreatorHelper { this: AstCreator =>
         cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
       case s: IASTElaboratedTypeSpecifier =>
         cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
+      case l: IASTLiteralExpression =>
+        cleanType(ASTTypeUtil.getType(l.getExpressionType))
+      case e: IASTExpression =>
+        cleanType(ASTTypeUtil.getNodeType(e), stripKeywords)
       case _ =>
         cleanType(getNodeSignature(node), stripKeywords)
     }
@@ -442,6 +446,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case d: ICPPASTFieldDesignator        => astForNode(d.getName)
       case d: ICASTFieldDesignator          => astForNode(d.getName)
       case decl: ICPPASTDecltypeSpecifier   => astforDecltypeSpecifier(decl)
+      case arrMod: IASTArrayModifier        => astForArrayModifier(arrMod)
       case _                                => notHandledYet(node)
     }
   }

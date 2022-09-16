@@ -9,7 +9,9 @@ object AmmoniteBridge extends App with BridgeBase {
   /** Code that is executed when starting the shell
     */
   override def predefPlus(lines: List[String]): String = {
-    lines.foldLeft(Predefined.forInteractiveShell) { case (res, line) => res + s"\n$line" }
+    s"""${Predefined.forInteractiveShell}
+       |${lines.mkString("\n")}
+       |""".stripMargin
   }
 
   override def promptStr(): String = "joern> "

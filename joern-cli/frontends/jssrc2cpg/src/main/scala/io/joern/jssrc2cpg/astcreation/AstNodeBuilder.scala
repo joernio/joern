@@ -295,11 +295,12 @@ trait AstNodeBuilder { this: AstCreator =>
     callName: String,
     dispatchType: String,
     line: Option[Integer],
-    column: Option[Integer]
+    column: Option[Integer],
+    fullName: Option[String] = None
   ): NewCall = NewCall()
     .code(code)
     .name(callName)
-    .methodFullName(callName)
+    .methodFullName(fullName.getOrElse(callName))
     .dispatchType(dispatchType)
     .lineNumber(line)
     .columnNumber(column)
@@ -411,13 +412,13 @@ trait AstNodeBuilder { this: AstCreator =>
 
   protected def createStaticCallNode(
     code: String,
-    methodName: String,
+    callName: String,
     fullName: String,
     line: Option[Integer],
     column: Option[Integer]
   ): NewCall = NewCall()
     .code(code)
-    .name(methodName)
+    .name(callName)
     .methodFullName(fullName)
     .dispatchType(DispatchTypes.STATIC_DISPATCH)
     .signature("")

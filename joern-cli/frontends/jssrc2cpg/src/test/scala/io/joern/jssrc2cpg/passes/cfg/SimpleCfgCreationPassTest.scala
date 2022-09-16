@@ -16,14 +16,14 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("class Foo") shouldBe expected(("bar", AlwaysEdge))
       succOf("bar") shouldBe expected(("this", AlwaysEdge))
       succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("bar()", AlwaysEdge))
-      succOf("bar()") shouldBe expected(("x = (class Foo {}, bar())", AlwaysEdge))
-      succOf("x = (class Foo {}, bar())") shouldBe expected(("RET", AlwaysEdge))
+      succOf("bar()") shouldBe expected(("let x = (class Foo {}, bar())", AlwaysEdge))
+      succOf("let x = (class Foo {}, bar())") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "have correct structure for empty array literal" in CfgFixture("var x = []") { implicit cpg =>
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("__ecma.Array.factory()", AlwaysEdge))
-      succOf("__ecma.Array.factory()") shouldBe expected(("x = []", AlwaysEdge))
+      succOf("__ecma.Array.factory()") shouldBe expected(("var x = []", AlwaysEdge))
     }
 
     "have correct structure for array literal with values" in CfgFixture("var x = [1, 2]") { implicit cpg =>
@@ -47,8 +47,8 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("2") shouldBe expected(("_tmp_0.push(2)", AlwaysEdge))
 
       succOf("_tmp_0.push(2)") shouldBe expected(("_tmp_0", 5, AlwaysEdge))
-      succOf("_tmp_0", 5) shouldBe expected(("x = [1, 2]", AlwaysEdge))
-      succOf("x = [1, 2]") shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 5) shouldBe expected(("var x = [1, 2]", AlwaysEdge))
+      succOf("var x = [1, 2]") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "have correct structure for untagged runtime node in call" in CfgFixture(s"foo(`Hello $${world}!`)") {
@@ -144,8 +144,8 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("2") shouldBe expected(("_tmp_0.key2 = 2", AlwaysEdge))
 
       succOf("_tmp_0.key2 = 2") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
-      succOf("_tmp_0", 2) shouldBe expected(("x = {\n key1: \"value\",\n key2: 2\n}", AlwaysEdge))
-      succOf("x = {\n key1: \"value\",\n key2: 2\n}") shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("var x = {\n key1: \"value\",\n key2: 2\n}", AlwaysEdge))
+      succOf("var x = {\n key1: \"value\",\n key2: 2\n}") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for member access used in an assignment (chained)" in CfgFixture("a.b = c.z;") { implicit cpg =>
@@ -162,8 +162,8 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
     "be correct for decl statement with assignment" in CfgFixture("var x = 1;") { implicit cpg =>
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("1", AlwaysEdge))
-      succOf("1") shouldBe expected(("x = 1", AlwaysEdge))
-      succOf("x = 1") shouldBe expected(("RET", AlwaysEdge))
+      succOf("1") shouldBe expected(("var x = 1", AlwaysEdge))
+      succOf("var x = 1") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for nested expression" in CfgFixture("x = y + 1;") { implicit cpg =>
@@ -620,8 +620,8 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("arg1") shouldBe expected(("arg2", AlwaysEdge))
       succOf("arg2") shouldBe expected(("new MyClass(arg1, arg2)", AlwaysEdge))
       succOf("new MyClass(arg1, arg2)", NodeTypes.CALL) shouldBe expected(("_tmp_0", 2, AlwaysEdge))
-      succOf("_tmp_0", 2) shouldBe expected(("x = new MyClass(arg1, arg2)", AlwaysEdge))
-      succOf("x = new MyClass(arg1, arg2)") shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("var x = new MyClass(arg1, arg2)", AlwaysEdge))
+      succOf("var x = new MyClass(arg1, arg2)") shouldBe expected(("RET", AlwaysEdge))
     }
   }
 

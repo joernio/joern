@@ -2,6 +2,7 @@ package io.joern.console.workspacehandling
 
 import better.files.Dsl._
 import better.files._
+import io.joern.console.Reporting
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
 import org.json4s.DefaultFormats
@@ -24,7 +25,8 @@ object DefaultLoader extends WorkspaceLoader[Project] {
   * @param path
   *   path to to workspace.
   */
-class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLoader[ProjectType] = DefaultLoader) {
+class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLoader[ProjectType] = DefaultLoader)
+    extends Reporting {
 
   def getPath: String = path
 
@@ -413,7 +415,5 @@ object WorkspaceManager {
       .toList
       .sortBy(_.name)
   }
-
-  def report(str: String): Unit = System.err.println(str)
 
 }

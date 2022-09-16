@@ -29,16 +29,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     paramNodeInfo: BabelNodeInfo,
     paramName: String
   ): Ast = {
-    val restNodeInfo = createBabelNodeInfo(elementNodeInfo.json("argument"))
-    val ast = restNodeInfo.node match {
-      case FunctionDeclaration =>
-        astForFunctionDeclaration(restNodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-      case FunctionExpression =>
-        astForFunctionDeclaration(restNodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-      case ArrowFunctionExpression =>
-        astForFunctionDeclaration(restNodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-      case _ => astForNode(restNodeInfo.json)
-    }
+    val ast = astForNodeWithFunctionReferenceAndCall(elementNodeInfo.json("argument"))
     val defaultName = ast.nodes.collectFirst {
       case id: IdentifierBase => id.name.replace("...", "")
       case clazz: TypeRefBase => clazz.code.stripPrefix("class ")
@@ -117,7 +108,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val rhsElement  = nodeInfo.json("right")
         val lhsNodeInfo = createBabelNodeInfo(lhsElement)
         lhsNodeInfo.node match {
-          case ObjectPattern =>
+          case ObjectPattern | ArrayPattern =>
             val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
             val param = createParameterInNode(
               paramName,
@@ -130,20 +121,6 @@ trait AstForFunctionsCreator { this: AstCreator =>
             val rhsAst = astForNodeWithFunctionReference(rhsElement)
             Ast.storeInDiffGraph(rhsAst, diffGraph)
             additionalBlockStatements.addOne(astForDeconstruction(lhsNodeInfo, rhsAst, Some(paramName)))
-            param
-          case ArrayPattern =>
-            val name = generateUnusedVariableName(usedVariableNames, s"param$index")
-            val param = createParameterInNode(
-              name,
-              nodeInfo.code,
-              index,
-              isVariadic = false,
-              nodeInfo.lineNumber,
-              nodeInfo.columnNumber
-            )
-            val rhsAst = astForNodeWithFunctionReference(rhsElement)
-            Ast.storeInDiffGraph(rhsAst, diffGraph)
-            additionalBlockStatements.addOne(astForDeconstruction(lhsNodeInfo, rhsAst, Some(name)))
             param
           case _ =>
             additionalBlockStatements.addOne(convertParamWithDefault(nodeInfo))

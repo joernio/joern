@@ -1,10 +1,10 @@
 package io.joern.console
 
-import os.{Path, pwd}
 import ammonite.util.{Colors, Res}
 import better.files._
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
+import os.{Path, pwd}
 
 case class Config(
   scriptFile: Option[Path] = None,
@@ -154,6 +154,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
       config.scriptFile match {
         case None =>
           if (config.server) {
+            GlobalReporting.enable()
             startHttpServer(config)
           } else if (config.pluginToRun.isDefined) {
             runPlugin(config, slProduct.name)
@@ -380,9 +381,7 @@ trait PluginHandling {
 
 }
 
-trait ServerHandling {
-
-  this: BridgeBase =>
+trait ServerHandling { this: BridgeBase =>
 
   protected def startHttpServer(config: Config): Unit = {
     val predef   = predefPlus(additionalImportCode(config))

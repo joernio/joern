@@ -220,12 +220,16 @@ class AstCreator(
   protected def astForNodeWithFunctionReference(json: Value): Ast = {
     val nodeInfo = createBabelNodeInfo(json)
     nodeInfo.node match {
-      case FunctionDeclaration =>
-        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
-      case FunctionExpression =>
-        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
-      case ArrowFunctionExpression =>
-        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
+      case _: FunctionLike => astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
+      case _               => astForNode(json)
+    }
+  }
+
+  protected def astForNodeWithFunctionReferenceAndCall(json: Value): Ast = {
+    val nodeInfo = createBabelNodeInfo(json)
+    nodeInfo.node match {
+      case _: FunctionLike =>
+        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
       case _ => astForNode(json)
     }
   }

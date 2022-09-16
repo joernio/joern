@@ -2,12 +2,12 @@ package io.joern.console
 
 import better.files.Dsl._
 import better.files.File
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.joern.console.cpgcreation.ImportCode
 import io.joern.console.scripting.{AmmoniteExecutor, ScriptManager}
 import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceManager}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.Overlays
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
@@ -22,7 +22,8 @@ class Console[T <: Project](
   executor: AmmoniteExecutor,
   loader: WorkspaceLoader[T],
   baseDir: File = File.currentWorkingDirectory
-) extends ScriptManager(executor) {
+) extends ScriptManager(executor)
+    with Reporting {
 
   import Console._
 
@@ -473,13 +474,10 @@ class Console[T <: Project](
     projectName
   }
 
-  def report(string: String): Unit = Console.report(string)
-
 }
 
 object Console {
-  def report(string: String): Unit = System.err.println(string)
-  val nameOfLegacyCpgInProject     = "cpg.bin.zip"
+  val nameOfLegacyCpgInProject = "cpg.bin.zip"
 
   def deriveNameFromInputPath[T <: Project](inputPath: String, workspace: WorkspaceManager[T]): String = {
     val name    = File(inputPath).name

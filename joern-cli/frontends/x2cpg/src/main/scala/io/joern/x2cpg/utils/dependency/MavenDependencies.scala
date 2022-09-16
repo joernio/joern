@@ -1,6 +1,5 @@
 package io.joern.x2cpg.utils.dependency
 
-import better.files.File
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
