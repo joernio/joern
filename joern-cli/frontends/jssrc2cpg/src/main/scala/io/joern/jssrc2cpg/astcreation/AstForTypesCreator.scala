@@ -14,6 +14,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import ujson.Value
 
 import scala.util.Try
@@ -142,7 +143,48 @@ trait AstForTypesCreator { this: AstCreator =>
     } else {
       Seq(Ast(memberNode))
     }
+  }
 
+  private def astForClassMember(classElement: Value, typeDeclNode: NewTypeDecl, metaTypeDeclNode: NewTypeDecl): Ast = {
+    val nodeInfo = createBabelNodeInfo(classElement)
+    val memberNode = nodeInfo.node match {
+      case ClassMethod | ClassPrivateMethod =>
+        val function = createMethodAstAndNode(nodeInfo).methodNode
+        addModifier(function, nodeInfo.json)
+        val dynamicTypeHintFullName = Some(function.fullName)
+        createMemberNode(function.name, nodeInfo.code, dynamicTypeHintFullName)
+      case _ =>
+        val name = nodeInfo.node match {
+          case ClassProperty        => code(nodeInfo.json("key"))
+          case ClassPrivateProperty => code(nodeInfo.json("key")("id"))
+          // TODO: name field most likely needs adjustment for other Babel AST types
+          case _ => nodeInfo.code
+        }
+        createMemberNode(name, nodeInfo.code, dynamicTypeOption = None)
+    }
+    addModifier(memberNode, classElement)
+    if (classElement("static").bool) {
+      diffGraph.addEdge(metaTypeDeclNode, memberNode, EdgeTypes.AST)
+    } else {
+      diffGraph.addEdge(typeDeclNode, memberNode, EdgeTypes.AST)
+    }
+
+    if (hasKey(nodeInfo.json, "value") && !nodeInfo.json("value").isNull) {
+      val lhsAst = astForNode(nodeInfo.json("key"))
+      val rhsAst = astForNodeWithFunctionReference(nodeInfo.json("value"))
+      val callNode =
+        createCallNode(
+          nodeInfo.code,
+          Operators.assignment,
+          DispatchTypes.STATIC_DISPATCH,
+          nodeInfo.lineNumber,
+          nodeInfo.columnNumber
+        )
+      val argAsts = List(lhsAst, rhsAst)
+      createCallAst(callNode, argAsts)
+    } else {
+      Ast()
+    }
   }
 
   protected def astForEnum(tsEnum: BabelNodeInfo): Ast = {
@@ -238,32 +280,8 @@ trait AstForTypesCreator { this: AstCreator =>
     diffGraph.addEdge(metaTypeDeclNode, constructorBindingNode, EdgeTypes.BINDS)
     diffGraph.addEdge(constructorBindingNode, constructorNode, EdgeTypes.REF)
 
-    val classBodyElements = classMembers(clazz, withConstructor = false)
-
-    classBodyElements.foreach { classElement =>
-      val nodeInfo = createBabelNodeInfo(classElement)
-      val memberNode = nodeInfo.node match {
-        case ClassMethod | ClassPrivateMethod =>
-          val function = createMethodAstAndNode(nodeInfo).methodNode
-          addModifier(function, nodeInfo.json)
-          val dynamicTypeHintFullName = Some(function.fullName)
-          createMemberNode(function.name, nodeInfo.code, dynamicTypeHintFullName)
-        case _ =>
-          val name = nodeInfo.node match {
-            case ClassProperty        => code(nodeInfo.json("key"))
-            case ClassPrivateProperty => code(nodeInfo.json("key")("id"))
-            // TODO: name field most likely needs adjustment for other Babel AST types
-            case _ => nodeInfo.code
-          }
-          createMemberNode(name, nodeInfo.code, dynamicTypeOption = None)
-      }
-      addModifier(memberNode, classElement)
-      if (classElement("static").bool) {
-        diffGraph.addEdge(metaTypeDeclNode, memberNode, EdgeTypes.AST)
-      } else {
-        diffGraph.addEdge(typeDeclNode, memberNode, EdgeTypes.AST)
-      }
-    }
+    val memberInitCalls =
+      classMembers(clazz, withConstructor = false).map(m => astForClassMember(m, typeDeclNode, metaTypeDeclNode))
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
@@ -271,6 +289,12 @@ trait AstForTypesCreator { this: AstCreator =>
     scope.popScope()
     scope.popScope()
 
+    if (memberInitCalls.nonEmpty) {
+      val init =
+        createAstForFakeStaticInitMethod(typeFullName, parserResult.filename, clazz.lineNumber, memberInitCalls)
+      Ast.storeInDiffGraph(init, diffGraph)
+      diffGraph.addEdge(typeDeclNode, init.nodes.head, EdgeTypes.AST)
+    }
     Ast(metaTypeRefNode)
   }
 

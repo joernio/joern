@@ -411,8 +411,8 @@ trait AstCreatorHelper { this: AstCreator =>
     val code = childrenAsts.flatMap(_.nodes.headOption.map(_.asInstanceOf[NewCall].code)).mkString(",")
     val fakeStaticInitMethod =
       NewMethod()
-        .name("<sinit>")
-        .fullName(s"$name:<sinit>")
+        .name("<clinit>")
+        .fullName(s"$name:<clinit>")
         .code(code)
         .filename(filename)
         .lineNumber(lineNumber)
