@@ -5,17 +5,16 @@ import os.{Path, pwd}
 // import ammonite.util.{Colors, Res}
 import better.files.*
 import dotty.tools.Settings
-import dotty.tools.repl.State
 import dotty.tools.dotc.core.Contexts.{Context, ctx}
 import dotty.tools.io.{ClassPath, Directory, PlainDirectory}
+import dotty.tools.repl.State
 import dotty.tools.scripting.{ScriptingDriver, Util}
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import os.{pwd, Path}
 
-import java.io.File as JFile
-import java.io.PrintStream
+import java.io.{PrintStream, File as JFile}
 import java.nio.file.{Files, Path, Paths}
 
 case class Config(
@@ -175,10 +174,6 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
     } else if (config.rmPlugin.isDefined) {
       new PluginManager(InstallConfig().rootPath).rm(config.rmPlugin.get)
     } else {
-      // TODO invoke Dependencies.resolve, flatten
-//      val dependencies = config.dependencies.flatMap(Dependencies.resolve)
-      // TODO pass to script/repl/server below
-
       config.scriptFile match {
         case None =>
           if (config.server) {
@@ -316,10 +311,20 @@ trait ScriptExecution { this: BridgeBase =>
 
   private def compilerArgs(config: Config): Array[String] = {
     val compilerArgs = Array.newBuilder[String]
-    compilerArgs ++= Array("-classpath", System.getProperty("java.class.path")) // pass classpath over
+
+    val dependencyFiles = Dependencies.resolveOptimistically(config.dependencies)
+    compilerArgs ++= Array("-classpath", replClasspath(dependencyFiles))
     compilerArgs += "-explain" // verbose scalac error messages
     if (config.nocolors) compilerArgs ++= Array("-color", "never")
     compilerArgs.result()
+  }
+
+  private def replClasspath(dependencies: Seq[java.io.File]): String = {
+    val inheritedClasspath = System.getProperty("java.class.path")
+    val separator = System.getProperty("path.separator")
+
+    val entriesForDeps = dependencies.mkString(separator)
+    s"$inheritedClasspath$separator$entriesForDeps"
   }
 
 }
