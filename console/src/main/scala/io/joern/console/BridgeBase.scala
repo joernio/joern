@@ -10,6 +10,7 @@ import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
 
 import java.io.{PrintStream, File as JFile}
+import java.net.URLClassLoader
 import java.nio.file.{Files, Path, Paths}
 
 case class Config(
@@ -223,24 +224,62 @@ trait ScriptExecution { this: BridgeBase =>
          |""".stripMargin
     }
 
+    val classLoader: ClassLoader = {
+      import java.net.{URL, URLClassLoader}
+      val parent = this.getClass.getClassLoader
+      new ClassLoader(parent) {
+        override def findClass(moduleName: String, name: String): Class[_] = {
+          val ret = super.findClass(moduleName, name)
+          println(s"XXXX findClass $moduleName $name=$ret")
+          ret
+        }
+
+        override def findClass(name: String): Class[_] = {
+          val ret = super.findClass(name)
+          println(s"XXXX findClass $name=$ret")
+          ret
+        }
+
+        override def loadClass(name: String): Class[_] = {
+          val ret = super.loadClass(name)
+          println(s"XXXX loadClass $name=$ret")
+          ret
+        }
+
+        override def loadClass(name: String, resolve: Boolean): Class[_] = {
+          val ret = super.loadClass(name, resolve)
+//          os.write.append(os.Path("/home/mp/Projects/shiftleft/joern/foo.txt"), s"$name\n")
+          println(s"XXXX loadClass resolve=$resolve $name=$ret")
+          ret
+        }
+      }
+    }
+
     val replDriver = new ReplDriver(
       compilerArgs(config),
       onExitCode = Option(onExitCode),
       greeting = greeting,
       prompt = promptStr,
-      maxPrintElements = Int.MaxValue
+      maxPrintElements = Int.MaxValue,
+      Option(classLoader)
     )
     val initialState: State = replDriver.initialState
 
     // when upgrading to Scala 3.2.1: change to `given State`
     val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-    val state: State =
-      if (config.verbose) {
-        println(predefCode)
-        replDriver.run(predefCode)(using initialState)
-      } else {
-        replDriver.runQuietly(predefCode)(using initialState)
-      }
+    // TODO proper predef code again...
+    val predef0 =
+      """
+        |import overflowdb._
+      """.stripMargin
+    val state: State = replDriver.run(predef0)(using initialState)
+//    val state: State =
+//      if (config.verbose) {
+//        println(predefCode)
+//        replDriver.run(predefCode)(using initialState)
+//      } else {
+//        replDriver.runQuietly(predefCode)(using initialState)
+//      }
 
     replDriver.runUntilQuit(state)
   }
