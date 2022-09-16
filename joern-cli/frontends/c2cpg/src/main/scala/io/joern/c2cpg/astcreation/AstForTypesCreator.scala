@@ -269,7 +269,8 @@ trait AstForTypesCreator { this: AstCreator =>
         declaration.getDeclarators.toList.map {
           case d: IASTDeclarator if d.getInitializer != null =>
             astForInitializer(d, d.getInitializer)
-          case arrayDecl: IASTArrayDeclarator =>
+          case arrayDecl: IASTArrayDeclarator
+              if !arrayDecl.getArrayModifiers.toList.exists(m => m.getConstantExpression == null) =>
             val op           = Operators.arrayInitializer
             val initCallNode = newCallNode(arrayDecl, op, op, DispatchTypes.STATIC_DISPATCH)
             val initArgs     = arrayDecl.getArrayModifiers.toList.map(astForNode)
