@@ -4,8 +4,7 @@ import better.files.File
 import io.joern.x2cpg.utils.dependency.GradleConfigKeys.GradleConfigKey
 import org.slf4j.LoggerFactory
 
-import java.nio.file.{Files, Path}
-import scala.jdk.CollectionConverters._
+import java.nio.file.Path
 
 object GradleConfigKeys extends Enumeration {
   type GradleConfigKey = Value

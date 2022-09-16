@@ -9,7 +9,6 @@ import org.json4s.DefaultFormats
 import org.json4s.native.Serialization.{write => jsonWrite}
 import overflowdb.Config
 
-import java.io.OutputStream
 import java.net.URLEncoder
 import java.nio.file.Path
 import scala.collection.mutable.ListBuffer

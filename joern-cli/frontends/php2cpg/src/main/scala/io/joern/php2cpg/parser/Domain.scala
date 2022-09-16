@@ -362,10 +362,10 @@ object Domain {
   private def readName(json: Value): PhpExpr = {
     json match {
       case Str(name) => PhpNameExpr(name, PhpAttributes.Empty)
-
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name_FullyQualified") =>
         val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
         PhpNameExpr(name, PhpAttributes(json))
+      case _ => ??? // TODO: other matches are possible?
     }
   }
 
