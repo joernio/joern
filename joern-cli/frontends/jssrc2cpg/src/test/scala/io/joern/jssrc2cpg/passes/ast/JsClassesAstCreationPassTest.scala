@@ -59,6 +59,28 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       memberFoo.code shouldBe "foo() {}"
     }
 
+    "have member with initialization in TYPE_DECL for ClassA" in AstFixture("""
+        |class ClassA {
+        |  a = 1
+        |  b = "foo"
+        |  c = true
+        |}""".stripMargin) { cpg =>
+      val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
+      val List(a, b, c)        = classATypeDecl.member.l
+      a.name shouldBe "a"
+      a.code shouldBe "a = 1"
+      b.name shouldBe "b"
+      b.code shouldBe """b = "foo""""
+      c.name shouldBe "c"
+      c.code shouldBe "c = true"
+
+      val List(clInitMethod)                    = cpg.typeDecl.nameExact("ClassA").method.nameExact("<clinit>").l
+      val List(aInitCall, bInitCall, cInitCall) = clInitMethod.ast.isCall.l
+      aInitCall.code shouldBe "a = 1"
+      bInitCall.code shouldBe """b = "foo""""
+      cInitCall.code shouldBe "c = true"
+    }
+
     "have method for non-static method in ClassA AST" in AstFixture("""
         |var x = class ClassA {
         |  foo() {}

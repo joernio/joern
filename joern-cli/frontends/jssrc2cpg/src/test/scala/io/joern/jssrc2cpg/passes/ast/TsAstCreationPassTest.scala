@@ -94,7 +94,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
         direction.fullName shouldBe "code.ts::program:Direction"
         direction.filename shouldBe "code.ts"
         direction.file.name.head shouldBe "code.ts"
-        inside(direction.method.name("<sinit>").l) { case List(init) =>
+        inside(direction.method.name("<clinit>").l) { case List(init) =>
           init.block.astChildren.isCall.code.head shouldBe "Up = 1"
         }
         inside(cpg.typeDecl("Direction").member.l) { case List(up, down, left, right) =>

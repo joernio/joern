@@ -23,8 +23,8 @@ class StructTypeTests extends CCodeToCpgSuite {
     }
 
     "initialize array members correctly" in {
-      val List(fakeInitMethod)                  = cpg.method.nameExact("<sinit>").l
-      val List(aInitCall, bInitCall, cInitCall) = fakeInitMethod.call.nameExact(Operators.arrayInitializer).l
+      val List(clInitMethod)                    = cpg.method.nameExact("<clinit>").l
+      val List(aInitCall, bInitCall, cInitCall) = clInitMethod.call.nameExact(Operators.arrayInitializer).l
 
       aInitCall.code shouldBe "a[SIZE]"
       val List(argAInit) = aInitCall.argument.l
