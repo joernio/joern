@@ -16,8 +16,9 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object HackyGlobalState {
-  var jp: JavaPlatform = null
-  var swap = false
+//  var jp: JavaPlatform = null
+//  var swap = false
+  var classloader: ClassLoader = null
 }
 
 class ReplDriver(args: Array[String],
@@ -83,13 +84,14 @@ class ReplDriver(args: Array[String],
         // TODO extract, handle elsewhere
         if (line.startsWith("//> using")) {
           println("foo bar hacky state") // todo update ClassPath
-          HackyGlobalState.swap = true
+          HackyGlobalState.classloader.clearAssertionStatus()
+//          HackyGlobalState.swap = true
 //          HackyGlobalState.jp.newClassLoader()
-          val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-          val newCp = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
-          HackyGlobalState.jp.updateClassPath(
-            Map(HackyGlobalState.jp.classPath -> newCp)
-          )
+//          val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+//          val newCp = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
+//          HackyGlobalState.jp.updateClassPath(
+//            Map(HackyGlobalState.jp.classPath -> newCp)
+//          )
           println("foo bar hacky state end") // todo update ClassPath
           // TODO impl properly
 //          classL
