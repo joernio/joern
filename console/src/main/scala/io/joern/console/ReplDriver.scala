@@ -18,7 +18,7 @@ import scala.jdk.CollectionConverters.*
 object HackyGlobalState {
 //  var jp: JavaPlatform = null
 //  var swap = false
-  var classloader: ClassLoader = null
+//  var classloader: ClassLoader = null
 }
 
 class ReplDriver(args: Array[String],
