@@ -316,7 +316,7 @@ trait ScriptExecution { this: BridgeBase =>
 //      compilerArgs.result()
 //    }
 
-    HackyGlobalState.classloader = classLoader
+//    HackyGlobalState.classloader = classLoader
     val replDriver = new ReplDriver(
       compilerArgs(config),
 //      scalacArgs0,
@@ -324,7 +324,7 @@ trait ScriptExecution { this: BridgeBase =>
       greeting = greeting,
       prompt = promptStr,
       maxPrintElements = Int.MaxValue,
-      Option(classLoader)
+//      Option(classLoader)
     )
 //    replDriver.addDependency(hppcJar)
 
