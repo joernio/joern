@@ -36,29 +36,29 @@ class ReplDriver(args: Array[String],
     val ctx = super.initCtx
     ctx.fresh.setSetting(ctx.settings.VreplMaxPrintElements, maxPrintElements)
 //    val base: ContextBase = ctx.base
-    val base: ContextBase = new ContextBase {
-      override def newPlatform(using Context): Platform = {
-        val jp = new JavaPlatform {
-          override def classPath(using Context): ClassPath = {
-            val original = super.classPath
-            val hppcJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/carrotsearch/hppc/0.7.1/hppc-0.7.1.jar"
-            val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-            val jar = if (!HackyGlobalState.swap) hppcJar else versionSortJar
-            val initialCp = ClassPathFactory.newClassPath(AbstractFile.getFile(jar))
-//            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
-//            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
-//            val newCp = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
-            println(s"XXX1 new aggregate classpath created with $jar")
-            new AggregateClassPath(Seq(original, initialCp))
-          }
-        }
-        HackyGlobalState.jp = jp
-        jp
-      }
-    }
+//    val base: ContextBase = new ContextBase {
+//      override def newPlatform(using Context): Platform = {
+//        val jp = new JavaPlatform {
+//          override def classPath(using Context): ClassPath = {
+//            val original = super.classPath
+//            val hppcJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/carrotsearch/hppc/0.7.1/hppc-0.7.1.jar"
+//            val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+//            val jar = if (!HackyGlobalState.swap) hppcJar else versionSortJar
+//            val initialCp = ClassPathFactory.newClassPath(AbstractFile.getFile(jar))
+////            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
+////            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
+////            val newCp = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
+//            println(s"XXX1 new aggregate classpath created with $jar")
+//            new AggregateClassPath(Seq(original, initialCp))
+//          }
+//        }
+//        HackyGlobalState.jp = jp
+//        jp
+//      }
+//    }
 
-    println("XXX2 ReplDriver.initCtx called")
-    new Contexts.InitialContext(base, ctx.settings)
+//    println("XXX2 ReplDriver.initCtx called")
+//    new Contexts.InitialContext(base, ctx.settings)
   }
 
   /** Run REPL with `state` until `:quit` command found
@@ -116,14 +116,15 @@ class ReplDriver(args: Array[String],
   
   /** configure rendering to use our pprinter for displaying results */
   private def initializeRenderer() = {
-    rendering.myReplStringOf = {
-      // We need to use the PPrinter class from the on the user classpath, and not the one available in the current
-      // classloader, so we use reflection instead of simply calling `io.joern.console.PPrinter:apply`.
-      // This is analogous to what happens in dotty.tools.repl.Rendering.
-      val pprinter = Class.forName("io.joern.console.PPrinter", true, rendering.myClassLoader)
-      val renderer = pprinter.getMethod("apply", classOf[Object])
-      (value: Object) => renderer.invoke(null, value).asInstanceOf[String]
-    }
+    // TODO reactivate...
+    // rendering.myReplStringOf = {
+    //   // We need to use the PPrinter class from the on the user classpath, and not the one available in the current
+    //   // classloader, so we use reflection instead of simply calling `io.joern.console.PPrinter:apply`.
+    //   // This is analogous to what happens in dotty.tools.repl.Rendering.
+    //   val pprinter = Class.forName("io.joern.console.PPrinter", true, rendering.myClassLoader)
+    //   val renderer = pprinter.getMethod("apply", classOf[Object])
+    //   (value: Object) => renderer.invoke(null, value).asInstanceOf[String]
+    // }
   }
 
 }
