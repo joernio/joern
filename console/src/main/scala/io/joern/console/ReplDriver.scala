@@ -16,7 +16,8 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object HackyGlobalState {
-//  var jp: JavaPlatform = null
+  var jp: JavaPlatform = null
+  var calledUsing = false
 //  var swap = false
 //  var classloader: ClassLoader = null
 }
@@ -35,31 +36,37 @@ class ReplDriver(args: Array[String],
 
   override def initCtx: Context = {
     val ctx = super.initCtx
-    ctx.fresh.setSetting(ctx.settings.VreplMaxPrintElements, maxPrintElements)
-//    val base: ContextBase = ctx.base
-//    val base: ContextBase = new ContextBase {
-//      override def newPlatform(using Context): Platform = {
-//        val jp = new JavaPlatform {
-//          override def classPath(using Context): ClassPath = {
-//            val original = super.classPath
-//            val hppcJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/carrotsearch/hppc/0.7.1/hppc-0.7.1.jar"
-//            val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-//            val jar = if (!HackyGlobalState.swap) hppcJar else versionSortJar
-//            val initialCp = ClassPathFactory.newClassPath(AbstractFile.getFile(jar))
-////            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
-////            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
-////            val newCp = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
-//            println(s"XXX1 new aggregate classpath created with $jar")
-//            new AggregateClassPath(Seq(original, initialCp))
-//          }
-//        }
-//        HackyGlobalState.jp = jp
-//        jp
-//      }
-//    }
+//    ctx.fresh.setSetting(ctx.settings.VreplMaxPrintElements, maxPrintElements)
 
-//    println("XXX2 ReplDriver.initCtx called")
-//    new Contexts.InitialContext(base, ctx.settings)
+//    val base: ContextBase = ctx.base
+    val base: ContextBase = new ContextBase {
+      override def newPlatform(using Context): Platform = {
+        val jp = new JavaPlatform {
+          override def classPath(using Context): ClassPath = {
+            val original = super.classPath
+//            val hppcJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/carrotsearch/hppc/0.7.1/hppc-0.7.1.jar"
+            val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+            val jar = versionSortJar
+//            val jars = if (HackyGlobalState.calledUsing) Seq(hppcJar, versionSortJar) else versionSortJar
+            val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(jar))
+//            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
+//            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
+//            val newCp = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
+            println(s"YYY1 new aggregate classpath; calledUsing=${HackyGlobalState.calledUsing}")
+            val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
+
+            val ret = new AggregateClassPath(cpResult)
+            ret
+            // TODO override everything in ^, check when it's being called...
+          }
+        }
+        HackyGlobalState.jp = jp
+        jp
+      }
+    }
+
+    println("YYY2 ReplDriver.initCtx called")
+    new Contexts.InitialContext(base, ctx.settings)
   }
 
   /** Run REPL with `state` until `:quit` command found
@@ -84,8 +91,8 @@ class ReplDriver(args: Array[String],
         // TODO extract, handle elsewhere
         if (line.startsWith("//> using")) {
           println("foo bar hacky state") // todo update ClassPath
-          HackyGlobalState.classloader.clearAssertionStatus()
-//          HackyGlobalState.swap = true
+//          HackyGlobalState.classloader.clearAssertionStatus()
+          HackyGlobalState.calledUsing = true
 //          HackyGlobalState.jp.newClassLoader()
 //          val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
 //          val newCp = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
