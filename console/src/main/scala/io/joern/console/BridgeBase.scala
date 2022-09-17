@@ -224,28 +224,41 @@ trait ScriptExecution { this: BridgeBase =>
          |""".stripMargin
     }
 
-    val classLoader: ClassLoader = {
-      import java.net.{URL, URLClassLoader}
-      val parent = this.getClass.getClassLoader
-      new ClassLoader(parent) {
+//    val classLoader: ClassLoader = {
+//      import java.net.{URL, URLClassLoader}
+//      val parent = this.getClass.getClassLoader
+//      new ClassLoader(parent) {
+//
+//        override def loadClass(name: String, resolve: Boolean): Class[_] = {
+//          val ret = super.loadClass(name, resolve)
+////          os.write.append(os.Path("/home/mp/Projects/shiftleft/joern/foo.txt"), s"$name\n")
+////          println(s"XXXX loadClass resolve=$resolve $name=$ret")
+//          ret
+//        }
+//      }
+//    }
+//
 
-        override def loadClass(name: String, resolve: Boolean): Class[_] = {
-          val ret = super.loadClass(name, resolve)
-//          os.write.append(os.Path("/home/mp/Projects/shiftleft/joern/foo.txt"), s"$name\n")
-//          println(s"XXXX loadClass resolve=$resolve $name=$ret")
-          ret
-        }
-      }
+    val scalacArgs0 = {
+      val hppcJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/carrotsearch/hppc/0.7.1/hppc-0.7.1.jar"
+      val compilerArgs = Array.newBuilder[String]
+      val dependencyFiles = Seq(Paths.get(hppcJar).toFile)
+      compilerArgs ++= Array("-classpath", replClasspath(dependencyFiles))
+      compilerArgs += "-explain" // verbose scalac error messages
+      if (config.nocolors) compilerArgs ++= Array("-color", "never")
+      compilerArgs.result()
     }
 
     val replDriver = new ReplDriver(
-      compilerArgs(config),
+//      compilerArgs(config),
+      scalacArgs0,
       onExitCode = Option(onExitCode),
       greeting = greeting,
       prompt = promptStr,
       maxPrintElements = Int.MaxValue,
-      Option(classLoader)
+//      Option(classLoader)
     )
+//    replDriver.addDependency(hppcJar)
 
     // TODO cleanup
 //    val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
@@ -271,9 +284,25 @@ trait ScriptExecution { this: BridgeBase =>
   // TODO test idea: if quit with C-c: restart with old state but new classloader - go via addDependency
     val state2 = replDriver.runUntilQuit(state)
     println("running again...")
-    val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-    replDriver.addDependency(versionSortJar)
-    replDriver.runUntilQuit(state2)
+    val scalacArgs1 = {
+      val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+      val compilerArgs = Array.newBuilder[String]
+      val dependencyFiles = Seq(Paths.get(versionSortJar).toFile)
+      compilerArgs ++= Array("-classpath", replClasspath(dependencyFiles))
+      compilerArgs += "-explain" // verbose scalac error messages
+      if (config.nocolors) compilerArgs ++= Array("-color", "never")
+      compilerArgs.result()
+    }
+    val replDriver2 = new ReplDriver(
+      scalacArgs1,
+      onExitCode = Option(onExitCode),
+      greeting = greeting,
+      prompt = promptStr,
+      maxPrintElements = Int.MaxValue,
+//      Option(classLoader)
+    )
+//    replDriver2.addDependency(versionSortJar)
+    replDriver2.runUntilQuit(state2)
   }
 
   protected def runScript(scriptFile: os.Path, config: Config): Unit = {
