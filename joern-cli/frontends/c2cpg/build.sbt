@@ -8,7 +8,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules"  %% "scala-parallel-collections" % "1.0.4",
   "com.diffplug.spotless"    % "spotless-eclipse-cdt"       % "10.5.0",
   "org.jline"                % "jline"                      % "3.21.0",
-  "org.slf4j"                % "slf4j-api"                  % "1.7.36",
+  "org.slf4j"                % "slf4j-api"                  % "2.0.1",
   "org.apache.logging.log4j" % "log4j-slf4j-impl"           % Versions.log4j     % Runtime,
   "org.scalatest"           %% "scalatest"                  % Versions.scalatest % Test
 )
