@@ -110,7 +110,8 @@ class ReplDriver(args: Array[String],
 //          rootCtx = ctx
 //          rootCtx = initCtx
           rootCtx = initialCtx(Nil)
-          // import works now! but renderer needs update as well...
+          rendering.myClassLoader = null
+          
           ParseResult(line)(state)
           //          ParseResult(line)(initialState)
 
