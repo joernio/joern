@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.BeforeAndAfterAll
 
-class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
+class ProjectParseTest extends JsSrc2CpgSuite with BeforeAndAfterAll {
 
   private val projectWithSubfolders: File = {
     val dir = File.newTemporaryDirectory("jssrc2cpgTestsSubfolders")
