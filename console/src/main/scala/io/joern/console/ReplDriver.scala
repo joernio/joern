@@ -5,12 +5,13 @@ import dotty.tools.dotc.ast.{tpd, untpd}
 import dotty.tools.dotc.classpath.{AggregateClassPath, ClassPathFactory}
 import dotty.tools.dotc.config.{JavaPlatform, Platform}
 import dotty.tools.dotc.core.Contexts
-import dotty.tools.io.{AbstractFile, ClassPath}
+import dotty.tools.io.{AbstractFile, ClassPath, ClassRepresentation}
 import dotty.tools.repl.{CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
 
 import java.io.PrintStream
 import org.jline.reader.*
 
+import java.net.URL
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
@@ -34,6 +35,12 @@ class ReplDriver(args: Array[String],
 
   def addDependency(jarPath: String): Unit = additionalDependencyJars.add(jarPath)
 
+  def _updateCp(): Unit = {
+    val newCp: ClassPath = ???
+    HackyGlobalState.jp.updateClassPath(
+      Map(HackyGlobalState.initialCp, newCp))
+  }
+
   override def initCtx: Context = {
     val ctx = super.initCtx
 //    ctx.fresh.setSetting(ctx.settings.VreplMaxPrintElements, maxPrintElements)
@@ -51,13 +58,55 @@ class ReplDriver(args: Array[String],
             val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(jar))
 //            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
 //            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
-//            val newCp = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
+//            val directoryClassPath = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
+//            val virtualDirectory = dotty.tools.io.VirtualDirectory("classes")
             println(s"YYY1 new aggregate classpath; calledUsing=${HackyGlobalState.calledUsing}")
             val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
 
-            val ret = new AggregateClassPath(cpResult)
-            ret
-            // TODO override everything in ^, check when it's being called...
+            new AggregateClassPath(cpResult) {
+//              override def hasPackage(pkg: String) = {
+//                val ret = super.hasPackage(pkg)
+//                println(s"VVV hasPackage: ret=$ret")
+//                ret
+//              }
+//
+//              override def packages(inPackage: String) = {
+//                val ret = super.packages(inPackage)
+//                println(s"VVV packages: ret=$ret")
+//                ret
+//              }
+//
+//              override def classes(inPackage: String) = {
+//                val ret = super.classes(inPackage)
+//                println(s"VVV classes: ret=$ret")
+//                ret
+//              }
+//
+//              override def sources(inPackage: String) = {
+//                val ret = super.sources(inPackage)
+//                println(s"VVV sources: ret=$ret")
+//                ret
+//              }
+//
+//              override def list(inPackage: String) = {
+//                val ret = super.list(inPackage)
+//                if (HackyGlobalState.calledUsing) throw new AssertionError("boom")
+//                println(s"VVV list: ret=$ret")
+//                ret
+//              }
+//
+//              override def findClassFile(className: String): Option[AbstractFile] = {
+//                val ret = super.findClassFile(className)
+//                println(s"VVV findClassFile $className: $ret")
+//                ret
+//              }
+//
+//              override def findClass(className: String): Option[ClassRepresentation] = {
+//                val ret = super.findClass(className)
+//                println(s"VVV findClass $className: $ret")
+//                ret
+//              }
+            }
           }
         }
         HackyGlobalState.jp = jp
@@ -66,7 +115,8 @@ class ReplDriver(args: Array[String],
     }
 
     println("YYY2 ReplDriver.initCtx called")
-    new Contexts.InitialContext(base, ctx.settings)
+    val ret = new Contexts.InitialContext(base, ctx.settings)
+    ret
   }
 
   /** Run REPL with `state` until `:quit` command found
