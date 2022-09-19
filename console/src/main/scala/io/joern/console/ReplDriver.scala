@@ -1,10 +1,10 @@
 package io.joern.console
 
 import dotty.tools.dotc.core.Contexts.{Context, ContextBase}
-import dotty.tools.dotc.ast.{tpd, untpd}
+import dotty.tools.dotc.ast.{Positioned, tpd, untpd}
 import dotty.tools.dotc.classpath.{AggregateClassPath, ClassPathFactory}
-import dotty.tools.dotc.config.{JavaPlatform, Platform}
-import dotty.tools.dotc.core.{Contexts, Mode}
+import dotty.tools.dotc.config.{Feature, JavaPlatform, Platform}
+import dotty.tools.dotc.core.{Contexts, MacroClassLoader, Mode}
 import dotty.tools.io.{AbstractFile, ClassPath, ClassRepresentation}
 import dotty.tools.repl.{CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
 
@@ -117,13 +117,39 @@ class ReplDriver(args: Array[String],
 //          newRootCtx.setSetting(newRootCtx.settings.YreadComments, true)
 //          setupRootCtx(this.settings ++ settings, newRootCtx)
 //          rootCtx = setupRootCtx(this.args, newRootCtx) // this works but removes the state - drill deeper in here - can we save the state?
-          rootCtx = setup(settings, newRootCtx) match {
-            case Some((Nil, ictx)) => Contexts.inContext(ictx) {
-              ictx.base.initialize() // test: inside `initialise, call `newPlatform`, but not `definitions.init`
-              ictx
+//          rootCtx = setup(settings, newRootCtx) match {
+//            case Some((Nil, ictx)) => Contexts.inContext(ictx) {
+              // still works... maybe the main thing happens in setup?
+//              ictx.base.initialize() // test: inside `initialise, call `newPlatform`, but not `definitions.init`
+//              ictx
+//            }
+//            case _ => ???
+//          }
+
+          // happens in `setup - drill in there...
+//          rootCtx = setup(settings, newRootCtx).get._2
+
+          import dotty.tools.dotc.core.Comments.{ContextDoc, ContextDocstrings}
+          import Contexts.ctx
+          // TODO dive deeper here - currently still reproduces - simplify further...
+          def setup(args: Array[String], rootCtx: Context): Context = {
+            val ictx = rootCtx.fresh
+            val summary = command.distill(args, ictx.settings)(ictx.settingsState)(using ictx)
+            ictx.setSettings(summary.sstate)
+            Feature.checkExperimentalSettings(using ictx)
+            MacroClassLoader.init(ictx)
+            Positioned.init(using ictx)
+
+            Contexts.inContext(ictx) {
+              if !ctx.settings.YdropComments.value || ctx.settings.YreadComments.value then
+                ictx.setProperty(ContextDoc, new ContextDocstrings)
+              val fileNamesOrNone = command.checkUsage(summary, sourcesRequired)(using ctx.settings)(using ctx.settingsState)
+              val fileNames = fileNamesOrNone.get
+              val files = fileNames.map(ctx.getFile)
+              fromTastySetup(files)
             }
-            case _ => ???
           }
+          rootCtx = setup(settings, newRootCtx)
 
           rendering.myClassLoader = null
 
