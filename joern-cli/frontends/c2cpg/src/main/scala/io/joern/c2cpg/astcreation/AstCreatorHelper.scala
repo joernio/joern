@@ -1,18 +1,9 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.datastructures.CGlobal
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  ExpressionNew,
-  NewBlock,
-  NewCall,
-  NewMethod,
-  NewMethodReturn,
-  NewNode
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast._
@@ -400,33 +391,6 @@ trait AstCreatorHelper { this: AstCreator =>
     val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH)
     val args     = c.getArguments.toList.map(a => astForNode(a))
     callAst(callNode, args)
-  }
-
-  protected def astForFakeStaticInitMethod(
-    name: String,
-    lineNumber: Option[Integer],
-    astParentFullName: String,
-    childrenAsts: Seq[Ast]
-  ): Ast = {
-    val code = childrenAsts.flatMap(_.nodes.headOption.map(_.asInstanceOf[NewCall].code)).mkString(",")
-    val fakeStaticInitMethod =
-      NewMethod()
-        .name("<clinit>")
-        .fullName(s"$name:<clinit>")
-        .code(code)
-        .filename(filename)
-        .lineNumber(lineNumber)
-        .astParentType(NodeTypes.TYPE_DECL)
-        .astParentFullName(astParentFullName)
-
-    val blockNode = NewBlock()
-      .typeFullName("ANY")
-
-    val methodReturn = NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName("ANY")
-    Ast(fakeStaticInitMethod).withChild(Ast(blockNode).withChildren(childrenAsts)).withChild(Ast(methodReturn))
   }
 
   protected def astForNode(node: IASTNode): Ast = {

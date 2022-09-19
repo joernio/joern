@@ -319,7 +319,12 @@ trait AstForTypesCreator { this: AstCreator =>
     if (calls.isEmpty) {
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
-      val init = astForFakeStaticInitMethod(fullname, line(typeSpecifier), fullname, calls)
+      val init = staticInitMethodAst(
+        calls,
+        s"$fullname:${io.joern.x2cpg.Defines.StaticInitMethodName}",
+        None,
+        Defines.anyTypeName
+      )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
   }
@@ -380,7 +385,7 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
-    val memberAsts = typeSpecifier.getEnumerators.toIndexedSeq.flatMap { e =>
+    val memberAsts = typeSpecifier.getEnumerators.toList.flatMap { e =>
       astsForEnumerator(e)
     }
     methodAstParentStack.pop()
@@ -390,7 +395,12 @@ trait AstForTypesCreator { this: AstCreator =>
     if (calls.isEmpty) {
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
-      val init = astForFakeStaticInitMethod(fullname, line(typeSpecifier), fullname, calls)
+      val init = staticInitMethodAst(
+        calls,
+        s"$fullname:${io.joern.x2cpg.Defines.StaticInitMethodName}",
+        None,
+        Defines.anyTypeName
+      )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
   }

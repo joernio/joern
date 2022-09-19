@@ -209,7 +209,7 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.push(typeDeclNode)
     dynamicInstanceTypeStack.push(typeFullName)
 
-    val memberAsts = tsEnum.json("members").arr.toSeq.flatMap(m => astsForEnumMember(createBabelNodeInfo(m)))
+    val memberAsts = tsEnum.json("members").arr.toList.flatMap(m => astsForEnumMember(createBabelNodeInfo(m)))
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
@@ -218,8 +218,12 @@ trait AstForTypesCreator { this: AstCreator =>
     if (calls.isEmpty) {
       Ast(typeDeclNode).withChildren(member)
     } else {
-      val init =
-        createAstForFakeStaticInitMethod(typeFullName, parserResult.filename, tsEnum.lineNumber, calls)
+      val init = staticInitMethodAst(
+        calls,
+        s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
+        None,
+        Defines.ANY.label
+      )
       Ast(typeDeclNode).withChildren(member).withChild(init)
     }
   }
@@ -281,7 +285,7 @@ trait AstForTypesCreator { this: AstCreator =>
     diffGraph.addEdge(constructorBindingNode, constructorNode, EdgeTypes.REF)
 
     val memberInitCalls =
-      classMembers(clazz, withConstructor = false).map(m => astForClassMember(m, typeDeclNode, metaTypeDeclNode))
+      classMembers(clazz, withConstructor = false).toList.map(m => astForClassMember(m, typeDeclNode, metaTypeDeclNode))
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
@@ -290,8 +294,12 @@ trait AstForTypesCreator { this: AstCreator =>
     scope.popScope()
 
     if (memberInitCalls.nonEmpty) {
-      val init =
-        createAstForFakeStaticInitMethod(typeFullName, parserResult.filename, clazz.lineNumber, memberInitCalls)
+      val init = staticInitMethodAst(
+        memberInitCalls,
+        s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
+        None,
+        Defines.ANY.label
+      )
       Ast.storeInDiffGraph(init, diffGraph)
       diffGraph.addEdge(typeDeclNode, init.nodes.head, EdgeTypes.AST)
     }

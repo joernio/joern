@@ -3,6 +3,7 @@ package io.joern.x2cpg
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -77,6 +78,19 @@ abstract class AstCreatorBase(filename: String) {
       .lineNumber(line)
       .columnNumber(column)
 
+  def staticInitMethodAst(initAsts: List[Ast], fullName: String, signature: Option[String], returnType: String): Ast = {
+    val methodNode = NewMethod()
+      .name(Defines.StaticInitMethodName)
+      .fullName(fullName)
+    if (signature.isDefined) {
+      methodNode.signature(signature.get)
+    }
+    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
+    val body           = blockAst(NewBlock(), initAsts)
+    val methodReturn   = methodReturnNode(returnType, None, None, None)
+    methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
+  }
+
   /** For a given return node and arguments, create an AST that represents the return instruction. The main purpose of
     * this method is to automatically assign the correct argument indices.
     */
@@ -111,8 +125,7 @@ abstract class AstCreatorBase(filename: String) {
     * method is to increase the readability of the code which creates block asts.
     */
   def blockAst(blockNode: NewBlock, statements: List[Ast] = List()): Ast = {
-    Ast(blockNode)
-      .withChildren(statements)
+    Ast(blockNode).withChildren(statements)
   }
 
   /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
