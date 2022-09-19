@@ -56,14 +56,6 @@ class ReplDriver(args: Array[String],
             val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
 
             val cp = new AggregateClassPath(cpResult)
-//              override def list(inPackage: String) = {
-//                val ret = super.list(inPackage)
-//                println(s"VVV list: ret=$ret")
-//                if (HackyGlobalState.calledUsing) throw new AssertionError("boom")
-//                ret
-//              }
-//            }
-
 //            println(s"YYY3 JavaPlatform.classpath called; calledUsing=${HackyGlobalState.calledUsing}")
             HackyGlobalState.initialCp = cp
             HackyGlobalState.initialCp
@@ -97,8 +89,11 @@ class ReplDriver(args: Array[String],
         candidates.addAll(comps.asJava)
       }
       given Context = state.context
+      // TODO try, then change...
+//      var ctx = state.context
       try {
         val line = terminal.readLine(completer)
+//        val line = terminal.readLine(completer)(using ctx)
         // TODO extract, handle elsewhere
         if (line.startsWith("//> using")) {
           HackyGlobalState.calledUsing = true
@@ -109,43 +104,18 @@ class ReplDriver(args: Array[String],
 //              .setSetting(rootCtx.settings.outputDir, new dotty.tools.io.VirtualDirectory("<REPL compilation output>"))
 //          compiler = new dotty.tools.repl.ReplCompiler
 //          rendering = new dotty.tools.repl.Rendering(classLoader)
-          resetToInitial(Nil)
-          ParseResult(line)(initialState)
+//          resetToInitial(Nil)
+//          ctx = initCtx
+//          ctx.fresh
+//          rootCtx = ctx
+//          rootCtx = initCtx
+          rootCtx = initialCtx(Nil)
+          // import works now! but renderer needs update as well...
+          ParseResult(line)(state)
+          //          ParseResult(line)(initialState)
 
 //          this.compiler.reset() // that alone doesn't work...
 //          compiler = new dotty.tools.repl.ReplCompiler // this trips up everything...
-
-          // trying to update ClassPath
-//          val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-//          val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
-//          //            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
-//          //            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
-//          //            val directoryClassPath = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
-//          //            val virtualDirectory = dotty.tools.io.VirtualDirectory("classes")
-//          println(s"YYY2 new aggregate classpath")
-//
-////          val oldCp = HackyGlobalState.initialCp
-//          val oldCp = HackyGlobalState.jp.classPath
-//          val newCp = new AggregateClassPath(Seq(oldCp, versionSortClassPath))
-//
-//          HackyGlobalState.jp.updateClassPath(
-//            Map(oldCp -> newCp)
-//          )
-
-//          state.context.freshOver(state.context)
-//          this.compiler = new ReplCompiler
-          //          state.context.fresh
-//          state.context.initialize()
-
-//          HackyGlobalState.classloader.clearAssertionStatus()
-//          HackyGlobalState.calledUsing = true
-//          HackyGlobalState.jp.newClassLoader()
-//          val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-//          val newCp = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
-//          HackyGlobalState.jp.updateClassPath(
-//            Map(HackyGlobalState.jp.classPath -> newCp)
-//          )
-//          println("foo bar hacky state end") // todo update ClassPath
         }
         else {
           ParseResult(line)(state)
