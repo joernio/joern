@@ -435,7 +435,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
     argument.name shouldBe Operators.fieldAccess
     argument.typeFullName shouldBe "test.MyObject"
-    argument.code shouldBe "obj"
+    argument.code shouldBe "this.obj"
     argument.order shouldBe 2
     argument.argumentIndex shouldBe 1
 

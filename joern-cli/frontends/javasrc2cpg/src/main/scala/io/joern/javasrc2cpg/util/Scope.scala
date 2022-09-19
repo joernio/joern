@@ -24,12 +24,14 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
   private var typeDeclStack: List[NewTypeDecl]              = Nil
   private var lambdaMethods: List[mutable.ArrayBuffer[Ast]] = Nil
   private var lambdaDecls: List[mutable.ArrayBuffer[Ast]]   = Nil
+  private var memberInits: List[mutable.ArrayBuffer[Ast]]   = Nil
 
   override def pushNewScope(scope: ScopeType): Unit = {
     scope match {
       case TypeDeclScope(declNode) =>
         typeDeclStack = declNode :: typeDeclStack
         lambdaMethods = mutable.ArrayBuffer[Ast]() :: lambdaMethods
+        memberInits = mutable.ArrayBuffer[Ast]() :: memberInits
       case NamespaceScope =>
         lambdaDecls = mutable.ArrayBuffer[Ast]() :: lambdaMethods
       case _ => // Nothing to do in this case
@@ -52,6 +54,7 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
       case Some(TypeDeclScope(typeDecl)) =>
         typeDeclStack = typeDeclStack.tail
         lambdaMethods = lambdaMethods.tail
+        memberInits = memberInits.tail
         Some(TypeDeclScope(typeDecl))
 
       case Some(NamespaceScope) =>
@@ -118,6 +121,22 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
           }
           .flatten
       )
+  }
+
+  def addMemberInitializersToScope(inits: Seq[Ast]): Unit = {
+    memberInits match {
+      case currMembers :: _ => currMembers.addAll(inits)
+      case Nil              => logger.warn("Attempting to add static initializes without memberInits in scope.")
+    }
+  }
+
+  def getMemberInitializers: Seq[Ast] = {
+    memberInits match {
+      case currMembers :: _ => currMembers.toSeq
+      case Nil =>
+        logger.warn("Attemping to fetch initializers from scope with uninitialized memberInits. Inits may be missing.")
+        Seq.empty
+    }
   }
 
   private def getWildcardType(identifier: String): Option[String] = {
