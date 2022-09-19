@@ -52,7 +52,7 @@ class MemberTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should not create a <clinit> method for classes without static members" in {
-    cpg.typeDecl.nameExact("Foo").method.nameExact("<clinit>").size shouldBe 0
+    cpg.typeDecl.nameExact("Foo").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).size shouldBe 0
   }
 
   "should create correct static and non-static members for class with both" in {
@@ -85,11 +85,11 @@ class MemberTests extends JavaSrcCodeToCpgFixture {
   "should create a single <clinit> method for classes with static members" in {
     pendingUntilFixed {
 
-      cpg.typeDecl.nameExact("Bar").method.nameExact("<clinit>").size shouldBe 1
+      cpg.typeDecl.nameExact("Bar").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).size shouldBe 1
 
-      val clinit = cpg.typeDecl.nameExact("Bar").method.nameExact("<clinit>").head
+      val clinit = cpg.typeDecl.nameExact("Bar").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).head
       clinit.signature shouldBe "void()"
-      clinit.fullName shouldBe "Bar.<clinit>:void()"
+      clinit.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.StaticInitMethodName}:void()"
 
       clinit.body.astChildren.l match {
         case List(

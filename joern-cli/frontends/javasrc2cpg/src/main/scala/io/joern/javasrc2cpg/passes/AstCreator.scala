@@ -96,7 +96,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{
   operatorCallNode
 }
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
-import io.joern.javasrc2cpg.util.Scope.{ScopeTypes, WildcardImportName}
+import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.javasrc2cpg.util.{
   BindingTable,
   BindingTableAdapterForJavaparser,
@@ -159,7 +159,6 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
 import scala.language.{existentials, implicitConversions}
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 case class ClosureBindingEntry(nodeTypeInfo: NodeTypeInfo, binding: NewClosureBinding)
@@ -450,23 +449,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     Option.when(staticInits.nonEmpty) {
       val signature = composeMethodLikeSignature(TypeConstants.Void, Nil)
       val fullName = scopeStack.getEnclosingTypeDecl
-        .map { typeDecl =>
-          composeMethodFullName(typeDecl.fullName, NameConstants.Clinit, signature)
-        }
+        .map(typeDecl =>
+          composeMethodFullName(typeDecl.fullName, io.joern.x2cpg.Defines.StaticInitMethodName, signature)
+        )
         .getOrElse("")
-
-      val methodNode = NewMethod()
-        .name(NameConstants.Clinit)
-        .fullName(fullName)
-        .signature(signature)
-
-      val staticModifier = modifierNode(ModifierTypes.STATIC)
-
-      val body = Ast(NewBlock()).withChildren(staticInits)
-
-      val methodReturn = methodReturnNode(TypeConstants.Void, None, None, None)
-
-      methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
+      staticInitMethodAst(staticInits.toList, fullName, Some(signature), TypeConstants.Void)
     }
   }
 

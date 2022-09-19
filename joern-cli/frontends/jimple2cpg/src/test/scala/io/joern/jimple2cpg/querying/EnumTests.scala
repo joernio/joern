@@ -43,7 +43,7 @@ class EnumTests extends JimpleCodeToCpgFixture {
     constructor.lineNumber shouldBe Some(1)
 
     staticInit.order shouldBe 4
-    staticInit.name shouldBe "<clinit>"
+    staticInit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
     staticInit.lineNumber shouldBe Some(2)
   }
 
@@ -88,7 +88,7 @@ class EnumTests extends JimpleCodeToCpgFixture {
     val List(redCall, blueCall) = cpg.typeDecl
       .name(".*Color.*")
       .method
-      .name("<clinit>")
+      .name(io.joern.x2cpg.Defines.StaticInitMethodName)
       .ast
       .isCall
       .code(".*.Color(.+, \\d+, .+)")
