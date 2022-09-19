@@ -18,6 +18,7 @@ import scala.jdk.CollectionConverters.*
 
 object HackyGlobalState {
   var jp: JavaPlatform = null
+  var initialCp: ClassPath = null
   var calledUsing = false
 //  var swap = false
 //  var classloader: ClassLoader = null
@@ -31,15 +32,9 @@ class ReplDriver(args: Array[String],
                  maxPrintElements: Int,
                  classLoader: Option[ClassLoader] = None) extends dotty.tools.repl.ReplDriver(args, out, classLoader) {
 
-  private val additionalDependencyJars: mutable.Set[String] = mutable.Set.empty
+//  private val additionalDependencyJars: mutable.Set[String] = mutable.Set.empty
 
-  def addDependency(jarPath: String): Unit = additionalDependencyJars.add(jarPath)
-
-  def _updateCp(): Unit = {
-    val newCp: ClassPath = ???
-    HackyGlobalState.jp.updateClassPath(
-      Map(HackyGlobalState.initialCp, newCp))
-  }
+//  def addDependency(jarPath: String): Unit = additionalDependencyJars.add(jarPath)
 
   override def initCtx: Context = {
     val ctx = super.initCtx
@@ -51,62 +46,27 @@ class ReplDriver(args: Array[String],
         val jp = new JavaPlatform {
           override def classPath(using Context): ClassPath = {
             val original = super.classPath
-//            val hppcJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/carrotsearch/hppc/0.7.1/hppc-0.7.1.jar"
             val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-            val jar = versionSortJar
-//            val jars = if (HackyGlobalState.calledUsing) Seq(hppcJar, versionSortJar) else versionSortJar
-            val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(jar))
+            val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
 //            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
 //            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
 //            val directoryClassPath = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
 //            val virtualDirectory = dotty.tools.io.VirtualDirectory("classes")
-            println(s"YYY1 new aggregate classpath; calledUsing=${HackyGlobalState.calledUsing}")
+//            println(s"YYY1 new aggregate classpath; calledUsing=${HackyGlobalState.calledUsing}")
             val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
 
-            new AggregateClassPath(cpResult) {
-//              override def hasPackage(pkg: String) = {
-//                val ret = super.hasPackage(pkg)
-//                println(s"VVV hasPackage: ret=$ret")
-//                ret
-//              }
-//
-//              override def packages(inPackage: String) = {
-//                val ret = super.packages(inPackage)
-//                println(s"VVV packages: ret=$ret")
-//                ret
-//              }
-//
-//              override def classes(inPackage: String) = {
-//                val ret = super.classes(inPackage)
-//                println(s"VVV classes: ret=$ret")
-//                ret
-//              }
-//
-//              override def sources(inPackage: String) = {
-//                val ret = super.sources(inPackage)
-//                println(s"VVV sources: ret=$ret")
-//                ret
-//              }
-//
+            val cp = new AggregateClassPath(cpResult)
 //              override def list(inPackage: String) = {
 //                val ret = super.list(inPackage)
-//                if (HackyGlobalState.calledUsing) throw new AssertionError("boom")
 //                println(s"VVV list: ret=$ret")
+//                if (HackyGlobalState.calledUsing) throw new AssertionError("boom")
 //                ret
 //              }
-//
-//              override def findClassFile(className: String): Option[AbstractFile] = {
-//                val ret = super.findClassFile(className)
-//                println(s"VVV findClassFile $className: $ret")
-//                ret
-//              }
-//
-//              override def findClass(className: String): Option[ClassRepresentation] = {
-//                val ret = super.findClass(className)
-//                println(s"VVV findClass $className: $ret")
-//                ret
-//              }
-            }
+//            }
+
+//            println(s"YYY3 JavaPlatform.classpath called; calledUsing=${HackyGlobalState.calledUsing}")
+            HackyGlobalState.initialCp = cp
+            HackyGlobalState.initialCp
           }
         }
         HackyGlobalState.jp = jp
@@ -114,7 +74,8 @@ class ReplDriver(args: Array[String],
       }
     }
 
-    println("YYY2 ReplDriver.initCtx called")
+    println(s"YYY2 ReplDriver.initCtx called. calledUsing=${HackyGlobalState.calledUsing}")
+//    throw new AssertionError("boom") // who's calling us?
     val ret = new Contexts.InitialContext(base, ctx.settings)
     ret
   }
@@ -140,20 +101,55 @@ class ReplDriver(args: Array[String],
         val line = terminal.readLine(completer)
         // TODO extract, handle elsewhere
         if (line.startsWith("//> using")) {
-          println("foo bar hacky state") // todo update ClassPath
-//          HackyGlobalState.classloader.clearAssertionStatus()
           HackyGlobalState.calledUsing = true
+//          val settings = Nil
+//          rootCtx = initialCtx(settings)
+//          if (rootCtx.settings.outputDir.isDefault(using rootCtx))
+//            rootCtx = rootCtx.fresh
+//              .setSetting(rootCtx.settings.outputDir, new dotty.tools.io.VirtualDirectory("<REPL compilation output>"))
+//          compiler = new dotty.tools.repl.ReplCompiler
+//          rendering = new dotty.tools.repl.Rendering(classLoader)
+          resetToInitial(Nil)
+          ParseResult(line)(initialState)
+
+//          this.compiler.reset() // that alone doesn't work...
+//          compiler = new dotty.tools.repl.ReplCompiler // this trips up everything...
+
+          // trying to update ClassPath
+//          val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+//          val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
+//          //            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
+//          //            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
+//          //            val directoryClassPath = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
+//          //            val virtualDirectory = dotty.tools.io.VirtualDirectory("classes")
+//          println(s"YYY2 new aggregate classpath")
+//
+////          val oldCp = HackyGlobalState.initialCp
+//          val oldCp = HackyGlobalState.jp.classPath
+//          val newCp = new AggregateClassPath(Seq(oldCp, versionSortClassPath))
+//
+//          HackyGlobalState.jp.updateClassPath(
+//            Map(oldCp -> newCp)
+//          )
+
+//          state.context.freshOver(state.context)
+//          this.compiler = new ReplCompiler
+          //          state.context.fresh
+//          state.context.initialize()
+
+//          HackyGlobalState.classloader.clearAssertionStatus()
+//          HackyGlobalState.calledUsing = true
 //          HackyGlobalState.jp.newClassLoader()
 //          val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
 //          val newCp = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
 //          HackyGlobalState.jp.updateClassPath(
 //            Map(HackyGlobalState.jp.classPath -> newCp)
 //          )
-          println("foo bar hacky state end") // todo update ClassPath
-          // TODO impl properly
-//          classL
+//          println("foo bar hacky state end") // todo update ClassPath
         }
-        ParseResult(line)(state)
+        else {
+          ParseResult(line)(state)
+        }
       } catch {
         case _: EndOfFileException => // Ctrl+D
           onExitCode.foreach(code => run(code)(state))
