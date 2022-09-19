@@ -4,7 +4,7 @@ import dotty.tools.dotc.core.Contexts.{Context, ContextBase}
 import dotty.tools.dotc.ast.{tpd, untpd}
 import dotty.tools.dotc.classpath.{AggregateClassPath, ClassPathFactory}
 import dotty.tools.dotc.config.{JavaPlatform, Platform}
-import dotty.tools.dotc.core.Contexts
+import dotty.tools.dotc.core.{Contexts, Mode}
 import dotty.tools.io.{AbstractFile, ClassPath, ClassRepresentation}
 import dotty.tools.repl.{CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
 
@@ -109,9 +109,24 @@ class ReplDriver(args: Array[String],
 //          ctx.fresh
 //          rootCtx = ctx
 //          rootCtx = initCtx
-          rootCtx = initialCtx(Nil)
+
+//          rootCtx = initialCtx(Nil)
+          val newRootCtx = initCtx//.fresh//.addMode(Mode.ReadPositions | Mode.Interactive)
+          val settings = args
+//          newRootCtx.setSetting(newRootCtx.settings.YcookComments, true)
+//          newRootCtx.setSetting(newRootCtx.settings.YreadComments, true)
+//          setupRootCtx(this.settings ++ settings, newRootCtx)
+//          rootCtx = setupRootCtx(this.args, newRootCtx) // this works but removes the state - drill deeper in here - can we save the state?
+          rootCtx = setup(settings, newRootCtx) match {
+            case Some((Nil, ictx)) => Contexts.inContext(ictx) {
+              ictx.base.initialize() // test: inside `initialise, call `newPlatform`, but not `definitions.init`
+              ictx
+            }
+            case _ => ???
+          }
+
           rendering.myClassLoader = null
-          
+
           ParseResult(line)(state)
           //          ParseResult(line)(initialState)
 
