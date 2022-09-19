@@ -5,7 +5,7 @@ import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.NodeBuilders.modifierNode
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes, Operators, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewFile, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewAnnotation, NewAnnotationLiteral, NewAnnotationParameter, NewAnnotationParameterAssign, NewArrayInitializer, NewBinding, NewBlock, NewCall, NewClosureBinding, NewControlStructure, NewFieldIdentifier, NewFile, NewIdentifier, NewJumpTarget, NewLiteral, NewLocal, NewMember, NewMethod, NewMethodParameterIn, NewMethodRef, NewMethodReturn, NewModifier, NewNamespaceBlock, NewNode, NewReturn, NewTypeDecl, NewTypeRef, NewUnknown, NewConfigFile}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -52,7 +52,8 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     sourceUnit.children.collectFirst { case x: ImportDirective => x }
     // TODO: Pragma directive will be useful to get which version of Solidity we're using but for now we don't have
     //  anywhere to store that information
-    sourceUnit.children.collectFirst { case x: PragmaDirective => x }
+    sourceUnit.children.collectFirst { case x: PragmaDirective => ConfigNode(x)
+    }
 
     val packageDecl = astForPackageDeclaration(sourceUnit)
     val namespaceBlockFullName = {
@@ -68,6 +69,14 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withChildren(typeDecls)
 
   }
+
+  private def ConfigNode(directive: PragmaDirective): Unit = {
+    val configNode = NewConfigFile()
+      .name(directive.name)
+      .content(directive.value)
+    diffGraph.addNode(configNode)
+  }
+
 //TODO: Fix
   private def astForPackageDeclaration(sourceUnit:SourceUnit): Ast = {
     val fullName = filename.replace(java.io.File.separator, ".")
