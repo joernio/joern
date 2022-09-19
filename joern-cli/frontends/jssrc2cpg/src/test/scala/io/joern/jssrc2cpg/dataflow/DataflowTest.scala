@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
-class DataflowTests extends DataFlowCodeToCpgSuite {
+class DataflowTest extends DataFlowCodeToCpgSuite {
 
   "Flow from function call read to multiple versions of the same variable" in {
     val cpg: Cpg = code("""

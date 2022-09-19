@@ -72,10 +72,12 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Traversal[NodeType]) exte
     _dump(highlight = false)
 
   private def _dump(highlight: Boolean)(implicit finder: NodeExtensionFinder): List[String] = {
-    var language: Option[String] = null // initialized on first element - need the graph for this
+    var language: Option[String] = null
+    var rootPath: Option[String] = null
     traversal.map { node =>
       if (language == null) language = new Cpg(node.graph).metaData.language.headOption
-      CodeDumper.dump(node.location, language, highlight)
+      if (rootPath == null) rootPath = new Cpg(node.graph).metaData.root.headOption
+      CodeDumper.dump(node.location, language, rootPath, highlight)
     }.l
   }
 
