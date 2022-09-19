@@ -72,11 +72,14 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Traversal[NodeType]) exte
     _dump(highlight = false)
 
   private def _dump(highlight: Boolean)(implicit finder: NodeExtensionFinder): List[String] = {
-    var language: Option[String] = null
-    var rootPath: Option[String] = null
+    // initialized on first element as we need the graph for retrieving the metaData node.
+    // TODO: there should be a step to retrieve the metaData node for any node
+    //  so we could avoid instantiating a new Cpg everytime using dump
+    var cpg: Cpg = null
     traversal.map { node =>
-      if (language == null) language = new Cpg(node.graph).metaData.language.headOption
-      if (rootPath == null) rootPath = new Cpg(node.graph).metaData.root.headOption
+      if (cpg == null) cpg = new Cpg(node.graph)
+      val language = cpg.metaData.language.headOption
+      val rootPath = cpg.metaData.root.headOption
       CodeDumper.dump(node.location, language, rootPath, highlight)
     }.l
   }
