@@ -62,10 +62,18 @@ class ReplDriver(args: Array[String],
 //            println(s"YYY1 new aggregate classpath; calledUsing=${HackyGlobalState.calledUsing}")
             val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
 
-            val cp = new AggregateClassPath(cpResult)
+//            val cp = new AggregateClassPath(cpResult)
 //            println(s"YYY3 JavaPlatform.classpath called; calledUsing=${HackyGlobalState.calledUsing}")
-            HackyGlobalState.initialCp = cp
-            HackyGlobalState.initialCp
+//            HackyGlobalState.initialCp = cp
+//            HackyGlobalState.initialCp
+            new AggregateClassPath(cpResult) {
+              override def list(inPackage: String) = {
+                println("XXXX8 calling `classpath.list`")
+//                if (HackyGlobalState.calledUsing) throw new AssertionError("boom")
+//                else super.list(inPackage)
+                super.list(inPackage)
+              }
+            }
           }
         }
         HackyGlobalState.jp = jp
@@ -99,8 +107,10 @@ class ReplDriver(args: Array[String],
 //          val newCp = s"${oldCtx.settings.classpath.value}$versionSortJar$classpathSeparator"
 //          val ctx1 = oldCtx.fresh.setSetting(oldCtx.settings.classpath, newCp)
           val ctx1 = oldCtx.fresh.setSetting(oldCtx.settings.classpath, versionSortJar)
-          val newState = state0.copy(context = ctx1)
-          ctx1.initialize()(using ctx1)
+          val ctx2 = ctx1.setNewScope.setNewTyperState()
+//          ctx2.typerState.fresh()
+          val newState = state0.copy(context = ctx2)
+//          ctx1.initialize()(using ctx1)
           newState
         } else state0
       val completer: Completer = { (_, line, candidates) =>
