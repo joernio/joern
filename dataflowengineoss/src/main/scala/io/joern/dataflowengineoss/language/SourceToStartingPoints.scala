@@ -7,21 +7,6 @@ import overflowdb.traversal._
 
 object SourceToStartingPoints {
 
-  /** The code below deals with static member variables in Java, and specifically with the situation where literals that
-    * initialize static members are passed to `reachableBy` as sources. In this case, we determine the first usages of
-    * this member in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements
-    * would be problematic, but it works quite well in practice.
-    */
-  def sourceToStartingPoints[NodeType](src: NodeType): List[CfgNode] = {
-    src match {
-      case lit: Literal =>
-        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
-      case member: Member =>
-        usages(targetsToClassIdentifierPair(memberToInitializedMembers(member)))
-      case x => List(x).collect{ case y : CfgNode => y}
-    }
-  }
-
   def sourceTravsToStartingPoints[NodeType](sourceTravs: Seq[Traversal[NodeType]]): List[StartingPointWithSource] = {
     val sources = sourceTravs
       .flatMap(_.toList)
@@ -31,6 +16,24 @@ object SourceToStartingPoints {
       .sortBy(_.id)
     sources.flatMap { src =>
       sourceToStartingPoints(src).map(s => StartingPointWithSource(s, src))
+    }
+  }
+
+  /** The code below deals with static member variables in Java, and specifically with the situation where literals that
+    * initialize static members are passed to `reachableBy` as sources. In this case, we determine the first usages of
+    * this member in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements
+    * would be problematic, but it works quite well in practice.
+    */
+  private def sourceToStartingPoints[NodeType](src: NodeType): List[CfgNode] = {
+    src match {
+      case lit: Literal =>
+        val initializedMembers = literalToInitializedMembers(lit)
+        List(lit) ++ usages(targetsToClassIdentifierPair(initializedMembers))
+      case member: Member =>
+        val initializedMembers = memberToInitializedMembers(member)
+        usages(targetsToClassIdentifierPair(initializedMembers))
+      case x =>
+        List(x).collect { case y: CfgNode => y }
     }
   }
 
