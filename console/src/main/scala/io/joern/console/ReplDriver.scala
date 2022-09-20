@@ -141,41 +141,28 @@ class ReplDriver(args: Array[String],
             val ictx = rootCtx
 //            val ictx = rootCtx.fresh
             val cmdDistill = command.distill(args, ictx.settings)(ictx.settingsState)(using ictx)
-
-
-//            println(s"XXX4 cmdDistill=$cmdDistill")
-//            ictx.setScope(oldScope)
-//            val summary = command.distill(args, ictx.settings)(ictx.settingsState)(using ictx)
-//            ictx.setSettings(summary.sstate)
-//            Feature.checkExperimentalSettings(using ictx)
-//            MacroClassLoader.init(ictx)
-//            Positioned.init(using ictx)
-
             ictx
           }
+//          val newRootCtx = this.initCtx
           val newRootCtx = {
+            val ctx = super.initCtx
             val base: ContextBase = new ContextBase {
               override def newPlatform(using Context): Platform = {
-                println("creating newPlatform with versionsort")
                 new JavaPlatform {
                   override def classPath(using Context): ClassPath = {
                     val original = super.classPath
                     val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
                     val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
-                    new AggregateClassPath(Seq(original, versionSortClassPath))
+                    val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
+
+                    new AggregateClassPath(cpResult)
                   }
                 }
               }
             }
-            val newContext = new Contexts.InitialContext(base, ctx.settings)
-
-//            println(s"YYY2a newRootCtx created, versionSort now included")
-            ctx.freshOver(newContext)
-//            ctx.fresh
-//            new Contexts.InitialContext(base, ctx.settings)
+            new Contexts.InitialContext(base, ctx.settings)
           }
-//          rootCtx = setup(settings, newRootCtx) // nothing works, really...
-          rootCtx = newRootCtx // same...
+          rootCtx = setup(settings, newRootCtx)
 
           rendering.myClassLoader = null
 
