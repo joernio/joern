@@ -45,6 +45,8 @@ class ReplDriver(args: Array[String],
       override def newPlatform(using Context): Platform = {
         val jp = new JavaPlatform {
           override def classPath(using Context): ClassPath = {
+//            val oldScope = ctx.scope // always empty
+//            println(s"XXXX5 newPlatform.oldScope: $oldScope ${oldScope.size}")
             val original = super.classPath
             val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
             val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
@@ -133,12 +135,21 @@ class ReplDriver(args: Array[String],
           import Contexts.ctx
           // TODO dive deeper here - currently still reproduces - simplify further...
           def setup(args: Array[String], rootCtx: Context): Context = {
-            val ictx = rootCtx.fresh
-            val summary = command.distill(args, ictx.settings)(ictx.settingsState)(using ictx)
-            ictx.setSettings(summary.sstate)
-            Feature.checkExperimentalSettings(using ictx)
-            MacroClassLoader.init(ictx)
-            Positioned.init(using ictx)
+            val oldScope = rootCtx.scope // empty scope?
+            println(s"XXXX3 oldScope: $oldScope ${oldScope.size}") // always empty... look elsewhere
+
+            val ictx = rootCtx
+//            val ictx = rootCtx.fresh
+            val cmdDistill = command.distill(args, ictx.settings)(ictx.settingsState)(using ictx)
+
+
+//            println(s"XXX4 cmdDistill=$cmdDistill")
+//            ictx.setScope(oldScope)
+//            val summary = command.distill(args, ictx.settings)(ictx.settingsState)(using ictx)
+//            ictx.setSettings(summary.sstate)
+//            Feature.checkExperimentalSettings(using ictx)
+//            MacroClassLoader.init(ictx)
+//            Positioned.init(using ictx)
 
             ictx
           }
