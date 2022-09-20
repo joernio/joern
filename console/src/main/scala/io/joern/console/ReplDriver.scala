@@ -142,8 +142,7 @@ class ReplDriver(args: Array[String],
 //            ictx
 //          }
 //          val newRootCtx = this.initCtx
-          val newRootCtx = {
-            val ctx = super.initCtx
+          rootCtx = {
             val base: ContextBase = new ContextBase {
               override def newPlatform(using Context): Platform = {
                 new JavaPlatform {
@@ -158,10 +157,10 @@ class ReplDriver(args: Array[String],
                 }
               }
             }
-            new Contexts.InitialContext(base, ctx.settings)
+            val newRootCtx = new Contexts.InitialContext(base, rootCtx.settings)
+            command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
+            newRootCtx
           }
-          command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
-          rootCtx = newRootCtx
 
           rendering.myClassLoader = null
 
