@@ -402,16 +402,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           astForFieldVariable(variable, fieldDeclaration)
         }
 
-        val staticInitAsts = if (fieldDeclaration.isStatic) {
-          val assignments = assignmentsForVarDecl(
-            fieldDeclaration.getVariables.asScala.toList,
-            line(fieldDeclaration),
-            column(fieldDeclaration)
-          )
-          assignments
-        } else {
-          Nil
-        }
+        val assignments = assignmentsForVarDecl(
+          fieldDeclaration.getVariables.asScala.toList,
+          line(fieldDeclaration),
+          column(fieldDeclaration)
+        )
+
+        val staticInitAsts = if (fieldDeclaration.isStatic) assignments else Nil
+        if (!fieldDeclaration.isStatic) scopeStack.addMemberInitializersToScope(assignments)
 
         AstWithStaticInit(memberAsts, staticInitAsts)
 
@@ -445,7 +443,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     identifierNode(name, typeFullName)
   }
 
-  private def clinitAstsFromStaticInits(staticInits: Seq[Ast]): Option[Ast] = {
+  private def clinitAstFromStaticInits(staticInits: Seq[Ast]): Option[Ast] = {
     Option.when(staticInits.nonEmpty) {
       val signature = composeMethodLikeSignature(TypeConstants.Void, Nil)
       val fullName = scopeStack.getEnclosingTypeDecl
@@ -585,7 +583,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val annotationAsts = typ.getAnnotations.asScala.map(astForAnnotationExpr)
 
-    val clinitAst = clinitAstsFromStaticInits(staticInits.toSeq)
+    val clinitAst = clinitAstFromStaticInits(staticInits.toSeq)
 
     val lambdaMethods = scopeStack.getLambdaMethodsInScope.toSeq
 
@@ -636,7 +634,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .isExternal(false)
 
     val thisAst = Ast(thisNodeForMethod(typeFullName, lineNumber = None))
-    val bodyAst = Ast(NewBlock())
+    val bodyAst = Ast(NewBlock()).withChildren(scopeStack.getMemberInitializers)
 
     val returnNode = methodReturnNode(TypeConstants.Void, None, None, None)
 
@@ -735,6 +733,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val fullName       = composeMethodFullName(typeFullName, NameConstants.Init, signature)
 
     val constructorNode = createPartialMethod(constructorDeclaration)
+      .name(NameConstants.Init)
       .fullName(fullName)
       .signature(signature)
 
@@ -749,7 +748,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     scopeStack.addToScope(thisNode, thisNode.name, thisNode.typeFullName)
     val thisAst = Ast(thisNode)
 
-    val bodyAst      = astForMethodBody(Some(constructorDeclaration.getBody))
+    val bodyAst      = astForConstructorBody(Some(constructorDeclaration.getBody))
     val methodReturn = constructorReturnNode(constructorDeclaration)
 
     val annotationAsts = constructorDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toList
@@ -983,7 +982,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       scopeStack.addToScope(node, node.name, node.typeFullName)
     }
 
-    val bodyAst = astForMethodBody(methodDeclaration.getBody.toScala)
+    val bodyAst = methodDeclaration.getBody.toScala.map(astForBlockStatement(_)).getOrElse(Ast(NewBlock()))
     val methodReturn =
       methodReturnNode(returnTypeFullName, None, line(methodDeclaration.getType), column(methodDeclaration.getType))
 
@@ -1024,10 +1023,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     methodNode
   }
 
-  private def astForMethodBody(body: Option[BlockStmt]): Ast = {
+  private def astForConstructorBody(body: Option[BlockStmt]): Ast = {
+    val containsThisInvocation =
+      body
+        .flatMap(_.getStatements.asScala.headOption)
+        .collect { case e: ExplicitConstructorInvocationStmt => e }
+        .exists(_.isThis)
+
+    val memberInitializers =
+      if (containsThisInvocation)
+        Seq.empty
+      else
+        scopeStack.getMemberInitializers
+
     body match {
-      case Some(b) => astForBlockStatement(b)
-      case None    => Ast(NewBlock())
+      case Some(b) => astForBlockStatement(b, prefixAsts = memberInitializers)
+
+      case None => Ast(NewBlock()).withChildren(memberInitializers)
     }
   }
 
@@ -1983,7 +1995,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         case List(identifier: NewIdentifier) =>
           // In this case we have a simple assign. No block needed.
           // e.g. Foo f = new Foo();
-          val initAst = completeInitForConstructor(partialConstructor, identifier)
+          val initAst = completeInitForConstructor(partialConstructor, Ast(identifier.copy))
           Seq(callAst(callNode, targetAst ++ argsAsts), initAst)
 
         case _ =>
@@ -2007,6 +2019,33 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
       NewLocal().name(name).code(code).typeFullName(typeFullName)
     }.toList
+  }
+
+  private def copyAstForVarDeclInit(targetAst: Ast): Ast = {
+    targetAst.root match {
+      case Some(identifier: NewIdentifier) => Ast(identifier.copy)
+
+      case Some(fieldAccess: NewCall) if fieldAccess.name == Operators.fieldAccess =>
+        val maybeIdentifier = targetAst.nodes.collectFirst { case node if node.isInstanceOf[NewIdentifier] => node }
+        val maybeField = targetAst.nodes.collectFirst { case node if node.isInstanceOf[NewFieldIdentifier] => node }
+
+        (maybeIdentifier, maybeField) match {
+          case (Some(identifier), Some(fieldIdentifier)) =>
+            val args = List(identifier, fieldIdentifier).map(node => Ast(node.copy))
+            callAst(fieldAccess.copy, args)
+
+          case _ =>
+            logger.warn(s"Attempting to copy field access without required children: ${fieldAccess.code}")
+            Ast()
+        }
+
+      case Some(root) =>
+        logger.warn(s"Attempting to copy unhandled root type for var decl init: $root")
+        Ast()
+
+      case None =>
+        Ast()
+    }
   }
 
   private def assignmentsForVarDecl(
@@ -2039,14 +2078,20 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
       val callNode = operatorCallNode(Operators.assignment, code, Some(typeFullName), lineNumber, columnNumber)
 
-      val identifier          = identifierNode(name, typeFullName, line(variable), column(variable))
-      val localCorrespToIdent = scopeStack.lookupVariable(name).map(_.node)
-      val targetAst           = Ast(identifier).withRefEdges(identifier, localCorrespToIdent.toList)
+      val targetAst = scopeStack.lookupVariable(name) match {
+        case Some(nodeTypeInfo) if nodeTypeInfo.isField && !nodeTypeInfo.isStatic =>
+          val thisType = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse("<empty>")
+          fieldAccessAst(NameConstants.This, thisType, name, Some(typeFullName), line(variable), column(variable))
+
+        case maybeCorrespNode =>
+          val identifier = identifierNode(name, typeFullName, line(variable), column(variable))
+          Ast(identifier).withRefEdges(identifier, maybeCorrespNode.map(_.node).toList)
+      }
 
       // Since all partial constructors will be dealt with here, don't pass them up.
       val declAst = callAst(callNode, Seq(targetAst) ++ initializerAsts)
 
-      val constructorAsts = partialConstructorQueue.map(completeInitForConstructor(_, identifier))
+      val constructorAsts = partialConstructorQueue.map(completeInitForConstructor(_, copyAstForVarDeclInit(targetAst)))
       partialConstructorQueue.clear()
 
       Seq(declAst) ++ constructorAsts
@@ -2055,14 +2100,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     assignments.toList
   }
 
-  private def completeInitForConstructor(partialConstructor: PartialConstructor, identifier: NewIdentifier): Ast = {
+  private def completeInitForConstructor(partialConstructor: PartialConstructor, targetAst: Ast): Ast = {
     val initNode = partialConstructor.initNode
+    val args     = partialConstructor.initArgs
 
-    val objectNode = identifier.copy
-
-    val args = partialConstructor.initArgs
-
-    callAst(initNode, args.toList, Some(Ast(objectNode)), withRecvArgEdge = true)
+    callAst(initNode, args.toList, Some(targetAst), withRecvArgEdge = true)
   }
 
   def astsForVariableDecl(varDecl: VariableDeclarationExpr): Seq[Ast] = {
@@ -2155,6 +2197,34 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, exprAst ++ Seq(typeAst))
   }
 
+  private def fieldAccessAst(
+    identifierName: String,
+    identifierType: String,
+    fieldIdentifierName: String,
+    returnType: Option[String],
+    lineNo: Option[Integer],
+    columnNo: Option[Integer]
+  ): Ast = {
+    val identifier       = identifierNode(identifierName, identifierType, lineNo, columnNo)
+    val maybeCorrespNode = scopeStack.lookupVariable(identifierName).map(_.node)
+
+    val fieldIdentifier = NewFieldIdentifier()
+      .code(fieldIdentifierName)
+      .canonicalName(fieldIdentifierName)
+      .lineNumber(lineNo)
+      .columnNumber(columnNo)
+
+    val fieldAccessCode = s"$identifierName.$fieldIdentifierName"
+    val fieldAccess =
+      operatorCallNode(Operators.fieldAccess, fieldAccessCode, returnType, lineNo, columnNo)
+
+    val identifierAst = Ast(identifier)
+    val fieldIdentAst = Ast(fieldIdentifier)
+
+    callAst(fieldAccess, Seq(identifierAst, fieldIdentAst))
+      .withRefEdges(identifier, maybeCorrespNode.toList)
+  }
+
   def astForNameExpr(nameExpr: NameExpr, expectedType: Option[ExpectedType]): Ast = {
     val name = nameExpr.getName.toString
     val typeFullName = expressionReturnTypeFullName(nameExpr)
@@ -2180,21 +2250,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
               typeInfoCalc.fullName(fieldDecl.declaringType())
           }
 
-        val identifier = identifierNode(identifierName, identifierTypeFullName, line(nameExpr), column(nameExpr))
-
-        val fieldIdentifier = NewFieldIdentifier()
-          .code(nameExpr.toString)
-          .canonicalName(name)
-          .lineNumber(line(nameExpr))
-          .columnNumber(column(nameExpr))
-
-        val fieldAccess =
-          operatorCallNode(Operators.fieldAccess, name, Some(typeFullName), line(nameExpr), column(nameExpr))
-
-        val identifierAst = Ast(identifier)
-        val fieldIdentAst = Ast(fieldIdentifier)
-
-        callAst(fieldAccess, Seq(identifierAst, fieldIdentAst))
+        fieldAccessAst(
+          identifierName,
+          identifierTypeFullName,
+          name,
+          Some(typeFullName),
+          line(nameExpr),
+          column(nameExpr)
+        )
 
       case _ =>
         val identifier = identifierNode(name, typeFullName, line(nameExpr), column(nameExpr))
