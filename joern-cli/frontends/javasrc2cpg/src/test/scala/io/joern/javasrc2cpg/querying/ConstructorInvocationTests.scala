@@ -36,7 +36,7 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
     "create the correct Ast for the constructor" in {
-      fooCpg.method.name("Foo").l match {
+      fooCpg.typeDecl.name("Foo").method.nameExact("<init>").l match {
         case List(cons: Method) =>
           cons.fullName shouldBe "Foo.<init>:void(int)"
           cons.signature shouldBe "void(int)"
@@ -107,7 +107,7 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
 
   "it should create correct method nodes for constructors" in {
 
-    cpg.method.name("Bar").l match {
+    cpg.typeDecl.name("Bar").method.nameExact("<init>").l match {
       case List(cons1: Method, cons2: Method) =>
         cons1.fullName shouldBe "Bar.<init>:void(int)"
         cons1.signature shouldBe "void(int)"
