@@ -1,11 +1,11 @@
 package io.joern.console
 
 import dotty.tools.dotc.core.Comments.{ContextDoc, ContextDocstrings}
-import dotty.tools.dotc.core.Contexts.{Context, ContextBase}
+import dotty.tools.dotc.core.Contexts.{Context, ContextBase, FreshContext}
 import dotty.tools.dotc.ast.{Positioned, tpd, untpd}
 import dotty.tools.dotc.classpath.{AggregateClassPath, ClassPathFactory}
 import dotty.tools.dotc.config.{Feature, JavaPlatform, Platform}
-import dotty.tools.dotc.core.{Contexts, MacroClassLoader, Mode}
+import dotty.tools.dotc.core.{Contexts, MacroClassLoader, Mode, TyperState}
 import dotty.tools.io.{AbstractFile, ClassPath, ClassRepresentation}
 import dotty.tools.repl.{CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
 import Contexts.ctx
@@ -14,6 +14,7 @@ import java.io.PrintStream
 import org.jline.reader.*
 
 import java.net.URL
+import javax.naming.InitialContext
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
@@ -45,8 +46,10 @@ class ReplDriver(args: Array[String],
 //    val base: ContextBase = ctx.base
     val base: ContextBase = new ContextBase {
       override def newPlatform(using Context): Platform = {
+        println(s"initCtx: creating new platform; calledUsing=${HackyGlobalState.calledUsing}")
         val jp = new JavaPlatform {
           override def classPath(using Context): ClassPath = {
+            println(s"initial javaplatform -> classpath; calledUsing=${HackyGlobalState.calledUsing}")
 //            val oldScope = ctx.scope // always empty
 //            println(s"XXXX5 newPlatform.oldScope: $oldScope ${oldScope.size}")
             val original = super.classPath
@@ -115,7 +118,7 @@ class ReplDriver(args: Array[String],
 //          rootCtx = initCtx
 
 //          rootCtx = initialCtx(Nil)
-          val settings = args
+//          val settings = args
 //          val newRootCtx = initCtx//.fresh//.addMode(Mode.ReadPositions | Mode.Interactive)
 //          newRootCtx.setSetting(newRootCtx.settings.YcookComments, true)
 //          newRootCtx.setSetting(newRootCtx.settings.YreadComments, true)
@@ -142,11 +145,20 @@ class ReplDriver(args: Array[String],
 //            ictx
 //          }
 //          val newRootCtx = this.initCtx
+
+            // no difference...
+//            val freshContext: FreshContext = rootCtx.asInstanceOf[FreshContext]
+//          freshContext.typerState.fresh()
+//          freshContext.setDebug
+
           rootCtx = {
-            val base: ContextBase = new ContextBase {
+            val oldCtx: FreshContext = rootCtx.asInstanceOf[FreshContext]
+            val baseCtx: ContextBase = new ContextBase {
+              override val initialCtx: Context = oldCtx
               override def newPlatform(using Context): Platform = {
                 new JavaPlatform {
                   override def classPath(using Context): ClassPath = {
+                    println("new javaplatform -> classpath")
                     val original = super.classPath
                     val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
                     val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
@@ -157,9 +169,17 @@ class ReplDriver(args: Array[String],
                 }
               }
             }
-            val newRootCtx = new Contexts.InitialContext(base, rootCtx.settings)
+//
+//            // TODO how can i connect the two? idea: create a new FreshContext, copy (almost) everything over
+//            oldCtx.withTyperState(TyperState.initialState())
+//            // rootCtx.fresh // maintains history, but doesn't use new platform
+            val newRootCtx = new Contexts.InitialContext(baseCtx, rootCtx.settings) // works, but loses history
             command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
             newRootCtx
+//            println(s"oldRootCtx class=${rootCtx.getClass}") // FreshContext
+//            println(s"newRootCtx class=${newRootCtx.getClass}") //InitialContext
+//            newRootCtx.freshOver(rootCtx) // no workie
+//            rootCtx.freshOver(newRootCtx) // doesn't work either...
           }
 
           rendering.myClassLoader = null
