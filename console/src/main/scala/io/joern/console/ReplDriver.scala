@@ -1,5 +1,6 @@
 package io.joern.console
 
+import dotty.tools.dotc.core.Comments.{ContextDoc, ContextDocstrings}
 import dotty.tools.dotc.core.Contexts.{Context, ContextBase}
 import dotty.tools.dotc.ast.{Positioned, tpd, untpd}
 import dotty.tools.dotc.classpath.{AggregateClassPath, ClassPathFactory}
@@ -7,6 +8,7 @@ import dotty.tools.dotc.config.{Feature, JavaPlatform, Platform}
 import dotty.tools.dotc.core.{Contexts, MacroClassLoader, Mode}
 import dotty.tools.io.{AbstractFile, ClassPath, ClassRepresentation}
 import dotty.tools.repl.{CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
+import Contexts.ctx
 
 import java.io.PrintStream
 import org.jline.reader.*
@@ -131,18 +133,14 @@ class ReplDriver(args: Array[String],
           // happens in `setup - drill in there...
 //          rootCtx = setup(settings, newRootCtx).get._2
 
-          import dotty.tools.dotc.core.Comments.{ContextDoc, ContextDocstrings}
-          import Contexts.ctx
-          // TODO dive deeper here - currently still reproduces - simplify further...
-          def setup(args: Array[String], rootCtx: Context): Context = {
-            val oldScope = rootCtx.scope // empty scope?
-            println(s"XXXX3 oldScope: $oldScope ${oldScope.size}") // always empty... look elsewhere
-
-            val ictx = rootCtx
-//            val ictx = rootCtx.fresh
-            val cmdDistill = command.distill(args, ictx.settings)(ictx.settingsState)(using ictx)
-            ictx
-          }
+//          def setup(args: Array[String], rootCtx: Context): Context = {
+//            val oldScope = rootCtx.scope // empty scope?
+//            println(s"XXXX3 oldScope: $oldScope ${oldScope.size}") // always empty... look elsewhere
+//
+//            val ictx = rootCtx
+//            val cmdDistill = command.distill(args, ictx.settings)(ictx.settingsState)(using ictx)
+//            ictx
+//          }
 //          val newRootCtx = this.initCtx
           val newRootCtx = {
             val ctx = super.initCtx
@@ -162,7 +160,8 @@ class ReplDriver(args: Array[String],
             }
             new Contexts.InitialContext(base, ctx.settings)
           }
-          rootCtx = setup(settings, newRootCtx)
+          command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
+          rootCtx = newRootCtx
 
           rendering.myClassLoader = null
 
