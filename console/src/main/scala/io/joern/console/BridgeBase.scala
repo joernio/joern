@@ -335,19 +335,13 @@ trait ScriptExecution { this: BridgeBase =>
 
     // when upgrading to Scala 3.2.1: change to `given State`
     val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-    // TODO proper predef code again...
-    val predef0 =
-      """
-        |import overflowdb._
-      """.stripMargin
-    val state: State = replDriver.run(predef0)(using initialState)
-//    val state: State =
-//      if (config.verbose) {
-//        println(predefCode)
-//        replDriver.run(predefCode)(using initialState)
-//      } else {
-//        replDriver.runQuietly(predefCode)(using initialState)
-//      }
+    val state: State =
+      if (config.verbose) {
+        println(predefCode)
+        replDriver.run(predefCode)(using initialState)
+      } else {
+        replDriver.runQuietly(predefCode)(using initialState)
+      }
 
   // TODO test idea: if quit with C-c: restart with old state but new classloader - go via addDependency
     val state2 = replDriver.runUntilQuit(state)

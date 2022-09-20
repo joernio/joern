@@ -139,7 +139,6 @@ class ReplDriver(args: Array[String],
             println(s"XXXX3 oldScope: $oldScope ${oldScope.size}") // always empty... look elsewhere
 
             val ictx = rootCtx
-//            val ictx = rootCtx.fresh
             val cmdDistill = command.distill(args, ictx.settings)(ictx.settingsState)(using ictx)
             ictx
           }
@@ -177,7 +176,7 @@ class ReplDriver(args: Array[String],
         }
       } catch {
         case _: EndOfFileException => // Ctrl+D
-          onExitCode.foreach(code => run(code)(state))
+          // onExitCode.foreach(code => run(code)(state))
           Quit
         case _: UserInterruptException => // Ctrl+C
           Newline
