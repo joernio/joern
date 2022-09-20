@@ -14,7 +14,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import ujson.Value
 
@@ -79,7 +78,11 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
-  private def createFakeConstructor(code: String, forElem: BabelNodeInfo): MethodAst = {
+  private def createFakeConstructor(
+    code: String,
+    forElem: BabelNodeInfo,
+    methodBlockContent: List[Ast] = List.empty
+  ): MethodAst = {
     val fakeConstructorCode = s"""{
       | "type": "ClassMethod",
       | "key": {
@@ -100,7 +103,10 @@ trait AstForTypesCreator { this: AstCreator =>
       |   "body": []
       | }
       |}""".stripMargin
-    val result = createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)))
+    val result = createMethodAstAndNode(
+      createBabelNodeInfo(ujson.read(fakeConstructorCode)),
+      methodBlockContent = methodBlockContent
+    )
     result.methodNode.code(code)
     result
   }
@@ -108,18 +114,20 @@ trait AstForTypesCreator { this: AstCreator =>
   private def findClassConstructor(clazz: BabelNodeInfo): Option[Value] =
     classMembers(clazz).find(isConstructor)
 
-  private def createClassConstructor(classExpr: BabelNodeInfo): Ast =
+  private def createClassConstructor(classExpr: BabelNodeInfo, constructorContent: List[Ast]): Ast =
     findClassConstructor(classExpr) match {
       case Some(classConstructor) if hasKey(classConstructor, "body") =>
-        val result = createMethodAstAndNode(createBabelNodeInfo(classConstructor))
+        val result =
+          createMethodAstAndNode(createBabelNodeInfo(classConstructor), methodBlockContent = constructorContent)
         diffGraph.addEdge(result.methodNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
         result.methodAst
       case Some(classConstructor) =>
-        val methodNode = createMethodDefinitionNode(createBabelNodeInfo(classConstructor))
+        val methodNode =
+          createMethodDefinitionNode(createBabelNodeInfo(classConstructor), methodBlockContent = constructorContent)
         diffGraph.addEdge(methodNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
         Ast(methodNode)
       case _ =>
-        val result = createFakeConstructor("constructor() {}", classExpr)
+        val result = createFakeConstructor("constructor() {}", classExpr, methodBlockContent = constructorContent)
         diffGraph.addEdge(result.methodNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
         result.methodAst
     }
@@ -301,13 +309,18 @@ trait AstForTypesCreator { this: AstCreator =>
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
     scope.pushNewBlockScope(typeDeclNode)
 
-    val constructorAst = createClassConstructor(clazz)
+    val allClassMembers = classMembers(clazz, withConstructor = false).toList
+
+    // adding all other members and retrieving their initialization calls
+    val memberInitCalls = allClassMembers
+      .filter(m => !isStaticMember(m) && isInitializedMember(m))
+      .map(m => astForClassMember(m, typeDeclNode, metaTypeDeclNode))
+
+    val constructorAst = createClassConstructor(clazz, memberInitCalls)
 
     val constructorBindingNode = createBindingNode()
     diffGraph.addEdge(metaTypeDeclNode, constructorBindingNode, EdgeTypes.BINDS)
     diffGraph.addEdge(constructorBindingNode, constructorAst.nodes.head, EdgeTypes.REF)
-
-    val allClassMembers = classMembers(clazz, withConstructor = false).toList
 
     // adding all class methods / functions and uninitialized, non-static members
     allClassMembers
@@ -317,11 +330,6 @@ trait AstForTypesCreator { this: AstCreator =>
     // adding all static members and retrieving their initialization calls
     val staticMemberInitCalls =
       allClassMembers.filter(isStaticMember).map(m => astForClassMember(m, typeDeclNode, metaTypeDeclNode))
-
-    // adding all other members and retrieving their initialization calls
-    val memberInitCalls = allClassMembers
-      .filter(m => !isStaticMember(m) && isInitializedMember(m))
-      .map(m => astForClassMember(m, typeDeclNode, metaTypeDeclNode))
 
     // retrieving initialization calls from the static initialization block if any
     val staticInitBlock = allClassMembers.find(isStaticInitBlock)
@@ -333,20 +341,6 @@ trait AstForTypesCreator { this: AstCreator =>
     metaTypeRefIdStack.pop()
     scope.popScope()
     scope.popScope()
-
-    if (memberInitCalls.nonEmpty) {
-      val constructorBlock = constructorAst.nodes.collectFirst { case b: NewBlock => b }
-      constructorBlock match {
-        case Some(blockNode) =>
-          Ast.storeInDiffGraph(blockAst(blockNode, memberInitCalls), diffGraph)
-          Ast.storeInDiffGraph(constructorAst, diffGraph)
-        case None =>
-          val blockNode = NewBlock()
-          val block     = blockAst(blockNode, memberInitCalls)
-          Ast.storeInDiffGraph(block, diffGraph)
-          diffGraph.addEdge(constructorAst.nodes.head, blockNode, EdgeTypes.AST)
-      }
-    }
 
     if (staticMemberInitCalls.nonEmpty || staticInitBlockAsts.nonEmpty) {
       val init = staticInitMethodAst(
