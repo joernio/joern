@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.language
 
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Identifier, Literal, Member, TypeDecl}
 import io.shiftleft.semanticcpg.language._
@@ -41,12 +42,12 @@ object SourceToStartingPoints {
     * it looks for a method called "<clinit>", which represents the implicitly defined class constructor.
     */
   private def literalToInitializedMembers(lit: Literal): List[Identifier] = {
-    lit.inAssignment.where(_.method.nameExact("<clinit>")).target.isIdentifier.l
+    lit.inAssignment.where(_.method.nameExact(Defines.StaticInitMethodName)).target.isIdentifier.l
   }
 
   private def memberToInitializedMembers(member: Member): List[Identifier] = {
     member.typeDecl.method
-      .nameExact("<clinit>")
+      .nameExact(Defines.StaticInitMethodName)
       .ast
       .isIdentifier
       .nameExact(member.name)
@@ -60,7 +61,7 @@ object SourceToStartingPoints {
       val cpg = Cpg(typeDecl.graph())
       val usagesInSameClass =
         typeDecl.method
-          .whereNot(_.nameExact("<clinit>"))
+          .whereNot(_.nameExact(Defines.StaticInitMethodName))
           .flatMap { m =>
             m.ast.isIdentifier.nameExact(identifier.name).takeWhile(notLeftHandOfAssignment)
           }
