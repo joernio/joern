@@ -273,8 +273,6 @@ trait ScriptExecution { this: BridgeBase =>
     }
 
     runRepl()
-    println("intermission")
-    runRepl()
 //    println("running again...")
 //    val scalacArgs1 = {
 //      val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
