@@ -236,34 +236,39 @@ trait ScriptExecution { this: BridgeBase =>
 //      compilerArgs.result()
 //    }
 
-//    HackyGlobalState.classloader = classLoader
-    val replDriver = new ReplDriver(
-      compilerArgs(config),
-//      scalacArgs0,
-      onExitCode = Option(onExitCode),
-      greeting = greeting,
-      prompt = promptStr,
-      maxPrintElements = Int.MaxValue,
-//      Option(classLoader)
-    )
+    def runRepl(): Unit = {
 
-    // TODO cleanup
-//    val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-//    replDriver.addDependency(versionSortJar)
-    val initialState: State = replDriver.initialState
+      val replDriver = new ReplDriver(
+        compilerArgs(config),
+        //      scalacArgs0,
+        onExitCode = Option(onExitCode),
+        greeting = greeting,
+        prompt = promptStr,
+        maxPrintElements = Int.MaxValue,
+      )
 
-    // when upgrading to Scala 3.2.1: change to `given State`
-    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-    val state: State =
-      if (config.verbose) {
-        println(predefCode)
-        replDriver.run(predefCode)(using initialState)
-      } else {
-        replDriver.runQuietly(predefCode)(using initialState)
-      }
+      // TODO cleanup
+      //    val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+      //    replDriver.addDependency(versionSortJar)
+      val initialState: State = replDriver.initialState
 
-  // TODO test idea: if quit with C-c: restart with old state but new classloader - go via addDependency
-     replDriver.runUntilQuit(state)
+      // when upgrading to Scala 3.2.1: change to `given State`
+      val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
+      val state: State =
+        if (config.verbose) {
+          println(predefCode)
+          replDriver.run(predefCode)(using initialState)
+        } else {
+          replDriver.runQuietly(predefCode)(using initialState)
+        }
+
+      // TODO test idea: if quit with C-c: restart with old state but new classloader - go via addDependency
+      replDriver.runUntilQuit(state)
+    }
+
+    runRepl()
+    println("intermission")
+    runRepl()
 //    println("running again...")
 //    val scalacArgs1 = {
 //      val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
