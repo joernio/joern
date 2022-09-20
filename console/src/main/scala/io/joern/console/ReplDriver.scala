@@ -68,7 +68,7 @@ class ReplDriver(args: Array[String],
       }
     }
 
-    println(s"YYY2 ReplDriver.initCtx called. calledUsing=${HackyGlobalState.calledUsing}")
+    println(s"YYY2 ReplDriver.initCtx. calledUsing=${HackyGlobalState.calledUsing}")
 //    throw new AssertionError("boom") // who's calling us?
     val ret = new Contexts.InitialContext(base, ctx.settings)
     ret
@@ -113,8 +113,8 @@ class ReplDriver(args: Array[String],
 //          rootCtx = initCtx
 
 //          rootCtx = initialCtx(Nil)
-          val newRootCtx = initCtx//.fresh//.addMode(Mode.ReadPositions | Mode.Interactive)
           val settings = args
+//          val newRootCtx = initCtx//.fresh//.addMode(Mode.ReadPositions | Mode.Interactive)
 //          newRootCtx.setSetting(newRootCtx.settings.YcookComments, true)
 //          newRootCtx.setSetting(newRootCtx.settings.YreadComments, true)
 //          setupRootCtx(this.settings ++ settings, newRootCtx)
@@ -153,7 +153,29 @@ class ReplDriver(args: Array[String],
 
             ictx
           }
-          rootCtx = setup(settings, newRootCtx)
+          val newRootCtx = {
+            val base: ContextBase = new ContextBase {
+              override def newPlatform(using Context): Platform = {
+                println("creating newPlatform with versionsort")
+                new JavaPlatform {
+                  override def classPath(using Context): ClassPath = {
+                    val original = super.classPath
+                    val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+                    val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
+                    new AggregateClassPath(Seq(original, versionSortClassPath))
+                  }
+                }
+              }
+            }
+            val newContext = new Contexts.InitialContext(base, ctx.settings)
+
+//            println(s"YYY2a newRootCtx created, versionSort now included")
+            ctx.freshOver(newContext)
+//            ctx.fresh
+//            new Contexts.InitialContext(base, ctx.settings)
+          }
+//          rootCtx = setup(settings, newRootCtx) // nothing works, really...
+          rootCtx = newRootCtx // same...
 
           rendering.myClassLoader = null
 
