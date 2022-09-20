@@ -132,7 +132,15 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
 
   def getMemberInitializers: Seq[Ast] = {
     memberInits match {
-      case currMembers :: _ => currMembers.toSeq
+      case currMembers :: _ =>
+        currMembers.toSeq.map { ast =>
+          ast.root match {
+            case Some(root: AstNodeNew) =>
+              ast.subTreeCopy(root)
+
+            case _ => Ast()
+          }
+        }
       case Nil =>
         logger.warn("Attemping to fetch initializers from scope with uninitialized memberInits. Inits may be missing.")
         Seq.empty
