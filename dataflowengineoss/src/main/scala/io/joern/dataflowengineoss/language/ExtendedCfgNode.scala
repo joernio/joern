@@ -57,7 +57,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     paths.to(Traversal)
   }
 
-  def reachableByDetailed[NodeType <: CfgNode](
+  def reachableByDetailed[NodeType](
     sourceTravs: Traversal[NodeType]*
   )(implicit context: EngineContext): List[ReachableByResult] = {
     reachableByInternal(sourceTravsToStartingPoints(sourceTravs))
