@@ -103,7 +103,6 @@ trait AstForTypesCreator { this: AstCreator =>
       |   "body": []
       | }
       |}""".stripMargin
-    setIndices(methodBlockContent)
     val result = createMethodAstAndNode(
       createBabelNodeInfo(ujson.read(fakeConstructorCode)),
       methodBlockContent = methodBlockContent
