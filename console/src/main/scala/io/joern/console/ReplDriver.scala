@@ -1,14 +1,14 @@
 package io.joern.console
 
+import dotty.tools.MainGenericCompiler.classpathSeparator
 import dotty.tools.dotc.core.Comments.{ContextDoc, ContextDocstrings}
-import dotty.tools.dotc.core.Contexts.{Context, ContextBase, FreshContext}
+import dotty.tools.dotc.core.Contexts.{Context, ContextBase, ContextState, FreshContext, ctx}
 import dotty.tools.dotc.ast.{Positioned, tpd, untpd}
 import dotty.tools.dotc.classpath.{AggregateClassPath, ClassPathFactory}
 import dotty.tools.dotc.config.{Feature, JavaPlatform, Platform}
 import dotty.tools.dotc.core.{Contexts, MacroClassLoader, Mode, TyperState}
 import dotty.tools.io.{AbstractFile, ClassPath, ClassRepresentation}
 import dotty.tools.repl.{CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
-import Contexts.ctx
 
 import java.io.PrintStream
 import org.jline.reader.*
@@ -173,9 +173,26 @@ class ReplDriver(args: Array[String],
 //            // TODO how can i connect the two? idea: create a new FreshContext, copy (almost) everything over
 //            oldCtx.withTyperState(TyperState.initialState())
 //            // rootCtx.fresh // maintains history, but doesn't use new platform
-            val newRootCtx = new Contexts.InitialContext(baseCtx, rootCtx.settings) // works, but loses history
-            command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
-            newRootCtx
+//            val newRootCtx = new Contexts.InitialContext(baseCtx, rootCtx.settings) // works, but loses history
+//            command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
+//            newRootCtx
+
+//            oldCtx.base.reset()
+//            oldCtx
+//              new FreshContext(baseCtx)
+//              println(s"XXX5 cp=${oldCtx.settings.classpath.value}")
+            val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+//              val newCtx = oldCtx.setSetting(oldCtx.settings.classpath, s"${oldCtx.settings.classpath.value}$classpathSeparator$versionSortJar")
+//oldCtx.settings.classpath.updateIn()
+            // TODO call `fromTastySetup(additionalFiles)
+            val ctx1 = oldCtx.fresh
+            val newCp = s"${oldCtx.settings.classpath.value}$versionSortJar$classpathSeparator"
+//            ctx1.settings.classpath.updateIn(ctx1.settings, versionSortJar)
+            val ctx2 = ctx1.setSetting(ctx1.settings.classpath, newCp)
+            //            val newCtx = oldCtx.fresh.setSetting(oldCtx.settings.classpath, s"${oldCtx.settings.classpath.value}$classpathSeparator$versionSortJar")
+            println(s"XXX6 new cp=${ctx2.settings.classpath.value}")
+            println(s"XXX7 settingsState: ${ctx2.settingsState}")
+            ctx2
 //            println(s"oldRootCtx class=${rootCtx.getClass}") // FreshContext
 //            println(s"newRootCtx class=${newRootCtx.getClass}") //InitialContext
 //            newRootCtx.freshOver(rootCtx) // no workie
