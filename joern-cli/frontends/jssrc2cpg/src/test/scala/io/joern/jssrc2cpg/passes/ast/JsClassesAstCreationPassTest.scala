@@ -63,23 +63,37 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
         |class ClassA {
         |  a = 1
         |  b = "foo"
-        |  c = true
+        |  static c = true
+        |  static d
+        |  static {
+        |    this.d = false
+        |  }
         |}""".stripMargin) { cpg =>
       val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(a, b, c)        = classATypeDecl.member.l
+      val List(a, b)           = classATypeDecl.member.l
       a.name shouldBe "a"
       a.code shouldBe "a = 1"
       b.name shouldBe "b"
       b.code shouldBe """b = "foo""""
-      c.name shouldBe "c"
-      c.code shouldBe "c = true"
 
-      val List(clInitMethod) =
-        cpg.typeDecl.nameExact("ClassA").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
-      val List(aInitCall, bInitCall, cInitCall) = clInitMethod.ast.isCall.l
+      val List(classAMetaTypeDecl) =
+        cpg.typeDecl.nameExact("ClassA<meta>").fullNameExact("code.js::program:ClassA<meta>").l
+      val List(c, d) = classAMetaTypeDecl.member.l
+      c.name shouldBe "c"
+      c.code shouldBe "static c = true"
+      d.name shouldBe "d"
+      d.code shouldBe "static d"
+
+      val List(clInitMethod) = classAMetaTypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
+      val List(cInitCall, dInitCall) = clInitMethod.block.ast.isCall.nameExact(Operators.assignment).l
+      cInitCall.code shouldBe "static c = true"
+      dInitCall.code shouldBe "this.d = false"
+
+      val List(constructor) =
+        cpg.typeDecl.nameExact("ClassA").method.nameExact("<constructor>").l
+      val List(aInitCall, bInitCall) = constructor.block.ast.isCall.nameExact(Operators.assignment).l
       aInitCall.code shouldBe "a = 1"
       bInitCall.code shouldBe """b = "foo""""
-      cInitCall.code shouldBe "c = true"
     }
 
     "have method for non-static method in ClassA AST" in AstFixture("""
