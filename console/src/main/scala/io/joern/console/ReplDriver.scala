@@ -36,43 +36,43 @@ class ReplDriver(args: Array[String],
 
 //  def addDependency(jarPath: String): Unit = additionalDependencyJars.add(jarPath)
 
-  override def initCtx: Context = {
-    val ctx = super.initCtx
-//    ctx.fresh.setSetting(ctx.settings.VreplMaxPrintElements, maxPrintElements)
-
-//    val base: ContextBase = ctx.base
-    val base: ContextBase = new ContextBase {
-      override def newPlatform(using Context): Platform = {
-        val jp = new JavaPlatform {
-          override def classPath(using Context): ClassPath = {
-//            val oldScope = ctx.scope // always empty
-//            println(s"XXXX5 newPlatform.oldScope: $oldScope ${oldScope.size}")
-            val original = super.classPath
-            val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-            val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
-//            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
-//            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
-//            val directoryClassPath = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
-//            val virtualDirectory = dotty.tools.io.VirtualDirectory("classes")
-//            println(s"YYY1 new aggregate classpath; calledUsing=${HackyGlobalState.calledUsing}")
-            val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
-
-            val cp = new AggregateClassPath(cpResult)
-//            println(s"YYY3 JavaPlatform.classpath called; calledUsing=${HackyGlobalState.calledUsing}")
-            HackyGlobalState.initialCp = cp
-            HackyGlobalState.initialCp
-          }
-        }
-        HackyGlobalState.jp = jp
-        jp
-      }
-    }
-
-    println(s"YYY2 ReplDriver.initCtx. calledUsing=${HackyGlobalState.calledUsing}")
-//    throw new AssertionError("boom") // who's calling us?
-    val ret = new Contexts.InitialContext(base, ctx.settings)
-    ret
-  }
+//  override def initCtx: Context = {
+//    val ctx = super.initCtx
+////    ctx.fresh.setSetting(ctx.settings.VreplMaxPrintElements, maxPrintElements)
+//
+////    val base: ContextBase = ctx.base
+//    val base: ContextBase = new ContextBase {
+//      override def newPlatform(using Context): Platform = {
+//        val jp = new JavaPlatform {
+//          override def classPath(using Context): ClassPath = {
+////            val oldScope = ctx.scope // always empty
+////            println(s"XXXX5 newPlatform.oldScope: $oldScope ${oldScope.size}")
+//            val original = super.classPath
+//            val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+//            val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
+////            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
+////            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
+////            val directoryClassPath = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
+////            val virtualDirectory = dotty.tools.io.VirtualDirectory("classes")
+////            println(s"YYY1 new aggregate classpath; calledUsing=${HackyGlobalState.calledUsing}")
+//            val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
+//
+//            val cp = new AggregateClassPath(cpResult)
+////            println(s"YYY3 JavaPlatform.classpath called; calledUsing=${HackyGlobalState.calledUsing}")
+//            HackyGlobalState.initialCp = cp
+//            HackyGlobalState.initialCp
+//          }
+//        }
+//        HackyGlobalState.jp = jp
+//        jp
+//      }
+//    }
+//
+//    println(s"YYY2 ReplDriver.initCtx. calledUsing=${HackyGlobalState.calledUsing}")
+////    throw new AssertionError("boom") // who's calling us?
+//    val ret = new Contexts.InitialContext(base, ctx.settings)
+//    ret
+//  }
 
   /** Run REPL with `state` until `:quit` command found
     * Main difference to the 'original': different greeting, trap Ctrl-c
@@ -99,38 +99,7 @@ class ReplDriver(args: Array[String],
         // TODO extract, handle elsewhere
         if (line.startsWith("//> using")) {
           HackyGlobalState.calledUsing = true
-//          val settings = Nil
-//          rootCtx = initialCtx(settings)
-//          if (rootCtx.settings.outputDir.isDefault(using rootCtx))
-//            rootCtx = rootCtx.fresh
-//              .setSetting(rootCtx.settings.outputDir, new dotty.tools.io.VirtualDirectory("<REPL compilation output>"))
-//          compiler = new dotty.tools.repl.ReplCompiler
-//          rendering = new dotty.tools.repl.Rendering(classLoader)
-//          resetToInitial(Nil)
-//          ctx = initCtx
-//          ctx.fresh
-//          rootCtx = ctx
-//          rootCtx = initCtx
-
-//          rootCtx = initialCtx(Nil)
           val settings = args
-//          val newRootCtx = initCtx//.fresh//.addMode(Mode.ReadPositions | Mode.Interactive)
-//          newRootCtx.setSetting(newRootCtx.settings.YcookComments, true)
-//          newRootCtx.setSetting(newRootCtx.settings.YreadComments, true)
-//          setupRootCtx(this.settings ++ settings, newRootCtx)
-//          rootCtx = setupRootCtx(this.args, newRootCtx) // this works but removes the state - drill deeper in here - can we save the state?
-//          rootCtx = setup(settings, newRootCtx) match {
-//            case Some((Nil, ictx)) => Contexts.inContext(ictx) {
-              // still works... maybe the main thing happens in setup?
-//              ictx.base.initialize() // test: inside `initialise, call `newPlatform`, but not `definitions.init`
-//              ictx
-//            }
-//            case _ => ???
-//          }
-
-          // happens in `setup - drill in there...
-//          rootCtx = setup(settings, newRootCtx).get._2
-
           import dotty.tools.dotc.core.Comments.{ContextDoc, ContextDocstrings}
           import Contexts.ctx
           // TODO dive deeper here - currently still reproduces - simplify further...
@@ -176,7 +145,7 @@ class ReplDriver(args: Array[String],
         }
       } catch {
         case _: EndOfFileException => // Ctrl+D
-          // onExitCode.foreach(code => run(code)(state))
+          onExitCode.foreach(code => run(code)(state))
           Quit
         case _: UserInterruptException => // Ctrl+C
           Newline
