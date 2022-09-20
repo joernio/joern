@@ -27,7 +27,7 @@ class PCodeMapper(
 ) {
   private val logger = LoggerFactory.getLogger(getClass)
   private val pcodeOps: List[PcodeOp] =
-    nativeInstruction.getPcode().toList
+    nativeInstruction.getPcode(false).toList
 
   val state = new State(argumentIndex = -1)
 
@@ -45,12 +45,27 @@ class PCodeMapper(
       true
     )
   )
-
+  val registerList: List[String] = List("CF", "OF", "PF", "SF", "ZF")
+  def filterSideEffects(pcodes: List[PcodeOp]): List[PcodeOp] = {
+    try {
+      return pcodes
+        .filter { pcode =>
+          pcode.getOutput.isRegister && !registerList.contains(
+            highFunction.getFunction.getProgram.getRegister(pcode.getOutput).toString
+          )
+        }
+    } catch {
+      case _: Throwable => println("ERROR " + nativeInstruction.toString + " " + pcodes.mkString(" :::: "));
+    }
+    pcodes
+  }
   // Entry point
   def getNode: CfgNodeNew = {
     if (pcodeOps.isEmpty) {
       // It looks like that for some instructions,
       // like "bti c" getPcode() returns nothing
+      // therefor it is added as a call without
+      // any special arguments ..
       logger.info(s"NO pcodes for $nativeInstruction")
       createCallNode(
         nativeInstruction.toString,
@@ -58,182 +73,15 @@ class PCodeMapper(
         nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue()
       )
     } else {
-      mapCallNode(pcodeOps.last)
-    }
-  }
-
-  def createCall(name: String, code: String, index: Int = 1): CfgNodeNew = {
-    createCallNode(code, name, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue, index)
-  }
-
-  def handleSingleArgument(pcodeOp: PcodeOp, cpgOperationName: String, operation: String): CfgNodeNew = {
-    val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
-    val callNode = createCall(cpgOperationName, nativeInstruction.toString) // s"$operation(${firstOp.code})")
-    connectCallToArgument(callNode, firstOp)
-    callNode
-  }
-
-  def handleTwoArguments(pcodeOp: PcodeOp, cpgOperationName: String, code: String, callIndex: Int = -1): CfgNodeNew = {
-    val callNode =
-      createCall(cpgOperationName, nativeInstruction.toString, callIndex)
-    // we need this for MIPS
-    if (pcodeOp.getOutput.isRegister) {
-      val firstOp  = resolveVarNode(pcodeOp.getOutput, 1)
-      val secondOp = resolveVarNode(pcodeOp.getInput(0), 2)
-      val thirdOp  = resolveVarNode(pcodeOp.getInput(1), 3)
-      connectCallToArgument(callNode, firstOp)
-      connectCallToArgument(callNode, secondOp)
-      connectCallToArgument(callNode, thirdOp)
-    } else {
-      val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
-      val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
-      connectCallToArgument(callNode, firstOp)
-      connectCallToArgument(callNode, secondOp)
-    }
-    callNode
-  }
-
-  def handleStore(pcodeOp: PcodeOp): CfgNodeNew = {
-    val firstOp  = resolveVarNode(pcodeOp.getInput(1), 1)
-    val secondOp = resolveVarNode(pcodeOp.getInput(2), 2)
-    val callNode = createCall("<operator>.assignment", nativeInstruction.toString)
-    connectCallToArgument(callNode, firstOp)
-    connectCallToArgument(callNode, secondOp)
-    callNode
-  }
-  def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
-    if (input.isRegister) {
-      var name = input.getHigh.getName
-      val high = input.getHigh
-      if (
-        high != null && input.getDef != null && high.getName == "UNNAMED" && input.getDef != null && input.getDef.getInputs != null
-      ) {
-        val symbol = input.getDef.getInputs.toList.lastOption
-          .flatMap(x => Option(x.getHigh))
-          .flatMap(x => Option(x.getSymbol))
-        if (symbol.isDefined) {
-          name = symbol.get.getName
-        }
-      }
-      if (name == null) {
-        name = input.getHigh.getSymbol.getName
-      }
-      createIdentifier(
-        name,
-        name,
-        index,
-        Types.registerType(name),
-        instruction.getMinAddress.getOffsetAsBigInteger.intValue
-      )
-    } else if (input.isConstant) {
-      createLiteral(
-        "0x" + input.getWordOffset.toHexString,
-        index,
-        index,
-        "0x" + input.getWordOffset.toHexString,
-        instruction.getMinAddress.getOffsetAsBigInteger.intValue
-      )
-    } else if (input.isUnique) {
-      var valueString = ""
-      if (input.getDescendants.asScala.toList.head.getOutput == null) {
-        valueString = input.getDef.getInputs.toList.head.getAddress.getOffset.toString
+      val filteredPcodeOps = filterSideEffects(pcodeOps)
+      if (filteredPcodeOps.isEmpty) {
+        // classic case
+        val node = mapCallNode(pcodeOps.last)
+        node
       } else {
-        valueString = input.getDescendants.asScala.toList.head.getOutput.getHigh.getName
+        val node = mapCallNode(filteredPcodeOps.last)
+        node
       }
-
-      val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset, valueString)
-
-      createLiteral(
-        value,
-        index,
-        index,
-        input.getWordOffset.toHexString,
-        instruction.getMinAddress.getOffsetAsBigInteger.intValue
-      )
-    } else {
-      // we default to literal
-      // identifier could be useful too
-      createLiteral(
-        input.toString(),
-        index,
-        index,
-        input.toString(),
-        instruction.getMinAddress.getOffsetAsBigInteger.intValue
-      )
-    }
-  }
-  def handleAssignment(pcodeOp: PcodeOp, code: String): CfgNodeNew = {
-    val secondOp = resolveVarNode(pcodeOp.getInputs.headOption.get, 2)
-    val callNode = createCall("<operator>.assignment", code = code) // s"${firstOp.code} = ${secondOp.code}")
-    connectCallToArgument(callNode, secondOp)
-    if (pcodeOp.getOutput.isRegister) {
-      val firstOp = resolveVarNode(pcodeOp.getOutput, 1)
-      connectCallToArgument(callNode, firstOp)
-    } else {
-      val firstOp = createIdentifier(
-        pcodeOp.getOutput.toString(),
-        pcodeOp.getOutput.toString,
-        1,
-        "TODO",
-        pcodeOp.getSeqnum.getTarget.getOffsetAsBigInteger.intValue()
-      )
-      connectCallToArgument(callNode, firstOp)
-    }
-    callNode
-  }
-  def handleTwoArguments(
-    instruction: Instruction,
-    callNode: CfgNodeNew,
-    pcodeOp: PcodeOp,
-    operand: String,
-    name: String
-  ): Unit = {
-    val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
-    val secondOp = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
-    val code     = s"${firstOp.code} $operand ${secondOp.code}"
-    val opNode   = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
-
-    connectCallToArgument(opNode, firstOp)
-    connectCallToArgument(opNode, secondOp)
-    connectCallToArgument(callNode, opNode)
-  }
-  def handlePtrSub(instruction: Instruction, callNode: CfgNodeNew, varNode: Varnode, index: Int): Unit = {
-    val arg = resolveVarNode(instruction, varNode, index)
-    connectCallToArgument(callNode, arg)
-  }
-  def handleAssignment(instruction: Instruction, callNode: CfgNodeNew, to: Varnode, index: Int): Unit = {
-    val node = resolveVarNode(instruction, to, index)
-    connectCallToArgument(callNode, node)
-  }
-  def resolveArgument(instruction: Instruction, callNode: CfgNodeNew, pcodeAst: PcodeOp, index: Int): Unit = {
-    pcodeAst.getOpcode match {
-      case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
-        logger.warn("INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
-      case CALL | CALLIND =>
-        handleAssignment(instruction, callNode, pcodeAst.getOutput, index)
-      case INT_ADD | FLOAT_ADD =>
-        handleTwoArguments(instruction, callNode, pcodeAst, "+", "<operator>.addition")
-      case INT_DIV | FLOAT_DIV | INT_SDIV =>
-        handleTwoArguments(instruction, callNode, pcodeAst, "/", "<operator>.division")
-      case INT_SUB | FLOAT_SUB =>
-        handleTwoArguments(instruction, callNode, pcodeAst, "-", "<operator>.subtraction")
-      case INT_MULT | FLOAT_MULT =>
-        handleTwoArguments(instruction, callNode, pcodeAst, "*", "<operator>.multiplication")
-      case MULTIEQUAL | INDIRECT | PIECE => // not handled
-      case INT_XOR =>
-        handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
-      case INT_OR =>
-        handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
-      case COPY | LOAD | STORE | SUBPIECE =>
-        handleAssignment(instruction, callNode, pcodeAst.getOutput, index)
-      case CAST =>
-        // we need to "unpack" the def of the first input of the cast
-        // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
-        if (pcodeAst.getInput(0).getDef != null) {
-          resolveArgument(instruction, callNode, pcodeAst.getInput(0).getDef, index)
-        }
-      case PTRSUB | PTRADD => handlePtrSub(instruction, callNode, pcodeAst.getOutput, index)
-      case _               => // handleDefault(pcodeAst)
     }
   }
 
@@ -430,5 +278,180 @@ class PCodeMapper(
     diffGraphBuilder.addNode(argument)
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.ARGUMENT)
     diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
+  }
+
+  def createCall(name: String, code: String, index: Int = 1): CfgNodeNew = {
+    createCallNode(code, name, nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue, index)
+  }
+
+  def handleSingleArgument(pcodeOp: PcodeOp, cpgOperationName: String, operation: String): CfgNodeNew = {
+    val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
+    val callNode = createCall(cpgOperationName, nativeInstruction.toString) // s"$operation(${firstOp.code})")
+    connectCallToArgument(callNode, firstOp)
+    callNode
+  }
+
+  def handleTwoArguments(pcodeOp: PcodeOp, cpgOperationName: String, code: String, callIndex: Int = -1): CfgNodeNew = {
+    val callNode =
+      createCall(cpgOperationName, nativeInstruction.toString, callIndex)
+    // we need this for MIPS
+    if (pcodeOp.getOutput.isRegister) {
+      val firstOp  = resolveVarNode(pcodeOp.getOutput, 1)
+      val secondOp = resolveVarNode(pcodeOp.getInput(0), 2)
+      val thirdOp  = resolveVarNode(pcodeOp.getInput(1), 3)
+      connectCallToArgument(callNode, firstOp)
+      connectCallToArgument(callNode, secondOp)
+      connectCallToArgument(callNode, thirdOp)
+    } else {
+      val firstOp  = resolveVarNode(pcodeOp.getInput(0), 1)
+      val secondOp = resolveVarNode(pcodeOp.getInput(1), 2)
+      connectCallToArgument(callNode, firstOp)
+      connectCallToArgument(callNode, secondOp)
+    }
+    callNode
+  }
+
+  def handleStore(pcodeOp: PcodeOp): CfgNodeNew = {
+    val firstOp  = resolveVarNode(pcodeOp.getInput(1), 1)
+    val secondOp = resolveVarNode(pcodeOp.getInput(2), 2)
+    val callNode = createCall("<operator>.assignment", nativeInstruction.toString)
+    connectCallToArgument(callNode, firstOp)
+    connectCallToArgument(callNode, secondOp)
+    callNode
+  }
+  def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
+    if (input.isRegister) {
+      var name = input.getHigh.getName
+      val high = input.getHigh
+      if (
+        high != null && input.getDef != null && high.getName == "UNNAMED" && input.getDef != null && input.getDef.getInputs != null
+      ) {
+        val symbol = input.getDef.getInputs.toList.lastOption
+          .flatMap(x => Option(x.getHigh))
+          .flatMap(x => Option(x.getSymbol))
+        if (symbol.isDefined) {
+          name = symbol.get.getName
+        }
+      }
+      if (name == null) {
+        name = input.getHigh.getSymbol.getName
+      }
+      createIdentifier(
+        name,
+        name,
+        index,
+        Types.registerType(name),
+        instruction.getMinAddress.getOffsetAsBigInteger.intValue
+      )
+    } else if (input.isConstant) {
+      createLiteral(
+        "0x" + input.getWordOffset.toHexString,
+        index,
+        index,
+        "0x" + input.getWordOffset.toHexString,
+        instruction.getMinAddress.getOffsetAsBigInteger.intValue
+      )
+    } else if (input.isUnique) {
+      var valueString = ""
+      if (input.getDescendants.asScala.toList.head.getOutput == null) {
+        valueString = input.getDef.getInputs.toList.head.getAddress.getOffset.toString
+      } else {
+        valueString = input.getDescendants.asScala.toList.head.getOutput.getHigh.getName
+      }
+
+      val value = address2Literal.getOrElse(input.getDef.getInputs.toList.head.getAddress.getOffset, valueString)
+
+      createLiteral(
+        value,
+        index,
+        index,
+        input.getWordOffset.toHexString,
+        instruction.getMinAddress.getOffsetAsBigInteger.intValue
+      )
+    } else {
+      // we default to literal
+      // identifier could be useful too
+      createLiteral(
+        input.toString(),
+        index,
+        index,
+        input.toString(),
+        instruction.getMinAddress.getOffsetAsBigInteger.intValue
+      )
+    }
+  }
+  def handleAssignment(pcodeOp: PcodeOp, code: String): CfgNodeNew = {
+    val secondOp = resolveVarNode(pcodeOp.getInputs.headOption.get, 2)
+    val callNode = createCall("<operator>.assignment", code = code) // s"${firstOp.code} = ${secondOp.code}")
+    connectCallToArgument(callNode, secondOp)
+    if (pcodeOp.getOutput.isRegister) {
+      val firstOp = resolveVarNode(pcodeOp.getOutput, 1)
+      connectCallToArgument(callNode, firstOp)
+    } else {
+      val firstOp = createIdentifier(
+        pcodeOp.getOutput.toString(),
+        pcodeOp.getOutput.toString,
+        1,
+        "TODO",
+        pcodeOp.getSeqnum.getTarget.getOffsetAsBigInteger.intValue()
+      )
+      connectCallToArgument(callNode, firstOp)
+    }
+    callNode
+  }
+  def handleTwoArguments(
+    instruction: Instruction,
+    callNode: CfgNodeNew,
+    pcodeOp: PcodeOp,
+    operand: String,
+    name: String
+  ): Unit = {
+    val firstOp  = resolveVarNode(instruction, pcodeOp.getInput(0), 1)
+    val secondOp = resolveVarNode(instruction, pcodeOp.getInput(1), 2)
+    val code     = s"${firstOp.code} $operand ${secondOp.code}"
+    val opNode   = createCallNode(code = code, name, instruction.getMinAddress.getOffsetAsBigInteger.intValue)
+
+    connectCallToArgument(opNode, firstOp)
+    connectCallToArgument(opNode, secondOp)
+    connectCallToArgument(callNode, opNode)
+  }
+  def handlePtrSub(instruction: Instruction, callNode: CfgNodeNew, varNode: Varnode, index: Int): Unit = {
+    val arg = resolveVarNode(instruction, varNode, index)
+    connectCallToArgument(callNode, arg)
+  }
+  def handleAssignment(instruction: Instruction, callNode: CfgNodeNew, to: Varnode, index: Int): Unit = {
+    val node = resolveVarNode(instruction, to, index)
+    connectCallToArgument(callNode, node)
+  }
+  def resolveArgument(instruction: Instruction, callNode: CfgNodeNew, pcodeAst: PcodeOp, index: Int): Unit = {
+    pcodeAst.getOpcode match {
+      case INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL =>
+        logger.warn("INT_EQUAL | INT_NOTEQUAL | INT_SLESS | INT_SLESSEQUAL | INT_LESS | INT_LESSEQUAL ")
+      case CALL | CALLIND =>
+        handleAssignment(instruction, callNode, pcodeAst.getOutput, index)
+      case INT_ADD | FLOAT_ADD =>
+        handleTwoArguments(instruction, callNode, pcodeAst, "+", "<operator>.addition")
+      case INT_DIV | FLOAT_DIV | INT_SDIV =>
+        handleTwoArguments(instruction, callNode, pcodeAst, "/", "<operator>.division")
+      case INT_SUB | FLOAT_SUB =>
+        handleTwoArguments(instruction, callNode, pcodeAst, "-", "<operator>.subtraction")
+      case INT_MULT | FLOAT_MULT =>
+        handleTwoArguments(instruction, callNode, pcodeAst, "*", "<operator>.multiplication")
+      case MULTIEQUAL | INDIRECT | PIECE => // not handled
+      case INT_XOR =>
+        handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
+      case INT_OR =>
+        handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
+      case COPY | LOAD | STORE | SUBPIECE =>
+        handleAssignment(instruction, callNode, pcodeAst.getOutput, index)
+      case CAST =>
+        // we need to "unpack" the def of the first input of the cast
+        // eg. "(param_1 + 5)" in "(void *)(param_1 + 5)"
+        if (pcodeAst.getInput(0).getDef != null) {
+          resolveArgument(instruction, callNode, pcodeAst.getInput(0).getDef, index)
+        }
+      case PTRSUB | PTRADD => handlePtrSub(instruction, callNode, pcodeAst.getOutput, index)
+      case _               => // handleDefault(pcodeAst)
+    }
   }
 }
