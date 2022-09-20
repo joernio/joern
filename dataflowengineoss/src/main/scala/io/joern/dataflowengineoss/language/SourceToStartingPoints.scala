@@ -12,13 +12,13 @@ object SourceToStartingPoints {
     * this member in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements
     * would be problematic, but it works quite well in practice.
     */
-  def sourceToStartingPoints[NodeType <: CfgNode](src: NodeType): List[CfgNode] = {
+  def sourceToStartingPoints[NodeType](src: NodeType): List[CfgNode] = {
     src match {
       case lit: Literal =>
         List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
       case member: Member =>
         usages(targetsToClassIdentifierPair(memberToInitializedMembers(member)))
-      case x => List(x)
+      case x => List(x).collect{ case y : CfgNode => y}
     }
   }
 
