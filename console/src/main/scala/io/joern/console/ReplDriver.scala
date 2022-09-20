@@ -90,7 +90,19 @@ class ReplDriver(args: Array[String],
 //    println(s"XXXXX classloader: ${rendering.myClassLoader.findClass("foobar")}")
 
     /** Blockingly read a line, getting back a parse result */
-    def readLine(state: State): ParseResult = {
+    def readLine(state0: State): ParseResult = {
+      val state =
+        if (HackyGlobalState.calledUsing) {
+          println("XXX7 fiddling with state")
+          val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+          val oldCtx = state0.context
+//          val newCp = s"${oldCtx.settings.classpath.value}$versionSortJar$classpathSeparator"
+//          val ctx1 = oldCtx.fresh.setSetting(oldCtx.settings.classpath, newCp)
+          val ctx1 = oldCtx.fresh.setSetting(oldCtx.settings.classpath, versionSortJar)
+          val newState = state0.copy(context = ctx1)
+          ctx1.initialize()(using ctx1)
+          newState
+        } else state0
       val completer: Completer = { (_, line, candidates) =>
         val comps = completions(line.cursor, line.line, state)
         candidates.addAll(comps.asJava)
