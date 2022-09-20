@@ -22,7 +22,7 @@ import scala.collection.mutable
 
 trait AstForFunctionsCreator { this: AstCreator =>
 
-  case class MethodAst(ast: Ast, methodNode: NewMethod, methodAst: Ast)
+  case class MethodAst(ast: Ast, methodNode: NewMethod)
 
   private def handleRestInParameters(
     elementNodeInfo: BabelNodeInfo,
@@ -407,9 +407,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     methodRefNode match {
       case Some(ref) if callAst.nodes.isEmpty =>
-        MethodAst(Ast(ref), methodNode, mAst)
+        MethodAst(Ast(ref), methodNode)
       case _ =>
-        MethodAst(callAst, methodNode, mAst)
+        MethodAst(callAst, methodNode)
     }
   }
 
