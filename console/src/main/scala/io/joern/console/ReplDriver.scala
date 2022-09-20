@@ -140,14 +140,7 @@ class ReplDriver(args: Array[String],
             MacroClassLoader.init(ictx)
             Positioned.init(using ictx)
 
-            Contexts.inContext(ictx) {
-              if !ctx.settings.YdropComments.value || ctx.settings.YreadComments.value then
-                ictx.setProperty(ContextDoc, new ContextDocstrings)
-              val fileNamesOrNone = command.checkUsage(summary, sourcesRequired)(using ctx.settings)(using ctx.settingsState)
-              val fileNames = fileNamesOrNone.get
-              val files = fileNames.map(ctx.getFile)
-              fromTastySetup(files)
-            }
+            ictx
           }
           rootCtx = setup(settings, newRootCtx)
 
