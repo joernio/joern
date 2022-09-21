@@ -3,6 +3,7 @@ package io.joern.dataflowengineoss.language
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Identifier, Literal, Member, TypeDecl}
 import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement, ReachableByResult}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import overflowdb.traversal._
 import io.shiftleft.semanticcpg.language._
@@ -91,13 +92,13 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     * this member in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements
     * would be problematic, but it works quite well in practice.
     */
-  def sourceToStartingPoints[NodeType <: CfgNode](src: NodeType): List[CfgNode] = {
+  def sourceToStartingPoints[NodeType](src: NodeType): List[CfgNode] = {
     src match {
       case lit: Literal =>
         List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
       case member: Member =>
         usages(targetsToClassIdentifierPair(memberToInitializedMembers(member)))
-      case x => List(x)
+      case x => List(x).collect { case y: CfgNode => y }
     }
   }
 
@@ -117,12 +118,12 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     * it looks for a method called "<clinit>", which represents the implicitly defined class constructor.
     */
   private def literalToInitializedMembers(lit: Literal): List[Identifier] = {
-    lit.inAssignment.where(_.method.nameExact("<clinit>")).target.isIdentifier.l
+    lit.inAssignment.where(_.method.nameExact(Defines.StaticInitMethodName)).target.isIdentifier.l
   }
 
   private def memberToInitializedMembers(member: Member): List[Identifier] = {
     member.typeDecl.method
-      .nameExact("<clinit>")
+      .nameExact(Defines.StaticInitMethodName)
       .ast
       .isIdentifier
       .nameExact(member.name)
@@ -136,7 +137,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
       val cpg = Cpg(typeDecl.graph())
       val usagesInSameClass =
         typeDecl.method
-          .whereNot(_.nameExact("<clinit>"))
+          .whereNot(_.nameExact(Defines.StaticInitMethodName))
           .flatMap { m =>
             m.ast.isIdentifier.nameExact(identifier.name).takeWhile(notLeftHandOfAssignment)
           }
