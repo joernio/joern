@@ -20,6 +20,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object HackyGlobalState {
+  val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
   var calledUsing = false
 }
 
@@ -30,8 +31,7 @@ class ReplDriver(args: Array[String],
                  prompt: String,
                  maxPrintElements: Int,
                  classLoader: Option[ClassLoader] = None) extends dotty.tools.repl.ReplDriver(args, out, classLoader) {
-
-  val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+  import HackyGlobalState.versionSortJar
 
   override def initCtx: Context = {
     val ctx = super.initCtx
@@ -153,11 +153,9 @@ class ReplDriver(args: Array[String],
           rootCtx = {
             val oldCtx: FreshContext = rootCtx.asInstanceOf[FreshContext]
             val baseCtx: ContextBase = new ContextBase {
-              override val initialCtx: Context = oldCtx
               override def newPlatform(using Context): Platform = {
                 new JavaPlatform {
                   override def classPath(using Context): ClassPath = {
-                    println("new javaplatform -> classpath")
                     val original = super.classPath
                     val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
                     val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
@@ -171,13 +169,14 @@ class ReplDriver(args: Array[String],
 //            // TODO how can i connect the two? idea: create a new FreshContext, copy (almost) everything over
 //            oldCtx.withTyperState(TyperState.initialState())
 //            // rootCtx.fresh // maintains history, but doesn't use new platform
-//            val newRootCtx = new Contexts.InitialContext(baseCtx, rootCtx.settings) // works, but loses history
-//            command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
-//            newRootCtx
+            val newRootCtx = new Contexts.InitialContext(baseCtx, rootCtx.settings) // works, but loses history
+            command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
+            /* must call ^ - otherwise:
+            Exception in thread "main" dotty.tools.dotc.MissingCoreLibraryException: Could not find package scala from compiler core libraries.
+            Make sure the compiler core libraries are on the classpath. */
 
 //            oldCtx.base.reset()
 //            oldCtx
-//              new FreshContext(baseCtx)
 //              println(s"XXX5 cp=${oldCtx.settings.classpath.value}")
 //              val newCtx = oldCtx.setSetting(oldCtx.settings.classpath, s"${oldCtx.settings.classpath.value}$classpathSeparator$versionSortJar")
 //oldCtx.settings.classpath.updateIn()
@@ -189,11 +188,11 @@ class ReplDriver(args: Array[String],
             //            val newCtx = oldCtx.fresh.setSetting(oldCtx.settings.classpath, s"${oldCtx.settings.classpath.value}$classpathSeparator$versionSortJar")
             println(s"XXX6 new cp=${ctx2.settings.classpath.value}")
             println(s"XXX7 settingsState: ${ctx2.settingsState}")
-            ctx2
 //            println(s"oldRootCtx class=${rootCtx.getClass}") // FreshContext
 //            println(s"newRootCtx class=${newRootCtx.getClass}") //InitialContext
 //            newRootCtx.freshOver(rootCtx) // no workie
 //            rootCtx.freshOver(newRootCtx) // doesn't work either...
+            newRootCtx
           }
 
           rendering.myClassLoader = null
