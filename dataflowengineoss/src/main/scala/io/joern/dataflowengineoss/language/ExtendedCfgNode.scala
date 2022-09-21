@@ -1,12 +1,10 @@
 package io.joern.dataflowengineoss.language
 
 import io.joern.dataflowengineoss.language.SourceToStartingPoints.sourceTravsToStartingPoints
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Identifier, Literal, Member, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement, ReachableByResult}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.codepropertygraph.Cpg
 import overflowdb.traversal._
-import io.shiftleft.semanticcpg.language._
 
 import scala.collection.mutable
 

@@ -6,9 +6,15 @@ import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Iden
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
+/** This component translates sources to starting points for data flow tracking. In most cases, a source can already be
+  * a starting point. However, some nodes, such as member variables, need to be translated into suitable sources, e.g,
+  * all places where the member variable is first used.
+  */
 object SourceToStartingPoints {
 
-  def sourceTravsToStartingPoints[NodeType](sourceTravs: Seq[Traversal[NodeType]]): List[StartingPointWithSource] = {
+  /** For a sequence of source traversals, determine the corresponding list of starting points.
+    */
+  def sourceTravsToStartingPoints[NodeType](sourceTravs: Traversal[NodeType]*): List[StartingPointWithSource] = {
     val sources = sourceTravs
       .flatMap(_.toList)
       .collect { case n: CfgNode => n }
@@ -20,10 +26,14 @@ object SourceToStartingPoints {
     }
   }
 
-  /** The code below deals with static member variables in Java, and specifically with the situation where literals that
-    * initialize static members are passed to `reachableBy` as sources. In this case, we determine the first usages of
-    * this member in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements
-    * would be problematic, but it works quite well in practice.
+  /** The code below deals with static member variables in, and specifically with the following situations:
+    *
+    * (a) Literals that initialize static members are used as sources.
+    *
+    * (b) Static members are used as sources.
+    *
+    * In both cases, we determine the first usages of this member in each method, traversing the AST from left to right.
+    * This heuristic isn't fool-proof, e.g., goto-statements would be problematic, but it works quite well in practice.
     */
   private def sourceToStartingPoints[NodeType](src: NodeType): List[CfgNode] = {
     src match {
@@ -38,8 +48,7 @@ object SourceToStartingPoints {
     }
   }
 
-  /** For a literal, determine if it is used in the initialization of any member variables. This is Javasrc-specific as
-    * it looks for a method called "<clinit>", which represents the implicitly defined class constructor.
+  /** For a literal, determine if it is used in the initialization of any static member variable.
     */
   private def literalToInitializedMembers(lit: Literal): List[Identifier] = {
     lit.inAssignment.where(_.method.nameExact(Defines.StaticInitMethodName)).target.isIdentifier.l
