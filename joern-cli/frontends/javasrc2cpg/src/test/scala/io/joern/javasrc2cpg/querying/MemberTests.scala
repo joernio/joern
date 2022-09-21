@@ -8,6 +8,20 @@ import org.scalatest.Ignore
 
 class NewMemberTests extends JavaSrcCode2CpgFixture {
   "non-static member initializers" should {
+    "only be added once per constructor" in {
+      val cpg = code("""
+                      |class Foo {
+                      |  int x = 1;
+                      |
+                      |  public Foo() {}
+                      |
+                      |  public Foo(int y) {
+                      |    this.x = y;
+                      |  }
+                      |}""".stripMargin)
+
+      cpg.method.fullNameExact("Foo.<init>:void()").assignment.astChildren.size shouldBe 2
+    }
     "be added to the default constructor in classes with no constructor" in {
       val cpg = code("""
 			 |class Foo {
