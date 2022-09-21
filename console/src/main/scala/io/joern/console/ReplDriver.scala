@@ -50,12 +50,11 @@ class ReplDriver(args: Array[String],
 //            val directoryClassPath = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
             val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
             new AggregateClassPath(cpResult) {
-              override def list(inPackage: String) = {
-                println("AggregateClassPath.list")
+//              override def list(inPackage: String) = {
+//                println("AggregateClassPath.list")
 //                if (HackyGlobalState.calledUsing) throw new AssertionError("boom") //who's calling us?
 //                else super.list(inPackage)
-                super.list(inPackage)
-              }
+//              }
             }
           }
         }
@@ -79,76 +78,26 @@ class ReplDriver(args: Array[String],
     def readLine(state0: State): ParseResult = {
       val state =
         if (HackyGlobalState.calledUsing) {
-          println("XXX7 fiddling with state")
+          println("called `using` before - fiddling with state")
           val oldCtx = state0.context
-//          val newCp = s"${oldCtx.settings.classpath.value}$versionSortJar$classpathSeparator"
-//          val ctx1 = oldCtx.fresh.setSetting(oldCtx.settings.classpath, newCp)
-          val ctx1 = oldCtx.fresh.setSetting(oldCtx.settings.classpath, versionSortJar)
+          val newCp = s"${oldCtx.settings.classpath.value(using oldCtx)}$versionSortJar$classpathSeparator"
+          val ctx1 = oldCtx.fresh.setSetting(oldCtx.settings.classpath, newCp)
           val ctx2 = ctx1.setNewScope.setNewTyperState()
 //          ctx2.typerState.fresh()
-          val newState = state0.copy(context = ctx2)
 //          ctx1.initialize()(using ctx1)
-          newState
-        } else state0
+          state0.copy(context = ctx2)
+        } else {
+          state0
+        }
       val completer: Completer = { (_, line, candidates) =>
         val comps = completions(line.cursor, line.line, state)
         candidates.addAll(comps.asJava)
       }
       given Context = state.context
-      // TODO try, then change...
-//      var ctx = state.context
       try {
         val line = terminal.readLine(completer)
-//        val line = terminal.readLine(completer)(using ctx)
-        // TODO extract, handle elsewhere
         if (line.startsWith("//> using")) {
           HackyGlobalState.calledUsing = true
-//          val settings = Nil
-//          rootCtx = initialCtx(settings)
-//          if (rootCtx.settings.outputDir.isDefault(using rootCtx))
-//            rootCtx = rootCtx.fresh
-//              .setSetting(rootCtx.settings.outputDir, new dotty.tools.io.VirtualDirectory("<REPL compilation output>"))
-//          compiler = new dotty.tools.repl.ReplCompiler
-//          rendering = new dotty.tools.repl.Rendering(classLoader)
-//          resetToInitial(Nil)
-//          ctx = initCtx
-//          ctx.fresh
-//          rootCtx = ctx
-//          rootCtx = initCtx
-
-//          rootCtx = initialCtx(Nil)
-//          val settings = args
-//          val newRootCtx = initCtx//.fresh//.addMode(Mode.ReadPositions | Mode.Interactive)
-//          newRootCtx.setSetting(newRootCtx.settings.YcookComments, true)
-//          newRootCtx.setSetting(newRootCtx.settings.YreadComments, true)
-//          setupRootCtx(this.settings ++ settings, newRootCtx)
-//          rootCtx = setupRootCtx(this.args, newRootCtx) // this works but removes the state - drill deeper in here - can we save the state?
-//          rootCtx = setup(settings, newRootCtx) match {
-//            case Some((Nil, ictx)) => Contexts.inContext(ictx) {
-              // still works... maybe the main thing happens in setup?
-//              ictx.base.initialize() // test: inside `initialise, call `newPlatform`, but not `definitions.init`
-//              ictx
-//            }
-//            case _ => ???
-//          }
-
-          // happens in `setup - drill in there...
-//          rootCtx = setup(settings, newRootCtx).get._2
-
-//          def setup(args: Array[String], rootCtx: Context): Context = {
-//            val oldScope = rootCtx.scope // empty scope?
-//            println(s"XXXX3 oldScope: $oldScope ${oldScope.size}") // always empty... look elsewhere
-//
-//            val ictx = rootCtx
-//            val cmdDistill = command.distill(args, ictx.settings)(ictx.settingsState)(using ictx)
-//            ictx
-//          }
-//          val newRootCtx = this.initCtx
-
-            // no difference...
-//            val freshContext: FreshContext = rootCtx.asInstanceOf[FreshContext]
-//          freshContext.typerState.fresh()
-//          freshContext.setDebug
 
           rootCtx = {
             val oldCtx: FreshContext = rootCtx.asInstanceOf[FreshContext]
@@ -159,7 +108,6 @@ class ReplDriver(args: Array[String],
                     val original = super.classPath
                     val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
                     val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
-
                     new AggregateClassPath(cpResult)
                   }
                 }
@@ -208,7 +156,7 @@ class ReplDriver(args: Array[String],
         }
       } catch {
         case _: EndOfFileException => // Ctrl+D
-          onExitCode.foreach(code => run(code)(state))
+//          onExitCode.foreach(code => run(code)(state))
           Quit
         case _: UserInterruptException => // Ctrl+C
           Newline
