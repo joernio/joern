@@ -274,8 +274,8 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should use correct type for super calls" in {
-    val List(call) = cpg.call.name("<init>").l
-    call.methodFullName shouldBe "java.lang.Object.<init>:void()"
+    val List(call) = cpg.call.name(io.joern.x2cpg.Defines.ConstructorMethodName).l
+    call.methodFullName shouldBe s"java.lang.Object.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
     call.typeFullName shouldBe "void"
     call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 

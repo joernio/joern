@@ -131,9 +131,9 @@ class TsAstCreationPassTest extends AbstractPassTest {
         greeter.fullName shouldBe "code.ts::program:Greeter"
         greeter.filename shouldBe "code.ts"
         greeter.file.name.head shouldBe "code.ts"
-        val constructor = greeter.method.name("<constructor>").head
+        val constructor = greeter.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).head
         greeter.method.isConstructor.head shouldBe constructor
-        constructor.fullName shouldBe "code.ts::program:Greeter:<constructor>"
+        constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
         inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, greet) =>
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
@@ -160,8 +160,8 @@ class TsAstCreationPassTest extends AbstractPassTest {
         greeter.fullName shouldBe "code.ts::program:Greeter"
         greeter.filename shouldBe "code.ts"
         greeter.file.name.head shouldBe "code.ts"
-        val constructor = greeter.method.name("<constructor>").head
-        constructor.fullName shouldBe "code.ts::program:Greeter:<constructor>"
+        val constructor = greeter.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).head
+        constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
         greeter.method.isConstructor.head shouldBe constructor
         inside(cpg.typeDecl("Greeter").member.l) { case List(greeting) =>
           greeting.name shouldBe "greeting"
@@ -181,11 +181,10 @@ class TsAstCreationPassTest extends AbstractPassTest {
         |""".stripMargin,
       "code.ts"
     ) { cpg =>
-      inside(cpg.typeDecl.name("Greeter.*").l) { case List(greeter, greeterMeta) =>
-        greeterMeta.name shouldBe "Greeter<meta>"
+      inside(cpg.typeDecl.name("Greeter.*").l) { case List(greeter) =>
         greeter.name shouldBe "Greeter"
         cpg.typeDecl.isAbstract.head shouldBe greeter
-        greeterMeta.member.isStatic.head shouldBe greeterMeta.member.name("a").head
+        greeter.member.isStatic.head shouldBe greeter.member.name("a").head
         greeter.member.isPrivate.head shouldBe greeter.member.name("b").head
         greeter.member.isPublic.head shouldBe greeter.member.name("c").head
         greeter.member.isProtected.head shouldBe greeter.member.name("d").head
@@ -201,8 +200,8 @@ class TsAstCreationPassTest extends AbstractPassTest {
     ) { cpg =>
       cpg.method.fullName.l shouldBe List(
         "code.ts::program",
-        "code.ts::program:A:<constructor>",
-        "code.ts::program:B:<constructor>"
+        s"code.ts::program:A:${io.joern.x2cpg.Defines.ConstructorMethodName}",
+        s"code.ts::program:B:${io.joern.x2cpg.Defines.ConstructorMethodName}"
       )
     }
 
@@ -238,8 +237,8 @@ class TsAstCreationPassTest extends AbstractPassTest {
           func.dynamicTypeHintFullName.head shouldBe "code.ts::program:Greeter:anonymous"
         }
         inside(cpg.typeDecl("Greeter").method.l) { case List(constructor, anon) =>
-          constructor.name shouldBe "<constructor>"
-          constructor.fullName shouldBe "code.ts::program:Greeter:<constructor>"
+          constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+          constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
           constructor.code shouldBe "new: Greeter"
           greeter.method.isConstructor.head shouldBe constructor
           anon.name shouldBe "anonymous"
@@ -266,8 +265,8 @@ class TsAstCreationPassTest extends AbstractPassTest {
         greeter.filename shouldBe "code.ts"
         greeter.file.name.head shouldBe "code.ts"
         inside(cpg.typeDecl("Greeter").method.l) { case List(constructor) =>
-          constructor.name shouldBe "<constructor>"
-          constructor.fullName shouldBe "code.ts::program:Greeter:<constructor>"
+          constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+          constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
           constructor.code shouldBe "new (param: string) : Greeter"
           constructor.parameter.name.l shouldBe List("this", "param")
           constructor.parameter.code.l shouldBe List("this", "param: string")

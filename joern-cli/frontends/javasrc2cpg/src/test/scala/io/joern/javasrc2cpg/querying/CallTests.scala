@@ -22,12 +22,17 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
 			 |}
 			 |""".stripMargin)
 
-      cpg.method.fullNameExact("Foo.<init>:void()").call.nameExact("<init>").receiver.l match {
+      cpg.method
+        .fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()")
+        .call
+        .nameExact(io.joern.x2cpg.Defines.ConstructorMethodName)
+        .receiver
+        .l match {
         case List(thisNode: Identifier) =>
           thisNode.outE.collectAll[Ref].map(_.inNode).l match {
             case List(paramNode: MethodParameterIn) =>
               paramNode.name shouldBe "this"
-              paramNode.method.fullName shouldBe "Foo.<init>:void()"
+              paramNode.method.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
 
             case result => fail(s"Expected REF edge to method parameter but found $result")
           }
@@ -172,7 +177,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
           |  }
           |}
           |""".stripMargin)
-      cpg.call.name("<init>").l match {
+      cpg.call.name(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
         case List(initCall: Call) =>
           initCall.code shouldBe "new Foo()"
 

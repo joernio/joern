@@ -44,14 +44,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct structure for block expression" in AstFixture("let x = (class Foo {}, bar())") { cpg =>
       val List(program) = cpg.method.nameExact(":program").l
 
-      val List(classFooMetaTypeDecl) = cpg.typeDecl.nameExact("Foo<meta>").l
-      classFooMetaTypeDecl.fullName shouldBe "code.js::program:Foo<meta>"
-
       val List(classFooTypeDecl) = cpg.typeDecl.nameExact("Foo").l
       classFooTypeDecl.fullName shouldBe "code.js::program:Foo"
 
       // constructor
-      val List(classFooMethod) = classFooTypeDecl.astChildren.isMethod.nameExact("<constructor>").l
+      val List(classFooMethod) =
+        classFooTypeDecl.astChildren.isMethod.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l
       classFooMethod.code shouldBe "constructor() {}"
 
       val List(programBlock) = program.astChildren.isBlock.l
