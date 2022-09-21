@@ -43,7 +43,15 @@ class ReplDriver(args: Array[String],
       try {
         val line = terminal.readLine(completer)
         // TODO extract, handle elsewhere
-        if (line.startsWith("//> using")) {
+        if (line.startsWith("//> foo")) {
+//          ParseResult(line)(state)
+          // TODO extract dependency, pass back to BridgeBase, restart ReplDriver
+          // ideally, would pass the added dep to the state... unfortunately, that doesn't seem to work...
+          // find another workaround for the callback - ensure predef is being called!
+//          ParseResult(":reset")(state)
+           println("todo add callback for `restart with deps`")
+           Quit
+        } else if (line.startsWith("//> using")) {
           val settings = args
           import dotty.tools.dotc.core.Comments.{ContextDoc, ContextDocstrings}
           import Contexts.ctx
@@ -54,7 +62,6 @@ class ReplDriver(args: Array[String],
             val cmdDistill = command.distill(args, ictx.settings)(ictx.settingsState)(using ictx)
             ictx
           }
-//          val newRootCtx = this.initCtx
           val newRootCtx = {
             val ctx = super.initCtx
             val base: ContextBase = new ContextBase {
