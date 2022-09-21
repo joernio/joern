@@ -14,7 +14,9 @@ case class StartingPointWithSource(startingPoint: CfgNode, source: CfgNode)
 
 /** Base class for nodes that can occur in data flows
   */
-class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
+class SourceToStartingPoints(val traversal: Traversal[CfgNode]) extends AnyVal {
+
+  import SourceToStartingPoints._
 
   def ddgIn(implicit semantics: Semantics): Traversal[CfgNode] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
@@ -86,6 +88,10 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
       }
     }
   }
+
+}
+
+object SourceToStartingPoints {
 
   /** The code below deals with static member variables in Java, and specifically with the situation where literals that
     * initialize static members are passed to `reachableBy` as sources. In this case, we determine the first usages of
