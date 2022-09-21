@@ -8,7 +8,7 @@ import dotty.tools.dotc.classpath.{AggregateClassPath, ClassPathFactory}
 import dotty.tools.dotc.config.{Feature, JavaPlatform, Platform}
 import dotty.tools.dotc.core.{Contexts, MacroClassLoader, Mode, TyperState}
 import dotty.tools.io.{AbstractFile, ClassPath, ClassRepresentation}
-import dotty.tools.repl.{CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
+import dotty.tools.repl.{AbstractFileClassLoader, CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
 
 import java.io.PrintStream
 import org.jline.reader.*
@@ -33,6 +33,7 @@ class ReplDriver(args: Array[String],
                  classLoader: Option[ClassLoader] = None) extends dotty.tools.repl.ReplDriver(args, out, classLoader) {
   import HackyGlobalState.versionSortJar
 
+  /** experiment 2: start: make .classpath dynamic - that alone doesn't help, but is prerequisite for the below...
   override def initCtx: Context = {
     val ctx = super.initCtx
 
@@ -64,6 +65,7 @@ class ReplDriver(args: Array[String],
     println(s"ReplDriver.initCtx. calledUsing=${HackyGlobalState.calledUsing}")
     new Contexts.InitialContext(base, ctx.settings)
   }
+   experiment 2: end */
 
   /** Run REPL with `state` until `:quit` command found
     * Main difference to the 'original': different greeting, trap Ctrl-c
@@ -77,6 +79,7 @@ class ReplDriver(args: Array[String],
     /** Blockingly read a line, getting back a parse result */
     def readLine(state0: State): ParseResult = {
       val state =
+      /* experiment 3 start: modify state.context
         if (HackyGlobalState.calledUsing) {
           println("called `using` before - fiddling with state")
           val oldCtx = state0.context
@@ -86,9 +89,10 @@ class ReplDriver(args: Array[String],
 //          ctx2.typerState.fresh()
 //          ctx1.initialize()(using ctx1)
           state0.copy(context = ctx2)
-        } else {
+        } else
+      experiment 3: end */
           state0
-        }
+
       val completer: Completer = { (_, line, candidates) =>
         val comps = completions(line.cursor, line.line, state)
         candidates.addAll(comps.asJava)
@@ -99,8 +103,8 @@ class ReplDriver(args: Array[String],
         if (line.startsWith("//> using")) {
           HackyGlobalState.calledUsing = true
 
+          /* experiment 1: entirely replace rootCtx
           rootCtx = {
-            val oldCtx: FreshContext = rootCtx.asInstanceOf[FreshContext]
             val baseCtx: ContextBase = new ContextBase {
               override def newPlatform(using Context): Platform = {
                 new JavaPlatform {
@@ -113,47 +117,52 @@ class ReplDriver(args: Array[String],
                 }
               }
             }
-//
-//            // TODO how can i connect the two? idea: create a new FreshContext, copy (almost) everything over
-//            oldCtx.withTyperState(TyperState.initialState())
-//            // rootCtx.fresh // maintains history, but doesn't use new platform
-            val newRootCtx = new Contexts.InitialContext(baseCtx, rootCtx.settings) // works, but loses history
+            val newRootCtx = new Contexts.InitialContext(baseCtx, rootCtx.settings)
             command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
-            /* must call ^ - otherwise:
-            Exception in thread "main" dotty.tools.dotc.MissingCoreLibraryException: Could not find package scala from compiler core libraries.
-            Make sure the compiler core libraries are on the classpath. */
-
-//            oldCtx.base.reset()
-//            oldCtx
-//              println(s"XXX5 cp=${oldCtx.settings.classpath.value}")
-//              val newCtx = oldCtx.setSetting(oldCtx.settings.classpath, s"${oldCtx.settings.classpath.value}$classpathSeparator$versionSortJar")
-//oldCtx.settings.classpath.updateIn()
-            // TODO call `fromTastySetup(additionalFiles)
-            val ctx1 = oldCtx.fresh
-            val newCp = s"${oldCtx.settings.classpath.value}$versionSortJar$classpathSeparator"
-//            ctx1.settings.classpath.updateIn(ctx1.settings, versionSortJar)
-            val ctx2 = ctx1.setSetting(ctx1.settings.classpath, newCp)
-            //            val newCtx = oldCtx.fresh.setSetting(oldCtx.settings.classpath, s"${oldCtx.settings.classpath.value}$classpathSeparator$versionSortJar")
-            println(s"XXX6 new cp=${ctx2.settings.classpath.value}")
-            println(s"XXX7 settingsState: ${ctx2.settingsState}")
-//            println(s"oldRootCtx class=${rootCtx.getClass}") // FreshContext
-//            println(s"newRootCtx class=${newRootCtx.getClass}") //InitialContext
-//            newRootCtx.freshOver(rootCtx) // no workie
-//            rootCtx.freshOver(newRootCtx) // doesn't work either...
             newRootCtx
           }
+          rendering.myClassLoader = null // otherwise jline doesn't find our class
+          experiment 1 end: this works, but history is lost */
 
-          rendering.myClassLoader = null
+          /* experiment 2: adapt Rendering.myClassLoader
+          rendering.myClassLoader = new AbstractFileClassLoader(AbstractFile.getFile(versionSortJar), rendering.myClassLoader)
+          experiment 2 end: no effect */
 
-          ParseResult(line)(state)
-          //          ParseResult(line)(initialState)
+          /* experiment 3: reset compiler (and not the context and/or state)
+           * result: trips up everything...
+           */
+          //          this.compiler.reset() // that alone doesn't do anything
+          //          compiler = new dotty.tools.repl.ReplCompiler // this trips up everything...
 
-//          this.compiler.reset() // that alone doesn't work...
-//          compiler = new dotty.tools.repl.ReplCompiler // this trips up everything...
+
+////            // TODO how can i connect the two? idea: create a new FreshContext, copy (almost) everything over
+////            oldCtx.withTyperState(TyperState.initialState())
+////            // rootCtx.fresh // maintains history, but doesn't use new platform
+//            /* must call ^ - otherwise:
+//            Exception in thread "main" dotty.tools.dotc.MissingCoreLibraryException: Could not find package scala from compiler core libraries.
+//            Make sure the compiler core libraries are on the classpath. */
+//
+////            oldCtx.base.reset()
+////            oldCtx
+////              println(s"XXX5 cp=${oldCtx.settings.classpath.value}")
+////              val newCtx = oldCtx.setSetting(oldCtx.settings.classpath, s"${oldCtx.settings.classpath.value}$classpathSeparator$versionSortJar")
+////oldCtx.settings.classpath.updateIn()
+//            // TODO call `fromTastySetup(additionalFiles)
+//            val ctx1 = oldCtx.fresh
+//            val newCp = s"${oldCtx.settings.classpath.value}$versionSortJar$classpathSeparator"
+////            ctx1.settings.classpath.updateIn(ctx1.settings, versionSortJar)
+//            val ctx2 = ctx1.setSetting(ctx1.settings.classpath, newCp)
+//            //            val newCtx = oldCtx.fresh.setSetting(oldCtx.settings.classpath, s"${oldCtx.settings.classpath.value}$classpathSeparator$versionSortJar")
+//            println(s"XXX6 new cp=${ctx2.settings.classpath.value}")
+//            println(s"XXX7 settingsState: ${ctx2.settingsState}")
+////            println(s"oldRootCtx class=${rootCtx.getClass}") // FreshContext
+////            println(s"newRootCtx class=${newRootCtx.getClass}") //InitialContext
+////            newRootCtx.freshOver(rootCtx) // no workie
+////            rootCtx.freshOver(newRootCtx) // doesn't work either...
+//            newRootCtx
         }
-        else {
-          ParseResult(line)(state)
-        }
+
+        ParseResult(line)(state)
       } catch {
         case _: EndOfFileException => // Ctrl+D
 //          onExitCode.foreach(code => run(code)(state))
