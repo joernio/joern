@@ -372,7 +372,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       if (shouldCreateFunctionReference) {
         methodRefNode
       } else {
-        metaTypeRefIdStack.headOption
+        typeRefIdStack.headOption
       }
     scope.pushNewMethodScope(methodFullName, methodName, blockNode, capturingRefNode)
     localAstParentStack.push(blockNode)

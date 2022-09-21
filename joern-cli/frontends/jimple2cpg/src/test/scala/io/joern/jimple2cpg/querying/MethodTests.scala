@@ -28,7 +28,7 @@ class MethodTests extends JimpleCodeToCpgFixture {
    */
 
   "should contain exactly one non-stub method node with correct fields" in {
-    val List(x) = cpg.method.nameNot("<init>").isExternal(false).l
+    val List(x) = cpg.method.nameNot(io.joern.x2cpg.Defines.ConstructorMethodName).isExternal(false).l
     x.name shouldBe "foo"
     x.fullName shouldBe "Foo.foo:int(int,int)"
     x.code shouldBe "int foo(int param1, int param2)"

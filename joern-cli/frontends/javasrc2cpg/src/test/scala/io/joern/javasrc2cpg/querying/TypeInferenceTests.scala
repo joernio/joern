@@ -60,9 +60,9 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.nameExact("<init>").methodFullName.l match {
+      cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "a.Bar.<init>:void()"
+          fullName shouldBe s"a.Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
 
         case result => fail(s"Expected single constructor invocation for Bar but found $result")
       }
@@ -89,9 +89,9 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.nameExact("<init>").methodFullName.l match {
+      cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "a.Bar.<init>:void()"
+          fullName shouldBe s"a.Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
 
         case result => fail(s"Expected single constructor invocation for Bar but found $result")
       }
@@ -108,9 +108,9 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.nameExact("<init>").methodFullName.l match {
+      cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "a.Bar.<init>:void()"
+          fullName shouldBe s"a.Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
 
         case result => fail(s"Expected single constructor invocation for Bar but found $result")
       }
@@ -177,7 +177,7 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
         case res => fail(s"Expected single alloc call but got $res")
       }
 
-      val init = cpg.method.name("test2").call.nameExact("<init>").l match {
+      val init = cpg.method.name("test2").call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
         case init :: Nil => init
         case res         => fail(s"Expected single init call but got $res")
 
@@ -185,7 +185,7 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
 
       init.typeFullName shouldBe "void"
       init.signature shouldBe "void(int)"
-      init.methodFullName shouldBe "a.b.c.Bar.<init>:void(int)"
+      init.methodFullName shouldBe s"a.b.c.Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
 
       init.argument.size shouldBe 2
 

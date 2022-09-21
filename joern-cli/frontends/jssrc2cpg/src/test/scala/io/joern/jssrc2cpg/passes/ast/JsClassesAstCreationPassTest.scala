@@ -7,34 +7,32 @@ import io.shiftleft.semanticcpg.language._
 class JsClassesAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for classes" should {
-    "have a TYPE_DECL and <meta> TYPE_DECL for ClassA" in AstFixture("var x = class ClassA {}") { cpg =>
-      cpg.typeDecl.nameExact("ClassA<meta>").fullNameExact("code.js::program:ClassA<meta>").size shouldBe 1
-      cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA")
+    "have a TYPE_DECL for ClassA" in AstFixture("var x = class ClassA {}") { cpg =>
+      cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").size shouldBe 1
     }
 
-    "have constructor binding in <meta> TYPE_DECL for ClassA" in AstFixture("""
+    "have constructor binding in TYPE_DECL for ClassA" in AstFixture("""
         |var x = class ClassA {
         |  constructor() {}
         |}""".stripMargin) { cpg =>
-      val List(classAMetaTypeDecl) =
-        cpg.typeDecl.nameExact("ClassA<meta>").fullNameExact("code.js::program:ClassA<meta>").l
-      val List(constructorBinding) = classAMetaTypeDecl.bindsOut.l
+      val List(classATypeDecl)     = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
+      val List(constructorBinding) = classATypeDecl.bindsOut.l
       constructorBinding.name shouldBe ""
       constructorBinding.signature shouldBe ""
       val List(boundMethod) = constructorBinding.refOut.l
-      boundMethod.fullName shouldBe "code.js::program:ClassA:<constructor>"
+      boundMethod.fullName shouldBe s"code.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
       boundMethod.code shouldBe "constructor() {}"
     }
 
-    "have member for static method in <meta> TYPE_DECL for ClassA" in AstFixture("""
+    "have member for static method in TYPE_DECL for ClassA" in AstFixture("""
        |var x = class ClassA {
        |  static staticFoo() {}
        |}""".stripMargin) { cpg =>
-      val List(classAMetaTypeDecl) =
-        cpg.typeDecl.nameExact("ClassA<meta>").fullNameExact("code.js::program:ClassA<meta>").l
-      val List(memberFoo) = classAMetaTypeDecl.member.l
+      val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
+      val List(memberFoo)      = classATypeDecl.member.l
       memberFoo.dynamicTypeHintFullName shouldBe Seq("code.js::program:ClassA:staticFoo")
       memberFoo.code shouldBe "static staticFoo() {}"
+      classATypeDecl.member.isStatic.l shouldBe List(memberFoo)
     }
 
     "have method for static method in ClassA AST" in AstFixture("""
@@ -70,27 +68,25 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
         |  }
         |}""".stripMargin) { cpg =>
       val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(a, b)           = classATypeDecl.member.l
+      val List(a, b)           = classATypeDecl.member.not(_.isStatic).l
       a.name shouldBe "a"
       a.code shouldBe "a = 1"
       b.name shouldBe "b"
       b.code shouldBe """b = "foo""""
 
-      val List(classAMetaTypeDecl) =
-        cpg.typeDecl.nameExact("ClassA<meta>").fullNameExact("code.js::program:ClassA<meta>").l
-      val List(c, d) = classAMetaTypeDecl.member.l
+      val List(c, d) = classATypeDecl.member.isStatic.l
       c.name shouldBe "c"
       c.code shouldBe "static c = true"
       d.name shouldBe "d"
       d.code shouldBe "static d"
 
-      val List(clInitMethod) = classAMetaTypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
+      val List(clInitMethod)         = classATypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
       val List(cInitCall, dInitCall) = clInitMethod.block.ast.isCall.nameExact(Operators.assignment).l
       cInitCall.code shouldBe "static c = true"
       dInitCall.code shouldBe "this.d = false"
 
       val List(constructor) =
-        cpg.typeDecl.nameExact("ClassA").method.nameExact("<constructor>").l
+        cpg.typeDecl.nameExact("ClassA").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l
       val List(aInitCall, bInitCall) = constructor.block.ast.isCall.nameExact(Operators.assignment).l
       aInitCall.code shouldBe "a = 1"
       bInitCall.code shouldBe """b = "foo""""
@@ -111,7 +107,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       val List(programBlock)    = program.astChildren.isBlock.l
       val List(assignmentToTmp) = programBlock.astChildren.isCall.l
       val List(rhs)             = assignmentToTmp._typeRefViaAstOut.l
-      rhs.typeFullName shouldBe "code.js::program:ClassA<meta>"
+      rhs.typeFullName shouldBe "code.js::program:ClassA"
     }
 
     "have correct structure for type decls for classes with extends" in AstFixture("class ClassA extends Base {}") {

@@ -602,7 +602,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       defaultConstructorAst
         .flatMap(_.root)
         .collect { case defaultConstructor: NewMethod =>
-          BindingTableEntry(NameConstants.Init, defaultConstructor.signature, defaultConstructor.fullName)
+          BindingTableEntry(
+            io.joern.x2cpg.Defines.ConstructorMethodName,
+            defaultConstructor.signature,
+            defaultConstructor.fullName
+          )
         }
 
     // Annotation declarations need no binding table as objects of this
@@ -625,9 +629,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def astForDefaultConstructor(): Ast = {
     val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse("<empty>")
     val signature    = s"${TypeConstants.Void}()"
-    val fullName     = composeMethodFullName(typeFullName, NameConstants.Init, signature)
+    val fullName     = composeMethodFullName(typeFullName, io.joern.x2cpg.Defines.ConstructorMethodName, signature)
     val constructorNode = NewMethod()
-      .name(NameConstants.Init)
+      .name(io.joern.x2cpg.Defines.ConstructorMethodName)
       .fullName(fullName)
       .signature(signature)
       .filename(filename)
@@ -659,8 +663,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val children = astsForExpression(argument, None)
       val callNode =
         NewCall()
-          .name(s"$typeFullName.<init>")
-          .methodFullName(s"$typeFullName.<init>")
+          .name(s"$typeFullName.${io.joern.x2cpg.Defines.ConstructorMethodName}")
+          .methodFullName(s"$typeFullName.${io.joern.x2cpg.Defines.ConstructorMethodName}")
           .dispatchType(DispatchTypes.STATIC_DISPATCH)
           .code(entry.toString)
           .lineNumber(line(entry))
@@ -730,10 +734,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val parameterTypes = parameterAsts.map(rootType(_).getOrElse(TypeConstants.UnresolvedType))
     val signature      = s"${TypeConstants.Void}(${parameterTypes.mkString(",")})"
     val typeFullName   = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
-    val fullName       = composeMethodFullName(typeFullName, NameConstants.Init, signature)
+    val fullName       = composeMethodFullName(typeFullName, io.joern.x2cpg.Defines.ConstructorMethodName, signature)
 
     val constructorNode = createPartialMethod(constructorDeclaration)
-      .name(NameConstants.Init)
+      .name(io.joern.x2cpg.Defines.ConstructorMethodName)
       .fullName(fullName)
       .signature(signature)
 
@@ -2328,7 +2332,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .signature(composeMethodLikeSignature(typeFullName, Nil))
 
     val initNode = callNode(
-      NameConstants.Init,
+      io.joern.x2cpg.Defines.ConstructorMethodName,
       Some(typeFullName),
       TypeConstants.Void,
       DispatchTypes.STATIC_DISPATCH,
@@ -2416,7 +2420,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val argTypes = argumentTypesForCall(tryWithSafeStackOverflow(stmt.resolve()), args)
 
     val callRoot = callNode(
-      NameConstants.Init,
+      io.joern.x2cpg.Defines.ConstructorMethodName,
       Some(typeFullName),
       TypeConstants.Void,
       DispatchTypes.STATIC_DISPATCH,
