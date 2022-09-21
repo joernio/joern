@@ -20,9 +20,17 @@ class MemberTests extends JavaDataflowFixture {
       | }
       |""".stripMargin
 
-  it should "find flow from literal to sink" in {
-    val sink = cpg.call("sink").argument(1).l
+  it should "find flow from member to sink" in {
+    val sink   = cpg.call("sink").argument(1).l
     val source = cpg.member.name("x").l
+    sink.size shouldBe 1
+    source.size shouldBe 1
+    sink.reachableBy(source).size shouldBe 1
+  }
+
+  it should "find flow from literal to sink" in {
+    val sink   = cpg.call("sink").argument(1).l
+    val source = cpg.literal.code("\"abc\"")
     sink.size shouldBe 1
     source.size shouldBe 1
     sink.reachableBy(source).size shouldBe 1
