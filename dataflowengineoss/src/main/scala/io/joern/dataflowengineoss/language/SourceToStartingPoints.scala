@@ -152,16 +152,15 @@ object SourceToStartingPoints {
     member.typeDecl.method
       .nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName)
       .ast
-      .isIdentifier
-      .nameExact(member.name)
-      .argumentIndex(1)
-      .where(_.inAssignment)
-      .l ++ member.typeDecl.method
-      .nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName)
-      .ast
-      .isFieldIdentifier
-      .canonicalNameExact(member.head.name)
-      .where(_.inAssignment)
+      .flatMap { x =>
+        x match {
+          case identifier: Identifier if identifier.name == member.name =>
+            Traversal(identifier).argumentIndex(1).where(_.inAssignment).l
+          case fieldIdentifier: FieldIdentifier if fieldIdentifier.canonicalName == member.head.name =>
+            Traversal(fieldIdentifier).where(_.inAssignment).l
+          case _ => List[Expression]()
+        }
+      }
       .l
   }
 
