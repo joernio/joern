@@ -226,6 +226,80 @@ trait ScriptExecution { this: BridgeBase =>
          |""".stripMargin
     }
 
+    val classLoader: ClassLoader = {
+      import java.net.{URL, URLClassLoader}
+      val parent = this.getClass.getClassLoader
+      new ClassLoader(parent) {
+
+        override def loadClass(name: String): Class[_]  = {
+         val ret = super.loadClass(name)
+         println("XXXX1 " + ret)
+         ret
+        }
+
+        override def findClass(name: String): Class[_]  = {
+         val ret = super.findClass(name)
+         println("XXXX3 " + ret)
+         ret
+        }
+
+        override def findClass(moduleName: String, name: String): Class[_]  = {
+         val ret = super.findClass(moduleName, name)
+         println("XXXX4 " + ret)
+         ret
+        }
+
+        override def findResource(moduleName: String, name: String): URL  = {
+         val ret = super.findResource(moduleName, name)
+         println("XXXX5 " + ret)
+         ret
+        }
+
+        override def getResource(name: String): URL  = {
+         val ret = super.getResource(name)
+         println("XXXX6 " + ret)
+         ret
+        }
+
+        override def getResources(name: String): util.Enumeration[URL]  = {
+         val ret = super.getResources(name)
+         println("XXXX7 " + ret)
+         ret
+        }
+
+        override def resources(name: String): stream.Stream[URL]  = {
+         val ret = super.resources(name)
+         println("XXXX8 " + ret)
+         ret
+        }
+
+        override def findResource(name: String): URL  = {
+         val ret = super.findResource(name)
+         println("XXXX9 " + ret)
+         ret
+        }
+
+        override def findResources(name: String): util.Enumeration[URL]  = {
+         val ret = super.findResources(name)
+         println("XXXX10 " + ret)
+         ret
+        }
+
+        override def getResourceAsStream(name: String): InputStream  = {
+         val ret = super.getResourceAsStream(name)
+         println("XXXX11 " + ret)
+         ret
+        }
+
+        override def loadClass(name: String, resolve: Boolean): Class[_] = {
+          val ret = super.loadClass(name, resolve)
+//          os.write.append(os.Path("/home/mp/Projects/shiftleft/joern/foo.txt"), s"$name\n")
+          println(s"XXXX loadClass resolve=$resolve $name=$ret")
+          ret
+        }
+      }
+    }
+
 //    val scalacArgs0 = {
 //      val hppcJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/carrotsearch/hppc/0.7.1/hppc-0.7.1.jar"
 //      val compilerArgs = Array.newBuilder[String]
@@ -236,37 +310,41 @@ trait ScriptExecution { this: BridgeBase =>
 //      compilerArgs.result()
 //    }
 
-    def runRepl(): Unit = {
+//    HackyGlobalState.classloader = classLoader
+    val replDriver = new ReplDriver(
+      compilerArgs(config),
+//      scalacArgs0,
+      onExitCode = Option(onExitCode),
+      greeting = greeting,
+      prompt = promptStr,
+      maxPrintElements = Int.MaxValue,
+//      Option(classLoader)
+    )
+//    replDriver.addDependency(hppcJar)
 
-      val replDriver = new ReplDriver(
-        compilerArgs(config),
-        //      scalacArgs0,
-        onExitCode = Option(onExitCode),
-        greeting = greeting,
-        prompt = promptStr,
-        maxPrintElements = Int.MaxValue,
-      )
+    // TODO cleanup
+//    val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+//    replDriver.addDependency(versionSortJar)
+    val initialState: State = replDriver.initialState
 
-      // TODO cleanup
-      //    val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-      //    replDriver.addDependency(versionSortJar)
-      val initialState: State = replDriver.initialState
+    // when upgrading to Scala 3.2.1: change to `given State`
+    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
+    // TODO proper predef code again...
+    val predef0 =
+      """
+        |import overflowdb._
+      """.stripMargin
+    val state: State = replDriver.run(predef0)(using initialState)
+//    val state: State =
+//      if (config.verbose) {
+//        println(predefCode)
+//        replDriver.run(predefCode)(using initialState)
+//      } else {
+//        replDriver.runQuietly(predefCode)(using initialState)
+//      }
 
-      // when upgrading to Scala 3.2.1: change to `given State`
-      val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-      val state: State =
-        if (config.verbose) {
-          println(predefCode)
-          replDriver.run(predefCode)(using initialState)
-        } else {
-          replDriver.runQuietly(predefCode)(using initialState)
-        }
-
-      // TODO test idea: if quit with C-c: restart with old state but new classloader - go via addDependency
-      replDriver.runUntilQuit(state)
-    }
-
-    runRepl()
+  // TODO test idea: if quit with C-c: restart with old state but new classloader - go via addDependency
+    val state2 = replDriver.runUntilQuit(state)
 //    println("running again...")
 //    val scalacArgs1 = {
 //      val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
