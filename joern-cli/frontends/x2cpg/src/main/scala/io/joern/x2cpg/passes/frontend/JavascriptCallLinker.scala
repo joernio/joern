@@ -43,8 +43,7 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
       // (i.e. code that does `var foo = function() {}`)
       method.start
         .fullName(".*::program:anonymous\\d*")
-        .in(EdgeTypes.REF)
-        .collectAll[nodes.MethodRef]
+        .flatMap(_._methodRefViaRefIn)
         .argumentIndex(2)
         .inCall
         .nameExact(Operators.assignment)
