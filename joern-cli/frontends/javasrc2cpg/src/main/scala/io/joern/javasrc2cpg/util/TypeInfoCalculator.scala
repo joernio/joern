@@ -19,38 +19,34 @@ import com.github.javaparser.resolution.types.{
   ResolvedVoidType,
   ResolvedWildcard
 }
-import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserClassDeclaration
 import com.github.javaparser.symbolsolver.logic.InferenceVariableType
 import com.github.javaparser.symbolsolver.model.typesystem.{LazyType, NullType}
-import com.github.javaparser.symbolsolver.reflectionmodel.{ReflectionClassDeclaration, ReflectionTypeParameter}
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.{TypeConstants, TypeNameConstants}
 import io.joern.x2cpg.datastructures.Global
-import org.checkerframework.checker.signature.qual.FullyQualifiedName
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
   private val logger               = LoggerFactory.getLogger(this.getClass)
   private val emptyTypeParamValues = ResolvedTypeParametersMap.empty()
 
-  def name(typ: ResolvedType): String = {
+  def name(typ: ResolvedType): Option[String] = {
     nameOrFullName(typ, emptyTypeParamValues, false)
   }
 
-  def name(typ: ResolvedType, typeParamValues: ResolvedTypeParametersMap): String = {
+  def name(typ: ResolvedType, typeParamValues: ResolvedTypeParametersMap): Option[String] = {
     nameOrFullName(typ, typeParamValues, false)
   }
 
-  def fullName(typ: ResolvedType): String = {
-    registerType(nameOrFullName(typ, emptyTypeParamValues, true))
+  def fullName(typ: ResolvedType): Option[String] = {
+    nameOrFullName(typ, emptyTypeParamValues, true).map(registerType)
   }
 
-  def fullName(typ: ResolvedType, typeParamValues: ResolvedTypeParametersMap): String = {
-    registerType(nameOrFullName(typ, typeParamValues, true))
+  def fullName(typ: ResolvedType, typeParamValues: ResolvedTypeParametersMap): Option[String] = {
+    nameOrFullName(typ, typeParamValues, true).map(registerType)
   }
 
   private def typesSubstituted(
@@ -70,7 +66,7 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
     typ: ResolvedType,
     typeParamValues: ResolvedTypeParametersMap,
     fullyQualified: Boolean
-  ): String = {
+  ): Option[String] = {
     typ match {
       case refType: ResolvedReferenceType =>
         nameOrFullName(refType.getTypeDeclaration.get, fullyQualified)
@@ -88,13 +84,13 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
             nameOrFullName(lazyType.asWildcard(), typeParamValues, fullyQualified)
         }
       case voidType: ResolvedVoidType =>
-        voidType.describe()
+        Some(voidType.describe())
       case primitiveType: ResolvedPrimitiveType =>
-        primitiveType.describe()
+        Some(primitiveType.describe())
       case arrayType: ResolvedArrayType =>
-        nameOrFullName(arrayType.getComponentType, typeParamValues, fullyQualified) + "[]"
+        nameOrFullName(arrayType.getComponentType, typeParamValues, fullyQualified).map(_ + "[]")
       case nullType: NullType =>
-        nullType.describe()
+        Some(nullType.describe())
       case typeVariable: ResolvedTypeVariable =>
         val typeParamDecl   = typeVariable.asTypeParameter()
         val substitutedType = Try(typeParamValues.getValue(typeParamDecl))
@@ -104,8 +100,8 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
         } else {
           val extendsBoundOption = Try(typeParamDecl.getBounds.asScala.find(_.isExtends)).toOption.flatten
           extendsBoundOption
-            .map(bound => nameOrFullName(bound.getType, typeParamValues, fullyQualified))
-            .getOrElse(objectType(fullyQualified))
+            .flatMap(bound => nameOrFullName(bound.getType, typeParamValues, fullyQualified))
+            .orElse(objectType(fullyQualified))
         }
       case lambdaConstraintType: ResolvedLambdaConstraintType =>
         nameOrFullName(lambdaConstraintType.getBound, typeParamValues, fullyQualified)
@@ -120,20 +116,21 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
         // For whatever reason there is no accessor and the field is private.
         // So for now we settle with the ancestor type. Maybe we use reflection later.
         Try(unionType.getCommonAncestor.toScala).toOption.flatten
-          .map(nameOrFullName(_, typeParamValues, fullyQualified))
-          .getOrElse(objectType(fullyQualified))
+          .flatMap(nameOrFullName(_, typeParamValues, fullyQualified))
+          .orElse(objectType(fullyQualified))
       case _: InferenceVariableType =>
         // From the JavaParser docs, the InferenceVariableType is: An element using during type inference.
         // At this point JavaParser has failed to resolve the type.
-        TypeConstants.UnresolvedType
+        None
     }
   }
 
-  private def objectType(fullyQualified: Boolean): String = {
+  private def objectType(fullyQualified: Boolean): Option[String] = {
+    // Return an option type for
     if (fullyQualified) {
-      TypeConstants.Object
+      Some(TypeConstants.Object)
     } else {
-      TypeNameConstants.Object
+      Some(TypeNameConstants.Object)
     }
   }
 
@@ -158,33 +155,33 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
         // resolve. Since we anyway dont care about the type cast, we directly access the
         // symbolResolver and specifiy the most generic type ResolvedType.
         Try(symbolResolver.toResolvedType(typ, classOf[ResolvedType])).toOption
-          .map(resolvedType => nameOrFullName(resolvedType, emptyTypeParamValues, fullyQualified))
+          .flatMap(resolvedType => nameOrFullName(resolvedType, emptyTypeParamValues, fullyQualified))
     }
   }
 
-  def name(decl: ResolvedDeclaration): String = {
+  def name(decl: ResolvedDeclaration): Option[String] = {
     nameOrFullName(decl, false)
   }
 
-  def fullName(decl: ResolvedDeclaration): String = {
-    registerType(nameOrFullName(decl, true))
+  def fullName(decl: ResolvedDeclaration): Option[String] = {
+    nameOrFullName(decl, true).map(registerType)
   }
 
-  private def nameOrFullName(decl: ResolvedDeclaration, fullyQualified: Boolean): String = {
+  private def nameOrFullName(decl: ResolvedDeclaration, fullyQualified: Boolean): Option[String] = {
     decl match {
       case typeDecl: ResolvedTypeDeclaration =>
         nameOrFullName(typeDecl, fullyQualified)
     }
   }
 
-  private def nameOrFullName(typeDecl: ResolvedTypeDeclaration, fullyQualified: Boolean): String = {
+  private def nameOrFullName(typeDecl: ResolvedTypeDeclaration, fullyQualified: Boolean): Option[String] = {
     typeDecl match {
       case typeParamDecl: ResolvedTypeParameterDeclaration =>
         if (fullyQualified) {
           val containFullName = nameOrFullName(typeParamDecl.getContainer.asInstanceOf[ResolvedDeclaration], true)
-          containFullName + "." + typeParamDecl.getName
+          containFullName.map(_ + "." + typeParamDecl.getName)
         } else {
-          typeParamDecl.getName
+          Some(typeParamDecl.getName)
         }
       case _ =>
         val typeName = Option(typeDecl.getName).getOrElse(throw new RuntimeException("TODO Investigate"))
@@ -195,18 +192,18 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
         // and hopefully find a better solution if necessary.
         val isInnerTypeDecl = Try(typeDecl.containerType().isPresent).getOrElse(false)
         if (isInnerTypeDecl) {
-          nameOrFullName(typeDecl.containerType().get, fullyQualified) + "$" + typeName
+          nameOrFullName(typeDecl.containerType().get, fullyQualified).map(_ + "$" + typeName)
         } else {
           if (fullyQualified) {
             val packageName = typeDecl.getPackageName
 
             if (packageName == null || packageName == "") {
-              typeName
+              Some(typeName)
             } else {
-              packageName + "." + typeName
+              Some(packageName + "." + typeName)
             }
           } else {
-            typeName
+            Some(typeName)
           }
         }
     }
@@ -230,19 +227,18 @@ object TypeInfoCalculator {
   }
 
   object TypeConstants {
-    val Byte: String           = "byte"
-    val Short: String          = "short"
-    val Int: String            = "int"
-    val Long: String           = "long"
-    val Float: String          = "float"
-    val Double: String         = "double"
-    val Char: String           = "char"
-    val Boolean: String        = "boolean"
-    val Object: String         = "java.lang.Object"
-    val Class: String          = "java.lang.Class"
-    val Iterator: String       = "java.util.Iterator"
-    val Void: String           = "void"
-    val UnresolvedType: String = "codepropertygraph.Unresolved"
+    val Byte: String     = "byte"
+    val Short: String    = "short"
+    val Int: String      = "int"
+    val Long: String     = "long"
+    val Float: String    = "float"
+    val Double: String   = "double"
+    val Char: String     = "char"
+    val Boolean: String  = "boolean"
+    val Object: String   = "java.lang.Object"
+    val Class: String    = "java.lang.Class"
+    val Iterator: String = "java.util.Iterator"
+    val Void: String     = "void"
   }
 
   object TypeNameConstants {
@@ -287,8 +283,6 @@ object TypeInfoCalculator {
   )
 
   def apply(global: Global, symbolResolver: SymbolResolver): TypeInfoCalculator = {
-    val typeInfoCalculator = new TypeInfoCalculator(global, symbolResolver)
-    typeInfoCalculator.registerType(TypeConstants.UnresolvedType)
-    typeInfoCalculator
+    new TypeInfoCalculator(global, symbolResolver)
   }
 }

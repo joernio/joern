@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.passes
 
-import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
@@ -13,7 +13,7 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[Call] = {
-    cpg.call.methodFullName(s".*${TypeConstants.UnresolvedType}.*").toArray
+    cpg.call.methodFullName(s".*(${Defines.UnresolvedNamespace}|${Defines.UnresolvedSignature}).*").toArray
   }
 
   private def isMatchingMethod(method: Method, call: Call): Boolean = {
