@@ -1,16 +1,26 @@
 package io.joern.dataflowengineoss.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Identifier, Literal, Member, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  CfgNode,
+  Expression,
+  FieldIdentifier,
+  Identifier,
+  Literal,
+  Member,
+  StoredNode,
+  TypeDecl
+}
 import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement, ReachableByResult}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Operators
 import overflowdb.traversal._
 import io.shiftleft.semanticcpg.language._
 
 import scala.collection.mutable
 
-case class StartingPointWithSource(startingPoint: CfgNode, source: CfgNode)
+case class StartingPointWithSource(startingPoint: CfgNode, source: StoredNode)
 
 /** Base class for nodes that can occur in data flows
   */
@@ -81,10 +91,10 @@ class SourceToStartingPoints(val traversal: Traversal[CfgNode]) extends AnyVal {
     val sources               = startingPointsWithSources.map(_.source)
     val startingPointToSource = startingPointsWithSources.map { x => x.startingPoint -> x.source }.toMap
     result.map { r =>
-      if (sources.contains(r.startingPoint)) {
+      if (sources.contains(r.startingPoint) || !startingPointToSource(r.startingPoint).isInstanceOf[CfgNode]) {
         r
       } else {
-        r.copy(path = PathElement(startingPointToSource(r.startingPoint)) +: r.path)
+        r.copy(path = PathElement(startingPointToSource(r.startingPoint).asInstanceOf[CfgNode]) +: r.path)
       }
     }
   }
@@ -103,7 +113,8 @@ object SourceToStartingPoints {
       case lit: Literal =>
         List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
       case member: Member =>
-        usages(targetsToClassIdentifierPair(memberToInitializedMembers(member)))
+        val initializedMember = memberToInitializedMembers(member)
+        usages(targetsToClassIdentifierPair(initializedMember))
       case x => List(x).collect { case y: CfgNode => y }
     }
   }
@@ -111,7 +122,7 @@ object SourceToStartingPoints {
   def sourceTravsToStartingPoints[NodeType](sourceTravs: Seq[Traversal[NodeType]]): List[StartingPointWithSource] = {
     val sources = sourceTravs
       .flatMap(_.toList)
-      .collect { case n: CfgNode => n }
+      .collect { case n: StoredNode => n }
       .dedup
       .toList
       .sortBy(_.id)
@@ -123,35 +134,69 @@ object SourceToStartingPoints {
   /** For a literal, determine if it is used in the initialization of any member variables. This is Javasrc-specific as
     * it looks for a method called "<clinit>", which represents the implicitly defined class constructor.
     */
-  private def literalToInitializedMembers(lit: Literal): List[Identifier] = {
-    lit.inAssignment.where(_.method.nameExact(Defines.StaticInitMethodName)).target.isIdentifier.l
+  private def literalToInitializedMembers(lit: Literal): List[Expression] = {
+    lit.inAssignment
+      .where(_.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName))
+      .target
+      .isIdentifier
+      .l ++
+      lit.inAssignment
+        .where(_.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName))
+        .target
+        .isCall
+        .nameExact(Operators.fieldAccess)
+        .ast
+        .isFieldIdentifier
+        .l
   }
 
-  private def memberToInitializedMembers(member: Member): List[Identifier] = {
+  private def memberToInitializedMembers(member: Member): List[Expression] = {
     member.typeDecl.method
-      .nameExact(Defines.StaticInitMethodName)
+      .nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName)
       .ast
       .isIdentifier
       .nameExact(member.name)
       .argumentIndex(1)
       .where(_.inAssignment)
+      .l ++ member.typeDecl.method
+      .nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName)
+      .ast
+      .isFieldIdentifier
+      .canonicalNameExact(member.head.name)
+      .where(_.inAssignment)
       .l
   }
 
-  private def usages(pairs: List[(TypeDecl, Identifier)]): List[CfgNode] = {
-    pairs.flatMap { case (typeDecl, identifier) =>
+  private def usages(pairs: List[(TypeDecl, Expression)]): List[CfgNode] = {
+    pairs.flatMap { case (typeDecl, expression) =>
       val cpg = Cpg(typeDecl.graph())
       val usagesInSameClass =
         typeDecl.method
-          .whereNot(_.nameExact(Defines.StaticInitMethodName))
+          .whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName))
           .flatMap { m =>
-            m.ast.isIdentifier.nameExact(identifier.name).takeWhile(notLeftHandOfAssignment)
+            expression match {
+              case identifier: Identifier =>
+                m.ast.isIdentifier.nameExact(identifier.name).takeWhile(notLeftHandOfAssignment)
+              case fieldIdentifier: FieldIdentifier =>
+                m.ast.isFieldIdentifier
+                  .canonicalNameExact(fieldIdentifier.canonicalName)
+                  .takeWhile(notLeftHandOfAssignment)
+              case _ => List()
+            }
           }
           .headOption
       val usagesInOtherClasses = cpg.method.flatMap { m =>
         m.fieldAccess
           .where(_.argument(1).isIdentifier.typeFullNameExact(typeDecl.fullName))
-          .where(_.argument(2).isFieldIdentifier.canonicalNameExact(identifier.name))
+          .where { x =>
+            expression match {
+              case identifier: Identifier =>
+                x.argument(2).isFieldIdentifier.canonicalNameExact(identifier.name)
+              case fieldIdentifier: FieldIdentifier =>
+                x.argument(2).isFieldIdentifier.canonicalNameExact(fieldIdentifier.canonicalName)
+              case _ => List()
+            }
+          }
           .takeWhile(notLeftHandOfAssignment)
           .headOption
       }
@@ -163,7 +208,7 @@ object SourceToStartingPoints {
     !(x.argumentIndex == 1 && x.inAssignment.nonEmpty)
   }
 
-  private def targetsToClassIdentifierPair(targets: List[Identifier]): List[(TypeDecl, Identifier)] = {
+  private def targetsToClassIdentifierPair(targets: List[Expression]): List[(TypeDecl, Expression)] = {
     targets.flatMap(target => target.method.typeDecl.map { typeDecl => (typeDecl, target) })
   }
 

@@ -1,8 +1,9 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
 import io.joern.javasrc2cpg.testfixtures.JavaDataflowFixture
-import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal._
 import io.joern.dataflowengineoss.language._
+import io.shiftleft.semanticcpg.language._
 
 class MemberTests extends JavaDataflowFixture {
 
@@ -30,7 +31,7 @@ class MemberTests extends JavaDataflowFixture {
 
   it should "find flow from literal to sink" in {
     val sink   = cpg.call("sink").argument(1).l
-    val source = cpg.literal.code("\"abc\"")
+    val source = cpg.literal.code("\"abc\"").l
     sink.size shouldBe 1
     source.size shouldBe 1
     sink.reachableBy(source).size shouldBe 1
