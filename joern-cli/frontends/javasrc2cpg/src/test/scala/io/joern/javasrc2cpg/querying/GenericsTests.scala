@@ -119,9 +119,9 @@ class GenericsTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should create correct constructor calls" in {
-    cpg.method.name("map").call.nameExact("<init>").l match {
+    cpg.method.name("map").call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
       case const :: Nil =>
-        const.methodFullName shouldBe "Box.<init>:void()"
+        const.methodFullName shouldBe s"Box.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
         const.signature shouldBe "void()"
 
       case res => fail(s"Expected call to <init> but got $res")

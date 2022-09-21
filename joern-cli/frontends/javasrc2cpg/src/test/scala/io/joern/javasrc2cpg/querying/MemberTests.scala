@@ -20,7 +20,11 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
                       |  }
                       |}""".stripMargin)
 
-      cpg.method.fullNameExact("Foo.<init>:void()").assignment.astChildren.size shouldBe 2
+      cpg.method
+        .fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()")
+        .assignment
+        .astChildren
+        .size shouldBe 2
     }
     "be added to the default constructor in classes with no constructor" in {
       val cpg = code("""
@@ -28,12 +32,12 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
              |    int x = 1;
              |}""".stripMargin)
 
-      val constructor = cpg.method.nameExact("<init>").l match {
+      val constructor = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
         case constructor :: Nil => constructor
         case result             => fail(s"Expected single constructor method but found $result")
       }
 
-      constructor.fullName shouldBe "Foo.<init>:void()"
+      constructor.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
       val xAssign = constructor.body.astChildren.l match {
         case List(xAssign: Call) => xAssign
         case result              => fail(s"Expected xAssign in constructor but found $result")
@@ -68,12 +72,12 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
              |    int x = 1;
              |    public Foo() {}
              |}""".stripMargin)
-      val constructor = cpg.method.nameExact("<init>").l match {
+      val constructor = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
         case constructor :: Nil => constructor
         case result             => fail(s"Expected single constructor method but found $result")
       }
 
-      constructor.fullName shouldBe "Foo.<init>:void()"
+      constructor.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
       val xAssign = constructor.body.astChildren.l match {
         case List(xAssign: Call) => xAssign
         case result              => fail(s"Expected xAssign in constructor but found $result")
@@ -113,12 +117,12 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
 			 |    }
 			 |}""".stripMargin)
 
-      val constructor = cpg.method.nameExact("<init>").l match {
+      val constructor = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
         case constructor :: Nil => constructor
         case result             => fail(s"Expected single constructor method but found $result")
       }
 
-      constructor.fullName shouldBe "Foo.<init>:void(int)"
+      constructor.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
       val (xAssign, yAssign) = constructor.body.astChildren.l match {
         case List(xAssign: Call, yAssign: Call) => (xAssign, yAssign)
         case result                             => fail(s"Expected two assigns in constructor but found $result")
@@ -185,10 +189,11 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
 			 |    }
 			 |}""".stripMargin)
 
-      val constructorWithParam = cpg.method.fullNameExact("Foo.<init>:void(int)").l match {
-        case constructor :: Nil => constructor
-        case result             => fail(s"Expected single constructor method but found $result")
-      }
+      val constructorWithParam =
+        cpg.method.fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)").l match {
+          case constructor :: Nil => constructor
+          case result             => fail(s"Expected single constructor method but found $result")
+        }
 
       val (xAssign, yAssign) = constructorWithParam.body.astChildren.l match {
         case List(xAssign: Call, yAssign: Call) => (xAssign, yAssign)
@@ -240,10 +245,11 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
         case result => fail(s"Expected field assign args but got $result")
       }
 
-      val ctorWithExplInvocation = cpg.method.fullNameExact("Foo.<init>:void()")
+      val ctorWithExplInvocation =
+        cpg.method.fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()")
       ctorWithExplInvocation.body.astChildren.l match {
         case List(explConsInvocation: Call) =>
-          explConsInvocation.methodFullName shouldBe "Foo.<init>:void(int)"
+          explConsInvocation.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
 
         case result => fail(s"Expected single explicit constructor invocation call but found $result")
       }
@@ -366,7 +372,7 @@ class MemberTests extends JavaSrcCodeToCpgFixture {
               fail(s"Expected member field access but got ${res}")
           }
 
-          isStaticObjectInit.methodFullName shouldBe "Bar.<init>:void()"
+          isStaticObjectInit.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
 
           isAlsoStaticInit.methodFullName shouldBe Operators.assignment
 

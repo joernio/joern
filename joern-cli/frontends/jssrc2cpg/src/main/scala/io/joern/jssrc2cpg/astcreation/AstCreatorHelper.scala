@@ -144,9 +144,9 @@ trait AstCreatorHelper { this: AstCreator =>
 
   private def calcMethodName(func: BabelNodeInfo): String = func.node match {
     case TSCallSignatureDeclaration                              => "anonymous"
-    case TSConstructSignatureDeclaration                         => "<constructor>"
+    case TSConstructSignatureDeclaration                         => io.joern.x2cpg.Defines.ConstructorMethodName
     case _ if safeStr(func.json, "kind").contains("method")      => func.json("key")("name").str
-    case _ if safeStr(func.json, "kind").contains("constructor") => "<constructor>"
+    case _ if safeStr(func.json, "kind").contains("constructor") => io.joern.x2cpg.Defines.ConstructorMethodName
     case _ if func.json("id").isNull                             => "anonymous"
     case _                                                       => func.json("id")("name").str
   }

@@ -19,9 +19,9 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "have correct methodFullName and signature" in {
-      val initCall = cpg.call.nameExact("<init>").head
+      val initCall = cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).head
       initCall.signature shouldBe "void(long)"
-      initCall.methodFullName shouldBe "Foo.<init>:void(long)"
+      initCall.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(long)"
     }
   }
 
@@ -36,9 +36,9 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
     "create the correct Ast for the constructor" in {
-      fooCpg.typeDecl.name("Foo").method.nameExact("<init>").l match {
+      fooCpg.typeDecl.name("Foo").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
         case List(cons: Method) =>
-          cons.fullName shouldBe "Foo.<init>:void(int)"
+          cons.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
           cons.signature shouldBe "void(int)"
           cons.code shouldBe "public Foo(int x)"
           cons.parameter.size shouldBe 2
@@ -107,16 +107,16 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
 
   "it should create correct method nodes for constructors" in {
 
-    cpg.typeDecl.name("Bar").method.nameExact("<init>").l match {
+    cpg.typeDecl.name("Bar").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
       case List(cons1: Method, cons2: Method) =>
-        cons1.fullName shouldBe "Bar.<init>:void(int)"
+        cons1.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         cons1.signature shouldBe "void(int)"
         cons1.code shouldBe "public Bar(int x)"
         cons1.parameter.size shouldBe 2
         cons1.parameter.index(0).head.name shouldBe "this"
         cons1.parameter.index(1).head.name shouldBe "x"
 
-        cons2.fullName shouldBe "Bar.<init>:void(int,int)"
+        cons2.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
         cons2.signature shouldBe "void(int,int)"
         cons2.code shouldBe "public Bar(int x, int y)"
         cons2.parameter.size shouldBe 3
@@ -144,9 +144,9 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
-        init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Bar.<init>:void(int,int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
+        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+        init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
+        init.callOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
@@ -185,9 +185,9 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
-        init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Bar.<init>:void(int,int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
+        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+        init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
+        init.callOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
@@ -234,9 +234,9 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
-        init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Bar.<init>:void(int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(int)"
+        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+        init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+        init.callOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.signature shouldBe "void(int)"
         init.code shouldBe "new Bar(42)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -279,9 +279,9 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
-        init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Bar.<init>:void(int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(int)"
+        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+        init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+        init.callOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.signature shouldBe "void(int)"
         init.code shouldBe "new Bar(42)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -302,11 +302,15 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should create only `init` call for direct invocation using `this`" in {
-    cpg.typeDecl.name("Bar").method.fullNameExact("Bar.<init>:void(int,int)").l match {
+    cpg.typeDecl
+      .name("Bar")
+      .method
+      .fullNameExact(s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)")
+      .l match {
       case List(method) =>
         val List(init: Call) = method.astChildren.isBlock.astChildren.l
-        init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Bar.<init>:void(int)"
+        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+        init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int)"
@@ -326,11 +330,15 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should create only `init` call for direct invocation using `super`" in {
-    cpg.typeDecl.name("Bar").method.fullNameExact("Bar.<init>:void(int)").l match {
+    cpg.typeDecl
+      .name("Bar")
+      .method
+      .fullNameExact(s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)")
+      .l match {
       case List(method) =>
         val List(init: Call) = method.astChildren.isBlock.astChildren.l
-        init.name shouldBe "<init>"
-        init.methodFullName shouldBe "Foo.<init>:void(int)"
+        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+        init.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int)"
