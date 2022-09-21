@@ -13,8 +13,8 @@ package object language {
   implicit def expressionMethods[NodeType <: Expression](node: NodeType): ExpressionMethods[NodeType] =
     new ExpressionMethods(node)
 
-  implicit def toExtendedCfgNode[NodeType <: CfgNode](traversal: IterableOnce[NodeType]): SourceToStartingPoints =
-    new SourceToStartingPoints(traversal)
+  implicit def toExtendedCfgNode[NodeType <: CfgNode](traversal: IterableOnce[NodeType]): ExtendedCfgNode =
+    new ExtendedCfgNode(traversal)
 
   implicit def toDdgNodeDot(traversal: IterableOnce[Method]): DdgNodeDot =
     new DdgNodeDot(traversal)

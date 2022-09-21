@@ -25,9 +25,9 @@ case class StartingPointWithSource(startingPoint: CfgNode, source: StoredNode)
 
 /** Base class for nodes that can occur in data flows
   */
-class SourceToStartingPoints(val traversal: Traversal[CfgNode]) extends AnyVal {
+class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 
-  import SourceToStartingPoints._
+  import ExtendedCfgNode._
 
   def ddgIn(implicit semantics: Semantics): Traversal[CfgNode] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
@@ -102,9 +102,9 @@ class SourceToStartingPoints(val traversal: Traversal[CfgNode]) extends AnyVal {
 
 }
 
-object SourceToStartingPoints {
+object ExtendedCfgNode {
 
-  /** The code below deals with member variables in, and specifically with the situation where literals that initialize
+  /** The code below deals with member variables, and specifically with the situation where literals that initialize
     * static members are passed to `reachableBy` as sources. In this case, we determine the first usages of this member
     * in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements would be
     * problematic, but it works quite well in practice.
