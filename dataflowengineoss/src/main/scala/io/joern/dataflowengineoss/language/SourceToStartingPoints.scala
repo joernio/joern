@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.language
 
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
   CfgNode,
   Expression,
   FieldIdentifier,
@@ -103,10 +104,10 @@ class SourceToStartingPoints(val traversal: Traversal[CfgNode]) extends AnyVal {
 
 object SourceToStartingPoints {
 
-  /** The code below deals with static member variables in Java, and specifically with the situation where literals that
-    * initialize static members are passed to `reachableBy` as sources. In this case, we determine the first usages of
-    * this member in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements
-    * would be problematic, but it works quite well in practice.
+  /** The code below deals with member variables in, and specifically with the situation where literals that initialize
+    * static members are passed to `reachableBy` as sources. In this case, we determine the first usages of this member
+    * in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements would be
+    * problematic, but it works quite well in practice.
     */
   def sourceToStartingPoints[NodeType](src: NodeType): List[CfgNode] = {
     src match {
@@ -131,23 +132,20 @@ object SourceToStartingPoints {
     }
   }
 
-  /** For a literal, determine if it is used in the initialization of any member variables. This is Javasrc-specific as
-    * it looks for a method called "<clinit>", which represents the implicitly defined class constructor.
+  /** For a literal, determine if it is used in the initialization of any member variables. Return list of initialized
+    * members. An initialized member is either an identifier or a field-identifier.
     */
   private def literalToInitializedMembers(lit: Literal): List[Expression] = {
     lit.inAssignment
       .where(_.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName))
       .target
-      .isIdentifier
-      .l ++
-      lit.inAssignment
-        .where(_.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName))
-        .target
-        .isCall
-        .nameExact(Operators.fieldAccess)
-        .ast
-        .isFieldIdentifier
-        .l
+      .flatMap {
+        case identifier: Identifier => List(identifier)
+        case call: Call if call.name == Operators.fieldAccess =>
+          call.ast.isFieldIdentifier.l
+        case _ => List[Expression]()
+      }
+      .l
   }
 
   private def memberToInitializedMembers(member: Member): List[Expression] = {
