@@ -245,10 +245,8 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should default to <unresolvedType> with a matching type node for unresolved types" in {
-    val List(x)    = cpg.typ(TypeConstants.UnresolvedType).l
     val List(node) = cpg.identifier.name("UnknownType").l
-    node.typeFullName shouldBe TypeConstants.UnresolvedType
-    node.typ.headOption shouldBe Some(x)
+    node.typeFullName shouldBe "<empty>"
   }
 
   "should handle primitive type arrays" in {

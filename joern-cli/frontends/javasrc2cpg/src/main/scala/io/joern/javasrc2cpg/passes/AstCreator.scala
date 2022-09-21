@@ -539,7 +539,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         (extendedTypes ++ implementedTypes).flatMap { typ =>
           typeInfoCalc.fullName(typ)
         }
-      val maybeJavaObjectType = if (inheritsFromTypeNames.isEmpty) {
+      val maybeJavaObjectType = if (extendedTypes.isEmpty) {
         typeInfoCalc.registerType(TypeConstants.Object)
         Seq(TypeConstants.Object)
       } else {
@@ -680,17 +680,19 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def astForEnumEntry(entry: EnumConstantDeclaration): Ast = {
+    // TODO Fix enum entries in general
     val typeFullName =
       tryWithSafeStackOverflow(entry.resolve().getType).toOption.flatMap(typeInfoCalc.fullName)
 
     val entryNode = memberNode(entry.getNameAsString, entry.toString, typeFullName, line(entry), column(entry))
 
+    val name = s"${typeFullName.getOrElse(Defines.UnresolvedNamespace)}.${Defines.ConstructorMethodName}"
     val args = entry.getArguments.asScala.map { argument =>
       val children = astsForExpression(argument, None)
       val callNode =
         NewCall()
-          .name(s"$typeFullName.${io.joern.x2cpg.Defines.ConstructorMethodName}")
-          .methodFullName(s"$typeFullName.${io.joern.x2cpg.Defines.ConstructorMethodName}")
+          .name(name)
+          .methodFullName(name)
           .dispatchType(DispatchTypes.STATIC_DISPATCH)
           .code(entry.toString)
           .lineNumber(line(entry))
@@ -2095,8 +2097,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val resolvedExpectedType = Try(symbolResolver.toResolvedType(variable.getType, classOf[ResolvedType])).toOption
       val initializerAsts      = astsForExpression(initializer, Some(ExpectedType(typeFullName, resolvedExpectedType)))
 
-      val typeName = typeFullName.map(TypeNodePass.fullToShortName)
-      val code     = s"$typeName $name = ${rootCode(initializerAsts)}"
+      val typeName = typeFullName
+        .map(TypeNodePass.fullToShortName)
+        .getOrElse(s"${Defines.UnresolvedNamespace}.${variable.getTypeAsString}")
+      val code = s"$typeName $name = ${rootCode(initializerAsts)}"
 
       val callNode = operatorCallNode(Operators.assignment, code, typeFullName, lineNumber, columnNumber)
 
