@@ -1,17 +1,22 @@
-package io.joern.jssrc2cpg.passes
+package io.joern.x2cpg.passes.frontend
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.{NodeOps, jIteratortoTraversal, toNodeTraversal}
+import overflowdb.traversal.NodeOps
+import overflowdb.traversal.jIteratortoTraversal
+import overflowdb.traversal.toNodeTraversal
 
 import scala.collection.mutable
 
 /** The Javascript specific call linker links static call sites (by full name) and call sites to methods in the same
   * file (by name).
   */
-class CallLinkerPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   private type MethodsByNameAndFileType = mutable.HashMap[(String, String), nodes.Method]
   private type MethodsByFullNameType    = mutable.HashMap[String, nodes.Method]
@@ -38,8 +43,7 @@ class CallLinkerPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
       // (i.e. code that does `var foo = function() {}`)
       method.start
         .fullName(".*::program:anonymous\\d*")
-        .in(EdgeTypes.REF)
-        .collectAll[nodes.MethodRef]
+        .flatMap(_._methodRefViaRefIn)
         .argumentIndex(2)
         .inCall
         .nameExact(Operators.assignment)
