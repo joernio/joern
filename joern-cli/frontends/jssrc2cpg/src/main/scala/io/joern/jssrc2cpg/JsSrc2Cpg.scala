@@ -1,7 +1,7 @@
 package io.joern.jssrc2cpg
 
 import better.files.File
-import io.joern.jssrc2cpg.passes.{AstCreationPass, BuiltinTypesPass, CallLinkerPass, JsMetaDataPass, TypeNodePass}
+import io.joern.jssrc2cpg.passes.{AstCreationPass, BuiltinTypesPass, JsMetaDataPass, TypeNodePass}
 import io.joern.jssrc2cpg.passes.ConfigPass
 import io.joern.jssrc2cpg.passes.DependenciesPass
 import io.joern.jssrc2cpg.passes.PrivateKeyFilePass
@@ -33,7 +33,6 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
         astCreationPass.createAndApply()
 
         new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
-        new CallLinkerPass(cpg).createAndApply()
         new JsMetaDataPass(cpg, hash, config.inputPath).createAndApply()
         new BuiltinTypesPass(cpg).createAndApply()
         new DependenciesPass(cpg, config).createAndApply()
