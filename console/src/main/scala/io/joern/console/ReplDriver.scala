@@ -20,11 +20,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object HackyGlobalState {
-  var jp: JavaPlatform = null
-  var initialCp: ClassPath = null
   var calledUsing = false
-//  var swap = false
-//  var classloader: ClassLoader = null
 }
 
 class ReplDriver(args: Array[String],
@@ -35,56 +31,39 @@ class ReplDriver(args: Array[String],
                  maxPrintElements: Int,
                  classLoader: Option[ClassLoader] = None) extends dotty.tools.repl.ReplDriver(args, out, classLoader) {
 
-//  private val additionalDependencyJars: mutable.Set[String] = mutable.Set.empty
-
-//  def addDependency(jarPath: String): Unit = additionalDependencyJars.add(jarPath)
+  val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
 
   override def initCtx: Context = {
     val ctx = super.initCtx
-//    ctx.fresh.setSetting(ctx.settings.VreplMaxPrintElements, maxPrintElements)
 
-//    val base: ContextBase = ctx.base
     val base: ContextBase = new ContextBase {
       override def newPlatform(using Context): Platform = {
         println(s"initCtx: creating new platform; calledUsing=${HackyGlobalState.calledUsing}")
-        val jp = new JavaPlatform {
+        new JavaPlatform {
           override def classPath(using Context): ClassPath = {
             println(s"initial javaplatform -> classpath; calledUsing=${HackyGlobalState.calledUsing}")
 //            val oldScope = ctx.scope // always empty
-//            println(s"XXXX5 newPlatform.oldScope: $oldScope ${oldScope.size}")
             val original = super.classPath
-            val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
             val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
 //            val extJarsDir = "/home/mp/Projects/shiftleft/joern/extjars"
 //            val extClassesDir = "/home/mp/Projects/shiftleft/joern/extclasses"
 //            val directoryClassPath = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
-//            val virtualDirectory = dotty.tools.io.VirtualDirectory("classes")
-//            println(s"YYY1 new aggregate classpath; calledUsing=${HackyGlobalState.calledUsing}")
             val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
-
-//            val cp = new AggregateClassPath(cpResult)
-//            println(s"YYY3 JavaPlatform.classpath called; calledUsing=${HackyGlobalState.calledUsing}")
-//            HackyGlobalState.initialCp = cp
-//            HackyGlobalState.initialCp
             new AggregateClassPath(cpResult) {
               override def list(inPackage: String) = {
-                println("XXXX8 calling `classpath.list`")
-//                if (HackyGlobalState.calledUsing) throw new AssertionError("boom")
+                println("AggregateClassPath.list")
+//                if (HackyGlobalState.calledUsing) throw new AssertionError("boom") //who's calling us?
 //                else super.list(inPackage)
                 super.list(inPackage)
               }
             }
           }
         }
-        HackyGlobalState.jp = jp
-        jp
       }
     }
 
-    println(s"YYY2 ReplDriver.initCtx. calledUsing=${HackyGlobalState.calledUsing}")
-//    throw new AssertionError("boom") // who's calling us?
-    val ret = new Contexts.InitialContext(base, ctx.settings)
-    ret
+    println(s"ReplDriver.initCtx. calledUsing=${HackyGlobalState.calledUsing}")
+    new Contexts.InitialContext(base, ctx.settings)
   }
 
   /** Run REPL with `state` until `:quit` command found
@@ -95,14 +74,12 @@ class ReplDriver(args: Array[String],
     initializeRenderer()
 
     out.println(greeting)
-//    println(s"XXXXX classloader: ${rendering.myClassLoader.findClass("foobar")}")
 
     /** Blockingly read a line, getting back a parse result */
     def readLine(state0: State): ParseResult = {
       val state =
         if (HackyGlobalState.calledUsing) {
           println("XXX7 fiddling with state")
-          val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
           val oldCtx = state0.context
 //          val newCp = s"${oldCtx.settings.classpath.value}$versionSortJar$classpathSeparator"
 //          val ctx1 = oldCtx.fresh.setSetting(oldCtx.settings.classpath, newCp)
@@ -182,7 +159,6 @@ class ReplDriver(args: Array[String],
                   override def classPath(using Context): ClassPath = {
                     println("new javaplatform -> classpath")
                     val original = super.classPath
-                    val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
                     val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
                     val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
 
@@ -203,7 +179,6 @@ class ReplDriver(args: Array[String],
 //            oldCtx
 //              new FreshContext(baseCtx)
 //              println(s"XXX5 cp=${oldCtx.settings.classpath.value}")
-            val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
 //              val newCtx = oldCtx.setSetting(oldCtx.settings.classpath, s"${oldCtx.settings.classpath.value}$classpathSeparator$versionSortJar")
 //oldCtx.settings.classpath.updateIn()
             // TODO call `fromTastySetup(additionalFiles)
