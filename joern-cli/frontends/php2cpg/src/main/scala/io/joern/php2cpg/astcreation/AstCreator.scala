@@ -174,7 +174,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case elseIf :: rest =>
         val newIfStmt = PhpIfStmt(elseIf.cond, elseIf.stmts, rest, ifStmt.elseStmt, elseIf.attributes)
-        astForIfStmt(newIfStmt) :: Nil
+        val wrappingBlock = Ast(NewBlock())
+        wrappingBlock.withChild(astForIfStmt(newIfStmt)) :: Nil
     }
 
     val conditionCode = rootCode(condition)
