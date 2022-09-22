@@ -806,6 +806,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .order(0)
 
     typeFullName.foreach(param.typeFullName(_))
+    typeFullName.foreach(typeInfoCalc.registerType)
     param
   }
 
@@ -2616,17 +2617,17 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .zipWithIndex
       .map { case ((param, maybeType), idx) =>
         val name = param.getNameAsString
-        val code = maybeType
-          .map(typ => s"$typ $name")
-          .getOrElse(s"${Defines.UnresolvedNamespace}.${param.getTypeAsString} $name")
+        val typeFullName = maybeType.getOrElse(s"${Defines.UnresolvedNamespace}")
+        val code = s"$typeFullName $name"
         val paramNode = NewMethodParameterIn()
           .name(name)
           .index(idx + 1)
           .order(idx + 1)
           .code(code)
           .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+          .typeFullName(typeFullName)
           .lineNumber(line(expr))
-        maybeType.foreach(paramNode.typeFullName(_))
+        typeInfoCalc.registerType(typeFullName)
         paramNode
       }
 
@@ -3031,10 +3032,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val expressionTypeFullName = expressionReturnTypeFullName(call).orElse(expectedReturnType.flatMap(_.fullName))
 
     val argumentTypes = argumentTypesForMethodLike(maybeResolvedCall)
-    val returnType = maybeResolvedCall.toOption
-      .flatMap { resolvedCall =>
+    val returnType = maybeResolvedCall
+      .map { resolvedCall =>
         typeInfoCalc.fullName(resolvedCall.getReturnType, ResolvedTypeParametersMap.empty())
       }
+      .toOption
+      .flatten
       .orElse(expressionTypeFullName)
 
     val dispatchType = dispatchTypeForCall(maybeResolvedCall, call.getScope.toScala)
@@ -3101,6 +3104,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .fullName(parameter.getType)
         .orElse(scopeStack.lookupVariableType(parameter.getTypeAsString, wildcardFallback = true))
         .map(_ ++ maybeArraySuffix)
+        .getOrElse(s"${Defines.UnresolvedNamespace}.${parameter.getTypeAsString}")
+
+    typeInfoCalc.registerType(typeFullName)
 
     val parameterNode = NewMethodParameterIn()
       .name(parameter.getName.toString)
@@ -3108,9 +3114,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(parameter))
       .columnNumber(column(parameter))
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      .typeFullName(typeFullName)
       .index(childNum)
       .order(childNum)
-    typeFullName.foreach(parameterNode.typeFullName(_))
     val annotationAsts = parameter.getAnnotations.asScala.map(astForAnnotationExpr)
     val ast            = Ast(parameterNode)
 

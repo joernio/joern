@@ -181,7 +181,6 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
       val init = cpg.method.name("test2").call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
         case init :: Nil => init
         case res         => fail(s"Expected single init call but got $res")
-
       }
 
       init.typeFullName shouldBe "void"

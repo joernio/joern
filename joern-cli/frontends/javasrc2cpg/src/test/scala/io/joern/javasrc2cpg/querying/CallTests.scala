@@ -11,6 +11,22 @@ import overflowdb.traversal.jIteratortoTraversal
 import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
+  "calls to unresolved lambda parameters" should {
+    val cpg = code("""
+		 |class Foo {
+		 |  public void isSuccess(ExecutorService executorService) {
+		 |    var responses = executorService.invokeAll(flagCalls);
+		 |    responses.stream().filter(r -> {
+		 |      return r.get().getStatusCode() == 200;
+		 |    });
+		 |  }
+		 |}""".stripMargin)
+
+    "have the correct call name" in {
+      cpg.call.name("get").methodFullName.head shouldBe s"${Defines.UnresolvedNamespace}.get:${Defines.UnresolvedSignature}(0)"
+    }
+  }
+
   "calls to instance methods in same class" should {
     "have ref edges from implicit `this` for an explicit constructor invocation" in {
       val cpg = code("""
