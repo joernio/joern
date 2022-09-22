@@ -52,6 +52,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case contStmt: PhpContinueStmt => astForContinueStmt(contStmt)
       case whileStmt: PhpWhileStmt   => astForWhileStmt(whileStmt)
       case ifStmt: PhpIfStmt         => astForIfStmt(ifStmt)
+      case switchStmt: PhpSwitchStmt => astForSwitchStmt(switchStmt)
 
       case unhandled =>
         logger.warn(s"Unhandled stmt: $unhandled")
@@ -185,6 +186,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .lineNumber(line(ifStmt))
 
     controlStructureAst(ifNode, Some(condition), thenAst :: elseAst)
+  }
+
+  private def astForSwitchStmt(stmt: PhpSwitchStmt): Ast = {
+
   }
 
   private def astForFunctionCall(call: PhpFuncCall): Ast = {
