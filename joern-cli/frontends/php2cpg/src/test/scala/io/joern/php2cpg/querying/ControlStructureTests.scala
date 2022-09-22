@@ -56,7 +56,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         case List(_, thenBlock: Block) =>
           thenBlock.astChildren.l match {
             case List(bIdentifier: Identifier) => bIdentifier.name shouldBe "b"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                        => fail(s"Expected identifier in body but found $result")
           }
         case result => fail(s"Expected only then body but found $result")
       }
@@ -84,12 +84,12 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         case List(_, thenBlock: Block, elseBlock: Block) =>
           thenBlock.astChildren.l match {
             case List(bIdentifier: Identifier) => bIdentifier.name shouldBe "b"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                        => fail(s"Expected identifier in body but found $result")
           }
 
           elseBlock.astChildren.l match {
             case List(cIdentifier: Identifier) => cIdentifier.name shouldBe "c"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                        => fail(s"Expected identifier in body but found $result")
           }
         case result => fail(s"Expected then and else body but found $result")
       }
@@ -112,14 +112,14 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       ifAst.condition.l match {
         case List(condition1: Identifier) => condition1.name shouldBe "cond1"
-        case result => fail(s"Expected identifier argument but found $result")
+        case result                       => fail(s"Expected identifier argument but found $result")
       }
 
       val elseif1 = ifAst.astChildren.l match {
         case List(_, thenBlock: Block, elseBlock: Block) =>
           thenBlock.astChildren.l match {
             case List(body1: Identifier) => body1.name shouldBe "body1"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
 
           elseBlock.astChildren.l match {
@@ -131,14 +131,14 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       elseif1.condition.l match {
         case List(condition2: Identifier) => condition2.name shouldBe "cond2"
-        case result => fail(s"Expected identifier argument but found $result")
+        case result                       => fail(s"Expected identifier argument but found $result")
       }
 
       val elseif2 = elseif1.astChildren.l match {
         case List(_, thenBlock: Block, elseBlock: Block) =>
           thenBlock.astChildren.l match {
             case List(body2: Identifier) => body2.name shouldBe "body2"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
 
           elseBlock.astChildren.l match {
@@ -150,19 +150,19 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       elseif2.condition.l match {
         case List(condition3: Identifier) => condition3.name shouldBe "cond3"
-        case result => fail(s"Expected identifier argument but found $result")
+        case result                       => fail(s"Expected identifier argument but found $result")
       }
 
       elseif2.astChildren.l match {
         case List(_, thenBlock: Block, elseBlock: Block) =>
           thenBlock.astChildren.l match {
             case List(body3: Identifier) => body3.name shouldBe "body3"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
 
           elseBlock.astChildren.l match {
             case List(body4: Identifier) => body4.name shouldBe "body4"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
         case result => fail(s"Expected then and else body but found $result")
       }
@@ -185,14 +185,14 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       ifAst.condition.l match {
         case List(condition1: Identifier) => condition1.name shouldBe "cond1"
-        case result => fail(s"Expected identifier argument but found $result")
+        case result                       => fail(s"Expected identifier argument but found $result")
       }
 
       val elseif1 = ifAst.astChildren.l match {
         case List(_, thenBlock: Block, elseBlock: Block) =>
           thenBlock.astChildren.l match {
             case List(body1: Identifier) => body1.name shouldBe "body1"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
 
           elseBlock.astChildren.l match {
@@ -204,14 +204,14 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       elseif1.condition.l match {
         case List(condition2: Identifier) => condition2.name shouldBe "cond2"
-        case result => fail(s"Expected identifier argument but found $result")
+        case result                       => fail(s"Expected identifier argument but found $result")
       }
 
       val elseif2 = elseif1.astChildren.l match {
         case List(_, thenBlock: Block, elseBlock: Block) =>
           thenBlock.astChildren.l match {
             case List(body2: Identifier) => body2.name shouldBe "body2"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
 
           elseBlock.astChildren.l match {
@@ -223,19 +223,19 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       elseif2.condition.l match {
         case List(condition3: Identifier) => condition3.name shouldBe "cond3"
-        case result => fail(s"Expected identifier argument but found $result")
+        case result                       => fail(s"Expected identifier argument but found $result")
       }
 
       elseif2.astChildren.l match {
         case List(_, thenBlock: Block, elseBlock: Block) =>
           thenBlock.astChildren.l match {
             case List(body3: Identifier) => body3.name shouldBe "body3"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
 
           elseBlock.astChildren.l match {
             case List(body4: Identifier) => body4.name shouldBe "body4"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
         case result => fail(s"Expected then and else body but found $result")
       }
@@ -258,14 +258,14 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       ifAst.condition.l match {
         case List(condition1: Identifier) => condition1.name shouldBe "cond1"
-        case result => fail(s"Expected identifier argument but found $result")
+        case result                       => fail(s"Expected identifier argument but found $result")
       }
 
       val elseif1 = ifAst.astChildren.l match {
         case List(_, thenBlock: Block, elseBlock: Block) =>
           thenBlock.astChildren.l match {
             case List(body1: Identifier) => body1.name shouldBe "body1"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
 
           elseBlock.astChildren.l match {
@@ -277,14 +277,14 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       elseif1.condition.l match {
         case List(condition2: Identifier) => condition2.name shouldBe "cond2"
-        case result => fail(s"Expected identifier argument but found $result")
+        case result                       => fail(s"Expected identifier argument but found $result")
       }
 
       val elseif2 = elseif1.astChildren.l match {
         case List(_, thenBlock: Block, elseBlock: Block) =>
           thenBlock.astChildren.l match {
             case List(body2: Identifier) => body2.name shouldBe "body2"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
 
           elseBlock.astChildren.l match {
@@ -296,19 +296,19 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       elseif2.condition.l match {
         case List(condition3: Identifier) => condition3.name shouldBe "cond3"
-        case result => fail(s"Expected identifier argument but found $result")
+        case result                       => fail(s"Expected identifier argument but found $result")
       }
 
       elseif2.astChildren.l match {
         case List(_, thenBlock: Block, elseBlock: Block) =>
           thenBlock.astChildren.l match {
             case List(body3: Identifier) => body3.name shouldBe "body3"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
 
           elseBlock.astChildren.l match {
             case List(body4: Identifier) => body4.name shouldBe "body4"
-            case result => fail(s"Expected identifier in body but found $result")
+            case result                  => fail(s"Expected identifier in body but found $result")
           }
         case result => fail(s"Expected then and else body but found $result")
       }

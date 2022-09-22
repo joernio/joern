@@ -108,7 +108,7 @@ object Domain {
     attributes: PhpAttributes
   ) extends PhpStmt
   final case class PhpElseIfStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
-  final case class PhpElseStmt(stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
+  final case class PhpElseStmt(stmts: List[PhpStmt], attributes: PhpAttributes)                  extends PhpStmt
 
   final case class PhpMethodDecl(
     name: String,
@@ -319,16 +319,16 @@ object Domain {
 
   private def readIf(json: Value): PhpIfStmt = {
     val condition = readExpr(json("cond"))
-    val stmts = json("stmts").arr.map(readStmt).toList
-    val elseIfs = json("elseifs").arr.map(readElseIf).toList
-    val elseStmt = Option.when(!json("else").isNull)(readElse(json("else")))
+    val stmts     = json("stmts").arr.map(readStmt).toList
+    val elseIfs   = json("elseifs").arr.map(readElseIf).toList
+    val elseStmt  = Option.when(!json("else").isNull)(readElse(json("else")))
 
     PhpIfStmt(condition, stmts, elseIfs, elseStmt, PhpAttributes(json))
   }
 
   private def readElseIf(json: Value): PhpElseIfStmt = {
     val condition = readExpr(json("cond"))
-    val stmts = json("stmts").arr.map(readStmt).toList
+    val stmts     = json("stmts").arr.map(readStmt).toList
 
     PhpElseIfStmt(condition, stmts, PhpAttributes(json))
   }

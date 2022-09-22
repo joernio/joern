@@ -173,7 +173,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case Nil => ifStmt.elseStmt.map(els => stmtBlockAst(els.stmts, line(els))).toList
 
       case elseIf :: rest =>
-        val newIfStmt = PhpIfStmt(elseIf.cond, elseIf.stmts, rest, ifStmt.elseStmt, elseIf.attributes)
+        val newIfStmt     = PhpIfStmt(elseIf.cond, elseIf.stmts, rest, ifStmt.elseStmt, elseIf.attributes)
         val wrappingBlock = Ast(NewBlock())
         wrappingBlock.withChild(astForIfStmt(newIfStmt)) :: Nil
     }
@@ -186,7 +186,6 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     controlStructureAst(ifNode, Some(condition), thenAst :: elseAst)
   }
-
 
   private def astForFunctionCall(call: PhpFuncCall): Ast = {
     val name = call.name match {
