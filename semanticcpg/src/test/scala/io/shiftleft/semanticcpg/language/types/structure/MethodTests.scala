@@ -2,7 +2,6 @@ package io.shiftleft.semanticcpg.language.types.structure
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Literal, Method, NamespaceBlock, TypeDecl}
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
@@ -10,10 +9,10 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class MethodTests extends AnyWordSpec with Matchers {
 
-  private val cpg: Cpg = MockCpg()
+  val cpg = MockCpg()
     .withNamespace("namespace")
     .withTypeDecl("TypeDecl", inNamespace = Some("namespace"))
-    .withMethod("foo", inTypeDecl = Some("TypeDecl"))
+    .withMethod("foo", inTypeDecl = Some("TypeDecl"), external = false)
     .withMethod("bar", inTypeDecl = Some("TypeDecl"), external = true)
     .withCallInMethod("foo", "call")
     .withCallInMethod("foo", "call2")
@@ -57,7 +56,7 @@ class MethodTests extends AnyWordSpec with Matchers {
           .withCustom { case (graph, cpg) =>
             val namespaceBlock = cpg.namespaceBlock("namespace").head
             val method         = cpg.method("foo").head
-            graph.setNodeProperty(method, Method.PropertyNames.AstParentType, NamespaceBlock.Label)
+            graph.addNodeProperty(method, Method.PropertyNames.AstParentType, NamespaceBlock.Label)
             graph.addEdge(namespaceBlock, method, EdgeTypes.AST)
           }
           .cpg
