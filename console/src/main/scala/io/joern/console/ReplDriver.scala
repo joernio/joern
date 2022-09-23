@@ -95,7 +95,7 @@ class ReplDriver(args: Array[String],
 
     /** Blockingly read a line, getting back a parse result */
     def readLine(state0: State): ParseResult = {
-      val state =
+      var state =
       /* experiment 3 start: modify state.context
         if (HackyGlobalState.calledUsing) {
           println("called `using` before - fiddling with state")
@@ -121,17 +121,6 @@ class ReplDriver(args: Array[String],
         val line = terminal.readLine(completer)
 
         if (line.startsWith("//> using")) {
-
-//          val code = """versionsort.VersionHelper.compare("1.0", "0.9")"""
-//          val run: Run = compiler.newRun
-////          run.reset()
-////          val tpeOf = compiler.typeOf(code)(using state0)
-////          run.reset()
-//          val compiled = run.compileFromStrings(List(code))
-//          println(s"compiled=$compiled")
-////          val typeCheck = compiler.typeCheck(code)(state)
-////          println(s"XXX1 tpeOf=$tpeOf; typeCheck=typeCheck")
-//
           HackyGlobalState.calledUsing = true
 
           /* experiment 1: entirely replace rootCtx */
@@ -156,10 +145,11 @@ class ReplDriver(args: Array[String],
 
           val i = "debugger stop here"
           rootCtx = newCtx
+          state = state.copy(context = newCtx)
 //          newCtx.moreProperties = null
 //          rootCtx = newCtx.freshOver(oldCtx)
 //          rootCtx.freshOver(newCtx)
-//          rendering.myClassLoader = null // otherwise jline doesn't find our class
+          rendering.myClassLoader = null // otherwise jline doesn't find our class
           /* experiment 1 end: this works, but history is lost */
 
           /* experiment 2: adapt Rendering.myClassLoader
