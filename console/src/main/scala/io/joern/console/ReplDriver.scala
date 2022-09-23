@@ -1,6 +1,7 @@
 package io.joern.console
 
 import dotty.tools.MainGenericCompiler.classpathSeparator
+import dotty.tools.dotc.Run
 import dotty.tools.dotc.core.Comments.{ContextDoc, ContextDocstrings}
 import dotty.tools.dotc.core.Contexts.{Context, ContextBase, ContextState, FreshContext, ctx}
 import dotty.tools.dotc.ast.{Positioned, tpd, untpd}
@@ -33,16 +34,29 @@ class ReplDriver(args: Array[String],
                  classLoader: Option[ClassLoader] = None) extends dotty.tools.repl.ReplDriver(args, out, classLoader) {
   import HackyGlobalState.versionSortJar
 
-  /** experiment 2: start: make .classpath dynamic - that alone doesn't help, but is prerequisite for the below...
+  /** experiment 2: start: make .classpath dynamic - that alone doesn't help, but is prerequisite for the below... */
   override def initCtx: Context = {
     val ctx = super.initCtx
 
     val base: ContextBase = new ContextBase {
       override def newPlatform(using Context): Platform = {
-        println(s"initCtx: creating new platform; calledUsing=${HackyGlobalState.calledUsing}")
+//        println(s"initCtx: creating new platform; calledUsing=${HackyGlobalState.calledUsing}")
+        // idea: copy ReplCompiler.objectNames
+          /*
+          if (HackyGlobalState.calledUsing) throw new AssertionError("boom")
+            at io.joern.console.ReplDriver$$anon$1.newPlatform(ReplDriver.scala:43)
+            at dotty.tools.dotc.core.Contexts$ContextBase.initialize(Contexts.scala:927)
+            at dotty.tools.dotc.core.Contexts$Context.initialize(Contexts.scala:584)
+            at dotty.tools.dotc.Run.rootContext(Run.scala:349)
+            at dotty.tools.repl.ReplCompiler$$anon$1.rootContext(ReplCompiler.scala:61)
+            at dotty.tools.dotc.Run.<init>(Run.scala:370)
+            at dotty.tools.repl.ReplCompiler$$anon$1.<init>(ReplCompiler.scala:41)
+            at dotty.tools.repl.ReplCompiler.newRun(ReplCompiler.scala:67)
+            at dotty.tools.repl.ReplDriver.newRun(ReplDriver.scala:206)
+          */
         new JavaPlatform {
           override def classPath(using Context): ClassPath = {
-            println(s"initial javaplatform -> classpath; calledUsing=${HackyGlobalState.calledUsing}")
+//            println(s"javaplatform.classpath; calledUsing=${HackyGlobalState.calledUsing}")
 //            val oldScope = ctx.scope // always empty
             val original = super.classPath
             val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
@@ -51,11 +65,14 @@ class ReplDriver(args: Array[String],
 //            val directoryClassPath = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
             val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
             new AggregateClassPath(cpResult) {
-//              override def list(inPackage: String) = {
-//                println("AggregateClassPath.list")
+              override def list(inPackage: String) = {
+//                println(s"AggregateClassPath.list; calledUsing = ${HackyGlobalState.calledUsing}")
 //                if (HackyGlobalState.calledUsing) throw new AssertionError("boom") //who's calling us?
 //                else super.list(inPackage)
-//              }
+                // note: even if the very first action is to call `using` and `list` is invoked many times afterwards,
+                // it is already cached in the old state... find a way to invalidate that cache...
+                super.list(inPackage)
+              }
             }
           }
         }
@@ -65,7 +82,7 @@ class ReplDriver(args: Array[String],
     println(s"ReplDriver.initCtx. calledUsing=${HackyGlobalState.calledUsing}")
     new Contexts.InitialContext(base, ctx.settings)
   }
-   experiment 2: end */
+   /* experiment 2: end */
 
   /** Run REPL with `state` until `:quit` command found
     * Main difference to the 'original': different greeting, trap Ctrl-c
@@ -93,6 +110,8 @@ class ReplDriver(args: Array[String],
       experiment 3: end */
           state0
 
+//          state0.context
+
       val completer: Completer = { (_, line, candidates) =>
         val comps = completions(line.cursor, line.line, state)
         candidates.addAll(comps.asJava)
@@ -100,19 +119,30 @@ class ReplDriver(args: Array[String],
       given Context = state.context
       try {
         val line = terminal.readLine(completer)
+
         if (line.startsWith("//> using")) {
+
+//          val code = """versionsort.VersionHelper.compare("1.0", "0.9")"""
+//          val run: Run = compiler.newRun
+////          run.reset()
+////          val tpeOf = compiler.typeOf(code)(using state0)
+////          run.reset()
+//          val compiled = run.compileFromStrings(List(code))
+//          println(s"compiled=$compiled")
+////          val typeCheck = compiler.typeCheck(code)(state)
+////          println(s"XXX1 tpeOf=$tpeOf; typeCheck=typeCheck")
+//
           HackyGlobalState.calledUsing = true
 
-          /* experiment 1: entirely replace rootCtx
-          rootCtx = {
+          /* experiment 1: entirely replace rootCtx */
+          val newCtx = {
             val baseCtx: ContextBase = new ContextBase {
               override def newPlatform(using Context): Platform = {
                 new JavaPlatform {
                   override def classPath(using Context): ClassPath = {
                     val original = super.classPath
                     val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
-                    val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
-                    new AggregateClassPath(cpResult)
+                    new AggregateClassPath(Seq(original, versionSortClassPath))
                   }
                 }
               }
@@ -121,8 +151,16 @@ class ReplDriver(args: Array[String],
             command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
             newRootCtx
           }
-          rendering.myClassLoader = null // otherwise jline doesn't find our class
-          experiment 1 end: this works, but history is lost */
+
+          val oldCtx = rootCtx
+
+          val i = "debugger stop here"
+          rootCtx = newCtx
+//          newCtx.moreProperties = null
+//          rootCtx = newCtx.freshOver(oldCtx)
+//          rootCtx.freshOver(newCtx)
+//          rendering.myClassLoader = null // otherwise jline doesn't find our class
+          /* experiment 1 end: this works, but history is lost */
 
           /* experiment 2: adapt Rendering.myClassLoader
           rendering.myClassLoader = new AbstractFileClassLoader(AbstractFile.getFile(versionSortJar), rendering.myClassLoader)
@@ -131,8 +169,9 @@ class ReplDriver(args: Array[String],
           /* experiment 3: reset compiler (and not the context and/or state)
            * result: trips up everything...
            */
-          //          this.compiler.reset() // that alone doesn't do anything
-          //          compiler = new dotty.tools.repl.ReplCompiler // this trips up everything...
+//          this.compiler.reset() // that alone doesn't do anything
+          // TODO: pass in old ctx or state
+//          compiler = new dotty.tools.repl.ReplCompiler // this trips up everything...
 
 
 ////            // TODO how can i connect the two? idea: create a new FreshContext, copy (almost) everything over
