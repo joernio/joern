@@ -2,13 +2,17 @@ package io.joern.x2cpg.testfixtures
 
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.Cpg
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, Inside}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import scala.collection.mutable
 
-class Code2CpgFixture(val frontend: LanguageFrontend) extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class Code2CpgFixture(val frontend: LanguageFrontend)
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with Inside {
   private val cpgs = mutable.ArrayBuffer.empty[TestCpg]
 
   def code(code: String): TestCpg = {
