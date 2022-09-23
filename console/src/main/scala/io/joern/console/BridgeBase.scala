@@ -218,13 +218,19 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 trait ScriptExecution { this: BridgeBase =>
 
   protected def startInteractiveShell(config: Config) = {
-    val replConfig = config.cpgToLoad.map { cpgFile =>
-      "importCpg(\"" + cpgFile + "\")"
-    } ++ config.forInputPath.map { name =>
-      s"""
-         |openForInputPath(\"$name\")
-         |""".stripMargin
-    }
+//    val replConfig = config.cpgToLoad.map { cpgFile =>
+//      "importCpg(\"" + cpgFile + "\")"
+//    } ++ config.forInputPath.map { name =>
+//      s"""
+//         |openForInputPath(\"$name\")
+//         |""".stripMargin
+//    }
+//
+//    val debuggerConnected = false
+//    while (!debuggerConnected) {
+//      println("waiting fo debugger...")
+//      Thread.sleep(1000)
+//    }
 
     val replDriver = new ReplDriver(
       compilerArgs(config),
