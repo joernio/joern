@@ -142,6 +142,7 @@ class ReplDriver(args: Array[String],
           }
 
           val oldCtx = rootCtx
+          newCtx.withSource(oldCtx.source)
 
           val i = "debugger stop here"
           rootCtx = newCtx
