@@ -12,159 +12,117 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     "work without a body, an elseif or an else" in {
       val cpg = code("<?php\nif ($a) {}")
 
-      val ifAst = cpg.controlStructure.l match {
-        case List(ast) =>
-          ast.controlStructureType shouldBe ControlStructureTypes.IF
-          ast
-
-        case result => fail(s"Expected single control structure but found $result")
+      val ifAst = inside(cpg.controlStructure.l) { case List(ast) =>
+        ast.controlStructureType shouldBe ControlStructureTypes.IF
+        ast
       }
 
-      ifAst.condition.l match {
-        case List(aIdent: Identifier) =>
-          aIdent.name shouldBe "a"
-
-        case result => fail(s"Expected identifier argument but found $result")
+      inside(ifAst.condition.l) { case List(aIdent: Identifier) =>
+        aIdent.name shouldBe "a"
       }
 
-      ifAst.astChildren.l match {
-        case List(_, thenBlock: Block) =>
-          thenBlock.astChildren.size shouldBe 0
-        case result => fail(s"Expected only then body but found $result")
+      inside(ifAst.astChildren.l) { case List(_, thenBlock: Block) =>
+        thenBlock.astChildren.size shouldBe 0
       }
     }
 
     "work with just a then body" in {
       val cpg = code("<?php\nif ($a) { $b; }")
 
-      val ifAst = cpg.controlStructure.l match {
-        case List(ast) =>
-          ast.controlStructureType shouldBe ControlStructureTypes.IF
-          ast
-
-        case result => fail(s"Expected single control structure but found $result")
+      val ifAst = inside(cpg.controlStructure.l) { case List(ast) =>
+        ast.controlStructureType shouldBe ControlStructureTypes.IF
+        ast
       }
 
-      ifAst.condition.l match {
-        case List(aIdent: Identifier) =>
-          aIdent.name shouldBe "a"
-
-        case result => fail(s"Expected identifier argument but found $result")
+      inside(ifAst.condition.l) { case List(aIdent: Identifier) =>
+        aIdent.name shouldBe "a"
       }
 
-      ifAst.astChildren.l match {
-        case List(_, thenBlock: Block) =>
-          thenBlock.astChildren.l match {
-            case List(bIdentifier: Identifier) => bIdentifier.name shouldBe "b"
-            case result                        => fail(s"Expected identifier in body but found $result")
-          }
-        case result => fail(s"Expected only then body but found $result")
+      inside(ifAst.astChildren.l) { case List(_, thenBlock: Block) =>
+        inside(thenBlock.astChildren.l) { case List(bIdentifier: Identifier) =>
+          bIdentifier.name shouldBe "b"
+        }
       }
     }
 
     "work with else" in {
       val cpg = code("<?php\nif ($a) { $b; } else { $c; }")
 
-      val ifAst = cpg.controlStructure.l match {
-        case List(ast) =>
-          ast.controlStructureType shouldBe ControlStructureTypes.IF
-          ast
-
-        case result => fail(s"Expected single control structure but found $result")
+      val ifAst = inside(cpg.controlStructure.l) { case List(ast) =>
+        ast.controlStructureType shouldBe ControlStructureTypes.IF
+        ast
       }
 
-      ifAst.condition.l match {
-        case List(aIdent: Identifier) =>
-          aIdent.name shouldBe "a"
-
-        case result => fail(s"Expected identifier argument but found $result")
+      inside(ifAst.condition.l) { case List(aIdent: Identifier) =>
+        aIdent.name shouldBe "a"
       }
 
-      ifAst.astChildren.l match {
-        case List(_, thenBlock: Block, elseBlock: Block) =>
-          thenBlock.astChildren.l match {
-            case List(bIdentifier: Identifier) => bIdentifier.name shouldBe "b"
-            case result                        => fail(s"Expected identifier in body but found $result")
-          }
+      inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        inside(thenBlock.astChildren.l) { case List(bIdentifier: Identifier) =>
+          bIdentifier.name shouldBe "b"
+        }
 
-          elseBlock.astChildren.l match {
-            case List(cIdentifier: Identifier) => cIdentifier.name shouldBe "c"
-            case result                        => fail(s"Expected identifier in body but found $result")
-          }
-        case result => fail(s"Expected then and else body but found $result")
+        inside(elseBlock.astChildren.l) { case List(cIdentifier: Identifier) =>
+          cIdentifier.name shouldBe "c"
+        }
       }
     }
 
     "work with elseif chains" in {
       val cpg = code("""<?php
-			 |if ($cond1) {
-			 |  $body1;
-			 |} elseif ($cond2) {
-			 |  $body2;
-			 |} elseif ($cond3) {
-			 |  $body3;
-			 |} else {
-			 |  $body4;
-			 |}
-			 |""".stripMargin)
+                      |if ($cond1) {
+                      |  $body1;
+                      |} elseif ($cond2) {
+                      |  $body2;
+                      |} elseif ($cond3) {
+                      |  $body3;
+                      |} else {
+                      |  $body4;
+                      |}
+                      |""".stripMargin)
 
       val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).head
 
-      ifAst.condition.l match {
-        case List(condition1: Identifier) => condition1.name shouldBe "cond1"
-        case result                       => fail(s"Expected identifier argument but found $result")
+      inside(ifAst.condition.l) { case List(condition1: Identifier) =>
+        condition1.name shouldBe "cond1"
       }
 
-      val elseif1 = ifAst.astChildren.l match {
-        case List(_, thenBlock: Block, elseBlock: Block) =>
-          thenBlock.astChildren.l match {
-            case List(body1: Identifier) => body1.name shouldBe "body1"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
+      val elseif1 = inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        inside(thenBlock.astChildren.l) { case List(body1: Identifier) =>
+          body1.name shouldBe "body1"
+        }
 
-          elseBlock.astChildren.l match {
-            case List(elseStructure: ControlStructure) => elseStructure
-            case result => fail(s"Expected control structure in else block but found $result")
-          }
-        case result => fail(s"Expected then and else body but found $result")
+        inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+          elseStructure
+        }
       }
 
-      elseif1.condition.l match {
-        case List(condition2: Identifier) => condition2.name shouldBe "cond2"
-        case result                       => fail(s"Expected identifier argument but found $result")
+      inside(elseif1.condition.l) { case List(condition2: Identifier) =>
+        condition2.name shouldBe "cond2"
       }
 
-      val elseif2 = elseif1.astChildren.l match {
-        case List(_, thenBlock: Block, elseBlock: Block) =>
-          thenBlock.astChildren.l match {
-            case List(body2: Identifier) => body2.name shouldBe "body2"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
+      val elseif2 = inside(elseif1.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        inside(thenBlock.astChildren.l) { case List(body2: Identifier) =>
+          body2.name shouldBe "body2"
+        }
 
-          elseBlock.astChildren.l match {
-            case List(elseStructure: ControlStructure) => elseStructure
-            case result => fail(s"Expected control structure in else block but found $result")
-          }
-        case result => fail(s"Expected then and else body but found $result")
+        inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+          elseStructure
+        }
       }
 
-      elseif2.condition.l match {
-        case List(condition3: Identifier) => condition3.name shouldBe "cond3"
-        case result                       => fail(s"Expected identifier argument but found $result")
+      inside(elseif2.condition.l) { case List(condition3: Identifier) =>
+        condition3.name shouldBe "cond3"
       }
 
-      elseif2.astChildren.l match {
-        case List(_, thenBlock: Block, elseBlock: Block) =>
-          thenBlock.astChildren.l match {
-            case List(body3: Identifier) => body3.name shouldBe "body3"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
+      inside(elseif2.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        inside(thenBlock.astChildren.l) { case List(body3: Identifier) =>
+          body3.name shouldBe "body3"
+        }
 
-          elseBlock.astChildren.l match {
-            case List(body4: Identifier) => body4.name shouldBe "body4"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
-        case result => fail(s"Expected then and else body but found $result")
+        inside(elseBlock.astChildren.l) { case List(body4: Identifier) =>
+          body4.name shouldBe "body4"
+        }
       }
     }
 
@@ -183,61 +141,46 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).head
 
-      ifAst.condition.l match {
-        case List(condition1: Identifier) => condition1.name shouldBe "cond1"
-        case result                       => fail(s"Expected identifier argument but found $result")
+      inside(ifAst.condition.l) { case List(condition1: Identifier) =>
+        condition1.name shouldBe "cond1"
       }
 
-      val elseif1 = ifAst.astChildren.l match {
-        case List(_, thenBlock: Block, elseBlock: Block) =>
-          thenBlock.astChildren.l match {
-            case List(body1: Identifier) => body1.name shouldBe "body1"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
+      val elseif1 = inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        inside(thenBlock.astChildren.l) { case List(body1: Identifier) =>
+          body1.name shouldBe "body1"
+        }
 
-          elseBlock.astChildren.l match {
-            case List(elseStructure: ControlStructure) => elseStructure
-            case result => fail(s"Expected control structure in else block but found $result")
-          }
-        case result => fail(s"Expected then and else body but found $result")
+        inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+          elseStructure
+        }
       }
 
-      elseif1.condition.l match {
-        case List(condition2: Identifier) => condition2.name shouldBe "cond2"
-        case result                       => fail(s"Expected identifier argument but found $result")
+      inside(elseif1.condition.l) { case List(condition2: Identifier) =>
+        condition2.name shouldBe "cond2"
       }
 
-      val elseif2 = elseif1.astChildren.l match {
-        case List(_, thenBlock: Block, elseBlock: Block) =>
-          thenBlock.astChildren.l match {
-            case List(body2: Identifier) => body2.name shouldBe "body2"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
+      val elseif2 = inside(elseif1.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        inside(thenBlock.astChildren.l) { case List(body2: Identifier) =>
+          body2.name shouldBe "body2"
+        }
 
-          elseBlock.astChildren.l match {
-            case List(elseStructure: ControlStructure) => elseStructure
-            case result => fail(s"Expected control structure in else block but found $result")
-          }
-        case result => fail(s"Expected then and else body but found $result")
+        inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+          elseStructure
+        }
       }
 
-      elseif2.condition.l match {
-        case List(condition3: Identifier) => condition3.name shouldBe "cond3"
-        case result                       => fail(s"Expected identifier argument but found $result")
+      inside(elseif2.condition.l) { case List(condition3: Identifier) =>
+        condition3.name shouldBe "cond3"
       }
 
-      elseif2.astChildren.l match {
-        case List(_, thenBlock: Block, elseBlock: Block) =>
-          thenBlock.astChildren.l match {
-            case List(body3: Identifier) => body3.name shouldBe "body3"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
+      inside(elseif2.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        inside(thenBlock.astChildren.l) { case List(body3: Identifier) =>
+          body3.name shouldBe "body3"
+        }
 
-          elseBlock.astChildren.l match {
-            case List(body4: Identifier) => body4.name shouldBe "body4"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
-        case result => fail(s"Expected then and else body but found $result")
+        inside(elseBlock.astChildren.l) { case List(body4: Identifier) =>
+          body4.name shouldBe "body4"
+        }
       }
     }
 
@@ -256,61 +199,46 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).head
 
-      ifAst.condition.l match {
-        case List(condition1: Identifier) => condition1.name shouldBe "cond1"
-        case result                       => fail(s"Expected identifier argument but found $result")
+      inside(ifAst.condition.l) { case List(condition1: Identifier) =>
+        condition1.name shouldBe "cond1"
       }
 
-      val elseif1 = ifAst.astChildren.l match {
-        case List(_, thenBlock: Block, elseBlock: Block) =>
-          thenBlock.astChildren.l match {
-            case List(body1: Identifier) => body1.name shouldBe "body1"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
+      val elseif1 = inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        inside(thenBlock.astChildren.l) { case List(body1: Identifier) =>
+          body1.name shouldBe "body1"
+        }
 
-          elseBlock.astChildren.l match {
-            case List(elseStructure: ControlStructure) => elseStructure
-            case result => fail(s"Expected control structure in else block but found $result")
-          }
-        case result => fail(s"Expected then and else body but found $result")
+        inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+          elseStructure
+        }
       }
 
-      elseif1.condition.l match {
-        case List(condition2: Identifier) => condition2.name shouldBe "cond2"
-        case result                       => fail(s"Expected identifier argument but found $result")
+      inside(elseif1.condition.l) { case List(condition2: Identifier) =>
+        condition2.name shouldBe "cond2"
       }
 
-      val elseif2 = elseif1.astChildren.l match {
-        case List(_, thenBlock: Block, elseBlock: Block) =>
-          thenBlock.astChildren.l match {
-            case List(body2: Identifier) => body2.name shouldBe "body2"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
+      val elseif2 = inside(elseif1.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        inside(thenBlock.astChildren.l) { case List(body2: Identifier) =>
+          body2.name shouldBe "body2"
+        }
 
-          elseBlock.astChildren.l match {
-            case List(elseStructure: ControlStructure) => elseStructure
-            case result => fail(s"Expected control structure in else block but found $result")
-          }
-        case result => fail(s"Expected then and else body but found $result")
+        inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+          elseStructure
+        }
       }
 
-      elseif2.condition.l match {
-        case List(condition3: Identifier) => condition3.name shouldBe "cond3"
-        case result                       => fail(s"Expected identifier argument but found $result")
+      inside(elseif2.condition.l) { case List(condition3: Identifier) =>
+        condition3.name shouldBe "cond3"
       }
 
-      elseif2.astChildren.l match {
-        case List(_, thenBlock: Block, elseBlock: Block) =>
-          thenBlock.astChildren.l match {
-            case List(body3: Identifier) => body3.name shouldBe "body3"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
+      inside(elseif2.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        inside(thenBlock.astChildren.l) { case List(body3: Identifier) =>
+          body3.name shouldBe "body3"
+        }
 
-          elseBlock.astChildren.l match {
-            case List(body4: Identifier) => body4.name shouldBe "body4"
-            case result                  => fail(s"Expected identifier in body but found $result")
-          }
-        case result => fail(s"Expected then and else body but found $result")
+        inside(elseBlock.astChildren.l) { case List(body4: Identifier) =>
+          body4.name shouldBe "body4"
+        }
       }
     }
   }
