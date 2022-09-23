@@ -124,22 +124,25 @@ class ReplDriver(args: Array[String],
           HackyGlobalState.calledUsing = true
 
           /* experiment 1: entirely replace rootCtx */
-          val newCtx = {
-            val baseCtx: ContextBase = new ContextBase {
-              override def newPlatform(using Context): Platform = {
-                new JavaPlatform {
-                  override def classPath(using Context): ClassPath = {
-                    val original = super.classPath
-                    val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
-                    new AggregateClassPath(Seq(original, versionSortClassPath))
-                  }
-                }
-              }
-            }
-            val newRootCtx = new Contexts.InitialContext(baseCtx, rootCtx.settings)
-            command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
-            newRootCtx
-          }
+          // TODO try with new `initCtx`
+          val newCtx = initCtx
+          command.distill(args, newCtx.settings)(newCtx.settingsState)(using newCtx)
+//          val newCtx = {
+//            val baseCtx: ContextBase = new ContextBase {
+//              override def newPlatform(using Context): Platform = {
+//                new JavaPlatform {
+//                  override def classPath(using Context): ClassPath = {
+//                    val original = super.classPath
+//                    val versionSortClassPath = ClassPathFactory.newClassPath(AbstractFile.getFile(versionSortJar))
+//                    new AggregateClassPath(Seq(original, versionSortClassPath))
+//                  }
+//                }
+//              }
+//            }
+//            val newRootCtx = new Contexts.InitialContext(baseCtx, rootCtx.settings)
+//            command.distill(args, newRootCtx.settings)(newRootCtx.settingsState)(using newRootCtx)
+//            newRootCtx
+//          }
 
           val oldCtx = rootCtx
           newCtx.withSource(oldCtx.source)
