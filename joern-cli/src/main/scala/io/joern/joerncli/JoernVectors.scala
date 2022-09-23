@@ -2,6 +2,7 @@ package io.joern.joerncli
 
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 
 import scala.util.Using
@@ -9,18 +10,29 @@ import io.shiftleft.semanticcpg.language._
 import org.json4s.DefaultFormats
 import org.json4s.native.Serialization
 import overflowdb.traversal._
-import scala.jdk.CollectionConverters._
 
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
 class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, String] {
   override def structureToString(s: String): String         = s
-  override def extractObjects(cpg: Cpg): Traversal[AstNode] = cpg.method.ast
-  override def enumerateSubStructures(obj: AstNode): List[String] =
-    List(obj.id().toString) ++ obj.propertiesMap().entrySet().asScala.toList.sortBy(_.getKey).map { e =>
-      s"${e.getKey}: ${e.getValue}"
-    }
+  override def extractObjects(cpg: Cpg): Traversal[AstNode] = cpg.method.internal
+  override def enumerateSubStructures(obj: AstNode): List[String] = {
+    val relevantFields = Set(PropertyNames.NAME, PropertyNames.FULL_NAME, PropertyNames.CODE)
+
+    List(obj.id().toString) ++ obj
+      .propertiesMap()
+      .entrySet()
+      .asScala
+      .toList
+      .filter { e => relevantFields.contains(e.getKey) }
+      .sortBy(_.getKey)
+      .map { e =>
+        s"${e.getKey}: ${e.getValue}"
+      } ++ List(s"label: ${obj.label}")
+  }
+
   override def objectToString(node: AstNode): String = node.id().toString
   override def hash(label: String): String           = label
 }
