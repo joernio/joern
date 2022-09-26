@@ -93,14 +93,6 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
       dstGraph.addEdge(methodNode, param, EdgeTypes.AST)
     }
 
-    val methodReturn = NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName("ANY")
-
-    dstGraph.addNode(methodReturn)
-    dstGraph.addEdge(methodNode, methodReturn, EdgeTypes.AST)
-
     val blockNode = NewBlock()
       .order(1)
       .argumentIndex(1)
@@ -108,6 +100,14 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
     dstGraph.addNode(blockNode)
     dstGraph.addEdge(methodNode, blockNode, EdgeTypes.AST)
+
+    val methodReturn = NewMethodReturn()
+      .code("RET")
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .typeFullName("ANY")
+
+    dstGraph.addNode(methodReturn)
+    dstGraph.addEdge(methodNode, methodReturn, EdgeTypes.AST)
 
     methodNode
   }
