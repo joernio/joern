@@ -182,18 +182,18 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         "module-name"
       )
       cpg.assignment.code.l shouldBe List(
-        "var name = require(\"module-name\").name",
-        "var otherName = require(\"module-name\").otherName",
+        "var name = require(\"module-name\")",
+        "var otherName = require(\"module-name\")",
         "var member1 = require(\"module-name\").member1",
         "var alias1 = require(\"module-name\").member2",
         "var member3 = require(\"module-name\").member3",
         "var member4 = require(\"module-name\").member4",
         "var member5 = require(\"module-name\").member5",
         "var alias2 = require(\"module-name\").member6",
-        "var defaultMember1 = require(\"module-name\").defaultMember1",
-        "var alias3 = require(\"module-name\").alias3",
-        "var defaultMember2 = require(\"module-name\").defaultMember2",
-        "var module-name = require(\"module-name\").module-name"
+        "var defaultMember1 = require(\"module-name\")",
+        "var alias3 = require(\"module-name\")",
+        "var defaultMember2 = require(\"module-name\")",
+        "var module-name = require(\"module-name\")"
       )
 
       val List(
