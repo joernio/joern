@@ -102,6 +102,7 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
     dstGraph.addEdge(methodNode, blockNode, EdgeTypes.AST)
 
     val methodReturn = NewMethodReturn()
+      .order(2)
       .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .typeFullName("ANY")
