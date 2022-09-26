@@ -239,6 +239,7 @@ object TypeInfoCalculator {
     val Class: String    = "java.lang.Class"
     val Iterator: String = "java.util.Iterator"
     val Void: String     = "void"
+    val Any: String      = "ANY"
   }
 
   object TypeNameConstants {
