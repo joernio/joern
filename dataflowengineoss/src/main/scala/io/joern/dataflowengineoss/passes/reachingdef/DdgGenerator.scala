@@ -93,6 +93,8 @@ class DdgGenerator {
       }
 
       // Handle block arguments
+      // This handles `foo(new Bar())`, which is lowered to
+      // `foo({Bar tmp = Bar.alloc(); tmp.init(); tmp})`
       call.argument.isBlock.foreach { block =>
         block.astChildren.lastOption match {
           case None => // Do nothing
