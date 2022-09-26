@@ -141,9 +141,9 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
     ) { cpg =>
       cpg.file.name.l shouldBe List("test.vue")
       cpg.assignment.code.l shouldBe List(
-        "var Component = require(\"vue-property-decorator\")",
-        "var Prop = require(\"vue-property-decorator\")",
-        "var Vue = require(\"vue-property-decorator\")",
+        "var Component = require(\"vue-property-decorator\").Component",
+        "var Prop = require(\"vue-property-decorator\").Prop",
+        "var Vue = require(\"vue-property-decorator\").Vue",
         "exports[\"default\"] = HelloWorld"
       )
       cpg.local.code.l shouldBe List("Component", "Prop", "Vue", "msg")

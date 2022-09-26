@@ -35,7 +35,10 @@ class TsAstCreationPassTest extends AbstractPassTest {
         |""".stripMargin,
       "code.ts"
     ) { cpg =>
-      cpg.assignment.code.l shouldBe List("var fs = require(\"fs\")", "var models = require(\"../models/index\")")
+      cpg.assignment.code.l shouldBe List(
+        "var fs = require(\"fs\").fs",
+        "var models = require(\"../models/index\").models"
+      )
       cpg.local.code.l shouldBe List("fs", "models")
       val List(fsDep, modelsDep) = cpg.dependency.l
       fsDep.name shouldBe "fs"

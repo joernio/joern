@@ -326,16 +326,22 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
     diffGraph.addNode(createDependencyNode(name, referenceName, IMPORT_KEYWORD))
     createImportNodeAndAttachToAst(impDecl, referenceName, name)
-    astForRequireCallFromImport(name, referenceName, impDecl)
+    astForRequireCallFromImport(name, None, referenceName, impDecl)
   }
 
-  private def astForRequireCallFromImport(name: String, from: String, nodeInfo: BabelNodeInfo): Ast = {
-    val id        = createIdentifierNode(name, nodeInfo)
-    val localNode = createLocalNode(id.code, Defines.ANY.label)
-    scope.addVariable(id.code, localNode, BlockScope)
+  private def astForRequireCallFromImport(
+    name: String,
+    alias: Option[String],
+    from: String,
+    nodeInfo: BabelNodeInfo
+  ): Ast = {
+    val destName  = alias.getOrElse(name)
+    val destNode  = createIdentifierNode(destName, nodeInfo)
+    val localNode = createLocalNode(destName, Defines.ANY.label)
+    scope.addVariable(destName, localNode, BlockScope)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 
-    val destAst           = Ast(id)
+    val destAst           = Ast(destNode)
     val sourceCallArgNode = createLiteralNode(s"\"$from\"", None, nodeInfo.lineNumber, nodeInfo.columnNumber)
     val sourceCall = createCallNode(
       s"$REQUIRE_KEYWORD(${sourceCallArgNode.code})",
@@ -345,15 +351,24 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       nodeInfo.columnNumber
     )
     val sourceAst = createCallAst(sourceCall, List(Ast(sourceCallArgNode)))
+    Ast.storeInDiffGraph(sourceAst, diffGraph)
+
+    val fieldAccessCall = createFieldAccessCallAst(
+      sourceAst.nodes.head,
+      createFieldIdentifierNode(name, nodeInfo.lineNumber, nodeInfo.columnNumber),
+      nodeInfo.lineNumber,
+      nodeInfo.columnNumber
+    )
+    Ast.storeInDiffGraph(fieldAccessCall, diffGraph)
+
     val assigmentCallAst =
       createAssignmentCallAst(
         destAst.nodes.head,
-        sourceAst.nodes.head,
-        s"var ${codeOf(destAst.nodes.head)} = ${codeOf(sourceAst.nodes.head)}",
+        fieldAccessCall.nodes.head,
+        s"var ${codeOf(destAst.nodes.head)} = ${codeOf(fieldAccessCall.nodes.head)}",
         nodeInfo.lineNumber,
         nodeInfo.columnNumber
       )
-    Ast.storeInDiffGraph(sourceAst, diffGraph)
     assigmentCallAst
   }
 
@@ -364,7 +379,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     if (specifiers.isEmpty) {
       diffGraph.addNode(createDependencyNode(source, source, IMPORT_KEYWORD))
       createImportNodeAndAttachToAst(impDecl, source, source)
-      astForRequireCallFromImport(source, source, impDecl)
+      astForRequireCallFromImport(source, None, source, impDecl)
     } else {
       val specs = impDecl.json("specifiers").arr.toList
       val depNodes = specs.map { importSpecifier =>
@@ -374,8 +389,13 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       }
       depNodes.foreach(diffGraph.addNode)
       val requireCalls = specs.map { importSpecifier =>
-        val importedName = importSpecifier("local")("name").str
-        astForRequireCallFromImport(importedName, source, impDecl)
+        val name = importSpecifier("local")("name").str
+        val (alias, reqName) = if (hasKey(importSpecifier, "imported")) {
+          (Some(name), importSpecifier("imported")("name").str)
+        } else {
+          (None, name)
+        }
+        astForRequireCallFromImport(reqName, alias, source, impDecl)
       }
       if (requireCalls.isEmpty) {
         Ast()
