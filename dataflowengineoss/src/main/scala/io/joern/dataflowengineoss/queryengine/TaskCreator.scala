@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Call,
   CfgNode,
@@ -61,12 +62,23 @@ class TaskCreator(sources: Set[CfgNode]) {
   /** For a given parameter of a method, determine all corresponding arguments at all call sites to the method.
     */
   private def paramToArgs(param: MethodParameterIn): List[Expression] =
+    paramToArgsOfCallers(param) ++ paramToMethodRefCallReceivers(param)
+
+  private def paramToArgsOfCallers(param: MethodParameterIn): List[Expression] =
     NoResolve
       .getMethodCallsites(param.method)
       .to(Traversal)
       .collectAll[Call]
       .argument(param.index)
       .l
+
+  /** Expand to receiver objects of calls that reference the method of the parameter, e.g., if `param` is a parameter of
+    * `m`, return `foo` in `foo.bar(m)` TODO: I'm not sure whether `methodRef.methodFullNameExact(...)` uses an index.
+    * If not, then caching these lookups or keeping a map of all method names to their references may make sense.
+    */
+
+  private def paramToMethodRefCallReceivers(param: MethodParameterIn): List[Expression] =
+    new Cpg(param.graph()).methodRef.methodFullNameExact(param.method.fullName).inCall.argument(0).l
 
   /** Create new tasks from all results that end in an output argument, including return arguments. In this case, we
     * want to traverse to corresponding method output parameters and method return nodes respectively.
