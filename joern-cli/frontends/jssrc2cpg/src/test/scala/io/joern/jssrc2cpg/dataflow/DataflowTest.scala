@@ -510,7 +510,6 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
       Set(List(("f(this, x, y)", 2), ("g(x, y)", 3)))
   }
 
-
   "Flow from non-static member to sink" in {
     val cpg: Cpg = code("""
         |class Foo {
