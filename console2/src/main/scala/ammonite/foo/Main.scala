@@ -1,5 +1,6 @@
 package ammonite.foo
 
+import ammonite.foo.Util.newLine
 import dotty.tools.MainGenericCompiler.classpathSeparator
 import dotty.tools.dotc.Run
 import dotty.tools.dotc.core.Comments.{ContextDoc, ContextDocstrings}
@@ -54,9 +55,11 @@ object Main {
       //      candidates.addAll(comps.asJava)
     }
 
+    val imports = new StringBuffer
+
     def readLine(): Unit = {
-      val line = terminal.readLine(completer)
-      if (line.startsWith("//> using")) {
+      val userInput = terminal.readLine(completer)
+      if (userInput.startsWith("//> using")) {
         // add versionsort to classPath
         // TODO allow to add any maven dependency and/or jar
         compiler = new Compiler(
@@ -65,14 +68,22 @@ object Main {
           compiler.classPath :+ versionSortJarUrl,
           compiler.whiteList)
       } else {
+        val codeWithPrefixedImports =
+          s"""$imports
+             |$userInput
+             |""".stripMargin
         val compileResult = compiler.compile(
-          src = line.getBytes(StandardCharsets.UTF_8),
+          src = codeWithPrefixedImports.getBytes(StandardCharsets.UTF_8),
           printer,
           importsLen = 0,
           userCodeNestingLevel = 0,
           fileName = s"cmd$cmdIdx.sc"
-        )
-        println(s"XX compilation result: ${compileResult.get}")
+        ).get
+
+        if (compileResult.imports.value.nonEmpty) {
+          imports.append(compileResult.imports.toString())
+          imports.append(newLine)
+        }
       }
       cmdIdx += 1
     }

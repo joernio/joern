@@ -26,7 +26,6 @@ case class ImportData(fromName: Name,
                       prefix: Seq[Name],
                       importType: ImportData.ImportType)
 
-
 object ImportData{
   sealed case class ImportType(name: String)
   val Type = ImportType("Type")

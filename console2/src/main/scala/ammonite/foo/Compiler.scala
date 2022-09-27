@@ -265,7 +265,6 @@ class Compiler(
           case other =>
             other
         }
-        println(s"XXX1 newImports: $newImports")
         Some(Compiler.Output(
           postProcessedClasses,
           Imports(newImports),
