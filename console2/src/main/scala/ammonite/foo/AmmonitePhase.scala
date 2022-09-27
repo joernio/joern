@@ -24,30 +24,33 @@ class AmmonitePhase(
 
   def phaseName: String = "ammonite"
 
-  private var myImports = new mutable.ListBuffer[(Boolean, String, String, Seq[AmmName])]
-  private var usedEarlierDefinitions0 = new mutable.ListBuffer[String]
+  private val myImports = new mutable.ListBuffer[(Boolean, String, String, Seq[AmmName])]
+  private val usedEarlierDefinitions0 = new mutable.ListBuffer[String]
 
-  def importData: Seq[ImportData] =
+  def importData: Seq[ImportData] = {
     val grouped = myImports
       .toList
       .distinct
       .groupBy { case (a, b, c, d) => (b, c, d) }
+      .view
       .mapValues(_.map(_._1))
 
     val open = for {
       ((fromName, toName, importString), items) <- grouped
       if !CompilerUtil.ignoredNames(fromName)
     } yield {
-      val importType = items match{
+      val importType = items match {
         case Seq(true) => ImportData.Type
         case Seq(false) => ImportData.Term
         case Seq(_, _) => ImportData.TermType
+        case _ => ???
       }
 
       ImportData(AmmName(fromName), AmmName(toName), importString, importType)
     }
 
     open.toVector.sortBy(x => Util.encodeScalaSourcePath(x.prefix))
+  }
 
   def usedEarlierDefinitions: Seq[String] =
     usedEarlierDefinitions0.toList.distinct
@@ -122,6 +125,7 @@ class AmmonitePhase(
             .map(_.symbol)
             .filter(saneSym(_))
             .groupBy(_.name.decode.toString)
+            .view
             .mapValues(_.map(_.isType).toVector)
 
       val renamings = for{
@@ -237,24 +241,29 @@ class AmmonitePhase(
       case _ => List(tree)
     }
 
-  def run(using Context): Unit =
+  def run(using Context): Unit = {
     val elems = unpkg(ctx.compilationUnit.tpdTree)
-    def mainStats(trees: List[tpd.Tree]): List[tpd.Tree] =
-      trees
-        .reverseIterator
-        .collectFirst {
-          case TypeDef(name, rhs0: Template) => rhs0.body
-        }
-        .getOrElse(Nil)
 
-    val rootStats = mainStats(elems)
-    val stats = (1 until userCodeNestingLevel)
-      .foldLeft(rootStats)((trees, _) => mainStats(trees))
-
-    if (needsUsedEarlierDefinitions) {
-      val wrapperSym = elems.last.symbol
-      updateUsedEarlierDefinitions(wrapperSym, stats)
-    }
+    // this code extracts the user input from ammonites nested generated trees...
+    // we try and get away without such nesting, therefor not needed for now...
+    // TODO drop in final cleanup
+//    def mainStats(trees: List[tpd.Tree]): List[tpd.Tree] =
+//      trees
+//        .reverseIterator
+//        .collectFirst {
+//          case TypeDef(name, rhs0: Template) => rhs0.body
+//        }
+//        .getOrElse(Nil)
+//
+//    val rootStats = mainStats(elems)
+//    val stats = (1 until userCodeNestingLevel)
+//      .foldLeft(rootStats)((trees, _) => mainStats(trees))
+//
+//    if (needsUsedEarlierDefinitions) {
+//      val wrapperSym = elems.last.symbol
+//      updateUsedEarlierDefinitions(wrapperSym, stats)
+//    }
+    val stats = elems
 
     stats.foreach {
       case i: Import => processImport(i)
@@ -264,3 +273,4 @@ class AmmonitePhase(
         processTree(t)
       case _ =>
     }
+  }
