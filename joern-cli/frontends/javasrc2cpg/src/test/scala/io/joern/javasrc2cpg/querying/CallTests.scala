@@ -23,7 +23,10 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
 		 |}""".stripMargin)
 
     "have the correct call name" in {
-      cpg.call.name("get").methodFullName.head shouldBe s"${Defines.UnresolvedNamespace}.get:${Defines.UnresolvedSignature}(0)"
+      cpg.call
+        .name("get")
+        .methodFullName
+        .head shouldBe s"${Defines.UnresolvedNamespace}.get:${Defines.UnresolvedSignature}(0)"
     }
   }
 

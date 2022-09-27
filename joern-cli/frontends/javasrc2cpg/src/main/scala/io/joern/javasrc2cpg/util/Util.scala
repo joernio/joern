@@ -32,11 +32,11 @@ object Util {
   /** Creates an AST that represents a single member node
     */
   def memberNode(
-                  name: String,
-                  code: String,
-                  maybeTypeFullName: Option[String],
-                  lineNo: Option[Integer],
-                  columnNo: Option[Integer]
+    name: String,
+    code: String,
+    maybeTypeFullName: Option[String],
+    lineNo: Option[Integer],
+    columnNo: Option[Integer]
   ): NewMember = {
     val typeFullName = maybeTypeFullName.getOrElse("ANY")
     val memberNode = NewMember()
