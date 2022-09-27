@@ -16,8 +16,8 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("class Foo") shouldBe expected(("bar", AlwaysEdge))
       succOf("bar") shouldBe expected(("this", AlwaysEdge))
       succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("bar()", AlwaysEdge))
-      succOf("bar()") shouldBe expected(("(class Foo {}, bar())", AlwaysEdge))
-      succOf("(class Foo {}, bar())") shouldBe expected(("let x = (class Foo {}, bar())", AlwaysEdge))
+      succOf("bar()") shouldBe expected(("class Foo {}, bar()", AlwaysEdge))
+      succOf("class Foo {}, bar()") shouldBe expected(("let x = (class Foo {}, bar())", AlwaysEdge))
       succOf("let x = (class Foo {}, bar())") shouldBe expected(("RET", AlwaysEdge))
     }
 
@@ -48,7 +48,8 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("2") shouldBe expected(("_tmp_0.push(2)", AlwaysEdge))
 
       succOf("_tmp_0.push(2)") shouldBe expected(("_tmp_0", 5, AlwaysEdge))
-      succOf("_tmp_0", 5) shouldBe expected(("var x = [1, 2]", AlwaysEdge))
+      succOf("_tmp_0", 5) shouldBe expected(("[1, 2]", AlwaysEdge))
+      succOf("[1, 2]") shouldBe expected(("var x = [1, 2]", AlwaysEdge))
       succOf("var x = [1, 2]") shouldBe expected(("RET", AlwaysEdge))
     }
 
@@ -145,7 +146,10 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("2") shouldBe expected(("_tmp_0.key2 = 2", AlwaysEdge))
 
       succOf("_tmp_0.key2 = 2") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
-      succOf("_tmp_0", 2) shouldBe expected(("var x = {\n key1: \"value\",\n key2: 2\n}", AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("{\n key1: \"value\",\n key2: 2\n}", AlwaysEdge))
+      succOf("{\n key1: \"value\",\n key2: 2\n}") shouldBe expected(
+        ("var x = {\n key1: \"value\",\n key2: 2\n}", AlwaysEdge)
+      )
       succOf("var x = {\n key1: \"value\",\n key2: 2\n}") shouldBe expected(("RET", AlwaysEdge))
     }
 
@@ -254,14 +258,23 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("i = 0") shouldBe expected(("i", 1, AlwaysEdge))
       succOf("i", 1) shouldBe expected(("3", AlwaysEdge))
       succOf("3") shouldBe expected(("i < 3", AlwaysEdge))
-      succOf("i < 3") shouldBe expected(("loop2:", AlwaysEdge), ("RET", AlwaysEdge))
+
+      import io.shiftleft.semanticcpg.language._
+      val code = cpg.method.ast.code(".*loop1:.*").code.head
+      succOf("i < 3") shouldBe expected(("loop2:", AlwaysEdge), (code, AlwaysEdge))
+      succOf(code) shouldBe expected(("RET", AlwaysEdge))
+
       succOf("loop2:") shouldBe expected(("j", AlwaysEdge))
       succOf("j") shouldBe expected(("0", 1, AlwaysEdge))
       succOf("0", 1) shouldBe expected(("j = 0", AlwaysEdge))
       succOf("j = 0") shouldBe expected(("j", 1, AlwaysEdge))
       succOf("j", 1) shouldBe expected(("3", 1, AlwaysEdge))
       succOf("3", 1) shouldBe expected(("j < 3", AlwaysEdge))
-      succOf("j < 3") shouldBe expected(("i", 2, AlwaysEdge))
+
+      val code2 = cpg.method.ast.isBlock.code("loop2: for.*").code.head
+      succOf("j < 3") shouldBe expected((code2, AlwaysEdge), ("i", 2, AlwaysEdge))
+      succOf(code2) shouldBe expected(("i", 2, AlwaysEdge))
+
       succOf("i", 2) shouldBe expected(("i++", AlwaysEdge))
       succOf("i++") shouldBe expected(("i", 3, AlwaysEdge))
       succOf("i", 3) shouldBe expected(("1", AlwaysEdge))
@@ -621,7 +634,8 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("arg1") shouldBe expected(("arg2", AlwaysEdge))
       succOf("arg2") shouldBe expected(("new MyClass(arg1, arg2)", AlwaysEdge))
       succOf("new MyClass(arg1, arg2)", NodeTypes.CALL) shouldBe expected(("_tmp_0", 2, AlwaysEdge))
-      succOf("_tmp_0", 2) shouldBe expected(("var x = new MyClass(arg1, arg2)", AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("new MyClass(arg1, arg2)", AlwaysEdge))
+      succOf("new MyClass(arg1, arg2)") shouldBe expected(("var x = new MyClass(arg1, arg2)", AlwaysEdge))
       succOf("var x = new MyClass(arg1, arg2)") shouldBe expected(("RET", AlwaysEdge))
     }
   }
@@ -657,7 +671,10 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       ("!(_result_0 = _iterator_0.next()).done", AlwaysEdge)
     )
 
-    succOf("!(_result_0 = _iterator_0.next()).done") shouldBe expected(("i", 1, TrueEdge), ("RET", FalseEdge))
+    import io.shiftleft.semanticcpg.language._
+    val code = cpg.method.ast.isBlock.code("for \\(var i.*foo.*}").code.head
+    succOf("!(_result_0 = _iterator_0.next()).done") shouldBe expected(("i", 1, TrueEdge), (code, FalseEdge))
+    succOf(code) shouldBe expected(("RET", AlwaysEdge))
 
     succOf("i", 1) shouldBe expected(("_result_0", 2, AlwaysEdge))
     succOf("_result_0", 2) shouldBe expected(("value", AlwaysEdge))
@@ -667,7 +684,9 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
     succOf("foo") shouldBe expected(("this", 1, AlwaysEdge))
     succOf("this", 2) shouldBe expected(("i", 2, AlwaysEdge))
     succOf("i", 2) shouldBe expected(("foo(i)", AlwaysEdge))
-    succOf("foo(i)") shouldBe expected(("_result_0", 1, AlwaysEdge))
+    val code2 = "{" + "\n" + "   foo(i)" + "\n" + "}"
+    succOf("foo(i)") shouldBe expected((code2, AlwaysEdge))
+    succOf(code2) shouldBe expected(("_result_0", 1, AlwaysEdge))
   }
 
 }
