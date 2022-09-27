@@ -142,7 +142,7 @@ class Compiler(
               printer: Printer,
               importsLen: Int,
               userCodeNestingLevel: Int,
-              fileName: String): Option[Compiler.Output] =
+              fileName: String): Option[Compiler.Output] = {
     // println(s"Compiling\n${new String(src, StandardCharsets.UTF_8)}\n")
 
     self.userCodeNestingLevel = userCodeNestingLevel
@@ -265,13 +265,13 @@ class Compiler(
           case other =>
             other
         }
-        val output = Compiler.Output(
+        Some(Compiler.Output(
           postProcessedClasses,
           Imports(newImports),
           Some(usedEarlierDefinitions)
-        )
-        Some(output)
+        ))
     }
+  }
 
   // Originally adapted from
   // https://github.com/lampepfl/dotty/blob/3.0.0-M3/
