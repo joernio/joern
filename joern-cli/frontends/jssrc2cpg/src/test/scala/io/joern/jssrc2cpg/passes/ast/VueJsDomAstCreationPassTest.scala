@@ -148,7 +148,14 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
       )
       cpg.local.code.l shouldBe List("Component", "Prop", "Vue", "msg")
 
-      inside(cpg.identifier.l) { case List(exports, msg, comp, prop, vue, helloWorld) =>
+      inside(cpg.identifier.l) { case List(exports, comp, prop, vue, msg, helloWorld) =>
+        comp.name shouldBe "Component"
+        comp.code shouldBe "Component"
+        prop.name shouldBe "Prop"
+        prop.code shouldBe "Prop"
+        vue.name shouldBe "Vue"
+        vue.code shouldBe "Vue"
+
         exports.name shouldBe "exports"
         exports.code shouldBe "exports"
         msg.name shouldBe "msg"
@@ -159,13 +166,6 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
         parentTemplateDom(parentTemplateDom(msg)).code shouldBe "<h1>{{ msg }}</h1>"
         helloWorld.name shouldBe "HelloWorld"
         helloWorld.code shouldBe "HelloWorld"
-
-        comp.name shouldBe "Component"
-        comp.code shouldBe "Component"
-        prop.name shouldBe "Prop"
-        prop.code shouldBe "Prop"
-        vue.name shouldBe "Vue"
-        vue.code shouldBe "Vue"
       }
 
       inside(cpg.staticImport.l) { case List(component, prop, vue) =>
