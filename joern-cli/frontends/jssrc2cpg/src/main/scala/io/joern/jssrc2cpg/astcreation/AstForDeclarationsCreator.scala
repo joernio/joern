@@ -331,9 +331,14 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   }
 
   private def setTypeHintForImport(name: String, alias: Option[String], from: String, isImportN: Boolean): Unit = {
-    val moduleName              = if (from.startsWith(".")) from else s"^$from^"
-    val destName                = alias.getOrElse(name)
-    val dynamicTypeHintFullName = if (isImportN) s"$moduleName.$name" else from
+    val cleanedModuleName = cleanImportPath(from)
+    val moduleName        = if (from.startsWith(".")) cleanedModuleName else s"^$from^"
+    val destName          = alias.getOrElse(name)
+    val dynamicTypeHintFullName =
+      if (isImportN) s"$moduleName.$name"
+      else {
+        if (from.startsWith(".")) cleanedModuleName else from
+      }
     val localNode = createLocalNode(destName, Defines.ANY.label).dynamicTypeHintFullName(Seq(dynamicTypeHintFullName))
     scope.addVariable(destName, localNode, BlockScope)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)

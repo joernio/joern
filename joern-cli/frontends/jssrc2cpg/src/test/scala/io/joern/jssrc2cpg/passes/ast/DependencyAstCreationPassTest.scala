@@ -2,7 +2,6 @@ package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.AbstractPassTest
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
 class DependencyAstCreationPassTest extends AbstractPassTest {
@@ -183,10 +182,10 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
 
       val List(alias1Ident, alias1RecIdent, member1Ident, member1RecIdent, nameIdent, nameRecIdent) =
         cpg.method("bar").ast.isIdentifier.name("alias1", "member1", "name").l
-      alias1Ident.dynamicTypeHintFullName shouldBe List("module-name.member2")
-      alias1RecIdent.dynamicTypeHintFullName shouldBe List("module-name.member2")
-      member1Ident.dynamicTypeHintFullName shouldBe List("module-name.member1")
-      member1RecIdent.dynamicTypeHintFullName shouldBe List("module-name.member1")
+      alias1Ident.dynamicTypeHintFullName shouldBe List("^module-name^.member2")
+      alias1RecIdent.dynamicTypeHintFullName shouldBe List("^module-name^.member2")
+      member1Ident.dynamicTypeHintFullName shouldBe List("^module-name^.member1")
+      member1RecIdent.dynamicTypeHintFullName shouldBe List("^module-name^.member1")
       nameIdent.dynamicTypeHintFullName shouldBe List("module-name")
       nameRecIdent.dynamicTypeHintFullName shouldBe List("module-name")
 
@@ -212,17 +211,17 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       otherNameLocal.code shouldBe "otherName"
       otherNameLocal.dynamicTypeHintFullName shouldBe Seq("module-name")
       member1Local.code shouldBe "member1"
-      member1Local.dynamicTypeHintFullName shouldBe Seq("module-name.member1")
+      member1Local.dynamicTypeHintFullName shouldBe Seq("^module-name^.member1")
       alias1Local.code shouldBe "alias1"
-      alias1Local.dynamicTypeHintFullName shouldBe Seq("module-name.member2")
+      alias1Local.dynamicTypeHintFullName shouldBe Seq("^module-name^.member2")
       member3Local.code shouldBe "member3"
-      member3Local.dynamicTypeHintFullName shouldBe Seq("module-name.member3")
+      member3Local.dynamicTypeHintFullName shouldBe Seq("^module-name^.member3")
       member4Local.code shouldBe "member4"
-      member4Local.dynamicTypeHintFullName shouldBe Seq("module-name.member4")
+      member4Local.dynamicTypeHintFullName shouldBe Seq("^module-name^.member4")
       member5Local.code shouldBe "member5"
-      member5Local.dynamicTypeHintFullName shouldBe Seq("module-name.member5")
+      member5Local.dynamicTypeHintFullName shouldBe Seq("^module-name^.member5")
       alias2Local.code shouldBe "alias2"
-      alias2Local.dynamicTypeHintFullName shouldBe Seq("module-name.member6")
+      alias2Local.dynamicTypeHintFullName shouldBe Seq("^module-name^.member6")
       defaultMember1Local.code shouldBe "defaultMember1"
       defaultMember1Local.dynamicTypeHintFullName shouldBe Seq("module-name")
       alias3Local.code shouldBe "alias3"
@@ -304,14 +303,16 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       |import { member2 } from "dep";
       |import { member3 as alias1 } from "./dep";
       |import { member4 as alias2 } from "dep";
+      |import { member5 as alias3 } from "./some/../path/dep"
       |""".stripMargin) { cpg =>
-    val List(name1, name2, member1, member2, alias1, alias2) = cpg.local.l
+    val List(name1, name2, member1, member2, alias1, alias2, alias3) = cpg.local.l
     name1.dynamicTypeHintFullName shouldBe List("./dep")
     name2.dynamicTypeHintFullName shouldBe List("dep")
     member1.dynamicTypeHintFullName shouldBe List("./dep.member1")
     member2.dynamicTypeHintFullName shouldBe List("^dep^.member2")
     alias1.dynamicTypeHintFullName shouldBe List("./dep.member3")
     alias2.dynamicTypeHintFullName shouldBe List("^dep^.member4")
+    alias3.dynamicTypeHintFullName shouldBe List("./path/dep.member5")
   }
 
   "AST generation for exports" should {

@@ -7,9 +7,11 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import org.apache.commons.io.FilenameUtils
 import org.apache.commons.lang.StringUtils
 import ujson.Value
 
+import java.nio.file.Paths
 import scala.collection.mutable
 import scala.collection.SortedMap
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
@@ -264,6 +266,10 @@ trait AstCreatorHelper { this: AstCreator =>
     val local = createLocalNode(variableName, Defines.ANY.label)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     (local, MethodScope)
+  }
+
+  protected def cleanImportPath(path: String): String = {
+    "./" + FilenameUtils.separatorsToUnix(Paths.get(path).normalize().toString)
   }
 
 }
