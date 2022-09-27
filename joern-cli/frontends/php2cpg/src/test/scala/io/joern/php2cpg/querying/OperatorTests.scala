@@ -26,7 +26,7 @@ class OperatorTests extends PhpCode2CpgFixture {
       assignment.argument.l match {
         case List(target: Identifier, source: Literal) =>
           target.name shouldBe "a"
-          target.code shouldBe "a"
+          target.code shouldBe "$a"
           target.argumentIndex shouldBe 1
 
           source.code shouldBe "2"
@@ -77,7 +77,7 @@ class OperatorTests extends PhpCode2CpgFixture {
       addition.argument.l match {
         case List(expr: Identifier) =>
           expr.name shouldBe "a"
-          expr.code shouldBe "a"
+          expr.code shouldBe "$a"
           expr.argumentIndex shouldBe 1
 
         case result => s"Found unexpected call args $result"
@@ -118,7 +118,7 @@ class OperatorTests extends PhpCode2CpgFixture {
       addition.argument.l match {
         case List(target: Identifier, source: Literal) =>
           target.name shouldBe "a"
-          target.code shouldBe "a"
+          target.code shouldBe "$a"
           target.argumentIndex shouldBe 1
 
           source.code shouldBe "2"
@@ -178,8 +178,7 @@ class OperatorTests extends PhpCode2CpgFixture {
       }
 
       cast.typeFullName shouldBe "int"
-      // TODO Still need to fix variable code
-      cast.code shouldBe "(int) a"
+      cast.code shouldBe "(int) $a"
       cast.lineNumber shouldBe Some(2)
       cast.argument.l match {
         case List(typeRef: TypeRef, expr: Identifier) =>

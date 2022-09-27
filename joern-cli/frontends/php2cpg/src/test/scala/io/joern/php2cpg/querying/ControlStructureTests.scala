@@ -3,10 +3,127 @@ package io.joern.php2cpg.querying
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, ControlStructure, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Block,
+  ControlStructure,
+  Identifier,
+  JumpLabel,
+  JumpTarget,
+  Literal
+}
 import io.shiftleft.semanticcpg.language._
 
 class ControlStructureTests extends PhpCode2CpgFixture {
+  "switch statements" should {
+    "work without a default case" in {
+      val cpg = code("""<?php
+			 |switch ($cond) {
+			 |  case 0:
+			 |    $b;
+			 |    break;
+			 |  case 1:
+			 |    $c;
+			 |    break;
+			 |}
+			 |""".stripMargin)
+
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.SWITCH).l) { case List(switchStmt) =>
+        switchStmt.lineNumber shouldBe Some(2)
+
+        inside(switchStmt.condition.l) { case List(cond: Identifier) =>
+          cond.name shouldBe "cond"
+          cond.code shouldBe "$cond"
+          cond.lineNumber shouldBe Some(2)
+        }
+
+        inside(switchStmt.astChildren.l) {
+          case List(
+                _,
+                case0: JumpTarget,
+                bIdent: Identifier,
+                break1: ControlStructure,
+                case1: JumpTarget,
+                cIdent: Identifier,
+                break2: ControlStructure
+              ) =>
+            case0.name shouldBe "case"
+            case0.code shouldBe "case 0"
+            case0.lineNumber shouldBe Some(3)
+
+            bIdent.name shouldBe "b"
+            bIdent.code shouldBe "$b"
+            bIdent.lineNumber shouldBe Some(4)
+
+            break1.controlStructureType shouldBe ControlStructureTypes.BREAK
+            break1.code shouldBe "break"
+            break1.lineNumber shouldBe Some(5)
+
+            case1.name shouldBe "case"
+            case1.code shouldBe "case 1"
+            case1.lineNumber shouldBe Some(6)
+
+            cIdent.name shouldBe "c"
+            cIdent.code shouldBe "$c"
+            cIdent.lineNumber shouldBe Some(7)
+
+            break2.controlStructureType shouldBe ControlStructureTypes.BREAK
+            break2.code shouldBe "break"
+            break2.lineNumber shouldBe Some(8)
+        }
+      }
+    }
+
+    "work with a default case" in {
+      val cpg = code("""<?php
+                      |switch ($cond) {
+                      |  case 0:
+                      |    $b;
+                      |    break;
+                      |  default:
+                      |    $c;
+                      |}
+                      |""".stripMargin)
+
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.SWITCH).l) { case List(switchStmt) =>
+        switchStmt.lineNumber shouldBe Some(2)
+
+        inside(switchStmt.condition.l) { case List(cond: Identifier) =>
+          cond.name shouldBe "cond"
+          cond.code shouldBe "$cond"
+          cond.lineNumber shouldBe Some(2)
+        }
+
+        inside(switchStmt.astChildren.l) {
+          case List(
+                _,
+                case0: JumpTarget,
+                bIdent: Identifier,
+                break1: ControlStructure,
+                defaultCase: JumpTarget,
+                cIdent: Identifier
+              ) =>
+            case0.name shouldBe "case"
+            case0.code shouldBe "case 0"
+            case0.lineNumber shouldBe Some(3)
+
+            bIdent.name shouldBe "b"
+            bIdent.code shouldBe "$b"
+            bIdent.lineNumber shouldBe Some(4)
+
+            break1.controlStructureType shouldBe ControlStructureTypes.BREAK
+            break1.code shouldBe "break"
+            break1.lineNumber shouldBe Some(5)
+
+            defaultCase.name shouldBe "default"
+            defaultCase.code shouldBe "default"
+            defaultCase.lineNumber shouldBe Some(6)
+
+            cIdent.name shouldBe "c"
+            cIdent.lineNumber shouldBe Some(7)
+        }
+      }
+    }
+  }
 
   "if statements" should {
     "work without a body, an elseif or an else" in {
@@ -311,7 +428,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         case result => fail(s"Expected while but found $result")
       }
 
-      whileAst.code shouldBe "while(a)"
+      whileAst.code shouldBe "while($a)"
 
       whileAst.condition.l match {
         case List(aIdent: Identifier) =>
@@ -340,7 +457,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         case result => fail(s"Expected while but found $result")
       }
 
-      whileAst.code shouldBe "while(a)"
+      whileAst.code shouldBe "while($a)"
 
       whileAst.condition.l match {
         case List(aIdent: Identifier) =>

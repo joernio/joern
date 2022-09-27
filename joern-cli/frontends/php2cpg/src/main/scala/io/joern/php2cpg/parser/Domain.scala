@@ -109,8 +109,10 @@ object Domain {
   ) extends PhpStmt
   final case class PhpElseIfStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
   final case class PhpElseStmt(stmts: List[PhpStmt], attributes: PhpAttributes)                  extends PhpStmt
-  final case class PhpSwitchStmt(condition: PhpExpr, cases: List[PhpCaseStmt], attributes: PhpAttributes) extends PhpStmt
-  final case class PhpCaseStmt(condition: Option[PhpExpr], stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
+  final case class PhpSwitchStmt(condition: PhpExpr, cases: List[PhpCaseStmt], attributes: PhpAttributes)
+      extends PhpStmt
+  final case class PhpCaseStmt(condition: Option[PhpExpr], stmts: List[PhpStmt], attributes: PhpAttributes)
+      extends PhpStmt
 
   final case class PhpMethodDecl(
     name: String,
@@ -331,14 +333,14 @@ object Domain {
 
   private def readSwitch(json: Value): PhpSwitchStmt = {
     val condition = readExpr(json("cond"))
-    val cases = json("cases").arr.map(readCase).toList
+    val cases     = json("cases").arr.map(readCase).toList
 
     PhpSwitchStmt(condition, cases, PhpAttributes(json))
   }
 
   private def readCase(json: Value): PhpCaseStmt = {
     val condition = Option.unless(json("cond").isNull)(readExpr(json("cond")))
-    val stmts = json("stmts").arr.map(readStmt).toList
+    val stmts     = json("stmts").arr.map(readStmt).toList
 
     PhpCaseStmt(condition, stmts, PhpAttributes(json))
   }

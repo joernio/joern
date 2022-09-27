@@ -9,10 +9,12 @@ import io.joern.x2cpg.utils.NodeBuilders.operatorCallNode
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EvaluationStrategies, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  ExpressionNew,
   NewBlock,
   NewCall,
   NewControlStructure,
   NewIdentifier,
+  NewJumpTarget,
   NewLiteral,
   NewMethod,
   NewMethodParameterIn,
@@ -189,7 +191,29 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForSwitchStmt(stmt: PhpSwitchStmt): Ast = {
+    val conditionAst = astForExpr(stmt.condition)
 
+    val switchNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.SWITCH)
+      .code(s"switch (${rootCode(conditionAst)})")
+      .lineNumber(line(stmt))
+
+    val entryAsts = stmt.cases.flatMap(astsForSwitchCase)
+
+    controlStructureAst(switchNode, Some(conditionAst), entryAsts)
+  }
+
+  private def astsForSwitchCase(caseStmt: PhpCaseStmt): List[Ast] = {
+    val maybeConditionAst = caseStmt.condition.map(astForExpr)
+    val jumpTarget = maybeConditionAst match {
+      case Some(conditionAst) => NewJumpTarget().name("case").code(s"case ${rootCode(conditionAst)}")
+      case None               => NewJumpTarget().name("default").code("default")
+    }
+    jumpTarget.lineNumber(line(caseStmt))
+
+    val stmtAsts = caseStmt.stmts.map(astForStmt)
+
+    Ast(jumpTarget) :: stmtAsts
   }
 
   private def astForFunctionCall(call: PhpFuncCall): Ast = {
@@ -223,7 +247,18 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForVariableExpr(variable: PhpVariable): Ast = {
-    astForExpr(variable.value)
+    // TODO Need to figure out variable variables. Maybe represent as some kind of call?
+    val valueAst = astForExpr(variable.value)
+
+    valueAst.root.collect { case root: ExpressionNew =>
+      root.code = "$" + root.code
+    }
+
+    valueAst.root.collect { case root: NewIdentifier =>
+      root.lineNumber = line(variable)
+    }
+
+    valueAst
   }
 
   private def astForNameExpr(expr: PhpNameExpr): Ast = {
