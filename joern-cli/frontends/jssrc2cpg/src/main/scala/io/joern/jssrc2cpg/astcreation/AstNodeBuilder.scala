@@ -375,7 +375,7 @@ trait AstNodeBuilder { this: AstCreator =>
           .findVariableInEnclosingScope(scope.getScopeHead, name)
           .toSeq
           .flatMap(_.dynamicTypeHintFullName)
-    createIdentifierNode(name, dynamicTypeHints, node.lineNumber, node.columnNumber)
+    createIdentifierNode(name, dynamicTypeHints.distinct.sorted, node.lineNumber, node.columnNumber)
   }
 
   protected def createIdentifierNode(
