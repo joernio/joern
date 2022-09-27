@@ -22,68 +22,60 @@ import scala.jdk.CollectionConverters.*
 
 object Main {
   def main(args: Array[String]): Unit = {
-     val printer = Printer(
-       outStream = System.out,
-       errStream = System.err,
-       resultStream = System.out,
-       warning = msg => println(s"Xwarn: $msg"),
-       error = msg => println(s"Xerror: $msg"),
-       info = msg => println(s"Xinfo: $msg")
-     )
-     val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-     val versionSortJarUrl = new URL(s"file:$versionSortJar")
+    val printer = Printer(
+      outStream = System.out,
+      errStream = System.err,
+      resultStream = System.out,
+      warning = msg => println(s"Xwarn: $msg"),
+      error = msg => println(s"Xerror: $msg"),
+      info = msg => println(s"Xinfo: $msg"))
+    val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+    val versionSortJarUrl = new URL(s"file:$versionSortJar")
 
-     val initialClassLoader = getClass.getClassLoader
-     val initialClassPath = Classpath.classpath(initialClassLoader, None)
+    val initialClassLoader = getClass.getClassLoader
+    val initialClassPath = Classpath.classpath(initialClassLoader, None)
 
-      // TODO implement completer
-      val completer: Completer = { (_, line, candidates) =>
-        //      val comps = completions(line.cursor, line.line, state)
-        //      candidates.addAll(comps.asJava)
-      }
+    var compiler = new Compiler(
+      dynamicClassPath = dotty.tools.io.AbstractFile.getDirectory("."),
+      initialClassPath = initialClassPath,
+      classPath = initialClassPath,
+      whiteList = Set.empty
+    )
+    var cmdIdx = 0
+    given Context = compiler.initialCtx // TODO always get latest context for completions...
 
-      val compiler0 = new Compiler(
-        dynamicClassPath = dotty.tools.io.AbstractFile.getDirectory("."),
-        initialClassPath = initialClassPath,
-        classPath = initialClassPath,
-        whiteList = Set.empty
-      )
-      given Context = compiler0.initialCtx // TODO always get latest context for completions...
+    val prompt = "joern2> "
+    val terminal = new JLineTerminal(prompt)
 
-      val prompt = "joern2> "
-      val terminal = new JLineTerminal(prompt)
+    // TODO implement completer
+    val completer: Completer = { (_, line, candidates) =>
+      //      val comps = completions(line.cursor, line.line, state)
+      //      candidates.addAll(comps.asJava)
+    }
 
+    def readLine(): Unit = {
       val line = terminal.readLine(completer)
-      println(s"read: $line")
+      if (line.startsWith("//> using")) {
+        // add versionsort to classPath
+        compiler = new Compiler(
+          compiler.dynamicClassPath,
+          compiler.initialClassPath,
+          compiler.classPath :+ versionSortJarUrl,
+          compiler.whiteList)
+      } else {
+        val compileResult = compiler.compile(
+          src = line.getBytes("UTF-8"),
+          printer,
+          importsLen = 0,
+          userCodeNestingLevel = 0,
+          fileName = s"cmd$cmdIdx.sc"
+        )
+        println(s"XX compilation result: ${compileResult.get}")
+      }
+      cmdIdx += 1
+    }
 
-  //   val compiler1 = new Compiler(
-  //     compiler0.dynamicClassPath,
-  //     compiler0.initialClassPath,
-  //     compiler0.classPath :+ versionSortJarUrl,
-  //     compiler0.whiteList)
-  //   val cmd0Src = """val foo = 42"""
-  //   val compileResult0 = compiler0.compile(
-  //     src = cmd0Src.getBytes("UTF-8"),
-  //     printer,
-  //     importsLen = 0,
-  //     userCodeNestingLevel = 0,
-  //     fileName = "cmd0.sc"
-  //   )
-  //   println(compileResult0.get) // foo defined successfully
-
-  //   val cmd1Src =
-  //     """val bar = foo
-  //       |val baz = versionsort.VersionHelper.compare("1.0", "0.9")
-  //       |""".stripMargin
-  //   val compileResult1 = compiler1.compile(
-  //     src = cmd1Src.getBytes("UTF-8"),
-  //     printer,
-  //     importsLen = 0,
-  //     userCodeNestingLevel = 0,
-  //     fileName = "cmd1.sc"
-  //   )
-  //   println(compileResult1.get) // bar|baz defined successfully :)
-
+    while (true) readLine()
   }
 
 }
