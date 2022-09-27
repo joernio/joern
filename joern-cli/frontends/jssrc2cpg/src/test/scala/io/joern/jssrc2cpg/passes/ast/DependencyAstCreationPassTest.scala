@@ -297,6 +297,23 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
     }
   }
 
+  "have correct dependencies (internal / external)" in AstFixture("""
+      |import name1 from "./dep";
+      |import name2 from "dep";
+      |import { member1 } from "./dep";
+      |import { member2 } from "dep";
+      |import { member3 as alias1 } from "./dep";
+      |import { member4 as alias2 } from "dep";
+      |""".stripMargin) { cpg =>
+    val List(name1, name2, member1, member2, alias1, alias2) = cpg.local.l
+    name1.dynamicTypeHintFullName shouldBe List("./dep")
+    name2.dynamicTypeHintFullName shouldBe List("dep")
+    member1.dynamicTypeHintFullName shouldBe List("./dep.member1")
+    member2.dynamicTypeHintFullName shouldBe List("^dep^.member2")
+    alias1.dynamicTypeHintFullName shouldBe List("./dep.member3")
+    alias2.dynamicTypeHintFullName shouldBe List("^dep^.member4")
+  }
+
   "AST generation for exports" should {
     "have correct structure for simple names and aliases" in AstFixture("""
         |var name1, name2, name3, name6;
