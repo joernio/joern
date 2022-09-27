@@ -1,5 +1,6 @@
 name := "console2"
 
+// TODO: pull out into separate build
 enablePlugins(JavaAppPackaging)
 
 // val ScoptVersion          = "4.0.1"
@@ -13,7 +14,8 @@ enablePlugins(JavaAppPackaging)
 libraryDependencies ++= Seq(
 //   // TODO once https://github.com/lampepfl/dotty/pull/16011 is merged and released as part of 3.2.1, use our custom scala fork here 
 //   // "com.michaelpollmeier" %% "scala3-compiler"   % Scala3ReplForkVersion,
-  "org.scala-lang"       %% "scala3-compiler"   % scalaVersion.value,
+  // "org.scala-lang"       %% "scala3-compiler"   % scalaVersion.value,
+  "org.scala-lang"       %% "scala3-compiler"   % "3.1.3",
   "org.ow2.asm" % "asm" % "9.3",
 //  ("io.get-coursier"      %% "coursier"          % "2.0.13").cross(CrossVersion.for3Use2_13).exclude("org.scala-lang.modules", "scala-xml_2.13"),
 //   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
