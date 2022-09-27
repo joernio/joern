@@ -17,11 +17,10 @@ import scala.util.hashing.MurmurHash3
 
 class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, String] {
   override def structureToString(s: String): String         = s
-  override def extractObjects(cpg: Cpg): Traversal[AstNode] = cpg.method.internal
+  override def extractObjects(cpg: Cpg): Traversal[AstNode] = Traversal(cpg.graph.V.collect { case x: AstNode => x })
   override def enumerateSubStructures(obj: AstNode): List[String] = {
     val relevantFields = Set(PropertyNames.NAME, PropertyNames.FULL_NAME, PropertyNames.CODE)
-
-    List(obj.id().toString) ++ obj
+    List("id: " + obj.id().toString) ++ obj
       .propertiesMap()
       .entrySet()
       .asScala
