@@ -16,7 +16,8 @@ class SimpleCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("class Foo") shouldBe expected(("bar", AlwaysEdge))
       succOf("bar") shouldBe expected(("this", AlwaysEdge))
       succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("bar()", AlwaysEdge))
-      succOf("bar()") shouldBe expected(("let x = (class Foo {}, bar())", AlwaysEdge))
+      succOf("bar()") shouldBe expected(("(class Foo {}, bar())", AlwaysEdge))
+      succOf("(class Foo {}, bar())") shouldBe expected(("let x = (class Foo {}, bar())", AlwaysEdge))
       succOf("let x = (class Foo {}, bar())") shouldBe expected(("RET", AlwaysEdge))
     }
 
