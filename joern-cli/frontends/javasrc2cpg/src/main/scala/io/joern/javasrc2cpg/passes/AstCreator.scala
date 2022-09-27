@@ -2835,11 +2835,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val parameters = thisParam ++ parametersWithoutThis
 
     val lambdaMethodNode = createLambdaMethodNode(lambdaMethodName, parametersWithoutThis, returnType)
-    // TODO FIX THIS
-    val returnNode      = methodReturnNode(returnType.getOrElse("<empty>"), None, line(expr), column(expr))
-    val virtualModifier = Some(modifierNode(ModifierTypes.VIRTUAL))
-    val staticModifier  = Option.when(thisParam.isEmpty)(modifierNode(ModifierTypes.STATIC))
-    val privateModifier = Some(modifierNode(ModifierTypes.PRIVATE))
+    val returnNode       = methodReturnNode(returnType.getOrElse(TypeConstants.Any), None, line(expr), column(expr))
+    val virtualModifier  = Some(modifierNode(ModifierTypes.VIRTUAL))
+    val staticModifier   = Option.when(thisParam.isEmpty)(modifierNode(ModifierTypes.STATIC))
+    val privateModifier  = Some(modifierNode(ModifierTypes.PRIVATE))
 
     val modifiers = List(virtualModifier, staticModifier, privateModifier).flatten.map(Ast(_))
 
