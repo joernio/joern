@@ -57,9 +57,15 @@ abstract class AstCreatorBase(filename: String) {
   /** Creates an AST that represents a method stub, containing information about the method, its parameters, and the
     * return type.
     */
-  def methodStubAst(method: NewMethod, parameters: Seq[NewMethodParameterIn], methodReturn: NewMethodReturn): Ast =
+  def methodStubAst(
+    method: NewMethod,
+    parameters: Seq[NewMethodParameterIn],
+    methodReturn: NewMethodReturn,
+    modifiers: Seq[NewModifier] = Nil
+  ): Ast =
     Ast(method)
       .withChildren(parameters.map(Ast(_)))
+      .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))
 
   /** Create a method return node

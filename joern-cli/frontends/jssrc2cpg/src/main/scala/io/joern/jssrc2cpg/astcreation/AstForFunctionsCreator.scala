@@ -319,7 +319,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       )
 
     val mAst = if (methodBlockContent.isEmpty) {
-      methodStubAst(methodNode, thisNode +: paramNodes, methodReturnNode).withChild(Ast(virtualModifierNode))
+      methodStubAst(methodNode, thisNode +: paramNodes, methodReturnNode, List(virtualModifierNode))
     } else {
       setIndices(methodBlockContent)
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
@@ -408,9 +408,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
         methodNode,
         thisNode +: paramNodes,
         blockAst.withChildren(methodBlockContent ++ additionalBlockStatements ++ bodyStmtAsts),
-        methodReturnNode
+        methodReturnNode,
+        List(virtualModifierNode)
       )
-        .withChild(Ast(virtualModifierNode))
 
     Ast.storeInDiffGraph(mAst, diffGraph)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
