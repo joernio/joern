@@ -1,7 +1,5 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
-import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
-
 import scala.collection.mutable
 
 class DataFlowSolver {
