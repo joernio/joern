@@ -13,7 +13,7 @@ import scala.collection.mutable
 case class NodeTypeInfo(
   node: NewNode,
   name: String,
-  typeFullName: String,
+  typeFullName: Option[String],
   isField: Boolean = false,
   isStatic: Boolean = false
 )
@@ -65,7 +65,7 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
     }
   }
 
-  def addToScope(node: NewNode, name: String, typeFullName: String): Unit = {
+  def addToScope(node: NewNode, name: String, typeFullName: Option[String]): Unit = {
     addToScope(identifier = name, NodeTypeInfo(node, name = name, typeFullName = typeFullName))
   }
 
@@ -113,7 +113,7 @@ class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
 
   def lookupVariableType(identifier: String, wildcardFallback: Boolean = false): Option[String] = {
     lookupVariable(identifier)
-      .map(_.typeFullName)
+      .flatMap(_.typeFullName)
       .orElse(
         Option
           .when(wildcardFallback) {

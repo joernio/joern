@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.passes
 
 import better.files.File
+import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
@@ -33,7 +34,7 @@ class AstCreationPass(sourceInfo: SourceDirectoryInfo, config: Config, cpg: Cpg,
 
   override def runOnPart(diffGraph: DiffGraphBuilder, fileInfo: SourceFileInfo): Unit = {
     val parserConfig =
-      new ParserConfiguration().setSymbolResolver(symbolResolver)
+      new ParserConfiguration().setSymbolResolver(symbolResolver).setLanguageLevel(LanguageLevel.CURRENT)
     val parser      = new JavaParser(parserConfig)
     val parseResult = parser.parse(new java.io.File(fileInfo.analysisFileName))
 

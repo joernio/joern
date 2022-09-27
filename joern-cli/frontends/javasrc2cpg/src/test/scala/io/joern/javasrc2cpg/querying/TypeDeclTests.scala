@@ -132,7 +132,9 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
           case res => fail(s"Expected method id on interface but got $res")
         }
 
-      case res => fail(s"Expected typeDecl for interface but got $res")
+      case res =>
+        res.foreach(typ => println(typ.fullName))
+        fail(s"Expected typeDecl for interface but got $res")
     }
   }
 
