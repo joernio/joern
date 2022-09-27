@@ -81,13 +81,13 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       d.code shouldBe "static d"
 
       val List(clInitMethod)         = classATypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
-      val List(cInitCall, dInitCall) = clInitMethod.block.ast.isCall.nameExact(Operators.assignment).l
+      val List(cInitCall, dInitCall) = clInitMethod.block.assignment.l
       cInitCall.code shouldBe "static c = true"
       dInitCall.code shouldBe "this.d = false"
 
       val List(constructor) =
         cpg.typeDecl.nameExact("ClassA").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l
-      val List(aInitCall, bInitCall) = constructor.block.ast.isCall.nameExact(Operators.assignment).l
+      val List(aInitCall, bInitCall) = constructor.block.assignment.l
       aInitCall.code shouldBe "a = 1"
       bInitCall.code shouldBe """b = "foo""""
     }

@@ -1,6 +1,7 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.datastructures.MethodScope
+import io.joern.jssrc2cpg.datastructures.Scope
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
@@ -366,12 +367,20 @@ trait AstNodeBuilder { this: AstCreator =>
       case _ =>
         None
     }
-    createIdentifierNode(name, dynamicInstanceTypeOption, node.lineNumber, node.columnNumber)
+    val dynamicTypeHints =
+      dynamicInstanceTypeOption.toSeq ++
+        // we look up locals and their dynamic type hints in the surrounding scope to
+        // acquire information from imports
+        Scope
+          .findVariableInEnclosingScope(scope.getScopeHead, name)
+          .toSeq
+          .flatMap(_.dynamicTypeHintFullName)
+    createIdentifierNode(name, dynamicTypeHints, node.lineNumber, node.columnNumber)
   }
 
   protected def createIdentifierNode(
     name: String,
-    dynamicTypeOption: Option[String],
+    dynamicTypeOption: Seq[String],
     line: Option[Integer],
     column: Option[Integer]
   ): NewIdentifier = NewIdentifier()
@@ -380,7 +389,7 @@ trait AstNodeBuilder { this: AstCreator =>
     .lineNumber(line)
     .columnNumber(column)
     .typeFullName(Defines.ANY.label)
-    .dynamicTypeHintFullName(dynamicTypeOption.toList)
+    .dynamicTypeHintFullName(dynamicTypeOption)
 
   protected def createStaticCallNode(
     code: String,

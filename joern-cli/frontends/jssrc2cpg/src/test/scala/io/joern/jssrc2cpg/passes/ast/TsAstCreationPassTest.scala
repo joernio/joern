@@ -17,11 +17,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
         |""".stripMargin,
       "code.ts"
     ) { cpg =>
-      cpg.call(Operators.assignment).code.l shouldBe List(
-        "const x = \"foo\" as string",
-        "var y = 1 as int",
-        "let z = true as boolean"
-      )
+      cpg.assignment.code.l shouldBe List("const x = \"foo\" as string", "var y = 1 as int", "let z = true as boolean")
       inside(cpg.call(Operators.cast).l) { case List(callX, callY, callZ) =>
         callX.argument(1).code shouldBe "string"
         callX.argument(2).code shouldBe "\"foo\""

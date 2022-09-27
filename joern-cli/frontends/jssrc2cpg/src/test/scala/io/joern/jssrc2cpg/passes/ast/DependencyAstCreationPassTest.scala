@@ -167,7 +167,71 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
        |import defaultMember1, * as alias3 from "module-name";
        |import defaultMember2 from "module-name";
        |import "module-name";
+       |
+       |function foo() {
+       |  var alias1  = "";
+       |  alias1.call();
+       |}
+       |function bar() {
+       |  alias1.call();
+       |  member1.call();
+       |  name.call();
+       |}
        |""".stripMargin) { cpg =>
+      val aliasIdentInFoo = cpg.method("foo").ast.isIdentifier
+      aliasIdentInFoo.dynamicTypeHintFullName shouldBe empty // its overridden in the scope of foo
+
+      val List(alias1Ident, alias1RecIdent, member1Ident, member1RecIdent, nameIdent, nameRecIdent) =
+        cpg.method("bar").ast.isIdentifier.name("alias1", "member1", "name").l
+      alias1Ident.dynamicTypeHintFullName shouldBe List("module-name.member2")
+      alias1RecIdent.dynamicTypeHintFullName shouldBe List("module-name.member2")
+      member1Ident.dynamicTypeHintFullName shouldBe List("module-name.member1")
+      member1RecIdent.dynamicTypeHintFullName shouldBe List("module-name.member1")
+      nameIdent.dynamicTypeHintFullName shouldBe List("module-name")
+      nameRecIdent.dynamicTypeHintFullName shouldBe List("module-name")
+
+      val List(
+        nameLocal,
+        otherNameLocal,
+        member1Local,
+        alias1Local,
+        member3Local,
+        member4Local,
+        member5Local,
+        alias2Local,
+        defaultMember1Local,
+        alias3Local,
+        defaultMember2Local,
+        moduleNameLocal,
+        _, // ignore local for method foo
+        _  // ignore local for method bar
+      ) = cpg.method.nameExact(":program").local.l
+
+      nameLocal.code shouldBe "name"
+      nameLocal.dynamicTypeHintFullName shouldBe Seq("module-name")
+      otherNameLocal.code shouldBe "otherName"
+      otherNameLocal.dynamicTypeHintFullName shouldBe Seq("module-name")
+      member1Local.code shouldBe "member1"
+      member1Local.dynamicTypeHintFullName shouldBe Seq("module-name.member1")
+      alias1Local.code shouldBe "alias1"
+      alias1Local.dynamicTypeHintFullName shouldBe Seq("module-name.member2")
+      member3Local.code shouldBe "member3"
+      member3Local.dynamicTypeHintFullName shouldBe Seq("module-name.member3")
+      member4Local.code shouldBe "member4"
+      member4Local.dynamicTypeHintFullName shouldBe Seq("module-name.member4")
+      member5Local.code shouldBe "member5"
+      member5Local.dynamicTypeHintFullName shouldBe Seq("module-name.member5")
+      alias2Local.code shouldBe "alias2"
+      alias2Local.dynamicTypeHintFullName shouldBe Seq("module-name.member6")
+      defaultMember1Local.code shouldBe "defaultMember1"
+      defaultMember1Local.dynamicTypeHintFullName shouldBe Seq("module-name")
+      alias3Local.code shouldBe "alias3"
+      alias3Local.dynamicTypeHintFullName shouldBe Seq("module-name")
+      defaultMember2Local.code shouldBe "defaultMember2"
+      defaultMember2Local.dynamicTypeHintFullName shouldBe Seq("module-name")
+      moduleNameLocal.code shouldBe "module-name"
+      moduleNameLocal.dynamicTypeHintFullName shouldBe Seq("module-name")
+
       val List(
         name,
         otherName,
@@ -256,7 +320,7 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         "variable4",
         "variable5"
       )
-      cpg.call(Operators.assignment).code.l.sorted shouldBe List(
+      cpg.assignment.code.l.sorted shouldBe List(
         "exports.name1 = name1",
         "exports.name10 = name10",
         "exports.name11 = name11",
@@ -284,7 +348,7 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |""".stripMargin) { cpg =>
       cpg.local.code.l shouldBe List("foo", "bar", "func")
       cpg.typeDecl.name.l should contain allElementsOf List("func", "ClassA")
-      cpg.call(Operators.assignment).code.l shouldBe List(
+      cpg.assignment.code.l shouldBe List(
         "var foo = 1",
         "var bar = 2",
         "exports.foo = foo",
@@ -302,7 +366,7 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |export default function foo(param) {};
         |""".stripMargin) { cpg =>
       cpg.local.code.l shouldBe List("name1", "foo", "name2")
-      cpg.call(Operators.assignment).code.l shouldBe List(
+      cpg.assignment.code.l shouldBe List(
         "exports[\"default\"] = name1",
         "name2 = \"2\"",
         "exports[\"default\"] = name2",
@@ -334,12 +398,12 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       bar.dependencyGroupId shouldBe Some("Bar")
       bar.version shouldBe "require"
 
-      cpg.call(Operators.assignment).code.l shouldBe List(
-        "_Foo = require(\"Foo\")",
+      cpg.assignment.code.l shouldBe List(
+        "var _Foo = require(\"Foo\")",
         "_Foo.name1 = import1",
         "_Foo.name2 = import2",
         "_Foo.name3 = name3",
-        "_Bar = require(\"Bar\")",
+        "var _Bar = require(\"Bar\")",
         "_Bar.bar = bar"
       )
     }
@@ -363,12 +427,12 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       dep3.dependencyGroupId shouldBe Some("./some/Module")
       dep3.version shouldBe "require"
 
-      cpg.call(Operators.assignment).code.l shouldBe List(
-        "_Foo = require(\"Foo\")",
+      cpg.assignment.code.l shouldBe List(
+        "var _Foo = require(\"Foo\")",
         "exports.Foo = _Foo",
-        "_Bar = require(\"Bar\")",
+        "var _Bar = require(\"Bar\")",
         "exports.B = _Bar",
-        "_Module = require(\"./some/Module\")",
+        "var _Module = require(\"./some/Module\")",
         "exports.Module = _Module"
       )
     }

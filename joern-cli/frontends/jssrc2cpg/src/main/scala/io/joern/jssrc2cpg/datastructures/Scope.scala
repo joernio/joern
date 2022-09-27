@@ -1,5 +1,6 @@
 package io.joern.jssrc2cpg.datastructures
 
+import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
 import scala.collection.mutable
@@ -90,6 +91,15 @@ object Scope {
       }
       .getOrElse(throw new RuntimeException("Cannot find method scope."))
     // There are no references outside of methods. Meaning we always find a MethodScope here.
+  }
+
+  def findVariableInEnclosingScope(scopeHead: Option[ScopeElement], variableName: String): Option[NewLocal] = {
+    new ScopeElementIterator(scopeHead).collectFirst {
+      case scopeElem if scopeElem.nameToVariableNode.isDefinedAt(variableName) =>
+        val newLocalMaybe = scopeElem.nameToVariableNode.get(variableName)
+        val result        = newLocalMaybe.collect { case l: NewLocal => l }
+        result
+    }.flatten
   }
 }
 
