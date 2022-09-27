@@ -2,7 +2,7 @@ package ammonite.foo
 
 import java.net.URL
 
-object Main {
+object MainPlain {
   def main(args: Array[String]): Unit = {
     val printer = Printer(
       outStream = System.out,
