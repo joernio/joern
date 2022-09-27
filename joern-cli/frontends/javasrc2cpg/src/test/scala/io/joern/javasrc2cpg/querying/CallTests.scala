@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, MethodParameterIn}
@@ -10,6 +11,25 @@ import overflowdb.traversal.jIteratortoTraversal
 import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
+  "calls to unresolved lambda parameters" should {
+    val cpg = code("""
+		 |class Foo {
+		 |  public void isSuccess(ExecutorService executorService) {
+		 |    var responses = executorService.invokeAll(flagCalls);
+		 |    responses.stream().filter(r -> {
+		 |      return r.get().getStatusCode() == 200;
+		 |    });
+		 |  }
+		 |}""".stripMargin)
+
+    "have the correct call name" in {
+      cpg.call
+        .name("get")
+        .methodFullName
+        .head shouldBe s"${Defines.UnresolvedNamespace}.get:${Defines.UnresolvedSignature}(0)"
+    }
+  }
+
   "calls to instance methods in same class" should {
     "have ref edges from implicit `this` for an explicit constructor invocation" in {
       val cpg = code("""
@@ -373,8 +393,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
   "should handle unresolved calls with appropriate defaults" in {
     val List(call: Call) = cpg.typeDecl.name("Foo").ast.isCall.name("foo").l
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-    call.methodFullName shouldBe "test.Foo.foo:void(int)"
-    call.signature shouldBe "void(int)"
+    call.methodFullName shouldBe s"test.Foo.foo:${Defines.UnresolvedSignature}(1)"
+    call.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
     call.code shouldBe "foo(argc)"
   }
 

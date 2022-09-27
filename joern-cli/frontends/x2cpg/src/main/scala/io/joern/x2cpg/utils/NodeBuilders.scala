@@ -63,18 +63,21 @@ object NodeBuilders {
 
   def identifierNode(
     name: String,
-    typeFullName: String,
+    typeFullName: Option[String],
     line: Option[Integer] = None,
     column: Option[Integer] = None,
     dynamicTypeHintFullName: Seq[String] = Seq.empty
-  ): NewIdentifier =
-    NewIdentifier()
+  ): NewIdentifier = {
+    val identifier = NewIdentifier()
       .name(name)
       .code(name)
-      .typeFullName(typeFullName)
       .lineNumber(line)
       .columnNumber(column)
       .dynamicTypeHintFullName(dynamicTypeHintFullName)
+
+    typeFullName.map(identifier.typeFullName(_))
+    identifier
+  }
 
   def modifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
 
