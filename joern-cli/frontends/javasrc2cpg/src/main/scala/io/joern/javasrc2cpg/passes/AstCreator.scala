@@ -1026,8 +1026,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val bodyAst = methodDeclaration.getBody.toScala.map(astForBlockStatement(_)).getOrElse(Ast(NewBlock()))
     val methodReturn = methodReturnNode(
-      // TODO
-      returnTypeFullName.getOrElse("<empty>"),
+      returnTypeFullName.getOrElse(TypeConstants.Any),
       None,
       line(methodDeclaration.getType),
       column(methodDeclaration.getType)
