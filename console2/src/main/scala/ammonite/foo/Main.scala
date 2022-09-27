@@ -46,11 +46,12 @@ object Main {
     var cmdIdx = 0
     given Context = compiler.initialCtx // TODO always get latest context for completions...
 
-    val prompt = "joern2> "
+    val prompt = "joern> "
     val terminal = new JLineTerminal(prompt)
 
     // TODO implement completer
     val completer: Completer = { (_, line, candidates) =>
+      println("XXX1 in completer")
       //      val comps = completions(line.cursor, line.line, state)
       //      candidates.addAll(comps.asJava)
     }
@@ -60,7 +61,6 @@ object Main {
     def readLine(): Unit = {
       val userInput = terminal.readLine(completer)
       if (userInput.startsWith("//> using")) {
-        // add versionsort to classPath
         // TODO allow to add any maven dependency and/or jar
         compiler = new Compiler(
           compiler.dynamicClassPath,
