@@ -152,8 +152,9 @@ class OperatorTests extends PhpCode2CpgFixture {
 
       def normalizeLogicalOps(input: String): String = {
         input
-          .replaceAll(raw"\|\|", "or")
-          .replace(raw"&&", "and")
+          .replaceAll(" or ", " || ")
+          .replaceAll(" and ", " && ")
+          .replaceAll(" <> ", " != ")
       }
 
       testData.foreach { case (testCode, expectedType) =>
@@ -221,7 +222,8 @@ class OperatorTests extends PhpCode2CpgFixture {
       call.lineNumber shouldBe Some(2)
 
       inside(call.argument.l) { case List(arg: Identifier) =>
-        arg.name shouldBe "$a"
+        arg.name shouldBe "a"
+        arg.code shouldBe "$a"
         arg.argumentIndex shouldBe 1
       }
     }

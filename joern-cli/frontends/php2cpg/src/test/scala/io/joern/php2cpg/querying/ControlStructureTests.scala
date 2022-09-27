@@ -86,7 +86,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
                       |""".stripMargin)
 
       inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.SWITCH).l) { case List(switchStmt) =>
-        switchStmt.code shouldBe "$cond"
+        switchStmt.code shouldBe "switch ($cond)"
         switchStmt.lineNumber shouldBe Some(2)
 
         inside(switchStmt.condition.l) { case List(cond: Identifier) =>
@@ -466,7 +466,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         case List(whileAst) if whileAst.controlStructureType == ControlStructureTypes.WHILE => whileAst
       }
 
-      whileAst.code shouldBe "while($a)"
+      whileAst.code shouldBe "while ($a)"
 
       inside(whileAst.condition.l) { case List(aIdent: Identifier) =>
         aIdent.name shouldBe "a"
