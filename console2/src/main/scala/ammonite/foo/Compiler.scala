@@ -441,10 +441,7 @@ object Compiler {
       (x.path.stripPrefix("(memory)/"), x.toByteArray)
     }
 
-  private def writeDeep(
-                         d: AbstractFile,
-                         path: List[String]
-                       ): OutputStream = path match {
+  private def writeDeep(d: AbstractFile, path: List[String]): OutputStream = path match {
     case head :: Nil => d.fileNamed(path.head).output
     case head :: rest =>
       writeDeep(
@@ -456,7 +453,7 @@ object Compiler {
     case Nil => ???
   }
 
-  def addToClasspath(classFiles: Traversable[(String, Array[Byte])],
+  def addToClasspath(classFiles: Iterable[(String, Array[Byte])],
                      dynamicClasspath: AbstractFile): Unit = {
     for ((name, bytes) <- classFiles) {
 //      println(s"XX1 adding to classpath: $name") // XX1 adding to classpath: ammonite/$sess/cmd1.class ...

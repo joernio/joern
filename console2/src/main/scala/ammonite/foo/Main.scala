@@ -15,6 +15,7 @@ import java.io.PrintStream
 import org.jline.reader.*
 
 import java.net.URL
+import java.nio.charset.StandardCharsets
 import javax.naming.InitialContext
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -57,6 +58,7 @@ object Main {
       val line = terminal.readLine(completer)
       if (line.startsWith("//> using")) {
         // add versionsort to classPath
+        // TODO allow to add any maven dependency and/or jar
         compiler = new Compiler(
           compiler.dynamicClassPath,
           compiler.initialClassPath,
@@ -64,7 +66,7 @@ object Main {
           compiler.whiteList)
       } else {
         val compileResult = compiler.compile(
-          src = line.getBytes("UTF-8"),
+          src = line.getBytes(StandardCharsets.UTF_8),
           printer,
           importsLen = 0,
           userCodeNestingLevel = 0,
