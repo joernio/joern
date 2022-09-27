@@ -109,7 +109,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       case block: Block =>
         // Only include block nodes that do not describe the entire
         // method body or the bodies of control structures
-        if (block.astParent.isMethod || block.astParent.isControlStructure) {
+        if (block._astIn.hasNext && (block.astParent.isMethod || block.astParent.isControlStructure)) {
           cfgForChildren(block)
         } else {
           cfgForChildren(node) ++ cfgForSingleNode(node.asInstanceOf[CfgNode])
