@@ -50,7 +50,7 @@ class InferenceJarTests extends AnyFreeSpec with Matchers {
       val call = cpg.method.name("test1").call.name("foo").head
       call.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.foo:${Defines.UnresolvedSignature}(0)"
       call.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
-      call.typeFullName shouldBe "<empty>"
+      call.typeFullName shouldBe "ANY"
     }
   }
 }

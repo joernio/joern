@@ -2122,7 +2122,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val typeName = typeFullName
         .map(TypeNodePass.fullToShortName)
         .getOrElse(s"${Defines.UnresolvedNamespace}.${variable.getTypeAsString}")
-      typeInfoCalc.registerType(typeName)
       val code = s"$typeName $name = ${rootCode(initializerAsts)}"
 
       val callNode = operatorCallNode(Operators.assignment, code, typeFullName, lineNumber, columnNumber)
@@ -3111,7 +3110,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         objectNode.map(Ast(_)).toList
     }
 
-    val receiverType = receiverTypeOption.orElse(scopeAsts.headOption.flatMap(rootType))
+    val receiverType = receiverTypeOption.orElse(scopeAsts.headOption.flatMap(rootType).filter(_ != TypeConstants.Any))
 
     val argumentsCode = getArgumentCodeString(call.getArguments)
     val codePrefix    = codePrefixForMethodCall(call)
