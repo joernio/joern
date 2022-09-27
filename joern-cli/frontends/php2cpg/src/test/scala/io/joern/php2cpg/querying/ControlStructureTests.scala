@@ -28,6 +28,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 			 |""".stripMargin)
 
       inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.SWITCH).l) { case List(switchStmt) =>
+        switchStmt.code shouldBe "switch ($cond)"
         switchStmt.lineNumber shouldBe Some(2)
 
         inside(switchStmt.condition.l) { case List(cond: Identifier) =>
@@ -85,6 +86,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
                       |""".stripMargin)
 
       inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.SWITCH).l) { case List(switchStmt) =>
+        switchStmt.code shouldBe "$cond"
         switchStmt.lineNumber shouldBe Some(2)
 
         inside(switchStmt.condition.l) { case List(cond: Identifier) =>
@@ -119,6 +121,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             defaultCase.lineNumber shouldBe Some(6)
 
             cIdent.name shouldBe "c"
+            cIdent.code shouldBe "$c"
             cIdent.lineNumber shouldBe Some(7)
         }
       }
@@ -134,12 +137,18 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         ast
       }
 
+      ifAst.code shouldBe "if ($a)"
+      ifAst.lineNumber shouldBe Some(2)
+
       inside(ifAst.condition.l) { case List(aIdent: Identifier) =>
         aIdent.name shouldBe "a"
+        aIdent.code shouldBe "$a"
+        aIdent.lineNumber shouldBe Some(2)
       }
 
       inside(ifAst.astChildren.l) { case List(_, thenBlock: Block) =>
         thenBlock.astChildren.size shouldBe 0
+        thenBlock.lineNumber shouldBe Some(2)
       }
     }
 
@@ -151,13 +160,22 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         ast
       }
 
+      ifAst.code shouldBe "if ($a)"
+      ifAst.lineNumber shouldBe Some(2)
+
       inside(ifAst.condition.l) { case List(aIdent: Identifier) =>
         aIdent.name shouldBe "a"
+        aIdent.code shouldBe "$a"
+        aIdent.lineNumber shouldBe Some(2)
       }
 
       inside(ifAst.astChildren.l) { case List(_, thenBlock: Block) =>
+        thenBlock.lineNumber shouldBe Some(2)
+
         inside(thenBlock.astChildren.l) { case List(bIdentifier: Identifier) =>
           bIdentifier.name shouldBe "b"
+          bIdentifier.code shouldBe "$b"
+          bIdentifier.lineNumber shouldBe Some(2)
         }
       }
     }
@@ -170,17 +188,29 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         ast
       }
 
+      ifAst.code shouldBe "if ($a)"
+      ifAst.lineNumber shouldBe Some(2)
+
       inside(ifAst.condition.l) { case List(aIdent: Identifier) =>
         aIdent.name shouldBe "a"
+        aIdent.code shouldBe "$a"
+        aIdent.lineNumber shouldBe Some(2)
       }
 
       inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        thenBlock.lineNumber shouldBe Some(2)
+        elseBlock.lineNumber shouldBe Some(2)
+
         inside(thenBlock.astChildren.l) { case List(bIdentifier: Identifier) =>
           bIdentifier.name shouldBe "b"
+          bIdentifier.code shouldBe "$b"
+          bIdentifier.lineNumber shouldBe Some(2)
         }
 
         inside(elseBlock.astChildren.l) { case List(cIdentifier: Identifier) =>
           cIdentifier.name shouldBe "c"
+          cIdentifier.code shouldBe "$c"
+          cIdentifier.lineNumber shouldBe Some(2)
         }
       }
     }
@@ -202,11 +232,15 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
       inside(ifAst.condition.l) { case List(condition1: Identifier) =>
         condition1.name shouldBe "cond1"
+        condition1.code shouldBe "$cond1"
+        condition1.lineNumber shouldBe Some(2)
       }
 
       val elseif1 = inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
         inside(thenBlock.astChildren.l) { case List(body1: Identifier) =>
           body1.name shouldBe "body1"
+          body1.code shouldBe "$body1"
+          body1.lineNumber shouldBe Some(3)
         }
 
         inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
@@ -214,13 +248,19 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         }
       }
 
+      elseif1.lineNumber shouldBe Some(4)
+
       inside(elseif1.condition.l) { case List(condition2: Identifier) =>
         condition2.name shouldBe "cond2"
+        condition2.code shouldBe "$cond2"
+        condition2.lineNumber shouldBe Some(4)
       }
 
       val elseif2 = inside(elseif1.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
         inside(thenBlock.astChildren.l) { case List(body2: Identifier) =>
           body2.name shouldBe "body2"
+          body2.code shouldBe "$body2"
+          body2.lineNumber shouldBe Some(5)
         }
 
         inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
@@ -228,17 +268,28 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         }
       }
 
+      elseif2.lineNumber shouldBe Some(6)
+
       inside(elseif2.condition.l) { case List(condition3: Identifier) =>
         condition3.name shouldBe "cond3"
+        condition3.code shouldBe "$cond3"
+        condition3.lineNumber shouldBe Some(6)
       }
 
       inside(elseif2.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+        thenBlock.lineNumber shouldBe Some(6)
+        elseBlock.lineNumber shouldBe Some(8)
+
         inside(thenBlock.astChildren.l) { case List(body3: Identifier) =>
           body3.name shouldBe "body3"
+          body3.code shouldBe "$body3"
+          body3.lineNumber shouldBe Some(7)
         }
 
         inside(elseBlock.astChildren.l) { case List(body4: Identifier) =>
           body4.name shouldBe "body4"
+          body4.code shouldBe "$body4"
+          body4.lineNumber shouldBe Some(9)
         }
       }
     }
@@ -363,29 +414,23 @@ class ControlStructureTests extends PhpCode2CpgFixture {
   "break statements" should {
     "support the default depth 1 break" in {
       val cpg = code("<?php\nbreak;")
-      cpg.controlStructure.l match {
-        case List(breakStmt) =>
-          breakStmt.controlStructureType shouldBe ControlStructureTypes.BREAK
-          breakStmt.astChildren.isEmpty shouldBe true
 
-        case result => fail(s"Expected break but found $result")
+      inside(cpg.controlStructure.l) { case List(breakStmt) =>
+        breakStmt.controlStructureType shouldBe ControlStructureTypes.BREAK
+        breakStmt.astChildren.isEmpty shouldBe true
       }
     }
 
     "support arbitrary depth breaks" in {
       val cpg = code("<?php\nbreak(5);")
-      cpg.controlStructure.l match {
-        case List(breakStmt) =>
-          breakStmt.controlStructureType shouldBe ControlStructureTypes.BREAK
-          breakStmt.astChildren.l match {
-            case List(num: Literal) =>
-              num.code shouldBe "5"
-              num.typeFullName shouldBe TypeConstants.Int
 
-            case result => fail(s"Expected depth argument but found $result")
-          }
+      inside(cpg.controlStructure.l) { case List(breakStmt) =>
+        breakStmt.controlStructureType shouldBe ControlStructureTypes.BREAK
 
-        case result => fail(s"Expected break but found $result")
+        inside(breakStmt.astChildren.l) { case List(num: Literal) =>
+          num.code shouldBe "5"
+          num.typeFullName shouldBe TypeConstants.Int
+        }
       }
     }
   }
@@ -393,29 +438,23 @@ class ControlStructureTests extends PhpCode2CpgFixture {
   "continue statements" should {
     "support the default depth 1 continue" in {
       val cpg = code("<?php\ncontinue;")
-      cpg.controlStructure.l match {
-        case List(breakStmt) =>
-          breakStmt.controlStructureType shouldBe ControlStructureTypes.CONTINUE
-          breakStmt.astChildren.isEmpty shouldBe true
-
-        case result => fail(s"Expected continue but found $result")
+      inside(cpg.controlStructure.l) { case List(continueStmt) =>
+        continueStmt.controlStructureType shouldBe ControlStructureTypes.CONTINUE
+        continueStmt.astChildren.isEmpty shouldBe true
+        continueStmt.lineNumber shouldBe Some(2)
       }
     }
 
     "support arbitrary depth continues" in {
       val cpg = code("<?php\ncontinue(5);")
-      cpg.controlStructure.l match {
-        case List(breakStmt) =>
-          breakStmt.controlStructureType shouldBe ControlStructureTypes.CONTINUE
-          breakStmt.astChildren.l match {
-            case List(num: Literal) =>
-              num.code shouldBe "5"
-              num.typeFullName shouldBe TypeConstants.Int
 
-            case result => fail(s"Expected depth argument but found $result")
-          }
+      inside(cpg.controlStructure.l) { case List(continueStmt) =>
+        continueStmt.controlStructureType shouldBe ControlStructureTypes.CONTINUE
 
-        case result => fail(s"Expected continue but found $result")
+        inside(continueStmt.astChildren.l) { case List(num: Literal) =>
+          num.code shouldBe "5"
+          num.typeFullName shouldBe TypeConstants.Int
+        }
       }
     }
   }
@@ -423,26 +462,20 @@ class ControlStructureTests extends PhpCode2CpgFixture {
   "while statements" should {
     "work with an empty body" in {
       val cpg = code("<?php\nwhile($a);")
-      val whileAst = cpg.controlStructure.l match {
+      val whileAst = inside(cpg.controlStructure.l) {
         case List(whileAst) if whileAst.controlStructureType == ControlStructureTypes.WHILE => whileAst
-        case result => fail(s"Expected while but found $result")
       }
 
       whileAst.code shouldBe "while($a)"
 
-      whileAst.condition.l match {
-        case List(aIdent: Identifier) =>
-          aIdent.name shouldBe "a"
-          aIdent.order shouldBe 1
-        case result => fail(s"Expected while condition but found $result")
+      inside(whileAst.condition.l) { case List(aIdent: Identifier) =>
+        aIdent.name shouldBe "a"
+        aIdent.order shouldBe 1
       }
 
-      whileAst.astChildren.collectAll[Block].l match {
-        case List(block) =>
-          block.order shouldBe 2
-          block.astChildren.size shouldBe 0
-
-        case result => fail(s"Expected while block but found $result")
+      inside(whileAst.astChildren.collectAll[Block].l) { case List(block) =>
+        block.order shouldBe 2
+        block.astChildren.size shouldBe 0
       }
     }
 
@@ -452,29 +485,32 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 				 |  $b;
 				 |  $c;
 				 |}""".stripMargin)
-      val whileAst = cpg.controlStructure.l match {
+
+      val whileAst = inside(cpg.controlStructure.l) {
         case List(whileAst) if whileAst.controlStructureType == ControlStructureTypes.WHILE => whileAst
-        case result => fail(s"Expected while but found $result")
       }
 
-      whileAst.code shouldBe "while($a)"
+      whileAst.code shouldBe "while ($a)"
+      whileAst.lineNumber shouldBe Some(2)
 
-      whileAst.condition.l match {
-        case List(aIdent: Identifier) =>
-          aIdent.name shouldBe "a"
-        case result => fail(s"Expected while condition but found $result")
+      inside(whileAst.condition.l) { case List(aIdent: Identifier) =>
+        aIdent.name shouldBe "a"
+        aIdent.code shouldBe "$a"
+        aIdent.lineNumber shouldBe Some(2)
       }
 
-      whileAst.astChildren.collectAll[Block].l match {
-        case List(block) =>
-          block.astChildren.l match {
-            case List(bIdent: Identifier, cIdent: Identifier) =>
-              bIdent.name shouldBe "b"
-              cIdent.name shouldBe "c"
-            case result => fail(s"Expected while body statements but got $result")
-          }
+      inside(whileAst.astChildren.collectAll[Block].l) { case List(block) =>
+        block.lineNumber shouldBe Some(2)
 
-        case result => fail(s"Expected while block but found $result")
+        inside(block.astChildren.l) { case List(bIdent: Identifier, cIdent: Identifier) =>
+          bIdent.name shouldBe "b"
+          bIdent.code shouldBe "$b"
+          bIdent.lineNumber shouldBe Some(3)
+
+          cIdent.name shouldBe "c"
+          cIdent.code shouldBe "$c"
+          cIdent.lineNumber shouldBe Some(4)
+        }
       }
     }
   }

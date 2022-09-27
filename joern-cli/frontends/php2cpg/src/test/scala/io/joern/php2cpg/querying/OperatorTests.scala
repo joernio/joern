@@ -18,21 +18,17 @@ class OperatorTests extends PhpCode2CpgFixture {
                       |$a = 2
                       |""".stripMargin)
 
-      val assignment = cpg.call.l match {
+      val assignment = inside(cpg.call.l) {
         case List(call) if call.name == Operators.assignment => call
-        case result                                          => fail(s"Expected assign call but found $result")
       }
 
-      assignment.argument.l match {
-        case List(target: Identifier, source: Literal) =>
-          target.name shouldBe "a"
-          target.code shouldBe "$a"
-          target.argumentIndex shouldBe 1
+      inside(assignment.argument.l) { case List(target: Identifier, source: Literal) =>
+        target.name shouldBe "a"
+        target.code shouldBe "$a"
+        target.argumentIndex shouldBe 1
 
-          source.code shouldBe "2"
-          source.argumentIndex shouldBe 2
-
-        case result => s"Found unexpected call args $result"
+        source.code shouldBe "2"
+        source.argumentIndex shouldBe 2
       }
     }
 
@@ -59,6 +55,7 @@ class OperatorTests extends PhpCode2CpgFixture {
         val cpg = code(s"<?php\n$testCode", fileName = s"Test${filenameKeyPool.next}.php")
         cpg.call.name.l shouldBe expectedType :: Nil
         cpg.call.methodFullName.l shouldBe expectedType :: Nil
+        cpg.call.code.l shouldBe testCode :: Nil
       }
     }
   }
@@ -69,18 +66,14 @@ class OperatorTests extends PhpCode2CpgFixture {
                       |+$a
                       |""".stripMargin)
 
-      val addition = cpg.call.l match {
+      val addition = inside(cpg.call.l) {
         case List(call) if call.name == Operators.plus => call
-        case result                                    => fail(s"Expected plus call but found $result")
       }
 
-      addition.argument.l match {
-        case List(expr: Identifier) =>
-          expr.name shouldBe "a"
-          expr.code shouldBe "$a"
-          expr.argumentIndex shouldBe 1
-
-        case result => s"Found unexpected call args $result"
+      inside(addition.argument.l) { case List(expr: Identifier) =>
+        expr.name shouldBe "a"
+        expr.code shouldBe "$a"
+        expr.argumentIndex shouldBe 1
       }
     }
 
@@ -100,6 +93,7 @@ class OperatorTests extends PhpCode2CpgFixture {
         val cpg = code(s"<?php\n$testCode", fileName = s"Test${filenameKeyPool.next}.php")
         cpg.call.name.l shouldBe expectedType :: Nil
         cpg.call.methodFullName.l shouldBe expectedType :: Nil
+        cpg.call.code.l shouldBe testCode :: Nil
       }
     }
   }
@@ -110,21 +104,17 @@ class OperatorTests extends PhpCode2CpgFixture {
                       |$a + 2
                       |""".stripMargin)
 
-      val addition = cpg.call.l match {
+      val addition = inside(cpg.call.l) {
         case List(call) if call.name == Operators.plus => call
-        case result                                    => fail(s"Expected plus call but found $result")
       }
 
-      addition.argument.l match {
-        case List(target: Identifier, source: Literal) =>
-          target.name shouldBe "a"
-          target.code shouldBe "$a"
-          target.argumentIndex shouldBe 1
+      inside(addition.argument.l) { case List(target: Identifier, source: Literal) =>
+        target.name shouldBe "a"
+        target.code shouldBe "$a"
+        target.argumentIndex shouldBe 1
 
-          source.code shouldBe "2"
-          source.argumentIndex shouldBe 2
-
-        case result => s"Found unexpected call args $result"
+        source.code shouldBe "2"
+        source.argumentIndex shouldBe 2
       }
     }
 
@@ -160,10 +150,17 @@ class OperatorTests extends PhpCode2CpgFixture {
         ("$a <=> $b", PhpBuiltins.spaceshipOp)
       )
 
+      def normalizeLogicalOps(input: String): String = {
+        input
+          .replaceAll(raw"\|\|", "or")
+          .replace(raw"&&", "and")
+      }
+
       testData.foreach { case (testCode, expectedType) =>
         val cpg = code(s"<?php\n$testCode", fileName = s"Test${filenameKeyPool.next}.php")
         cpg.call.name.l shouldBe expectedType :: Nil
         cpg.call.methodFullName.l shouldBe expectedType :: Nil
+        cpg.call.code.l shouldBe normalizeLogicalOps(testCode) :: Nil
       }
     }
   }
@@ -172,23 +169,20 @@ class OperatorTests extends PhpCode2CpgFixture {
     "have the correct arguments set" in {
       val cpg = code("<?php\n(int) $a")
 
-      val cast = cpg.call.nameExact(Operators.cast).l match {
-        case List(cast) => cast
-        case result     => fail(s"Expected cast call but got $result")
+      val cast = inside(cpg.call.nameExact(Operators.cast).l) { case List(cast) =>
+        cast
       }
 
       cast.typeFullName shouldBe "int"
       cast.code shouldBe "(int) $a"
       cast.lineNumber shouldBe Some(2)
-      cast.argument.l match {
-        case List(typeRef: TypeRef, expr: Identifier) =>
-          typeRef.typeFullName shouldBe "int"
-          typeRef.argumentIndex shouldBe 1
 
-          expr.name shouldBe "a"
-          expr.argumentIndex shouldBe 2
+      inside(cast.argument.l) { case List(typeRef: TypeRef, expr: Identifier) =>
+        typeRef.typeFullName shouldBe "int"
+        typeRef.argumentIndex shouldBe 1
 
-        case result => fail(s"Expected cast args but got $result")
+        expr.name shouldBe "a"
+        expr.argumentIndex shouldBe 2
       }
     }
 
@@ -205,12 +199,10 @@ class OperatorTests extends PhpCode2CpgFixture {
 
       testData.foreach { case (testCode, expectedType) =>
         val cpg = code(s"<?php\n$testCode", fileName = s"Test${filenameKeyPool.next}.php")
-        cpg.call.nameExact(Operators.cast).argument(1).l match {
-          case List(typeRef: TypeRef) =>
-            typeRef.typeFullName shouldBe expectedType
-            typeRef.code shouldBe expectedType
 
-          case result => fail(s"Expected typeRef arg for $testCode but found $result")
+        inside(cpg.call.nameExact(Operators.cast).argument(1).l) { case List(typeRef: TypeRef) =>
+          typeRef.typeFullName shouldBe expectedType
+          typeRef.code shouldBe expectedType
         }
       }
     }
@@ -220,30 +212,25 @@ class OperatorTests extends PhpCode2CpgFixture {
     "handle a single argument" in {
       val cpg = code("<?php\nisset($a)")
 
-      val call = cpg.call.nameExact(PhpBuiltins.issetFunc).l match {
-        case List(call) => call
-        case result     => fail(s"Expected isset call but found $result")
+      val call = inside(cpg.call.nameExact(PhpBuiltins.issetFunc).l) { case List(call) =>
+        call
       }
 
       call.methodFullName shouldBe PhpBuiltins.issetFunc
       call.typeFullName shouldBe TypeConstants.Bool
       call.lineNumber shouldBe Some(2)
 
-      call.argument.l match {
-        case List(arg: Identifier) =>
-          arg.name shouldBe "a"
-          arg.argumentIndex shouldBe 1
-
-        case result => fail(s"Expected isset argument but got $result")
+      inside(call.argument.l) { case List(arg: Identifier) =>
+        arg.name shouldBe "$a"
+        arg.argumentIndex shouldBe 1
       }
     }
 
     "handle multiple arguments" in {
       val cpg = code("<?php\nisset($a, $b, $c)")
 
-      val call = cpg.call.nameExact(PhpBuiltins.issetFunc).l match {
-        case List(call) => call
-        case result     => fail(s"Expected isset call but found $result")
+      val call = inside(cpg.call.nameExact(PhpBuiltins.issetFunc).l) { case List(call) =>
+        call
       }
 
       call.methodFullName shouldBe PhpBuiltins.issetFunc
@@ -251,18 +238,18 @@ class OperatorTests extends PhpCode2CpgFixture {
       call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       call.lineNumber shouldBe Some(2)
 
-      call.argument.l match {
-        case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
-          aArg.name shouldBe "a"
-          aArg.argumentIndex shouldBe 1
+      inside(call.argument.l) { case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.argumentIndex shouldBe 1
 
-          bArg.name shouldBe "b"
-          bArg.argumentIndex shouldBe 2
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.argumentIndex shouldBe 2
 
-          cArg.name shouldBe "c"
-          cArg.argumentIndex shouldBe 3
-
-        case result => fail(s"Expected isset arguments but got $result")
+        cArg.name shouldBe "c"
+        cArg.code shouldBe "$c"
+        cArg.argumentIndex shouldBe 3
       }
     }
   }
@@ -270,67 +257,63 @@ class OperatorTests extends PhpCode2CpgFixture {
   "print calls should be created correctly" in {
     val cpg = code("<?php\nprint(\"Hello, world\");")
 
-    cpg.call.nameExact(PhpBuiltins.printFunc).l match {
-      case List(printCall) =>
-        printCall.methodFullName shouldBe "print"
-        printCall.typeFullName shouldBe TypeConstants.Int
-        printCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        printCall.lineNumber shouldBe Some(2)
+    inside(cpg.call.nameExact(PhpBuiltins.printFunc).l) { case List(printCall) =>
+      printCall.methodFullName shouldBe "print"
+      printCall.typeFullName shouldBe TypeConstants.Int
+      printCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      printCall.lineNumber shouldBe Some(2)
 
-        printCall.argument.l match {
-          case List(arg: Literal) => arg.code shouldBe "\"Hello, world\""
-          case result             => fail(s"Expected string argument but found $result")
-        }
-
-      case result => fail(s"Expected print call but found $result")
+      inside(printCall.argument.l) { case List(arg: Literal) =>
+        arg.code shouldBe "\"Hello, world\""
+      }
     }
   }
 
   "ternary operators" should {
     "be created correctly for general cond ? then : else style operators" in {
       val cpg = code("<?php\n$a ? $b : $c")
-      val call = cpg.call.nameExact(Operators.conditional).l match {
-        case List(conditionalOp) => conditionalOp
-        case result              => fail(s"Expected conditional operator but found $result")
+
+      val call = inside(cpg.call.nameExact(Operators.conditional).l) { case List(conditionalOp) =>
+        conditionalOp
       }
 
       call.methodFullName shouldBe Operators.conditional
+      call.code shouldBe "$a ? $b : $c"
       call.lineNumber shouldBe Some(2)
 
-      call.argument.l match {
-        case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
-          aArg.name shouldBe "a"
-          aArg.argumentIndex shouldBe 1
+      inside(call.argument.l) { case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.argumentIndex shouldBe 1
 
-          bArg.name shouldBe "b"
-          bArg.argumentIndex shouldBe 2
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.argumentIndex shouldBe 2
 
-          cArg.name shouldBe "c"
-          cArg.argumentIndex shouldBe 3
-
-        case result => fail(s"Expected 3 conditional args but found $result")
+        cArg.name shouldBe "c"
+        cArg.code shouldBe "$c"
+        cArg.argumentIndex shouldBe 3
       }
     }
 
     "be created correctly for the shorthand elvis operator" in {
       val cpg = code("<?php\n$a ?: $b")
-      val call = cpg.call.nameExact(PhpBuiltins.elvisOp).l match {
-        case List(elvisOp) => elvisOp
-        case result        => fail(s"Expected elvis operator but found $result")
+      val call = inside(cpg.call.nameExact(PhpBuiltins.elvisOp).l) { case List(elvisOp) =>
+        elvisOp
       }
 
       call.methodFullName shouldBe PhpBuiltins.elvisOp
+      call.code shouldBe "$a ?: $b"
       call.lineNumber shouldBe Some(2)
 
-      call.argument.l match {
-        case List(aArg: Identifier, bArg: Identifier) =>
-          aArg.name shouldBe "a"
-          aArg.argumentIndex shouldBe 1
+      inside(call.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.argumentIndex shouldBe 1
 
-          bArg.name shouldBe "b"
-          bArg.argumentIndex shouldBe 2
-
-        case result => fail(s"Expected 2 elvis operator args but found $result")
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.argumentIndex shouldBe 2
       }
     }
   }
