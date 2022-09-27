@@ -51,8 +51,7 @@ class Compiler(
 
             override def classPath(using Context) =
               if (classPath0 == null) {
-//                println(s"XXX1 new classpath0: self.classPath=${self.classPath}\n initialClassPath=${initialClassPath}\n dynamnicClassPath=$dynamicClassPath")
-                println(s"XXX1 classpath0.contains(versionsort)=${self.classPath.find(_.getPath.contains("versionsort")).isDefined}")
+//                println(s"XXX1 classpath0.contains(versionsort)=${self.classPath.find(_.getPath.contains("versionsort")).isDefined}")
                 classPath0 = classpath.AggregateClassPath(Seq(
                   asDottyClassPath(initialClassPath, whiteListed = true),
                   asDottyClassPath(self.classPath),
@@ -102,20 +101,10 @@ class Compiler(
     if (whiteListed) new dotty.ammonite.foo.WhiteListClasspath(dirsCp ++ jarsCp, whiteList)
     else classpath.AggregateClassPath(dirsCp ++ jarsCp)
 
-  // Originally adapted from
-  // https://github.com/lampepfl/dotty/blob/3.0.0-M3/
-  //   compiler/src/dotty/tools/repl/ReplDriver.scala/#L67-L73
   /** Create a fresh and initialized context with IDE mode enabled */
   lazy val initialCtx =
     val rootCtx = initCtx.fresh.addMode(Mode.ReadPositions | Mode.Interactive)
     rootCtx.setSetting(rootCtx.settings.YcookComments, true)
-    // FIXME Disabled for the tests to pass
-    rootCtx.setSetting(rootCtx.settings.color, "never")
-    // FIXME We lose possible custom openStream implementations on the URLs of initialClassPath and
-    // classPath
-    val initialClassPath0 = initialClassPath
-      // .filter(!_.toURI.toASCIIString.contains("fansi_2.13"))
-      // .filter(!_.toURI.toASCIIString.contains("pprint_2.13"))
     rootCtx.setSetting(rootCtx.settings.outputDir, outputDir)
 
     val (_, ictx) = setup(settings.toArray, rootCtx)
@@ -127,7 +116,7 @@ class Compiler(
   // Originally adapted from
   // https://github.com/lampepfl/dotty/blob/3.0.0-M3/
   //   compiler/src/dotty/tools/repl/ReplCompiler.scala/#L34-L39
-  val compiler = new DottyCompiler:
+  val compiler = new DottyCompiler {
     override protected def frontendPhases: List[List[Phase]] =
       CompilerHelper.frontEndPhases ++
         List(
@@ -135,6 +124,7 @@ class Compiler(
           List(new AmmonitePhase(userCodeNestingLevel, userCodeNestingLevel == 2)),
           List(new PostTyper)
         )
+  }
 
   // Originally adapted from
   // https://github.com/lampepfl/dotty/blob/3.0.0-M3/
@@ -469,7 +459,7 @@ object Compiler {
   def addToClasspath(classFiles: Traversable[(String, Array[Byte])],
                      dynamicClasspath: AbstractFile): Unit = {
     for ((name, bytes) <- classFiles) {
-      //      println(s"XX1 adding to classpath: $name") // XX1 adding to classpath: ammonite/$sess/cmd1.class ...
+//      println(s"XX1 adding to classpath: $name") // XX1 adding to classpath: ammonite/$sess/cmd1.class ...
       val output = writeDeep(dynamicClasspath, name.split('/').toList)
       output.write(bytes)
       output.close()
