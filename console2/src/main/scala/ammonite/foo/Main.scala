@@ -22,26 +22,26 @@ import scala.jdk.CollectionConverters.*
 
 object Main {
   def main(args: Array[String]): Unit = {
-  //   val printer = Printer(
-  //     outStream = System.out,
-  //     errStream = System.err,
-  //     resultStream = System.out,
-  //     warning = msg => println(s"Xwarn: $msg"),
-  //     error = msg => println(s"Xerror: $msg"),
-  //     info = msg => println(s"Xinfo: $msg")
-  //   )
-  //   val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
-  //   val versionSortJarUrl = new URL(s"file:$versionSortJar")
+     val printer = Printer(
+       outStream = System.out,
+       errStream = System.err,
+       resultStream = System.out,
+       warning = msg => println(s"Xwarn: $msg"),
+       error = msg => println(s"Xerror: $msg"),
+       info = msg => println(s"Xinfo: $msg")
+     )
+     val versionSortJar = "/home/mp/.cache/coursier/v1/https/repo1.maven.org/maven2/com/michaelpollmeier/versionsort/1.0.7/versionsort-1.0.7.jar"
+     val versionSortJarUrl = new URL(s"file:$versionSortJar")
 
-  //   val initialClassLoader = getClass.getClassLoader
-  //   val initialClassPath = Classpath.classpath(initialClassLoader, None)
+     val initialClassLoader = getClass.getClassLoader
+     val initialClassPath = Classpath.classpath(initialClassLoader, None)
 
-  //   val compiler0 = new Compiler(
-  //     dynamicClassPath = dotty.tools.io.AbstractFile.getDirectory("."),
-  //     initialClassPath = initialClassPath,
-  //     classPath = initialClassPath,
-  //     whiteList = Set.empty
-  //   )
+     val compiler0 = new Compiler(
+       dynamicClassPath = dotty.tools.io.AbstractFile.getDirectory("."),
+       initialClassPath = initialClassPath,
+       classPath = initialClassPath,
+       whiteList = Set.empty
+     )
   //   val compiler1 = new Compiler(
   //     compiler0.dynamicClassPath,
   //     compiler0.initialClassPath,

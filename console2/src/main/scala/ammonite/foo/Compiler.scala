@@ -5,18 +5,17 @@ import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import java.io.{ByteArrayInputStream, OutputStream}
-
 import dotty.tools.dotc
-import dotc.{CompilationUnit, Compiler => DottyCompiler, Run, ScalacCommand}
+import dotc.{CompilationUnit, Run, ScalacCommand, Compiler as DottyCompiler}
 import dotc.ast.{tpd, untpd}
 import dotc.ast.Positioned
 import dotc.classpath
 import dotc.config.{CompilerCommand, JavaPlatform}
-import dotc.core.Contexts._
+import dotc.core.Contexts.*
 import dotc.core.{Flags, MacroClassLoader, Mode}
 import dotc.core.Comments.{ContextDoc, ContextDocstrings}
 import dotc.core.Phases.{Phase, unfusedPhases}
-import dotc.core.Symbols.{defn, Symbol}
+import dotc.core.Symbols.{Symbol, defn}
 import dotc.fromtasty.TastyFileUtil
 import dotc.interactive.Completion
 import dotc.report
@@ -25,16 +24,8 @@ import dotc.semanticdb
 import dotc.transform.{PostTyper, Staging}
 import dotc.util.{Property, SourceFile, SourcePosition}
 import dotc.util.Spans.Span
-import dotty.tools.io.{
-  AbstractFile,
-  ClassPath,
-  ClassRepresentation,
-  File,
-  VirtualDirectory,
-  VirtualFile,
-  PlainFile,
-  Path
-}
+import dotty.tools.dotc.ast.tpd.Tree
+import dotty.tools.io.{AbstractFile, ClassPath, ClassRepresentation, File, Path, PlainFile, VirtualDirectory, VirtualFile}
 import dotty.tools.repl.CollectTopLevelImports
 
 class Compiler(
@@ -136,8 +127,7 @@ class Compiler(
   // Originally adapted from
   // https://github.com/lampepfl/dotty/blob/3.0.0-M3/
   //   compiler/src/dotty/tools/repl/ReplCompiler.scala/#L34-L39
-  val compiler =
-  new DottyCompiler :
+  val compiler = new DottyCompiler:
     override protected def frontendPhases: List[List[Phase]] =
       CompilerHelper.frontEndPhases ++
         List(
@@ -293,15 +283,10 @@ class Compiler(
         Some(output)
     }
 
-  def objCompiler = compiler
-
   // Originally adapted from
   // https://github.com/lampepfl/dotty/blob/3.0.0-M3/
   //   compiler/src/dotty/tools/repl/ReplCompiler.scala/#L224-L286
-  def tryTypeCheck(
-                    src: Array[Byte],
-                    fileName: String
-                  ) =
+  def tryTypeCheck(src: Array[Byte], fileName: String): (Tree, Context) =
     val sourceFile = SourceFile.virtual(fileName, new String(src, StandardCharsets.UTF_8))
 
     val reporter0 = Compiler.newStoreReporter()
