@@ -185,16 +185,13 @@ class Compiler(
       }
 
     implicit val ctx: Context = run.runContext.withSource(sourceFile)
-
-    val unit =
-      new CompilationUnit(ctx.source) :
-        // as done in
-        // https://github.com/lampepfl/dotty/blob/3.0.0-M3/
-        //   compiler/src/dotty/tools/repl/ReplCompillationUnit.scala/#L8
-        override def isSuspendable: Boolean = false
-    ctx
-      .run
-      .compileUnits(unit :: Nil)
+    val unit = new CompilationUnit(ctx.source) {
+      // as done in
+      // https://github.com/lampepfl/dotty/blob/3.0.0-M3/
+      //   compiler/src/dotty/tools/repl/ReplCompillationUnit.scala/#L8
+      override def isSuspendable: Boolean = false
+    }
+    ctx.run.compileUnits(unit :: Nil)
 
     val result =
       if (ctx.reporter.hasErrors) Left(reporter.fold(ctx.reporter.removeBufferedMessages)(_ => Nil))
