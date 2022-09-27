@@ -36,12 +36,26 @@ object Main {
      val initialClassLoader = getClass.getClassLoader
      val initialClassPath = Classpath.classpath(initialClassLoader, None)
 
-     val compiler0 = new Compiler(
-       dynamicClassPath = dotty.tools.io.AbstractFile.getDirectory("."),
-       initialClassPath = initialClassPath,
-       classPath = initialClassPath,
-       whiteList = Set.empty
-     )
+      // TODO implement completer
+      val completer: Completer = { (_, line, candidates) =>
+        //      val comps = completions(line.cursor, line.line, state)
+        //      candidates.addAll(comps.asJava)
+      }
+
+      val compiler0 = new Compiler(
+        dynamicClassPath = dotty.tools.io.AbstractFile.getDirectory("."),
+        initialClassPath = initialClassPath,
+        classPath = initialClassPath,
+        whiteList = Set.empty
+      )
+      given Context = compiler0.initialCtx // TODO always get latest context for completions...
+
+      val prompt = "joern2> "
+      val terminal = new JLineTerminal(prompt)
+
+      val line = terminal.readLine(completer)
+      println(s"read: $line")
+
   //   val compiler1 = new Compiler(
   //     compiler0.dynamicClassPath,
   //     compiler0.initialClassPath,
@@ -69,27 +83,6 @@ object Main {
   //     fileName = "cmd1.sc"
   //   )
   //   println(compileResult1.get) // bar|baz defined successfully :)
-
-    val prompt = "joern2> "
-    val terminal = new JLineTerminal(prompt)
-
-    val completer: Completer = { (_, line, candidates) =>
-      // TODO
-      //      val comps = completions(line.cursor, line.line, state)
-      //      candidates.addAll(comps.asJava)
-    }
-    given Context = NoContext
-    val line = terminal.readLine(completer)
-    println(s"read: $line")
-
-    // @tailrec def loop(state: State): State = {
-    //   val res = readLine(state)
-    //   if (res == Quit) state
-    //   else loop(interpret(res)(state))
-    // }
-
-    // try loop(initialState)
-    // finally terminal.close()
 
   }
 
