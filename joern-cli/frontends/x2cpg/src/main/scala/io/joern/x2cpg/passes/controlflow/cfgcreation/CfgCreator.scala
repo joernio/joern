@@ -106,7 +106,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForConditionalExpression(call)
       case call: Call if call.dispatchType == DispatchTypes.INLINED =>
         cfgForInlinedCall(call)
-      case _: Call | _: FieldIdentifier | _: Identifier | _: Literal | _: Unknown =>
+      case _: Call | _: FieldIdentifier | _: Identifier | _: Literal | _: Block | _: Unknown =>
         cfgForChildren(node) ++ cfgForSingleNode(node.asInstanceOf[CfgNode])
       case _ =>
         cfgForChildren(node)

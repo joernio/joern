@@ -554,4 +554,14 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     sink.reachableBy(src).size shouldBe 1
   }
 
+  "Flow through object given via object notation" in {
+    val cpg: Cpg = code("""
+        |const x = new Foo(y);
+        |""".stripMargin)
+
+    val sink = cpg.call.l
+    val src  = cpg.identifier("y").l
+    println(sink.reachableByFlows(src).p)
+  }
+
 }
