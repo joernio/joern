@@ -8,15 +8,13 @@ class DependencyCfgCreationPassTest extends AbstractCfgPassTest {
     "be correct for JSON.parse" in CfgFixture("""JSON.parse("foo");""") { implicit cpg =>
       succOf(":program") shouldBe expected((""""foo"""", AlwaysEdge))
       succOf(""""foo"""") shouldBe expected(("""JSON.parse("foo")""", AlwaysEdge))
-      succOf("""JSON.parse("foo")""") shouldBe expected(("<empty>", AlwaysEdge))
-      succOf("""<empty>""") shouldBe expected(("RET", AlwaysEdge))
+      succOf("""JSON.parse("foo")""") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "have correct structure for JSON.stringify" in CfgFixture("""JSON.stringify(foo);""") { implicit cpg =>
       succOf(":program") shouldBe expected(("foo", AlwaysEdge))
       succOf("foo") shouldBe expected(("JSON.stringify(foo)", AlwaysEdge))
-      succOf("JSON.stringify(foo)") shouldBe expected(("<empty>", AlwaysEdge))
-      succOf("<empty>") shouldBe expected(("RET", AlwaysEdge))
+      succOf("JSON.stringify(foo)") shouldBe expected(("RET", AlwaysEdge))
     }
   }
 
