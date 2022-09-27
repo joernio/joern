@@ -559,9 +559,9 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
         |const x = new Foo(y);
         |""".stripMargin)
 
-    val sink = cpg.call.l
+    val sink = cpg.identifier("x").l
     val src  = cpg.identifier("y").l
-    println(sink.reachableByFlows(src).p)
+    sink.reachableBy(src).size shouldBe 1
   }
 
 }

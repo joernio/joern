@@ -209,7 +209,6 @@ class DdgGenerator {
       case _: FieldIdentifier  => false
       case _: JumpTarget       => false
       case _: MethodReturn     => false
-      case _: Block            => false
       case _                   => true
     }
   }
