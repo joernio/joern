@@ -102,7 +102,10 @@ class DdgGenerator {
             val edgesToAdd = in(node).toList.flatMap { inDef =>
               numberToNode.get(inDef) match {
                 case Some(identifier: Identifier) => Some(identifier)
-                case _                            => None
+                case Some(call: Call) if call.name != Operators.fieldAccess =>
+                  Some(call)
+                case _ =>
+                  None
               }
             }
             edgesToAdd.foreach { inNode =>
@@ -209,7 +212,6 @@ class DdgGenerator {
       case _: FieldIdentifier  => false
       case _: JumpTarget       => false
       case _: MethodReturn     => false
-      case _: Block            => false
       case _                   => true
     }
   }

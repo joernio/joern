@@ -59,8 +59,7 @@ class DdgGenerator {
   }
 
   private def shouldBeDisplayed(v: Node): Boolean = !(
-    v.isInstanceOf[Block] ||
-      v.isInstanceOf[ControlStructure] ||
+    v.isInstanceOf[ControlStructure] ||
       v.isInstanceOf[JumpTarget]
   )
 

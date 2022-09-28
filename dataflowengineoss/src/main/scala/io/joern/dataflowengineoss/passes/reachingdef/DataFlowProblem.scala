@@ -1,7 +1,5 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
-import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
-
 /** A general data flow problem, formulated as in the Dragon Book, Second Edition on page 626, with mild modifications.
   * In particular, instead of allowing only for the specification of a boundary, we allow initialization of IN and OUT.
   */

@@ -89,7 +89,7 @@ package object testing {
       fileName: String = ""
     ): MockCpg =
       withCustom { (graph, _) =>
-        val retParam  = NewMethodReturn().typeFullName("int")
+        val retParam  = NewMethodReturn().typeFullName("int").order(10)
         val param     = NewMethodParameterIn().order(1).index(1).name("param1")
         val paramType = NewType().name("paramtype")
         val paramOut  = NewMethodParameterOut().name("param1").order(1)
