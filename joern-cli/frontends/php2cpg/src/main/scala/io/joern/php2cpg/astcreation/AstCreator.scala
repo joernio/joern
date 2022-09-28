@@ -1,6 +1,6 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.astcreation.AstCreator.{TypeConstants, operatorSymbols}
 import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
@@ -159,7 +159,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val whileNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.WHILE)
-      .code(s"while(${rootCode(condition)})")
+      .code(s"while (${rootCode(condition)})")
       .lineNumber(line(whileStmt))
 
     val body = stmtBlockAst(whileStmt.stmts, line(whileStmt))
@@ -272,11 +272,16 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForAssignment(assignment: PhpAssignment): Ast = {
     val operatorName = assignment.assignOp
-    val callNode     = operatorCallNode(operatorName, operatorName, line = line(assignment))
 
     val targetAst = astForExpr(assignment.target)
     val sourceAst = astForExpr(assignment.source)
 
+    // TODO Handle ref assigns properly (if needed).
+    val refSymbol = if (assignment.isRefAssign) "&" else ""
+    val symbol    = operatorSymbols.getOrElse(assignment.assignOp, assignment.assignOp)
+    val code      = s"${rootCode(targetAst)} $symbol $refSymbol${rootCode(sourceAst)}"
+
+    val callNode = operatorCallNode(operatorName, code, line = line(assignment))
     callAst(callNode, List(targetAst, sourceAst))
   }
 
@@ -306,23 +311,29 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val leftAst  = astForExpr(binOp.left)
     val rightAst = astForExpr(binOp.right)
 
-    val callNode = operatorCallNode(
-      binOp.operator,
-      /* TODO CODE */ binOp.operator,
-      line = line(binOp)
-    )
+    val symbol = operatorSymbols.getOrElse(binOp.operator, binOp.operator)
+    val code   = s"${rootCode(leftAst)} ${symbol} ${rootCode(rightAst)}"
+
+    val callNode = operatorCallNode(binOp.operator, code, line = line(binOp))
 
     callAst(callNode, List(leftAst, rightAst))
+  }
+
+  private def isPostfixOperator(operator: String): Boolean = {
+    Set(Operators.postDecrement, Operators.postIncrement).contains(operator)
   }
 
   private def astForUnaryOp(unaryOp: PhpUnaryOp): Ast = {
     val exprAst = astForExpr(unaryOp.expr)
 
-    val callNode = operatorCallNode(
-      unaryOp.operator,
-      /* TODO CODE */ unaryOp.operator,
-      line = line(unaryOp)
-    )
+    val symbol = operatorSymbols.getOrElse(unaryOp.operator, unaryOp.operator)
+    val code =
+      if (isPostfixOperator(unaryOp.operator))
+        s"${rootCode(exprAst)}$symbol"
+      else
+        s"$symbol${rootCode(exprAst)}"
+
+    val callNode = operatorCallNode(unaryOp.operator, code, line = line(unaryOp))
 
     callAst(callNode, exprAst :: Nil)
   }
@@ -370,12 +381,12 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val elseAst      = astForExpr(ternaryOp.elseExpr)
 
     val operatorName = if (maybeThenAst.isDefined) Operators.conditional else PhpBuiltins.elvisOp
+    val code = maybeThenAst match {
+      case Some(thenAst) => s"${rootCode(conditionAst)} ? ${rootCode(thenAst)} : ${rootCode(elseAst)}"
+      case None          => s"${rootCode(conditionAst)} ?: ${rootCode(elseAst)}"
+    }
 
-    val callNode = operatorCallNode(
-      operatorName,
-      /* TODO */ PropertyDefaults.Code,
-      line = line(ternaryOp)
-    )
+    val callNode = operatorCallNode(operatorName, code, line = line(ternaryOp))
 
     val args = List(Some(conditionAst), maybeThenAst, Some(elseAst)).flatten
     callAst(callNode, args)
@@ -392,5 +403,55 @@ object AstCreator {
     val Bool: String       = "bool"
     val Unresolved: String = "codepropertygraph.Unresolved"
   }
+
+  val operatorSymbols: Map[String, String] = Map(
+    Operators.and                            -> "&",
+    Operators.or                             -> "|",
+    Operators.xor                            -> "^",
+    Operators.logicalAnd                     -> "&&",
+    Operators.logicalOr                      -> "||",
+    PhpBuiltins.coalesceOp                   -> "??",
+    PhpBuiltins.concatOp                     -> ".",
+    Operators.division                       -> "/",
+    Operators.equals                         -> "==",
+    Operators.greaterEqualsThan              -> ">=",
+    Operators.greaterThan                    -> ">",
+    PhpBuiltins.identicalOp                  -> "===",
+    PhpBuiltins.logicalXorOp                 -> "xor",
+    Operators.minus                          -> "-",
+    Operators.modulo                         -> "%",
+    Operators.multiplication                 -> "*",
+    Operators.notEquals                      -> "!=",
+    PhpBuiltins.notIdenticalOp               -> "!==",
+    Operators.plus                           -> "+",
+    Operators.exponentiation                 -> "**",
+    Operators.shiftLeft                      -> "<<",
+    Operators.arithmeticShiftRight           -> ">>",
+    Operators.lessEqualsThan                 -> "<=",
+    Operators.lessThan                       -> "<",
+    PhpBuiltins.spaceshipOp                  -> "<=>",
+    Operators.not                            -> "~",
+    Operators.logicalNot                     -> "!",
+    Operators.postDecrement                  -> "--",
+    Operators.postIncrement                  -> "++",
+    Operators.preDecrement                   -> "--",
+    Operators.preIncrement                   -> "++",
+    Operators.minus                          -> "-",
+    Operators.plus                           -> "+",
+    Operators.assignment                     -> "=",
+    Operators.assignmentAnd                  -> "&=",
+    Operators.assignmentOr                   -> "|=",
+    Operators.assignmentXor                  -> "^=",
+    PhpBuiltins.assignmentCoalesceOp         -> "??=",
+    PhpBuiltins.assignmentConcatOp           -> ".=",
+    Operators.assignmentDivision             -> "/=",
+    Operators.assignmentMinus                -> "-=",
+    Operators.assignmentModulo               -> "%=",
+    Operators.assignmentMultiplication       -> "*=",
+    Operators.assignmentPlus                 -> "+=",
+    Operators.assignmentExponentiation       -> "**=",
+    Operators.assignmentShiftLeft            -> "<<=",
+    Operators.assignmentArithmeticShiftRight -> ">>="
+  )
 
 }

@@ -214,8 +214,13 @@ object Domain {
       AssignTypeMap.contains(typeName)
     }
   }
-  final case class PhpAssignment(assignOp: String, target: PhpExpr, source: PhpExpr, attributes: PhpAttributes)
-      extends PhpExpr
+  final case class PhpAssignment(
+    assignOp: String,
+    target: PhpExpr,
+    source: PhpExpr,
+    isRefAssign: Boolean,
+    attributes: PhpAttributes
+  ) extends PhpExpr
 
   final case class PhpCast(typ: String, expr: PhpExpr, attributes: PhpAttributes) extends PhpExpr
   object PhpCast {
@@ -468,12 +473,15 @@ object Domain {
   }
 
   private def readAssign(json: Value): PhpAssignment = {
-    val opType = AssignTypeMap(json("nodeType").str)
+    val nodeType = json("nodeType").str
+    val opType   = AssignTypeMap(nodeType)
 
     val target = readExpr(json("var"))
     val source = readExpr(json("expr"))
 
-    PhpAssignment(opType, target, source, PhpAttributes(json))
+    val isRefAssign = nodeType == "Expr_AssignRef"
+
+    PhpAssignment(opType, target, source, isRefAssign, PhpAttributes(json))
   }
 
   private def readCast(json: Value): PhpCast = {
