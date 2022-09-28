@@ -58,9 +58,17 @@ object Main {
 
     val imports = new StringBuffer
 
+    def preprocess(code: String): String = {
+      val codeWithPrefixedImports =
+        s"""$imports
+           |$code
+           |""".stripMargin
+      codeWithPrefixedImports
+    }
+
     def readLine(): Unit = {
-      val userInput = terminal.readLine(completer)
-      if (userInput.startsWith("//> using")) {
+      val code = terminal.readLine(completer)
+      if (code.startsWith("//> using")) {
         // TODO allow to add any maven dependency and/or jar
         compiler = new Compiler(
           compiler.dynamicClassPath,
@@ -68,12 +76,8 @@ object Main {
           compiler.classPath :+ versionSortJarUrl,
           compiler.whiteList)
       } else {
-        val codeWithPrefixedImports =
-          s"""$imports
-             |$userInput
-             |""".stripMargin
         val compileResult = compiler.compile(
-          src = codeWithPrefixedImports.getBytes(StandardCharsets.UTF_8),
+          src = preprocess(code).getBytes(StandardCharsets.UTF_8),
           printer,
           importsLen = 0,
           userCodeNestingLevel = 0,
