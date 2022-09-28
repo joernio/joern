@@ -6,20 +6,8 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.utils.NodeBuilders.operatorCallNode
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EvaluationStrategies, Operators, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  ExpressionNew,
-  NewBlock,
-  NewCall,
-  NewControlStructure,
-  NewIdentifier,
-  NewJumpTarget,
-  NewLiteral,
-  NewMethod,
-  NewMethodParameterIn,
-  NewTypeRef
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewCall, NewControlStructure, NewIdentifier, NewJumpTarget, NewLiteral, NewMethod, NewMethodParameterIn, NewTypeRef}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
@@ -217,17 +205,26 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForFunctionCall(call: PhpFuncCall): Ast = {
-    val name = call.name match {
-      case PhpNameExpr(name, _) => name
-      case complexExpr          =>
-        // TODO Handle this properly
-        complexExpr.toString
-    }
+
+    // TODO Static function calls?
+    val targetAst = astForExpr(call.target)
+    val arguments = call.args.map(astForCallArg)
+
+    val targetCode = rootCode(targetAst)
+    val argsCode = arguments.map(rootCode(_)).mkString(",")
+    val code = s"$targetCode($argsCode)"
+
+    // TODO Function name doesn't make sense in a lot of cases. Do we have some sort of
+    //  `apply` operator? Use targetCode for now for best current results.
+    val name = targetCode
+
     val callNode = NewCall()
       .name(name)
+      .code(code)
+      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH /* TODO STATIC DISPATCH for Name targets? */)
       .lineNumber(line(call))
-    val arguments = call.args.map(astForCallArg)
-    callAst(callNode, arguments)
+
+    callAst(callNode, arguments, receiver = Some(targetAst))
   }
 
   private def astForCallArg(arg: PhpArgument): Ast = {

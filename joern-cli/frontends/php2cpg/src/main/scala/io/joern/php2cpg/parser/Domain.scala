@@ -127,7 +127,7 @@ object Domain {
 
   sealed abstract class PhpExpr extends PhpStmt
 
-  final case class PhpFuncCall(name: PhpExpr, args: Seq[PhpArgument], attributes: PhpAttributes) extends PhpExpr
+  final case class PhpFuncCall(target: PhpExpr, args: Seq[PhpArgument], attributes: PhpAttributes) extends PhpExpr
   final case class PhpVariable(value: PhpExpr, attributes: PhpAttributes)                        extends PhpExpr
   final case class PhpNameExpr(name: String, attributes: PhpAttributes)                          extends PhpExpr
   final case class PhpBinaryOp(operator: String, left: PhpExpr, right: PhpExpr, attributes: PhpAttributes)
