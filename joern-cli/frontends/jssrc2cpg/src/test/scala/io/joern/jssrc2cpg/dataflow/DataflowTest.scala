@@ -554,7 +554,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     sink.reachableBy(src).size shouldBe 1
   }
 
-  "Flow through object given via object notation" in {
+  "Flow through constructor" in {
     val cpg: Cpg = code("""
         |const x = new Foo(y);
         |""".stripMargin)
@@ -562,6 +562,28 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     val sink = cpg.identifier("x").l
     val src  = cpg.identifier("y").l
     sink.reachableBy(src).size shouldBe 1
+  }
+
+  "Flow through constructor and object notation" in {
+    val cpg: Cpg = code("""
+                          |const x = new Foo({ z : y } );
+                          |""".stripMargin)
+
+    val sink = cpg.identifier("x").l
+    val src  = cpg.identifier("y").l
+    sink.reachableBy(src).size shouldBe 1
+  }
+
+  "Flow from field via object notation" in {
+    val cpg: Cpg = code("""
+                          |const x = { p : a.y } ;
+                          |""".stripMargin)
+
+    val sink = cpg.identifier("x").l
+    val src  = cpg.fieldAccess.where(_.fieldIdentifier.canonicalName("y")).l
+    src.size shouldBe 1
+    sink.size shouldBe 1
+    println(sink.reachableBy(src).l)
   }
 
 }

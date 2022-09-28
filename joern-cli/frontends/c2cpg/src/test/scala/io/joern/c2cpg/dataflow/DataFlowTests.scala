@@ -57,7 +57,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "find flows from identifiers to return values of `flow`" in {
       val source = cpg.identifier
       val sink   = cpg.method.name("flow").methodReturn
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 9
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 8
     }
 
     "find flows from z to method returns of flow" in {
@@ -1524,7 +1524,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "find flows from identifiers to return values of `flow`" in {
       val source = cpg.identifier
       val sink   = cpg.method.name("flow").methodReturn
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 9
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 8
     }
 
     "find flows from z to method returns of flow" in {

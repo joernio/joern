@@ -107,9 +107,8 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
 
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing
-      case x if sources.contains(x.asInstanceOf[NodeType]) => {
+      case x if sources.contains(x.asInstanceOf[NodeType]) =>
         Vector(ReachableByResult(path, table, callSiteStack)) ++ deduplicate(computeResultsForParents())
-      }
       // Case 1.5: the second node on the path is a METHOD_RETURN and its a source. This clumsy check is necessary because
       // for method returns, the derived tasks we create in TaskCreator jump immediately to the RETURN statements in
       // order to only pick up values that actually propagate via a RETURN and don't just flow to METHOD_RETURN because
@@ -118,6 +117,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
           if path.size > 1 && path(1).node
             .isInstanceOf[MethodReturn] && sources.contains(path(1).node.asInstanceOf[NodeType]) =>
         Vector(ReachableByResult(path.drop(1), table, callSiteStack)) ++ deduplicate(computeResultsForParents())
+
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
         Vector(ReachableByResult(path, table, callSiteStack, partial = true))
@@ -129,6 +129,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
             path
           ) =>
         createPartialResultForOutputArgOrRet()
+
       // Case 4: we have reached an argument to an internal method without semantic (output argument) and
       // this isn't the start node nor is it the argument for the parameter we just expanded => return partial result and stop traversing
       case arg: Expression
@@ -136,11 +137,11 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
             isCallToInternalMethodWithoutSemantic(c)
           ) && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
         createPartialResultForOutputArgOrRet()
+
       // All other cases: expand into parents
       case _ =>
         deduplicate(computeResultsForParents())
     }
-
     table.add(curNode, res)
     res
   }

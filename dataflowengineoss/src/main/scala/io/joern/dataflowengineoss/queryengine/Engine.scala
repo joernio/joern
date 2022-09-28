@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, Properties}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
@@ -175,10 +175,14 @@ object Engine {
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
       .filter { e =>
-        e.outNode() match {
-          case srcNode: CfgNode =>
-            !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode) && !isCallRetval(srcNode)
-          case _ => false
+        if (node.isInstanceOf[Block]) {
+          !e.outNode().isInstanceOf[Method]
+        } else {
+          e.outNode() match {
+            case srcNode: CfgNode =>
+              !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode) && !isCallRetval(srcNode)
+            case _ => false
+          }
         }
       }
       .toVector
@@ -272,7 +276,7 @@ object Engine {
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
     vec
       .groupBy { x =>
-        (x.path.headOption ++ x.path.lastOption, x.partial, x.callDepth)
+        (x.path.headOption.map(_.node) ++ x.path.lastOption.map(_.node), x.partial, x.callDepth)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
