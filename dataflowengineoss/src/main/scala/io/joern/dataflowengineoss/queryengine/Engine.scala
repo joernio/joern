@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.passes.reachingdef.EdgeValidator
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, Properties}
@@ -123,8 +124,7 @@ object Engine {
     *   the path that has been expanded to reach the `curNode`
     */
   def expandIn(curNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[PathElement] = {
-    val edgesToParents = ddgInE(curNode, path)
-    edgesToParents.flatMap(elemForEdge)
+    ddgInE(curNode, path).flatMap(elemForEdge)
   }
 
   private def elemForEdge(e: Edge)(implicit semantics: Semantics): Option[PathElement] = {
@@ -132,21 +132,8 @@ object Engine {
     val parNode  = e.outNode().asInstanceOf[CfgNode]
     val outLabel = Some(e.property(Properties.VARIABLE)).getOrElse("")
 
-    curNode match {
-      case childNode: Expression =>
-        if (isCallRetval(parNode) || !isValidEdge(parNode, childNode)) {
-          return None
-        }
-        parNode match {
-          case _: Expression =>
-          case _ if !(childNode.isUsed) =>
-            return None
-          case _ =>
-        }
-      case _ =>
-        if (isCallRetval(parNode)) {
-          return None
-        }
+    if (!EdgeValidator.isValidEdge(curNode, parNode)) {
+      return None
     }
 
     curNode match {
@@ -174,7 +161,7 @@ object Engine {
     }
   }
 
-  private def isOutputArgOfInternalMethod(arg: Expression)(implicit semantics: Semantics): Boolean = {
+  def isOutputArgOfInternalMethod(arg: Expression)(implicit semantics: Semantics): Boolean = {
     arg.inCall.l match {
       case List(call) =>
         methodsForCall(call)
@@ -203,27 +190,6 @@ object Engine {
         }
       }
       .toVector
-  }
-
-  private def isCallRetval(parentNode: StoredNode)(implicit semantics: Semantics): Boolean = {
-    parentNode match {
-      case call: Call =>
-        val sem = semantics.forMethod(call.methodFullName)
-        sem.isDefined && !sem.get.mappings.map(_._2).contains(-1)
-      case _ =>
-        false
-    }
-  }
-
-  def isValidEdge(parNode: CfgNode, curNode: Expression)(implicit semantics: Semantics): Boolean = {
-    parNode match {
-      case parentNode: Expression =>
-        val sameCallSite = parentNode.inCall.l == curNode.start.inCall.l
-        !(sameCallSite && isOutputArgOfInternalMethod(parentNode)) &&
-        (sameCallSite && parentNode.isUsed && curNode.isDefined || !sameCallSite && curNode.isUsed)
-      case _ =>
-        curNode.isUsed
-    }
   }
 
   def argToOutputParams(arg: Expression): Traversal[MethodParameterOut] = {
