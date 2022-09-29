@@ -122,26 +122,17 @@ object Engine {
     * @param path
     *   the path that has been expanded to reach the `curNode`
     */
-  def expandIn(curNode: CfgNode, path: Vector[PathElement], edgeProvider: (CfgNode => Vector[Edge]) = null)(implicit
-    semantics: Semantics
-  ): Vector[PathElement] = {
-
-    val parentNodes = if (edgeProvider == null) {
-      ddgInE(curNode, path)
-    } else {
-      edgeProvider(curNode)
-    }
-
+  def expandIn(curNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[PathElement] = {
     curNode match {
       case argument: Expression =>
-        val (arguments, nonArguments) = parentNodes.partition(_.outNode().isInstanceOf[Expression])
+        val (arguments, nonArguments) = ddgInE(curNode, path).partition(_.outNode().isInstanceOf[Expression])
         val elemsForArguments = arguments.flatMap { e =>
           elemForArgument(e, argument)
         }
         val elems = elemsForArguments ++ nonArguments.flatMap(edgeToPathElement)
         elems
       case _ =>
-        parentNodes.flatMap(edgeToPathElement)
+        ddgInE(curNode, path).flatMap(edgeToPathElement)
     }
   }
 
