@@ -2,8 +2,10 @@ package io.joern.javasrc2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, writeCodeToFile}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.shiftleft.utils.ProjectRoot
 
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
@@ -23,8 +25,10 @@ class JavaSrc2CpgTestContext {
       val cpg = javaSrc2Cpg.createCpg(config)
       applyDefaultOverlays(cpg.get)
       if (runDataflow) {
-        val context = new LayerCreatorContext(cpg.get)
-        val options = new OssDataFlowOptions()
+        val context                       = new LayerCreatorContext(cpg.get)
+        val options                       = new OssDataFlowOptions()
+        val semanticsFilename             = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
+        implicit val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
         new OssDataFlow(options).run(context)
       }
       buildResult = Some(cpg.get)

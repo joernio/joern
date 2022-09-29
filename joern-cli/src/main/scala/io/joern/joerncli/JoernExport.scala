@@ -5,7 +5,9 @@ import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.joerncli.CpgBasedTool.{exitIfInvalid, exitWithError}
+import io.joern.joerncli.console.Joern.semantics
 import io.joern.joerncli.console.JoernWorkspaceLoader
+import io.joern.joerncli.console.JoernWorkspaceLoader.defaultSemantics
 import io.joern.x2cpg.layers._
 import io.shiftleft.semanticcpg.layers._
 import overflowdb.Graph
@@ -59,15 +61,15 @@ object JoernExport extends App {
     exitIfInvalid(config.outDir, config.cpgFileName)
 
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
-      CpgBasedTool.addDataFlowOverlayIfNonExistent(cpg)
-      val context = new LayerCreatorContext(cpg)
-
-      mkdir(File(config.outDir))
       implicit val semantics: Semantics = JoernWorkspaceLoader.defaultSemantics
       if (semantics.elements.isEmpty) {
         System.err.println("Warning: semantics are empty.")
       }
 
+      CpgBasedTool.addDataFlowOverlayIfNonExistent(cpg)
+      val context = new LayerCreatorContext(cpg)
+
+      mkdir(File(config.outDir))
       (config.repr, config.format) match {
         case (Representation.ast, Format.dot) =>
           new DumpAst(AstDumpOptions(config.outDir)).create(context)

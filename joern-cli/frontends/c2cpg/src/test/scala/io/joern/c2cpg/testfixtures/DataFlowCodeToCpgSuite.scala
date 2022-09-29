@@ -12,7 +12,7 @@ class DataFlowCodeToCpgSuite extends CCodeToCpgSuite {
 
   private val semanticsFilename: String = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
 
-  protected val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
+  implicit protected val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
 
   protected implicit val context: EngineContext = EngineContext(semantics)
 

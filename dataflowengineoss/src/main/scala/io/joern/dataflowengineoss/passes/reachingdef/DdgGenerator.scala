@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Block,
@@ -27,7 +28,9 @@ import scala.collection.{Set, mutable}
 
 /** Creation of data dependence edges based on solution of the ReachingDefProblem.
   */
-class DdgGenerator {
+class DdgGenerator(semantics: Semantics) {
+
+  implicit val s: Semantics = semantics
 
   /** Once reaching definitions have been computed, we create a data dependence graph by checking which reaching
     * definitions are relevant, meaning that a symbol is propagated that is used by the target node.
@@ -198,7 +201,15 @@ class DdgGenerator {
         .isInstanceOf[Unknown]
     )
       return
-    dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
+
+    (fromNode, toNode) match {
+      case (parentNode: CfgNode, childNode: CfgNode) =>
+        if (EdgeValidator.isValidEdge(childNode, parentNode)) {
+          dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
+        }
+      case _ =>
+
+    }
   }
 
   /** There are a few node types that (a) are not to be considered in the DDG, or (b) are not standalone DDG nodes, or

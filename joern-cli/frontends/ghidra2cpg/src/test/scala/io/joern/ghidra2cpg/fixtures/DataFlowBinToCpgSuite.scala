@@ -21,7 +21,7 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
 
   var semanticsFilename =
     ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-  var semantics: Semantics            = _
+  implicit var semantics: Semantics            = _
   implicit var context: EngineContext = _
 
   override def beforeAll(): Unit = {
