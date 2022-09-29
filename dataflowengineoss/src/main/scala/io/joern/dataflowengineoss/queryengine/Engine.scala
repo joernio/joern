@@ -124,22 +124,10 @@ object Engine {
     */
   def expandIn(curNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[PathElement] = {
     curNode match {
-      case argument: Expression =>
-        val (arguments, nonArguments) = ddgInE(curNode, path).partition(_.outNode().isInstanceOf[Expression])
-        val elemsForArguments = arguments.flatMap { e =>
-          elemForArgument(e, argument)
-        }
-
-        // !parentNode.isInstanceOf[Expression] && childNode.isUsed
-
-        val elemsForNonArguments = if (argument.isUsed) {
-          nonArguments.map(edgeToPathElement)
-        } else {
-          Vector()
-        }
-        elemsForArguments ++ elemsForNonArguments
+      case _: Expression =>
+        ddgInE(curNode, path).flatMap(elemForEdgeToArgument)
       case _ =>
-        ddgInE(curNode, path).map(edgeToPathElement)
+        ddgInE(curNode, path).map(elemForEdgeToNonArgument)
     }
   }
 
@@ -156,9 +144,7 @@ object Engine {
     }
   }
 
-  /** Convert an edge to a path element.
-    */
-  private def edgeToPathElement(e: Edge): PathElement = {
+  private def elemForEdgeToNonArgument(e: Edge): PathElement = {
     val parentNode = e.outNode().asInstanceOf[CfgNode]
     val outLabel   = Some(e.property(Properties.VARIABLE)).getOrElse("")
     PathElement(parentNode, outEdgeLabel = outLabel)
@@ -192,10 +178,11 @@ object Engine {
     }
   }
 
-  private def elemForArgument(e: Edge, curNode: Expression)(implicit semantics: Semantics): Option[PathElement] = {
-    val parentNode = e.outNode().asInstanceOf[Expression]
+  private def elemForEdgeToArgument(e: Edge)(implicit semantics: Semantics): Option[PathElement] = {
+    val childNode  = e.inNode().asInstanceOf[Expression]
+    val parentNode = e.outNode().asInstanceOf[CfgNode]
     val outLabel   = Some(e.property(Properties.VARIABLE)).getOrElse("")
-    elemForArgument(parentNode, curNode, outLabel)
+    elemForArgument(parentNode, childNode, outLabel)
   }
 
   /** For a given `(parentNode, curNode)` pair, determine whether to expand into `parentNode`. If so, return a
@@ -203,23 +190,30 @@ object Engine {
     * field to specify whether it should be visible in the flow or not, a decision that can also only be made by looking
     * at both the parent and the child.
     */
-  private def elemForArgument(parentNode: Expression, curNode: Expression, outLabel: String)(implicit
+  private def elemForArgument(parNode: CfgNode, curNode: Expression, outLabel: String)(implicit
     semantics: Semantics
   ): Option[PathElement] = {
-    val parentNodeCall = parentNode.inCall.l
-    if (isValidEdge(parentNode, curNode)) {
-      val sameCallSite = parentNode.inCall.l == curNode.start.inCall.l
-      val visible = if (sameCallSite) {
-        val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
-        val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
-        (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
-      } else {
-        parentNode.isDefined
-      }
-      val isOutputArg = isOutputArgOfInternalMethod(parentNode)
-      Some(PathElement(parentNode, visible, isOutputArg, outEdgeLabel = outLabel))
-    } else {
-      None
+    parNode match {
+      case parentNode: Expression =>
+        val parentNodeCall = parentNode.inCall.l
+        if (isValidEdge(parentNode, curNode)) {
+          val sameCallSite = parentNode.inCall.l == curNode.start.inCall.l
+          val visible = if (sameCallSite) {
+            val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
+            val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
+            (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
+          } else {
+            parentNode.isDefined
+          }
+          val isOutputArg = isOutputArgOfInternalMethod(parentNode)
+          Some(PathElement(parentNode, visible, isOutputArg, outEdgeLabel = outLabel))
+        } else {
+          None
+        }
+      case parentNode if curNode.isUsed =>
+        Some(PathElement(parentNode, outEdgeLabel = outLabel))
+      case _ =>
+        None
     }
   }
 
