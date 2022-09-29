@@ -13,6 +13,11 @@ import io.shiftleft.utils.ProjectRoot
 
 class DataFlowTests extends GhidraBinToCpgSuite {
 
+  implicit val resolver: ICallResolver = NoResolve
+  val semanticsFilename                = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
+  implicit val semantics: Semantics             = Semantics.fromList(new Parser().parseFile(semanticsFilename))
+  implicit var context: EngineContext  = EngineContext(semantics)
+
   override def passes(cpg: Cpg): Unit = {
     val context = new LayerCreatorContext(cpg)
     new Base().run(context)
@@ -30,11 +35,6 @@ class DataFlowTests extends GhidraBinToCpgSuite {
   }
 
   "The data flow should contain " in {
-    implicit val resolver: ICallResolver = NoResolve
-    val semanticsFilename                = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-    val semantics: Semantics             = Semantics.fromList(new Parser().parseFile(semanticsFilename))
-    implicit var context: EngineContext  = EngineContext(semantics)
-
     def source = cpg.method.name("dataflow").call.argument.code("1")
     def sink =
       cpg.method

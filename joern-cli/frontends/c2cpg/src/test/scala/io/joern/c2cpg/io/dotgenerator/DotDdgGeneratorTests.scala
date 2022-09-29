@@ -23,7 +23,7 @@ class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
       inside(cpg.method.name("foo").dotDdg(semantics).l) { case List(elem) =>
         val lines = elem.split("\n")
         lines.head should startWith("digraph \"foo\"")
-        lines.count(x => x.contains("->")) shouldBe 32
+        lines.count(x => x.contains("->")) shouldBe 31
         lines.last should startWith("}")
       }
     }

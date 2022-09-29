@@ -152,7 +152,9 @@ class BenchmarkCpgContext {
     applyDefaultOverlays(cpg.get)
     val context = new LayerCreatorContext(cpg.get)
     val options = new OssDataFlowOptions()
-    new OssDataFlow(options).run(context)
+    val semanticsFile: String            = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
+    lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))
+    new OssDataFlow(options)(defaultSemantics).run(context)
     cpg.get
   }
 

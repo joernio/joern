@@ -2,6 +2,7 @@ package io.joern.joerncli
 
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -22,7 +23,7 @@ object CpgBasedTool {
 
   /** Add the data flow layer to the CPG if it does not exist yet.
     */
-  def addDataFlowOverlayIfNonExistent(cpg: Cpg): Unit = {
+  def addDataFlowOverlayIfNonExistent(cpg: Cpg)(implicit s: Semantics): Unit = {
     if (!cpg.metaData.overlays.exists(_ == OssDataFlow.overlayName)) {
       System.err.println("CPG does not have dataflow overlay. Calculating.")
       val opts    = new OssDataFlowOptions()

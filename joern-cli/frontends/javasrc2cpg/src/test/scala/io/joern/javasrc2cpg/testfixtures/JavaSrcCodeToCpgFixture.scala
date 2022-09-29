@@ -30,9 +30,9 @@ class JavaSrcCodeToCpgFixture extends CodeToCpgFixture(new JavaSrcFrontend(delom
 class JavaSrcCode2CpgFixture(withOssDataflow: Boolean = false, delombokMode: String = "default")
     extends Code2CpgFixture(new JavaSrcFrontend(delombokMode)) {
 
-  val semanticsFile: String            = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-  lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))
-  implicit val resolver: ICallResolver = NoResolve
+  val semanticsFile: String = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
+  implicit lazy val defaultSemantics: Semantics  = Semantics.fromList(new Parser().parseFile(semanticsFile))
+  implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics, EngineConfig(maxCallDepth = 4))
 
   override def applyPasses(cpg: Cpg): Unit = {

@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.passes.reachingdef.EdgeValidator
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, Properties}
@@ -123,20 +124,44 @@ object Engine {
     *   the path that has been expanded to reach the `curNode`
     */
   def expandIn(curNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[PathElement] = {
+    ddgInE(curNode, path).flatMap(elemForEdge)
+  }
+
+  private def elemForEdge(e: Edge)(implicit semantics: Semantics): Option[PathElement] = {
+    val curNode  = e.inNode().asInstanceOf[CfgNode]
+    val parNode  = e.outNode().asInstanceOf[CfgNode]
+    val outLabel = Some(e.property(Properties.VARIABLE)).getOrElse("")
+
+    if (!EdgeValidator.isValidEdge(curNode, parNode)) {
+      return None
+    }
+
     curNode match {
-      case argument: Expression =>
-        val (arguments, nonArguments) = ddgInE(curNode, path).partition(_.outNode().isInstanceOf[Expression])
-        val elemsForArguments = arguments.flatMap { e =>
-          elemForArgument(e, argument)
+      case childNode: Expression =>
+        parNode match {
+          case parentNode: Expression =>
+            val parentNodeCall = parentNode.inCall.l
+            val sameCallSite   = parentNode.inCall.l == childNode.start.inCall.l
+            val visible = if (sameCallSite) {
+              val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
+              val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
+              (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
+            } else {
+              parentNode.isDefined
+            }
+            val isOutputArg = isOutputArgOfInternalMethod(parentNode)
+            Some(PathElement(parentNode, visible, isOutputArg, outEdgeLabel = outLabel))
+          case parentNode =>
+            Some(PathElement(parentNode, outEdgeLabel = outLabel))
+          case _ =>
+            None
         }
-        val elems = elemsForArguments ++ nonArguments.flatMap(edgeToPathElement)
-        elems
       case _ =>
-        ddgInE(curNode, path).flatMap(edgeToPathElement)
+        Some(PathElement(parNode, outEdgeLabel = outLabel))
     }
   }
 
-  private def isOutputArgOfInternalMethod(arg: Expression)(implicit semantics: Semantics): Boolean = {
+  def isOutputArgOfInternalMethod(arg: Expression)(implicit semantics: Semantics): Boolean = {
     arg.inCall.l match {
       case List(call) =>
         methodsForCall(call)
@@ -149,94 +174,22 @@ object Engine {
     }
   }
 
-  /** Convert an edge to a path element. This function may return `None` if the edge is found to lead to an argument
-    * that isn't used, according to semantics. It may also return `None` if the child node is an output argument of an
-    * internal function.
-    */
-  private def edgeToPathElement(e: Edge)(implicit semantics: Semantics): Option[PathElement] = {
-    val parentNode = e.outNode().asInstanceOf[CfgNode]
-    val childNode  = e.inNode().asInstanceOf[CfgNode]
-    val outLabel   = Some(e.property(Properties.VARIABLE)).getOrElse("")
-
-    childNode match {
-      case exp: Expression if !exp.isUsed =>
-        None
-      case _ =>
-        Some(PathElement(parentNode, outEdgeLabel = outLabel))
-    }
-  }
-
   /** For a given node `node`, return all incoming reaching definition edges, unless the source node is (a) a METHOD
     * node, (b) already present on `path`, or (c) a CALL node to a method where the semantic indicates that taint is
     * propagated to it.
     */
-  private def ddgInE(node: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[Edge] = {
+  private def ddgInE(node: CfgNode, path: Vector[PathElement]): Vector[Edge] = {
     node
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
       .filter { e =>
-        if (node.isInstanceOf[Block]) {
-          !e.outNode().isInstanceOf[Method]
-        } else {
-          e.outNode() match {
-            case srcNode: CfgNode =>
-              !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode) && !isCallRetval(srcNode)
-            case _ => false
-          }
+        e.outNode() match {
+          case srcNode: CfgNode =>
+            !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode)
+          case _ => false
         }
       }
       .toVector
-  }
-
-  private def isCallRetval(node: StoredNode)(implicit semantics: Semantics): Boolean = {
-    node match {
-      case call: Call =>
-        val sem = semantics.forMethod(call.methodFullName)
-        sem.isDefined && !sem.get.mappings.map(_._2).contains(-1)
-      case _ =>
-        false
-    }
-  }
-
-  /** For a given `(parentNode, curNode)` pair, determine whether to expand into `parentNode`. If so, return a
-    * corresponding path element or None if `parentNode` should not be followed. The Path element contains a Boolean
-    * field to specify whether it should be visible in the flow or not, a decision that can also only be made by looking
-    * at both the parent and the child.
-    */
-  private def elemForArgument(e: Edge, curNode: Expression)(implicit semantics: Semantics): Option[PathElement] = {
-
-    val parentNode     = e.outNode().asInstanceOf[Expression]
-    val parentNodeCall = parentNode.inCall.l
-    val sameCallSite   = parentNode.inCall.l == curNode.start.inCall.l
-
-    if (sameCallSite && isOutputArgOfInternalMethod(parentNode)) {
-      return None
-    }
-
-    if (
-      sameCallSite && parentNode.isUsed && curNode.isDefined ||
-      !sameCallSite && curNode.isUsed
-    ) {
-
-      val visible = if (sameCallSite) {
-        val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
-        val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
-        (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
-      } else {
-        parentNode.isDefined
-      }
-      val isOutputArg = isOutputArgOfInternalMethod(parentNode)
-      Some(
-        PathElement(
-          parentNode,
-          visible,
-          isOutputArg,
-          outEdgeLabel = Some(e.property(Properties.VARIABLE)).getOrElse("")
-        )
-      )
-    } else {
-      None
-    }
   }
 
   def argToOutputParams(arg: Expression): Traversal[MethodParameterOut] = {

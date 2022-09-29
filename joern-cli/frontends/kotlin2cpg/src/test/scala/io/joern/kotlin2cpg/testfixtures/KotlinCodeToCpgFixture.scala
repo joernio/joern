@@ -30,7 +30,7 @@ class KotlinFrontend(withTestResourcePaths: Boolean = false) extends LanguageFro
 class KotlinCode2CpgFixture(withOssDataflow: Boolean = false, withDefaultJars: Boolean = false)
     extends Code2CpgFixture(new KotlinFrontend(withTestResourcePaths = withDefaultJars)) {
 
-  val defaultSemantics = {
+  implicit val defaultSemantics = {
     val semanticsFilename: String = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
     Semantics.fromList(new Parser().parseFile(semanticsFilename))
   }

@@ -10,9 +10,8 @@ import io.shiftleft.utils.ProjectRoot
 
 class DataFlowCodeToCpgSuite extends JsSrc2CpgSuite {
 
-  val semanticsFilename: String = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-
-  var semantics: Semantics = _
+  val semanticsFilename: String     = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
+  implicit var semantics: Semantics = _
 
   implicit var context: EngineContext = _
 

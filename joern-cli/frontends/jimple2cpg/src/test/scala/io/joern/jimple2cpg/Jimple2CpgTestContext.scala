@@ -1,10 +1,14 @@
 package io.joern.jimple2cpg
 
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.layers._
+import io.shiftleft.utils.ProjectRoot
 
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
@@ -24,6 +28,9 @@ class Jimple2CpgTestContext {
       if (runDataflow) {
         val context = new LayerCreatorContext(cpg)
         val options = new OssDataFlowOptions()
+
+        val semanticsFilename             = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
+        implicit val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
         new OssDataFlow(options).run(context)
       }
       buildResult = Some(cpg)
