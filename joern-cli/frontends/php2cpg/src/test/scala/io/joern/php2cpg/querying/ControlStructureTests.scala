@@ -37,9 +37,8 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           cond.lineNumber shouldBe Some(2)
         }
 
-        inside(switchStmt.astChildren.l) {
+        inside(switchStmt.whenTrue.astChildren.l) {
           case List(
-                _,
                 case0: JumpTarget,
                 bIdent: Identifier,
                 break1: ControlStructure,
@@ -95,9 +94,8 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           cond.lineNumber shouldBe Some(2)
         }
 
-        inside(switchStmt.astChildren.l) {
+        inside(switchStmt.whenTrue.astChildren.l) {
           case List(
-                _,
                 case0: JumpTarget,
                 bIdent: Identifier,
                 break1: ControlStructure,

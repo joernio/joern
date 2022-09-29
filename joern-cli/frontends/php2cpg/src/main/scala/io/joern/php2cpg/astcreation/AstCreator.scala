@@ -51,8 +51,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForEchoStmt(echoStmt: PhpEchoStmt): Ast = {
-    val callNode = operatorCallNode("<operator>.echo", code = "echo", line = line(echoStmt))
     val args     = echoStmt.exprs.map(astForExpr)
+    val code     = s"echo ${args.map(rootCode(_)).mkString(",")}"
+    val callNode = operatorCallNode("echo", code, line = line(echoStmt))
     callAst(callNode, args)
   }
 
@@ -186,9 +187,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .code(s"switch (${rootCode(conditionAst)})")
       .lineNumber(line(stmt))
 
-    val entryAsts = stmt.cases.flatMap(astsForSwitchCase)
+    val entryAsts  = stmt.cases.flatMap(astsForSwitchCase)
+    val switchBody = Ast(NewBlock().lineNumber(line(stmt))).withChildren(entryAsts)
 
-    controlStructureAst(switchNode, Some(conditionAst), entryAsts)
+    controlStructureAst(switchNode, Some(conditionAst), switchBody :: Nil)
   }
 
   private def astsForSwitchCase(caseStmt: PhpCaseStmt): List[Ast] = {
