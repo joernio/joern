@@ -193,23 +193,24 @@ object Engine {
   private def elemForArgument(parNode: CfgNode, curNode: Expression, outLabel: String)(implicit
     semantics: Semantics
   ): Option[PathElement] = {
+
+    if (!isValidEdge(parNode, curNode)) {
+      return None
+    }
+
     parNode match {
       case parentNode: Expression =>
         val parentNodeCall = parentNode.inCall.l
-        if (isValidEdge(parentNode, curNode)) {
-          val sameCallSite = parentNode.inCall.l == curNode.start.inCall.l
-          val visible = if (sameCallSite) {
-            val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
-            val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
-            (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
-          } else {
-            parentNode.isDefined
-          }
-          val isOutputArg = isOutputArgOfInternalMethod(parentNode)
-          Some(PathElement(parentNode, visible, isOutputArg, outEdgeLabel = outLabel))
+        val sameCallSite   = parentNode.inCall.l == curNode.start.inCall.l
+        val visible = if (sameCallSite) {
+          val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
+          val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
+          (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
         } else {
-          None
+          parentNode.isDefined
         }
+        val isOutputArg = isOutputArgOfInternalMethod(parentNode)
+        Some(PathElement(parentNode, visible, isOutputArg, outEdgeLabel = outLabel))
       case parentNode if curNode.isUsed =>
         Some(PathElement(parentNode, outEdgeLabel = outLabel))
       case _ =>
@@ -217,10 +218,15 @@ object Engine {
     }
   }
 
-  def isValidEdge(parentNode: Expression, curNode: Expression)(implicit semantics: Semantics): Boolean = {
-    val sameCallSite = parentNode.inCall.l == curNode.start.inCall.l
-    !(sameCallSite && isOutputArgOfInternalMethod(parentNode)) &&
-    (sameCallSite && parentNode.isUsed && curNode.isDefined || !sameCallSite && curNode.isUsed)
+  def isValidEdge(parNode: CfgNode, curNode: Expression)(implicit semantics: Semantics): Boolean = {
+    parNode match {
+      case parentNode: Expression =>
+        val sameCallSite = parentNode.inCall.l == curNode.start.inCall.l
+        !(sameCallSite && isOutputArgOfInternalMethod(parentNode)) &&
+        (sameCallSite && parentNode.isUsed && curNode.isDefined || !sameCallSite && curNode.isUsed)
+      case _ =>
+        curNode.isUsed
+    }
   }
 
   def argToOutputParams(arg: Expression): Traversal[MethodParameterOut] = {
