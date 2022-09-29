@@ -123,11 +123,12 @@ object Engine {
     *   the path that has been expanded to reach the `curNode`
     */
   def expandIn(curNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[PathElement] = {
+    val edgesToParents = ddgInE(curNode, path)
     curNode match {
       case _: Expression =>
-        ddgInE(curNode, path).flatMap(elemForEdgeToArgument)
+        edgesToParents.flatMap(elemForEdgeToArgument)
       case _ =>
-        ddgInE(curNode, path).map(elemForEdgeToNonArgument)
+        edgesToParents.flatMap(elemForEdgeToNonArgument)
     }
   }
 
@@ -144,32 +145,36 @@ object Engine {
     }
   }
 
-  private def elemForEdgeToNonArgument(e: Edge): PathElement = {
+  private def elemForEdgeToNonArgument(e: Edge)(implicit semantics: Semantics): Option[PathElement] = {
     val parentNode = e.outNode().asInstanceOf[CfgNode]
     val outLabel   = Some(e.property(Properties.VARIABLE)).getOrElse("")
-    PathElement(parentNode, outEdgeLabel = outLabel)
+    if (isCallRetval(parentNode)) {
+      None
+    } else {
+      Some(PathElement(parentNode, outEdgeLabel = outLabel))
+    }
   }
 
   /** For a given node `node`, return all incoming reaching definition edges, unless the source node is (a) a METHOD
     * node, (b) already present on `path`, or (c) a CALL node to a method where the semantic indicates that taint is
     * propagated to it.
     */
-  private def ddgInE(node: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[Edge] = {
+  private def ddgInE(node: CfgNode, path: Vector[PathElement]): Vector[Edge] = {
     node
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
       .filter { e =>
         e.outNode() match {
           case srcNode: CfgNode =>
-            !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode) && !isCallRetval(srcNode)
+            !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode)
           case _ => false
         }
       }
       .toVector
   }
 
-  private def isCallRetval(node: StoredNode)(implicit semantics: Semantics): Boolean = {
-    node match {
+  private def isCallRetval(parentNode: StoredNode)(implicit semantics: Semantics): Boolean = {
+    parentNode match {
       case call: Call =>
         val sem = semantics.forMethod(call.methodFullName)
         sem.isDefined && !sem.get.mappings.map(_._2).contains(-1)
@@ -193,8 +198,7 @@ object Engine {
   private def elemForArgument(parNode: CfgNode, curNode: Expression, outLabel: String)(implicit
     semantics: Semantics
   ): Option[PathElement] = {
-
-    if (!isValidEdge(parNode, curNode)) {
+    if (isCallRetval(parNode) || !isValidEdge(parNode, curNode)) {
       return None
     }
 
