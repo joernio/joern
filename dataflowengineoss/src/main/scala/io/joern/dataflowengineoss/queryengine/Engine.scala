@@ -175,14 +175,10 @@ object Engine {
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
       .filter { e =>
-        if (node.isInstanceOf[Block]) {
-          !e.outNode().isInstanceOf[Method]
-        } else {
-          e.outNode() match {
-            case srcNode: CfgNode =>
-              !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode) && !isCallRetval(srcNode)
-            case _ => false
-          }
+        e.outNode() match {
+          case srcNode: CfgNode =>
+            !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode) && !isCallRetval(srcNode)
+          case _ => false
         }
       }
       .toVector
