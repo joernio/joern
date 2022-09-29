@@ -6,8 +6,25 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.utils.NodeBuilders.operatorCallNode
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewCall, NewControlStructure, NewIdentifier, NewJumpTarget, NewLiteral, NewMethod, NewMethodParameterIn, NewTypeRef}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EvaluationStrategies,
+  Operators,
+  PropertyNames
+}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  ExpressionNew,
+  NewBlock,
+  NewCall,
+  NewControlStructure,
+  NewIdentifier,
+  NewJumpTarget,
+  NewLiteral,
+  NewMethod,
+  NewMethodParameterIn,
+  NewTypeRef
+}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
@@ -41,6 +58,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case breakStmt: PhpBreakStmt   => astForBreakStmt(breakStmt)
       case contStmt: PhpContinueStmt => astForContinueStmt(contStmt)
       case whileStmt: PhpWhileStmt   => astForWhileStmt(whileStmt)
+      case doStmt: PhpDoStmt         => astForDoStmt(doStmt)
       case ifStmt: PhpIfStmt         => astForIfStmt(ifStmt)
       case switchStmt: PhpSwitchStmt => astForSwitchStmt(switchStmt)
 
@@ -156,6 +174,19 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     controlStructureAst(whileNode, Some(condition), List(body))
   }
 
+  private def astForDoStmt(doStmt: PhpDoStmt): Ast = {
+    val condition = astForExpr(doStmt.cond)
+
+    val whileNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.DO)
+      .code(s"do {...} while (${rootCode(condition)})")
+      .lineNumber(line(doStmt))
+
+    val body = stmtBlockAst(doStmt.stmts, line(doStmt))
+
+    controlStructureAst(whileNode, Some(condition), List(body), placeConditionLast = true)
+  }
+
   private def astForIfStmt(ifStmt: PhpIfStmt): Ast = {
     val condition = astForExpr(ifStmt.cond)
 
@@ -207,26 +238,31 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForFunctionCall(call: PhpFuncCall): Ast = {
-
-    // TODO Static function calls?
-    val targetAst = astForExpr(call.target)
     val arguments = call.args.map(astForCallArg)
 
-    val targetCode = rootCode(targetAst)
-    val argsCode = arguments.map(rootCode(_)).mkString(",")
-    val code = s"$targetCode($argsCode)"
+    val targetAst = Option.unless(call.target.isInstanceOf[PhpNameExpr])(astForExpr(call.target))
+    val targetCode =
+      targetAst
+        .map(rootCode(_))
+        .getOrElse(call.target match {
+          case nameExpr: PhpNameExpr => nameExpr.name
+          case other =>
+            logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
+            ???
+        })
 
-    // TODO Function name doesn't make sense in a lot of cases. Do we have some sort of
-    //  `apply` operator? Use targetCode for now for best current results.
+    val argsCode = arguments.map(rootCode(_)).mkString(",")
+    val code     = s"$targetCode($argsCode)"
+
     val name = targetCode
 
     val callNode = NewCall()
       .name(name)
       .code(code)
-      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH /* TODO STATIC DISPATCH for Name targets? */)
+      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH /* TODO STATIC DISPATCH for Name targets? */ )
       .lineNumber(line(call))
 
-    callAst(callNode, arguments, receiver = Some(targetAst))
+    callAst(callNode, arguments, receiver = targetAst)
   }
 
   private def astForCallArg(arg: PhpArgument): Ast = {

@@ -100,6 +100,7 @@ object Domain {
   final case class PhpBreakStmt(num: Option[Int], attributes: PhpAttributes)                    extends PhpStmt
   final case class PhpContinueStmt(num: Option[Int], attributes: PhpAttributes)                 extends PhpStmt
   final case class PhpWhileStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
+  final case class PhpDoStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes)    extends PhpStmt
   final case class PhpIfStmt(
     cond: PhpExpr,
     stmts: List[PhpStmt],
@@ -128,8 +129,8 @@ object Domain {
   sealed abstract class PhpExpr extends PhpStmt
 
   final case class PhpFuncCall(target: PhpExpr, args: Seq[PhpArgument], attributes: PhpAttributes) extends PhpExpr
-  final case class PhpVariable(value: PhpExpr, attributes: PhpAttributes)                        extends PhpExpr
-  final case class PhpNameExpr(name: String, attributes: PhpAttributes)                          extends PhpExpr
+  final case class PhpVariable(value: PhpExpr, attributes: PhpAttributes)                          extends PhpExpr
+  final case class PhpNameExpr(name: String, attributes: PhpAttributes)                            extends PhpExpr
   final case class PhpBinaryOp(operator: String, left: PhpExpr, right: PhpExpr, attributes: PhpAttributes)
       extends PhpExpr
   object PhpBinaryOp {
@@ -294,6 +295,7 @@ object Domain {
       case "Stmt_Break"      => readBreak(json)
       case "Stmt_Continue"   => readContinue(json)
       case "Stmt_While"      => readWhile(json)
+      case "Stmt_Do"         => readDo(json)
       case "Stmt_If"         => readIf(json)
       case "Stmt_Switch"     => readSwitch(json)
       case unhandled =>
@@ -325,6 +327,12 @@ object Domain {
     val cond  = readExpr(json("cond"))
     val stmts = json("stmts").arr.toList.map(readStmt)
     PhpWhileStmt(cond, stmts, PhpAttributes(json))
+  }
+
+  private def readDo(json: Value): PhpDoStmt = {
+    val cond  = readExpr(json("cond"))
+    val stmts = json("stmts").arr.toList.map(readStmt)
+    PhpDoStmt(cond, stmts, PhpAttributes(json))
   }
 
   private def readIf(json: Value): PhpIfStmt = {

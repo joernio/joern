@@ -512,4 +512,60 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "do statements" should {
+    "work with an empty body" in {
+      val cpg = code("<?php\ndo {} while ($a);")
+      val doASt = inside(cpg.controlStructure.l) {
+        case List(doAst) if doAst.controlStructureType == ControlStructureTypes.DO => doAst
+      }
+
+      doASt.code shouldBe "do {...} while ($a)"
+
+      inside(doASt.astChildren.collectAll[Block].l) { case List(block) =>
+        block.order shouldBe 1
+        block.astChildren.size shouldBe 0
+      }
+
+      inside(doASt.condition.l) { case List(aIdent: Identifier) =>
+        aIdent.name shouldBe "a"
+        aIdent.order shouldBe 2
+      }
+    }
+
+    "work with a non-empty body" in {
+      val cpg = code("""<?php
+				 |do {
+				 |  $b;
+				 |  $c;
+				 |} while ($a);""".stripMargin)
+
+      val doAst = inside(cpg.controlStructure.l) {
+        case List(doAst) if doAst.controlStructureType == ControlStructureTypes.DO => doAst
+      }
+
+      doAst.code shouldBe "do {...} while ($a)"
+      doAst.lineNumber shouldBe Some(2)
+
+      inside(doAst.astChildren.collectAll[Block].l) { case List(block) =>
+        block.lineNumber shouldBe Some(2)
+
+        inside(block.astChildren.l) { case List(bIdent: Identifier, cIdent: Identifier) =>
+          bIdent.name shouldBe "b"
+          bIdent.code shouldBe "$b"
+          bIdent.lineNumber shouldBe Some(3)
+
+          cIdent.name shouldBe "c"
+          cIdent.code shouldBe "$c"
+          cIdent.lineNumber shouldBe Some(4)
+        }
+      }
+
+      inside(doAst.condition.l) { case List(aIdent: Identifier) =>
+        aIdent.name shouldBe "a"
+        aIdent.code shouldBe "$a"
+        aIdent.lineNumber shouldBe Some(5)
+      }
+    }
+  }
 }
