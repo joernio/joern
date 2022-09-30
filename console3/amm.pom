@@ -7,7 +7,6 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <artifactId>ammonite-fat_3.2.0</artifactId>
     <packaging>jar</packaging>
     <description>ammonite-fat</description>
-    <version>2.5.4-33-0af04a5b</version>
     <url>https://github.com/com-lihaoyi/Ammonite</url>
     <licenses>
         <license>
@@ -54,6 +53,41 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             <groupId>org.scala-lang</groupId>
             <artifactId>scala3-library_3</artifactId>
             <version>3.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>os-lib_2.13</artifactId>
+            <version>0.8.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>upickle_2.13</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>ujson_2.13</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>mainargs_3</artifactId>
+            <version>0.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.get-coursier</groupId>
+            <artifactId>interface</artifactId>
+            <version>0.0.21</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+            <version>2.13.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-xml_3</artifactId>
+            <version>2.1.0</version>
         </dependency>
     </dependencies>
 </project>
