@@ -1,33 +1,19 @@
 package io.joern.joerncli.console
 
-import better.files.Dsl._
 import better.files._
 import io.joern.console.workspacehandling.{ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, InstallConfig}
-import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.Cpg
 
-import java.nio.file.{Files, Path}
-import scala.jdk.CollectionConverters._
+import java.nio.file.Path
 
-object JoernWorkspaceLoader {
-  val semanticsFilename = "semantics"
-
-  lazy val defaultSemanticsFile: String = {
-    val file      = Files.createTempFile("joern-default", ".semantics")
-    val fileLines = DefaultSemantics().serialize.split("\n").toList.asJava
-    Files.write(file, fileLines, java.nio.charset.StandardCharsets.UTF_8).toString
-  }
-
-}
+object JoernWorkspaceLoader {}
 
 class JoernWorkspaceLoader extends WorkspaceLoader[JoernProject] {
   override def createProject(projectFile: ProjectFile, path: Path): JoernProject = {
-    val project               = new JoernProject(projectFile, path)
-    val semanticFileInProject = path.resolve(JoernWorkspaceLoader.semanticsFilename)
-    cp(File(JoernWorkspaceLoader.defaultSemanticsFile), File(semanticFileInProject))
+    val project = new JoernProject(projectFile, path)
     project.context = EngineContext()
     project
   }
