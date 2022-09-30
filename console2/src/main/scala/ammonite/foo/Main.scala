@@ -1,6 +1,6 @@
 package ammonite.foo
 
-import ammonite.foo.Util.newLine
+import ammonite.foo.Util.{newLine, CodeSource}
 import dotty.tools.MainGenericCompiler.classpathSeparator
 import dotty.tools.dotc.Run
 import dotty.tools.dotc.core.Comments.{ContextDoc, ContextDocstrings}
@@ -57,13 +57,24 @@ object Main {
     }
 
     val imports = new StringBuffer
+    val wd: os.Path = os.pwd
 
     def preprocess(code: String): String = {
-      val codeWithPrefixedImports =
-        s"""$imports
-           |$code
-           |""".stripMargin
-      codeWithPrefixedImports
+      val wrapperName = Name("cmd" + code)
+
+      val codeSource = CodeSource(
+        wrapperName,
+        Seq(),
+        Seq(Name("ammonite"), Name("$sess")),
+        Some(wd/"(console)")
+      )
+      val (hookStmts, importTrees) = parser.parseImportHooks(codeSource, stmts)
+      ???
+//      val codeWithPrefixedImports =
+//        s"""$imports
+//           |$code
+//           |""".stripMargin
+//      codeWithPrefixedImports
     }
 
     def readLine(): Unit = {

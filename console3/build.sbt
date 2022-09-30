@@ -1,22 +1,20 @@
-name := "console2"
+// idea: play with ammonite and scala3: find a combination of jars that work together with scala3
+// status: works - but would need to exclude fansi/sourcecode in every subproject downstream...
+// idea: build a fat jar with everything 'ammonite*' and depend on that, plus selected transitive jars...
+name := "console3"
 
-// TODO: pull out into separate build
 enablePlugins(JavaAppPackaging)
+scalaVersion := "3.2.0"
 
-// val ScoptVersion          = "4.0.1"
-// val CaskVersion           = "0.8.3"
-// val CirceVersion          = "0.14.2"
-// val ZeroturnaroundVersion = "1.15"
-// // val Scala3ReplForkVersion = "3.1.3-bin-20220912-0999a7a-NIGHTLY-nonbootstrapped"
-
-// dependsOn(Projects.semanticcpg, Projects.macros, Projects.c2cpg % Test, Projects.x2cpg % "compile->compile;test->test")
+Compile/mainClass := Some("ammonite.AmmoniteMain")
 
 libraryDependencies ++= Seq(
-//   // TODO once https://github.com/lampepfl/dotty/pull/16011 is merged and released as part of 3.2.1, use our custom scala fork here 
+  "com.lihaoyi" %% "ammonite" % "2.5.4-33-0af04a5b" cross CrossVersion.full,
+  // "com.lihaoyi" %% "fansi" % "0.3.1",
 //   // "com.michaelpollmeier" %% "scala3-compiler"   % Scala3ReplForkVersion,
-  "org.scala-lang"       %% "scala3-compiler"   % scalaVersion.value,
+  // "org.scala-lang"       %% "scala3-compiler"   % scalaVersion.value,
   // "org.scala-lang"       %% "scala3-compiler"   % "3.1.3",
-  "org.ow2.asm" % "asm" % "9.3",
+  // "org.ow2.asm" % "asm" % "9.3",
 //  ("io.get-coursier"      %% "coursier"          % "2.0.13").cross(CrossVersion.for3Use2_13).exclude("org.scala-lang.modules", "scala-xml_2.13"),
 //   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
 //   "com.github.scopt"     %% "scopt"             % ScoptVersion,
@@ -24,8 +22,14 @@ libraryDependencies ++= Seq(
 //   "io.circe"             %% "circe-generic"     % CirceVersion,
 //   "io.circe"             %% "circe-parser"      % CirceVersion,
 //   "org.zeroturnaround"    % "zt-zip"            % ZeroturnaroundVersion,
-  "com.lihaoyi"          %% "os-lib"            % "0.8.1",
+  // "com.lihaoyi"          %% "os-lib"            % "0.8.1",
 //   "com.lihaoyi"          %% "pprint"            % "0.7.3",
 //   "com.lihaoyi"          %% "cask"              % CaskVersion,
-//   "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
 )
+
+excludeDependencies ++= Seq(
+  ExclusionRule("com.lihaoyi", "fansi_2.13"),
+  ExclusionRule("com.lihaoyi", "sourcecode_2.13"),
+)
+
+scriptClasspath := Seq("*")
