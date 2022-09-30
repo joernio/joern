@@ -12,6 +12,7 @@ lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
 lazy val console2          = Projects.console2
 lazy val console3          = Projects.console3
+lazy val console4          = Projects.console4
 lazy val console           = Projects.console
 lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros

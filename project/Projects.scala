@@ -8,6 +8,7 @@ object Projects {
   lazy val console           = project.in(file("console"))
   lazy val console2          = project.in(file("console2"))
   lazy val console3          = project.in(file("console3"))
+  lazy val console4          = project.in(file("console4"))
   lazy val dataflowengineoss = project.in(file("dataflowengineoss"))
   lazy val macros            = project.in(file("macros"))
   lazy val semanticcpg       = project.in(file("semanticcpg"))
