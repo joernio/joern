@@ -8,7 +8,6 @@ import overflowdb.traversal._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.joerncli.console.Joern.semantics
-import io.joern.joerncli.console.JoernWorkspaceLoader.defaultSemantics
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import overflowdb.Edge
@@ -52,7 +51,7 @@ object JoernSlice extends App {
   private def calculateSlice(cpg: Cpg, sourceFile: String, sourceLine: Int): Slice = {
     val sinks = cpg.file.nameExact(sourceFile).ast.lineNumber(sourceLine).isCall.argument.l
 
-    implicit val context: EngineContext = EngineContext(defaultSemantics)
+    implicit val context: EngineContext = EngineContext()
     val sliceNodes                      = sinks.repeat(_.ddgIn)(_.times(20).emit).dedup.l
     val sliceEdges = sliceNodes
       .flatMap(_.outE)

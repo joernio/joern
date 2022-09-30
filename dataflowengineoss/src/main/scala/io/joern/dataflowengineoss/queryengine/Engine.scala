@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.queryengine
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.passes.reachingdef.EdgeValidator
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
@@ -257,7 +258,7 @@ object Engine {
   * @param config
   *   additional configurations for the data flow engine.
   */
-case class EngineContext(semantics: Semantics, config: EngineConfig = EngineConfig())
+case class EngineContext(semantics: Semantics = DefaultSemantics(), config: EngineConfig = EngineConfig())
 
 /** Various configurations for the data flow engine.
   * @param maxCallDepth
