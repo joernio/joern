@@ -1,41 +1,9 @@
 package io.joern.console
 
-import pprint.{Renderer, Result, Tree, Truncated}
+import io.shiftleft.codepropertygraph.generated.nodes
+import pprint.{PPrinter, Renderer, Result, Tree, Truncated}
 
-object PPrinter {
-  private val pprinter = create()
-
-  def apply(obj: Object): String =
-    pprinter(obj).toString
-
-  private def create(): pprint.PPrinter = {
-    new pprint.PPrinter(
-      defaultHeight = 99999,
-      colorLiteral = fansi.Attrs.Empty, // leave color highlighting to the repl
-      colorApplyPrefix = fansi.Attrs.Empty,
-      additionalHandlers = handleProduct(pprint.PPrinter.BlackWhite)) {
-
-      override def tokenize(x: Any,
-                            width: Int = defaultWidth,
-                            height: Int = defaultHeight,
-                            indent: Int = defaultIndent,
-                            initialOffset: Int = 0,
-                            escapeUnicode: Boolean,
-                            showFieldNames: Boolean): Iterator[fansi.Str] = {
-        val tree = this.treeify(x, escapeUnicode = escapeUnicode, showFieldNames = showFieldNames)
-        val renderer = new Renderer(width, colorApplyPrefix, colorLiteral, indent) {
-          override def rec(x: Tree, leftOffset: Int, indentCount: Int): Result = x match {
-            case Tree.Literal(body) if isAnsiEncoded(body) =>
-              // this is the part we're overriding, everything else is just boilerplate
-              Result.fromString(fixForFansi(body))
-            case _ => super.rec(x, leftOffset, indentCount)
-          }
-        }
-        val rendered = renderer.rec(tree, initialOffset, 0).iter
-        new Truncated(rendered, width, height)
-      }
-    }
-  }
+object pprinter {
 
   val AnsiEncodedRegexp = "\u001b\\[[\\d;]+m".r
   def isAnsiEncoded(s: String): Boolean =
@@ -55,22 +23,45 @@ object PPrinter {
         "\u001b[$1;$2;$3m"
       ) // `[00;38;05;70m` is encoded as `[38;5;70m` in fansi - 8bit color encoding
 
-  private def handleProduct(original: pprint.PPrinter): PartialFunction[Any, Tree] = {
-    case product: Product =>
-      Tree.Apply(
-        product.productPrefix,
-        Iterator.range(0, product.productArity).map { elementIdx =>
-          val elementValueTree = original.treeify(
-            product.productElement(elementIdx),
+  def create(original: PPrinter): PPrinter =
+    new PPrinter(defaultHeight = 99999, additionalHandlers = myAdditionalHandlers(original)) {
+      override def tokenize(
+        x: Any,
+        width: Int = defaultWidth,
+        height: Int = defaultHeight,
+        indent: Int = defaultIndent,
+        initialOffset: Int = 0,
+        escapeUnicode: Boolean,
+        showFieldNames: Boolean
+      ): Iterator[fansi.Str] = {
+        val tree = this.treeify(x, escapeUnicode = escapeUnicode, showFieldNames = showFieldNames)
+        val renderer = new Renderer(width, colorApplyPrefix, colorLiteral, indent) {
+          override def rec(x: Tree, leftOffset: Int, indentCount: Int): Result = x match {
+            case Tree.Literal(body) if isAnsiEncoded(body) =>
+              // this is the part we're overriding, everything else is just boilerplate
+              Result.fromString(fixForFansi(body))
+            case _ => super.rec(x, leftOffset, indentCount)
+          }
+        }
+        val rendered = renderer.rec(tree, initialOffset, 0).iter
+        new Truncated(rendered, width, height)
+      }
+    }
+
+  private def myAdditionalHandlers(original: PPrinter): PartialFunction[Any, Tree] = { case node: nodes.StoredNode =>
+    Tree.Apply(
+      node.productPrefix,
+      Iterator.range(0, node.productArity).map { n =>
+        Tree.Infix(
+          Tree.Literal(node.productElementLabel(n)),
+          "->",
+          original.treeify(
+            node.productElement(n),
             escapeUnicode = original.defaultEscapeUnicode,
             showFieldNames = original.defaultShowFieldNames
           )
-          product.productElementName(elementIdx) match {
-            case "" => elementValueTree
-            case name => Tree.Infix(Tree.Literal(name), "->", elementValueTree)
-          }
-        }
-      )
+        )
+      }
+    )
   }
-
 }

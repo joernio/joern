@@ -2,13 +2,12 @@ package io.joern.console
 
 import better.files.Dsl._
 import better.files.File
-import dotty.tools.repl.State
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.joern.console.cpgcreation.ImportCode
 import io.joern.console.scripting.{AmmoniteExecutor, ScriptManager}
 import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceManager}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.Overlays
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
@@ -19,30 +18,12 @@ import scala.sys.process.Process
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
-object Console {
-  def report(string: String): Unit = System.err.println(string)
-  val nameOfLegacyCpgInProject     = "cpg.bin.zip"
-
-  def deriveNameFromInputPath[T <: Project](inputPath: String, workspace: WorkspaceManager[T]): String = {
-    val name    = File(inputPath).name
-    val project = workspace.project(name)
-    if (project.isDefined && project.exists(_.inputPath != inputPath)) {
-      var i = 1
-      while (workspace.project(name + i).isDefined) {
-        i += 1
-      }
-      name + i
-    } else {
-      name
-    }
-  }
-}
-
 class Console[T <: Project](
   executor: AmmoniteExecutor,
   loader: WorkspaceLoader[T],
   baseDir: File = File.currentWorkingDirectory
-) extends ScriptManager(executor) {
+) extends ScriptManager(executor)
+    with Reporting {
 
   import Console._
 
@@ -493,8 +474,24 @@ class Console[T <: Project](
     projectName
   }
 
-  def report(string: String): Unit = Console.report(string)
+}
 
+object Console {
+  val nameOfLegacyCpgInProject = "cpg.bin.zip"
+
+  def deriveNameFromInputPath[T <: Project](inputPath: String, workspace: WorkspaceManager[T]): String = {
+    val name    = File(inputPath).name
+    val project = workspace.project(name)
+    if (project.isDefined && project.exists(_.inputPath != inputPath)) {
+      var i = 1
+      while (workspace.project(name + i).isDefined) {
+        i += 1
+      }
+      name + i
+    } else {
+      name
+    }
+  }
 }
 
 class ConsoleException(message: String, cause: Option[Throwable])

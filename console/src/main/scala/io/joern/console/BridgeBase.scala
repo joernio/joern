@@ -1,25 +1,16 @@
 package io.joern.console
 
-import better.files.*
-import dotty.tools.Settings
-import dotty.tools.dotc.core.Contexts.{Context, ctx}
-import dotty.tools.io.{ClassPath, Directory, PlainDirectory}
-import dotty.tools.repl.State
-import dotty.tools.scripting.{ScriptingDriver, Util}
+import ammonite.util.{Colors, Res}
+import better.files._
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
-
-import java.io.{InputStream, PrintStream, File as JFile}
-import java.net.URLClassLoader
-import java.nio.file.{Files, Path, Paths}
-import java.util
-import java.util.stream
+import os.{Path, pwd}
 
 case class Config(
-  scriptFile: Option[os.Path] = None,
+  scriptFile: Option[Path] = None,
   command: Option[String] = None,
-  params: Seq[String] = Seq.empty,
-  additionalImports: List[os.Path] = Nil,
+  params: Map[String, String] = Map.empty,
+  additionalImports: List[Path] = Nil,
   addPlugin: Option[String] = None,
   rmPlugin: Option[String] = None,
   pluginToRun: Option[String] = None,
@@ -36,44 +27,36 @@ case class Config(
   nocolors: Boolean = false,
   cpgToLoad: Option[File] = None,
   forInputPath: Option[String] = None,
-  frontendArgs: Array[String] = Array.empty,
-  verbose: Boolean = false,
-  dependencies: Seq[String] = Seq.empty
+  frontendArgs: Array[String] = Array.empty
 )
 
 /** Base class for Ammonite Bridge, split by topic into multiple self types.
   */
 trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling {
 
-  def slProduct: SLProduct
-
   protected def parseConfig(args: Array[String]): Config = {
-    implicit def pathRead: scopt.Read[os.Path] =
-      scopt.Read.stringRead.map(os.Path(_, os.pwd)) // support both relative and absolute paths
+    implicit def pathRead: scopt.Read[Path] =
+      scopt.Read.stringRead
+        .map(Path(_, pwd)) // support both relative and absolute paths
 
-    val parser = new scopt.OptionParser[Config](slProduct.name) {
+    val parser = new scopt.OptionParser[Config]("(joern|ocular)") {
       override def errorOnUnknownArgument = false
 
       note("Script execution")
 
-      opt[os.Path]("script")
+      opt[Path]("script")
         .action((x, c) => c.copy(scriptFile = Some(x)))
         .text("path to script file: will execute and exit")
 
-      opt[Seq[String]]('p', "params")
-        .valueName("value1,value2")
+      opt[Map[String, String]]('p', "params")
+        .valueName("k1=v1,k2=v2")
         .action((x, c) => c.copy(params = x))
-        .text("parameter values for main function in script")
+        .text("key values for script")
 
-      opt[Seq[os.Path]]("import")
+      opt[Seq[Path]]("import")
         .valueName("script1.sc,script2.sc,...")
         .action((x, c) => c.copy(additionalImports = x.toList))
         .text("import additional additional script(s): will execute and keep console open")
-
-      opt[Seq[String]]("dependency")
-        .valueName("com.michaelpollmeier:versionsort:1.0.7,...")
-        .action((x, c) => c.copy(dependencies = x.toList))
-        .text("resolve dependency (and it's transitive dependencies) for given maven coordinate(s)")
 
       opt[String]("command")
         .action((x, c) => c.copy(command = Some(x)))
@@ -150,10 +133,6 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
         .action((_, c) => c.copy(nocolors = true))
         .text("turn off colors")
 
-      opt[Unit]("verbose")
-        .action((_, c) => c.copy(verbose = true))
-        .text("enable verbose output")
-
       help("help")
         .text("Print this help text")
     }
@@ -164,9 +143,9 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
   /** Entry point for Joern's integrated ammonite shell
     */
-  protected def runAmmonite(config: Config): Unit = {
+  protected def runAmmonite(config: Config, slProduct: SLProduct = OcularProduct): Unit = {
     if (config.listPlugins) {
-      printPluginsAndLayerCreators(config)
+      printPluginsAndLayerCreators(config, slProduct)
     } else if (config.addPlugin.isDefined) {
       new PluginManager(InstallConfig().rootPath).add(config.addPlugin.get)
     } else if (config.rmPlugin.isDefined) {
@@ -175,11 +154,12 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
       config.scriptFile match {
         case None =>
           if (config.server) {
+            GlobalReporting.enable()
             startHttpServer(config)
           } else if (config.pluginToRun.isDefined) {
             runPlugin(config, slProduct.name)
           } else {
-            startInteractiveShell(config)
+            startInteractiveShell(config, slProduct)
           }
         case Some(scriptFile) =>
           runScript(scriptFile, config)
@@ -196,8 +176,9 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
   /** Override this method to implement script decryption
     */
-  protected def decryptedScript(scriptFile: os.Path): os.Path =
+  protected def decryptedScript(scriptFile: Path): Path = {
     scriptFile
+  }
 
   private def readScript(scriptFile: File): List[String] = {
     val code = scriptFile.lines.toList
@@ -207,103 +188,74 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
   protected def predefPlus(lines: List[String]): String
 
-  protected def greeting: String
+  protected def shutdownHooks: List[String]
 
-  protected def promptStr: String
+  protected def promptStr(): String
 
-  protected def onExitCode: String
 }
 
-// TODO rename - why is this called `ScriptExecution` if it really implements scripts and repl?
-trait ScriptExecution { this: BridgeBase =>
+trait ScriptExecution {
+  this: BridgeBase =>
 
-  protected def startInteractiveShell(config: Config) = {
-//    val replConfig = config.cpgToLoad.map { cpgFile =>
-//      "importCpg(\"" + cpgFile + "\")"
-//    } ++ config.forInputPath.map { name =>
-//      s"""
-//         |openForInputPath(\"$name\")
-//         |""".stripMargin
-//    }
-//
-//    val debuggerConnected = false
-//    while (!debuggerConnected) {
-//      println("waiting fo debugger...")
-//      Thread.sleep(1000)
-//    }
+  protected def startInteractiveShell(config: Config, slProduct: SLProduct) = {
+    val configurePPrinterMaybe =
+      if (config.nocolors) ""
+      else """val originalPPrinter = repl.pprinter()
+             |repl.pprinter.update(io.joern.console.pprinter.create(originalPPrinter))
+             |""".stripMargin
 
-    val replDriver = new ReplDriver(
-      compilerArgs(config),
-      onExitCode = Option(onExitCode),
-      greeting = greeting,
-      prompt = promptStr,
-      maxPrintElements = Int.MaxValue
-    )
-
-    val initialState: State = replDriver.initialState
-    replDriver.runUntilQuit(initialState)
-
-    // when upgrading to Scala 3.2.1: change to `given State`
-//    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-    // TODO proper predef code again...
-//    val predef0 =
-//      """
-//        |import overflowdb._
-//      """.stripMargin
-//    val state: State = replDriver.run(predef0)(using initialState)
-//    val state: State =
-//      if (config.verbose) {
-//        println(predefCode)
-//        replDriver.run(predefCode)(using initialState)
-//      } else {
-//        replDriver.runQuietly(predefCode)(using initialState)
-//      }
+    val replConfig = List(
+      "repl.prompt() = \"" + promptStr() + "\"",
+      configurePPrinterMaybe,
+      "implicit val implicitPPrinter = repl.pprinter()",
+      "banner()"
+    ) ++ config.cpgToLoad.map { cpgFile =>
+      "importCpg(\"" + cpgFile + "\")"
+    } ++ config.forInputPath.map { name =>
+      s"""
+         |openForInputPath(\"$name\")
+         |""".stripMargin
+    }
+    ammonite
+      .Main(
+        predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks),
+        welcomeBanner = None,
+        storageBackend = new StorageBackend(slProduct),
+        remoteLogging = false,
+        colors = ammoniteColors(config)
+      )
+      .run()
   }
 
-  protected def runScript(scriptFile: os.Path, config: Config): Unit = {
+  protected def runScript(scriptFile: Path, config: Config) = {
     val isEncryptedScript = scriptFile.ext == "enc"
     System.err.println(s"executing $scriptFile with params=${config.params}")
-
-    val scriptArgs: Array[String] = config.command.toArray ++ config.params
-
-    val decodedScriptFile =
+    val scriptArgs: Seq[String] = {
+      val commandArgs   = config.command.toList
+      val parameterArgs = config.params.flatMap { case (key, value) => Seq(s"--$key", value) }
+      commandArgs ++ parameterArgs
+    }
+    val actualScriptFile =
       if (isEncryptedScript) decryptedScript(scriptFile)
       else scriptFile
 
-    // Our predef code includes import statements... I didn't find a nice way to add them to the context of the
-    // script file, so instead we'll just write it to the beginning of the script file.
-    // That's obviously suboptimal, e.g. because it messes with the line numbers.
-    // Therefor, we'll display the temp script file name to the user and not delete it, in case the script errors.
-    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
-    val predefPlusScriptFileTmp = Files.createTempFile("joern-script-with-predef", ".sc")
-    val scriptCode = Files.readString(decodedScriptFile.toNIO)
-    Files.writeString(
-      predefPlusScriptFileTmp,
-      s"""$predefCode
-         |$scriptCode
-         |""".stripMargin
-    )
+    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config) ++ shutdownHooks)
 
-    try {
-      new ScriptingDriver(
-        compilerArgs = compilerArgs(config),
-        scriptFile = predefPlusScriptFileTmp.toFile,
-        scriptArgs = scriptArgs
-      ).compileAndRun()
-
-      // if the script failed: don't delete the temporary file which includes the predef,
-      // so that the line numbers are accurate and the user can properly debug
-      predefPlusScriptFileTmp.toFile.delete()
-      System.err.println(s"script finished successfully")
-    } catch {
-      case t: Throwable =>
-        if (isEncryptedScript) {
-          /* minimizing exposure time by deleting the decrypted script straight away */
-          decodedScriptFile.toIO.delete()
-          predefPlusScriptFileTmp.toFile.delete()
-        }
-        throw t
+    ammonite
+      .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))
+      .runScript(actualScriptFile, scriptArgs)
+      ._1 match {
+      case Res.Success(r) =>
+        System.err.println(s"script finished successfully")
+        System.err.println(r)
+      case Res.Failure(msg) =>
+        throw new AssertionError(s"script failed: $msg")
+      case Res.Exception(e, msg) =>
+        throw new AssertionError(s"script errored: $msg", e)
+      case _ => ???
     }
+    /* minimizing exposure time by deleting the decrypted script straight away */
+    if (isEncryptedScript) actualScriptFile.toIO.delete
   }
 
   /** For the given config, generate a list of commands to import the CPG
@@ -318,31 +270,18 @@ trait ScriptExecution { this: BridgeBase =>
     }
   }
 
-  private def compilerArgs(config: Config): Array[String] = {
-    val compilerArgs = Array.newBuilder[String]
-
-    val dependencyFiles = Dependencies.resolveOptimistically(config.dependencies)
-    compilerArgs ++= Array("-classpath", replClasspath(dependencyFiles))
-    compilerArgs += "-explain" // verbose scalac error messages
-    if (config.nocolors) compilerArgs ++= Array("-color", "never")
-    compilerArgs.result()
-  }
-
-  private def replClasspath(dependencies: Seq[java.io.File]): String = {
-    val inheritedClasspath = System.getProperty("java.class.path")
-    val separator = System.getProperty("path.separator")
-
-    val entriesForDeps = dependencies.mkString(separator)
-    s"$inheritedClasspath$separator$entriesForDeps"
-  }
+  private def ammoniteColors(config: Config) =
+    if (config.nocolors) Colors.BlackWhite
+    else Colors.Default
 
 }
 
-trait PluginHandling { this: BridgeBase =>
+trait PluginHandling {
+  this: BridgeBase =>
 
   /** Print a summary of the available plugins and layer creators to the terminal.
     */
-  protected def printPluginsAndLayerCreators(config: Config): Unit = {
+  protected def printPluginsAndLayerCreators(config: Config, slProduct: SLProduct): Unit = {
     println("Installed plugins:")
     println("==================")
     new PluginManager(InstallConfig().rootPath).listPlugins().foreach(println)
@@ -442,9 +381,7 @@ trait PluginHandling { this: BridgeBase =>
 
 }
 
-trait ServerHandling {
-
-  this: BridgeBase =>
+trait ServerHandling { this: BridgeBase =>
 
   protected def startHttpServer(config: Config): Unit = {
     val predef   = predefPlus(additionalImportCode(config))

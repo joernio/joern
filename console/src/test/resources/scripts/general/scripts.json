@@ -1,0 +1,9 @@
+{
+  "description": "A collection of general purpose scripts.",
+  "scripts": [
+    {
+      "name": "list-funcs.sc",
+      "description": "Lists all functions."
+    }
+  ]
+}

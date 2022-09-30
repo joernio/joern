@@ -1,16 +1,16 @@
 package io.joern.console.cpgcreation
 
 import better.files.File
-import io.joern.console.{ConsoleException, FrontendConfig}
+import io.joern.console.workspacehandling.Project
+import io.joern.console.{ConsoleException, FrontendConfig, Reporting}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.joern.console.workspacehandling.Project
 import overflowdb.traversal.help.Table
 
 import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
 
-class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
+class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Reporting {
   import io.joern.console.Console._
 
   private val config             = console.config
@@ -47,9 +47,8 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
     }
   }
 
-  def c: SourceBasedFrontend = new SourceBasedFrontend("c", Languages.NEWC, "Eclipse CDT Based Frontend for C/C++")
-  def cpp: SourceBasedFrontend =
-    new SourceBasedFrontend("cpp", Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", "cpp")
+  def c: SourceBasedFrontend    = new CFrontend("c")
+  def cpp: SourceBasedFrontend  = new CFrontend("cpp", extension = "cpp")
   def java: SourceBasedFrontend = new SourceBasedFrontend("java", Languages.JAVASRC, "Java Source Frontend", "java")
 
   def jvm: Frontend    = new Frontend("jvm", Languages.JAVA, "Java/Dalvik Bytecode Frontend (based on SOOT's jimple)")
@@ -57,10 +56,12 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   def kotlin: SourceBasedFrontend =
     new SourceBasedFrontend("kotlin", Languages.KOTLIN, "Kotlin Source Frontend", "kotlin")
 
-  def python: Frontend     = new Frontend("python", Languages.PYTHON, "Python Source Frontend")
-  def golang: Frontend     = new Frontend("golang", Languages.GOLANG, "Golang Source Frontend")
-  def javascript: Frontend = new Frontend("javascript", Languages.JAVASCRIPT, "Javascript Source Frontend")
-  def jssrc: Frontend  = new Frontend("jssrc", Languages.JSSRC, "Javascript/Typescript Source Frontend based on astgen")
+  def python: SourceBasedFrontend = new SourceBasedFrontend("python", Languages.PYTHON, "Python Source Frontend", "py")
+  def golang: SourceBasedFrontend = new SourceBasedFrontend("golang", Languages.GOLANG, "Golang Source Frontend", "go")
+  def javascript: SourceBasedFrontend =
+    new SourceBasedFrontend("javascript", Languages.JAVASCRIPT, "Javascript Source Frontend", "js")
+  def jssrc: SourceBasedFrontend =
+    new SourceBasedFrontend("jssrc", Languages.JSSRC, "Javascript/Typescript Source Frontend based on astgen", "js")
   def csharp: Frontend = new Frontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
 
   def llvm: Frontend = new Frontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
@@ -90,22 +91,20 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
     }
   }
 
-  class SourceBasedFrontend(
-    name: String,
-    language: String = Languages.C,
-    description: String = "Eclipse CDT based parser for C/C++",
-    extension: String = "c"
-  ) extends Frontend(name, language, description) {
+  class SourceBasedFrontend(name: String, language: String, description: String, extension: String)
+      extends Frontend(name, language, description) {
 
     def fromString(str: String, args: List[String] = List()): Cpg = {
       withCodeInTmpFile(str, "tmp." + extension) { dir =>
-        super.apply(dir.path.toString, args = args)
+        apply(dir.path.toString, args = args)
       } match {
         case Failure(exception) => throw new ConsoleException(s"unable to generate cpg from given String", exception)
         case Success(value)     => value
       }
     }
   }
+  class CFrontend(name: String, extension: String = "c")
+      extends SourceBasedFrontend(name, Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", extension)
 
   private def withCodeInTmpFile(str: String, filename: String)(f: File => Cpg): Try[Cpg] = {
     val dir = File.newTemporaryDirectory("console")
@@ -118,7 +117,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) {
   }
 
   private def allFrontends: List[Frontend] =
-    List(c, cpp, ghidra, java, jvm, javascript, golang, llvm, python, csharp)
+    List(c, cpp, ghidra, kotlin, java, jvm, javascript, golang, llvm, php, python, csharp)
 
   /** Provide an overview of the available CPG generators (frontends)
     */

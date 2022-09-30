@@ -5,7 +5,7 @@ import io.joern.console.embammonite.{EmbeddedAmmonite, HasUUID, QueryResult}
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Base64, UUID}
-// import ammonite.compiler.{Parsers => AmmoniteParser}
+import ammonite.compiler.{Parsers => AmmoniteParser}
 import ujson.Obj
 
 object CPGLSError extends Enumeration {
@@ -33,10 +33,9 @@ class CPGQLServer(
     val res = if (!isAuthorized) {
       unauthorizedResponse
     } else {
-      val hasErrorOnParseQuery: Boolean =
+      val hasErrorOnParseQuery =
         // With ignoreIncomplete = false the result is always Some. Thus .get is ok.
-        // AmmoniteParser.split(query, false, "N/A").get.isLeft
-        ???
+        AmmoniteParser.split(query, false, "N/A").get.isLeft
       if (hasErrorOnParseQuery) {
         val result = new QueryResult("", CPGLSError.parseError.toString, UUID.randomUUID())
         returnResult(result)
@@ -108,7 +107,6 @@ abstract class WebServiceWithWebSocket[T <: HasUUID](
 
   def handler(): cask.WebsocketResult = {
     cask.WsHandler { connection =>
-      // TODO this can't be called from scala3 because it's using scala2 macros...
       connection.send(cask.Ws.Text("connected"))
       openConnections += connection
       cask.WsActor {

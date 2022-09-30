@@ -1,6 +1,6 @@
 package io.joern.console.embammonite
 
-// import ammonite.util.Colors
+import ammonite.util.Colors
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.io.{BufferedReader, InputStreamReader, PipedInputStream, PipedOutputStream, PrintWriter}
@@ -33,21 +33,20 @@ class EmbeddedAmmonite(predef: String = "") {
 
   val userThread = new Thread(new UserRunnable(jobQueue, writer, reader, errReader))
 
-  val shellThread = new Thread(
-    new Runnable {
-      override def run(): Unit = {
-            // ammonite.Main(
-            //   predefCode = EmbeddedAmmonite.predef + predef,
-            //   welcomeBanner = None,
-            //   remoteLogging = false,
-            //   colors = Colors.BlackWhite,
-            //   inputStream = inStream,
-            //   outputStream = outStream,
-            //   errorStream = errStream)
-            //   .run()
-        ???
-      }
-    })
+  val shellThread = new Thread(() => {
+    val ammoniteShell =
+      ammonite
+        .Main(
+          predefCode = EmbeddedAmmonite.predef + predef,
+          welcomeBanner = None,
+          remoteLogging = false,
+          colors = Colors.BlackWhite,
+          inputStream = inStream,
+          outputStream = outStream,
+          errorStream = errStream
+        )
+    ammoniteShell.run()
+  })
 
   private def pipePair(): (PipedInputStream, PipedOutputStream) = {
     val out = new PipedOutputStream()

@@ -21,7 +21,10 @@ abstract class WorkspaceLoader[ProjectType <: Project] {
     val dirFile = File(path)
     val dirPath = dirFile.path.toAbsolutePath
 
-    mkdirs(dirFile)
+    if (!dirFile.exists) {
+      println(s"creating workspace directory: ${dirFile.path.toString}")
+      mkdirs(dirFile)
+    }
     new Workspace(ListBuffer.from(loadProjectsFromFs(dirPath)))
   }
 
@@ -40,7 +43,7 @@ abstract class WorkspaceLoader[ProjectType <: Project] {
       case Success(v) => Some(v)
       case Failure(e) =>
         System.err.println(s"Error loading project at $path - skipping: ")
-        System.err.println(e.printStackTrace)
+        System.err.println(e)
         None
     }
   }

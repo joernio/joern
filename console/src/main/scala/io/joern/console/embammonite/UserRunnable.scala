@@ -1,5 +1,6 @@
 package io.joern.console.embammonite
 
+import io.joern.console.GlobalReporting
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.io.{BufferedReader, PrintWriter}
@@ -12,7 +13,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[UserRunnable])
 
-  private val magicEchoSeq: String = new String(Array(27, 91, 57, 57, 57, 57, 68, 27, 91, 48, 74, 64, 32).map(_.toChar))
+  private val magicEchoSeq: Seq[Char] = List(27, 91, 57, 57, 57, 57, 68, 27, 91, 48, 74, 64, 32).map(_.toChar)
   private val endMarker               = """.*END: ([0-9a-f\-]+)""".r
 
   override def run(): Unit = {
@@ -25,9 +26,10 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
         } else {
           sendQueryToAmmonite(job)
           val stdoutPair = stdOutUpToMarker()
-          val stdOutput  = stdoutPair.get
-          val errOutput  = exhaustStderr()
-          val result     = new QueryResult(stdOutput, errOutput, job.uuid)
+          val stdOutput  = GlobalReporting.getAndClearGlobalStdOut() + stdoutPair.get
+
+          val errOutput = exhaustStderr()
+          val result    = new QueryResult(stdOutput, errOutput, job.uuid)
           job.observer(result)
         }
       }
