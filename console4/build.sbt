@@ -12,8 +12,8 @@ libraryDependencies ++= Seq(
   // TODO add these to the pom
   "com.lihaoyi" %% "os-lib" % "0.8.1",
   "com.lihaoyi" %% "mainargs" % "0.3.0",
-  "com.lihaoyi" %% "upickle" % "2.0.0",
-  // "com.lihaoyi" % "upickle_2.13" % "2.0.0",
+  // "com.lihaoyi" %% "upickle" % "2.0.0",
+  "com.lihaoyi" % "upickle_2.13" % "2.0.0",
   "com.lihaoyi" %% "ujson" % "2.0.0",
   // "io.get-coursier" % "interface" % "0.0.21",
   "io.get-coursier" % "interface" % "1.0.9",
