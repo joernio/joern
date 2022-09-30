@@ -5,7 +5,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <name>ammonite-fat_3.2.0</name>
     <groupId>io.joern</groupId>
     <artifactId>ammonite-fat_3.2.0</artifactId>
-    <version>2.5.4+1-5d34cfc3</version>
+    <version>2.5.4+2-daea6130</version>
     <packaging>jar</packaging>
     <description>ammonite-fat</description>
     <url>https://github.com/com-lihaoyi/Ammonite</url>
@@ -72,7 +72,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
         </dependency>
         <dependency>
             <groupId>com.lihaoyi</groupId>
-            <artifactId>mainargs_3</artifactId>
+            <artifactId>mainargs_2.13</artifactId>
             <version>0.3.0</version>
         </dependency>
         <dependency>
