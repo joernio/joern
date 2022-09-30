@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project 
+xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <modelVersion>4.0.0</modelVersion>
+    <name>ammonite-fat_3.2.0</name>
+    <groupId>io.joern</groupId>
+    <artifactId>ammonite-fat_3.2.0</artifactId>
+    <version>2.5.4+3-fatterjar</version>
+    <packaging>jar</packaging>
+    <description>ammonite-fat</description>
+    <url>https://github.com/com-lihaoyi/Ammonite</url>
+    <licenses>
+        <license>
+            <name>MIT</name>
+            <url>https://spdx.org/licenses/MIT.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <scm>
+        <connection>scm:git:git://github.com/com-lihaoyi/Ammonite.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:com-lihaoyi/Ammonite.git</developerConnection>
+        <url>https://github.com/com-lihaoyi/Ammonite</url>
+    </scm>
+    <developers>
+        <developer>
+            <id>lihaoyi</id>
+            <name>Li Haoyi</name>
+            <url>https://github.com/lihaoyi</url>
+        </developer>
+    </developers>
+    <properties> </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala3-compiler_3</artifactId>
+            <version>3.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>9.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>3.21.0-GA</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.javaparser</groupId>
+            <artifactId>javaparser-core</artifactId>
+            <version>3.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala3-library_3</artifactId>
+            <version>3.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.get-coursier</groupId>
+            <artifactId>interface</artifactId>
+            <version>0.0.21</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+            <version>2.13.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-xml_3</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+    </dependencies>
+</project>
