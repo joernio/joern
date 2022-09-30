@@ -48,7 +48,7 @@ class PocTest extends PhpCode2CpgFixture {
           method.methodReturn.typeFullName shouldBe TypeConstants.Unresolved
 
           val List(echoCall) = method.body.astChildren.collectAll[Call].l
-          echoCall.name shouldBe "<operator>.echo"
+          echoCall.name shouldBe "echo"
           echoCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
           val encapsCall = echoCall.argument.l match {
             case List(encapsCall: Call) => encapsCall

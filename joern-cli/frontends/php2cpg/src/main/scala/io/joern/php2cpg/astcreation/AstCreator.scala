@@ -6,8 +6,13 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.utils.NodeBuilders.operatorCallNode
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EvaluationStrategies, Operators, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EvaluationStrategies,
+  Operators,
+  PropertyNames
+}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   ExpressionNew,
   NewBlock,
@@ -53,6 +58,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case breakStmt: PhpBreakStmt   => astForBreakStmt(breakStmt)
       case contStmt: PhpContinueStmt => astForContinueStmt(contStmt)
       case whileStmt: PhpWhileStmt   => astForWhileStmt(whileStmt)
+      case doStmt: PhpDoStmt         => astForDoStmt(doStmt)
       case ifStmt: PhpIfStmt         => astForIfStmt(ifStmt)
       case switchStmt: PhpSwitchStmt => astForSwitchStmt(switchStmt)
 
@@ -63,8 +69,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForEchoStmt(echoStmt: PhpEchoStmt): Ast = {
-    val callNode = operatorCallNode("<operator>.echo", code = "echo", line = line(echoStmt))
     val args     = echoStmt.exprs.map(astForExpr)
+    val code     = s"echo ${args.map(rootCode(_)).mkString(",")}"
+    val callNode = operatorCallNode("echo", code, line = line(echoStmt))
     callAst(callNode, args)
   }
 
@@ -167,6 +174,19 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     controlStructureAst(whileNode, Some(condition), List(body))
   }
 
+  private def astForDoStmt(doStmt: PhpDoStmt): Ast = {
+    val condition = astForExpr(doStmt.cond)
+
+    val whileNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.DO)
+      .code(s"do {...} while (${rootCode(condition)})")
+      .lineNumber(line(doStmt))
+
+    val body = stmtBlockAst(doStmt.stmts, line(doStmt))
+
+    controlStructureAst(whileNode, Some(condition), List(body), placeConditionLast = true)
+  }
+
   private def astForIfStmt(ifStmt: PhpIfStmt): Ast = {
     val condition = astForExpr(ifStmt.cond)
 
@@ -198,9 +218,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .code(s"switch (${rootCode(conditionAst)})")
       .lineNumber(line(stmt))
 
-    val entryAsts = stmt.cases.flatMap(astsForSwitchCase)
+    val entryAsts  = stmt.cases.flatMap(astsForSwitchCase)
+    val switchBody = Ast(NewBlock().lineNumber(line(stmt))).withChildren(entryAsts)
 
-    controlStructureAst(switchNode, Some(conditionAst), entryAsts)
+    controlStructureAst(switchNode, Some(conditionAst), switchBody :: Nil)
   }
 
   private def astsForSwitchCase(caseStmt: PhpCaseStmt): List[Ast] = {
@@ -217,17 +238,31 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForFunctionCall(call: PhpFuncCall): Ast = {
-    val name = call.name match {
-      case PhpNameExpr(name, _) => name
-      case complexExpr          =>
-        // TODO Handle this properly
-        complexExpr.toString
-    }
+    val arguments = call.args.map(astForCallArg)
+
+    val targetAst = Option.unless(call.target.isInstanceOf[PhpNameExpr])(astForExpr(call.target))
+    val targetCode =
+      targetAst
+        .map(rootCode(_))
+        .getOrElse(call.target match {
+          case nameExpr: PhpNameExpr => nameExpr.name
+          case other =>
+            logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
+            ???
+        })
+
+    val argsCode = arguments.map(rootCode(_)).mkString(",")
+    val code     = s"$targetCode($argsCode)"
+
+    val name = targetCode
+
     val callNode = NewCall()
       .name(name)
+      .code(code)
+      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH /* TODO STATIC DISPATCH for Name targets? */ )
       .lineNumber(line(call))
-    val arguments = call.args.map(astForCallArg)
-    callAst(callNode, arguments)
+
+    callAst(callNode, arguments, receiver = targetAst)
   }
 
   private def astForCallArg(arg: PhpArgument): Ast = {
