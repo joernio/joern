@@ -1,18 +1,16 @@
 package io.joern.c2cpg.testfixtures
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import io.shiftleft.utils.ProjectRoot
 
 class DataFlowCodeToCpgSuite extends CCodeToCpgSuite {
 
-  private val semanticsFilename: String = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-
-  implicit protected val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
+  implicit protected val semantics: Semantics = DefaultSemantics()
 
   protected implicit val context: EngineContext = EngineContext(semantics)
 

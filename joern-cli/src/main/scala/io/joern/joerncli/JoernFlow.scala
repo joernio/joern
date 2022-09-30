@@ -1,5 +1,6 @@
 package io.joern.joerncli
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
@@ -79,7 +80,7 @@ object JoernFlow extends App {
     debugOut(s"Number of sources: ${sources.size}\n")
     debugOut(s"Number of sinks: ${sinks.size}\n")
 
-    implicit val semantics: Semantics = JoernWorkspaceLoader.defaultSemantics
+    implicit val semantics: Semantics = DefaultSemantics()
     val engineConfig                  = EngineConfig(config.depth)
     debugOut(s"Analysis depth: ${engineConfig.maxCallDepth}\n")
     implicit val context: EngineContext = EngineContext(semantics, engineConfig)

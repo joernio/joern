@@ -1,8 +1,8 @@
 package io.joern.joerncli
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.joern.joerncli.console.JoernWorkspaceLoader
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers._
@@ -22,7 +22,7 @@ object DefaultOverlays {
     applyDefaultOverlays(cpg)
     val context                       = new LayerCreatorContext(cpg)
     val options                       = new OssDataFlowOptions(maxNumberOfDefinitions)
-    implicit val semantics: Semantics = JoernWorkspaceLoader.defaultSemantics
+    implicit val semantics: Semantics = DefaultSemantics()
     if (semantics.elements.isEmpty) {
       System.err.println("Warning: semantics are empty.")
     }

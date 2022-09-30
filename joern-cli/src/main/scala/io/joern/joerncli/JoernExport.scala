@@ -1,13 +1,12 @@
 package io.joern.joerncli
 
 import better.files.Dsl._
-import better.files.File
+import better.files.{DefaultBufferSize, File}
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.layers.dataflows._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.joerncli.CpgBasedTool.{exitIfInvalid, exitWithError}
-import io.joern.joerncli.console.Joern.semantics
 import io.joern.joerncli.console.JoernWorkspaceLoader
-import io.joern.joerncli.console.JoernWorkspaceLoader.defaultSemantics
 import io.joern.x2cpg.layers._
 import io.shiftleft.semanticcpg.layers._
 import overflowdb.Graph
@@ -61,7 +60,7 @@ object JoernExport extends App {
     exitIfInvalid(config.outDir, config.cpgFileName)
 
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
-      implicit val semantics: Semantics = JoernWorkspaceLoader.defaultSemantics
+      implicit val semantics: Semantics = DefaultSemantics()
       if (semantics.elements.isEmpty) {
         System.err.println("Warning: semantics are empty.")
       }
