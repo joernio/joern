@@ -1,5 +1,6 @@
 package io.joern.ghidra2cpg.querying.x86
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.language._
@@ -14,8 +15,7 @@ import io.shiftleft.utils.ProjectRoot
 class DataFlowTests extends GhidraBinToCpgSuite {
 
   implicit val resolver: ICallResolver = NoResolve
-  val semanticsFilename                = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-  implicit val semantics: Semantics             = Semantics.fromList(new Parser().parseFile(semanticsFilename))
+  implicit val semantics: Semantics             = DefaultSemantics()
   implicit var context: EngineContext  = EngineContext(semantics)
 
   override def passes(cpg: Cpg): Unit = {
