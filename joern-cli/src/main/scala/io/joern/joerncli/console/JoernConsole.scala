@@ -23,7 +23,7 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
 
   override val config: ConsoleConfig = JoernConsole.defaultConfig
 
-  implicit def semantics: Semantics = context.semantics
+  implicit var semantics: Semantics = context.semantics
 
   implicit def context: EngineContext =
     workspace.getActiveProject
