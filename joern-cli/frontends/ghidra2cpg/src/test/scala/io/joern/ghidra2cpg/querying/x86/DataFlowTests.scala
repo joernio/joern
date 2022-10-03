@@ -1,22 +1,18 @@
 package io.joern.ghidra2cpg.querying.x86
 
-import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.language.{ICallResolver, _}
 import io.shiftleft.semanticcpg.layers._
-import io.shiftleft.utils.ProjectRoot
 
 class DataFlowTests extends GhidraBinToCpgSuite {
 
   implicit val resolver: ICallResolver = NoResolve
-  implicit val semantics: Semantics             = DefaultSemantics()
-  implicit var context: EngineContext  = EngineContext(semantics)
+  implicit var context: EngineContext  = EngineContext()
 
   override def passes(cpg: Cpg): Unit = {
     val context = new LayerCreatorContext(cpg)
@@ -24,7 +20,6 @@ class DataFlowTests extends GhidraBinToCpgSuite {
     new TypeRelations().run(context)
     new ControlFlow().run(context)
     new CallGraph().run(context)
-
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
   }

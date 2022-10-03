@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.layers.dataflows
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.passes.reachingdef.ReachingDefPass
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
@@ -13,7 +14,7 @@ object OssDataFlow {
 
 class OssDataFlowOptions(var maxNumberOfDefinitions: Int = 4000) extends LayerCreatorOptions {}
 
-class OssDataFlow(opts: OssDataFlowOptions)(implicit s: Semantics) extends LayerCreator {
+class OssDataFlow(opts: OssDataFlowOptions)(implicit s: Semantics = DefaultSemantics()) extends LayerCreator {
 
   override val overlayName: String = OssDataFlow.overlayName
   override val description: String = OssDataFlow.description

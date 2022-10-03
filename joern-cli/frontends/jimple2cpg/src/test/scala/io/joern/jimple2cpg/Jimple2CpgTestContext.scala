@@ -1,6 +1,5 @@
 package io.joern.jimple2cpg
 
-import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
@@ -26,8 +25,6 @@ class Jimple2CpgTestContext {
       if (runDataflow) {
         val context = new LayerCreatorContext(cpg)
         val options = new OssDataFlowOptions()
-
-        implicit val semantics: Semantics = DefaultSemantics()
         new OssDataFlow(options).run(context)
       }
       buildResult = Some(cpg)

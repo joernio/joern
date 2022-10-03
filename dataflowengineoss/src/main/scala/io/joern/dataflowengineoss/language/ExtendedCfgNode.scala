@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.language
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Call,
   CfgNode,
@@ -29,14 +30,14 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 
   import ExtendedCfgNode._
 
-  def ddgIn(implicit semantics: Semantics): Traversal[CfgNode] = {
+  def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Traversal[CfgNode] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = traversal.flatMap(x => x.ddgIn(Vector(PathElement(x)), withInvisible = false, cache))
     cache.clear()
     result
   }
 
-  def ddgInPathElem(implicit semantics: Semantics): Traversal[PathElement] = {
+  def ddgInPathElem(implicit semantics: Semantics = DefaultSemantics()): Traversal[PathElement] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = traversal.flatMap(x => x.ddgInPathElem(Vector(PathElement(x)), withInvisible = false, cache))
     cache.clear()

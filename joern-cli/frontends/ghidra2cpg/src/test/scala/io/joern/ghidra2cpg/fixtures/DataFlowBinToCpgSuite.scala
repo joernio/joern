@@ -17,13 +17,11 @@ import scala.util.Try
 
 class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
 
-  implicit var semantics: Semantics            = _
   implicit var context: EngineContext = _
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    semantics = DefaultSemantics()
-    context = EngineContext(semantics)
+    context = EngineContext()
   }
 
   implicit val viewer: ImageViewer = (pathStr: String) =>

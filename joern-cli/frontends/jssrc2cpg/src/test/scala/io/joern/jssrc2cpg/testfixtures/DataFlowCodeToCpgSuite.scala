@@ -1,22 +1,18 @@
 package io.joern.jssrc2cpg.testfixtures
 
-import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 class DataFlowCodeToCpgSuite extends JsSrc2CpgSuite {
-
-  implicit var semantics: Semantics = DefaultSemantics()
 
   implicit var context: EngineContext = _
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    context = EngineContext(semantics)
+    context = EngineContext()
   }
 
   override def applyPasses(cpg: Cpg): Unit = {
