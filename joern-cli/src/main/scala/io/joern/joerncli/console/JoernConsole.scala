@@ -3,6 +3,7 @@ package io.joern.joerncli.console
 import better.files._
 import io.joern.console.workspacehandling.{ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, InstallConfig}
+import io.joern.dataflowengineoss.layers.dataflows.OssDataFlow
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.Cpg

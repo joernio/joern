@@ -8,12 +8,7 @@ import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 class DataFlowCodeToCpgSuite extends JsSrc2CpgSuite {
 
-  implicit var context: EngineContext = _
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    context = EngineContext()
-  }
+  implicit var context: EngineContext = EngineContext()
 
   override def applyPasses(cpg: Cpg): Unit = {
     super.applyPasses(cpg)
