@@ -37,9 +37,14 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
     cpg.call("require").map(Require).foreach { require =>
       require.methodFullName.foreach { fullName =>
-        diffGraph.setNodeProperty(require.call, "METHOD_FULL_NAME", fullName)
         cpg.method.fullNameExact(fullName).foreach { method =>
-          diffGraph.addEdge(require.call, method, EdgeTypes.CALL)
+          require.call.inAssignment.target.code.headOption.foreach { target =>
+            val nodesToPatch = require.call.file.method.ast.isCall.nameExact(target).dedup.l
+            nodesToPatch.foreach { node =>
+              diffGraph.setNodeProperty(node, "METHOD_FULL_NAME", fullName)
+              diffGraph.addEdge(node, method, EdgeTypes.CALL)
+            }
+          }
         }
       }
     }
