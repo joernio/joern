@@ -34,8 +34,8 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
     implicit val callResolver: NoResolve.type = NoResolve
     cpg.call("externalfunc").callee.fullName.l shouldBe List("sampleone.js::program:anonymous")
 
-    val sink   = cpg.call("log").argument(1).l
-    val source = cpg.literal.codeExact("\"foo\"").l
+    val sink   = cpg.call("log").argument(1)
+    val source = cpg.literal.codeExact("\"foo\"")
     sink.reachableByFlows(source).size shouldBe 2
   }
 
