@@ -137,7 +137,14 @@ abstract class AstCreatorBase(filename: String) {
     }
   }
 
-  def forAst(forNode: NewControlStructure, locals: Seq[Ast], initAsts: Seq[Ast], conditionAsts: Seq[Ast], updateAsts: Seq[Ast], bodyAst: Ast): Ast = {
+  def forAst(
+    forNode: NewControlStructure,
+    locals: Seq[Ast],
+    initAsts: Seq[Ast],
+    conditionAsts: Seq[Ast],
+    updateAsts: Seq[Ast],
+    bodyAst: Ast
+  ): Ast = {
     val lineNumber = forNode.lineNumber
     Ast(forNode)
       .withChildren(locals)

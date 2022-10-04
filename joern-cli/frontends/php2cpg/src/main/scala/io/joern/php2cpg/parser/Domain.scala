@@ -101,7 +101,13 @@ object Domain {
   final case class PhpContinueStmt(num: Option[Int], attributes: PhpAttributes)                 extends PhpStmt
   final case class PhpWhileStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
   final case class PhpDoStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes)    extends PhpStmt
-  final case class PhpForStmt(inits: List[PhpExpr], conditions: List[PhpExpr], loopExprs: List[PhpExpr], bodyStmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
+  final case class PhpForStmt(
+    inits: List[PhpExpr],
+    conditions: List[PhpExpr],
+    loopExprs: List[PhpExpr],
+    bodyStmts: List[PhpStmt],
+    attributes: PhpAttributes
+  ) extends PhpStmt
   final case class PhpIfStmt(
     cond: PhpExpr,
     stmts: List[PhpStmt],
@@ -338,10 +344,10 @@ object Domain {
   }
 
   private def readFor(json: Value): PhpForStmt = {
-    val inits = json("init").arr.map(readExpr).toList
+    val inits      = json("init").arr.map(readExpr).toList
     val conditions = json("cond").arr.map(readExpr).toList
-    val loopExprs = json("cond").arr.map(readExpr).toList
-    val bodyStmts = json("stmts").arr.map(readStmt).toList
+    val loopExprs  = json("cond").arr.map(readExpr).toList
+    val bodyStmts  = json("stmts").arr.map(readStmt).toList
 
     PhpForStmt(inits, conditions, loopExprs, bodyStmts, PhpAttributes(json))
   }
@@ -464,7 +470,11 @@ object Domain {
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name_FullyQualified") =>
         val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
         PhpNameExpr(name, PhpAttributes(json))
-      case _ => ??? // TODO: other matches are possible?
+      case Obj(value) if value.get("nodeType").map(_.str).contains("Expr_Variable") =>
+        readVariable(value)
+      case unhandled =>
+        logger.error(s"Found unhandled name type $unhandled")
+        ??? // TODO: other matches are possible?
     }
   }
 

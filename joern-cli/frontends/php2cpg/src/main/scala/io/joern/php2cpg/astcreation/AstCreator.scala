@@ -1,20 +1,44 @@
 package io.joern.php2cpg.astcreation
 
 import io.joern.php2cpg.astcreation.AstCreator.{TypeConstants, operatorSymbols}
+import io.joern.php2cpg.datastructures.Scope
 import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.datastructures.{Global, Scope}
+import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.utils.NodeBuilders.operatorCallNode
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewCall, NewControlStructure, NewIdentifier, NewJumpTarget, NewLiteral, NewMethod, NewMethodParameterIn, NewNode, NewTypeRef}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EdgeTypes,
+  EvaluationStrategies,
+  Operators,
+  PropertyNames
+}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  ExpressionNew,
+  NewBlock,
+  NewCall,
+  NewControlStructure,
+  NewIdentifier,
+  NewJumpTarget,
+  NewLiteral,
+  NewLocal,
+  NewMethod,
+  NewMethodParameterIn,
+  NewMethodReturn,
+  NewNode,
+  NewTypeDecl,
+  NewTypeRef
+}
+import io.shiftleft.proto.cpg.Cpg.CpgStruct.Edge.EdgeType
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstCreatorBase(filename) {
 
   private val logger = LoggerFactory.getLogger(AstCreator.getClass)
-  private val scope = new Scope[String, NewNode, NewNode]()
+  private val scope  = new Scope()
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val ast = astForPhpFile(phpAst)
@@ -43,9 +67,29 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForPhpFile(file: PhpFile): Ast = {
     val namespaceBlock = globalNamespaceBlock().filename(absolutePath(filename))
-    val children       = file.children.map(astForStmt)
 
-    Ast(namespaceBlock).withChildren(children)
+    val globalTypeDecl = NewTypeDecl()
+      .name(namespaceBlock.name)
+      .fullName(namespaceBlock.fullName)
+      .astParentFullName(namespaceBlock.fullName)
+      .code(namespaceBlock.code)
+      .filename(filename)
+
+    val globalMethod = NewMethod()
+      .name(globalTypeDecl.name)
+      .fullName(globalTypeDecl.fullName)
+      .astParentFullName(globalTypeDecl.fullName)
+      .code(globalTypeDecl.code)
+
+    scope.pushNewScope(globalMethod)
+    val children = file.children.map(astForStmt)
+    scope.popScope()
+
+    val globalMethodAst =
+      Ast(globalMethod).withChild(Ast(NewBlock()).withChildren(children)).withChild(Ast(NewMethodReturn()))
+    val globalTypeDeclAst = Ast(globalTypeDecl).withChild(globalMethodAst)
+
+    Ast(namespaceBlock).withChild(globalTypeDeclAst)
   }
 
   private def astForStmt(stmt: PhpStmt): Ast = {
@@ -83,16 +127,19 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
         .isExternal(false)
     scope.pushNewScope(methodNode)
 
-    val parameters   = decl.params.map(astForParam)
-    val methodBody   = stmtBlockAst(decl.stmts, line(decl))
-    val methodReturn = methodReturnNode(TypeConstants.Unresolved, line = line(decl), column = None)
+    val parameters      = decl.params.map(astForParam)
+    val methodBodyStmts = decl.stmts.map(astForStmt)
+    val methodReturn    = methodReturnNode(TypeConstants.Unresolved, line = line(decl), column = None)
+
+    val declLocals = scope.getLocalsInScope.map(Ast(_))
+    val methodBody = blockAst(NewBlock(), declLocals ++ methodBodyStmts)
 
     scope.popScope()
     methodAstWithAnnotations(methodNode, parameters, methodBody, methodReturn)
   }
 
   private def stmtBlockAst(stmts: Seq[PhpStmt], lineNumber: Option[Integer]): Ast = {
-    val bodyBlock    = NewBlock().lineNumber(lineNumber)
+    val bodyBlock = NewBlock().lineNumber(lineNumber)
 
     scope.pushNewScope(bodyBlock)
     val bodyStmtAsts = stmts.map(astForStmt)
@@ -197,9 +244,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   private def astForForStmt(stmt: PhpForStmt): Ast = {
     val lineNumber = line(stmt)
 
-    val initAsts = stmt.inits.map(astForExpr)
+    val initAsts      = stmt.inits.map(astForExpr)
     val conditionAsts = stmt.conditions.map(astForExpr)
-    val loopExprAsts = stmt.loopExprs.map(astForExpr)
+    val loopExprAsts  = stmt.loopExprs.map(astForExpr)
 
     val bodyAst = stmtBlockAst(stmt.bodyStmts, line(stmt))
 
@@ -328,6 +375,18 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .name(expr.name)
       .code(expr.name)
       .lineNumber(line(expr))
+
+    scope.lookupVariable(identifier.name) match {
+      case Some(declaringNode) =>
+        diffGraph.addEdge(identifier, declaringNode, EdgeTypes.REF)
+
+      case None =>
+        // With variable variables, it's possible to use a valid variable without having an obvious assignment to it.
+        // If a name is unknown at this point, assume it's a local that had a value assigned in some way at some point.
+        val local = NewLocal().name(identifier.name).code("$" + identifier.code).typeFullName(identifier.typeFullName)
+        scope.addToScope(local.name, local)
+        diffGraph.addEdge(identifier, local, EdgeTypes.REF)
+    }
 
     Ast(identifier)
   }
