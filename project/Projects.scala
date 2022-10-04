@@ -4,7 +4,7 @@ object Projects {
   val frontendsRoot = file("joern-cli/frontends")
 
   lazy val joerncli          = project.in(file("joern-cli"))
-  lazy val querydb           = project.in(file("querydb"))
+  // lazy val querydb           = project.in(file("querydb"))
   lazy val console           = project.in(file("console"))
   lazy val dataflowengineoss = project.in(file("dataflowengineoss"))
   lazy val macros            = project.in(file("macros"))
@@ -19,5 +19,5 @@ object Projects {
   lazy val jssrc2cpg   = project.in(frontendsRoot / "jssrc2cpg")
   lazy val javasrc2cpg = project.in(frontendsRoot / "javasrc2cpg")
   lazy val jimple2cpg  = project.in(frontendsRoot / "jimple2cpg")
-  lazy val kotlin2cpg  = project.in(frontendsRoot / "kotlin2cpg")
+  // lazy val kotlin2cpg  = project.in(frontendsRoot / "kotlin2cpg")
 }

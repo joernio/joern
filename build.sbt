@@ -5,7 +5,7 @@ ThisBuild / scalaVersion := "3.2.0"
 val cpgVersion = "1.3.561"
 
 lazy val joerncli          = Projects.joerncli
-lazy val querydb           = Projects.querydb
+// lazy val querydb           = Projects.querydb
 lazy val console           = Projects.console
 lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
@@ -19,11 +19,11 @@ lazy val php2cpg           = Projects.php2cpg
 lazy val jssrc2cpg         = Projects.jssrc2cpg
 lazy val javasrc2cpg       = Projects.javasrc2cpg
 lazy val jimple2cpg        = Projects.jimple2cpg
-lazy val kotlin2cpg        = Projects.kotlin2cpg
+// lazy val kotlin2cpg        = Projects.kotlin2cpg
 
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   joerncli,
-  querydb,
+  // querydb,
   console,
   dataflowengineoss,
   macros,
@@ -35,7 +35,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   jssrc2cpg,
   javasrc2cpg,
   jimple2cpg,
-  kotlin2cpg
+  // kotlin2cpg
 )
 
 // ammonite-cross depends on both scala3 and scala 2.13 dependencies, leading to inconsistent classpaths...
@@ -64,7 +64,7 @@ createDistribution := {
   val zip              = (joerncli / Universal / packageBin).value
 
   IO.copyFile(zip, distributionFile)
-  val querydbDistribution = (querydb / createDistribution).value
+  // val querydbDistribution = (querydb / createDistribution).value
 
   println(s"created distribution - resulting files: $distributionFile")
   distributionFile
