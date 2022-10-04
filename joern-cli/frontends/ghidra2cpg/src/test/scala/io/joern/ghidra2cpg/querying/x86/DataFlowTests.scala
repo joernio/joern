@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.language.{ICallResolver, _}
 import io.shiftleft.semanticcpg.layers._
@@ -16,10 +17,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
 
   override def passes(cpg: Cpg): Unit = {
     val context = new LayerCreatorContext(cpg)
-    new Base().run(context)
-    new TypeRelations().run(context)
-    new ControlFlow().run(context)
-    new CallGraph().run(context)
+    defaultOverlayCreators().foreach(_.run(context))
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
   }

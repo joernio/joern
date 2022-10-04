@@ -3,6 +3,7 @@ package io.joern.console
 import better.files.Dsl._
 import better.files._
 import io.joern.console.testing._
+import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
@@ -317,7 +318,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       )
       val numOverlayFilesBefore = console.project.path.resolve("overlays").toFile.list().length
       numOverlayFilesBefore shouldBe 4
-      console._runAnalyzer(new Base, new ControlFlow, new TypeRelations, new CallGraph)
+      console._runAnalyzer(defaultOverlayCreators(): _*)
       console.project.appliedOverlays shouldBe List(
         Base.overlayName,
         ControlFlow.overlayName,

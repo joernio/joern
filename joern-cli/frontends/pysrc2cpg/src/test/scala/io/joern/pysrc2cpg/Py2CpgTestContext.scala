@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg
 
-import io.joern.x2cpg.layers.{Base, CallGraph, TypeRelations, ControlFlow}
+import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -42,10 +43,7 @@ class Py2CpgTestContext private () {
       py2Cpg.buildCpg()
 
       val context = new LayerCreatorContext(cpg)
-      new Base().run(context)
-      new TypeRelations().run(context)
-      new ControlFlow().run(context)
-      new CallGraph().run(context)
+      defaultOverlayCreators().foreach(_.run(context))
       buildResult = Some(cpg)
     }
     buildResult.get

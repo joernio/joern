@@ -5,6 +5,7 @@ import better.files.File
 import io.joern.console.cpgcreation.ImportCode
 import io.joern.console.scripting.{AmmoniteExecutor, ScriptManager}
 import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceManager}
+import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
@@ -425,8 +426,7 @@ class Console[T <: Project](
     val appliedOverlays = io.shiftleft.semanticcpg.Overlays.appliedOverlays(cpg)
     if (appliedOverlays.isEmpty) {
       report("Adding default overlays to base CPG")
-      val overlayCreators = List(new Base, new ControlFlow, new TypeRelations, new CallGraph)
-      _runAnalyzer(overlayCreators: _*)
+      _runAnalyzer(defaultOverlayCreators(): _*)
     }
     cpg
   }
