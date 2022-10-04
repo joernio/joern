@@ -121,6 +121,19 @@ object Domain {
       extends PhpStmt
   final case class PhpCaseStmt(condition: Option[PhpExpr], stmts: List[PhpStmt], attributes: PhpAttributes)
       extends PhpStmt
+  final case class PhpTryStmt(
+    stmts: List[PhpStmt],
+    catches: List[PhpCatchStmt],
+    finallyStmt: Option[PhpFinallyStmt],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+  final case class PhpCatchStmt(
+    types: List[PhpNameExpr],
+    variable: Option[PhpExpr],
+    stmts: List[PhpStmt],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+  final case class PhpFinallyStmt(stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
 
   final case class PhpMethodDecl(
     name: String,
@@ -306,6 +319,7 @@ object Domain {
       case "Stmt_For"        => readFor(json)
       case "Stmt_If"         => readIf(json)
       case "Stmt_Switch"     => readSwitch(json)
+      case "Stmt_TryCatch"   => readTry(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -366,6 +380,28 @@ object Domain {
     val cases     = json("cases").arr.map(readCase).toList
 
     PhpSwitchStmt(condition, cases, PhpAttributes(json))
+  }
+
+  private def readTry(json: Value): PhpTryStmt = {
+    val stmts       = json("stmts").arr.map(readStmt).toList
+    val catches     = json("catches").arr.map(readCatch).toList
+    val finallyStmt = Option.unless(json("finally").isNull)(readFinally(json("finally")))
+
+    PhpTryStmt(stmts, catches, finallyStmt, PhpAttributes(json))
+  }
+
+  private def readCatch(json: Value): PhpCatchStmt = {
+    val types = json("types").arr.map(readName).toList
+    val variable = Option.unless(json("var").isNull)(readExpr(json("var")))
+    val stmts = json("stmts").arr.map(readStmt).toList
+
+    PhpCatchStmt(types, variable, stmts, PhpAttributes(json))
+  }
+
+  private def readFinally(json: Value): PhpFinallyStmt = {
+    val stmts = json("stmts").arr.map(readStmt).toList
+
+    PhpFinallyStmt(stmts, PhpAttributes(json))
   }
 
   private def readCase(json: Value): PhpCaseStmt = {
@@ -438,7 +474,13 @@ object Domain {
 
   private def readFunctionCall(json: Value): PhpFuncCall = {
     val args = json("args").arr.map(readCallArg).toSeq
-    PhpFuncCall(readName(json("name")), args, PhpAttributes(json))
+
+    val name = if (json("name")("nodeType").str.startsWith("Name_"))
+      readName(json("name"))
+    else
+      readExpr(json("name"))
+
+    PhpFuncCall(name, args, PhpAttributes(json))
   }
 
   private def readFunction(json: Value): PhpMethodDecl = {
@@ -464,14 +506,12 @@ object Domain {
     )
   }
 
-  private def readName(json: Value): PhpExpr = {
+  private def readName(json: Value): PhpNameExpr = {
     json match {
       case Str(name) => PhpNameExpr(name, PhpAttributes.Empty)
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name_FullyQualified") =>
         val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
         PhpNameExpr(name, PhpAttributes(json))
-      case Obj(value) if value.get("nodeType").map(_.str).contains("Expr_Variable") =>
-        readVariable(value)
       case unhandled =>
         logger.error(s"Found unhandled name type $unhandled")
         ??? // TODO: other matches are possible?
