@@ -6,7 +6,7 @@ import io.joern.php2cpg.parser.Domain.PhpCast.{CastTypeMap, isCastType}
 import io.joern.php2cpg.parser.Domain.PhpUnaryOp.{UnaryOpTypeMap, isUnaryOpType}
 import io.shiftleft.codepropertygraph.generated.Operators
 import org.slf4j.LoggerFactory
-import ujson.{Arr, Obj, Str, Value, reformatTo}
+import ujson.{Arr, Obj, Str, Value}
 
 import scala.collection.mutable
 import scala.util.{Success, Try}
