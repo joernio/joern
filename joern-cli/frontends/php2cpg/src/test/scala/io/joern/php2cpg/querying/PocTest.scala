@@ -39,9 +39,8 @@ class PocTest extends PhpCode2CpgFixture {
     }
 
     "have the correct method ast for the printHello method" in {
-      cpg.method.internal.l match {
+      cpg.method.internal.name("printHello").l match {
         case method :: Nil =>
-          method.name shouldBe "printHello"
           val List(param) = method.parameter.l
           param.name shouldBe "name"
           param.code shouldBe "name"

@@ -568,4 +568,124 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "for statements with the usual format" should {
+    val cpg = code("""<?php
+        |for ($i = 0; $i < 42; $i++) {
+        |  echo $i;
+        |}
+        |""".stripMargin)
+
+    "add a local for the initializer to the enclosing method" in {
+      inside(cpg.local.l) { case List(iLocal) =>
+        iLocal.name shouldBe "i"
+        iLocal.code shouldBe "$i"
+      }
+    }
+
+    "create the FOR control structure" in {
+      inside(cpg.controlStructure.l) { case List(forStructure) =>
+        forStructure.controlStructureType shouldBe ControlStructureTypes.FOR
+        forStructure.code shouldBe "for ($i = 0;$i < 42;$i++)"
+        forStructure.lineNumber shouldBe Some(2)
+      }
+    }
+
+    "create the correct initialiser AST" in {
+      inside(cpg.controlStructure.astChildren.l) { case List(initialiser, _, _, _) =>
+        initialiser.code shouldBe "$i = 0"
+        initialiser.lineNumber shouldBe Some(2)
+      }
+    }
+
+    "create the correct condition AST" in {
+      inside(cpg.controlStructure.astChildren.l) { case List(_, condition, _, _) =>
+        condition.code shouldBe "$i < 42"
+        condition.lineNumber shouldBe Some(2)
+
+        cpg.controlStructure.condition.l shouldBe List(condition)
+      }
+    }
+
+    "create the correct update AST" in {
+      inside(cpg.controlStructure.astChildren.l) { case List(_, _, update, _) =>
+        update.code shouldBe "$i++"
+        update.lineNumber shouldBe Some(2)
+      }
+    }
+
+    "create the correct body AST" in {
+      inside(cpg.controlStructure.astChildren.l) { case List(_, _, _, body: Block) =>
+        body.astChildren.code.l shouldBe List("echo $i")
+      }
+    }
+  }
+
+  "for statements with multiple inits, conditions and updates" should {
+    val cpg = code("""<?php
+        |for ($i = 0, $j = 100; $i < 42, $j > 42; $i++, $j--) {
+        |  echo $i;
+        |}
+        |""".stripMargin)
+
+    "add a local for the initializer to the enclosing method" in {
+      inside(cpg.local.sortBy(_.name).toList) { case List(iLocal, jLocal) =>
+        iLocal.name shouldBe "i"
+        iLocal.code shouldBe "$i"
+
+        jLocal.name shouldBe "j"
+        jLocal.code shouldBe "$j"
+      }
+    }
+
+    "create the FOR control structure" in {
+      inside(cpg.controlStructure.l) { case List(forStructure) =>
+        forStructure.controlStructureType shouldBe ControlStructureTypes.FOR
+        forStructure.code shouldBe "for ($i = 0,$j = 100;$i < 42,$j > 42;$i++,$j--)"
+        forStructure.lineNumber shouldBe Some(2)
+      }
+    }
+
+    "create the correct initialiser AST" in {
+      inside(cpg.controlStructure.astChildren.l) { case List(initialisers: Block, _, _, _) =>
+        inside(initialisers.astChildren.l) { case List(iInit, jInit) =>
+          iInit.code shouldBe "$i = 0"
+          iInit.lineNumber shouldBe Some(2)
+
+          jInit.code shouldBe "$j = 100"
+          jInit.lineNumber shouldBe Some(2)
+        }
+      }
+    }
+
+    "create the correct condition AST" in {
+      inside(cpg.controlStructure.astChildren.l) { case List(_, conditions: Block, _, _) =>
+        inside(conditions.astChildren.l) { case List(iCond, jCond) =>
+          iCond.code shouldBe "$i < 42"
+          iCond.lineNumber shouldBe Some(2)
+
+          jCond.code shouldBe "$j > 42"
+          jCond.lineNumber shouldBe Some(2)
+        }
+      }
+    }
+
+    "create the correct update AST" in {
+      inside(cpg.controlStructure.astChildren.l) { case List(_, _, updates: Block, _) =>
+        inside(updates.astChildren.l) { case List(iUpdate, jUpdate) =>
+          iUpdate.code shouldBe "$i++"
+          iUpdate.lineNumber shouldBe Some(2)
+
+          jUpdate.code shouldBe "$j--"
+          jUpdate.lineNumber shouldBe Some(2)
+        }
+      }
+    }
+
+    "create the correct body AST" in {
+      inside(cpg.controlStructure.astChildren.l) { case List(_, _, _, body: Block) =>
+        body.astChildren.code.l shouldBe List("echo $i")
+      }
+    }
+  }
 }

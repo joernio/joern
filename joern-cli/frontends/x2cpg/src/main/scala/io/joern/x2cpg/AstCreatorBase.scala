@@ -127,6 +127,34 @@ abstract class AstCreatorBase(filename: String) {
     }
   }
 
+  def wrapMultipleInBlock(asts: Seq[Ast], lineNumber: Option[Integer]): Ast = {
+    asts.toList match {
+      case Nil => blockAst(NewBlock().lineNumber(lineNumber))
+
+      case ast :: Nil => ast
+
+      case asts => blockAst(NewBlock().lineNumber(lineNumber), asts)
+    }
+  }
+
+  def forAst(
+    forNode: NewControlStructure,
+    locals: Seq[Ast],
+    initAsts: Seq[Ast],
+    conditionAsts: Seq[Ast],
+    updateAsts: Seq[Ast],
+    bodyAst: Ast
+  ): Ast = {
+    val lineNumber = forNode.lineNumber
+    Ast(forNode)
+      .withChildren(locals)
+      .withChild(wrapMultipleInBlock(initAsts, lineNumber))
+      .withChild(wrapMultipleInBlock(conditionAsts, lineNumber))
+      .withChild(wrapMultipleInBlock(updateAsts, lineNumber))
+      .withChild(bodyAst)
+      .withConditionEdges(forNode, conditionAsts.flatMap(_.root).toList)
+  }
+
   /** For a given block node and statement ASTs, create an AST that represents the block. The main purpose of this
     * method is to increase the readability of the code which creates block asts.
     */
