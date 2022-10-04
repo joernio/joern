@@ -236,7 +236,7 @@ object JoernScan extends App with BridgeBase {
   }
 
   override protected def predefPlus(lines: List[String]): String = AmmoniteBridge.predefPlus(lines)
-  override protected def promptStr                             = AmmoniteBridge.promptStr
+  override protected def promptStr()                             = AmmoniteBridge.promptStr
 
   override protected def greeting: String = AmmoniteBridge.greeting
 

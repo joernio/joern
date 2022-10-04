@@ -7,5 +7,5 @@ scalaVersion := "3.2.0"
 Compile/mainClass := Some("ammonite.AmmoniteMain")
 
 libraryDependencies ++= Seq(
-  "io.joern" %% "ammonite-fat" % "2.5.4+1-5d34cfc3" cross CrossVersion.full,
+  "io.joern" %% "ammonite-fat" % "2.5.4+3-fatterjar" cross CrossVersion.full,
 )
