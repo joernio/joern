@@ -216,15 +216,18 @@ trait ScriptExecution {
          |openForInputPath(\"$name\")
          |""".stripMargin
     }
-    ammonite
-      .Main(
+    ammonite.Main(
         predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks),
         welcomeBanner = None,
         storageBackend = new StorageBackend(slProduct),
         remoteLogging = false,
         colors = ammoniteColors(config)
-      )
-      .run()
+      ).run()._1 match {
+        case Res.Failure(msg) =>
+          System.err.println(s"error while trying to run ammonite repl: $msg")
+        case _ =>
+      }
+
   }
 
   protected def runScript(scriptFile: Path, config: Config) = {
