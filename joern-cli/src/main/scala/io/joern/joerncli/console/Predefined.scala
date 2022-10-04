@@ -42,7 +42,8 @@ object Predefined {
 
   def dynamicPredef(): String = {
     Run.codeForRunCommand() +
-      Help.codeForHelpCommand(classOf[io.joern.joerncli.console.JoernConsole])
+      Help.codeForHelpCommand(classOf[io.joern.joerncli.console.JoernConsole]) +
+      "ossDataFlowOptions = opts.ossdataflow"
   }
 
 }
