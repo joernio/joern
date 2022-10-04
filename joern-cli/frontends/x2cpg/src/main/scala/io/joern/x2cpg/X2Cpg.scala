@@ -1,7 +1,7 @@
 package io.joern.x2cpg
 
 import better.files.File
-import io.joern.x2cpg.X2Cpg.withErrorsToConsole
+import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
@@ -66,8 +66,8 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
     */
   def createCpg(config: T): Try[Cpg]
 
-  /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG closed not
-    * returned.
+  /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG is closed and
+    * not returned.
     */
   def run(config: T): Unit = {
     withErrorsToConsole(config) { _ =>
@@ -79,6 +79,22 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
           Failure(exception)
       }
     }
+  }
+
+  /** Create a CPG with default overlays according to given configuration
+    */
+  def createCpgWithDefaultOverlays(config: T): Try[Cpg] = {
+    val maybeCpg = createCpg(config)
+    maybeCpg.foreach(cpg => applyDefaultOverlays(cpg))
+    maybeCpg
+  }
+
+  /** Create a CPG for code at `inputPath` and apply default overlays.
+    */
+  def createCpgWithDefaultOverlays(inputName: String)(implicit defaultConfig: T): Try[Cpg] = {
+    val maybeCpg = createCpg(inputName)
+    maybeCpg.foreach(cpg => applyDefaultOverlays(cpg))
+    maybeCpg
   }
 
   /** Create a CPG for code at `inputName` (a single location) with default frontend configuration. If `outputName`

@@ -8,7 +8,6 @@ import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.javasrc2cpg.{JavaSrc2Cpg, Config => JavaSrcConfig}
 import io.joern.jimple2cpg.{Jimple2Cpg, Config => JimpleConfig}
-import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
@@ -140,8 +139,8 @@ class BenchmarkCpgContext {
     val cpg = guessLanguage(inputPath) match {
       case Some(language: String) =>
         language match {
-          case Languages.JAVASRC => JavaSrc2Cpg().createCpg(JavaSrcConfig(inputPath, cpgPath))
-          case Languages.JAVA    => Jimple2Cpg().createCpg(JimpleConfig(inputPath, cpgPath))
+          case Languages.JAVASRC => JavaSrc2Cpg().createCpgWithDefaultOverlays(JavaSrcConfig(inputPath, cpgPath))
+          case Languages.JAVA    => Jimple2Cpg().createCpgWithDefaultOverlays(JimpleConfig(inputPath, cpgPath))
           case _ => Failure(new RuntimeException(s"No supported language frontend for the benchmark at '$inputPath'"))
         }
       case None =>
@@ -149,7 +148,6 @@ class BenchmarkCpgContext {
           new RuntimeException(s"Unable to guess which language frontend to use to parse the benchmark at '$inputPath'")
         )
     }
-    applyDefaultOverlays(cpg.get)
     val context = new LayerCreatorContext(cpg.get)
     val options = new OssDataFlowOptions()
     val semanticsFile: String            = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
