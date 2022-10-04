@@ -3,39 +3,37 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{TypeConstants, operatorSymbols}
 import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.utils.NodeBuilders.operatorCallNode
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EvaluationStrategies,
-  Operators,
-  PropertyNames
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  ExpressionNew,
-  NewBlock,
-  NewCall,
-  NewControlStructure,
-  NewIdentifier,
-  NewJumpTarget,
-  NewLiteral,
-  NewMethod,
-  NewMethodParameterIn,
-  NewTypeRef
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewCall, NewControlStructure, NewIdentifier, NewJumpTarget, NewLiteral, NewMethod, NewMethodParameterIn, NewNode, NewTypeRef}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstCreatorBase(filename) {
 
   private val logger = LoggerFactory.getLogger(AstCreator.getClass)
+  private val scope = new Scope[String, NewNode, NewNode]()
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val ast = astForPhpFile(phpAst)
     storeInDiffGraph(ast, diffGraph)
     diffGraph
+  }
+
+  private def expectSingle(asts: List[Ast]): Ast = {
+    asts match {
+      case Nil =>
+        logger.warn(s"expectSingle found no asts. Returning emtpy AST in $filename")
+        Ast()
+
+      case single :: Nil => single
+
+      case head :: _ =>
+        logger.warn(s"expectSingle found multiple astas. Returning first in $filename")
+        head
+    }
   }
 
   private def registerType(typ: String): String = {
@@ -59,6 +57,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case contStmt: PhpContinueStmt => astForContinueStmt(contStmt)
       case whileStmt: PhpWhileStmt   => astForWhileStmt(whileStmt)
       case doStmt: PhpDoStmt         => astForDoStmt(doStmt)
+      case forStmt: PhpForStmt       => astForForStmt(forStmt)
       case ifStmt: PhpIfStmt         => astForIfStmt(ifStmt)
       case switchStmt: PhpSwitchStmt => astForSwitchStmt(switchStmt)
 
@@ -82,17 +81,23 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
         .code(decl.name)
         .lineNumber(line(decl))
         .isExternal(false)
+    scope.pushNewScope(methodNode)
 
     val parameters   = decl.params.map(astForParam)
     val methodBody   = stmtBlockAst(decl.stmts, line(decl))
     val methodReturn = methodReturnNode(TypeConstants.Unresolved, line = line(decl), column = None)
 
+    scope.popScope()
     methodAstWithAnnotations(methodNode, parameters, methodBody, methodReturn)
   }
 
   private def stmtBlockAst(stmts: Seq[PhpStmt], lineNumber: Option[Integer]): Ast = {
     val bodyBlock    = NewBlock().lineNumber(lineNumber)
+
+    scope.pushNewScope(bodyBlock)
     val bodyStmtAsts = stmts.map(astForStmt)
+    scope.popScope()
+
     Ast(bodyBlock).withChildren(bodyStmtAsts)
   }
 
@@ -109,6 +114,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .lineNumber(line(param))
       .isVariadic(param.isVariadic)
       .evaluationStrategy(evaluationStrategy)
+
+    scope.addToScope(param.name, paramNode)
 
     Ast(paramNode)
   }
@@ -187,6 +194,20 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     controlStructureAst(whileNode, Some(condition), List(body), placeConditionLast = true)
   }
 
+  private def astForForStmt(stmt: PhpForStmt): Ast = {
+    val lineNumber = line(stmt)
+
+    val initAsts = stmt.inits.map(astForExpr)
+    val conditionAsts = stmt.conditions.map(astForExpr)
+    val loopExprAsts = stmt.loopExprs.map(astForExpr)
+
+    val bodyAst = stmtBlockAst(stmt.bodyStmts, line(stmt))
+
+    val forNode = NewControlStructure().controlStructureType(ControlStructureTypes.FOR).lineNumber(lineNumber)
+    // TODO Create locals on first use of variable
+    forAst(forNode, Nil, initAsts, conditionAsts, loopExprAsts, bodyAst)
+  }
+
   private def astForIfStmt(ifStmt: PhpIfStmt): Ast = {
     val condition = astForExpr(ifStmt.cond)
 
@@ -197,8 +218,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case elseIf :: rest =>
         val newIfStmt     = PhpIfStmt(elseIf.cond, elseIf.stmts, rest, ifStmt.elseStmt, elseIf.attributes)
-        val wrappingBlock = Ast(NewBlock())
-        wrappingBlock.withChild(astForIfStmt(newIfStmt)) :: Nil
+        val wrappingBlock = NewBlock().lineNumber(line(elseIf))
+        scope.pushNewScope(wrappingBlock)
+        val wrappedAst = Ast(wrappingBlock).withChild(astForIfStmt(newIfStmt)) :: Nil
+        scope.popScope()
+        wrappedAst
     }
 
     val conditionCode = rootCode(condition)
@@ -218,8 +242,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .code(s"switch (${rootCode(conditionAst)})")
       .lineNumber(line(stmt))
 
+    val switchBodyBlock = NewBlock().lineNumber(line(stmt))
+    scope.pushNewScope(switchBodyBlock)
     val entryAsts  = stmt.cases.flatMap(astsForSwitchCase)
-    val switchBody = Ast(NewBlock().lineNumber(line(stmt))).withChildren(entryAsts)
+    val switchBody = Ast(switchBodyBlock).withChildren(entryAsts)
+    scope.popScope()
 
     controlStructureAst(switchNode, Some(conditionAst), switchBody :: Nil)
   }

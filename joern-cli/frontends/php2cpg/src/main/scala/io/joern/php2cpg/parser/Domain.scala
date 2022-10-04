@@ -101,6 +101,7 @@ object Domain {
   final case class PhpContinueStmt(num: Option[Int], attributes: PhpAttributes)                 extends PhpStmt
   final case class PhpWhileStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
   final case class PhpDoStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes)    extends PhpStmt
+  final case class PhpForStmt(inits: List[PhpExpr], conditions: List[PhpExpr], loopExprs: List[PhpExpr], bodyStmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
   final case class PhpIfStmt(
     cond: PhpExpr,
     stmts: List[PhpStmt],
@@ -296,6 +297,7 @@ object Domain {
       case "Stmt_Continue"   => readContinue(json)
       case "Stmt_While"      => readWhile(json)
       case "Stmt_Do"         => readDo(json)
+      case "Stmt_For"        => readFor(json)
       case "Stmt_If"         => readIf(json)
       case "Stmt_Switch"     => readSwitch(json)
       case unhandled =>
@@ -333,6 +335,15 @@ object Domain {
     val cond  = readExpr(json("cond"))
     val stmts = json("stmts").arr.toList.map(readStmt)
     PhpDoStmt(cond, stmts, PhpAttributes(json))
+  }
+
+  private def readFor(json: Value): PhpForStmt = {
+    val inits = json("init").arr.map(readExpr).toList
+    val conditions = json("cond").arr.map(readExpr).toList
+    val loopExprs = json("cond").arr.map(readExpr).toList
+    val bodyStmts = json("stmts").arr.map(readStmt).toList
+
+    PhpForStmt(inits, conditions, loopExprs, bodyStmts, PhpAttributes(json))
   }
 
   private def readIf(json: Value): PhpIfStmt = {
