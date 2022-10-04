@@ -346,7 +346,7 @@ object Domain {
   private def readFor(json: Value): PhpForStmt = {
     val inits      = json("init").arr.map(readExpr).toList
     val conditions = json("cond").arr.map(readExpr).toList
-    val loopExprs  = json("cond").arr.map(readExpr).toList
+    val loopExprs  = json("loop").arr.map(readExpr).toList
     val bodyStmts  = json("stmts").arr.map(readStmt).toList
 
     PhpForStmt(inits, conditions, loopExprs, bodyStmts, PhpAttributes(json))

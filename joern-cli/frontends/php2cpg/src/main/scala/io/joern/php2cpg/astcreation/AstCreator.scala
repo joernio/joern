@@ -250,8 +250,13 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val bodyAst = stmtBlockAst(stmt.bodyStmts, line(stmt))
 
-    val forNode = NewControlStructure().controlStructureType(ControlStructureTypes.FOR).lineNumber(lineNumber)
-    // TODO Create locals on first use of variable
+    val initCode      = initAsts.map(rootCode(_)).mkString(",")
+    val conditionCode = conditionAsts.map(rootCode(_)).mkString(",")
+    val loopExprCode  = loopExprAsts.map(rootCode(_)).mkString(",")
+    val forCode       = s"for ($initCode;$conditionCode;$loopExprCode)"
+
+    val forNode =
+      NewControlStructure().controlStructureType(ControlStructureTypes.FOR).lineNumber(lineNumber).code(forCode)
     forAst(forNode, Nil, initAsts, conditionAsts, loopExprAsts, bodyAst)
   }
 
