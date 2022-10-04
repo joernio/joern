@@ -177,6 +177,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case issetExpr: PhpIsset       => astForIssetExpr(issetExpr)
       case printExpr: PhpPrint       => astForPrintExpr(printExpr)
       case ternaryOp: PhpTernaryOp   => astForTernaryOp(ternaryOp)
+      case throwExpr: PhpThrowExpr   => astForThrow(throwExpr)
 
       case unhandled =>
         logger.warn(s"Unhandled expr: $unhandled")
@@ -527,6 +528,19 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val args = List(Some(conditionAst), maybeThenAst, Some(elseAst)).flatten
     callAst(callNode, args)
+  }
+
+  private def astForThrow(expr: PhpThrowExpr): Ast = {
+    val thrownExpr = astForExpr(expr.expr)
+    val code       = s"throw ${rootCode(thrownExpr)}"
+
+    val throwNode =
+      NewControlStructure()
+        .controlStructureType(ControlStructureTypes.THROW)
+        .code(code)
+        .lineNumber(line(expr))
+
+    Ast(throwNode).withChild(thrownExpr)
   }
 
   private def line(phpNode: PhpNode): Option[Integer] = phpNode.attributes.lineNumber

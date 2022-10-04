@@ -794,4 +794,18 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       catchBlocks.flatMap(_.lineNumber) shouldBe Set(4, 6)
     }
   }
+
+  "a throw in a try-catch should be created correctly" in {
+    val cpg = code("""<?php
+        |try {
+        |  throw $x;
+        |} catch (A $a) {}
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.THROW).l) { case List(throwExpr) =>
+      throwExpr.lineNumber shouldBe Some(3)
+      throwExpr.code shouldBe "throw $x"
+      throwExpr.astChildren.code.l shouldBe List("$x")
+    }
+  }
 }

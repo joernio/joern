@@ -6,7 +6,7 @@ import io.joern.php2cpg.parser.Domain.PhpCast.{CastTypeMap, isCastType}
 import io.joern.php2cpg.parser.Domain.PhpUnaryOp.{UnaryOpTypeMap, isUnaryOpType}
 import io.shiftleft.codepropertygraph.generated.Operators
 import org.slf4j.LoggerFactory
-import ujson.{Arr, Obj, Str, Value}
+import ujson.{Arr, Obj, Str, Value, reformatTo}
 
 import scala.collection.mutable
 import scala.util.{Success, Try}
@@ -280,6 +280,7 @@ object Domain {
       PhpEncapsedPart(s"\"${escapeString(value)}\"", attributes)
     }
   }
+  final case class PhpThrowExpr(expr: PhpExpr, attributes: PhpAttributes) extends PhpExpr
 
   private def escapeString(value: String): String = {
     value
@@ -320,6 +321,7 @@ object Domain {
       case "Stmt_If"         => readIf(json)
       case "Stmt_Switch"     => readSwitch(json)
       case "Stmt_TryCatch"   => readTry(json)
+      case "Stmt_Throw"      => readThrow(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -390,6 +392,12 @@ object Domain {
     PhpTryStmt(stmts, catches, finallyStmt, PhpAttributes(json))
   }
 
+  private def readThrow(json: Value): PhpThrowExpr = {
+    val expr = readExpr(json("expr"))
+
+    PhpThrowExpr(expr, PhpAttributes(json))
+  }
+
   private def readCatch(json: Value): PhpCatchStmt = {
     val types    = json("types").arr.map(readName).toList
     val variable = Option.unless(json("var").isNull)(readExpr(json("var")))
@@ -437,6 +445,8 @@ object Domain {
       case "Expr_Isset"    => readIsset(json)
       case "Expr_Print"    => readPrint(json)
       case "Expr_Ternary"  => readTernaryOp(json)
+
+      case "Expr_Throw" => readThrow(json)
 
       case typ if isUnaryOpType(typ)  => readUnaryOp(json)
       case typ if isBinaryOpType(typ) => readBinaryOp(json)
