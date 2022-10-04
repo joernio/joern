@@ -3,7 +3,6 @@ name := "console"
 enablePlugins(JavaAppPackaging)
 
 val ScoptVersion          = "4.0.1"
-val BetterFilesVersion    = "3.9.1"
 val CaskVersion           = "0.8.3"
 val CirceVersion          = "0.14.2"
 val AmmoniteVersion       = "2.5.4+3-fatterjar"
@@ -14,7 +13,6 @@ dependsOn(Projects.semanticcpg, Projects.macros, Projects.c2cpg % Test, Projects
 libraryDependencies ++= Seq(
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
   "com.github.scopt"     %% "scopt"             % ScoptVersion,
-  "com.github.pathikrit" %% "better-files"      % BetterFilesVersion,
   "org.typelevel"        %% "cats-effect"       % Versions.cats,
   "io.circe"             %% "circe-generic"     % CirceVersion,
   "io.circe"             %% "circe-parser"      % CirceVersion,
