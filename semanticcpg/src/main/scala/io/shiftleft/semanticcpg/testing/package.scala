@@ -3,8 +3,10 @@ package io.shiftleft.semanticcpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Languages, ModifierTypes}
-import io.shiftleft.passes.{CpgPass, DiffGraph}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.passes.{SimpleCpgPass}
+import io.shiftleft.semanticcpg.language.{NewTagNodePairTraversal, _}
+import overflowdb.BatchedUpdate
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 package object testing {
 
@@ -12,11 +14,25 @@ package object testing {
 
     def apply(): MockCpg = new MockCpg
 
-    def apply(f: (DiffGraph.Builder, Cpg) => Unit): MockCpg = new MockCpg().withCustom(f)
-
+    def apply(f: (DiffGraphBuilder, Cpg) => Unit): MockCpg = new MockCpg().withCustom(f)
   }
 
   case class MockCpg(cpg: Cpg = Cpg.emptyCpg) {
+
+    // TODO: remove this fn as soon as an appropriate `store` method has been defined on the traversal class itself
+    private def store(traversal: NewTagNodePairTraversal, diffGraph: DiffGraphBuilder): Unit = {
+      traversal.original.foreach { tagNodePair =>
+        val tag      = tagNodePair.tag
+        val tagValue = tagNodePair.node
+        diffGraph.addNode(tag.asInstanceOf[NewNode])
+        tagValue match {
+          case tagValue: StoredNode =>
+            diffGraph.addEdge(tagValue, tag.asInstanceOf[NewNode], EdgeTypes.TAGGED_BY)
+          case tagValue: NewNode =>
+            diffGraph.addEdge(tagValue, tag.asInstanceOf[NewNode], EdgeTypes.TAGGED_BY, Nil)
+        }
+      }
+    }
 
     def withMetaData(language: String = Languages.C): MockCpg = withMetaData(language, Nil)
 
@@ -125,12 +141,12 @@ package object testing {
       paramTags: List[(String, String)] = List()
     ): MockCpg =
       withCustom { (graph, cpg) =>
-        implicit val diffGraph: DiffGraph.Builder = graph
+        implicit val diffGraph: DiffGraphBuilder = graph
         methodTags.foreach { case (k, v) =>
-          cpg.method.name(methodName).newTagNodePair(k, v).store()
+          store(cpg.method.name(methodName).newTagNodePair(k, v), diffGraph)
         }
         paramTags.foreach { case (k, v) =>
-          cpg.method.name(methodName).parameter.newTagNodePair(k, v).store()
+          store(cpg.method.name(methodName).parameter.newTagNodePair(k, v), diffGraph)
         }
       }
 
@@ -198,12 +214,12 @@ package object testing {
       graph.addNode(newNode)
     }
 
-    def withCustom(f: (DiffGraph.Builder, Cpg) => Unit): MockCpg = {
-      val diffGraph = new DiffGraph.Builder
+    def withCustom(f: (DiffGraphBuilder, Cpg) => Unit): MockCpg = {
+      val diffGraph = new DiffGraphBuilder
       f(diffGraph, cpg)
-      class MyPass extends CpgPass(cpg) {
-        override def run(): Iterator[DiffGraph] = {
-          Iterator(diffGraph.build())
+      class MyPass extends SimpleCpgPass(cpg) {
+        override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+          builder.absorb(diffGraph)
         }
       }
       new MyPass().createAndApply()
