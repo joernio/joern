@@ -1,10 +1,18 @@
 package io.joern.jssrc2cpg
 
 import better.files.File
-import io.joern.jssrc2cpg.passes.{AstCreationPass, BuiltinTypesPass, JsMetaDataPass, TypeNodePass}
-import io.joern.jssrc2cpg.passes.ConfigPass
-import io.joern.jssrc2cpg.passes.DependenciesPass
-import io.joern.jssrc2cpg.passes.PrivateKeyFilePass
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.jssrc2cpg.JsSrc2Cpg.postProcessingPasses
+import io.joern.jssrc2cpg.passes.{
+  AstCreationPass,
+  BuiltinTypesPass,
+  ConfigPass,
+  DependenciesPass,
+  JsMetaDataPass,
+  PrivateKeyFilePass,
+  RequirePass,
+  TypeNodePass
+}
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.jssrc2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
@@ -12,6 +20,8 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.utils.HashUtil
 import io.joern.x2cpg.SourceFiles
+import io.shiftleft.passes.CpgPassBase
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.nio.file.Path
 import scala.util.Try
@@ -48,5 +58,21 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
       }
     }
   }
+
+  def createCpgWithAllOverlays(config: Config): Try[Cpg] = {
+    val maybeCpg = createCpgWithOverlays(config)
+    maybeCpg.foreach { cpg =>
+      new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
+      postProcessingPasses(cpg).foreach(_.createAndApply())
+    }
+    maybeCpg
+  }
+
+}
+
+object JsSrc2Cpg {
+
+  def postProcessingPasses(cpg: Cpg): List[CpgPassBase] =
+    List(new RequirePass(cpg))
 
 }

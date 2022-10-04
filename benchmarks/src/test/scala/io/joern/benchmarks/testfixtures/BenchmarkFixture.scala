@@ -139,8 +139,8 @@ class BenchmarkCpgContext {
     val cpg = guessLanguage(inputPath) match {
       case Some(language: String) =>
         language match {
-          case Languages.JAVASRC => JavaSrc2Cpg().createCpgWithDefaultOverlays(JavaSrcConfig(inputPath, cpgPath))
-          case Languages.JAVA    => Jimple2Cpg().createCpgWithDefaultOverlays(JimpleConfig(inputPath, cpgPath))
+          case Languages.JAVASRC => JavaSrc2Cpg().createCpgWithOverlays(JavaSrcConfig(inputPath, cpgPath))
+          case Languages.JAVA    => Jimple2Cpg().createCpgWithOverlays(JimpleConfig(inputPath, cpgPath))
           case _ => Failure(new RuntimeException(s"No supported language frontend for the benchmark at '$inputPath'"))
         }
       case None =>

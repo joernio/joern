@@ -18,7 +18,7 @@ class Jimple2CpgTestContext {
       val jimple2Cpg                     = Jimple2Cpg()
       val inputPath                      = writeCodeToFile(code).getAbsolutePath
       implicit val defaultConfig: Config = Config()
-      val cpg                            = jimple2Cpg.createCpgWithDefaultOverlays(inputPath).get
+      val cpg                            = jimple2Cpg.createCpgWithOverlays(inputPath).get
       if (runDataflow) {
         val context = new LayerCreatorContext(cpg)
         val options = new OssDataFlowOptions()

@@ -83,7 +83,7 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
 
   /** Create a CPG with default overlays according to given configuration
     */
-  def createCpgWithDefaultOverlays(config: T): Try[Cpg] = {
+  def createCpgWithOverlays(config: T): Try[Cpg] = {
     val maybeCpg = createCpg(config)
     maybeCpg.foreach(cpg => applyDefaultOverlays(cpg))
     maybeCpg
@@ -91,7 +91,7 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
 
   /** Create a CPG for code at `inputPath` and apply default overlays.
     */
-  def createCpgWithDefaultOverlays(inputName: String)(implicit defaultConfig: T): Try[Cpg] = {
+  def createCpgWithOverlays(inputName: String)(implicit defaultConfig: T): Try[Cpg] = {
     val maybeCpg = createCpg(inputName)
     maybeCpg.foreach(cpg => applyDefaultOverlays(cpg))
     maybeCpg

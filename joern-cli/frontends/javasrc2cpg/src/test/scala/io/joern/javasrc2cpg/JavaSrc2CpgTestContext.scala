@@ -17,7 +17,7 @@ class JavaSrc2CpgTestContext {
         outputPath = "",
         inferenceJarPaths = inferenceJarPaths
       )
-      val cpg = javaSrc2Cpg.createCpgWithDefaultOverlays(config)
+      val cpg = javaSrc2Cpg.createCpgWithOverlays(config)
       if (runDataflow) {
         val context = new LayerCreatorContext(cpg.get)
         val options = new OssDataFlowOptions()

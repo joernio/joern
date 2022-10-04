@@ -6,7 +6,7 @@ import io.joern.dataflowengineoss.language._
 
 class RequirePassTests extends DataFlowCodeToCpgSuite {
 
-  "`require` " in {
+  "methods imported via `require` should be resolved correctly" in {
     val cpg = code(
       """
          | const externalfunc = require('./sampleone')
@@ -29,7 +29,6 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
       "sampleone.js"
     )
 
-    new RequirePass(cpg).createAndApply()
     cpg.call("externalfunc").methodFullName.l shouldBe List("sampleone.js::program:anonymous")
     implicit val callResolver: NoResolve.type = NoResolve
     cpg.call("externalfunc").callee.fullName.l shouldBe List("sampleone.js::program:anonymous")
