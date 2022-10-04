@@ -391,9 +391,9 @@ object Domain {
   }
 
   private def readCatch(json: Value): PhpCatchStmt = {
-    val types = json("types").arr.map(readName).toList
+    val types    = json("types").arr.map(readName).toList
     val variable = Option.unless(json("var").isNull)(readExpr(json("var")))
-    val stmts = json("stmts").arr.map(readStmt).toList
+    val stmts    = json("stmts").arr.map(readStmt).toList
 
     PhpCatchStmt(types, variable, stmts, PhpAttributes(json))
   }
@@ -475,10 +475,11 @@ object Domain {
   private def readFunctionCall(json: Value): PhpFuncCall = {
     val args = json("args").arr.map(readCallArg).toSeq
 
-    val name = if (json("name")("nodeType").str.startsWith("Name_"))
-      readName(json("name"))
-    else
-      readExpr(json("name"))
+    val name =
+      if (json("name")("nodeType").str.startsWith("Name_"))
+        readName(json("name"))
+      else
+        readExpr(json("name"))
 
     PhpFuncCall(name, args, PhpAttributes(json))
   }

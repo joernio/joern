@@ -688,4 +688,110 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "a full try-catch-finally chain" should {
+    val cpg = code("""<?php
+        |try {
+        |  $body1;
+        |} catch (A $a) {
+        |  $body2;
+        |} catch (B $b) {
+        |  $body3;
+        |} finally {
+        |  $body4;
+        |}
+        |""".stripMargin)
+
+    "create the try block correctly" in {
+      inside(cpg.controlStructure.l) { case List(tryStructure) =>
+        tryStructure.controlStructureType shouldBe ControlStructureTypes.TRY
+        tryStructure.lineNumber shouldBe Some(2)
+
+        inside(tryStructure.astChildren.l) { case List(body: Block, _, _, _) =>
+          body.order shouldBe 1
+          inside(body.astChildren.code.l) { case List(bodyCode) =>
+            bodyCode shouldBe "$body1"
+          }
+        }
+      }
+    }
+
+    "create the catch blocks correctly" in {
+      val catchBlocks = cpg.controlStructure.astChildren.order(2).toSet
+
+      catchBlocks.flatMap(_.astChildren.code.toSet) shouldBe Set("$body2", "$body3")
+      catchBlocks.flatMap(_.lineNumber) shouldBe Set(4, 6)
+    }
+
+    "create the finally block correctly" in {
+      inside(cpg.controlStructure.astChildren.order(3).l) { case List(finallyBlock) =>
+        finallyBlock.astChildren.code.toSet shouldBe Set("$body4")
+        finallyBlock.lineNumber shouldBe Some(8)
+      }
+    }
+  }
+
+  "a try-finally chain" should {
+    val cpg = code("""<?php
+        |try {
+        |  $body1;
+        |} finally {
+        |  $body4;
+        |}
+        |""".stripMargin)
+
+    "create the try block correctly" in {
+      inside(cpg.controlStructure.l) { case List(tryStructure) =>
+        tryStructure.controlStructureType shouldBe ControlStructureTypes.TRY
+        tryStructure.lineNumber shouldBe Some(2)
+
+        inside(tryStructure.astChildren.l) { case List(body: Block, _) =>
+          body.order shouldBe 1
+          inside(body.astChildren.code.l) { case List(bodyCode) =>
+            bodyCode shouldBe "$body1"
+          }
+        }
+      }
+    }
+
+    "create the finally block correctly" in {
+      inside(cpg.controlStructure.astChildren.order(3).l) { case List(finallyBlock) =>
+        finallyBlock.astChildren.code.toSet shouldBe Set("$body4")
+        finallyBlock.lineNumber shouldBe Some(4)
+      }
+    }
+  }
+
+  "a try-catch chain without finally" should {
+    val cpg = code("""<?php
+        |try {
+        |  $body1;
+        |} catch (A $a) {
+        |  $body2;
+        |} catch (B $b) {
+        |  $body3;
+        |}
+        |""".stripMargin)
+
+    "create the try block correctly" in {
+      inside(cpg.controlStructure.l) { case List(tryStructure) =>
+        tryStructure.controlStructureType shouldBe ControlStructureTypes.TRY
+        tryStructure.lineNumber shouldBe Some(2)
+
+        inside(tryStructure.astChildren.l) { case List(body: Block, _, _) =>
+          body.order shouldBe 1
+          inside(body.astChildren.code.l) { case List(bodyCode) =>
+            bodyCode shouldBe "$body1"
+          }
+        }
+      }
+    }
+
+    "create the catch blocks correctly" in {
+      val catchBlocks = cpg.controlStructure.astChildren.order(2).toSet
+
+      catchBlocks.flatMap(_.astChildren.code.toSet) shouldBe Set("$body2", "$body3")
+      catchBlocks.flatMap(_.lineNumber) shouldBe Set(4, 6)
+    }
+  }
 }

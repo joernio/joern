@@ -140,7 +140,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def stmtBlockAst(stmts: Seq[PhpStmt], lineNumber: Option[Integer]): Ast = {
-    val bodyBlock = NewBlock().lineNumber(lineNumber)
+    val bodyBlock    = NewBlock().lineNumber(lineNumber)
     val bodyStmtAsts = stmts.map(astForStmt)
     Ast(bodyBlock).withChildren(bodyStmtAsts)
   }
@@ -268,7 +268,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case elseIf :: rest =>
         val newIfStmt     = PhpIfStmt(elseIf.cond, elseIf.stmts, rest, ifStmt.elseStmt, elseIf.attributes)
         val wrappingBlock = NewBlock().lineNumber(line(elseIf))
-        val wrappedAst = Ast(wrappingBlock).withChild(astForIfStmt(newIfStmt)) :: Nil
+        val wrappedAst    = Ast(wrappingBlock).withChild(astForIfStmt(newIfStmt)) :: Nil
         wrappedAst
     }
 
@@ -290,14 +290,28 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .lineNumber(line(stmt))
 
     val switchBodyBlock = NewBlock().lineNumber(line(stmt))
-    val entryAsts  = stmt.cases.flatMap(astsForSwitchCase)
-    val switchBody = Ast(switchBodyBlock).withChildren(entryAsts)
+    val entryAsts       = stmt.cases.flatMap(astsForSwitchCase)
+    val switchBody      = Ast(switchBodyBlock).withChildren(entryAsts)
 
     controlStructureAst(switchNode, Some(conditionAst), switchBody :: Nil)
   }
 
   private def astForTryStmt(stmt: PhpTryStmt): Ast = {
-    Ast()
+    val tryBody     = stmtBlockAst(stmt.stmts, line(stmt))
+    val catches     = stmt.catches.map(astForCatchStmt)
+    val finallyBody = stmt.finallyStmt.map(fin => stmtBlockAst(fin.stmts, line(fin)))
+
+    val tryNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.TRY)
+      .code("TODO")
+      .lineNumber(line(stmt))
+
+    tryCatchAst(tryNode, tryBody, catches, finallyBody)
+  }
+
+  private def astForCatchStmt(stmt: PhpCatchStmt): Ast = {
+    // TODO Add variable at some point. Current implementation is consistent with C++.
+    stmtBlockAst(stmt.stmts, line(stmt))
   }
 
   private def astsForSwitchCase(caseStmt: PhpCaseStmt): List[Ast] = {
