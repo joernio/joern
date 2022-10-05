@@ -104,6 +104,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case forStmt: PhpForStmt       => astForForStmt(forStmt)
       case ifStmt: PhpIfStmt         => astForIfStmt(ifStmt)
       case switchStmt: PhpSwitchStmt => astForSwitchStmt(switchStmt)
+      case tryStmt: PhpTryStmt       => astForTryStmt(tryStmt)
 
       case unhandled =>
         logger.warn(s"Unhandled stmt: $unhandled")
@@ -139,12 +140,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def stmtBlockAst(stmts: Seq[PhpStmt], lineNumber: Option[Integer]): Ast = {
-    val bodyBlock = NewBlock().lineNumber(lineNumber)
-
-    scope.pushNewScope(bodyBlock)
+    val bodyBlock    = NewBlock().lineNumber(lineNumber)
     val bodyStmtAsts = stmts.map(astForStmt)
-    scope.popScope()
-
     Ast(bodyBlock).withChildren(bodyStmtAsts)
   }
 
@@ -180,6 +177,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case issetExpr: PhpIsset       => astForIssetExpr(issetExpr)
       case printExpr: PhpPrint       => astForPrintExpr(printExpr)
       case ternaryOp: PhpTernaryOp   => astForTernaryOp(ternaryOp)
+      case throwExpr: PhpThrowExpr   => astForThrow(throwExpr)
 
       case unhandled =>
         logger.warn(s"Unhandled expr: $unhandled")
@@ -271,9 +269,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case elseIf :: rest =>
         val newIfStmt     = PhpIfStmt(elseIf.cond, elseIf.stmts, rest, ifStmt.elseStmt, elseIf.attributes)
         val wrappingBlock = NewBlock().lineNumber(line(elseIf))
-        scope.pushNewScope(wrappingBlock)
-        val wrappedAst = Ast(wrappingBlock).withChild(astForIfStmt(newIfStmt)) :: Nil
-        scope.popScope()
+        val wrappedAst    = Ast(wrappingBlock).withChild(astForIfStmt(newIfStmt)) :: Nil
         wrappedAst
     }
 
@@ -295,12 +291,28 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .lineNumber(line(stmt))
 
     val switchBodyBlock = NewBlock().lineNumber(line(stmt))
-    scope.pushNewScope(switchBodyBlock)
-    val entryAsts  = stmt.cases.flatMap(astsForSwitchCase)
-    val switchBody = Ast(switchBodyBlock).withChildren(entryAsts)
-    scope.popScope()
+    val entryAsts       = stmt.cases.flatMap(astsForSwitchCase)
+    val switchBody      = Ast(switchBodyBlock).withChildren(entryAsts)
 
     controlStructureAst(switchNode, Some(conditionAst), switchBody :: Nil)
+  }
+
+  private def astForTryStmt(stmt: PhpTryStmt): Ast = {
+    val tryBody     = stmtBlockAst(stmt.stmts, line(stmt))
+    val catches     = stmt.catches.map(astForCatchStmt)
+    val finallyBody = stmt.finallyStmt.map(fin => stmtBlockAst(fin.stmts, line(fin)))
+
+    val tryNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.TRY)
+      .code("TODO")
+      .lineNumber(line(stmt))
+
+    tryCatchAst(tryNode, tryBody, catches, finallyBody)
+  }
+
+  private def astForCatchStmt(stmt: PhpCatchStmt): Ast = {
+    // TODO Add variable at some point. Current implementation is consistent with C++.
+    stmtBlockAst(stmt.stmts, line(stmt))
   }
 
   private def astsForSwitchCase(caseStmt: PhpCaseStmt): List[Ast] = {
@@ -516,6 +528,19 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val args = List(Some(conditionAst), maybeThenAst, Some(elseAst)).flatten
     callAst(callNode, args)
+  }
+
+  private def astForThrow(expr: PhpThrowExpr): Ast = {
+    val thrownExpr = astForExpr(expr.expr)
+    val code       = s"throw ${rootCode(thrownExpr)}"
+
+    val throwNode =
+      NewControlStructure()
+        .controlStructureType(ControlStructureTypes.THROW)
+        .code(code)
+        .lineNumber(line(expr))
+
+    Ast(throwNode).withChild(thrownExpr)
   }
 
   private def line(phpNode: PhpNode): Option[Integer] = phpNode.attributes.lineNumber
