@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "org.zeroturnaround"    % "zt-zip"            % ZeroturnaroundVersion,
   "io.joern"             %% "ammonite-fat"      % AmmoniteVersion cross CrossVersion.full,
   "com.lihaoyi"          %% "os-lib"            % "0.8.1",
-  // "com.lihaoyi"          %% "upickle"           % "2.0.0",
+  "com.lihaoyi"          %% "upickle"           % "2.0.0", // override what cask brings in...
   "com.lihaoyi"          %% "cask"              % CaskVersion,
   "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
 )
