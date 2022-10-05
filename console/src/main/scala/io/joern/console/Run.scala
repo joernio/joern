@@ -66,7 +66,7 @@ object Run {
          |
          |val opts = new OptsDynamic()
          |
-         |import _root_.io.shiftleft.passes.DiffGraph
+         |import io.shiftleft.passes.DiffGraph
          |
          |@scala.annotation.nowarn
          |implicit def _diffGraph: DiffGraph.Builder = opts.commit.diffGraphBuilder
