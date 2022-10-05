@@ -38,4 +38,32 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
     sink.reachableByFlows(source).size shouldBe 2
   }
 
+  "methods imported via `import` should be resolved correctly" in {
+    val cpg = code(
+      """
+         | import {foo, bar} from './sampleone.mjs';
+         | x = "literal";
+         | foo(literal);
+         | bar(literal);
+      """.stripMargin,
+      "sample.js"
+    )
+
+    cpg.moreCode(
+      """
+        |export function foo(x) {
+        |console.log(x);
+        |}
+        |
+        |export function bar(x) {
+        |console.log(x);
+        |}
+        |""".stripMargin,
+      "sampleone.mjs"
+    )
+
+    cpg.method.foreach(println)
+
+  }
+
 }
