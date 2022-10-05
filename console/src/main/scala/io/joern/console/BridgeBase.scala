@@ -221,7 +221,7 @@ trait ScriptExecution {
          |openForInputPath(\"$name\")
          |""".stripMargin
     }
-    
+
     val predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks)
     if (config.verbose) println(
       s"""starting ammonite with following predef code:
@@ -431,4 +431,23 @@ trait ServerHandling { this: BridgeBase =>
     }
   }
 
+}
+
+object Foo {
+  def main(args: Array[String]): Unit = {
+    val scriptArgs: Seq[String] =
+//      Nil
+      Seq("--cpgFile", "foo.cpg.bin")
+
+    val predefCode = ""
+
+//    os.write(os.Path("/home/mp/Projects/shiftleft/joern/main-output"), "iwashere")
+    val scriptFile = os.Path("/home/mp/Projects/shiftleft/joern/test.sc")
+
+    val res = ammonite
+      .Main(predefCode = predefCode)
+      .runScript(scriptFile, scriptArgs)
+
+    println(res)
+  }
 }

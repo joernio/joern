@@ -5,7 +5,7 @@ enablePlugins(JavaAppPackaging)
 val ScoptVersion          = "4.1.0"
 val CaskVersion           = "0.8.3"
 val CirceVersion          = "0.14.2"
-val AmmoniteVersion       = "2.5.4+3-fatterjar"
+val AmmoniteVersion       = "2.5.4+4-fatter-mainargs030"
 val ZeroturnaroundVersion = "1.15"
 
 dependsOn(Projects.semanticcpg, Projects.macros, Projects.c2cpg % Test, Projects.x2cpg % "compile->compile;test->test")
@@ -19,6 +19,7 @@ libraryDependencies ++= Seq(
   "org.zeroturnaround"    % "zt-zip"            % ZeroturnaroundVersion,
   "io.joern"             %% "ammonite-fat"      % AmmoniteVersion cross CrossVersion.full,
   "com.lihaoyi"          %% "os-lib"            % "0.8.1",
+  // "com.lihaoyi"          %% "upickle"           % "2.0.0",
   "com.lihaoyi"          %% "cask"              % CaskVersion,
   "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
 )

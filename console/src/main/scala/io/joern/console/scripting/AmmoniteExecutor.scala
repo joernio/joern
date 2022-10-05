@@ -78,6 +78,7 @@ trait AmmoniteExecutor {
      * https://contributors.scala-lang.org/t/scala-3-and-reflection/3627/10
      */
 //    runScript(scriptPath, parameters, bindings = IndexedSeq("cpg" -> cpg))
+    println("TODO")
     ???
   }
 
@@ -120,8 +121,9 @@ trait AmmoniteExecutor {
     /** TODO try to find a different way for runScript - TypeTags got dropped from scala 3...
      * https://contributors.scala-lang.org/t/scala-3-and-reflection/3627/10
      */
-//    runScripts(scriptPaths, parameters, bindings = IndexedSeq("cpg" -> cpg))
+    println("TODO")
     ???
+//    runScripts(scriptPaths, parameters, bindings = IndexedSeq("cpg" -> cpg))
   }
 
   /** Runs a query against the provided CPG.

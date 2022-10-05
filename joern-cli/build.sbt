@@ -6,6 +6,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft"            %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"             %% "requests"          % "0.7.1",
   "com.github.scopt"        %% "scopt"             % "4.1.0",
+  "com.lihaoyi"              % "upickle_2.13"      % "2.0.0" force(),
   "io.circe"                %% "circe-generic"     % "0.14.2",
   "org.reflections"          % "reflections"       % "0.10.2",
   "org.apache.logging.log4j" % "log4j-slf4j-impl"  % Versions.log4j     % Runtime,
