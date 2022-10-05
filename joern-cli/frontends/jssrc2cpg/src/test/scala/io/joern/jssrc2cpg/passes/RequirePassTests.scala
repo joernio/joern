@@ -42,9 +42,10 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
     val cpg = code(
       """
          | import {foo, bar} from './sampleone.mjs';
-         | x = "literal";
-         | foo(literal);
-         | bar(literal);
+         | var x = "literal";
+         | foo(x);
+         | bar(x);
+         |
       """.stripMargin,
       "sample.js"
     )
@@ -62,7 +63,17 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
       "sampleone.mjs"
     )
 
-    cpg.call("foo").methodFullName.foreach(println)
+    implicit val callResolver: NoResolve.type = NoResolve
+    cpg.call("foo").methodFullName.l shouldBe List("sampleone.mjs::program:foo")
+    cpg.call("foo").callee.fullName.l shouldBe List("sampleone.mjs::program:foo")
+    cpg.call("bar").methodFullName.l shouldBe List("sampleone.mjs::program:bar")
+    cpg.call("bar").callee.fullName.l shouldBe List("sampleone.mjs::program:bar")
+
+    val sink   = cpg.call("log").argument(1).l
+    val source = cpg.literal.codeExact("\"literal\"").l
+    sink.size shouldBe 2
+    source.size shouldBe 1
+    sink.reachableByFlows(source).size shouldBe 2
   }
 
 }

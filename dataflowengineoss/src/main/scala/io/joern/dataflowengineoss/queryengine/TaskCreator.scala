@@ -47,7 +47,7 @@ class TaskCreator(sources: Set[CfgNode]) {
         val newCallSiteStack = result.callSiteStack.clone()
         val callSite         = newCallSiteStack.pop()
         paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
-          ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1, newCallSiteStack)
+          ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth - 1, newCallSiteStack)
         }
       }
     }
