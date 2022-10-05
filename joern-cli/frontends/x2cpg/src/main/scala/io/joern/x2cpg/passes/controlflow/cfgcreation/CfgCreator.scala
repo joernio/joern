@@ -156,9 +156,13 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     */
   protected def cfgForBreakStatement(node: ControlStructure): Cfg = {
     node.astChildren.find(_.order == 1) match {
-      case Some(jumpLabel) =>
-        val labelName = jumpLabel.asInstanceOf[JumpLabel].name
+      case Some(jumpLabel: JumpLabel) =>
+        val labelName = jumpLabel.name
         Cfg(entryNode = Some(node), jumpsToLabel = List((node, labelName)))
+      case Some(_: Literal) =>
+        // TODO: PHP breaks take an integer argument which determines how many blocks should be broken out of. Creating
+        //  the CFG for that correctly is still a TODO, but this prevents crashes.
+        Cfg(entryNode = Some(node), breaks = List(node))
       case None =>
         Cfg(entryNode = Some(node), breaks = List(node))
     }
@@ -166,9 +170,13 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
   protected def cfgForContinueStatement(node: ControlStructure): Cfg = {
     node.astChildren.find(_.order == 1) match {
-      case Some(jumpLabel) =>
-        val labelName = jumpLabel.asInstanceOf[JumpLabel].name
+      case Some(jumpLabel: JumpLabel) =>
+        val labelName = jumpLabel.name
         Cfg(entryNode = Some(node), jumpsToLabel = List((node, labelName)))
+      case Some(_: Literal) =>
+        // TODO: PHP breaks take an integer argument which determines how many blocks should be broken out of. Creating
+        //  the CFG for that correctly is still a TODO, but this prevents crashes.
+        Cfg(entryNode = Some(node), breaks = List(node))
       case None =>
         Cfg(entryNode = Some(node), continues = List(node))
     }
