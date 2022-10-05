@@ -12,31 +12,38 @@ import java.nio.file.Paths
 
 class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
-  val codeRoot                = cpg.metaData.root.headOption.getOrElse("")
-  val moduleExportAssignments = cpg.assignment.where(_.target.codeExact("module.exports")).l
+  private val codeRoot = cpg.metaData.root.headOption.getOrElse("")
 
-  val fileNameToMethodFullName = Traversal(moduleExportAssignments).source.isMethodRef.flatMap { ref =>
-    ref.file.name.headOption.map { x =>
-      val filename = Paths.get(codeRoot, x).toAbsolutePath.normalize.toString
-      filename -> ref.methodFullName
-    }
-  }.toMap
+  /** A map from file names to method full names based on assignments to `module.exports`.
+    */
+  val fileNameToMethodFullName: Map[String, String] = {
+    val moduleExportAssignments = cpg.assignment.where(_.target.codeExact("module.exports")).l
+    Traversal(moduleExportAssignments).source.isMethodRef.flatMap { ref =>
+      ref.file.name.headOption.map { x =>
+        val filename = fileToAbsolutePath(x)
+        filename -> ref.methodFullName
+      }
+    }.toMap
+  }
 
+  /** A map from (filename, symbol) pairs to method full names based on `export` statements.
+    */
   val exportTable: Map[(String, String), String] = {
     val assignments = cpg.methodRef
       .where(_.method.fullName(".*::program"))
       .inAssignment
-
     val pairs =
       for {
         assignment     <- assignments
         identifier     <- Traversal(assignment).target.isIdentifier.name.l
-        filename       <- Traversal(assignment).file.name.l
+        filename       <- Traversal(assignment).file.name.map(fileToAbsolutePath).l
         methodFullName <- Traversal(assignment).source.isMethodRef.methodFullName.l
       } yield ((filename, identifier) -> methodFullName)
-
     pairs.toMap
   }
+
+  private def fileToAbsolutePath(file: String) =
+    Paths.get(codeRoot, file).toAbsolutePath.normalize.toString
 
   case class Require(call: Call) {
 
@@ -52,11 +59,24 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
       .isLiteral
       .code
       .map(stripQuotes)
-      .map { x => Paths.get(dirHoldingModule, x).toAbsolutePath.normalize.toString + ".js" }
+      .map { x =>
+        val path = Paths.get(dirHoldingModule, x).toAbsolutePath.normalize.toString
+        if (path.endsWith(".mjs")) {
+          path
+        } else {
+          path + ".js"
+        }
+      }
       .headOption
       .getOrElse("")
 
-    val methodFullName: Option[String] = fileNameToMethodFullName.get(fileToInclude)
+    val methodFullName: Option[String] = {
+      if (symbol == "") {
+        fileNameToMethodFullName.get(fileToInclude)
+      } else {
+        exportTable.get((fileToInclude, symbol))
+      }
+    }
 
     val target: String = call.inAssignment.target.code.head
 
@@ -77,7 +97,7 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
   }
 
-  def stripQuotes(str: String) = {
+  private def stripQuotes(str: String) = {
     if (str.length >= 2 && str.startsWith("\"") && str.endsWith("\"")) {
       str.substring(1, str.length - 1)
     } else if (str.length >= 2 && str.startsWith("'") && str.endsWith("'")) {

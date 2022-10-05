@@ -62,8 +62,7 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
       "sampleone.mjs"
     )
 
-    cpg.method.foreach(println)
-
+    cpg.call("foo").methodFullName.foreach(println)
   }
 
 }
