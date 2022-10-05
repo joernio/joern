@@ -2,6 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.parser.Domain.PhpBuiltins
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language._
 
 class CfgTests extends PhpCode2CpgFixture {
@@ -109,6 +110,64 @@ class CfgTests extends PhpCode2CpgFixture {
 
     "find that sink3 does not post dominate sink2" in {
       cpg.call("sink3").postDominates.isCall.name.toSet should not contain "sink2"
+    }
+  }
+
+  "the CFG for foreach constructs" should {
+    val cpg = code("""<?php
+        |function foo() {
+        |  pre();
+        |  for ($i = 0; $i < 10; $i++) {
+        |    sink($i);
+        |  }
+        |  post();
+        |}
+        |""".stripMargin)
+
+    "find that the sink call is controlled by the comparison" in {
+      cpg.call.name("sink").controlledBy.collectAll[Call].code.toSet should contain("$i < 10")
+    }
+
+    "find that the initializer dominates the sink call" in {
+      cpg.call.name("sink").dominatedBy.collectAll[Call].code.toSet should contain("$i = 0")
+    }
+
+    "find that the sink call does not dominate the post call" in {
+      cpg.call.name("sink").dominates.collectAll[Call].name.toSet should not contain "post"
+    }
+  }
+
+  "the CFG for try constructs" should {
+    val cpg = code("""<?php
+        |function foo() {
+        |  call1();
+        |  try {
+        |    call2();
+        |  } catch (A $a) {
+        |    call3();
+        |  } catch (B $b) {
+        |    call4();
+        |  } finally {
+        |    call5();
+        |  }
+        |  call6();
+        |}
+        |""".stripMargin)
+
+    "find that call1 dominates all other calls" in {
+      cpg.call.name("call1").dominates.collectAll[Call].name.toSet shouldBe (2 to 6).map(num => s"call$num").toSet
+    }
+
+    "find that call6 is post dominated by the try and finally calls" in {
+      cpg.call.name("call1").postDominatedBy.collectAll[Call].name.toSet shouldBe Set("call2", "call5", "call6")
+    }
+
+    "find that call3 is controlled by call2" in {
+      cpg.call.name("call3").controlledBy.collectAll[Call].name.toSet should contain("call2")
+    }
+
+    "find that call6 is not controlled by call2" in {
+      cpg.call.name("call6").controlledBy.collectAll[Call].name.toSet should not contain ("call2")
     }
   }
 }

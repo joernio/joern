@@ -155,6 +155,20 @@ abstract class AstCreatorBase(filename: String) {
       .withConditionEdges(forNode, conditionAsts.flatMap(_.root).toList)
   }
 
+  /** For the given try body, catch ASTs and finally AST, create a try-catch-finally AST with orders set correctly for
+    * the ossdataflow engine.
+    */
+  def tryCatchAst(tryNode: NewControlStructure, tryBodyAst: Ast, catchAsts: Seq[Ast], finallyAst: Option[Ast]): Ast = {
+    tryBodyAst.root.collect { case x: ExpressionNew => x }.foreach(_.order = 1)
+    catchAsts.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 2)
+    finallyAst.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 3)
+
+    Ast(tryNode)
+      .withChild(tryBodyAst)
+      .withChildren(catchAsts)
+      .withChildren(finallyAst.toList)
+  }
+
   /** For a given block node and statement ASTs, create an AST that represents the block. The main purpose of this
     * method is to increase the readability of the code which creates block asts.
     */
