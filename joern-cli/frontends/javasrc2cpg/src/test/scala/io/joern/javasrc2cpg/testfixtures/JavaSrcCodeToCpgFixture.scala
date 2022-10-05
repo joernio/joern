@@ -1,9 +1,7 @@
 package io.joern.javasrc2cpg.testfixtures
 
-import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, CodeToCpgFixture, LanguageFrontend}
@@ -30,9 +28,8 @@ class JavaSrcCodeToCpgFixture extends CodeToCpgFixture(new JavaSrcFrontend(delom
 class JavaSrcCode2CpgFixture(withOssDataflow: Boolean = false, delombokMode: String = "default")
     extends Code2CpgFixture(new JavaSrcFrontend(delombokMode)) {
 
-  implicit lazy val defaultSemantics: Semantics  = DefaultSemantics()
   implicit val resolver: ICallResolver           = NoResolve
-  implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics, EngineConfig(maxCallDepth = 4))
+  implicit lazy val engineContext: EngineContext = EngineContext(config = EngineConfig(maxCallDepth = 4))
 
   override def applyPasses(cpg: Cpg): Unit = {
     super.applyPasses(cpg)

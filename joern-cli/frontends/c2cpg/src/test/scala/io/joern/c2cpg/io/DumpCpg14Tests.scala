@@ -20,7 +20,7 @@ class DumpCpg14Tests extends DataFlowCodeToCpgSuite {
       File.usingTemporaryDirectory("dumpast") { tmpDir =>
         val opts         = Cpg14DumpOptions(tmpDir.path.toString)
         val layerContext = new LayerCreatorContext(cpg)
-        new DumpCpg14(opts)(semantics).run(layerContext)
+        new DumpCpg14(opts).run(layerContext)
         (tmpDir / "0-cpg.dot").exists shouldBe true
         (tmpDir / "1-cpg.dot").exists shouldBe true
         Files.size((tmpDir / "0-cpg.dot").path) should not be 0

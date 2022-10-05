@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.kotlin2cpg.{Config, Kotlin2Cpg}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -29,7 +28,6 @@ class KotlinCode2CpgFixture(withOssDataflow: Boolean = false, withDefaultJars: B
     extends Code2CpgFixture(new KotlinFrontend(withTestResourcePaths = withDefaultJars)) {
 
   implicit val context: EngineContext = EngineContext()
-  implicit val semantics: Semantics   = context.semantics
 
   override def applyPasses(cpg: Cpg): Unit = {
     super.applyPasses(cpg)

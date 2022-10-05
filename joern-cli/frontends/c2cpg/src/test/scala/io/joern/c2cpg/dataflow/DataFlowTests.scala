@@ -1878,7 +1878,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
 class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
 
-  override implicit val context: EngineContext = EngineContext(semantics, EngineConfig(maxCallDepth = -1))
+  override implicit val context: EngineContext = EngineContext(config = EngineConfig(maxCallDepth = -1))
 
   "DataFlowTests67" should {
     val cpg = code("""

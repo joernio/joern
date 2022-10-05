@@ -3,6 +3,7 @@ package io.joern.joerncli.console
 import better.files._
 import io.joern.console.workspacehandling.{ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, InstallConfig}
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.Cpg
@@ -24,6 +25,9 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
   override val config: ConsoleConfig = JoernConsole.defaultConfig
 
   implicit var semantics: Semantics = context.semantics
+
+  // this is set to be `opts.ossdataflow` on initialization of the shell
+  var ossDataFlowOptions: OssDataFlowOptions = new OssDataFlowOptions()
 
   implicit def context: EngineContext =
     workspace.getActiveProject
@@ -52,6 +56,11 @@ class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new Joer
   def loadCpg(inputPath: String): Option[Cpg] = {
     report("Deprecated. Please use `importCpg` instead")
     importCpg(inputPath)
+  }
+
+  override def applyDefaultOverlays(cpg: Cpg): Cpg = {
+    super.applyDefaultOverlays(cpg)
+    _runAnalyzer(new OssDataFlow(ossDataFlowOptions))
   }
 
 }

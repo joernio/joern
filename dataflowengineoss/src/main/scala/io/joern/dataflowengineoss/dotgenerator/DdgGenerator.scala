@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.dotgenerator
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
 import io.joern.dataflowengineoss.language._
@@ -17,7 +18,7 @@ class DdgGenerator {
   val edgeType          = "DDG"
   private val edgeCache = mutable.Map[StoredNode, List[Edge]]()
 
-  def generate(methodNode: Method)(implicit semantics: Semantics): Graph = {
+  def generate(methodNode: Method)(implicit semantics: Semantics = DefaultSemantics()): Graph = {
     val entryNode                  = methodNode
     val paramNodes                 = methodNode.parameter.l
     val allOtherNodes              = methodNode.cfgNode.l

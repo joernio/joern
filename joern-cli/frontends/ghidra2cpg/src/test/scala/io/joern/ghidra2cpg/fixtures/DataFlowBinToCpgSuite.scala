@@ -1,11 +1,9 @@
 package io.joern.ghidra2cpg.fixtures
 
-import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
@@ -17,13 +15,11 @@ import scala.util.Try
 
 class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
 
-  implicit var semantics: Semantics            = _
   implicit var context: EngineContext = _
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    semantics = DefaultSemantics()
-    context = EngineContext(semantics)
+    context = EngineContext()
   }
 
   implicit val viewer: ImageViewer = (pathStr: String) =>

@@ -1,10 +1,8 @@
 package io.joern.javasrc2cpg
 
-import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, writeCodeToFile}
+import io.joern.x2cpg.X2Cpg.writeCodeToFile
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 class JavaSrc2CpgTestContext {
@@ -19,12 +17,10 @@ class JavaSrc2CpgTestContext {
         outputPath = "",
         inferenceJarPaths = inferenceJarPaths
       )
-      val cpg = javaSrc2Cpg.createCpg(config)
-      applyDefaultOverlays(cpg.get)
+      val cpg = javaSrc2Cpg.createCpgWithOverlays(config)
       if (runDataflow) {
-        val context                       = new LayerCreatorContext(cpg.get)
-        val options                       = new OssDataFlowOptions()
-        implicit val semantics: Semantics = DefaultSemantics()
+        val context = new LayerCreatorContext(cpg.get)
+        val options = new OssDataFlowOptions()
         new OssDataFlow(options).run(context)
       }
       buildResult = Some(cpg.get)
