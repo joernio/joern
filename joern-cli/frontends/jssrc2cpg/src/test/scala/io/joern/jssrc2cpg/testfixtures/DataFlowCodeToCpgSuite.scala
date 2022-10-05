@@ -5,7 +5,6 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.jssrc2cpg.JsSrc2Cpg
-import io.joern.jssrc2cpg.passes.RequirePass
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 class DataFlowCodeToCpgSuite extends JsSrc2CpgSuite {
