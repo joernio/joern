@@ -6,7 +6,7 @@ import io.shiftleft.passes.DiffGraph
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal._
 
-class NewTagNodePairTraversal(traversal: Traversal[NewTagNodePair]) extends HasStoreMethod {
+class NewTagNodePairTraversal(traversal: Traversal[NewTagNodePair]) extends HasStoreAndPersistMethods {
   val original = traversal
 
   override def store()(implicit diffGraph: DiffGraph.Builder): Unit = {
@@ -23,4 +23,17 @@ class NewTagNodePairTraversal(traversal: Traversal[NewTagNodePair]) extends HasS
     }
   }
 
+  override def persist()(implicit diffGraph: DiffGraphBuilder): Unit = {
+    traversal.foreach { tagNodePair =>
+      val tag      = tagNodePair.tag
+      val tagValue = tagNodePair.node
+      diffGraph.addNode(tag.asInstanceOf[NewNode])
+      tagValue match {
+        case tagValue: StoredNode =>
+          diffGraph.addEdge(tagValue, tag.asInstanceOf[NewNode], EdgeTypes.TAGGED_BY)
+        case tagValue: NewNode =>
+          diffGraph.addEdge(tagValue, tag.asInstanceOf[NewNode], EdgeTypes.TAGGED_BY, Nil)
+      }
+    }
+  }
 }
