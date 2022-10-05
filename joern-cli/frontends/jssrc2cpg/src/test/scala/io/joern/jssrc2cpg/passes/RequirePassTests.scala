@@ -69,10 +69,8 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
     cpg.call("bar").methodFullName.l shouldBe List("sampleone.mjs::program:bar")
     cpg.call("bar").callee.fullName.l shouldBe List("sampleone.mjs::program:bar")
 
-    val sink   = cpg.call("log").argument(1).l
-    val source = cpg.literal.codeExact("\"literal\"").l
-    sink.size shouldBe 2
-    source.size shouldBe 1
+    val sink   = cpg.call("log").argument(1)
+    val source = cpg.literal.codeExact("\"literal\"")
     sink.reachableByFlows(source).size shouldBe 2
   }
 
