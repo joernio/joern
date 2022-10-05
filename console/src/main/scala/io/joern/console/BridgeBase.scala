@@ -27,7 +27,8 @@ case class Config(
   nocolors: Boolean = false,
   cpgToLoad: Option[File] = None,
   forInputPath: Option[String] = None,
-  frontendArgs: Array[String] = Array.empty
+  frontendArgs: Array[String] = Array.empty,
+  verbose: Boolean = false
 )
 
 /** Base class for Ammonite Bridge, split by topic into multiple self types.
@@ -41,6 +42,10 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
     val parser = new scopt.OptionParser[Config]("(joern|ocular)") {
       override def errorOnUnknownArgument = false
+
+      opt[Unit]('v', "verbose")
+        .action((_, c) => c.copy(verbose = true))
+        .text("verbose mode (e.g. print predef code)")
 
       note("Script execution")
 
@@ -216,17 +221,24 @@ trait ScriptExecution {
          |openForInputPath(\"$name\")
          |""".stripMargin
     }
+    
+    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks)
+    if (config.verbose) println(
+      s"""starting ammonite with following predef code:
+         |$predefCode
+         |""".stripMargin)
+
     ammonite.Main(
-        predefCode = predefPlus(additionalImportCode(config) ++ replConfig ++ shutdownHooks),
-        welcomeBanner = None,
-        storageBackend = new StorageBackend(slProduct),
-        remoteLogging = false,
-        colors = ammoniteColors(config)
-      ).run()._1 match {
-        case Res.Failure(msg) =>
-          System.err.println(s"error while trying to run ammonite repl: $msg")
-        case _ =>
-      }
+      predefCode = predefCode,
+      welcomeBanner = None,
+      storageBackend = new StorageBackend(slProduct),
+      remoteLogging = false,
+      colors = ammoniteColors(config)
+    ).run()._1 match {
+      case Res.Failure(msg) =>
+        System.err.println(s"error while trying to run ammonite repl: $msg")
+      case _ =>
+    }
 
   }
 
