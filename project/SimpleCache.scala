@@ -9,17 +9,18 @@ object SimpleCache {
     * do not use for snapshot artifacts that may change
     */
   def downloadMaybe(url: String): File = {
-    val urlEncoded = URLEncoder.encode(url, "UTF-8")
-    val localFile  = new File(s"$LocalCacheDir/$urlEncoded")
-
+    val localFile = encodeFile(url)
     if (!localFile.exists) {
       println(s"downloading $url")
       sbt.io.Using.urlInputStream(new URL(url)) { inputStream =>
         IO.transfer(inputStream, localFile)
       }
     }
-
     localFile
   }
 
+  def encodeFile(url: String): File = {
+    val urlEncoded = URLEncoder.encode(url, "UTF-8")
+    new File(s"$LocalCacheDir/$urlEncoded")
+  }
 }
