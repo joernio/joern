@@ -43,7 +43,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
       modelsDep.name shouldBe "models"
       modelsDep.dependencyGroupId shouldBe Some("../models/index")
 
-      val List(fs, models) = cpg.staticImport.l
+      val List(fs, models) = cpg.imports.l
       fs.code shouldBe "import fs = require('fs')"
       fs.importedEntity shouldBe Some("fs")
       fs.importedAs shouldBe Some("fs")

@@ -72,7 +72,7 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |import {c} from "";
         |import * as d from "depD";
         |""".stripMargin) { cpg =>
-      val List(a, b, c, d) = cpg.staticImport.l
+      val List(a, b, c, d) = cpg.imports.l
       a.code shouldBe "import {a} from \"depA\""
       a.importedEntity shouldBe Some("depA")
       a.importedAs shouldBe Some("a")

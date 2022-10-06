@@ -168,7 +168,7 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
         helloWorld.code shouldBe "HelloWorld"
       }
 
-      inside(cpg.staticImport.l) { case List(component, prop, vue) =>
+      inside(cpg.imports.l) { case List(component, prop, vue) =>
         component.importedAs shouldBe Some("Component")
         component.importedEntity shouldBe Some("vue-property-decorator")
         component.code shouldBe "import { Component, Prop, Vue } from 'vue-property-decorator'"
