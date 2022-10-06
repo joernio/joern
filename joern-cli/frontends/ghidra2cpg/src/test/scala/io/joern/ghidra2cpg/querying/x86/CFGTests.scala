@@ -34,7 +34,6 @@ class CFGTests extends GhidraBinToCpgSuite {
       case List(nextIfSkipped: Call, nextIfTaken: Call) =>
         nextIfSkipped.code shouldBe "ADD RAX,0x2"
         nextIfTaken.code shouldBe "MOV RSP,RBP"
-
       case result =>
         fail(s"Expected call nodes `ADD RAX,0x2` and `MOV RSP,RBP` but got $result")
     }
