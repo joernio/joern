@@ -73,7 +73,7 @@ astGenDlTask := {
   Seq("astgen-linux", "astgen-macos", "astgen-win.exe").foreach { fileName =>
     val dest = astGenDir / fileName
     if (!dest.exists) {
-      val url = s"https://github.com/max-leuthaeuser/astgen/releases/download/latest/$fileName"
+      val url            = s"https://github.com/max-leuthaeuser/astgen/releases/download/latest/$fileName"
       val downloadedFile = SimpleCache.downloadMaybe(url)
       IO.copyFile(downloadedFile, dest)
     }
@@ -88,6 +88,11 @@ astGenDlTask := {
   distDir.listFiles().foreach(_.setExecutable(true, false))
 }
 Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
+
+// Also remove astgen binaries with clean, e.g., to allow for updating them.
+// Sadly, we can't define the bin/ folders globally,
+// as .value can only be used within a task or setting macro
+cleanFiles ++= Seq(baseDirectory.value / "bin" / "astgen", (Universal / stagingDirectory).value / "bin" / "astgen")
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
