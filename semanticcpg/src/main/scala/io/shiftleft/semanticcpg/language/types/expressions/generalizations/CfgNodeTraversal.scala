@@ -28,6 +28,8 @@ class CfgNodeTraversal[A <: CfgNode](val traversal: Traversal[A]) extends AnyVal
         expression.method
       case callRepr: CallRepr =>
         callRepr._astIn.onlyChecked.asInstanceOf[Method]
+      case jumpTarget: JumpTarget =>
+        jumpTarget.method
     }
 
   /** Traverse to next expression in CFG.
