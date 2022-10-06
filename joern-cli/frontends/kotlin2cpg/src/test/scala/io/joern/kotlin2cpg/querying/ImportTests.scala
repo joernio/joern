@@ -18,11 +18,11 @@ class ImportTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should contain the correct number of IMPORT nodes" in {
-      cpg.staticImport.size should not be 0
+      cpg.imports.size should not be 0
     }
 
     "should contain IMPORT node for `listOf` entry with the correct properties set" in {
-      val List(imp) = cpg.staticImport.code(".*listOf.*").l
+      val List(imp) = cpg.imports.code(".*listOf.*").l
       imp.code shouldBe "import kotlin.io.collections.listOf"
       imp.importedEntity shouldBe Some("kotlin.io.collections.listOf")
       imp.lineNumber shouldBe Some(4)
@@ -32,7 +32,7 @@ class ImportTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should contain IMPORT node for wildcard `comparisons` entry with the correct properties set" in {
-      val List(imp) = cpg.staticImport.code(".*comparisons.*").l
+      val List(imp) = cpg.imports.code(".*comparisons.*").l
       imp.code shouldBe "import kotlin.comparisons.*"
       imp.importedEntity shouldBe Some("kotlin.comparisons.*")
       imp.lineNumber shouldBe Some(5)
@@ -52,7 +52,7 @@ class ImportTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should not contain any IMPORT nodes" in {
-      cpg.staticImport.size shouldBe 0
+      cpg.imports.size shouldBe 0
     }
   }
 }
