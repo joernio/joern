@@ -115,7 +115,6 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
         getResultResponse.obj.keySet should contain("success")
         getResultResponse("uuid").str shouldBe queryResultWSMessage
         getResultResponse("stdout").str shouldBe "res0: Int = 1\n"
-        getResultResponse("stderr").str shouldBe ""
       }
 
       "disallow fetching the result of a completed query with an invalid auth header" in Fixture() { host =>
@@ -166,7 +165,6 @@ class CPGQLServerTests extends AnyWordSpec with Matchers {
           getResultResponse.obj.keySet should not contain "err"
           getResultResponse("uuid").str shouldBe queryResultWSMessage
           getResultResponse("stdout").str shouldBe "res0: Int = 1\n"
-          getResultResponse("stderr").str shouldBe ""
       }
 
       "write a well-formatted message to a websocket connection when a query failed evaluation" in Fixture() { host =>
