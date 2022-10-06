@@ -20,8 +20,8 @@ class CFGTests extends GhidraBinToCpgSuite {
   "should have correct CFG edge out of an unconditional jump" in {
     def jmp: Call = cpg.method.name("main").call.code("JMP.*").l.head
     def foo = cpg.method.name("main").call.code("JMP.*").l
-    println (cpg.method.name("main").call.code("JMP.*").l.mkString("  ;;;;;   "))
-    //println (cpg.method.name("main").call.code("JMP.*").l.head.cfgNext.l.mkString("  ;;;;;   "))
+    println (cpg.method.name("main").call.code("JMP.*").code.l.mkString("  ;;;;;   "))
+    println ("AAAA "+ cpg.method.name("main").call.code("JMP.*").l.head.cfgNext.code.l.mkString("  ;;;;;   "))
     jmp.cfgNext.l match {
       case List(node: Call) =>
         node.code shouldBe "CMP RCX,0x0"
@@ -32,12 +32,12 @@ class CFGTests extends GhidraBinToCpgSuite {
   }
 
   "should have correct CFG edges out of a conditional jump" in {
-    val jmp = cpg.method.name("main").call.code("JLE.*").l.head
+    def jmp = cpg.method.name("main").call.code("JLE.*").l.head
+    println(jmp.cfgNext.code.l)
     jmp.cfgNext.l match {
       case List(nextIfSkipped: Call, nextIfTaken: Call) =>
         nextIfSkipped.code shouldBe "ADD RAX,0x2"
         nextIfTaken.code shouldBe "MOV RSP,RBP"
-
       case result =>
         fail(s"Expected call nodes `ADD RAX,0x2` and `MOV RSP,RBP` but got $result")
     }

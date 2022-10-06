@@ -38,7 +38,9 @@ class DataFlowTests extends GhidraBinToCpgSuite {
         .code("or t9,t6,zero")
         .where(_.cfgPrev.isCall.code("add.*"))
         .argument(1)
-    val flowsThroughAddXInstructions = sink.reachableByFlows(source).l
+    def flowsThroughAddXInstructions = sink.reachableByFlows(source).l
+    println(flowsThroughAddXInstructions )
+    println("ok")
     flowsThroughAddXInstructions.map(flowToResultPairs).toSet shouldBe
       Set(
         List(

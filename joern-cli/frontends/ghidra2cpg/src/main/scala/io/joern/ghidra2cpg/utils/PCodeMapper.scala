@@ -55,7 +55,19 @@ class PCodeMapper(
           )
         }
     } catch {
-      case _: Throwable => println("ERROR " + nativeInstruction.toString + " " + pcodes.mkString(" :::: "));
+      case _: Throwable =>  println("ERROR " + nativeInstruction.toString + " " + pcodes.mkString(" :::: "));
+    }
+    pcodes
+  }
+  def filterPcode(pcodes: List[PcodeOp]): List[PcodeOp] = {
+    try {
+      return pcodes
+        .filterNot { pcode =>
+          pcode.getOpcode == INT_ZEXT
+
+        }
+    } catch {
+      case _: Throwable =>  println("ERROR " + nativeInstruction.toString + " " + pcodes.mkString(" :::: "));
     }
     pcodes
   }
@@ -73,13 +85,21 @@ class PCodeMapper(
         nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue()
       )
     } else {
-      val filteredPcodeOps = filterSideEffects(pcodeOps)
+      val filteredPcodeOps = filterPcode(filterSideEffects(pcodeOps))
       if (filteredPcodeOps.isEmpty) {
         // classic case
         val node = mapCallNode(pcodeOps.last)
         node
       } else {
+        if(highFunction.getFunction.getName == "main") {
+          println("a")
+        }
         val node = mapCallNode(filteredPcodeOps.last)
+        if (highFunction.getFunction.getName == "dataflow") {
+          println("AAAA " + nativeInstruction.toString)
+          println("BBBB " + filteredPcodeOps)
+          println("CCCC " + node.code)
+        }
         node
       }
     }
@@ -208,6 +228,10 @@ class PCodeMapper(
         handleSingleArgument(pcodeOp, "<operator>.scarry", pcodeOp.getMnemonic)
       case INT_SEXT | INT_ZEXT =>
         handleSingleArgument(pcodeOp, "<operator>.extend", pcodeOp.getMnemonic)
+      // val x = resolveVarNode(pcodeOp.getInput(0), index)
+      // println("DDDD " + pcodeOp.getInput(0))
+      // println("" + pcodeOp.getInput(0))
+      // x
       case INT_SUB | FLOAT_SUB | PTRSUB =>
         handleTwoArguments(pcodeOp, "<operator>.subtraction", "-")
       case INT_XOR =>

@@ -91,6 +91,7 @@ class PCodePass(currentProgram: Program, fileName: String, functions: List[Funct
     methodNode: NewMethod,
     blockNode: NewBlock
   ): Unit = {
+    val highFunction = decompiler.toHighFunction(function).orNull
     // Map instructions to nodes
     val instructionNodes = currentProgram.getListing
       .getInstructions(function.getBody, true)
@@ -98,7 +99,9 @@ class PCodePass(currentProgram: Program, fileName: String, functions: List[Funct
       .asScala
       .toList
       .map { instruction =>
-        val highFunction = decompiler.toHighFunction(function).orNull
+        if(function.getName == "main"){
+          println(instruction)
+        }
         new PCodeMapper(diffGraphBuilder, instruction, functions, highFunction, address2Literals).getNode
       }
     // Adding all nodes to the graph
@@ -111,7 +114,9 @@ class PCodePass(currentProgram: Program, fileName: String, functions: List[Funct
         val prevInstructionNode = nodes.head
         val instructionNode     = nodes.last
         diffGraphBuilder.addEdge(blockNode, instructionNode, EdgeTypes.AST)
-        diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
+        if (!prevInstructionNode.code.startsWith("JMP")) {
+          diffGraphBuilder.addEdge(prevInstructionNode, instructionNode, EdgeTypes.CFG)
+        }
       }
     }
   }
