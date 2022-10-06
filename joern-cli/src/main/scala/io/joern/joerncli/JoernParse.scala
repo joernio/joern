@@ -1,10 +1,11 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.console.cpgcreation.{cpgGeneratorForLanguage, guessLanguage}
+import io.joern.console.cpgcreation.{CpgGenerator, cpgGeneratorForLanguage, guessLanguage}
 import io.joern.console.{FrontendConfig, InstallConfig}
 import io.joern.joerncli.CpgBasedTool.newCpgCreatedString
 import io.shiftleft.codepropertygraph.generated.Languages
+
 import scala.jdk.CollectionConverters._
 
 object JoernParse extends App {
@@ -57,6 +58,8 @@ object JoernParse extends App {
 
   val (parserArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
   val installConfig              = new InstallConfig()
+
+  var generator: CpgGenerator = _
 
   run() match {
     case Right(msg) => println(msg)
@@ -124,7 +127,7 @@ object JoernParse extends App {
     } else {
       println(s"Parsing code at: ${config.inputPath} - language: `$language`")
       println("[+] Running language frontend")
-      val generator =
+      generator =
         cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
       generator.generate(config.inputPath, outputPath = config.outputCpgFile, namespaces = config.namespaces) match {
         case Some(cmd) => Right(cmd)
@@ -137,7 +140,9 @@ object JoernParse extends App {
     try {
       println("[+] Applying default overlays")
       if (config.enhance) {
-        DefaultOverlays.create(config.outputCpgFile, config.maxNumDef).close()
+        val cpg = DefaultOverlays.create(config.outputCpgFile, config.maxNumDef)
+        generator.applyPostProcessingPasses(cpg)
+        cpg.close()
       }
       Right("Code property graph generation successful")
     } catch {
