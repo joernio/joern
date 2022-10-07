@@ -301,7 +301,11 @@ trait AstForDeclarationsCreator { this: AstCreator =>
         case ObjectPattern | ArrayPattern =>
           astForDeconstruction(nodeInfo, sourceAst)
         case _ =>
-          val destAst = astForNode(id.json)
+          val destAst = id.node match {
+            case Identifier => astForIdentifier(id, Some(typeFullName))
+            case _          => astForNode(id.json)
+          }
+
           val assigmentCallAst =
             createAssignmentCallAst(
               destAst.nodes.head,

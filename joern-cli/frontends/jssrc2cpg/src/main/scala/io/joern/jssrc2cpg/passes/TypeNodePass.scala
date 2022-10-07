@@ -6,13 +6,6 @@ import io.shiftleft.passes.SimpleCpgPass
 
 class TypeNodePass(usedTypes: List[(String, String)], cpg: Cpg) extends SimpleCpgPass(cpg, "types") {
   override def run(diffGraph: DiffGraphBuilder): Unit = {
-    diffGraph.addNode(
-      NewType()
-        .name(Defines.ANY.label)
-        .fullName(Defines.ANY.label)
-        .typeDeclFullName(Defines.ANY.label)
-    )
-
     val filteredTypes = usedTypes.filterNot { case (name, _) =>
       name == "ANY" || Defines.values.map { case typeName: Defines.Tpe => typeName.label }.contains(name)
     }

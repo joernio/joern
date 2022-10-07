@@ -9,6 +9,66 @@ class TsAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple TS constructs" should {
 
+    "create methods for const exports" in TsAstFixture(
+      "export const getApiA = (req: Request) => { const user = req.user as UserDocument; }"
+    ) { cpg =>
+      cpg.method.name.l shouldBe List(":program", "anonymous")
+      cpg.assignment.code.l shouldBe List(
+        "const user = req.user as UserDocument",
+        "const getApiA = (req: Request) => { const user = req.user as UserDocument; }",
+        "exports.getApiA = getApiA"
+      )
+      inside(cpg.method.name("anonymous").l) { case List(anon) =>
+        anon.fullName shouldBe "code.ts::program:anonymous"
+        anon.ast.isIdentifier.name.l shouldBe List("user", "req")
+      }
+    }
+
+    "have correct types when type is being used multiple times" in TsAstFixture("""
+        |import { Response, Request, NextFunction } from "express";
+        |import { UserDocument } from "../models/User";
+        |
+        |type CustomResponse = {
+        |    render: (arg0: string) => void;
+        |}
+        |
+        |export const getApiA = (req: Request) => {
+        |    const user = req.user as UserDocument;
+        |};
+        |
+        |function getApiB(res: Response): void {
+        |    res.render("api/index", {
+        |        title: "API Examples"
+        |    });
+        |}
+        |
+        |function getApiC(res: CustomResponse): void {
+        |    res.render("api/index");
+        |}
+        |
+        |function getFoo(req: Request, res: Response): void {
+        |    const user = req.user as UserDocument;
+        |    const token = user.tokens.find((token: any) => token.kind === "foo");
+        |    res.render("api/foo", {
+        |        title: "foo API",
+        |        profile: "Test"
+        |    });
+        |};
+        |""".stripMargin) { cpg =>
+      cpg.typ.name.l should contain allElementsOf List(
+        ":program",
+        "getApiB",
+        "getApiC",
+        "anonymous",
+        "getFoo",
+        "anonymous",
+        "CustomResponse",
+        "Request",
+        "Response",
+        "UserDocument"
+      )
+    }
+
     "have correct structure for casts" in AstFixture(
       """
         | const x = "foo" as string;
@@ -26,6 +86,12 @@ class TsAstCreationPassTest extends AbstractPassTest {
         callZ.argument(1).code shouldBe "boolean"
         callZ.argument(2).code shouldBe "true"
       }
+      cpg.local("x").typeFullName.l shouldBe List(Defines.STRING.label)
+      cpg.identifier("x").typeFullName.l shouldBe List(Defines.STRING.label)
+      cpg.local("y").typeFullName.l shouldBe List("int")
+      cpg.identifier("y").typeFullName.l shouldBe List("int")
+      cpg.local("z").typeFullName.l shouldBe List(Defines.BOOLEAN.label)
+      cpg.identifier("z").typeFullName.l shouldBe List(Defines.BOOLEAN.label)
     }
 
     "have correct structure for import assignments" in AstFixture(
