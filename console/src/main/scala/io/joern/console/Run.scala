@@ -1,7 +1,7 @@
 package io.joern.console
 
-import io.shiftleft.passes.{CpgPass, DiffGraph}
-import io.shiftleft.semanticcpg.language.HasStoreMethod
+import io.shiftleft.passes.{SimpleCpgPass}
+import io.shiftleft.semanticcpg.language.HasStoreAndPersistMethods
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.reflections8.Reflections
 import org.reflections8.util.{ClasspathHelper, ConfigurationBuilder}
@@ -10,18 +10,16 @@ import scala.jdk.CollectionConverters._
 
 object Run {
 
-  def runCustomQuery(console: Console[_], query: HasStoreMethod): Unit = {
+  def runCustomQuery(console: Console[_], query: HasStoreAndPersistMethods): Unit = {
     console._runAnalyzer(new LayerCreator {
       override val overlayName: String = "custom"
       override val description: String = "A custom pass"
 
       override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
-        val pass: CpgPass = new CpgPass(console.cpg) {
+        val pass: SimpleCpgPass = new SimpleCpgPass(console.cpg) {
           override val name = "custom"
-          override def run(): Iterator[DiffGraph] = {
-            implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
-            query.store()
-            Iterator(diffGraph.build())
+          override def run(builder: DiffGraphBuilder): Unit = {
+            query.persist()(builder)
           }
         }
         runPass(pass, context, storeUndoInfo)
@@ -66,8 +64,8 @@ object Run {
          |
          |val opts = new OptsDynamic()
          |
-         | import io.shiftleft.passes.DiffGraph
-         | implicit def _diffGraph: DiffGraph.Builder = opts.commit.diffGraphBuilder
+         | import overflowdb.BatchedUpdate.DiffGraphBuilder
+         | implicit def _diffGraph: DiffGraphBuilder = opts.commit.diffGraphBuilder
          | def diffGraph = _diffGraph
          |""".stripMargin
 
@@ -92,7 +90,7 @@ object Run {
       s"""
          | class OverlaysDynamic {
          |
-         | def apply(query : io.shiftleft.semanticcpg.language.HasStoreMethod) {
+         | def apply(query : io.shiftleft.semanticcpg.language.HasStoreAndPersistMethods) {
          |   io.joern.console.Run.runCustomQuery(console, query)
          | }
          |
