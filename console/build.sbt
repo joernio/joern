@@ -5,7 +5,7 @@ enablePlugins(JavaAppPackaging)
 val ScoptVersion          = "4.1.0"
 val CaskVersion           = "0.8.3"
 val CirceVersion          = "0.14.2"
-val AmmoniteVersion       = "2.5.4+4-fatter-mainargs030"
+// val AmmoniteVersion       = "2.5.4+4-fatter-mainargs030"
 val ZeroturnaroundVersion = "1.15"
 
 dependsOn(Projects.semanticcpg, Projects.macros, Projects.c2cpg % Test, Projects.x2cpg % "compile->compile;test->test")
@@ -17,7 +17,8 @@ libraryDependencies ++= Seq(
   "io.circe"             %% "circe-generic"     % CirceVersion,
   "io.circe"             %% "circe-parser"      % CirceVersion,
   "org.zeroturnaround"    % "zt-zip"            % ZeroturnaroundVersion,
-  "io.joern"             %% "ammonite-fat"      % AmmoniteVersion cross CrossVersion.full,
+  // "io.joern"             %% "ammonite-fat"      % AmmoniteVersion cross CrossVersion.full,
+  "com.michaelpollmeier.ammolite" %% "ammolite" % "2.5.4-ammolite",
   "com.lihaoyi"          %% "os-lib"            % "0.8.1",
   "com.lihaoyi"          %% "upickle"           % "2.0.0", // override what cask brings in...
   "com.lihaoyi"          %% "mainargs"          % "0.3.0",
