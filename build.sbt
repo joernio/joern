@@ -38,14 +38,6 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   // kotlin2cpg
 )
 
-// ammonite-cross depends on both scala3 and scala 2.13 dependencies, leading to inconsistent classpaths...
-// https://github.com/com-lihaoyi/Ammonite/issues/1241
-ThisBuild / excludeDependencies ++= Seq(
-  "fansi", "os-lib", "upickle", "upickle-core", "upickle-implicits", "geny", "upack", "ujson", "sourcecode"
-).map(artifactName =>
-  ExclusionRule("com.lihaoyi", s"${artifactName}_2.13")
-) :+ ExclusionRule("org.scala-lang.modules", "scala-xml_2.13")
-
 ThisBuild / libraryDependencies += 
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % Versions.log4j % Test
 

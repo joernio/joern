@@ -18,10 +18,7 @@ libraryDependencies ++= Seq(
   "io.circe"             %% "circe-parser"      % CirceVersion,
   "org.zeroturnaround"    % "zt-zip"            % ZeroturnaroundVersion,
   // "io.joern"             %% "ammonite-fat"      % AmmoniteVersion cross CrossVersion.full,
-  "com.michaelpollmeier.ammolite" %% "ammolite" % "2.5.4-ammolite",
-  "com.lihaoyi"          %% "os-lib"            % "0.8.1",
-  "com.lihaoyi"          %% "upickle"           % "2.0.0", // override what cask brings in...
-  "com.lihaoyi"          %% "mainargs"          % "0.3.0",
+  "com.michaelpollmeier.ammolite" %% "ammolite" % "2.5.4-ammolite+0-42618e9b+20221007-0906",
   "com.lihaoyi"          %% "cask"              % CaskVersion,
   "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
 )
