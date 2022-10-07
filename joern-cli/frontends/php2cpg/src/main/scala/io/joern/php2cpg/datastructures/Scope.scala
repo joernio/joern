@@ -1,7 +1,7 @@
 package io.joern.php2cpg.datastructures
 
 import io.joern.x2cpg.datastructures.{Scope => X2CpgScope}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethod, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethod, NewNode, NewTypeDecl}
 
 import scala.collection.mutable
 
@@ -39,6 +39,9 @@ class Scope extends X2CpgScope[String, NewNode, NewNode] {
     }
     super.addToScope(identifier, variable)
   }
+
+  def getEnclosingTypeDeclType: Option[String] =
+    stack.map(_.scopeNode).collectFirst { case td: NewTypeDecl => td }.map(_.fullName)
 
   def getLocalsInScope: List[NewLocal] = localStack.headOption.map(_.toList).toList.flatten
 }

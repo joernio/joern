@@ -44,7 +44,7 @@ class PocTest extends PhpCode2CpgFixture {
           val List(param) = method.parameter.l
           param.name shouldBe "name"
           param.code shouldBe "name"
-          method.methodReturn.typeFullName shouldBe TypeConstants.Unresolved
+          method.methodReturn.typeFullName shouldBe TypeConstants.Any
 
           val List(echoCall) = method.body.astChildren.collectAll[Call].l
           echoCall.name shouldBe "echo"
