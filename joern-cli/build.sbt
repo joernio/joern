@@ -11,6 +11,8 @@ libraryDependencies ++= Seq(
   "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test
 )
 
+excludeDependencies ++= ExclusionDependencies.forAmmonite
+
 enablePlugins(UniversalPlugin)
 enablePlugins(JavaAppPackaging)
 //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
