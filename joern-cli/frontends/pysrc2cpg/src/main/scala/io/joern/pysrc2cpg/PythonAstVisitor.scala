@@ -4,7 +4,6 @@ import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators, nodes}
-import io.shiftleft.passes.DiffGraph
 import io.joern.pysrc2cpg.memop.{AstNodeToMemoryOperationMap, Del, Load, MemoryOperationCalculator, Store}
 import io.joern.pythonparser.ast
 import overflowdb.BatchedUpdate.DiffGraphBuilder
