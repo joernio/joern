@@ -1,7 +1,6 @@
 package io.joern.pysrc2cpg
 
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, nodes}
-import io.shiftleft.passes.DiffGraph
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 class NodeBuilder(diffGraph: DiffGraphBuilder) {

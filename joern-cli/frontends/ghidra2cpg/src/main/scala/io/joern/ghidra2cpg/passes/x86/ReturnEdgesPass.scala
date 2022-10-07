@@ -2,9 +2,9 @@ package io.joern.ghidra2cpg.passes.x86
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
-import io.shiftleft.passes.{CpgPass, DiffGraph, SimpleCpgPass}
+import io.shiftleft.passes.{SimpleCpgPass}
 import io.shiftleft.semanticcpg.language._
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{LoggerFactory}
 
 class ReturnEdgesPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
