@@ -27,6 +27,7 @@ import overflowdb.NodeOrDetachedNode
   * `steps` package, e.g. `Steps`
   */
 package object language extends operatorextension.Implicits with LowPrioImplicits with NodeTraversalImplicits {
+
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
 
