@@ -9,9 +9,11 @@ trait HasStoreMethod {
   def store()(implicit diffBuilder: DiffGraph.Builder): Unit
 }
 
-trait HasStoreAndPersistMethods extends HasStoreMethod {
+trait HasPersistMethod {
   def persist()(implicit diffBuilder: DiffGraphBuilder): Unit
 }
+
+trait HasStoreAndPersistMethods extends HasStoreMethod with HasPersistMethod
 
 class NewNodeSteps[A <: NewNode](val traversal: Traversal[A]) extends HasStoreAndPersistMethods {
 
