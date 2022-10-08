@@ -19,21 +19,6 @@ package object testing {
 
   case class MockCpg(cpg: Cpg = Cpg.emptyCpg) {
 
-    // TODO: remove this fn as soon as an appropriate `store` method has been defined on the traversal class itself
-    private def store(traversal: NewTagNodePairTraversal, diffGraph: DiffGraphBuilder): Unit = {
-      traversal.original.foreach { tagNodePair =>
-        val tag      = tagNodePair.tag
-        val tagValue = tagNodePair.node
-        diffGraph.addNode(tag.asInstanceOf[NewNode])
-        tagValue match {
-          case tagValue: StoredNode =>
-            diffGraph.addEdge(tagValue, tag.asInstanceOf[NewNode], EdgeTypes.TAGGED_BY)
-          case tagValue: NewNode =>
-            diffGraph.addEdge(tagValue, tag.asInstanceOf[NewNode], EdgeTypes.TAGGED_BY, Nil)
-        }
-      }
-    }
-
     def withMetaData(language: String = Languages.C): MockCpg = withMetaData(language, Nil)
 
     def withMetaData(language: String, overlays: List[String]): MockCpg = {
@@ -143,10 +128,10 @@ package object testing {
       withCustom { (graph, cpg) =>
         implicit val diffGraph: DiffGraphBuilder = graph
         methodTags.foreach { case (k, v) =>
-          store(cpg.method.name(methodName).newTagNodePair(k, v), diffGraph)
+          cpg.method.name(methodName).newTagNodePair(k, v).persist()(diffGraph)
         }
         paramTags.foreach { case (k, v) =>
-          store(cpg.method.name(methodName).parameter.newTagNodePair(k, v), diffGraph)
+          cpg.method.name(methodName).parameter.newTagNodePair(k, v).persist()(diffGraph)
         }
       }
 
