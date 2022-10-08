@@ -7,8 +7,6 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal._
 
 class NewTagNodePairTraversal(traversal: Traversal[NewTagNodePair]) extends HasStoreAndPersistMethods {
-  val original = traversal
-
   override def store()(implicit diffGraph: DiffGraph.Builder): Unit = {
     traversal.foreach { tagNodePair =>
       val tag      = tagNodePair.tag
