@@ -64,6 +64,7 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
     maybeCpg.map { cpg =>
       new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
       postProcessingPasses(cpg).foreach(_.createAndApply())
+      cpg
     }
   }
 
