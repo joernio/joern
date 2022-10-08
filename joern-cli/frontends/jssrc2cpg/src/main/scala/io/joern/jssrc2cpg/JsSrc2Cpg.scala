@@ -61,11 +61,11 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
 
   def createCpgWithAllOverlays(config: Config): Try[Cpg] = {
     val maybeCpg = createCpgWithOverlays(config)
-    maybeCpg.foreach { cpg =>
+    maybeCpg.map { cpg =>
       new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
       postProcessingPasses(cpg).foreach(_.createAndApply())
+      cpg
     }
-    maybeCpg
   }
 
 }
