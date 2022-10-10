@@ -1,7 +1,7 @@
 package io.joern.console
 
 import io.shiftleft.passes.{SimpleCpgPass}
-import io.shiftleft.semanticcpg.language.HasStoreAndPersistMethods
+import io.shiftleft.semanticcpg.language.HasPersistMethod
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.reflections8.Reflections
 import org.reflections8.util.{ClasspathHelper, ConfigurationBuilder}
@@ -10,7 +10,7 @@ import scala.jdk.CollectionConverters._
 
 object Run {
 
-  def runCustomQuery(console: Console[_], query: HasStoreAndPersistMethods): Unit = {
+  def runCustomQuery(console: Console[_], query: HasPersistMethod): Unit = {
     console._runAnalyzer(new LayerCreator {
       override val overlayName: String = "custom"
       override val description: String = "A custom pass"
@@ -90,7 +90,7 @@ object Run {
       s"""
          | class OverlaysDynamic {
          |
-         | def apply(query : io.shiftleft.semanticcpg.language.HasStoreAndPersistMethods) {
+         | def apply(query : io.shiftleft.semanticcpg.language.HasPersistMethod) {
          |   io.joern.console.Run.runCustomQuery(console, query)
          | }
          |

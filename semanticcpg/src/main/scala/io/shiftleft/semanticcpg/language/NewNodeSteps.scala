@@ -1,28 +1,14 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.passes.DiffGraph
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal._
-
-trait HasStoreMethod {
-  def store()(implicit diffBuilder: DiffGraph.Builder): Unit
-}
 
 trait HasPersistMethod {
   def persist()(implicit diffBuilder: DiffGraphBuilder): Unit
 }
 
-trait HasStoreAndPersistMethods extends HasStoreMethod with HasPersistMethod
-
-class NewNodeSteps[A <: NewNode](val traversal: Traversal[A]) extends HasStoreAndPersistMethods {
-
-  override def store()(implicit diffBuilder: DiffGraph.Builder): Unit =
-    traversal.sideEffect(storeRecursively).iterate()
-
-  private def storeRecursively(newNode: NewNode)(implicit diffBuilder: DiffGraph.Builder): Unit = {
-    diffBuilder.addNode(newNode)
-  }
+class NewNodeSteps[A <: NewNode](val traversal: Traversal[A]) extends HasPersistMethod {
 
   override def persist()(implicit diffBuilder: DiffGraphBuilder): Unit =
     traversal.sideEffect(persistRecursively).iterate()
