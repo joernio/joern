@@ -6,7 +6,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal._
 
 trait HasStoreMethod {
-  def store()(implicit diffBuilder: DiffGraph.Builder): Unit
+  def store()(implicit diffBuilder: DiffGraphBuilder): Unit
 }
 
 trait HasPersistMethod {
@@ -17,12 +17,7 @@ trait HasStoreAndPersistMethods extends HasStoreMethod with HasPersistMethod
 
 class NewNodeSteps[A <: NewNode](val traversal: Traversal[A]) extends HasStoreAndPersistMethods {
 
-  override def store()(implicit diffBuilder: DiffGraph.Builder): Unit =
-    traversal.sideEffect(storeRecursively).iterate()
-
-  private def storeRecursively(newNode: NewNode)(implicit diffBuilder: DiffGraph.Builder): Unit = {
-    diffBuilder.addNode(newNode)
-  }
+  override def store()(implicit diffBuilder: DiffGraphBuilder): Unit = persist()
 
   override def persist()(implicit diffBuilder: DiffGraphBuilder): Unit =
     traversal.sideEffect(persistRecursively).iterate()
