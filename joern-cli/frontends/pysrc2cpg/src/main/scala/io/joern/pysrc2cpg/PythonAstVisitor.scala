@@ -1,11 +1,10 @@
 package io.joern.pysrc2cpg
 
-import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators, nodes}
-import io.joern.pysrc2cpg.memop.{AstNodeToMemoryOperationMap, Del, Load, MemoryOperationCalculator, Store}
+import io.joern.pysrc2cpg.memop._
 import io.joern.pythonparser.ast
+import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -242,7 +241,7 @@ class PythonAstVisitor(
    */
   def wrapMethodRefWithDecorators(methodRefNode: nodes.NewNode, decoratorList: Iterable[ast.iexpr]): nodes.NewNode = {
     decoratorList.foldRight(methodRefNode)((decorator: ast.iexpr, wrappedMethodRef: nodes.NewNode) =>
-      createCall(convert(decorator), lineAndColOf(decorator), wrappedMethodRef :: Nil, Nil)
+      createCall(convert(decorator), "", lineAndColOf(decorator), wrappedMethodRef :: Nil, Nil)
     )
   }
 
@@ -489,7 +488,7 @@ class PythonAstVisitor(
 
     // Create call to <body> function and assignment of the meta class object to a identifier named
     // like the class.
-    val callToClassBodyFunction = createCall(methodRefNode, lineAndColOf(classDef), Nil, Nil)
+    val callToClassBodyFunction = createCall(methodRefNode, "", lineAndColOf(classDef), Nil, Nil)
     val metaTypeRefNode =
       createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColOf(classDef))
     val classIdentifierAssignNode =
@@ -641,6 +640,7 @@ class PythonAstVisitor(
             lineAndColumn
           ),
           createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColumn),
+          "",
           lineAndColumn,
           arguments,
           keywordArguments
@@ -1043,6 +1043,7 @@ class PythonAstVisitor(
       createInstanceCall(
         createIdentifierNode(enterIdentifierName, Load, lineAndCol),
         createIdentifierNode(managerIdentifierName, Load, lineAndCol),
+        "",
         lineAndCol,
         Nil,
         Nil
@@ -1076,6 +1077,7 @@ class PythonAstVisitor(
       createInstanceCall(
         createIdentifierNode("__exit__", Load, lineAndCol),
         createIdentifierNode(managerIdentifierName, Load, lineAndCol),
+        "",
         lineAndCol,
         Nil,
         Nil
@@ -1669,7 +1671,11 @@ class PythonAstVisitor(
         )
       case _ =>
         val receiverNode = convert(call.func)
-        createCall(receiverNode, lineAndColOf(call), argumentNodes, keywordArgNodes)
+        val name = call.func match {
+          case ast.Name(id, _) => id
+          case _               => ""
+        }
+        createCall(receiverNode, name, lineAndColOf(call), argumentNodes, keywordArgNodes)
     }
   }
 

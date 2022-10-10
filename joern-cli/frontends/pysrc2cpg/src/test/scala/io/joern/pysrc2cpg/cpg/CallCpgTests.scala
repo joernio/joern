@@ -1,7 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.joern.pysrc2cpg.Py2CpgTestContext
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -13,7 +13,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
 
     "test call node properties" in {
       val callNode = cpg.call.codeExact("func(a, b)").head
-      callNode.name shouldBe ""
+      callNode.name shouldBe "func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(1)
@@ -52,7 +52,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
 
     "test call node properties" in {
       val callNode = cpg.call.codeExact("func(a, b, namedPar = c)").head
-      callNode.name shouldBe ""
+      callNode.name shouldBe "func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(1)
@@ -70,7 +70,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
 
       callNode.astChildren.order(2).head shouldBe arg2
 
-      var namedArg = callNode.astChildren.order(3).isIdentifier.head
+      val namedArg = callNode.astChildren.order(3).isIdentifier.head
       namedArg.code shouldBe "c"
       namedArg.argumentIndex shouldBe -1
       namedArg.argumentName shouldBe Some("namedPar")
@@ -82,7 +82,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
 
     "test call node properties" in {
       val callNode = cpg.call.codeExact("x.func(a, b)").head
-      callNode.name shouldBe ""
+      callNode.name shouldBe "func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(1)
@@ -124,7 +124,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
 
     "test call node properties" in {
       val callNode = cpg.call.codeExact("x.func(a, b, namedPar = c)").head
-      callNode.name shouldBe ""
+      callNode.name shouldBe "func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(1)
@@ -142,7 +142,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
 
       callNode.astChildren.order(3).head shouldBe arg2
 
-      var namedArg = callNode.astChildren.order(4).isIdentifier.head
+      val namedArg = callNode.astChildren.order(4).isIdentifier.head
       namedArg.code shouldBe "c"
       namedArg.argumentIndex shouldBe -1
       namedArg.argumentName shouldBe Some("namedPar")
