@@ -583,7 +583,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     val src  = cpg.fieldAccess.where(_.fieldIdentifier.canonicalName("y")).l
     src.size shouldBe 1
     sink.size shouldBe 1
-    println(sink.reachableBy(src).l)
+    sink.reachableBy(src).size shouldBe 1
   }
 
   "Flow from inside object notation to call argument" in {
@@ -594,7 +594,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
 
     val sink = cpg.call.nameExact("fn")
     val src  = cpg.literal("47")
-    sink.reachableBy(src).nonEmpty shouldBe true
+    sink.reachableBy(src).size shouldBe 1
   }
 
 }
