@@ -2,27 +2,11 @@ package io.joern.dataflowengineoss.passes.reachingdef
 
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Block,
-  Call,
-  CfgNode,
-  ControlStructure,
-  Expression,
-  FieldIdentifier,
-  Identifier,
-  JumpTarget,
-  Method,
-  MethodParameterIn,
-  MethodParameterOut,
-  MethodReturn,
-  Return,
-  StoredNode,
-  Unknown
-}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.{Set, mutable}
 
@@ -105,10 +89,8 @@ class DdgGenerator(semantics: Semantics) {
             val edgesToAdd = in(node).toList.flatMap { inDef =>
               numberToNode.get(inDef) match {
                 case Some(identifier: Identifier) => Some(identifier)
-                case Some(call: Call) if call.name != Operators.fieldAccess =>
-                  Some(call)
-                case _ =>
-                  None
+                case Some(call: Call)             => Some(call)
+                case _                            => None
               }
             }
             edgesToAdd.foreach { inNode =>
