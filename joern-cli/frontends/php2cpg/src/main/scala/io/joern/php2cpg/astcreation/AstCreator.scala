@@ -6,7 +6,7 @@ import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
-import io.joern.x2cpg.utils.NodeBuilders.{identifierNode, modifierNode, operatorCallNode}
+import io.joern.x2cpg.utils.NodeBuilders.{fieldIdentifierNode, identifierNode, modifierNode, operatorCallNode}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
@@ -21,6 +21,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewCall,
   NewControlStructure,
+  NewFieldIdentifier,
   NewIdentifier,
   NewJumpTarget,
   NewLiteral,
@@ -138,6 +139,13 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     scope.addToScope(NameConstants.This, thisNode)
 
     Ast(thisNode)
+  }
+
+  private def thisIdentifier(lineNumber: Option[Integer]): NewIdentifier = {
+    val typ = scope.getEnclosingTypeDeclType
+
+    identifierNode(NameConstants.This, typ, dynamicTypeHintFullName = typ.toList, line = lineNumber)
+      .code("$" + NameConstants.This)
   }
 
   private def setParamIndices(asts: Seq[Ast]): Seq[Ast] = {
@@ -446,7 +454,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case _: PhpPropertyStmt => None // Handled above
 
-      case method: PhpMethodDecl if method.name.name != Defines.ConstructorMethodName => Some(astForMethodDecl(method))
+      case method: PhpMethodDecl if method.name.name == Defines.ConstructorMethodName => None // Handled above
+
+      case method: PhpMethodDecl =>
+        Some(astForMethodDecl(method))
 
       case other =>
         logger.warn(s"Found unhandled class body stmt $other")
@@ -494,16 +505,26 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     methodAstWithAnnotations(methodNode, thisParam :: Nil, methodBody, methodReturn, modifiers)
   }
 
-  private def astForMemberAssignment(memberNode: NewMember, valueExpr: PhpExpr): Ast = {
-    val identifierCode = memberNode.code.replaceAll("const ", "")
-    val identifier =
-      identifierNode(memberNode.name, Some(memberNode.typeFullName), line = memberNode.lineNumber).code(identifierCode)
+  private def astForMemberAssignment(memberNode: NewMember, valueExpr: PhpExpr, isField: Boolean): Ast = {
+    val targetAst = if (isField) {
+      val code            = "$this->" + memberNode.name
+      val fieldAccessNode = operatorCallNode(Operators.fieldAccess, code, line = memberNode.lineNumber)
+      val identifier      = thisIdentifier(memberNode.lineNumber)
+      val thisParam       = scope.lookupVariable(NameConstants.This)
+      val fieldIdentifier = fieldIdentifierNode(memberNode.name, memberNode.lineNumber)
+      callAst(fieldAccessNode, List(identifier, fieldIdentifier).map(Ast(_))).withRefEdges(identifier, thisParam.toList)
+    } else {
+      val identifierCode = memberNode.code.replaceAll("const ", "")
+      val identifier = identifierNode(memberNode.name, Some(memberNode.typeFullName), line = memberNode.lineNumber)
+        .code(identifierCode)
+      Ast(identifier).withRefEdge(identifier, memberNode)
+    }
     val value = astForExpr(valueExpr)
 
-    val assignmentCode = s"${identifier.code} = ${rootCode(value)}"
+    val assignmentCode = s"${rootCode(targetAst)} = ${rootCode(value)}"
     val callNode       = operatorCallNode(Operators.assignment, assignmentCode, line = memberNode.lineNumber)
 
-    callAst(callNode, List(Ast(identifier), value)).withRefEdge(identifier, memberNode)
+    callAst(callNode, List(targetAst, value))
   }
 
   private def astsForClassConstStmt(stmt: PhpClassConstStmt): List[Ast] = {
@@ -515,8 +536,14 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       val name      = constDecl.name.name
       val code      = s"const $name"
       val someValue = Some(constDecl.value)
-      astForClassConstOrFieldValue(name, code, someValue, line(stmt), scope.addConstOrStaticInitToScope)
-        .withChildren(modifierAsts)
+      astForClassConstOrFieldValue(
+        name,
+        code,
+        someValue,
+        line(stmt),
+        scope.addConstOrStaticInitToScope,
+        isField = false
+      ).withChildren(modifierAsts)
     }
   }
 
@@ -525,8 +552,14 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       val modifierAsts = stmt.modifiers.map(modifierNode).map(Ast(_))
 
       val name = varDecl.name.name
-      astForClassConstOrFieldValue(name, "$" + name, varDecl.defaultValue, line(stmt), scope.addFieldInitToScope)
-        .withChildren(modifierAsts)
+      astForClassConstOrFieldValue(
+        name,
+        "$" + name,
+        varDecl.defaultValue,
+        line(stmt),
+        scope.addFieldInitToScope,
+        isField = true
+      ).withChildren(modifierAsts)
     }
   }
 
@@ -535,7 +568,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     code: String,
     value: Option[PhpExpr],
     lineNumber: Option[Integer],
-    addToScope: Ast => Unit
+    addToScope: Ast => Unit,
+    isField: Boolean
   ): Ast = {
     val memberNode = NewMember()
       .name(name)
@@ -545,7 +579,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     value match {
       case Some(value) =>
-        val assignAst = astForMemberAssignment(memberNode, value)
+        val assignAst = astForMemberAssignment(memberNode, value, isField)
         addToScope(assignAst)
 
       case None => // Nothing to do here
@@ -801,8 +835,7 @@ object AstCreator {
   }
 
   object NameConstants {
-    val This: String        = "this"
-    val PhpParseConstructor = "__construct"
+    val This: String = "this"
   }
 
   val operatorSymbols: Map[String, String] = Map(
