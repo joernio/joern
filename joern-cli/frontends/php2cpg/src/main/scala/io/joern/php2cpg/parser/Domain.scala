@@ -691,6 +691,10 @@ object Domain {
         val name = value("name").str
         PhpNameExpr(correctConstructor(name), PhpAttributes(json))
 
+      case Obj(value) if value.get("nodeType").map(_.str).contains("VarLikeIdentifier") =>
+        val name = value("name").str
+        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+
       case unhandled =>
         logger.error(s"Found unhandled name type $unhandled")
         ??? // TODO: other matches are possible?

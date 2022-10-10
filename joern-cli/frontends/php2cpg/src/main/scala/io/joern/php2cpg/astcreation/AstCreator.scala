@@ -415,9 +415,26 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     Ast(typeDeclNode).withChildren(modifiers).withChildren(bodyStmts)
   }
 
+  private def astForStaticAndConstInits: Option[Ast] = {
+    scope.getConstAndStaticInits match {
+      case Nil => None
+
+      case inits =>
+        val namespacePrefix = getNamespacePrefixForName
+        val signature       = s"${TypeConstants.Void}()"
+        val fullName        = s"$namespacePrefix${Defines.StaticInitMethodName}:$signature"
+        val ast             = staticInitMethodAst(inits, fullName, Some(signature), TypeConstants.Void)
+        Some(ast)
+    }
+
+  }
+
   private def astsForClassBody(bodyStmts: List[PhpStmt]): List[Ast] = {
     val classConsts = bodyStmts.collect { case cs: PhpClassConstStmt => cs }.flatMap(astsForClassConstStmt)
     val properties  = bodyStmts.collect { case cp: PhpPropertyStmt => cp }.flatMap(astsForPropertyStmt)
+
+    val clinitAst = astForStaticAndConstInits
+
     val constructorDecl = bodyStmts.collectFirst {
       case m: PhpMethodDecl if m.name.name == Defines.ConstructorMethodName => m
     }
@@ -429,14 +446,14 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case _: PhpPropertyStmt => None // Handled above
 
-      case method: PhpMethodDecl => Some(astForMethodDecl(method))
+      case method: PhpMethodDecl if method.name.name != Defines.ConstructorMethodName => Some(astForMethodDecl(method))
 
       case other =>
         logger.warn(s"Found unhandled class body stmt $other")
         Some(astForStmt(other))
     }
 
-    classConsts ++ properties ++ constructorAst ++ otherBodyStmts
+    List(classConsts, properties, clinitAst, constructorAst, otherBodyStmts).flatten
   }
 
   private def astForConstructor(maybeDecl: Option[PhpMethodDecl]): Ast = {
@@ -478,8 +495,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForMemberAssignment(memberNode: NewMember, valueExpr: PhpExpr): Ast = {
+    val identifierCode = memberNode.code.replaceAll("const ", "")
     val identifier =
-      identifierNode(memberNode.name, Some(memberNode.typeFullName), line = memberNode.lineNumber).code(memberNode.code)
+      identifierNode(memberNode.name, Some(memberNode.typeFullName), line = memberNode.lineNumber).code(identifierCode)
     val value = astForExpr(valueExpr)
 
     val assignmentCode = s"${identifier.code} = ${rootCode(value)}"
@@ -490,11 +508,14 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astsForClassConstStmt(stmt: PhpClassConstStmt): List[Ast] = {
     stmt.consts.map { constDecl =>
-      val modifierAsts = stmt.modifiers.map(modifierNode).map(Ast(_))
+      val finalModifier = Ast(modifierNode(ModifierTypes.FINAL))
+      // `final const` is not allowed, so this is a safe way to represent constants in the CPG
+      val modifierAsts = finalModifier :: stmt.modifiers.map(modifierNode).map(Ast(_))
 
       val name      = constDecl.name.name
+      val code      = s"const $name"
       val someValue = Some(constDecl.value)
-      astForClassConstOrFieldValue(name, "$" + name, someValue, line(stmt), scope.addConstOrStaticInitToScope)
+      astForClassConstOrFieldValue(name, code, someValue, line(stmt), scope.addConstOrStaticInitToScope)
         .withChildren(modifierAsts)
     }
   }
@@ -775,6 +796,7 @@ object AstCreator {
     val Int: String    = "int"
     val Float: String  = "float"
     val Bool: String   = "bool"
+    val Void: String   = "void"
     val Any: String    = "ANY"
   }
 
