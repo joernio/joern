@@ -1,9 +1,9 @@
 package io.joern.jssrc2cpg.dataflow
 
-import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
@@ -584,6 +584,17 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     src.size shouldBe 1
     sink.size shouldBe 1
     println(sink.reachableBy(src).l)
+  }
+
+  "Flow from inside object notation to call argument" in {
+    val cpg: Cpg = code("""
+        |const a = { b : 47 } ;
+        |fn(a);
+        |""".stripMargin)
+
+    val sink = cpg.call.nameExact("fn")
+    val src  = cpg.literal("47")
+    sink.reachableBy(src).nonEmpty shouldBe true
   }
 
 }
