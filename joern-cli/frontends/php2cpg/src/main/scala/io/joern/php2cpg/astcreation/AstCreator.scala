@@ -5,8 +5,8 @@ import io.joern.php2cpg.datastructures.Scope
 import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.{Ast, AstCreatorBase}
-import io.joern.x2cpg.utils.NodeBuilders.{modifierNode, operatorCallNode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
+import io.joern.x2cpg.utils.NodeBuilders.{identifierNode, modifierNode, operatorCallNode}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
@@ -25,6 +25,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewJumpTarget,
   NewLiteral,
   NewLocal,
+  NewMember,
   NewMethod,
   NewMethodParameterIn,
   NewMethodReturn,
@@ -34,7 +35,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeDecl,
   NewTypeRef
 }
-import io.shiftleft.proto.cpg.Cpg.CpgStruct.Edge.EdgeType
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
@@ -152,13 +152,13 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     asts
   }
 
-  private def astForMethodDecl(decl: PhpMethodDecl): Ast = {
-    val namespaceName = scope.getEnclosingTypeDeclType.map(typeName => s"$typeName.").getOrElse("")
+  private def astForMethodDecl(decl: PhpMethodDecl, bodyPrefixAsts: List[Ast] = Nil): Ast = {
+    val namespacePrefix = getNamespacePrefixForName
 
     val methodNode =
       NewMethod()
         .name(decl.name.name)
-        .fullName(s"$namespaceName${decl.name.name}")
+        .fullName(s"$namespacePrefix${decl.name.name}")
         .code(decl.name.name)
         .lineNumber(line(decl))
         .isExternal(false)
@@ -174,7 +174,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       None
     }
     val parameters      = thisParam.toList ++ setParamIndices(decl.params.map(astForParam))
-    val methodBodyStmts = decl.stmts.map(astForStmt)
+    val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.map(astForStmt)
     val methodReturn    = methodReturnNode(returnType, line = line(decl), column = None)
 
     val declLocals = scope.getLocalsInScope.map(Ast(_))
@@ -408,11 +408,129 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .lineNumber(line(stmt))
 
     scope.pushNewScope(typeDeclNode)
-    val bodyStmts = stmt.stmts.map(astForStmt)
+    val bodyStmts = astsForClassBody(stmt.stmts)
     val modifiers = stmt.modifiers.map(modifierNode).map(Ast(_))
     scope.popScope()
 
     Ast(typeDeclNode).withChildren(modifiers).withChildren(bodyStmts)
+  }
+
+  private def astsForClassBody(bodyStmts: List[PhpStmt]): List[Ast] = {
+    val classConsts = bodyStmts.collect { case cs: PhpClassConstStmt => cs }.flatMap(astsForClassConstStmt)
+    val properties  = bodyStmts.collect { case cp: PhpPropertyStmt => cp }.flatMap(astsForPropertyStmt)
+    val constructorDecl = bodyStmts.collectFirst {
+      case m: PhpMethodDecl if m.name.name == Defines.ConstructorMethodName => m
+    }
+
+    val constructorAst = astForConstructor(constructorDecl) :: Nil
+
+    val otherBodyStmts = bodyStmts.flatMap {
+      case _: PhpClassConstStmt => None // Handled above
+
+      case _: PhpPropertyStmt => None // Handled above
+
+      case method: PhpMethodDecl => Some(astForMethodDecl(method))
+
+      case other =>
+        logger.warn(s"Found unhandled class body stmt $other")
+        Some(astForStmt(other))
+    }
+
+    classConsts ++ properties ++ constructorAst ++ otherBodyStmts
+  }
+
+  private def astForConstructor(maybeDecl: Option[PhpMethodDecl]): Ast = {
+    maybeDecl match {
+      case None => defaultConstructorAst()
+
+      case Some(constructorDecl) =>
+        val fieldInits = scope.getFieldInits
+        astForMethodDecl(constructorDecl, fieldInits)
+    }
+  }
+
+  private def getNamespacePrefixForName: String = {
+    scope.getEnclosingTypeDeclType.map(typeName => s"$typeName.").getOrElse("")
+  }
+
+  private def defaultConstructorAst(): Ast = {
+    val namespacePrefix = getNamespacePrefixForName
+
+    val signature = s"${Defines.UnresolvedSignature}(0)"
+    val fullName  = s"$namespacePrefix${Defines.ConstructorMethodName}:$signature"
+
+    val modifiers = List(ModifierTypes.VIRTUAL, ModifierTypes.PUBLIC, ModifierTypes.CONSTRUCTOR).map(modifierNode)
+
+    val thisParam = thisParamAstForMethod(lineNumber = None)
+
+    val methodNode = NewMethod()
+      .name(Defines.ConstructorMethodName)
+      .fullName(fullName)
+      .signature(signature)
+      .isExternal(false)
+      .code(fullName)
+
+    val methodBody = blockAst(NewBlock(), scope.getFieldInits)
+
+    val methodReturn = NewMethodReturn().typeFullName(TypeConstants.Any)
+
+    methodAstWithAnnotations(methodNode, thisParam :: Nil, methodBody, methodReturn, modifiers)
+  }
+
+  private def astForMemberAssignment(memberNode: NewMember, valueExpr: PhpExpr): Ast = {
+    val identifier =
+      identifierNode(memberNode.name, Some(memberNode.typeFullName), line = memberNode.lineNumber).code(memberNode.code)
+    val value = astForExpr(valueExpr)
+
+    val assignmentCode = s"${identifier.code} = ${rootCode(value)}"
+    val callNode       = operatorCallNode(Operators.assignment, assignmentCode, line = memberNode.lineNumber)
+
+    callAst(callNode, List(Ast(identifier), value)).withRefEdge(identifier, memberNode)
+  }
+
+  private def astsForClassConstStmt(stmt: PhpClassConstStmt): List[Ast] = {
+    stmt.consts.map { constDecl =>
+      val modifierAsts = stmt.modifiers.map(modifierNode).map(Ast(_))
+
+      val name      = constDecl.name.name
+      val someValue = Some(constDecl.value)
+      astForClassConstOrFieldValue(name, "$" + name, someValue, line(stmt), scope.addConstOrStaticInitToScope)
+        .withChildren(modifierAsts)
+    }
+  }
+
+  private def astsForPropertyStmt(stmt: PhpPropertyStmt): List[Ast] = {
+    stmt.variables.map { varDecl =>
+      val modifierAsts = stmt.modifiers.map(modifierNode).map(Ast(_))
+
+      val name = varDecl.name.name
+      astForClassConstOrFieldValue(name, "$" + name, varDecl.defaultValue, line(stmt), scope.addFieldInitToScope)
+        .withChildren(modifierAsts)
+    }
+  }
+
+  private def astForClassConstOrFieldValue(
+    name: String,
+    code: String,
+    value: Option[PhpExpr],
+    lineNumber: Option[Integer],
+    addToScope: Ast => Unit
+  ): Ast = {
+    val memberNode = NewMember()
+      .name(name)
+      .code(code)
+      .typeFullName(TypeConstants.Any) // TODO attempt to infer this for at least primitives
+      .lineNumber(lineNumber)
+
+    value match {
+      case Some(value) =>
+        val assignAst = astForMemberAssignment(memberNode, value)
+        addToScope(assignAst)
+
+      case None => // Nothing to do here
+    }
+
+    Ast(memberNode)
   }
 
   private def astForCatchStmt(stmt: PhpCatchStmt): Ast = {
@@ -661,7 +779,8 @@ object AstCreator {
   }
 
   object NameConstants {
-    val This: String = "this"
+    val This: String        = "this"
+    val PhpParseConstructor = "__construct"
   }
 
   val operatorSymbols: Map[String, String] = Map(

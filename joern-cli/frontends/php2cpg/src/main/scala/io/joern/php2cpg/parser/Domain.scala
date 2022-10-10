@@ -4,6 +4,7 @@ import io.joern.php2cpg.parser.Domain.PhpAssignment.{AssignTypeMap, isAssignType
 import io.joern.php2cpg.parser.Domain.PhpBinaryOp.{BinaryOpTypeMap, isBinaryOpType}
 import io.joern.php2cpg.parser.Domain.PhpCast.{CastTypeMap, isCastType}
 import io.joern.php2cpg.parser.Domain.PhpUnaryOp.{UnaryOpTypeMap, isUnaryOpType}
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import org.slf4j.LoggerFactory
 import ujson.{Arr, Obj, Str, Value}
@@ -178,6 +179,29 @@ object Domain {
     extendsClass: Option[PhpNameExpr],
     implementedInterfaces: List[PhpNameExpr],
     stmts: List[PhpStmt],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+
+  final case class PhpPropertyStmt(
+    modifiers: List[String],
+    variables: List[PhpPropertyValue],
+    typeName: Option[PhpNameExpr],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+
+  final case class PhpPropertyValue(name: PhpNameExpr, defaultValue: Option[PhpExpr], attributes: PhpAttributes)
+      extends PhpStmt
+
+  final case class PhpClassConstStmt(
+    modifiers: List[String],
+    consts: List[PhpConstDeclaration],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+
+  final case class PhpConstDeclaration(
+    name: PhpNameExpr,
+    value: PhpExpr,
+    namespacedName: Option[PhpNameExpr],
     attributes: PhpAttributes
   ) extends PhpStmt
 
@@ -360,6 +384,8 @@ object Domain {
       case "Stmt_Return"      => readReturn(json)
       case "Stmt_Class"       => readClass(json)
       case "Stmt_ClassMethod" => readClassMethod(json)
+      case "Stmt_Property"    => readProperty(json)
+      case "Stmt_ClassConst"  => readClassConst(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -601,6 +627,36 @@ object Domain {
     )
   }
 
+  private def readProperty(json: Value): PhpPropertyStmt = {
+    val modifiers = PhpModifiers.getModifierSet(json("flags").num.toInt)
+    val variables = json("props").arr.map(readPropertyValue).toList
+    val typeName  = Option.unless(json("type").isNull)(readName(json("type")))
+
+    PhpPropertyStmt(modifiers, variables, typeName, PhpAttributes(json))
+  }
+
+  private def readPropertyValue(json: Value): PhpPropertyValue = {
+    val name         = readName(json("name"))
+    val defaultValue = Option.unless(json("default").isNull)(readExpr(json("default")))
+
+    PhpPropertyValue(name, defaultValue, PhpAttributes(json))
+  }
+
+  private def readClassConst(json: Value): PhpClassConstStmt = {
+    val modifiers         = PhpModifiers.getModifierSet(json("flags").num.toInt)
+    val constDeclarations = json("consts").arr.map(readConstDeclaration).toList
+
+    PhpClassConstStmt(modifiers, constDeclarations, PhpAttributes(json))
+  }
+
+  private def readConstDeclaration(json: Value): PhpConstDeclaration = {
+    val name           = readName(json("name"))
+    val value          = readExpr(json("value"))
+    val namespacedName = Option.unless(json("namespacedName").isNull)(readName(json("namespacedName")))
+
+    PhpConstDeclaration(name, value, namespacedName, PhpAttributes(json))
+  }
+
   private def readParam(json: Value): PhpParam = {
     val paramType = Option.unless(json("type").isNull)(readName(json("type")))
     PhpParam(
@@ -614,22 +670,26 @@ object Domain {
     )
   }
 
+  private def correctConstructor(originalName: String): String = {
+    originalName.replaceAll("__construct", Defines.ConstructorMethodName)
+  }
+
   private def readName(json: Value): PhpNameExpr = {
     json match {
-      case Str(name) => PhpNameExpr(name, PhpAttributes.Empty)
+      case Str(name) => PhpNameExpr(correctConstructor(name), PhpAttributes.Empty)
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name_FullyQualified") =>
         val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
-        PhpNameExpr(name, PhpAttributes(json))
+        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name") =>
         // TODO Can this case just be merged with Name_FullyQualified?
         val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
-        PhpNameExpr(name, PhpAttributes(json))
+        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Identifier") =>
         val name = value("name").str
-        PhpNameExpr(name, PhpAttributes(json))
+        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
 
       case unhandled =>
         logger.error(s"Found unhandled name type $unhandled")
