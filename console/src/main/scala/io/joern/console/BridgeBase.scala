@@ -78,7 +78,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
       opt[Seq[String]]("dependency")
         .valueName("com.michaelpollmeier:versionsort:1.0.7,...")
         .action((x, c) => c.copy(dependencies = x.toList))
-        .text("resolve dependency (and it's transitive dependencies) for given maven coordinate(s): comma-separated list")
+        .text("resolve dependency (and it's transitive dependencies) for given maven coordinate(s): comma-separated list. use `--verbose` to print resolved jars")
 
       opt[String]("command")
         .action((x, c) => c.copy(command = Some(x)))
@@ -157,7 +157,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 
       opt[Unit]("verbose")
         .action((_, c) => c.copy(verbose = true))
-        .text("enable verbose output")
+        .text("enable verbose output (predef, resolved dependency jars, ...)")
 
       help("help")
         .text("Print this help text")
@@ -314,7 +314,7 @@ trait ScriptExecution { this: BridgeBase =>
   private def compilerArgs(config: Config): Array[String] = {
     val compilerArgs = Array.newBuilder[String]
 
-    val dependencyFiles = Dependencies.resolveOptimistically(config.dependencies)
+    val dependencyFiles = Dependencies.resolveOptimistically(config.dependencies, config.verbose)
     compilerArgs ++= Array("-classpath", replClasspath(dependencyFiles))
     compilerArgs += "-explain" // verbose scalac error messages
     compilerArgs += "-deprecation"
