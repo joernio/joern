@@ -65,14 +65,14 @@ class ReplDriver(args: Array[String],
 //            val directoryClassPath = ClassPathFactory.newClassPath(AbstractFile.getDirectory(extClassesDir))
             val cpResult = if (HackyGlobalState.calledUsing) Seq(original, versionSortClassPath) else Seq(original)
             new AggregateClassPath(cpResult) {
-              override def list(inPackage: String) = {
+              // override def list(inPackage: String) = {
 //                println(s"AggregateClassPath.list; calledUsing = ${HackyGlobalState.calledUsing}")
 //                if (HackyGlobalState.calledUsing) throw new AssertionError("boom") //who's calling us?
 //                else super.list(inPackage)
                 // note: even if the very first action is to call `using` and `list` is invoked many times afterwards,
                 // it is already cached in the old state... find a way to invalidate that cache...
-                super.list(inPackage)
-              }
+                // super.list(inPackage)
+              // }
             }
           }
         }
@@ -87,7 +87,7 @@ class ReplDriver(args: Array[String],
   /** Run REPL with `state` until `:quit` command found
     * Main difference to the 'original': different greeting, trap Ctrl-c
    */
-  override def runUntilQuit(initialState: State = initialState): State = {
+  override def runUntilQuit(using initialState: State = initialState)(): State = {
     val terminal = new JLineTerminal(prompt)
     initializeRenderer()
 
@@ -195,7 +195,7 @@ class ReplDriver(args: Array[String],
 //            newRootCtx
         }
 
-        ParseResult(line)(state)
+        ParseResult(line)(using state)
       } catch {
         case _: EndOfFileException => // Ctrl+D
 //          onExitCode.foreach(code => run(code)(state))
@@ -205,13 +205,13 @@ class ReplDriver(args: Array[String],
       }
     }
 
-    @tailrec def loop(state: State): State = {
+    @tailrec def loop(using state: State)(): State = {
       val res = readLine(state)
       if (res == Quit) state
-      else loop(interpret(res)(state))
+      else loop(using interpret(res))()
     }
 
-    try runBody { loop(initialState) }
+    try runBody { loop(using initialState)() }
     finally terminal.close()
   }
   

@@ -241,7 +241,7 @@ trait ScriptExecution { this: BridgeBase =>
     )
 
     val initialState: State = replDriver.initialState
-    replDriver.runUntilQuit(initialState)
+    replDriver.runUntilQuit(using initialState)()
 
     // when upgrading to Scala 3.2.1: change to `given State`
 //    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
