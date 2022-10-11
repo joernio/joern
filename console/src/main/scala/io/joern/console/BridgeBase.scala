@@ -78,7 +78,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
       opt[Seq[String]]("dependency")
         .valueName("com.michaelpollmeier:versionsort:1.0.7,...")
         .action((x, c) => c.copy(dependencies = x.toList))
-        .text("resolve dependency (and it's transitive dependencies) for given maven coordinate(s)")
+        .text("resolve dependency (and it's transitive dependencies) for given maven coordinate(s): comma-separated list")
 
       opt[String]("command")
         .action((x, c) => c.copy(command = Some(x)))
