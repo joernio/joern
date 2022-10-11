@@ -55,7 +55,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         System.exit(1)
       }
 
-      val maxHeapSize          = Runtime.getRuntime().maxMemory()
+      val maxHeapSize          = Runtime.getRuntime.maxMemory()
       val formattedMaxHeapSize = String.format("%,.2f", maxHeapSize / (1024 * 1024 * 1024).toDouble)
       logger.info(s"Max heap size currently set to `${formattedMaxHeapSize}GB`.")
 
@@ -101,9 +101,9 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         if (config.withStdlibJarsInClassPath) defaultKotlinStdlibContentRootJarPaths
         else Seq()
       val defaultContentRootJars = stdlibJars ++
-        jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, false) } ++
+        jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, isResource = false) } ++
         dependenciesPaths.map { path =>
-          DefaultContentRootJarPath(path, false)
+          DefaultContentRootJarPath(path, isResource = false)
         }
       val messageCollector        = new ErrorLoggingMessageCollector
       val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
@@ -117,7 +117,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
       val sources = sourceEntries.filterNot { entry =>
         config.ignorePaths.exists { pathToIgnore =>
-          val parent = Paths.get(pathToIgnore).toAbsolutePath()
+          val parent = Paths.get(pathToIgnore).toAbsolutePath
           val child  = Paths.get(entry.filename)
           child.startsWith(parent)
         }
@@ -279,8 +279,8 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
 class Jar4ImportService(url: String) {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val findUrl   = url + "/find"
-  val healthUrl = url + "/health"
+  val findUrl: String   = url + "/find"
+  val healthUrl: String = url + "/health"
 
   def fetchDependencyCoordinates(imports: Seq[String]): Seq[String] = {
     try {

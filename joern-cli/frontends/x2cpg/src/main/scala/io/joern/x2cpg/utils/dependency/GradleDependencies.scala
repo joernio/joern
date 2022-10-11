@@ -17,9 +17,9 @@ case class GradleProjectInfo(gradleVersion: String, tasks: Seq[String], hasAndro
   def gradleVersionMajorMinor(): (Int, Int) = {
     def isValidPart(part: String) = part.forall(Character.isDigit)
     val parts                     = gradleVersion.split('.')
-    if (parts.size == 1 && isValidPart(parts(0))) {
+    if (parts.length == 1 && isValidPart(parts(0))) {
       (parts(0).toInt, 0)
-    } else if (parts.size >= 2 && isValidPart(parts(0)) && isValidPart(parts(1))) {
+    } else if (parts.length >= 2 && isValidPart(parts(0)) && isValidPart(parts(1))) {
       (parts(0).toInt, parts(1).toInt)
     } else {
       (-1, -1)
@@ -134,7 +134,7 @@ object GradleDependencies {
             val hasAndroidPrefixGradleProperty =
               runGradleTask(connection, Constants.gradlePropertiesTaskName) match {
                 case Some(out) =>
-                  out.split('\n').filter(_.startsWith(Constants.gradleAndroidPropertyPrefix)).nonEmpty
+                  out.split('\n').exists(_.startsWith(Constants.gradleAndroidPropertyPrefix))
                 case None => false
               }
             val info = GradleProjectInfo(
@@ -238,7 +238,7 @@ object GradleDependencies {
       outDir.delete()
       None
     } else {
-      val classesJar = classesJarEntries.toList.head
+      val classesJar = classesJarEntries.head
       logger.trace(s"Copying `classes.jar` for aar at `${aar.path.toString}` into `$newPath`")
       classesJar.copyTo(outFile)
       outDir.delete()

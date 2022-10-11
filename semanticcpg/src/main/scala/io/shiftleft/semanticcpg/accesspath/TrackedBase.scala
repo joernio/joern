@@ -24,10 +24,10 @@ sealed trait TrackedMethodOrTypeRef extends TrackedBase {
 }
 
 case class TrackedMethod(method: MethodRef) extends TrackedMethodOrTypeRef {
-  override def code = method.code
+  override def code: String = method.code
 }
 case class TrackedTypeRef(typeRef: TypeRef) extends TrackedMethodOrTypeRef {
-  override def code = typeRef.code
+  override def code: String = typeRef.code
 }
 
 case class TrackedAlias(argIndex: Int) extends TrackedBase {

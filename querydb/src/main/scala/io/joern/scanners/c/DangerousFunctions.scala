@@ -72,7 +72,7 @@ object DangerousFunctions extends QueryBundle {
           .method("(?i)(sprintf|vsprintf)")
           .callIn
           .whereNot(_.argument.order(2).isLiteral)
-        (printfFns ++ sprintsFns)
+        printfFns ++ sprintsFns
       }),
       tags = List(QueryTags.badfn, QueryTags.default),
       codeExamples = CodeExamples(

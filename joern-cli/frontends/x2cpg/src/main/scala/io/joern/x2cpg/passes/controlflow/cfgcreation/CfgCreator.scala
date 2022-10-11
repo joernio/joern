@@ -20,8 +20,8 @@ import overflowdb.traversal.Traversal
   *            / \       / \
   *           x  10     x   1
   * }}}
-  * This tree can be translated into a control flow graph, by translating the sub tree rooted in `x < 10` and that of `x
-  * += 1` and connecting their control flow graphs according to the semantics of `if`:
+  * This tree can be translated into a control flow graph, by translating the sub tree rooted in `x < 10` and that of
+  * `x+= 1` and connecting their control flow graphs according to the semantics of `if`:
   * {{{
   *            [x < 10]----
   *               |t     f|

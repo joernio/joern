@@ -6,10 +6,12 @@ import io.joern.console.embammonite.{EmbeddedAmmonite, HasUUID, QueryResult}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Base64, UUID}
 import ammonite.compiler.{Parsers => AmmoniteParser}
+import cask.model.Response.Raw
+import cask.router.Result
 import ujson.Obj
 
 object CPGLSError extends Enumeration {
-  val parseError = Value("cpgqls_query_parse_error")
+  val parseError: CPGLSError.Value = Value("cpgqls_query_parse_error")
 }
 
 class CPGQLServer(
@@ -25,7 +27,8 @@ class CPGQLServer(
 
   @basicAuth()
   @cask.get("/result/:uuidParam")
-  override def getResult(uuidParam: String)(isAuthorized: Boolean) = super.getResult(uuidParam)(isAuthorized)
+  override def getResult(uuidParam: String)(isAuthorized: Boolean): Response[Obj] =
+    super.getResult(uuidParam)(isAuthorized)
 
   @basicAuth()
   @cask.postJson("/query")
@@ -35,7 +38,7 @@ class CPGQLServer(
     } else {
       val hasErrorOnParseQuery =
         // With ignoreIncomplete = false the result is always Some. Thus .get is ok.
-        AmmoniteParser.split(query, false, "N/A").get.isLeft
+        AmmoniteParser.split(query, ignoreIncomplete = false, "N/A").get.isLeft
       if (hasErrorOnParseQuery) {
         val result = new QueryResult("", CPGLSError.parseError.toString, UUID.randomUUID())
         returnResult(result)
@@ -66,14 +69,14 @@ abstract class WebServiceWithWebSocket[T <: HasUUID](
 
   class basicAuth extends cask.RawDecorator {
 
-    def wrapFunction(ctx: Request, delegate: Delegate) = {
+    def wrapFunction(ctx: Request, delegate: Delegate): Result[Raw] = {
       val authString                           = requestToAuthString(ctx)
       val Array(user, password): Array[String] = authStringToUserAndPwd(authString)
       val isAuthorized =
         if (serverAuthUsername == "" && serverAuthPassword == "")
           true
         else
-          (user == serverAuthUsername && password == serverAuthPassword)
+          user == serverAuthUsername && password == serverAuthPassword
       delegate(Map("isAuthorized" -> isAuthorized))
     }
 
@@ -87,7 +90,7 @@ abstract class WebServiceWithWebSocket[T <: HasUUID](
       }
     }
 
-    private def authStringToUserAndPwd(authString: String) = {
+    private def authStringToUserAndPwd(authString: String): Array[String] = {
       val split = authString.split(":")
       if (split.length == 2) {
         Array(split(0), split(1))
@@ -110,19 +113,17 @@ abstract class WebServiceWithWebSocket[T <: HasUUID](
       connection.send(cask.Ws.Text("connected"))
       openConnections += connection
       cask.WsActor {
-        case cask.Ws.Error(e) => {
+        case cask.Ws.Error(e) =>
           println("Connection error: " + e.getMessage)
           openConnections -= connection
-        }
-        case cask.Ws.Close(_, _) | cask.Ws.ChannelClosed() => {
+        case cask.Ws.Close(_, _) | cask.Ws.ChannelClosed() =>
           println("Connection closed.")
           openConnections -= connection
-        }
       }
     }
   }
 
-  def getResult(uuidParam: String)(isAuthorized: Boolean) = {
+  def getResult(uuidParam: String)(isAuthorized: Boolean): Response[Obj] = {
     val res = if (!isAuthorized) {
       unauthorizedResponse
     } else {

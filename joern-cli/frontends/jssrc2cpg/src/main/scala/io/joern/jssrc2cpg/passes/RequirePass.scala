@@ -38,7 +38,7 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
         identifier     <- Traversal(assignment).target.isIdentifier.name.l
         filename       <- Traversal(assignment).file.name.map(fileToAbsolutePath).l
         methodFullName <- Traversal(assignment).source.isMethodRef.methodFullName.l
-      } yield ((filename, identifier) -> methodFullName)
+      } yield (filename, identifier) -> methodFullName
     pairs.toMap
   }
 
@@ -85,7 +85,7 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   }
 
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
-    cpg.call("require").where(_.inAssignment.target).map(Require).foreach { require =>
+    cpg.call("require").where(_.inAssignment.target).map(Require.apply(_)).foreach { require =>
       require.methodFullName.foreach { fullName =>
         cpg.method.fullNameExact(fullName).foreach { method =>
           require.nodesToPatch.foreach { node =>
@@ -97,7 +97,7 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
   }
 
-  private def stripQuotes(str: String) = {
+  private def stripQuotes(str: String): String = {
     if (str.length >= 2 && str.startsWith("\"") && str.endsWith("\"")) {
       str.substring(1, str.length - 1)
     } else if (str.length >= 2 && str.startsWith("'") && str.endsWith("'")) {

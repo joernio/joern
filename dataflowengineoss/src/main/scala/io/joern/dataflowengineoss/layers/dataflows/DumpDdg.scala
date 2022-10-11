@@ -27,7 +27,7 @@ class DumpDdg(options: DdgDumpOptions)(implicit semantics: Semantics = DefaultSe
     val cpg = context.cpg
     cpg.method.zipWithIndex.foreach { case (method, i) =>
       val str = method.dotDdg.head
-      (File(options.outDir) / s"${i}-ddg.dot").write(str)
+      (File(options.outDir) / s"$i-ddg.dot").write(str)
     }
   }
 }

@@ -226,7 +226,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     val blockCode = blockElements.map(codeOf).mkString("\n")
     val blockNode = nodeBuilder.blockNode(blockCode, lineAndColumn)
 
-    var orderIndex = new AutoIncIndex(1)
+    val orderIndex = new AutoIncIndex(1)
     addAstChildNodes(blockNode, orderIndex, blockElements)
 
     blockNode

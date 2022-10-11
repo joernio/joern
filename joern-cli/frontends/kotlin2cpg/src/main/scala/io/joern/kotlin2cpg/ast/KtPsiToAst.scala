@@ -761,7 +761,7 @@ trait KtPsiToAst {
       s"${Defines.UnresolvedNamespace}${Constants.componentNPrefix}$componentIdx:$fallbackSignature"
     val (fullName, signature) =
       typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-    val componentNCallCode = s"${componentNReceiverName}.${Constants.componentNPrefix}$componentIdx()"
+    val componentNCallCode = s"$componentNReceiverName.${Constants.componentNPrefix}$componentIdx()"
     val componentNCallNode = callNode(
       componentNCallCode,
       s"${Constants.componentNPrefix}$componentIdx",
@@ -1141,7 +1141,7 @@ trait KtPsiToAst {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val stmtAsts     = astsForExpression(expr.getBody, None)
     val node         = controlStructureNode(expr.getText, ControlStructureTypes.DO, line(expr), column(expr))
-    controlStructureAst(node, conditionAst, stmtAsts.toList, true)
+    controlStructureAst(node, conditionAst, stmtAsts.toList, placeConditionLast = true)
   }
 
   // e.g. lowering:
@@ -1533,11 +1533,11 @@ trait KtPsiToAst {
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     if (typeInfoProvider.isReferenceToClass(expr)) astForNameReferenceToType(expr, argIdx)
-    else
-      typeInfoProvider.isReferencingMember(expr) match {
-        case true  => astForNameReferenceToMember(expr, argIdx)
-        case false => astForNonSpecialNameReference(expr, argIdx)
-      }
+    else if (typeInfoProvider.isReferencingMember(expr)) {
+      astForNameReferenceToMember(expr, argIdx)
+    } else {
+      astForNonSpecialNameReference(expr, argIdx)
+    }
   }
 
   private def astForNameReferenceToType(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
