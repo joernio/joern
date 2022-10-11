@@ -317,6 +317,7 @@ trait ScriptExecution { this: BridgeBase =>
     val dependencyFiles = Dependencies.resolveOptimistically(config.dependencies)
     compilerArgs ++= Array("-classpath", replClasspath(dependencyFiles))
     compilerArgs += "-explain" // verbose scalac error messages
+    compilerArgs += "-deprecation"
     if (config.nocolors) compilerArgs ++= Array("-color", "never")
     compilerArgs.result()
   }
