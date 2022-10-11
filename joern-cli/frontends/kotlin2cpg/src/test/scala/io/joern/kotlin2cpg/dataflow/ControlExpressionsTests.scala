@@ -53,8 +53,10 @@ class ControlExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = tr
         Set(
           List(
             ("f1(p)", Some(2)),
+            ("p", Some(4)),
             ("if (r > 0) { p } else { 0 }", Some(4)),
             ("val tick1 = if (r > 0) { p } else { 0 }", Some(4)),
+            ("tick1", Some(5)),
             ("if (r > 0) { 0 } else { tick1 }", Some(5)),
             ("val tick2 = if (r > 0) { 0 } else { tick1 }", Some(5)),
             ("println(tick2)", Some(6))

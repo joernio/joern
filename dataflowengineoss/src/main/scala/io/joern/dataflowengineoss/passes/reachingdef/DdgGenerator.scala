@@ -1,10 +1,8 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
-import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
-import io.shiftleft.semanticcpg.accesspath.MatchResult
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -31,96 +29,77 @@ class DdgGenerator(semantics: Semantics) {
     problem: DataFlowProblem[StoredNode, mutable.BitSet],
     solution: Solution[StoredNode, mutable.BitSet]
   ): Unit = {
+
     implicit val implicitDst: DiffGraphBuilder = dstGraph
-    val numberToNode                           = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-    val in                                     = solution.in
-    val gen = solution.problem.transferFunction
-      .asInstanceOf[ReachingDefTransferFunction]
-      .gen
 
-    val method        = problem.flowGraph.entryNode.asInstanceOf[Method]
-    val allNodes      = in.keys.toList
-    val usageAnalyzer = new UsageAnalyzer(problem, in)
+    val numberToNode = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+    val in           = solution.in
+    val gen          = solution.problem.transferFunction.asInstanceOf[ReachingDefTransferFunction].gen
 
-    /** Add an edge from the entry node to each node that does not have other incoming definitions.
-      */
+    val method   = problem.flowGraph.entryNode.asInstanceOf[Method]
+    val allNodes = in.keys.toList
+
     def addEdgesFromEntryNode(): Unit = {
       // Add edges from the entry node
-      allNodes
-        .filter(n => isDdgNode(n) && usageAnalyzer.usedIncomingDefs(n).isEmpty)
-        .foreach { node =>
-          addEdge(method, node)
+      for {
+        node <- allNodes
+        if isDdgNode(node) && incomingDefsForNode(node).isEmpty
+      } addEdge(method, node)
+    }
+
+    def incomingDefsForNode(node: StoredNode): Set[StoredNode] = {
+      in(node).toSet
+        .map(numberToNode)
+        .filter { inNode =>
+          UsageAnalyzer.sameVariable(node, inNode) ||
+          UsageAnalyzer.isContainer(node, inNode) ||
+          UsageAnalyzer.isPart(node, inNode) ||
+          UsageAnalyzer.isAlias(node, inNode)
         }
+    }
+
+    def addEdgesToNode(node: StoredNode): Unit = {
+      for {
+        inNode <- incomingDefsForNode(node)
+        if inNode != node
+      } addEdge(inNode, node, nodeToEdgeLabel(inNode))
     }
 
     /** Adds incoming edges to arguments of call sites, including edges between arguments of the same call site.
       */
     def addEdgesToCallSite(call: Call): Unit = {
       // Edges between arguments of call sites
-      usageAnalyzer.usedIncomingDefs(call).foreach { case (use, ins) =>
-        ins.foreach { in =>
-          val inNode = numberToNode(in)
-          if (inNode != use) {
-            addEdge(inNode, use, nodeToEdgeLabel(inNode))
-          }
-        }
-      }
+      call.argument.foreach(addEdgesToNode)
 
       // For all calls, assume that input arguments
       // taint corresponding output arguments
       // and the return value. We filter invalid
       // edges at query time (according to the given semantic).
-      usageAnalyzer.uses(call).foreach { use =>
-        gen(call).foreach { g =>
-          val genNode = numberToNode(g)
-          if (use != genNode && isDdgNode(use)) {
-            addEdge(use, genNode, nodeToEdgeLabel(use))
-          }
-        }
-      }
+      for {
+        use <- call.argument.toList
+        g   <- gen(call).toList
+        genNode = numberToNode(g)
+        if use != genNode && isDdgNode(use)
+      } addEdge(use, genNode, nodeToEdgeLabel(use))
 
       // Handle block arguments
       // This handles `foo(new Bar())`, which is lowered to
       // `foo({Bar tmp = Bar.alloc(); tmp.init(); tmp})`
-      call.argument.isBlock.foreach { block =>
-        block.astChildren.lastOption match {
-          case None => // Do nothing
-          case Some(node: Identifier) =>
-            val edgesToAdd = in(node).toList.flatMap { inDef =>
-              numberToNode.get(inDef) match {
-                case Some(identifier: Identifier) => Some(identifier)
-                case Some(call: Call)             => Some(call)
-                case _                            => None
-              }
-            }
-            edgesToAdd.foreach { inNode =>
-              addEdge(inNode, block, nodeToEdgeLabel(inNode))
-            }
-            if (edgesToAdd.nonEmpty) {
-              addEdge(block, call)
-            }
-          case Some(node: Call) =>
-            addEdge(node, call, nodeToEdgeLabel(node))
-            addEdge(block, call)
-          case _ => // Do nothing
-        }
+      for {
+        block <- call.argument.isBlock
+        last  <- block.astChildren.lastOption
+      } {
+        addEdgesToNode(last)
+        addEdge(last, block, nodeToEdgeLabel(last))
+        addEdge(block, call)
       }
 
     }
 
     def addEdgesToReturn(ret: Return): Unit = {
-      usageAnalyzer.usedIncomingDefs(ret).foreach { case (use: CfgNode, inElements) =>
-        addEdge(use, ret, use.code)
-        inElements
-          .filterNot(x => numberToNode.get(x).contains(use))
-          .flatMap(numberToNode.get)
-          .foreach { inElemNode =>
-            addEdge(inElemNode, ret, nodeToEdgeLabel(inElemNode))
-          }
-        if (inElements.isEmpty) {
-          addEdge(method, ret)
-        }
-      }
+      val uses = ret.astChildren.collect { case x: Expression => x }.toList
+      uses.foreach(use => addEdge(use, ret, use.code))
+      uses.foreach(addEdgesToNode)
       addEdge(ret, method.methodReturn, "<RET>")
     }
 
@@ -131,13 +110,7 @@ class DdgGenerator(semantics: Semantics) {
       paramOut.paramIn.foreach { paramIn =>
         addEdge(paramIn, paramOut, paramIn.name)
       }
-      usageAnalyzer.usedIncomingDefs(paramOut).foreach { case (_, inElements) =>
-        inElements.foreach { inElement =>
-          val inElemNode = numberToNode(inElement)
-          val edgeLabel  = nodeToEdgeLabel(inElemNode)
-          addEdge(inElemNode, paramOut, edgeLabel)
-        }
-      }
+      addEdgesToNode(paramOut)
     }
 
     def addEdgesToExitNode(exitNode: MethodReturn): Unit = {
@@ -178,17 +151,12 @@ class DdgGenerator(semantics: Semantics) {
   private def addEdge(fromNode: StoredNode, toNode: StoredNode, variable: String = "")(implicit
     dstGraph: DiffGraphBuilder
   ): Unit = {
-    if (
-      fromNode.isInstanceOf[Unknown] || toNode
-        .isInstanceOf[Unknown]
-    )
+    if (fromNode.isInstanceOf[Unknown] || toNode.isInstanceOf[Unknown])
       return
 
     (fromNode, toNode) match {
-      case (parentNode: CfgNode, childNode: CfgNode) =>
-        if (EdgeValidator.isValidEdge(childNode, parentNode)) {
-          dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
-        }
+      case (parentNode: CfgNode, childNode: CfgNode) if EdgeValidator.isValidEdge(childNode, parentNode) =>
+        dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
       case _ =>
 
     }
@@ -216,123 +184,4 @@ class DdgGenerator(semantics: Semantics) {
       case _                    => ""
     }
   }
-}
-
-/** Upon calculating reaching definitions, we find ourselves with a set of incoming definitions `in(n)` for each node
-  * `n` of the flow graph. This component determines those of the incoming definitions that are relevant as the value
-  * they define is actually used by `n`.
-  */
-private class UsageAnalyzer(
-  problem: DataFlowProblem[StoredNode, mutable.BitSet],
-  in: Map[StoredNode, Set[Definition]]
-) {
-
-  val numberToNode                 = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-  private val allNodes             = in.keys.toList
-  private val containerSet         = Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess)
-  private val indirectionAccessSet = Set(Operators.addressOf, Operators.indirection)
-  val usedIncomingDefs: Map[StoredNode, Map[StoredNode, Set[Definition]]] = initUsedIncomingDefs()
-
-  def initUsedIncomingDefs(): Map[StoredNode, Map[StoredNode, Set[Definition]]] = {
-    allNodes.map { node =>
-      node -> usedIncomingDefsForNode(node)
-    }.toMap
-  }
-
-  private def usedIncomingDefsForNode(node: StoredNode): Map[StoredNode, Set[Definition]] = {
-    uses(node).map { use =>
-      use -> in(node).filter { inElement =>
-        val inElemNode = numberToNode(inElement)
-        sameVariable(use, inElemNode) || isContainer(use, inElemNode) || isPart(use, inElemNode) || isAlias(
-          use,
-          inElemNode
-        )
-      }
-    }.toMap
-  }
-
-  /** Determine whether the node `use` describes a container for `inElement`, e.g., use = `ptr` while inElement =
-    * `ptr->foo`.
-    */
-  private def isContainer(use: StoredNode, inElement: StoredNode): Boolean = {
-    inElement match {
-      case call: Call if containerSet.contains(call.name) =>
-        call.argument.headOption.exists { base =>
-          nodeToString(use).contains(base.code)
-        }
-      case _ => false
-    }
-  }
-
-  /** Determine whether `use` is a part of `inElement`, e.g., use = `argv[0]` while inElement = `argv`
-    */
-  private def isPart(use: StoredNode, inElement: StoredNode): Boolean = {
-    use match {
-      case call: Call if containerSet.contains(call.name) =>
-        inElement match {
-          case param: MethodParameterIn =>
-            call.argument.headOption.exists { base =>
-              base.code == param.name
-            }
-          case identifier: Identifier =>
-            call.argument.headOption.exists { base =>
-              base.code == identifier.name
-            }
-          case _ => false
-        }
-      case _ => false
-    }
-  }
-
-  private def isAlias(use: StoredNode, inElement: StoredNode): Boolean = {
-    use match {
-      case useCall: Call =>
-        inElement match {
-          case inCall: Call =>
-            val (useBase, useAccessPath) = toTrackedBaseAndAccessPathSimple(useCall)
-            val (inBase, inAccessPath)   = toTrackedBaseAndAccessPathSimple(inCall)
-            useBase == inBase && useAccessPath.matchAndDiff(inAccessPath.elements)._1 == MatchResult.EXACT_MATCH
-          case _ => false
-        }
-      case _ => false
-    }
-  }
-
-  def uses(node: StoredNode): Set[StoredNode] = {
-    val n: Set[StoredNode] = node match {
-      case ret: Return =>
-        ret.astChildren.collect { case x: Expression => x }.toSet
-      case call: Call =>
-        call.argument.toSet
-      case paramOut: MethodParameterOut =>
-        Set(paramOut)
-      case _ => Set()
-    }
-    n.filterNot(_.isInstanceOf[FieldIdentifier])
-  }
-
-  /** Compares arguments of calls with incoming definitions to see if they refer to the same variable
-    */
-  def sameVariable(use: StoredNode, inElement: StoredNode): Boolean = {
-    inElement match {
-      case param: MethodParameterIn =>
-        nodeToString(use).contains(param.name)
-      case call: Call if indirectionAccessSet.contains(call.name) =>
-        call.argumentOption(1).exists(x => nodeToString(use).contains(x.code))
-      case call: Call =>
-        nodeToString(use).contains(call.code)
-      case identifier: Identifier => nodeToString(use).contains(identifier.code)
-      case _                      => false
-    }
-  }
-
-  private def nodeToString(node: StoredNode): Option[String] = {
-    node match {
-      case exp: Expression       => Some(exp.code)
-      case p: MethodParameterIn  => Some(p.name)
-      case p: MethodParameterOut => Some(p.name)
-      case _                     => None
-    }
-  }
-
 }
