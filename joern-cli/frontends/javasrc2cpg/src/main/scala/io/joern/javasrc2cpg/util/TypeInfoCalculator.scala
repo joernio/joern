@@ -34,19 +34,19 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
   private val emptyTypeParamValues = ResolvedTypeParametersMap.empty()
 
   def name(typ: ResolvedType): Option[String] = {
-    nameOrFullName(typ, emptyTypeParamValues, false)
+    nameOrFullName(typ, emptyTypeParamValues, fullyQualified = false)
   }
 
   def name(typ: ResolvedType, typeParamValues: ResolvedTypeParametersMap): Option[String] = {
-    nameOrFullName(typ, typeParamValues, false)
+    nameOrFullName(typ, typeParamValues, fullyQualified = false)
   }
 
   def fullName(typ: ResolvedType): Option[String] = {
-    nameOrFullName(typ, emptyTypeParamValues, true).map(registerType)
+    nameOrFullName(typ, emptyTypeParamValues, fullyQualified = true).map(registerType)
   }
 
   def fullName(typ: ResolvedType, typeParamValues: ResolvedTypeParametersMap): Option[String] = {
-    nameOrFullName(typ, typeParamValues, true).map(registerType)
+    nameOrFullName(typ, typeParamValues, fullyQualified = true).map(registerType)
   }
 
   private def typesSubstituted(
@@ -83,10 +83,8 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
           case _ if lazyType.isWildcard =>
             nameOrFullName(lazyType.asWildcard(), typeParamValues, fullyQualified)
         }
-      case voidType: ResolvedVoidType =>
-        Some(voidType.describe())
-      case primitiveType: ResolvedPrimitiveType =>
-        Some(primitiveType.describe())
+      case tpe @ (_: ResolvedVoidType | _: ResolvedPrimitiveType) =>
+        Some(tpe.describe())
       case arrayType: ResolvedArrayType =>
         nameOrFullName(arrayType.getComponentType, typeParamValues, fullyQualified).map(_ + "[]")
       case nullType: NullType =>
@@ -135,11 +133,11 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
   }
 
   def name(typ: Type): Option[String] = {
-    nameOrFullName(typ, false)
+    nameOrFullName(typ, fullyQualified = false)
   }
 
   def fullName(typ: Type): Option[String] = {
-    nameOrFullName(typ, true).map(registerType)
+    nameOrFullName(typ, fullyQualified = true).map(registerType)
   }
 
   private def nameOrFullName(typ: Type, fullyQualified: Boolean): Option[String] = {
@@ -160,11 +158,11 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
   }
 
   def name(decl: ResolvedDeclaration): Option[String] = {
-    nameOrFullName(decl, false)
+    nameOrFullName(decl, fullyQualified = false)
   }
 
   def fullName(decl: ResolvedDeclaration): Option[String] = {
-    nameOrFullName(decl, true).map(registerType)
+    nameOrFullName(decl, fullyQualified = true).map(registerType)
   }
 
   private def nameOrFullName(decl: ResolvedDeclaration, fullyQualified: Boolean): Option[String] = {
@@ -178,7 +176,8 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
     typeDecl match {
       case typeParamDecl: ResolvedTypeParameterDeclaration =>
         if (fullyQualified) {
-          val containFullName = nameOrFullName(typeParamDecl.getContainer.asInstanceOf[ResolvedDeclaration], true)
+          val containFullName =
+            nameOrFullName(typeParamDecl.getContainer.asInstanceOf[ResolvedDeclaration], fullyQualified = true)
           containFullName.map(_ + "." + typeParamDecl.getName)
         } else {
           Some(typeParamDecl.getName)

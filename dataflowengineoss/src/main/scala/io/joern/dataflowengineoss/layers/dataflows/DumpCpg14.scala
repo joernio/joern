@@ -27,7 +27,7 @@ class DumpCpg14(options: Cpg14DumpOptions)(implicit semantics: Semantics = Defau
     val cpg = context.cpg
     cpg.method.zipWithIndex.foreach { case (method, i) =>
       val str = method.dotCpg14.head
-      (File(options.outDir) / s"${i}-cpg.dot").write(str)
+      (File(options.outDir) / s"$i-cpg.dot").write(str)
     }
   }
 }

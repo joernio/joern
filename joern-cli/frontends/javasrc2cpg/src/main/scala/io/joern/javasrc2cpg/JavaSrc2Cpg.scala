@@ -28,7 +28,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   import JavaSrc2Cpg._
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val sourceFileExtensions = Set(".java")
+  val sourceFileExtensions: Set[String] = Set(".java")
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>

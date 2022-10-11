@@ -14,9 +14,9 @@ object TypeRelations {
 }
 
 class TypeRelations extends LayerCreator {
-  override val overlayName: String = TypeRelations.overlayName
-  override val description: String = TypeRelations.description
-  override val dependsOn           = List(Base.overlayName)
+  override val overlayName: String     = TypeRelations.overlayName
+  override val description: String     = TypeRelations.description
+  override val dependsOn: List[String] = List(Base.overlayName)
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val cpg = context.cpg

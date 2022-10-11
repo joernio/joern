@@ -3,8 +3,8 @@ package io.shiftleft.semanticcpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Languages, ModifierTypes}
-import io.shiftleft.passes.{SimpleCpgPass}
-import io.shiftleft.semanticcpg.language.{NewTagNodePairTraversal, _}
+import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 

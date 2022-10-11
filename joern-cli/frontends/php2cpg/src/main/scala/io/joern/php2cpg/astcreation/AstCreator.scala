@@ -7,35 +7,8 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
 import io.joern.x2cpg.utils.NodeBuilders.{fieldIdentifierNode, identifierNode, modifierNode, operatorCallNode}
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  Operators,
-  PropertyNames
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  ExpressionNew,
-  NewBlock,
-  NewCall,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodReturn,
-  NewModifier,
-  NewNode,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef
-}
+import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.codepropertygraph.generated.nodes._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
@@ -111,7 +84,6 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case tryStmt: PhpTryStmt       => astForTryStmt(tryStmt)
       case returnStmt: PhpReturnStmt => astForReturnStmt(returnStmt)
       case classStmt: PhpClassStmt   => astForClassStmt(classStmt)
-
       case unhandled =>
         logger.warn(s"Unhandled stmt: $unhandled")
         ???
@@ -236,9 +208,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case printExpr: PhpPrint       => astForPrintExpr(printExpr)
       case ternaryOp: PhpTernaryOp   => astForTernaryOp(ternaryOp)
       case throwExpr: PhpThrowExpr   => astForThrow(throwExpr)
-
-      case unhandled =>
-        logger.warn(s"Unhandled expr: $unhandled")
+      case null =>
+        logger.warn(s"expr was null")
         ???
     }
   }
@@ -716,9 +687,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
         callAst(callNode, args)
       case PhpEncapsedPart(value, _) =>
         Ast(NewLiteral().code(value).typeFullName(TypeConstants.String).lineNumber(line(scalar)))
-
-      case unhandled =>
-        logger.warn(s"Unhandled scalar: $unhandled")
+      case null =>
+        logger.warn(s"scalar was null")
         ???
     }
   }
@@ -728,7 +698,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val rightAst = astForExpr(binOp.right)
 
     val symbol = operatorSymbols.getOrElse(binOp.operator, binOp.operator)
-    val code   = s"${rootCode(leftAst)} ${symbol} ${rootCode(rightAst)}"
+    val code   = s"${rootCode(leftAst)} $symbol ${rootCode(rightAst)}"
 
     val callNode = operatorCallNode(binOp.operator, code, line = line(binOp))
 

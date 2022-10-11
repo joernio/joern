@@ -1,4 +1,4 @@
-package io.joern.scanners.java;
+package io.joern.scanners.java
 
 import io.joern.scanners._
 import io.shiftleft.semanticcpg.language._

@@ -28,7 +28,7 @@ object MissingLengthCheck extends QueryBundle {
         cpg.method.arrayAccess
           .filter { access =>
             val arrName = access.simpleName
-            !arrName.isEmpty && !arrName.forall(x => access.method.local.nameExact(x).nonEmpty)
+            arrName.nonEmpty && !arrName.forall(x => access.method.local.nameExact(x).nonEmpty)
           }
           .usesConstantOffset
           .flatMap { arrayAccess =>

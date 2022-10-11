@@ -18,7 +18,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
 
   override def run(): Unit = {
     try {
-      var terminate = false;
+      var terminate = false
       while (!(terminate && queue.isEmpty)) {
         val job = queue.take()
         if (isTerminationMarker(job)) {
@@ -55,7 +55,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
     var currentOutput: String = ""
     var line                  = reader.readLine()
     while (line != null) {
-      if (!line.startsWith(magicEchoSeq) && !line.isEmpty) {
+      if (!line.startsWith(magicEchoSeq) && line.nonEmpty) {
         val uuid = uuidFromLine(line)
         if (uuid.isEmpty) {
           currentOutput += line + "\n"
