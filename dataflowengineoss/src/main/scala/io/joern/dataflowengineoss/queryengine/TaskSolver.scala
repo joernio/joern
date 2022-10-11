@@ -146,12 +146,11 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     res
   }
 
-  private def isArgOrRetOfMethodWeCameFrom(call: Call, path: Vector[PathElement]): Boolean = {
+  private def isArgOrRetOfMethodWeCameFrom(call: Call, path: Vector[PathElement]): Boolean =
     path match {
       case Vector(_, PathElement(x: MethodReturn, _, _, _), _*)      => methodsForCall(call).contains(x.method)
       case Vector(_, PathElement(x: MethodParameterIn, _, _, _), _*) => methodsForCall(call).contains(x.method)
       case _                                                         => false
     }
-  }
 
 }
