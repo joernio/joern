@@ -198,7 +198,7 @@ class ReplDriver(args: Array[String],
         ParseResult(line)(using state)
       } catch {
         case _: EndOfFileException => // Ctrl+D
-//          onExitCode.foreach(code => run(code)(state))
+          onExitCode.foreach(code => run(code)(using state))
           Quit
         case _: UserInterruptException => // Ctrl+C
           Newline
