@@ -39,37 +39,37 @@ class DdgGenerator(semantics: Semantics) {
     val method   = problem.flowGraph.entryNode.asInstanceOf[Method]
     val allNodes = in.keys.toList
 
+    def incomingDefsForNode(current: StoredNode, use: StoredNode): Set[StoredNode] = {
+      in(current).toSet
+        .map(numberToNode)
+        .filter { inNode =>
+          UsageAnalyzer.sameVariable(use, inNode) ||
+          UsageAnalyzer.isContainer(use, inNode) ||
+          UsageAnalyzer.isPart(use, inNode) ||
+          UsageAnalyzer.isAlias(use, inNode)
+        }
+    }
+
+    def addEdgesToUse(current: StoredNode, use: StoredNode): Unit = {
+      for {
+        inNode <- incomingDefsForNode(current, use)
+        if inNode != use
+      } addEdge(inNode, use, nodeToEdgeLabel(inNode))
+    }
+
     def addEdgesFromEntryNode(): Unit = {
       // Add edges from the entry node
       for {
         node <- allNodes
-        if isDdgNode(node) && incomingDefsForNode(node).isEmpty
+        if isDdgNode(node) && incomingDefsForNode(node, node).isEmpty
       } addEdge(method, node)
-    }
-
-    def incomingDefsForNode(node: StoredNode): Set[StoredNode] = {
-      in(node).toSet
-        .map(numberToNode)
-        .filter { inNode =>
-          UsageAnalyzer.sameVariable(node, inNode) ||
-          UsageAnalyzer.isContainer(node, inNode) ||
-          UsageAnalyzer.isPart(node, inNode) ||
-          UsageAnalyzer.isAlias(node, inNode)
-        }
-    }
-
-    def addEdgesToNode(node: StoredNode): Unit = {
-      for {
-        inNode <- incomingDefsForNode(node)
-        if inNode != node
-      } addEdge(inNode, node, nodeToEdgeLabel(inNode))
     }
 
     /** Adds incoming edges to arguments of call sites, including edges between arguments of the same call site.
       */
     def addEdgesToCallSite(call: Call): Unit = {
       // Edges between arguments of call sites
-      call.argument.foreach(addEdgesToNode)
+      call.argument.foreach(arg => addEdgesToUse(call, arg))
 
       // For all calls, assume that input arguments
       // taint corresponding output arguments
@@ -89,7 +89,7 @@ class DdgGenerator(semantics: Semantics) {
         block <- call.argument.isBlock
         last  <- block.astChildren.lastOption
       } {
-        addEdgesToNode(last)
+        addEdgesToUse(call, last)
         addEdge(last, block, nodeToEdgeLabel(last))
         addEdge(block, call)
       }
@@ -99,7 +99,7 @@ class DdgGenerator(semantics: Semantics) {
     def addEdgesToReturn(ret: Return): Unit = {
       val uses = ret.astChildren.collect { case x: Expression => x }.toList
       uses.foreach(use => addEdge(use, ret, use.code))
-      uses.foreach(addEdgesToNode)
+      uses.foreach(addEdgesToUse(ret, _))
       addEdge(ret, method.methodReturn, "<RET>")
     }
 
@@ -110,7 +110,7 @@ class DdgGenerator(semantics: Semantics) {
       paramOut.paramIn.foreach { paramIn =>
         addEdge(paramIn, paramOut, paramIn.name)
       }
-      addEdgesToNode(paramOut)
+      addEdgesToUse(paramOut, paramOut)
     }
 
     def addEdgesToExitNode(exitNode: MethodReturn): Unit = {
