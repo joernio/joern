@@ -10,7 +10,7 @@ package io.joern.x2cpg.datastructures
   *   Scope type.
   */
 class Scope[I, V, S] {
-  protected var stack = List[ScopeElement[I, V, S]]()
+  protected var stack: List[ScopeElement[I, V, S]] = List[ScopeElement[I, V, S]]()
 
   def isEmpty: Boolean = {
     stack.isEmpty

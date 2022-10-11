@@ -30,11 +30,11 @@ object AccessPathHandling {
   private val logger                = LoggerFactory.getLogger(getClass)
   private var hasWarnedDeprecations = false
 
-  def memberAccessToPath(memberAccess: Call, tail: List[AccessElement]) = {
+  def memberAccessToPath(memberAccess: Call, tail: List[AccessElement]): List[AccessElement] = {
     memberAccess.name match {
       case Operators.memberAccess | Operators.indirectMemberAccess =>
         if (!hasWarnedDeprecations) {
-          logger.info(s"Deprecated Operator ${memberAccess.name} on ${memberAccess}")
+          logger.info(s"Deprecated Operator ${memberAccess.name} on $memberAccess")
           hasWarnedDeprecations = true
         }
         memberAccess
@@ -50,7 +50,7 @@ object AccessPathHandling {
 
       case Operators.computedMemberAccess | Operators.indirectComputedMemberAccess =>
         if (!hasWarnedDeprecations) {
-          logger.info(s"Deprecated Operator ${memberAccess.name} on ${memberAccess}")
+          logger.info(s"Deprecated Operator ${memberAccess.name} on $memberAccess")
           hasWarnedDeprecations = true
         }
         memberAccess
@@ -81,14 +81,13 @@ object AccessPathHandling {
 
   private def extractAccessStringToken(memberAccess: Call): AccessElement = {
     memberAccess.argumentOption(2) match {
-      case None => {
+      case None =>
         logger.warn(
           s"Invalid AST: Found member access without second argument." +
             s" Member access CODE: ${memberAccess.code}" +
             s" In method ${memberAccess.method.fullName}"
         )
         VariableAccess
-      }
       case Some(literal: Literal) => ConstantAccess(literal.code)
       case Some(fieldIdentifier: FieldIdentifier) =>
         ConstantAccess(fieldIdentifier.canonicalName)
@@ -97,14 +96,13 @@ object AccessPathHandling {
   }
   private def extractAccessIntToken(memberAccess: Call): AccessElement = {
     memberAccess.argumentOption(2) match {
-      case None => {
+      case None =>
         logger.warn(
           s"Invalid AST: Found member access without second argument." +
             s" Member access CODE: ${memberAccess.code}" +
             s" In method ${memberAccess.method.fullName}"
         )
         VariablePointerShift
-      }
       case Some(literal: Literal) =>
         literal.code.toIntOption.map(PointerShift.apply).getOrElse(VariablePointerShift)
       case Some(fieldIdentifier: FieldIdentifier) =>

@@ -66,7 +66,7 @@ class CachingReflectionTypeSolver extends ReflectionTypeSolver {
 
   private def innerClassLookup(name: String): SymbolReference[ResolvedReferenceTypeDeclaration] = {
     val lastDot: Int = name.lastIndexOf('.')
-    if (lastDot == -(1)) {
+    if (lastDot == -1) {
       SymbolReference.unsolved(classOf[ResolvedReferenceTypeDeclaration])
     } else {
       val parentName: String                                        = name.substring(0, lastDot)

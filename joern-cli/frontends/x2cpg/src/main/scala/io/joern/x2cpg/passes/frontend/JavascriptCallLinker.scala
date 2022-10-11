@@ -9,7 +9,6 @@ import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.NodeOps
 import overflowdb.traversal.jIteratortoTraversal
-import overflowdb.traversal.toNodeTraversal
 
 import scala.collection.mutable
 

@@ -165,10 +165,10 @@ object Scope {
 
   object ScopeTypes {
     sealed trait ScopeType
-    final case class TypeDeclScope(declNode: NewTypeDecl)  extends ScopeType
-    final case class MethodScope(returnType: ExpectedType) extends ScopeType
-    final case object BlockScope                           extends ScopeType
-    final case object NamespaceScope                       extends ScopeType
+    case class TypeDeclScope(declNode: NewTypeDecl)  extends ScopeType
+    case class MethodScope(returnType: ExpectedType) extends ScopeType
+    case object BlockScope                           extends ScopeType
+    case object NamespaceScope                       extends ScopeType
   }
 
   def apply(): Scope = new Scope()

@@ -1,6 +1,6 @@
 package io.joern.console
 
-import io.shiftleft.passes.{SimpleCpgPass}
+import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language.HasStoreAndPersistMethods
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.reflections8.Reflections

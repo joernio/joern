@@ -5,7 +5,7 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.passes.reachingdef.EdgeValidator
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, Properties}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
@@ -152,9 +152,9 @@ object Engine {
             }
             val isOutputArg = isOutputArgOfInternalMethod(parentNode)
             Some(PathElement(parentNode, visible, isOutputArg, outEdgeLabel = outLabel))
-          case parentNode =>
+          case parentNode if parentNode != null =>
             Some(PathElement(parentNode, outEdgeLabel = outLabel))
-          case _ =>
+          case null =>
             None
         }
       case _ =>
