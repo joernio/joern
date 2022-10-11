@@ -1,11 +1,12 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.console.cpgcreation.{CpgGenerator, cpgGeneratorForLanguage, guessLanguage}
+import io.joern.console.cpgcreation.{cpgGeneratorForLanguage, guessLanguage, CpgGenerator}
 import io.joern.console.{FrontendConfig, InstallConfig}
 import io.joern.joerncli.CpgBasedTool.newCpgCreatedString
 import io.shiftleft.codepropertygraph.generated.Languages
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 object JoernParse extends App {
@@ -39,10 +40,10 @@ object JoernParse extends App {
 
     opt[Unit]("nooverlays")
       .text("do not apply default overlays")
-      .action((x, c) => c.copy(enhance = false))
+      .action((_, c) => c.copy(enhance = false))
     opt[Unit]("overlaysonly")
       .text("Only apply default overlays")
-      .action((x, c) => c.copy(enhanceOnly = true))
+      .action((_, c) => c.copy(enhanceOnly = true))
 
     opt[Int]("max-num-def")
       .text("Maximum number of definitions in per-method data flow calculation")
@@ -99,7 +100,7 @@ object JoernParse extends App {
   }
 
   private def buildLanguageList(): String = {
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s ++= "Available languages (case insensitive):\n"
     s ++= Languages.ALL.asScala.map(lang => s"- ${lang.toLowerCase}").mkString("\n")
     s.toString()

@@ -68,7 +68,7 @@ object EmbeddingGenerator {
 trait EmbeddingGenerator[T, S] {
   import EmbeddingGenerator._
 
-  case class Embedding(data: (() => Traversal[(T, SparseVectorWithExplicitFeature[S])])) {
+  case class Embedding(data: () => Traversal[(T, SparseVectorWithExplicitFeature[S])]) {
     lazy val dimToStructure: Map[String, S] = {
       val m = mutable.HashMap[String, S]()
       data().foreach { case (_, vector) =>
@@ -180,7 +180,7 @@ object JoernVectors extends App {
     }
   }
 
-  private def traversalToJson[X](trav: Traversal[X], vectorToString: (X => String)): Unit = {
+  private def traversalToJson[X](trav: Traversal[X], vectorToString: X => String): Unit = {
     println("[")
     trav.nextOption().foreach { vector => print(vectorToString(vector)) }
     trav.foreach { vector => print(",\n" + vectorToString(vector)) }

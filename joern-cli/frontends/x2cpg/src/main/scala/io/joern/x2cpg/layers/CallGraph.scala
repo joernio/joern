@@ -26,9 +26,9 @@ object CallGraph {
 }
 
 class CallGraph extends LayerCreator {
-  override val overlayName: String = CallGraph.overlayName
-  override val description: String = CallGraph.description
-  override val dependsOn           = List(TypeRelations.overlayName)
+  override val overlayName: String     = CallGraph.overlayName
+  override val description: String     = CallGraph.description
+  override val dependsOn: List[String] = List(TypeRelations.overlayName)
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val cpg = context.cpg

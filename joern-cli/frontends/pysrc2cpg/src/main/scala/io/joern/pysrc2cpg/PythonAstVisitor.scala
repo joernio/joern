@@ -432,9 +432,9 @@ class PythonAstVisitor(
 
     val initParameters = initFunctionOption.map(_.args).getOrElse {
       // Create arguments of a default __init__ function.
-      new ast.Arguments(
+      ast.Arguments(
         posonlyargs = mutable.Seq.empty[ast.Arg],
-        args = mutable.Seq(new ast.Arg("self", None, None, classDef.attributeProvider)),
+        args = mutable.Seq(ast.Arg("self", None, None, classDef.attributeProvider)),
         vararg = None,
         kwonlyargs = mutable.Seq.empty[ast.Arg],
         kw_defaults = mutable.Seq.empty[Option[ast.iexpr]],
@@ -890,12 +890,12 @@ class PythonAstVisitor(
         if (ifs.size == 1) {
           ifs.head
         } else {
-          new ast.BoolOp(ast.And, ifs.to(mutable.Seq), ifs.head.attributeProvider)
+          ast.BoolOp(ast.And, ifs.to(mutable.Seq), ifs.head.attributeProvider)
         }
       val ifNotContinueNode = convert(
-        new ast.If(
-          new ast.UnaryOp(ast.Not, conditionNode, ifs.head.attributeProvider),
-          mutable.ArrayBuffer.empty[ast.istmt].append(new ast.Continue(ifs.head.attributeProvider)),
+        ast.If(
+          ast.UnaryOp(ast.Not, conditionNode, ifs.head.attributeProvider),
+          mutable.ArrayBuffer.empty[ast.istmt].append(ast.Continue(ifs.head.attributeProvider)),
           mutable.Seq.empty[ast.istmt],
           ifs.head.attributeProvider
         )
@@ -1907,7 +1907,7 @@ object PythonAstVisitor {
   // This list contains all functions from https://docs.python.org/3/library/functions.html#built-in-funcs
   // for python version 3.9.5.
   // There is a corresponding list in policies which needs to be updated if this one is updated and vice versa.
-  val builtinFunctionsV3 = Iterable(
+  val builtinFunctionsV3: Iterable[String] = Iterable(
     "abs",
     "all",
     "any",
@@ -1962,7 +1962,7 @@ object PythonAstVisitor {
   )
   // This list contains all classes from https://docs.python.org/3/library/functions.html#built-in-funcs
   // for python version 3.9.5.
-  val builtinClassesV3 = Iterable(
+  val builtinClassesV3: Iterable[String] = Iterable(
     "bool",
     "bytearray",
     "bytes",
@@ -1983,7 +1983,7 @@ object PythonAstVisitor {
     "type"
   )
   // This list contains all functions from https://docs.python.org/2.7/library/functions.html
-  val builtinFunctionsV2 = Iterable(
+  val builtinFunctionsV2: Iterable[String] = Iterable(
     "abs",
     "all",
     "any",
@@ -2045,7 +2045,7 @@ object PythonAstVisitor {
     "__import__"
   )
   // This list contains all classes from https://docs.python.org/2.7/library/functions.html
-  val builtinClassesV2 = Iterable(
+  val builtinClassesV2: Iterable[String] = Iterable(
     "bool",
     "bytearray",
     "complex",

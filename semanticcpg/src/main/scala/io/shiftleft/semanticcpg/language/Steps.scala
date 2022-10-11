@@ -3,6 +3,7 @@ package io.shiftleft.semanticcpg.language
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import org.json4s.native.Serialization.{write, writePretty}
 import org.json4s.{CustomSerializer, Extraction}
+import org.json4s.Formats
 import overflowdb.traversal._
 import overflowdb.traversal.help.Doc
 
@@ -61,7 +62,7 @@ class Steps[A](val traversal: Traversal[A]) extends AnyVal {
   def toJsonPretty: String = toJson(pretty = true)
 
   protected def toJson(pretty: Boolean): String = {
-    implicit val formats = org.json4s.DefaultFormats + Steps.nodeSerializer
+    implicit val formats: Formats = org.json4s.DefaultFormats + Steps.nodeSerializer
 
     val results = traversal.toList
     if (pretty) writePretty(results)

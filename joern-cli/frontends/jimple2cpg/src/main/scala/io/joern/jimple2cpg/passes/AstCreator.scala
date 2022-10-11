@@ -1154,7 +1154,7 @@ object AstCreator {
 
   def parseAsmType(signature: String): String = {
     val sigArr = signature.toCharArray
-    val sb     = new StringBuilder()
+    val sb     = new mutable.StringBuilder()
     sigArr.toSeq.foreach { (c: Char) =>
       if (c == ';') {
         val prefix = sb
