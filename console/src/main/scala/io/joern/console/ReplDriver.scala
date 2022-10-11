@@ -68,15 +68,14 @@ class ReplDriver(args: Array[String],
   
   /** configure rendering to use our pprinter for displaying results */
   private def initializeRenderer() = {
-    // TODO reactivate...
-    // rendering.myReplStringOf = {
-    //   // We need to use the PPrinter class from the on the user classpath, and not the one available in the current
-    //   // classloader, so we use reflection instead of simply calling `io.joern.console.PPrinter:apply`.
-    //   // This is analogous to what happens in dotty.tools.repl.Rendering.
-    //   val pprinter = Class.forName("io.joern.console.PPrinter", true, rendering.myClassLoader)
-    //   val renderer = pprinter.getMethod("apply", classOf[Object])
-    //   (value: Object) => renderer.invoke(null, value).asInstanceOf[String]
-    // }
+    rendering.myReplStringOf = {
+      // We need to use the PPrinter class from the on the user classpath, and not the one available in the current
+      // classloader, so we use reflection instead of simply calling `io.joern.console.PPrinter:apply`.
+      // This is analogous to what happens in dotty.tools.repl.Rendering.
+      val pprinter = Class.forName("io.joern.console.PPrinter", true, rendering.myClassLoader)
+      val renderer = pprinter.getMethod("apply", classOf[Object])
+      (value: Object, maxElements: Int) => renderer.invoke(null, value).asInstanceOf[String]
+    }
   }
 
 }
