@@ -128,10 +128,10 @@ package object testing {
       withCustom { (graph, cpg) =>
         implicit val diffGraph: DiffGraphBuilder = graph
         methodTags.foreach { case (k, v) =>
-          cpg.method.name(methodName).newTagNodePair(k, v).persist()(diffGraph)
+          cpg.method.name(methodName).newTagNodePair(k, v).store()(diffGraph)
         }
         paramTags.foreach { case (k, v) =>
-          cpg.method.name(methodName).parameter.newTagNodePair(k, v).persist()(diffGraph)
+          cpg.method.name(methodName).parameter.newTagNodePair(k, v).store()(diffGraph)
         }
       }
 
