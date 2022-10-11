@@ -224,20 +224,6 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 trait ScriptExecution { this: BridgeBase =>
 
   protected def startInteractiveShell(config: Config) = {
-//    val replConfig = config.cpgToLoad.map { cpgFile =>
-//      "importCpg(\"" + cpgFile + "\")"
-//    } ++ config.forInputPath.map { name =>
-//      s"""
-//         |openForInputPath(\"$name\")
-//         |""".stripMargin
-//    }
-//
-//    val debuggerConnected = false
-//    while (!debuggerConnected) {
-//      println("waiting fo debugger...")
-//      Thread.sleep(1000)
-//    }
-
     val replDriver = new ReplDriver(
       compilerArgs(config),
       onExitCode = Option(onExitCode),
@@ -246,24 +232,25 @@ trait ScriptExecution { this: BridgeBase =>
       maxPrintElements = Int.MaxValue
     )
 
-    val initialState: State = replDriver.initialState
-    replDriver.runUntilQuit(using initialState)()
+    val replConfig = config.cpgToLoad.map { cpgFile =>
+      "importCpg(\"" + cpgFile + "\")"
+    } ++ config.forInputPath.map { name =>
+      s"""
+         |openForInputPath(\"$name\")
+         |""".stripMargin
+    }
 
-    // when upgrading to Scala 3.2.1: change to `given State`
-//    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-    // TODO proper predef code again...
-//    val predef0 =
-//      """
-//        |import overflowdb._
-//      """.stripMargin
-//    val state: State = replDriver.run(predef0)(using initialState)
-//    val state: State =
-//      if (config.verbose) {
-//        println(predefCode)
-//        replDriver.run(predefCode)(using initialState)
-//      } else {
-//        replDriver.runQuietly(predefCode)(using initialState)
-//      }
+    val initialState: State = replDriver.initialState
+    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
+    val state: State =
+      if (config.verbose) {
+        println(predefCode)
+        replDriver.run(predefCode)(using initialState)
+      } else {
+        replDriver.runQuietly(predefCode)(using initialState)
+      }
+
+    replDriver.runUntilQuit(using state)()
   }
 
   protected def runScript(scriptFile: os.Path, config: Config): Unit = {
