@@ -99,8 +99,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case classStmt: PhpClassStmt   => astForClassStmt(classStmt)
       case gotoStmt: PhpGotoStmt     => astForGotoStmt(gotoStmt)
       case labelStmt: PhpLabelStmt   => astForLabelStmt(labelStmt)
-      case unhandled =>
-        logger.warn(s"Unhandled stmt: $unhandled")
+
+      case haltStmt: PhpHaltCompilerStmt => astForHaltCompilerStmt(haltStmt)
+      case null =>
+        logger.warn("stmt was null")
         ???
     }
   }
@@ -401,6 +403,18 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .lineNumber(line(stmt))
 
     Ast(jumpTarget)
+  }
+
+  private def astForHaltCompilerStmt(stmt: PhpHaltCompilerStmt): Ast = {
+    val callNode = NewCall()
+      .name(NameConstants.HaltCompiler)
+      .methodFullName(NameConstants.HaltCompiler)
+      .code(s"${NameConstants.HaltCompiler}()")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(TypeConstants.Void)
+      .lineNumber(line(stmt))
+
+    Ast(callNode)
   }
 
   private def astForAnonymousClass(stmt: PhpClassStmt): Ast = {
@@ -863,8 +877,9 @@ object AstCreator {
   }
 
   object NameConstants {
-    val This: String    = "this"
-    val Unknown: String = "UNKNOWN"
+    val HaltCompiler: String = "__halt_compiler"
+    val This: String         = "this"
+    val Unknown: String      = "UNKNOWN"
   }
 
   val operatorSymbols: Map[String, String] = Map(

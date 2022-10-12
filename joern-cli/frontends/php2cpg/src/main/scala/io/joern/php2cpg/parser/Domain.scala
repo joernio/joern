@@ -197,6 +197,7 @@ object Domain {
 
   final case class PhpGotoStmt(label: PhpNameExpr, attributes: PhpAttributes)  extends PhpStmt
   final case class PhpLabelStmt(label: PhpNameExpr, attributes: PhpAttributes) extends PhpStmt
+  final case class PhpHaltCompilerStmt(attributes: PhpAttributes)              extends PhpStmt
 
   final case class PhpConstDeclaration(
     name: PhpNameExpr,
@@ -377,26 +378,27 @@ object Domain {
       case "Stmt_Echo" =>
         val values = json("exprs").arr.map(readExpr).toSeq
         PhpEchoStmt(values, PhpAttributes(json))
-      case "Stmt_Expression"  => readExpr(json("expr"))
-      case "Stmt_Function"    => readFunction(json)
-      case "Stmt_InlineHTML"  => readInlineHtml(json)
-      case "Stmt_Break"       => readBreak(json)
-      case "Stmt_Continue"    => readContinue(json)
-      case "Stmt_While"       => readWhile(json)
-      case "Stmt_Do"          => readDo(json)
-      case "Stmt_For"         => readFor(json)
-      case "Stmt_If"          => readIf(json)
-      case "Stmt_Switch"      => readSwitch(json)
-      case "Stmt_TryCatch"    => readTry(json)
-      case "Stmt_Throw"       => readThrow(json)
-      case "Stmt_Return"      => readReturn(json)
-      case "Stmt_Class"       => readClass(json)
-      case "Stmt_ClassMethod" => readClassMethod(json)
-      case "Stmt_Property"    => readProperty(json)
-      case "Stmt_ClassConst"  => readConst(json)
-      case "Stmt_Const"       => readConst(json)
-      case "Stmt_Goto"        => readGoto(json)
-      case "Stmt_Label"       => readLabel(json)
+      case "Stmt_Expression"   => readExpr(json("expr"))
+      case "Stmt_Function"     => readFunction(json)
+      case "Stmt_InlineHTML"   => readInlineHtml(json)
+      case "Stmt_Break"        => readBreak(json)
+      case "Stmt_Continue"     => readContinue(json)
+      case "Stmt_While"        => readWhile(json)
+      case "Stmt_Do"           => readDo(json)
+      case "Stmt_For"          => readFor(json)
+      case "Stmt_If"           => readIf(json)
+      case "Stmt_Switch"       => readSwitch(json)
+      case "Stmt_TryCatch"     => readTry(json)
+      case "Stmt_Throw"        => readThrow(json)
+      case "Stmt_Return"       => readReturn(json)
+      case "Stmt_Class"        => readClass(json)
+      case "Stmt_ClassMethod"  => readClassMethod(json)
+      case "Stmt_Property"     => readProperty(json)
+      case "Stmt_ClassConst"   => readConst(json)
+      case "Stmt_Const"        => readConst(json)
+      case "Stmt_Goto"         => readGoto(json)
+      case "Stmt_Label"        => readLabel(json)
+      case "Stmt_HaltCompiler" => readHaltCompiler(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -698,6 +700,11 @@ object Domain {
   private def readLabel(json: Value): PhpLabelStmt = {
     val name = readName(json("name"))
     PhpLabelStmt(name, PhpAttributes(json))
+  }
+
+  private def readHaltCompiler(json: Value): PhpHaltCompilerStmt = {
+    // Ignore the remaining text here since it can get quite large (common use case is to separate code from data blob)
+    PhpHaltCompilerStmt(PhpAttributes(json))
   }
 
   private def readConstDeclaration(json: Value): PhpConstDeclaration = {
