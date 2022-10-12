@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, MethodParameterIn, MethodReturn}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
 
 import java.util.concurrent.Callable
@@ -114,8 +114,9 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       // order to only pick up values that actually propagate via a RETURN and don't just flow to METHOD_RETURN because
       // it is the exit node.
       case _
-          if path.size > 1 && path(1).node
-            .isInstanceOf[MethodReturn] && sources.contains(path(1).node.asInstanceOf[NodeType]) =>
+          if path.size > 1
+            && path(1).node.isInstanceOf[MethodReturn]
+            && sources.contains(path(1).node.asInstanceOf[NodeType]) =>
         Vector(ReachableByResult(path.drop(1), table, callSiteStack)) ++ deduplicate(computeResultsForParents())
 
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
@@ -124,18 +125,17 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
       case call: Call
-          if path.size > 1 && isCallToInternalMethodWithoutSemantic(call) && !isArgOrRetOfMethodWeCameFrom(
-            call,
-            path
-          ) =>
+          if path.size > 1
+            && isCallToInternalMethodWithoutSemantic(call)
+            && !isArgOrRetOfMethodWeCameFrom(call, path) =>
         createPartialResultForOutputArgOrRet()
 
       // Case 4: we have reached an argument to an internal method without semantic (output argument) and
       // this isn't the start node nor is it the argument for the parameter we just expanded => return partial result and stop traversing
       case arg: Expression
-          if path.size > 1 && arg.inCall.toList.exists(c =>
-            isCallToInternalMethodWithoutSemantic(c)
-          ) && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
+          if path.size > 1
+            && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c))
+            && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
         createPartialResultForOutputArgOrRet()
 
       // All other cases: expand into parents
@@ -146,18 +146,11 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     res
   }
 
-  private def isArgOrRetOfMethodWeCameFrom(call: Call, path: Vector[PathElement]): Boolean = {
-    if (path.size <= 1) {
-      false
-    } else {
-      path(1).node match {
-        case x: MethodParameterIn =>
-          methodsForCall(call).contains(x.method)
-        case x: MethodReturn =>
-          methodsForCall(call).contains(x.method)
-        case _ => false
-      }
+  private def isArgOrRetOfMethodWeCameFrom(call: Call, path: Vector[PathElement]): Boolean =
+    path match {
+      case Vector(_, PathElement(x: MethodReturn, _, _, _), _*)      => methodsForCall(call).contains(x.method)
+      case Vector(_, PathElement(x: MethodParameterIn, _, _, _), _*) => methodsForCall(call).contains(x.method)
+      case _                                                         => false
     }
-  }
 
 }

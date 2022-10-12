@@ -192,11 +192,8 @@ object Domain {
   final case class PhpPropertyValue(name: PhpNameExpr, defaultValue: Option[PhpExpr], attributes: PhpAttributes)
       extends PhpStmt
 
-  final case class PhpClassConstStmt(
-    modifiers: List[String],
-    consts: List[PhpConstDeclaration],
-    attributes: PhpAttributes
-  ) extends PhpStmt
+  final case class PhpConstStmt(modifiers: List[String], consts: List[PhpConstDeclaration], attributes: PhpAttributes)
+      extends PhpStmt
 
   final case class PhpConstDeclaration(
     name: PhpNameExpr,
@@ -341,6 +338,14 @@ object Domain {
   }
   final case class PhpThrowExpr(expr: PhpExpr, attributes: PhpAttributes) extends PhpExpr
 
+  final case class PhpClassConstFetchExpr(
+    className: PhpExpr,
+    constantName: Option[PhpNameExpr],
+    attributes: PhpAttributes
+  ) extends PhpExpr
+
+  final case class PhpConstFetchExpr(name: PhpNameExpr, attributes: PhpAttributes) extends PhpExpr
+
   private def escapeString(value: String): String = {
     value
       .replace("\\", "\\\\")
@@ -385,7 +390,8 @@ object Domain {
       case "Stmt_Class"       => readClass(json)
       case "Stmt_ClassMethod" => readClassMethod(json)
       case "Stmt_Property"    => readProperty(json)
-      case "Stmt_ClassConst"  => readClassConst(json)
+      case "Stmt_ClassConst"  => readConst(json)
+      case "Stmt_Const"       => readConst(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -462,6 +468,31 @@ object Domain {
     PhpThrowExpr(expr, PhpAttributes(json))
   }
 
+  private def readClassConstFetch(json: Value): PhpClassConstFetchExpr = {
+    val classNameType = json("class")("nodeType").str
+    val className =
+      if (classNameType.startsWith("Name_"))
+        readName(json("class"))
+      else
+        readExpr(json("class"))
+
+    val constantName = json("name") match {
+      case str: Str => Some(PhpNameExpr(str.value, PhpAttributes(json)))
+
+      case obj: Obj if obj("nodeType").strOpt.contains("Expr_Error") => None
+
+      case obj: Obj => Some(readName(obj))
+    }
+
+    PhpClassConstFetchExpr(className, constantName, PhpAttributes(json))
+  }
+
+  private def readConstFetch(json: Value): PhpConstFetchExpr = {
+    val name = readName(json("name"))
+
+    PhpConstFetchExpr(name, PhpAttributes(json))
+  }
+
   private def readReturn(json: Value): PhpReturnStmt = {
     val expr = Option.unless(json("expr").isNull)(readExpr(json("expr")))
 
@@ -528,6 +559,9 @@ object Domain {
       case "Expr_Ternary"  => readTernaryOp(json)
 
       case "Expr_Throw" => readThrow(json)
+
+      case "Expr_ClassConstFetch" => readClassConstFetch(json)
+      case "Expr_ConstFetch"      => readConstFetch(json)
 
       case typ if isUnaryOpType(typ)  => readUnaryOp(json)
       case typ if isBinaryOpType(typ) => readBinaryOp(json)
@@ -642,11 +676,13 @@ object Domain {
     PhpPropertyValue(name, defaultValue, PhpAttributes(json))
   }
 
-  private def readClassConst(json: Value): PhpClassConstStmt = {
-    val modifiers         = PhpModifiers.getModifierSet(json("flags").num.toInt)
+  private def readConst(json: Value): PhpConstStmt = {
+    val modifiers =
+      json.obj.get("flags").flatMap(_.numOpt).map(num => PhpModifiers.getModifierSet(num.toInt)).getOrElse(Nil)
+
     val constDeclarations = json("consts").arr.map(readConstDeclaration).toList
 
-    PhpClassConstStmt(modifiers, constDeclarations, PhpAttributes(json))
+    PhpConstStmt(modifiers, constDeclarations, PhpAttributes(json))
   }
 
   private def readConstDeclaration(json: Value): PhpConstDeclaration = {
