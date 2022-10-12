@@ -116,6 +116,25 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
 
   def methodParameterNode(
     name: String,
+    index: Int,
+    isVariadic: Boolean,
+    lineAndColumn: LineAndColumn
+  ): nodes.NewMethodParameterIn = {
+    val methodParameterNode = nodes
+      .NewMethodParameterIn()
+      .name(name)
+      .code(name)
+      .index(index)
+      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      .typeFullName(Constants.ANY)
+      .isVariadic(isVariadic)
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
+    addNodeToDiff(methodParameterNode)
+  }
+
+  def methodParameterNode(
+    name: String,
     isVariadic: Boolean,
     lineAndColumn: LineAndColumn
   ): nodes.NewMethodParameterIn = {

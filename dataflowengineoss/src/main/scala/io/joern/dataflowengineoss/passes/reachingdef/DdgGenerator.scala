@@ -32,11 +32,10 @@ class DdgGenerator(semantics: Semantics) {
     solution: Solution[StoredNode, mutable.BitSet]
   ): Unit = {
     implicit val implicitDst: DiffGraphBuilder = dstGraph
-    val numberToNode                           = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-    val in                                     = solution.in
-    val gen = solution.problem.transferFunction
-      .asInstanceOf[ReachingDefTransferFunction]
-      .gen
+
+    val numberToNode = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+    val in           = solution.in
+    val gen          = solution.problem.transferFunction.asInstanceOf[ReachingDefTransferFunction].gen
 
     val method        = problem.flowGraph.entryNode.asInstanceOf[Method]
     val allNodes      = in.keys.toList
@@ -178,17 +177,12 @@ class DdgGenerator(semantics: Semantics) {
   private def addEdge(fromNode: StoredNode, toNode: StoredNode, variable: String = "")(implicit
     dstGraph: DiffGraphBuilder
   ): Unit = {
-    if (
-      fromNode.isInstanceOf[Unknown] || toNode
-        .isInstanceOf[Unknown]
-    )
+    if (fromNode.isInstanceOf[Unknown] || toNode.isInstanceOf[Unknown])
       return
 
     (fromNode, toNode) match {
-      case (parentNode: CfgNode, childNode: CfgNode) =>
-        if (EdgeValidator.isValidEdge(childNode, parentNode)) {
-          dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
-        }
+      case (parentNode: CfgNode, childNode: CfgNode) if EdgeValidator.isValidEdge(childNode, parentNode) =>
+        dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
       case _ =>
 
     }
@@ -300,13 +294,10 @@ private class UsageAnalyzer(
 
   def uses(node: StoredNode): Set[StoredNode] = {
     val n: Set[StoredNode] = node match {
-      case ret: Return =>
-        ret.astChildren.collect { case x: Expression => x }.toSet
-      case call: Call =>
-        call.argument.toSet
-      case paramOut: MethodParameterOut =>
-        Set(paramOut)
-      case _ => Set()
+      case ret: Return                  => ret.astChildren.collect { case x: Expression => x }.toSet
+      case call: Call                   => call.argument.toSet
+      case paramOut: MethodParameterOut => Set(paramOut)
+      case _                            => Set()
     }
     n.filterNot(_.isInstanceOf[FieldIdentifier])
   }

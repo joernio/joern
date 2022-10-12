@@ -52,6 +52,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .code(namespaceBlock.code)
       .filename(filename)
 
+    scope.pushNewScope(globalTypeDecl)
+
     val globalMethod = NewMethod()
       .name(globalTypeDecl.name)
       .fullName(globalTypeDecl.fullName)
@@ -59,12 +61,23 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .code(globalTypeDecl.code)
 
     scope.pushNewScope(globalMethod)
-    val children = file.children.map(astForStmt)
-    scope.popScope()
+    val (fileConsts, otherStmts) = file.children.partition(_.isInstanceOf[PhpConstStmt])
+    val constAsts                = fileConsts.flatMap(fc => astsForConstStmt(fc.asInstanceOf[PhpConstStmt]))
+    val methodChildren           = otherStmts.map(astForStmt)
+    val clinitAst                = astForStaticAndConstInits
+    scope.popScope() // Global method
+    scope.popScope() // Global typeDecl
 
     val globalMethodAst =
-      Ast(globalMethod).withChild(Ast(NewBlock()).withChildren(children)).withChild(Ast(NewMethodReturn()))
-    val globalTypeDeclAst = Ast(globalTypeDecl).withChild(globalMethodAst)
+      Ast(globalMethod)
+        .withChild(Ast(NewBlock()).withChildren(methodChildren))
+        .withChild(Ast(NewMethodReturn()))
+
+    val globalTypeDeclAst =
+      Ast(globalTypeDecl)
+        .withChildren(constAsts)
+        .withChildren(clinitAst.toList)
+        .withChild(globalMethodAst)
 
     Ast(namespaceBlock).withChild(globalTypeDeclAst)
   }
@@ -208,8 +221,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case printExpr: PhpPrint       => astForPrintExpr(printExpr)
       case ternaryOp: PhpTernaryOp   => astForTernaryOp(ternaryOp)
       case throwExpr: PhpThrowExpr   => astForThrow(throwExpr)
+
+      case classConstFetchExpr: PhpClassConstFetchExpr => astForClassConstFetchExpr(classConstFetchExpr)
+
       case null =>
-        logger.warn(s"expr was null")
+        logger.warn("expr was null")
         ???
     }
   }
@@ -408,8 +424,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   }
 
-  private def astsForClassBody(bodyStmts: List[PhpStmt]): List[Ast] = {
-    val classConsts = bodyStmts.collect { case cs: PhpClassConstStmt => cs }.flatMap(astsForClassConstStmt)
+  private def astsForClassBody(bodyStmts: List[PhpStmt], createDefaultConstructor: Boolean = true): List[Ast] = {
+    val classConsts = bodyStmts.collect { case cs: PhpConstStmt => cs }.flatMap(astsForConstStmt)
     val properties  = bodyStmts.collect { case cp: PhpPropertyStmt => cp }.flatMap(astsForPropertyStmt)
 
     val clinitAst = astForStaticAndConstInits
@@ -418,10 +434,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case m: PhpMethodDecl if m.name.name == Defines.ConstructorMethodName => m
     }
 
-    val constructorAst = astForConstructor(constructorDecl) :: Nil
+    val constructorAst = astForConstructor(constructorDecl, createDefaultConstructor).toList
 
     val otherBodyStmts = bodyStmts.flatMap {
-      case _: PhpClassConstStmt => None // Handled above
+      case _: PhpConstStmt => None // Handled above
 
       case _: PhpPropertyStmt => None // Handled above
 
@@ -429,6 +445,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case method: PhpMethodDecl =>
         Some(astForMethodDecl(method))
+
+      case classStmt: PhpClassStmt =>
+        Some(astForClassStmt(classStmt))
 
       case other =>
         logger.warn(s"Found unhandled class body stmt $other")
@@ -438,13 +457,15 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     List(classConsts, properties, clinitAst, constructorAst, otherBodyStmts).flatten
   }
 
-  private def astForConstructor(maybeDecl: Option[PhpMethodDecl]): Ast = {
+  private def astForConstructor(maybeDecl: Option[PhpMethodDecl], createDefaultConstructor: Boolean): Option[Ast] = {
     maybeDecl match {
-      case None => defaultConstructorAst()
+      case None if createDefaultConstructor => Some(defaultConstructorAst())
 
       case Some(constructorDecl) =>
         val fieldInits = scope.getFieldInits
-        astForMethodDecl(constructorDecl, fieldInits)
+        Some(astForMethodDecl(constructorDecl, fieldInits))
+
+      case _ => None
     }
   }
 
@@ -498,7 +519,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     callAst(callNode, List(targetAst, value))
   }
 
-  private def astsForClassConstStmt(stmt: PhpClassConstStmt): List[Ast] = {
+  private def astsForConstStmt(stmt: PhpConstStmt): List[Ast] = {
     stmt.consts.map { constDecl =>
       val finalModifier = Ast(modifierNode(ModifierTypes.FINAL))
       // `final const` is not allowed, so this is a safe way to represent constants in the CPG
@@ -507,14 +528,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       val name      = constDecl.name.name
       val code      = s"const $name"
       val someValue = Some(constDecl.value)
-      astForClassConstOrFieldValue(
-        name,
-        code,
-        someValue,
-        line(stmt),
-        scope.addConstOrStaticInitToScope,
-        isField = false
-      ).withChildren(modifierAsts)
+      astForConstOrFieldValue(name, code, someValue, line(stmt), scope.addConstOrStaticInitToScope, isField = false)
+        .withChildren(modifierAsts)
     }
   }
 
@@ -523,7 +538,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       val modifierAsts = stmt.modifiers.map(modifierNode).map(Ast(_))
 
       val name = varDecl.name.name
-      astForClassConstOrFieldValue(
+      astForConstOrFieldValue(
         name,
         "$" + name,
         varDecl.defaultValue,
@@ -534,7 +549,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     }
   }
 
-  private def astForClassConstOrFieldValue(
+  private def astForConstOrFieldValue(
     name: String,
     code: String,
     value: Option[PhpExpr],
@@ -688,7 +703,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case PhpEncapsedPart(value, _) =>
         Ast(NewLiteral().code(value).typeFullName(TypeConstants.String).lineNumber(line(scalar)))
       case null =>
-        logger.warn(s"scalar was null")
+        logger.warn("scalar was null")
         ???
     }
   }
@@ -791,6 +806,19 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     Ast(throwNode).withChild(thrownExpr)
   }
 
+  private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {
+    val target              = astForExpr(expr.className)
+    val fieldIdentifierName = expr.constantName.map(_.name).getOrElse(NameConstants.Unknown)
+
+    val fieldIdentifier = fieldIdentifierNode(fieldIdentifierName, line(expr))
+
+    val fieldAccessCode = s"${rootCode(target)}::${fieldIdentifier.code}"
+
+    val fieldAccessCall = operatorCallNode(Operators.fieldAccess, fieldAccessCode, line = line(expr))
+
+    callAst(fieldAccessCall, List(target, Ast(fieldIdentifier)))
+  }
+
   private def line(phpNode: PhpNode): Option[Integer] = phpNode.attributes.lineNumber
 }
 
@@ -805,7 +833,8 @@ object AstCreator {
   }
 
   object NameConstants {
-    val This: String = "this"
+    val This: String    = "this"
+    val Unknown: String = "UNKNOWN"
   }
 
   val operatorSymbols: Map[String, String] = Map(
