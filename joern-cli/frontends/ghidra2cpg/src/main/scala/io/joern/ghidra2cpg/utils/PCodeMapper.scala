@@ -88,10 +88,9 @@ class PCodeMapper(
       )
     } else {
       if (highFunction.getFunction.getName == "main" && nativeInstruction.toString.contains("CMP RCX")) {
-        println("EEEEEEEEEEEee")
+        // debuging here
         val a = filterSideEffects(pcodeOps)
         val b = filterPcode(a)
-        println(b)
       }
       val filteredPcodeOps = filterPcode(filterSideEffects(pcodeOps))
       if (filteredPcodeOps.isEmpty) {
@@ -99,15 +98,7 @@ class PCodeMapper(
         val node = mapCallNode(pcodeOps.last)
         node
       } else {
-        if (highFunction.getFunction.getName.contains("main") && nativeInstruction.toString.contains("CMP RCX,0x0")) {
-          println("a")
-        }
         val node = mapCallNode(filteredPcodeOps.last)
-        if (highFunction.getFunction.getName == "dataflow") {
-          println("AAAA " + nativeInstruction.toString)
-          println("BBBB " + filteredPcodeOps)
-          println("CCCC " + node.code)
-        }
         node
       }
     }
