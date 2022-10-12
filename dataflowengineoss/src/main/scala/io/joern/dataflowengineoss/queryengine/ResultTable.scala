@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, StoredNode}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -55,56 +55,49 @@ class ResultTable(
   *   this is the main result - a known path
   * @param table
   *   the result table - kept to allow for detailed inspection of intermediate paths
+  * @param resultType
+  *   see ResultType below
   * @param callSiteStack
   *   the call site stack containing the call sites that were expanded to kick off the task. We require this to match
   *   call sites to exclude non-realizable paths through other callers
-  * @param partial
-  *   indicate whether this result stands on its own or requires further analysis, e.g., by expanding output arguments
-  *   backwards into method output parameters.
   */
 case class ReachableByResult(
   path: Vector[PathElement],
   table: ResultTable,
-  callSiteStack: mutable.Stack[Call],
-  callDepth: Int = 0,
-  partial: Boolean = false
+  callSiteStack: List[Call], // immutable.Stack is Deprecated in scala 2.13. Use a List instead
+  resultType: ResultType,
+  callDepth: Int = 0
 ) {
   def startingPoint: CfgNode = path.head.node
-
-  /** If the result begins in an output argument, return it.
-    */
-  def outputArgument: Option[CfgNode] = {
-    path.headOption.collect {
-      case elem: PathElement if elem.isOutputArg =>
-        elem.node
-    }
-  }
 }
 
-/** We represent data flows as sequences of path elements, where each path element consists of a node, flags and the
-  * label of its outgoing edge.
+sealed trait ResultType
+sealed trait CompleteResult extends ResultType
+sealed trait PartialResult  extends ResultType
+// The Engine will collect partial results and create new tasks from them, see TaskCreator
+
+case object ReachSource      extends CompleteResult
+case object ReachParameterIn extends PartialResult
+case object ReachArgument    extends PartialResult
+case object ReachCall        extends PartialResult
+
+/** We represent data flows as sequences of path elements, where each path element consists of a node, a visible flag
+  * and the label of its outgoing edge.
   *
   * @param node
   *   The parent node
-  *
   * @param callSiteStack
   *   The call stack when this path element was created. Since we may enter the same function via two different call
   *   sites, path elements should only be treated as the same if they are the same node and we've reached them via the
   *   same call sequence.
-  *
   * @param visible
   *   whether this path element should be shown in the flow
-  * @param isOutputArg
-  *   input and output arguments are the same node in the CPG, so, we need this additional flag to determine whether we
-  *   are on an input or output argument. By default, we consider arguments to be input arguments, meaning that when
-  *   tracking `x` at `f(x)`, we do not expand into `f` but rather upwards to producers of `x`.
   * @param outEdgeLabel
   *   label of the outgoing DDG edge
   */
 case class PathElement(
   node: CfgNode,
-  callSiteStack: mutable.Stack[Call] = mutable.Stack(),
+  callSiteStack: List[Call] = List(),
   visible: Boolean = true,
-  isOutputArg: Boolean = false,
   outEdgeLabel: String = ""
 )

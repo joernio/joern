@@ -1,24 +1,14 @@
 package io.joern.dataflowengineoss.language
 
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  CfgNode,
-  Expression,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  Member,
-  StoredNode,
-  TypeDecl
-}
 import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement, ReachableByResult}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
-import overflowdb.traversal._
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal._
 
 import scala.collection.mutable
 
@@ -97,7 +87,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
         r
       } else {
         r.copy(path =
-          PathElement(startingPointToSource(r.startingPoint).asInstanceOf[CfgNode], r.callSiteStack.clone()) +: r.path
+          PathElement(startingPointToSource(r.startingPoint).asInstanceOf[CfgNode], r.callSiteStack) +: r.path
         )
       }
     }
