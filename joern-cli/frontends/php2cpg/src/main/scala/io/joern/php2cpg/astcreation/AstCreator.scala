@@ -97,6 +97,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case tryStmt: PhpTryStmt       => astForTryStmt(tryStmt)
       case returnStmt: PhpReturnStmt => astForReturnStmt(returnStmt)
       case classStmt: PhpClassStmt   => astForClassStmt(classStmt)
+      case gotoStmt: PhpGotoStmt     => astForGotoStmt(gotoStmt)
+      case labelStmt: PhpLabelStmt   => astForLabelStmt(labelStmt)
       case unhandled =>
         logger.warn(s"Unhandled stmt: $unhandled")
         ???
@@ -371,6 +373,34 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case None       => astForAnonymousClass(stmt)
       case Some(name) => astForNamedClass(stmt, name)
     }
+  }
+
+  private def astForGotoStmt(stmt: PhpGotoStmt): Ast = {
+    val label = stmt.label.name
+    val code  = s"goto $label"
+
+    val gotoNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.GOTO)
+      .code(code)
+      .lineNumber(line(stmt))
+
+    val jumpLabel = NewJumpLabel()
+      .name(label)
+      .code(label)
+      .lineNumber(line(stmt))
+
+    controlStructureAst(gotoNode, condition = None, children = Ast(jumpLabel) :: Nil)
+  }
+
+  private def astForLabelStmt(stmt: PhpLabelStmt): Ast = {
+    val label = stmt.label.name
+
+    val jumpTarget = NewJumpTarget()
+      .name(label)
+      .code(label)
+      .lineNumber(line(stmt))
+
+    Ast(jumpTarget)
   }
 
   private def astForAnonymousClass(stmt: PhpClassStmt): Ast = {

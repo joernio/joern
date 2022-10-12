@@ -195,6 +195,9 @@ object Domain {
   final case class PhpConstStmt(modifiers: List[String], consts: List[PhpConstDeclaration], attributes: PhpAttributes)
       extends PhpStmt
 
+  final case class PhpGotoStmt(label: PhpNameExpr, attributes: PhpAttributes)  extends PhpStmt
+  final case class PhpLabelStmt(label: PhpNameExpr, attributes: PhpAttributes) extends PhpStmt
+
   final case class PhpConstDeclaration(
     name: PhpNameExpr,
     value: PhpExpr,
@@ -392,6 +395,8 @@ object Domain {
       case "Stmt_Property"    => readProperty(json)
       case "Stmt_ClassConst"  => readConst(json)
       case "Stmt_Const"       => readConst(json)
+      case "Stmt_Goto"        => readGoto(json)
+      case "Stmt_Label"       => readLabel(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -683,6 +688,16 @@ object Domain {
     val constDeclarations = json("consts").arr.map(readConstDeclaration).toList
 
     PhpConstStmt(modifiers, constDeclarations, PhpAttributes(json))
+  }
+
+  private def readGoto(json: Value): PhpGotoStmt = {
+    val name = readName(json("name"))
+    PhpGotoStmt(name, PhpAttributes(json))
+  }
+
+  private def readLabel(json: Value): PhpLabelStmt = {
+    val name = readName(json("name"))
+    PhpLabelStmt(name, PhpAttributes(json))
   }
 
   private def readConstDeclaration(json: Value): PhpConstDeclaration = {
