@@ -97,7 +97,7 @@ class DdgGenerator(semantics: Semantics) {
     }
 
     def addEdgesToReturn(ret: Return): Unit = {
-      val uses = ret.astChildren.collect { case x: Expression => x }.toList
+      val uses = ret.astChildren.collectAll[Expression].toSet
       uses.foreach(use => addEdge(use, ret, use.code))
       uses.foreach(addEdgesToUse(ret, _))
       addEdge(ret, method.methodReturn, "<RET>")
