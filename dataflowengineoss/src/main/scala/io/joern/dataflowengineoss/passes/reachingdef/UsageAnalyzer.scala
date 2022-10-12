@@ -15,10 +15,17 @@ object UsageAnalyzer {
   private val containerSet         = Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess)
   private val indirectionAccessSet = Set(Operators.addressOf, Operators.indirection)
 
+  def check(node: StoredNode, target: StoredNode): Boolean = {
+    sameVariable(node, target) ||
+    isContainer(node, target) ||
+    isPart(node, target) ||
+    isAlias(node, target)
+  }
+
   /** Determine whether the node `use` describes a container for `inElement`, e.g., use = `ptr` while inElement =
     * `ptr->foo`.
     */
-  def isContainer(use: StoredNode, inElement: StoredNode): Boolean = {
+  private def isContainer(use: StoredNode, inElement: StoredNode): Boolean = {
     inElement match {
       case call: Call if containerSet.contains(call.name) =>
         call.argument.headOption.exists { base =>
@@ -30,7 +37,7 @@ object UsageAnalyzer {
 
   /** Determine whether `use` is a part of `inElement`, e.g., use = `argv[0]` while inElement = `argv`
     */
-  def isPart(use: StoredNode, inElement: StoredNode): Boolean = {
+  private def isPart(use: StoredNode, inElement: StoredNode): Boolean = {
     use match {
       case call: Call if containerSet.contains(call.name) =>
         inElement match {
@@ -48,7 +55,7 @@ object UsageAnalyzer {
     }
   }
 
-  def isAlias(use: StoredNode, inElement: StoredNode): Boolean = {
+  private def isAlias(use: StoredNode, inElement: StoredNode): Boolean = {
     use match {
       case useCall: Call =>
         inElement match {
@@ -64,7 +71,7 @@ object UsageAnalyzer {
 
   /** Compares arguments of calls with incoming definitions to see if they refer to the same variable
     */
-  def sameVariable(use: StoredNode, inElement: StoredNode): Boolean = {
+  private def sameVariable(use: StoredNode, inElement: StoredNode): Boolean = {
     inElement match {
       case param: MethodParameterIn =>
         nodeToString(use).contains(param.name)

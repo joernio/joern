@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-import scala.collection.{Set, mutable}
+import scala.collection.mutable
 
 /** Creation of data dependence edges based on solution of the ReachingDefProblem.
   */
@@ -39,22 +39,20 @@ class DdgGenerator(semantics: Semantics) {
     val method   = problem.flowGraph.entryNode.asInstanceOf[Method]
     val allNodes = in.keys.toList
 
-    def incomingDefsForNode(current: StoredNode, use: StoredNode): Set[StoredNode] = {
-      in(current).toSet
-        .map(numberToNode)
-        .filter { inNode =>
-          UsageAnalyzer.sameVariable(use, inNode) ||
-          UsageAnalyzer.isContainer(use, inNode) ||
-          UsageAnalyzer.isPart(use, inNode) ||
-          UsageAnalyzer.isAlias(use, inNode)
-        }
+    def incomingDefsForNode(current: StoredNode, usedNode: StoredNode): List[StoredNode] = {
+      for {
+        i <- in(current).toList
+        inNode = numberToNode(i)
+        if inNode != usedNode
+        if UsageAnalyzer.check(usedNode, inNode)
+      } yield inNode
     }
 
-    def addEdgesToUse(current: StoredNode, use: StoredNode): Unit = {
+    def addEdgesToUsedNodes(current: StoredNode, usedNodes: List[StoredNode]): Unit = {
       for {
-        inNode <- incomingDefsForNode(current, use)
-        if inNode != use
-      } addEdge(inNode, use, nodeToEdgeLabel(inNode))
+        usedNode <- usedNodes
+        inNode   <- incomingDefsForNode(current, usedNode)
+      } addEdge(inNode, usedNode, edgeLabel(inNode))
     }
 
     def addEdgesFromEntryNode(): Unit = {
@@ -69,7 +67,8 @@ class DdgGenerator(semantics: Semantics) {
       */
     def addEdgesToCallSite(call: Call): Unit = {
       // Edges between arguments of call sites
-      call.argument.foreach(arg => addEdgesToUse(call, arg))
+      val usedNodesOfCall = call.argument.toList
+      addEdgesToUsedNodes(call, usedNodesOfCall)
 
       // For all calls, assume that input arguments
       // taint corresponding output arguments
@@ -80,7 +79,7 @@ class DdgGenerator(semantics: Semantics) {
         g   <- gen(call).toList
         genNode = numberToNode(g)
         if use != genNode && isDdgNode(use)
-      } addEdge(use, genNode, nodeToEdgeLabel(use))
+      } addEdge(use, genNode, edgeLabel(use))
 
       // Handle block arguments
       // This handles `foo(new Bar())`, which is lowered to
@@ -88,18 +87,26 @@ class DdgGenerator(semantics: Semantics) {
       for {
         block <- call.argument.isBlock
         last  <- block.astChildren.lastOption
+        if last.isInstanceOf[Expression]
       } {
-        addEdgesToUse(call, last)
-        addEdge(last, block, nodeToEdgeLabel(last))
-        addEdge(block, call)
+        val usedNodesOfLast = List(last)
+        addEdgesToUsedNodes(last, usedNodesOfLast)
+        addEdge(last, block, edgeLabel(last))
       }
 
     }
 
+    // example code: {a = 1; b = fn(a); return b}
+    // step1 used incoming node --> b
+    // step2 b                  --> Return
+    // step3 Return             --> MethodReturn
     def addEdgesToReturn(ret: Return): Unit = {
-      val uses = ret.astChildren.collectAll[Expression].toSet
-      uses.foreach(use => addEdge(use, ret, use.code))
-      uses.foreach(addEdgesToUse(ret, _))
+      val usedNodesOfRet = ret.astChildren.collectAll[Expression].toList
+      // step1: link used incoming defs to expression
+      addEdgesToUsedNodes(ret, usedNodesOfRet)
+      // step2: link returned expressions to Return node
+      usedNodesOfRet.foreach(use => addEdge(use, ret, edgeLabel(use)))
+      // step3: link Return node to MethodReturn node
       addEdge(ret, method.methodReturn, "<RET>")
     }
 
@@ -110,13 +117,14 @@ class DdgGenerator(semantics: Semantics) {
       paramOut.paramIn.foreach { paramIn =>
         addEdge(paramIn, paramOut, paramIn.name)
       }
-      addEdgesToUse(paramOut, paramOut)
+      val usedNodesOfParamOut = List(paramOut)
+      addEdgesToUsedNodes(paramOut, usedNodesOfParamOut)
     }
 
     def addEdgesToExitNode(exitNode: MethodReturn): Unit = {
       in(exitNode).foreach { i =>
         val iNode = numberToNode(i)
-        addEdge(iNode, exitNode, nodeToEdgeLabel(iNode))
+        addEdge(iNode, exitNode, edgeLabel(iNode))
       }
     }
 
@@ -132,7 +140,7 @@ class DdgGenerator(semantics: Semantics) {
       genOnce.foreach { case (_, defs) =>
         defs.foreach { d =>
           val dNode = numberToNode(d)
-          addEdge(dNode, exitNode, nodeToEdgeLabel(dNode))
+          addEdge(dNode, exitNode, edgeLabel(dNode))
         }
       }
     }
@@ -177,9 +185,10 @@ class DdgGenerator(semantics: Semantics) {
     }
   }
 
-  private def nodeToEdgeLabel(node: StoredNode): String = {
+  private def edgeLabel(node: StoredNode): String = {
     node match {
       case n: MethodParameterIn => n.name
+      case n: Identifier        => n.name
       case n: CfgNode           => n.code
       case _                    => ""
     }
