@@ -99,9 +99,6 @@ class PCodePass(currentProgram: Program, fileName: String, functions: List[Funct
       .asScala
       .toList
       .map { instruction =>
-        if(function.getName == "main"){
-          println(instruction)
-        }
         new PCodeMapper(diffGraphBuilder, instruction, functions, highFunction, address2Literals).getNode
       }
     // Adding all nodes to the graph

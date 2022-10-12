@@ -45,17 +45,18 @@ class PCodeMapper(
       true
     )
   )
-  val registerList: List[String] = List("CF", "OF", "PF", "SF", "ZF")
+  // CF = 0x200
+  // val registerList: List[String] = List("CF", "OF", "PF", "SF", "ZF")
   def filterSideEffects(pcodes: List[PcodeOp]): List[PcodeOp] = {
     try {
-      return pcodes
-        .filter { pcode =>
-          pcode.getOutput.isRegister && !registerList.contains(
-            highFunction.getFunction.getProgram.getRegister(pcode.getOutput).toString
-          )
+      val x = pcodes
+        .filter { pcode => pcode.getOutput.isRegister }
+        val y = x.filter { pcode =>
+          highFunction.getFunction.getProgram.getRegister(pcode.getOutput).getGroup.equals("FLAGS")
         }
+      return y
     } catch {
-      case _: Throwable =>  println("ERROR " + nativeInstruction.toString + " " + pcodes.mkString(" :::: "));
+      case _: Throwable => println("ERROR " + nativeInstruction.toString + " " + pcodes.mkString(" :::: "));
     }
     pcodes
   }
@@ -67,12 +68,13 @@ class PCodeMapper(
 
         }
     } catch {
-      case _: Throwable =>  println("ERROR " + nativeInstruction.toString + " " + pcodes.mkString(" :::: "));
+      case _: Throwable => // println("ERROR " + nativeInstruction.toString + " " + pcodes.mkString(" :::: "));
     }
     pcodes
   }
   // Entry point
   def getNode: CfgNodeNew = {
+
     if (pcodeOps.isEmpty) {
       // It looks like that for some instructions,
       // like "bti c" getPcode() returns nothing
@@ -85,13 +87,19 @@ class PCodeMapper(
         nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue()
       )
     } else {
+      if (highFunction.getFunction.getName == "main" && nativeInstruction.toString.contains("CMP RCX")) {
+        println("EEEEEEEEEEEee")
+        val a = filterSideEffects(pcodeOps)
+        val b = filterPcode(a)
+        println(b)
+      }
       val filteredPcodeOps = filterPcode(filterSideEffects(pcodeOps))
       if (filteredPcodeOps.isEmpty) {
         // classic case
         val node = mapCallNode(pcodeOps.last)
         node
       } else {
-        if(highFunction.getFunction.getName == "main") {
+        if (highFunction.getFunction.getName.contains("main") && nativeInstruction.toString.contains("CMP RCX,0x0")) {
           println("a")
         }
         val node = mapCallNode(filteredPcodeOps.last)

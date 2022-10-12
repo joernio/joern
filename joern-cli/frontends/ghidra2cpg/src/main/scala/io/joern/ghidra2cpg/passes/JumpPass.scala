@@ -71,6 +71,7 @@ class JumpPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg) {
         println("ABC "+sourceCall.argument.order(1).code.l)
         sourceCall.argument.order(1).code.l.distinct.headOption.flatMap(parseAddress) match {
           case Some(destinationAddress) =>
+            println(method.ast.filter(_.isInstanceOf[Call]).lineNumber(destinationAddress).code.l)
             method.ast.filter(_.isInstanceOf[Call]).lineNumber(destinationAddress).foreach { destination =>
               if (method.name == "main") {
                 println(s"${sourceCall.code} ${destination.code}")
