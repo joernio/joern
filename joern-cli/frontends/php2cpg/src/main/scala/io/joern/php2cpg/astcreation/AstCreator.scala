@@ -224,8 +224,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case classConstFetchExpr: PhpClassConstFetchExpr => astForClassConstFetchExpr(classConstFetchExpr)
 
-      case unhandled =>
-        logger.warn(s"Unhandled expr: $unhandled")
+      case null =>
+        logger.warn("expr was null")
         ???
     }
   }
@@ -702,8 +702,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
         callAst(callNode, args)
       case PhpEncapsedPart(value, _) =>
         Ast(NewLiteral().code(value).typeFullName(TypeConstants.String).lineNumber(line(scalar)))
-      case unhandled =>
-        logger.warn(s"Unhandled scalar type: $unhandled")
+      case null =>
+        logger.warn("scalar was null")
         ???
     }
   }
