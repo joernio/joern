@@ -24,6 +24,7 @@ class MethodDecoratorPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
           .NewMethodParameterOut()
           .code(parameterIn.code)
           .order(parameterIn.order)
+          .index(parameterIn.index)
           .name(parameterIn.name)
           .evaluationStrategy(parameterIn.evaluationStrategy)
           .typeFullName(parameterIn.typeFullName)
