@@ -5,10 +5,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewTagNodePair, 
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal._
 
-class NewTagNodePairTraversal(traversal: Traversal[NewTagNodePair]) extends HasStoreAndPersistMethods {
-  override def store()(implicit diffGraph: DiffGraphBuilder): Unit = persist()
-
-  override def persist()(implicit diffGraph: DiffGraphBuilder): Unit = {
+class NewTagNodePairTraversal(traversal: Traversal[NewTagNodePair]) extends HasStoreMethod {
+  override def store()(implicit diffGraph: DiffGraphBuilder): Unit = {
     traversal.foreach { tagNodePair =>
       val tag      = tagNodePair.tag
       val tagValue = tagNodePair.node
