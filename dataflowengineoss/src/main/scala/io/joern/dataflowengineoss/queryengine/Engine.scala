@@ -78,9 +78,9 @@ class Engine(context: EngineContext) {
       * tasks from partial results.
       */
     def handleResultsOfTask(resultsOfTask: Vector[ReachableByResult]): Unit = {
-      val (partial, complete) = resultsOfTask.partition(_.partial)
+      val (complete, partial) = resultsOfTask.partition(_.resultType == ReachSource)
       result ++= complete
-      val newTasks = new TaskCreator(sources).createFromResults(partial)
+      val newTasks = new TaskCreator(sources).createFromPartialResults(partial)
       newTasks.foreach(submitTask)
     }
 
@@ -150,8 +150,7 @@ object Engine {
             } else {
               parentNode.isDefined
             }
-            val isOutputArg = isOutputArgOfInternalMethod(parentNode)
-            Some(PathElement(parentNode, visible, isOutputArg, outEdgeLabel = outLabel))
+            Some(PathElement(parentNode, visible, outEdgeLabel = outLabel))
           case parentNode if parentNode != null =>
             Some(PathElement(parentNode, outEdgeLabel = outLabel))
           case null =>
@@ -230,7 +229,7 @@ object Engine {
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
     vec
       .groupBy { x =>
-        (x.path.headOption.map(_.node) ++ x.path.lastOption.map(_.node), x.partial, x.callDepth)
+        (x.path.headOption.map(_.node) ++ x.path.lastOption.map(_.node), x.resultType != ReachSource, x.callDepth)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList

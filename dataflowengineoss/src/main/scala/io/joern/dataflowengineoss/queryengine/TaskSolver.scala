@@ -87,17 +87,6 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       }
     }
 
-    def createPartialResultForOutputArgOrRet() = {
-      Vector(
-        ReachableByResult(
-          PathElement(path.head.node, isOutputArg = true) +: path.tail,
-          table,
-          callSiteStack,
-          partial = true
-        )
-      )
-    }
-
     /** Determine results for the current node
       *
       * * Case 1: we have reached a source => return result. * Case 2: we have reached a method parameter (that is not a
@@ -117,18 +106,18 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
           if path.size > 1
             && path(1).node.isInstanceOf[MethodReturn]
             && sources.contains(path(1).node.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(path.drop(1), table, callSiteStack)) ++ deduplicate(computeResultsForParents())
+        ReachableByResult(path.drop(1), table, callSiteStack, ReachSource) +: deduplicate(computeResultsForParents())
 
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
-        Vector(ReachableByResult(path, table, callSiteStack, partial = true))
+        Vector(ReachableByResult(path, table, callSiteStack, ReachParameterIn))
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
       case call: Call
           if path.size > 1
             && isCallToInternalMethodWithoutSemantic(call)
             && !isArgOrRetOfMethodWeCameFrom(call, path) =>
-        createPartialResultForOutputArgOrRet()
+        Vector(ReachableByResult(path, table, callSiteStack, ReachCall))
 
       // Case 4: we have reached an argument to an internal method without semantic (output argument) and
       // this isn't the start node nor is it the argument for the parameter we just expanded => return partial result and stop traversing
@@ -136,7 +125,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
           if path.size > 1
             && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c))
             && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
-        createPartialResultForOutputArgOrRet()
+        Vector(ReachableByResult(path, table, callSiteStack, ReachArgument))
 
       // All other cases: expand into parents
       case _ =>
@@ -148,9 +137,9 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
 
   private def isArgOrRetOfMethodWeCameFrom(call: Call, path: Vector[PathElement]): Boolean =
     path match {
-      case Vector(_, PathElement(x: MethodReturn, _, _, _), _*)      => methodsForCall(call).contains(x.method)
-      case Vector(_, PathElement(x: MethodParameterIn, _, _, _), _*) => methodsForCall(call).contains(x.method)
-      case _                                                         => false
+      case Vector(_, PathElement(x: MethodReturn, _, _), _*)      => methodsForCall(call).contains(x.method)
+      case Vector(_, PathElement(x: MethodParameterIn, _, _), _*) => methodsForCall(call).contains(x.method)
+      case _                                                      => false
     }
 
 }
