@@ -56,9 +56,9 @@ class Scope {
       val resolvedReferenceOption = pendingReference.tryResolve()
 
       resolvedReferenceOption.getOrElse {
-        val methodScopeNodeId = Scope.getEnclosingMethodScope(pendingReference.stack)
+        val methodScopeNode = Scope.getEnclosingMethodScopeNode(pendingReference.stack)
         val (newVariableNode, scopeType) =
-          unresolvedHandler(methodScopeNodeId, pendingReference.variableName)
+          unresolvedHandler(methodScopeNode, pendingReference.variableName)
         addVariable(pendingReference.stack, pendingReference.variableName, newVariableNode, scopeType)
         pendingReference.tryResolve().get
       }
@@ -73,9 +73,8 @@ class Scope {
     scopeType: ScopeType
   ): Unit = {
     val scopeToAddTo = scopeType match {
-      case MethodScope =>
-        new ScopeElementIterator(stack).find(_.isInstanceOf[MethodScopeElement]).get
-      case _ => stack.get
+      case MethodScope => Scope.getEnclosingMethodScopeElement(stack)
+      case _           => stack.get
     }
     scopeToAddTo.addVariable(variableName, variableNode)
   }
@@ -83,13 +82,14 @@ class Scope {
 }
 
 object Scope {
-  def getEnclosingMethodScope(scopeHead: Option[ScopeElement]): NewNode = {
-    new ScopeElementIterator(scopeHead)
-      .collectFirst { case methodScopeElement: MethodScopeElement =>
-        methodScopeElement.scopeNode
-      }
-      .getOrElse(throw new RuntimeException("Cannot find method scope."))
+  def getEnclosingMethodScopeNode(scopeHead: Option[ScopeElement]): NewNode =
+    getEnclosingMethodScopeElement(scopeHead).scopeNode
+
+  def getEnclosingMethodScopeElement(scopeHead: Option[ScopeElement]): MethodScopeElement = {
     // There are no references outside of methods. Meaning we always find a MethodScope here.
+    new ScopeElementIterator(scopeHead)
+      .collectFirst { case methodScopeElement: MethodScopeElement => methodScopeElement }
+      .getOrElse(throw new RuntimeException("Cannot find method scope."))
   }
 }
 

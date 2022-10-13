@@ -363,69 +363,6 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {}
   }
 
-  "undo" should {
-    "remove layer from meta information" in ConsoleFixture() { (console, codeDir) =>
-      console.importCode(codeDir.toString)
-      console._runAnalyzer(new MockLayerCreator)
-      console.project.appliedOverlays shouldBe List(
-        Base.overlayName,
-        ControlFlow.overlayName,
-        TypeRelations.overlayName,
-        CallGraph.overlayName,
-        "fooname"
-      )
-      console.undo
-      console.project.appliedOverlays shouldBe List(
-        Base.overlayName,
-        ControlFlow.overlayName,
-        TypeRelations.overlayName,
-        CallGraph.overlayName
-      )
-      console.undo
-      console.undo
-      console.undo
-      console.undo
-      console.project.appliedOverlays shouldBe List()
-    }
-
-    "remove overlay file from project" in ConsoleFixture() { (console, codeDir) =>
-      console.importCode(codeDir.toString)
-      val overlayDir         = console.project.path.resolve("overlays")
-      val overlayFilesBefore = overlayDir.toFile.list.toSet
-      overlayFilesBefore shouldBe Set(
-        Base.overlayName,
-        ControlFlow.overlayName,
-        TypeRelations.overlayName,
-        CallGraph.overlayName
-      )
-      console.undo
-      console.undo
-      console.undo
-      console.undo
-      val overlayFilesAfter = overlayDir.toFile.list.toSet
-      overlayFilesAfter shouldBe Set()
-    }
-
-    "actually remove some nodes" in ConsoleFixture() { (console, codeDir) =>
-      console.importCode(codeDir.toString)
-      console.cpg.parameter.asOutput.l.size should be > 0
-      console.project.appliedOverlays shouldBe List(
-        Base.overlayName,
-        ControlFlow.overlayName,
-        TypeRelations.overlayName,
-        CallGraph.overlayName
-      )
-      console.undo
-      console.undo
-      console.undo
-      console.undo
-      console.project.appliedOverlays shouldBe List()
-      console.cpg.parameter.asOutput.l.size shouldBe 0
-      console._runAnalyzer(new Base)
-      console.cpg.parameter.asOutput.l.size should be > 0
-    }
-  }
-
   "save" should {
     "close and reopen projects" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, codeDir) =>
       console.importCode(codeDir.toString, "project1")
@@ -469,8 +406,6 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       Run.runCustomQuery(console, console.cpg.method.newTagNode("mytag"))
       console.cpg.tag.name("mytag").method.name.toSet should contain("main")
       console.cpg.metaData.map(_.overlays).head.last shouldBe "custom"
-      console.undo
-      console.cpg.metaData.map(_.overlays).head.last shouldBe "callgraph"
     }
   }
 
