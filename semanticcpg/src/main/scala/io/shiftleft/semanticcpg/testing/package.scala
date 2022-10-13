@@ -3,8 +3,8 @@ package io.shiftleft.semanticcpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Languages, ModifierTypes}
-import io.shiftleft.passes.{SimpleCpgPass}
-import io.shiftleft.semanticcpg.language.{NewTagNodePairTraversal, _}
+import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -128,10 +128,10 @@ package object testing {
       withCustom { (graph, cpg) =>
         implicit val diffGraph: DiffGraphBuilder = graph
         methodTags.foreach { case (k, v) =>
-          cpg.method.name(methodName).newTagNodePair(k, v).persist()(diffGraph)
+          cpg.method.name(methodName).newTagNodePair(k, v).store()(diffGraph)
         }
         paramTags.foreach { case (k, v) =>
-          cpg.method.name(methodName).parameter.newTagNodePair(k, v).persist()(diffGraph)
+          cpg.method.name(methodName).parameter.newTagNodePair(k, v).store()(diffGraph)
         }
       }
 

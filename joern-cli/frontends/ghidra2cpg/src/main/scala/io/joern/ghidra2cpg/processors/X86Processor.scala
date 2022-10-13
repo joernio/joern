@@ -1,10 +1,10 @@
 package io.joern.ghidra2cpg.processors
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 object X86Processor extends Processor {
-  override val getInstructions: HashMap[String, String] =
-    HashMap(
+  override val getInstructions: mutable.HashMap[String, String] =
+    mutable.HashMap(
       "ADC"       -> "<operator>.incBy",
       "ADD"       -> "<operator>.incBy",
       "ADDR32"    -> "<operator>.TODO",

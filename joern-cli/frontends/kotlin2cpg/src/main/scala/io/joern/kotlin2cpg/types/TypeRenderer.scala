@@ -15,7 +15,7 @@ object TypeRenderer {
 
   private val cpgUnresolvedType = ErrorUtils.createUnresolvedType(Defines.UnresolvedNamespace, List().asJava)
 
-  val primitiveArrayMappings = Map[String, String](
+  val primitiveArrayMappings: Map[String, String] = Map[String, String](
     "kotlin.BooleanArray" -> "boolean[]",
     "kotlin.ByteArray"    -> "byte[]",
     "kotlin.CharArray"    -> "char[]",
@@ -103,7 +103,7 @@ object TypeRenderer {
     }
 
     if (shouldMapPrimitiveArrayTypes && primitiveArrayMappings.contains(rendered)) {
-      primitiveArrayMappings.get(rendered).get
+      primitiveArrayMappings(rendered)
     } else if (rendered == TypeConstants.kotlinUnit) {
       TypeConstants.void
     } else {

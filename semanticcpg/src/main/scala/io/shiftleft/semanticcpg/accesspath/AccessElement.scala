@@ -35,6 +35,6 @@ case object AddressOf extends AccessElement("&") {
 }
 
 // this will eventually obtain an optional byteOffset
-case class PointerShift(logicalOffset: Int) extends AccessElement(s"<${logicalOffset}>") {
+case class PointerShift(logicalOffset: Int) extends AccessElement(s"<$logicalOffset>") {
   override def kind: Int = 0x06060606
 }

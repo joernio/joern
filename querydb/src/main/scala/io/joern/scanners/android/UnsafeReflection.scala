@@ -32,16 +32,14 @@ object UnsafeReflection extends QueryBundle {
         groovyBuildGradleFiles.filter { gradleFile =>
           gradleFile.content
             .split('\n')
-            .filter { line =>
+            .exists { line =>
               targetSdkVersionMatch
                 .findAllIn(line)
                 .matchData
-                .filter { m =>
+                .exists { m =>
                   m.groupCount > 0 && m.group(1).toInt < minimumAndroidSdkVersionWhereNoAdditionalChecksRequired
                 }
-                .nonEmpty
             }
-            .nonEmpty
         }
       }),
       tags = List(QueryTags.android),

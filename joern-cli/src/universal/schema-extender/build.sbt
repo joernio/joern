@@ -16,7 +16,7 @@ replaceDomainClassesInJoern := {
   val newDomainClassesJar = (domainClasses / Compile / packageBin).value
 
   val targetFile =
-    file(joernInstallPath.value) / "lib" / s"io.shiftleft.codepropertygraph-domain-classes_2.13-${cpgVersion}.jar"
+    file(joernInstallPath.value) / "lib" / s"io.shiftleft.codepropertygraph-domain-classes_2.13-$cpgVersion.jar"
   assert(targetFile.exists, s"target jar assumed to be $targetFile, but that file doesn't exist...")
 
   println(s"copying $newDomainClassesJar to $targetFile")

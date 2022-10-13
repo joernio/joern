@@ -57,7 +57,7 @@ class Parser() {
     val lexer       = new SemanticsLexer(charStream)
     val tokenStream = new CommonTokenStream(lexer)
     val parser      = new SemanticsParser(tokenStream)
-    val treeWalker  = new ParseTreeWalker();
+    val treeWalker  = new ParseTreeWalker()
 
     val tree     = parser.taintSemantics()
     val listener = new Listener()

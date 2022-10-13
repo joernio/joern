@@ -284,7 +284,7 @@ class PythonAstVisitor(
   ): () => MethodParameters = {
     val startIndex = if (contextStack.isClassContext && !isStatic) 0 else 1
 
-    () => new MethodParameters(startIndex, convert(parameters))
+    () => new MethodParameters(startIndex, convert(parameters, startIndex))
   }
 
   // TODO handle returns
@@ -431,9 +431,9 @@ class PythonAstVisitor(
 
     val initParameters = initFunctionOption.map(_.args).getOrElse {
       // Create arguments of a default __init__ function.
-      new ast.Arguments(
+      ast.Arguments(
         posonlyargs = mutable.Seq.empty[ast.Arg],
-        args = mutable.Seq(new ast.Arg("self", None, None, classDef.attributeProvider)),
+        args = mutable.Seq(ast.Arg("self", None, None, classDef.attributeProvider)),
         vararg = None,
         kwonlyargs = mutable.Seq.empty[ast.Arg],
         kw_defaults = mutable.Seq.empty[Option[ast.iexpr]],
@@ -551,8 +551,8 @@ class PythonAstVisitor(
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn) :: Nil ++
-            convert(parameters)
+          nodeBuilder.methodParameterNode("cls", 0, isVariadic = false, lineAndColumn) :: Nil ++
+            convert(parameters, 1)
         )
       },
       bodyProvider = () => {
@@ -628,7 +628,7 @@ class PythonAstVisitor(
       methodName,
       methodFullName,
       parameterProvider = () => {
-        MethodParameters(1, convert(parametersWithoutSelf))
+        MethodParameters(1, convert(parametersWithoutSelf, 1))
       },
       bodyProvider = () => {
         val (arguments, keywordArguments) = createArguments(parametersWithoutSelf, lineAndColumn)
@@ -687,8 +687,8 @@ class PythonAstVisitor(
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn) :: Nil ++
-            convert(parametersWithoutSelf)
+          nodeBuilder.methodParameterNode("cls", 0, isVariadic = false, lineAndColumn) :: Nil ++
+            convert(parametersWithoutSelf, 1)
         )
       },
       bodyProvider = () => {
@@ -890,12 +890,12 @@ class PythonAstVisitor(
         if (ifs.size == 1) {
           ifs.head
         } else {
-          new ast.BoolOp(ast.And, ifs.to(mutable.Seq), ifs.head.attributeProvider)
+          ast.BoolOp(ast.And, ifs.to(mutable.Seq), ifs.head.attributeProvider)
         }
       val ifNotContinueNode = convert(
-        new ast.If(
-          new ast.UnaryOp(ast.Not, conditionNode, ifs.head.attributeProvider),
-          mutable.ArrayBuffer.empty[ast.istmt].append(new ast.Continue(ifs.head.attributeProvider)),
+        ast.If(
+          ast.UnaryOp(ast.Not, conditionNode, ifs.head.attributeProvider),
+          mutable.ArrayBuffer.empty[ast.istmt].append(ast.Continue(ifs.head.attributeProvider)),
           mutable.Seq.empty[ast.istmt],
           ifs.head.attributeProvider
         )
@@ -1859,10 +1859,12 @@ class PythonAstVisitor(
     blockNode
   }
 
-  def convert(parameters: ast.Arguments): Iterable[nodes.NewMethodParameterIn] = {
-    parameters.posonlyargs.map(convertPosOnlyArg) ++
-      parameters.args.map(convertNormalArg) ++
-      parameters.vararg.map(convertVarArg) ++
+  def convert(parameters: ast.Arguments, startIndex: Int): Iterable[nodes.NewMethodParameterIn] = {
+    val autoIncIndex = new AutoIncIndex(startIndex)
+
+    parameters.posonlyargs.map(convertPosOnlyArg(_, autoIncIndex)) ++
+      parameters.args.map(convertNormalArg(_, autoIncIndex)) ++
+      parameters.vararg.map(convertVarArg(_, autoIncIndex)) ++
       parameters.kwonlyargs.map(convertKeywordOnlyArg) ++
       parameters.kw_arg.map(convertKwArg)
   }
@@ -1870,16 +1872,16 @@ class PythonAstVisitor(
   // TODO for now the different arg convert functions are all the same but
   // will all be slightly different in the future when we can represent the
   // different types in the cpg.
-  def convertPosOnlyArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg))
+  def convertPosOnlyArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
+    nodeBuilder.methodParameterNode(arg.arg, index.getAndInc, isVariadic = false, lineAndColOf(arg))
   }
 
-  def convertNormalArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg))
+  def convertNormalArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
+    nodeBuilder.methodParameterNode(arg.arg, index.getAndInc, isVariadic = false, lineAndColOf(arg))
   }
 
-  def convertVarArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, isVariadic = true, lineAndColOf(arg))
+  def convertVarArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
+    nodeBuilder.methodParameterNode(arg.arg, index.getAndInc, isVariadic = true, lineAndColOf(arg))
   }
 
   def convertKeywordOnlyArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
@@ -1913,7 +1915,7 @@ object PythonAstVisitor {
   // This list contains all functions from https://docs.python.org/3/library/functions.html#built-in-funcs
   // for python version 3.9.5.
   // There is a corresponding list in policies which needs to be updated if this one is updated and vice versa.
-  val builtinFunctionsV3 = Iterable(
+  val builtinFunctionsV3: Iterable[String] = Iterable(
     "abs",
     "all",
     "any",
@@ -1968,7 +1970,7 @@ object PythonAstVisitor {
   )
   // This list contains all classes from https://docs.python.org/3/library/functions.html#built-in-funcs
   // for python version 3.9.5.
-  val builtinClassesV3 = Iterable(
+  val builtinClassesV3: Iterable[String] = Iterable(
     "bool",
     "bytearray",
     "bytes",
@@ -1989,7 +1991,7 @@ object PythonAstVisitor {
     "type"
   )
   // This list contains all functions from https://docs.python.org/2.7/library/functions.html
-  val builtinFunctionsV2 = Iterable(
+  val builtinFunctionsV2: Iterable[String] = Iterable(
     "abs",
     "all",
     "any",
@@ -2051,7 +2053,7 @@ object PythonAstVisitor {
     "__import__"
   )
   // This list contains all classes from https://docs.python.org/2.7/library/functions.html
-  val builtinClassesV2 = Iterable(
+  val builtinClassesV2: Iterable[String] = Iterable(
     "bool",
     "bytearray",
     "complex",

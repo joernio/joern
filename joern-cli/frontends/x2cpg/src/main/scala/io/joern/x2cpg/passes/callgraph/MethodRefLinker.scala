@@ -95,7 +95,7 @@ object MethodRefLinker {
         srcNode.out(edgeType).property(Properties.FULL_NAME).nextOption() match {
           case Some(dstFullName) =>
             dstGraph.setNodeProperty(srcNode.asInstanceOf[StoredNode], dstFullNameKey, dstFullName)
-          case None => logger.info(s"Missing outgoing edge of type ${edgeType} from node ${srcNode}")
+          case None => logger.info(s"Missing outgoing edge of type $edgeType from node $srcNode")
         }
         if (!loggedDeprecationWarning) {
           logger.info(

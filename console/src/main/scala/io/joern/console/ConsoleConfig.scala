@@ -1,6 +1,8 @@
 package io.joern.console
 
 import better.files._
+
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 /** Installation configuration of Console
@@ -36,6 +38,8 @@ class InstallConfig(environment: Map[String, String] = sys.env) {
 
   private val rootDirectoryMarkerFilename = ".installation_root"
   private val maxSearchDepth              = 10
+
+  @tailrec
   private def findRootDirectory(currentSearchDir: File, currentSearchDepth: Int = 0): Option[File] = {
     if (currentSearchDir.list.map(_.name).contains(rootDirectoryMarkerFilename))
       Some(currentSearchDir)

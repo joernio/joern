@@ -1,6 +1,6 @@
 package io.joern.console
 
-import io.shiftleft.passes.{SimpleCpgPass}
+import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 

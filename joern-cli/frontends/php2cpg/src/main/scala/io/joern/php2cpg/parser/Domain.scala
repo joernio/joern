@@ -4,7 +4,8 @@ import io.joern.php2cpg.parser.Domain.PhpAssignment.{AssignTypeMap, isAssignType
 import io.joern.php2cpg.parser.Domain.PhpBinaryOp.{BinaryOpTypeMap, isBinaryOpType}
 import io.joern.php2cpg.parser.Domain.PhpCast.{CastTypeMap, isCastType}
 import io.joern.php2cpg.parser.Domain.PhpUnaryOp.{UnaryOpTypeMap, isUnaryOpType}
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import org.slf4j.LoggerFactory
 import ujson.{Arr, Obj, Str, Value}
 
@@ -56,9 +57,31 @@ object Domain {
           val kind      = attributes.get("kind").map(_.num.toInt)
           PhpAttributes(startLine, kind)
 
+        case Success(Arr(_)) =>
+          logger.debug(s"Found array attributes in $json")
+          PhpAttributes.Empty
+
         case unhandled =>
           logger.warn(s"Could not find attributes object in type $unhandled")
           PhpAttributes.Empty
+      }
+    }
+  }
+
+  object PhpModifiers {
+    private val ModifierMasks = List(
+      (1, ModifierTypes.PUBLIC),
+      (2, ModifierTypes.PROTECTED),
+      (4, ModifierTypes.PRIVATE),
+      (8, ModifierTypes.STATIC),
+      (16, ModifierTypes.ABSTRACT),
+      (32, ModifierTypes.FINAL),
+      (64, ModifierTypes.READONLY)
+    )
+
+    def getModifierSet(flags: Int): List[String] = {
+      ModifierMasks.collect {
+        case (mask, typ) if (flags & mask) != 0 => typ
       }
     }
   }
@@ -70,6 +93,7 @@ object Domain {
 
   final case class PhpParam(
     name: String,
+    paramType: Option[PhpNameExpr],
     byRef: Boolean,
     isVariadic: Boolean,
     default: Option[PhpExpr],
@@ -134,15 +158,47 @@ object Domain {
     attributes: PhpAttributes
   ) extends PhpStmt
   final case class PhpFinallyStmt(stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
+  final case class PhpReturnStmt(expr: Option[PhpExpr], attributes: PhpAttributes) extends PhpStmt
 
   final case class PhpMethodDecl(
-    name: String,
+    name: PhpNameExpr,
     params: Seq[PhpParam],
-    // TODO returnType: Option[String],
+    modifiers: List[String],
+    returnType: Option[PhpNameExpr],
     stmts: Seq[PhpStmt],
     returnByRef: Boolean,
     // TODO attributeGroups: Seq[PhpAttributeGroup],
-    namespacedName: Option[String],
+    namespacedName: Option[PhpNameExpr],
+    isClassMethod: Boolean,
+    attributes: PhpAttributes
+  ) extends PhpStmt
+
+  final case class PhpClassStmt(
+    name: Option[PhpNameExpr],
+    modifiers: List[String],
+    extendsClass: Option[PhpNameExpr],
+    implementedInterfaces: List[PhpNameExpr],
+    stmts: List[PhpStmt],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+
+  final case class PhpPropertyStmt(
+    modifiers: List[String],
+    variables: List[PhpPropertyValue],
+    typeName: Option[PhpNameExpr],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+
+  final case class PhpPropertyValue(name: PhpNameExpr, defaultValue: Option[PhpExpr], attributes: PhpAttributes)
+      extends PhpStmt
+
+  final case class PhpConstStmt(modifiers: List[String], consts: List[PhpConstDeclaration], attributes: PhpAttributes)
+      extends PhpStmt
+
+  final case class PhpConstDeclaration(
+    name: PhpNameExpr,
+    value: PhpExpr,
+    namespacedName: Option[PhpNameExpr],
     attributes: PhpAttributes
   ) extends PhpStmt
 
@@ -282,6 +338,14 @@ object Domain {
   }
   final case class PhpThrowExpr(expr: PhpExpr, attributes: PhpAttributes) extends PhpExpr
 
+  final case class PhpClassConstFetchExpr(
+    className: PhpExpr,
+    constantName: Option[PhpNameExpr],
+    attributes: PhpAttributes
+  ) extends PhpExpr
+
+  final case class PhpConstFetchExpr(name: PhpNameExpr, attributes: PhpAttributes) extends PhpExpr
+
   private def escapeString(value: String): String = {
     value
       .replace("\\", "\\\\")
@@ -310,18 +374,24 @@ object Domain {
       case "Stmt_Echo" =>
         val values = json("exprs").arr.map(readExpr).toSeq
         PhpEchoStmt(values, PhpAttributes(json))
-      case "Stmt_Expression" => readExpr(json("expr"))
-      case "Stmt_Function"   => readFunction(json)
-      case "Stmt_InlineHTML" => readInlineHtml(json)
-      case "Stmt_Break"      => readBreak(json)
-      case "Stmt_Continue"   => readContinue(json)
-      case "Stmt_While"      => readWhile(json)
-      case "Stmt_Do"         => readDo(json)
-      case "Stmt_For"        => readFor(json)
-      case "Stmt_If"         => readIf(json)
-      case "Stmt_Switch"     => readSwitch(json)
-      case "Stmt_TryCatch"   => readTry(json)
-      case "Stmt_Throw"      => readThrow(json)
+      case "Stmt_Expression"  => readExpr(json("expr"))
+      case "Stmt_Function"    => readFunction(json)
+      case "Stmt_InlineHTML"  => readInlineHtml(json)
+      case "Stmt_Break"       => readBreak(json)
+      case "Stmt_Continue"    => readContinue(json)
+      case "Stmt_While"       => readWhile(json)
+      case "Stmt_Do"          => readDo(json)
+      case "Stmt_For"         => readFor(json)
+      case "Stmt_If"          => readIf(json)
+      case "Stmt_Switch"      => readSwitch(json)
+      case "Stmt_TryCatch"    => readTry(json)
+      case "Stmt_Throw"       => readThrow(json)
+      case "Stmt_Return"      => readReturn(json)
+      case "Stmt_Class"       => readClass(json)
+      case "Stmt_ClassMethod" => readClassMethod(json)
+      case "Stmt_Property"    => readProperty(json)
+      case "Stmt_ClassConst"  => readConst(json)
+      case "Stmt_Const"       => readConst(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -398,6 +468,48 @@ object Domain {
     PhpThrowExpr(expr, PhpAttributes(json))
   }
 
+  private def readClassConstFetch(json: Value): PhpClassConstFetchExpr = {
+    val classNameType = json("class")("nodeType").str
+    val className =
+      if (classNameType.startsWith("Name_"))
+        readName(json("class"))
+      else
+        readExpr(json("class"))
+
+    val constantName = json("name") match {
+      case str: Str => Some(PhpNameExpr(str.value, PhpAttributes(json)))
+
+      case obj: Obj if obj("nodeType").strOpt.contains("Expr_Error") => None
+
+      case obj: Obj => Some(readName(obj))
+    }
+
+    PhpClassConstFetchExpr(className, constantName, PhpAttributes(json))
+  }
+
+  private def readConstFetch(json: Value): PhpConstFetchExpr = {
+    val name = readName(json("name"))
+
+    PhpConstFetchExpr(name, PhpAttributes(json))
+  }
+
+  private def readReturn(json: Value): PhpReturnStmt = {
+    val expr = Option.unless(json("expr").isNull)(readExpr(json("expr")))
+
+    PhpReturnStmt(expr, PhpAttributes(json))
+  }
+
+  private def readClass(json: Value): PhpClassStmt = {
+    val name         = Option.unless(json("name").isNull)(readName(json("name")))
+    val modifiers    = PhpModifiers.getModifierSet(json("flags").num.toInt)
+    val extendsClass = Option.unless(json("extends").isNull)(readName(json("extends")))
+    val implements   = json("implements").arr.map(readName).toList
+    val stmts        = json("stmts").arr.map(readStmt).toList
+    val attributes   = PhpAttributes(json)
+
+    PhpClassStmt(name, modifiers, extendsClass, implements, stmts, attributes)
+  }
+
   private def readCatch(json: Value): PhpCatchStmt = {
     val types    = json("types").arr.map(readName).toList
     val variable = Option.unless(json("var").isNull)(readExpr(json("var")))
@@ -448,6 +560,9 @@ object Domain {
 
       case "Expr_Throw" => readThrow(json)
 
+      case "Expr_ClassConstFetch" => readClassConstFetch(json)
+      case "Expr_ConstFetch"      => readConstFetch(json)
+
       case typ if isUnaryOpType(typ)  => readUnaryOp(json)
       case typ if isBinaryOpType(typ) => readBinaryOp(json)
       case typ if isAssignType(typ)   => readAssign(json)
@@ -495,20 +610,94 @@ object Domain {
   }
 
   private def readFunction(json: Value): PhpMethodDecl = {
-    val jsonMap = json.obj
+    val returnByRef = json("byRef").bool
+    val name        = readName(json("name"))
+    val params      = json("params").arr.map(readParam).toList
+    val returnType  = Option.unless(json("returnType").isNull)(readName(json("returnType")))
+    val stmts       = json("stmts").arr.map(readStmt).toList
+    // Only class methods have modifiers
+    val modifiers      = Nil
+    val namespacedName = Option.unless(json("namespacedName").isNull)(readName(json("namespacedName")))
+    val isClassMethod  = false
+
     PhpMethodDecl(
-      name = jsonMap("name")("name").str,
-      params = jsonMap("params").arr.map(readParam).toSeq,
-      stmts = jsonMap("stmts").arr.map(readStmt).toSeq,
-      returnByRef = jsonMap("byRef").bool,
-      namespacedName = jsonMap.get("namespacedName").map(_.obj).flatMap(constructNamespacedName),
+      name,
+      params,
+      modifiers,
+      returnType,
+      stmts,
+      returnByRef,
+      namespacedName,
+      isClassMethod,
       PhpAttributes(json)
     )
   }
 
+  private def readClassMethod(json: Value): PhpMethodDecl = {
+    val modifiers   = PhpModifiers.getModifierSet(json("flags").num.toInt)
+    val returnByRef = json("byRef").bool
+    val name        = readName(json("name"))
+    val params      = json("params").arr.map(readParam).toList
+    val returnType  = Option.unless(json("returnType").isNull)(readName(json("returnType")))
+    val stmts =
+      if (json("stmts").isNull)
+        Nil
+      else
+        json("stmts").arr.map(readStmt).toList
+
+    val namespacedName = None // only defined for functions
+    val isClassMethod  = true
+
+    PhpMethodDecl(
+      name,
+      params,
+      modifiers,
+      returnType,
+      stmts,
+      returnByRef,
+      namespacedName,
+      isClassMethod,
+      PhpAttributes(json)
+    )
+  }
+
+  private def readProperty(json: Value): PhpPropertyStmt = {
+    val modifiers = PhpModifiers.getModifierSet(json("flags").num.toInt)
+    val variables = json("props").arr.map(readPropertyValue).toList
+    val typeName  = Option.unless(json("type").isNull)(readName(json("type")))
+
+    PhpPropertyStmt(modifiers, variables, typeName, PhpAttributes(json))
+  }
+
+  private def readPropertyValue(json: Value): PhpPropertyValue = {
+    val name         = readName(json("name"))
+    val defaultValue = Option.unless(json("default").isNull)(readExpr(json("default")))
+
+    PhpPropertyValue(name, defaultValue, PhpAttributes(json))
+  }
+
+  private def readConst(json: Value): PhpConstStmt = {
+    val modifiers =
+      json.obj.get("flags").flatMap(_.numOpt).map(num => PhpModifiers.getModifierSet(num.toInt)).getOrElse(Nil)
+
+    val constDeclarations = json("consts").arr.map(readConstDeclaration).toList
+
+    PhpConstStmt(modifiers, constDeclarations, PhpAttributes(json))
+  }
+
+  private def readConstDeclaration(json: Value): PhpConstDeclaration = {
+    val name           = readName(json("name"))
+    val value          = readExpr(json("value"))
+    val namespacedName = Option.unless(json("namespacedName").isNull)(readName(json("namespacedName")))
+
+    PhpConstDeclaration(name, value, namespacedName, PhpAttributes(json))
+  }
+
   private def readParam(json: Value): PhpParam = {
+    val paramType = Option.unless(json("type").isNull)(readName(json("type")))
     PhpParam(
       name = json("var")("name").str,
+      paramType = paramType,
       byRef = json("byRef").bool,
       isVariadic = json("variadic").bool,
       default = json.obj.get("default").filterNot(_.isNull).map(readExpr),
@@ -517,12 +706,31 @@ object Domain {
     )
   }
 
+  private def correctConstructor(originalName: String): String = {
+    originalName.replaceAll("__construct", Defines.ConstructorMethodName)
+  }
+
   private def readName(json: Value): PhpNameExpr = {
     json match {
-      case Str(name) => PhpNameExpr(name, PhpAttributes.Empty)
+      case Str(name) => PhpNameExpr(correctConstructor(name), PhpAttributes.Empty)
+
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name_FullyQualified") =>
         val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
-        PhpNameExpr(name, PhpAttributes(json))
+        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+
+      case Obj(value) if value.get("nodeType").map(_.str).contains("Name") =>
+        // TODO Can this case just be merged with Name_FullyQualified?
+        val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
+        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+
+      case Obj(value) if value.get("nodeType").map(_.str).contains("Identifier") =>
+        val name = value("name").str
+        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+
+      case Obj(value) if value.get("nodeType").map(_.str).contains("VarLikeIdentifier") =>
+        val name = value("name").str
+        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+
       case unhandled =>
         logger.error(s"Found unhandled name type $unhandled")
         ??? // TODO: other matches are possible?

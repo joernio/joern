@@ -26,8 +26,8 @@ object AccessPath {
       var idx = start
       while (idx < untilExclusive) {
         el.elements(idx) match {
-          case (VariablePointerShift | VariableAccess) => return false
-          case _                                       =>
+          case VariablePointerShift | VariableAccess => return false
+          case _                                     =>
         }
         idx += 1
       }
@@ -47,8 +47,8 @@ object AccessPath {
       val nElements = el.elements.length - 1
       while (nElements - i > -1) {
         el.elements(nElements - i) match {
-          case (AddressOf | VariablePointerShift | _: PointerShift) => i += 1
-          case _                                                    => return i
+          case AddressOf | VariablePointerShift | _: PointerShift => i += 1
+          case _                                                  => return i
         }
       }
       i
