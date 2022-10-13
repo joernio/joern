@@ -8,7 +8,6 @@ import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceMa
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
-import io.shiftleft.semanticcpg.Overlays
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
@@ -235,38 +234,6 @@ class Console[T <: Project](
     } else {
       Some(fixProjectNameAndComplainOnFix(name))
     }
-  }
-
-  @Doc(
-    info = "undo effects of analyzer",
-    longInfo = """|Undo the last change, that is, unapply the last
-       |overlay applied to the active project.
-       |""",
-    example = "undo"
-  )
-  def undo: File = {
-    project.overlayDirs.lastOption
-      .map { dir =>
-        if (dir.isRegularFile) {
-          System.err.println("Detected undo information in old format. That's ok.")
-          CpgLoader.addDiffGraphs(List(dir.path.toString), cpg)
-        } else {
-          val zipFiles = dir.list.toList.sortWith(compareFiles).reverse.map(_.path.toString)
-          CpgLoader.addDiffGraphs(zipFiles, cpg)
-        }
-        Overlays.removeLastOverlayName(cpg)
-        dir.delete()
-      }
-      .getOrElse(throw new RuntimeException("No overlays present"))
-  }
-
-  private def compareFiles(a: File, b: File): Boolean = {
-    val splitA = a.name.split("_")
-    val splitB = b.name.split("_")
-    if (splitA.length < 2 || splitB.length < 2)
-      a.toString < b.toString
-    else
-      splitA(0).toInt < splitB(0).toInt
   }
 
   @Doc(
