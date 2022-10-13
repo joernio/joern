@@ -20,25 +20,6 @@ import scala.sys.process.Process
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
-object Console {
-  def report(string: String): Unit = System.err.println(string)
-  val nameOfLegacyCpgInProject     = "cpg.bin.zip"
-
-  def deriveNameFromInputPath[T <: Project](inputPath: String, workspace: WorkspaceManager[T]): String = {
-    val name    = File(inputPath).name
-    val project = workspace.project(name)
-    if (project.isDefined && project.exists(_.inputPath != inputPath)) {
-      var i = 1
-      while (workspace.project(name + i).isDefined) {
-        i += 1
-      }
-      name + i
-    } else {
-      name
-    }
-  }
-}
-
 class Console[T <: Project](
   executor: AmmoniteExecutor,
   loader: WorkspaceLoader[T],
@@ -463,7 +444,7 @@ class Console[T <: Project](
 }
 
 object Console {
-  val nameOfLegacyCpgInProject = "cpg.bin.zip"
+  val nameOfLegacyCpgInProject     = "cpg.bin.zip"
 
   def deriveNameFromInputPath[T <: Project](inputPath: String, workspace: WorkspaceManager[T]): String = {
     val name    = File(inputPath).name
