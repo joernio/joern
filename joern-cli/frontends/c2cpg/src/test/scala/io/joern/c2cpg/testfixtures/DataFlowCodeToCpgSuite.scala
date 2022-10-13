@@ -2,13 +2,13 @@ package io.joern.c2cpg.testfixtures
 
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 class DataFlowCodeToCpgSuite extends CCodeToCpgSuite {
 
-  protected implicit val context: EngineContext = EngineContext(config = EngineConfig(maxCallDepth = 4))
+  protected implicit val context: EngineContext = EngineContext()
 
   override def applyPasses(cpg: Cpg): Unit = {
     super.applyPasses(cpg)

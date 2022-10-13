@@ -1,8 +1,6 @@
 package io.joern.jimple2cpg.testfixtures
 
-import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.jimple2cpg.Jimple2CpgTestContext
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
@@ -13,9 +11,8 @@ import overflowdb.traversal.Traversal
 
 class JimpleDataflowFixture extends AnyFlatSpec with Matchers {
 
-  lazy val defaultSemantics: Semantics           = DefaultSemantics()
   implicit val resolver: ICallResolver           = NoResolve
-  implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics, EngineConfig(maxCallDepth = 4))
+  implicit lazy val engineContext: EngineContext = EngineContext()
 
   val code: String  = ""
   lazy val cpg: Cpg = Jimple2CpgTestContext.buildCpgWithDataflow(code)
