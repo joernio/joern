@@ -23,10 +23,11 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
         |
         |function sink(par1) {}
         |""".stripMargin) { cpg =>
-      val List(x1, x2, x3) = cpg.local("x").l
+      val List(x1, x2) = cpg.local("x").l
       x1._blockViaAstIn should not be empty
+      x1.referencingIdentifiers.name.l shouldBe List("x")
       x2._blockViaAstIn should not be empty
-      x3._blockViaAstIn should not be empty
+      x2.referencingIdentifiers.name.l shouldBe List("x")
     }
 
     "have a TYPE_DECL for ClassA" in AstFixture("var x = class ClassA {}") { cpg =>

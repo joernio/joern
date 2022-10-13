@@ -288,7 +288,7 @@ trait AstForTypesCreator { this: AstCreator =>
     dynamicInstanceTypeStack.push(typeFullName)
     typeRefIdStack.push(typeRefNode)
 
-    scope.pushNewMethodScope(typeFullName, typeName, localAstParentStack.head, None)
+    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
 
     val allClassMembers = classMembers(clazz, withConstructor = false).toList
 
@@ -364,7 +364,7 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.push(namespaceNode)
     dynamicInstanceTypeStack.push(fullName)
 
-    scope.pushNewMethodScope(fullName, name, localAstParentStack.head, None)
+    scope.pushNewMethodScope(fullName, name, namespaceNode, None)
 
     val blockAst = if (hasKey(tsModuleDecl.json, "body")) {
       val nodeInfo = createBabelNodeInfo(tsModuleDecl.json("body"))
@@ -408,7 +408,7 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.push(typeDeclNode)
     dynamicInstanceTypeStack.push(typeFullName)
 
-    scope.pushNewMethodScope(typeFullName, typeName, localAstParentStack.head, None)
+    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
 
     val constructorNode = interfaceConstructor(typeName, tsInterface)
     diffGraph.addEdge(constructorNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
