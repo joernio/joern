@@ -114,7 +114,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
   }
 
   private def nextParamOutOrExit(paramOut: MethodParameterOut): List[StoredNode] = {
-    val nextParam = paramOut.method.parameter.index(paramOut.index.head + 1).asOutput.headOption
+    val nextParam = paramOut.method.parameter.index(paramOut.index + 1).asOutput.headOption
     if (nextParam.isDefined) { nextParam.toList }
     else { List(exitNode) }
   }
@@ -136,7 +136,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
   }
 
   private def previousOutputParamOrLastNodeOfBody(paramOut: MethodParameterOut): List[StoredNode] = {
-    val prevParam = paramOut.method.parameter.index(paramOut.index.head - 1).asOutput.headOption
+    val prevParam = paramOut.method.parameter.index(paramOut.index - 1).asOutput.headOption
     if (prevParam.isDefined) { prevParam.toList }
     else { lastActualCfgNode.toList }
   }

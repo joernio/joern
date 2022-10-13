@@ -7,6 +7,29 @@ import io.shiftleft.semanticcpg.language._
 class JsClassesAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for classes" should {
+
+    "have ast parent blocks for class locals" in AstFixture("""
+        |var x = source();
+        |
+        |class Foo {
+        |  func() {
+        |    sink(x);
+        |  }
+        |}
+        |
+        |function source() {
+        |  return 1;
+        |}
+        |
+        |function sink(par1) {}
+        |""".stripMargin) { cpg =>
+      val List(x1, x2) = cpg.local("x").l
+      x1._blockViaAstIn should not be empty
+      x1.referencingIdentifiers.name.l shouldBe List("x")
+      x2._blockViaAstIn should not be empty
+      x2.referencingIdentifiers.name.l shouldBe List("x")
+    }
+
     "have a TYPE_DECL for ClassA" in AstFixture("var x = class ClassA {}") { cpg =>
       cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").size shouldBe 1
     }
