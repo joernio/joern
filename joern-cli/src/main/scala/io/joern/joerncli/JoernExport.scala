@@ -98,7 +98,7 @@ object JoernExport extends App {
   }
 
   private def overflowdbExport(graph: Graph, outDir: String, exporter: overflowdb.formats.Exporter): Unit = {
-    val outDirPath = Paths.get(outDir).toAbsolutePath
+    val outDirPath                                                = Paths.get(outDir).toAbsolutePath
     val ExportResult(nodeCount, edgeCount, files, additionalInfo) = exporter.runExport(graph, outDirPath)
     println(s"exported $nodeCount nodes, $edgeCount edges into $outDirPath")
     additionalInfo.foreach(println)
