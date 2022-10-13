@@ -237,29 +237,6 @@ class Console[T <: Project](
     }
   }
 
-  @Doc(
-    info = "undo effects of analyzer",
-    longInfo = """|Undo the last change, that is, unapply the last
-       |overlay applied to the active project.
-       |""",
-    example = "undo"
-  )
-  def undo: File = {
-    project.overlayDirs.lastOption
-      .map { dir =>
-        if (dir.isRegularFile) {
-          System.err.println("Detected undo information in old format. That's ok.")
-          CpgLoader.addDiffGraphs(List(dir.path.toString), cpg)
-        } else {
-          val zipFiles = dir.list.toList.sortWith(compareFiles).reverse.map(_.path.toString)
-          CpgLoader.addDiffGraphs(zipFiles, cpg)
-        }
-        Overlays.removeLastOverlayName(cpg)
-        dir.delete()
-      }
-      .getOrElse(throw new RuntimeException("No overlays present"))
-  }
-
   private def compareFiles(a: File, b: File): Boolean = {
     val splitA = a.name.split("_")
     val splitB = b.name.split("_")
