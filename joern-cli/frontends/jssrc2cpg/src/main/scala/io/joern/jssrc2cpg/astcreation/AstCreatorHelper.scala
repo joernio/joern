@@ -7,6 +7,8 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import org.apache.commons.lang.StringUtils
 import ujson.Value
 
@@ -217,6 +219,11 @@ trait AstCreatorHelper { this: AstCreator =>
             Some(variableNodeId)
           } else {
             currentScope.flatMap {
+              case methodScope: MethodScopeElement
+                  if methodScope.scopeNode.isInstanceOf[NewTypeDecl] || methodScope.scopeNode
+                    .isInstanceOf[NewNamespaceBlock] =>
+                currentScope = Some(Scope.getEnclosingMethodScopeElement(currentScope))
+                None
               case methodScope: MethodScopeElement =>
                 // We have reached a MethodScope and still did not find a local variable to link to.
                 // For all non local references the CPG format does not allow us to link
