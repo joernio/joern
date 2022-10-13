@@ -269,7 +269,7 @@ case class EngineContext(semantics: Semantics = DefaultSemantics(), config: Engi
   *   enables sharing of previously calculated paths among other tasks.
   */
 case class EngineConfig(
-  var maxCallDepth: Int = 2,
+  var maxCallDepth: Int = 4,
   initialTable: Option[ResultTable] = None,
   shareCacheBetweenTasks: Boolean = true
 )
