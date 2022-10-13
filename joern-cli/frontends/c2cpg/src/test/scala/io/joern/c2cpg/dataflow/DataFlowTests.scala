@@ -2,11 +2,9 @@ package io.joern.c2cpg.dataflow
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.EngineConfig
-import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.codepropertygraph.generated.nodes.Literal
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.toNodeTraversal
 
@@ -26,7 +24,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |    free(p);
         |  }
         | }
-        | 
+        |
         | int flow(int p0) {
         |    int a = p0;
         |    int b=a;
@@ -194,22 +192,18 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         val sink   = cpg.method.name("sink").parameter.name("x")
         val flows  = sink.reachableByFlows(source)
 
-        pendingUntilFixed( // for whatever reason tracking to and from method foo fails.
-          flows.map(flowToResultPairs).toSetMutable shouldBe
-            Set(
-              List(
-                ("$ret", Some(2)),
-                ("source(2)", Some(11)),
-                ("p2", None),
-                ("p1", None),
-                ("k", Some(11)),
-                ("k", Some(12)),
-                ("par", Some(15)),
-                ("par", Some(16)),
-                ("x", Some(6))
-              )
+        flows.map(flowToResultPairs).toSetMutable shouldBe
+          Set(
+            List(
+              ("int", Some(2)),
+              ("source()", Some(11)),
+              ("k = source()", Some(11)),
+              ("foo(k)", Some(12)),
+              ("foo(int par)", Some(15)),
+              ("sink(par)", Some(16)),
+              ("sink(int x)", Some(6))
             )
-        )
+          )
       }
     }
 
@@ -1493,7 +1487,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |    free(p);
         |  }
         | }
-        | 
+        |
         | int flow(int p0) {
         |  int a = p0;
         |  int b=a;
@@ -1540,7 +1534,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |int test() {
         |  char inputBuffer[0x100] = "";
         |  int buffer[10] = {0};
-        |  int data = 1;     
+        |  int data = 1;
         |  fgets(inputBuffer, 0x100, stdin);
         |  data = atoi(inputBuffer);
         |  buffer[data] = 1;
