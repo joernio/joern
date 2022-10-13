@@ -287,8 +287,8 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.push(typeDeclNode)
     dynamicInstanceTypeStack.push(typeFullName)
     typeRefIdStack.push(typeRefNode)
-    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
-    scope.pushNewBlockScope(typeDeclNode)
+
+    scope.pushNewMethodScope(typeFullName, typeName, localAstParentStack.head, None)
 
     val allClassMembers = classMembers(clazz, withConstructor = false).toList
 
@@ -320,7 +320,6 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
     typeRefIdStack.pop()
-    scope.popScope()
     scope.popScope()
 
     if (staticMemberInitCalls.nonEmpty || staticInitBlockAsts.nonEmpty) {
@@ -364,8 +363,8 @@ trait AstForTypesCreator { this: AstCreator =>
 
     methodAstParentStack.push(namespaceNode)
     dynamicInstanceTypeStack.push(fullName)
-    scope.pushNewMethodScope(fullName, name, namespaceNode, None)
-    scope.pushNewBlockScope(namespaceNode)
+
+    scope.pushNewMethodScope(fullName, name, localAstParentStack.head, None)
 
     val blockAst = if (hasKey(tsModuleDecl.json, "body")) {
       val nodeInfo = createBabelNodeInfo(tsModuleDecl.json("body"))
@@ -379,7 +378,6 @@ trait AstForTypesCreator { this: AstCreator =>
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
-    scope.popScope()
     scope.popScope()
 
     Ast(namespaceNode).withChild(blockAst)
@@ -409,8 +407,8 @@ trait AstForTypesCreator { this: AstCreator =>
 
     methodAstParentStack.push(typeDeclNode)
     dynamicInstanceTypeStack.push(typeFullName)
-    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
-    scope.pushNewBlockScope(typeDeclNode)
+
+    scope.pushNewMethodScope(typeFullName, typeName, localAstParentStack.head, None)
 
     val constructorNode = interfaceConstructor(typeName, tsInterface)
     diffGraph.addEdge(constructorNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
@@ -454,7 +452,6 @@ trait AstForTypesCreator { this: AstCreator =>
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
-    scope.popScope()
     scope.popScope()
 
     Ast(typeDeclNode)
