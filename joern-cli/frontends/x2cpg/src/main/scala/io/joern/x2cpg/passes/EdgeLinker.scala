@@ -10,11 +10,9 @@ import overflowdb.traversal._
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
-class EdgeLinker
-
 object EdgeLinker {
   import overflowdb.BatchedUpdate.DiffGraphBuilder
-  val logger: Logger = LoggerFactory.getLogger(classOf[EdgeLinker])
+  val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   def typeDeclFullNameToNode(cpg: Cpg, x: String): Option[TypeDecl] =
     nodesWithFullName(cpg, x).collectFirst { case x: TypeDecl => x }
