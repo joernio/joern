@@ -35,7 +35,7 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
   }
 
   def expressionUp: Traversal[Expression] = {
-    node._astIn.collect { case e: Expression => e }
+    node._astIn.collectAll[Expression]
   }
 
   def expressionDown: Traversal[Expression] = {
