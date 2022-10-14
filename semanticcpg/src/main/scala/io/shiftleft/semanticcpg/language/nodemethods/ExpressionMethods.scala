@@ -35,11 +35,11 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
   }
 
   def expressionUp: Traversal[Expression] = {
-    node._astIn.collect{case e: Expression => e}
+    node._astIn.collect { case e: Expression => e }
   }
 
   def expressionDown: Traversal[Expression] = {
-    node._astOut.collect{case e: Expression => e}
+    node._astOut.collect { case e: Expression => e }
   }
 
   def receivedCall: Traversal[Call] = {
@@ -47,15 +47,15 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
   }
 
   def isArgument: Traversal[Expression] = {
-    if(node._argumentIn.hasNext) Traversal(node)
+    if (node._argumentIn.hasNext) Traversal(node)
     else Traversal.empty
-   // node._argumentIn.cast[Expression]
+    // node._argumentIn.cast[Expression]
   }
 
-  def inCall: Traversal[Call] = 
+  def inCall: Traversal[Call] =
     node._argumentIn.headOption match {
-      case Some(c:Call) => Traversal(c)
-      case _ => Traversal.empty
+      case Some(c: Call) => Traversal(c)
+      case _             => Traversal.empty
     }
 
   def parameter(implicit callResolver: ICallResolver): Traversal[MethodParameterIn] =
