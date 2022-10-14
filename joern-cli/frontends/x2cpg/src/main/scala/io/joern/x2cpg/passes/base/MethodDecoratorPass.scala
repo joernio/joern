@@ -36,13 +36,11 @@ class MethodDecoratorPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
         if (method.isEmpty) {
           logger.warn("Parameter without method encountered: " + parameterIn.toString)
         } else {
-          if (parameterIn.typeFullName == null) {
-            val evalType = parameterIn.typ
-            dstGraph.addEdge(parameterOut, evalType, EdgeTypes.EVAL_TYPE)
-            if (!loggedMissingTypeFullName) {
-              logger.warn("Using deprecated CPG format with missing TYPE_FULL_NAME on METHOD_PARAMETER_IN nodes.")
-              loggedMissingTypeFullName = true
-            }
+          val evalType = parameterIn.typ
+          dstGraph.addEdge(parameterOut, evalType, EdgeTypes.EVAL_TYPE)
+          if (!loggedMissingTypeFullName) {
+            logger.warn("Using deprecated CPG format with missing TYPE_FULL_NAME on METHOD_PARAMETER_IN nodes.")
+            loggedMissingTypeFullName = true
           }
 
           dstGraph.addNode(parameterOut)

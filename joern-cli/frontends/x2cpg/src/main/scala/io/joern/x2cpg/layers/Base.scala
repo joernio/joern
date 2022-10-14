@@ -1,10 +1,10 @@
 package io.joern.x2cpg.layers
 
+import io.joern.x2cpg.passes.base._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
-import io.joern.x2cpg.passes.base._
 
 object Base {
   val overlayName: String = "base"
@@ -17,10 +17,10 @@ object Base {
     new TypeDeclStubCreator(cpg),
     new MethodStubCreator(cpg),
     new ParameterIndexCompatPass(cpg),
+    new TypeUsagePass(cpg),
     new MethodDecoratorPass(cpg),
     new AstLinkerPass(cpg),
-    new ContainsEdgePass(cpg),
-    new TypeUsagePass(cpg)
+    new ContainsEdgePass(cpg)
   )
 
 }
