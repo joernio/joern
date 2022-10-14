@@ -1,10 +1,10 @@
 package io.joern.x2cpg.passes
 
+import io.joern.x2cpg.passes.base.MethodDecoratorPass
+import io.joern.x2cpg.testfixtures.EmptyGraphFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
-import io.joern.x2cpg.passes.base.MethodDecoratorPass
-import io.joern.x2cpg.testfixtures.EmptyGraphFixture
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb._
@@ -12,6 +12,8 @@ import overflowdb._
 class MethodDecoratorPassTests extends AnyWordSpec with Matchers {
   "MethodDecoratorTest" in EmptyGraphFixture { graph =>
     val method = graph + NodeTypes.METHOD
+    val typ    = graph + NodeTypes.TYPE
+
     val parameterIn = graph
       .+(
         NodeTypes.METHOD_PARAMETER_IN,
@@ -25,6 +27,7 @@ class MethodDecoratorPassTests extends AnyWordSpec with Matchers {
       .asInstanceOf[MethodParameterIn]
 
     method --- EdgeTypes.AST --> parameterIn
+    parameterIn --- EdgeTypes.EVAL_TYPE --> typ
 
     val methodDecorator = new MethodDecoratorPass(new Cpg(graph))
     methodDecorator.createAndApply()
