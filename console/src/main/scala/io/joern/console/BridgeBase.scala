@@ -270,12 +270,11 @@ trait ScriptExecution { this: BridgeBase =>
     val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
     val predefPlusScriptFileTmp = Files.createTempFile("joern-script-with-predef", ".sc")
     val scriptCode = Files.readString(decodedScriptFile.toNIO)
-    Files.writeString(
-      predefPlusScriptFileTmp,
-      s"""$predefCode
-         |$scriptCode
-         |""".stripMargin
-    )
+    val scriptContent = s"""$predefCode
+                           |$scriptCode
+                           |""".stripMargin
+    if (config.verbose) println(scriptContent)
+    Files.writeString(predefPlusScriptFileTmp, scriptContent)
 
     try {
       new ScriptingDriver(
@@ -297,6 +296,11 @@ trait ScriptExecution { this: BridgeBase =>
         }
         throw t
     }
+
+    // TODO remove debug code...
+    // println("XXX0 trying with mainargs...")
+    // import mainargs.{main, arg, ParserForMethods, Flag}
+
   }
 
   /** For the given config, generate a list of commands to import the CPG
