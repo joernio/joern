@@ -125,8 +125,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
       case call: Call
-          if path.size > 1
-            && isCallToInternalMethodWithoutSemantic(call)
+          if isCallToInternalMethodWithoutSemantic(call)
             && !isArgOrRetOfMethodWeCameFrom(call, path) =>
         createPartialResultForOutputArgOrRet()
 
