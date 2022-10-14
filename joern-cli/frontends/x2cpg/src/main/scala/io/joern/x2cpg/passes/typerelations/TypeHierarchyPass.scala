@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
-import io.joern.x2cpg.passes.callgraph.MethodRefLinker.{linkToMultiple, typeFullNameToNode}
+import io.joern.x2cpg.passes.EdgeLinker._
 
 /** Create INHERITS_FROM edges from `TYPE_DECL` nodes to `TYPE` nodes.
   */

@@ -1,12 +1,12 @@
 package io.joern.x2cpg.passes.base
 
+import io.joern.x2cpg.passes.EdgeLinker.linkToSingle
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, StoredNode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
-import io.joern.x2cpg.passes.callgraph.MethodRefLinker
 
 import scala.collection.mutable
 
@@ -40,7 +40,7 @@ class FileCreationPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
     // Create SOURCE_FILE edges from nodes of various types
     // to FILE
 
-    MethodRefLinker.linkToSingle(
+    linkToSingle(
       cpg,
       srcLabels = List(NodeTypes.NAMESPACE_BLOCK, NodeTypes.TYPE_DECL, NodeTypes.METHOD, NodeTypes.COMMENT),
       dstNodeLabel = NodeTypes.FILE,

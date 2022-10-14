@@ -1,9 +1,9 @@
 package io.joern.x2cpg.passes.base
 
+import io.joern.x2cpg.passes.EdgeLinker._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
-import io.joern.x2cpg.passes.callgraph.MethodRefLinker.{linkToSingle, typeDeclFullNameToNode, typeFullNameToNode}
 
 class TypeUsagePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
