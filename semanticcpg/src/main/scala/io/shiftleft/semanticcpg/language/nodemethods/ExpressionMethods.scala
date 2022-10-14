@@ -52,10 +52,11 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
    // node._argumentIn.cast[Expression]
   }
 
-  def inCall: Traversal[Call] = {
-    if (node._argumentIn.hasNext) Traversal(node._argumentIn.next().asInstanceOf[Call])
-    else Traversal.empty
-  }
+  def inCall: Traversal[Call] = 
+    node._argumentIn.headOption match {
+      case Some(c:Call) => Traversal(c)
+      case _ => Traversal.empty
+    }
 
   def parameter(implicit callResolver: ICallResolver): Traversal[MethodParameterIn] =
     for {
