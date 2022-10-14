@@ -162,7 +162,7 @@ object JoernVectors extends App {
       val embedding = generator.embed(cpg)
       println("{")
       println("\"objects\":")
-      traversalToJson(embedding.objects, { x: String => generator.defaultToString(x) })
+      traversalToJson(embedding.objects, generator.defaultToString)
       if (config.dimToFeature) {
         println(",\"dimToFeature\": ")
         println(Serialization.write(embedding.dimToStructure))
@@ -174,7 +174,7 @@ object JoernVectors extends App {
         cpg.graph.edges().map { x =>
           Map("src" -> x.outNode().id(), "dst" -> x.inNode().id(), "label" -> x.label())
         },
-        { x: Map[String, Any] => generator.defaultToString(x) }
+        generator.defaultToString
       )
       println("}")
     }
