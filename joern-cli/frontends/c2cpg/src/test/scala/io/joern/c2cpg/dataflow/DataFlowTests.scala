@@ -1337,7 +1337,15 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val source = cpg.call("source")
       val sink   = cpg.call("sink")
       val flows  = sink.reachableByFlows(source)
-      flows.map(flowToResultPairs).toSetMutable shouldBe Set(List(("source()", Some(6)), ("sink(source())", Some(6))))
+      flows.map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(
+          ("source()", Some(6)),
+          ("sink(int arg)", Some(2)),
+          ("return arg;", Some(2)),
+          ("int", Some(2)),
+          ("sink(source())", Some(6))
+        )
+      )
     }
   }
 
@@ -1865,6 +1873,25 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val List(flow)       = sink.reachableByFlows(source).l
       val literal: Literal = flow.elements.head.asInstanceOf[Literal]
       literal.code shouldBe "\"firstName\""
+    }
+  }
+
+  "DataFlowTest70" should {
+    val cpg = code("""
+        | int source() {
+        |   return 42;
+        | }
+        | void main() {
+        |   sink(source());
+        | }
+        | """.stripMargin)
+
+    "Test Interprocedural" should {
+      "have a flow from argument(which itself is a call) to return" in {
+        val source = cpg.literal("42")
+        val sink   = cpg.call("sink").argument
+        sink.reachableByFlows(source).size shouldBe 1
+      }
     }
   }
 
