@@ -49,7 +49,6 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
   def isArgument: Traversal[Expression] = {
     if (node._argumentIn.hasNext) Traversal(node)
     else Traversal.empty
-    // node._argumentIn.cast[Expression]
   }
 
   def inCall: Traversal[Call] =
