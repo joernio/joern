@@ -33,18 +33,18 @@ class ExpressionTraversal[NodeType <: Expression](val traversal: Traversal[NodeT
   /** Only those expressions which are (direct) arguments of a call
     */
   def isArgument: Traversal[Expression] =
-    traversal.where(_.in(EdgeTypes.ARGUMENT)).cast[Expression]
+    traversal.flatMap(_.isArgument)
 
   /** Traverse to surrounding call
     */
   def inCall: Traversal[Call] =
-    traversal.repeat(_.in(EdgeTypes.ARGUMENT))(_.until(_.hasLabel(NodeTypes.CALL))).cast[Call]
+    traversal.flatMap(_.inCall)
 
   /** Traverse to surrounding call
     */
   @deprecated("Use inCall")
   def call: Traversal[Call] =
-    traversal.repeat(_.in(EdgeTypes.ARGUMENT))(_.until(_.hasLabel(NodeTypes.CALL))).cast[Call]
+    inCall
 
   /** Traverse to related parameter
     */
