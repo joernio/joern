@@ -19,7 +19,7 @@ class TaskCreator(sources: Set[CfgNode]) {
       case r if r.resultType == ReachArgument    => tasksForArgument(r)
     }
 
-  /** Create new tasks from all results that start in a parameter. In essence, we want to traverse to corresponding
+  /** Create new tasks for a result that ends in a MethodParameterIn. In essence, we want to traverse to corresponding
     * arguments of call sites, but we need to be careful here not to create unrealizable paths. We achieve this by
     * holding a call stack in results.
     *
@@ -31,15 +31,16 @@ class TaskCreator(sources: Set[CfgNode]) {
     * `result.callSite`. We would now like to continue exploring from the corresponding argument at that call site only.
     */
   private def tasksForParameterIn(result: ReachableByResult): Vector[ReachableByTask] = {
-    val ReachableByResult(path @ Vector(PathElement(parameter: MethodParameterIn, _, _), _*), _, _, _, depth) = result
-    if (result.callSiteStack.isEmpty) {
+    val ReachableByResult(path @ Vector(PathElement(param: MethodParameterIn, _, _), _*), _, callSitesStack, _, depth) =
+      result
+    if (callSitesStack.isEmpty) {
       // Case 1
-      paramToArgs(parameter).map(ReachableByTask(_, sources, new ResultTable, path, depth + 1))
+      paramToArgs(param).map(ReachableByTask(_, sources, new ResultTable, path, depth + 1))
     } else {
       // Case 2
-      val newCallSiteStack = result.callSiteStack.clone()
+      val newCallSiteStack = callSitesStack.clone()
       val callSite         = newCallSiteStack.pop()
-      paramToArgs(parameter)
+      paramToArgs(param)
         .filter(x => x.inCall.exists(c => c == callSite))
         .map(ReachableByTask(_, sources, new ResultTable, path, depth - 1, newCallSiteStack))
     }
@@ -66,9 +67,8 @@ class TaskCreator(sources: Set[CfgNode]) {
   private def paramToMethodRefCallReceivers(param: MethodParameterIn): Vector[Expression] =
     new Cpg(param.graph()).methodRef.methodFullNameExact(param.method.fullName).inCall.argument(0).toVector
 
-  /** Create new tasks from all results that end in an output argument, including return arguments. In this case, we
-    * want to traverse to corresponding method output parameters and method return nodes respectively.
-    */
+  // Create new tasks for a result that ends in an CALL
+  // In this case, we traverse to corresponding MethodReturn nodes
   private def tasksForCall(result: ReachableByResult): Vector[ReachableByTask] = {
     val ReachableByResult(path @ Vector(PathElement(call: Call, _, _), _*), _, stack, _, depth) = result
     NoResolve
@@ -76,19 +76,22 @@ class TaskCreator(sources: Set[CfgNode]) {
       .methodReturn
       .toVector
       .flatMap(methodReturn => {
-        val returnStatements = methodReturn._returnViaReachingDefIn
-        if (returnStatements.isEmpty) {
-          val newCallSiteStack = stack.clone() :+ call
+        // Return and MethodReturn is Different
+        val returns = methodReturn._returnViaReachingDefIn
+        if (returns.isEmpty) {
+          val newCallSiteStack = stack.clone().push(call)
           ReachableByTask(methodReturn, sources, new ResultTable, path, depth + 1, newCallSiteStack) :: Nil
         } else
-          returnStatements.map(returnStatement => {
+          returns.map(ret => {
             val newPath          = PathElement(methodReturn) +: path
-            val newCallSiteStack = stack.clone() :+ call
-            ReachableByTask(returnStatement, sources, new ResultTable, newPath, depth + 1, newCallSiteStack)
+            val newCallSiteStack = stack.clone().push(call)
+            ReachableByTask(ret, sources, new ResultTable, newPath, depth + 1, newCallSiteStack)
           })
       })
   }
 
+  // Create new tasks from a result that ends in an output argument
+  // In this case, we want to traverse to corresponding method output parameters.
   private def tasksForArgument(result: ReachableByResult): Vector[ReachableByTask] = {
     val ReachableByResult(path @ Vector(PathElement(argument: Expression, _, _), _*), _, stack, _, depth) = result
     val outParams =

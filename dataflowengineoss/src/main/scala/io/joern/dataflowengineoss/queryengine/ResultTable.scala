@@ -72,13 +72,17 @@ case class ReachableByResult(
 }
 
 sealed trait ResultType
-case object ReachSource      extends ResultType // complete
-case object ReachParameterIn extends ResultType // a partial result, create new task
-case object ReachArgument    extends ResultType // a partial result, create new task
-case object ReachCall        extends ResultType // a partial result, create new task
+sealed trait CompleteResult extends ResultType
+sealed trait PartialResult  extends ResultType
+// The Engin will collect partial results and create new tasks from them, see TaskCreator
 
-/** We represent data flows as sequences of path elements, where each path element consists of a node, flags and the
-  * label of its outgoing edge.
+case object ReachSource      extends CompleteResult
+case object ReachParameterIn extends PartialResult
+case object ReachArgument    extends PartialResult
+case object ReachCall        extends PartialResult
+
+/** We represent data flows as sequences of path elements, where each path element consists of a node, a visible flag
+  * and the label of its outgoing edge.
   *
   * @param node
   *   The parent node

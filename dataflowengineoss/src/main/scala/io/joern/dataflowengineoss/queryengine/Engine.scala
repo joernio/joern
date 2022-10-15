@@ -78,7 +78,7 @@ class Engine(context: EngineContext) {
       * tasks from partial results.
       */
     def handleResultsOfTask(resultsOfTask: Vector[ReachableByResult]): Unit = {
-      val (complete, partial) = resultsOfTask.partition(_.resultType == ReachSource)
+      val (complete, partial) = resultsOfTask.partition(_.resultType.isInstanceOf[CompleteResult])
       result ++= complete
       val newTasks = new TaskCreator(sources).createFromPartialResults(partial)
       newTasks.foreach(submitTask)
@@ -216,6 +216,7 @@ object Engine {
       .internal
       .nonEmpty
   }
+
   def isCallToInternalMethodWithoutSemantic(call: Call)(implicit semantics: Semantics): Boolean = {
     isCallToInternalMethod(call) && semanticsForCall(call).isEmpty
   }
@@ -229,7 +230,7 @@ object Engine {
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
     vec
       .groupBy { x =>
-        (x.path.headOption.map(_.node) ++ x.path.lastOption.map(_.node), x.resultType != ReachSource, x.callDepth)
+        (x.path.headOption.map(_.node) ++ x.path.lastOption.map(_.node), x.callDepth)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
