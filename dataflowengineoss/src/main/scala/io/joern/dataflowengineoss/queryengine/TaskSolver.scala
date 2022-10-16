@@ -22,6 +22,8 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
 
   import Engine._
 
+  implicit val implicitEngineContext: EngineContext = context
+
   /** Entry point of callable. First checks if the maximum call depth has been exceeded, in which case an empty result
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
@@ -69,8 +71,8 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     /** For each parent of the current node, determined via `expandIn`, check if results are available in the result
       * table. If not, determine results recursively.
       */
-    def computeResultsForParents() = {
-      expandIn(curNode, path).iterator.flatMap { parent =>
+    def computeResultsForParents()(implicit engineContext: EngineContext) = {
+      expandIn(curNode, path, engineContext.config.allowVisitSameNodeKTimes).iterator.flatMap { parent =>
         createResultsFromCacheOrCompute(parent, path)
       }.toVector
     }

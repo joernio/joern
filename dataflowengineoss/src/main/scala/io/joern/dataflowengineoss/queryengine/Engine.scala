@@ -124,8 +124,10 @@ object Engine {
     * @param path
     *   the path that has been expanded to reach the `curNode`
     */
-  def expandIn(curNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[PathElement] = {
-    ddgInE(curNode, path).flatMap(elemForEdge)
+  def expandIn(curNode: CfgNode, path: Vector[PathElement], allowVisitSameNodeKTimes: Int = 1)(implicit
+    semantics: Semantics
+  ): Vector[PathElement] = {
+    ddgInE(curNode, path, allowVisitSameNodeKTimes).flatMap(elemForEdge)
   }
 
   private def elemForEdge(e: Edge)(implicit semantics: Semantics): Option[PathElement] = {
@@ -179,14 +181,14 @@ object Engine {
     * node, (b) already present on `path`, or (c) a CALL node to a method where the semantic indicates that taint is
     * propagated to it.
     */
-  private def ddgInE(node: CfgNode, path: Vector[PathElement]): Vector[Edge] = {
+  private def ddgInE(node: CfgNode, path: Vector[PathElement], allowVisitSameNodeKTimes: Int): Vector[Edge] = {
     node
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
       .filter { e =>
         e.outNode() match {
           case srcNode: CfgNode =>
-            !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode)
+            !srcNode.isInstanceOf[Method] && path.map(_.node).count(_ == srcNode) < allowVisitSameNodeKTimes
           case _ => false
         }
       }
@@ -263,6 +265,8 @@ case class EngineContext(semantics: Semantics = DefaultSemantics(), config: Engi
 /** Various configurations for the data flow engine.
   * @param maxCallDepth
   *   the k-limit for calls and field accesses.
+  * @param allowVisitSameNodeKTimes
+  *   How much times do we allow the data flow to pass a certain node.
   * @param initialTable
   *   an initial (starting node) -> (path-edges) cache to initiate data flow queries with.
   * @param shareCacheBetweenTasks
@@ -270,6 +274,7 @@ case class EngineContext(semantics: Semantics = DefaultSemantics(), config: Engi
   */
 case class EngineConfig(
   var maxCallDepth: Int = 4,
+  allowVisitSameNodeKTimes: Int = 4,
   initialTable: Option[ResultTable] = None,
   shareCacheBetweenTasks: Boolean = true
 )
