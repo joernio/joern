@@ -22,21 +22,22 @@ object Path {
 
   implicit val show: Show[Path] = { path =>
     Table(
-      columnNames = Array("tracked", "lineNumber", "method", "file"),
+      columnNames = Array("nodeType", "tracked", "lineNumber", "method", "file"),
       rows = path.elements.map { cfgNode =>
+        val nodeType   = cfgNode.getClass.getSimpleName
         val method     = cfgNode.method
         val methodName = method.name
         val lineNumber = cfgNode.lineNumber.getOrElse("N/A").toString
         val fileName   = method.file.name.headOption.getOrElse("N/A")
 
-        val trackedSymbol = cfgNode match {
+        val trackedSymbol = (cfgNode match {
           case _: MethodParameterIn =>
             val paramsPretty = method.parameter.toList.sortBy(_.index).map(_.code).mkString(", ")
             s"$methodName($paramsPretty)"
           case _ => cfgNode.statement.repr
-        }
+        }).replace("\n", "")
 
-        Array(trackedSymbol, lineNumber, methodName, fileName)
+        Array(nodeType, trackedSymbol, lineNumber, methodName, fileName)
       }
     ).render
   }
