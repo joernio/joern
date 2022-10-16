@@ -278,7 +278,7 @@ case class EngineContext(semantics: Semantics = DefaultSemantics(), config: Engi
   */
 case class EngineConfig(
   var maxCallDepth: Int = 4,
-  var maxTimesVisitingANode: Int = 4,
+  var maxTimesVisitingANode: Int = 1,
   initialTable: Option[ResultTable] = None,
   shareCacheBetweenTasks: Boolean = true
 )
