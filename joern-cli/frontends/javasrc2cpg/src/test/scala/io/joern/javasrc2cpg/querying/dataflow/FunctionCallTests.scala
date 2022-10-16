@@ -1,11 +1,32 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
-import io.joern.javasrc2cpg.testfixtures.{JavaDataflowFixture, JavaSrcCode2CpgFixture}
 import io.joern.dataflowengineoss.language._
+import io.joern.javasrc2cpg.testfixtures.{JavaDataflowFixture, JavaSrcCode2CpgFixture}
 import io.shiftleft.semanticcpg.language._
 
 class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
   "Dataflow through function calls" should {
+
+    "can go in a method multiple times" in {
+      val cpg = code("""
+          |class Foo{
+          |    String name;
+          |    String getName() {
+          |        return name;
+          |    }
+          |}
+          |class Main{
+          |    public void bar(Foo foo) {
+          |        check(foo.getName());
+          |        sink(foo.getName());
+          |    }
+          |}
+          |""".stripMargin)
+
+      def source = cpg.method("bar").parameter.name("foo")
+      def sink   = cpg.method("sink").parameter.index(1)
+      sink.reachableBy(source).size shouldBe 1
+    }
 
     "find a path directly via a function argument" in {
       val cpg = code("""
