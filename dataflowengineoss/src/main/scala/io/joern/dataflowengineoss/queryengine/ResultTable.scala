@@ -74,7 +74,7 @@ case class ReachableByResult(
 sealed trait ResultType
 sealed trait CompleteResult extends ResultType
 sealed trait PartialResult  extends ResultType
-// The Engin will collect partial results and create new tasks from them, see TaskCreator
+// The Engine will collect partial results and create new tasks from them, see TaskCreator
 
 case object ReachSource      extends CompleteResult
 case object ReachParameterIn extends PartialResult
