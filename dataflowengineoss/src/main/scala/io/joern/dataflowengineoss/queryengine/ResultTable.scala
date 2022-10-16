@@ -64,7 +64,7 @@ class ResultTable(
 case class ReachableByResult(
   path: Vector[PathElement],
   table: ResultTable,
-  callSiteStack: mutable.Stack[Call],
+  callSiteStack: List[Call], // immutable.Stack is Deprecated in scala 2.13. Use a List instead
   resultType: ResultType = ReachSource,
   callDepth: Int = 0
 ) {
