@@ -22,7 +22,7 @@ case class ReachableByTask(
   table: ResultTable,
   initialPath: Vector[PathElement] = Vector(),
   callDepth: Int = 0,
-  callSiteStack: mutable.Stack[Call] = mutable.Stack()
+  callSiteStack: List[Call] = List() //immutable.Stack is Deprecated in scala 2.13. Use a List instead
 )
 
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks

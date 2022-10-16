@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
 
 import java.util.concurrent.Callable
-import scala.collection.mutable
 
 /** Callable for solving a ReachableByTask
   *
@@ -61,7 +60,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     path: Vector[PathElement],
     sources: Set[NodeType],
     table: ResultTable,
-    callSiteStack: mutable.Stack[Call]
+    callSiteStack: List[Call]
   )(implicit semantics: Semantics): Vector[ReachableByResult] = {
 
     val curNode = path.head.node
