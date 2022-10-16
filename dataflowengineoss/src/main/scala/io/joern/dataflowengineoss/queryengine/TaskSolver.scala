@@ -72,7 +72,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       * table. If not, determine results recursively.
       */
     def computeResultsForParents()(implicit engineContext: EngineContext) = {
-      expandIn(curNode, path, engineContext.config.allowVisitSameNodeKTimes).iterator.flatMap { parent =>
+      expandIn(curNode, path, engineContext.config.maxTimesVisitingANode).iterator.flatMap { parent =>
         createResultsFromCacheOrCompute(parent, path)
       }.toVector
     }
