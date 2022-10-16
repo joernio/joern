@@ -35,7 +35,7 @@ object Path {
             val paramsPretty = method.parameter.toList.sortBy(_.index).map(_.code).mkString(", ")
             s"$methodName($paramsPretty)"
           case _ => cfgNode.statement.repr
-        }).replace("\n", "")
+        }).replace("\n", " ")
 
         Array(nodeType, trackedSymbol, lineNumber, methodName, fileName)
       }
