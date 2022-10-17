@@ -254,6 +254,11 @@ trait ScriptExecution { this: BridgeBase =>
   }
 
   protected def runScript(scriptFile: os.Path, config: Config): Unit = {
+    if (!os.exists(scriptFile)) {
+      System.err.println(s"given script file $scriptFile does not exist")
+      System.exit(1)
+    }
+
     val isEncryptedScript = scriptFile.ext == "enc"
     System.err.println(s"executing $scriptFile with params=${config.params}")
 
