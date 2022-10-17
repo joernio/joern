@@ -1264,4 +1264,20 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     }
   }
 
+  "AST generation for import/require" should {
+    "make available `import` statements via cpg.imports" in AstFixture("import {x} from \"foo\";") { cpg =>
+      val List(imp) = cpg.imports.l
+      imp.code shouldBe "import {x} from \"foo\""
+      imp.importedEntity shouldBe Some("foo")
+      imp.importedAs shouldBe Some("x")
+    }
+
+    "make available `require` statements via cpg.imports" in AstFixture("const x = require(\"foo\")") { cpg =>
+      val List(imp) = cpg.imports.l
+      imp.code shouldBe "x = require(\"foo\")"
+      imp.importedEntity shouldBe Some("foo")
+      imp.importedAs shouldBe Some("x")
+    }
+
+  }
 }
