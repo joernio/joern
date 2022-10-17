@@ -206,11 +206,21 @@ object Domain {
     attributes: PhpAttributes
   ) extends PhpStmt
 
+  final case class PhpNamespaceStmt(name: Option[PhpNameExpr], stmts: List[PhpStmt], attributes: PhpAttributes)
+      extends PhpStmt
+
   sealed abstract class PhpExpr extends PhpStmt
 
-  final case class PhpFuncCall(target: PhpExpr, args: Seq[PhpArgument], attributes: PhpAttributes) extends PhpExpr
-  final case class PhpVariable(value: PhpExpr, attributes: PhpAttributes)                          extends PhpExpr
-  final case class PhpNameExpr(name: String, attributes: PhpAttributes)                            extends PhpExpr
+  final case class PhpCallExpr(
+    target: Option[PhpExpr],
+    methodName: PhpExpr,
+    args: Seq[PhpArgument],
+    isNullSafe: Boolean,
+    isStatic: Boolean,
+    attributes: PhpAttributes
+  ) extends PhpExpr
+  final case class PhpVariable(value: PhpExpr, attributes: PhpAttributes) extends PhpExpr
+  final case class PhpNameExpr(name: String, attributes: PhpAttributes)   extends PhpExpr
   final case class PhpBinaryOp(operator: String, left: PhpExpr, right: PhpExpr, attributes: PhpAttributes)
       extends PhpExpr
   object PhpBinaryOp {
@@ -399,6 +409,7 @@ object Domain {
       case "Stmt_Goto"         => readGoto(json)
       case "Stmt_Label"        => readLabel(json)
       case "Stmt_HaltCompiler" => readHaltCompiler(json)
+      case "Stmt_Namespace"    => readNamespace(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -559,7 +570,11 @@ object Domain {
       case "Scalar_Encapsed"           => PhpEncapsed(json("parts").arr.map(readExpr).toSeq, PhpAttributes(json))
       case "Scalar_EncapsedStringPart" => PhpEncapsedPart.withQuotes(json("value").str, PhpAttributes(json))
 
-      case "Expr_FuncCall" => readFunctionCall(json)
+      case "Expr_FuncCall"           => readCall(json)
+      case "Expr_MethodCall"         => readCall(json)
+      case "Expr_NullsafeMethodCall" => readCall(json)
+      case "Expr_StaticCall"         => readCall(json)
+
       case "Expr_Variable" => readVariable(json)
       case "Expr_Isset"    => readIsset(json)
       case "Expr_Print"    => readPrint(json)
@@ -583,7 +598,12 @@ object Domain {
 
   private def readVariable(json: Value): PhpVariable = {
     // TODO Figure out when the variable has an expr name
-    PhpVariable(readName(json("name")), PhpAttributes(json))
+    val name = json("name") match {
+      case Str(value) => readName(value)
+      case Obj(_)     => readNameOrExpr(json, "name")
+      case value      => readExpr(value)
+    }
+    PhpVariable(name, PhpAttributes(json))
   }
 
   private def readIsset(json: Value): PhpIsset = {
@@ -604,16 +624,30 @@ object Domain {
     PhpTernaryOp(condition, maybeThenExpr, elseExpr, PhpAttributes(json))
   }
 
-  private def readFunctionCall(json: Value): PhpFuncCall = {
-    val args = json("args").arr.map(readCallArg).toSeq
+  private def readNameOrExpr(json: Value, fieldName: String): PhpExpr = {
+    val field = json(fieldName)
+    if (field("nodeType").str.startsWith("Name_"))
+      readName(field)
+    else if (field("nodeType").str == "Identifier")
+      readName(field)
+    else
+      readExpr(field)
+  }
 
-    val name =
-      if (json("name")("nodeType").str.startsWith("Name_"))
-        readName(json("name"))
-      else
-        readExpr(json("name"))
+  private def readCall(json: Value): PhpCallExpr = {
+    val jsonMap  = json.obj
+    val nodeType = json("nodeType").str
+    val args     = json("args").arr.map(readCallArg).toSeq
 
-    PhpFuncCall(name, args, PhpAttributes(json))
+    val target =
+      jsonMap.get("var").map(readExpr).orElse(jsonMap.get("class").map(_ => readNameOrExpr(jsonMap, "class")))
+
+    val methodName = readNameOrExpr(json, "name")
+
+    val isNullSafe = nodeType == "Expr_NullsafeMethodCall"
+    val isStatic   = nodeType == "Expr_StaticCall"
+
+    PhpCallExpr(target, methodName, args, isNullSafe, isStatic, PhpAttributes(json))
   }
 
   private def readFunction(json: Value): PhpMethodDecl = {
@@ -705,6 +739,20 @@ object Domain {
   private def readHaltCompiler(json: Value): PhpHaltCompilerStmt = {
     // Ignore the remaining text here since it can get quite large (common use case is to separate code from data blob)
     PhpHaltCompilerStmt(PhpAttributes(json))
+  }
+
+  private def readNamespace(json: Value): PhpNamespaceStmt = {
+    val name = Option.unless(json("name").isNull)(readName(json("name")))
+
+    val stmts = json("stmts") match {
+      case ujson.Null => Nil
+      case stmts: Arr => stmts.arr.map(readStmt).toList
+      case unhandled =>
+        logger.warn(s"Unhandled namespace stmts type $unhandled")
+        ???
+    }
+
+    PhpNamespaceStmt(name, stmts, PhpAttributes(json))
   }
 
   private def readConstDeclaration(json: Value): PhpConstDeclaration = {
