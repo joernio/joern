@@ -259,7 +259,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
   }
 
-  private def handleRequireCallForDependencies(lhs: Value, rhs: Value): Unit = {
+  private def handleRequireCallForDependencies(declarator: BabelNodeInfo, lhs: Value, rhs: Value): Unit = {
     val rhsCode  = code(rhs)
     val groupId  = rhsCode.substring(rhsCode.indexOf(s"$REQUIRE_KEYWORD(") + 9, rhsCode.indexOf(")") - 1)
     val nodeInfo = createBabelNodeInfo(lhs)
@@ -268,7 +268,10 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case ObjectPattern => nodeInfo.json("properties").arr.toList.map(code)
       case _             => List(code(lhs))
     }
-    names.foreach(name => diffGraph.addNode(createDependencyNode(name, groupId, REQUIRE_KEYWORD)))
+    names.foreach { name =>
+      diffGraph.addNode(createDependencyNode(name, groupId, REQUIRE_KEYWORD))
+      createImportNodeAndAttachToAst(declarator, groupId, name)
+    }
   }
 
   private def astForVariableDeclarator(declarator: Value, scopeType: ScopeType, kind: String): Ast = {
@@ -291,7 +294,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     } else {
       val sourceAst = init.get match {
         case requireCall if requireCall.code.startsWith(s"$REQUIRE_KEYWORD(") =>
-          handleRequireCallForDependencies(id.json, init.get.json)
+          handleRequireCallForDependencies(createBabelNodeInfo(declarator), id.json, init.get.json)
           astForNodeWithFunctionReference(requireCall.json)
         case initExpr =>
           astForNodeWithFunctionReference(initExpr.json)
