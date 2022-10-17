@@ -277,7 +277,6 @@ trait ScriptExecution { this: BridgeBase =>
     val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
     val predefPlusScriptFileTmp = Files.createTempFile("joern-script-with-predef", ".sc")
     val scriptCode = Files.readString(decodedScriptFile.toNIO)
-    // TODO get predef back - but don't forget wrapper code
     val scriptContent = wrapForMainargs(predefCode, scriptCode)
     if (config.verbose) println(scriptContent)
     Files.writeString(predefPlusScriptFileTmp, scriptContent)
@@ -322,9 +321,12 @@ trait ScriptExecution { this: BridgeBase =>
        |// dotty's ScriptingDriver expects an object with a `main(Array[String]): Unit`
        |object Main {
        |
+       |
        |$mainImpl
        |
-       |  def main(args: Array[String]): Unit = mainargs.ParserForMethods(this).runOrExit(args.toSeq)
+       |  def main(args: Array[String]): Unit = {
+       |    mainargs.ParserForMethods(this).runOrExit(args.toSeq)
+       |  }
        |}
        |""".stripMargin
   }
