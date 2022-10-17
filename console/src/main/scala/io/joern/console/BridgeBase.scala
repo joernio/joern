@@ -1,8 +1,6 @@
 package io.joern.console
 
 import os.{Path, pwd}
-// import ammonite.interp.Watchable
-// import ammonite.util.{Colors, Res}
 import better.files.*
 import dotty.tools.Settings
 import dotty.tools.dotc.core.Contexts.{Context, ctx}
@@ -23,7 +21,7 @@ import java.util.stream
 case class Config(
   scriptFile: Option[os.Path] = None,
   command: Option[String] = None,
-  params: Seq[String] = Seq.empty,
+  params: Map[String, String] = Map.empty,
   additionalImports: List[os.Path] = Nil,
   addPlugin: Option[String] = None,
   rmPlugin: Option[String] = None,
@@ -65,8 +63,8 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
         .action((x, c) => c.copy(scriptFile = Some(x)))
         .text("path to script file: will execute and exit")
 
-      opt[Seq[String]]('p', "params")
-        .valueName("value1,value2")
+      opt[Map[String, String]]('p', "params")
+        .valueName("k1=v1,k2=v2")
         .action((x, c) => c.copy(params = x))
         .text("parameter values for main function in script")
 
@@ -260,11 +258,14 @@ trait ScriptExecution { this: BridgeBase =>
       System.exit(1)
     }
 
-    val isEncryptedScript = scriptFile.ext == "enc"
     System.err.println(s"executing $scriptFile with params=${config.params}")
+    val scriptArgs: Seq[String] = {
+      val commandArgs = config.command.toList
+      val parameterArgs = config.params.flatMap { case (key, value) => Seq(s"--$key", value) }
+      commandArgs ++ parameterArgs
+    }
 
-    val scriptArgs: Array[String] = config.command.toArray ++ config.params
-
+    val isEncryptedScript = scriptFile.ext == "enc"
     val decodedScriptFile =
       if (isEncryptedScript) decryptedScript(scriptFile)
       else scriptFile
@@ -285,7 +286,7 @@ trait ScriptExecution { this: BridgeBase =>
       new ScriptingDriver(
         compilerArgs = compilerArgs(config),
         scriptFile = predefPlusScriptFileTmp.toFile,
-        scriptArgs = scriptArgs
+        scriptArgs = scriptArgs.toArray
       ).compileAndRun()
 
       // if the script failed: don't delete the temporary file which includes the predef,
