@@ -95,7 +95,6 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       case DelombokMode.TypesOnly   => true
     }
 
-    // val inputPathAsFile = File(config.inputPath)
     val sourceInfoTuples = SourceRootFinder.getSourceRoots(config.inputPath).map { inputPath =>
       val inputPathAsFile = File(inputPath)
       val originalSourcesDir = if (inputPathAsFile.isDirectory) {
