@@ -308,7 +308,7 @@ trait ScriptExecution { this: BridgeBase =>
       if (scriptCode.contains("@main")) {
         scriptCode
       } else {
-        s"""@main def run(): Unit = {
+        s"""@main def _execMain(): Unit = {
            |  $scriptCode
            |}
            |""".stripMargin
