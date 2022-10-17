@@ -1,11 +1,51 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
-import io.joern.javasrc2cpg.testfixtures.{JavaDataflowFixture, JavaSrcCode2CpgFixture}
 import io.joern.dataflowengineoss.language._
+import io.joern.javasrc2cpg.testfixtures.{JavaDataflowFixture, JavaSrcCode2CpgFixture}
 import io.shiftleft.semanticcpg.language._
 
 class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
   "Dataflow through function calls" should {
+
+    "can handle dynamic call" in {
+      val cpg = code(
+        """
+          |package a;
+          |public class Foo {
+          |    public String getName() {
+          |        return "foo";
+          |    }
+          |}
+          |""".stripMargin,
+        "a/Foo.java"
+      ).moreCode(
+        """
+          |package b;
+          |import a.Foo;
+          |public class Bar extends Foo {
+          |    public String getName() {
+          |        return "bar";
+          |    }
+          |}
+          |""".stripMargin,
+        "b/Bar.java"
+      ).moreCode(
+        """
+          |import a.Foo;
+          |class Main {
+          |    void main(Foo foo) {
+          |        System.out.println(foo.getName());
+          |    }
+          |}
+          |""".stripMargin,
+        "Main.java"
+      )
+      def foo  = cpg.literal("\"foo\"")
+      def bar  = cpg.literal("\"bar\"")
+      def sink = cpg.call("println").argument
+      sink.reachableBy(foo).size shouldBe 1
+      sink.reachableBy(bar).size shouldBe 1
+    }
 
     "find a path directly via a function argument" in {
       val cpg = code("""

@@ -83,7 +83,7 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
       case None =>
         val directSubclasses =
           cpg.typ
-            .nameExact(typDeclFullName)
+            .fullNameExact(typDeclFullName)
             .flatMap(_.in(EdgeTypes.INHERITS_FROM).asScala)
             .collect { case x: TypeDecl =>
               x.fullName
