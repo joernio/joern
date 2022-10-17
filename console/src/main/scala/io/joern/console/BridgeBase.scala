@@ -270,9 +270,10 @@ trait ScriptExecution { this: BridgeBase =>
     val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
     val predefPlusScriptFileTmp = Files.createTempFile("joern-script-with-predef", ".sc")
     val scriptCode = Files.readString(decodedScriptFile.toNIO)
-    val scriptContent = s"""$predefCode
-                           |$scriptCode
-                           |""".stripMargin
+    // val scriptContent = s"""$predefCode
+    //                        |$scriptCode
+    //                        |""".stripMargin
+    val scriptContent = scriptCode
     if (config.verbose) println(scriptContent)
     Files.writeString(predefPlusScriptFileTmp, scriptContent)
 
