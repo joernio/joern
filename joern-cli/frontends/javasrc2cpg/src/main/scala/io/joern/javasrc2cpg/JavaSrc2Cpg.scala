@@ -130,7 +130,6 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       }
 
       (typeSourcesPath, sourceFileInfo)
-    // SourceDirectoryInfo(typeSourcesPath, sourceFileInfo)
     }
 
     val typesPaths   = sourceInfoTuples.map(_._1)
