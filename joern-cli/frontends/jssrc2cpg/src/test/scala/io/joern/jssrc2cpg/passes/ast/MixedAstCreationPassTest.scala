@@ -1289,13 +1289,12 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       imp.importedAs shouldBe Some("x")
     }
 
-    "allow traversing from dependency to import from for `require` statements" in AstFixture(
-      "const x = require(\"foo\")"
-    ) { cpg =>
-      val List(imp)  = cpg.imports.l
-      val List(dep)  = cpg.dependency.l
-      val List(imp2) = dep.imports.l
-      imp shouldBe imp2
+    "allow traversing from dependency to import for `require` statements" in AstFixture("const x = require(\"foo\")") {
+      cpg =>
+        val List(imp)  = cpg.imports.l
+        val List(dep)  = cpg.dependency.l
+        val List(imp2) = dep.imports.l
+        imp shouldBe imp2
     }
 
   }
