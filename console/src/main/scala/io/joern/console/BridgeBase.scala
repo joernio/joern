@@ -283,7 +283,7 @@ trait ScriptExecution { this: BridgeBase =>
 
     try {
       new ScriptingDriver(
-        compilerArgs = compilerArgs(config),
+        compilerArgs = compilerArgs(config) :+ "-nowarn",
         scriptFile = predefPlusScriptFileTmp.toFile,
         scriptArgs = scriptArgs.toArray
       ).compileAndRun()
@@ -314,13 +314,13 @@ trait ScriptExecution { this: BridgeBase =>
            |""".stripMargin
       }
 
-    // TODO add predefCode
     s"""
        |import mainargs.main // intentionally shadow any potentially given @main
        |
        |// dotty's ScriptingDriver expects an object with a `main(Array[String]): Unit`
        |object Main {
        |
+       |$predefCode
        |
        |$mainImpl
        |
