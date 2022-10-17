@@ -403,10 +403,11 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     } else {
       val specs = impDecl.json("specifiers").arr.toList
       val depNodes = specs.map { importSpecifier =>
-        val importedName   = importSpecifier("local")("name").str
-        val importNode     = createImportNodeAndAttachToAst(impDecl, source, importedName)
+        val importedName = importSpecifier("local")("name").str
+        val importNode = createImportNodeAndAttachToAst(impDecl, source, importedName)
         val dependencyNode = createDependencyNode(importedName, source, IMPORT_KEYWORD)
         diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
+        dependencyNode
       }
       depNodes.foreach(diffGraph.addNode)
       val requireCalls = specs.map { importSpecifier =>
