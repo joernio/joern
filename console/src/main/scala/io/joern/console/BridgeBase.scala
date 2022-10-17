@@ -10,13 +10,15 @@ import dotty.tools.scripting.{ScriptingDriver, Util}
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
 import io.joern.x2cpg.utils.dependency.DependencyResolver
-import os.{pwd, Path}
+import os.{Path, pwd}
+import scala.jdk.CollectionConverters._
 
 import java.io.{InputStream, PrintStream, File as JFile}
 import java.net.URLClassLoader
 import java.nio.file.{Files, Path, Paths}
 import java.util
 import java.util.stream
+import java.util.stream.Collectors
 
 case class Config(
   scriptFile: Option[os.Path] = None,
@@ -283,7 +285,7 @@ trait ScriptExecution { this: BridgeBase =>
 
     try {
       new ScriptingDriver(
-        compilerArgs = compilerArgs(config) :+ "-nowarn",
+        compilerArgs = compilerArgs(maybeAddDependencies(scriptCode, config)) :+ "-nowarn",
         scriptFile = predefPlusScriptFileTmp.toFile,
         scriptArgs = scriptArgs.toArray
       ).compileAndRun()
@@ -301,6 +303,19 @@ trait ScriptExecution { this: BridgeBase =>
         }
         throw t
     }
+  }
+
+  private def maybeAddDependencies(scriptCode: String, config: Config): Config = {
+    val usingClausePrefix = "//> using "
+    val dependenciesFromUsingClauses =
+      scriptCode.lines()
+        .map(_.trim)
+        .filter(_.startsWith(usingClausePrefix))
+        .map(_.drop(usingClausePrefix.length))
+        .collect(Collectors.toList)
+        .asScala
+
+    config.copy(dependencies = config.dependencies ++ dependenciesFromUsingClauses)
   }
 
   private def wrapForMainargs(predefCode: String, scriptCode: String): String = {
