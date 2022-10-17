@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.datastructures.MethodScope
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
+import io.joern.x2cpg
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -294,12 +295,13 @@ trait AstNodeBuilder { this: AstCreator =>
     callName: String,
     dispatchType: String,
     line: Option[Integer],
-    column: Option[Integer],
-    fullName: Option[String] = None
+    column: Option[Integer]
   ): NewCall = NewCall()
     .code(code)
     .name(callName)
-    .methodFullName(fullName.getOrElse(callName))
+    .methodFullName(
+      if (dispatchType == DispatchTypes.STATIC_DISPATCH) callName else x2cpg.Defines.DynamicCallUnknownFallName
+    )
     .dispatchType(dispatchType)
     .lineNumber(line)
     .columnNumber(column)
