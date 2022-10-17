@@ -2,7 +2,6 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.nodes.Return
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
@@ -20,7 +19,23 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
 
       cpg.typeDecl.name("Foo").method.fullName.l shouldBe List("Foo.foo:void()")
     }
+
+    "should have correct inheritsFromTypeFullName" in {
+      val cpg = code(
+        """
+          |package a;
+          |public class A {}
+          |""".stripMargin,
+        "a/A.java" // must specify "a/" to make the test pass
+      ).moreCode("""
+          |package a;
+          |public class B extends A {}
+          |""".stripMargin)
+      val typeDecl = cpg.typeDecl("B").head
+      typeDecl.inheritsFromTypeFullName should contain("a.A")
+    }
   }
+
 }
 class TypeDeclTests extends JavaSrcCodeToCpgFixture {
 
