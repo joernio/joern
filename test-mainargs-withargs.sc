@@ -1,10 +1,9 @@
-import mainargs.{main, arg, ParserForMethods, Flag}
+import mainargs.main
 
 object Main{
-  @main
-  def run(name: String) = {
+  @main def run(name: String) = {
     println(s"hello, $name")
   }
 
-  def main(args: Array[String]): Unit = ParserForMethods(this).runOrExit(args.toSeq)
+  def main(args: Array[String]): Unit = mainargs.ParserForMethods(this).runOrExit(args.toSeq)
 }
