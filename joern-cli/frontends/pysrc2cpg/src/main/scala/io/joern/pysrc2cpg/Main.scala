@@ -37,5 +37,6 @@ object Main extends App {
       ignoreVenvDir.map(Paths.get(_))
     )
 
-  Py2CpgOnFileSystem.buildCpg(py2CpgConfig)
+  val cpg = Py2CpgOnFileSystem.buildCpg(py2CpgConfig)
+  cpg.close()
 }
