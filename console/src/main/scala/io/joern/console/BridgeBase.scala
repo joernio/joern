@@ -253,6 +253,7 @@ trait ScriptExecution { this: BridgeBase =>
     replDriver.runUntilQuit(using state)()
   }
 
+  // TODO factor out into separate class and file...
   protected def runScript(scriptFile: os.Path, config: Config): Unit = {
     if (!os.exists(scriptFile)) {
       System.err.println(s"given script file $scriptFile does not exist")
@@ -275,10 +276,8 @@ trait ScriptExecution { this: BridgeBase =>
     val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
     val predefPlusScriptFileTmp = Files.createTempFile("joern-script-with-predef", ".sc")
     val scriptCode = Files.readString(decodedScriptFile.toNIO)
-    // val scriptContent = s"""$predefCode
-    //                        |$scriptCode
-    //                        |""".stripMargin
-    val scriptContent = scriptCode
+    // TODO get predef back - but don't forget wrapper code
+    val scriptContent = wrapForMainargs(predefCode, scriptCode)
     if (config.verbose) println(scriptContent)
     Files.writeString(predefPlusScriptFileTmp, scriptContent)
 
@@ -302,11 +301,31 @@ trait ScriptExecution { this: BridgeBase =>
         }
         throw t
     }
+  }
 
-    // TODO remove debug code...
-    // println("XXX0 trying with mainargs...")
-    // import mainargs.{main, arg, ParserForMethods, Flag}
+  private def wrapForMainargs(predefCode: String, scriptCode: String): String = {
+    val mainImpl =
+      if (scriptCode.contains("@main")) {
+        scriptCode
+      } else {
+        s"""@main def run(): Unit = {
+           |  $scriptCode
+           |}
+           |""".stripMargin
+      }
 
+    // TODO add predefCode
+    s"""
+       |import mainargs.main // intentionally shadow any potentially given @main
+       |
+       |// dotty's ScriptingDriver expects an object with a `main(Array[String]): Unit`
+       |object Main {
+       |
+       |$mainImpl
+       |
+       |  def main(args: Array[String]): Unit = mainargs.ParserForMethods(this).runOrExit(args.toSeq)
+       |}
+       |""".stripMargin
   }
 
   /** For the given config, generate a list of commands to import the CPG

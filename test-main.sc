@@ -1,3 +1,3 @@
-@main def main(name: String) = {
-  println(s"Hello, $name!")
+@main def main() = {
+  println("Hello, world!")
 }
