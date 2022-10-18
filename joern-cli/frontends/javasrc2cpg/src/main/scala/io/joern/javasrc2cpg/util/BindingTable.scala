@@ -6,13 +6,14 @@ import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParame
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserAnnotationDeclaration
 import com.github.javaparser.symbolsolver.javassistmodel.JavassistAnnotationDeclaration
 import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionAnnotationDeclaration
-import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, getAllParents}
+import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, getAllParents, safeGetAncestors}
 import io.shiftleft.codepropertygraph.generated.nodes.{Binding, NewBinding, NewTypeDecl, TypeDecl}
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 case class BindingTableEntry(name: String, signature: String, implementingMethodFullName: String)
 
@@ -39,10 +40,13 @@ trait BindingTableAdapter[T] {
 class BindingTableAdapterForJavaparser(
   methodSignature: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String
 ) extends BindingTableAdapter[ResolvedReferenceTypeDeclaration] {
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
   override def directParents(
     typeDecl: ResolvedReferenceTypeDeclaration
   ): collection.Seq[ResolvedReferenceTypeDeclaration] = {
-    typeDecl.getAncestors(true).asScala.map(_.getTypeDeclaration.get)
+    safeGetAncestors(typeDecl).map(_.getTypeDeclaration.get)
   }
 
   override def allParentsWithTypeMap(
