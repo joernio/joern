@@ -35,18 +35,6 @@ class EmbeddedAmmonite(predef: String = "") {
   val shellThread = new Thread(
     new Runnable {
       override def run(): Unit = {
-            // ammonite.Main(
-            //   predefCode = EmbeddedAmmonite.predef + predef,
-            //   welcomeBanner = None,
-            //   remoteLogging = false,
-            //   colors = Colors.BlackWhite,
-            //   inputStream = inStream,
-            //   outputStream = outStream,
-            //   errorStream = errStream)
-            //   .run()
-
-        // TODO use a different - simpler - ReplDriver?
-
         val inheritedClasspath = System.getProperty("java.class.path")
         val compilerArgs = Array(
           "-classpath", inheritedClasspath,
@@ -55,12 +43,11 @@ class EmbeddedAmmonite(predef: String = "") {
           "-color", "never"
         )
 
-//        println(s"starting embedded repl; compilerArgs=${compilerArgs.toSeq}")
-
         val replDriver = new EmbeddedAmmonite.ReplDriver(compilerArgs, inStream, new PrintStream(outStream) {
           // TODO remove the debug code
+          val tmpFile = os.pwd/"debug.out"
           override def println(x: String): Unit = {
-            println(s"XXX0 $x")
+            os.write.append(tmpFile, s"XXX0 $x")
             super.println(x)
           }
         })
@@ -149,6 +136,7 @@ object EmbeddedAmmonite {
                    in: InputStream,
                    out: PrintStream = scala.Console.out,
                    classLoader: Option[ClassLoader] = None) extends dotty.tools.repl.ReplDriver(args, out, classLoader) {
+    val reader = new BufferedReader(new InputStreamReader(in))
 
     /** Run REPL with `state` until `:quit` command found
       * Main difference to the 'original': different greeting, trap Ctrl-c
@@ -159,20 +147,15 @@ object EmbeddedAmmonite {
         given Context = state.context
 
         try {
-          val reader = new BufferedReader(new InputStreamReader(in))
           val line = reader.readLine()
           val res = ParseResult(line)(using state)
-          println(s"YYYY3 res=$res")
-          out.println("res: foo bar TODO")
+//          println(s"YYYY3 res=$res")
+          out.println("res0: foo bar 0")
           res
         } catch {
-          case _: StackOverflowError =>
-            // this happens if C-c is run on the server...
-            println("exiting server")
-            Quit
-          case error =>
-            error.printStackTrace()
-            println(s"caught exception ^ - continuing anyway...")
+          case e =>
+            e.printStackTrace()
+            println(s"caught exception $e with msg=${e.getMessage} ^ - continuing anyway...")
             Newline
         }
       }
