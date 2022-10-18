@@ -30,6 +30,10 @@ object Domain {
     val encaps    = "encaps"
     val issetFunc = "isset"
     val printFunc = "print"
+    val cloneFunc = "clone"
+    val emptyFunc = "empty"
+    val evalFunc  = "eval"
+    val exitFunc  = "exit"
   }
 
   object PhpDomainTypeConstants {
@@ -219,8 +223,12 @@ object Domain {
     isStatic: Boolean,
     attributes: PhpAttributes
   ) extends PhpExpr
-  final case class PhpVariable(value: PhpExpr, attributes: PhpAttributes) extends PhpExpr
-  final case class PhpNameExpr(name: String, attributes: PhpAttributes)   extends PhpExpr
+  final case class PhpVariable(value: PhpExpr, attributes: PhpAttributes)        extends PhpExpr
+  final case class PhpNameExpr(name: String, attributes: PhpAttributes)          extends PhpExpr
+  final case class PhpCloneExpr(expr: PhpExpr, attributes: PhpAttributes)        extends PhpExpr
+  final case class PhpEmptyExpr(expr: PhpExpr, attributes: PhpAttributes)        extends PhpExpr
+  final case class PhpEvalExpr(expr: PhpExpr, attributes: PhpAttributes)         extends PhpExpr
+  final case class PhpExitExpr(expr: Option[PhpExpr], attributes: PhpAttributes) extends PhpExpr
   final case class PhpBinaryOp(operator: String, left: PhpExpr, right: PhpExpr, attributes: PhpAttributes)
       extends PhpExpr
   object PhpBinaryOp {
@@ -575,6 +583,10 @@ object Domain {
       case "Expr_NullsafeMethodCall" => readCall(json)
       case "Expr_StaticCall"         => readCall(json)
 
+      case "Expr_Clone"    => readClone(json)
+      case "Expr_Empty"    => readEmpty(json)
+      case "Expr_Eval"     => readEval(json)
+      case "Expr_Exit"     => readExit(json)
       case "Expr_Variable" => readVariable(json)
       case "Expr_Isset"    => readIsset(json)
       case "Expr_Print"    => readPrint(json)
@@ -594,6 +606,26 @@ object Domain {
         logger.error(s"Found unhandled expr type: $unhandled")
         ???
     }
+  }
+
+  private def readClone(json: Value): PhpCloneExpr = {
+    val expr = readExpr(json("expr"))
+    PhpCloneExpr(expr, PhpAttributes(json))
+  }
+
+  private def readEmpty(json: Value): PhpEmptyExpr = {
+    val expr = readExpr(json("expr"))
+    PhpEmptyExpr(expr, PhpAttributes(json))
+  }
+
+  private def readEval(json: Value): PhpEvalExpr = {
+    val expr = readExpr(json("expr"))
+    PhpEvalExpr(expr, PhpAttributes(json))
+  }
+
+  private def readExit(json: Value): PhpExitExpr = {
+    val expr = Option.unless(json("expr").isNull)(readExpr(json("expr")))
+    PhpExitExpr(expr, PhpAttributes(json))
   }
 
   private def readVariable(json: Value): PhpVariable = {
