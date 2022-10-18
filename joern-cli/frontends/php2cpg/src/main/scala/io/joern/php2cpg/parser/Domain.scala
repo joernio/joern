@@ -597,7 +597,6 @@ object Domain {
   }
 
   private def readVariable(json: Value): PhpVariable = {
-    // TODO Figure out when the variable has an expr name
     val name = json("name") match {
       case Str(value) => readName(value)
       case Obj(_)     => readNameOrExpr(json, "name")
