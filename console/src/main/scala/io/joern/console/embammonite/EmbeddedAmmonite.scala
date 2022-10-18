@@ -3,7 +3,7 @@ package io.joern.console.embammonite
 import dotty.tools.repl.State
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.io.{BufferedReader, InputStreamReader, PipedInputStream, PipedOutputStream, PrintWriter}
+import java.io.{BufferedReader, InputStream, InputStreamReader, PipedInputStream, PipedOutputStream, PrintWriter}
 import java.util.UUID
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, Semaphore}
 
@@ -57,7 +57,7 @@ class EmbeddedAmmonite(predef: String = "") {
 
 //        println(s"starting embedded repl; compilerArgs=${compilerArgs.toSeq}")
 
-        val replDriver = new EmbeddedAmmonite.ReplDriver(compilerArgs)
+        val replDriver = new EmbeddedAmmonite.ReplDriver(compilerArgs, inStream)
 
         val initialState: State = replDriver.initialState
         val state: State = initialState
@@ -143,6 +143,7 @@ object EmbeddedAmmonite {
   import scala.annotation.tailrec
 
   class ReplDriver(args: Array[String],
+                   in: InputStream,
                    out: PrintStream = scala.Console.out,
                    classLoader: Option[ClassLoader] = None) extends dotty.tools.repl.ReplDriver(args, out, classLoader) {
 
@@ -156,7 +157,17 @@ object EmbeddedAmmonite {
 
 //        try {
 //          val line = terminal.readLine(completer)
-          ParseResult(line)(using state)
+        println("YYYY0 blocking on `read`")
+        val br = new BufferedReader(new InputStreamReader(in))
+        val line = br.readLine()
+
+//        val bytes = in.readAllBytes()
+//        println(s"YYYY1 read ${bytes.length} bytes")
+//        val line = new String(bytes, "UTF-8")
+        println(s"YYYY2 read: $line")
+        val res = ParseResult(line)(using state)
+        println(s"YYYY3 res=$res")
+        res
 //        } catch {
 //          case _: EndOfFileException => // Ctrl+D
 //            Quit

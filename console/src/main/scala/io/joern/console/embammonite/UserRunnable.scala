@@ -45,7 +45,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
   }
 
   private def sendQueryToAmmonite(job: Job): Unit = {
-    println(s"XXX2 TODO drop sending job to writer: $job")
+    println(s"XXX2 sending job to writer: $job")
     writer.println(job.query.trim)
     writer.println(s""""END: ${job.uuid}"""")
     writer.println(s"""throw new RuntimeException("END: ${job.uuid}")""")
