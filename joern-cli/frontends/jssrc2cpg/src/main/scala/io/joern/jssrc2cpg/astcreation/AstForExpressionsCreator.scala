@@ -43,8 +43,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         callName,
         DispatchTypes.DYNAMIC_DISPATCH,
         callExpr.lineNumber,
-        callExpr.columnNumber,
-        fullName = Some("")
+        callExpr.columnNumber
       )
     createCallAst(callNode, args, Some(Ast(receiverNode)), Some(Ast(baseNode)))
   }

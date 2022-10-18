@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg
 
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, nodes}
+import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, nodes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 class NodeBuilder(diffGraph: DiffGraphBuilder) {
@@ -15,7 +16,7 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .NewCall()
       .code(code)
       .name(name)
-      .methodFullName(name)
+      .methodFullName(if (dispatchType == DispatchTypes.STATIC_DISPATCH) name else Defines.DynamicCallUnknownFallName)
       .dispatchType(dispatchType)
       .typeFullName(Constants.ANY)
       .lineNumber(lineAndColumn.line)
