@@ -1,6 +1,6 @@
 package io.joern.console.embammonite
 
-// import ammonite.util.Colors
+import dotty.tools.repl.State
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.io.{BufferedReader, InputStreamReader, PipedInputStream, PipedOutputStream, PrintWriter}
@@ -18,7 +18,6 @@ trait HasUUID {
 private[embammonite] case class Job(uuid: UUID, query: String, observer: QueryResult => Unit)
 
 class EmbeddedAmmonite(predef: String = "") {
-
   import EmbeddedAmmonite.logger
 
   val jobQueue: BlockingQueue[Job] = new LinkedBlockingQueue[Job]()
@@ -45,7 +44,36 @@ class EmbeddedAmmonite(predef: String = "") {
             //   outputStream = outStream,
             //   errorStream = errStream)
             //   .run()
-        ???
+
+        // TODO use a different - simpler - ReplDriver?
+
+        val inheritedClasspath = System.getProperty("java.class.path")
+        val compilerArgs = Array(
+          "-classpath", inheritedClasspath,
+          "-explain", // verbose scalac error messages
+          "-deprecation",
+          "-color", "never"
+        )
+
+//        println(s"starting embedded repl; compilerArgs=${compilerArgs.toSeq}")
+
+        val replDriver = new EmbeddedAmmonite.ReplDriver(compilerArgs)
+
+        val initialState: State = replDriver.initialState
+        val state: State = initialState
+        // TODO predef
+//        val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
+//        val state: State =
+//          if (config.verbose) {
+//            println(predefCode)
+//            replDriver.run(predefCode)(using initialState)
+//          } else {
+//            replDriver.runQuietly(predefCode)(using initialState)
+//          }
+
+        println("XXX0 starting repl")
+        replDriver.runUntilQuit(using state)()
+        println("XXX9 exited repl")
       }
     })
 
@@ -66,6 +94,7 @@ class EmbeddedAmmonite(predef: String = "") {
   /** Submit query `q` to shell and call `observer` when the result is ready.
     */
   def queryAsync(q: String)(observer: QueryResult => Unit): UUID = {
+//    println(s"XXX1 TODO drop - adding job $q")
     val uuid = UUID.randomUUID()
     jobQueue.add(Job(uuid, q, observer))
     uuid
@@ -106,6 +135,49 @@ class EmbeddedAmmonite(predef: String = "") {
 
 object EmbeddedAmmonite {
 
+  // TODO simplify further
+  import dotty.tools.dotc.core.Contexts.{Context, ContextBase, ContextState, FreshContext, ctx}
+  import dotty.tools.repl.{AbstractFileClassLoader, CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
+//
+  import java.io.PrintStream
+  import scala.annotation.tailrec
+
+  class ReplDriver(args: Array[String],
+                   out: PrintStream = scala.Console.out,
+                   classLoader: Option[ClassLoader] = None) extends dotty.tools.repl.ReplDriver(args, out, classLoader) {
+
+    /** Run REPL with `state` until `:quit` command found
+      * Main difference to the 'original': different greeting, trap Ctrl-c
+      */
+    override def runUntilQuit(using initialState: State = initialState)(): State = {
+      /** Blockingly read a line, getting back a parse result */
+      def readLine(state: State): ParseResult = {
+        given Context = state.context
+
+//        try {
+//          val line = terminal.readLine(completer)
+          ParseResult(line)(using state)
+//        } catch {
+//          case _: EndOfFileException => // Ctrl+D
+//            Quit
+//          case _: UserInterruptException => // Ctrl+C
+//            Newline
+//        }
+      }
+
+      @tailrec def loop(using state: State)(): State = {
+        val res = readLine(state)
+        if (res == Quit) state
+        else loop(using interpret(res))()
+      }
+
+      try runBody {
+        loop(using initialState)()
+      }
+    }
+  }
+
+  // TODO drop?
   /* The standard frontend attempts to query /dev/tty
       in multiple places, e.g., to query terminal dimensions.
       This does not work in intellij tests
@@ -116,36 +188,35 @@ object EmbeddedAmmonite {
       by passing a `displayTransform` that returns
       an empty string on all input.
    */
-
-  val predef: String =
-    """class CustomFrontend extends ammonite.repl.AmmoniteFrontEnd(ammonite.compiler.Parsers) {
-      |  override def width = 65536
-      |  override def height = 65536
-      |
-      |  override def readLine(reader: java.io.Reader,
-      |                        output: java.io.OutputStream,
-      |                        prompt: String,
-      |                        colors: ammonite.util.Colors,
-      |                        compilerComplete: (Int, String) => (Int, Seq[String], Seq[String]),
-      |                        history: IndexedSeq[String]) = {
-      |
-      |  val writer = new java.io.OutputStreamWriter(output)
-      |
-      |  val multilineFilter = ammonite.terminal.Filter.action(
-      |    ammonite.terminal.SpecialKeys.NewLine,
-      |    ti => ammonite.compiler.Parsers.split(ti.ts.buffer.mkString).isEmpty) {
-      |      case ammonite.terminal.TermState(rest, b, c, _) => ammonite.terminal.filters.BasicFilters.injectNewLine(b, c, rest)
-      |    }
-      |
-      |  val allFilters = ammonite.terminal.Filter.merge(extraFilters, multilineFilter, ammonite.terminal.filters.BasicFilters.all)
-      |
-      |  new ammonite.terminal.LineReader(width, prompt, reader, writer, allFilters, displayTransform = { (_: Vector[Char], i: Int) => (fansi.Str(""), i) } )
-      |  .readChar(ammonite.terminal.TermState(ammonite.terminal.LazyList.continually(reader.read()), Vector.empty, 0, ""), 0)
-      | }
-      |}
-      |
-      |repl.frontEnd() = new CustomFrontend()
-      |""".stripMargin
+//  val predef: String =
+//    """class CustomFrontend extends ammonite.repl.AmmoniteFrontEnd(ammonite.compiler.Parsers) {
+//      |  override def width = 65536
+//      |  override def height = 65536
+//      |
+//      |  override def readLine(reader: java.io.Reader,
+//      |                        output: java.io.OutputStream,
+//      |                        prompt: String,
+//      |                        colors: ammonite.util.Colors,
+//      |                        compilerComplete: (Int, String) => (Int, Seq[String], Seq[String]),
+//      |                        history: IndexedSeq[String]) = {
+//      |
+//      |  val writer = new java.io.OutputStreamWriter(output)
+//      |
+//      |  val multilineFilter = ammonite.terminal.Filter.action(
+//      |    ammonite.terminal.SpecialKeys.NewLine,
+//      |    ti => ammonite.compiler.Parsers.split(ti.ts.buffer.mkString).isEmpty) {
+//      |      case ammonite.terminal.TermState(rest, b, c, _) => ammonite.terminal.filters.BasicFilters.injectNewLine(b, c, rest)
+//      |    }
+//      |
+//      |  val allFilters = ammonite.terminal.Filter.merge(extraFilters, multilineFilter, ammonite.terminal.filters.BasicFilters.all)
+//      |
+//      |  new ammonite.terminal.LineReader(width, prompt, reader, writer, allFilters, displayTransform = { (_: Vector[Char], i: Int) => (fansi.Str(""), i) } )
+//      |  .readChar(ammonite.terminal.TermState(ammonite.terminal.LazyList.continually(reader.read()), Vector.empty, 0, ""), 0)
+//      | }
+//      |}
+//      |
+//      |repl.frontEnd() = new CustomFrontend()
+//      |""".stripMargin
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[EmbeddedAmmonite])
 }

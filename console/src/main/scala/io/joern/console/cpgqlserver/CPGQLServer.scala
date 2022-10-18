@@ -36,10 +36,11 @@ class CPGQLServer(
     val res = if (!isAuthorized) {
       unauthorizedResponse
     } else {
+      // TODO reimplement
       val hasErrorOnParseQuery: Boolean =
         // With ignoreIncomplete = false the result is always Some. Thus .get is ok.
         // AmmoniteParser.split(query, ignoreIncomplete = false, "N/A").get.isLeft
-        ???
+        false
       if (hasErrorOnParseQuery) {
         val result = new QueryResult("", CPGLSError.parseError.toString, UUID.randomUUID())
         returnResult(result)
