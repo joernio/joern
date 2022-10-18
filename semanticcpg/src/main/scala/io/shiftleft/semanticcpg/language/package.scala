@@ -81,6 +81,12 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   implicit def iterOnceToAnnotationTrav[A <: Annotation](a: IterableOnce[A]): AnnotationTraversal =
     new AnnotationTraversal(iterableToTraversal(a))
 
+  implicit def singleToDependencyTrav[A <: Dependency](a: A): DependencyTraversal =
+    new DependencyTraversal(Traversal.fromSingle(a))
+
+  implicit def iterToDependencyTrav[A <: Dependency](a: IterableOnce[A]): DependencyTraversal =
+    new DependencyTraversal(iterableToTraversal(a))
+
   implicit def singleToAnnotationParameterAssignTrav[A <: AnnotationParameterAssign](
     a: A
   ): AnnotationParameterAssignTraversal =
