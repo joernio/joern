@@ -150,7 +150,7 @@ object EmbeddedAmmonite {
           val line = reader.readLine()
           val res = ParseResult(line)(using state)
 //          println(s"YYYY3 res=$res")
-          out.println("res0: foo bar 0")
+//          out.println("res0: foo bar 0")
           res
         } catch {
           case e =>
