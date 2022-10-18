@@ -126,8 +126,8 @@ if [ -d "$JOERN_INSTALL_DIR/joern-cli" ]; then
     printf "Should I remove it? [y/N]"
     read -r ANSWER
     if [ $ANSWER = "y" ] || [ $ANSWER = "Y" ]; then
-      echo "rm -r $JOERN_INSTALL_DIR/joern-cli"
-      rm -r "$JOERN_INSTALL_DIR/joern-cli"
+      echo "rm -rf $JOERN_INSTALL_DIR/joern-cli"
+      rm -rf "$JOERN_INSTALL_DIR/joern-cli"
     else
         exit
     fi
@@ -137,8 +137,8 @@ if [ -d "$JOERN_INSTALL_DIR/joern-cli" ]; then
       exit
     else
       echo "Removing: $JOERN_INSTALL_DIR/joern-cli"
-      echo "rm -r $JOERN_INSTALL_DIR/joern-cli"
-      rm -r "$JOERN_INSTALL_DIR/joern-cli"
+      echo "rm -rf $JOERN_INSTALL_DIR/joern-cli"
+      rm -rf "$JOERN_INSTALL_DIR/joern-cli"
     fi
   fi
 fi
