@@ -3,7 +3,7 @@ package io.joern.console.embammonite
 import dotty.tools.repl.State
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.io.{BufferedReader, InputStream, InputStreamReader, PipedInputStream, PipedOutputStream, PrintWriter}
+import java.io.{BufferedReader, InputStream, InputStreamReader, PipedInputStream, PipedOutputStream, PrintStream, PrintWriter}
 import java.util.UUID
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, Semaphore}
 
@@ -57,7 +57,13 @@ class EmbeddedAmmonite(predef: String = "") {
 
 //        println(s"starting embedded repl; compilerArgs=${compilerArgs.toSeq}")
 
-        val replDriver = new EmbeddedAmmonite.ReplDriver(compilerArgs, inStream)
+        val replDriver = new EmbeddedAmmonite.ReplDriver(compilerArgs, inStream, new PrintStream(outStream) {
+          // TODO remove the debug code
+          override def println(x: String): Unit = {
+            println(s"XXX0 $x")
+            super.println(x)
+          }
+        })
 
         val initialState: State = replDriver.initialState
         val state: State = initialState
@@ -71,9 +77,7 @@ class EmbeddedAmmonite(predef: String = "") {
 //            replDriver.runQuietly(predefCode)(using initialState)
 //          }
 
-        println("XXX0 starting repl")
         replDriver.runUntilQuit(using state)()
-        println("XXX9 exited repl")
       }
     })
 
@@ -134,11 +138,10 @@ class EmbeddedAmmonite(predef: String = "") {
 }
 
 object EmbeddedAmmonite {
+  private val logger: Logger = LoggerFactory.getLogger(classOf[EmbeddedAmmonite])
 
-  // TODO simplify further
   import dotty.tools.dotc.core.Contexts.{Context, ContextBase, ContextState, FreshContext, ctx}
   import dotty.tools.repl.{AbstractFileClassLoader, CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
-//
   import java.io.PrintStream
   import scala.annotation.tailrec
 
@@ -155,25 +158,23 @@ object EmbeddedAmmonite {
       def readLine(state: State): ParseResult = {
         given Context = state.context
 
-//        try {
-//          val line = terminal.readLine(completer)
-        println("YYYY0 blocking on `read`")
-        val br = new BufferedReader(new InputStreamReader(in))
-        val line = br.readLine()
-
-//        val bytes = in.readAllBytes()
-//        println(s"YYYY1 read ${bytes.length} bytes")
-//        val line = new String(bytes, "UTF-8")
-        println(s"YYYY2 read: $line")
-        val res = ParseResult(line)(using state)
-        println(s"YYYY3 res=$res")
-        res
-//        } catch {
-//          case _: EndOfFileException => // Ctrl+D
-//            Quit
-//          case _: UserInterruptException => // Ctrl+C
-//            Newline
-//        }
+        try {
+          val reader = new BufferedReader(new InputStreamReader(in))
+          val line = reader.readLine()
+          val res = ParseResult(line)(using state)
+          println(s"YYYY3 res=$res")
+          out.println("res: foo bar TODO")
+          res
+        } catch {
+          case _: StackOverflowError =>
+            // this happens if C-c is run on the server...
+            println("exiting server")
+            Quit
+          case error =>
+            error.printStackTrace()
+            println(s"caught exception ^ - continuing anyway...")
+            Newline
+        }
       }
 
       @tailrec def loop(using state: State)(): State = {
@@ -188,46 +189,4 @@ object EmbeddedAmmonite {
     }
   }
 
-  // TODO drop?
-  /* The standard frontend attempts to query /dev/tty
-      in multiple places, e.g., to query terminal dimensions.
-      This does not work in intellij tests
-      (see https://github.com/lihaoyi/Ammonite/issues/276)
-      The below hack overrides the default frontend with
-      a custom frontend that does not require /dev/tty.
-      This also enables us to disable terminal echo
-      by passing a `displayTransform` that returns
-      an empty string on all input.
-   */
-//  val predef: String =
-//    """class CustomFrontend extends ammonite.repl.AmmoniteFrontEnd(ammonite.compiler.Parsers) {
-//      |  override def width = 65536
-//      |  override def height = 65536
-//      |
-//      |  override def readLine(reader: java.io.Reader,
-//      |                        output: java.io.OutputStream,
-//      |                        prompt: String,
-//      |                        colors: ammonite.util.Colors,
-//      |                        compilerComplete: (Int, String) => (Int, Seq[String], Seq[String]),
-//      |                        history: IndexedSeq[String]) = {
-//      |
-//      |  val writer = new java.io.OutputStreamWriter(output)
-//      |
-//      |  val multilineFilter = ammonite.terminal.Filter.action(
-//      |    ammonite.terminal.SpecialKeys.NewLine,
-//      |    ti => ammonite.compiler.Parsers.split(ti.ts.buffer.mkString).isEmpty) {
-//      |      case ammonite.terminal.TermState(rest, b, c, _) => ammonite.terminal.filters.BasicFilters.injectNewLine(b, c, rest)
-//      |    }
-//      |
-//      |  val allFilters = ammonite.terminal.Filter.merge(extraFilters, multilineFilter, ammonite.terminal.filters.BasicFilters.all)
-//      |
-//      |  new ammonite.terminal.LineReader(width, prompt, reader, writer, allFilters, displayTransform = { (_: Vector[Char], i: Int) => (fansi.Str(""), i) } )
-//      |  .readChar(ammonite.terminal.TermState(ammonite.terminal.LazyList.continually(reader.read()), Vector.empty, 0, ""), 0)
-//      | }
-//      |}
-//      |
-//      |repl.frontEnd() = new CustomFrontend()
-//      |""".stripMargin
-
-  private val logger: Logger = LoggerFactory.getLogger(classOf[EmbeddedAmmonite])
 }
