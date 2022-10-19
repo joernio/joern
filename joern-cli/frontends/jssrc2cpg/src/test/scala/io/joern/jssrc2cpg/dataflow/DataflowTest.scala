@@ -599,7 +599,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
 
   "Flow into method defined as lambda and assigned to constant" in {
     val cpg: Cpg = code("""
-        | const foo = <A>(x, y) => {
+        | const foo = (x, y) => {
         |   sink(x);
         | };
         |
@@ -610,6 +610,12 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     val src  = cpg.literal.code("1").l
     sink.size shouldBe 1
     src.size shouldBe 1
+    // TODO While `const foo = (x,y) => { ... }` ends up as a METHOD
+    // in the CPG, its fullName is just `file::program:anonymous` and
+    // its name is `anonymous`, and so, we don't know that it can be
+    // referred to as `foo`.  There is also no assignment visible
+    // in the CPG, so, the relation between the constant `foo` and
+    // the anonymous function is not visible in the CPG
     sink.reachableBy(src).size shouldBe 1
   }
 
