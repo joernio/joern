@@ -5,7 +5,6 @@ import io.joern.console.embammonite.{EmbeddedAmmonite, HasUUID, QueryResult}
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Base64, UUID}
-//import ammonite.compiler.{Parsers => AmmoniteParser}
 import cask.model.Response.Raw
 import cask.router.Result
 import ujson.Obj
@@ -33,26 +32,13 @@ class CPGQLServer(
   @basicAuth()
   @cask.postJson("/query")
   def postQuery(query: String)(isAuthorized: Boolean): Response[Obj] = {
-    val res = if (!isAuthorized) {
-      unauthorizedResponse
-    } else {
-      // TODO reimplement
-      val hasErrorOnParseQuery: Boolean =
-        // With ignoreIncomplete = false the result is always Some. Thus .get is ok.
-        // AmmoniteParser.split(query, ignoreIncomplete = false, "N/A").get.isLeft
-        false
-      if (hasErrorOnParseQuery) {
-        val result = new QueryResult(CPGLSError.parseError.toString, UUID.randomUUID())
+    if (!isAuthorized) unauthorizedResponse
+    else {
+      val uuid = ammonite.queryAsync(query) { result =>
         returnResult(result)
-        Response(ujson.Obj("success" -> false, "uuid" -> result.uuid.toString), 200)
-      } else {
-        val uuid = ammonite.queryAsync(query) { result =>
-          returnResult(result)
-        }
-        Response(ujson.Obj("success" -> true, "uuid" -> uuid.toString), 200)
       }
+      Response(ujson.Obj("success" -> true, "uuid" -> uuid.toString), 200)
     }
-    res
   }
 
   override def resultToJson(result: QueryResult, success: Boolean): Obj = {
