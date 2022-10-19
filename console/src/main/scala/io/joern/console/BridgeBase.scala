@@ -487,9 +487,10 @@ trait ServerHandling { this: BridgeBase =>
 
   protected def startHttpServer(config: Config): Unit = {
     val predef   = predefPlus(additionalImportCode(config))
-    val ammonite = new EmbeddedAmmonite(predef)
+    val ammonite = new EmbeddedAmmonite(predef, config.verbose)
     ammonite.start()
     Runtime.getRuntime.addShutdownHook(new Thread(() => {
+      println("Shutting down CPGQL server...")
       ammonite.shutdown()
     }))
     val server = new CPGQLServer(
