@@ -52,7 +52,6 @@ class AstCreationPass(sourceInfo: SourceDirectoryInfo, config: Config, cpg: Cpg,
         diffGraph.absorb(new AstCreator(fileInfo.originalFileName, result, global, symbolResolver).createAst())
       case _ =>
         logger.warn("Failed to parse file " + fileInfo.analysisFileName)
-        Iterator()
     }
   }
 
@@ -77,15 +76,12 @@ class AstCreationPass(sourceInfo: SourceDirectoryInfo, config: Config, cpg: Cpg,
   }
 
   private def createSymbolSolver(): JavaSymbolSolver = {
-    val codeDir = sourceInfo.typeSolverSourceDir
-    SourceRootFinder.getSourceRoots(codeDir)
-
     val combinedTypeSolver   = new CombinedTypeSolver()
     val reflectionTypeSolver = new CachingReflectionTypeSolver()
     combinedTypeSolver.add(reflectionTypeSolver)
 
     // Add solvers for all detected sources roots
-    SourceRootFinder.getSourceRoots(codeDir).foreach { srcDir =>
+    sourceInfo.typeSolverSourceDirs.foreach { srcDir =>
       val javaParserTypeSolver = new JavaParserTypeSolver(srcDir)
       combinedTypeSolver.add(javaParserTypeSolver)
     }

@@ -319,4 +319,98 @@ class OperatorTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "the clone operator should be represented with the correct call node" in {
+    val cpg = code("<?php\nclone $x")
+
+    inside(cpg.call.l) { case List(cloneCall) =>
+      cloneCall.name shouldBe PhpBuiltins.cloneFunc
+      cloneCall.methodFullName shouldBe PhpBuiltins.cloneFunc
+      cloneCall.code shouldBe "clone $x"
+      cloneCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      cloneCall.lineNumber shouldBe Some(2)
+
+      inside(cloneCall.argument.l) { case List(xArg: Identifier) =>
+        xArg.name shouldBe "x"
+        xArg.code shouldBe "$x"
+      }
+    }
+  }
+
+  "the empty call should be represented with the correct call node" in {
+    val cpg = code("<?php\nempty($x)")
+
+    inside(cpg.call.l) { case List(emptyCall) =>
+      emptyCall.name shouldBe PhpBuiltins.emptyFunc
+      emptyCall.methodFullName shouldBe PhpBuiltins.emptyFunc
+      emptyCall.code shouldBe "empty($x)"
+      emptyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      emptyCall.lineNumber shouldBe Some(2)
+
+      inside(emptyCall.argument.l) { case List(xArg: Identifier) =>
+        xArg.name shouldBe "x"
+        xArg.code shouldBe "$x"
+      }
+    }
+  }
+
+  "the eval call should be represented with the correct call node" in {
+    val cpg = code("<?php\neval($x)")
+
+    inside(cpg.call.l) { case List(evalCall) =>
+      evalCall.name shouldBe PhpBuiltins.evalFunc
+      evalCall.methodFullName shouldBe PhpBuiltins.evalFunc
+      evalCall.code shouldBe "eval($x)"
+      evalCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      evalCall.lineNumber shouldBe Some(2)
+
+      inside(evalCall.argument.l) { case List(xArg: Identifier) =>
+        xArg.name shouldBe "x"
+        xArg.code shouldBe "$x"
+      }
+    }
+  }
+
+  "exit statements" should {
+    "be represented with an empty arg list if no args are given" in {
+      val cpg = code("<?php\nexit;")
+      inside(cpg.call.l) { case List(exitCall) =>
+        exitCall.name shouldBe PhpBuiltins.exitFunc
+        exitCall.methodFullName shouldBe PhpBuiltins.exitFunc
+        exitCall.typeFullName shouldBe TypeConstants.Void
+        exitCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        exitCall.lineNumber shouldBe Some(2)
+        exitCall.argument.size shouldBe 0
+        exitCall.astChildren.size shouldBe 0
+      }
+    }
+
+    "be represented with an empty arg list if an empty args list is given" in {
+      val cpg = code("<?php\nexit();")
+      inside(cpg.call.l) { case List(exitCall) =>
+        exitCall.name shouldBe PhpBuiltins.exitFunc
+        exitCall.methodFullName shouldBe PhpBuiltins.exitFunc
+        exitCall.typeFullName shouldBe TypeConstants.Void
+        exitCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        exitCall.lineNumber shouldBe Some(2)
+        exitCall.argument.size shouldBe 0
+        exitCall.astChildren.size shouldBe 0
+      }
+    }
+
+    "have the correct arg child if an arg is given" in {
+      val cpg = code("<?php\nexit(0);")
+      inside(cpg.call.l) { case List(exitCall) =>
+        exitCall.name shouldBe PhpBuiltins.exitFunc
+        exitCall.methodFullName shouldBe PhpBuiltins.exitFunc
+        exitCall.typeFullName shouldBe TypeConstants.Void
+        exitCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        exitCall.lineNumber shouldBe Some(2)
+
+        inside(cpg.argument.l) { case List(literal: Literal) =>
+          literal.code shouldBe "0"
+        }
+      }
+    }
+  }
 }

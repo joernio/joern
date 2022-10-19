@@ -170,4 +170,25 @@ class CfgTests extends PhpCode2CpgFixture {
       cpg.call.name("call6").controlledBy.collectAll[Call].name.toSet should not contain ("call2")
     }
   }
+
+  "the CFG for gotos" should {
+    val cpg = code("""<?php
+		 |function foo() {
+		 |  if (cond()) {
+         |    sink1();
+         |    goto SKIP;
+		 |  } else {
+		 |    SKIP:
+		 |    sink2();
+		 |  }
+		 |}
+		 |""".stripMargin)
+    "find that sink1 is post dominated by sink2" in {
+      cpg.call.name("sink1").postDominatedBy.collectAll[Call].name.toSet should contain("sink2")
+    }
+
+    "find that sink2 is not controlled by cond" in {
+      cpg.call.name("sink2").controlledBy.collectAll[Call].name.toSet should not contain "cond"
+    }
+  }
 }

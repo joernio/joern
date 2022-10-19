@@ -1,19 +1,12 @@
 package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
-import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import scala.collection.mutable
 
 object Py2CpgTestContext {
-  def newContext: Py2CpgTestContext = {
-    new Py2CpgTestContext()
-  }
-
-  /** This is a shorthand for newContext.addSource().buildCpg
-    */
   def buildCpg(code: String, file: String = "test.py"): Cpg = {
     val context = new Py2CpgTestContext()
     context.addSource(code, file)
@@ -21,7 +14,7 @@ object Py2CpgTestContext {
   }
 }
 
-class Py2CpgTestContext private () {
+class Py2CpgTestContext {
   private val codeAndFile = mutable.ArrayBuffer.empty[Py2Cpg.InputPair]
   private var buildResult = Option.empty[Cpg]
 
@@ -32,7 +25,7 @@ class Py2CpgTestContext private () {
     if (codeAndFile.exists(_.absFileName == file)) {
       throw new RuntimeException(s"Add more than one source under file name $file.")
     }
-    codeAndFile.append(new Py2Cpg.InputPair(code, "<absoluteTestPath>/" + file, file))
+    codeAndFile.append(Py2Cpg.InputPair(code, "<absoluteTestPath>/" + file, file))
     this
   }
 

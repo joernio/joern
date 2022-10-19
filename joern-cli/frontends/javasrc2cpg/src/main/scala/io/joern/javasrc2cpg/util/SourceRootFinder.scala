@@ -13,34 +13,36 @@ import better.files.File
   */
 object SourceRootFinder {
 
+  private val excludes: Set[String] = Set("test", ".mvn")
+
   private def statePreSrc(currentDir: File): List[File] = {
     currentDir.children.filter(_.isDirectory).toList.flatMap { child =>
       child.name match {
-        case "src"  => stateSrc(child)
-        case "main" => stateMainTest(child)
-        case "test" => stateMainTest(child)
-        case "java" => child :: Nil
-        case _      => statePreSrc(child)
+        case name if excludes.contains(name) => Nil
+        case "src"                           => stateSrc(child)
+        case "main"                          => stateMain(child)
+        case "java"                          => child :: Nil
+        case _                               => statePreSrc(child)
       }
     }
   }
 
   private def stateSrc(currentDir: File): List[File] = {
-    val mainTestChildren = currentDir.children.filter(_.isDirectory).toList.flatMap { child =>
+    val mainChildren = currentDir.children.filter(_.isDirectory).toList.flatMap { child =>
       child.name match {
-        case "main" => stateMainTest(child)
-        case "test" => stateMainTest(child)
-        case _      => Nil
+        case name if excludes.contains(name) => Nil
+        case "main"                          => stateMain(child)
+        case _                               => Nil
       }
     }
 
-    mainTestChildren match {
+    mainChildren match {
       case Nil => List(currentDir)
-      case _   => mainTestChildren
+      case _   => mainChildren
     }
   }
 
-  private def stateMainTest(currentDir: File): List[File] = {
+  private def stateMain(currentDir: File): List[File] = {
     val javaChildren = currentDir.children.filter(_.isDirectory).toList.flatMap { child =>
       child.name match {
         case "java" => child :: Nil
@@ -56,11 +58,11 @@ object SourceRootFinder {
 
   private def listBottomLevelSubdirectories(currentDir: File): List[File] = {
     val srcDirs = currentDir.name match {
-      case "src"  => stateSrc(currentDir)
-      case "main" => stateMainTest(currentDir)
-      case "test" => stateMainTest(currentDir)
-      case "java" => List(currentDir)
-      case _      => statePreSrc(currentDir)
+      case name if excludes.contains(name) => Nil
+      case "src"                           => stateSrc(currentDir)
+      case "main"                          => stateMain(currentDir)
+      case "java"                          => List(currentDir)
+      case _                               => statePreSrc(currentDir)
     }
 
     srcDirs match {

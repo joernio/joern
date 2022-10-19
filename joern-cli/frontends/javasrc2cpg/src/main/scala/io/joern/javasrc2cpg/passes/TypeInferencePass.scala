@@ -62,7 +62,7 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
           diffGraph.setNodeProperty(call, PropertyNames.Signature, method.signature)
           diffGraph.setNodeProperty(call, PropertyNames.TypeFullName, method.methodReturn.typeFullName)
         } else {
-          logger.info(s"Found multiple matching internal methods for unresolved call ${call.methodFullName}")
+          logger.debug(s"Found multiple matching internal methods for unresolved call ${call.methodFullName}")
         }
 
       case None => // Call is to and unresolved external method, so we can't get any more information here.

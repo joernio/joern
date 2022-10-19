@@ -1,5 +1,6 @@
 package io.joern.x2cpg.passes.base
 
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes}
@@ -26,7 +27,7 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
       methodFullNameToNode.put(method.fullName, method)
     }
 
-    for (call <- cpg.call if call.methodFullName.nonEmpty) {
+    for (call <- cpg.call if call.methodFullName != Defines.DynamicCallUnknownFallName) {
       methodToParameterCount.put(NameAndSignature(call.name, call.signature, call.methodFullName), call.argument.size)
     }
 

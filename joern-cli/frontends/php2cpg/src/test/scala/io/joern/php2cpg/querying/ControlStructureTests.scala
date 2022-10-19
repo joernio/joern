@@ -808,4 +808,34 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       throwExpr.astChildren.code.l shouldBe List("$x")
     }
   }
+
+  "goto statements and labels" should {
+    val cpg = code("""<?php
+		 |goto TARGET;
+		 |TARGET:
+		 |""".stripMargin)
+
+    "create a goto control structure with the correct jump label" in {
+      inside(cpg.controlStructure.l) { case List(goto) =>
+        goto.controlStructureType shouldBe ControlStructureTypes.GOTO
+        goto.code shouldBe "goto TARGET"
+        goto.lineNumber shouldBe Some(2)
+
+        inside(goto.astChildren.l) { case List(jumpLabel: JumpLabel) =>
+          jumpLabel.name shouldBe "TARGET"
+          jumpLabel.code shouldBe "TARGET"
+          jumpLabel.lineNumber shouldBe Some(2)
+          jumpLabel.order shouldBe 1 // Important for CFG creation
+        }
+      }
+    }
+
+    "create the correct jumpTarget" in {
+      inside(cpg.jumpTarget.l) { case List(jumpTarget) =>
+        jumpTarget.name shouldBe "TARGET"
+        jumpTarget.code shouldBe "TARGET"
+        jumpTarget.lineNumber shouldBe Some(3)
+      }
+    }
+  }
 }
