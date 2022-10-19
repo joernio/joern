@@ -8,8 +8,7 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 import scala.util.Try
 
-class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: BufferedReader, errReader: BufferedReader)
-    extends Runnable {
+class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: BufferedReader) extends Runnable {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[UserRunnable])
 
@@ -27,9 +26,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
           sendQueryToAmmonite(job)
           val stdoutPair = stdOutUpToMarker()
           val stdOutput  = GlobalReporting.getAndClearGlobalStdOut() + stdoutPair.get
-
-          val errOutput = ""
-          val result    = new QueryResult(stdOutput, errOutput, job.uuid)
+          val result    = new QueryResult(stdOutput, job.uuid)
           job.observer(result)
         }
       }
@@ -45,7 +42,6 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
   }
 
   private def sendQueryToAmmonite(job: Job): Unit = {
-    println(s"XXX2 sendQueryToAmmonite: sending job to writer: $job")
     writer.println(job.query.trim)
     writer.println(s""""END: ${job.uuid}"""")
     writer.println(s"""throw new RuntimeException("END: ${job.uuid}")""")
@@ -73,21 +69,6 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
     endMarker.findAllIn(line).matchData.flatMap { m =>
       Try { UUID.fromString(m.group(1)) }.toOption
     }
-  }
-
-  private def exhaustStderr(): String = {
-    var currentOutput = ""
-    var line          = errReader.readLine()
-    while (line != null) {
-      val uuid = uuidFromLine(line)
-      if (uuid.isEmpty) {
-        currentOutput += line
-      } else {
-        return currentOutput
-      }
-      line = errReader.readLine()
-    }
-    currentOutput
   }
 
 }

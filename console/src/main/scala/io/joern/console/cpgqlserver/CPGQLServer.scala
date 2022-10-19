@@ -42,7 +42,7 @@ class CPGQLServer(
         // AmmoniteParser.split(query, ignoreIncomplete = false, "N/A").get.isLeft
         false
       if (hasErrorOnParseQuery) {
-        val result = new QueryResult("", CPGLSError.parseError.toString, UUID.randomUUID())
+        val result = new QueryResult(CPGLSError.parseError.toString, UUID.randomUUID())
         returnResult(result)
         Response(ujson.Obj("success" -> false, "uuid" -> result.uuid.toString), 200)
       } else {
@@ -56,7 +56,7 @@ class CPGQLServer(
   }
 
   override def resultToJson(result: QueryResult, success: Boolean): Obj = {
-    ujson.Obj("success" -> success, "uuid" -> result.uuid.toString, "stdout" -> result.out, "stderr" -> result.err)
+    ujson.Obj("success" -> success, "uuid" -> result.uuid.toString, "stdout" -> result.out)
   }
 
   initialize()
