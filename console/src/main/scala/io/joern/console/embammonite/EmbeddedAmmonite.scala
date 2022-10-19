@@ -95,16 +95,18 @@ class EmbeddedAmmonite(predef: String = "", verbose: Boolean = false) {
   /** Shutdown the embedded ammonite shell and associated threads.
     */
   def shutdown(): Unit = {
+    logger.info("Trying to shutdown shell and writer thread")
     shutdownShellThread()
     logger.info("Shell terminated gracefully")
     shutdownWriterThread()
+    logger.info("Writer thread terminated gracefully")
 
     def shutdownWriterThread(): Unit = {
       jobQueue.add(Job(null, null, null))
       userThread.join()
     }
     def shutdownShellThread(): Unit = {
-      writer.println("exit")
+      writer.println(":exit")
       writer.close()
       shellThread.join()
     }

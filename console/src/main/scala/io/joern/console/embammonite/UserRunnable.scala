@@ -28,7 +28,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
           sendQueryToAmmonite(job)
           val stdoutPair = stdOutUpToMarker()
           val stdOutput  = GlobalReporting.getAndClearGlobalStdOut() + stdoutPair.get
-          val result    = QueryResult(stdOutput, job.uuid)
+          val result = QueryResult(stdOutput, job.uuid)
           if (verbose) println(s"result: $result")
           job.observer(result)
         }
