@@ -59,10 +59,10 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
         // in which case the type hasn't been successfully substituted.
         val substitutionOccurred =
           !(substitutedType.isTypeVariable && substitutedType.asTypeParameter() == typeParamDecl)
-        // There's a potential infinite loop that can occur when a type variable is subsituted with a wildcard type
+        // There's a potential infinite loop that can occur when a type variable is substituted with a wildcard type
         // bounded by that type variable.
         val isSimilarWildcardSubstition = substitutedType match {
-          case wc: ResolvedWildcard => wc.getBoundedType == substitutedType
+          case wc: ResolvedWildcard => Try(wc.getBoundedType.asTypeParameter()).toOption.contains(typeParamDecl)
           case _                    => false
         }
 
