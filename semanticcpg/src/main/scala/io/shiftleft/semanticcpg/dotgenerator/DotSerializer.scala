@@ -74,6 +74,8 @@ object DotSerializer {
       case annoAssign: AnnotationParameterAssign => (annoAssign.label, annoAssign.code).toString()
       case annoParam: AnnotationParameter        => (annoParam.label, annoParam.code).toString()
       case typ: Type                             => (typ.label, typ.name).toString()
+      case typeDecl: TypeDecl                    => (typeDecl.label, typeDecl.name).toString()
+      case member: Member                        => (member.label, member.name).toString()
       case _                                     => ""
     }) + (if (maybeLineNo.isPresent) s"<SUB>${maybeLineNo.get()}</SUB>" else "")
   }
