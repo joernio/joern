@@ -232,6 +232,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case printExpr: PhpPrint       => astForPrintExpr(printExpr)
       case ternaryOp: PhpTernaryOp   => astForTernaryOp(ternaryOp)
       case throwExpr: PhpThrowExpr   => astForThrow(throwExpr)
+      case cloneExpr: PhpCloneExpr   => astForClone(cloneExpr)
+      case emptyExpr: PhpEmptyExpr   => astForEmpty(emptyExpr)
+      case evalExpr: PhpEvalExpr     => astForEval(evalExpr)
+      case exitExpr: PhpExitExpr     => astForExit(exitExpr)
 
       case classConstFetchExpr: PhpClassConstFetchExpr => astForClassConstFetchExpr(classConstFetchExpr)
 
@@ -933,6 +937,45 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
         .lineNumber(line(expr))
 
     Ast(throwNode).withChild(thrownExpr)
+  }
+
+  private def astForClone(expr: PhpCloneExpr): Ast = {
+    val argAst  = astForExpr(expr.expr)
+    val argType = rootType(argAst)
+    val code    = s"clone ${rootCode(argAst)}"
+
+    val callNode = operatorCallNode(PhpBuiltins.cloneFunc, code, argType, line(expr))
+
+    callAst(callNode, argAst :: Nil)
+  }
+
+  private def astForEmpty(expr: PhpEmptyExpr): Ast = {
+    val argAst = astForExpr(expr.expr)
+    val code   = s"empty(${rootCode(argAst)})"
+
+    val callNode =
+      operatorCallNode(PhpBuiltins.emptyFunc, code, typeFullName = Some(TypeConstants.Bool), line = line(expr))
+
+    callAst(callNode, argAst :: Nil)
+  }
+
+  private def astForEval(expr: PhpEvalExpr): Ast = {
+    val argAst = astForExpr(expr.expr)
+    val code   = s"eval(${rootCode(argAst)})"
+
+    val callNode =
+      operatorCallNode(PhpBuiltins.evalFunc, code, typeFullName = Some(TypeConstants.Bool), line = line(expr))
+
+    callAst(callNode, argAst :: Nil)
+  }
+
+  private def astForExit(expr: PhpExitExpr): Ast = {
+    val args = expr.expr.map(astForExpr)
+    val code = s"exit(${args.map(rootCode(_)).getOrElse("")})"
+
+    val callNode = operatorCallNode(PhpBuiltins.exitFunc, code, Some(TypeConstants.Void), line(expr))
+
+    callAst(callNode, args.toList)
   }
 
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {
