@@ -43,15 +43,7 @@ class EmbeddedAmmonite(predef: String = "") {
           "-color", "never"
         )
 
-        val replDriver = new EmbeddedAmmonite.ReplDriver(compilerArgs, inStream, new PrintStream(outStream) {
-          // TODO remove the debug code
-          val tmpFile = os.pwd/"debug.out"
-          override def println(x: String): Unit = {
-            os.write.append(tmpFile, s"XXX0 $x")
-            super.println(x)
-          }
-        })
-
+        val replDriver = new EmbeddedAmmonite.ReplDriver(compilerArgs, inStream, new PrintStream(outStream))
         val initialState: State = replDriver.initialState
         val state: State = initialState
         // TODO predef
@@ -85,7 +77,6 @@ class EmbeddedAmmonite(predef: String = "") {
   /** Submit query `q` to shell and call `observer` when the result is ready.
     */
   def queryAsync(q: String)(observer: QueryResult => Unit): UUID = {
-//    println(s"XXX1 TODO drop - adding job $q")
     val uuid = UUID.randomUUID()
     jobQueue.add(Job(uuid, q, observer))
     uuid
@@ -148,10 +139,7 @@ object EmbeddedAmmonite {
 
         try {
           val line = reader.readLine()
-          val res = ParseResult(line)(using state)
-//          println(s"YYYY3 res=$res")
-//          out.println("res0: foo bar 0")
-          res
+          ParseResult(line)(using state)
         } catch {
           case e =>
             e.printStackTrace()

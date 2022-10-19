@@ -28,8 +28,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
           val stdoutPair = stdOutUpToMarker()
           val stdOutput  = GlobalReporting.getAndClearGlobalStdOut() + stdoutPair.get
 
-//          val errOutput = exhaustStderr()
-          val errOutput = "todo err out"
+          val errOutput = ""
           val result    = new QueryResult(stdOutput, errOutput, job.uuid)
           job.observer(result)
         }
