@@ -106,6 +106,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case gotoStmt: PhpGotoStmt       => astForGotoStmt(gotoStmt)
       case labelStmt: PhpLabelStmt     => astForLabelStmt(labelStmt)
       case namespace: PhpNamespaceStmt => astForNamespaceStmt(namespace)
+      case _: NopStmt                  => Ast() // TODO This'll need to be updated when comments are added.
 
       case haltStmt: PhpHaltCompilerStmt => astForHaltCompilerStmt(haltStmt)
       case null =>

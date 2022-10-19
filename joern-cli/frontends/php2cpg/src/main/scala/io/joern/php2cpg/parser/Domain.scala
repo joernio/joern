@@ -124,6 +124,9 @@ object Domain {
 
   sealed abstract class PhpStmt extends PhpNode
 
+  // In the PhpParser output, comments are included as an attribute to the first statement following the comment. If
+  // no such statement exists, a Nop statement (which does not exist in PHP) is added as a sort of comment container.
+  final case class NopStmt(attributes: PhpAttributes) extends PhpStmt
   final case class PhpEchoStmt(exprs: Seq[PhpExpr], attributes: PhpAttributes)                  extends PhpStmt
   final case class PhpBreakStmt(num: Option[Int], attributes: PhpAttributes)                    extends PhpStmt
   final case class PhpContinueStmt(num: Option[Int], attributes: PhpAttributes)                 extends PhpStmt
@@ -418,6 +421,7 @@ object Domain {
       case "Stmt_Label"        => readLabel(json)
       case "Stmt_HaltCompiler" => readHaltCompiler(json)
       case "Stmt_Namespace"    => readNamespace(json)
+      case "Stmt_Nop"          => NopStmt(PhpAttributes(json))
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
