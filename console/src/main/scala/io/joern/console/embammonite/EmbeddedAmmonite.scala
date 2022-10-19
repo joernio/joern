@@ -17,7 +17,7 @@ trait HasUUID {
 private[embammonite] case class Job(uuid: UUID, query: String, observer: QueryResult => Unit)
 
 class EmbeddedAmmonite(predef: String = "") {
-  import EmbeddedAmmonite.logger
+  private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   val jobQueue: BlockingQueue[Job] = new LinkedBlockingQueue[Job]()
 
@@ -40,7 +40,7 @@ class EmbeddedAmmonite(predef: String = "") {
           "-color", "never"
         )
 
-        val replDriver = new EmbeddedAmmonite.ReplDriver(compilerArgs, inStream, new PrintStream(outStream))
+        val replDriver = new ReplDriver(compilerArgs, inStream, new PrintStream(outStream))
         val initialState: State = replDriver.initialState
         val state: State = initialState
         // TODO predef
@@ -107,53 +107,6 @@ class EmbeddedAmmonite(predef: String = "") {
       writer.println("exit")
       writer.close()
       shellThread.join()
-    }
-  }
-
-}
-
-object EmbeddedAmmonite {
-  private val logger: Logger = LoggerFactory.getLogger(classOf[EmbeddedAmmonite])
-
-  import dotty.tools.dotc.core.Contexts.{Context, ContextBase, ContextState, FreshContext, ctx}
-  import dotty.tools.repl.{AbstractFileClassLoader, CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
-  import java.io.PrintStream
-  import scala.annotation.tailrec
-
-  class ReplDriver(args: Array[String],
-                   in: InputStream,
-                   out: PrintStream = scala.Console.out,
-                   classLoader: Option[ClassLoader] = None) extends dotty.tools.repl.ReplDriver(args, out, classLoader) {
-    val reader = new BufferedReader(new InputStreamReader(in))
-
-    /** Run REPL with `state` until `:quit` command found
-      * Main difference to the 'original': different greeting, trap Ctrl-c
-      */
-    override def runUntilQuit(using initialState: State = initialState)(): State = {
-      /** Blockingly read a line, getting back a parse result */
-      def readLine(state: State): ParseResult = {
-        given Context = state.context
-
-        try {
-          val line = reader.readLine()
-          ParseResult(line)(using state)
-        } catch {
-          case e =>
-            e.printStackTrace()
-            println(s"caught exception $e with msg=${e.getMessage} ^ - continuing anyway...")
-            Newline
-        }
-      }
-
-      @tailrec def loop(using state: State)(): State = {
-        val res = readLine(state)
-        if (res == Quit) state
-        else loop(using interpret(res))()
-      }
-
-      runBody {
-        loop(using initialState)()
-      }
     }
   }
 
