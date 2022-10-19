@@ -597,4 +597,20 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     sink.reachableBy(src).size shouldBe 1
   }
 
+  "Flow into method defined as lambda and assigned to constant" in {
+    val cpg: Cpg = code("""
+        | const foo = <A>(x, y) => {
+        |   sink(x);
+        | };
+        |
+        | foo(1, 2);
+        |""".stripMargin)
+
+    val sink = cpg.call("sink").l
+    val src  = cpg.literal.code("1").l
+    sink.size shouldBe 1
+    src.size shouldBe 1
+    sink.reachableBy(src).size shouldBe 1
+  }
+
 }
