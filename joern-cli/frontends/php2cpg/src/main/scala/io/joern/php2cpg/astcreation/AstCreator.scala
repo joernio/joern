@@ -8,6 +8,7 @@ import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
 import io.joern.x2cpg.utils.NodeBuilders.{fieldIdentifierNode, identifierNode, modifierNode, operatorCallNode}
 import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
@@ -45,6 +46,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   private def astForPhpFile(file: PhpFile): Ast = {
     val namespaceBlock = globalNamespaceBlock().filename(absolutePath(filename))
 
+    scope.pushNewScope(namespaceBlock)
+
     val globalTypeDecl = NewTypeDecl()
       .name(namespaceBlock.name)
       .fullName(namespaceBlock.fullName)
@@ -61,12 +64,15 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .code(globalTypeDecl.code)
 
     scope.pushNewScope(globalMethod)
+
     val (fileConsts, otherStmts) = file.children.partition(_.isInstanceOf[PhpConstStmt])
     val constAsts                = fileConsts.flatMap(fc => astsForConstStmt(fc.asInstanceOf[PhpConstStmt]))
     val methodChildren           = otherStmts.map(astForStmt)
     val clinitAst                = astForStaticAndConstInits
+
     scope.popScope() // Global method
     scope.popScope() // Global typeDecl
+    scope.popScope() // Global namespace
 
     val globalMethodAst =
       Ast(globalMethod)
@@ -84,21 +90,26 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForStmt(stmt: PhpStmt): Ast = {
     stmt match {
-      case echoStmt: PhpEchoStmt     => astForEchoStmt(echoStmt)
-      case methodDecl: PhpMethodDecl => astForMethodDecl(methodDecl)
-      case expr: PhpExpr             => astForExpr(expr)
-      case breakStmt: PhpBreakStmt   => astForBreakStmt(breakStmt)
-      case contStmt: PhpContinueStmt => astForContinueStmt(contStmt)
-      case whileStmt: PhpWhileStmt   => astForWhileStmt(whileStmt)
-      case doStmt: PhpDoStmt         => astForDoStmt(doStmt)
-      case forStmt: PhpForStmt       => astForForStmt(forStmt)
-      case ifStmt: PhpIfStmt         => astForIfStmt(ifStmt)
-      case switchStmt: PhpSwitchStmt => astForSwitchStmt(switchStmt)
-      case tryStmt: PhpTryStmt       => astForTryStmt(tryStmt)
-      case returnStmt: PhpReturnStmt => astForReturnStmt(returnStmt)
-      case classStmt: PhpClassStmt   => astForClassStmt(classStmt)
-      case unhandled =>
-        logger.warn(s"Unhandled stmt: $unhandled")
+      case echoStmt: PhpEchoStmt       => astForEchoStmt(echoStmt)
+      case methodDecl: PhpMethodDecl   => astForMethodDecl(methodDecl)
+      case expr: PhpExpr               => astForExpr(expr)
+      case breakStmt: PhpBreakStmt     => astForBreakStmt(breakStmt)
+      case contStmt: PhpContinueStmt   => astForContinueStmt(contStmt)
+      case whileStmt: PhpWhileStmt     => astForWhileStmt(whileStmt)
+      case doStmt: PhpDoStmt           => astForDoStmt(doStmt)
+      case forStmt: PhpForStmt         => astForForStmt(forStmt)
+      case ifStmt: PhpIfStmt           => astForIfStmt(ifStmt)
+      case switchStmt: PhpSwitchStmt   => astForSwitchStmt(switchStmt)
+      case tryStmt: PhpTryStmt         => astForTryStmt(tryStmt)
+      case returnStmt: PhpReturnStmt   => astForReturnStmt(returnStmt)
+      case classStmt: PhpClassStmt     => astForClassStmt(classStmt)
+      case gotoStmt: PhpGotoStmt       => astForGotoStmt(gotoStmt)
+      case labelStmt: PhpLabelStmt     => astForLabelStmt(labelStmt)
+      case namespace: PhpNamespaceStmt => astForNamespaceStmt(namespace)
+
+      case haltStmt: PhpHaltCompilerStmt => astForHaltCompilerStmt(haltStmt)
+      case null =>
+        logger.warn("stmt was null")
         ???
     }
   }
@@ -209,7 +220,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForExpr(expr: PhpExpr): Ast = {
     expr match {
-      case funcCallExpr: PhpFuncCall => astForFunctionCall(funcCallExpr)
+      case funcCallExpr: PhpCallExpr => astForCall(funcCallExpr)
       case variableExpr: PhpVariable => astForVariableExpr(variableExpr)
       case nameExpr: PhpNameExpr     => astForNameExpr(nameExpr)
       case assignExpr: PhpAssignment => astForAssignment(assignExpr)
@@ -373,6 +384,61 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     }
   }
 
+  private def astForGotoStmt(stmt: PhpGotoStmt): Ast = {
+    val label = stmt.label.name
+    val code  = s"goto $label"
+
+    val gotoNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.GOTO)
+      .code(code)
+      .lineNumber(line(stmt))
+
+    val jumpLabel = NewJumpLabel()
+      .name(label)
+      .code(label)
+      .lineNumber(line(stmt))
+
+    controlStructureAst(gotoNode, condition = None, children = Ast(jumpLabel) :: Nil)
+  }
+
+  private def astForLabelStmt(stmt: PhpLabelStmt): Ast = {
+    val label = stmt.label.name
+
+    val jumpTarget = NewJumpTarget()
+      .name(label)
+      .code(label)
+      .lineNumber(line(stmt))
+
+    Ast(jumpTarget)
+  }
+
+  private def astForNamespaceStmt(stmt: PhpNamespaceStmt): Ast = {
+    val name     = stmt.name.map(_.name).getOrElse(NameConstants.Unknown)
+    val fullName = s"$filename:$name"
+
+    val namespaceBlock = NewNamespaceBlock()
+      .name(name)
+      .fullName(fullName)
+
+    scope.pushNewScope(namespaceBlock)
+    val bodyStmts = stmt.stmts.map(astForStmt)
+    scope.popScope()
+
+    Ast(namespaceBlock).withChildren(bodyStmts)
+  }
+
+  private def astForHaltCompilerStmt(stmt: PhpHaltCompilerStmt): Ast = {
+    val callNode = NewCall()
+      .name(NameConstants.HaltCompiler)
+      .methodFullName(NameConstants.HaltCompiler)
+      .code(s"${NameConstants.HaltCompiler}()")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(TypeConstants.Void)
+      .lineNumber(line(stmt))
+
+    Ast(callNode)
+  }
+
   private def astForAnonymousClass(stmt: PhpClassStmt): Ast = {
     // TODO
     Ast()
@@ -394,9 +460,12 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val inheritsFrom = (stmt.extendsClass.toList ++ stmt.implementedInterfaces).map(_.name)
     val code         = codeForClassStmt(stmt, name)
 
+    val namespacePrefix = scope.getEnclosingNamespaceName.map(_ + ".").getOrElse("")
+    val fullName        = s"$namespacePrefix${name.name}"
+
     val typeDeclNode = NewTypeDecl()
       .name(name.name)
-      .fullName(name.name)
+      .fullName(fullName)
       .code(code)
       .inheritsFromTypeFullName(inheritsFrom)
       .filename(filename)
@@ -592,14 +661,29 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     Ast(jumpTarget) :: stmtAsts
   }
 
-  private def astForFunctionCall(call: PhpFuncCall): Ast = {
+  private def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
+    val callOperator = if (call.isNullSafe) "?->" else "->"
+    s"${rootCode(targetAst)}$callOperator$name"
+  }
+
+  private def codeForStaticMethodCall(call: PhpCallExpr, name: String): String = {
+    val className =
+      call.target.map(astForExpr).map(rootCode(_, Defines.UnresolvedNamespace)).getOrElse(Defines.UnresolvedNamespace)
+    s"$className::$name"
+  }
+
+  private def astForCall(call: PhpCallExpr): Ast = {
     val arguments = call.args.map(astForCallArg)
 
-    val targetAst = Option.unless(call.target.isInstanceOf[PhpNameExpr])(astForExpr(call.target))
-    val targetCode =
-      targetAst
+    val isMethodCall = call.target.isDefined && !call.isStatic
+
+    val targetAst = Option.when(isMethodCall)(call.target.map(astForExpr)).flatten
+
+    val nameAst = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
+    val name =
+      nameAst
         .map(rootCode(_))
-        .getOrElse(call.target match {
+        .getOrElse(call.methodName match {
           case nameExpr: PhpNameExpr => nameExpr.name
           case other =>
             logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
@@ -607,17 +691,57 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
         })
 
     val argsCode = arguments.map(rootCode(_)).mkString(",")
-    val code     = s"$targetCode($argsCode)"
 
-    val name = targetCode
+    val codePrefix =
+      if (isMethodCall && targetAst.isDefined)
+        codeForMethodCall(call, targetAst.get, name)
+      else if (call.isStatic)
+        codeForStaticMethodCall(call, name)
+      else
+        name
+
+    val code = s"$codePrefix($argsCode)"
+
+    val dispatchType =
+      if (call.isStatic || call.target.isEmpty)
+        DispatchTypes.STATIC_DISPATCH
+      else
+        DispatchTypes.DYNAMIC_DISPATCH
+
+    val fullName = call.target match {
+      // Static method call with a known class name
+      case Some(nameExpr: PhpNameExpr) if call.isStatic =>
+        s"${nameExpr.name}.$name:${Defines.UnresolvedSignature}(${arguments.size})"
+
+      // Function call
+      case None =>
+        val namespaceName = scope.getEnclosingNamespaceName.getOrElse(Defines.UnresolvedNamespace)
+        s"$namespaceName.$name:${Defines.UnresolvedSignature}(${arguments.size})"
+
+      // Other method calls. Need more type info for these.
+      case _ => PropertyDefaults.MethodFullName
+    }
 
     val callNode = NewCall()
       .name(name)
+      .methodFullName(fullName)
       .code(code)
-      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH /* TODO STATIC DISPATCH for Name targets? */ )
+      .dispatchType(dispatchType)
       .lineNumber(line(call))
 
-    callAst(callNode, arguments, receiver = targetAst)
+    val receiverAst = (targetAst, nameAst) match {
+      case (Some(target), Some(name)) =>
+        val fieldAccess = operatorCallNode(Operators.fieldAccess, codePrefix, line = line(call))
+        Some(callAst(fieldAccess, target :: name :: Nil))
+
+      case (Some(target), None) => Some(target)
+
+      case (None, Some(name)) => Some(name)
+
+      case (None, None) => None
+    }
+
+    callAst(callNode, arguments, receiver = receiverAst)
   }
 
   private def astForCallArg(arg: PhpArgument): Ast = {
@@ -743,6 +867,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   private def rootCode(ast: Ast, default: String = ""): String = {
     ast.root.flatMap(_.properties.get(PropertyNames.CODE).map(_.toString)).getOrElse(default)
   }
+
+  private def rootType(ast: Ast): Option[String] = {
+    ast.root.flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+  }
+
   private def astForCastExpr(castExpr: PhpCast): Ast = {
     val typ = NewTypeRef()
       .typeFullName(registerType(castExpr.typ))
@@ -833,8 +962,9 @@ object AstCreator {
   }
 
   object NameConstants {
-    val This: String    = "this"
-    val Unknown: String = "UNKNOWN"
+    val HaltCompiler: String = "__halt_compiler"
+    val This: String         = "this"
+    val Unknown: String      = "UNKNOWN"
   }
 
   val operatorSymbols: Map[String, String] = Map(
