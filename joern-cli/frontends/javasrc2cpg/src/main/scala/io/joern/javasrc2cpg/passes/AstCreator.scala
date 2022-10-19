@@ -2901,7 +2901,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     if (maybeImplementedInterface.isEmpty) {
       val location = s"$filename:${line(expr)}:${column(expr)}"
-      logger.warn(
+      logger.debug(
         s"Could not resolve the interface implemented by a lambda. Type info may be missing: $location. Type info may be missing."
       )
     }

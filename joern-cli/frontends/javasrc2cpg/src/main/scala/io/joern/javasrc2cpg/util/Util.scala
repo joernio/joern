@@ -24,7 +24,7 @@ object Util {
       case Success(ancestors) => ancestors.asScala.toSeq
 
       case Failure(exception) =>
-        logger.warn(s"Failed to get direct parents for typeDecl ${typeDecl.getQualifiedName}", exception)
+        logger.debug(s"Failed to get direct parents for typeDecl ${typeDecl.getQualifiedName}")
         Seq.empty
     }
   }

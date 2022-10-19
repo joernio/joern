@@ -52,7 +52,6 @@ class AstCreationPass(sourceInfo: SourceDirectoryInfo, config: Config, cpg: Cpg,
         diffGraph.absorb(new AstCreator(fileInfo.originalFileName, result, global, symbolResolver).createAst())
       case _ =>
         logger.warn("Failed to parse file " + fileInfo.analysisFileName)
-        Iterator()
     }
   }
 

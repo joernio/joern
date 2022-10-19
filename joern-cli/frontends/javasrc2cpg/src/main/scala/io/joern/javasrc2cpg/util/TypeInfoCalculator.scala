@@ -57,7 +57,16 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
       .map { substitutedType =>
         // substitutedType.isTypeVariable can crash with an UnsolvedSymbolException if it is an instance of LazyType,
         // in which case the type hasn't been successfully substituted.
-        !(substitutedType.isTypeVariable && substitutedType.asTypeParameter() == typeParamDecl)
+        val substitutionOccurred =
+          !(substitutedType.isTypeVariable && substitutedType.asTypeParameter() == typeParamDecl)
+        // There's a potential infinite loop that can occur when a type variable is subsituted with a wildcard type
+        // bounded by that type variable.
+        val isSimilarWildcardSubstition = substitutedType match {
+          case wc: ResolvedWildcard => wc.getBoundedType == substitutedType
+          case _                    => false
+        }
+
+        substitutionOccurred && !isSimilarWildcardSubstition
       }
       .getOrElse(false)
   }
