@@ -20,7 +20,7 @@ object Py2CpgOnFileSystem {
     * @param config
     *   Configuration for cpg generation.
     */
-  def buildCpg(config: Py2CpgOnFileSystemConfig): Unit = {
+  def buildCpg(config: Py2CpgOnFileSystemConfig): Cpg = {
     logConfiguration(config)
 
     val cpg = initCpg(config.outputFile)
@@ -35,7 +35,7 @@ object Py2CpgOnFileSystem {
 
     val py2Cpg = new Py2Cpg(inputProviders, cpg)
     py2Cpg.buildCpg()
-    cpg.close
+    cpg
   }
 
   private def initCpg(outputFile: Path): Cpg = {
