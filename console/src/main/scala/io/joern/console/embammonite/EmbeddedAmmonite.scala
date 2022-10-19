@@ -7,9 +7,8 @@ import java.io.{BufferedReader, InputStream, InputStreamReader, PipedInputStream
 import java.util.UUID
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, Semaphore}
 
-/** Result of executing a query, containing in particular output received on standard out and on standard error.
-  */
-class QueryResult(val out: String, val err: String, val uuid: UUID) extends HasUUID
+/** Result of executing a query, containing in particular output received on standard out. */
+class QueryResult(val out: String, val uuid: UUID) extends HasUUID
 
 trait HasUUID {
   def uuid: UUID
@@ -24,13 +23,11 @@ class EmbeddedAmmonite(predef: String = "") {
 
   val (inStream, toStdin)     = pipePair()
   val (fromStdout, outStream) = pipePair()
-  val (fromStderr, errStream) = pipePair()
 
   val writer    = new PrintWriter(toStdin)
   val reader    = new BufferedReader(new InputStreamReader(fromStdout))
-  val errReader = new BufferedReader(new InputStreamReader(fromStderr))
 
-  val userThread = new Thread(new UserRunnable(jobQueue, writer, reader, errReader))
+  val userThread = new Thread(new UserRunnable(jobQueue, writer, reader))
 
   val shellThread = new Thread(
     new Runnable {
@@ -154,7 +151,7 @@ object EmbeddedAmmonite {
         else loop(using interpret(res))()
       }
 
-      try runBody {
+      runBody {
         loop(using initialState)()
       }
     }
