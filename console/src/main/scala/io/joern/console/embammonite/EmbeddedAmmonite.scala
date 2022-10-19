@@ -16,7 +16,7 @@ trait HasUUID {
 
 private[embammonite] case class Job(uuid: UUID, query: String, observer: QueryResult => Unit)
 
-class EmbeddedAmmonite(predef: String = "", verbose: Boolean = false) {
+class EmbeddedAmmonite(predefCode: String = "", verbose: Boolean = false) {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   val jobQueue: BlockingQueue[Job] = new LinkedBlockingQueue[Job]()
@@ -42,16 +42,13 @@ class EmbeddedAmmonite(predef: String = "", verbose: Boolean = false) {
 
         val replDriver = new ReplDriver(compilerArgs, inStream, new PrintStream(outStream))
         val initialState: State = replDriver.initialState
-        val state: State = initialState
-        // TODO predef
-//        val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-//        val state: State =
-//          if (config.verbose) {
-//            println(predefCode)
-//            replDriver.run(predefCode)(using initialState)
-//          } else {
-//            replDriver.runQuietly(predefCode)(using initialState)
-//          }
+        val state: State =
+          if (verbose) {
+            println(predefCode)
+            replDriver.run(predefCode)(using initialState)
+          } else {
+            replDriver.runQuietly(predefCode)(using initialState)
+          }
 
         replDriver.runUntilQuit(using state)()
       }
