@@ -11,6 +11,7 @@ import soot.jimple._
 import soot.tagkit._
 import soot.{Local => _, _}
 
+import scala.collection.immutable.HashSet
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -23,6 +24,8 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   private val logger         = LoggerFactory.getLogger(classOf[AstCreationPass])
   private val unitToAsts     = mutable.HashMap[soot.Unit, Seq[Ast]]()
   private val controlTargets = mutable.HashMap[Seq[Ast], soot.Unit]()
+  // There are many, but the popular ones should do https://en.wikipedia.org/wiki/List_of_JVM_languages
+  private val JVM_LANGS = HashSet("scala", "clojure", "groovy", "kotlin", "jython", "jruby")
 
   /** Add `typeName` to a global map and return it. The map is later passed to a pass that creates TYPE nodes for each
     * key in the map.
@@ -183,7 +186,22 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       }
     } catch {
       case e: RuntimeException =>
-        logger.warn(s"Unexpected exception while parsing method body! Will stub the method ${methodNode.fullName}", e)
+        // Use a few heuristics to determine if this is not built with the JDK
+        val nonJavaLibs = cls.getInterfaces.asScala.map(_.getPackageName).filter(JVM_LANGS.contains).toSet
+        if (nonJavaLibs.nonEmpty || cls.getMethods.asScala.exists(_.getName.endsWith("$"))) {
+          val errMsg = "The bytecode for this method suggests it is built with a non-Java JVM language. " +
+            "Soot requires including the specific language's SDK in the analysis to create the method body for " +
+            s"'${methodNode.fullName}' correctly."
+          logger.warn(
+            if (nonJavaLibs.nonEmpty) s"$errMsg. Language(s) detected: ${nonJavaLibs.mkString(",")}."
+            else errMsg
+          )
+        } else {
+          logger.warn(
+            s"Unexpected runtime exception while parsing method body! Will stub the method '${methodNode.fullName}''",
+            e
+          )
+        }
         Ast(methodNode)
           .withChildren(astsForModifiers(methodDeclaration))
           .withChildren(astsForMethodTags(methodDeclaration))
