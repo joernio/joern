@@ -8,7 +8,7 @@ import java.util.UUID
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, Semaphore}
 
 /** Result of executing a query, containing in particular output received on standard out. */
-class QueryResult(val out: String, val uuid: UUID) extends HasUUID
+case class QueryResult(out: String, uuid: UUID) extends HasUUID
 
 trait HasUUID {
   def uuid: UUID
@@ -16,7 +16,7 @@ trait HasUUID {
 
 private[embammonite] case class Job(uuid: UUID, query: String, observer: QueryResult => Unit)
 
-class EmbeddedAmmonite(predef: String = "") {
+class EmbeddedAmmonite(predef: String = "", verbose: Boolean = false) {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   val jobQueue: BlockingQueue[Job] = new LinkedBlockingQueue[Job]()
@@ -27,7 +27,7 @@ class EmbeddedAmmonite(predef: String = "") {
   val writer    = new PrintWriter(toStdin)
   val reader    = new BufferedReader(new InputStreamReader(fromStdout))
 
-  val userThread = new Thread(new UserRunnable(jobQueue, writer, reader))
+  val userThread = new Thread(new UserRunnable(jobQueue, writer, reader, verbose))
 
   val shellThread = new Thread(
     new Runnable {

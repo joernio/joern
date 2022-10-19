@@ -8,7 +8,8 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 import scala.util.Try
 
-class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: BufferedReader) extends Runnable {
+class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: BufferedReader, verbose: Boolean = false)
+  extends Runnable {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[UserRunnable])
 
@@ -23,10 +24,12 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
         if (isTerminationMarker(job)) {
           terminate = true
         } else {
+          if (verbose) println(s"executing: $job")
           sendQueryToAmmonite(job)
           val stdoutPair = stdOutUpToMarker()
           val stdOutput  = GlobalReporting.getAndClearGlobalStdOut() + stdoutPair.get
-          val result    = new QueryResult(stdOutput, job.uuid)
+          val result    = QueryResult(stdOutput, job.uuid)
+          if (verbose) println(s"result: $result")
           job.observer(result)
         }
       }
