@@ -90,7 +90,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing
       case x if sources.contains(x.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(path, table, callSiteStack)) ++ deduplicate(computeResultsForParents())
+        ReachableByResult(path, table, callSiteStack, ReachSource) +: deduplicate(computeResultsForParents())
 
       // Case 1.5: the second node on the path is a METHOD_RETURN and its a source. This clumsy check is necessary because
       // for method returns, the derived tasks we create in TaskCreator jump immediately to the RETURN statements in
@@ -104,14 +104,14 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
 
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
-        Vector(ReachableByResult(path, table, callSiteStack, ReachParameterIn))
+        ReachableByResult(path, table, callSiteStack, ReachParameterIn) +: Vector.empty
 
       // Case 3: we have reached a call to an internal method without semantic (return value)
       // => return partial result and stop traversing
       case call: Call
           if isCallToInternalMethodWithoutSemantic(call)
             && !isArgOrRetOfMethodWeCameFrom(call, path) =>
-        Vector(ReachableByResult(path, table, callSiteStack, ReachCall))
+        ReachableByResult(path, table, callSiteStack, ReachCall) +: Vector.empty
 
       // Case 4: we have reached an argument to an internal method without semantic (output argument) and
       // this isn't the start node nor is it the argument for the parameter we just expanded
@@ -120,7 +120,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
           if path.size > 1
             && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c))
             && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
-        Vector(ReachableByResult(path, table, callSiteStack, ReachArgument))
+        ReachableByResult(path, table, callSiteStack, ReachArgument) +: Vector.empty
 
       // All other cases: expand into parents
       case _ =>
