@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
   "Dataflow through function calls" should {
 
-    "can go in a method twice" in {
+    "do not go in a method twice" in {
       val cpg = code("""
           |class Foo{
           |    String name;

@@ -22,8 +22,6 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
 
   import Engine._
 
-  implicit val implicitEngineContext: EngineContext = context
-
   /** Entry point of callable. First checks if the maximum call depth has been exceeded, in which case an empty result
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
