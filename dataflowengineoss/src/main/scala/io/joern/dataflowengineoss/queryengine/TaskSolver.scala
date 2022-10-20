@@ -22,6 +22,8 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
 
   import Engine._
 
+  implicit val implicitEngineContext: EngineContext = context
+
   /** Entry point of callable. First checks if the maximum call depth has been exceeded, in which case an empty result
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
@@ -126,7 +128,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       // this isn't the start node => return partial result and stop traversing
       case call: Call
           if isCallToInternalMethodWithoutSemantic(call)
-            && !isArgOrRetOfMethodWeCameFrom(call, path) =>
+            && !isMethodWeCameFrom(call, path) =>
         createPartialResultForOutputArgOrRet()
 
       // Case 4: we have reached an argument to an internal method without semantic (output argument) and
@@ -134,7 +136,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       case arg: Expression
           if path.size > 1
             && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c))
-            && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
+            && !arg.inCall.headOption.exists(x => isMethodWeCameFrom(x, path)) =>
         createPartialResultForOutputArgOrRet()
 
       // All other cases: expand into parents
@@ -145,11 +147,8 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     res
   }
 
-  private def isArgOrRetOfMethodWeCameFrom(call: Call, path: Vector[PathElement]): Boolean =
-    path match {
-      case Vector(_, PathElement(x: MethodReturn, _, _, _), _*)      => methodsForCall(call).contains(x.method)
-      case Vector(_, PathElement(x: MethodParameterIn, _, _, _), _*) => methodsForCall(call).contains(x.method)
-      case _                                                         => false
-    }
+  private def isMethodWeCameFrom(call: Call, path: Vector[PathElement]): Boolean = {
+    path.exists { case PathElement(node, _, _, _) => methodsForCall(call).contains(node.method) }
+  }
 
 }
