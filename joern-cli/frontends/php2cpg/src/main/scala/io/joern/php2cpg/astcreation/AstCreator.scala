@@ -247,6 +247,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case arrayDimFetchExpr: PhpArrayDimFetchExpr     => astForArrayDimFetchExpr(arrayDimFetchExpr)
       case errorSuppressExpr: PhpErrorSuppressExpr     => astForErrorSuppressExpr(errorSuppressExpr)
       case instanceOfExpr: PhpInstanceOfExpr           => astForInstanceOfExpr(instanceOfExpr)
+      case propertyFetchExpr: PhpPropertyFetchExpr     => astForPropertyFetchExpr(propertyFetchExpr)
 
       case null =>
         logger.warn("expr was null")
@@ -1113,6 +1114,28 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val instanceOfNode = operatorCallNode(Operators.instanceOf, code, Some(TypeConstants.Bool), line(expr))
 
     callAst(instanceOfNode, exprAst :: classAst :: Nil)
+  }
+
+  private def astForPropertyFetchExpr(expr: PhpPropertyFetchExpr): Ast = {
+    val objExprAst = astForExpr(expr.expr)
+
+    val fieldAst = expr.name match {
+      case name: PhpNameExpr => Ast(fieldIdentifierNode(name.name, line(expr)))
+      case other             => astForExpr(other)
+    }
+
+    val accessSymbol =
+      if (expr.isStatic)
+        "::"
+      else if (expr.isNullsafe)
+        "?->"
+      else
+        "->"
+
+    val code            = s"${rootCode(objExprAst)}$accessSymbol${rootCode(fieldAst)}"
+    val fieldAccessNode = operatorCallNode(Operators.fieldAccess, code, line = line(expr))
+
+    callAst(fieldAccessNode, objExprAst :: fieldAst :: Nil)
   }
 
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {

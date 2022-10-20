@@ -394,6 +394,14 @@ object Domain {
 
   final case class PhpInstanceOfExpr(expr: PhpExpr, className: PhpExpr, attributes: PhpAttributes) extends PhpExpr
 
+  final case class PhpPropertyFetchExpr(
+    expr: PhpExpr,
+    name: PhpExpr,
+    isNullsafe: Boolean,
+    isStatic: Boolean,
+    attributes: PhpAttributes
+  ) extends PhpExpr
+
   private def escapeString(value: String): String = {
     value
       .replace("\\", "\\\\")
@@ -579,6 +587,22 @@ object Domain {
     PhpInstanceOfExpr(expr, className, PhpAttributes(json))
   }
 
+  private def readPropertyFetch(
+    json: Value,
+    isNullsafe: Boolean = false,
+    isStatic: Boolean = false
+  ): PhpPropertyFetchExpr = {
+    val expr =
+      if (json.obj.contains("var"))
+        readExpr(json("var"))
+      else
+        readNameOrExpr(json, "class")
+
+    val name = readNameOrExpr(json, "name")
+
+    PhpPropertyFetchExpr(expr, name, isNullsafe, isStatic, PhpAttributes(json))
+  }
+
   private def readReturn(json: Value): PhpReturnStmt = {
     val expr = Option.unless(json("expr").isNull)(readExpr(json("expr")))
 
@@ -661,6 +685,10 @@ object Domain {
       case "Expr_ErrorSuppress" => readErrorSuppress(json)
       case "Expr_Instanceof"    => readInstanceOf(json)
 
+      case "Expr_PropertyFetch"         => readPropertyFetch(json)
+      case "Expr_NullsafePropertyFetch" => readPropertyFetch(json, isNullsafe = true)
+      case "Expr_StaticPropertyFetch"   => readPropertyFetch(json, isStatic = true)
+
       case typ if isUnaryOpType(typ)  => readUnaryOp(json)
       case typ if isBinaryOpType(typ) => readBinaryOp(json)
       case typ if isAssignType(typ)   => readAssign(json)
@@ -725,7 +753,9 @@ object Domain {
       readName(field)
     else if (field("nodeType").str == "Identifier")
       readName(field)
-    else
+    else if (field("nodeType").str == "VarLikeIdentifier") {
+      readVariable(field)
+    } else
       readExpr(field)
   }
 
