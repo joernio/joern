@@ -23,6 +23,9 @@ object Domain {
     val notIdenticalOp = "<operator>.notIdentical"
     val spaceshipOp    = "<operator>.spaceship"
     val elvisOp        = "<operator>.elvis"
+    val unpack         = "<operator>.unpack"
+    // Used for $array[] = $var type assignments
+    val emptyArrayIdx = "<operator>.emptyArrayIdx"
 
     val assignmentCoalesceOp = "<operator>.assignmentCoalesce"
     val assignmentConcatOp   = "<operator>.assignmentConcat"
@@ -124,6 +127,9 @@ object Domain {
 
   sealed abstract class PhpStmt extends PhpNode
 
+  // In the PhpParser output, comments are included as an attribute to the first statement following the comment. If
+  // no such statement exists, a Nop statement (which does not exist in PHP) is added as a sort of comment container.
+  final case class NopStmt(attributes: PhpAttributes)                                           extends PhpStmt
   final case class PhpEchoStmt(exprs: Seq[PhpExpr], attributes: PhpAttributes)                  extends PhpStmt
   final case class PhpBreakStmt(num: Option[Int], attributes: PhpAttributes)                    extends PhpStmt
   final case class PhpContinueStmt(num: Option[Int], attributes: PhpAttributes)                 extends PhpStmt
@@ -341,16 +347,20 @@ object Domain {
   final case class PhpIsset(vars: Seq[PhpExpr], attributes: PhpAttributes) extends PhpExpr
   final case class PhpPrint(expr: PhpExpr, attributes: PhpAttributes)      extends PhpExpr
 
-  sealed abstract class PhpScalar                                      extends PhpExpr
-  final case class PhpString(value: String, attributes: PhpAttributes) extends PhpScalar
+  sealed abstract class PhpScalar extends PhpExpr
+  sealed abstract class PhpSimpleScalar extends PhpScalar {
+    def value: String
+    def attributes: PhpAttributes
+  }
+  final case class PhpString(value: String, attributes: PhpAttributes) extends PhpSimpleScalar
   object PhpString {
     def withQuotes(value: String, attributes: PhpAttributes): PhpString = {
       PhpString(s"\"${escapeString(value)}\"", attributes)
     }
   }
 
-  final case class PhpInt(value: String, attributes: PhpAttributes)            extends PhpScalar
-  final case class PhpFloat(value: String, attributes: PhpAttributes)          extends PhpScalar
+  final case class PhpInt(value: String, attributes: PhpAttributes)            extends PhpSimpleScalar
+  final case class PhpFloat(value: String, attributes: PhpAttributes)          extends PhpSimpleScalar
   final case class PhpEncapsed(parts: Seq[PhpExpr], attributes: PhpAttributes) extends PhpScalar
   final case class PhpEncapsedPart(value: String, attributes: PhpAttributes)   extends PhpScalar
   object PhpEncapsedPart {
@@ -367,6 +377,17 @@ object Domain {
   ) extends PhpExpr
 
   final case class PhpConstFetchExpr(name: PhpNameExpr, attributes: PhpAttributes) extends PhpExpr
+
+  final case class PhpArrayExpr(items: List[PhpArrayItem], attributes: PhpAttributes) extends PhpExpr
+  final case class PhpArrayItem(
+    key: Option[PhpExpr],
+    value: PhpExpr,
+    byRef: Boolean,
+    unpack: Boolean,
+    attributes: PhpAttributes
+  ) extends PhpExpr
+  final case class PhpArrayDimFetchExpr(variable: PhpExpr, dimension: Option[PhpExpr], attributes: PhpAttributes)
+      extends PhpExpr
 
   private def escapeString(value: String): String = {
     value
@@ -418,6 +439,7 @@ object Domain {
       case "Stmt_Label"        => readLabel(json)
       case "Stmt_HaltCompiler" => readHaltCompiler(json)
       case "Stmt_Namespace"    => readNamespace(json)
+      case "Stmt_Nop"          => NopStmt(PhpAttributes(json))
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -519,6 +541,27 @@ object Domain {
     PhpConstFetchExpr(name, PhpAttributes(json))
   }
 
+  private def readArray(json: Value): PhpArrayExpr = {
+    val items = json("items").arr.map(readArrayItem).toList
+    PhpArrayExpr(items, PhpAttributes(json))
+  }
+
+  private def readArrayItem(json: Value): PhpArrayItem = {
+    val key    = Option.unless(json("key").isNull)(readExpr(json("key")))
+    val value  = readExpr(json("value"))
+    val byRef  = json("byRef").bool
+    val unpack = json("byRef").bool
+
+    PhpArrayItem(key, value, byRef, unpack, PhpAttributes(json))
+  }
+
+  private def readArrayDimFetch(json: Value): PhpArrayDimFetchExpr = {
+    val variable  = readExpr(json("var"))
+    val dimension = Option.unless(json("dim").isNull)(readExpr(json("dim")))
+
+    PhpArrayDimFetchExpr(variable, dimension, PhpAttributes(json))
+  }
+
   private def readReturn(json: Value): PhpReturnStmt = {
     val expr = Option.unless(json("expr").isNull)(readExpr(json("expr")))
 
@@ -591,11 +634,13 @@ object Domain {
       case "Expr_Isset"    => readIsset(json)
       case "Expr_Print"    => readPrint(json)
       case "Expr_Ternary"  => readTernaryOp(json)
-
-      case "Expr_Throw" => readThrow(json)
+      case "Expr_Throw"    => readThrow(json)
 
       case "Expr_ClassConstFetch" => readClassConstFetch(json)
       case "Expr_ConstFetch"      => readConstFetch(json)
+
+      case "Expr_Array"         => readArray(json)
+      case "Expr_ArrayDimFetch" => readArrayDimFetch(json)
 
       case typ if isUnaryOpType(typ)  => readUnaryOp(json)
       case typ if isBinaryOpType(typ) => readBinaryOp(json)
