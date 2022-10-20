@@ -20,7 +20,7 @@ class JoernWorkspaceLoader extends WorkspaceLoader[JoernProject] {
   }
 }
 
-class JoernConsole extends Console[JoernProject](JoernAmmoniteExecutor, new JoernWorkspaceLoader) {
+class JoernConsole extends Console[JoernProject](new JoernWorkspaceLoader) {
 
   override val config: ConsoleConfig = JoernConsole.defaultConfig
 
@@ -67,20 +67,5 @@ object JoernConsole {
     s"""Type `help` to begin""".stripMargin
 
   def defaultConfig: ConsoleConfig = new ConsoleConfig()
-
-  def runScriptTest(scriptName: String, params: Map[String, String], cpg: Cpg): Any = {
-    class TempConsole(workspaceDir: String) extends JoernConsole {
-      override def context: EngineContext = EngineContext()
-      override val config = new ConsoleConfig(
-        install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir))
-      )
-    }
-    val workspaceDir = File.newTemporaryDirectory("console")
-    try {
-      new TempConsole(workspaceDir.toString).runScript(scriptName, params, cpg)
-    } finally {
-      workspaceDir.delete()
-    }
-  }
 
 }
