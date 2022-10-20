@@ -245,6 +245,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case classConstFetchExpr: PhpClassConstFetchExpr => astForClassConstFetchExpr(classConstFetchExpr)
       case arrayDimFetchExpr: PhpArrayDimFetchExpr     => astForArrayDimFetchExpr(arrayDimFetchExpr)
+      case errorSuppressExpr: PhpErrorSuppressExpr     => astForErrorSuppressExpr(errorSuppressExpr)
+      case instanceOfExpr: PhpInstanceOfExpr           => astForInstanceOfExpr(instanceOfExpr)
 
       case null =>
         logger.warn("expr was null")
@@ -1091,6 +1093,26 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
         val accessNode = operatorCallNode(PhpBuiltins.emptyArrayIdx, s"$variableCode[]", line = line(expr))
         callAst(accessNode, variableAst :: Nil)
     }
+  }
+
+  private def astForErrorSuppressExpr(expr: PhpErrorSuppressExpr): Ast = {
+    val childAst = astForExpr(expr.expr)
+
+    val code         = s"@${rootCode(childAst)}"
+    val suppressNode = operatorCallNode(PhpBuiltins.errorSuppress, code, line = line(expr))
+    rootType(childAst).foreach(suppressNode.typeFullName(_))
+
+    callAst(suppressNode, childAst :: Nil)
+  }
+
+  private def astForInstanceOfExpr(expr: PhpInstanceOfExpr): Ast = {
+    val exprAst  = astForExpr(expr.expr)
+    val classAst = astForExpr(expr.className)
+
+    val code           = s"${rootCode(exprAst)} instanceof ${rootCode(classAst)}"
+    val instanceOfNode = operatorCallNode(Operators.instanceOf, code, Some(TypeConstants.Bool), line(expr))
+
+    callAst(instanceOfNode, exprAst :: classAst :: Nil)
   }
 
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {
