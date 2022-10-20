@@ -7,6 +7,7 @@ import io.joern.jssrc2cpg.passes.{
   AstCreationPass,
   BuiltinTypesPass,
   ConfigPass,
+  ConstClosurePass,
   DependenciesPass,
   JsMetaDataPass,
   PrivateKeyFilePass,
@@ -73,6 +74,6 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
 object JsSrc2Cpg {
 
   def postProcessingPasses(cpg: Cpg): List[CpgPassBase] =
-    List(new RequirePass(cpg))
+    List(new RequirePass(cpg), new ConstClosurePass(cpg))
 
 }
