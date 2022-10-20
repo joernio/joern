@@ -7,6 +7,7 @@ import io.joern.jssrc2cpg.passes.{
   AstCreationPass,
   BuiltinTypesPass,
   ConfigPass,
+  ConstClosurePass,
   DependenciesPass,
   JsMetaDataPass,
   PrivateKeyFilePass,
@@ -20,6 +21,7 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.utils.HashUtil
 import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.passes.frontend.JavascriptCallLinker
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -73,6 +75,6 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
 object JsSrc2Cpg {
 
   def postProcessingPasses(cpg: Cpg): List[CpgPassBase] =
-    List(new RequirePass(cpg))
+    List(new RequirePass(cpg), new ConstClosurePass(cpg), new JavascriptCallLinker(cpg))
 
 }

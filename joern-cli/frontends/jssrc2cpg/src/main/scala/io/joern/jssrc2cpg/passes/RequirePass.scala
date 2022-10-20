@@ -10,6 +10,8 @@ import overflowdb.traversal.{NodeOps, Traversal}
 
 import java.nio.file.Paths
 
+/** This pass enhances the call graph and call nodes by interpreting assignments of the form `foo = require("module")`.
+  */
 class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   private val codeRoot = cpg.metaData.root.headOption.getOrElse("")

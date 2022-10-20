@@ -14,13 +14,7 @@ object CallGraph {
   def defaultOpts         = new LayerCreatorOptions()
 
   def passes(cpg: Cpg): Iterator[CpgPassBase] = {
-    val languageSpecificPasses = cpg.metaData.language.lastOption match {
-      case Some(Languages.JSSRC)      => Iterator[CpgPassBase](new JavascriptCallLinker(cpg))
-      case Some(Languages.JAVASCRIPT) => Iterator[CpgPassBase](new JavascriptCallLinker(cpg))
-      case _                          => Iterator[CpgPassBase]()
-    }
-    languageSpecificPasses ++
-      Iterator(new MethodRefLinker(cpg), new StaticCallLinker(cpg), new DynamicCallLinker(cpg))
+    Iterator(new MethodRefLinker(cpg), new StaticCallLinker(cpg), new DynamicCallLinker(cpg))
   }
 
 }
