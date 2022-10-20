@@ -24,7 +24,7 @@ object Domain {
     val spaceshipOp    = "<operator>.spaceship"
     val elvisOp        = "<operator>.elvis"
     val unpack         = "<operator>.unpack"
-    // Used for $array[] = $var type assignmests
+    // Used for $array[] = $var type assignments
     val emptyArrayIdx = "<operator>.emptyArrayIdx"
 
     val assignmentCoalesceOp = "<operator>.assignmentCoalesce"
