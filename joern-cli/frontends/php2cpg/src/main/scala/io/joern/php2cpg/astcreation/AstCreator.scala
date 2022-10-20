@@ -1,7 +1,7 @@
 package io.joern.php2cpg.astcreation
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
-import io.joern.php2cpg.datastructures.Scope
+import io.joern.php2cpg.datastructures.{ArrayIndexTracker, Scope}
 import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
@@ -10,6 +10,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{fieldIdentifierNode, identifierNode, m
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.passes.IntervalKeyPool
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
@@ -17,6 +18,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private val logger = LoggerFactory.getLogger(AstCreator.getClass)
   private val scope  = new Scope()
+
+  private val tmpKeyPool            = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+  private def getNewTmpName: String = s"tmp${tmpKeyPool.next.toString}"
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val ast = astForPhpFile(phpAst)
@@ -237,8 +241,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case emptyExpr: PhpEmptyExpr   => astForEmpty(emptyExpr)
       case evalExpr: PhpEvalExpr     => astForEval(evalExpr)
       case exitExpr: PhpExitExpr     => astForExit(exitExpr)
+      case arrayExpr: PhpArrayExpr   => astForArrayExpr(arrayExpr)
 
       case classConstFetchExpr: PhpClassConstFetchExpr => astForClassConstFetchExpr(classConstFetchExpr)
+      case arrayDimFetchExpr: PhpArrayDimFetchExpr     => astForArrayDimFetchExpr(arrayDimFetchExpr)
 
       case null =>
         logger.warn("expr was null")
@@ -979,6 +985,114 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     callAst(callNode, args.toList)
   }
 
+  private def getTmpLocal(typeFullName: Option[String], lineNumber: Option[Integer]): NewLocal = {
+    val name = getNewTmpName
+
+    val local = NewLocal()
+      .name(name)
+      .code("$" + name)
+      .lineNumber(lineNumber)
+
+    typeFullName.foreach(local.typeFullName(_))
+
+    local
+  }
+
+  private def identifierAstFromLocal(local: NewLocal, lineNumber: Option[Integer] = None): Ast = {
+    val identifier = identifierNode(local.name, typeFullName = Some(local.typeFullName), lineNumber)
+      .code("$" + local.name)
+    Ast(identifier).withRefEdge(identifier, local)
+  }
+
+  private def astForArrayExpr(expr: PhpArrayExpr): Ast = {
+    val idxTracker = new ArrayIndexTracker
+
+    val tmpLocal = getTmpLocal(Some(TypeConstants.Array), line(expr))
+    scope.pushNewScope(tmpLocal)
+
+    val itemAssignments = expr.items.map(assignForArrayItem(_, tmpLocal, idxTracker))
+    val arrayBlock      = NewBlock().lineNumber(line(expr))
+
+    Ast(arrayBlock)
+      .withChild(Ast(tmpLocal))
+      .withChildren(itemAssignments)
+      .withChild(identifierAstFromLocal(tmpLocal))
+  }
+
+  private def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {
+    val maybeIntValue = scalar match {
+      case string: PhpString =>
+        string.value
+          .drop(1)
+          .dropRight(1)
+          .toIntOption
+
+      case number => number.value.toIntOption
+    }
+
+    maybeIntValue match {
+      case Some(intValue) =>
+        idxTracker.updateValue(intValue)
+        PhpInt(intValue.toString, scalar.attributes)
+
+      case None =>
+        scalar
+    }
+  }
+  private def assignForArrayItem(item: PhpArrayItem, arrayLocal: NewLocal, idxTracker: ArrayIndexTracker): Ast = {
+    // It's perhaps a bit clumsy to reconstruct PhpExpr nodes here, but reuse astForArrayDimExpr for consistency
+    val variable = PhpVariable(PhpNameExpr(arrayLocal.name, item.attributes), item.attributes)
+
+    val dimension = item.key match {
+      case Some(key: PhpSimpleScalar) => dimensionFromSimpleScalar(key, idxTracker)
+      case Some(key)                  => key
+      case None                       => PhpInt(idxTracker.next, item.attributes)
+    }
+
+    val dimFetchNode = PhpArrayDimFetchExpr(variable, Some(dimension), item.attributes)
+    val dimFetchAst  = astForArrayDimFetchExpr(dimFetchNode)
+
+    val valueAst = astForArrayItemValue(item)
+
+    val assignCode = s"${rootCode(dimFetchAst)} = ${rootCode(valueAst)}"
+
+    val assignNode = operatorCallNode(Operators.assignment, assignCode, line = line(item))
+
+    callAst(assignNode, dimFetchAst :: valueAst :: Nil)
+  }
+
+  private def astForArrayItemValue(item: PhpArrayItem): Ast = {
+    val exprAst   = astForExpr(item.value)
+    val valueCode = rootCode(exprAst)
+
+    if (item.byRef) {
+      val parentCall = operatorCallNode(Operators.addressOf, s"&$valueCode", line = line(item))
+      callAst(parentCall, exprAst :: Nil)
+    } else if (item.unpack) {
+      val parentCall = operatorCallNode(PhpBuiltins.unpack, s"...$valueCode", line = line(item))
+      callAst(parentCall, exprAst :: Nil)
+    } else {
+      exprAst
+    }
+  }
+
+  private def astForArrayDimFetchExpr(expr: PhpArrayDimFetchExpr): Ast = {
+    val variableAst  = astForExpr(expr.variable)
+    val variableCode = rootCode(variableAst)
+
+    expr.dimension match {
+      case Some(dimension) =>
+        val dimensionAst = astForExpr(dimension)
+        val code         = s"$variableCode[${rootCode(dimensionAst)}]"
+        val accessNode   = operatorCallNode(Operators.indexAccess, code, line = line(expr))
+        callAst(accessNode, variableAst :: dimensionAst :: Nil)
+
+      case None =>
+        val accessNode = operatorCallNode(PhpBuiltins.emptyArrayIdx, s"$variableCode[]", line = line(expr))
+        callAst(accessNode, variableAst :: Nil)
+    }
+  }
+
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {
     val target              = astForExpr(expr.className)
     val fieldIdentifierName = expr.constantName.map(_.name).getOrElse(NameConstants.Unknown)
@@ -1003,6 +1117,7 @@ object AstCreator {
     val Bool: String   = "bool"
     val Void: String   = "void"
     val Any: String    = "ANY"
+    val Array: String  = "array"
   }
 
   object NameConstants {
