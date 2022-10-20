@@ -123,11 +123,13 @@ object Engine {
     *   the node to expand
     * @param path
     *   the path that has been expanded to reach the `curNode`
+    * @param maxTimesVisitingANode
+    *   How much times do we allow the data flow to pass a node visited before.
     */
-  def expandIn(curNode: CfgNode, path: Vector[PathElement], allowVisitSameNodeKTimes: Int = 1)(implicit
+  def expandIn(curNode: CfgNode, path: Vector[PathElement], maxTimesVisitingANode: Int = 1)(implicit
     semantics: Semantics
   ): Vector[PathElement] = {
-    ddgInE(curNode, path, allowVisitSameNodeKTimes).flatMap(elemForEdge)
+    ddgInE(curNode, path, maxTimesVisitingANode).flatMap(elemForEdge)
   }
 
   private def elemForEdge(e: Edge)(implicit semantics: Semantics): Option[PathElement] = {
@@ -177,18 +179,20 @@ object Engine {
     }
   }
 
-  /** For a given node `node`, return all incoming reaching definition edges, unless the source node is (a) a METHOD
-    * node, (b) already present on `path`, or (c) a CALL node to a method where the semantic indicates that taint is
-    * propagated to it.
-    */
-  private def ddgInE(node: CfgNode, path: Vector[PathElement], allowVisitSameNodeKTimes: Int): Vector[Edge] = {
+  // For a given node `node`, return all incoming reaching definition edges, unless the source node is
+  // (a) a METHOD node,
+  // (b) already visited from path more than K times
+  private def ddgInE(node: CfgNode, path: Vector[PathElement], maxTimesVisitingANode: Int): Vector[Edge] = {
     node
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
       .filter { e =>
         e.outNode() match {
           case srcNode: CfgNode =>
-            !srcNode.isInstanceOf[Method] && path.map(_.node).count(_ == srcNode) < allowVisitSameNodeKTimes
+            !srcNode.isInstanceOf[Method] && (
+              maxTimesVisitingANode == -1 ||
+                path.map(_.node).count(_ == srcNode) < maxTimesVisitingANode
+            )
           case _ => false
         }
       }
@@ -265,8 +269,8 @@ case class EngineContext(semantics: Semantics = DefaultSemantics(), config: Engi
 /** Various configurations for the data flow engine.
   * @param maxCallDepth
   *   the k-limit for calls and field accesses.
-  * @param allowVisitSameNodeKTimes
-  *   How much times do we allow the data flow to pass a certain node.
+  * @param maxTimesVisitingANode
+  *   How much times do we allow the data flow to pass a node visited before.
   * @param initialTable
   *   an initial (starting node) -> (path-edges) cache to initiate data flow queries with.
   * @param shareCacheBetweenTasks
@@ -274,7 +278,7 @@ case class EngineContext(semantics: Semantics = DefaultSemantics(), config: Engi
   */
 case class EngineConfig(
   var maxCallDepth: Int = 4,
-  allowVisitSameNodeKTimes: Int = 4,
+  var maxTimesVisitingANode: Int = 1,
   initialTable: Option[ResultTable] = None,
   shareCacheBetweenTasks: Boolean = true
 )

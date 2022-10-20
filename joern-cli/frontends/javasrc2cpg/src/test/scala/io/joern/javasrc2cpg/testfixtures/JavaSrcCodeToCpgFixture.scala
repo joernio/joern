@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, CodeToCpgFixture, LanguageFrontend}
 import io.shiftleft.codepropertygraph.Cpg
@@ -29,7 +29,7 @@ class JavaSrcCode2CpgFixture(withOssDataflow: Boolean = false, delombokMode: Str
     extends Code2CpgFixture(new JavaSrcFrontend(delombokMode)) {
 
   implicit val resolver: ICallResolver           = NoResolve
-  implicit lazy val engineContext: EngineContext = EngineContext()
+  implicit lazy val engineContext: EngineContext = EngineContext(config = EngineConfig(maxTimesVisitingANode = 2))
 
   override def applyPasses(cpg: Cpg): Unit = {
     super.applyPasses(cpg)
