@@ -155,14 +155,14 @@ object Engine {
               parentNode.isDefined
             }
             val isOutputArg = isOutputArgOfInternalMethod(parentNode)
-            Some(PathElement(parentNode, callSiteStack, visible, isOutputArg, outEdgeLabel = outLabel))
+            Some(PathElement(parentNode, callSiteStack.clone(), visible, isOutputArg, outEdgeLabel = outLabel))
           case parentNode if parentNode != null =>
-            Some(PathElement(parentNode, callSiteStack, outEdgeLabel = outLabel))
+            Some(PathElement(parentNode, callSiteStack.clone(), outEdgeLabel = outLabel))
           case null =>
             None
         }
       case _ =>
-        Some(PathElement(parNode, callSiteStack, outEdgeLabel = outLabel))
+        Some(PathElement(parNode, callSiteStack.clone(), outEdgeLabel = outLabel))
     }
   }
 
