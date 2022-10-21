@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
   "Dataflow through function calls" should {
 
-    "foo" in {
+    "allow traversing through a method multiple times" in {
       val cpg = code("""
           |class Foo{
           |    String name;
