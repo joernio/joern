@@ -26,11 +26,17 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
   override def call(): Vector[ReachableByResult] = {
+
+    println("Task: ")
+    println(task.sink)
+    println(task.initialPath)
+    println(task.callSiteStack)
+
     if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
       Vector()
     } else {
       implicit val sem: Semantics = context.semantics
-      val path                    = PathElement(task.sink) +: task.initialPath
+      val path                    = PathElement(task.sink, task.callSiteStack.headOption) +: task.initialPath
       results(path, task.sources, task.table, task.callSiteStack)
       // TODO why do we update the call depth here?
       task.table.get(task.sink).get.map { r =>
@@ -70,7 +76,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       * table. If not, determine results recursively.
       */
     def computeResultsForParents() = {
-      expandIn(curNode, path).iterator.flatMap { parent =>
+      expandIn(curNode, path, callSiteStack.headOption).iterator.flatMap { parent =>
         createResultsFromCacheOrCompute(parent, path)
       }.toVector
     }
@@ -90,7 +96,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     def createPartialResultForOutputArgOrRet() = {
       Vector(
         ReachableByResult(
-          PathElement(path.head.node, isOutputArg = true) +: path.tail,
+          PathElement(path.head.node, callSiteStack.headOption, isOutputArg = true) +: path.tail,
           table,
           callSiteStack,
           partial = true
@@ -99,14 +105,9 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     }
 
     /** Determine results for the current node
-      *
-      * * Case 1: we have reached a source => return result. * Case 2: we have reached a method parameter (that is not a
-      * source) => return a partial result * Case 3: we have reached an argument/call and the path is not empty =>
-      * consider this an output argument and create a partial result
       */
-
     val res = curNode match {
-      // Case 1: we have reached a source => return result and continue traversing
+      // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) =>
         Vector(ReachableByResult(path, table, callSiteStack)) ++ deduplicate(computeResultsForParents())
       // Case 1.5: the second node on the path is a METHOD_RETURN and its a source. This clumsy check is necessary because
@@ -147,9 +148,9 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
 
   private def isArgOrRetOfMethodWeCameFrom(call: Call, path: Vector[PathElement]): Boolean =
     path match {
-      case Vector(_, PathElement(x: MethodReturn, _, _, _), _*)      => methodsForCall(call).contains(x.method)
-      case Vector(_, PathElement(x: MethodParameterIn, _, _, _), _*) => methodsForCall(call).contains(x.method)
-      case _                                                         => false
+      case Vector(_, PathElement(x: MethodReturn, _, _, _, _), _*)      => methodsForCall(call).contains(x.method)
+      case Vector(_, PathElement(x: MethodParameterIn, _, _, _, _), _*) => methodsForCall(call).contains(x.method)
+      case _                                                            => false
     }
 
 }

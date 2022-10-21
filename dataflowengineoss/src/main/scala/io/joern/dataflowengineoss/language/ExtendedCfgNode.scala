@@ -32,14 +32,14 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 
   def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Traversal[CfgNode] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
-    val result = traversal.flatMap(x => x.ddgIn(Vector(PathElement(x)), withInvisible = false, cache))
+    val result = traversal.flatMap(x => x.ddgIn(Vector(PathElement(x, None)), withInvisible = false, cache))
     cache.clear()
     result
   }
 
   def ddgInPathElem(implicit semantics: Semantics = DefaultSemantics()): Traversal[PathElement] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
-    val result = traversal.flatMap(x => x.ddgInPathElem(Vector(PathElement(x)), withInvisible = false, cache))
+    val result = traversal.flatMap(x => x.ddgInPathElem(Vector(PathElement(x, None)), withInvisible = false, cache))
     cache.clear()
     result
   }
@@ -96,7 +96,12 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
       if (sources.contains(r.startingPoint) || !startingPointToSource(r.startingPoint).isInstanceOf[CfgNode]) {
         r
       } else {
-        r.copy(path = PathElement(startingPointToSource(r.startingPoint).asInstanceOf[CfgNode]) +: r.path)
+        r.copy(path =
+          PathElement(
+            startingPointToSource(r.startingPoint).asInstanceOf[CfgNode],
+            r.callSiteStack.headOption
+          ) +: r.path
+        )
       }
     }
   }

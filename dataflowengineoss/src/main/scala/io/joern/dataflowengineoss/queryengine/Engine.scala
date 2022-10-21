@@ -124,11 +124,15 @@ object Engine {
     * @param path
     *   the path that has been expanded to reach the `curNode`
     */
-  def expandIn(curNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[PathElement] = {
-    ddgInE(curNode, path).flatMap(elemForEdge)
+  def expandIn(curNode: CfgNode, path: Vector[PathElement], callOnTopOfStack: Option[Call] = None)(implicit
+    semantics: Semantics
+  ): Vector[PathElement] = {
+    ddgInE(curNode, path, callOnTopOfStack).flatMap(x => elemForEdge(x, callOnTopOfStack))
   }
 
-  private def elemForEdge(e: Edge)(implicit semantics: Semantics): Option[PathElement] = {
+  private def elemForEdge(e: Edge, callOnTopOfStack: Option[Call] = None)(implicit
+    semantics: Semantics
+  ): Option[PathElement] = {
     val curNode  = e.inNode().asInstanceOf[CfgNode]
     val parNode  = e.outNode().asInstanceOf[CfgNode]
     val outLabel = Some(e.property(Properties.VARIABLE)).getOrElse("")
@@ -151,14 +155,14 @@ object Engine {
               parentNode.isDefined
             }
             val isOutputArg = isOutputArgOfInternalMethod(parentNode)
-            Some(PathElement(parentNode, visible, isOutputArg, outEdgeLabel = outLabel))
+            Some(PathElement(parentNode, callOnTopOfStack, visible, isOutputArg, outEdgeLabel = outLabel))
           case parentNode if parentNode != null =>
-            Some(PathElement(parentNode, outEdgeLabel = outLabel))
+            Some(PathElement(parentNode, callOnTopOfStack, outEdgeLabel = outLabel))
           case null =>
             None
         }
       case _ =>
-        Some(PathElement(parNode, outEdgeLabel = outLabel))
+        Some(PathElement(parNode, callOnTopOfStack, outEdgeLabel = outLabel))
     }
   }
 
@@ -179,14 +183,16 @@ object Engine {
     * node, (b) already present on `path`, or (c) a CALL node to a method where the semantic indicates that taint is
     * propagated to it.
     */
-  private def ddgInE(node: CfgNode, path: Vector[PathElement]): Vector[Edge] = {
+  private def ddgInE(node: CfgNode, path: Vector[PathElement], callOnTopOfStack: Option[Call] = None): Vector[Edge] = {
     node
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
       .filter { e =>
         e.outNode() match {
           case srcNode: CfgNode =>
-            !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode)
+            !srcNode.isInstanceOf[Method] && !path
+              .map(x => (x.node, x.callOnTopOfStack))
+              .contains((srcNode, callOnTopOfStack))
           case _ => false
         }
       }

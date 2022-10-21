@@ -86,6 +86,12 @@ case class ReachableByResult(
   *
   * @param node
   *   The parent node
+  *
+  * @param callOnTopOfStack
+  *   The call that was on top of the call stack when this path element was created. Since we may enter the same
+  *   function via two different call sites, path elements should only be treated as the same if they are the same node
+  *   and we've reached them via the same call site.
+  *
   * @param visible
   *   whether this path element should be shown in the flow
   * @param isOutputArg
@@ -95,4 +101,10 @@ case class ReachableByResult(
   * @param outEdgeLabel
   *   label of the outgoing DDG edge
   */
-case class PathElement(node: CfgNode, visible: Boolean = true, isOutputArg: Boolean = false, outEdgeLabel: String = "")
+case class PathElement(
+  node: CfgNode,
+  callOnTopOfStack: Option[CfgNode],
+  visible: Boolean = true,
+  isOutputArg: Boolean = false,
+  outEdgeLabel: String = ""
+)
