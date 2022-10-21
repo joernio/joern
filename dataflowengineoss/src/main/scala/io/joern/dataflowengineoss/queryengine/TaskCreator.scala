@@ -86,10 +86,10 @@ class TaskCreator(sources: Set[CfgNode]) {
   private def tasksForUnresolvedOutArgs(results: Vector[ReachableByResult]): Vector[ReachableByTask] = {
 
     val outArgsAndCalls = results
-      .map(x => (x, x.outputArgument, x.path, x.callDepth, x.callSiteStack.headOption))
+      .map(x => (x, x.outputArgument, x.path, x.callDepth))
       .distinct
 
-    val forCalls = outArgsAndCalls.flatMap { case (result, outArg, path, callDepth, callOnTopOfStack) =>
+    val forCalls = outArgsAndCalls.flatMap { case (result, outArg, path, callDepth) =>
       val outCall = outArg.collect { case n: Call => n }
 
       val methodReturns = outCall.toList
@@ -105,7 +105,7 @@ class TaskCreator(sources: Set[CfgNode]) {
           List(ReachableByTask(methodReturn, sources, new ResultTable, newPath, callDepth + 1, callSiteStack))
         } else {
           returnStatements.map { returnStatement =>
-            val newPath       = Vector(PathElement(methodReturn, callOnTopOfStack)) ++ path
+            val newPath       = Vector(PathElement(methodReturn, result.callSiteStack.clone())) ++ path
             val callSiteStack = result.callSiteStack.clone()
             callSiteStack.push(call)
             ReachableByTask(returnStatement, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
@@ -114,7 +114,7 @@ class TaskCreator(sources: Set[CfgNode]) {
       }
     }
 
-    val forArgs = outArgsAndCalls.flatMap { case (result, args, path, callDepth, _) =>
+    val forArgs = outArgsAndCalls.flatMap { case (result, args, path, callDepth) =>
       args.toList.flatMap { case arg: Expression =>
         val outParams = if (result.callSiteStack.nonEmpty) {
           List[MethodParameterOut]()

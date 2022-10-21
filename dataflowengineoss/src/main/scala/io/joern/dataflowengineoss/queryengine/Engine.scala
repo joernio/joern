@@ -124,13 +124,13 @@ object Engine {
     * @param path
     *   the path that has been expanded to reach the `curNode`
     */
-  def expandIn(curNode: CfgNode, path: Vector[PathElement], callOnTopOfStack: Option[Call] = None)(implicit
-    semantics: Semantics
+  def expandIn(curNode: CfgNode, path: Vector[PathElement], callSiteStack: mutable.Stack[Call] = mutable.Stack())(
+    implicit semantics: Semantics
   ): Vector[PathElement] = {
-    ddgInE(curNode, path, callOnTopOfStack).flatMap(x => elemForEdge(x, callOnTopOfStack))
+    ddgInE(curNode, path, callSiteStack).flatMap(x => elemForEdge(x, callSiteStack))
   }
 
-  private def elemForEdge(e: Edge, callOnTopOfStack: Option[Call] = None)(implicit
+  private def elemForEdge(e: Edge, callSiteStack: mutable.Stack[Call] = mutable.Stack())(implicit
     semantics: Semantics
   ): Option[PathElement] = {
     val curNode  = e.inNode().asInstanceOf[CfgNode]
@@ -155,14 +155,14 @@ object Engine {
               parentNode.isDefined
             }
             val isOutputArg = isOutputArgOfInternalMethod(parentNode)
-            Some(PathElement(parentNode, callOnTopOfStack, visible, isOutputArg, outEdgeLabel = outLabel))
+            Some(PathElement(parentNode, callSiteStack, visible, isOutputArg, outEdgeLabel = outLabel))
           case parentNode if parentNode != null =>
-            Some(PathElement(parentNode, callOnTopOfStack, outEdgeLabel = outLabel))
+            Some(PathElement(parentNode, callSiteStack, outEdgeLabel = outLabel))
           case null =>
             None
         }
       case _ =>
-        Some(PathElement(parNode, callOnTopOfStack, outEdgeLabel = outLabel))
+        Some(PathElement(parNode, callSiteStack, outEdgeLabel = outLabel))
     }
   }
 
@@ -183,7 +183,11 @@ object Engine {
     * node, (b) already present on `path`, or (c) a CALL node to a method where the semantic indicates that taint is
     * propagated to it.
     */
-  private def ddgInE(node: CfgNode, path: Vector[PathElement], callOnTopOfStack: Option[Call] = None): Vector[Edge] = {
+  private def ddgInE(
+    node: CfgNode,
+    path: Vector[PathElement],
+    callSiteStack: mutable.Stack[Call] = mutable.Stack()
+  ): Vector[Edge] = {
     node
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
@@ -191,8 +195,8 @@ object Engine {
         e.outNode() match {
           case srcNode: CfgNode =>
             !srcNode.isInstanceOf[Method] && !path
-              .map(x => (x.node, x.callOnTopOfStack))
-              .contains((srcNode, callOnTopOfStack))
+              .map(x => (x.node, x.callSiteStack))
+              .contains((srcNode, callSiteStack))
           case _ => false
         }
       }

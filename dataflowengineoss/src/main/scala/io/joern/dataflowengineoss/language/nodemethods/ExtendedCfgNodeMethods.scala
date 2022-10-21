@@ -25,7 +25,7 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
 
   def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Traversal[CfgNode] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
-    val result = ddgIn(Vector(PathElement(node, None)), withInvisible = false, cache)
+    val result = ddgIn(Vector(PathElement(node)), withInvisible = false, cache)
     cache.clear()
     result
   }
@@ -34,11 +34,11 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     withInvisible: Boolean,
     cache: mutable.HashMap[CfgNode, Vector[PathElement]] = mutable.HashMap[CfgNode, Vector[PathElement]]()
   )(implicit semantics: Semantics): Traversal[PathElement] =
-    ddgInPathElem(Vector(PathElement(node, None)), withInvisible, cache)
+    ddgInPathElem(Vector(PathElement(node)), withInvisible, cache)
 
   def ddgInPathElem(implicit semantics: Semantics): Traversal[PathElement] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
-    val result = ddgInPathElem(Vector(PathElement(node, None)), withInvisible = false, cache)
+    val result = ddgInPathElem(Vector(PathElement(node)), withInvisible = false, cache)
     cache.clear()
     result
   }

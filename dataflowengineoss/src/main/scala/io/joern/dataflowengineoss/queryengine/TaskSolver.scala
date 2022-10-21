@@ -36,7 +36,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       Vector()
     } else {
       implicit val sem: Semantics = context.semantics
-      val path                    = PathElement(task.sink, task.callSiteStack.headOption) +: task.initialPath
+      val path                    = PathElement(task.sink, task.callSiteStack.clone()) +: task.initialPath
       results(path, task.sources, task.table, task.callSiteStack)
       // TODO why do we update the call depth here?
       task.table.get(task.sink).get.map { r =>
@@ -76,7 +76,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       * table. If not, determine results recursively.
       */
     def computeResultsForParents() = {
-      expandIn(curNode, path, callSiteStack.headOption).iterator.flatMap { parent =>
+      expandIn(curNode, path, callSiteStack.clone()).iterator.flatMap { parent =>
         createResultsFromCacheOrCompute(parent, path)
       }.toVector
     }
@@ -96,7 +96,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     def createPartialResultForOutputArgOrRet() = {
       Vector(
         ReachableByResult(
-          PathElement(path.head.node, callSiteStack.headOption, isOutputArg = true) +: path.tail,
+          PathElement(path.head.node, callSiteStack.clone(), isOutputArg = true) +: path.tail,
           table,
           callSiteStack,
           partial = true
