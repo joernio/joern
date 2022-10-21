@@ -2,7 +2,7 @@ name               := "jssrc2cpg"
 scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.1.3")
 
-dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
+dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
 
 val astGenVersion = "2.2.0"
 

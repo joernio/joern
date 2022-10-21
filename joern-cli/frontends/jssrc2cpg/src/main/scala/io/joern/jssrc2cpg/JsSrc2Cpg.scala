@@ -1,8 +1,6 @@
 package io.joern.jssrc2cpg
 
 import better.files.File
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.jssrc2cpg.JsSrc2Cpg.postProcessingPasses
 import io.joern.jssrc2cpg.passes.{
   AstCreationPass,
   BuiltinTypesPass,
@@ -58,15 +56,6 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
 
         report.print()
       }
-    }
-  }
-
-  def createCpgWithAllOverlays(config: Config): Try[Cpg] = {
-    val maybeCpg = createCpgWithOverlays(config)
-    maybeCpg.map { cpg =>
-      new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
-      postProcessingPasses(cpg).foreach(_.createAndApply())
-      cpg
     }
   }
 

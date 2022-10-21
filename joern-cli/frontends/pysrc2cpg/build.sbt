@@ -2,7 +2,7 @@ name := "pysrc2cpg"
 
 scalaVersion := "2.13.8"
 
-dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
+dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
   "io.shiftleft"            %% "codepropertygraph"          % Versions.cpg,

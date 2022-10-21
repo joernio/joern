@@ -1,6 +1,6 @@
 name := "ghidra2cpg"
 
-dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
+dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
   "com.github.scopt" %% "scopt"                    % "4.1.0",
