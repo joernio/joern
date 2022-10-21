@@ -66,6 +66,16 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       barCall.code shouldBe "bar()"
     }
 
+    "have correct structure for index access" in AstFixture("if(d = decorators[i]) foo();") { cpg =>
+      val List(indexAccessCall) = cpg.call(Operators.indexAccess).l
+      indexAccessCall.code shouldBe "decorators[i]"
+      val List(baseArg: Identifier, indexArg: Identifier) = indexAccessCall.argument.l
+      baseArg.name shouldBe "decorators"
+      baseArg.argumentIndex shouldBe 1
+      indexArg.name shouldBe "i"
+      indexArg.argumentIndex shouldBe 2
+    }
+
     "have correct structure for empty array literal" in AstFixture("var x = []") { cpg =>
       val List(method)      = cpg.method.nameExact(":program").l
       val List(methodBlock) = method.astChildren.isBlock.l
