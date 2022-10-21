@@ -70,7 +70,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       * table. If not, determine results recursively.
       */
     def computeResultsForParents() = {
-      expandIn(curNode, path, callSiteStack.clone()).iterator.flatMap { parent =>
+      expandIn(curNode, path, callSiteStack).iterator.flatMap { parent =>
         createResultsFromCacheOrCompute(parent, path)
       }.toVector
     }
