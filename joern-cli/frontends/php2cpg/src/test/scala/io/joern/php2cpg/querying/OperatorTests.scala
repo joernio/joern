@@ -4,7 +4,7 @@ import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.{PhpBuiltins, PhpDomainTypeConstants}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, TypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
 
@@ -410,6 +410,38 @@ class OperatorTests extends PhpCode2CpgFixture {
         inside(cpg.argument.l) { case List(literal: Literal) =>
           literal.code shouldBe "0"
         }
+      }
+    }
+  }
+
+  "the error suppress operator should work" in {
+    val cpg = code("<?php\n@foo();")
+
+    inside(cpg.call.nameExact(PhpBuiltins.errorSuppress).l) { case List(errorSuppress) =>
+      errorSuppress.methodFullName shouldBe PhpBuiltins.errorSuppress
+      errorSuppress.code shouldBe "@foo()"
+
+      inside(errorSuppress.argument.l) { case List(fooCall: Call) =>
+        fooCall.name shouldBe "foo"
+        fooCall.code shouldBe "foo()"
+      }
+    }
+  }
+
+  "instanceof with a simple class name should work" in {
+    val cpg = code("<?php\n$foo instanceof Foo")
+
+    inside(cpg.call.l) { case List(instanceOfCall) =>
+      instanceOfCall.name shouldBe Operators.instanceOf
+      instanceOfCall.methodFullName shouldBe Operators.instanceOf
+      instanceOfCall.code shouldBe "$foo instanceof Foo"
+
+      inside(instanceOfCall.argument.l) { case List(obj: Identifier, className: Identifier) =>
+        obj.name shouldBe "foo"
+        obj.code shouldBe "$foo"
+
+        className.name shouldBe "Foo"
+        className.code shouldBe "Foo"
       }
     }
   }
