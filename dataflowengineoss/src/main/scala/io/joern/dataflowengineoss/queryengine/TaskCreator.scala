@@ -105,7 +105,7 @@ class TaskCreator(sources: Set[CfgNode]) {
           List(ReachableByTask(methodReturn, sources, new ResultTable, newPath, callDepth + 1, callSiteStack))
         } else {
           returnStatements.map { returnStatement =>
-            val newPath       = Vector(PathElement(methodReturn)) ++ path
+            val newPath       = Vector(PathElement(methodReturn, result.callSiteStack.clone())) ++ path
             val callSiteStack = result.callSiteStack.clone()
             callSiteStack.push(call)
             ReachableByTask(returnStatement, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)

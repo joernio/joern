@@ -96,7 +96,9 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
       if (sources.contains(r.startingPoint) || !startingPointToSource(r.startingPoint).isInstanceOf[CfgNode]) {
         r
       } else {
-        r.copy(path = PathElement(startingPointToSource(r.startingPoint).asInstanceOf[CfgNode]) +: r.path)
+        r.copy(path =
+          PathElement(startingPointToSource(r.startingPoint).asInstanceOf[CfgNode], r.callSiteStack.clone()) +: r.path
+        )
       }
     }
   }
