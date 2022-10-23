@@ -1,9 +1,9 @@
 package io.joern.pysrc2cpg
 
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.joern.pysrc2cpg.memop.{Load, MemoryOperation, Store}
 import io.joern.pythonparser.ast
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
 import scala.collection.mutable
 
@@ -65,6 +65,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
         val importCallNode = createCall(
           createIdentifierNode("import", Load, lineAndCol),
+          "import",
           lineAndCol,
           nodeBuilder.stringLiteralNode(from, lineAndCol) ::
             nodeBuilder.stringLiteralNode(alias.name, lineAndCol) :: Nil,
@@ -226,7 +227,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     val blockCode = blockElements.map(codeOf).mkString("\n")
     val blockNode = nodeBuilder.blockNode(blockCode, lineAndColumn)
 
-    var orderIndex = new AutoIncIndex(1)
+    val orderIndex = new AutoIncIndex(1)
     addAstChildNodes(blockNode, orderIndex, blockElements)
 
     blockNode
@@ -234,6 +235,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
   protected def createCall(
     receiverNode: NewNode,
+    name: String,
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
     keywordArguments: Iterable[(String, NewNode)]
@@ -246,7 +248,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
         .mkString(", ") +
       ")"
-    val callNode = nodeBuilder.callNode(code, "", DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
+    val callNode = nodeBuilder.callNode(code, name, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
 
     edgeBuilder.astEdge(receiverNode, callNode, 0)
     edgeBuilder.receiverEdge(receiverNode, callNode)
@@ -270,6 +272,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   protected def createInstanceCall(
     receiverNode: NewNode,
     instanceNode: NewNode,
+    name: String,
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
     keywordArguments: Iterable[(String, NewNode)]
@@ -282,7 +285,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
         .mkString(", ") +
       ")"
-    val callNode = nodeBuilder.callNode(code, "", DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
+    val callNode = nodeBuilder.callNode(code, name, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
 
     edgeBuilder.astEdge(receiverNode, callNode, 0)
     edgeBuilder.receiverEdge(receiverNode, callNode)
@@ -331,11 +334,11 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         createFieldAccess(createIdentifierNode(tmpVarName, Load, lineAndColumn), y, lineAndColumn)
       val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
       val instanceCallNode =
-        createInstanceCall(receiverNode, instanceNode, lineAndColumn, argumentNodes, keywordArguments)
+        createInstanceCall(receiverNode, instanceNode, y, lineAndColumn, argumentNodes, keywordArguments)
       createBlock(tmpAssignCall :: instanceCallNode :: Nil, lineAndColumn)
     } else {
       val receiverNode = createFieldAccess(x(), y, lineAndColumn)
-      createInstanceCall(receiverNode, x(), lineAndColumn, argumentNodes, keywordArguments)
+      createInstanceCall(receiverNode, x(), y, lineAndColumn, argumentNodes, keywordArguments)
     }
   }
 

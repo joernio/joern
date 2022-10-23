@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
@@ -60,16 +61,16 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.nameExact("<init>").methodFullName.l match {
+      cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "a.Bar.<init>:void()"
+          fullName shouldBe s"a.Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
 
         case result => fail(s"Expected single constructor invocation for Bar but found $result")
       }
 
       cpg.call.nameExact("getValue").methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "a.Bar.getValue:java.lang.String()"
+          fullName shouldBe s"a.Bar.getValue:${Defines.UnresolvedSignature}(0)"
 
         case result => fail(s"Expected single call to getValue but found $result")
       }
@@ -89,9 +90,9 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.nameExact("<init>").methodFullName.l match {
+      cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "a.Bar.<init>:void()"
+          fullName shouldBe s"a.Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
 
         case result => fail(s"Expected single constructor invocation for Bar but found $result")
       }
@@ -108,9 +109,9 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.nameExact("<init>").methodFullName.l match {
+      cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "a.Bar.<init>:void()"
+          fullName shouldBe s"a.Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
 
         case result => fail(s"Expected single constructor invocation for Bar but found $result")
       }
@@ -141,14 +142,14 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
     "be used in calls" in {
       cpg.call.name("info").methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "a.Logger.info:void(java.lang.String,codepropertygraph.Unresolved)"
+          fullName shouldBe s"a.Logger.info:${Defines.UnresolvedSignature}(2)"
 
         case result => fail(s"Expected single call to info but got $result")
       }
 
       cpg.call.name("getProperty").methodFullName.l match {
         case List(fullName) =>
-          fullName shouldBe "b.Environment.getProperty:codepropertygraph.Unresolved(java.lang.String)"
+          fullName shouldBe s"b.Environment.getProperty:${Defines.UnresolvedSignature}(1)"
 
         case result => fail(s"Expected single call to getProperty but got $result")
       }
@@ -177,15 +178,14 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
         case res => fail(s"Expected single alloc call but got $res")
       }
 
-      val init = cpg.method.name("test2").call.nameExact("<init>").l match {
+      val init = cpg.method.name("test2").call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
         case init :: Nil => init
         case res         => fail(s"Expected single init call but got $res")
-
       }
 
       init.typeFullName shouldBe "void"
-      init.signature shouldBe "void(int)"
-      init.methodFullName shouldBe "a.b.c.Bar.<init>:void(int)"
+      init.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
+      init.methodFullName shouldBe s"a.b.c.Bar.${Defines.ConstructorMethodName}:${Defines.UnresolvedSignature}(1)"
 
       init.argument.size shouldBe 2
 
@@ -290,8 +290,8 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
     }
 
     call.typeFullName shouldBe "int"
-    call.methodFullName shouldBe "a.b.c.Bar.bar:int()"
-    call.signature shouldBe "int()"
+    call.methodFullName shouldBe s"a.b.c.Bar.bar:${Defines.UnresolvedSignature}(0)"
+    call.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
 
     call.argument.l match {
       case (obj: Identifier) :: Nil =>
@@ -321,8 +321,8 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
     }
 
     call.typeFullName shouldBe "void"
-    call.signature shouldBe "void(d.Baz,int)"
-    call.methodFullName shouldBe "a.b.c.Bar.bar:void(d.Baz,int)"
+    call.signature shouldBe s"${Defines.UnresolvedSignature}(2)"
+    call.methodFullName shouldBe s"a.b.c.Bar.bar:${Defines.UnresolvedSignature}(2)"
 
     call.argument.l match {
       case List(obj: Identifier, arg1: Identifier, arg2: Literal) =>
@@ -347,8 +347,8 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
     }
 
     call.typeFullName shouldBe "void"
-    call.signature shouldBe "void()"
-    call.methodFullName shouldBe "pakfoo.Foo.missing:void()"
+    call.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
+    call.methodFullName shouldBe s"pakfoo.Foo.missing:${Defines.UnresolvedSignature}(0)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
     call.argument.l match {

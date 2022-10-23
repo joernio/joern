@@ -1,10 +1,11 @@
 package io.joern.console
 
-import os.{Path, pwd}
+import ammonite.interp.Watchable
 import ammonite.util.{Colors, Res}
 import better.files._
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
+import os.{pwd, Path}
 
 case class Config(
   scriptFile: Option[Path] = None,
@@ -154,6 +155,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
       config.scriptFile match {
         case None =>
           if (config.server) {
+            GlobalReporting.enable()
             startHttpServer(config)
           } else if (config.pluginToRun.isDefined) {
             runPlugin(config, slProduct.name)
@@ -196,7 +198,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 trait ScriptExecution {
   this: BridgeBase =>
 
-  protected def startInteractiveShell(config: Config, slProduct: SLProduct) = {
+  protected def startInteractiveShell(config: Config, slProduct: SLProduct): (Res[Any], Seq[(Watchable, Long)]) = {
     val configurePPrinterMaybe =
       if (config.nocolors) ""
       else """val originalPPrinter = repl.pprinter()
@@ -226,7 +228,7 @@ trait ScriptExecution {
       .run()
   }
 
-  protected def runScript(scriptFile: Path, config: Config) = {
+  protected def runScript(scriptFile: Path, config: Config): AnyVal = {
     val isEncryptedScript = scriptFile.ext == "enc"
     System.err.println(s"executing $scriptFile with params=${config.params}")
     val scriptArgs: Seq[String] = {
@@ -380,9 +382,7 @@ trait PluginHandling {
 
 }
 
-trait ServerHandling {
-
-  this: BridgeBase =>
+trait ServerHandling { this: BridgeBase =>
 
   protected def startHttpServer(config: Config): Unit = {
     val predef   = predefPlus(additionalImportCode(config))
@@ -402,11 +402,10 @@ trait ServerHandling {
     try {
       server.main(Array.empty)
     } catch {
-      case _: java.net.BindException => {
+      case _: java.net.BindException =>
         println("Could not bind socket for CPGQL server, exiting.")
         ammonite.shutdown()
         System.exit(1)
-      }
       case e: Throwable =>
         println("Unhandled exception thrown while attempting to start CPGQL server: ")
         println(e.getMessage)

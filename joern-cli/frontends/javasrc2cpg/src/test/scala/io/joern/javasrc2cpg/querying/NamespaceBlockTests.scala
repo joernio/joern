@@ -27,7 +27,10 @@ class NamespaceBlockTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should allow traversing from namespace block to method" in {
-    cpg.namespaceBlock.filename(".*java").typeDecl.method.name.toSetMutable shouldBe Set("foo", "<init>")
+    cpg.namespaceBlock.filename(".*java").typeDecl.method.name.toSetMutable shouldBe Set(
+      "foo",
+      io.joern.x2cpg.Defines.ConstructorMethodName
+    )
   }
 
   "should allow traversing from namespace block to type declaration" in {

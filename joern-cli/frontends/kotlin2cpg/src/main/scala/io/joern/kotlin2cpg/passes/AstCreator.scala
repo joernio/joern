@@ -36,7 +36,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   protected val tmpKeyPool      = new IntervalKeyPool(first = 1, last = Long.MaxValue)
   protected val iteratorKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
 
-  protected val relativizedPath = fileWithMeta.relativizedPath
+  protected val relativizedPath: String = fileWithMeta.relativizedPath
 
   protected val scope: Scope[String, DeclarationNew, NewNode] = new Scope()
 
@@ -60,7 +60,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     typeName
   }
 
-  protected def getName(node: NewImport) = {
+  protected def getName(node: NewImport): String = {
     val isWildcard = node.isWildcard.getOrElse(false: java.lang.Boolean)
     if (isWildcard) Constants.wildcardImportName
     else node.importedEntity.getOrElse("")

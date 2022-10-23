@@ -35,22 +35,20 @@ class QueryDatabase(
     */
   def queriesInBundle[T <: QueryBundle](bundle: Class[T]): List[Query] = {
     val instance = bundle.getField("MODULE$").get(null)
-    queryCreatorsInBundle(bundle).map {
-      case (method, args) => {
-        val query           = method.invoke(instance, args: _*).asInstanceOf[Query]
-        val bundleNamespace = bundle.getPackageName
-        // the namespace currently looks like `io.joern.scanners.c.CopyLoops`
-        val namespaceParts = bundleNamespace.split('.')
-        val language =
-          if (bundleNamespace.startsWith("io.shiftleft.ocular.scanners")) {
-            namespaceParts(4)
-          } else if (namespaceParts.size > 3) {
-            namespaceParts(3)
-          } else {
-            ""
-          }
-        query.copy(language = language)
-      }
+    queryCreatorsInBundle(bundle).map { case (method, args) =>
+      val query           = method.invoke(instance, args: _*).asInstanceOf[Query]
+      val bundleNamespace = bundle.getPackageName
+      // the namespace currently looks like `io.joern.scanners.c.CopyLoops`
+      val namespaceParts = bundleNamespace.split('.')
+      val language =
+        if (bundleNamespace.startsWith("io.shiftleft.ocular.scanners")) {
+          namespaceParts(4)
+        } else if (namespaceParts.length > 3) {
+          namespaceParts(3)
+        } else {
+          ""
+        }
+      query.copy(language = language)
     }
   }
 

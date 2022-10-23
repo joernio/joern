@@ -25,7 +25,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("b", 1) shouldBe expected(("_tmp_0.b", AlwaysEdge))
       succOf("_tmp_0.b") shouldBe expected(("b = _tmp_0.b", AlwaysEdge))
       succOf("b = _tmp_0.b") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("{a, b}", AlwaysEdge))
+      succOf("{a, b}") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for object destruction assignment with declaration and ternary init" in CfgFixture(
@@ -52,7 +53,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("b", 1) shouldBe expected(("_tmp_0.b", AlwaysEdge))
       succOf("_tmp_0.b") shouldBe expected(("b = _tmp_0.b", AlwaysEdge))
       succOf("b = _tmp_0.b") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("{ a, b }", AlwaysEdge))
+      succOf("{ a, b }") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for object destruction assignment with reassignment" in CfgFixture("var {a: n, b: m} = x") {
@@ -73,7 +75,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
         succOf("b") shouldBe expected(("_tmp_0.b", AlwaysEdge))
         succOf("_tmp_0.b") shouldBe expected(("m = _tmp_0.b", AlwaysEdge))
         succOf("m = _tmp_0.b") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-        succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+        succOf("_tmp_0", 3) shouldBe expected(("{a: n, b: m}", AlwaysEdge))
+        succOf("{a: n, b: m}") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for object destruction assignment with reassignment and defaults" in CfgFixture(
@@ -119,7 +122,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
         expected(("m = _tmp_0.b === void 0 ? 2 : _tmp_0.b", AlwaysEdge))
       succOf("m = _tmp_0.b === void 0 ? 2 : _tmp_0.b") shouldBe
         expected(("_tmp_0", 5, AlwaysEdge))
-      succOf("_tmp_0", 5) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 5) shouldBe expected(("{a: n = 1, b: m = 2}", AlwaysEdge))
+      succOf("{a: n = 1, b: m = 2}") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for object destruction assignment with rest" in CfgFixture("var {a, ...rest} = x") { implicit cpg =>
@@ -140,7 +144,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("_tmp_0.rest") shouldBe expected(("rest = _tmp_0.rest", AlwaysEdge))
       succOf("rest = _tmp_0.rest") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
 
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("{a, ...rest}", AlwaysEdge))
+      succOf("{a, ...rest}") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for object destruction assignment with computed property name" ignore CfgFixture(
@@ -161,7 +166,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
         ("param1_0", 1, FalseEdge)
       )
       succOf("param1_0", 1) shouldBe expected(("param1_0 === void 0 ? {} : param1_0", AlwaysEdge))
-      succOf("_tmp_0") shouldBe expected(("param1_0 === void 0 ? {} : param1_0", AlwaysEdge))
+      succOf("_tmp_0") shouldBe expected(("{}", AlwaysEdge))
+      succOf("{}") shouldBe expected(("param1_0 === void 0 ? {} : param1_0", AlwaysEdge))
       succOf("param1_0 === void 0 ? {} : param1_0") shouldBe expected(
         ("_tmp_1 = param1_0 === void 0 ? {} : param1_0", AlwaysEdge)
       )
@@ -175,7 +181,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
         ("_tmp_2", TrueEdge), // holds {}
         ("_tmp_1", 2, FalseEdge)
       )
-      succOf("_tmp_2") shouldBe expected(("_tmp_1.id === void 0 ? {} : _tmp_1.id", AlwaysEdge))
+      succOf("_tmp_2") shouldBe expected(("{}", AlwaysEdge))
+      succOf("{}", 1) shouldBe expected(("_tmp_1.id === void 0 ? {} : _tmp_1.id", AlwaysEdge))
       succOf("_tmp_1", 2) shouldBe expected(("id", 2, AlwaysEdge))
 
       succOf("_tmp_1.id === void 0 ? {} : _tmp_1.id") shouldBe expected(
@@ -190,7 +197,9 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("b", 1) shouldBe expected(("_tmp_1.b", AlwaysEdge))
       succOf("_tmp_1.b") shouldBe expected(("b = _tmp_1.b", AlwaysEdge))
       succOf("b = _tmp_1.b") shouldBe expected(("_tmp_1", 4, AlwaysEdge))
-      succOf("_tmp_1", 4) shouldBe expected(("id", 3, AlwaysEdge))
+      succOf("_tmp_1", 4) shouldBe expected(("{id = {}, b}", AlwaysEdge))
+      succOf("{id = {}, b}") shouldBe expected(("id", AlwaysEdge))
+
     }
 
     "be correct for object destruction assignment as parameter" in CfgFixture("""
@@ -226,7 +235,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("1") shouldBe expected(("_tmp_0[1]", AlwaysEdge))
       succOf("_tmp_0[1]") shouldBe expected(("b = _tmp_0[1]", AlwaysEdge))
       succOf("b = _tmp_0[1]") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("[a, b]", AlwaysEdge))
+      succOf("[a, b]") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for array destruction assignment without declaration" in CfgFixture("[a, b] = x") { implicit cpg =>
@@ -247,7 +257,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("1") shouldBe expected(("_tmp_0[1]", AlwaysEdge))
       succOf("_tmp_0[1]") shouldBe expected(("b = _tmp_0[1]", AlwaysEdge))
       succOf("b = _tmp_0[1]") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("[a, b]", AlwaysEdge))
+      succOf("[a, b]") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for array destruction assignment with defaults" in CfgFixture("var [a = 1, b = 2] = x") {
@@ -291,8 +302,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
           ("b = _tmp_0[1] === void 0 ? 2 : _tmp_0[1]", AlwaysEdge)
         )
         succOf("b = _tmp_0[1] === void 0 ? 2 : _tmp_0[1]") shouldBe expected(("_tmp_0", 5, AlwaysEdge))
-
-        succOf("_tmp_0", 5) shouldBe expected(("RET", AlwaysEdge))
+        succOf("_tmp_0", 5) shouldBe expected(("[a = 1, b = 2]", AlwaysEdge))
+        succOf("[a = 1, b = 2]") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for array destruction assignment with ignores" in CfgFixture("var [a, , b] = x") { implicit cpg =>
@@ -313,7 +324,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("2") shouldBe expected(("_tmp_0[2]", AlwaysEdge))
       succOf("_tmp_0[2]") shouldBe expected(("b = _tmp_0[2]", AlwaysEdge))
       succOf("b = _tmp_0[2]") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("[a, , b]", AlwaysEdge))
+      succOf("[a, , b]") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for array destruction assignment with rest" in CfgFixture("var [a, ...rest] = x") { implicit cpg =>
@@ -334,7 +346,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("1") shouldBe expected(("_tmp_0[1]", AlwaysEdge))
       succOf("_tmp_0[1]") shouldBe expected(("rest = _tmp_0[1]", AlwaysEdge))
       succOf("rest = _tmp_0[1]") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("[a, ...rest]", AlwaysEdge))
+      succOf("[a, ...rest]") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for array destruction assignment as parameter" in CfgFixture("""

@@ -4,10 +4,10 @@ import better.files.File
 import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.joern.jssrc2cpg.Config
 import io.shiftleft.codepropertygraph.Cpg
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend}
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import org.scalatest.Inside
 
-class JsSrc2CpgFrontend(override val fileSuffix: String = ".js") extends LanguageFrontend {
+trait JsSrc2CpgFrontend extends LanguageFrontend {
   def execute(sourceCodePath: java.io.File): Cpg = {
     val cpgOutFile = File.newTemporaryFile(suffix = "cpg.bin")
     cpgOutFile.deleteOnExit()
@@ -17,4 +17,8 @@ class JsSrc2CpgFrontend(override val fileSuffix: String = ".js") extends Languag
   }
 }
 
-class JsSrc2CpgSuite(fileSuffix: String = ".js") extends Code2CpgFixture(new JsSrc2CpgFrontend(fileSuffix)) with Inside
+class DefaultTestCpgWithJsSrc(val fileSuffix: String) extends DefaultTestCpg with JsSrc2CpgFrontend
+
+class JsSrc2CpgSuite(fileSuffix: String = ".js")
+    extends Code2CpgFixture(() => new DefaultTestCpgWithJsSrc(fileSuffix))
+    with Inside

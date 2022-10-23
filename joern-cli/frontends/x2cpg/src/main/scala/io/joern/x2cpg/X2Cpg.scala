@@ -1,10 +1,10 @@
 package io.joern.x2cpg
 
 import better.files.File
-import io.joern.x2cpg.X2Cpg.withErrorsToConsole
+import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.slf4j.LoggerFactory
 import overflowdb.Config
 import scopt.OParser
@@ -66,8 +66,8 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
     */
   def createCpg(config: T): Try[Cpg]
 
-  /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG closed not
-    * returned.
+  /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG is closed and
+    * not returned.
     */
   def run(config: T): Unit = {
     withErrorsToConsole(config) { _ =>
@@ -78,6 +78,26 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
         case Failure(exception) =>
           Failure(exception)
       }
+    }
+  }
+
+  /** Create a CPG with default overlays according to given configuration
+    */
+  def createCpgWithOverlays(config: T): Try[Cpg] = {
+    val maybeCpg = createCpg(config)
+    maybeCpg.map { cpg =>
+      applyDefaultOverlays(cpg)
+      cpg
+    }
+  }
+
+  /** Create a CPG for code at `inputPath` and apply default overlays.
+    */
+  def createCpgWithOverlays(inputName: String)(implicit defaultConfig: T): Try[Cpg] = {
+    val maybeCpg = createCpg(inputName)
+    maybeCpg.map { cpg =>
+      applyDefaultOverlays(cpg)
+      cpg
     }
   }
 
@@ -194,10 +214,15 @@ object X2Cpg {
     */
   def applyDefaultOverlays(cpg: Cpg): Unit = {
     val context = new LayerCreatorContext(cpg)
-    new Base().run(context)
-    new ControlFlow().run(context)
-    new TypeRelations().run(context)
-    new CallGraph().run(context)
+    defaultOverlayCreators().foreach { creator =>
+      creator.run(context)
+    }
+  }
+
+  /** This should be the only place where we define the list of default overlays.
+    */
+  def defaultOverlayCreators(): List[LayerCreator] = {
+    List(new Base(), new ControlFlow(), new TypeRelations(), new CallGraph())
   }
 
   /** Write `sourceCode` to a temporary file inside a temporary directory. The prefix for the temporary directory is

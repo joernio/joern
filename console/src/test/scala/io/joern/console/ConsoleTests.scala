@@ -3,6 +3,7 @@ package io.joern.console
 import better.files.Dsl._
 import better.files._
 import io.joern.console.testing._
+import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
@@ -317,7 +318,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       )
       val numOverlayFilesBefore = console.project.path.resolve("overlays").toFile.list().length
       numOverlayFilesBefore shouldBe 4
-      console._runAnalyzer(new Base, new ControlFlow, new TypeRelations, new CallGraph)
+      console._runAnalyzer(defaultOverlayCreators(): _*)
       console.project.appliedOverlays shouldBe List(
         Base.overlayName,
         ControlFlow.overlayName,
@@ -360,69 +361,6 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     override val description: String = "foodescr"
 
     override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {}
-  }
-
-  "undo" should {
-    "remove layer from meta information" in ConsoleFixture() { (console, codeDir) =>
-      console.importCode(codeDir.toString)
-      console._runAnalyzer(new MockLayerCreator)
-      console.project.appliedOverlays shouldBe List(
-        Base.overlayName,
-        ControlFlow.overlayName,
-        TypeRelations.overlayName,
-        CallGraph.overlayName,
-        "fooname"
-      )
-      console.undo
-      console.project.appliedOverlays shouldBe List(
-        Base.overlayName,
-        ControlFlow.overlayName,
-        TypeRelations.overlayName,
-        CallGraph.overlayName
-      )
-      console.undo
-      console.undo
-      console.undo
-      console.undo
-      console.project.appliedOverlays shouldBe List()
-    }
-
-    "remove overlay file from project" in ConsoleFixture() { (console, codeDir) =>
-      console.importCode(codeDir.toString)
-      val overlayDir         = console.project.path.resolve("overlays")
-      val overlayFilesBefore = overlayDir.toFile.list.toSet
-      overlayFilesBefore shouldBe Set(
-        Base.overlayName,
-        ControlFlow.overlayName,
-        TypeRelations.overlayName,
-        CallGraph.overlayName
-      )
-      console.undo
-      console.undo
-      console.undo
-      console.undo
-      val overlayFilesAfter = overlayDir.toFile.list.toSet
-      overlayFilesAfter shouldBe Set()
-    }
-
-    "actually remove some nodes" in ConsoleFixture() { (console, codeDir) =>
-      console.importCode(codeDir.toString)
-      console.cpg.parameter.asOutput.l.size should be > 0
-      console.project.appliedOverlays shouldBe List(
-        Base.overlayName,
-        ControlFlow.overlayName,
-        TypeRelations.overlayName,
-        CallGraph.overlayName
-      )
-      console.undo
-      console.undo
-      console.undo
-      console.undo
-      console.project.appliedOverlays shouldBe List()
-      console.cpg.parameter.asOutput.l.size shouldBe 0
-      console._runAnalyzer(new Base)
-      console.cpg.parameter.asOutput.l.size should be > 0
-    }
   }
 
   "save" should {
@@ -468,8 +406,6 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       Run.runCustomQuery(console, console.cpg.method.newTagNode("mytag"))
       console.cpg.tag.name("mytag").method.name.toSet should contain("main")
       console.cpg.metaData.map(_.overlays).head.last shouldBe "custom"
-      console.undo
-      console.cpg.metaData.map(_.overlays).head.last shouldBe "callgraph"
     }
   }
 

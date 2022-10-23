@@ -96,7 +96,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{
   operatorCallNode
 }
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
-import io.joern.javasrc2cpg.util.Scope.{ScopeTypes, WildcardImportName}
+import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.javasrc2cpg.util.{
   BindingTable,
   BindingTableAdapterForJavaparser,
@@ -109,7 +109,14 @@ import io.joern.javasrc2cpg.util.{
   TypeInfoCalculator
 }
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
-import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, rootCode, rootType}
+import io.joern.javasrc2cpg.util.Util.{
+  composeMethodFullName,
+  composeMethodLikeSignature,
+  composeUnresolvedSignature,
+  memberNode,
+  rootCode,
+  rootType
+}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
@@ -147,10 +154,11 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeRef,
   NewUnknown
 }
-import io.joern.x2cpg.{Ast, AstCreatorBase}
+import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.{PropertyDefaults => ParameterDefaults}
 import io.shiftleft.passes.IntervalKeyPool
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -159,7 +167,6 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
 import scala.language.{existentials, implicitConversions}
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 case class ClosureBindingEntry(nodeTypeInfo: NodeTypeInfo, binding: NewClosureBinding)
@@ -171,12 +178,12 @@ case class LambdaImplementedInfo(
 
 case class PartialConstructor(initNode: NewCall, initArgs: Seq[Ast], blockAst: Ast)
 
-case class ExpectedType(fullName: String, resolvedType: Option[ResolvedType] = None)
+case class ExpectedType(fullName: Option[String], resolvedType: Option[ResolvedType] = None)
 object ExpectedType {
-  val default: ExpectedType = ExpectedType(TypeConstants.UnresolvedType)
-  val Int: ExpectedType     = ExpectedType(TypeConstants.Int)
-  val Boolean: ExpectedType = ExpectedType(TypeConstants.Boolean)
-  val Void: ExpectedType    = ExpectedType(TypeConstants.Void)
+  def empty: ExpectedType   = ExpectedType(None, None)
+  val Int: ExpectedType     = ExpectedType(Some(TypeConstants.Int))
+  val Boolean: ExpectedType = ExpectedType(Some(TypeConstants.Boolean))
+  val Void: ExpectedType    = ExpectedType(Some(TypeConstants.Void))
 }
 
 case class AstWithStaticInit(ast: Seq[Ast], staticInits: Seq[Ast])
@@ -231,14 +238,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     specificImports.foreach { importStmt =>
       val name         = importStmt.getName.getIdentifier
       val typeFullName = importStmt.getNameAsString // fully qualified name
-      val importNode   = identifierNode(name, typeFullName)
-      scopeStack.addToScope(importNode, name, typeFullName)
+      typeInfoCalc.registerType(typeFullName)
+      val importNode = identifierNode(name, Some(typeFullName))
+      scopeStack.addToScope(importNode, name, Some(typeFullName))
     }
 
     asteriskImports match {
       case imp :: Nil =>
         val name         = WildcardImportName
-        val typeFullName = imp.getNameAsString
+        val typeFullName = Some(imp.getNameAsString)
         val importNode   = identifierNode(name, typeFullName)
         scopeStack.addToScope(importNode, name, typeFullName)
 
@@ -309,21 +317,41 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
+  private def composeSignature(
+    maybeReturnType: Option[String],
+    maybeParameterTypes: Option[List[String]],
+    parameterCount: Int
+  ): String = {
+    (maybeReturnType, maybeParameterTypes) match {
+      case (Some(returnType), Some(parameterTypes)) =>
+        composeMethodLikeSignature(returnType, parameterTypes)
+
+      case _ =>
+        composeUnresolvedSignature(parameterCount)
+    }
+  }
+
   private def methodSignature(method: ResolvedMethodDeclaration, typeParamValues: ResolvedTypeParametersMap): String = {
-    val parameterTypes = calcParameterTypes(method, typeParamValues)
+    val maybeParameterTypes = calcParameterTypes(method, typeParamValues)
 
-    val returnType =
-      Try(method.getReturnType)
-        .map(returnType => typeInfoCalc.fullName(returnType, typeParamValues))
-        .getOrElse(TypeConstants.UnresolvedType)
+    val maybeReturnType =
+      Try(method.getReturnType).toOption
+        .flatMap(returnType => typeInfoCalc.fullName(returnType, typeParamValues))
 
-    composeMethodLikeSignature(returnType, parameterTypes)
+    composeSignature(maybeReturnType, maybeParameterTypes, method.getNumberOfParams)
+  }
+
+  private def toOptionList[T](items: collection.Seq[Option[T]]): Option[List[T]] = {
+    items.foldLeft[Option[List[T]]](Some(Nil)) {
+      case (Some(acc), Some(value)) => Some(acc :+ value)
+      case _                        => None
+    }
   }
 
   private def calcParameterTypes(
     methodLike: ResolvedMethodLikeDeclaration,
     typeParamValues: ResolvedTypeParametersMap
-  ): collection.Seq[String] = {
+  ): Option[List[String]] = {
     val parameterTypes =
       Range(0, methodLike.getNumberOfParams)
         .flatMap { index =>
@@ -331,15 +359,18 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         }
         .map { param =>
           Try(param.getType).toOption
-            .map(paramType => typeInfoCalc.fullName(paramType, typeParamValues))
-            .getOrElse(TypeConstants.UnresolvedType)
+            .flatMap(paramType => typeInfoCalc.fullName(paramType, typeParamValues))
         }
 
-    parameterTypes
+    toOptionList(parameterTypes)
   }
 
   def getBindingTable(typeDecl: ResolvedReferenceTypeDeclaration): BindingTable = {
-    val fullName = typeInfoCalc.fullName(typeDecl)
+    val fullName = typeInfoCalc.fullName(typeDecl).getOrElse {
+      val qualifiedName = typeDecl.getQualifiedName
+      logger.warn(s"Could not get full name for resolved type decl $qualifiedName. THIS SHOULD NOT HAPPEN!")
+      qualifiedName
+    }
     bindingTableCache.getOrElseUpdate(
       fullName,
       createBindingTable(
@@ -403,16 +434,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           astForFieldVariable(variable, fieldDeclaration)
         }
 
-        val staticInitAsts = if (fieldDeclaration.isStatic) {
-          val assignments = assignmentsForVarDecl(
-            fieldDeclaration.getVariables.asScala.toList,
-            line(fieldDeclaration),
-            column(fieldDeclaration)
-          )
-          assignments
-        } else {
-          Nil
-        }
+        val assignments = assignmentsForVarDecl(
+          fieldDeclaration.getVariables.asScala.toList,
+          line(fieldDeclaration),
+          column(fieldDeclaration)
+        )
+
+        val staticInitAsts = if (fieldDeclaration.isStatic) assignments else Nil
+        if (!fieldDeclaration.isStatic) scopeStack.addMemberInitializersToScope(assignments)
 
         AstWithStaticInit(memberAsts, staticInitAsts)
 
@@ -434,39 +463,29 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val typeFullName = typeParameter.getTypeBound.asScala.headOption
       .flatMap(typeInfoCalc.fullName)
       .getOrElse(TypeConstants.Object)
+    typeInfoCalc.registerType(typeFullName)
 
-    identifierNode(name, typeFullName)
+    identifierNode(name, Some(typeFullName))
   }
 
   private def identifierForResolvedTypeParameter(typeParameter: ResolvedTypeParameterDeclaration): NewIdentifier = {
     val name = typeParameter.getName
-    val typeFullName = Try(typeParameter.getUpperBound)
-      .map(typeInfoCalc.fullName)
+    val typeFullName = Try(typeParameter.getUpperBound).toOption
+      .flatMap(typeInfoCalc.fullName)
       .getOrElse(TypeConstants.Object)
-    identifierNode(name, typeFullName)
+    typeInfoCalc.registerType(typeFullName)
+    identifierNode(name, Some(typeFullName))
   }
 
-  private def clinitAstsFromStaticInits(staticInits: Seq[Ast]): Option[Ast] = {
+  private def clinitAstFromStaticInits(staticInits: Seq[Ast]): Option[Ast] = {
     Option.when(staticInits.nonEmpty) {
       val signature = composeMethodLikeSignature(TypeConstants.Void, Nil)
       val fullName = scopeStack.getEnclosingTypeDecl
-        .map { typeDecl =>
-          composeMethodFullName(typeDecl.fullName, NameConstants.Clinit, signature)
-        }
+        .map(typeDecl =>
+          composeMethodFullName(typeDecl.fullName, io.joern.x2cpg.Defines.StaticInitMethodName, signature)
+        )
         .getOrElse("")
-
-      val methodNode = NewMethod()
-        .name(NameConstants.Clinit)
-        .fullName(fullName)
-        .signature(signature)
-
-      val staticModifier = modifierNode(ModifierTypes.STATIC)
-
-      val body = Ast(NewBlock()).withChildren(staticInits)
-
-      val methodReturn = methodReturnNode(TypeConstants.Void, None, None, None)
-
-      methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
+      staticInitMethodAst(staticInits.toList, fullName, Some(signature), TypeConstants.Void)
     }
   }
 
@@ -519,24 +538,25 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val decl             = typ.asClassOrInterfaceDeclaration()
       val extendedTypes    = decl.getExtendedTypes.asScala
       val implementedTypes = decl.getImplementedTypes.asScala
+      val inheritsFromTypeNames =
+        (extendedTypes ++ implementedTypes).flatMap { typ =>
+          typeInfoCalc.fullName(typ)
+        }
       val maybeJavaObjectType = if (extendedTypes.isEmpty) {
         typeInfoCalc.registerType(TypeConstants.Object)
         Seq(TypeConstants.Object)
       } else {
         Seq()
       }
-      val inheritsFromTypeNames =
-        (extendedTypes ++ implementedTypes).map { typ =>
-          typeInfoCalc.fullName(typ).getOrElse(TypeConstants.UnresolvedType)
-        }
       maybeJavaObjectType ++ inheritsFromTypeNames
     } else {
       List.empty[String]
     }
 
-    val resolvedType = tryWithSafeStackOverflow(typ.resolve())
-    val name         = resolvedType.map(typeInfoCalc.name).getOrElse(typ.getNameAsString)
-    val typeFullName = resolvedType.map(typeInfoCalc.fullName).getOrElse(typ.getNameAsString)
+    val resolvedType    = tryWithSafeStackOverflow(typ.resolve()).toOption
+    val defaultFullName = s"${Defines.UnresolvedNamespace}.${typ.getNameAsString}"
+    val name            = resolvedType.flatMap(typeInfoCalc.name).getOrElse(typ.getNameAsString)
+    val typeFullName    = resolvedType.flatMap(typeInfoCalc.fullName).getOrElse(defaultFullName)
 
     val code = codeForTypeDecl(typ, isInterface)
 
@@ -558,7 +578,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         resolvedTypeParams
           .map(identifierForResolvedTypeParameter)
           .foreach { identifier =>
-            scopeStack.addToScope(identifier, identifier.name, identifier.typeFullName)
+            scopeStack.addToScope(identifier, identifier.name, Some(identifier.typeFullName))
           }
 
       case _ => // Nothing to do here
@@ -598,7 +618,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val annotationAsts = typ.getAnnotations.asScala.map(astForAnnotationExpr)
 
-    val clinitAst = clinitAstsFromStaticInits(staticInits.toSeq)
+    val clinitAst = clinitAstFromStaticInits(staticInits.toSeq)
 
     val lambdaMethods = scopeStack.getLambdaMethodsInScope.toSeq
 
@@ -617,7 +637,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       defaultConstructorAst
         .flatMap(_.root)
         .collect { case defaultConstructor: NewMethod =>
-          BindingTableEntry(NameConstants.Init, defaultConstructor.signature, defaultConstructor.fullName)
+          BindingTableEntry(
+            io.joern.x2cpg.Defines.ConstructorMethodName,
+            defaultConstructor.signature,
+            defaultConstructor.fullName
+          )
         }
 
     // Annotation declarations need no binding table as objects of this
@@ -638,18 +662,22 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def astForDefaultConstructor(): Ast = {
-    val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse("<empty>")
+    val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName)
     val signature    = s"${TypeConstants.Void}()"
-    val fullName     = composeMethodFullName(typeFullName, NameConstants.Init, signature)
+    val fullName = composeMethodFullName(
+      typeFullName.getOrElse(Defines.UnresolvedNamespace),
+      Defines.ConstructorMethodName,
+      signature
+    )
     val constructorNode = NewMethod()
-      .name(NameConstants.Init)
+      .name(io.joern.x2cpg.Defines.ConstructorMethodName)
       .fullName(fullName)
       .signature(signature)
       .filename(filename)
       .isExternal(false)
 
     val thisAst = Ast(thisNodeForMethod(typeFullName, lineNumber = None))
-    val bodyAst = Ast(NewBlock())
+    val bodyAst = Ast(NewBlock()).withChildren(scopeStack.getMemberInitializers)
 
     val returnNode = methodReturnNode(TypeConstants.Void, None, None, None)
 
@@ -659,23 +687,19 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def astForEnumEntry(entry: EnumConstantDeclaration): Ast = {
+    // TODO Fix enum entries in general
     val typeFullName =
-      tryWithSafeStackOverflow(entry.resolve().getType).toOption
-        .map(typeInfoCalc.fullName)
-        .getOrElse(TypeConstants.UnresolvedType)
-    val entryNode = NewMember()
-      .lineNumber(line(entry))
-      .columnNumber(column(entry))
-      .code(entry.toString)
-      .name(entry.getName.toString)
-      .typeFullName(typeFullName)
+      tryWithSafeStackOverflow(entry.resolve().getType).toOption.flatMap(typeInfoCalc.fullName)
 
+    val entryNode = memberNode(entry.getNameAsString, entry.toString, typeFullName, line(entry), column(entry))
+
+    val name = s"${typeFullName.getOrElse(Defines.UnresolvedNamespace)}.${Defines.ConstructorMethodName}"
     val args = entry.getArguments.asScala.map { argument =>
-      val children = astsForExpression(argument, None)
+      val children = astsForExpression(argument, ExpectedType.empty)
       val callNode =
         NewCall()
-          .name(s"$typeFullName.<init>")
-          .methodFullName(s"$typeFullName.<init>")
+          .name(name)
+          .methodFullName(name)
           .dispatchType(DispatchTypes.STATIC_DISPATCH)
           .code(entry.toString)
           .lineNumber(line(entry))
@@ -712,22 +736,18 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       typeInfoCalc
         .fullName(v.getType)
         .orElse(scopeStack.lookupVariableType(v.getTypeAsString, wildcardFallback = true))
-        .getOrElse(TypeConstants.UnresolvedType)
-    val name = v.getName.toString
-    val memberNode =
-      NewMember()
-        .name(name)
-        .typeFullName(typeFullName)
-        .code(s"$typeFullName $name")
-    val memberAst      = Ast(memberNode)
+        .getOrElse(s"${Defines.UnresolvedNamespace}.${v.getTypeAsString}")
+    val name           = v.getName.toString
+    val node           = memberNode(name, s"$typeFullName $name", Some(typeFullName), line(v), column(v))
+    val memberAst      = Ast(node)
     val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
 
     val fieldDeclModifiers = modifiersForFieldDeclaration(fieldDeclaration)
 
     val nodeTypeInfo = NodeTypeInfo(
-      memberNode,
+      node,
       name = name,
-      typeFullName = typeFullName,
+      typeFullName = Some(typeFullName),
       isField = true,
       isStatic = fieldDeclaration.isStatic
     )
@@ -740,27 +760,36 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForConstructor(constructorDeclaration: ConstructorDeclaration): Ast = {
     scopeStack.pushNewScope(MethodScope(ExpectedType.Void))
+    val maybeResolved = tryWithSafeStackOverflow(constructorDeclaration.resolve())
 
-    val parameterAsts  = astsForParameterList(constructorDeclaration.getParameters).toList
-    val parameterTypes = parameterAsts.map(rootType(_).getOrElse(TypeConstants.UnresolvedType))
-    val signature      = s"${TypeConstants.Void}(${parameterTypes.mkString(",")})"
-    val typeFullName   = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
-    val fullName       = composeMethodFullName(typeFullName, NameConstants.Init, signature)
+    val parameterAsts = astsForParameterList(constructorDeclaration.getParameters).toList
+    val paramTypes    = argumentTypesForMethodLike(maybeResolved)
+    val signature     = composeSignature(Some(TypeConstants.Void), paramTypes, parameterAsts.size)
+    val typeFullName  = scopeStack.getEnclosingTypeDecl.map(_.fullName)
+    val fullName =
+      composeMethodFullName(
+        typeFullName.getOrElse(Defines.UnresolvedNamespace),
+        Defines.ConstructorMethodName,
+        signature
+      )
 
     val constructorNode = createPartialMethod(constructorDeclaration)
+      .name(io.joern.x2cpg.Defines.ConstructorMethodName)
       .fullName(fullName)
       .signature(signature)
 
     parameterAsts.foreach { ast =>
       ast.root match {
-        case Some(p: NewMethodParameterIn) => scopeStack.addToScope(p, p.name, p.typeFullName)
+        case Some(p: NewMethodParameterIn) => scopeStack.addToScope(p, p.name, Some(p.typeFullName))
         case _                             => // This should never happen
       }
     }
 
-    val thisAst = Ast(thisNodeForMethod(typeFullName, line(constructorDeclaration)))
+    val thisNode = thisNodeForMethod(typeFullName, line(constructorDeclaration))
+    scopeStack.addToScope(thisNode, thisNode.name, typeFullName)
+    val thisAst = Ast(thisNode)
 
-    val bodyAst      = astForMethodBody(Some(constructorDeclaration.getBody))
+    val bodyAst      = astForConstructorBody(Some(constructorDeclaration.getBody))
     val methodReturn = constructorReturnNode(constructorDeclaration)
 
     val annotationAsts = constructorDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toList
@@ -776,16 +805,22 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     )
   }
 
-  private def thisNodeForMethod(typeFullName: String, lineNumber: Option[Integer]): NewMethodParameterIn = {
-    NewMethodParameterIn()
+  private def thisNodeForMethod(
+    maybeTypeFullName: Option[String],
+    lineNumber: Option[Integer]
+  ): NewMethodParameterIn = {
+    val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(TypeConstants.Any))
+    val param = NewMethodParameterIn()
       .name(NameConstants.This)
       .lineNumber(lineNumber)
       .code(NameConstants.This)
-      .typeFullName(typeFullName)
-      .dynamicTypeHintFullName(Seq(typeFullName))
+      .dynamicTypeHintFullName(maybeTypeFullName.toSeq)
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
       .index(0)
       .order(0)
+      .typeFullName(typeFullName)
+
+    param
   }
 
   private def convertAnnotationValueExpr(expr: Expression): Option[Ast] = {
@@ -890,15 +925,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def expressionReturnTypeFullName(expr: Expression): Option[String] = {
     tryWithSafeStackOverflow(expr.calculateResolvedType()).toOption
-      .map(typeInfoCalc.fullName)
+      .flatMap(typeInfoCalc.fullName)
       .orElse(exprNameFromStack(expr))
   }
 
   private def createAnnotationNode(annotationExpr: AnnotationExpr): NewAnnotation = {
+    val fallbackType = s"${Defines.UnresolvedNamespace}.${annotationExpr.getNameAsString}"
     NewAnnotation()
       .code(annotationExpr.toString)
       .name(annotationExpr.getName.getIdentifier)
-      .fullName(expressionReturnTypeFullName(annotationExpr).getOrElse(TypeConstants.UnresolvedType))
+      .fullName(expressionReturnTypeFullName(annotationExpr).getOrElse(fallbackType))
   }
 
   private def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
@@ -919,12 +955,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           createAnnotationAssignmentAst("value", single.getMemberValue, single.getMemberValue.toString)
         )
     }
-  }
-
-  private def getMethodFullName(typeDecl: Option[NewTypeDecl], methodName: String, signature: String) = {
-    val typeName = typeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
-
-    composeMethodFullName(typeName, methodName, signature)
   }
 
   private def modifiersForMethod(methodDeclaration: MethodDeclaration): Seq[NewModifier] = {
@@ -956,44 +986,51 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def addTypeParametersToScope(methodDeclaration: MethodDeclaration): Unit = {
     methodDeclaration.getTypeParameters.asScala.foreach { typeParam =>
       val identifier = identifierForTypeParameter(typeParam)
-      scopeStack.addToScope(identifier, identifier.name, identifier.typeFullName)
+      scopeStack.addToScope(identifier, identifier.name, Some(identifier.typeFullName))
     }
   }
 
   private def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
 
+    val maybeResolved = tryWithSafeStackOverflow(methodDeclaration.resolve())
     val expectedReturnType = Try(
       symbolResolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])
     ).toOption
     val returnTypeFullName = expectedReturnType
-      .map(typeInfoCalc.fullName)
+      .flatMap(typeInfoCalc.fullName)
       .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString, wildcardFallback = true))
-      .getOrElse(TypeConstants.UnresolvedType)
 
     scopeStack.pushNewScope(MethodScope(ExpectedType(returnTypeFullName, expectedReturnType)))
 
     addTypeParametersToScope(methodDeclaration)
 
     val parameterAsts  = astsForParameterList(methodDeclaration.getParameters)
-    val parameterTypes = parameterAsts.map(rootType(_).getOrElse(TypeConstants.UnresolvedType))
-    val signature      = composeMethodLikeSignature(returnTypeFullName, parameterTypes)
-    val methodFullName =
-      getMethodFullName(scopeStack.getEnclosingTypeDecl, methodDeclaration.getNameAsString, signature)
+    val parameterTypes = argumentTypesForMethodLike(maybeResolved)
+    val signature      = composeSignature(returnTypeFullName, parameterTypes, parameterAsts.size)
+    val namespaceName  = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(Defines.UnresolvedNamespace)
+    val methodFullName = composeMethodFullName(namespaceName, methodDeclaration.getNameAsString, signature)
 
     val methodNode = createPartialMethod(methodDeclaration)
       .fullName(methodFullName)
       .signature(signature)
 
-    val thisNode = Option
-      .when(!methodDeclaration.isStatic) {
-        val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
-        Ast(thisNodeForMethod(typeFullName, line(methodDeclaration)))
-      }
-      .toSeq
+    val thisNode = Option.when(!methodDeclaration.isStatic) {
+      val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName)
+      thisNodeForMethod(typeFullName, line(methodDeclaration))
+    }
+    val thisAst = thisNode.map(Ast(_)).toList
 
-    val bodyAst = astForMethodBody(methodDeclaration.getBody.toScala)
-    val methodReturn =
-      methodReturnNode(returnTypeFullName, None, line(methodDeclaration.getType), column(methodDeclaration.getType))
+    thisNode.foreach { node =>
+      scopeStack.addToScope(node, node.name, Some(node.typeFullName))
+    }
+
+    val bodyAst = methodDeclaration.getBody.toScala.map(astForBlockStatement(_)).getOrElse(Ast(NewBlock()))
+    val methodReturn = methodReturnNode(
+      returnTypeFullName.getOrElse(TypeConstants.Any),
+      None,
+      line(methodDeclaration.getType),
+      column(methodDeclaration.getType)
+    )
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
 
@@ -1001,7 +1038,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     scopeStack.popScope()
 
-    methodAstWithAnnotations(methodNode, thisNode ++ parameterAsts, bodyAst, methodReturn, modifiers, annotationAsts)
+    methodAstWithAnnotations(methodNode, thisAst ++ parameterAsts, bodyAst, methodReturn, modifiers, annotationAsts)
   }
 
   private def constructorReturnNode(constructorDeclaration: ConstructorDeclaration): NewMethodReturn = {
@@ -1032,10 +1069,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     methodNode
   }
 
-  private def astForMethodBody(body: Option[BlockStmt]): Ast = {
+  private def astForConstructorBody(body: Option[BlockStmt]): Ast = {
+    val containsThisInvocation =
+      body
+        .flatMap(_.getStatements.asScala.headOption)
+        .collect { case e: ExplicitConstructorInvocationStmt => e }
+        .exists(_.isThis)
+
+    val memberInitializers =
+      if (containsThisInvocation)
+        Seq.empty
+      else
+        scopeStack.getMemberInitializers
+
     body match {
-      case Some(b) => astForBlockStatement(b)
-      case None    => Ast(NewBlock())
+      case Some(b) => astForBlockStatement(b, prefixAsts = memberInitializers)
+
+      case None => Ast(NewBlock()).withChildren(memberInitializers)
     }
   }
 
@@ -1055,7 +1105,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .code(stmt.toString())
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
 
-    val args = astsForExpression(stmt.getExpression, None)
+    val args = astsForExpression(stmt.getExpression, ExpectedType.empty)
 
     callAst(throwNode, args)
   }
@@ -1071,7 +1121,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
 
-    val resources = stmt.getResources.asScala.flatMap(astsForExpression(_, expectedType = None)).toList
+    val resources = stmt.getResources.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty)).toList
     val tryAst    = astForBlockStatement(stmt.getTryBlock, codeStr = "try")
     val catchAsts = stmt.getCatchClauses.asScala.map(astForCatchClause)
     val catchBlock = Option
@@ -1104,7 +1154,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case x: ContinueStmt     => Seq(astForContinueStatement(x))
       case x: DoStmt           => Seq(astForDo(x))
       case _: EmptyStmt        => Seq() // Intentionally skipping this
-      case x: ExpressionStmt   => astsForExpression(x.getExpression, Some(ExpectedType.Void))
+      case x: ExpressionStmt   => astsForExpression(x.getExpression, ExpectedType.Void)
       case x: ForEachStmt      => astForForEach(x)
       case x: ForStmt          => Seq(astForFor(x))
       case x: IfStmt           => Seq(astForIf(x))
@@ -1145,7 +1195,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .code(s"if (${stmt.getCondition.toString})")
 
     val conditionAst =
-      astsForExpression(stmt.getCondition, Some(ExpectedType.Boolean)).headOption.toList
+      astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption.toList
 
     val thenAsts = astsForStatement(stmt.getThenStmt)
     val elseAst  = astForElse(stmt.getElseStmt.toScala).toList
@@ -1172,7 +1222,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .code(s"while (${stmt.getCondition.toString})")
 
     val conditionAst =
-      astsForExpression(stmt.getCondition, Some(ExpectedType.Boolean)).headOption.toList
+      astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption.toList
     val stmtAsts = astsForStatement(stmt.getBody)
 
     val ast = Ast(whileNode)
@@ -1191,7 +1241,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val doNode =
       NewControlStructure().controlStructureType(ControlStructureTypes.DO)
     val conditionAst =
-      astsForExpression(stmt.getCondition, Some(ExpectedType.Boolean)).headOption.toList
+      astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption.toList
     val stmtAsts = astsForStatement(stmt.getBody)
     controlStructureAst(doNode, conditionAst.headOption, stmtAsts.toList, placeConditionLast = true)
   }
@@ -1229,14 +1279,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .columnNumber(column(stmt))
 
     val initAsts =
-      stmt.getInitialization.asScala.flatMap(astsForExpression(_, expectedType = None))
+      stmt.getInitialization.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty))
 
     val compareAsts = stmt.getCompare.toScala.toList.flatMap {
-      astsForExpression(_, Some(ExpectedType.Boolean))
+      astsForExpression(_, ExpectedType.Boolean)
     }
 
     val updateAsts = stmt.getUpdate.asScala.toList.flatMap {
-      astsForExpression(_, None)
+      astsForExpression(_, ExpectedType.empty)
     }
 
     val stmtAsts =
@@ -1257,10 +1307,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def iterableAssignAstsForNativeForEach(
     iterableExpression: Expression,
-    iterableType: String
+    iterableType: Option[String]
   ): (NodeTypeInfo, Seq[Ast]) = {
     val lineNo       = line(iterableExpression)
-    val expectedType = Some(ExpectedType(iterableType))
+    val expectedType = ExpectedType(iterableType)
 
     val iterableAst = astsForExpression(iterableExpression, expectedType = expectedType) match {
       case Nil =>
@@ -1281,12 +1331,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       NewLocal()
         .name(iterableName)
         .code(iterableName)
-        .typeFullName(iterableType)
         .lineNumber(lineNo)
+    iterableType.foreach(iterableLocalNode.typeFullName(_))
     val iterableLocalAst = Ast(iterableLocalNode)
 
     val iterableAssignNode =
-      operatorCallNode(Operators.assignment, code = "", line = lineNo, typeFullName = Some(iterableType))
+      operatorCallNode(Operators.assignment, code = "", line = lineNo, typeFullName = iterableType)
     val iterableAssignIdentifier = identifierNode(iterableName, iterableType, lineNo)
     val iterableAssignArgs       = List(Ast(iterableAssignIdentifier), iterableAst)
     val iterableAssignAst =
@@ -1294,7 +1344,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .withRefEdge(iterableAssignIdentifier, iterableLocalNode)
 
     (
-      NodeTypeInfo(iterableLocalNode, iterableLocalNode.name, iterableLocalNode.typeFullName),
+      NodeTypeInfo(iterableLocalNode, iterableLocalNode.name, Some(iterableLocalNode.typeFullName)),
       List(iterableLocalAst, iterableAssignAst)
     )
   }
@@ -1308,7 +1358,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .typeFullName(typeFullName)
         .code(idxName)
         .lineNumber(lineNo)
-    scopeStack.addToScope(idxLocal, idxName, typeFullName)
+    scopeStack.addToScope(idxLocal, idxName, Some(typeFullName))
     idxLocal
   }
 
@@ -1320,7 +1370,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       line = lineNo,
       typeFullName = Some(TypeConstants.Int)
     )
-    val idxIdentifierArg = identifierNode(idxName, idxLocal.typeFullName, lineNo)
+    val idxIdentifierArg = identifierNode(idxName, Some(idxLocal.typeFullName), lineNo)
     val zeroLiteral =
       NewLiteral()
         .code("0")
@@ -1344,7 +1394,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       typeFullName = Some(TypeConstants.Boolean),
       line = lineNo
     )
-    val comparisonIdxIdentifier = identifierNode(idxName, idxLocal.typeFullName, lineNo)
+    val comparisonIdxIdentifier = identifierNode(idxName, Some(idxLocal.typeFullName), lineNo)
     val comparisonFieldAccess = operatorCallNode(
       Operators.fieldAccess,
       code = s"${iterableSource.name}.length",
@@ -1372,7 +1422,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       typeFullName = Some(TypeConstants.Int),
       line = lineNo
     )
-    val incrementArg    = identifierNode(idxLocal.name, idxLocal.typeFullName, lineNo)
+    val incrementArg    = identifierNode(idxLocal.name, Some(idxLocal.typeFullName), lineNo)
     val incrementArgAst = Ast(incrementArg)
     callAst(incrementNode, List(incrementArgAst))
       .withRefEdge(incrementArg, idxLocal)
@@ -1396,12 +1446,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     maybeVariable match {
       case Some(variable) =>
         val name         = variable.getNameAsString
-        val typeFullName = typeInfoCalc.fullName(variable.getType).getOrElse(TypeConstants.UnresolvedType)
+        val typeFullName = typeInfoCalc.fullName(variable.getType).getOrElse("ANY")
         val localNode = partialLocalNode
           .name(name)
           .code(variable.getNameAsString)
           .typeFullName(typeFullName)
-        scopeStack.addToScope(localNode, name, typeFullName)
+
+        scopeStack.addToScope(localNode, name, Some(typeFullName))
         localNode
 
       case None =>
@@ -1429,14 +1480,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val varAssignNode =
       operatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(variableLocal.typeFullName), lineNo)
 
-    val targetNode = identifierNode(variableLocal.name, variableLocal.typeFullName, lineNo)
+    val targetNode = identifierNode(variableLocal.name, Some(variableLocal.typeFullName), lineNo)
 
-    val indexAccessTypeFullName = iterable.typeFullName.replaceAll(raw"\[]", "")
+    val indexAccessTypeFullName = iterable.typeFullName.map(_.replaceAll(raw"\[]", ""))
     val indexAccess =
-      operatorCallNode(Operators.indexAccess, PropertyDefaults.Code, Some(indexAccessTypeFullName), lineNo)
+      operatorCallNode(Operators.indexAccess, PropertyDefaults.Code, indexAccessTypeFullName, lineNo)
 
     val indexAccessIdentifier = identifierNode(iterable.name, iterable.typeFullName, lineNo)
-    val indexAccessIndex      = identifierNode(idxLocal.name, idxLocal.typeFullName, lineNo)
+    val indexAccessIndex      = identifierNode(idxLocal.name, Some(idxLocal.typeFullName), lineNo)
 
     val indexAccessArgsAsts = List(indexAccessIdentifier, indexAccessIndex).map(Ast(_))
     val indexAccessAst      = callAst(indexAccess, indexAccessArgsAsts)
@@ -1469,7 +1520,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def astsForNativeForEach(stmt: ForEachStmt, iterableType: String): Seq[Ast] = {
+  private def astsForNativeForEach(stmt: ForEachStmt, iterableType: Option[String]): Seq[Ast] = {
 
     // This is ugly, but for a case like `for (int x : new int[] { ... })` this creates a new LOCAL
     // with the assignment `int[] $iterLocal0 = new int[] { ... }` before the FOR loop.
@@ -1518,23 +1569,17 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def iteratorAssignAstForForEach(
     iterExpr: Expression,
     iteratorLocalNode: NewLocal,
-    iterableType: String,
+    iterableType: Option[String],
     lineNo: Option[Integer]
   ): Ast = {
     val iteratorAssignNode =
       operatorCallNode(Operators.assignment, code = "", typeFullName = Some(TypeConstants.Iterator), line = lineNo)
-    val iteratorAssignIdentifier = identifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo)
+    val iteratorAssignIdentifier = identifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
 
     val iteratorCallNode =
-      callNode(
-        "iterator",
-        Some(iterableType),
-        TypeConstants.Iterator,
-        DispatchTypes.DYNAMIC_DISPATCH,
-        lineNumber = lineNo
-      )
+      callNode("iterator", iterableType, TypeConstants.Iterator, DispatchTypes.DYNAMIC_DISPATCH, lineNumber = lineNo)
 
-    val actualIteratorAst = astsForExpression(iterExpr, expectedType = None).toList match {
+    val actualIteratorAst = astsForExpression(iterExpr, expectedType = ExpectedType.empty).toList match {
       case Nil =>
         logger.warn(s"Could not create receiver ast for iterator $iterExpr")
         None
@@ -1562,7 +1607,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         DispatchTypes.DYNAMIC_DISPATCH,
         lineNumber = lineNo
       )
-    val iteratorHasNextCallReceiver = identifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo)
+    val iteratorHasNextCallReceiver =
+      identifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
 
     callAst(iteratorHasNextCallNode, receiver = Some(Ast(iteratorHasNextCallReceiver)), withRecvArgEdge = true)
       .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
@@ -1573,7 +1619,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val forVariableType = variableLocal.typeFullName
     val varLocalAssignNode =
       operatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(forVariableType), lineNo)
-    val varLocalAssignIdentifier = identifierNode(variableLocal.name, variableLocal.typeFullName, lineNo)
+    val varLocalAssignIdentifier = identifierNode(variableLocal.name, Some(variableLocal.typeFullName), lineNo)
 
     val iterNextCallNode =
       callNode(
@@ -1583,7 +1629,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         DispatchTypes.DYNAMIC_DISPATCH,
         lineNumber = lineNo
       )
-    val iterNextCallReceiver = identifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName, lineNo)
+    val iterNextCallReceiver = identifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
     val iterNextCallAst =
       callAst(iterNextCallNode, receiver = Some(Ast(iterNextCallReceiver)), withRecvArgEdge = true)
         .withRefEdge(iterNextCallReceiver, iteratorLocalNode)
@@ -1592,9 +1638,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withRefEdge(varLocalAssignIdentifier, variableLocal)
   }
 
-  private def astForIterableForEach(stmt: ForEachStmt, maybeTypeFullName: Option[String]): Seq[Ast] = {
-    val lineNo       = line(stmt)
-    val iterableType = maybeTypeFullName.getOrElse(TypeConstants.UnresolvedType)
+  private def astForIterableForEach(stmt: ForEachStmt, iterableType: Option[String]): Seq[Ast] = {
+    val lineNo = line(stmt)
 
     val iteratorLocalNode = iteratorLocalForForEach(lineNo)
     val iteratorAssignAst =
@@ -1633,7 +1678,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val ast = expressionReturnTypeFullName(stmt.getIterable) match {
       case Some(typeFullName) if typeFullName.endsWith("[]") =>
-        astsForNativeForEach(stmt, typeFullName)
+        astsForNativeForEach(stmt, Some(typeFullName))
 
       case maybeType =>
         astForIterableForEach(stmt, maybeType)
@@ -1649,7 +1694,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .controlStructureType(ControlStructureTypes.SWITCH)
         .code(s"switch(${stmt.getSelector.toString})")
 
-    val selectorAsts = astsForExpression(stmt.getSelector, None)
+    val selectorAsts = astsForExpression(stmt.getSelector, ExpectedType.empty)
     val selectorNode = selectorAsts.head.root.get
 
     val entryAsts = stmt.getEntries.asScala.flatMap(astForSwitchEntry)
@@ -1670,7 +1715,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val modifier = Ast(modifierNode("SYNCHRONIZED"))
 
-    val exprAsts = astsForExpression(stmt.getExpression, None)
+    val exprAsts = astsForExpression(stmt.getExpression, ExpectedType.empty)
     val bodyAst  = astForBlockStatement(stmt.getBody)
 
     Ast(parentNode)
@@ -1692,7 +1737,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           val jumpTarget = NewJumpTarget()
             .name("case")
             .code(label.toString)
-          val labelAsts = astsForExpression(label, None).toList
+          val labelAsts = astsForExpression(label, ExpectedType.empty).toList
 
           Ast(jumpTarget) :: labelAsts
         }
@@ -1716,7 +1761,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
 
-    val args = astsForExpression(stmt.getCheck, Some(ExpectedType.Boolean))
+    val args = astsForExpression(stmt.getCheck, ExpectedType.Boolean)
     callAst(callNode, args)
   }
 
@@ -1746,7 +1791,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .columnNumber(column(ret))
       .code(ret.toString)
     if (ret.getExpression.isPresent) {
-      val expectedType = scopeStack.getEnclosingMethodReturnType
+      val expectedType = scopeStack.getEnclosingMethodReturnType.getOrElse(ExpectedType.empty)
       val exprAsts     = astsForExpression(ret.getExpression.get(), expectedType)
       returnAst(returnNode, exprAsts)
     } else {
@@ -1754,7 +1799,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  def astForUnaryExpr(expr: UnaryExpr, expectedType: Option[ExpectedType]): Ast = {
+  def astForUnaryExpr(expr: UnaryExpr, expectedType: ExpectedType): Ast = {
     val operatorName = expr.getOperator match {
       case UnaryExpr.Operator.LOGICAL_COMPLEMENT => Operators.logicalNot
       case UnaryExpr.Operator.POSTFIX_DECREMENT  => Operators.postDecrement
@@ -1771,8 +1816,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val typeFullName =
       expressionReturnTypeFullName(expr)
         .orElse(argsAsts.headOption.flatMap(rootType))
-        .orElse(expectedType.map(_.fullName))
-        .getOrElse(TypeConstants.UnresolvedType)
+        .orElse(expectedType.fullName)
+        .getOrElse(TypeConstants.Any)
 
     val callNode = operatorCallNode(
       operatorName,
@@ -1785,11 +1830,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, argsAsts)
   }
 
-  def astForArrayAccessExpr(expr: ArrayAccessExpr, expectedType: Option[ExpectedType]): Ast = {
+  def astForArrayAccessExpr(expr: ArrayAccessExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       expressionReturnTypeFullName(expr)
-        .orElse(expectedType.map(_.fullName))
-        .getOrElse(TypeConstants.UnresolvedType)
+        .orElse(expectedType.fullName)
+        .getOrElse(TypeConstants.Any)
     val callNode = operatorCallNode(
       Operators.indexAccess,
       code = expr.toString,
@@ -1798,14 +1843,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       column = column(expr)
     )
 
-    val arrayExpectedType = expectedType.map(exp => ExpectedType(exp.fullName ++ "[]", exp.resolvedType))
+    val arrayExpectedType = expectedType.copy(fullName = expectedType.fullName.map(_ ++ "[]"))
     val nameAst           = astsForExpression(expr.getName, arrayExpectedType)
-    val indexAst          = astsForExpression(expr.getIndex, Some(ExpectedType.Int))
+    val indexAst          = astsForExpression(expr.getIndex, ExpectedType.Int)
     val args              = nameAst ++ indexAst
     callAst(callNode, args)
   }
 
-  def astForArrayCreationExpr(expr: ArrayCreationExpr, expectedType: Option[ExpectedType]): Ast = {
+  def astForArrayCreationExpr(expr: ArrayCreationExpr, expectedType: ExpectedType): Ast = {
     val maybeInitializerAst = expr.getInitializer.toScala.map(astForArrayInitializerExpr(_, expectedType))
 
     maybeInitializerAst.flatMap(_.root) match {
@@ -1814,11 +1859,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
 
     maybeInitializerAst.getOrElse {
-      val typeFullName = expressionReturnTypeFullName(expr).orElse(expectedType.map(_.fullName))
-      val callNode     = operatorCallNode(Operators.alloc, code = expr.toString, typeFullName = typeFullName)
+      val typeFullName = expressionReturnTypeFullName(expr).orElse(expectedType.fullName).getOrElse(TypeConstants.Any)
+      val callNode     = operatorCallNode(Operators.alloc, code = expr.toString, typeFullName = Some(typeFullName))
       val levelAsts = expr.getLevels.asScala.flatMap { lvl =>
         lvl.getDimension.toScala match {
-          case Some(dimension) => astsForExpression(dimension, Some(ExpectedType.Int))
+          case Some(dimension) => astsForExpression(dimension, ExpectedType.Int)
 
           case None => Seq.empty
         }
@@ -1827,39 +1872,40 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  def astForArrayInitializerExpr(expr: ArrayInitializerExpr, expectedType: Option[ExpectedType]): Ast = {
+  def astForArrayInitializerExpr(expr: ArrayInitializerExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       expressionReturnTypeFullName(expr)
-        .orElse(expectedType.map(_.fullName))
+        .orElse(expectedType.fullName)
+        .getOrElse(TypeConstants.Any)
     val callNode = operatorCallNode(
       Operators.arrayInitializer,
       code = expr.toString,
-      typeFullName = typeFullName,
+      typeFullName = Some(typeFullName),
       line = line(expr),
       column = column(expr)
     )
 
     val MAX_INITIALIZERS = 1000
 
-    val expectedValueType = expr.getValues.asScala.headOption.flatMap { value =>
+    val expectedValueType = expr.getValues.asScala.headOption.map { value =>
       // typeName and resolvedType may represent different types since typeName can fall
       // back to known information or primitive types. While this certainly isn't ideal,
       // it shouldn't cause issues since resolvedType is only used where the extra type
       // information not available in typeName is necessary.
       val typeName     = expressionReturnTypeFullName(value)
       val resolvedType = Try(value.calculateResolvedType()).toOption
-      typeName.map(ExpectedType(_, resolvedType))
+      ExpectedType(typeName, resolvedType)
     }
     val args = expr.getValues.asScala
       .slice(0, MAX_INITIALIZERS)
-      .flatMap(astsForExpression(_, expectedValueType))
+      .flatMap(astsForExpression(_, expectedValueType.getOrElse(ExpectedType.empty)))
       .toSeq
 
     val ast = callAst(callNode, args)
 
     if (expr.getValues.size() > MAX_INITIALIZERS) {
       val placeholder = NewLiteral()
-        .typeFullName("ANY")
+        .typeFullName(TypeConstants.Any)
         .code("<too-many-initializers>")
         .lineNumber(line(expr))
         .columnNumber(column(expr))
@@ -1869,7 +1915,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  def astForBinaryExpr(expr: BinaryExpr, expectedType: Option[ExpectedType]): Ast = {
+  def astForBinaryExpr(expr: BinaryExpr, expectedType: ExpectedType): Ast = {
     val operatorName = expr.getOperator match {
       case BinaryExpr.Operator.OR                   => Operators.logicalOr
       case BinaryExpr.Operator.AND                  => Operators.logicalAnd
@@ -1899,8 +1945,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       expressionReturnTypeFullName(expr)
         .orElse(args.headOption.flatMap(rootType))
         .orElse(args.lastOption.flatMap(rootType))
-        .orElse(expectedType.map(_.fullName))
-        .getOrElse(TypeConstants.UnresolvedType)
+        .orElse(expectedType.fullName)
+        .getOrElse(TypeConstants.Any)
 
     val callNode = operatorCallNode(
       operatorName,
@@ -1913,12 +1959,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, args)
   }
 
-  def astForCastExpr(expr: CastExpr, expectedType: Option[ExpectedType]): Ast = {
+  def astForCastExpr(expr: CastExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       typeInfoCalc
         .fullName(expr.getType)
-        .orElse(expectedType.map(_.fullName))
-        .getOrElse(TypeConstants.UnresolvedType)
+        .orElse(expectedType.fullName)
+        .getOrElse(TypeConstants.Any)
 
     val callNode = operatorCallNode(
       Operators.cast,
@@ -1930,17 +1976,17 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeNode = NewTypeRef()
       .code(expr.getType.toString)
-      .typeFullName(typeFullName)
       .lineNumber(line(expr))
       .columnNumber(column(expr))
+      .typeFullName(typeFullName)
     val typeAst = Ast(typeNode)
 
-    val exprAst = astsForExpression(expr.getExpression, None)
+    val exprAst = astsForExpression(expr.getExpression, ExpectedType.empty)
 
     callAst(callNode, Seq(typeAst) ++ exprAst)
   }
 
-  def astsForAssignExpr(expr: AssignExpr, expectedExprType: Option[ExpectedType]): Seq[Ast] = {
+  def astsForAssignExpr(expr: AssignExpr, expectedExprType: ExpectedType): Seq[Ast] = {
     val operatorName = expr.getOperator match {
       case Operator.ASSIGN               => Operators.assignment
       case Operator.PLUS                 => Operators.assignmentPlus
@@ -1961,7 +2007,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .map { resolvedType =>
         ExpectedType(typeInfoCalc.fullName(resolvedType), Some(resolvedType))
       }
-      .orElse(expectedExprType) // resolved target type should be more accurate
+      .getOrElse(expectedExprType) // resolved target type should be more accurate
     val targetAst = astsForExpression(expr.getTarget, expectedType)
     val argsAsts  = astsForExpression(expr.getValue, expectedType)
     val valueType = argsAsts.headOption.flatMap(rootType)
@@ -1970,8 +2016,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       targetAst.headOption
         .flatMap(rootType)
         .orElse(valueType)
-        .orElse(expectedType.map(_.fullName))
-        .getOrElse(TypeConstants.UnresolvedType)
+        .orElse(expectedType.fullName)
+        .getOrElse(TypeConstants.Any)
 
     val code = s"${rootCode(targetAst)} ${expr.getOperator.asString} ${rootCode(argsAsts)}"
 
@@ -1991,7 +2037,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         case List(identifier: NewIdentifier) =>
           // In this case we have a simple assign. No block needed.
           // e.g. Foo f = new Foo();
-          val initAst = completeInitForConstructor(partialConstructor, identifier)
+          val initAst = completeInitForConstructor(partialConstructor, Ast(identifier.copy))
           Seq(callAst(callNode, targetAst ++ argsAsts), initAst)
 
         case _ =>
@@ -2009,12 +2055,40 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val name = variable.getName.toString
       val typeFullName = typeInfoCalc
         .fullName(variable.getType)
-        .orElse(scopeStack.lookupVariable(variable.getTypeAsString).map(_.typeFullName)) // TODO: TYPE_CLEANUP
-        .getOrElse(TypeConstants.UnresolvedType)
+        .orElse(scopeStack.lookupVariable(variable.getTypeAsString).flatMap(_.typeFullName))
+        .getOrElse(TypeConstants.Any)
       val code = s"${variable.getType} $name"
 
-      NewLocal().name(name).code(code).typeFullName(typeFullName)
+      val localNode = NewLocal().name(name).code(code).typeFullName(typeFullName)
+      localNode
     }.toList
+  }
+
+  private def copyAstForVarDeclInit(targetAst: Ast): Ast = {
+    targetAst.root match {
+      case Some(identifier: NewIdentifier) => Ast(identifier.copy)
+
+      case Some(fieldAccess: NewCall) if fieldAccess.name == Operators.fieldAccess =>
+        val maybeIdentifier = targetAst.nodes.collectFirst { case node if node.isInstanceOf[NewIdentifier] => node }
+        val maybeField = targetAst.nodes.collectFirst { case node if node.isInstanceOf[NewFieldIdentifier] => node }
+
+        (maybeIdentifier, maybeField) match {
+          case (Some(identifier), Some(fieldIdentifier)) =>
+            val args = List(identifier, fieldIdentifier).map(node => Ast(node.copy))
+            callAst(fieldAccess.copy, args)
+
+          case _ =>
+            logger.warn(s"Attempting to copy field access without required children: ${fieldAccess.code}")
+            Ast()
+        }
+
+      case Some(root) =>
+        logger.warn(s"Attempting to copy unhandled root type for var decl init: $root")
+        Ast()
+
+      case None =>
+        Ast()
+    }
   }
 
   private def assignmentsForVarDecl(
@@ -2036,25 +2110,34 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .orElse(scopeStack.lookupVariableType(javaParserVarType, wildcardFallback = true))
 
       val typeFullName =
-        variableTypeFullName.orElse(initializerTypeFullName).getOrElse(TypeConstants.UnresolvedType)
+        variableTypeFullName.orElse(initializerTypeFullName)
 
       // Need the actual resolvedType here for when the RHS is a lambda expression.
       val resolvedExpectedType = Try(symbolResolver.toResolvedType(variable.getType, classOf[ResolvedType])).toOption
-      val initializerAsts      = astsForExpression(initializer, Some(ExpectedType(typeFullName, resolvedExpectedType)))
+      val initializerAsts      = astsForExpression(initializer, ExpectedType(typeFullName, resolvedExpectedType))
 
-      val typeName = TypeNodePass.fullToShortName(typeFullName)
-      val code     = s"$typeName $name = ${rootCode(initializerAsts)}"
+      val typeName = typeFullName
+        .map(TypeNodePass.fullToShortName)
+        .getOrElse(s"${Defines.UnresolvedNamespace}.${variable.getTypeAsString}")
+      val code = s"$typeName $name = ${rootCode(initializerAsts)}"
 
-      val callNode = operatorCallNode(Operators.assignment, code, Some(typeFullName), lineNumber, columnNumber)
+      val callNode = operatorCallNode(Operators.assignment, code, typeFullName, lineNumber, columnNumber)
 
-      val identifier          = identifierNode(name, typeFullName, line(variable), column(variable))
-      val localCorrespToIdent = scopeStack.lookupVariable(name).map(_.node)
-      val targetAst           = Ast(identifier).withRefEdges(identifier, localCorrespToIdent.toList)
+      val targetAst = scopeStack.lookupVariable(name) match {
+        case Some(nodeTypeInfo) if nodeTypeInfo.isField && !nodeTypeInfo.isStatic =>
+          val thisType = scopeStack.getEnclosingTypeDecl.map(_.fullName)
+          fieldAccessAst(NameConstants.This, thisType, name, typeFullName, line(variable), column(variable))
+
+        case maybeCorrespNode =>
+          val identifier =
+            identifierNode(name, Some(typeFullName.getOrElse(TypeConstants.Any)), line(variable), column(variable))
+          Ast(identifier).withRefEdges(identifier, maybeCorrespNode.map(_.node).toList)
+      }
 
       // Since all partial constructors will be dealt with here, don't pass them up.
       val declAst = callAst(callNode, Seq(targetAst) ++ initializerAsts)
 
-      val constructorAsts = partialConstructorQueue.map(completeInitForConstructor(_, identifier))
+      val constructorAsts = partialConstructorQueue.map(completeInitForConstructor(_, copyAstForVarDeclInit(targetAst)))
       partialConstructorQueue.clear()
 
       Seq(declAst) ++ constructorAsts
@@ -2063,14 +2146,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     assignments.toList
   }
 
-  private def completeInitForConstructor(partialConstructor: PartialConstructor, identifier: NewIdentifier): Ast = {
+  private def completeInitForConstructor(partialConstructor: PartialConstructor, targetAst: Ast): Ast = {
     val initNode = partialConstructor.initNode
+    val args     = partialConstructor.initArgs
 
-    val objectNode = identifier.copy
-
-    val args = partialConstructor.initArgs
-
-    callAst(initNode, args.toList, Some(Ast(objectNode)), withRecvArgEdge = true)
+    callAst(initNode, args.toList, Some(targetAst), withRecvArgEdge = true)
   }
 
   def astsForVariableDecl(varDecl: VariableDeclarationExpr): Seq[Ast] = {
@@ -2078,7 +2158,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val localAsts = locals.map { Ast(_) }
 
     locals.foreach { local =>
-      scopeStack.addToScope(local, local.name, local.typeFullName)
+      scopeStack.addToScope(local, local.name, Some(local.typeFullName))
     }
 
     val assignments =
@@ -2091,7 +2171,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val someTypeFullName = Some(TypeConstants.Class)
     val callNode = operatorCallNode(Operators.fieldAccess, expr.toString, someTypeFullName, line(expr), column(expr))
 
-    val identifierType = typeInfoCalc.fullName(expr.getType).getOrElse(TypeConstants.UnresolvedType)
+    val identifierType = typeInfoCalc.fullName(expr.getType)
     val identifier     = identifierNode(expr.getTypeAsString, identifierType, line(expr), column(expr))
     val idAst          = Ast(identifier)
 
@@ -2105,8 +2185,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, Seq(idAst, fieldIdAst))
   }
 
-  def astForConditionalExpr(expr: ConditionalExpr, expectedType: Option[ExpectedType]): Ast = {
-    val condAst = astsForExpression(expr.getCondition, Some(ExpectedType.Boolean))
+  def astForConditionalExpr(expr: ConditionalExpr, expectedType: ExpectedType): Ast = {
+    val condAst = astsForExpression(expr.getCondition, ExpectedType.Boolean)
     val thenAst = astsForExpression(expr.getThenExpr, expectedType)
     val elseAst = astsForExpression(expr.getElseExpr, expectedType)
 
@@ -2114,28 +2194,28 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       expressionReturnTypeFullName(expr)
         .orElse(thenAst.headOption.flatMap(rootType))
         .orElse(elseAst.headOption.flatMap(rootType))
-        .orElse(expectedType.map(_.fullName))
-        .getOrElse(TypeConstants.UnresolvedType)
+        .orElse(expectedType.fullName)
+        .getOrElse(TypeConstants.Any)
 
     val callNode = operatorCallNode(Operators.conditional, expr.toString, Some(typeFullName), line(expr), column(expr))
 
     callAst(callNode, condAst ++ thenAst ++ elseAst)
   }
 
-  def astForEnclosedExpression(expr: EnclosedExpr, expectedType: Option[ExpectedType]): Seq[Ast] = {
+  def astForEnclosedExpression(expr: EnclosedExpr, expectedType: ExpectedType): Seq[Ast] = {
     astsForExpression(expr.getInner, expectedType)
   }
 
-  def astForFieldAccessExpr(expr: FieldAccessExpr, expectedType: Option[ExpectedType]): Ast = {
+  def astForFieldAccessExpr(expr: FieldAccessExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       expressionReturnTypeFullName(expr)
-        .orElse(expectedType.map(_.fullName))
-        .getOrElse(TypeConstants.UnresolvedType)
+        .orElse(expectedType.fullName)
+        .getOrElse(TypeConstants.Any)
 
     val callNode = operatorCallNode(Operators.fieldAccess, expr.toString, Some(typeFullName), line(expr), column(expr))
 
     val fieldIdentifier = expr.getName
-    val identifierAsts  = astsForExpression(expr.getScope, None)
+    val identifierAsts  = astsForExpression(expr.getScope, ExpectedType.empty)
     val fieldIdentifierNode = NewFieldIdentifier()
       .canonicalName(fieldIdentifier.toString)
       .lineNumber(line(fieldIdentifier))
@@ -2150,8 +2230,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val booleanTypeFullName = Some(TypeConstants.Boolean)
     val callNode = operatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
 
-    val exprAst      = astsForExpression(expr.getExpression, None)
-    val typeFullName = typeInfoCalc.fullName(expr.getType).getOrElse(TypeConstants.UnresolvedType)
+    val exprAst      = astsForExpression(expr.getExpression, ExpectedType.empty)
+    val typeFullName = typeInfoCalc.fullName(expr.getType).getOrElse(TypeConstants.Any)
     val typeNode =
       NewTypeRef()
         .code(expr.getType.toString)
@@ -2163,18 +2243,53 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, exprAst ++ Seq(typeAst))
   }
 
-  def astForNameExpr(nameExpr: NameExpr, expectedType: Option[ExpectedType]): Ast = {
+  private def fieldAccessAst(
+    identifierName: String,
+    identifierType: Option[String],
+    fieldIdentifierName: String,
+    returnType: Option[String],
+    lineNo: Option[Integer],
+    columnNo: Option[Integer]
+  ): Ast = {
+    val typeFullName     = identifierType.orElse(Some(TypeConstants.Any)).map(typeInfoCalc.registerType)
+    val identifier       = identifierNode(identifierName, typeFullName, lineNo, columnNo)
+    val maybeCorrespNode = scopeStack.lookupVariable(identifierName).map(_.node)
+
+    val fieldIdentifier = NewFieldIdentifier()
+      .code(fieldIdentifierName)
+      .canonicalName(fieldIdentifierName)
+      .lineNumber(lineNo)
+      .columnNumber(columnNo)
+
+    val fieldAccessCode = s"$identifierName.$fieldIdentifierName"
+    val fieldAccess =
+      operatorCallNode(
+        Operators.fieldAccess,
+        fieldAccessCode,
+        returnType.orElse(Some(TypeConstants.Any)),
+        lineNo,
+        columnNo
+      )
+
+    val identifierAst = Ast(identifier)
+    val fieldIdentAst = Ast(fieldIdentifier)
+
+    callAst(fieldAccess, Seq(identifierAst, fieldIdentAst))
+      .withRefEdges(identifier, maybeCorrespNode.toList)
+  }
+
+  def astForNameExpr(nameExpr: NameExpr, expectedType: ExpectedType): Ast = {
     val name = nameExpr.getName.toString
     val typeFullName = expressionReturnTypeFullName(nameExpr)
-      .orElse(expectedType.map(_.fullName))
-      .getOrElse(TypeConstants.UnresolvedType)
+      .orElse(expectedType.fullName)
+      .map(typeInfoCalc.registerType)
 
     tryWithSafeStackOverflow(nameExpr.resolve()) match {
       case Success(value) if value.isField =>
         val identifierName = if (value.asField.isStatic) {
           // A static field represented by a NameExpr must belong to the class in which it's used. Static fields
           // from other classes are represented by a FieldAccessExpr instead.
-          scopeStack.getEnclosingTypeDecl.map(_.name).getOrElse(TypeConstants.UnresolvedType)
+          scopeStack.getEnclosingTypeDecl.map(_.name).getOrElse(s"${Defines.UnresolvedNamespace}.$name")
         } else {
           NameConstants.This
         }
@@ -2188,24 +2303,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
               typeInfoCalc.fullName(fieldDecl.declaringType())
           }
 
-        val identifier = identifierNode(identifierName, identifierTypeFullName, line(nameExpr), column(nameExpr))
-
-        val fieldIdentifier = NewFieldIdentifier()
-          .code(nameExpr.toString)
-          .canonicalName(name)
-          .lineNumber(line(nameExpr))
-          .columnNumber(column(nameExpr))
-
-        val fieldAccess =
-          operatorCallNode(Operators.fieldAccess, name, Some(typeFullName), line(nameExpr), column(nameExpr))
-
-        val identifierAst = Ast(identifier)
-        val fieldIdentAst = Ast(fieldIdentifier)
-
-        callAst(fieldAccess, Seq(identifierAst, fieldIdentAst))
+        fieldAccessAst(identifierName, identifierTypeFullName, name, typeFullName, line(nameExpr), column(nameExpr))
 
       case _ =>
-        val identifier = identifierNode(name, typeFullName, line(nameExpr), column(nameExpr))
+        val identifier =
+          identifierNode(name, typeFullName.orElse(Some(TypeConstants.Any)), line(nameExpr), column(nameExpr))
 
         val variableOption = scopeStack
           .lookupVariable(name)
@@ -2219,18 +2321,36 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def argumentTypesForMethodLike(
-    maybeResolvedMethodLike: Try[ResolvedMethodLikeDeclaration],
-    argumentAsts: Seq[Ast]
-  ): collection.Seq[String] = {
-    maybeResolvedMethodLike match {
-      case Success(resolvedMethodLike) =>
-        calcParameterTypes(resolvedMethodLike, ResolvedTypeParametersMap.empty())
-      case _ =>
-        // Fall back to actual argument types instead of expected parameter types if the method
-        // could not be resolved. This could lead to methodFullName and signature mismatches between
-        // call nodes and the corresponding method nodes.
-        argumentAsts.map(arg => rootType(arg).getOrElse(TypeConstants.UnresolvedType))
+    maybeResolvedMethodLike: Try[ResolvedMethodLikeDeclaration]
+  ): Option[List[String]] = {
+    maybeResolvedMethodLike.toOption
+      .flatMap(calcParameterTypes(_, ResolvedTypeParametersMap.empty()))
+  }
+
+  private def initNode(
+    namespaceName: Option[String],
+    argumentTypes: Option[List[String]],
+    argsSize: Int,
+    code: String,
+    lineNumber: Option[Integer] = None,
+    columnNumber: Option[Integer] = None
+  ): NewCall = {
+    val initSignature = argumentTypes match {
+      case Some(argumentTypes) => composeMethodLikeSignature(TypeConstants.Void, argumentTypes)
+      case _ if argsSize == 0  => composeMethodLikeSignature(TypeConstants.Void, Nil)
+      case _                   => composeUnresolvedSignature(argsSize)
     }
+    val namespace          = namespaceName.getOrElse(Defines.UnresolvedNamespace)
+    val initMethodFullName = composeMethodFullName(namespace, Defines.ConstructorMethodName, initSignature)
+    NewCall()
+      .name(Defines.ConstructorMethodName)
+      .methodFullName(initMethodFullName)
+      .signature(initSignature)
+      .typeFullName(TypeConstants.Void)
+      .code(code)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
   }
 
   /** The below representation for constructor invocations and object creations was chosen for the sake of consistency
@@ -2258,37 +2378,40 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     * This is not valid Java code, but this representation is a decent compromise between staying faithful to Java and
     * being consistent with the Java bytecode frontend.
     */
-  def astForObjectCreationExpr(expr: ObjectCreationExpr, expectedType: Option[ExpectedType]): Ast = {
+  def astForObjectCreationExpr(expr: ObjectCreationExpr, expectedType: ExpectedType): Ast = {
     val maybeResolvedExpr = tryWithSafeStackOverflow(expr.resolve())
     val argumentAsts      = argAstsForCall(expr, maybeResolvedExpr, expr.getArguments)
 
     val typeFullName = tryWithSafeStackOverflow(typeInfoCalc.fullName(expr.getType)).toOption.flatten
       .orElse(scopeStack.lookupVariableType(expr.getTypeAsString))
-      .orElse(expectedType.map(_.fullName))
-      .getOrElse(TypeConstants.UnresolvedType)
+      .orElse(expectedType.fullName)
 
-    val argumentTypes = argumentTypesForMethodLike(maybeResolvedExpr, argumentAsts)
+    val argumentTypes = argumentTypesForMethodLike(maybeResolvedExpr)
 
-    val allocNode = operatorCallNode(Operators.alloc, expr.toString, Some(typeFullName), line(expr), column(expr))
-      .signature(composeMethodLikeSignature(typeFullName, Nil))
+    val allocSignature = typeFullName.map(composeMethodLikeSignature(_, Nil)).getOrElse(composeUnresolvedSignature(0))
+    val allocNode = operatorCallNode(
+      Operators.alloc,
+      expr.toString,
+      typeFullName.orElse(Some(TypeConstants.Any)),
+      line(expr),
+      column(expr)
+    ).signature(allocSignature)
 
-    val initNode = callNode(
-      NameConstants.Init,
-      Some(typeFullName),
-      TypeConstants.Void,
-      DispatchTypes.STATIC_DISPATCH,
+    val initCall = initNode(
+      typeFullName.orElse(Some(TypeConstants.Any)),
       argumentTypes,
+      argumentAsts.size,
       expr.toString,
       line(expr)
     )
 
     // Assume that a block ast is required, since there isn't enough information to decide otherwise.
     // This simplifies logic elsewhere, and unnecessary blocks will be garbage collected soon.
-    val blockAst = blockAstForConstructorInvocation(line(expr), column(expr), allocNode, initNode, argumentAsts)
+    val blockAst = blockAstForConstructorInvocation(line(expr), column(expr), allocNode, initCall, argumentAsts)
 
     expr.getParentNode.toScala match {
       case Some(parent) if parent.isInstanceOf[VariableDeclarator] || parent.isInstanceOf[AssignExpr] =>
-        val partialConstructor = PartialConstructor(initNode, argumentAsts, blockAst)
+        val partialConstructor = PartialConstructor(initCall, argumentAsts, blockAst)
         partialConstructorQueue.append(partialConstructor)
         Ast(allocNode)
 
@@ -2312,7 +2435,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val tempName = "$obj" ++ tempConstCount.toString
     tempConstCount += 1
-    val identifier    = identifierNode(tempName, allocNode.typeFullName)
+    val identifier    = identifierNode(tempName, Some(allocNode.typeFullName))
     val identifierAst = Ast(identifier)
 
     val allocAst = Ast(allocNode)
@@ -2334,13 +2457,17 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withChild(returnAst)
   }
 
-  def astForThisExpr(expr: ThisExpr, expectedType: Option[ExpectedType]): Ast = {
+  def astForThisExpr(expr: ThisExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       expressionReturnTypeFullName(expr)
-        .orElse(expectedType.map(_.fullName))
-        .getOrElse(TypeConstants.UnresolvedType)
+        .orElse(expectedType.fullName)
 
     val identifier = identifierNode(expr.toString, typeFullName, line(expr), column(expr))
+    val thisParam  = scopeStack.lookupVariable(NameConstants.This)
+
+    thisParam.foreach { nodeTypeInfo =>
+      diffGraph.addEdge(identifier, nodeTypeInfo.node, EdgeTypes.REF)
+    }
 
     Ast(identifier)
   }
@@ -2348,31 +2475,31 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def astForExplicitConstructorInvocation(stmt: ExplicitConstructorInvocationStmt): Ast = {
     val maybeResolved = tryWithSafeStackOverflow(stmt.resolve())
     val args          = argAstsForCall(stmt, maybeResolved, stmt.getArguments)
+    val argTypes      = argumentTypesForMethodLike(maybeResolved)
 
-    val typeFullName = tryWithSafeStackOverflow(stmt.resolve())
+    val typeFullName = maybeResolved.toOption
       .map(_.declaringType())
-      .map(typeInfoCalc.fullName)
-      .getOrElse(TypeConstants.UnresolvedType)
-    val argTypes = argumentTypesForCall(tryWithSafeStackOverflow(stmt.resolve()), args)
+      .flatMap(typeInfoCalc.fullName)
 
-    val callRoot = callNode(
-      NameConstants.Init,
-      Some(typeFullName),
-      TypeConstants.Void,
-      DispatchTypes.STATIC_DISPATCH,
+    val callRoot = initNode(
+      typeFullName.orElse(Some(TypeConstants.Any)),
       argTypes,
+      args.size,
       stmt.toString,
       line(stmt),
       column(stmt)
     )
 
-    val thisNode = identifierNode(NameConstants.This, typeFullName)
-    val thisAst  = Ast(thisNode)
+    val thisNode = identifierNode(NameConstants.This, typeFullName.orElse(Some(TypeConstants.Any)))
+    scopeStack.lookupVariable(NameConstants.This).foreach { thisParam =>
+      diffGraph.addEdge(thisNode, thisParam.node, EdgeTypes.REF)
+    }
+    val thisAst = Ast(thisNode)
 
     callAst(callRoot, args, Some(thisAst), withRecvArgEdge = true)
   }
 
-  private def astsForExpression(expression: Expression, expectedType: Option[ExpectedType]): Seq[Ast] = {
+  private def astsForExpression(expression: Expression, expectedType: ExpectedType): Seq[Ast] = {
     // TODO: Implement missing handlers
     // case _: MethodReferenceExpr     => Seq()
     // case _: PatternExpr             => Seq()
@@ -2466,7 +2593,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def createObjectNode(
-    typeFullName: String,
+    typeFullName: Option[String],
     call: MethodCallExpr,
     dispatchType: String
   ): Option[NewIdentifier] = {
@@ -2490,9 +2617,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     s"$IterableNamePrefix${iterableKeyPool.next}"
   }
 
-  private def genericParamTypeMapForLambda(expectedType: Option[ExpectedType]): ResolvedTypeParametersMap = {
-    expectedType
-      .flatMap(_.resolvedType)
+  private def genericParamTypeMapForLambda(expectedType: ExpectedType): ResolvedTypeParametersMap = {
+    expectedType.resolvedType
       // This should always be true for correct code
       .collect { case r: ResolvedReferenceType => r }
       .map(_.typeParametersMap())
@@ -2517,7 +2643,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
           case Success(resolvedType) => typeInfoCalc.fullName(resolvedType)
 
-          case Failure(_) => TypeConstants.UnresolvedType
+          case Failure(_) => None
         }
 
       case None =>
@@ -2527,7 +2653,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         lambdaParameters
           .map(_.getType)
           .map(typeInfoCalc.fullName)
-          .map(_.getOrElse(TypeConstants.UnresolvedType))
     }
 
     if (paramTypesList.size != lambdaParameters.size) {
@@ -2537,20 +2662,24 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val parameterNodes = lambdaParameters
       .zip(paramTypesList)
       .zipWithIndex
-      .map { case ((param, typ), idx) =>
-        val name = param.getNameAsString
-        NewMethodParameterIn()
+      .map { case ((param, maybeType), idx) =>
+        val name         = param.getNameAsString
+        val typeFullName = maybeType.getOrElse(s"${Defines.UnresolvedNamespace}")
+        val code         = s"$typeFullName $name"
+        val paramNode = NewMethodParameterIn()
           .name(name)
-          .typeFullName(typ)
           .index(idx + 1)
           .order(idx + 1)
-          .code(s"$typ $name")
+          .code(code)
           .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+          .typeFullName(typeFullName)
           .lineNumber(line(expr))
+        typeInfoCalc.registerType(typeFullName)
+        paramNode
       }
 
     parameterNodes.foreach { paramNode =>
-      scopeStack.addToScope(paramNode, paramNode.name, paramNode.typeFullName)
+      scopeStack.addToScope(paramNode, paramNode.name, Some(paramNode.typeFullName))
     }
 
     parameterNodes.map(Ast(_))
@@ -2560,7 +2689,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     maybeResolvedLambdaType: Option[ResolvedType],
     maybeBoundMethod: Option[ResolvedMethodDeclaration],
     expectedTypeParamTypes: ResolvedTypeParametersMap
-  ): String = {
+  ): Option[String] = {
     val maybeBoundMethodReturnType = maybeBoundMethod.flatMap { boundMethod =>
       Try(boundMethod.getReturnType).collect {
         case returnType: ResolvedTypeVariable =>
@@ -2571,7 +2700,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
 
     val returnType = maybeBoundMethodReturnType.orElse(maybeResolvedLambdaType)
-    returnType.map(typeInfoCalc.fullName).getOrElse(TypeConstants.UnresolvedType)
+    returnType.flatMap(typeInfoCalc.fullName)
   }
 
   def closureBinding(closureBindingId: String, originalName: String): NewClosureBinding = {
@@ -2595,24 +2724,29 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def localsForCapturedNodes(closureBindingEntries: List[ClosureBindingEntry]): List[NewLocal] = {
     val localsForCaptured =
       closureBindingEntries.map { case ClosureBindingEntry(nodeTypeInfo, binding) =>
+        val typeFullName = nodeTypeInfo.typeFullName.getOrElse(TypeConstants.Any)
         val local = NewLocal()
           .name(nodeTypeInfo.name)
           .code(nodeTypeInfo.name)
-          .typeFullName(nodeTypeInfo.typeFullName)
           .closureBindingId(binding.closureBindingId)
+          .typeFullName(typeFullName)
         local
       }
-    localsForCaptured.foreach { local => scopeStack.addToScope(local, local.name, local.typeFullName) }
+    localsForCaptured.foreach { local => scopeStack.addToScope(local, local.name, Some(local.typeFullName)) }
     localsForCaptured
   }
 
-  private def astForLambdaBody(body: Statement, localsForCapturedVars: Seq[NewLocal], returnType: String): Ast = {
+  private def astForLambdaBody(
+    body: Statement,
+    localsForCapturedVars: Seq[NewLocal],
+    returnType: Option[String]
+  ): Ast = {
     body match {
       case block: BlockStmt => astForBlockStatement(block, prefixAsts = localsForCapturedVars.map(Ast(_)))
 
       case stmt =>
         val blockAst = Ast(NewBlock().lineNumber(line(body)))
-        val bodyAst = if (returnType == TypeConstants.Void) {
+        val bodyAst = if (returnType.contains(TypeConstants.Void)) {
           astsForStatement(stmt)
         } else {
           val returnNode =
@@ -2629,12 +2763,26 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def createLambdaMethodNode(lambdaName: String, parameters: Seq[Ast], returnType: String): NewMethod = {
-    val enclosingTypeName =
-      scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
-    val signature =
-      s"$returnType(${parameters.map(rootType).map(_.getOrElse(TypeConstants.UnresolvedType)).mkString(",")})"
-    val lambdaFullName = composeMethodFullName(enclosingTypeName, lambdaName, signature)
+  private def lambdaMethodSignature(returnType: Option[String], parameters: Seq[Ast]): String = {
+    val maybeParameterTypes = toOptionList(parameters.map(rootType))
+    val containsEmptyType   = maybeParameterTypes.exists(_.contains(ParameterDefaults.TypeFullName))
+
+    (returnType, maybeParameterTypes) match {
+      case (Some(returnType), Some(parameterTypes)) if !containsEmptyType =>
+        composeMethodLikeSignature(returnType, parameterTypes)
+
+      case _ => composeUnresolvedSignature(parameters.size)
+    }
+  }
+
+  private def createLambdaMethodNode(
+    lambdaName: String,
+    parameters: Seq[Ast],
+    returnType: Option[String]
+  ): NewMethod = {
+    val enclosingTypeName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(Defines.UnresolvedNamespace)
+    val signature         = lambdaMethodSignature(returnType, parameters)
+    val lambdaFullName    = composeMethodFullName(enclosingTypeName, lambdaName, signature)
 
     NewMethod()
       .name(lambdaName)
@@ -2660,7 +2808,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     lambdaMethodName: String,
     implementedInfo: LambdaImplementedInfo,
     localsForCaptured: Seq[NewLocal],
-    expectedLambdaType: Option[ExpectedType]
+    expectedLambdaType: ExpectedType
   ): NewMethod = {
     val implementedMethod    = implementedInfo.implementedMethod
     val implementedInterface = implementedInfo.implementedInterface
@@ -2678,7 +2826,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .collect { case identifier: NewIdentifier => identifier }
       .find { identifier => identifier.name == NameConstants.This || identifier.name == NameConstants.Super }
       .map { _ =>
-        val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName).getOrElse(TypeConstants.UnresolvedType)
+        val typeFullName = scopeStack.getEnclosingTypeDecl.map(_.fullName)
         Ast(thisNodeForMethod(typeFullName, line(expr)))
       }
       .toList
@@ -2686,7 +2834,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val parameters = thisParam ++ parametersWithoutThis
 
     val lambdaMethodNode = createLambdaMethodNode(lambdaMethodName, parametersWithoutThis, returnType)
-    val returnNode       = methodReturnNode(returnType, None, line(expr), column(expr))
+    val returnNode       = methodReturnNode(returnType.getOrElse(TypeConstants.Any), None, line(expr), column(expr))
     val virtualModifier  = Some(modifierNode(ModifierTypes.VIRTUAL))
     val staticModifier   = Option.when(thisParam.isEmpty)(modifierNode(ModifierTypes.STATIC))
     val privateModifier  = Some(modifierNode(ModifierTypes.PRIVATE))
@@ -2726,7 +2874,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   ): NewTypeDecl = {
     val inheritsFromTypeFullName =
       implementedInfo.implementedInterface
-        .map(typeInfoCalc.fullName)
+        .flatMap(typeInfoCalc.fullName)
         .orElse(Some(TypeConstants.Object))
         .toList
 
@@ -2741,11 +2889,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     lambdaTypeDeclNode
   }
 
-  private def getLambdaImplementedInfo(expr: LambdaExpr, expectedType: Option[ExpectedType]): LambdaImplementedInfo = {
+  private def getLambdaImplementedInfo(expr: LambdaExpr, expectedType: ExpectedType): LambdaImplementedInfo = {
     val maybeImplementedType = {
       val maybeResolved = tryWithSafeStackOverflow(expr.calculateResolvedType())
       maybeResolved.toOption
-        .orElse(expectedType.flatMap(_.resolvedType))
+        .orElse(expectedType.resolvedType)
         .collect { case refType: ResolvedReferenceType => refType }
     }
 
@@ -2753,7 +2901,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     if (maybeImplementedInterface.isEmpty) {
       val location = s"$filename:${line(expr)}:${column(expr)}"
-      logger.warn(
+      logger.debug(
         s"Could not resolve the interface implemented by a lambda. Type info may be missing: $location. Type info may be missing."
       )
     }
@@ -2776,8 +2924,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     LambdaImplementedInfo(maybeImplementedType, maybeBoundMethod)
   }
 
-  private def astForLambdaExpr(expr: LambdaExpr, expectedType: Option[ExpectedType]): Ast = {
-    scopeStack.pushNewScope(MethodScope(expectedType.getOrElse(ExpectedType.default)))
+  private def astForLambdaExpr(expr: LambdaExpr, expectedType: ExpectedType): Ast = {
+    scopeStack.pushNewScope(MethodScope(expectedType))
 
     val lambdaMethodName = nextLambdaName()
 
@@ -2815,33 +2963,33 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def astForLiteralExpr(expr: LiteralExpr): Ast = {
-    Ast(
+    val typeFullName = expressionReturnTypeFullName(expr).getOrElse(TypeConstants.Any)
+    val literalNode =
       NewLiteral()
         .code(expr.toString)
-        .typeFullName(expressionReturnTypeFullName(expr).getOrElse(TypeConstants.UnresolvedType))
         .lineNumber(line(expr))
         .columnNumber(column(expr))
-    )
+        .typeFullName(typeFullName)
+    Ast(literalNode)
   }
 
-  private def getExpectedParamType(
-    maybeResolvedCall: Try[ResolvedMethodLikeDeclaration],
-    idx: Int
-  ): Option[ExpectedType] = {
-    maybeResolvedCall.toOption.map { methodDecl =>
-      val paramCount = methodDecl.getNumberOfParams
+  private def getExpectedParamType(maybeResolvedCall: Try[ResolvedMethodLikeDeclaration], idx: Int): ExpectedType = {
+    maybeResolvedCall.toOption
+      .map { methodDecl =>
+        val paramCount = methodDecl.getNumberOfParams
 
-      val resolvedType = if (idx < paramCount) {
-        Some(methodDecl.getParam(idx).getType)
-      } else if (paramCount > 0 && methodDecl.getParam(paramCount - 1).isVariadic) {
-        Some(methodDecl.getParam(paramCount - 1).getType)
-      } else {
-        None
+        val resolvedType = if (idx < paramCount) {
+          Some(methodDecl.getParam(idx).getType)
+        } else if (paramCount > 0 && methodDecl.getParam(paramCount - 1).isVariadic) {
+          Some(methodDecl.getParam(paramCount - 1).getType)
+        } else {
+          None
+        }
+
+        val typeName = resolvedType.flatMap(typeInfoCalc.fullName)
+        ExpectedType(typeName, resolvedType)
       }
-
-      val typeName = resolvedType.map(typeInfoCalc.fullName)
-      ExpectedType(typeName.getOrElse(TypeConstants.UnresolvedType), resolvedType)
-    }
+      .getOrElse(ExpectedType.empty)
   }
 
   private def dispatchTypeForCall(maybeDecl: Try[ResolvedMethodDeclaration], maybeScope: Option[Expression]): String = {
@@ -2860,7 +3008,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def targetTypeForCall(callExpr: MethodCallExpr): Option[String] = {
-    callExpr.getScope.toScala match {
+    val maybeType = callExpr.getScope.toScala match {
       case Some(scope: ThisExpr) =>
         expressionReturnTypeFullName(scope)
           .orElse(scopeStack.getEnclosingTypeDecl.map(_.fullName))
@@ -2874,26 +3022,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case None =>
         tryWithSafeStackOverflow(callExpr.resolve()).toOption
           .flatMap { methodDeclOption =>
-            if (methodDeclOption.isStatic) Some(typeInfoCalc.fullName(methodDeclOption.declaringType()))
+            if (methodDeclOption.isStatic) typeInfoCalc.fullName(methodDeclOption.declaringType())
             else scopeStack.getEnclosingTypeDecl.map(_.fullName)
           }
           .orElse(scopeStack.getEnclosingTypeDecl.map(_.fullName))
     }
-  }
 
-  private def argumentTypesForCall(maybeMethod: Try[ResolvedMethodLikeDeclaration], argAsts: Seq[Ast]): List[String] = {
-    maybeMethod match {
-      case Success(resolved) =>
-        (0 until resolved.getNumberOfParams).map { idx =>
-          val param = resolved.getParam(idx)
-          typeInfoCalc.fullName(param.getType)
-        }.toList
-
-      case Failure(_) =>
-        // Fall back to actual argument types if the called method couldn't be resolved.
-        // This may result in missing dataflows.
-        argAsts.map(arg => rootType(arg).getOrElse(TypeConstants.UnresolvedType)).toList
-    }
+    maybeType.map(typeInfoCalc.registerType)
   }
 
   private def argAstsForCall(
@@ -2911,15 +3046,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     tryResolvedDecl match {
       case Success(_) if hasVariadicParameter =>
-        val expectedVariadicTypeFullName =
-          getExpectedParamType(tryResolvedDecl, paramCount - 1)
-            .map(_.fullName)
-            .getOrElse(TypeConstants.UnresolvedType)
-        val (regularArgs, varargs) = argsAsts.splitAt(paramCount - 1)
+        val expectedVariadicTypeFullName = getExpectedParamType(tryResolvedDecl, paramCount - 1).fullName
+        val (regularArgs, varargs)       = argsAsts.splitAt(paramCount - 1)
         val arrayInitializer = operatorCallNode(
           Operators.arrayInitializer,
           Operators.arrayInitializer,
-          Some(expectedVariadicTypeFullName),
+          expectedVariadicTypeFullName,
           line(call),
           column(call)
         )
@@ -2941,65 +3073,70 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .mkString(", ")
   }
 
-  private def astForMethodCall(call: MethodCallExpr, expectedReturnType: Option[ExpectedType]): Ast = {
+  private def astForMethodCall(call: MethodCallExpr, expectedReturnType: ExpectedType): Ast = {
     val maybeResolvedCall = tryWithSafeStackOverflow(call.resolve())
     val argumentAsts      = argAstsForCall(call, maybeResolvedCall, call.getArguments)
 
-    val expressionTypeFullName = expressionReturnTypeFullName(call)
-      .orElse(expectedReturnType.map(_.fullName))
-      .getOrElse(TypeConstants.UnresolvedType)
+    val expressionTypeFullName = expressionReturnTypeFullName(call).orElse(expectedReturnType.fullName)
 
-    val argumentTypes = argumentTypesForMethodLike(maybeResolvedCall, argumentAsts)
+    val argumentTypes = argumentTypesForMethodLike(maybeResolvedCall)
     val returnType = maybeResolvedCall
       .map { resolvedCall =>
         typeInfoCalc.fullName(resolvedCall.getReturnType, ResolvedTypeParametersMap.empty())
       }
-      .getOrElse(expressionTypeFullName)
+      .toOption
+      .flatten
+      .orElse(expressionTypeFullName)
 
     val dispatchType = dispatchTypeForCall(maybeResolvedCall, call.getScope.toScala)
 
     val receiverTypeOption = targetTypeForCall(call)
     val scopeAsts = call.getScope.toScala match {
-      case Some(scope) =>
-        astsForExpression(scope, receiverTypeOption.map(ExpectedType(_)))
+      case Some(scope) => astsForExpression(scope, ExpectedType(receiverTypeOption))
 
       case None =>
         val objectNode =
-          createObjectNode(receiverTypeOption.getOrElse(TypeConstants.UnresolvedType), call, dispatchType)
+          createObjectNode(receiverTypeOption, call, dispatchType)
+        for {
+          obj       <- objectNode
+          thisParam <- scopeStack.lookupVariable(NameConstants.This)
+        } diffGraph.addEdge(obj, thisParam.node, EdgeTypes.REF)
         objectNode.map(Ast(_)).toList
     }
 
-    val receiverType =
-      receiverTypeOption
-        .orElse(scopeAsts.headOption.flatMap(rootType))
-        .getOrElse(TypeConstants.UnresolvedType)
+    val receiverType = receiverTypeOption.orElse(scopeAsts.headOption.flatMap(rootType).filter(_ != TypeConstants.Any))
 
     val argumentsCode = getArgumentCodeString(call.getArguments)
     val codePrefix    = codePrefixForMethodCall(call)
     val callCode      = s"$codePrefix${call.getNameAsString}($argumentsCode)"
 
-    val callRoot = callNode(
-      call.getNameAsString,
-      Some(receiverType),
-      returnType,
-      dispatchType,
-      argumentTypes,
-      callCode,
-      line(call),
-      column(call)
-    ).typeFullName(expressionTypeFullName) // Use concrete return type but `Object` in signature for generics
+    val callName       = call.getNameAsString
+    val namespace      = receiverType.getOrElse(Defines.UnresolvedNamespace)
+    val signature      = composeSignature(returnType, argumentTypes, argumentAsts.size)
+    val methodFullName = composeMethodFullName(namespace, callName, signature)
+    val callRoot = NewCall()
+      .name(callName)
+      .methodFullName(methodFullName)
+      .signature(signature)
+      .code(callCode)
+      .dispatchType(dispatchType)
+      .lineNumber(line(call))
+      .columnNumber(column(call))
+      .typeFullName(expressionTypeFullName.getOrElse(TypeConstants.Any))
 
     callAst(callRoot, argumentAsts, scopeAsts.headOption, withRecvArgEdge = true)
   }
 
-  def astForSuperExpr(superExpr: SuperExpr, expectedType: Option[ExpectedType]): Ast = {
+  def astForSuperExpr(superExpr: SuperExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       expressionReturnTypeFullName(superExpr)
-        .orElse(expectedType.map(_.fullName))
-        .getOrElse(TypeConstants.UnresolvedType)
+        .orElse(expectedType.fullName)
+        .getOrElse(TypeConstants.Any)
+
+    typeInfoCalc.registerType(typeFullName)
 
     val identifier =
-      identifierNode(NameConstants.Super, typeFullName, line(superExpr), column(superExpr))
+      identifierNode(NameConstants.Super, Some(typeFullName), line(superExpr), column(superExpr))
         .name(NameConstants.This) // Necessary for closed source dataflow
 
     Ast(identifier)
@@ -3013,25 +3150,28 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForParameter(parameter: Parameter, childNum: Int): Ast = {
     val maybeArraySuffix = if (parameter.isVarArgs) "[]" else ""
-    val typeFullName = {
+    val typeFullName =
       typeInfoCalc
         .fullName(parameter.getType)
         .orElse(scopeStack.lookupVariableType(parameter.getTypeAsString, wildcardFallback = true))
-        .getOrElse(TypeConstants.UnresolvedType)
-    }
+        .map(_ ++ maybeArraySuffix)
+        .getOrElse(s"${Defines.UnresolvedNamespace}.${parameter.getTypeAsString}")
+
+    typeInfoCalc.registerType(typeFullName)
+
     val parameterNode = NewMethodParameterIn()
       .name(parameter.getName.toString)
       .code(parameter.toString)
-      .typeFullName(s"$typeFullName$maybeArraySuffix")
       .lineNumber(line(parameter))
       .columnNumber(column(parameter))
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      .typeFullName(typeFullName)
       .index(childNum)
       .order(childNum)
     val annotationAsts = parameter.getAnnotations.asScala.map(astForAnnotationExpr)
     val ast            = Ast(parameterNode)
 
-    scopeStack.addToScope(parameterNode, parameter.getNameAsString, parameterNode.typeFullName)
+    scopeStack.addToScope(parameterNode, parameter.getNameAsString, Some(parameterNode.typeFullName))
     ast.withChildren(annotationAsts)
   }
 

@@ -1,30 +1,35 @@
 package io.joern.x2cpg.testfixtures
 
-import io.joern.x2cpg.X2Cpg
-import io.shiftleft.codepropertygraph.Cpg
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, Inside}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import scala.collection.mutable
 
-class Code2CpgFixture(val frontend: LanguageFrontend) extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+// Fixture class from which all tests which require a code to CPG translation step
+// should either directly or indirectly use. The intended way is to derive from
+// this class, thereby specifying the testCpgFactory parameter and than use the
+// derived class in tests.
+// The testCpgFactory() and code() methods return a type T deriving from TestCpg
+// in order to allow further cpg and language frontend configuration methods to
+// be defined as needed for the individual test cases.
+class Code2CpgFixture[T <: TestCpg](testCpgFactory: () => T)
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with Inside {
   private val cpgs = mutable.ArrayBuffer.empty[TestCpg]
 
-  def code(code: String): TestCpg = {
-    val newCpg = new TestCpg(frontend, this).moreCode(code)
+  def code(code: String): T = {
+    val newCpg = testCpgFactory().moreCode(code)
     cpgs.append(newCpg)
     newCpg
   }
 
-  def code(code: String, fileName: String): TestCpg = {
-    val newCpg = new TestCpg(frontend, this).moreCode(code, fileName)
+  def code(code: String, fileName: String): T = {
+    val newCpg = testCpgFactory().moreCode(code, fileName)
     cpgs.append(newCpg)
     newCpg
-  }
-
-  def applyPasses(cpg: Cpg): Unit = {
-    X2Cpg.applyDefaultOverlays(cpg)
   }
 
   override def afterAll(): Unit = {

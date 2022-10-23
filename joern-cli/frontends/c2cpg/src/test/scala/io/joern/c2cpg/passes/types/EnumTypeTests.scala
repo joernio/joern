@@ -31,11 +31,10 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
           green.name shouldBe "green"
           blue.name shouldBe "blue"
         }
-        inside(color.astChildren.isMethod.l) { case List(sinit) =>
-          sinit.name shouldBe "<sinit>"
-          sinit.fullName shouldBe "color:<sinit>"
-          sinit.code shouldBe "green = 20"
-          inside(sinit.ast.isCall.l) { case List(greenInit) =>
+        inside(color.astChildren.isMethod.l) { case List(clinit) =>
+          clinit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
+          clinit.fullName shouldBe s"color:${io.joern.x2cpg.Defines.StaticInitMethodName}"
+          inside(clinit.ast.isCall.l) { case List(greenInit) =>
             greenInit.code shouldBe "green = 20"
           }
         }
@@ -64,11 +63,10 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
             green.name shouldBe "green"
             blue.name shouldBe "blue"
           }
-          inside(color.astChildren.isMethod.l) { case List(sinit) =>
-            sinit.name shouldBe "<sinit>"
-            sinit.fullName shouldBe "color:<sinit>"
-            sinit.code shouldBe "green = 20"
-            inside(sinit.ast.isCall.l) { case List(greenInit) =>
+          inside(color.astChildren.isMethod.l) { case List(clinit) =>
+            clinit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
+            clinit.fullName shouldBe s"color:${io.joern.x2cpg.Defines.StaticInitMethodName}"
+            inside(clinit.ast.isCall.l) { case List(greenInit) =>
               greenInit.code shouldBe "green = 20"
             }
           }
@@ -91,11 +89,10 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
           low.name shouldBe "low"
           low.typeFullName shouldBe "char"
         }
-        inside(altitude.astChildren.isMethod.l) { case List(sinit) =>
-          sinit.name shouldBe "<sinit>"
-          sinit.fullName shouldBe "altitude:<sinit>"
-          sinit.code shouldBe "high='h',low='l'"
-          inside(sinit.ast.isCall.code.l) { case List(highInit, lowInit) =>
+        inside(altitude.astChildren.isMethod.l) { case List(clinit) =>
+          clinit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
+          clinit.fullName shouldBe s"altitude:${io.joern.x2cpg.Defines.StaticInitMethodName}"
+          inside(clinit.ast.isCall.code.l) { case List(highInit, lowInit) =>
             highInit shouldBe "high='h'"
             lowInit shouldBe "low='l'"
           }

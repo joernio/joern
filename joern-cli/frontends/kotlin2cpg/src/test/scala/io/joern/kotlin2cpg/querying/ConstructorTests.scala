@@ -19,7 +19,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain a METHOD node for the constructor with the correct props set" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.l
       m.fullName shouldBe "mypkg.Foo.<init>:void()"
-      m.name shouldBe "<init>"
+      m.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       m.parameter.size shouldBe 1
       Option(m.block).isDefined shouldBe true
     }
@@ -35,7 +35,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain a METHOD node for the constructor with a block with no children" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.AClass").method.l
       m.fullName shouldBe "mypkg.AClass.<init>:void(java.lang.String)"
-      m.name shouldBe "<init>"
+      m.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       m.parameter.size shouldBe 2
       Option(m.block).isDefined shouldBe true
       m.block.expressionDown.size shouldBe 0
@@ -63,7 +63,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain a METHOD node for the constructor with the correct props set" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.AClass").method.l
       m.fullName shouldBe "mypkg.AClass.<init>:void(java.lang.String)"
-      m.name shouldBe "<init>"
+      m.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       m.parameter.size shouldBe 2
       Option(m.block).isDefined shouldBe true
 
@@ -119,7 +119,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain a METHOD node for the constructor with the correct props set" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.l
       m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String)"
-      m.name shouldBe "<init>"
+      m.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       m.parameter.size shouldBe 2
       Option(m.block).isDefined shouldBe true
     }
@@ -136,7 +136,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain a METHOD node for the constructor with the correct props set" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.l
       m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String)"
-      m.name shouldBe "<init>"
+      m.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       m.parameter.size shouldBe 2
       Option(m.block).isDefined shouldBe true
     }
@@ -183,7 +183,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain a METHOD node for the secondary constructor with properties set correctly" in {
       val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.drop(1).take(1).l
       m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String,int)"
-      m.name shouldBe "<init>"
+      m.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(4)
       m.methodReturn.code shouldBe "void"

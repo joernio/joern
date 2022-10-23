@@ -38,7 +38,7 @@ class FileTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         .name(".*.kt".replace("/", s"\\${File.separator}"))
         .method
         .name
-        .toSet shouldBe Set("baz", "<init>", "add")
+        .toSet shouldBe Set("baz", io.joern.x2cpg.Defines.ConstructorMethodName, "add")
     }
 
     "should allow traversing from file to its type declarations" in {

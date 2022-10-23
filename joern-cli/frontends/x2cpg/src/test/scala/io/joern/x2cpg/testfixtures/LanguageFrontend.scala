@@ -6,7 +6,7 @@ import java.io.File
 
 /** LanguageFrontend encapsulates the logic that translates the source code directory into CPGs
   */
-abstract class LanguageFrontend {
+trait LanguageFrontend {
 
   /** A standard file extension for the source code files of the given language. E.g. `.c` for C language
     */

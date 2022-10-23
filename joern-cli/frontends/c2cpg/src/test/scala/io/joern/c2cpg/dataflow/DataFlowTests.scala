@@ -2,11 +2,9 @@ package io.joern.c2cpg.dataflow
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.EngineConfig
-import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.codepropertygraph.generated.nodes.Literal
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.toNodeTraversal
 
@@ -26,7 +24,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |    free(p);
         |  }
         | }
-        | 
+        |
         | int flow(int p0) {
         |    int a = p0;
         |    int b=a;
@@ -57,7 +55,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "find flows from identifiers to return values of `flow`" in {
       val source = cpg.identifier
       val sink   = cpg.method.name("flow").methodReturn
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 9
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 8
     }
 
     "find flows from z to method returns of flow" in {
@@ -194,22 +192,18 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         val sink   = cpg.method.name("sink").parameter.name("x")
         val flows  = sink.reachableByFlows(source)
 
-        pendingUntilFixed( // for whatever reason tracking to and from method foo fails.
-          flows.map(flowToResultPairs).toSetMutable shouldBe
-            Set(
-              List(
-                ("$ret", Some(2)),
-                ("source(2)", Some(11)),
-                ("p2", None),
-                ("p1", None),
-                ("k", Some(11)),
-                ("k", Some(12)),
-                ("par", Some(15)),
-                ("par", Some(16)),
-                ("x", Some(6))
-              )
+        flows.map(flowToResultPairs).toSetMutable shouldBe
+          Set(
+            List(
+              ("int", Some(2)),
+              ("source()", Some(11)),
+              ("k = source()", Some(11)),
+              ("foo(k)", Some(12)),
+              ("foo(int par)", Some(15)),
+              ("sink(par)", Some(16)),
+              ("sink(int x)", Some(6))
             )
-        )
+          )
       }
     }
 
@@ -1343,7 +1337,15 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val source = cpg.call("source")
       val sink   = cpg.call("sink")
       val flows  = sink.reachableByFlows(source)
-      flows.map(flowToResultPairs).toSetMutable shouldBe Set(List(("source()", Some(6)), ("sink(source())", Some(6))))
+      flows.map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(
+          ("source()", Some(6)),
+          ("sink(int arg)", Some(2)),
+          ("return arg;", Some(2)),
+          ("int", Some(2)),
+          ("sink(source())", Some(6))
+        )
+      )
     }
   }
 
@@ -1493,7 +1495,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |    free(p);
         |  }
         | }
-        | 
+        |
         | int flow(int p0) {
         |  int a = p0;
         |  int b=a;
@@ -1524,7 +1526,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "find flows from identifiers to return values of `flow`" in {
       val source = cpg.identifier
       val sink   = cpg.method.name("flow").methodReturn
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 9
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 8
     }
 
     "find flows from z to method returns of flow" in {
@@ -1540,7 +1542,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |int test() {
         |  char inputBuffer[0x100] = "";
         |  int buffer[10] = {0};
-        |  int data = 1;     
+        |  int data = 1;
         |  fgets(inputBuffer, 0x100, stdin);
         |  data = atoi(inputBuffer);
         |  buffer[data] = 1;
@@ -1874,11 +1876,30 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "DataFlowTest70" should {
+    val cpg = code("""
+        | int source() {
+        |   return 42;
+        | }
+        | void main() {
+        |   sink(source());
+        | }
+        | """.stripMargin)
+
+    "Test Interprocedural" should {
+      "have a flow from argument(which itself is a call) to return" in {
+        val source = cpg.literal("42")
+        val sink   = cpg.call("sink").argument
+        sink.reachableByFlows(source).size shouldBe 1
+      }
+    }
+  }
+
 }
 
 class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
 
-  override implicit val context: EngineContext = EngineContext(semantics, EngineConfig(maxCallDepth = -1))
+  override implicit val context: EngineContext = EngineContext(config = EngineConfig(maxCallDepth = -1))
 
   "DataFlowTests67" should {
     val cpg = code("""

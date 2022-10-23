@@ -1,9 +1,9 @@
 package io.joern.ghidra2cpg.processors
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 object MipsProcessor extends Processor {
-  override val getInstructions: HashMap[String, String] =
-    HashMap(
+  override val getInstructions: mutable.HashMap[String, String] =
+    mutable.HashMap(
       "_add.D"     -> "<operator>.incBy",
       "_addiu"     -> "<operator>.incBy",
       "_addu"      -> "<operator>.incBy",

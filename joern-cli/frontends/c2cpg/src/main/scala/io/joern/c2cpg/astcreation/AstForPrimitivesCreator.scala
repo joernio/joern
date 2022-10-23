@@ -73,6 +73,9 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     callAst(ma, List(owner, Ast(member)))
   }
 
+  protected def astForArrayModifier(arrMod: IASTArrayModifier): Ast =
+    astForNode(arrMod.getConstantExpression)
+
   protected def astForInitializerList(l: IASTInitializerList): Ast = {
     val op           = Operators.arrayInitializer
     val initCallNode = newCallNode(l, op, op, DispatchTypes.STATIC_DISPATCH)

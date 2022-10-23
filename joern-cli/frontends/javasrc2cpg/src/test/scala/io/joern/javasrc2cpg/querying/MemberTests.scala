@@ -1,10 +1,261 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Member}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, Member}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
+
+class NewMemberTests extends JavaSrcCode2CpgFixture {
+  "non-static member initializers" should {
+    "only be added once per constructor" in {
+      val cpg = code("""
+                      |class Foo {
+                      |  int x = 1;
+                      |
+                      |  public Foo() {}
+                      |
+                      |  public Foo(int y) {
+                      |    this.x = y;
+                      |  }
+                      |}""".stripMargin)
+
+      cpg.method
+        .fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()")
+        .assignment
+        .astChildren
+        .size shouldBe 2
+    }
+    "be added to the default constructor in classes with no constructor" in {
+      val cpg = code("""
+			 |class Foo {
+             |    int x = 1;
+             |}""".stripMargin)
+
+      val constructor = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
+        case constructor :: Nil => constructor
+        case result             => fail(s"Expected single constructor method but found $result")
+      }
+
+      constructor.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
+      val xAssign = constructor.body.astChildren.l match {
+        case List(xAssign: Call) => xAssign
+        case result              => fail(s"Expected xAssign in constructor but found $result")
+      }
+
+      xAssign.name shouldBe Operators.assignment
+      xAssign.methodFullName shouldBe Operators.assignment
+
+      xAssign.argument.l match {
+        case List(fieldAccess: Call, value: Literal) =>
+          fieldAccess.name shouldBe Operators.fieldAccess
+          fieldAccess.argument.l match {
+            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+              identifier.name shouldBe "this"
+              identifier.typeFullName shouldBe "Foo"
+              fieldIdentifier.canonicalName shouldBe "x"
+
+            case result => fail(s"Expected field identifier args but got $result")
+          }
+
+          value.code shouldBe "1"
+          value.typeFullName shouldBe "int"
+          value.argumentIndex shouldBe 2
+
+        case result => fail(s"Expected field assign args but got $result")
+      }
+    }
+
+    "be added to an empty constructor" in {
+      val cpg = code("""
+             |class Foo {
+             |    int x = 1;
+             |    public Foo() {}
+             |}""".stripMargin)
+      val constructor = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
+        case constructor :: Nil => constructor
+        case result             => fail(s"Expected single constructor method but found $result")
+      }
+
+      constructor.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
+      val xAssign = constructor.body.astChildren.l match {
+        case List(xAssign: Call) => xAssign
+        case result              => fail(s"Expected xAssign in constructor but found $result")
+      }
+
+      xAssign.name shouldBe Operators.assignment
+      xAssign.methodFullName shouldBe Operators.assignment
+
+      xAssign.argument.l match {
+        case List(fieldAccess: Call, value: Literal) =>
+          fieldAccess.name shouldBe Operators.fieldAccess
+          fieldAccess.argument.l match {
+            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+              identifier.name shouldBe "this"
+              identifier.typeFullName shouldBe "Foo"
+              fieldIdentifier.canonicalName shouldBe "x"
+
+            case result => fail(s"Expected field identifier args but got $result")
+          }
+
+          value.code shouldBe "1"
+          value.typeFullName shouldBe "int"
+          value.argumentIndex shouldBe 2
+
+        case result => fail(s"Expected field assign args but got $result")
+      }
+    }
+
+    "be added to a not-empty constructor without an explicit constructor invocation" in {
+      val cpg = code("""
+			 |class Foo {
+			 |    int x = 1;
+			 |    int y;
+			 |
+			 |    public Foo(int y) {
+			 |      this.y = y;
+			 |    }
+			 |}""".stripMargin)
+
+      val constructor = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
+        case constructor :: Nil => constructor
+        case result             => fail(s"Expected single constructor method but found $result")
+      }
+
+      constructor.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+      val (xAssign, yAssign) = constructor.body.astChildren.l match {
+        case List(xAssign: Call, yAssign: Call) => (xAssign, yAssign)
+        case result                             => fail(s"Expected two assigns in constructor but found $result")
+      }
+
+      xAssign.name shouldBe Operators.assignment
+      xAssign.methodFullName shouldBe Operators.assignment
+
+      xAssign.argument.l match {
+        case List(fieldAccess: Call, value: Literal) =>
+          fieldAccess.name shouldBe Operators.fieldAccess
+          fieldAccess.argument.l match {
+            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+              identifier.name shouldBe "this"
+              identifier.typeFullName shouldBe "Foo"
+              fieldIdentifier.canonicalName shouldBe "x"
+
+            case result => fail(s"Expected field identifier args but got $result")
+          }
+
+          value.code shouldBe "1"
+          value.typeFullName shouldBe "int"
+          value.argumentIndex shouldBe 2
+
+        case result => fail(s"Expected field assign args but got $result")
+      }
+
+      yAssign.name shouldBe Operators.assignment
+      yAssign.methodFullName shouldBe Operators.assignment
+
+      yAssign.argument.l match {
+        case List(fieldAccess: Call, value: Identifier) =>
+          fieldAccess.name shouldBe Operators.fieldAccess
+          fieldAccess.argument.l match {
+            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+              identifier.name shouldBe "this"
+              identifier.typeFullName shouldBe "Foo"
+              fieldIdentifier.canonicalName shouldBe "y"
+
+            case result => fail(s"Expected field identifier args but got $result")
+          }
+
+          value.name shouldBe "y"
+          value.code shouldBe "y"
+          value.typeFullName shouldBe "int"
+          value.argumentIndex shouldBe 2
+
+        case result => fail(s"Expected field assign args but got $result")
+      }
+    }
+
+    "not be added to a constructor containing an explicit constructor invocation" in {
+      val cpg = code("""
+			 |class Foo {
+			 |    int x = 1;
+			 |    int y;
+			 |
+			 |    public Foo(int y) {
+			 |        this.y = y;
+			 |    }
+			 |
+			 |    public Foo() {
+			 |        this(42);
+			 |    }
+			 |}""".stripMargin)
+
+      val constructorWithParam =
+        cpg.method.fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)").l match {
+          case constructor :: Nil => constructor
+          case result             => fail(s"Expected single constructor method but found $result")
+        }
+
+      val (xAssign, yAssign) = constructorWithParam.body.astChildren.l match {
+        case List(xAssign: Call, yAssign: Call) => (xAssign, yAssign)
+        case result                             => fail(s"Expected two assigns in constructor but found $result")
+      }
+
+      xAssign.name shouldBe Operators.assignment
+      xAssign.methodFullName shouldBe Operators.assignment
+
+      xAssign.argument.l match {
+        case List(fieldAccess: Call, value: Literal) =>
+          fieldAccess.name shouldBe Operators.fieldAccess
+          fieldAccess.argument.l match {
+            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+              identifier.name shouldBe "this"
+              identifier.typeFullName shouldBe "Foo"
+              fieldIdentifier.canonicalName shouldBe "x"
+
+            case result => fail(s"Expected field identifier args but got $result")
+          }
+
+          value.code shouldBe "1"
+          value.typeFullName shouldBe "int"
+          value.argumentIndex shouldBe 2
+
+        case result => fail(s"Expected field assign args but got $result")
+      }
+
+      yAssign.name shouldBe Operators.assignment
+      yAssign.methodFullName shouldBe Operators.assignment
+
+      yAssign.argument.l match {
+        case List(fieldAccess: Call, value: Identifier) =>
+          fieldAccess.name shouldBe Operators.fieldAccess
+          fieldAccess.argument.l match {
+            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+              identifier.name shouldBe "this"
+              identifier.typeFullName shouldBe "Foo"
+              fieldIdentifier.canonicalName shouldBe "y"
+
+            case result => fail(s"Expected field identifier args but got $result")
+          }
+
+          value.name shouldBe "y"
+          value.code shouldBe "y"
+          value.typeFullName shouldBe "int"
+          value.argumentIndex shouldBe 2
+
+        case result => fail(s"Expected field assign args but got $result")
+      }
+
+      val ctorWithExplInvocation =
+        cpg.method.fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()")
+      ctorWithExplInvocation.body.astChildren.l match {
+        case List(explConsInvocation: Call) =>
+          explConsInvocation.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+
+        case result => fail(s"Expected single explicit constructor invocation call but found $result")
+      }
+    }
+  }
+}
 
 class MemberTests extends JavaSrcCodeToCpgFixture {
 
@@ -52,7 +303,7 @@ class MemberTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should not create a <clinit> method for classes without static members" in {
-    cpg.typeDecl.nameExact("Foo").method.nameExact("<clinit>").size shouldBe 0
+    cpg.typeDecl.nameExact("Foo").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).size shouldBe 0
   }
 
   "should create correct static and non-static members for class with both" in {
@@ -85,11 +336,11 @@ class MemberTests extends JavaSrcCodeToCpgFixture {
   "should create a single <clinit> method for classes with static members" in {
     pendingUntilFixed {
 
-      cpg.typeDecl.nameExact("Bar").method.nameExact("<clinit>").size shouldBe 1
+      cpg.typeDecl.nameExact("Bar").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).size shouldBe 1
 
-      val clinit = cpg.typeDecl.nameExact("Bar").method.nameExact("<clinit>").head
+      val clinit = cpg.typeDecl.nameExact("Bar").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).head
       clinit.signature shouldBe "void()"
-      clinit.fullName shouldBe "Bar.<clinit>:void()"
+      clinit.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.StaticInitMethodName}:void()"
 
       clinit.body.astChildren.l match {
         case List(
@@ -121,7 +372,7 @@ class MemberTests extends JavaSrcCodeToCpgFixture {
               fail(s"Expected member field access but got ${res}")
           }
 
-          isStaticObjectInit.methodFullName shouldBe "Bar.<init>:void()"
+          isStaticObjectInit.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
 
           isAlsoStaticInit.methodFullName shouldBe Operators.assignment
 

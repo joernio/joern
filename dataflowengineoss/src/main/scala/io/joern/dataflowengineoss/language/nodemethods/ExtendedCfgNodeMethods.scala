@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.language.nodemethods
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement}
@@ -19,12 +20,10 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     */
   def astNode: AstNode = node
 
-  def reachableBy[NodeType <: CfgNode](sourceTravs: Traversal[NodeType]*)(implicit
-    context: EngineContext
-  ): Traversal[NodeType] =
+  def reachableBy[NodeType](sourceTravs: Traversal[NodeType]*)(implicit context: EngineContext): Traversal[NodeType] =
     node.start.reachableBy(sourceTravs: _*)
 
-  def ddgIn(implicit semantics: Semantics): Traversal[CfgNode] = {
+  def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Traversal[CfgNode] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = ddgIn(Vector(PathElement(node)), withInvisible = false, cache)
     cache.clear()

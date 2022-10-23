@@ -39,7 +39,7 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       assignmentRhs.methodFullName shouldBe Operators.alloc
       assignmentRhs.argumentIndex shouldBe 2
 
-      init.name shouldBe "<init>"
+      init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       init.code shouldBe "File(\"/tmp/myfile.txt\")"
       init.methodFullName shouldBe "java.io.File.<init>:void(java.lang.String)"
       init.signature shouldBe "void(java.lang.String)"
@@ -153,7 +153,7 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       assignmentRhs.methodFullName shouldBe Operators.alloc
       assignmentRhs.argumentIndex shouldBe 2
 
-      init.name shouldBe "<init>"
+      init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       init.code shouldBe "AClass(\"AMESSAGE\")"
       init.methodFullName shouldBe "mypkg.AClass.<init>:void(java.lang.String)"
       init.signature shouldBe "void(java.lang.String)"

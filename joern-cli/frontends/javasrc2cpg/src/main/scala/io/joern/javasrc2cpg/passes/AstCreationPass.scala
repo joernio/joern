@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.passes
 
 import better.files.File
+import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
@@ -33,7 +34,7 @@ class AstCreationPass(sourceInfo: SourceDirectoryInfo, config: Config, cpg: Cpg,
 
   override def runOnPart(diffGraph: DiffGraphBuilder, fileInfo: SourceFileInfo): Unit = {
     val parserConfig =
-      new ParserConfiguration().setSymbolResolver(symbolResolver)
+      new ParserConfiguration().setSymbolResolver(symbolResolver).setLanguageLevel(LanguageLevel.CURRENT)
     val parser      = new JavaParser(parserConfig)
     val parseResult = parser.parse(new java.io.File(fileInfo.analysisFileName))
 
@@ -51,7 +52,6 @@ class AstCreationPass(sourceInfo: SourceDirectoryInfo, config: Config, cpg: Cpg,
         diffGraph.absorb(new AstCreator(fileInfo.originalFileName, result, global, symbolResolver).createAst())
       case _ =>
         logger.warn("Failed to parse file " + fileInfo.analysisFileName)
-        Iterator()
     }
   }
 
@@ -76,15 +76,12 @@ class AstCreationPass(sourceInfo: SourceDirectoryInfo, config: Config, cpg: Cpg,
   }
 
   private def createSymbolSolver(): JavaSymbolSolver = {
-    val codeDir = sourceInfo.typeSolverSourceDir
-    SourceRootFinder.getSourceRoots(codeDir)
-
     val combinedTypeSolver   = new CombinedTypeSolver()
     val reflectionTypeSolver = new CachingReflectionTypeSolver()
     combinedTypeSolver.add(reflectionTypeSolver)
 
     // Add solvers for all detected sources roots
-    SourceRootFinder.getSourceRoots(codeDir).foreach { srcDir =>
+    sourceInfo.typeSolverSourceDirs.foreach { srcDir =>
       val javaParserTypeSolver = new JavaParserTypeSolver(srcDir)
       combinedTypeSolver.add(javaParserTypeSolver)
     }

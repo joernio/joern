@@ -23,7 +23,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
     ast.filter(predicate)
 
   def containsCallTo(regex: String): Traversal[A] =
-    traversal.filter(_.ast.isCall.name(regex).size > 0)
+    traversal.filter(_.ast.isCall.name(regex).nonEmpty)
 
   @Doc(info = "Depth of the abstract syntax tree")
   def depth: Traversal[Int] =

@@ -16,4 +16,13 @@ object Defines {
   val UnresolvedNamespace = "<unresolvedNamespace>"
   val UnresolvedSignature = "<unresolvedSignature>"
 
+  // Name of the synthetic, static method that contains the initialization of member variables.
+  val StaticInitMethodName = "<clinit>"
+
+  // Name of the constructor.
+  val ConstructorMethodName = "<init>"
+
+  // In some languages like Javascript dynamic calls do not provide any statically known
+  // method/function interface information. In those cases please use this value.
+  val DynamicCallUnknownFallName = "<unknownFullName>"
 }

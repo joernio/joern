@@ -16,8 +16,8 @@ object Base {
     new NamespaceCreator(cpg),
     new TypeDeclStubCreator(cpg),
     new MethodStubCreator(cpg),
-    new MethodDecoratorPass(cpg),
     new ParameterIndexCompatPass(cpg),
+    new MethodDecoratorPass(cpg),
     new AstLinkerPass(cpg),
     new ContainsEdgePass(cpg),
     new TypeUsagePass(cpg)

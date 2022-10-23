@@ -1,5 +1,6 @@
 package io.joern.console.embammonite
 
+import io.joern.console.GlobalReporting
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.io.{BufferedReader, PrintWriter}
@@ -17,7 +18,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
 
   override def run(): Unit = {
     try {
-      var terminate = false;
+      var terminate = false
       while (!(terminate && queue.isEmpty)) {
         val job = queue.take()
         if (isTerminationMarker(job)) {
@@ -25,9 +26,10 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
         } else {
           sendQueryToAmmonite(job)
           val stdoutPair = stdOutUpToMarker()
-          val stdOutput  = stdoutPair.get
-          val errOutput  = exhaustStderr()
-          val result     = new QueryResult(stdOutput, errOutput, job.uuid)
+          val stdOutput  = GlobalReporting.getAndClearGlobalStdOut() + stdoutPair.get
+
+          val errOutput = exhaustStderr()
+          val result    = new QueryResult(stdOutput, errOutput, job.uuid)
           job.observer(result)
         }
       }
@@ -53,7 +55,7 @@ class UserRunnable(queue: BlockingQueue[Job], writer: PrintWriter, reader: Buffe
     var currentOutput: String = ""
     var line                  = reader.readLine()
     while (line != null) {
-      if (!line.startsWith(magicEchoSeq) && !line.isEmpty) {
+      if (!line.startsWith(magicEchoSeq) && line.nonEmpty) {
         val uuid = uuidFromLine(line)
         if (uuid.isEmpty) {
           currentOutput += line + "\n"
