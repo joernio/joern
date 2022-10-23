@@ -1,6 +1,6 @@
 name := "dataflowengineoss"
 
-crossScalaVersions := Seq("2.13.8", "3.2.0")
+crossScalaVersions := Seq("2.13.8", "3.1.3")
 
 dependsOn(Projects.semanticcpg)
 
