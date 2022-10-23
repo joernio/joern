@@ -1,6 +1,6 @@
 name                     := "joern"
 ThisBuild / organization := "io.joern"
-ThisBuild / scalaVersion := "2.13.8"
+ThisBuild / scalaVersion := "2.13.10"
 
 val cpgVersion = "1.3.573"
 
@@ -38,7 +38,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   kotlin2cpg
 )
 
-ThisBuild / libraryDependencies += 
+ThisBuild / libraryDependencies +=
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % Versions.log4j % Test
 
 ThisBuild / compile / javacOptions ++= Seq(

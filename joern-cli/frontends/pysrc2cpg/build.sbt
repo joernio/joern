@@ -1,6 +1,6 @@
 name := "pysrc2cpg"
 
-scalaVersion := "2.13.8"
+scalaVersion := "2.13.10"
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
