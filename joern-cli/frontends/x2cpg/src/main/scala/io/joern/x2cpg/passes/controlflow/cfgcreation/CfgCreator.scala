@@ -20,8 +20,8 @@ import overflowdb.traversal.Traversal
   *            / \       / \
   *           x  10     x   1
   * }}}
-  * This tree can be translated into a control flow graph, by translating the sub tree rooted in `x < 10` and that of `x
-  * += 1` and connecting their control flow graphs according to the semantics of `if`:
+  * This tree can be translated into a control flow graph, by translating the sub tree rooted in `x < 10` and that of
+  * `x+= 1` and connecting their control flow graphs according to the semantics of `if`:
   * {{{
   *            [x < 10]----
   *               |t     f|
@@ -106,7 +106,15 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForConditionalExpression(call)
       case call: Call if call.dispatchType == DispatchTypes.INLINED =>
         cfgForInlinedCall(call)
-      case _: Call | _: FieldIdentifier | _: Identifier | _: Literal | _: Unknown =>
+      case block: Block =>
+        // Only include block nodes that do not describe the entire
+        // method body or the bodies of control structures
+        if (block._astIn.hasNext && (block.astParent.isMethod || block.astParent.isControlStructure)) {
+          cfgForChildren(block)
+        } else {
+          cfgForChildren(node) ++ cfgForSingleNode(node.asInstanceOf[CfgNode])
+        }
+      case _: Call | _: FieldIdentifier | _: Identifier | _: Literal | _: Block | _: Unknown =>
         cfgForChildren(node) ++ cfgForSingleNode(node.asInstanceOf[CfgNode])
       case _ =>
         cfgForChildren(node)
@@ -148,9 +156,13 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     */
   protected def cfgForBreakStatement(node: ControlStructure): Cfg = {
     node.astChildren.find(_.order == 1) match {
-      case Some(jumpLabel) =>
-        val labelName = jumpLabel.asInstanceOf[JumpLabel].name
+      case Some(jumpLabel: JumpLabel) =>
+        val labelName = jumpLabel.name
         Cfg(entryNode = Some(node), jumpsToLabel = List((node, labelName)))
+      case Some(_: Literal) =>
+        // TODO: PHP breaks take an integer argument which determines how many blocks should be broken out of. Creating
+        //  the CFG for that correctly is still a TODO, but this prevents crashes.
+        Cfg(entryNode = Some(node), breaks = List(node))
       case None =>
         Cfg(entryNode = Some(node), breaks = List(node))
     }
@@ -158,9 +170,13 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
   protected def cfgForContinueStatement(node: ControlStructure): Cfg = {
     node.astChildren.find(_.order == 1) match {
-      case Some(jumpLabel) =>
-        val labelName = jumpLabel.asInstanceOf[JumpLabel].name
+      case Some(jumpLabel: JumpLabel) =>
+        val labelName = jumpLabel.name
         Cfg(entryNode = Some(node), jumpsToLabel = List((node, labelName)))
+      case Some(_: Literal) =>
+        // TODO: PHP breaks take an integer argument which determines how many blocks should be broken out of. Creating
+        //  the CFG for that correctly is still a TODO, but this prevents crashes.
+        Cfg(entryNode = Some(node), breaks = List(node))
       case None =>
         Cfg(entryNode = Some(node), continues = List(node))
     }

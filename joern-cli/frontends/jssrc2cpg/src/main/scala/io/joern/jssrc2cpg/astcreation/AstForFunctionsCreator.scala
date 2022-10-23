@@ -16,29 +16,21 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeDecl,
   TypeRefBase
 }
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import ujson.{Arr, Value}
 
 import scala.collection.mutable
 
 trait AstForFunctionsCreator { this: AstCreator =>
 
-  case class MethodAst(ast: Ast, methodNode: NewMethod)
+  case class MethodAst(ast: Ast, methodNode: NewMethod, methodAst: Ast)
 
   private def handleRestInParameters(
     elementNodeInfo: BabelNodeInfo,
     paramNodeInfo: BabelNodeInfo,
     paramName: String
   ): Ast = {
-    val restNodeInfo = createBabelNodeInfo(elementNodeInfo.json("argument"))
-    val ast = restNodeInfo.node match {
-      case FunctionDeclaration =>
-        astForFunctionDeclaration(restNodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-      case FunctionExpression =>
-        astForFunctionDeclaration(restNodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-      case ArrowFunctionExpression =>
-        astForFunctionDeclaration(restNodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-      case _ => astForNode(restNodeInfo.json)
-    }
+    val ast = astForNodeWithFunctionReferenceAndCall(elementNodeInfo.json("argument"))
     val defaultName = ast.nodes.collectFirst {
       case id: IdentifierBase => id.name.replace("...", "")
       case clazz: TypeRefBase => clazz.code.stripPrefix("class ")
@@ -117,7 +109,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val rhsElement  = nodeInfo.json("right")
         val lhsNodeInfo = createBabelNodeInfo(lhsElement)
         lhsNodeInfo.node match {
-          case ObjectPattern =>
+          case ObjectPattern | ArrayPattern =>
             val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
             val param = createParameterInNode(
               paramName,
@@ -130,20 +122,6 @@ trait AstForFunctionsCreator { this: AstCreator =>
             val rhsAst = astForNodeWithFunctionReference(rhsElement)
             Ast.storeInDiffGraph(rhsAst, diffGraph)
             additionalBlockStatements.addOne(astForDeconstruction(lhsNodeInfo, rhsAst, Some(paramName)))
-            param
-          case ArrayPattern =>
-            val name = generateUnusedVariableName(usedVariableNames, s"param$index")
-            val param = createParameterInNode(
-              name,
-              nodeInfo.code,
-              index,
-              isVariadic = false,
-              nodeInfo.lineNumber,
-              nodeInfo.columnNumber
-            )
-            val rhsAst = astForNodeWithFunctionReference(rhsElement)
-            Ast.storeInDiffGraph(rhsAst, diffGraph)
-            additionalBlockStatements.addOne(astForDeconstruction(lhsNodeInfo, rhsAst, Some(name)))
             param
           case _ =>
             additionalBlockStatements.addOne(convertParamWithDefault(nodeInfo))
@@ -309,7 +287,10 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Ast(functionNode)
   }
 
-  protected def createMethodDefinitionNode(func: BabelNodeInfo): NewMethod = {
+  protected def createMethodDefinitionNode(
+    func: BabelNodeInfo,
+    methodBlockContent: List[Ast] = List.empty
+  ): NewMethod = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodNode                   = createMethodNode(methodName, methodFullName, func)
     val virtualModifierNode          = NewModifier().modifierType(ModifierTypes.VIRTUAL)
@@ -337,7 +318,13 @@ trait AstForFunctionsCreator { this: AstCreator =>
         parserResult.filename
       )
 
-    val mAst = methodStubAst(methodNode, thisNode +: paramNodes, methodReturnNode).withChild(Ast(virtualModifierNode))
+    val mAst = if (methodBlockContent.isEmpty) {
+      methodStubAst(methodNode, thisNode +: paramNodes, methodReturnNode, List(virtualModifierNode))
+    } else {
+      setIndices(methodBlockContent)
+      val bodyAst = blockAst(NewBlock(), methodBlockContent)
+      methodAst(methodNode, thisNode +: paramNodes, bodyAst, methodReturnNode)
+    }
 
     Ast.storeInDiffGraph(mAst, diffGraph)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
@@ -349,7 +336,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
   protected def createMethodAstAndNode(
     func: BabelNodeInfo,
     shouldCreateFunctionReference: Boolean = false,
-    shouldCreateAssignmentCall: Boolean = false
+    shouldCreateAssignmentCall: Boolean = false,
+    methodBlockContent: List[Ast] = List.empty
   ): MethodAst = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodRefNode = if (!shouldCreateFunctionReference) {
@@ -384,7 +372,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       if (shouldCreateFunctionReference) {
         methodRefNode
       } else {
-        metaTypeRefIdStack.headOption
+        typeRefIdStack.headOption
       }
     scope.pushNewMethodScope(methodFullName, methodName, blockNode, capturingRefNode)
     localAstParentStack.push(blockNode)
@@ -398,7 +386,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case ArrowFunctionExpression => createBlockStatementAsts(Arr(blockJson))
       case _                       => createBlockStatementAsts(blockJson("body"))
     }
-    setIndices(additionalBlockStatements.toList ++ bodyStmtAsts)
+    setIndices(methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts)
 
     val methodReturnNode = createMethodReturnNode(func)
 
@@ -419,10 +407,10 @@ trait AstForFunctionsCreator { this: AstCreator =>
       methodAst(
         methodNode,
         thisNode +: paramNodes,
-        blockAst.withChildren(additionalBlockStatements ++ bodyStmtAsts),
-        methodReturnNode
+        blockAst.withChildren(methodBlockContent ++ additionalBlockStatements ++ bodyStmtAsts),
+        methodReturnNode,
+        List(virtualModifierNode)
       )
-        .withChild(Ast(virtualModifierNode))
 
     Ast.storeInDiffGraph(mAst, diffGraph)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
@@ -430,9 +418,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     methodRefNode match {
       case Some(ref) if callAst.nodes.isEmpty =>
-        MethodAst(Ast(ref), methodNode)
+        MethodAst(Ast(ref), methodNode, mAst)
       case _ =>
-        MethodAst(callAst, methodNode)
+        MethodAst(callAst, methodNode, mAst)
     }
   }
 

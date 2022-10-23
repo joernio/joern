@@ -53,13 +53,10 @@ class SourceRootFinderTests extends AnyFlatSpec with Matchers with BeforeAndAfte
     val sourceRoots = rootsWithUnixSeparators(File(rootPath))
     sourceRoots.sorted shouldBe List(
       s"$stdRootPath/maven/mvn1/src/main/java",
-      s"$stdRootPath/maven/mvn1/src/test/java",
       s"$stdRootPath/maven/mvn2/src/main/java",
       s"$stdRootPath/src",
-      s"$stdRootPath/test",
       s"$stdRootPath/some/nested/directories/src",
-      s"$stdRootPath/some/nested/more/directories/src",
-      s"$stdRootPath/some/nested/more/directories/test"
+      s"$stdRootPath/some/nested/more/directories/src"
     ).sorted
   }
 

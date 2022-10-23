@@ -245,10 +245,8 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should default to <unresolvedType> with a matching type node for unresolved types" in {
-    val List(x)    = cpg.typ(TypeConstants.UnresolvedType).l
     val List(node) = cpg.identifier.name("UnknownType").l
-    node.typeFullName shouldBe TypeConstants.UnresolvedType
-    node.typ.headOption shouldBe Some(x)
+    node.typeFullName shouldBe "ANY"
   }
 
   "should handle primitive type arrays" in {
@@ -274,8 +272,8 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should use correct type for super calls" in {
-    val List(call) = cpg.call.name("<init>").l
-    call.methodFullName shouldBe "java.lang.Object.<init>:void()"
+    val List(call) = cpg.call.name(io.joern.x2cpg.Defines.ConstructorMethodName).l
+    call.methodFullName shouldBe s"java.lang.Object.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
     call.typeFullName shouldBe "void"
     call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 

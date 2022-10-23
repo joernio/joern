@@ -22,14 +22,18 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
     }
     "anonymous constructor full name 1" in AstFixture("class X { constructor(){} }") { cpg =>
-      cpg.method.fullName.toSetMutable should contain("code.js::program:X:<constructor>")
+      cpg.method.fullName.toSetMutable should contain(
+        s"code.js::program:X:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      )
     }
     "anonymous constructor of anonymous class full name" in AstFixture("""
                                                                          |var x = class {
                                                                          |  constructor(y) {
                                                                          |  }
                                                                          |}""".stripMargin) { cpg =>
-      cpg.method.fullName.toSetMutable should contain("code.js::program:_anon_cdecl:<constructor>")
+      cpg.method.fullName.toSetMutable should contain(
+        s"code.js::program:_anon_cdecl:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      )
     }
   }
 
@@ -497,7 +501,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       localSource.typeFullName shouldBe "code.js::program:source"
       localL.name shouldBe "l"
 
-      val List(callToSource) = programBlock.astChildren.isCall.codeExact("l = source(3)").l
+      val List(callToSource) = programBlock.astChildren.isCall.codeExact("var l = source(3)").l
 
       val List(identifierL) = callToSource.astChildren.isIdentifier.l
       identifierL.name shouldBe "l"
@@ -630,10 +634,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
         destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
         destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
 
-        val List(assignmentToA) = destructionBlock.astChildren.isCall
-          .nameExact(Operators.assignment)
-          .codeExact("a = _tmp_0.a === void 0 ? 1 : _tmp_0.a")
-          .l
+        val List(assignmentToA) = destructionBlock.assignment.codeExact("a = _tmp_0.a === void 0 ? 1 : _tmp_0.a").l
         assignmentToA.astChildren.isIdentifier.size shouldBe 1
 
         val List(ifA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0.a === void 0 ? 1 : _tmp_0.a").l
@@ -652,11 +653,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
         val List(falseBranchA) = ifA.astChildren.isCall.codeExact("_tmp_0.a").l
         falseBranchA.name shouldBe Operators.fieldAccess
 
-        val List(assignmentToB) =
-          destructionBlock.astChildren.isCall
-            .nameExact(Operators.assignment)
-            .codeExact("b = _tmp_0.b === void 0 ? 2 : _tmp_0.b")
-            .l
+        val List(assignmentToB) = destructionBlock.assignment.codeExact("b = _tmp_0.b === void 0 ? 2 : _tmp_0.b").l
         assignmentToB.astChildren.isIdentifier.size shouldBe 1
 
         val List(ifB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0.b === void 0 ? 2 : _tmp_0.b").l
@@ -722,10 +719,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
       destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
 
-      val List(assignmentToN) = destructionBlock.astChildren.isCall
-        .nameExact(Operators.assignment)
-        .codeExact("n = _tmp_0.a === void 0 ? 1 : _tmp_0.a")
-        .l
+      val List(assignmentToN) = destructionBlock.assignment.codeExact("n = _tmp_0.a === void 0 ? 1 : _tmp_0.a").l
       assignmentToN.astChildren.isIdentifier.size shouldBe 1
 
       val List(ifA) = assignmentToN.astChildren.isCall.codeExact("_tmp_0.a === void 0 ? 1 : _tmp_0.a").l
@@ -744,10 +738,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(falseBranchA) = ifA.astChildren.isCall.codeExact("_tmp_0.a").l
       falseBranchA.name shouldBe Operators.fieldAccess
 
-      val List(assignmentToM) = destructionBlock.astChildren.isCall
-        .nameExact(Operators.assignment)
-        .codeExact("m = _tmp_0.b === void 0 ? 2 : _tmp_0.b")
-        .l
+      val List(assignmentToM) = destructionBlock.assignment.codeExact("m = _tmp_0.b === void 0 ? 2 : _tmp_0.b").l
       assignmentToN.astChildren.isIdentifier.size shouldBe 1
 
       val List(ifB) = assignmentToM.astChildren.isCall.codeExact("_tmp_0.b === void 0 ? 2 : _tmp_0.b").l
@@ -971,11 +962,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
         destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
         destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
 
-        val List(assignmentToA) = destructionBlock.astChildren.isCall
-          .nameExact(Operators.assignment)
-          .codeExact("a = _tmp_0[0] === void 0 ? 1 : _tmp_0[0]")
-          .l
-
+        val List(assignmentToA) = destructionBlock.assignment.codeExact("a = _tmp_0[0] === void 0 ? 1 : _tmp_0[0]").l
         assignmentToA.astChildren.isIdentifier.size shouldBe 1
 
         val List(ifA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0[0] === void 0 ? 1 : _tmp_0[0]").l
@@ -994,10 +981,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
         val List(falseBranchA) = ifA.astChildren.isCall.codeExact("_tmp_0[0]").l
         falseBranchA.name shouldBe Operators.indexAccess
 
-        val List(assignmentToB) = destructionBlock.astChildren.isCall
-          .nameExact(Operators.assignment)
-          .codeExact("b = _tmp_0[1] === void 0 ? 2 : _tmp_0[1]")
-          .l
+        val List(assignmentToB) = destructionBlock.assignment.codeExact("b = _tmp_0[1] === void 0 ? 2 : _tmp_0[1]").l
         assignmentToB.astChildren.isIdentifier.size shouldBe 1
 
         val List(ifB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0[1] === void 0 ? 2 : _tmp_0[1]").l
@@ -1097,7 +1081,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
 
     "have correct structure for method spread argument" in AstFixture("foo(...args)") { cpg =>
       val List(fooCall) = cpg.call.codeExact("foo(...args)").l
-      fooCall.name shouldBe ""
+      fooCall.name shouldBe "foo"
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
       val List(receiver) = fooCall.receiver.isIdentifier.l
@@ -1115,7 +1099,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
 
     "have correct structure for complex method spread argument" in AstFixture("foo(...x.bar())") { cpg =>
       val List(fooCall) = cpg.call.codeExact("foo(...x.bar())").l
-      fooCall.name shouldBe ""
+      fooCall.name shouldBe "foo"
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
       val List(receiver) = fooCall.receiver.isIdentifier.l
@@ -1166,7 +1150,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(delete) = program.astChildren.isBlock.astChildren.isCall.codeExact("delete foo.x").l
       delete.name shouldBe Operators.delete
 
-      val List(rhs) = delete.astChildren.isCall.nameExact(Operators.fieldAccess).l
+      val List(rhs) = delete.fieldAccess.l
       rhs.code shouldBe "foo.x"
     }
   }
@@ -1280,4 +1264,38 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     }
   }
 
+  "AST generation for import/require" should {
+    "make available `import` statements via cpg.imports" in AstFixture("import {x} from \"foo\";") { cpg =>
+      val List(imp) = cpg.imports.l
+      imp.code shouldBe "import {x} from \"foo\""
+      imp.importedEntity shouldBe Some("foo")
+      imp.importedAs shouldBe Some("x")
+
+    }
+
+    "allow traversing from dependency to import from for `import` statements" in AstFixture(
+      "import {x} from \"foo\";"
+    ) { cpg =>
+      val List(imp)  = cpg.imports.l
+      val List(dep)  = cpg.dependency.l
+      val List(imp2) = dep.imports.l
+      imp shouldBe imp2
+    }
+
+    "make available `require` statements via cpg.imports" in AstFixture("const x = require(\"foo\")") { cpg =>
+      val List(imp) = cpg.imports.l
+      imp.code shouldBe "x = require(\"foo\")"
+      imp.importedEntity shouldBe Some("foo")
+      imp.importedAs shouldBe Some("x")
+    }
+
+    "allow traversing from dependency to import for `require` statements" in AstFixture("const x = require(\"foo\")") {
+      cpg =>
+        val List(imp)  = cpg.imports.l
+        val List(dep)  = cpg.dependency.l
+        val List(imp2) = dep.imports.l
+        imp shouldBe imp2
+    }
+
+  }
 }

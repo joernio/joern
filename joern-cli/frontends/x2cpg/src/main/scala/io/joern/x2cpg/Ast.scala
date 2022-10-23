@@ -185,7 +185,7 @@ case class Ast(
 
     val oldToNew = astChildren.zip(newChildren).map { case (old, n) => old -> n.root.get }.toMap
     def newIfExists(x: NewNode) = {
-      oldToNew.get(x).getOrElse(x)
+      oldToNew.getOrElse(x, x)
     }
 
     val newArgEdges       = argEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))

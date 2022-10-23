@@ -2,10 +2,8 @@ package io.joern.kotlin2cpg.types
 
 object TypeConstants {
   val any                               = "ANY"
-  val cpgUnresolved                     = "codepropertygraph.Unresolved"
-  val cpgUnresolvedSignature            = "codepropertygraph.SignatureUnresolved"
   val classLiteralReplacementMethodName = "getClass"
-  val initPrefix                        = "<init>"
+  val initPrefix                        = io.joern.x2cpg.Defines.ConstructorMethodName
   val kotlinFunctionXPrefix             = "kotlin.Function"
   val kotlinSuspendFunctionXPrefix      = "kotlin.coroutines.SuspendFunction"
   val kotlinAlsoPrefix                  = "kotlin.also"

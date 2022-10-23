@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Call,
   CfgNode,
@@ -46,7 +47,7 @@ class TaskCreator(sources: Set[CfgNode]) {
         val newCallSiteStack = result.callSiteStack.clone()
         val callSite         = newCallSiteStack.pop()
         paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
-          ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1, newCallSiteStack)
+          ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth - 1, newCallSiteStack)
         }
       }
     }
@@ -61,12 +62,23 @@ class TaskCreator(sources: Set[CfgNode]) {
   /** For a given parameter of a method, determine all corresponding arguments at all call sites to the method.
     */
   private def paramToArgs(param: MethodParameterIn): List[Expression] =
+    paramToArgsOfCallers(param) ++ paramToMethodRefCallReceivers(param)
+
+  private def paramToArgsOfCallers(param: MethodParameterIn): List[Expression] =
     NoResolve
       .getMethodCallsites(param.method)
       .to(Traversal)
       .collectAll[Call]
       .argument(param.index)
       .l
+
+  /** Expand to receiver objects of calls that reference the method of the parameter, e.g., if `param` is a parameter of
+    * `m`, return `foo` in `foo.bar(m)` TODO: I'm not sure whether `methodRef.methodFullNameExact(...)` uses an index.
+    * If not, then caching these lookups or keeping a map of all method names to their references may make sense.
+    */
+
+  private def paramToMethodRefCallReceivers(param: MethodParameterIn): List[Expression] =
+    new Cpg(param.graph()).methodRef.methodFullNameExact(param.method.fullName).inCall.argument(0).l
 
   /** Create new tasks from all results that end in an output argument, including return arguments. In this case, we
     * want to traverse to corresponding method output parameters and method return nodes respectively.
@@ -93,7 +105,7 @@ class TaskCreator(sources: Set[CfgNode]) {
           List(ReachableByTask(methodReturn, sources, new ResultTable, newPath, callDepth + 1, callSiteStack))
         } else {
           returnStatements.map { returnStatement =>
-            val newPath       = Vector(PathElement(methodReturn)) ++ path
+            val newPath       = Vector(PathElement(methodReturn, result.callSiteStack.clone())) ++ path
             val callSiteStack = result.callSiteStack.clone()
             callSiteStack.push(call)
             ReachableByTask(returnStatement, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)

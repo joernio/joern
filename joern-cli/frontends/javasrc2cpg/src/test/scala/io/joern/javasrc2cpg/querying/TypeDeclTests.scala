@@ -2,7 +2,6 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.nodes.Return
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
@@ -20,7 +19,23 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
 
       cpg.typeDecl.name("Foo").method.fullName.l shouldBe List("Foo.foo:void()")
     }
+
+    "should have correct inheritsFromTypeFullName" in {
+      val cpg = code(
+        """
+          |package a;
+          |public class A {}
+          |""".stripMargin,
+        "a/A.java" // must specify "a/" to make the test pass
+      ).moreCode("""
+          |package a;
+          |public class B extends A {}
+          |""".stripMargin)
+      val typeDecl = cpg.typeDecl("B").head
+      typeDecl.inheritsFromTypeFullName should contain("a.A")
+    }
   }
+
 }
 class TypeDeclTests extends JavaSrcCodeToCpgFixture {
 
@@ -69,8 +84,8 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
     x.method.size shouldBe 1
     val constructor = x.method.head
 
-    constructor.name shouldBe "<init>"
-    constructor.fullName shouldBe s"$typeFullName.<init>:void()"
+    constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+    constructor.fullName shouldBe s"$typeFullName.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
     constructor.signature shouldBe "void()"
     constructor.modifier.map(_.modifierType).toList should contain theSameElementsAs List(
       ModifierTypes.CONSTRUCTOR,
@@ -132,7 +147,9 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
           case res => fail(s"Expected method id on interface but got $res")
         }
 
-      case res => fail(s"Expected typeDecl for interface but got $res")
+      case res =>
+        res.foreach(typ => println(typ.fullName))
+        fail(s"Expected typeDecl for interface but got $res")
     }
   }
 

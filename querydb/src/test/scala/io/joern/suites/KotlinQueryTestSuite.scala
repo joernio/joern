@@ -10,12 +10,10 @@ import io.joern.console.scan._
 import io.shiftleft.utils.ProjectRoot
 
 class KotlinQueryTestSuite extends KotlinCode2CpgFixture(withOssDataflow = true) {
-  var semanticsFilename = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-  val argumentProvider  = new QDBArgumentProvider(3)
+  val argumentProvider = new QDBArgumentProvider(3)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    semanticsFilename = argumentProvider.testSemanticsFilename
   }
 
   def queryBundle: QueryBundle = QueryUtil.EmptyBundle

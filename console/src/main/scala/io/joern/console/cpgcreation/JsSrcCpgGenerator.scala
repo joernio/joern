@@ -1,6 +1,8 @@
 package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
+import io.joern.jssrc2cpg.JsSrc2Cpg
+import io.shiftleft.codepropertygraph.Cpg
 
 import java.nio.file.Path
 
@@ -20,4 +22,10 @@ case class JsSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cpg
 
   override def isAvailable: Boolean =
     command.toFile.exists
+
+  override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
+    JsSrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    cpg
+  }
+
 }

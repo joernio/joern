@@ -1,17 +1,50 @@
 package io.joern.joerncli
 
+import io.circe.{Encoder, Json, JsonObject}
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
+import io.joern.joerncli.EmbeddingGenerator.SparseVectorWithExplicitFeature
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 
 import scala.util.Using
 import io.shiftleft.semanticcpg.language._
-import org.json4s.DefaultFormats
+import org.json4s.JsonAST.JString
+import org.json4s.{CustomSerializer, DefaultFormats}
 import org.json4s.native.Serialization
 import overflowdb.traversal._
 
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
+
+class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, String)] {
+  override def structureToString(pair: (String, String)): String = pair._1 + ":" + pair._2
+  override def extractObjects(cpg: Cpg): Traversal[AstNode] = Traversal(cpg.graph.V.collect { case x: AstNode => x })
+  override def enumerateSubStructures(obj: AstNode): List[(String, String)] = {
+    val relevantFieldTypes = Set(PropertyNames.NAME, PropertyNames.FULL_NAME, PropertyNames.CODE)
+    val relevantFields = obj
+      .propertiesMap()
+      .entrySet()
+      .asScala
+      .toList
+      .filter { e => relevantFieldTypes.contains(e.getKey) }
+      .sortBy(_.getKey)
+      .map { e =>
+        (e.getKey, e.getValue.toString)
+      }
+    List(("id", obj.id().toString)) ++ relevantFields ++ List(("label", obj.label))
+  }
+
+  override def objectToString(node: AstNode): String = node.id().toString
+  override def hash(label: String): String           = label
+
+  override def vectorToString(vector: Map[(String, String), Double]): String = {
+    val jsonObj = Json.fromFields(vector.keys.map { case (k, v) => (k, Json.fromString(v)) })
+    jsonObj.toString
+  }
+
+}
 
 class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, AstNode] {
   override def extractObjects(cpg: Cpg): Traversal[Method]           = cpg.method
@@ -21,35 +54,37 @@ class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, AstNode] {
 }
 
 object EmbeddingGenerator {
-  type SparseVectorWithExplicitFeature = Map[Int, (Double, String)]
-  type SparseVector                    = Map[Int, Double]
+  type SparseVectorWithExplicitFeature[S] = Map[String, (Double, S)]
+  type SparseVector                       = Map[Int, Double]
 }
 
 /** Creates an embedding from a code property graph by following three steps: (1) Objects are extracted from the graph,
   * each of which is ultimately to be mapped to one vector (2) For each object, enumerate its sub structures. (3) Employ
   * feature hashing to associate each sub structure with a dimension. See "Pattern-based Vulnerability Discovery -
   * Chapter 3"
+  *
+  * T: Object type S: Sub structure type
   */
 trait EmbeddingGenerator[T, S] {
   import EmbeddingGenerator._
 
-  case class Embedding(data: (() => Traversal[(T, SparseVectorWithExplicitFeature)])) {
-    lazy val dimToStructure: Map[Int, String] = {
-      val m = mutable.HashMap[Int, String]()
+  case class Embedding(data: () => Traversal[(T, SparseVectorWithExplicitFeature[S])]) {
+    lazy val dimToStructure: Map[String, S] = {
+      val m = mutable.HashMap[String, S]()
       data().foreach { case (_, vector) =>
-        vector.foreach { case (hash, (_, structureAsString)) =>
-          m.put(hash, structureAsString)
+        vector.foreach { case (hash, (_, structure)) =>
+          m.put(hash, structure)
         }
       }
       m.toMap
     }
 
-    lazy val structureToDim: Map[String, Int] = for ((k, v) <- dimToStructure) yield (v, k)
+    lazy val structureToDim: Map[S, String] = for ((k, v) <- dimToStructure) yield (v, k)
 
     def objects: Traversal[String] = data().map { case (obj, _) => objectToString(obj) }
 
-    def vectors: Traversal[Map[Int, Double]] = data().map { case (_, vector) =>
-      vector.map { case (dim, (v, _)) => dim -> v }
+    def vectors: Traversal[Map[S, Double]] = data().map { case (_, vector) =>
+      vector.map { case (_, (v, structure)) => structure -> v }
     }
 
   }
@@ -66,19 +101,18 @@ trait EmbeddingGenerator[T, S] {
     })
   }
 
-  private def vectorize(substructures: List[S]): SparseVectorWithExplicitFeature = {
+  private def vectorize(substructures: List[S]): Map[String, (Double, S)] = {
     substructures
-      .map(structureToString)
-      .groupBy(identity)
+      .groupBy(x => structureToString(x))
       .view
-      .mapValues(_.size)
-      .map { case (s, v) =>
-        hash(s) -> (v.toDouble, s)
+      .map { case (_, l) =>
+        val v = l.size
+        hash(structureToString(l.head)) -> (v.toDouble, l.head)
       }
       .toMap
   }
 
-  def hash(label: String): Int = MurmurHash3.stringHash(label)
+  def hash(label: String): String = MurmurHash3.stringHash(label).toString
 
   def structureToString(s: S): String
 
@@ -92,12 +126,17 @@ trait EmbeddingGenerator[T, S] {
 
   def objectToString(t: T): String
 
+  implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
+
+  def vectorToString(vector: Map[S, Double]): String = defaultToString(vector)
+
+  def defaultToString[M](v: M): String = Serialization.write(v)
+
 }
 
 object JoernVectors extends App {
 
   implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
-
   case class Config(cpgFileName: String = "cpg.bin", outDir: String = "out", dimToFeature: Boolean = false)
 
   private def parseConfig: Option[Config] =
@@ -119,24 +158,32 @@ object JoernVectors extends App {
   parseConfig.foreach { config =>
     exitIfInvalid(config.outDir, config.cpgFileName)
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
-      val embedding = new BagOfAPISymbolsForMethods().embed(cpg)
+      val generator = new BagOfPropertiesForNodes()
+      val embedding = generator.embed(cpg)
       println("{")
       println("\"objects\":")
-      traversalToJson(embedding.objects)
+      traversalToJson(embedding.objects, { x: String => generator.defaultToString(x) })
       if (config.dimToFeature) {
         println(",\"dimToFeature\": ")
         println(Serialization.write(embedding.dimToStructure))
       }
       println(",\"vectors\":")
-      traversalToJson(embedding.vectors)
+      traversalToJson(embedding.vectors, generator.vectorToString)
+      println(",\"edges\":")
+      traversalToJson(
+        cpg.graph.edges().map { x =>
+          Map("src" -> x.outNode().id(), "dst" -> x.inNode().id(), "label" -> x.label())
+        },
+        { x: Map[String, Any] => generator.defaultToString(x) }
+      )
       println("}")
     }
   }
 
-  private def traversalToJson[X](trav: Traversal[X]): Unit = {
+  private def traversalToJson[X](trav: Traversal[X], vectorToString: X => String): Unit = {
     println("[")
-    trav.nextOption().foreach { vector => print(Serialization.write(vector)) }
-    trav.foreach { vector => print(",\n" + Serialization.write(vector)) }
+    trav.nextOption().foreach { vector => print(vectorToString(vector)) }
+    trav.foreach { vector => print(",\n" + vectorToString(vector)) }
     println("]")
   }
 

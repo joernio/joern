@@ -74,7 +74,7 @@ class ContextStack {
   private val variableReferences      = mutable.ArrayBuffer.empty[VariableReference]
   private var moduleMethodContext     = Option.empty[MethodContext]
   private var fileNamespaceBlock      = Option.empty[nodes.NewNamespaceBlock]
-  private var fileNamespaceBlockOrder = new AutoIncIndex(1)
+  private val fileNamespaceBlockOrder = new AutoIncIndex(1)
 
   private def push(context: Context): Unit = {
     stack = context :: stack
@@ -114,7 +114,7 @@ class ContextStack {
   }
 
   def addVariableReference(identifier: nodes.NewIdentifier, memOp: MemoryOperation): Unit = {
-    variableReferences.append(new VariableReference(identifier, memOp, stack))
+    variableReferences.append(VariableReference(identifier, memOp, stack))
   }
 
   def getAndIncLambdaCounter(): Int = {
@@ -258,7 +258,7 @@ class ContextStack {
                 methodContext.variables.put(name, localNode)
               }
             }
-            val localNodeInContext = methodContext.variables.get(name).get
+            val localNodeInContext = methodContext.variables(name)
 
             createRefEdge(localNodeInContext, identifierOrClosureBindingToLink)
 
@@ -270,7 +270,7 @@ class ContextStack {
         case specialBlockContext: SpecialBlockContext =>
           contextHasVariable = context.variables.contains(name)
           if (contextHasVariable) {
-            val localNodeInContext = specialBlockContext.variables.get(name).get
+            val localNodeInContext = specialBlockContext.variables(name)
             createRefEdge(localNodeInContext, identifierOrClosureBindingToLink)
           }
 

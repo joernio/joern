@@ -2,6 +2,7 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
+import io.joern.x2cpg.Defines
 import io.shiftleft.semanticcpg.language._
 
 class LombokTests extends JavaSrcCode2CpgFixture(delombokMode = "run-delombok") {
@@ -149,7 +150,7 @@ class NoLombokTests extends JavaSrcCode2CpgFixture() {
     )
 
     // Getter type should be unresolved since it's not available in source processed or in type info source.
-    val unresolvedName = s"Foo.getFirstName:${TypeConstants.UnresolvedType}()"
+    val unresolvedName = s"Foo.getFirstName:${Defines.UnresolvedSignature}(0)"
     cpg.call.name("getFirstName").head.methodFullName shouldBe unresolvedName
     // Log member should not be found since it hasn't been generated in the source we scan.
     cpg.member.name("log").isEmpty shouldBe true

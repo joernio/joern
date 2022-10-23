@@ -2,7 +2,6 @@ package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.AbstractPassTest
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
 class DependencyAstCreationPassTest extends AbstractPassTest {
@@ -73,7 +72,7 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |import {c} from "";
         |import * as d from "depD";
         |""".stripMargin) { cpg =>
-      val List(a, b, c, d) = cpg.staticImport.l
+      val List(a, b, c, d) = cpg.imports.l
       a.code shouldBe "import {a} from \"depA\""
       a.importedEntity shouldBe Some("depA")
       a.importedAs shouldBe Some("a")
@@ -168,6 +167,35 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
        |import defaultMember2 from "module-name";
        |import "module-name";
        |""".stripMargin) { cpg =>
+      cpg.local.code.l shouldBe List(
+        "name",
+        "otherName",
+        "member1",
+        "alias1",
+        "member3",
+        "member4",
+        "member5",
+        "alias2",
+        "defaultMember1",
+        "alias3",
+        "defaultMember2",
+        "module-name"
+      )
+      cpg.assignment.code.l shouldBe List(
+        "var name = require(\"module-name\")",
+        "var otherName = require(\"module-name\")",
+        "var member1 = require(\"module-name\").member1",
+        "var alias1 = require(\"module-name\").member2",
+        "var member3 = require(\"module-name\").member3",
+        "var member4 = require(\"module-name\").member4",
+        "var member5 = require(\"module-name\").member5",
+        "var alias2 = require(\"module-name\").member6",
+        "var defaultMember1 = require(\"module-name\")",
+        "var alias3 = require(\"module-name\")",
+        "var defaultMember2 = require(\"module-name\")",
+        "var module-name = require(\"module-name\")"
+      )
+
       val List(
         name,
         otherName,
@@ -256,7 +284,7 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         "variable4",
         "variable5"
       )
-      cpg.call(Operators.assignment).code.l.sorted shouldBe List(
+      cpg.assignment.code.l.sorted shouldBe List(
         "exports.name1 = name1",
         "exports.name10 = name10",
         "exports.name11 = name11",
@@ -269,8 +297,8 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         "exports.name7 = name7",
         "exports.name8 = name8",
         "exports.name9 = name9",
-        "name10 = \"10\"",
-        "name11 = \"11\""
+        "let name10 = \"10\"",
+        "let name11 = \"11\""
       )
     }
 
@@ -283,10 +311,10 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |export = class ClassA {};
         |""".stripMargin) { cpg =>
       cpg.local.code.l shouldBe List("foo", "bar", "func")
-      cpg.typeDecl.name.l should contain allElementsOf List("func", "ClassA", "ClassA<meta>")
-      cpg.call(Operators.assignment).code.l shouldBe List(
-        "foo = 1",
-        "bar = 2",
+      cpg.typeDecl.name.l should contain allElementsOf List("func", "ClassA")
+      cpg.assignment.code.l shouldBe List(
+        "var foo = 1",
+        "var bar = 2",
         "exports.foo = foo",
         "exports.bar = bar",
         "function func = function func(param) {}",
@@ -302,7 +330,7 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |export default function foo(param) {};
         |""".stripMargin) { cpg =>
       cpg.local.code.l shouldBe List("name1", "foo", "name2")
-      cpg.call(Operators.assignment).code.l shouldBe List(
+      cpg.assignment.code.l shouldBe List(
         "exports[\"default\"] = name1",
         "name2 = \"2\"",
         "exports[\"default\"] = name2",
@@ -334,12 +362,12 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       bar.dependencyGroupId shouldBe Some("Bar")
       bar.version shouldBe "require"
 
-      cpg.call(Operators.assignment).code.l shouldBe List(
-        "_Foo = require(\"Foo\")",
+      cpg.assignment.code.l shouldBe List(
+        "var _Foo = require(\"Foo\")",
         "_Foo.name1 = import1",
         "_Foo.name2 = import2",
         "_Foo.name3 = name3",
-        "_Bar = require(\"Bar\")",
+        "var _Bar = require(\"Bar\")",
         "_Bar.bar = bar"
       )
     }
@@ -363,12 +391,12 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       dep3.dependencyGroupId shouldBe Some("./some/Module")
       dep3.version shouldBe "require"
 
-      cpg.call(Operators.assignment).code.l shouldBe List(
-        "_Foo = require(\"Foo\")",
+      cpg.assignment.code.l shouldBe List(
+        "var _Foo = require(\"Foo\")",
         "exports.Foo = _Foo",
-        "_Bar = require(\"Bar\")",
+        "var _Bar = require(\"Bar\")",
         "exports.B = _Bar",
-        "_Module = require(\"./some/Module\")",
+        "var _Module = require(\"./some/Module\")",
         "exports.Module = _Module"
       )
     }

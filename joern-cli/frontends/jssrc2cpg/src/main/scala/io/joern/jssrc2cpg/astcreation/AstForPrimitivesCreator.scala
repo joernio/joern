@@ -8,10 +8,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 
 trait AstForPrimitivesCreator { this: AstCreator =>
 
-  protected def astForIdentifier(ident: BabelNodeInfo): Ast = {
+  protected def astForIdentifier(ident: BabelNodeInfo, typeFullName: Option[String] = None): Ast = {
     val name      = ident.json("name").str
     val identNode = createIdentifierNode(name, ident)
-    val tpe       = typeFor(ident)
+    val tpe = typeFullName match {
+      case Some(Defines.ANY.label) => typeFor(ident)
+      case Some(otherType)         => otherType
+      case None                    => typeFor(ident)
+    }
     identNode.typeFullName = tpe
     scope.addVariableReference(name, identNode)
     Ast(identNode)

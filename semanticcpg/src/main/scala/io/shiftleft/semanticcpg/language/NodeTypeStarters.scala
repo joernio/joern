@@ -252,8 +252,8 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
   def ret(code: String): Traversal[Return] =
     ret.code(code)
 
-  @Doc(info = "All static imports")
-  def staticImport: Traversal[Import] =
+  @Doc(info = "All imports")
+  def imports: Traversal[Import] =
     InitialTraversal.from[Import](cpg.graph, NodeTypes.IMPORT)
 
   @Doc(info = "All switch blocks (`ControlStructure` nodes)")

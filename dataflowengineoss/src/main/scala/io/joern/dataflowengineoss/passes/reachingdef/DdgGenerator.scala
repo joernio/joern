@@ -1,33 +1,20 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
+import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Block,
-  Call,
-  CfgNode,
-  ControlStructure,
-  Expression,
-  FieldIdentifier,
-  Identifier,
-  JumpTarget,
-  Method,
-  MethodParameterIn,
-  MethodParameterOut,
-  MethodReturn,
-  Return,
-  StoredNode,
-  Unknown
-}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.{Set, mutable}
 
 /** Creation of data dependence edges based on solution of the ReachingDefProblem.
   */
-class DdgGenerator {
+class DdgGenerator(semantics: Semantics) {
+
+  implicit val s: Semantics = semantics
 
   /** Once reaching definitions have been computed, we create a data dependence graph by checking which reaching
     * definitions are relevant, meaning that a symbol is propagated that is used by the target node.
@@ -41,15 +28,14 @@ class DdgGenerator {
     */
   def addReachingDefEdges(
     dstGraph: DiffGraphBuilder,
-    problem: DataFlowProblem[mutable.BitSet],
-    solution: Solution[mutable.BitSet]
+    problem: DataFlowProblem[StoredNode, mutable.BitSet],
+    solution: Solution[StoredNode, mutable.BitSet]
   ): Unit = {
     implicit val implicitDst: DiffGraphBuilder = dstGraph
-    val numberToNode                           = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-    val in                                     = solution.in
-    val gen = solution.problem.transferFunction
-      .asInstanceOf[ReachingDefTransferFunction]
-      .gen
+
+    val numberToNode = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+    val in           = solution.in
+    val gen          = solution.problem.transferFunction.asInstanceOf[ReachingDefTransferFunction].gen
 
     val method        = problem.flowGraph.entryNode.asInstanceOf[Method]
     val allNodes      = in.keys.toList
@@ -93,6 +79,8 @@ class DdgGenerator {
       }
 
       // Handle block arguments
+      // This handles `foo(new Bar())`, which is lowered to
+      // `foo({Bar tmp = Bar.alloc(); tmp.init(); tmp})`
       call.argument.isBlock.foreach { block =>
         block.astChildren.lastOption match {
           case None => // Do nothing
@@ -100,6 +88,7 @@ class DdgGenerator {
             val edgesToAdd = in(node).toList.flatMap { inDef =>
               numberToNode.get(inDef) match {
                 case Some(identifier: Identifier) => Some(identifier)
+                case Some(call: Call)             => Some(call)
                 case _                            => None
               }
             }
@@ -188,12 +177,15 @@ class DdgGenerator {
   private def addEdge(fromNode: StoredNode, toNode: StoredNode, variable: String = "")(implicit
     dstGraph: DiffGraphBuilder
   ): Unit = {
-    if (
-      fromNode.isInstanceOf[Unknown] || toNode
-        .isInstanceOf[Unknown]
-    )
+    if (fromNode.isInstanceOf[Unknown] || toNode.isInstanceOf[Unknown])
       return
-    dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
+
+    (fromNode, toNode) match {
+      case (parentNode: CfgNode, childNode: CfgNode) if EdgeValidator.isValidEdge(childNode, parentNode) =>
+        dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
+      case _ =>
+
+    }
   }
 
   /** There are a few node types that (a) are not to be considered in the DDG, or (b) are not standalone DDG nodes, or
@@ -207,7 +199,6 @@ class DdgGenerator {
       case _: FieldIdentifier  => false
       case _: JumpTarget       => false
       case _: MethodReturn     => false
-      case _: Block            => false
       case _                   => true
     }
   }
@@ -225,10 +216,13 @@ class DdgGenerator {
   * `n` of the flow graph. This component determines those of the incoming definitions that are relevant as the value
   * they define is actually used by `n`.
   */
-private class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[StoredNode, Set[Definition]]) {
+private class UsageAnalyzer(
+  problem: DataFlowProblem[StoredNode, mutable.BitSet],
+  in: Map[StoredNode, Set[Definition]]
+) {
 
-  val numberToNode                 = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-  private val allNodes             = in.keys.toList
+  val numberToNode: Map[Definition, StoredNode] = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+  private val allNodes                          = in.keys.toList
   private val containerSet         = Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess)
   private val indirectionAccessSet = Set(Operators.addressOf, Operators.indirection)
   val usedIncomingDefs: Map[StoredNode, Map[StoredNode, Set[Definition]]] = initUsedIncomingDefs()
@@ -300,13 +294,10 @@ private class UsageAnalyzer(problem: DataFlowProblem[mutable.BitSet], in: Map[St
 
   def uses(node: StoredNode): Set[StoredNode] = {
     val n: Set[StoredNode] = node match {
-      case ret: Return =>
-        ret.astChildren.collect { case x: Expression => x }.toSet
-      case call: Call =>
-        call.argument.toSet
-      case paramOut: MethodParameterOut =>
-        Set(paramOut)
-      case _ => Set()
+      case ret: Return                  => ret.astChildren.collect { case x: Expression => x }.toSet
+      case call: Call                   => call.argument.toSet
+      case paramOut: MethodParameterOut => Set(paramOut)
+      case _                            => Set()
     }
     n.filterNot(_.isInstanceOf[FieldIdentifier])
   }

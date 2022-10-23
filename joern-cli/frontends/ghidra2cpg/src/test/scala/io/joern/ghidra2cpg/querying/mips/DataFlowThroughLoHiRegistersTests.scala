@@ -37,7 +37,7 @@ class DataFlowThroughLoHiRegistersTests extends GhidraBinToCpgSuite {
        |"<operator>.incBy" 1->1 2->1 3->1 4->1
        |"<operator>.rotateRight" 2->1
        |""".stripMargin
-  val semantics: Semantics            = Semantics.fromList(new Parser().parse(customSemantics))
+  implicit val semantics: Semantics            = Semantics.fromList(new Parser().parse(customSemantics))
   implicit val context: EngineContext = EngineContext(semantics)
 
   "should find flows through `div*` instructions" in {

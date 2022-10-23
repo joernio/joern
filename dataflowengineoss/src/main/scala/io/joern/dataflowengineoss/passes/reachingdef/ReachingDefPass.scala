@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -10,7 +11,8 @@ import scala.collection.mutable
 
 /** A pass that calculates reaching definitions ("data dependencies").
   */
-class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends ForkJoinParallelCpgPass[Method](cpg) {
+class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000)(implicit s: Semantics)
+    extends ForkJoinParallelCpgPass[Method](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -25,7 +27,7 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
     }
 
     val solution     = new DataFlowSolver().calculateMopSolutionForwards(problem)
-    val ddgGenerator = new DdgGenerator()
+    val ddgGenerator = new DdgGenerator(s)
     ddgGenerator.addReachingDefEdges(dstGraph, problem, solution)
   }
 
@@ -33,7 +35,7 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000) extends Fork
     * were are dealing with in total. If a threshold is reached, we bail out instead, leaving reaching definitions
     * uncalculated for the method in question. Users can increase the threshold if desired.
     */
-  private def shouldBailOut(problem: DataFlowProblem[mutable.BitSet]): Boolean = {
+  private def shouldBailOut(problem: DataFlowProblem[StoredNode, mutable.BitSet]): Boolean = {
     val method           = problem.flowGraph.entryNode.asInstanceOf[Method]
     val transferFunction = problem.transferFunction.asInstanceOf[ReachingDefTransferFunction]
     // For each node, the `gen` map contains the list of definitions it generates

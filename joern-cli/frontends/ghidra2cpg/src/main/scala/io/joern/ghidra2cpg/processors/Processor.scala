@@ -1,7 +1,7 @@
 package io.joern.ghidra2cpg.processors
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 trait Processor {
-  def getInstructions: HashMap[String, String]
+  def getInstructions: mutable.HashMap[String, String]
 }

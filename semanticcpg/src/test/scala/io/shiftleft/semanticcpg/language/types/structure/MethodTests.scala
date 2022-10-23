@@ -56,7 +56,7 @@ class MethodTests extends AnyWordSpec with Matchers {
           .withCustom { case (graph, cpg) =>
             val namespaceBlock = cpg.namespaceBlock("namespace").head
             val method         = cpg.method("foo").head
-            graph.addNodeProperty(method, Method.PropertyNames.AstParentType, NamespaceBlock.Label)
+            graph.setNodeProperty(method, Method.PropertyNames.AstParentType, NamespaceBlock.Label)
             graph.addEdge(namespaceBlock, method, EdgeTypes.AST)
           }
           .cpg

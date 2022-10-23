@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.layers.dataflows
 
 import better.files.File
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language._
@@ -17,7 +18,7 @@ object DumpCpg14 {
   def defaultOpts: Cpg14DumpOptions = Cpg14DumpOptions("out")
 }
 
-class DumpCpg14(options: Cpg14DumpOptions)(implicit semantics: Semantics) extends LayerCreator {
+class DumpCpg14(options: Cpg14DumpOptions)(implicit semantics: Semantics = DefaultSemantics()) extends LayerCreator {
   override val overlayName: String       = DumpDdg.overlayName
   override val description: String       = DumpDdg.description
   override val storeOverlayName: Boolean = false
@@ -26,7 +27,7 @@ class DumpCpg14(options: Cpg14DumpOptions)(implicit semantics: Semantics) extend
     val cpg = context.cpg
     cpg.method.zipWithIndex.foreach { case (method, i) =>
       val str = method.dotCpg14.head
-      (File(options.outDir) / s"${i}-cpg.dot").write(str)
+      (File(options.outDir) / s"$i-cpg.dot").write(str)
     }
   }
 }

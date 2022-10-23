@@ -1,6 +1,6 @@
 package io.joern.console
 
-import io.shiftleft.passes.{CpgPass, DiffGraph}
+import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language.HasStoreMethod
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.reflections8.Reflections
@@ -16,12 +16,10 @@ object Run {
       override val description: String = "A custom pass"
 
       override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
-        val pass: CpgPass = new CpgPass(console.cpg) {
+        val pass: SimpleCpgPass = new SimpleCpgPass(console.cpg) {
           override val name = "custom"
-          override def run(): Iterator[DiffGraph] = {
-            implicit val diffGraph: DiffGraph.Builder = DiffGraph.newBuilder
-            query.store()
-            Iterator(diffGraph.build())
+          override def run(builder: DiffGraphBuilder): Unit = {
+            query.store()(builder)
           }
         }
         runPass(pass, context, storeUndoInfo)
@@ -66,8 +64,8 @@ object Run {
          |
          |val opts = new OptsDynamic()
          |
-         | import io.shiftleft.passes.DiffGraph
-         | implicit def _diffGraph: DiffGraph.Builder = opts.commit.diffGraphBuilder
+         | import overflowdb.BatchedUpdate.DiffGraphBuilder
+         | implicit def _diffGraph: DiffGraphBuilder = opts.commit.diffGraphBuilder
          | def diffGraph = _diffGraph
          |""".stripMargin
 

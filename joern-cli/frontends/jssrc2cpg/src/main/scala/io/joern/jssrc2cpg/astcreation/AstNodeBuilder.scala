@@ -3,11 +3,11 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.datastructures.MethodScope
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
+import io.joern.x2cpg
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstNodeBuilder { this: AstCreator =>
@@ -299,7 +299,9 @@ trait AstNodeBuilder { this: AstCreator =>
   ): NewCall = NewCall()
     .code(code)
     .name(callName)
-    .methodFullName(callName)
+    .methodFullName(
+      if (dispatchType == DispatchTypes.STATIC_DISPATCH) callName else x2cpg.Defines.DynamicCallUnknownFallName
+    )
     .dispatchType(dispatchType)
     .lineNumber(line)
     .columnNumber(column)
@@ -330,33 +332,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .lineNumber(line)
       .columnNumber(column)
       .dynamicTypeHintFullName(dynamicTypeOption.toList)
-
-  protected def createAstForFakeStaticInitMethod(
-    name: String,
-    filename: String,
-    lineNumber: Option[Integer],
-    childrenAsts: Seq[Ast]
-  ): Ast = {
-    val code = childrenAsts.flatMap(_.nodes.headOption.map(_.asInstanceOf[NewCall].code)).mkString(",")
-    val fakeStaticInitMethod =
-      NewMethod()
-        .name("<sinit>")
-        .fullName(s"$name:<sinit>")
-        .code(code)
-        .filename(filename)
-        .lineNumber(lineNumber)
-        .astParentType(NodeTypes.TYPE_DECL)
-        .astParentFullName(name)
-
-    val blockNode = NewBlock().typeFullName("ANY")
-
-    val methodReturn = NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName("ANY")
-
-    Ast(fakeStaticInitMethod).withChild(Ast(blockNode).withChildren(childrenAsts)).withChild(Ast(methodReturn))
-  }
 
   protected def createEqualsCallAst(
     destId: NewNode,
@@ -411,13 +386,13 @@ trait AstNodeBuilder { this: AstCreator =>
 
   protected def createStaticCallNode(
     code: String,
-    methodName: String,
+    callName: String,
     fullName: String,
     line: Option[Integer],
     column: Option[Integer]
   ): NewCall = NewCall()
     .code(code)
-    .name(methodName)
+    .name(callName)
     .methodFullName(fullName)
     .dispatchType(DispatchTypes.STATIC_DISPATCH)
     .signature("")

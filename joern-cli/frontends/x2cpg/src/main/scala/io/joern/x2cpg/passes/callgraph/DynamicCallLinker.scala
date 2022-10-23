@@ -49,7 +49,7 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     // Perform early stopping in the case of no virtual calls
     if (!cpg.call.exists(_.dispatchType == DispatchTypes.DYNAMIC_DISPATCH)) {
-      return;
+      return
     }
     initMaps()
     // ValidM maps class C and method name N to the set of

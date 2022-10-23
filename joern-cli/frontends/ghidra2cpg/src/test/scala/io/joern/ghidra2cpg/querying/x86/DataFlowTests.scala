@@ -31,11 +31,11 @@ class DataFlowTests extends GhidraBinToCpgSuite {
 
   "The data flow should contain " in {
     implicit val resolver: ICallResolver = NoResolve
-    val semanticsFilename                = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-    val semantics: Semantics             = Semantics.fromList(new Parser().parseFile(semanticsFilename))
-    implicit var context: EngineContext  = EngineContext(semantics)
+    val semanticsFilename    = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
+    val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
+    implicit val context: EngineContext = EngineContext(semantics)
 
-    def source = cpg.method.name("dataflow").call.argument.code("1")
+    def source = cpg.method.name("dataflow").call.code("MOV EDX,EAX").argument.code("EAX")
     def sink =
       cpg.method
         .name("dataflow")
@@ -45,8 +45,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
         .order(1)
         .code("EAX")
     val flows = sink.reachableByFlows(source).l
-
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List("ADD EAX,0x1", "MOV EDX,EAX", "MOV ECX,EDX", "MOV EAX,ECX"))
+      Set(List("MOV EDX,EAX", "MOV ECX,EDX", "MOV EAX,ECX"))
   }
 }

@@ -16,11 +16,10 @@ object Show {
 
   private val Default = new Show[Any] {
     override def apply(a: Any): String = a match {
-      case node: NewNode => {
+      case node: NewNode =>
         val label      = node.label
         val properties = propsToString(node.properties.toList)
         s"($label): $properties"
-      }
 
       case node: Node =>
         val label      = node.label

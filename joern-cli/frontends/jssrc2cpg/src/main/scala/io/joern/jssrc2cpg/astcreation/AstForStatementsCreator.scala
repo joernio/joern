@@ -27,30 +27,21 @@ trait AstForStatementsCreator { this: AstCreator =>
   private def sortBlockStatements(blockStatements: List[BabelNodeInfo]): List[BabelNodeInfo] =
     blockStatements.sortBy { nodeInfo =>
       nodeInfo.node match {
-        case FunctionDeclaration                                  => 0
-        case DeclareTypeAlias if isPlainTypeAlias(nodeInfo)       => 3
-        case TypeAlias if isPlainTypeAlias(nodeInfo)              => 3
-        case TSTypeAliasDeclaration if isPlainTypeAlias(nodeInfo) => 3
-        case DeclareTypeAlias                                     => 2
-        case TypeAlias                                            => 2
-        case TSTypeAliasDeclaration                               => 2
-        case _                                                    => 1
+        case ImportDeclaration                                    => 0
+        case FunctionDeclaration                                  => 1
+        case DeclareTypeAlias if isPlainTypeAlias(nodeInfo)       => 4
+        case TypeAlias if isPlainTypeAlias(nodeInfo)              => 4
+        case TSTypeAliasDeclaration if isPlainTypeAlias(nodeInfo) => 4
+        case DeclareTypeAlias                                     => 3
+        case TypeAlias                                            => 3
+        case TSTypeAliasDeclaration                               => 3
+        case _                                                    => 2
       }
     }
 
   protected def createBlockStatementAsts(json: Value): List[Ast] = {
     val blockStmts = sortBlockStatements(json.arr.map(createBabelNodeInfo).toList)
-    val blockAsts = blockStmts.map { nodeInfo =>
-      nodeInfo.node match {
-        case FunctionDeclaration =>
-          astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
-        case FunctionExpression =>
-          astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
-        case ArrowFunctionExpression =>
-          astForFunctionDeclaration(nodeInfo, shouldCreateAssignmentCall = true, shouldCreateFunctionReference = true)
-        case _ => astForNode(nodeInfo.json)
-      }
-    }
+    val blockAsts  = blockStmts.map(stmt => astForNodeWithFunctionReferenceAndCall(stmt.json))
     setIndices(blockAsts)
     blockAsts
   }

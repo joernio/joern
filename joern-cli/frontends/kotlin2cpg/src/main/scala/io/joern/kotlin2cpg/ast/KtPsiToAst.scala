@@ -9,7 +9,7 @@ import io.joern.kotlin2cpg.types.{CallKinds, TypeConstants, TypeInfoProvider}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.datastructures.Stack._
 
 import java.util.UUID.randomUUID
@@ -642,7 +642,7 @@ trait KtPsiToAst {
       Ast(localNode(entry.getName, typeFullName, None, line(entry), column(entry)))
     }
 
-    val callRhsTypeFullName = registerType(typeInfoProvider.expressionType(initExpr, TypeConstants.cpgUnresolved))
+    val callRhsTypeFullName = registerType(typeInfoProvider.expressionType(initExpr, Defines.UnresolvedNamespace))
     val tmpName             = Constants.tmpLocalPrefix + tmpKeyPool.next
     val localForTmpNode     = localNode(tmpName, callRhsTypeFullName)
     scope.addToScope(localForTmpNode.name, localForTmpNode)
@@ -692,7 +692,7 @@ trait KtPsiToAst {
       Ast(node)
     }
 
-    val ctorTypeFullName = registerType(typeInfoProvider.expressionType(ctorCall, TypeConstants.cpgUnresolved))
+    val ctorTypeFullName = registerType(typeInfoProvider.expressionType(ctorCall, Defines.UnresolvedNamespace))
     val tmpName          = Constants.tmpLocalPrefix + tmpKeyPool.next
     val localForTmpNode  = localNode(tmpName, ctorTypeFullName)
     scope.addToScope(localForTmpNode.name, localForTmpNode)
@@ -756,12 +756,12 @@ trait KtPsiToAst {
       identifierNode(componentNReceiverName, componentNTypeFullName, line(entry), column(entry))
         .argumentIndex(0)
 
-    val fallbackSignature = s"${TypeConstants.cpgUnresolved}()"
+    val fallbackSignature = s"${Defines.UnresolvedNamespace}()"
     val fallbackFullName =
-      s"${TypeConstants.cpgUnresolved}${Constants.componentNPrefix}$componentIdx:$fallbackSignature"
+      s"${Defines.UnresolvedNamespace}${Constants.componentNPrefix}$componentIdx:$fallbackSignature"
     val (fullName, signature) =
       typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-    val componentNCallCode = s"${componentNReceiverName}.${Constants.componentNPrefix}$componentIdx()"
+    val componentNCallCode = s"$componentNReceiverName.${Constants.componentNPrefix}$componentIdx()"
     val componentNCallNode = callNode(
       componentNCallCode,
       s"${Constants.componentNPrefix}$componentIdx",
@@ -1030,7 +1030,7 @@ trait KtPsiToAst {
   ): (String, String) = {
     val astDerivedMethodFullName = expr.getSelectorExpression match {
       case expression: KtCallExpression =>
-        val receiverPlaceholderType = TypeConstants.cpgUnresolved
+        val receiverPlaceholderType = Defines.UnresolvedNamespace
         val shortName               = expr.getSelectorExpression.getFirstChild.getText
         val args                    = expression.getValueArguments
         s"$receiverPlaceholderType.$shortName:${typeInfoProvider.anySignature(args.asScala.toList)}"
@@ -1141,7 +1141,7 @@ trait KtPsiToAst {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val stmtAsts     = astsForExpression(expr.getBody, None)
     val node         = controlStructureNode(expr.getText, ControlStructureTypes.DO, line(expr), column(expr))
-    controlStructureAst(node, conditionAst, stmtAsts.toList, true)
+    controlStructureAst(node, conditionAst, stmtAsts.toList, placeConditionLast = true)
   }
 
   // e.g. lowering:
@@ -1431,7 +1431,7 @@ trait KtPsiToAst {
   private def astForCtorCall(expr: KtCallExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.cpgUnresolved))
+    val typeFullName = registerType(typeInfoProvider.expressionType(expr, Defines.UnresolvedNamespace))
     val tmpBlockNode = blockNode("", typeFullName)
     val tmpName      = Constants.tmpLocalPrefix + tmpKeyPool.next
     val tmpLocalNode = localNode(tmpName, typeFullName)
@@ -1487,7 +1487,7 @@ trait KtPsiToAst {
       val typedCall = expr.getDelegateExpressionOrInitializer.asInstanceOf[KtCallExpression]
 
       val typeFullName = registerType(
-        typeInfoProvider.expressionType(expr.getDelegateExpressionOrInitializer, TypeConstants.cpgUnresolved)
+        typeInfoProvider.expressionType(expr.getDelegateExpressionOrInitializer, Defines.UnresolvedNamespace)
       )
       val rhsAst = Ast(operatorCallNode(Operators.alloc, Operators.alloc, Some(typeFullName)))
 
@@ -1533,11 +1533,11 @@ trait KtPsiToAst {
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     if (typeInfoProvider.isReferenceToClass(expr)) astForNameReferenceToType(expr, argIdx)
-    else
-      typeInfoProvider.isReferencingMember(expr) match {
-        case true  => astForNameReferenceToMember(expr, argIdx)
-        case false => astForNonSpecialNameReference(expr, argIdx)
-      }
+    else if (typeInfoProvider.isReferencingMember(expr)) {
+      astForNameReferenceToMember(expr, argIdx)
+    } else {
+      astForNonSpecialNameReference(expr, argIdx)
+    }
   }
 
   private def astForNameReferenceToType(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit

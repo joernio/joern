@@ -14,7 +14,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("MyClass") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
       succOf("_tmp_0", 1) shouldBe expected(("new MyClass()", AlwaysEdge))
       succOf("new MyClass()", NodeTypes.CALL) shouldBe expected(("_tmp_0", 2, AlwaysEdge))
-      succOf("_tmp_0", 2) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("new MyClass()", AlwaysEdge))
+      succOf("new MyClass()") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for simple new with arguments" in CfgFixture("new MyClass(arg1, arg2)") { implicit cpg =>
@@ -27,7 +28,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("arg1") shouldBe expected(("arg2", AlwaysEdge))
       succOf("arg2") shouldBe expected(("new MyClass(arg1, arg2)", AlwaysEdge))
       succOf("new MyClass(arg1, arg2)", NodeTypes.CALL) shouldBe expected(("_tmp_0", 2, AlwaysEdge))
-      succOf("_tmp_0", 2) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("new MyClass(arg1, arg2)", AlwaysEdge))
+      succOf("new MyClass(arg1, arg2)") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for new with access path" in CfgFixture("new foo.bar.MyClass()") { implicit cpg =>
@@ -42,7 +44,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("foo.bar.MyClass") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
       succOf("_tmp_0", 1) shouldBe expected(("new foo.bar.MyClass()", AlwaysEdge))
       succOf("new foo.bar.MyClass()", NodeTypes.CALL) shouldBe expected(("_tmp_0", 2, AlwaysEdge))
-      succOf("_tmp_0", 2) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("new foo.bar.MyClass()", AlwaysEdge))
+      succOf("new foo.bar.MyClass()") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be structure for throw new exceptions" in CfgFixture("function foo() { throw new Foo() }") { implicit cpg =>
@@ -53,7 +56,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("Foo") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
       succOf("_tmp_0", 1) shouldBe expected(("new Foo()", AlwaysEdge))
       succOf("new Foo()", NodeTypes.CALL) shouldBe expected(("_tmp_0", 2, AlwaysEdge))
-      succOf("_tmp_0", 2) shouldBe expected(("throw new Foo()", AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("new Foo()", AlwaysEdge))
+      succOf("new Foo()") shouldBe expected(("throw new Foo()", AlwaysEdge))
       succOf("throw new Foo()") shouldBe expected(("RET", AlwaysEdge))
     }
   }
@@ -87,8 +91,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
     "be correct for outer method of anonymous class declaration" in CfgFixture("var a = class {}") { implicit cpg =>
       succOf(":program") shouldBe expected(("a", AlwaysEdge))
       succOf("a") shouldBe expected(("class _anon_cdecl", AlwaysEdge))
-      succOf("class _anon_cdecl") shouldBe expected(("a = class {}", AlwaysEdge))
-      succOf("a = class {}") shouldBe expected(("RET", AlwaysEdge))
+      succOf("class _anon_cdecl") shouldBe expected(("var a = class {}", AlwaysEdge))
+      succOf("var a = class {}") shouldBe expected(("RET", AlwaysEdge))
     }
   }
 

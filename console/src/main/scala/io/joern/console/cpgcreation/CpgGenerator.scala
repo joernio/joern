@@ -1,6 +1,7 @@
 package io.joern.console.cpgcreation
 
 import better.files.File
+import io.shiftleft.codepropertygraph.Cpg
 
 import scala.sys.process._
 
@@ -33,6 +34,10 @@ abstract class CpgGenerator() {
       System.err.println(s"Error running shell command: $cmd")
       None
     }
+  }
+
+  def applyPostProcessingPasses(cpg: Cpg): Cpg = {
+    cpg
   }
 
 }
