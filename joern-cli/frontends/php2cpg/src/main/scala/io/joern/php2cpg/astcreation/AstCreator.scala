@@ -242,6 +242,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case evalExpr: PhpEvalExpr     => astForEval(evalExpr)
       case exitExpr: PhpExitExpr     => astForExit(exitExpr)
       case arrayExpr: PhpArrayExpr   => astForArrayExpr(arrayExpr)
+      case listExpr: PhpListExpr     => astForListExpr(listExpr)
+      case newExpr: PhpNewExpr       => astForNewExpr(newExpr)
 
       case classConstFetchExpr: PhpClassConstFetchExpr => astForClassConstFetchExpr(classConstFetchExpr)
       case arrayDimFetchExpr: PhpArrayDimFetchExpr     => astForArrayDimFetchExpr(arrayDimFetchExpr)
@@ -1020,6 +1022,101 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .withChild(Ast(tmpLocal))
       .withChildren(itemAssignments)
       .withChild(identifierAstFromLocal(tmpLocal))
+  }
+
+  private def astForListExpr(expr: PhpListExpr): Ast = {
+    /* TODO: Handling list in a way that will actually work with dataflow tracking is somewhat more complicated than
+     *  this and will likely need a fairly ugly lowering.
+     *
+     * In short, the case:
+     *   list($a, $b) = $arr;
+     * can be lowered to:
+     *   $a = $arr[0];
+     *   $b = $arr[1];
+     *
+     * the case:
+     *   list("id" => $a, "name" => $b) = $arr;
+     * can be lowered to:
+     *   $a = $arr["id"];
+     *   $b = $arr["name"];
+     *
+     * and the case:
+     *   foreach ($arr as list($a, $b)) { ... }
+     * can be lowered as above for each $arr[i];
+     *
+     * The below is just a placeholder to prevent crashes while figuring out the cleanest way to
+     * implement the above lowering or to think of a better way to do it.
+     */
+
+    val args     = expr.items.flatten.map { item => astForExpr(item.value) }
+    val listCode = s"${PhpBuiltins.listFunc}(${args.map(rootCode(_)).mkString(",")})"
+    val listNode = operatorCallNode(PhpBuiltins.listFunc, listCode, line = line(expr))
+
+    callAst(listNode, args)
+  }
+
+  private def astForNewExpr(expr: PhpNewExpr): Ast = {
+    expr.className match {
+      case classStmt: PhpClassStmt =>
+        astForAnonymousClassInstantiation(expr, classStmt)
+
+      case classNameExpr: PhpExpr =>
+        astForSimpleNewExpr(expr, classNameExpr)
+    }
+  }
+
+  private def astForAnonymousClassInstantiation(expr: PhpNewExpr, classStmt: PhpClassStmt): Ast = {
+    // TODO Do this along with other anonymous class support
+    Ast()
+  }
+
+  private def astForSimpleNewExpr(expr: PhpNewExpr, classNameExpr: PhpExpr): Ast = {
+    val (maybeNameAst, className) = classNameExpr match {
+      case nameExpr: PhpNameExpr =>
+        (None, nameExpr.name)
+
+      case expr: PhpExpr =>
+        val ast = astForExpr(expr)
+        // The name doesn't make sense in this case, but the AST will be more useful
+        val name = rootCode(ast, NameConstants.Unknown)
+        (Some(ast), name)
+    }
+
+    val tmpLocal = getTmpLocal(Some(className), line(expr))
+
+    // Alloc assign
+    val allocCode             = s"$className.<alloc>()"
+    val allocNode             = operatorCallNode(Operators.alloc, allocCode, Some(className), line(expr))
+    val allocAst              = callAst(allocNode, receiver = maybeNameAst)
+    val allocAssignCode       = s"${tmpLocal.code} = ${rootCode(allocAst)}"
+    val allocAssignNode       = operatorCallNode(Operators.assignment, allocAssignCode, Some(className), line(expr))
+    val allocAssignIdentifier = identifierAstFromLocal(tmpLocal, line(expr))
+    val allocAssignAst        = callAst(allocAssignNode, allocAssignIdentifier :: allocAst :: Nil)
+
+    // Init node
+    val initArgs       = expr.args.map(astForCallArg)
+    val initSignature  = s"${Defines.UnresolvedSignature}(${initArgs.size})"
+    val initNamePrefix = s"$className.${Defines.ConstructorMethodName}"
+    val initFullName   = s"$initNamePrefix:$initSignature"
+    val initCode       = s"$initNamePrefix(${initArgs.map(rootCode(_)).mkString(",")})"
+    val initCallNode = NewCall()
+      .name(Defines.ConstructorMethodName)
+      .methodFullName(initFullName)
+      .signature(initSignature)
+      .code(initCode)
+      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+      .lineNumber(line(expr))
+    val initReceiver = identifierAstFromLocal(tmpLocal, line(expr))
+    val initCallAst  = callAst(initCallNode, initArgs, receiver = Some(initReceiver))
+
+    // Return identifier
+    val returnIdentifierAst = identifierAstFromLocal(tmpLocal, line(expr))
+
+    Ast(NewBlock().lineNumber(line(expr)))
+      .withChild(Ast(tmpLocal))
+      .withChild(allocAssignAst)
+      .withChild(initCallAst)
+      .withChild(returnIdentifierAst)
   }
 
   private def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {

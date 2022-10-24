@@ -445,4 +445,25 @@ class OperatorTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "temporary list implementation should work" in {
+    // TODO This is a simple placeholder implementation that represents most of the useful information
+    //  in the AST, while being pretty much unusable for dataflow. A better implementation needs to follow.
+    val cpg = code("<?php\nlist($a, $b)")
+
+    inside(cpg.call.l) { case List(listCall: Call) =>
+      listCall.name shouldBe PhpBuiltins.listFunc
+      listCall.code shouldBe "list($a,$b)"
+      listCall.lineNumber shouldBe Some(2)
+      inside(listCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.lineNumber shouldBe Some(2)
+
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.lineNumber shouldBe Some(2)
+      }
+    }
+  }
 }
