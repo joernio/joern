@@ -187,6 +187,32 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       argument3.argumentIndex shouldBe 3
     }
 
+    "have correct structure for different string literals" in AstFixture("""
+        |var keyA = "AAA";
+        |var keyB = 'BBB';
+        |var keyC = `CCC`;
+        |var keyD = `DDD"`;
+        |var keyE = "EE EE E";
+        |var keyF = "F-FF-F";
+        |""".stripMargin) { cpg =>
+      cpg.literal.code.l shouldBe List(
+        """"AAA"""",
+        """"BBB"""",
+        """"CCC"""",
+        """"DDD""""",
+        """"EE EE E"""",
+        """"F-FF-F""""
+      )
+      cpg.call.code.l shouldBe List(
+        """var keyA = "AAA"""",
+        """var keyB = 'BBB'""",
+        """var keyC = `CCC`""",
+        """var keyD = `DDD"`""",
+        """var keyE = "EE EE E"""",
+        """var keyF = "F-FF-F""""
+      )
+    }
+
     "have correct structure for try" in AstFixture("""
        |try {
        | open()
