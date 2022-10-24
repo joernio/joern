@@ -226,7 +226,14 @@ object Domain {
 
   final case class PhpNewExpr(className: PhpNode, args: List[PhpArgument], attributes: PhpAttributes) extends PhpExpr
 
-  final case class PhpIncludeExpr()
+  final case class PhpIncludeExpr(expr: PhpExpr, includeType: String, attributes: PhpAttributes) extends PhpExpr
+  sealed abstract class PhpIncludeType(name: String)
+  case object PhpIncludeType {
+    val include: String     = "include"
+    val includeOnce: String = "include_once"
+    val require: String     = "require"
+    val requireOnce: String = "require_once"
+  }
 
   final case class PhpCallExpr(
     target: Option[PhpExpr],
@@ -554,6 +561,21 @@ object Domain {
     PhpNewExpr(classNode, args, PhpAttributes(json))
   }
 
+  private def readInclude(json: Value): PhpIncludeExpr = {
+    val expr = readExpr(json("expr"))
+    val includeType = json("type").num.toInt match {
+      case 1 => PhpIncludeType.include
+      case 2 => PhpIncludeType.includeOnce
+      case 3 => PhpIncludeType.require
+      case 4 => PhpIncludeType.requireOnce
+      case other =>
+        logger.warn(s"Unhandled include type: $other. Defaulting to regular include.")
+        PhpIncludeType.include
+    }
+
+    PhpIncludeExpr(expr, includeType, PhpAttributes(json))
+  }
+
   private def readClassConstFetch(json: Value): PhpClassConstFetchExpr = {
     val classNameType = json("class")("nodeType").str
     val className =
@@ -703,6 +725,7 @@ object Domain {
       case "Expr_Throw"    => readThrow(json)
       case "Expr_List"     => readList(json)
       case "Expr_New"      => readNew(json)
+      case "Expr_Include"  => readInclude(json)
 
       case "Expr_ClassConstFetch" => readClassConstFetch(json)
       case "Expr_ConstFetch"      => readConstFetch(json)
