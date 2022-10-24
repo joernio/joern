@@ -3,10 +3,7 @@ package io.joern.x2cpg.layers
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
-import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.callgraph.{DynamicCallLinker, MethodRefLinker, StaticCallLinker}
-import io.joern.x2cpg.passes.frontend.JavascriptCallLinker
-import io.shiftleft.codepropertygraph.generated.Languages
 
 object CallGraph {
   val overlayName: String = "callgraph"
