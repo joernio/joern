@@ -9,10 +9,6 @@ import cask.model.Response.Raw
 import cask.router.Result
 import ujson.Obj
 
-object CPGLSError extends Enumeration {
-  val parseError: CPGLSError.Value = Value("cpgqls_query_parse_error")
-}
-
 class CPGQLServer(
   ammonite: EmbeddedAmmonite,
   serverHost: String,

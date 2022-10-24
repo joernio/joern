@@ -9,7 +9,7 @@ import dotty.tools.dotc.classpath.{AggregateClassPath, ClassPathFactory}
 import dotty.tools.dotc.config.{Feature, JavaPlatform, Platform}
 import dotty.tools.dotc.core.{Contexts, MacroClassLoader, Mode, TyperState}
 import dotty.tools.io.{AbstractFile, ClassPath, ClassRepresentation}
-import dotty.tools.repl.{AbstractFileClassLoader, CollectTopLevelImports, Newline, ParseResult, Parsed, Quit, State}
+import dotty.tools.repl.{AbstractFileClassLoader, CollectTopLevelImports, JLineTerminal, Newline, ParseResult, Parsed, Quit, State}
 
 import java.io.PrintStream
 import org.jline.reader.*
@@ -32,7 +32,9 @@ class ReplDriver(args: Array[String],
     * Main difference to the 'original': different greeting, trap Ctrl-c
    */
   override def runUntilQuit(using initialState: State = initialState)(): State = {
-    val terminal = new JLineTerminal(prompt)
+    val terminal = new JLineTerminal {
+      override protected def promptStr = prompt
+    }
     initializeRenderer()
 
     out.println(greeting)
@@ -74,7 +76,7 @@ class ReplDriver(args: Array[String],
       // This is analogous to what happens in dotty.tools.repl.Rendering.
       val pprinter = Class.forName("io.joern.console.PPrinter", true, rendering.myClassLoader)
       val renderer = pprinter.getMethod("apply", classOf[Object])
-      (value: Object, maxElements: Int) => renderer.invoke(null, value).asInstanceOf[String]
+      (value: Object, maxElements: Int, maxCharacters) => renderer.invoke(null, value).asInstanceOf[String]
     }
   }
 

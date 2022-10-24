@@ -19,7 +19,7 @@ dependsOn(
 
 libraryDependencies ++= Seq(
   // TODO once https://github.com/lampepfl/dotty/pull/16011 is merged and released as part of 3.2.1, use our custom scala fork here 
-  "org.scala-lang"       %% "scala3-compiler"   % scalaVersion.value,
+  "com.michaelpollmeier" %% "scala3-compiler" % "3.2.0+1-extensible-repl",
   "com.lihaoyi"          %% "mainargs"          % "0.3.0",
  ("io.get-coursier"      %% "coursier"          % "2.0.13").cross(CrossVersion.for3Use2_13).exclude("org.scala-lang.modules", "scala-xml_2.13").exclude("org.scala-lang.modules", "scala-collection-compat_2.13"),
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
