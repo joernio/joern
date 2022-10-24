@@ -17,14 +17,12 @@ class PythonCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
   private val methodNameToNode = mutable.Map.empty[String, List[Method]]
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
-
     cpg.method.foreach { method =>
       methodNameToNode.updateWith(method.name) {
         case Some(l) => Some(method :: l)
         case None    => Some(List(method))
       }
     }
-
     cpg.call.foreach { call =>
       try {
         linkCallOnlyByShortName(call, dstGraph)

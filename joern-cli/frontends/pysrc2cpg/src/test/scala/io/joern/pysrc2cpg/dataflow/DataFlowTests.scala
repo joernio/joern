@@ -43,7 +43,6 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
     def source = cpg.literal("42")
     def sink   = cpg.call("sink")
-
     sink.reachableByFlows(source).size shouldBe 1
   }
 }
