@@ -445,4 +445,79 @@ class OperatorTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "temporary list implementation should work" in {
+    // TODO This is a simple placeholder implementation that represents most of the useful information
+    //  in the AST, while being pretty much unusable for dataflow. A better implementation needs to follow.
+    val cpg = code("<?php\nlist($a, $b) = $arr;")
+
+    inside(cpg.call.nameExact(PhpBuiltins.listFunc).l) { case List(listCall: Call) =>
+      listCall.methodFullName shouldBe PhpBuiltins.listFunc
+      listCall.code shouldBe "list($a,$b)"
+      listCall.lineNumber shouldBe Some(2)
+      inside(listCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.lineNumber shouldBe Some(2)
+
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.lineNumber shouldBe Some(2)
+      }
+    }
+  }
+
+  "include calls" should {
+    "be correctly represented for normal includes" in {
+      val cpg = code("<?php\ninclude 'path';")
+
+      inside(cpg.call.l) { case List(includeCall: Call) =>
+        includeCall.name shouldBe "include"
+        includeCall.methodFullName shouldBe "include"
+        includeCall.code shouldBe "include \"path\""
+        inside(includeCall.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+
+    "be correctly represented for include_once" in {
+      val cpg = code("<?php\ninclude_once 'path';")
+
+      inside(cpg.call.l) { case List(includeOnceCall: Call) =>
+        includeOnceCall.name shouldBe "include_once"
+        includeOnceCall.methodFullName shouldBe "include_once"
+        includeOnceCall.code shouldBe "include_once \"path\""
+        inside(includeOnceCall.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+
+    "be correctly represented for normal requires" in {
+      val cpg = code("<?php\nrequire 'path';")
+
+      inside(cpg.call.l) { case List(requireCall: Call) =>
+        requireCall.name shouldBe "require"
+        requireCall.methodFullName shouldBe "require"
+        requireCall.code shouldBe "require \"path\""
+        inside(requireCall.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+
+    "be correctly represented for require once" in {
+      val cpg = code("<?php\nrequire_once 'path';")
+
+      inside(cpg.call.l) { case List(requireOnce: Call) =>
+        requireOnce.name shouldBe "require_once"
+        requireOnce.methodFullName shouldBe "require_once"
+        requireOnce.code shouldBe "require_once \"path\""
+        inside(requireOnce.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+  }
 }
