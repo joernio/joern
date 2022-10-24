@@ -7,15 +7,43 @@ import io.shiftleft.semanticcpg.language._
 
 class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
-  val cpg: Cpg = code("""
+  "call test 1" in {
+    val cpg: Cpg = code("""
       |a = 42
       |c = foo(a, b)
       |print(c)
       |""".stripMargin)
+    def source = cpg.literal("42")
+    def sink   = cpg.call("print")
+    sink.reachableByFlows(source).size shouldBe 1
+  }
 
-  "first test" in {
-    val source = cpg.literal("42")
-    val sink   = cpg.call.code("print.*").argument
+  "call test 2" in {
+    val cpg: Cpg = code("""
+      |def foo():
+      |    return 42
+      |bar = foo()
+      |print(bar)
+      |""".stripMargin)
+    def source = cpg.literal("42")
+    def sink   = cpg.call("print")
+    sink.reachableByFlows(source).size shouldBe 1
+  }
+
+  "call test 3" in {
+    val cpg: Cpg = code("""
+        |def foo(input):
+        |    sink(input)
+        |
+        |def main():
+        |    source = 42
+        |    foo(source)
+        |
+        |""".stripMargin)
+
+    def source = cpg.literal("42")
+    def sink   = cpg.call("sink")
+
     sink.reachableByFlows(source).size shouldBe 1
   }
 }

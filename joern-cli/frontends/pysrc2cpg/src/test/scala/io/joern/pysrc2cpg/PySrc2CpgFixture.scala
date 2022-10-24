@@ -3,8 +3,9 @@ package io.joern.pysrc2cpg
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.pysrc2cpg.Py2CpgOnFileSystem.buildCpg
-import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
+import io.joern.x2cpg.passes.frontend.PythonCallLinker
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
+import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -16,7 +17,9 @@ trait PythonFrontend extends LanguageFrontend {
 
   override def execute(sourceCodeFile: File): Cpg = {
     val config = Py2CpgOnFileSystemConfig(Paths.get(X2CpgConfig.defaultOutputPath), sourceCodeFile.toPath, None)
-    buildCpg(config)
+    val cpg    = buildCpg(config)
+    new PythonCallLinker(cpg).createAndApply()
+    cpg
   }
 }
 
