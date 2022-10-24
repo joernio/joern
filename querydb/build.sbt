@@ -5,6 +5,7 @@ enablePlugins(JavaAppPackaging)
 dependsOn(
   Projects.console,
   Projects.macros,
+  Projects.dataflowengineoss,
   Projects.ghidra2cpg,
   Projects.ghidra2cpg % "test->test",
   Projects.c2cpg      % "test->test",
