@@ -27,7 +27,10 @@ class SourceRootFinderTests extends AnyFlatSpec with Matchers with BeforeAndAfte
       File(rootPath, "some", "nested", "directories", "src", "io"),
       File(rootPath, "some", "nested", "more", "directories", "src", "io"),
       File(rootPath, "some", "nested", "more", "directories", "test", "io"),
-      File(rootPath, "nosrc", "nested", "directories", "io")
+      File(rootPath, "nosrc", "nested", "directories", "io"),
+      File(rootPath, "code", "project", "src", "main"),
+      File(rootPath, "code", "project", "src", "random"),
+      File(rootPath, "code", "project", "src", "test")
     )
 
     directoriesToCreate.foreach { file =>
@@ -54,9 +57,14 @@ class SourceRootFinderTests extends AnyFlatSpec with Matchers with BeforeAndAfte
     sourceRoots.sorted shouldBe List(
       s"$stdRootPath/maven/mvn1/src/main/java",
       s"$stdRootPath/maven/mvn2/src/main/java",
+      // Over-approximate to avoid missing sources
+      s"$stdRootPath/maven/mvn1/src/main/resources",
+      s"$stdRootPath/maven/mvn1/src/main/scala",
       s"$stdRootPath/src",
       s"$stdRootPath/some/nested/directories/src",
-      s"$stdRootPath/some/nested/more/directories/src"
+      s"$stdRootPath/some/nested/more/directories/src",
+      s"$stdRootPath/code/project/src/main",
+      s"$stdRootPath/code/project/src/random"
     ).sorted
   }
 

@@ -13,14 +13,14 @@ import better.files.File
   */
 object SourceRootFinder {
 
-  private val excludes: Set[String] = Set("test", ".mvn")
+  private val excludes: Set[String] = Set("test", ".mvn", ".git")
 
   private def statePreSrc(currentDir: File): List[File] = {
     currentDir.children.filter(_.isDirectory).toList.flatMap { child =>
       child.name match {
         case name if excludes.contains(name) => Nil
         case "src"                           => stateSrc(child)
-        case "main"                          => stateMain(child)
+        case "main"                          => statePostSrc(child)
         case "java"                          => child :: Nil
         case _                               => statePreSrc(child)
       }
@@ -31,22 +31,42 @@ object SourceRootFinder {
     val mainChildren = currentDir.children.filter(_.isDirectory).toList.flatMap { child =>
       child.name match {
         case name if excludes.contains(name) => Nil
-        case "main"                          => stateMain(child)
+        case "main"                          => statePostSrc(child)
         case _                               => Nil
       }
     }
 
-    mainChildren match {
-      case Nil => List(currentDir)
-      case _   => mainChildren
+    val nonMainChildren = currentDir.children.filter(_.isDirectory).toList.flatMap { child =>
+      child.name match {
+        case name if excludes.contains(name) => Nil
+        case "main"                          => Nil
+        case _                               => statePostSrc(child)
+      }
+    }
+
+    val hasExcludedDir = currentDir.children.filter(_.isDirectory).toList.exists(file => excludes.contains(file.name))
+
+    (mainChildren, nonMainChildren) match {
+      case (Nil, Nil) =>
+        // probably a src/test directory in a tests-only module
+        if (hasExcludedDir) Nil else List(currentDir)
+      case (mainC, Nil) =>
+        // probably follows the common src/main/<packages> structure
+        mainC
+      case (Nil, _) =>
+        // the non-main children are probably package roots
+        List(currentDir)
+      case (mainC, nonMC) =>
+        // main a package root here?
+        mainC ++ nonMC
     }
   }
 
-  private def stateMain(currentDir: File): List[File] = {
+  private def statePostSrc(currentDir: File): List[File] = {
     val javaChildren = currentDir.children.filter(_.isDirectory).toList.flatMap { child =>
       child.name match {
-        case "java" => child :: Nil
-        case _      => Nil
+        case name if excludes.contains(name) => Nil
+        case _                               => child :: Nil
       }
     }
 
@@ -60,7 +80,7 @@ object SourceRootFinder {
     val srcDirs = currentDir.name match {
       case name if excludes.contains(name) => Nil
       case "src"                           => stateSrc(currentDir)
-      case "main"                          => stateMain(currentDir)
+      case "main"                          => statePostSrc(currentDir)
       case "java"                          => List(currentDir)
       case _                               => statePreSrc(currentDir)
     }
