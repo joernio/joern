@@ -1,15 +1,14 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
-import io.joern.javasrc2cpg.testfixtures.{JavaDataflowFixture, JavaSrcCode2CpgFixture}
 import io.joern.dataflowengineoss.language._
+import io.joern.javasrc2cpg.testfixtures.{JavaDataflowFixture, JavaSrcCode2CpgFixture}
 import io.shiftleft.semanticcpg.language._
 
 class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
   "Dataflow through function calls" should {
 
     "find a path from parent method to child method" in {
-      val cpg = code(
-        """
+      val cpg = code("""
           |interface Interface {
           |    String getName();
           |}
@@ -27,7 +26,7 @@ class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true
           |""".stripMargin)
 
       def source = cpg.literal("\"a_name\"")
-      def sink = cpg.method("sink").parameter.index(1)
+      def sink   = cpg.method("sink").parameter.index(1)
       sink.reachableByFlows(source).p.foreach(println)
       sink.reachableBy(source).size shouldBe 1
     }
