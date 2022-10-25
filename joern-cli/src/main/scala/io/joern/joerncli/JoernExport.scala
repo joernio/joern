@@ -129,11 +129,11 @@ object JoernExport extends App {
       case Representation.All =>
         exporter.runExport(cpg.graph, outDir)
       case Representation.SplitByMethod =>
-        splitByMethod(cpg).iterator.foreach { subGraph =>
+        splitByMethod(cpg).iterator.map { subGraph =>
           val sanitizedFilename = subGraph.name.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
           val outFileName = outDir.resolve(sanitizedFilename)
           exporter.runExport(subGraph.nodes, subGraph.edges, outFileName)
-        }
+        }.reduce(plus)
     }
 
     println(s"exported $nodeCount nodes, $edgeCount edges into $outDir")
@@ -150,6 +150,15 @@ object JoernExport extends App {
     cpg.method.map { method =>
       SubGraph(method.fullName, method.ast.toSet)
     }
+  }
+
+  private def plus(resultA: ExportResult, resultB: ExportResult): ExportResult = {
+    ExportResult(
+      nodeCount = resultA.nodeCount + resultB.nodeCount,
+      edgeCount = resultA.edgeCount + resultB.edgeCount,
+      files = resultA.files ++ resultB.files,
+      additionalInfo = resultA.additionalInfo
+    )
   }
 
   case class SubGraph(name: String, nodes: Set[Node]) {
