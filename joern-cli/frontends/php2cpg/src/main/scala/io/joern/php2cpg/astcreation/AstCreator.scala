@@ -113,8 +113,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case namespace: PhpNamespaceStmt     => astForNamespaceStmt(namespace)
       case declareStmt: PhpDeclareStmt     => astForDeclareStmt(declareStmt)
       case _: NopStmt                      => Ast() // TODO This'll need to be updated when comments are added.
-
-      case haltStmt: PhpHaltCompilerStmt => astForHaltCompilerStmt(haltStmt)
+      case haltStmt: PhpHaltCompilerStmt   => astForHaltCompilerStmt(haltStmt)
+      case unsetStmt: PhpUnsetStmt         => astForUnsetStmt(unsetStmt)
       case null =>
         logger.warn("stmt was null")
         ???
@@ -187,9 +187,12 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     } else {
       None
     }
-    val parameters      = thisParam.toList ++ setParamIndices(decl.params.map(astForParam))
-    val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.map(astForStmt)
-    val methodReturn    = methodReturnNode(returnType, line = line(decl), column = None)
+    val parameters = thisParam.toList ++ setParamIndices(decl.params.map(astForParam))
+    val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap {
+      case staticStmt: PhpStaticStmt => astsForStaticStmt(staticStmt)
+      case stmt                      => astForStmt(stmt) :: Nil
+    }
+    val methodReturn = methodReturnNode(returnType, line = line(decl), column = None)
 
     val declLocals = scope.getLocalsInScope.map(Ast(_))
     val methodBody = blockAst(NewBlock(), declLocals ++ methodBodyStmts)
@@ -257,6 +260,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case instanceOfExpr: PhpInstanceOfExpr           => astForInstanceOfExpr(instanceOfExpr)
       case propertyFetchExpr: PhpPropertyFetchExpr     => astForPropertyFetchExpr(propertyFetchExpr)
       case includeExpr: PhpIncludeExpr                 => astForIncludeExpr(includeExpr)
+      case shellExecExpr: PhpShellExecExpr             => astForShellExecExpr(shellExecExpr)
 
       case null =>
         logger.warn("expr was null")
@@ -486,6 +490,40 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .lineNumber(line(stmt))
 
     Ast(callNode)
+  }
+
+  private def astForUnsetStmt(stmt: PhpUnsetStmt): Ast = {
+    val args     = stmt.vars.map(astForExpr)
+    val code     = s"${PhpBuiltins.unset}(${args.map(rootCode(_)).mkString(", ")})"
+    val callNode = operatorCallNode(PhpBuiltins.unset, code, typeFullName = Some(TypeConstants.Void), line = line(stmt))
+    callAst(callNode, args)
+  }
+
+  private def astsForStaticStmt(stmt: PhpStaticStmt): List[Ast] = {
+    stmt.vars.flatMap { staticVarDecl =>
+      val variableAst   = astForVariableExpr(staticVarDecl.variable)
+      val maybeValueAst = staticVarDecl.defaultValue.map(astForExpr)
+
+      val code = rootCode(variableAst, NameConstants.Unknown)
+      val name = variableAst.root match {
+        case Some(identifier: NewIdentifier) => identifier.name
+        case _                               => code
+      }
+
+      // Local will be added to the method via magic later. Just fix the code and line here.
+      scope.lookupVariable(name).collect { case local: NewLocal => local }.foreach { local =>
+        local.code(s"static ${local.code}")
+        local.lineNumber(line(stmt))
+      }
+
+      val defaultAssignAst = maybeValueAst.map { valueAst =>
+        val valueCode  = s"static $code = ${rootCode(valueAst)}"
+        val assignNode = operatorCallNode(Operators.assignment, valueCode, line = line(stmt))
+        callAst(assignNode, variableAst :: valueAst :: Nil)
+      }
+
+      defaultAssignAst.toList
+    }
   }
 
   private def astForAnonymousClass(stmt: PhpClassLikeStmt): Ast = {
@@ -1296,6 +1334,15 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val callNode = operatorCallNode(expr.includeType, code, line = line(expr))
 
     callAst(callNode, exprAst :: Nil)
+  }
+
+  private def astForShellExecExpr(expr: PhpShellExecExpr): Ast = {
+    val args = expr.parts.map(astForExpr)
+    val code = s"`${args.map(rootCode(_)).mkString("").replaceAll("\"", "")}`"
+
+    val callNode = operatorCallNode(PhpBuiltins.shellExec, code, line = line(expr))
+
+    callAst(callNode, args)
   }
 
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {

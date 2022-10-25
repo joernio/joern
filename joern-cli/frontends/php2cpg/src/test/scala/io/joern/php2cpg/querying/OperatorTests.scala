@@ -599,4 +599,41 @@ class OperatorTests extends PhpCode2CpgFixture {
       echoCall.code shouldBe "echo $x"
     }
   }
+
+  "shell_exec calls should be handled" in {
+    val cpg = code("<?php\n`ls -la`")
+
+    inside(cpg.call.name("shell_exec").l) { case List(shellCall) =>
+      shellCall.methodFullName shouldBe "shell_exec"
+      shellCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      shellCall.code shouldBe "`ls -la`"
+      shellCall.lineNumber shouldBe Some(2)
+
+      inside(shellCall.argument.l) { case List(command: Literal) =>
+        command.code shouldBe "\"ls -la\""
+      }
+    }
+  }
+
+  "unset calls should be handled" in {
+    val cpg = code("<?php\nunset($a, $b)")
+
+    inside(cpg.call.l) { case List(unsetCall) =>
+      unsetCall.name shouldBe "unset"
+      unsetCall.methodFullName shouldBe "unset"
+      unsetCall.code shouldBe "unset($a, $b)"
+      unsetCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      unsetCall.lineNumber shouldBe Some(2)
+
+      inside(unsetCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.lineNumber shouldBe Some(2)
+
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.lineNumber shouldBe Some(2)
+      }
+    }
+  }
 }
