@@ -11,6 +11,9 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{toAstNodeMethods, toNodeTypeStarters}
 import io.shiftleft.semanticcpg.layers._
 import overflowdb.formats.ExportResult
+import overflowdb.formats.dot.DotExporter
+import overflowdb.formats.graphml.GraphMLExporter
+import overflowdb.formats.graphson.GraphSONExporter
 import overflowdb.formats.neo4jcsv.Neo4jCsvExporter
 import overflowdb.{Edge, Node}
 
@@ -75,7 +78,10 @@ object JoernExport extends App {
     }.parse(args, Config())
 
   parseConfig.foreach { config =>
-    exitIfInvalid(config.outDir, config.cpgFileName)
+    val repr = config.repr
+    val outDir = config.outDir
+    exitIfInvalid(outDir, config.cpgFileName)
+    mkdir(File(outDir))
 
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
       implicit val semantics: Semantics = DefaultSemantics()
@@ -86,20 +92,17 @@ object JoernExport extends App {
       CpgBasedTool.addDataFlowOverlayIfNonExistent(cpg)
       val context = new LayerCreatorContext(cpg)
 
-      mkdir(File(config.outDir))
       config.format match {
         case Format.Dot =>
-          exportDot(config.repr, config.outDir, context)
+          exportDot(repr, outDir, context)
         case Format.Neo4jCsv =>
-          exportWithOdbFormat(cpg, config.repr, config.outDir, Neo4jCsvExporter)
-//        case (Representation.all, Format.graphml) =>
-//          exportWithOdbFormat(cpg.graph, config.outDir, GraphMLExporter)
-//        case (Representation.all, Format.dot) =>
-//          exportWithOdbFormat(cpg.graph, config.outDir, DotExporter)
-//        case (Representation.all, Format.graphson) =>
-//          exportWithOdbFormat(cpg.graph, config.outDir, GraphSONExporter)
-//        case (repr, format) =>
-//          exitWithError(s"combination of repr=$repr and format=$format not (yet) supported")
+          exportWithOdbFormat(cpg, repr, outDir, Neo4jCsvExporter)
+        case Format.Graphml =>
+          exportWithOdbFormat(cpg, repr, outDir, GraphMLExporter)
+        case Format.Dot =>
+          exportWithOdbFormat(cpg, repr, outDir, DotExporter)
+        case Format.Graphson =>
+          exportWithOdbFormat(cpg, repr, outDir, GraphSONExporter)
       }
     }
   }
