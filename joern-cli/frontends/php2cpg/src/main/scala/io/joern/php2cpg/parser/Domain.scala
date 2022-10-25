@@ -90,7 +90,8 @@ object Domain {
       (64, ModifierTypes.READONLY)
     )
 
-    def getModifierSet(flags: Int): List[String] = {
+    def getModifierSet(json: Value): List[String] = {
+      val flags = json.objOpt.flatMap(_.get("flags")).map(_.num.toInt).getOrElse(0)
       ModifierMasks.collect {
         case (mask, typ) if (flags & mask) != 0 => typ
       }
@@ -187,12 +188,16 @@ object Domain {
     attributes: PhpAttributes
   ) extends PhpStmt
 
-  final case class PhpClassStmt(
+  final case class PhpClassLikeStmt(
     name: Option[PhpNameExpr],
     modifiers: List[String],
     extendsClass: Option[PhpNameExpr],
     implementedInterfaces: List[PhpNameExpr],
     stmts: List[PhpStmt],
+    isEnum: Boolean,
+    isInterface: Boolean,
+    // Optionally used for enums with values
+    scalarType: Option[PhpNameExpr],
     attributes: PhpAttributes
   ) extends PhpStmt
 
@@ -464,7 +469,9 @@ object Domain {
       case "Stmt_TryCatch"     => readTry(json)
       case "Stmt_Throw"        => readThrow(json)
       case "Stmt_Return"       => readReturn(json)
-      case "Stmt_Class"        => readClass(json)
+      case "Stmt_Class"        => readClassLike(json)
+      case "Stmt_Enum"         => readClassLike(json, isEnum = true)
+      case "Stmt_Interface"    => readClassLike(json, isInterface = true)
       case "Stmt_ClassMethod"  => readClassMethod(json)
       case "Stmt_Property"     => readProperty(json)
       case "Stmt_ClassConst"   => readConst(json)
@@ -560,7 +567,7 @@ object Domain {
   private def readNew(json: Value): PhpNewExpr = {
     val classNode =
       if (json("class")("nodeType").strOpt.contains("Stmt_Class"))
-        readClass(json("class"))
+        readClassLike(json("class"))
       else
         readNameOrExpr(json, "class")
 
@@ -664,15 +671,21 @@ object Domain {
     PhpReturnStmt(expr, PhpAttributes(json))
   }
 
-  private def readClass(json: Value): PhpClassStmt = {
-    val name         = Option.unless(json("name").isNull)(readName(json("name")))
-    val modifiers    = PhpModifiers.getModifierSet(json("flags").num.toInt)
-    val extendsClass = Option.unless(json("extends").isNull)(readName(json("extends")))
-    val implements   = json("implements").arr.map(readName).toList
-    val stmts        = json("stmts").arr.map(readStmt).toList
-    val attributes   = PhpAttributes(json)
+  private def readClassLike(json: Value, isEnum: Boolean = false, isInterface: Boolean = false): PhpClassLikeStmt = {
+    val name      = Option.unless(json("name").isNull)(readName(json("name")))
+    val modifiers = PhpModifiers.getModifierSet(json)
 
-    PhpClassStmt(name, modifiers, extendsClass, implements, stmts, attributes)
+    val maybeExtends = json.obj.getOrElse("extends", ujson.Null)
+    val extendsClass = Option.unless(maybeExtends.isNull)(readName(json("extends")))
+
+    val implements = json.obj.get("implements").map(_.arr.toList).getOrElse(Nil).map(readName)
+    val stmts      = json("stmts").arr.map(readStmt).toList
+
+    val scalarType = json.obj.get("scalarType").flatMap(typ => Option.unless(typ.isNull)(readName(typ)))
+
+    val attributes = PhpAttributes(json)
+
+    PhpClassLikeStmt(name, modifiers, extendsClass, implements, stmts, isEnum, isInterface, scalarType, attributes)
   }
 
   private def readCatch(json: Value): PhpCatchStmt = {
@@ -858,7 +871,7 @@ object Domain {
   }
 
   private def readClassMethod(json: Value): PhpMethodDecl = {
-    val modifiers   = PhpModifiers.getModifierSet(json("flags").num.toInt)
+    val modifiers   = PhpModifiers.getModifierSet(json)
     val returnByRef = json("byRef").bool
     val name        = readName(json("name"))
     val params      = json("params").arr.map(readParam).toList
@@ -886,7 +899,7 @@ object Domain {
   }
 
   private def readProperty(json: Value): PhpPropertyStmt = {
-    val modifiers = PhpModifiers.getModifierSet(json("flags").num.toInt)
+    val modifiers = PhpModifiers.getModifierSet(json)
     val variables = json("props").arr.map(readPropertyValue).toList
     val typeName  = Option.unless(json("type").isNull)(readName(json("type")))
 
@@ -901,8 +914,7 @@ object Domain {
   }
 
   private def readConst(json: Value): PhpConstStmt = {
-    val modifiers =
-      json.obj.get("flags").flatMap(_.numOpt).map(num => PhpModifiers.getModifierSet(num.toInt)).getOrElse(Nil)
+    val modifiers = PhpModifiers.getModifierSet(json)
 
     val constDeclarations = json("consts").arr.map(readConstDeclaration).toList
 

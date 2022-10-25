@@ -106,7 +106,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case switchStmt: PhpSwitchStmt   => astForSwitchStmt(switchStmt)
       case tryStmt: PhpTryStmt         => astForTryStmt(tryStmt)
       case returnStmt: PhpReturnStmt   => astForReturnStmt(returnStmt)
-      case classStmt: PhpClassStmt     => astForClassStmt(classStmt)
+      case classStmt: PhpClassLikeStmt => astForClassStmt(classStmt)
       case gotoStmt: PhpGotoStmt       => astForGotoStmt(gotoStmt)
       case labelStmt: PhpLabelStmt     => astForLabelStmt(labelStmt)
       case namespace: PhpNamespaceStmt => astForNamespaceStmt(namespace)
@@ -396,7 +396,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     returnAst(returnNode, maybeExprAst.toList)
   }
 
-  private def astForClassStmt(stmt: PhpClassStmt): Ast = {
+  private def astForClassStmt(stmt: PhpClassLikeStmt): Ast = {
     stmt.name match {
       case None       => astForAnonymousClass(stmt)
       case Some(name) => astForNamedClass(stmt, name)
@@ -484,12 +484,12 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     Ast(callNode)
   }
 
-  private def astForAnonymousClass(stmt: PhpClassStmt): Ast = {
+  private def astForAnonymousClass(stmt: PhpClassLikeStmt): Ast = {
     // TODO
     Ast()
   }
 
-  def codeForClassStmt(stmt: PhpClassStmt, name: PhpNameExpr): String = {
+  def codeForClassStmt(stmt: PhpClassLikeStmt, name: PhpNameExpr): String = {
     // TODO Extend for anonymous classes
     val extendsString = stmt.extendsClass.map(ext => s" extends ${ext.name}").getOrElse("")
     val implementsString =
@@ -501,7 +501,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     s"class ${name.name}$extendsString$implementsString"
   }
 
-  private def astForNamedClass(stmt: PhpClassStmt, name: PhpNameExpr): Ast = {
+  private def astForNamedClass(stmt: PhpClassLikeStmt, name: PhpNameExpr): Ast = {
     val inheritsFrom = (stmt.extendsClass.toList ++ stmt.implementedInterfaces).map(_.name)
     val code         = codeForClassStmt(stmt, name)
 
@@ -560,7 +560,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case method: PhpMethodDecl =>
         Some(astForMethodDecl(method))
 
-      case classStmt: PhpClassStmt =>
+      case classStmt: PhpClassLikeStmt =>
         Some(astForClassStmt(classStmt))
 
       case other =>
@@ -1086,7 +1086,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForNewExpr(expr: PhpNewExpr): Ast = {
     expr.className match {
-      case classStmt: PhpClassStmt =>
+      case classStmt: PhpClassLikeStmt =>
         astForAnonymousClassInstantiation(expr, classStmt)
 
       case classNameExpr: PhpExpr =>
@@ -1094,7 +1094,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     }
   }
 
-  private def astForAnonymousClassInstantiation(expr: PhpNewExpr, classStmt: PhpClassStmt): Ast = {
+  private def astForAnonymousClassInstantiation(expr: PhpNewExpr, classStmt: PhpClassLikeStmt): Ast = {
     // TODO Do this along with other anonymous class support
     Ast()
   }
