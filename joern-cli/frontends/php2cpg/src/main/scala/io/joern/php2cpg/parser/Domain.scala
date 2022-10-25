@@ -39,7 +39,8 @@ object Domain {
     val evalFunc  = "eval"
     val exitFunc  = "exit"
     // Used for multiple assignments for example `list($a, $b) = $someArray`
-    val listFunc = "list"
+    val listFunc    = "list"
+    val declareFunc = "declare"
   }
 
   object PhpDomainTypeConstants {
@@ -89,7 +90,8 @@ object Domain {
       (64, ModifierTypes.READONLY)
     )
 
-    def getModifierSet(flags: Int): List[String] = {
+    def getModifierSet(json: Value): List[String] = {
+      val flags = json.objOpt.flatMap(_.get("flags")).map(_.num.toInt).getOrElse(0)
       ModifierMasks.collect {
         case (mask, typ) if (flags & mask) != 0 => typ
       }
@@ -186,14 +188,25 @@ object Domain {
     attributes: PhpAttributes
   ) extends PhpStmt
 
-  final case class PhpClassStmt(
+  final case class PhpClassLikeStmt(
     name: Option[PhpNameExpr],
     modifiers: List[String],
-    extendsClass: Option[PhpNameExpr],
+    extendsNames: List[PhpNameExpr],
     implementedInterfaces: List[PhpNameExpr],
     stmts: List[PhpStmt],
+    classLikeType: String,
+    // Optionally used for enums with values
+    scalarType: Option[PhpNameExpr],
     attributes: PhpAttributes
   ) extends PhpStmt
+  object ClassLikeTypes {
+    val Class: String     = "class"
+    val Trait: String     = "trait"
+    val Interface: String = "interface"
+    val Enum: String      = "enum"
+  }
+
+  final case class PhpEnumCaseStmt(name: PhpNameExpr, expr: Option[PhpExpr], attributes: PhpAttributes) extends PhpStmt
 
   final case class PhpPropertyStmt(
     modifiers: List[String],
@@ -222,12 +235,18 @@ object Domain {
   final case class PhpNamespaceStmt(name: Option[PhpNameExpr], stmts: List[PhpStmt], attributes: PhpAttributes)
       extends PhpStmt
 
+  final case class PhpDeclareStmt(
+    declares: Seq[PhpDeclareItem],
+    stmts: Option[List[PhpStmt]],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+  final case class PhpDeclareItem(key: PhpNameExpr, value: PhpExpr, attributes: PhpAttributes) extends PhpStmt
+
   sealed abstract class PhpExpr extends PhpStmt
 
   final case class PhpNewExpr(className: PhpNode, args: List[PhpArgument], attributes: PhpAttributes) extends PhpExpr
 
   final case class PhpIncludeExpr(expr: PhpExpr, includeType: String, attributes: PhpAttributes) extends PhpExpr
-  sealed abstract class PhpIncludeType(name: String)
   case object PhpIncludeType {
     val include: String     = "include"
     val includeOnce: String = "include_once"
@@ -457,7 +476,11 @@ object Domain {
       case "Stmt_TryCatch"     => readTry(json)
       case "Stmt_Throw"        => readThrow(json)
       case "Stmt_Return"       => readReturn(json)
-      case "Stmt_Class"        => readClass(json)
+      case "Stmt_Class"        => readClassLike(json, ClassLikeTypes.Class)
+      case "Stmt_Interface"    => readClassLike(json, ClassLikeTypes.Interface)
+      case "Stmt_Trait"        => readClassLike(json, ClassLikeTypes.Trait)
+      case "Stmt_Enum"         => readClassLike(json, ClassLikeTypes.Enum)
+      case "Stmt_EnumCase"     => readEnumCase(json)
       case "Stmt_ClassMethod"  => readClassMethod(json)
       case "Stmt_Property"     => readProperty(json)
       case "Stmt_ClassConst"   => readConst(json)
@@ -467,6 +490,7 @@ object Domain {
       case "Stmt_HaltCompiler" => readHaltCompiler(json)
       case "Stmt_Namespace"    => readNamespace(json)
       case "Stmt_Nop"          => NopStmt(PhpAttributes(json))
+      case "Stmt_Declare"      => readDeclare(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -552,7 +576,7 @@ object Domain {
   private def readNew(json: Value): PhpNewExpr = {
     val classNode =
       if (json("class")("nodeType").strOpt.contains("Stmt_Class"))
-        readClass(json("class"))
+        readClassLike(json("class"), ClassLikeTypes.Class)
       else
         readNameOrExpr(json, "class")
 
@@ -656,15 +680,38 @@ object Domain {
     PhpReturnStmt(expr, PhpAttributes(json))
   }
 
-  private def readClass(json: Value): PhpClassStmt = {
-    val name         = Option.unless(json("name").isNull)(readName(json("name")))
-    val modifiers    = PhpModifiers.getModifierSet(json("flags").num.toInt)
-    val extendsClass = Option.unless(json("extends").isNull)(readName(json("extends")))
-    val implements   = json("implements").arr.map(readName).toList
-    val stmts        = json("stmts").arr.map(readStmt).toList
-    val attributes   = PhpAttributes(json)
+  private def extendsForClassLike(json: Value): List[PhpNameExpr] = {
+    json.obj
+      .get("extends")
+      .map {
+        case ujson.Null     => Nil
+        case arr: ujson.Arr => arr.arr.map(readName).toList
+        case obj: ujson.Obj => readName(obj) :: Nil
+      }
+      .getOrElse(Nil)
+  }
 
-    PhpClassStmt(name, modifiers, extendsClass, implements, stmts, attributes)
+  private def readClassLike(json: Value, classLikeType: String): PhpClassLikeStmt = {
+    val name      = Option.unless(json("name").isNull)(readName(json("name")))
+    val modifiers = PhpModifiers.getModifierSet(json)
+
+    val extendsNames = extendsForClassLike(json)
+
+    val implements = json.obj.get("implements").map(_.arr.toList).getOrElse(Nil).map(readName)
+    val stmts      = json("stmts").arr.map(readStmt).toList
+
+    val scalarType = json.obj.get("scalarType").flatMap(typ => Option.unless(typ.isNull)(readName(typ)))
+
+    val attributes = PhpAttributes(json)
+
+    PhpClassLikeStmt(name, modifiers, extendsNames, implements, stmts, classLikeType, scalarType, attributes)
+  }
+
+  private def readEnumCase(json: Value): PhpEnumCaseStmt = {
+    val name = readName(json("name"))
+    val expr = Option.unless(json("expr").isNull)(readExpr(json("expr")))
+
+    PhpEnumCaseStmt(name, expr, PhpAttributes(json))
   }
 
   private def readCatch(json: Value): PhpCatchStmt = {
@@ -850,7 +897,7 @@ object Domain {
   }
 
   private def readClassMethod(json: Value): PhpMethodDecl = {
-    val modifiers   = PhpModifiers.getModifierSet(json("flags").num.toInt)
+    val modifiers   = PhpModifiers.getModifierSet(json)
     val returnByRef = json("byRef").bool
     val name        = readName(json("name"))
     val params      = json("params").arr.map(readParam).toList
@@ -878,7 +925,7 @@ object Domain {
   }
 
   private def readProperty(json: Value): PhpPropertyStmt = {
-    val modifiers = PhpModifiers.getModifierSet(json("flags").num.toInt)
+    val modifiers = PhpModifiers.getModifierSet(json)
     val variables = json("props").arr.map(readPropertyValue).toList
     val typeName  = Option.unless(json("type").isNull)(readName(json("type")))
 
@@ -893,8 +940,7 @@ object Domain {
   }
 
   private def readConst(json: Value): PhpConstStmt = {
-    val modifiers =
-      json.obj.get("flags").flatMap(_.numOpt).map(num => PhpModifiers.getModifierSet(num.toInt)).getOrElse(Nil)
+    val modifiers = PhpModifiers.getModifierSet(json)
 
     val constDeclarations = json("consts").arr.map(readConstDeclaration).toList
 
@@ -928,6 +974,20 @@ object Domain {
     }
 
     PhpNamespaceStmt(name, stmts, PhpAttributes(json))
+  }
+
+  private def readDeclare(json: Value): PhpDeclareStmt = {
+    val declares = json("declares").arr.map(readDeclareItem).toList
+    val stmts    = Option.unless(json("stmts").isNull)(json("stmts").arr.map(readStmt).toList)
+
+    PhpDeclareStmt(declares, stmts, PhpAttributes(json))
+  }
+
+  private def readDeclareItem(json: Value): PhpDeclareItem = {
+    val key   = readName(json("key"))
+    val value = readExpr(json("value"))
+
+    PhpDeclareItem(key, value, PhpAttributes(json))
   }
 
   private def readConstDeclaration(json: Value): PhpConstDeclaration = {

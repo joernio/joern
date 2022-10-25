@@ -1,12 +1,13 @@
 package io.joern.php2cpg.querying
 
-import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.{PhpBuiltins, PhpDomainTypeConstants}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class OperatorTests extends PhpCode2CpgFixture {
 
@@ -518,6 +519,84 @@ class OperatorTests extends PhpCode2CpgFixture {
           pathLiteral.code shouldBe "\"path\""
         }
       }
+    }
+  }
+
+  "declare calls without statements should be correctly represented" in {
+    val cpg = code("<?php\ndeclare(ticks=1, encoding='UTF-8');")
+
+    val declareCall = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareCall: Call) =>
+          declareCall
+        }
+    }
+
+    declareCall.name shouldBe PhpBuiltins.declareFunc
+    declareCall.methodFullName shouldBe PhpBuiltins.declareFunc
+    declareCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    declareCall.code shouldBe "declare(ticks=1,encoding=\"UTF-8\")"
+    declareCall.lineNumber shouldBe Some(2)
+
+    inside(declareCall.argument.l) { case List(tickAssign: Call, encodingAssign: Call) =>
+      tickAssign.name shouldBe Operators.assignment
+      tickAssign.lineNumber shouldBe Some(2)
+      tickAssign.code shouldBe "ticks=1"
+
+      inside(tickAssign.argument.l) { case List(ticksIdentifier: Identifier, value: Literal) =>
+        ticksIdentifier.name shouldBe "ticks"
+        ticksIdentifier.code shouldBe "ticks"
+
+        value.code shouldBe "1"
+      }
+
+      encodingAssign.name shouldBe Operators.assignment
+      encodingAssign.lineNumber shouldBe Some(2)
+      encodingAssign.code shouldBe "encoding=\"UTF-8\""
+
+      inside(encodingAssign.argument.l) { case List(encodingIdentifier: Identifier, value: Literal) =>
+        encodingIdentifier.name shouldBe "encoding"
+        encodingIdentifier.code shouldBe "encoding"
+
+        value.code shouldBe "\"UTF-8\""
+      }
+    }
+  }
+
+  "declare calls with an empty statement list should have the correct block structure" in {
+    val cpg = code("""<?php
+        |declare(ticks=1) {}
+        |""".stripMargin)
+
+    val declareBlock = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareBlock: Block) =>
+          declareBlock
+        }
+    }
+
+    inside(declareBlock.astChildren.l) { case List(declareCall: Call) =>
+      declareCall.code shouldBe "declare(ticks=1)"
+    }
+  }
+
+  "declare calls with non-empty statement lists should have the correct block structure" in {
+    val cpg = code("""<?php
+        |declare(ticks=1) {
+        |  echo $x;
+        |}
+        |""".stripMargin)
+
+    val declareBlock = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareBlock: Block) =>
+          declareBlock
+        }
+    }
+
+    inside(declareBlock.astChildren.l) { case List(declareCall: Call, echoCall: Call) =>
+      declareCall.code shouldBe "declare(ticks=1)"
+      echoCall.code shouldBe "echo $x"
     }
   }
 }
