@@ -110,6 +110,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case gotoStmt: PhpGotoStmt       => astForGotoStmt(gotoStmt)
       case labelStmt: PhpLabelStmt     => astForLabelStmt(labelStmt)
       case namespace: PhpNamespaceStmt => astForNamespaceStmt(namespace)
+      case declareStmt: PhpDeclareStmt => astForDeclareStmt(declareStmt)
       case _: NopStmt                  => Ast() // TODO This'll need to be updated when comments are added.
 
       case haltStmt: PhpHaltCompilerStmt => astForHaltCompilerStmt(haltStmt)
@@ -246,6 +247,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case newExpr: PhpNewExpr       => astForNewExpr(newExpr)
 
       case classConstFetchExpr: PhpClassConstFetchExpr => astForClassConstFetchExpr(classConstFetchExpr)
+      case constFetchExpr: PhpConstFetchExpr           => astForConstFetchExpr(constFetchExpr)
       case arrayDimFetchExpr: PhpArrayDimFetchExpr     => astForArrayDimFetchExpr(arrayDimFetchExpr)
       case errorSuppressExpr: PhpErrorSuppressExpr     => astForErrorSuppressExpr(errorSuppressExpr)
       case instanceOfExpr: PhpInstanceOfExpr           => astForInstanceOfExpr(instanceOfExpr)
@@ -442,6 +444,32 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     scope.popScope()
 
     Ast(namespaceBlock).withChildren(bodyStmts)
+  }
+
+  private def astForDeclareStmt(stmt: PhpDeclareStmt): Ast = {
+    val declareAssignAsts = stmt.declares.map(astForDeclareItem)
+    val declareCode       = s"${PhpBuiltins.declareFunc}(${declareAssignAsts.map(rootCode(_)).mkString(",")})"
+    val declareNode       = operatorCallNode(PhpBuiltins.declareFunc, declareCode, line = line(stmt))
+    val declareAst        = callAst(declareNode, declareAssignAsts)
+
+    stmt.stmts match {
+      case Some(stmtList) =>
+        val stmtAsts = stmtList.map(astForStmt)
+        Ast(NewBlock().lineNumber(line(stmt)))
+          .withChild(declareAst)
+          .withChildren(stmtAsts)
+
+      case None => declareAst
+    }
+  }
+
+  private def astForDeclareItem(item: PhpDeclareItem): Ast = {
+    val key   = identifierNode(item.key.name, typeFullName = None, line = line(item))
+    val value = astForExpr(item.value)
+    val code  = s"${key.name}=${rootCode(value)}"
+
+    val declareAssignment = operatorCallNode(Operators.assignment, code, line = line(item))
+    callAst(declareAssignment, Ast(key) :: value :: Nil)
   }
 
   private def astForHaltCompilerStmt(stmt: PhpHaltCompilerStmt): Ast = {
@@ -1257,6 +1285,17 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     callAst(fieldAccessCall, List(target, Ast(fieldIdentifier)))
   }
 
+  private def astForConstFetchExpr(expr: PhpConstFetchExpr): Ast = {
+
+    val identifier      = identifierNode(NameConstants.Global, typeFullName = None, line = line(expr))
+    val fieldIdentifier = fieldIdentifierNode(expr.name.name, line = line(expr))
+
+    val fieldAccessNode = operatorCallNode(Operators.fieldAccess, code = expr.name.name, line = line(expr))
+    val args            = List(identifier, fieldIdentifier).map(Ast(_))
+
+    callAst(fieldAccessNode, args)
+  }
+
   private def line(phpNode: PhpNode): Option[Integer] = phpNode.attributes.lineNumber
 }
 
@@ -1275,6 +1314,7 @@ object AstCreator {
     val HaltCompiler: String = "__halt_compiler"
     val This: String         = "this"
     val Unknown: String      = "UNKNOWN"
+    val Global: String       = "<global>"
   }
 
   val operatorSymbols: Map[String, String] = Map(

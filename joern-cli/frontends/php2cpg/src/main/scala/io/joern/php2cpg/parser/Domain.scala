@@ -39,7 +39,8 @@ object Domain {
     val evalFunc  = "eval"
     val exitFunc  = "exit"
     // Used for multiple assignments for example `list($a, $b) = $someArray`
-    val listFunc = "list"
+    val listFunc    = "list"
+    val declareFunc = "declare"
   }
 
   object PhpDomainTypeConstants {
@@ -222,12 +223,18 @@ object Domain {
   final case class PhpNamespaceStmt(name: Option[PhpNameExpr], stmts: List[PhpStmt], attributes: PhpAttributes)
       extends PhpStmt
 
+  final case class PhpDeclareStmt(
+    declares: Seq[PhpDeclareItem],
+    stmts: Option[List[PhpStmt]],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+  final case class PhpDeclareItem(key: PhpNameExpr, value: PhpExpr, attributes: PhpAttributes) extends PhpStmt
+
   sealed abstract class PhpExpr extends PhpStmt
 
   final case class PhpNewExpr(className: PhpNode, args: List[PhpArgument], attributes: PhpAttributes) extends PhpExpr
 
   final case class PhpIncludeExpr(expr: PhpExpr, includeType: String, attributes: PhpAttributes) extends PhpExpr
-  sealed abstract class PhpIncludeType(name: String)
   case object PhpIncludeType {
     val include: String     = "include"
     val includeOnce: String = "include_once"
@@ -467,6 +474,7 @@ object Domain {
       case "Stmt_HaltCompiler" => readHaltCompiler(json)
       case "Stmt_Namespace"    => readNamespace(json)
       case "Stmt_Nop"          => NopStmt(PhpAttributes(json))
+      case "Stmt_Declare"      => readDeclare(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -928,6 +936,20 @@ object Domain {
     }
 
     PhpNamespaceStmt(name, stmts, PhpAttributes(json))
+  }
+
+  private def readDeclare(json: Value): PhpDeclareStmt = {
+    val declares = json("declares").arr.map(readDeclareItem).toList
+    val stmts    = Option.unless(json("stmts").isNull)(json("stmts").arr.map(readStmt).toList)
+
+    PhpDeclareStmt(declares, stmts, PhpAttributes(json))
+  }
+
+  private def readDeclareItem(json: Value): PhpDeclareItem = {
+    val key   = readName(json("key"))
+    val value = readExpr(json("value"))
+
+    PhpDeclareItem(key, value, PhpAttributes(json))
   }
 
   private def readConstDeclaration(json: Value): PhpConstDeclaration = {
