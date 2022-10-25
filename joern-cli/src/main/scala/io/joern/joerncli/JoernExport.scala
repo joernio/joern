@@ -17,7 +17,7 @@ import overflowdb.formats.graphson.GraphSONExporter
 import overflowdb.formats.neo4jcsv.Neo4jCsvExporter
 import overflowdb.{Edge, Node}
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util.Using
 
@@ -84,53 +84,59 @@ object JoernExport extends App {
     mkdir(File(outDir))
 
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
-      implicit val semantics: Semantics = DefaultSemantics()
-      if (semantics.elements.isEmpty) {
-        System.err.println("Warning: semantics are empty.")
-      }
-
-      CpgBasedTool.addDataFlowOverlayIfNonExistent(cpg)
-      val context = new LayerCreatorContext(cpg)
-
-      config.format match {
-        case Format.Dot =>
-          exportDot(repr, outDir, context)
-        case Format.Neo4jCsv =>
-          exportWithOdbFormat(cpg, repr, outDir, Neo4jCsvExporter)
-        case Format.Graphml =>
-          exportWithOdbFormat(cpg, repr, outDir, GraphMLExporter)
-        case Format.Dot =>
-          exportWithOdbFormat(cpg, repr, outDir, DotExporter)
-        case Format.Graphson =>
-          exportWithOdbFormat(cpg, repr, outDir, GraphSONExporter)
-      }
+      export(cpg, config.repr, config.format, Paths.get(outDir).toAbsolutePath)
     }
   }
 
-  private def exportDot(repr: Representation.Value, outDir: String, context: LayerCreatorContext): Unit = {
+  def export(cpg: Cpg, representation: Representation.Value, format: Format.Value, outDir: Path): Unit = {
+    implicit val semantics: Semantics = DefaultSemantics()
+    if (semantics.elements.isEmpty) {
+      System.err.println("Warning: semantics are empty.")
+    }
+
+    CpgBasedTool.addDataFlowOverlayIfNonExistent(cpg)
+    val context = new LayerCreatorContext(cpg)
+
+    format match {
+      case Format.Dot =>
+        exportDot(representation, outDir, context)
+      case Format.Neo4jCsv =>
+        exportWithOdbFormat(cpg, representation, outDir, Neo4jCsvExporter)
+      case Format.Graphml =>
+        exportWithOdbFormat(cpg, representation, outDir, GraphMLExporter)
+      case Format.Dot =>
+        exportWithOdbFormat(cpg, representation, outDir, DotExporter)
+      case Format.Graphson =>
+        exportWithOdbFormat(cpg, representation, outDir, GraphSONExporter)
+    }
+  }
+
+  private def exportDot(repr: Representation.Value, outDir: Path, context: LayerCreatorContext): Unit = {
+    val outDirStr = outDir.toString
     import Representation._
     repr match {
-      case Ast => new DumpAst(AstDumpOptions(outDir)).create(context)
-      case Cfg => new DumpCfg(CfgDumpOptions(outDir)).create(context)
-      case Ddg => new DumpDdg(DdgDumpOptions(outDir)).create(context)
-      case Cdg => new DumpCdg(CdgDumpOptions(outDir)).create(context)
-      case Pdg => new DumpPdg(PdgDumpOptions(outDir)).create(context)
-      case Cpg14 => new DumpCpg14(Cpg14DumpOptions(outDir)).create(context)
+      case Ast => new DumpAst(AstDumpOptions(outDirStr)).create(context)
+      case Cfg => new DumpCfg(CfgDumpOptions(outDirStr)).create(context)
+      case Ddg => new DumpDdg(DdgDumpOptions(outDirStr)).create(context)
+      case Cdg => new DumpCdg(CdgDumpOptions(outDirStr)).create(context)
+      case Pdg => new DumpPdg(PdgDumpOptions(outDirStr)).create(context)
+      case Cpg14 => new DumpCpg14(Cpg14DumpOptions(outDirStr)).create(context)
     }
   }
 
-  private def exportWithOdbFormat(cpg: Cpg, repr: Representation.Value, outDir: String, exporter: overflowdb.formats.Exporter): Unit = {
-    val outDirPath = Paths.get(outDir).toAbsolutePath
+  private def exportWithOdbFormat(cpg: Cpg, repr: Representation.Value, outDir: Path, exporter: overflowdb.formats.Exporter): Unit = {
     val ExportResult(nodeCount, edgeCount, _, additionalInfo) = repr match {
       case Representation.All =>
-        exporter.runExport(cpg.graph, outDirPath)
+        exporter.runExport(cpg.graph, outDir)
       case Representation.SplitByMethod =>
         splitByMethod(cpg).iterator.foreach { subGraph =>
-          exporter.runExport(subGraph.nodes, subGraph.edges, outDirPath.resolve(subGraph.name))
+          val sanitizedFilename = subGraph.name.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
+          val outFileName = outDir.resolve(sanitizedFilename)
+          exporter.runExport(subGraph.nodes, subGraph.edges, outFileName)
         }
     }
 
-    println(s"exported $nodeCount nodes, $edgeCount edges into $outDirPath")
+    println(s"exported $nodeCount nodes, $edgeCount edges into $outDir")
     additionalInfo.foreach(println)
   }
 
