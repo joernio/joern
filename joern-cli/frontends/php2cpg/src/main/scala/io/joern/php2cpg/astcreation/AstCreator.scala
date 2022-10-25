@@ -113,8 +113,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case namespace: PhpNamespaceStmt     => astForNamespaceStmt(namespace)
       case declareStmt: PhpDeclareStmt     => astForDeclareStmt(declareStmt)
       case _: NopStmt                      => Ast() // TODO This'll need to be updated when comments are added.
-
-      case haltStmt: PhpHaltCompilerStmt => astForHaltCompilerStmt(haltStmt)
+      case haltStmt: PhpHaltCompilerStmt   => astForHaltCompilerStmt(haltStmt)
+      case unsetStmt: PhpUnsetStmt         => astForUnsetStmt(unsetStmt)
       case null =>
         logger.warn("stmt was null")
         ???
@@ -487,6 +487,13 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .lineNumber(line(stmt))
 
     Ast(callNode)
+  }
+
+  private def astForUnsetStmt(stmt: PhpUnsetStmt): Ast = {
+    val args     = stmt.vars.map(astForExpr)
+    val code     = s"${PhpBuiltins.unset}(${args.map(rootCode(_)).mkString(", ")})"
+    val callNode = operatorCallNode(PhpBuiltins.unset, code, typeFullName = Some(TypeConstants.Void), line = line(stmt))
+    callAst(callNode, args)
   }
 
   private def astForAnonymousClass(stmt: PhpClassLikeStmt): Ast = {

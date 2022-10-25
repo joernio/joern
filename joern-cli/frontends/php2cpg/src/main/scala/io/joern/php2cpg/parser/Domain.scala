@@ -42,6 +42,7 @@ object Domain {
     val listFunc    = "list"
     val declareFunc = "declare"
     val shellExec   = "shell_exec"
+    val unset       = "unset"
   }
 
   object PhpDomainTypeConstants {
@@ -242,6 +243,8 @@ object Domain {
     attributes: PhpAttributes
   ) extends PhpStmt
   final case class PhpDeclareItem(key: PhpNameExpr, value: PhpExpr, attributes: PhpAttributes) extends PhpStmt
+
+  final case class PhpUnsetStmt(vars: List[PhpExpr], attributes: PhpAttributes) extends PhpStmt
 
   sealed abstract class PhpExpr extends PhpStmt
 
@@ -494,6 +497,7 @@ object Domain {
       case "Stmt_Namespace"    => readNamespace(json)
       case "Stmt_Nop"          => NopStmt(PhpAttributes(json))
       case "Stmt_Declare"      => readDeclare(json)
+      case "Stmt_Unset"        => readUnset(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -1001,6 +1005,12 @@ object Domain {
     val stmts    = Option.unless(json("stmts").isNull)(json("stmts").arr.map(readStmt).toList)
 
     PhpDeclareStmt(declares, stmts, PhpAttributes(json))
+  }
+
+  private def readUnset(json: Value): PhpUnsetStmt = {
+    val vars = json("vars").arr.map(readExpr).toList
+
+    PhpUnsetStmt(vars, PhpAttributes(json))
   }
 
   private def readDeclareItem(json: Value): PhpDeclareItem = {
