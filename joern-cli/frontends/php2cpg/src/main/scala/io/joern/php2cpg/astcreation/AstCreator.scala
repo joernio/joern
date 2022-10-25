@@ -257,6 +257,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case instanceOfExpr: PhpInstanceOfExpr           => astForInstanceOfExpr(instanceOfExpr)
       case propertyFetchExpr: PhpPropertyFetchExpr     => astForPropertyFetchExpr(propertyFetchExpr)
       case includeExpr: PhpIncludeExpr                 => astForIncludeExpr(includeExpr)
+      case shellExecExpr: PhpShellExecExpr             => astForShellExecExpr(shellExecExpr)
 
       case null =>
         logger.warn("expr was null")
@@ -1296,6 +1297,15 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val callNode = operatorCallNode(expr.includeType, code, line = line(expr))
 
     callAst(callNode, exprAst :: Nil)
+  }
+
+  private def astForShellExecExpr(expr: PhpShellExecExpr): Ast = {
+    val args = expr.parts.map(astForExpr)
+    val code = s"`${args.map(rootCode(_)).mkString("").replaceAll("\"", "")}`"
+
+    val callNode = operatorCallNode(PhpBuiltins.shellExec, code, line = line(expr))
+
+    callAst(callNode, args)
   }
 
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {

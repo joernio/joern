@@ -41,6 +41,7 @@ object Domain {
     // Used for multiple assignments for example `list($a, $b) = $someArray`
     val listFunc    = "list"
     val declareFunc = "declare"
+    val shellExec   = "shell_exec"
   }
 
   object PhpDomainTypeConstants {
@@ -427,6 +428,8 @@ object Domain {
 
   final case class PhpInstanceOfExpr(expr: PhpExpr, className: PhpExpr, attributes: PhpAttributes) extends PhpExpr
 
+  final case class PhpShellExecExpr(parts: List[PhpExpr], attributes: PhpAttributes) extends PhpExpr
+
   final case class PhpPropertyFetchExpr(
     expr: PhpExpr,
     name: PhpExpr,
@@ -658,6 +661,12 @@ object Domain {
     PhpInstanceOfExpr(expr, className, PhpAttributes(json))
   }
 
+  private def readShellExec(json: Value): PhpShellExecExpr = {
+    val parts = json("parts").arr.map(readExpr).toList
+
+    PhpShellExecExpr(parts, PhpAttributes(json))
+  }
+
   private def readPropertyFetch(
     json: Value,
     isNullsafe: Boolean = false,
@@ -748,13 +757,23 @@ object Domain {
     PhpElseStmt(stmts, PhpAttributes(json))
   }
 
+  private def readEncapsed(json: Value): PhpEncapsed = {
+    PhpEncapsed(json("parts").arr.map(readExpr).toSeq, PhpAttributes(json))
+  }
+
+  private def readEncapsedPart(json: Value): PhpEncapsedPart = {
+    PhpEncapsedPart.withQuotes(json("value").str, PhpAttributes(json))
+  }
+
   private def readExpr(json: Value): PhpExpr = {
     json("nodeType").str match {
       case "Scalar_String"             => PhpString.withQuotes(json("value").str, PhpAttributes(json))
       case "Scalar_DNumber"            => PhpFloat(json("value").toString, PhpAttributes(json))
       case "Scalar_LNumber"            => PhpInt(json("value").toString, PhpAttributes(json))
-      case "Scalar_Encapsed"           => PhpEncapsed(json("parts").arr.map(readExpr).toSeq, PhpAttributes(json))
-      case "Scalar_EncapsedStringPart" => PhpEncapsedPart.withQuotes(json("value").str, PhpAttributes(json))
+      case "Scalar_Encapsed"           => readEncapsed(json)
+      case "Scalar_InterpolatedString" => readEncapsed(json)
+      case "Scalar_EncapsedStringPart" => readEncapsedPart(json)
+      case "InterpolatedStringPart"    => readEncapsedPart(json)
 
       case "Expr_FuncCall"           => readCall(json)
       case "Expr_MethodCall"         => readCall(json)
@@ -781,6 +800,7 @@ object Domain {
       case "Expr_ArrayDimFetch" => readArrayDimFetch(json)
       case "Expr_ErrorSuppress" => readErrorSuppress(json)
       case "Expr_Instanceof"    => readInstanceOf(json)
+      case "Expr_ShellExec"     => readShellExec(json)
 
       case "Expr_PropertyFetch"         => readPropertyFetch(json)
       case "Expr_NullsafePropertyFetch" => readPropertyFetch(json, isNullsafe = true)
