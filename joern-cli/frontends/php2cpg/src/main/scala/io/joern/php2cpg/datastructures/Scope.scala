@@ -1,5 +1,6 @@
 package io.joern.php2cpg.datastructures
 
+import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{Scope => X2CpgScope}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}

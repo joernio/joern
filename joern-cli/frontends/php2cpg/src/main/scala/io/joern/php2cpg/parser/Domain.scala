@@ -191,15 +191,22 @@ object Domain {
   final case class PhpClassLikeStmt(
     name: Option[PhpNameExpr],
     modifiers: List[String],
-    extendsClass: Option[PhpNameExpr],
+    extendsNames: List[PhpNameExpr],
     implementedInterfaces: List[PhpNameExpr],
     stmts: List[PhpStmt],
-    isEnum: Boolean,
-    isInterface: Boolean,
+    classLikeType: String,
     // Optionally used for enums with values
     scalarType: Option[PhpNameExpr],
     attributes: PhpAttributes
   ) extends PhpStmt
+  object ClassLikeTypes {
+    val Class: String     = "class"
+    val Trait: String     = "trait"
+    val Interface: String = "interface"
+    val Enum: String      = "enum"
+  }
+
+  final case class PhpEnumCaseStmt(name: PhpNameExpr, expr: Option[PhpExpr], attributes: PhpAttributes) extends PhpStmt
 
   final case class PhpPropertyStmt(
     modifiers: List[String],
@@ -469,9 +476,11 @@ object Domain {
       case "Stmt_TryCatch"     => readTry(json)
       case "Stmt_Throw"        => readThrow(json)
       case "Stmt_Return"       => readReturn(json)
-      case "Stmt_Class"        => readClassLike(json)
-      case "Stmt_Enum"         => readClassLike(json, isEnum = true)
-      case "Stmt_Interface"    => readClassLike(json, isInterface = true)
+      case "Stmt_Class"        => readClassLike(json, ClassLikeTypes.Class)
+      case "Stmt_Interface"    => readClassLike(json, ClassLikeTypes.Interface)
+      case "Stmt_Trait"        => readClassLike(json, ClassLikeTypes.Trait)
+      case "Stmt_Enum"         => readClassLike(json, ClassLikeTypes.Enum)
+      case "Stmt_EnumCase"     => readEnumCase(json)
       case "Stmt_ClassMethod"  => readClassMethod(json)
       case "Stmt_Property"     => readProperty(json)
       case "Stmt_ClassConst"   => readConst(json)
@@ -567,7 +576,7 @@ object Domain {
   private def readNew(json: Value): PhpNewExpr = {
     val classNode =
       if (json("class")("nodeType").strOpt.contains("Stmt_Class"))
-        readClassLike(json("class"))
+        readClassLike(json("class"), ClassLikeTypes.Class)
       else
         readNameOrExpr(json, "class")
 
@@ -671,12 +680,22 @@ object Domain {
     PhpReturnStmt(expr, PhpAttributes(json))
   }
 
-  private def readClassLike(json: Value, isEnum: Boolean = false, isInterface: Boolean = false): PhpClassLikeStmt = {
+  private def extendsForClassLike(json: Value): List[PhpNameExpr] = {
+    json.obj
+      .get("extends")
+      .map {
+        case ujson.Null     => Nil
+        case arr: ujson.Arr => arr.arr.map(readName).toList
+        case obj: ujson.Obj => readName(obj) :: Nil
+      }
+      .getOrElse(Nil)
+  }
+
+  private def readClassLike(json: Value, classLikeType: String): PhpClassLikeStmt = {
     val name      = Option.unless(json("name").isNull)(readName(json("name")))
     val modifiers = PhpModifiers.getModifierSet(json)
 
-    val maybeExtends = json.obj.getOrElse("extends", ujson.Null)
-    val extendsClass = Option.unless(maybeExtends.isNull)(readName(json("extends")))
+    val extendsNames = extendsForClassLike(json)
 
     val implements = json.obj.get("implements").map(_.arr.toList).getOrElse(Nil).map(readName)
     val stmts      = json("stmts").arr.map(readStmt).toList
@@ -685,7 +704,14 @@ object Domain {
 
     val attributes = PhpAttributes(json)
 
-    PhpClassLikeStmt(name, modifiers, extendsClass, implements, stmts, isEnum, isInterface, scalarType, attributes)
+    PhpClassLikeStmt(name, modifiers, extendsNames, implements, stmts, classLikeType, scalarType, attributes)
+  }
+
+  private def readEnumCase(json: Value): PhpEnumCaseStmt = {
+    val name = readName(json("name"))
+    val expr = Option.unless(json("expr").isNull)(readExpr(json("expr")))
+
+    PhpEnumCaseStmt(name, expr, PhpAttributes(json))
   }
 
   private def readCatch(json: Value): PhpCatchStmt = {
