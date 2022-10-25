@@ -3,17 +3,7 @@ package io.joern.jssrc2cpg
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.jssrc2cpg.JsSrc2Cpg.postProcessingPasses
-import io.joern.jssrc2cpg.passes.{
-  AstCreationPass,
-  BuiltinTypesPass,
-  ConfigPass,
-  ConstClosurePass,
-  DependenciesPass,
-  JsMetaDataPass,
-  PrivateKeyFilePass,
-  RequirePass,
-  TypeNodePass
-}
+import io.joern.jssrc2cpg.passes._
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.jssrc2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
@@ -25,7 +15,6 @@ import io.joern.x2cpg.passes.frontend.JavascriptCallLinker
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
-import java.nio.file.Path
 import scala.util.Try
 
 class JsSrc2Cpg extends X2CpgFrontend[Config] {
@@ -39,7 +28,7 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
         val astgenResult = AstGenRunner.execute(config, tmpDir)
-        val hash         = HashUtil.sha256(astgenResult.parsedFiles.map { case (_, file) => Path.of(file) })
+        val hash         = HashUtil.sha256(astgenResult.parsedFiles.map { case (_, file) => File(file).path })
 
         val astCreationPass = new AstCreationPass(cpg, astgenResult, config, report)
         astCreationPass.createAndApply()
