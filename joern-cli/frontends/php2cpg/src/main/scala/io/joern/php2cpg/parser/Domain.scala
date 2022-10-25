@@ -246,6 +246,11 @@ object Domain {
 
   final case class PhpUnsetStmt(vars: List[PhpExpr], attributes: PhpAttributes) extends PhpStmt
 
+  final case class PhpStaticStmt(vars: List[PhpStaticVar], attributes: PhpAttributes) extends PhpStmt
+
+  final case class PhpStaticVar(variable: PhpVariable, defaultValue: Option[PhpExpr], attributes: PhpAttributes)
+      extends PhpStmt
+
   sealed abstract class PhpExpr extends PhpStmt
 
   final case class PhpNewExpr(className: PhpNode, args: List[PhpArgument], attributes: PhpAttributes) extends PhpExpr
@@ -498,6 +503,7 @@ object Domain {
       case "Stmt_Nop"          => NopStmt(PhpAttributes(json))
       case "Stmt_Declare"      => readDeclare(json)
       case "Stmt_Unset"        => readUnset(json)
+      case "Stmt_Static"       => readStatic(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -1011,6 +1017,19 @@ object Domain {
     val vars = json("vars").arr.map(readExpr).toList
 
     PhpUnsetStmt(vars, PhpAttributes(json))
+  }
+
+  private def readStatic(json: Value): PhpStaticStmt = {
+    val vars = json("vars").arr.map(readStaticVar).toList
+
+    PhpStaticStmt(vars, PhpAttributes(json))
+  }
+
+  private def readStaticVar(json: Value): PhpStaticVar = {
+    val variable     = readVariable(json("var"))
+    val defaultValue = Option.unless(json("default").isNull)(readExpr(json("default")))
+
+    PhpStaticVar(variable, defaultValue, PhpAttributes(json))
   }
 
   private def readDeclareItem(json: Value): PhpDeclareItem = {
