@@ -11,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.passes.IntervalKeyPool
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
@@ -511,8 +512,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
     val code         = codeForClassStmt(stmt, name)
 
-    val namespacePrefix = scope.getEnclosingNamespaceName.filter(_ != NameConstants.Global).map(_ + ".").getOrElse("")
-    val fullName        = s"$namespacePrefix${name.name}"
+    val namespacePrefix =
+      scope.getEnclosingNamespaceName.filter(_ != NamespaceTraversal.globalNamespaceName).map(_ + ".").getOrElse("")
+    val fullName = s"$namespacePrefix${name.name}"
 
     val typeDeclNode = NewTypeDecl()
       .name(name.name)
@@ -781,9 +783,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       // Function call
       case None =>
         val namespacePrefix = scope.getEnclosingNamespaceName match {
-          case Some(NameConstants.Global) => ""
-          case Some(name)                 => s"$name."
-          case None                       => Defines.UnresolvedNamespace
+          case Some(NamespaceTraversal.globalNamespaceName) => ""
+          case Some(name)                                   => s"$name."
+          case None                                         => Defines.UnresolvedNamespace
         }
         s"$namespacePrefix$name:${Defines.UnresolvedSignature}(${arguments.size})"
 
@@ -1311,7 +1313,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForConstFetchExpr(expr: PhpConstFetchExpr): Ast = {
 
-    val identifier      = identifierNode(NameConstants.Global, typeFullName = None, line = line(expr))
+    val identifier      = identifierNode(NamespaceTraversal.globalNamespaceName, typeFullName = None, line = line(expr))
     val fieldIdentifier = fieldIdentifierNode(expr.name.name, line = line(expr))
 
     val fieldAccessNode = operatorCallNode(Operators.fieldAccess, code = expr.name.name, line = line(expr))
@@ -1338,7 +1340,6 @@ object AstCreator {
     val HaltCompiler: String = "__halt_compiler"
     val This: String         = "this"
     val Unknown: String      = "UNKNOWN"
-    val Global: String       = "<global>"
   }
 
   val operatorSymbols: Map[String, String] = Map(

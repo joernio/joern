@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class OperatorTests extends PhpCode2CpgFixture {
 
@@ -524,10 +525,11 @@ class OperatorTests extends PhpCode2CpgFixture {
   "declare calls without statements should be correctly represented" in {
     val cpg = code("<?php\ndeclare(ticks=1, encoding='UTF-8');")
 
-    val declareCall = inside(cpg.method.nameExact(NameConstants.Global).l) { case List(globalMethod) =>
-      inside(globalMethod.body.astChildren.l) { case List(declareCall: Call) =>
-        declareCall
-      }
+    val declareCall = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareCall: Call) =>
+          declareCall
+        }
     }
 
     declareCall.name shouldBe PhpBuiltins.declareFunc
@@ -566,10 +568,11 @@ class OperatorTests extends PhpCode2CpgFixture {
         |declare(ticks=1) {}
         |""".stripMargin)
 
-    val declareBlock = inside(cpg.method.nameExact(NameConstants.Global).l) { case List(globalMethod) =>
-      inside(globalMethod.body.astChildren.l) { case List(declareBlock: Block) =>
-        declareBlock
-      }
+    val declareBlock = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareBlock: Block) =>
+          declareBlock
+        }
     }
 
     inside(declareBlock.astChildren.l) { case List(declareCall: Call) =>
@@ -584,10 +587,11 @@ class OperatorTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    val declareBlock = inside(cpg.method.nameExact(NameConstants.Global).l) { case List(globalMethod) =>
-      inside(globalMethod.body.astChildren.l) { case List(declareBlock: Block) =>
-        declareBlock
-      }
+    val declareBlock = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareBlock: Block) =>
+          declareBlock
+        }
     }
 
     inside(declareBlock.astChildren.l) { case List(declareCall: Call, echoCall: Call) =>
