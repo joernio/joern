@@ -7,6 +7,31 @@ import io.shiftleft.semanticcpg.language._
 class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
   "Dataflow through function calls" should {
 
+    "find a path from parent method to child method" in {
+      val cpg = code(
+        """
+          |interface Interface {
+          |    String getName();
+          |}
+          |abstract class A extends Interface {
+          |    void showNum() {
+          |        sink(getName());
+          |    }
+          |}
+          |class B extends A {
+          |    @Override
+          |    public String getName() {
+          |        return "a_name";
+          |    }
+          |}
+          |""".stripMargin)
+
+      def source = cpg.literal("\"a_name\"")
+      def sink = cpg.method("sink").parameter.index(1)
+      sink.reachableByFlows(source).p.foreach(println)
+      sink.reachableBy(source).size shouldBe 1
+    }
+
     "allow traversing through a method multiple times" in {
       val cpg = code("""
           |class Foo{
