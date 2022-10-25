@@ -12,8 +12,8 @@ class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true
           |interface Interface {
           |    String getName();
           |}
-          |abstract class A extends Interface {
-          |    void showNum() {
+          |abstract class A implements Interface {
+          |    void showName() {
           |        sink(getName());
           |    }
           |}
