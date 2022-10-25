@@ -35,7 +35,10 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
       (NameAndSignature(name, signature, fullName), parameterCount) <- methodToParameterCount
       if !methodFullNameToNode.contains(fullName)
     ) {
-      createMethodStub(name, fullName, signature, parameterCount, dstGraph)
+      val method = createMethodStub(name, fullName, signature, parameterCount, dstGraph)
+      for {
+        typeDecl <- cpg.typeDecl.filter(typeDecl => fullName.startsWith(typeDecl.fullName))
+      } dstGraph.addEdge(typeDecl, method, EdgeTypes.AST)
     }
   }
 
