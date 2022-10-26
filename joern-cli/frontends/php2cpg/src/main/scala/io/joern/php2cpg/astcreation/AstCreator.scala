@@ -253,7 +253,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case listExpr: PhpListExpr     => astForListExpr(listExpr)
       case newExpr: PhpNewExpr       => astForNewExpr(newExpr)
       case matchExpr: PhpMatchExpr   => astForMatchExpr(matchExpr)
+      case yieldExpr: PhpYieldExpr   => astForYieldExpr(yieldExpr)
 
+      case yieldFromExpr: PhpYieldFromExpr             => astForYieldFromExpr(yieldFromExpr)
       case classConstFetchExpr: PhpClassConstFetchExpr => astForClassConstFetchExpr(classConstFetchExpr)
       case constFetchExpr: PhpConstFetchExpr           => astForConstFetchExpr(constFetchExpr)
       case arrayDimFetchExpr: PhpArrayDimFetchExpr     => astForArrayDimFetchExpr(arrayDimFetchExpr)
@@ -1189,6 +1191,44 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val bodyAst = astForExpr(matchArm.body)
 
     targetAsts :+ bodyAst
+  }
+
+  private def astForYieldExpr(expr: PhpYieldExpr): Ast = {
+    val maybeKey = expr.key.map(astForExpr)
+    val maybeVal = expr.value.map(astForExpr)
+
+    val code = (maybeKey, maybeVal) match {
+      case (Some(key), Some(value)) =>
+        s"yield ${rootCode(key)} => ${rootCode(value)}"
+
+      case _ =>
+        s"yield ${maybeKey.map(rootCode(_)).getOrElse("")}${maybeVal.map(rootCode(_)).getOrElse("")}".trim
+    }
+
+    val yieldNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.YIELD)
+      .code(code)
+      .lineNumber(line(expr))
+
+    Ast(yieldNode)
+      .withChildren(maybeKey.toList)
+      .withChildren(maybeVal.toList)
+  }
+
+  private def astForYieldFromExpr(expr: PhpYieldFromExpr): Ast = {
+    // TODO This is currently only distinguishable from yield by the code field. Decide whether to treat YIELD_FROM
+    //  separately or whether to lower this to a foreach with regular yields.
+    val exprAst = astForExpr(expr.expr)
+
+    val code = s"yield from ${rootCode(exprAst)}"
+
+    val yieldNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.YIELD)
+      .code(code)
+      .lineNumber(line(expr))
+
+    Ast(yieldNode)
+      .withChild(exprAst)
   }
 
   private def astForAnonymousClassInstantiation(expr: PhpNewExpr, classLikeStmt: PhpClassLikeStmt): Ast = {

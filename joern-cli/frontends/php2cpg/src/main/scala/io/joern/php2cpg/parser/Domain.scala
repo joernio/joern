@@ -452,6 +452,9 @@ object Domain {
   final case class PhpMatchArm(conditions: List[PhpExpr], body: PhpExpr, isDefault: Boolean, attributes: PhpAttributes)
       extends PhpExpr
 
+  final case class PhpYieldExpr(key: Option[PhpExpr], value: Option[PhpExpr], attributes: PhpAttributes) extends PhpExpr
+  final case class PhpYieldFromExpr(expr: PhpExpr, attributes: PhpAttributes)                            extends PhpExpr
+
   private def escapeString(value: String): String = {
     value
       .replace("\\", "\\\\")
@@ -638,6 +641,19 @@ object Domain {
     PhpMatchArm(conditions, body, isDefault, PhpAttributes(json))
   }
 
+  private def readYield(json: Value): PhpYieldExpr = {
+    val key   = Option.unless(json("key").isNull)(readExpr(json("key")))
+    val value = Option.unless(json("value").isNull)(readExpr(json("value")))
+
+    PhpYieldExpr(key, value, PhpAttributes(json))
+  }
+
+  private def readYieldFrom(json: Value): PhpYieldFromExpr = {
+    val expr = readExpr(json("expr"))
+
+    PhpYieldFromExpr(expr, PhpAttributes(json))
+  }
+
   private def readClassConstFetch(json: Value): PhpClassConstFetchExpr = {
     val classNameType = json("class")("nodeType").str
     val className =
@@ -815,19 +831,21 @@ object Domain {
       case "Expr_NullsafeMethodCall" => readCall(json)
       case "Expr_StaticCall"         => readCall(json)
 
-      case "Expr_Clone"    => readClone(json)
-      case "Expr_Empty"    => readEmpty(json)
-      case "Expr_Eval"     => readEval(json)
-      case "Expr_Exit"     => readExit(json)
-      case "Expr_Variable" => readVariable(json)
-      case "Expr_Isset"    => readIsset(json)
-      case "Expr_Print"    => readPrint(json)
-      case "Expr_Ternary"  => readTernaryOp(json)
-      case "Expr_Throw"    => readThrow(json)
-      case "Expr_List"     => readList(json)
-      case "Expr_New"      => readNew(json)
-      case "Expr_Include"  => readInclude(json)
-      case "Expr_Match"    => readMatch(json)
+      case "Expr_Clone"     => readClone(json)
+      case "Expr_Empty"     => readEmpty(json)
+      case "Expr_Eval"      => readEval(json)
+      case "Expr_Exit"      => readExit(json)
+      case "Expr_Variable"  => readVariable(json)
+      case "Expr_Isset"     => readIsset(json)
+      case "Expr_Print"     => readPrint(json)
+      case "Expr_Ternary"   => readTernaryOp(json)
+      case "Expr_Throw"     => readThrow(json)
+      case "Expr_List"      => readList(json)
+      case "Expr_New"       => readNew(json)
+      case "Expr_Include"   => readInclude(json)
+      case "Expr_Match"     => readMatch(json)
+      case "Expr_Yield"     => readYield(json)
+      case "Expr_YieldFrom" => readYieldFrom(json)
 
       case "Expr_ClassConstFetch" => readClassConstFetch(json)
       case "Expr_ConstFetch"      => readConstFetch(json)
