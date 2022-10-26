@@ -74,11 +74,13 @@ object JoernExport extends App {
         .action((x, c) => c.copy(repr = Representation.withNameIgnoreCase(x)))
       opt[String]("format")
         .action((x, c) => c.copy(format = Format.withNameIgnoreCase(x)))
-        .text(s"export format, one of [${Format.values.toSeq.map(_.toString.toLowerCase).sorted.mkString("|")}] - defaults to `${Format.Dot}`")
+        .text(
+          s"export format, one of [${Format.values.toSeq.map(_.toString.toLowerCase).sorted.mkString("|")}] - defaults to `${Format.Dot}`"
+        )
     }.parse(args, Config())
 
   parseConfig.foreach { config =>
-    val repr = config.repr
+    val repr   = config.repr
     val outDir = config.outDir
     exitIfInvalid(outDir, config.cpgFileName)
     mkdir(File(outDir))
@@ -115,48 +117,49 @@ object JoernExport extends App {
     val outDirStr = outDir.toString
     import Representation._
     repr match {
-      case Ast => new DumpAst(AstDumpOptions(outDirStr)).create(context)
-      case Cfg => new DumpCfg(CfgDumpOptions(outDirStr)).create(context)
-      case Ddg => new DumpDdg(DdgDumpOptions(outDirStr)).create(context)
-      case Cdg => new DumpCdg(CdgDumpOptions(outDirStr)).create(context)
-      case Pdg => new DumpPdg(PdgDumpOptions(outDirStr)).create(context)
+      case Ast   => new DumpAst(AstDumpOptions(outDirStr)).create(context)
+      case Cfg   => new DumpCfg(CfgDumpOptions(outDirStr)).create(context)
+      case Ddg   => new DumpDdg(DdgDumpOptions(outDirStr)).create(context)
+      case Cdg   => new DumpCdg(CdgDumpOptions(outDirStr)).create(context)
+      case Pdg   => new DumpPdg(PdgDumpOptions(outDirStr)).create(context)
       case Cpg14 => new DumpCpg14(Cpg14DumpOptions(outDirStr)).create(context)
     }
   }
 
-  private def exportWithOdbFormat(cpg: Cpg, repr: Representation.Value, outDir: Path, exporter: overflowdb.formats.Exporter): Unit = {
+  private def exportWithOdbFormat(
+    cpg: Cpg,
+    repr: Representation.Value,
+    outDir: Path,
+    exporter: overflowdb.formats.Exporter
+  ): Unit = {
     val ExportResult(nodeCount, edgeCount, _, additionalInfo) = repr match {
       case Representation.All =>
         exporter.runExport(cpg.graph, outDir)
       case Representation.Cpg =>
-        splitByMethod(cpg).iterator.map { subGraph =>
-          val name = subGraph.name
-          val sanitizedFileName =
-            if (name.startsWith("/")) s"_root_/$name"
-            else name
-          val extension = exporter.defaultFileExtension
-          val outFileName = outDir.resolve(s"$sanitizedFileName.$extension")
-          exporter.runExport(subGraph.nodes, subGraph.edges, outFileName)
-        }.reduce(plus)
+        splitByMethod(cpg).iterator
+          .map { subGraph =>
+            val name = subGraph.name
+            val sanitizedFileName =
+              if (name.startsWith("/")) s"_root_/$name"
+              else name
+            val extension   = exporter.defaultFileExtension
+            val outFileName = outDir.resolve(s"$sanitizedFileName.$extension")
+            exporter.runExport(subGraph.nodes, subGraph.edges, outFileName)
+          }
+          .reduce(plus)
     }
 
     println(s"exported $nodeCount nodes, $edgeCount edges into $outDir")
     additionalInfo.foreach(println)
   }
 
-  /**
-   * for each method in the cpg:
-   *  recursively traverse all AST edges to get the subgraph of nodes within this method
-   *  add the method and this subgraph to the export
-   *  add all edges between all of these nodes to the export
-   */
+  /** for each method in the cpg: recursively traverse all AST edges to get the subgraph of nodes within this method add
+    * the method and this subgraph to the export add all edges between all of these nodes to the export
+    */
   private def splitByMethod(cpg: Cpg): IterableOnce[SubGraph] = {
     cpg.method.map { method =>
       val sanitizedMethodName = method.name.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
-      SubGraph(
-        name = s"${method.filename}/$sanitizedMethodName",
-        nodes = method.ast.toSet
-      )
+      SubGraph(name = s"${method.filename}/$sanitizedMethodName", nodes = method.ast.toSet)
     }
   }
 

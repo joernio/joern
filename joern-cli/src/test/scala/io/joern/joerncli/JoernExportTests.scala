@@ -13,7 +13,7 @@ class JoernExportTests extends AnyWordSpec with Matchers with AbstractJoernCliTe
   ) { case (cpg: Cpg, _) =>
     "split output by method" in {
       val tempDir = os.temp.dir(prefix = "joern-export-test")
-      JoernExport.export(cpg, Representation.SplitByMethod, JoernExport.Format.Graphson, tempDir.toNIO)
+      JoernExport.export(cpg, Representation.Cpg, JoernExport.Format.Graphson, tempDir.toNIO)
       val exportedFiles = os.walk(tempDir).filter(_.toIO.isFile)
       exportedFiles.size should be >= 100
     }
