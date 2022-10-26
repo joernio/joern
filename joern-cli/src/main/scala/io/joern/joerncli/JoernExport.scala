@@ -131,10 +131,11 @@ object JoernExport extends App {
       case Representation.SplitByMethod =>
         splitByMethod(cpg).iterator.map { subGraph =>
           val name = subGraph.name
-          val sanitizedName =
+          val sanitizedFileName =
             if (name.startsWith("/")) s"_root_/$name"
             else name
-          val outFileName = outDir.resolve(sanitizedName)
+          val extension = exporter.defaultFileExtension
+          val outFileName = outDir.resolve(s"$sanitizedFileName.$extension")
           exporter.runExport(subGraph.nodes, subGraph.edges, outFileName)
         }.reduce(plus)
     }

@@ -3,7 +3,7 @@ name := "joern-cli"
 dependsOn(Projects.console, Projects.console % "test->test", Projects.c2cpg, Projects.dataflowengineoss, Projects.x2cpg)
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"            %% "overflowdb-formats"   % "1.148+2-a01c4aa2",
+  "io.shiftleft"            %% "overflowdb-formats"   % "1.149+2-c2953d40",
   "io.shiftleft"            %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"             %% "requests"          % "0.7.1",
   "com.github.scopt"        %% "scopt"             % "4.1.0",
