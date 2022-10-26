@@ -1,13 +1,13 @@
 package io.joern.jssrc2cpg.dataflow
 
-import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
-class DataflowTests extends DataFlowCodeToCpgSuite {
+class DataflowTest extends DataFlowCodeToCpgSuite {
 
   "Flow from function call read to multiple versions of the same variable" in {
     val cpg: Cpg = code("""
@@ -508,6 +508,123 @@ class DataflowTests extends DataFlowCodeToCpgSuite {
 
     flows.map(flowToResultPairs).toSetMutable shouldBe
       Set(List(("f(this, x, y)", 2), ("g(x, y)", 3)))
+  }
+
+  "Flow from non-static member to sink" in {
+    val cpg: Cpg = code("""
+        |class Foo {
+        |  x = "foo";
+        |  func() {
+        |    sink(x);
+        |  }
+        |}
+        |""".stripMargin)
+
+    val sink   = cpg.call("sink").argument(1).l
+    val source = cpg.member.name("x").l
+    sink.size shouldBe 1
+    source.size shouldBe 1
+    sink.reachableBy(source).size shouldBe 1
+  }
+
+  "Flow from static member to sink" in {
+    val cpg: Cpg = code("""
+        |class Foo {
+        |  static x = "foo";
+        |  func() {
+        |    sink(x);
+        |  }
+        |}
+        |""".stripMargin)
+
+    val sink   = cpg.call("sink").argument(1).l
+    val source = cpg.member.name("x").l
+    sink.size shouldBe 1
+    source.size shouldBe 1
+    sink.reachableBy(source).size shouldBe 1
+  }
+
+  "Flow from receiver to closure parameters" in {
+    val cpg: Cpg = code("""
+        |foo.bar( (x,y) => { sink1(x); sink2(y); } )
+        |""".stripMargin)
+
+    val sink = cpg.call("sink1").argument(1).l
+    val src  = cpg.identifier.name("foo").l
+    sink.reachableBy(src).size shouldBe 1
+  }
+
+  "Flow through constructor" in {
+    val cpg: Cpg = code("""
+        |const x = new Foo(y);
+        |""".stripMargin)
+
+    val sink = cpg.identifier("x").l
+    val src  = cpg.identifier("y").l
+    sink.reachableBy(src).size shouldBe 1
+  }
+
+  "Flow through constructor and object notation" in {
+    val cpg: Cpg = code("""
+                          |const x = new Foo({ z : y } );
+                          |""".stripMargin)
+
+    val sink = cpg.identifier("x").l
+    val src  = cpg.identifier("y").l
+    sink.reachableBy(src).size shouldBe 1
+  }
+
+  "Flow from field via object notation" in {
+    val cpg: Cpg = code("""
+                          |const x = { p : a.y } ;
+                          |""".stripMargin)
+
+    val sink = cpg.identifier("x").l
+    val src  = cpg.fieldAccess.where(_.fieldIdentifier.canonicalName("y")).l
+    src.size shouldBe 1
+    sink.size shouldBe 1
+    sink.reachableBy(src).size shouldBe 1
+  }
+
+  "Flow from inside object notation to call argument" in {
+    val cpg: Cpg = code("""
+        |const a = { b : 47 } ;
+        |fn(a);
+        |""".stripMargin)
+
+    val sink = cpg.call.nameExact("fn")
+    val src  = cpg.literal("47")
+    sink.reachableBy(src).size shouldBe 1
+  }
+
+  "Flow into method defined as lambda and assigned to constant" in {
+    val cpg: Cpg = code("""
+        | const foo = (x, y) => {
+        |   sink(x);
+        | };
+        |
+        | foo(1, 2);
+        |""".stripMargin)
+
+    val sink = cpg.call("sink").l
+    val src  = cpg.literal.code("1").l
+    sink.size shouldBe 1
+    src.size shouldBe 1
+    sink.reachableBy(src).size shouldBe 1
+  }
+
+  "Should not reach irrelevant nodes" in {
+    val cpg: Cpg = code("""
+        |const irrelevant = "irrelevant";
+        |const a = { } ;
+        |sink(a);
+        |""".stripMargin)
+
+    val sink = cpg.call("sink").l
+    val src  = cpg.literal("\"irrelevant\"").l
+    sink.size shouldBe 1
+    src.size shouldBe 1
+    sink.reachableBy(src).size shouldBe 0
   }
 
 }

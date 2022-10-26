@@ -5,13 +5,14 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.semanticcpg.language.{ICallResolver, _}
 import io.shiftleft.semanticcpg.layers._
-import io.shiftleft.utils.ProjectRoot
 
 class DataFlowTests extends GhidraBinToCpgSuite {
+
+  implicit val resolver: ICallResolver = NoResolve
+  implicit var context: EngineContext  = EngineContext()
 
   override def passes(cpg: Cpg): Unit = {
     applyDefaultOverlays(cpg)
@@ -24,12 +25,6 @@ class DataFlowTests extends GhidraBinToCpgSuite {
     super.beforeAll()
     buildCpgForBin("linux/mips/t1_to_t9")
   }
-
-  implicit val resolver: ICallResolver = NoResolve
-
-  val semanticsFilename               = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-  val semantics: Semantics            = Semantics.fromList(new Parser().parseFile(semanticsFilename))
-  implicit var context: EngineContext = EngineContext(semantics)
 
   "should find flows through `add*` instructions" in {
     def source = cpg.call.code("li t1,0x2a").argument(1)

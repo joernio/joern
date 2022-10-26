@@ -8,10 +8,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 
 trait AstForPrimitivesCreator { this: AstCreator =>
 
-  protected def astForIdentifier(ident: BabelNodeInfo): Ast = {
+  protected def astForIdentifier(ident: BabelNodeInfo, typeFullName: Option[String] = None): Ast = {
     val name      = ident.json("name").str
     val identNode = createIdentifierNode(name, ident)
-    val tpe       = typeFor(ident)
+    val tpe = typeFullName match {
+      case Some(Defines.ANY.label) => typeFor(ident)
+      case Some(otherType)         => otherType
+      case None                    => typeFor(ident)
+    }
     identNode.typeFullName = tpe
     scope.addVariableReference(name, identNode)
     Ast(identNode)
@@ -26,15 +30,10 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   protected def astForNullLiteral(nullLiteral: BabelNodeInfo): Ast =
     Ast(createLiteralNode(nullLiteral.code, Some(Defines.NULL.label), nullLiteral.lineNumber, nullLiteral.columnNumber))
 
-  protected def astForStringLiteral(stringLiteral: BabelNodeInfo): Ast =
-    Ast(
-      createLiteralNode(
-        stringLiteral.code,
-        Some(Defines.STRING.label),
-        stringLiteral.lineNumber,
-        stringLiteral.columnNumber
-      )
-    )
+  protected def astForStringLiteral(stringLiteral: BabelNodeInfo): Ast = {
+    val code = s"\"${stringLiteral.json("value").str}\""
+    Ast(createLiteralNode(code, Some(Defines.STRING.label), stringLiteral.lineNumber, stringLiteral.columnNumber))
+  }
 
   protected def astForSpreadElement(spreadElement: BabelNodeInfo): Ast = {
     val ast = astForNode(spreadElement.json("argument"))
@@ -127,24 +126,28 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val quasis      = templateLiteral.json("quasis").arr.toList.filterNot(_("tail").bool)
     val quasisTail  = templateLiteral.json("quasis").arr.toList.filter(_("tail").bool).head
 
-    val callName = "__Runtime.TO_STRING"
-    val argsCodes = expressions.zip(quasis).flatMap { case (expression, quasi) =>
-      List(s"\"${quasi("value")("raw").str}\"", code(expression))
-    }
-    val callCode = s"$callName${(argsCodes :+ s"\"${quasisTail("value")("raw").str}\"").mkString("(", ", ", ")")}"
-    val templateCall =
-      createCallNode(
-        callCode,
-        callName,
-        DispatchTypes.STATIC_DISPATCH,
-        templateLiteral.lineNumber,
-        templateLiteral.columnNumber
-      )
+    if (expressions.isEmpty && quasis.isEmpty) {
+      astForTemplateElement(createBabelNodeInfo(quasisTail))
+    } else {
+      val callName = "__Runtime.TO_STRING"
+      val argsCodes = expressions.zip(quasis).flatMap { case (expression, quasi) =>
+        List(s"\"${quasi("value")("raw").str}\"", code(expression))
+      }
+      val callCode = s"$callName${(argsCodes :+ s"\"${quasisTail("value")("raw").str}\"").mkString("(", ", ", ")")}"
+      val templateCall =
+        createCallNode(
+          callCode,
+          callName,
+          DispatchTypes.STATIC_DISPATCH,
+          templateLiteral.lineNumber,
+          templateLiteral.columnNumber
+        )
 
-    val argumentAsts = expressions.zip(quasis).flatMap { case (expression, quasi) =>
-      List(astForNode(quasi), astForNode(expression))
+      val argumentAsts = expressions.zip(quasis).flatMap { case (expression, quasi) =>
+        List(astForNode(quasi), astForNode(expression))
+      }
+      val argAsts = argumentAsts :+ astForNode(quasisTail)
+      createCallAst(templateCall, argAsts)
     }
-    val argAsts = argumentAsts :+ astForNode(quasisTail)
-    createCallAst(templateCall, argAsts)
   }
 }

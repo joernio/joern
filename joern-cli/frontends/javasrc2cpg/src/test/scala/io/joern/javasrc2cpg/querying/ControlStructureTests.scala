@@ -59,7 +59,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           frAssignRhs.name shouldBe Operators.alloc
           frAssignRhs.typeFullName shouldBe "java.io.FileReader"
 
-          frInit.name shouldBe NameConstants.Init
+          frInit.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
           val List(frInitThis: Identifier, frInitArg: Identifier) = frInit.argument.l
           frInitThis.name shouldBe "fr"
           frInitThis.typeFullName shouldBe "java.io.FileReader"
@@ -77,7 +77,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           brAssignRhs.name shouldBe Operators.alloc
           brAssignRhs.typeFullName shouldBe "java.io.BufferedReader"
 
-          brInit.name shouldBe NameConstants.Init
+          brInit.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
           val List(brInitThis: Identifier, brInitArg: Identifier) = brInit.argument.l
           brInitThis.name shouldBe "br"
           brInitThis.typeFullName shouldBe "java.io.BufferedReader"

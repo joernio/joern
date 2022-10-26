@@ -1,12 +1,13 @@
 package io.joern.php2cpg.querying
 
-import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.{PhpBuiltins, PhpDomainTypeConstants}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, TypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class OperatorTests extends PhpCode2CpgFixture {
 
@@ -18,21 +19,17 @@ class OperatorTests extends PhpCode2CpgFixture {
                       |$a = 2
                       |""".stripMargin)
 
-      val assignment = cpg.call.l match {
+      val assignment = inside(cpg.call.l) {
         case List(call) if call.name == Operators.assignment => call
-        case result                                          => fail(s"Expected assign call but found $result")
       }
 
-      assignment.argument.l match {
-        case List(target: Identifier, source: Literal) =>
-          target.name shouldBe "a"
-          target.code shouldBe "a"
-          target.argumentIndex shouldBe 1
+      inside(assignment.argument.l) { case List(target: Identifier, source: Literal) =>
+        target.name shouldBe "a"
+        target.code shouldBe "$a"
+        target.argumentIndex shouldBe 1
 
-          source.code shouldBe "2"
-          source.argumentIndex shouldBe 2
-
-        case result => s"Found unexpected call args $result"
+        source.code shouldBe "2"
+        source.argumentIndex shouldBe 2
       }
     }
 
@@ -59,6 +56,7 @@ class OperatorTests extends PhpCode2CpgFixture {
         val cpg = code(s"<?php\n$testCode", fileName = s"Test${filenameKeyPool.next}.php")
         cpg.call.name.l shouldBe expectedType :: Nil
         cpg.call.methodFullName.l shouldBe expectedType :: Nil
+        cpg.call.code.l shouldBe testCode :: Nil
       }
     }
   }
@@ -69,18 +67,14 @@ class OperatorTests extends PhpCode2CpgFixture {
                       |+$a
                       |""".stripMargin)
 
-      val addition = cpg.call.l match {
+      val addition = inside(cpg.call.l) {
         case List(call) if call.name == Operators.plus => call
-        case result                                    => fail(s"Expected plus call but found $result")
       }
 
-      addition.argument.l match {
-        case List(expr: Identifier) =>
-          expr.name shouldBe "a"
-          expr.code shouldBe "a"
-          expr.argumentIndex shouldBe 1
-
-        case result => s"Found unexpected call args $result"
+      inside(addition.argument.l) { case List(expr: Identifier) =>
+        expr.name shouldBe "a"
+        expr.code shouldBe "$a"
+        expr.argumentIndex shouldBe 1
       }
     }
 
@@ -100,6 +94,7 @@ class OperatorTests extends PhpCode2CpgFixture {
         val cpg = code(s"<?php\n$testCode", fileName = s"Test${filenameKeyPool.next}.php")
         cpg.call.name.l shouldBe expectedType :: Nil
         cpg.call.methodFullName.l shouldBe expectedType :: Nil
+        cpg.call.code.l shouldBe testCode :: Nil
       }
     }
   }
@@ -110,21 +105,17 @@ class OperatorTests extends PhpCode2CpgFixture {
                       |$a + 2
                       |""".stripMargin)
 
-      val addition = cpg.call.l match {
+      val addition = inside(cpg.call.l) {
         case List(call) if call.name == Operators.plus => call
-        case result                                    => fail(s"Expected plus call but found $result")
       }
 
-      addition.argument.l match {
-        case List(target: Identifier, source: Literal) =>
-          target.name shouldBe "a"
-          target.code shouldBe "a"
-          target.argumentIndex shouldBe 1
+      inside(addition.argument.l) { case List(target: Identifier, source: Literal) =>
+        target.name shouldBe "a"
+        target.code shouldBe "$a"
+        target.argumentIndex shouldBe 1
 
-          source.code shouldBe "2"
-          source.argumentIndex shouldBe 2
-
-        case result => s"Found unexpected call args $result"
+        source.code shouldBe "2"
+        source.argumentIndex shouldBe 2
       }
     }
 
@@ -160,10 +151,18 @@ class OperatorTests extends PhpCode2CpgFixture {
         ("$a <=> $b", PhpBuiltins.spaceshipOp)
       )
 
+      def normalizeLogicalOps(input: String): String = {
+        input
+          .replaceAll(" or ", " || ")
+          .replaceAll(" and ", " && ")
+          .replaceAll(" <> ", " != ")
+      }
+
       testData.foreach { case (testCode, expectedType) =>
         val cpg = code(s"<?php\n$testCode", fileName = s"Test${filenameKeyPool.next}.php")
         cpg.call.name.l shouldBe expectedType :: Nil
         cpg.call.methodFullName.l shouldBe expectedType :: Nil
+        cpg.call.code.l shouldBe normalizeLogicalOps(testCode) :: Nil
       }
     }
   }
@@ -172,24 +171,20 @@ class OperatorTests extends PhpCode2CpgFixture {
     "have the correct arguments set" in {
       val cpg = code("<?php\n(int) $a")
 
-      val cast = cpg.call.nameExact(Operators.cast).l match {
-        case List(cast) => cast
-        case result     => fail(s"Expected cast call but got $result")
+      val cast = inside(cpg.call.nameExact(Operators.cast).l) { case List(cast) =>
+        cast
       }
 
       cast.typeFullName shouldBe "int"
-      // TODO Still need to fix variable code
-      cast.code shouldBe "(int) a"
+      cast.code shouldBe "(int) $a"
       cast.lineNumber shouldBe Some(2)
-      cast.argument.l match {
-        case List(typeRef: TypeRef, expr: Identifier) =>
-          typeRef.typeFullName shouldBe "int"
-          typeRef.argumentIndex shouldBe 1
 
-          expr.name shouldBe "a"
-          expr.argumentIndex shouldBe 2
+      inside(cast.argument.l) { case List(typeRef: TypeRef, expr: Identifier) =>
+        typeRef.typeFullName shouldBe "int"
+        typeRef.argumentIndex shouldBe 1
 
-        case result => fail(s"Expected cast args but got $result")
+        expr.name shouldBe "a"
+        expr.argumentIndex shouldBe 2
       }
     }
 
@@ -206,12 +201,10 @@ class OperatorTests extends PhpCode2CpgFixture {
 
       testData.foreach { case (testCode, expectedType) =>
         val cpg = code(s"<?php\n$testCode", fileName = s"Test${filenameKeyPool.next}.php")
-        cpg.call.nameExact(Operators.cast).argument(1).l match {
-          case List(typeRef: TypeRef) =>
-            typeRef.typeFullName shouldBe expectedType
-            typeRef.code shouldBe expectedType
 
-          case result => fail(s"Expected typeRef arg for $testCode but found $result")
+        inside(cpg.call.nameExact(Operators.cast).argument(1).l) { case List(typeRef: TypeRef) =>
+          typeRef.typeFullName shouldBe expectedType
+          typeRef.code shouldBe expectedType
         }
       }
     }
@@ -221,30 +214,26 @@ class OperatorTests extends PhpCode2CpgFixture {
     "handle a single argument" in {
       val cpg = code("<?php\nisset($a)")
 
-      val call = cpg.call.nameExact(PhpBuiltins.issetFunc).l match {
-        case List(call) => call
-        case result     => fail(s"Expected isset call but found $result")
+      val call = inside(cpg.call.nameExact(PhpBuiltins.issetFunc).l) { case List(call) =>
+        call
       }
 
       call.methodFullName shouldBe PhpBuiltins.issetFunc
       call.typeFullName shouldBe TypeConstants.Bool
       call.lineNumber shouldBe Some(2)
 
-      call.argument.l match {
-        case List(arg: Identifier) =>
-          arg.name shouldBe "a"
-          arg.argumentIndex shouldBe 1
-
-        case result => fail(s"Expected isset argument but got $result")
+      inside(call.argument.l) { case List(arg: Identifier) =>
+        arg.name shouldBe "a"
+        arg.code shouldBe "$a"
+        arg.argumentIndex shouldBe 1
       }
     }
 
     "handle multiple arguments" in {
       val cpg = code("<?php\nisset($a, $b, $c)")
 
-      val call = cpg.call.nameExact(PhpBuiltins.issetFunc).l match {
-        case List(call) => call
-        case result     => fail(s"Expected isset call but found $result")
+      val call = inside(cpg.call.nameExact(PhpBuiltins.issetFunc).l) { case List(call) =>
+        call
       }
 
       call.methodFullName shouldBe PhpBuiltins.issetFunc
@@ -252,18 +241,18 @@ class OperatorTests extends PhpCode2CpgFixture {
       call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       call.lineNumber shouldBe Some(2)
 
-      call.argument.l match {
-        case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
-          aArg.name shouldBe "a"
-          aArg.argumentIndex shouldBe 1
+      inside(call.argument.l) { case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.argumentIndex shouldBe 1
 
-          bArg.name shouldBe "b"
-          bArg.argumentIndex shouldBe 2
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.argumentIndex shouldBe 2
 
-          cArg.name shouldBe "c"
-          cArg.argumentIndex shouldBe 3
-
-        case result => fail(s"Expected isset arguments but got $result")
+        cArg.name shouldBe "c"
+        cArg.code shouldBe "$c"
+        cArg.argumentIndex shouldBe 3
       }
     }
   }
@@ -271,67 +260,379 @@ class OperatorTests extends PhpCode2CpgFixture {
   "print calls should be created correctly" in {
     val cpg = code("<?php\nprint(\"Hello, world\");")
 
-    cpg.call.nameExact(PhpBuiltins.printFunc).l match {
-      case List(printCall) =>
-        printCall.methodFullName shouldBe "print"
-        printCall.typeFullName shouldBe TypeConstants.Int
-        printCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        printCall.lineNumber shouldBe Some(2)
+    inside(cpg.call.nameExact(PhpBuiltins.printFunc).l) { case List(printCall) =>
+      printCall.methodFullName shouldBe "print"
+      printCall.typeFullName shouldBe TypeConstants.Int
+      printCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      printCall.lineNumber shouldBe Some(2)
 
-        printCall.argument.l match {
-          case List(arg: Literal) => arg.code shouldBe "\"Hello, world\""
-          case result             => fail(s"Expected string argument but found $result")
-        }
-
-      case result => fail(s"Expected print call but found $result")
+      inside(printCall.argument.l) { case List(arg: Literal) =>
+        arg.code shouldBe "\"Hello, world\""
+      }
     }
   }
 
   "ternary operators" should {
     "be created correctly for general cond ? then : else style operators" in {
       val cpg = code("<?php\n$a ? $b : $c")
-      val call = cpg.call.nameExact(Operators.conditional).l match {
-        case List(conditionalOp) => conditionalOp
-        case result              => fail(s"Expected conditional operator but found $result")
+
+      val call = inside(cpg.call.nameExact(Operators.conditional).l) { case List(conditionalOp) =>
+        conditionalOp
       }
 
       call.methodFullName shouldBe Operators.conditional
+      call.code shouldBe "$a ? $b : $c"
       call.lineNumber shouldBe Some(2)
 
-      call.argument.l match {
-        case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
-          aArg.name shouldBe "a"
-          aArg.argumentIndex shouldBe 1
+      inside(call.argument.l) { case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.argumentIndex shouldBe 1
 
-          bArg.name shouldBe "b"
-          bArg.argumentIndex shouldBe 2
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.argumentIndex shouldBe 2
 
-          cArg.name shouldBe "c"
-          cArg.argumentIndex shouldBe 3
-
-        case result => fail(s"Expected 3 conditional args but found $result")
+        cArg.name shouldBe "c"
+        cArg.code shouldBe "$c"
+        cArg.argumentIndex shouldBe 3
       }
     }
 
     "be created correctly for the shorthand elvis operator" in {
       val cpg = code("<?php\n$a ?: $b")
-      val call = cpg.call.nameExact(PhpBuiltins.elvisOp).l match {
-        case List(elvisOp) => elvisOp
-        case result        => fail(s"Expected elvis operator but found $result")
+      val call = inside(cpg.call.nameExact(PhpBuiltins.elvisOp).l) { case List(elvisOp) =>
+        elvisOp
       }
 
       call.methodFullName shouldBe PhpBuiltins.elvisOp
+      call.code shouldBe "$a ?: $b"
       call.lineNumber shouldBe Some(2)
 
-      call.argument.l match {
-        case List(aArg: Identifier, bArg: Identifier) =>
-          aArg.name shouldBe "a"
-          aArg.argumentIndex shouldBe 1
+      inside(call.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.argumentIndex shouldBe 1
 
-          bArg.name shouldBe "b"
-          bArg.argumentIndex shouldBe 2
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.argumentIndex shouldBe 2
+      }
+    }
+  }
 
-        case result => fail(s"Expected 2 elvis operator args but found $result")
+  "the clone operator should be represented with the correct call node" in {
+    val cpg = code("<?php\nclone $x")
+
+    inside(cpg.call.l) { case List(cloneCall) =>
+      cloneCall.name shouldBe PhpBuiltins.cloneFunc
+      cloneCall.methodFullName shouldBe PhpBuiltins.cloneFunc
+      cloneCall.code shouldBe "clone $x"
+      cloneCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      cloneCall.lineNumber shouldBe Some(2)
+
+      inside(cloneCall.argument.l) { case List(xArg: Identifier) =>
+        xArg.name shouldBe "x"
+        xArg.code shouldBe "$x"
+      }
+    }
+  }
+
+  "the empty call should be represented with the correct call node" in {
+    val cpg = code("<?php\nempty($x)")
+
+    inside(cpg.call.l) { case List(emptyCall) =>
+      emptyCall.name shouldBe PhpBuiltins.emptyFunc
+      emptyCall.methodFullName shouldBe PhpBuiltins.emptyFunc
+      emptyCall.code shouldBe "empty($x)"
+      emptyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      emptyCall.lineNumber shouldBe Some(2)
+
+      inside(emptyCall.argument.l) { case List(xArg: Identifier) =>
+        xArg.name shouldBe "x"
+        xArg.code shouldBe "$x"
+      }
+    }
+  }
+
+  "the eval call should be represented with the correct call node" in {
+    val cpg = code("<?php\neval($x)")
+
+    inside(cpg.call.l) { case List(evalCall) =>
+      evalCall.name shouldBe PhpBuiltins.evalFunc
+      evalCall.methodFullName shouldBe PhpBuiltins.evalFunc
+      evalCall.code shouldBe "eval($x)"
+      evalCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      evalCall.lineNumber shouldBe Some(2)
+
+      inside(evalCall.argument.l) { case List(xArg: Identifier) =>
+        xArg.name shouldBe "x"
+        xArg.code shouldBe "$x"
+      }
+    }
+  }
+
+  "exit statements" should {
+    "be represented with an empty arg list if no args are given" in {
+      val cpg = code("<?php\nexit;")
+      inside(cpg.call.l) { case List(exitCall) =>
+        exitCall.name shouldBe PhpBuiltins.exitFunc
+        exitCall.methodFullName shouldBe PhpBuiltins.exitFunc
+        exitCall.typeFullName shouldBe TypeConstants.Void
+        exitCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        exitCall.lineNumber shouldBe Some(2)
+        exitCall.argument.size shouldBe 0
+        exitCall.astChildren.size shouldBe 0
+      }
+    }
+
+    "be represented with an empty arg list if an empty args list is given" in {
+      val cpg = code("<?php\nexit();")
+      inside(cpg.call.l) { case List(exitCall) =>
+        exitCall.name shouldBe PhpBuiltins.exitFunc
+        exitCall.methodFullName shouldBe PhpBuiltins.exitFunc
+        exitCall.typeFullName shouldBe TypeConstants.Void
+        exitCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        exitCall.lineNumber shouldBe Some(2)
+        exitCall.argument.size shouldBe 0
+        exitCall.astChildren.size shouldBe 0
+      }
+    }
+
+    "have the correct arg child if an arg is given" in {
+      val cpg = code("<?php\nexit(0);")
+      inside(cpg.call.l) { case List(exitCall) =>
+        exitCall.name shouldBe PhpBuiltins.exitFunc
+        exitCall.methodFullName shouldBe PhpBuiltins.exitFunc
+        exitCall.typeFullName shouldBe TypeConstants.Void
+        exitCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        exitCall.lineNumber shouldBe Some(2)
+
+        inside(cpg.argument.l) { case List(literal: Literal) =>
+          literal.code shouldBe "0"
+        }
+      }
+    }
+  }
+
+  "the error suppress operator should work" in {
+    val cpg = code("<?php\n@foo();")
+
+    inside(cpg.call.nameExact(PhpBuiltins.errorSuppress).l) { case List(errorSuppress) =>
+      errorSuppress.methodFullName shouldBe PhpBuiltins.errorSuppress
+      errorSuppress.code shouldBe "@foo()"
+
+      inside(errorSuppress.argument.l) { case List(fooCall: Call) =>
+        fooCall.name shouldBe "foo"
+        fooCall.code shouldBe "foo()"
+      }
+    }
+  }
+
+  "instanceof with a simple class name should work" in {
+    val cpg = code("<?php\n$foo instanceof Foo")
+
+    inside(cpg.call.l) { case List(instanceOfCall) =>
+      instanceOfCall.name shouldBe Operators.instanceOf
+      instanceOfCall.methodFullName shouldBe Operators.instanceOf
+      instanceOfCall.code shouldBe "$foo instanceof Foo"
+
+      inside(instanceOfCall.argument.l) { case List(obj: Identifier, className: Identifier) =>
+        obj.name shouldBe "foo"
+        obj.code shouldBe "$foo"
+
+        className.name shouldBe "Foo"
+        className.code shouldBe "Foo"
+      }
+    }
+  }
+
+  "temporary list implementation should work" in {
+    // TODO This is a simple placeholder implementation that represents most of the useful information
+    //  in the AST, while being pretty much unusable for dataflow. A better implementation needs to follow.
+    val cpg = code("<?php\nlist($a, $b) = $arr;")
+
+    inside(cpg.call.nameExact(PhpBuiltins.listFunc).l) { case List(listCall: Call) =>
+      listCall.methodFullName shouldBe PhpBuiltins.listFunc
+      listCall.code shouldBe "list($a,$b)"
+      listCall.lineNumber shouldBe Some(2)
+      inside(listCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.lineNumber shouldBe Some(2)
+
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.lineNumber shouldBe Some(2)
+      }
+    }
+  }
+
+  "include calls" should {
+    "be correctly represented for normal includes" in {
+      val cpg = code("<?php\ninclude 'path';")
+
+      inside(cpg.call.l) { case List(includeCall: Call) =>
+        includeCall.name shouldBe "include"
+        includeCall.methodFullName shouldBe "include"
+        includeCall.code shouldBe "include \"path\""
+        inside(includeCall.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+
+    "be correctly represented for include_once" in {
+      val cpg = code("<?php\ninclude_once 'path';")
+
+      inside(cpg.call.l) { case List(includeOnceCall: Call) =>
+        includeOnceCall.name shouldBe "include_once"
+        includeOnceCall.methodFullName shouldBe "include_once"
+        includeOnceCall.code shouldBe "include_once \"path\""
+        inside(includeOnceCall.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+
+    "be correctly represented for normal requires" in {
+      val cpg = code("<?php\nrequire 'path';")
+
+      inside(cpg.call.l) { case List(requireCall: Call) =>
+        requireCall.name shouldBe "require"
+        requireCall.methodFullName shouldBe "require"
+        requireCall.code shouldBe "require \"path\""
+        inside(requireCall.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+
+    "be correctly represented for require once" in {
+      val cpg = code("<?php\nrequire_once 'path';")
+
+      inside(cpg.call.l) { case List(requireOnce: Call) =>
+        requireOnce.name shouldBe "require_once"
+        requireOnce.methodFullName shouldBe "require_once"
+        requireOnce.code shouldBe "require_once \"path\""
+        inside(requireOnce.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+  }
+
+  "declare calls without statements should be correctly represented" in {
+    val cpg = code("<?php\ndeclare(ticks=1, encoding='UTF-8');")
+
+    val declareCall = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareCall: Call) =>
+          declareCall
+        }
+    }
+
+    declareCall.name shouldBe PhpBuiltins.declareFunc
+    declareCall.methodFullName shouldBe PhpBuiltins.declareFunc
+    declareCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    declareCall.code shouldBe "declare(ticks=1,encoding=\"UTF-8\")"
+    declareCall.lineNumber shouldBe Some(2)
+
+    inside(declareCall.argument.l) { case List(tickAssign: Call, encodingAssign: Call) =>
+      tickAssign.name shouldBe Operators.assignment
+      tickAssign.lineNumber shouldBe Some(2)
+      tickAssign.code shouldBe "ticks=1"
+
+      inside(tickAssign.argument.l) { case List(ticksIdentifier: Identifier, value: Literal) =>
+        ticksIdentifier.name shouldBe "ticks"
+        ticksIdentifier.code shouldBe "ticks"
+
+        value.code shouldBe "1"
+      }
+
+      encodingAssign.name shouldBe Operators.assignment
+      encodingAssign.lineNumber shouldBe Some(2)
+      encodingAssign.code shouldBe "encoding=\"UTF-8\""
+
+      inside(encodingAssign.argument.l) { case List(encodingIdentifier: Identifier, value: Literal) =>
+        encodingIdentifier.name shouldBe "encoding"
+        encodingIdentifier.code shouldBe "encoding"
+
+        value.code shouldBe "\"UTF-8\""
+      }
+    }
+  }
+
+  "declare calls with an empty statement list should have the correct block structure" in {
+    val cpg = code("""<?php
+        |declare(ticks=1) {}
+        |""".stripMargin)
+
+    val declareBlock = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareBlock: Block) =>
+          declareBlock
+        }
+    }
+
+    inside(declareBlock.astChildren.l) { case List(declareCall: Call) =>
+      declareCall.code shouldBe "declare(ticks=1)"
+    }
+  }
+
+  "declare calls with non-empty statement lists should have the correct block structure" in {
+    val cpg = code("""<?php
+        |declare(ticks=1) {
+        |  echo $x;
+        |}
+        |""".stripMargin)
+
+    val declareBlock = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareBlock: Block) =>
+          declareBlock
+        }
+    }
+
+    inside(declareBlock.astChildren.l) { case List(declareCall: Call, echoCall: Call) =>
+      declareCall.code shouldBe "declare(ticks=1)"
+      echoCall.code shouldBe "echo $x"
+    }
+  }
+
+  "shell_exec calls should be handled" in {
+    val cpg = code("<?php\n`ls -la`")
+
+    inside(cpg.call.name("shell_exec").l) { case List(shellCall) =>
+      shellCall.methodFullName shouldBe "shell_exec"
+      shellCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      shellCall.code shouldBe "`ls -la`"
+      shellCall.lineNumber shouldBe Some(2)
+
+      inside(shellCall.argument.l) { case List(command: Literal) =>
+        command.code shouldBe "\"ls -la\""
+      }
+    }
+  }
+
+  "unset calls should be handled" in {
+    val cpg = code("<?php\nunset($a, $b)")
+
+    inside(cpg.call.l) { case List(unsetCall) =>
+      unsetCall.name shouldBe "unset"
+      unsetCall.methodFullName shouldBe "unset"
+      unsetCall.code shouldBe "unset($a, $b)"
+      unsetCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      unsetCall.lineNumber shouldBe Some(2)
+
+      inside(unsetCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.lineNumber shouldBe Some(2)
+
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.lineNumber shouldBe Some(2)
       }
     }
   }

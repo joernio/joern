@@ -55,13 +55,13 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
   def languageIsKnown(language: String): Boolean = CpgGeneratorFactory.KNOWN_LANGUAGES.contains(language)
 
   def runGenerator(
-    frontend: CpgGenerator,
+    generator: CpgGenerator,
     inputPath: String,
     outputPath: String,
     namespaces: List[String] = List()
   ): Option[Path] = {
     val outputFileOpt: Option[File] =
-      frontend.generate(inputPath, outputPath, namespaces).map(File(_))
+      generator.generate(inputPath, outputPath, namespaces).map(File(_))
     outputFileOpt.map { outFile =>
       val parentPath = outFile.parent.path.toAbsolutePath
       if (isZipFile(outFile)) {

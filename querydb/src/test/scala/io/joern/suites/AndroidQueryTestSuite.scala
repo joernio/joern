@@ -3,7 +3,7 @@ package io.joern.suites
 import io.joern.util.QueryUtil
 import io.joern.console.{CodeSnippet, Query, QueryBundle}
 import io.joern.kotlin2cpg.{Config, Kotlin2Cpg}
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend}
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.utils.ProjectRoot
 import io.joern.console.scan._
@@ -12,7 +12,9 @@ import io.shiftleft.semanticcpg.language._
 
 import java.io.File
 
-class Kotlin2CpgFrontend(override val fileSuffix: String = ".kt") extends LanguageFrontend {
+trait Kotlin2CpgFrontend extends LanguageFrontend {
+  override val fileSuffix: String = ".kt"
+
   def execute(sourceCodePath: File): Cpg = {
     val cpgFile = File.createTempFile("kt2cpg", ".zip")
     cpgFile.deleteOnExit()
@@ -22,15 +24,11 @@ class Kotlin2CpgFrontend(override val fileSuffix: String = ".kt") extends Langua
   }
 }
 
-class AndroidQueryTestSuite extends Code2CpgFixture(new Kotlin2CpgFrontend()) {
-  var semanticsFilename =
-    ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-  val argumentProvider = new QDBArgumentProvider(3)
+class DefaultTestCpgWithKotlin extends DefaultTestCpg with Kotlin2CpgFrontend
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    semanticsFilename = argumentProvider.testSemanticsFilename
-  }
+class AndroidQueryTestSuite extends Code2CpgFixture(() => new DefaultTestCpgWithKotlin()) {
+
+  val argumentProvider = new QDBArgumentProvider(3)
 
   def queryBundle: QueryBundle = QueryUtil.EmptyBundle
 

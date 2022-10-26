@@ -44,14 +44,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct structure for block expression" in AstFixture("let x = (class Foo {}, bar())") { cpg =>
       val List(program) = cpg.method.nameExact(":program").l
 
-      val List(classFooMetaTypeDecl) = cpg.typeDecl.nameExact("Foo<meta>").l
-      classFooMetaTypeDecl.fullName shouldBe "code.js::program:Foo<meta>"
-
       val List(classFooTypeDecl) = cpg.typeDecl.nameExact("Foo").l
       classFooTypeDecl.fullName shouldBe "code.js::program:Foo"
 
       // constructor
-      val List(classFooMethod) = classFooTypeDecl.astChildren.isMethod.nameExact("<constructor>").l
+      val List(classFooMethod) =
+        classFooTypeDecl.astChildren.isMethod.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l
       classFooMethod.code shouldBe "constructor() {}"
 
       val List(programBlock) = program.astChildren.isBlock.l
@@ -66,6 +64,16 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(barCall) = commaRight.astChildren.isCall.l
       barCall.code shouldBe "bar()"
+    }
+
+    "have correct structure for index access" in AstFixture("if(d = decorators[i]) foo();") { cpg =>
+      val List(indexAccessCall) = cpg.call(Operators.indexAccess).l
+      indexAccessCall.code shouldBe "decorators[i]"
+      val List(baseArg: Identifier, indexArg: Identifier) = indexAccessCall.argument.l
+      baseArg.name shouldBe "decorators"
+      baseArg.argumentIndex shouldBe 1
+      indexArg.name shouldBe "i"
+      indexArg.argumentIndex shouldBe 2
     }
 
     "have correct structure for empty array literal" in AstFixture("var x = []") { cpg =>
@@ -177,6 +185,32 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         runtimeCall.astChildren.isLiteral.codeExact("\"\\..\"").l
       argument3.order shouldBe 3
       argument3.argumentIndex shouldBe 3
+    }
+
+    "have correct structure for different string literals" in AstFixture("""
+        |var keyA = "AAA";
+        |var keyB = 'BBB';
+        |var keyC = `CCC`;
+        |var keyD = `DDD"`;
+        |var keyE = "EE EE E";
+        |var keyF = "F-FF-F";
+        |""".stripMargin) { cpg =>
+      cpg.literal.code.l shouldBe List(
+        """"AAA"""",
+        """"BBB"""",
+        """"CCC"""",
+        """"DDD""""",
+        """"EE EE E"""",
+        """"F-FF-F""""
+      )
+      cpg.call.code.l shouldBe List(
+        """var keyA = "AAA"""",
+        """var keyB = 'BBB'""",
+        """var keyC = `CCC`""",
+        """var keyD = `DDD"`""",
+        """var keyE = "EE EE E"""",
+        """var keyF = "F-FF-F""""
+      )
     }
 
     "have correct structure for try" in AstFixture("""

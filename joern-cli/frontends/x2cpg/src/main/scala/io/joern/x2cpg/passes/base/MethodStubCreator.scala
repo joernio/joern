@@ -1,5 +1,6 @@
 package io.joern.x2cpg.passes.base
 
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes}
@@ -26,7 +27,7 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
       methodFullNameToNode.put(method.fullName, method)
     }
 
-    for (call <- cpg.call if call.methodFullName.nonEmpty) {
+    for (call <- cpg.call if call.methodFullName != Defines.DynamicCallUnknownFallName) {
       methodToParameterCount.put(NameAndSignature(call.name, call.signature, call.methodFullName), call.argument.size)
     }
 
@@ -93,14 +94,6 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
       dstGraph.addEdge(methodNode, param, EdgeTypes.AST)
     }
 
-    val methodReturn = NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName("ANY")
-
-    dstGraph.addNode(methodReturn)
-    dstGraph.addEdge(methodNode, methodReturn, EdgeTypes.AST)
-
     val blockNode = NewBlock()
       .order(1)
       .argumentIndex(1)
@@ -108,6 +101,15 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
     dstGraph.addNode(blockNode)
     dstGraph.addEdge(methodNode, blockNode, EdgeTypes.AST)
+
+    val methodReturn = NewMethodReturn()
+      .order(2)
+      .code("RET")
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .typeFullName("ANY")
+
+    dstGraph.addNode(methodReturn)
+    dstGraph.addEdge(methodNode, methodReturn, EdgeTypes.AST)
 
     methodNode
   }

@@ -120,7 +120,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
 
     "test annotation node properties" in {
       import scala.jdk.CollectionConverters._
-      val annotationNode = cpg.method.nameExact("SomeClass").annotation.head
+      val annotationNode = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).annotation.head
       annotationNode.code shouldBe "@MarkerAnnotation()"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"

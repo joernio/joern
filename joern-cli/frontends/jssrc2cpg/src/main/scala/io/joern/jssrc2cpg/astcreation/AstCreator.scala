@@ -47,7 +47,7 @@ class AstCreator(
   // where the respective nodes are defined. Instead we put them under the parent TYPE_DECL in which they are defined.
   // To achieve this we need this extra stack.
   protected val methodAstParentStack          = new Stack[NewNode]()
-  protected val metaTypeRefIdStack            = new Stack[NewTypeRef]
+  protected val typeRefIdStack                = new Stack[NewTypeRef]
   protected val dynamicInstanceTypeStack      = new Stack[String]
   protected val localAstParentStack           = new Stack[NewBlock]()
   protected val rootTypeDecl                  = new Stack[NewTypeDecl]()

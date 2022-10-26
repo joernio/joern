@@ -2,7 +2,7 @@ package io.joern.javasrc2cpg
 
 import better.files.File
 import io.joern.javasrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, TypeInferencePass}
-import io.joern.javasrc2cpg.util.Delombok
+import io.joern.javasrc2cpg.util.{Delombok, SourceRootFinder}
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -16,7 +16,7 @@ import java.nio.file.Paths
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.Try
 
-case class SourceDirectoryInfo(typeSolverSourceDir: String, sourceFiles: List[SourceFileInfo])
+case class SourceDirectoryInfo(typeSolverSourceDirs: List[String], sourceFiles: List[SourceFileInfo])
 case class SourceFileInfo(analysisFileName: String, originalFileName: String)
 object JavaSrc2Cpg {
   val language: String = Languages.JAVASRC
@@ -28,7 +28,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   import JavaSrc2Cpg._
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val sourceFileExtensions = Set(".java")
+  val sourceFileExtensions: Set[String] = Set(".java")
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
@@ -95,41 +95,46 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       case DelombokMode.TypesOnly   => true
     }
 
-    val inputPathAsFile = File(config.inputPath)
+    val sourceInfoTuples = SourceRootFinder.getSourceRoots(config.inputPath).map { inputPath =>
+      val inputPathAsFile = File(inputPath)
+      val originalSourcesDir = if (inputPathAsFile.isDirectory) {
+        inputPath
+      } else {
+        val dir = File.newTemporaryDirectory("javasrc").deleteOnExit()
+        inputPathAsFile.copyToDirectory(dir).deleteOnExit()
+        dir.pathAsString
+      }
 
-    val originalSourcesDir = if (inputPathAsFile.isDirectory) {
-      config.inputPath
-    } else {
-      val dir = File.newTemporaryDirectory("javasrc").deleteOnExit()
-      inputPathAsFile.copyToDirectory(dir).deleteOnExit()
-      dir.pathAsString
+      val delombokSourcesDir = Option.when(runDelombok) {
+        Delombok.run(originalSourcesDir, config.delombokJavaHome)
+      }
+
+      val analysisSourceFilePath =
+        if (runDelombok && (delombokMode != DelombokMode.TypesOnly))
+          delombokSourcesDir.get
+        else
+          originalSourcesDir
+
+      val typeSourcesPath = delombokSourcesDir.getOrElse(originalSourcesDir)
+
+      val sourceFileNames = SourceFiles.determine(analysisSourceFilePath, sourceFileExtensions)
+      val sourceFileInfo = delombokSourcesDir match {
+        case Some(delombokSourcesDir) =>
+          sourceFileNames.map { fileName =>
+            // Directory structure remains unchanged.
+            val originalFileName = fileName.replace(delombokSourcesDir, originalSourcesDir)
+            SourceFileInfo(fileName, originalFileName)
+          }
+
+        case None => sourceFileNames.map { filename => SourceFileInfo(filename, filename) }
+      }
+
+      (typeSourcesPath, sourceFileInfo)
     }
 
-    val delombokSourcesDir = Option.when(runDelombok) {
-      Delombok.run(originalSourcesDir, config.delombokJavaHome)
-    }
-
-    val analysisSourceFilePath =
-      if (runDelombok && (delombokMode != DelombokMode.TypesOnly))
-        delombokSourcesDir.get
-      else
-        originalSourcesDir
-
-    val typeSourcesPath = delombokSourcesDir.getOrElse(originalSourcesDir)
-
-    val sourceFileNames = SourceFiles.determine(analysisSourceFilePath, sourceFileExtensions)
-    val sourceFileInfo = delombokSourcesDir match {
-      case Some(delombokSourcesDir) =>
-        sourceFileNames.map { fileName =>
-          // Directory structure remains unchanged.
-          val originalFileName = fileName.replace(delombokSourcesDir, originalSourcesDir)
-          SourceFileInfo(fileName, originalFileName)
-        }
-
-      case None => sourceFileNames.map { filename => SourceFileInfo(filename, filename) }
-    }
-
-    SourceDirectoryInfo(typeSourcesPath, sourceFileInfo)
+    val typesPaths   = sourceInfoTuples.map(_._1)
+    val sourcesPaths = sourceInfoTuples.flatMap(_._2)
+    SourceDirectoryInfo(typesPaths, sourcesPaths)
   }
 
 }

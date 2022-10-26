@@ -18,6 +18,7 @@ object SourceHighlighter {
     val langFlag = source.language match {
       case Languages.C | Languages.NEWC | Languages.GHIDRA => "-sC"
       case Languages.JAVASRC                               => "-sJava"
+      case Languages.JSSRC | Languages.JAVASCRIPT          => "-sJavascript"
       case other => throw new RuntimeException(s"Attempting to call highlighter on unsupported language: $other")
     }
 

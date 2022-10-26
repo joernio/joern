@@ -1,33 +1,20 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
+import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Block,
-  Call,
-  CfgNode,
-  ControlStructure,
-  Expression,
-  FieldIdentifier,
-  Identifier,
-  JumpTarget,
-  Method,
-  MethodParameterIn,
-  MethodParameterOut,
-  MethodReturn,
-  Return,
-  StoredNode,
-  Unknown
-}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.{Set, mutable}
 
 /** Creation of data dependence edges based on solution of the ReachingDefProblem.
   */
-class DdgGenerator {
+class DdgGenerator(semantics: Semantics) {
+
+  implicit val s: Semantics = semantics
 
   /** Once reaching definitions have been computed, we create a data dependence graph by checking which reaching
     * definitions are relevant, meaning that a symbol is propagated that is used by the target node.
@@ -45,11 +32,10 @@ class DdgGenerator {
     solution: Solution[StoredNode, mutable.BitSet]
   ): Unit = {
     implicit val implicitDst: DiffGraphBuilder = dstGraph
-    val numberToNode                           = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-    val in                                     = solution.in
-    val gen = solution.problem.transferFunction
-      .asInstanceOf[ReachingDefTransferFunction]
-      .gen
+
+    val numberToNode = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+    val in           = solution.in
+    val gen          = solution.problem.transferFunction.asInstanceOf[ReachingDefTransferFunction].gen
 
     val method        = problem.flowGraph.entryNode.asInstanceOf[Method]
     val allNodes      = in.keys.toList
@@ -93,16 +79,19 @@ class DdgGenerator {
       }
 
       // Handle block arguments
+      // This handles `foo(new Bar())`, which is lowered to
+      // `foo({Bar tmp = Bar.alloc(); tmp.init(); tmp})`
       call.argument.isBlock.foreach { block =>
         block.astChildren.lastOption match {
           case None => // Do nothing
           case Some(node: Identifier) =>
-            val edgesToAdd = in(node).toList.flatMap { inDef =>
-              numberToNode.get(inDef) match {
-                case Some(identifier: Identifier) => Some(identifier)
-                case _                            => None
+            val edgesToAdd = in(node).toList
+              .flatMap(numberToNode.get)
+              .filter(inDef => usageAnalyzer.isUsing(node, inDef))
+              .collect {
+                case identifier: Identifier => identifier
+                case call: Call             => call
               }
-            }
             edgesToAdd.foreach { inNode =>
               addEdge(inNode, block, nodeToEdgeLabel(inNode))
             }
@@ -188,12 +177,15 @@ class DdgGenerator {
   private def addEdge(fromNode: StoredNode, toNode: StoredNode, variable: String = "")(implicit
     dstGraph: DiffGraphBuilder
   ): Unit = {
-    if (
-      fromNode.isInstanceOf[Unknown] || toNode
-        .isInstanceOf[Unknown]
-    )
+    if (fromNode.isInstanceOf[Unknown] || toNode.isInstanceOf[Unknown])
       return
-    dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
+
+    (fromNode, toNode) match {
+      case (parentNode: CfgNode, childNode: CfgNode) if EdgeValidator.isValidEdge(childNode, parentNode) =>
+        dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
+      case _ =>
+
+    }
   }
 
   /** There are a few node types that (a) are not to be considered in the DDG, or (b) are not standalone DDG nodes, or
@@ -207,7 +199,6 @@ class DdgGenerator {
       case _: FieldIdentifier  => false
       case _: JumpTarget       => false
       case _: MethodReturn     => false
-      case _: Block            => false
       case _                   => true
     }
   }
@@ -230,7 +221,8 @@ private class UsageAnalyzer(
   in: Map[StoredNode, Set[Definition]]
 ) {
 
-  val numberToNode                 = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+  val numberToNode: Map[Definition, StoredNode] = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+
   private val allNodes             = in.keys.toList
   private val containerSet         = Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess)
   private val indirectionAccessSet = Set(Operators.addressOf, Operators.indirection)
@@ -246,13 +238,13 @@ private class UsageAnalyzer(
     uses(node).map { use =>
       use -> in(node).filter { inElement =>
         val inElemNode = numberToNode(inElement)
-        sameVariable(use, inElemNode) || isContainer(use, inElemNode) || isPart(use, inElemNode) || isAlias(
-          use,
-          inElemNode
-        )
+        isUsing(use, inElemNode)
       }
     }.toMap
   }
+
+  def isUsing(use: StoredNode, inElemNode: StoredNode): Boolean =
+    sameVariable(use, inElemNode) || isContainer(use, inElemNode) || isPart(use, inElemNode) || isAlias(use, inElemNode)
 
   /** Determine whether the node `use` describes a container for `inElement`, e.g., use = `ptr` while inElement =
     * `ptr->foo`.
@@ -303,20 +295,17 @@ private class UsageAnalyzer(
 
   def uses(node: StoredNode): Set[StoredNode] = {
     val n: Set[StoredNode] = node match {
-      case ret: Return =>
-        ret.astChildren.collect { case x: Expression => x }.toSet
-      case call: Call =>
-        call.argument.toSet
-      case paramOut: MethodParameterOut =>
-        Set(paramOut)
-      case _ => Set()
+      case ret: Return                  => ret.astChildren.collect { case x: Expression => x }.toSet
+      case call: Call                   => call.argument.toSet
+      case paramOut: MethodParameterOut => Set(paramOut)
+      case _                            => Set()
     }
     n.filterNot(_.isInstanceOf[FieldIdentifier])
   }
 
   /** Compares arguments of calls with incoming definitions to see if they refer to the same variable
     */
-  def sameVariable(use: StoredNode, inElement: StoredNode): Boolean = {
+  private def sameVariable(use: StoredNode, inElement: StoredNode): Boolean = {
     inElement match {
       case param: MethodParameterIn =>
         nodeToString(use).contains(param.name)

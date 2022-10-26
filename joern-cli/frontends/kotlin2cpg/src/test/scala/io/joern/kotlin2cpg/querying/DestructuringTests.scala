@@ -157,7 +157,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       allocAssignmentRhs.argumentIndex shouldBe 2
 
       val List(tmpInitCall) = cpg.call.code(".*init.*").l
-      tmpInitCall.code shouldBe "<init>"
+      tmpInitCall.code shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       tmpInitCall.methodFullName shouldBe "main.AClass.<init>:void(java.lang.String,int)"
       tmpInitCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       tmpInitCall.argument.code.l shouldBe List("tmp_1", "aMessage", "41414141")

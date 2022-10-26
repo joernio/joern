@@ -27,7 +27,8 @@ class MethodTests extends JavaSrcCodeToCpgFixture {
       |""".stripMargin
 
   "should contain exactly one non-stub method node in Foo with correct fields" in {
-    val List(x) = cpg.typeDecl.name("Foo").method.nameNot("<init>").isExternal(false).l
+    val List(x) =
+      cpg.typeDecl.name("Foo").method.nameNot(io.joern.x2cpg.Defines.ConstructorMethodName).isExternal(false).l
     x.name shouldBe "foo"
     x.fullName shouldBe "Foo.foo:int(int,int)"
     x.code shouldBe "int foo(int param1, int param2)"

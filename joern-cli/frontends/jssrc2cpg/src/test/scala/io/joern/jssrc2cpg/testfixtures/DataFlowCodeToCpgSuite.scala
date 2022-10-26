@@ -1,31 +1,30 @@
 package io.joern.jssrc2cpg.testfixtures
 
-import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.jssrc2cpg.JsSrc2Cpg
+import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, TestCpg}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import io.shiftleft.utils.ProjectRoot
 
-class DataFlowCodeToCpgSuite extends JsSrc2CpgSuite {
+class DataFlowTestCpg extends TestCpg with JsSrc2CpgFrontend {
+  override val fileSuffix: String = ".js"
 
-  val semanticsFilename: String = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
+  override def applyPasses(): Unit = {
+    X2Cpg.applyDefaultOverlays(this)
 
-  var semantics: Semantics = _
-
-  implicit var context: EngineContext = _
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
-    context = EngineContext(semantics)
+    val context = new LayerCreatorContext(this)
+    val options = new OssDataFlowOptions()
+    new OssDataFlow(options).run(context)
+    JsSrc2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
   }
 
-  override def applyPasses(cpg: Cpg): Unit = {
-    super.applyPasses(cpg)
-    new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
-  }
+}
+
+class DataFlowCodeToCpgSuite extends Code2CpgFixture(() => new DataFlowTestCpg()) {
+
+  implicit var context: EngineContext = EngineContext()
 
   protected def flowToResultPairs(path: Path): List[(String, Integer)] =
     path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>

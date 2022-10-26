@@ -7,6 +7,7 @@ import io.shiftleft.semanticcpg.utils.MemberAccess
 
 import java.util.Optional
 import scala.collection.immutable.HashMap
+import scala.collection.mutable
 import scala.language.postfixOps
 
 object DotSerializer {
@@ -44,8 +45,8 @@ object DotSerializer {
     graphEnd(sb)
   }
 
-  private def namedGraphBegin(root: AstNode): StringBuilder = {
-    val sb = new StringBuilder
+  private def namedGraphBegin(root: AstNode): mutable.StringBuilder = {
+    val sb = new mutable.StringBuilder
     val name = escape(root match {
       case method: Method => method.name
       case _              => ""
@@ -53,8 +54,8 @@ object DotSerializer {
     sb.append(s"""digraph "$name" {  \n""")
   }
 
-  private def defaultGraphBegin(): StringBuilder = {
-    val sb   = new StringBuilder
+  private def defaultGraphBegin(): mutable.StringBuilder = {
+    val sb   = new mutable.StringBuilder
     val name = "CPG"
     sb.append(s"""digraph "$name" {  \n""")
   }
@@ -73,6 +74,8 @@ object DotSerializer {
       case annoAssign: AnnotationParameterAssign => (annoAssign.label, annoAssign.code).toString()
       case annoParam: AnnotationParameter        => (annoParam.label, annoParam.code).toString()
       case typ: Type                             => (typ.label, typ.name).toString()
+      case typeDecl: TypeDecl                    => (typeDecl.label, typeDecl.name).toString()
+      case member: Member                        => (member.label, member.name).toString()
       case _                                     => ""
     }) + (if (maybeLineNo.isPresent) s"<SUB>${maybeLineNo.get()}</SUB>" else "")
   }
@@ -138,7 +141,7 @@ object DotSerializer {
     }
   }
 
-  private def graphEnd(sb: StringBuilder): String = {
+  private def graphEnd(sb: mutable.StringBuilder): String = {
     sb.append("\n}\n")
     sb.toString
   }

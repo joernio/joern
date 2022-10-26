@@ -43,8 +43,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         callName,
         DispatchTypes.DYNAMIC_DISPATCH,
         callExpr.lineNumber,
-        callExpr.columnNumber,
-        fullName = Some("")
+        callExpr.columnNumber
       )
     createCallAst(callNode, args, Some(Ast(receiverNode)), Some(Ast(baseNode)))
   }
@@ -159,15 +158,16 @@ trait AstForExpressionsCreator { this: AstCreator =>
     Ast.storeInDiffGraph(baseAst, diffGraph)
     val memberIsComputed = memberExpr.json("computed").bool
     val memberNodeInfo   = createBabelNodeInfo(memberExpr.json("property"))
-    val memberNode =
-      if (memberIsComputed) {
-        val node = astForNode(memberNodeInfo.json)
-        Ast.storeInDiffGraph(node, diffGraph)
-        node
-      } else {
-        Ast(createFieldIdentifierNode(memberNodeInfo.code, memberNodeInfo.lineNumber, memberNodeInfo.columnNumber))
-      }
-    createFieldAccessCallAst(baseAst.nodes.head, memberNode.nodes.head, memberExpr.lineNumber, memberExpr.columnNumber)
+    if (memberIsComputed) {
+      val memberAst = astForNode(memberNodeInfo.json)
+      Ast.storeInDiffGraph(memberAst, diffGraph)
+      createIndexAccessCallAst(baseAst.nodes.head, memberAst.nodes.head, memberExpr.lineNumber, memberExpr.columnNumber)
+    } else {
+      val memberAst = Ast(
+        createFieldIdentifierNode(memberNodeInfo.code, memberNodeInfo.lineNumber, memberNodeInfo.columnNumber)
+      )
+      createFieldAccessCallAst(baseAst.nodes.head, memberAst.nodes.head, memberExpr.lineNumber, memberExpr.columnNumber)
+    }
   }
 
   protected def astForAssignmentExpression(assignment: BabelNodeInfo): Ast = {

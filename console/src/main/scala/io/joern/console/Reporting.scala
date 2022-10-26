@@ -8,7 +8,7 @@ trait Reporting {
   def reportOutStream: OutputStream = System.err
 
   def report(string: String): Unit = {
-    reportOutStream.write(string.getBytes("UTF-8"))
+    reportOutStream.write((string + "\n").getBytes("UTF-8"))
     GlobalReporting.appendToGlobalStdOut(string)
   }
 }

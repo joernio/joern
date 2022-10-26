@@ -4,10 +4,10 @@ object Versions {
   // Dont upgrade antlr to 4.10 or above since those versions require java 11 or higher which
   // causes problems upstreams.
   val antlr         = "4.7"
-  val scalatest     = "3.2.12"
+  val scalatest     = "3.2.14"
   val cats          = "3.3.14"
   val log4j         = "2.19.0"
-  val json4s        = "4.0.5"
+  val json4s        = "4.0.6"
   val gradleTooling = "7.5.1"
 
   private def parseVersion(key: String): String = {

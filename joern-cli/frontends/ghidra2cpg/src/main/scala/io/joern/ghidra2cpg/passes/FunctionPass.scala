@@ -7,7 +7,7 @@ import ghidra.program.model.pcode.HighFunction
 import ghidra.program.model.scalar.Scalar
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.processors._
-import io.joern.ghidra2cpg.utils.{Decompiler, Utils}
+import io.joern.ghidra2cpg.utils.Decompiler
 import io.joern.ghidra2cpg.utils.Utils._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
@@ -26,11 +26,11 @@ abstract class FunctionPass(
   decompiler: Decompiler
 ) extends ConcurrentWriterCpgPass[Function](cpg) {
 
-  protected val functionByName = mutable.HashMap[String, Function]()
+  protected val functionByName: mutable.Map[String, Function] = mutable.HashMap[String, Function]()
   for (fn <- functions) {
     val other = functionByName.getOrElseUpdate(fn.getName, fn)
     if (!(other eq fn)) {
-      baseLogger.warn(s"Multiple functions with same name ${fn.getName}, can't disambiguate: ${fn}, ${other}")
+      baseLogger.warn(s"Multiple functions with same name ${fn.getName}, can't disambiguate: $fn, $other")
     }
   }
 

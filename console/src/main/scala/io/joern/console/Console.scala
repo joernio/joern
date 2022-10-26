@@ -5,10 +5,9 @@ import better.files.File
 import io.joern.console.cpgcreation.ImportCode
 import io.joern.console.scripting.{AmmoniteExecutor, ScriptManager}
 import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceManager}
-import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
-import io.shiftleft.semanticcpg.Overlays
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
@@ -238,38 +237,6 @@ class Console[T <: Project](
   }
 
   @Doc(
-    info = "undo effects of analyzer",
-    longInfo = """|Undo the last change, that is, unapply the last
-       |overlay applied to the active project.
-       |""",
-    example = "undo"
-  )
-  def undo: File = {
-    project.overlayDirs.lastOption
-      .map { dir =>
-        if (dir.isRegularFile) {
-          System.err.println("Detected undo information in old format. That's ok.")
-          CpgLoader.addDiffGraphs(List(dir.path.toString), cpg)
-        } else {
-          val zipFiles = dir.list.toList.sortWith(compareFiles).reverse.map(_.path.toString)
-          CpgLoader.addDiffGraphs(zipFiles, cpg)
-        }
-        Overlays.removeLastOverlayName(cpg)
-        dir.delete()
-      }
-      .getOrElse(throw new RuntimeException("No overlays present"))
-  }
-
-  private def compareFiles(a: File, b: File): Boolean = {
-    val splitA = a.name.split("_")
-    val splitB = b.name.split("_")
-    if (splitA.length < 2 || splitB.length < 2)
-      a.toString < b.toString
-    else
-      splitA(0).toInt < splitB(0).toInt
-  }
-
-  @Doc(
     info = "Write all changes to disk",
     longInfo = """
       |Close and reopen all loaded CPGs. This ensures
@@ -406,9 +373,7 @@ class Console[T <: Project](
        |""",
     example = "close(projectName)"
   )
-  def close(name: String): Option[Project] = {
-    defaultProjectNameIfEmpty(name).flatMap(workspace.closeProject)
-  }
+  def close(name: String): Option[Project] = defaultProjectNameIfEmpty(name).flatMap(workspace.closeProject)
 
   def close: Option[Project] = close("")
 
@@ -425,8 +390,7 @@ class Console[T <: Project](
     val appliedOverlays = io.shiftleft.semanticcpg.Overlays.appliedOverlays(cpg)
     if (appliedOverlays.isEmpty) {
       report("Adding default overlays to base CPG")
-      val overlayCreators = List(new Base, new ControlFlow, new TypeRelations, new CallGraph)
-      _runAnalyzer(overlayCreators: _*)
+      _runAnalyzer(defaultOverlayCreators(): _*)
     }
     cpg
   }
