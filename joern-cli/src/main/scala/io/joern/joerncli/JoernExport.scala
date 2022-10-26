@@ -86,11 +86,11 @@ object JoernExport extends App {
     mkdir(File(outDir))
 
     Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
-      export(cpg, config.repr, config.format, Paths.get(outDir).toAbsolutePath)
+      exportCpg(cpg, config.repr, config.format, Paths.get(outDir).toAbsolutePath)
     }
   }
 
-  def export(cpg: Cpg, representation: Representation.Value, format: Format.Value, outDir: Path): Unit = {
+  def exportCpg(cpg: Cpg, representation: Representation.Value, format: Format.Value, outDir: Path): Unit = {
     implicit val semantics: Semantics = DefaultSemantics()
     if (semantics.elements.isEmpty) {
       System.err.println("Warning: semantics are empty.")
