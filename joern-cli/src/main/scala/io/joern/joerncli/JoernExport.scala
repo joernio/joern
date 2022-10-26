@@ -130,8 +130,11 @@ object JoernExport extends App {
         exporter.runExport(cpg.graph, outDir)
       case Representation.SplitByMethod =>
         splitByMethod(cpg).iterator.map { subGraph =>
-          val sanitizedFilename = subGraph.name.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
-          val outFileName = outDir.resolve(sanitizedFilename)
+          val name = subGraph.name
+          val sanitizedName =
+            if (name.startsWith("/")) s"_root_/$name"
+            else name
+          val outFileName = outDir.resolve(sanitizedName)
           exporter.runExport(subGraph.nodes, subGraph.edges, outFileName)
         }.reduce(plus)
     }
@@ -148,7 +151,11 @@ object JoernExport extends App {
    */
   private def splitByMethod(cpg: Cpg): IterableOnce[SubGraph] = {
     cpg.method.map { method =>
-      SubGraph(method.fullName, method.ast.toSet)
+      val sanitizedMethodName = method.name.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
+      SubGraph(
+        name = s"${method.filename}/$sanitizedMethodName",
+        nodes = method.ast.toSet
+      )
     }
   }
 
