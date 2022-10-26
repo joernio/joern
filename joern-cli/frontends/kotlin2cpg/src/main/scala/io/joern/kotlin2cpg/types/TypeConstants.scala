@@ -10,6 +10,8 @@ object TypeConstants {
   val kotlinApplyPrefix                 = "kotlin.apply"
   val kotlinLetPrefix                   = "kotlin.let"
   val kotlinRunPrefix                   = "kotlin.run"
+  val kotlinTakeIfPrefix                = "kotlin.takeIf"
+  val kotlinTakeUnlessPrefix            = "kotlin.takeUnless"
   val scopeFunctionItParameterName      = "it"
   val scopeFunctionThisParameterName    = "this"
   val kotlinUnit                        = "kotlin.Unit"
