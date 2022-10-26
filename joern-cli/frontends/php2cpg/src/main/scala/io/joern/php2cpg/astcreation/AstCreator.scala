@@ -252,6 +252,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case arrayExpr: PhpArrayExpr   => astForArrayExpr(arrayExpr)
       case listExpr: PhpListExpr     => astForListExpr(listExpr)
       case newExpr: PhpNewExpr       => astForNewExpr(newExpr)
+      case matchExpr: PhpMatchExpr   => astForMatchExpr(matchExpr)
 
       case classConstFetchExpr: PhpClassConstFetchExpr => astForClassConstFetchExpr(classConstFetchExpr)
       case constFetchExpr: PhpConstFetchExpr           => astForConstFetchExpr(constFetchExpr)
@@ -1158,6 +1159,38 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     }
   }
 
+  private def astForMatchExpr(expr: PhpMatchExpr): Ast = {
+    val conditionAst = astForExpr(expr.condition)
+
+    val matchNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.MATCH)
+      .code(s"match (${rootCode(conditionAst)})")
+      .lineNumber(line(expr))
+
+    val matchBodyBlock = NewBlock().lineNumber(line(expr))
+    val armsAsts       = expr.matchArms.flatMap(astsForMatchArm)
+    val matchBody      = Ast(matchBodyBlock).withChildren(armsAsts)
+
+    controlStructureAst(matchNode, Some(conditionAst), matchBody :: Nil)
+  }
+
+  private def astsForMatchArm(matchArm: PhpMatchArm): List[Ast] = {
+    // TODO Don't just throw away the condition asts here (also for switch cases)
+    val targets = matchArm.conditions.map { condition =>
+      val conditionAst = astForExpr(condition)
+      val code         = rootCode(conditionAst, NameConstants.Unknown)
+      NewJumpTarget().name(code).code(code).lineNumber(line(condition))
+    }
+    val defaultLabel = Option.when(matchArm.isDefault)(
+      NewJumpTarget().name(NameConstants.Default).code(NameConstants.Default).lineNumber(line(matchArm))
+    )
+    val targetAsts = (targets ++ defaultLabel.toList).map(Ast(_))
+
+    val bodyAst = astForExpr(matchArm.body)
+
+    targetAsts :+ bodyAst
+  }
+
   private def astForAnonymousClassInstantiation(expr: PhpNewExpr, classLikeStmt: PhpClassLikeStmt): Ast = {
     // TODO Do this along with other anonymous class support
     Ast()
@@ -1384,6 +1417,7 @@ object AstCreator {
   }
 
   object NameConstants {
+    val Default: String      = "default"
     val HaltCompiler: String = "__halt_compiler"
     val This: String         = "this"
     val Unknown: String      = "UNKNOWN"
