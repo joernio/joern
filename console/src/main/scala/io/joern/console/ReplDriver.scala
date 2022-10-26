@@ -31,7 +31,7 @@ class ReplDriver(args: Array[String],
   /** Run REPL with `state` until `:quit` command found
     * Main difference to the 'original': different greeting, trap Ctrl-c
    */
-  override def runUntilQuit(using initialState: State = initialState)(): State = {
+  override def runUntilQuit(initialState: State = initialState): State = {
     val terminal = new JLineTerminal {
       override protected def promptStr = prompt
     }
@@ -76,7 +76,7 @@ class ReplDriver(args: Array[String],
       // This is analogous to what happens in dotty.tools.repl.Rendering.
       val pprinter = Class.forName("io.joern.console.PPrinter", true, rendering.myClassLoader)
       val renderer = pprinter.getMethod("apply", classOf[Object])
-      (value: Object, maxElements: Int, maxCharacters) => renderer.invoke(null, value).asInstanceOf[String]
+      (value: Object) => renderer.invoke(null, value).asInstanceOf[String]
     }
   }
 

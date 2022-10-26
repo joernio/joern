@@ -15,7 +15,7 @@ class ReplDriver(compilerArgs: Array[String],
   /** Run REPL with `state` until `:quit` command found
     * Main difference to the 'original': different greeting, trap Ctrl-c
     */
-  override def runUntilQuit(using initialState: State = initialState)(): State = {
+  override def runUntilQuit(initialState: State = initialState): State = {
     /** Blockingly read a line, getting back a parse result */
     def readLine(state: State): ParseResult = {
       given Context = state.context
