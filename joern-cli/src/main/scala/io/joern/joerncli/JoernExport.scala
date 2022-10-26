@@ -33,7 +33,7 @@ object JoernExport extends App {
   /** Choose from either a subset of the graph, or the entire graph (all).
     */
   object Representation extends Enumeration {
-    val Ast, Cfg, Ddg, Cdg, Pdg, Cpg14, All, SplitByMethod = Value
+    val Ast, Cfg, Ddg, Cdg, Pdg, Cpg14, Cpg, All = Value
 
     lazy val byNameLowercase: Map[String, Value] =
       values.map { value =>
@@ -128,7 +128,7 @@ object JoernExport extends App {
     val ExportResult(nodeCount, edgeCount, _, additionalInfo) = repr match {
       case Representation.All =>
         exporter.runExport(cpg.graph, outDir)
-      case Representation.SplitByMethod =>
+      case Representation.Cpg =>
         splitByMethod(cpg).iterator.map { subGraph =>
           val name = subGraph.name
           val sanitizedFileName =
