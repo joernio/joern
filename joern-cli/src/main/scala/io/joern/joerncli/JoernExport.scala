@@ -18,6 +18,7 @@ import overflowdb.formats.neo4jcsv.Neo4jCsvExporter
 import overflowdb.{Edge, Node}
 
 import java.nio.file.{Path, Paths}
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util.Using
 
@@ -136,15 +137,17 @@ object JoernExport extends App {
       case Representation.All =>
         exporter.runExport(cpg.graph, outDir)
       case Representation.Cpg =>
+        val windowsFilenameDeduplicationHelper = mutable.Set.empty[String]
         splitByMethod(cpg).iterator
-          .map { subGraph =>
-            val name = subGraph.name
-            val sanitizedFileName =
-              if (name.startsWith("/")) s"_root_/$name"
-              else name
-            val extension   = exporter.defaultFileExtension
-            val outFileName = outDir.resolve(s"$sanitizedFileName.$extension")
-            exporter.runExport(subGraph.nodes, subGraph.edges, outFileName)
+          .map { case subGraph @ MethodSubGraph(methodName, methodFilename, nodes) =>
+            val relativeFilename = sanitizedFileName(
+              methodName,
+              methodFilename,
+              exporter.defaultFileExtension,
+              windowsFilenameDeduplicationHelper
+            )
+            val outFileName = outDir.resolve(relativeFilename)
+            exporter.runExport(nodes, subGraph.edges, outFileName)
           }
           .reduce(plus)
     }
@@ -156,11 +159,44 @@ object JoernExport extends App {
   /** for each method in the cpg: recursively traverse all AST edges to get the subgraph of nodes within this method add
     * the method and this subgraph to the export add all edges between all of these nodes to the export
     */
-  private def splitByMethod(cpg: Cpg): IterableOnce[SubGraph] = {
+  private def splitByMethod(cpg: Cpg): IterableOnce[MethodSubGraph] = {
     cpg.method.map { method =>
-      val sanitizedMethodName = method.name.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
-      SubGraph(name = s"${method.filename}/$sanitizedMethodName", nodes = method.ast.toSet)
+      MethodSubGraph(methodName = method.name, methodFilename = method.filename, nodes = method.ast.toSet)
     }
+  }
+
+  /** @param windowsFilenameDeduplicationHelper
+    *   utility map to ensure we don't override output files for identical method names
+    */
+  private def sanitizedFileName(
+    methodName: String,
+    methodFilename: String,
+    fileExtension: String,
+    windowsFilenameDeduplicationHelper: mutable.Set[String]
+  ): String = {
+    val sanitizedMethodName = methodName.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
+    val isWindows           = System.getProperty("os.name").toLowerCase.contains("win")
+
+    val sanitizedFilename =
+      if (isWindows) {
+        // windows has some quirks in it's file system, e.g. we need to ensure paths aren't too long - so we're using a
+        // different strategy to sanitize windows file names: first occurrence of a given method uses the method name
+        // any methods with the same name afterwards get a `_` suffix
+        if (windowsFilenameDeduplicationHelper.contains(sanitizedMethodName)) {
+          sanitizedFileName(s"${methodName}_", methodFilename, fileExtension, windowsFilenameDeduplicationHelper)
+        } else {
+          windowsFilenameDeduplicationHelper.add(sanitizedMethodName)
+          sanitizedMethodName
+        }
+      } else { // non-windows
+        // handle leading `/` to ensure we're not writing outside of the output directory
+        val sanitizedPath =
+          if (methodFilename.startsWith("/")) s"_root_/$methodFilename"
+          else methodFilename
+        s"$sanitizedPath/$sanitizedMethodName"
+      }
+
+    s"$sanitizedFilename.$fileExtension"
   }
 
   private def plus(resultA: ExportResult, resultB: ExportResult): ExportResult = {
@@ -172,7 +208,7 @@ object JoernExport extends App {
     )
   }
 
-  case class SubGraph(name: String, nodes: Set[Node]) {
+  case class MethodSubGraph(methodName: String, methodFilename: String, nodes: Set[Node]) {
     def edges: Set[Edge] = {
       for {
         node <- nodes
