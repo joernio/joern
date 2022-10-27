@@ -54,21 +54,14 @@ object IncludeAutoDiscovery {
     val endIndex =
       if (IS_WIN) output.indexWhere(_.startsWith("End of search list.")) - 1
       else output.indexWhere(_.startsWith("COMPILER_PATH")) - 1
-    output
-      .slice(startIndex, endIndex)
-      .map { p =>
-        Paths.get(p.trim).toRealPath()
-      }
-      .toSet
+    output.slice(startIndex, endIndex).map(p => Paths.get(p.trim).toRealPath()).toSet
   }
 
-  private def discoverPaths(command: String): Set[Path] = {
-    ExternalCommand.run(command) match {
-      case Success(output) => extractPaths(output)
-      case Failure(exception) =>
-        logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)
-        Set.empty
-    }
+  private def discoverPaths(command: String): Set[Path] = ExternalCommand.run(command) match {
+    case Success(output) => extractPaths(output)
+    case Failure(exception) =>
+      logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)
+      Set.empty
   }
 
   def discoverIncludePathsC(config: Config): Set[Path] = {
