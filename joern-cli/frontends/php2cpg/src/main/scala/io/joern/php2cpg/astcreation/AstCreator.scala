@@ -115,6 +115,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case _: NopStmt                      => Ast() // TODO This'll need to be updated when comments are added.
       case haltStmt: PhpHaltCompilerStmt   => astForHaltCompilerStmt(haltStmt)
       case unsetStmt: PhpUnsetStmt         => astForUnsetStmt(unsetStmt)
+      case globalStmt: PhpGlobalStmt       => astForGlobalStmt(globalStmt)
+      case useStmt: PhpUseStmt             => astForUseStmt(useStmt)
+      case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt)
       case null =>
         logger.warn("stmt was null")
         ???
@@ -500,6 +503,50 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val code     = s"${PhpBuiltins.unset}(${args.map(rootCode(_)).mkString(", ")})"
     val callNode = operatorCallNode(PhpBuiltins.unset, code, typeFullName = Some(TypeConstants.Void), line = line(stmt))
     callAst(callNode, args)
+  }
+
+  private def astForGlobalStmt(stmt: PhpGlobalStmt): Ast = {
+    // This isn't an accurater representation of what `global` does, but with things like `global $$x` being possible,
+    // it's very difficult to figure out correct scopes for global variables.
+
+    val varsAsts = stmt.vars.map(astForExpr)
+    val code     = s"${PhpBuiltins.global} ${varsAsts.map(rootCode(_)).mkString(", ")}"
+
+    val globalCallNode = operatorCallNode(PhpBuiltins.global, code, Some(TypeConstants.Void), line(stmt))
+
+    callAst(globalCallNode, varsAsts)
+  }
+
+  private def astForUseStmt(stmt: PhpUseStmt): Ast = {
+    // TODO Use useType + scope to get better name info
+    val imports = stmt.uses.map(astForUseUse(_))
+    wrapMultipleInBlock(imports, line(stmt))
+  }
+
+  private def astForGroupUseStmt(stmt: PhpGroupUseStmt): Ast = {
+    // TODO Use useType + scope to get better name info
+    val groupPrefix = s"${stmt.prefix.name}\\"
+    val imports     = stmt.uses.map(astForUseUse(_, groupPrefix))
+    wrapMultipleInBlock(imports, line(stmt))
+  }
+
+  private def astForUseUse(stmt: PhpUseUse, namePrefix: String = ""): Ast = {
+    val originalName = s"$namePrefix${stmt.originalName.name}"
+    val aliasCode    = stmt.alias.map(alias => s" as ${alias.name}").getOrElse("")
+    val typeCode = stmt.useType match {
+      case PhpUseType.Function => s"function "
+      case PhpUseType.Constant => s"const "
+      case _                   => ""
+    }
+    val code = s"use $typeCode$originalName$aliasCode"
+
+    val importNode = NewImport()
+      .importedEntity(originalName)
+      .importedAs(stmt.alias.map(_.name))
+      .isExplicit(true)
+      .code(code)
+
+    Ast(importNode)
   }
 
   private def astsForStaticStmt(stmt: PhpStaticStmt): List[Ast] = {
