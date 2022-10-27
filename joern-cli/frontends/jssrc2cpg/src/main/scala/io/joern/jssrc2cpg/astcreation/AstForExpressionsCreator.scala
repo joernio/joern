@@ -105,7 +105,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     Ast(
       createLiteralNode(
         thisExpr.code,
-        dynamicInstanceTypeStack.headOption.orElse(Some(Defines.ANY.label)),
+        dynamicInstanceTypeStack.headOption.orElse(Some(Defines.ANY)),
         thisExpr.lineNumber,
         thisExpr.columnNumber
       )
@@ -119,7 +119,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     localAstParentStack.push(blockNode)
 
     val tmpAllocName      = generateUnusedVariableName(usedVariableNames, "_tmp")
-    val localTmpAllocNode = createLocalNode(tmpAllocName, Defines.ANY.label)
+    val localTmpAllocNode = createLocalNode(tmpAllocName, Defines.ANY)
     diffGraph.addEdge(localAstParentStack.head, localTmpAllocNode, EdgeTypes.AST)
 
     val tmpAllocNode1 = createIdentifierNode(tmpAllocName, newExpr)
@@ -374,7 +374,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       localAstParentStack.push(blockNode)
 
       val tmpName      = generateUnusedVariableName(usedVariableNames, "_tmp")
-      val localTmpNode = createLocalNode(tmpName, Defines.ANY.label)
+      val localTmpNode = createLocalNode(tmpName, Defines.ANY)
       diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
 
       val tmpArrayNode = createIdentifierNode(tmpName, arrExpr)
@@ -451,7 +451,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     localAstParentStack.push(blockNode)
 
     val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
-    val localNode = createLocalNode(tmpName, Defines.ANY.label)
+    val localNode = createLocalNode(tmpName, Defines.ANY)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 
     val propertiesAsts = objExpr.json("properties").arr.toList.map { property =>
@@ -476,7 +476,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             .getOrElse {
               if (defaultName.isEmpty) {
                 val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
-                val localNode = createLocalNode(tmpName, Defines.ANY.label)
+                val localNode = createLocalNode(tmpName, Defines.ANY)
                 diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
                 tmpName
               } else { defaultName.get }

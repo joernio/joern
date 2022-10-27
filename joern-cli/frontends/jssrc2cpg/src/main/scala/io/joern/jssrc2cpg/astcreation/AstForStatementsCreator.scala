@@ -132,7 +132,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       .map { test =>
         astForNode(Obj(test))
       }
-      .getOrElse(Ast(createLiteralNode("true", Some(Defines.BOOLEAN.label), forStmt.lineNumber, forStmt.columnNumber)))
+      .getOrElse(Ast(createLiteralNode("true", Some(Defines.BOOLEAN), forStmt.lineNumber, forStmt.columnNumber)))
     val updateAst = safeObj(forStmt.json, "update")
       .map { update =>
         astForNode(Obj(update))
@@ -265,7 +265,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
-    val iteratorLocalNode = createLocalNode(iteratorName, Defines.ANY.label)
+    val iteratorLocalNode = createLocalNode(iteratorName, Defines.ANY)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
 
     val iteratorNode = createIdentifierNode(iteratorName, forInOfStmt)
@@ -326,7 +326,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
-    val resultLocalNode = createLocalNode(resultName, Defines.ANY.label)
+    val resultLocalNode = createLocalNode(resultName, Defines.ANY)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     val resultNode = createIdentifierNode(resultName, forInOfStmt)
 
@@ -337,7 +337,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       case _                   => code(nodeInfo.json)
     }
 
-    val loopVariableLocalNode = createLocalNode(loopVariableName, Defines.ANY.label)
+    val loopVariableLocalNode = createLocalNode(loopVariableName, Defines.ANY)
     diffGraph.addEdge(localAstParentStack.head, loopVariableLocalNode, EdgeTypes.AST)
     val loopVariableNode = createIdentifierNode(loopVariableName, forInOfStmt)
 
