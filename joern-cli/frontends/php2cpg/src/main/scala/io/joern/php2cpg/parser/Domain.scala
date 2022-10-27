@@ -43,6 +43,7 @@ object Domain {
     val declareFunc = "declare"
     val shellExec   = "shell_exec"
     val unset       = "unset"
+    val global      = "global"
   }
 
   object PhpDomainTypeConstants {
@@ -250,6 +251,8 @@ object Domain {
 
   final case class PhpStaticVar(variable: PhpVariable, defaultValue: Option[PhpExpr], attributes: PhpAttributes)
       extends PhpStmt
+
+  final case class PhpGlobalStmt(vars: List[PhpExpr], attributes: PhpAttributes) extends PhpStmt
 
   sealed abstract class PhpExpr extends PhpStmt
 
@@ -513,6 +516,7 @@ object Domain {
       case "Stmt_Declare"      => readDeclare(json)
       case "Stmt_Unset"        => readUnset(json)
       case "Stmt_Static"       => readStatic(json)
+      case "Stmt_Global"       => readGlobal(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -1069,6 +1073,12 @@ object Domain {
     PhpStaticStmt(vars, PhpAttributes(json))
   }
 
+  private def readGlobal(json: Value): PhpGlobalStmt = {
+    val vars = json("vars").arr.map(readExpr).toList
+
+    PhpGlobalStmt(vars, PhpAttributes(json))
+  }
+
   private def readStaticVar(json: Value): PhpStaticVar = {
     val variable     = readVariable(json("var"))
     val defaultValue = Option.unless(json("default").isNull)(readExpr(json("default")))
@@ -1190,10 +1200,6 @@ object Domain {
 
       case "VariadicPlaceholder" => PhpVariadicPlaceholder(PhpAttributes(json))
     }
-  }
-
-  private def constructNamespacedName(nameObj: mutable.LinkedHashMap[String, Value]): Option[String] = {
-    nameObj.value.get("parts").map(_.arr.mkString(NamespaceDelimiter))
   }
 
   def fromJson(jsonInput: Value): PhpFile = {

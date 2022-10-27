@@ -115,6 +115,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case _: NopStmt                      => Ast() // TODO This'll need to be updated when comments are added.
       case haltStmt: PhpHaltCompilerStmt   => astForHaltCompilerStmt(haltStmt)
       case unsetStmt: PhpUnsetStmt         => astForUnsetStmt(unsetStmt)
+      case globalStmt: PhpGlobalStmt       => astForGlobalStmt(globalStmt)
       case null =>
         logger.warn("stmt was null")
         ???
@@ -500,6 +501,18 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val code     = s"${PhpBuiltins.unset}(${args.map(rootCode(_)).mkString(", ")})"
     val callNode = operatorCallNode(PhpBuiltins.unset, code, typeFullName = Some(TypeConstants.Void), line = line(stmt))
     callAst(callNode, args)
+  }
+
+  private def astForGlobalStmt(stmt: PhpGlobalStmt): Ast = {
+    // This isn't an accurater representation of what `global` does, but with things like `global $$x` being possible,
+    // it's very difficult to figure out correct scopes for global variables.
+
+    val varsAsts = stmt.vars.map(astForExpr)
+    val code     = s"${PhpBuiltins.global} ${varsAsts.map(rootCode(_)).mkString(", ")}"
+
+    val globalCallNode = operatorCallNode(PhpBuiltins.global, code, Some(TypeConstants.Void), line(stmt))
+
+    callAst(globalCallNode, varsAsts)
   }
 
   private def astsForStaticStmt(stmt: PhpStaticStmt): List[Ast] = {

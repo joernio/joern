@@ -636,4 +636,20 @@ class OperatorTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "global calls should handle simple and non-simple args" in {
+    val cpg = code("<?php\nglobal $a, $$b")
+
+    inside(cpg.call.l) { case List(globalCall) =>
+      globalCall.name shouldBe "global"
+      globalCall.methodFullName shouldBe "global"
+      globalCall.code shouldBe "global $a, $$b"
+      globalCall.lineNumber shouldBe Some(2)
+
+      inside(globalCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
+        aArg.name shouldBe "a"
+        bArg.name shouldBe "b"
+      }
+    }
+  }
 }
