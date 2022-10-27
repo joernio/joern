@@ -224,9 +224,8 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       diffGraph.addNode(createDependencyNode(name, depGroupId, REQUIRE_KEYWORD))
     }
 
-    val fromCallAst   = createAstForFrom(exportName, declaration)
-    val exportCallAst = createExportCallAst(name, EXPORT_KEYWORD, declaration)
-    Ast.storeInDiffGraph(exportCallAst, diffGraph)
+    val fromCallAst       = createAstForFrom(exportName, declaration)
+    val exportCallAst     = createExportCallAst(name, EXPORT_KEYWORD, declaration)
     val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration)
 
     val asts = List(fromCallAst, assignmentCallAst)
