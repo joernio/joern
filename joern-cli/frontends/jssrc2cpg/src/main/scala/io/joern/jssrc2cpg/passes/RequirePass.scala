@@ -19,6 +19,14 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   /** A map from file names to method full names based on assignments to `module.exports`.
     */
   val fileNameToMethodFullName: Map[String, String] = {
+
+    cpg.assignment.filter(_.argument.size != 2).foreach{ a =>
+      println("REACHED")
+      println(a.code)
+      println(a.argument.size)
+      a.argument.foreach(println)
+    }
+
     val moduleExportAssignments = cpg.assignment.where(_.target.codeExact("module.exports")).l
     Traversal(moduleExportAssignments).source.isMethodRef.flatMap { ref =>
       ref.file.name.headOption.map { x =>
