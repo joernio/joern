@@ -15,11 +15,11 @@ class MinifiedFileDetectionTest extends AnyWordSpec with Matchers {
   "Detecting minified files" should {
     "skip minified files by name correctly" in {
       File.usingTemporaryDirectory("jssrc2cpgTest") { sourceDir =>
-        (sourceDir / "a.min.js").createFile().write(s"""console.log("");""")
-        (sourceDir / "a.min.23472420.js").createFile().write(s"""console.log("");""")
-        (sourceDir / "b-min.js").createFile().write(s"""console.log("");""")
-        (sourceDir / "b-min.23472420.js").createFile().write(s"""console.log("");""")
-        (sourceDir / "c.bundle.js").createFile().write(s"""console.log("");""")
+        (sourceDir / "a.min.js").createFile()
+        (sourceDir / "a.min.23472420.js").createFile()
+        (sourceDir / "b-min.js").createFile()
+        (sourceDir / "b-min.23472420.js").createFile()
+        (sourceDir / "c.bundle.js").createFile()
         val cpg          = newEmptyCpg()
         val config       = Config(inputPath = sourceDir.toString, outputPath = sourceDir.toString)
         val astgenResult = AstGenRunner.execute(config, sourceDir)
