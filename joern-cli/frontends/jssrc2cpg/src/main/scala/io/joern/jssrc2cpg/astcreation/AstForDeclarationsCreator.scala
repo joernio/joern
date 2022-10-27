@@ -94,7 +94,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
   private def extractExportFromNameFromExportDecl(declaration: BabelNodeInfo): String =
     safeObj(declaration.json, "source")
-      .map { d => s"_${code(d).stripPrefix("\"").stripSuffix("\"")}" }
+      .map { d => s"_${stripQuotes(code(d))}" }
       .getOrElse(EXPORT_KEYWORD)
 
   private def cleanImportName(name: String): String = if (name.contains("/")) {
@@ -218,18 +218,17 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
   protected def astForExportAllDeclaration(declaration: BabelNodeInfo): Ast = {
     val exportName = extractExportFromNameFromExportDecl(declaration)
-    val depGroupId = code(declaration.json("source")).stripPrefix("\"").stripSuffix("\"")
+    val depGroupId = stripQuotes(code(declaration.json("source")))
     val name       = cleanImportName(depGroupId)
     if (exportName != EXPORT_KEYWORD) {
       diffGraph.addNode(createDependencyNode(name, depGroupId, REQUIRE_KEYWORD))
     }
 
-    val fromCallAst   = createAstForFrom(exportName, declaration)
-    val exportCallAst = createExportCallAst(name, EXPORT_KEYWORD, declaration)
-    Ast.storeInDiffGraph(exportCallAst, diffGraph)
+    val fromCallAst       = createAstForFrom(exportName, declaration)
+    val exportCallAst     = createExportCallAst(name, EXPORT_KEYWORD, declaration)
     val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration)
 
-    val asts = List(fromCallAst, exportCallAst, assignmentCallAst)
+    val asts = List(fromCallAst, assignmentCallAst)
     setIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }

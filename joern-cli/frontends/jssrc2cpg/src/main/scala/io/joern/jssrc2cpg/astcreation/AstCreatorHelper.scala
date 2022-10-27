@@ -181,6 +181,14 @@ trait AstCreatorHelper { this: AstCreator =>
     }
   }
 
+  protected def stripQuotes(str: String): String = str
+    .stripPrefix("\"")
+    .stripSuffix("\"")
+    .stripPrefix("'")
+    .stripSuffix("'")
+    .stripPrefix("`")
+    .stripSuffix("`")
+
   /** In JS it is possible to create anonymous classes. We have to handle this here.
     */
   private def calcTypeName(classNode: BabelNodeInfo): String =
