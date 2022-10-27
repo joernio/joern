@@ -175,10 +175,8 @@ object JoernExport extends App {
     windowsFilenameDeduplicationHelper: mutable.Set[String]
   ): String = {
     val sanitizedMethodName = methodName.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
-    val isWindows           = System.getProperty("os.name").toLowerCase.contains("win")
-
     val sanitizedFilename =
-      if (isWindows) {
+      if (scala.util.Properties.isWin) {
         // windows has some quirks in it's file system, e.g. we need to ensure paths aren't too long - so we're using a
         // different strategy to sanitize windows file names: first occurrence of a given method uses the method name
         // any methods with the same name afterwards get a `_` suffix
