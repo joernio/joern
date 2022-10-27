@@ -86,12 +86,12 @@ class TsAstCreationPassTest extends AbstractPassTest {
         callZ.argument(1).code shouldBe "boolean"
         callZ.argument(2).code shouldBe "true"
       }
-      cpg.local("x").typeFullName.l shouldBe List(Defines.STRING.label)
-      cpg.identifier("x").typeFullName.l shouldBe List(Defines.STRING.label)
+      cpg.local("x").typeFullName.l shouldBe List(Defines.STRING)
+      cpg.identifier("x").typeFullName.l shouldBe List(Defines.STRING)
       cpg.local("y").typeFullName.l shouldBe List("int")
       cpg.identifier("y").typeFullName.l shouldBe List("int")
-      cpg.local("z").typeFullName.l shouldBe List(Defines.BOOLEAN.label)
-      cpg.identifier("z").typeFullName.l shouldBe List(Defines.BOOLEAN.label)
+      cpg.local("z").typeFullName.l shouldBe List(Defines.BOOLEAN)
+      cpg.identifier("z").typeFullName.l shouldBe List(Defines.BOOLEAN)
     }
 
     "have correct structure for import assignments" in AstFixture(
@@ -130,7 +130,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
       func.fullName shouldBe "code.ts::program:foo"
       val List(_, arg) = cpg.method("foo").parameter.l
       arg.name shouldBe "arg"
-      arg.typeFullName shouldBe Defines.STRING.label
+      arg.typeFullName shouldBe Defines.STRING
       arg.code shouldBe "arg: string"
       arg.index shouldBe 1
       val List(parentTypeDecl) = cpg.typeDecl.name(":program").l

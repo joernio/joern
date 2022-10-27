@@ -236,7 +236,7 @@ trait AstCreatorHelper { this: AstCreator =>
                   case None =>
                     val methodScopeNode = methodScope.scopeNode
                     val localNode =
-                      createLocalNode(origin.variableName, Defines.ANY.label, Some(closureBindingIdProperty))
+                      createLocalNode(origin.variableName, Defines.ANY, Some(closureBindingIdProperty))
                     diffGraph.addEdge(methodScopeNode, localNode, EdgeTypes.AST)
                     val closureBindingNode = createClosureBindingNode(closureBindingIdProperty, origin.variableName)
                     methodScope.capturingRefId.foreach(ref =>
@@ -268,7 +268,7 @@ trait AstCreatorHelper { this: AstCreator =>
     methodScopeNodeId: NewNode,
     variableName: String
   ): (NewNode, ScopeType) = {
-    val local = createLocalNode(variableName, Defines.ANY.label)
+    val local = createLocalNode(variableName, Defines.ANY)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     (local, MethodScope)
   }

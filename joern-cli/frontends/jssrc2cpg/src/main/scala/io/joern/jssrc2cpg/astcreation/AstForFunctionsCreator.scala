@@ -39,7 +39,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       .getOrElse {
         if (defaultName.isEmpty) {
           val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
-          val localNode = createLocalNode(tmpName, Defines.ANY.label)
+          val localNode = createLocalNode(tmpName, Defines.ANY)
           diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
           tmpName
         } else { defaultName.get }

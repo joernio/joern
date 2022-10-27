@@ -14,17 +14,16 @@ class BuiltinTypesPassTest extends AbstractPassTest {
     }
 
     "create types and type decls correctly" in {
-      Defines.values.foreach { case typeName: Defines.Tpe =>
-        val typeNameLabel      = typeName.label
-        val List(typeDeclNode) = cpg.typeDecl(typeNameLabel).l
-        typeDeclNode.fullName shouldBe typeNameLabel
+      Defines.JSTYPES.foreach { typeName: String =>
+        val List(typeDeclNode) = cpg.typeDecl(typeName).l
+        typeDeclNode.fullName shouldBe typeName
         typeDeclNode.isExternal shouldBe false
         typeDeclNode.filename shouldBe "builtintypes"
 
         cpg.namespaceBlock.astChildren.l should contain(typeDeclNode)
 
-        val List(typeNode) = cpg.typ(typeNameLabel).l
-        typeNode.fullName shouldBe typeNameLabel
+        val List(typeNode) = cpg.typ(typeName).l
+        typeNode.fullName shouldBe typeName
       }
     }
 

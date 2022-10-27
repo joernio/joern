@@ -12,7 +12,7 @@ class TSTypesTest extends AbstractPassTest {
     inside(cpg.identifier.l) { case List(x, y) =>
       x.name shouldBe "x"
       x.code shouldBe "x"
-      x.typeFullName shouldBe Defines.STRING.label
+      x.typeFullName shouldBe Defines.STRING
       y.name shouldBe "y"
       y.code shouldBe "y"
       y.typeFullName shouldBe "Foo"
@@ -37,7 +37,7 @@ class TSTypesTest extends AbstractPassTest {
     inside(cpg.method("foo").parameter.l) { case List(_, a, b) =>
       a.name shouldBe "a"
       a.code shouldBe "a: string"
-      a.typeFullName shouldBe Defines.STRING.label
+      a.typeFullName shouldBe Defines.STRING
       b.name shouldBe "b"
       b.code shouldBe "b: Foo"
       b.typeFullName shouldBe "Foo"
@@ -118,7 +118,7 @@ class TSTypesTest extends AbstractPassTest {
       |type Alias = string
       |""".stripMargin) { cpg =>
     cpg.typeDecl("string").l shouldBe empty
-    cpg.typeDecl(Defines.STRING.label).size shouldBe 1
+    cpg.typeDecl(Defines.STRING).size shouldBe 1
     inside(cpg.typeDecl("Alias").l) { case List(alias) =>
       alias.fullName shouldBe "code.ts::program:Alias"
       alias.code shouldBe "type Alias = string"
