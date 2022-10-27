@@ -4,6 +4,7 @@ import io.joern.php2cpg.parser.Domain.PhpAssignment.{AssignTypeMap, isAssignType
 import io.joern.php2cpg.parser.Domain.PhpBinaryOp.{BinaryOpTypeMap, isBinaryOpType}
 import io.joern.php2cpg.parser.Domain.PhpCast.{CastTypeMap, isCastType}
 import io.joern.php2cpg.parser.Domain.PhpUnaryOp.{UnaryOpTypeMap, isUnaryOpType}
+import io.joern.php2cpg.parser.Domain.PhpUseType.{PhpUseType, getUseType}
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import org.slf4j.LoggerFactory
@@ -57,8 +58,8 @@ object Domain {
   }
 
   private val logger                      = LoggerFactory.getLogger(Domain.getClass)
-  private val NamespaceDelimiter          = "."
-  private val FullyQualifiedNameDelimiter = "."
+  private val NamespaceDelimiter          = "\\"
+  private val FullyQualifiedNameDelimiter = "\\"
 
   final case class PhpAttributes(lineNumber: Option[Integer], kind: Option[Int])
   object PhpAttributes {
@@ -254,16 +255,47 @@ object Domain {
 
   final case class PhpGlobalStmt(vars: List[PhpExpr], attributes: PhpAttributes) extends PhpStmt
 
+  final case class PhpUseStmt(uses: List[PhpUseUse], useType: PhpUseType, attributes: PhpAttributes) extends PhpStmt
+  final case class PhpGroupUseStmt(
+    prefix: PhpNameExpr,
+    uses: List[PhpUseUse],
+    useType: PhpUseType,
+    attributes: PhpAttributes
+  ) extends PhpStmt
+  final case class PhpUseUse(
+    originalName: PhpNameExpr,
+    alias: Option[PhpNameExpr],
+    useType: PhpUseType,
+    attributes: PhpAttributes
+  ) extends PhpStmt
+
+  case object PhpUseType {
+    sealed trait PhpUseType
+    case object Unknown  extends PhpUseType
+    case object Normal   extends PhpUseType
+    case object Function extends PhpUseType
+    case object Constant extends PhpUseType
+
+    def getUseType(typeNum: Int): PhpUseType = {
+      typeNum match {
+        case 1 => Normal
+        case 2 => Function
+        case 3 => Constant
+        case _ => Unknown
+      }
+    }
+  }
+
   sealed abstract class PhpExpr extends PhpStmt
 
   final case class PhpNewExpr(className: PhpNode, args: List[PhpArgument], attributes: PhpAttributes) extends PhpExpr
 
   final case class PhpIncludeExpr(expr: PhpExpr, includeType: String, attributes: PhpAttributes) extends PhpExpr
   case object PhpIncludeType {
-    val include: String     = "include"
-    val includeOnce: String = "include_once"
-    val require: String     = "require"
-    val requireOnce: String = "require_once"
+    val Include: String     = "include"
+    val IncludeOnce: String = "include_once"
+    val Require: String     = "require"
+    val RequireOnce: String = "require_once"
   }
 
   final case class PhpCallExpr(
@@ -517,6 +549,8 @@ object Domain {
       case "Stmt_Unset"        => readUnset(json)
       case "Stmt_Static"       => readStatic(json)
       case "Stmt_Global"       => readGlobal(json)
+      case "Stmt_Use"          => readUse(json)
+      case "Stmt_GroupUse"     => readGroupUse(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -614,13 +648,13 @@ object Domain {
   private def readInclude(json: Value): PhpIncludeExpr = {
     val expr = readExpr(json("expr"))
     val includeType = json("type").num.toInt match {
-      case 1 => PhpIncludeType.include
-      case 2 => PhpIncludeType.includeOnce
-      case 3 => PhpIncludeType.require
-      case 4 => PhpIncludeType.requireOnce
+      case 1 => PhpIncludeType.Include
+      case 2 => PhpIncludeType.IncludeOnce
+      case 3 => PhpIncludeType.Require
+      case 4 => PhpIncludeType.RequireOnce
       case other =>
         logger.warn(s"Unhandled include type: $other. Defaulting to regular include.")
-        PhpIncludeType.include
+        PhpIncludeType.Include
     }
 
     PhpIncludeExpr(expr, includeType, PhpAttributes(json))
@@ -1077,6 +1111,33 @@ object Domain {
     val vars = json("vars").arr.map(readExpr).toList
 
     PhpGlobalStmt(vars, PhpAttributes(json))
+  }
+
+  private def readUse(json: Value): PhpUseStmt = {
+    val useType = getUseType(json("type").num.toInt)
+    val uses    = json("uses").arr.map(readUseUse(_, useType)).toList
+
+    PhpUseStmt(uses, useType, PhpAttributes(json))
+  }
+
+  private def readGroupUse(json: Value): PhpGroupUseStmt = {
+    val prefix  = readName(json("prefix"))
+    val useType = getUseType(json("type").num.toInt)
+    val uses    = json("uses").arr.map(readUseUse(_, useType)).toList
+
+    PhpGroupUseStmt(prefix, uses, useType, PhpAttributes(json))
+  }
+
+  private def readUseUse(json: Value, parentType: PhpUseType): PhpUseUse = {
+    val name  = readName(json("name"))
+    val alias = Option.unless(json("alias").isNull)(readName(json("alias")))
+    val useType =
+      if (parentType == PhpUseType.Unknown)
+        getUseType(json("type").num.toInt)
+      else
+        parentType
+
+    PhpUseUse(name, alias, useType, PhpAttributes(json))
   }
 
   private def readStaticVar(json: Value): PhpStaticVar = {
