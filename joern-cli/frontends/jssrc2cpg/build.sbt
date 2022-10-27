@@ -4,7 +4,7 @@ crossScalaVersions := Seq("2.13.8", "3.1.3")
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
-val astGenVersion = "2.2.0"
+val astGenVersion = "2.3.0"
 
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
