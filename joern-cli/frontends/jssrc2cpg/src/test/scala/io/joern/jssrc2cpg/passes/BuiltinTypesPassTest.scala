@@ -14,7 +14,7 @@ class BuiltinTypesPassTest extends AbstractPassTest {
     }
 
     "create types and type decls correctly" in {
-      Defines.JSTYPES.foreach { typeName: String =>
+      Defines.JSTYPES.foreach { (typeName: String) =>
         val List(typeDeclNode) = cpg.typeDecl(typeName).l
         typeDeclNode.fullName shouldBe typeName
         typeDeclNode.isExternal shouldBe false
