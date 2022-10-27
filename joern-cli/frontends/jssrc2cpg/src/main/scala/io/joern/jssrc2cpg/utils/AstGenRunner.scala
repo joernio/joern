@@ -105,10 +105,10 @@ object AstGenRunner {
 
   def isMinifiedFile(filePath: String): Boolean = filePath match {
     case p if MINIFIED_PATH_REGEX.matches(p) => true
-    case p if p.endsWith(".js") =>
+    case p if File(p).exists && p.endsWith(".js") =>
       val lines             = IOUtils.readLinesInFile(File(filePath).path)
       val linesOfCode       = lines.size
-      val longestLineLength = lines.map(_.length).max
+      val longestLineLength = if (lines.isEmpty) 0 else lines.map(_.length).max
       if (longestLineLength >= LINE_LENGTH_THRESHOLD && linesOfCode <= 50) {
         logger.debug(s"'$filePath' seems to be a minified file (contains a line with length $longestLineLength)")
         true
