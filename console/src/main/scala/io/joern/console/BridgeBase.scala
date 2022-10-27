@@ -224,14 +224,6 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 trait ScriptExecution { this: BridgeBase =>
 
   protected def startInteractiveShell(config: Config) = {
-    val replDriver = new ReplDriver(
-      compilerArgs(config),
-      onExitCode = Option(onExitCode),
-      greeting = greeting,
-      prompt = promptStr,
-      maxPrintElements = Int.MaxValue
-    )
-
     val replConfig = config.cpgToLoad.map { cpgFile =>
       "importCpg(\"" + cpgFile + "\")"
     } ++ config.forInputPath.map { name =>
@@ -240,17 +232,19 @@ trait ScriptExecution { this: BridgeBase =>
          |""".stripMargin
     }
 
-    val initialState: State = replDriver.initialState
     val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
-    val state: State =
-      if (config.verbose) {
-        println(predefCode)
-        replDriver.run(predefCode)(using initialState)
-      } else {
-        replDriver.runQuietly(predefCode)(using initialState)
-      }
 
-    replDriver.runUntilQuit(state)
+    replpp.InteractiveShell.run(replpp.Config(
+      predefCode = Some(predefCode),
+      predefFiles = config.additionalImports,
+      nocolors = config.nocolors,
+      dependencies = config.dependencies,
+      verbose = config.verbose,
+      greeting = greeting,
+      prompt = Option(promptStr),
+      onExitCode = Option(onExitCode),
+
+    ))
   }
 
   // TODO factor out into separate class and file...
