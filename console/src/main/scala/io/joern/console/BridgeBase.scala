@@ -7,8 +7,6 @@ import dotty.tools.dotc.core.Contexts.{Context, ctx}
 import dotty.tools.io.{ClassPath, Directory, PlainDirectory}
 import dotty.tools.repl.State
 import dotty.tools.scripting.{ScriptingDriver, Util}
-import io.joern.console.cpgqlserver.CPGQLServer
-import io.joern.console.embammonite.EmbeddedAmmonite
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import os.{Path, pwd}
 import scala.jdk.CollectionConverters._
@@ -470,36 +468,16 @@ trait PluginHandling { this: BridgeBase =>
 trait ServerHandling { this: BridgeBase =>
 
   protected def startHttpServer(config: Config): Unit = {
-    val predef   = predefPlus(additionalImportCode(config))
-    val ammonite = new EmbeddedAmmonite(predef, config.verbose)
-    ammonite.start()
-    Runtime.getRuntime.addShutdownHook(new Thread(() => {
-      println("Shutting down CPGQL server...")
-      ammonite.shutdown()
-    }))
-    val server = new CPGQLServer(
-      ammonite,
-      config.serverHost,
-      config.serverPort,
-      config.serverAuthUsername,
-      config.serverAuthPassword
+    replpp.server.ReplServer.startHttpServer(
+      replpp.Config(
+//        predefCode = config. // TODO
+        verbose = config.verbose,
+        serverHost = config.serverHost,
+        serverPort = config.serverPort,
+        serverAuthUsername = config.serverAuthUsername,
+        serverAuthPassword = config.serverAuthPassword,
+      )
     )
-    println("Starting CPGQL server ...")
-    try {
-      server.main(Array.empty)
-    } catch {
-      case _: java.net.BindException =>
-        println("Could not bind socket for CPGQL server, exiting.")
-        ammonite.shutdown()
-        System.exit(1)
-      case e: Throwable =>
-        println("Unhandled exception thrown while attempting to start CPGQL server: ")
-        println(e.getMessage)
-        println("Exiting.")
-
-        ammonite.shutdown()
-        System.exit(1)
-    }
   }
 
 }
