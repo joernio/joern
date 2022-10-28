@@ -28,10 +28,7 @@ object Predefined {
 
   val forInteractiveShell: String =
     shared +
-      """
-        |import _root_.io.joern.joerncli.console.Joern._
-        |def script(x: String) : Any = console.runScript(x, Map(), cpg)
-      """.stripMargin +
+      """import _root_.io.joern.joerncli.console.Joern._""" +
       dynamicPredef()
 
   val forScripts: String =
