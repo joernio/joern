@@ -38,18 +38,18 @@ class TaintedPrivateVariable extends SolidityDataflowFixture {
   it should "should find a is tainted" in {
 
     {
-//      println(cpg.typeDecl.dotAst.l)
-      def privateMembers = cpg.member
-        .where(_.hasModifier(ModifierTypes.PRIVATE))
-      def sink = cpg.method
-        .where(_.hasModifier(ModifierTypes.PUBLIC))
-        .call
-        .name(s"${Operators.assignment}.*")
-        .where(_.argument.isCall.nameExact(Operators.fieldAccess).where(_.argument.isFieldIdentifier))
-//      sink.foreach(x => x.code.split(" ")(0) != privateMembers.code.l)
-      def source = cpg.method.parameter
-      sink.reachableByFlows(source).p
-    }
+      cpg.method.parameter
+      .filter { current =>
+        def sink = cpg.method
+          .where(_.hasModifier(ModifierTypes.PUBLIC))
+          .call
+          .name(s"${Operators.assignment}.*")
+          .where(_.argument.isCall.nameExact(Operators.fieldAccess).argument.isFieldIdentifier.canonicalName("^((?!this).)$"))
+
+        sink.reachableByFlows(current).nonEmpty
+      }
+
+    }.method.name.l shouldBe List("editVariable")
 
   }
 

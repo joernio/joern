@@ -28,16 +28,19 @@ class ControlledLoopIteration extends SolidityDataflowFixture {
   }
   it should "should find that n is tainted and affects the for loop" in {
     {
-      def loopCondition = cpg.controlStructure.condition.isCall.argument(2).code.next()
-      def sink = cpg.method
-        .where(_.hasModifier(ModifierTypes.PUBLIC))
-        .call
-        .name(s"${Operators.assignment}.*")
-        .where(_.argument.isCall.nameExact(Operators.fieldAccess))
-        .code(s"${loopCondition}.*")
+      cpg.method.parameter
+        .filter { current =>
+          def loopCondition = cpg.controlStructure.condition.isCall.argument(2).code.next()
 
-      def source = cpg.method.parameter
-      println(sink.reachableByFlows(source).p)
-    }
+          def sink = cpg.method
+            .where(_.hasModifier(ModifierTypes.PUBLIC))
+            .call
+            .name(s"${Operators.assignment}.*")
+            .where(_.argument.isCall.nameExact(Operators.fieldAccess))
+            .code(s"${loopCondition}.*")
+
+          sink.reachableByFlows(current).nonEmpty
+        }
+    }.method.name.l shouldBe List("set")
   }
 }

@@ -48,10 +48,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForCompilationUnit(sourceUnit: SourceUnit): Ast = {
-    // TODO: Import directives may help with resolving types but for now let's ignore
+
     sourceUnit.children.collectFirst { case x: ImportDirective => x }
-    // TODO: Pragma directive will be useful to get which version of Solidity we're using but for now we don't have
-    //  anywhere to store that information
+
     sourceUnit.children.collectFirst { case x: PragmaDirective => ConfigNode(x)
     }
 
@@ -63,8 +62,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       case (contractDef, order) =>
         astForTypeDecl(contractDef, namespaceBlockFullName, order)
     }
-//    println(sourceUnit.lineNumber.get)
-//    println(sourceUnit.columnNumber.get)
+
     packageDecl
       .withChildren(typeDecls)
 
@@ -77,7 +75,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     diffGraph.addNode(configNode)
   }
 
-//TODO: Fix
   private def astForPackageDeclaration(sourceUnit:SourceUnit): Ast = {
     val fullName = filename.replace(java.io.File.separator, ".")
     var tmp      = filename
@@ -104,7 +101,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   private def astForTypeDecl(contractDef: ContractDefinition, astParentFullName: String, order: Int): Ast = {
     val fullName  = registerType(contractDef.name)
     val shortName = fullName.split("\\.").lastOption.getOrElse(contractDef).toString
-    // TODO: Should look out for inheritance/implemented types I think this is in baseContracts? Make sure
     val superTypes = contractDef.baseContracts.map {
       case x: InheritanceSpecifier => {
         x.baseName.namePath
@@ -141,7 +137,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     val mAst = Ast(typeDecl)
       .withChildren(methods)
       .withChildren(memberAsts)
-
+// To check that properties are constructed properly
 //      mAst.nodes.foreach { n =>
 //        val code  = n.properties.getOrElse("CODE", null)
 //        val order = n.properties.getOrElse("ORDER", null)
@@ -185,7 +181,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
     // definition we simply handle the additional we need to
     methodOrModifier match {
       case x: ModifierDefinition =>
-        // TODO: Fill these in, try find out what the method return type would be. If multiple then there exists an "any" type
         val methodReturn = NewMethodReturn()
           .typeFullName("")
           .lineNumber(x.lineNumber.get)
@@ -215,7 +210,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           if (x.modifiers.nonEmpty) astForModifiers(x.modifiers)
           else Seq()
 
-        /** getting names of types and variable names TODO: "this" param only goes for static methods but for now it
+        /** getting names of types and variable names
           * seems most solidity methods are dynamic
           */
         val params = Ast(NewLocal().name("this").code("this").typeFullName(contractName).order(0)) +: parameters
@@ -294,12 +289,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
           .withChildren(modifiers)
           .withChild(methodReturn)
 
-        // TODO: Remove this when done, but gives a good idea of what has ORDER and what doesn't
-//        mAst.nodes.foreach { n =>
-//          val code  = n.properties.getOrElse("CODE", null)
-//          val order = n.properties.getOrElse("ORDER", null)
-//          println((order, n.label(), code))
-//        }
 
         mAst
       case x =>
@@ -309,11 +298,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
   }
 
-  // TODO: I assume the only types coming into parameter are var decls but it's worth making sure in tests
   private def astForParameter(varDecl: VariableDeclaration, order: Int): Ast = {
     val NewMethodParameter = NewMethodParameterIn();
     var typefullName       = ""
-    var code               = ""
     var visibility         = ""
     var storage            = ""
     typefullName = getTypeName(varDecl.typeName, varDecl.storageLocation)
@@ -330,7 +317,7 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
     NewMethodParameter
       .name(varDecl.name)
-      .code(typefullName + code + visibility /*+storage */+ " " + varDecl.name)
+      .code(typefullName  + visibility /*+storage */+ " " + varDecl.name)
       .typeFullName(typefullName)
       .order(order)
       .evaluationStrategy(getEvaluationStrategy(varDecl.typeName.getType))
@@ -339,7 +326,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
     Ast(NewMethodParameter)
   }
-//TODO: fix vars
   private def astForBody(body: Block, order: Int): Ast = {
     val blockNode = NewBlock().order(order).argumentIndex(order)
     try  {
@@ -380,7 +366,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForStatement(statement: BaseASTNode, order: Int): Ast = {
-    // TODO : Finish all of these statements
     statement match {
       case x: ExpressionStatement          => astForExpression(x.expression, order)
       case x: EmitStatement                => Ast()
@@ -454,7 +439,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForAsmStatement(statement: BaseASTNode, order: Int): Ast = {
-    // TODO : Finish all of these statements
     statement match {
       case x: AssemblyAssignment          => astForAsmAssignment(x, order)
       case x: AssemblyCall                => astForAsmCall(x, order)
@@ -594,10 +578,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
 
     Ast(newID)
 
-    // TODO: VarDecls should be Local nodes in their block and NOT be duplicated
-
-    // TODO: When a variable is referenced, it should always be referenced as an identifier
-
   }
 
   private def astForField(stateVariableDeclaration: StateVariableDeclaration, order: Int): Ast = {
@@ -673,8 +653,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
       .withChild(modifierMethod)
   }
 
-  /** TODO: This needs some refinement, can methods really return more than one base type?
-    */
   private def astForMethodReturn(value: List[BaseASTNode], order: Int): Ast = {
     var visibility = ""
     var name       = ""
@@ -703,8 +681,6 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
         .code(code)
         .typeFullName(name)
         .order(order)
-//        .columnNumber(value.columnNumber.get)
-//        .lineNumber(value.lineNumber.get)
     )
 
   }
@@ -1192,12 +1168,9 @@ class AstCreator(filename: String, sourceUnit: SourceUnit, global: Global) exten
   }
 
   private def astForVarDeclStmt(statement: VariableDeclarationStatement, order: Int): Ast = {
-    // TODO: We need to make sure that we don't duplicate Local nodes. Perhaps using
     val vars = withOrder(statement.variables.collect { case x: VariableDeclaration => x }) { (x, varOrder) =>
       astForVarDecl(x, varOrder)
     }
-
-
     val initial =
       if (statement.initialValue != null) astsForDefinition(statement.initialValue, statement.variables.size + 1)
       else Ast()

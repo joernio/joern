@@ -25,7 +25,6 @@ class CallTests extends SolidityCodeToCpgFixture {
 
 
   "should contain a call node for `add` with correct fields" in {
-
     val List(x) = cpg.call("add").l
     x.code shouldBe "add(argc, 3)"
     x.name shouldBe "add"
@@ -33,7 +32,7 @@ class CallTests extends SolidityCodeToCpgFixture {
     x.methodFullName shouldBe "Foo.add:uint256(uint256,uint256)"
     x.signature shouldBe "uint256(uint256,uint256)"
     x.argumentIndex shouldBe 2
-    x.lineNumber shouldBe Some(15)
+    x.lineNumber shouldBe Some(11)
   }
 
   "should allow traversing from call to arguments" in {

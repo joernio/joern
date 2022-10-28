@@ -9,4 +9,13 @@ contract Foo {
         a = _a;
     }
 
+    function confirmOwner()
+    public
+    {
+        if(msg.sender==newOwner)
+        {
+            owner=newOwner;
+        }
+    }
+
 }
