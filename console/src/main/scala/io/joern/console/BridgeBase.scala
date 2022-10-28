@@ -279,13 +279,6 @@ trait ScriptExecution { this: BridgeBase =>
           dependencies = config.dependencies,
         )
       )
-//      new ScriptingDriver(
-//        compilerArgs = compilerArgs(maybeAddDependencies(scriptCode, config)) :+ "-nowarn",
-//        scriptFile = predefPlusScriptFileTmp.toFile,
-//        scriptArgs = scriptArgs.toArray
-//      ).compileAndRun()
-//
-//      System.err.println(s"script finished successfully")
     } catch {
       case t: Throwable =>
         if (isEncryptedScript) {

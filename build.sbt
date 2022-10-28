@@ -1,9 +1,5 @@
 name                     := "joern"
 ThisBuild / organization := "io.joern"
-
-// TODO once https://github.com/lampepfl/dotty/pull/16011 is merged and released as part of 3.2.2, use the regular 3.2.2 release here, and only use our custom scala fork in console/build.sbt
-// Note that the console subproject depends on a fork of scala3-compiler (with some adaptations to the scala3-repl).
-// In order to upgrade the scalaVersion, we first need to publish a new version of our [fork](https://github.com/mpollmeier/dotty).
 ThisBuild / scalaVersion := "3.2.0"
 
 val cpgVersion = "1.3.577"
