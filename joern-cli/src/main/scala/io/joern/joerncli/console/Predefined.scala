@@ -4,10 +4,6 @@ import io.joern.console.{Help, Run}
 
 object Predefined {
 
-  /**
-    * TODO bring back this one - removed temporarily because the `overflowdb.traversal.toXyzViaAdditionalImplicit` cause autocompletion to crash the entire repl...
-      |import overflowdb.traversal._
-    */
   val shared: String =
     """
       |import _root_.io.joern.console._
@@ -21,6 +17,7 @@ object Predefined {
       |import _root_.io.joern.dataflowengineoss.language._
       |import _root_.io.shiftleft.semanticcpg.language._
       |import overflowdb._
+      |import overflowdb.traversal._
       |import scala.jdk.CollectionConverters._
       |implicit val resolver: ICallResolver = NoResolve
       |implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
