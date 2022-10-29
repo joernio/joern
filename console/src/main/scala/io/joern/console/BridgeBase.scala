@@ -443,10 +443,13 @@ trait PluginHandling { this: BridgeBase =>
 trait ServerHandling { this: BridgeBase =>
 
   protected def startHttpServer(config: Config): Unit = {
+    val predefCode = predefPlus(Nil)
+
     replpp.server.ReplServer.startHttpServer(
       replpp.Config(
-//        predefCode = config. // TODO
-        verbose = config.verbose,
+        predefCode = Some(predefCode),
+        predefFiles = config.additionalImports,
+        verbose = true, // always print what's happening - helps debugging
         serverHost = config.serverHost,
         serverPort = config.serverPort,
         serverAuthUsername = config.serverAuthUsername,
