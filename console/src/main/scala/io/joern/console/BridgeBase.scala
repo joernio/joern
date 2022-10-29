@@ -260,6 +260,7 @@ trait ScriptExecution { this: BridgeBase =>
           command = config.command,
           params = config.params,
           dependencies = config.dependencies,
+          verbose = config.verbose
         )
       )
     } catch {
