@@ -325,17 +325,6 @@ trait ScriptExecution { this: BridgeBase =>
     }
   }
 
-  private def compilerArgs(config: Config): Array[String] = {
-    val compilerArgs = Array.newBuilder[String]
-
-    val dependencyFiles = Dependencies.resolveOptimistically(config.dependencies, config.verbose)
-    compilerArgs ++= Array("-classpath", replClasspath(dependencyFiles))
-    compilerArgs += "-explain" // verbose scalac error messages
-    compilerArgs += "-deprecation"
-    if (config.nocolors) compilerArgs ++= Array("-color", "never")
-    compilerArgs.result()
-  }
-
   private def replClasspath(dependencies: Seq[java.io.File]): String = {
     val inheritedClasspath = System.getProperty("java.class.path")
     val separator = System.getProperty("path.separator")
