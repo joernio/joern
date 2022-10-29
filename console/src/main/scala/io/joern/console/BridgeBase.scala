@@ -271,6 +271,7 @@ trait ScriptExecution { this: BridgeBase =>
     try {
       replpp.ScriptRunner.exec(
         replpp.Config(
+          predefCode = Some(predefCode),
           scriptFile = Option(decodedScriptFile),
           command = config.command,
           params = config.params,
