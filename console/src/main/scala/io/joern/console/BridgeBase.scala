@@ -191,13 +191,6 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
     }
   }
 
-  protected def additionalImportCode(config: Config): List[String] =
-    config.additionalImports.flatMap { importScript =>
-      val file = importScript.toIO
-      assert(file.canRead, s"unable to read $file")
-      readScript(file.toScala)
-    }
-
   /** Override this method to implement script decryption
     */
   protected def decryptedScript(scriptFile: os.Path): os.Path =
@@ -230,7 +223,7 @@ trait ScriptExecution { this: BridgeBase =>
          |""".stripMargin
     }
 
-    val predefCode = predefPlus(additionalImportCode(config) ++ replConfig)
+    val predefCode = predefPlus(replConfig.toList)
 
     replpp.InteractiveShell.run(replpp.Config(
       predefCode = Some(predefCode),
@@ -240,8 +233,7 @@ trait ScriptExecution { this: BridgeBase =>
       verbose = config.verbose,
       greeting = greeting,
       prompt = Option(promptStr),
-      onExitCode = Option(onExitCode),
-
+      onExitCode = Option(onExitCode)
     ))
   }
 
@@ -257,21 +249,13 @@ trait ScriptExecution { this: BridgeBase =>
       if (isEncryptedScript) decryptedScript(scriptFile)
       else scriptFile
 
-    // Our predef code includes import statements... I didn't find a nice way to add them to the context of the
-    // script file, so instead we'll just write it to the beginning of the script file.
-    // That's obviously suboptimal, e.g. because it messes with the line numbers.
-    // Therefor, we'll display the temp script file name to the user and not delete it, in case the script errors.
-    val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config))
-//    val predefPlusScriptFileTmp = Files.createTempFile("joern-script-with-predef", ".sc")
-//    val scriptCode = Files.readString(decodedScriptFile.toNIO)
-//    val scriptContent = wrapForMainargs(predefCode, scriptCode)
-//    if (config.verbose) println(scriptContent)
-//    Files.writeString(predefPlusScriptFileTmp, scriptContent)
-//
+    val predefCode = predefPlus(importCpgCode(config))
+
     try {
       replpp.ScriptRunner.exec(
         replpp.Config(
           predefCode = Some(predefCode),
+          predefFiles = config.additionalImports,
           scriptFile = Option(decodedScriptFile),
           command = config.command,
           params = config.params,
