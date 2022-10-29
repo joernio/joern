@@ -1,6 +1,5 @@
 package io.joern.console
 
-import better.files.Dsl._
 import better.files.File
 import dotty.tools.repl.State
 import io.shiftleft.codepropertygraph.Cpg
@@ -349,7 +348,7 @@ class Console[T <: Project](
           return None
       }
     } else {
-      cp(cpgFile, cpgDestinationPath)
+      cpgFile.copyTo(cpgDestinationPath, overwrite = true)
     }
 
     val cpgOpt = open(name).flatMap(_.cpg)
@@ -409,7 +408,7 @@ class Console[T <: Project](
       if (projectOpt.get.appliedOverlays.contains(creator.overlayName)) {
         report(s"Overlay ${creator.overlayName} already exists - skipping")
       } else {
-        mkdirs(File(overlayDirName))
+        File(overlayDirName).createDirectories
         runCreator(creator, Some(overlayDirName))
       }
     }
