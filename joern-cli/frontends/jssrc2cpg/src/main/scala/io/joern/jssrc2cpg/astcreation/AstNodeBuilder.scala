@@ -325,13 +325,18 @@ trait AstNodeBuilder { this: AstCreator =>
     dynamicTypeOption: Option[String],
     line: Option[Integer],
     column: Option[Integer]
-  ): NewLiteral =
+  ): NewLiteral = {
+    val typeFullName = dynamicTypeOption match {
+      case Some(value) if Defines.JSTYPES.contains(value) => value
+      case _                                              => Defines.ANY
+    }
     NewLiteral()
       .code(code)
-      .typeFullName(Defines.ANY)
+      .typeFullName(typeFullName)
       .lineNumber(line)
       .columnNumber(column)
       .dynamicTypeHintFullName(dynamicTypeOption.toList)
+  }
 
   protected def createEqualsCallAst(
     destId: NewNode,

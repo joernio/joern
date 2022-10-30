@@ -21,6 +21,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       typeDecls.filename shouldBe "code.js"
     }
 
+    "have correct type for literals" in AstFixture("let x = 1; let y = 'y'; let z = false;") { cpg =>
+      val List(x, y, z) = cpg.literal.l
+      x.typeFullName shouldBe Defines.NUMBER
+      y.typeFullName shouldBe Defines.STRING
+      z.typeFullName shouldBe Defines.BOOLEAN
+    }
+
     "have correct structure for multiple declarators in one place" in AstFixture("let x = 1, y = 2, z = 3;") { cpg =>
       val List(xAssignment, yAssignment, zAssignment) = cpg.call.l.sortBy(_.code)
       xAssignment.code shouldBe "let x = 1"
