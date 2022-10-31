@@ -490,6 +490,9 @@ object Domain {
   final case class PhpYieldExpr(key: Option[PhpExpr], value: Option[PhpExpr], attributes: PhpAttributes) extends PhpExpr
   final case class PhpYieldFromExpr(expr: PhpExpr, attributes: PhpAttributes)                            extends PhpExpr
 
+  final case class PhpClosureExpr(params: List[PhpParam], stmts: List[PhpStmt], returnType: Option[PhpNameExpr], uses: List[PhpClosureUse], isStatic: Boolean, returnByRef: Boolean, attributes: PhpAttributes) extends PhpExpr
+  final case class PhpClosureUse(variable: PhpExpr, byRef: Boolean, attributes: PhpAttributes) extends PhpExpr
+
   private def escapeString(value: String): String = {
     value
       .replace("\\", "\\\\")
@@ -692,6 +695,22 @@ object Domain {
     PhpYieldFromExpr(expr, PhpAttributes(json))
   }
 
+  private def readClosure(json: Value): PhpClosureExpr = {
+    val params = json("params").arr.map(readParam).toList
+    val stmts = json("stmts").arr.map(readStmt).toList
+    val returnType  = Option.unless(json("returnType").isNull)(readName(json("returnType")))
+    val uses = json("uses").arr.map(readClosureUse).toList
+    val isStatic = json("static").bool
+    val isByRef = json("byRef").bool
+
+    PhpClosureExpr(params, stmts, returnType, uses, isStatic, isByRef, PhpAttributes(json))
+  }
+
+  private def readClosureUse(json: Value): PhpClosureUse = {
+    val variable = readVariable(json("var"))
+    val isByRef = json("byRef").bo
+  }
+
   private def readClassConstFetch(json: Value): PhpClassConstFetchExpr = {
     val classNameType = json("class")("nodeType").str
     val className =
@@ -884,6 +903,7 @@ object Domain {
       case "Expr_Match"     => readMatch(json)
       case "Expr_Yield"     => readYield(json)
       case "Expr_YieldFrom" => readYieldFrom(json)
+      case "Expr_Closure"   => readClosure(json)
 
       case "Expr_ClassConstFetch" => readClassConstFetch(json)
       case "Expr_ConstFetch"      => readConstFetch(json)
