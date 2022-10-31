@@ -9,7 +9,7 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{IdentifierBase, NewImport, NewNamespaceBlock, TypeRefBase}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewImport, NewNamespaceBlock}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import ujson.Value
 
@@ -24,26 +24,29 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
   private def hasNoName(json: Value): Boolean = !hasKey(json, "id") || json("id").isNull
 
-  protected def codeForExportObject(obj: BabelNodeInfo, defaultName: Option[String]): Seq[String] = obj.node match {
-    case Identifier                                 => Seq(obj.code)
-    case VariableDeclaration                        => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
-    case AssignmentExpression                       => Seq(code(obj.json("left")))
-    case ClassDeclaration                           => Seq(code(obj.json("id")))
-    case TSTypeAliasDeclaration                     => Seq(code(obj.json("id")))
-    case TSInterfaceDeclaration                     => Seq(code(obj.json("id")))
-    case TSEnumDeclaration                          => Seq(code(obj.json("id")))
-    case TSModuleDeclaration                        => Seq(code(obj.json("id")))
-    case TSDeclareFunction if hasNoName(obj.json)   => Seq(code(obj.json("id")))
-    case TSDeclareFunction                          => defaultName.toSeq
-    case FunctionDeclaration if hasNoName(obj.json) => Seq(code(obj.json("id")))
-    case FunctionDeclaration                        => defaultName.toSeq
-    case FunctionExpression if hasNoName(obj.json)  => Seq(code(obj.json("id")))
-    case FunctionExpression                         => defaultName.toSeq
-    case ClassExpression if hasNoName(obj.json)     => Seq(code(obj.json("id")))
-    case ClassExpression                            => defaultName.toSeq
-    case _ =>
-      notHandledYet(obj, "Lowering export declaration")
-      Seq.empty
+  protected def codeForBabelNodeInfo(obj: BabelNodeInfo): Seq[String] = {
+    val codes = obj.node match {
+      case Identifier                                 => Seq(obj.code)
+      case AssignmentExpression                       => Seq(code(obj.json("left")))
+      case ClassDeclaration                           => Seq(code(obj.json("id")))
+      case TSTypeAliasDeclaration                     => Seq(code(obj.json("id")))
+      case TSInterfaceDeclaration                     => Seq(code(obj.json("id")))
+      case TSEnumDeclaration                          => Seq(code(obj.json("id")))
+      case TSModuleDeclaration                        => Seq(code(obj.json("id")))
+      case TSDeclareFunction if hasNoName(obj.json)   => Seq.empty
+      case TSDeclareFunction                          => Seq(code(obj.json("id")))
+      case FunctionDeclaration if hasNoName(obj.json) => Seq.empty
+      case FunctionDeclaration                        => Seq(code(obj.json("id")))
+      case FunctionExpression if hasNoName(obj.json)  => Seq.empty
+      case FunctionExpression                         => Seq(code(obj.json("id")))
+      case ClassExpression if hasNoName(obj.json)     => Seq.empty
+      case ClassExpression                            => Seq(code(obj.json("id")))
+      case VariableDeclaration                        => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
+      case _ =>
+        notHandledYet(obj, "Retrieve code")
+        Seq.empty
+    }
+    codes.map(_.replace("...", ""))
   }
 
   private def createExportCallAst(name: String, exportName: String, declaration: BabelNodeInfo): Ast = {
@@ -78,17 +81,11 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   private def extractDeclarationsFromExportDecl(declaration: BabelNodeInfo, key: String): Option[(Ast, Seq[String])] =
     safeObj(declaration.json, key)
       .map { d =>
-        val nodeInfo = createBabelNodeInfo(d)
-        val ast      = astForNodeWithFunctionReferenceAndCall(d)
-        val defaultName = ast.nodes.collectFirst {
-          case id: IdentifierBase =>
-            // we will have the Identifier in the assignment call generated for a function (see above)
-            id.name
-          case clazz: TypeRefBase =>
-            // we will have a TypeRef for an exported class
-            clazz.code.stripPrefix("class ")
-        }
-        val names = codeForExportObject(nodeInfo, defaultName)
+        val nodeInfo    = createBabelNodeInfo(d)
+        val ast         = astForNodeWithFunctionReferenceAndCall(d)
+        val defaultName = codeForNodes(ast.nodes.toSeq)
+        val codes       = codeForBabelNodeInfo(nodeInfo)
+        val names       = if (codes.isEmpty) defaultName.toSeq else codes
         (ast, names)
       }
 
