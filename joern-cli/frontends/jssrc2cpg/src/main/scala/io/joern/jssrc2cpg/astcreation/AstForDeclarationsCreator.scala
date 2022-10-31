@@ -9,7 +9,7 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{IdentifierBase, NewImport, NewNamespaceBlock, TypeRefBase}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewImport, NewNamespaceBlock}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import ujson.Value
 
@@ -27,17 +27,21 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   protected def codeForBabelNodeInfo(obj: BabelNodeInfo): Seq[String] = {
     val codes = obj.node match {
       case Identifier                                 => Seq(obj.code)
-      case VariableDeclaration                        => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
       case AssignmentExpression                       => Seq(code(obj.json("left")))
       case ClassDeclaration                           => Seq(code(obj.json("id")))
       case TSTypeAliasDeclaration                     => Seq(code(obj.json("id")))
       case TSInterfaceDeclaration                     => Seq(code(obj.json("id")))
       case TSEnumDeclaration                          => Seq(code(obj.json("id")))
       case TSModuleDeclaration                        => Seq(code(obj.json("id")))
-      case TSDeclareFunction if hasNoName(obj.json)   => Seq(code(obj.json("id")))
-      case FunctionDeclaration if hasNoName(obj.json) => Seq(code(obj.json("id")))
-      case FunctionExpression if hasNoName(obj.json)  => Seq(code(obj.json("id")))
-      case ClassExpression if hasNoName(obj.json)     => Seq(code(obj.json("id")))
+      case TSDeclareFunction if hasNoName(obj.json)   => Seq.empty
+      case TSDeclareFunction                          => Seq(code(obj.json("id")))
+      case FunctionDeclaration if hasNoName(obj.json) => Seq.empty
+      case FunctionDeclaration                        => Seq(code(obj.json("id")))
+      case FunctionExpression if hasNoName(obj.json)  => Seq.empty
+      case FunctionExpression                         => Seq(code(obj.json("id")))
+      case ClassExpression if hasNoName(obj.json)     => Seq.empty
+      case ClassExpression                            => Seq(code(obj.json("id")))
+      case VariableDeclaration                        => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
       case _ =>
         notHandledYet(obj, "Retrieve code")
         Seq.empty
