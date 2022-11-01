@@ -10,7 +10,6 @@ import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import org.slf4j.LoggerFactory
 import ujson.{Arr, Obj, Str, Value}
 
-import scala.collection.mutable
 import scala.util.{Success, Try}
 
 object Domain {
@@ -94,8 +93,8 @@ object Domain {
       (64, ModifierTypes.READONLY)
     )
 
-    def getModifierSet(json: Value): List[String] = {
-      val flags = json.objOpt.flatMap(_.get("flags")).map(_.num.toInt).getOrElse(0)
+    def getModifierSet(json: Value, modifierString: String = "flags"): List[String] = {
+      val flags = json.objOpt.flatMap(_.get(modifierString)).map(_.num.toInt).getOrElse(0)
       ModifierMasks.collect {
         case (mask, typ) if (flags & mask) != 0 => typ
       }
@@ -285,6 +284,34 @@ object Domain {
       }
     }
   }
+
+  final case class PhpForeachStmt(
+    iterExpr: PhpExpr,
+    keyVar: Option[PhpExpr],
+    valueVar: PhpExpr,
+    assignByRef: Boolean,
+    stmts: List[PhpStmt],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+  final case class PhpTraitUseStmt(
+    traits: List[PhpNameExpr],
+    adaptations: List[PhpTraitUseAdaptation],
+    attributes: PhpAttributes
+  ) extends PhpStmt
+  sealed abstract class PhpTraitUseAdaptation extends PhpStmt
+  final case class PhpPrecedenceAdaptation(
+    traitName: PhpNameExpr,
+    methodName: PhpNameExpr,
+    insteadOf: List[PhpNameExpr],
+    attributes: PhpAttributes
+  ) extends PhpTraitUseAdaptation
+  final case class PhpAliasAdaptation(
+    traitName: Option[PhpNameExpr],
+    methodName: PhpNameExpr,
+    newModifier: Option[String],
+    newName: Option[PhpNameExpr],
+    attributes: PhpAttributes
+  ) extends PhpTraitUseAdaptation
 
   sealed abstract class PhpExpr extends PhpStmt
 
@@ -490,8 +517,24 @@ object Domain {
   final case class PhpYieldExpr(key: Option[PhpExpr], value: Option[PhpExpr], attributes: PhpAttributes) extends PhpExpr
   final case class PhpYieldFromExpr(expr: PhpExpr, attributes: PhpAttributes)                            extends PhpExpr
 
-  final case class PhpClosureExpr(params: List[PhpParam], stmts: List[PhpStmt], returnType: Option[PhpNameExpr], uses: List[PhpClosureUse], isStatic: Boolean, returnByRef: Boolean, attributes: PhpAttributes) extends PhpExpr
+  final case class PhpClosureExpr(
+    params: List[PhpParam],
+    stmts: List[PhpStmt],
+    returnType: Option[PhpNameExpr],
+    uses: List[PhpClosureUse],
+    isStatic: Boolean,
+    returnByRef: Boolean,
+    attributes: PhpAttributes
+  ) extends PhpExpr
   final case class PhpClosureUse(variable: PhpExpr, byRef: Boolean, attributes: PhpAttributes) extends PhpExpr
+  final case class PhpArrowFunction(
+    params: List[PhpParam],
+    expr: PhpExpr,
+    returnType: Option[PhpNameExpr],
+    isStatic: Boolean,
+    returnByRef: Boolean,
+    attributes: PhpAttributes
+  ) extends PhpExpr
 
   private def escapeString(value: String): String = {
     value
@@ -554,6 +597,8 @@ object Domain {
       case "Stmt_Global"       => readGlobal(json)
       case "Stmt_Use"          => readUse(json)
       case "Stmt_GroupUse"     => readGroupUse(json)
+      case "Stmt_Foreach"      => readForeach(json)
+      case "Stmt_TraitUse"     => readTraitUse(json)
       case unhandled =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
@@ -696,25 +741,27 @@ object Domain {
   }
 
   private def readClosure(json: Value): PhpClosureExpr = {
-    val params = json("params").arr.map(readParam).toList
-    val stmts = json("stmts").arr.map(readStmt).toList
-    val returnType  = Option.unless(json("returnType").isNull)(readName(json("returnType")))
-    val uses = json("uses").arr.map(readClosureUse).toList
-    val isStatic = json("static").bool
-    val isByRef = json("byRef").bool
+    val params     = json("params").arr.map(readParam).toList
+    val stmts      = json("stmts").arr.map(readStmt).toList
+    val returnType = Option.unless(json("returnType").isNull)(readType(json("returnType")))
+    val uses       = json("uses").arr.map(readClosureUse).toList
+    val isStatic   = json("static").bool
+    val isByRef    = json("byRef").bool
 
     PhpClosureExpr(params, stmts, returnType, uses, isStatic, isByRef, PhpAttributes(json))
   }
 
   private def readClosureUse(json: Value): PhpClosureUse = {
     val variable = readVariable(json("var"))
-    val isByRef = json("byRef").bo
+    val isByRef  = json("byRef").bool
+
+    PhpClosureUse(variable, isByRef, PhpAttributes(json))
   }
 
   private def readClassConstFetch(json: Value): PhpClassConstFetchExpr = {
     val classNameType = json("class")("nodeType").str
     val className =
-      if (classNameType.startsWith("Name_"))
+      if (classNameType.startsWith("Name"))
         readName(json("class"))
       else
         readExpr(json("class"))
@@ -773,6 +820,16 @@ object Domain {
     val parts = json("parts").arr.map(readExpr).toList
 
     PhpShellExecExpr(parts, PhpAttributes(json))
+  }
+
+  private def readArrowFunction(json: Value): PhpArrowFunction = {
+    val params      = json("params").arr.map(readParam).toList
+    val expr        = readExpr(json("expr"))
+    val returnType  = Option.unless(json("returnType").isNull)(readType(json("returnType")))
+    val isStatic    = json("static").bool
+    val returnByRef = json("byRef").bool
+
+    PhpArrowFunction(params, expr, returnType, isStatic, returnByRef, PhpAttributes(json))
   }
 
   private def readPropertyFetch(
@@ -873,6 +930,23 @@ object Domain {
     PhpEncapsedPart.withQuotes(json("value").str, PhpAttributes(json))
   }
 
+  private def readMagicConst(json: Value): PhpConstFetchExpr = {
+    val name = json("nodeType").str match {
+      case "Scalar_MagicConst_Class"     => "__CLASS__"
+      case "Scalar_MagicConst_Dir"       => "__DIR__"
+      case "Scalar_MagicConst_File"      => "__FILE__"
+      case "Scalar_MagicConst_Function"  => "__FUNCTION__"
+      case "Scalar_MagicConst_Line"      => "__LINE__"
+      case "Scalar_MagicConst_Method"    => "__METHOD__"
+      case "Scalar_MagicConst_Namespace" => "__NAMESPACE__"
+      case "Scalar_MagicConst_Trait"     => "__TRAIT__"
+    }
+
+    val attributes = PhpAttributes(json)
+
+    PhpConstFetchExpr(PhpNameExpr(name, attributes), attributes)
+  }
+
   private def readExpr(json: Value): PhpExpr = {
     json("nodeType").str match {
       case "Scalar_String"             => PhpString.withQuotes(json("value").str, PhpAttributes(json))
@@ -882,6 +956,8 @@ object Domain {
       case "Scalar_InterpolatedString" => readEncapsed(json)
       case "Scalar_EncapsedStringPart" => readEncapsedPart(json)
       case "InterpolatedStringPart"    => readEncapsedPart(json)
+
+      case typ if typ.startsWith("Scalar_MagicConst") => readMagicConst(json)
 
       case "Expr_FuncCall"           => readCall(json)
       case "Expr_MethodCall"         => readCall(json)
@@ -913,6 +989,7 @@ object Domain {
       case "Expr_ErrorSuppress" => readErrorSuppress(json)
       case "Expr_Instanceof"    => readInstanceOf(json)
       case "Expr_ShellExec"     => readShellExec(json)
+      case "Expr_ArrowFunction" => readArrowFunction(json)
 
       case "Expr_PropertyFetch"         => readPropertyFetch(json)
       case "Expr_NullsafePropertyFetch" => readPropertyFetch(json, isNullsafe = true)
@@ -950,6 +1027,9 @@ object Domain {
   }
 
   private def readVariable(json: Value): PhpVariable = {
+    if (!json.obj.contains("name")) {
+      logger.error(s"Variable did not contain name: $json")
+    }
     val name = json("name") match {
       case Str(value) => readName(value)
       case Obj(_)     => readNameOrExpr(json, "name")
@@ -978,7 +1058,7 @@ object Domain {
 
   private def readNameOrExpr(json: Value, fieldName: String): PhpExpr = {
     val field = json(fieldName)
-    if (field("nodeType").str.startsWith("Name_"))
+    if (field("nodeType").str.startsWith("Name"))
       readName(field)
     else if (field("nodeType").str == "Identifier")
       readName(field)
@@ -1008,7 +1088,7 @@ object Domain {
     val returnByRef = json("byRef").bool
     val name        = readName(json("name"))
     val params      = json("params").arr.map(readParam).toList
-    val returnType  = Option.unless(json("returnType").isNull)(readName(json("returnType")))
+    val returnType  = Option.unless(json("returnType").isNull)(readType(json("returnType")))
     val stmts       = json("stmts").arr.map(readStmt).toList
     // Only class methods have modifiers
     val modifiers      = Nil
@@ -1033,7 +1113,7 @@ object Domain {
     val returnByRef = json("byRef").bool
     val name        = readName(json("name"))
     val params      = json("params").arr.map(readParam).toList
-    val returnType  = Option.unless(json("returnType").isNull)(readName(json("returnType")))
+    val returnType  = Option.unless(json("returnType").isNull)(readType(json("returnType")))
     val stmts =
       if (json("stmts").isNull)
         Nil
@@ -1059,7 +1139,7 @@ object Domain {
   private def readProperty(json: Value): PhpPropertyStmt = {
     val modifiers = PhpModifiers.getModifierSet(json)
     val variables = json("props").arr.map(readPropertyValue).toList
-    val typeName  = Option.unless(json("type").isNull)(readName(json("type")))
+    val typeName  = Option.unless(json("type").isNull)(readType(json("type")))
 
     PhpPropertyStmt(modifiers, variables, typeName, PhpAttributes(json))
   }
@@ -1148,6 +1228,49 @@ object Domain {
     PhpGroupUseStmt(prefix, uses, useType, PhpAttributes(json))
   }
 
+  private def readForeach(json: Value): PhpForeachStmt = {
+    val iterExpr    = readExpr(json("expr"))
+    val keyVar      = Option.unless(json("keyVar").isNull)(readExpr(json("keyVar")))
+    val valueVar    = readExpr(json("valueVar"))
+    val assignByRef = json("byRef").bool
+    val stmts       = json("stmts").arr.map(readStmt).toList
+
+    PhpForeachStmt(iterExpr, keyVar, valueVar, assignByRef, stmts, PhpAttributes(json))
+  }
+
+  private def readTraitUse(json: Value): PhpTraitUseStmt = {
+    val traits      = json("traits").arr.map(readName).toList
+    val adaptations = json("adaptations").arr.map(readTraitUseAdaptation).toList
+    PhpTraitUseStmt(traits, adaptations, PhpAttributes(json))
+  }
+
+  private def readTraitUseAdaptation(json: Value): PhpTraitUseAdaptation = {
+    json("nodeType").str match {
+      case "Stmt_TraitUseAdaptation_Alias"      => readAliasAdaptation(json)
+      case "Stmt_TraitUseAdaptation_Precedence" => readPrecedenceAdaptation(json)
+    }
+  }
+
+  private def readAliasAdaptation(json: Value): PhpAliasAdaptation = {
+    val traitName  = Option.unless(json("trait").isNull)(readName(json("trait")))
+    val methodName = readName(json("method"))
+    val newName    = Option.unless(json("newName").isNull)(readName(json("newName")))
+
+    val newModifier = json("newModifier") match {
+      case ujson.Null => None
+      case _          => PhpModifiers.getModifierSet(json, "newModifier").headOption
+    }
+    PhpAliasAdaptation(traitName, methodName, newModifier, newName, PhpAttributes(json))
+  }
+
+  private def readPrecedenceAdaptation(json: Value): PhpPrecedenceAdaptation = {
+    val traitName  = readName(json("trait"))
+    val methodName = readName(json("method"))
+    val insteadOf  = json("insteadof").arr.map(readName).toList
+
+    PhpPrecedenceAdaptation(traitName, methodName, insteadOf, PhpAttributes(json))
+  }
+
   private def readUseUse(json: Value, parentType: PhpUseType): PhpUseUse = {
     val name  = readName(json("name"))
     val alias = Option.unless(json("alias").isNull)(readName(json("alias")))
@@ -1183,7 +1306,7 @@ object Domain {
   }
 
   private def readParam(json: Value): PhpParam = {
-    val paramType = Option.unless(json("type").isNull)(readName(json("type")))
+    val paramType = Option.unless(json("type").isNull)(readType(json("type")))
     PhpParam(
       name = json("var")("name").str,
       paramType = paramType,
@@ -1221,8 +1344,26 @@ object Domain {
         PhpNameExpr(correctConstructor(name), PhpAttributes(json))
 
       case unhandled =>
-        logger.error(s"Found unhandled name type $unhandled")
+        logger.error(s"Found unhandled name type $unhandled: $json")
         ??? // TODO: other matches are possible?
+    }
+  }
+
+  private def readType(json: Value): PhpNameExpr = {
+    json match {
+      case Obj(value) if value.get("nodeType").map(_.str).contains("NullableType") =>
+        val containedName = readName(value("type")).name
+        PhpNameExpr(s"?$containedName", attributes = PhpAttributes(json))
+
+      case Obj(value) if value.get("nodeType").map(_.str).contains("IntersectionType") =>
+        val names = value("types").arr.map(readName).map(_.name)
+        PhpNameExpr(names.mkString("&"), PhpAttributes(json))
+
+      case Obj(value) if value.get("nodeType").map(_.str).contains("UnionType") =>
+        val names = value("types").arr.map(readName).map(_.name)
+        PhpNameExpr(names.mkString("|"), PhpAttributes(json))
+
+      case other => readName(other)
     }
   }
 
@@ -1233,7 +1374,7 @@ object Domain {
       if (json.obj.contains("expr"))
         readExpr(json.obj("expr"))
       else if (json.obj.contains("var"))
-        readVariable(json.obj("var"))
+        readExpr(json.obj("var"))
       else
         throw new UnsupportedOperationException(s"Expected expr or var field in unary op but found $json")
 

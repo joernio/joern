@@ -118,6 +118,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case globalStmt: PhpGlobalStmt       => astForGlobalStmt(globalStmt)
       case useStmt: PhpUseStmt             => astForUseStmt(useStmt)
       case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt)
+      case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt)
+      case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt)
       case null =>
         logger.warn("stmt was null")
         ???
@@ -257,6 +259,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case newExpr: PhpNewExpr       => astForNewExpr(newExpr)
       case matchExpr: PhpMatchExpr   => astForMatchExpr(matchExpr)
       case yieldExpr: PhpYieldExpr   => astForYieldExpr(yieldExpr)
+      case closure: PhpClosureExpr   => astForClosureExpr(closure)
 
       case yieldFromExpr: PhpYieldFromExpr             => astForYieldFromExpr(yieldFromExpr)
       case classConstFetchExpr: PhpClassConstFetchExpr => astForClassConstFetchExpr(classConstFetchExpr)
@@ -267,6 +270,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case propertyFetchExpr: PhpPropertyFetchExpr     => astForPropertyFetchExpr(propertyFetchExpr)
       case includeExpr: PhpIncludeExpr                 => astForIncludeExpr(includeExpr)
       case shellExecExpr: PhpShellExecExpr             => astForShellExecExpr(shellExecExpr)
+      case arrowFunction: PhpArrowFunction             => astForArrowFunc(arrowFunction)
 
       case null =>
         logger.warn("expr was null")
@@ -528,6 +532,16 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val groupPrefix = s"${stmt.prefix.name}\\"
     val imports     = stmt.uses.map(astForUseUse(_, groupPrefix))
     wrapMultipleInBlock(imports, line(stmt))
+  }
+
+  private def astForForeachStmt(stmt: PhpForeachStmt): Ast = {
+    // TODO Actually implement this
+    Ast()
+  }
+
+  private def astforTraitUseStmt(stmt: PhpTraitUseStmt): Ast = {
+    // TODO Actually implement this
+    Ast()
   }
 
   private def astForUseUse(stmt: PhpUseUse, namePrefix: String = ""): Ast = {
@@ -1260,6 +1274,16 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     Ast(yieldNode)
       .withChildren(maybeKey.toList)
       .withChildren(maybeVal.toList)
+  }
+
+  private def astForClosureExpr(expr: PhpClosureExpr): Ast = {
+    // TODO Actually implement this (with uses)
+    Ast()
+  }
+
+  private def astForArrowFunc(expr: PhpArrowFunction): Ast = {
+    // TODO Actually implement this
+    Ast()
   }
 
   private def astForYieldFromExpr(expr: PhpYieldFromExpr): Ast = {
