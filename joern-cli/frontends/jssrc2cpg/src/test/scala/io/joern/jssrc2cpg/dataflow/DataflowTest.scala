@@ -613,4 +613,18 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     sink.reachableBy(src).size shouldBe 1
   }
 
+  "Should not reach irrelevant nodes" in {
+    val cpg: Cpg = code("""
+        |const irrelevant = "irrelevant";
+        |const a = { } ;
+        |sink(a);
+        |""".stripMargin)
+
+    val sink = cpg.call("sink").l
+    val src  = cpg.literal("\"irrelevant\"").l
+    sink.size shouldBe 1
+    src.size shouldBe 1
+    sink.reachableBy(src).size shouldBe 0
+  }
+
 }

@@ -38,6 +38,8 @@ object Domain {
     val emptyFunc = "empty"
     val evalFunc  = "eval"
     val exitFunc  = "exit"
+    // Used for multiple assignments for example `list($a, $b) = $someArray`
+    val listFunc = "list"
   }
 
   object PhpDomainTypeConstants {
@@ -222,6 +224,17 @@ object Domain {
 
   sealed abstract class PhpExpr extends PhpStmt
 
+  final case class PhpNewExpr(className: PhpNode, args: List[PhpArgument], attributes: PhpAttributes) extends PhpExpr
+
+  final case class PhpIncludeExpr(expr: PhpExpr, includeType: String, attributes: PhpAttributes) extends PhpExpr
+  sealed abstract class PhpIncludeType(name: String)
+  case object PhpIncludeType {
+    val include: String     = "include"
+    val includeOnce: String = "include_once"
+    val require: String     = "require"
+    val requireOnce: String = "require_once"
+  }
+
   final case class PhpCallExpr(
     target: Option[PhpExpr],
     methodName: PhpExpr,
@@ -369,7 +382,8 @@ object Domain {
       PhpEncapsedPart(s"\"${escapeString(value)}\"", attributes)
     }
   }
-  final case class PhpThrowExpr(expr: PhpExpr, attributes: PhpAttributes) extends PhpExpr
+  final case class PhpThrowExpr(expr: PhpExpr, attributes: PhpAttributes)                    extends PhpExpr
+  final case class PhpListExpr(items: List[Option[PhpArrayItem]], attributes: PhpAttributes) extends PhpExpr
 
   final case class PhpClassConstFetchExpr(
     className: PhpExpr,
@@ -529,6 +543,39 @@ object Domain {
     PhpThrowExpr(expr, PhpAttributes(json))
   }
 
+  private def readList(json: Value): PhpListExpr = {
+    val items = json("items").arr.map(item => Option.unless(item.isNull)(readArrayItem(item))).toList
+
+    PhpListExpr(items, PhpAttributes(json))
+  }
+
+  private def readNew(json: Value): PhpNewExpr = {
+    val classNode =
+      if (json("class")("nodeType").strOpt.contains("Stmt_Class"))
+        readClass(json("class"))
+      else
+        readNameOrExpr(json, "class")
+
+    val args = json("args").arr.map(readCallArg).toList
+
+    PhpNewExpr(classNode, args, PhpAttributes(json))
+  }
+
+  private def readInclude(json: Value): PhpIncludeExpr = {
+    val expr = readExpr(json("expr"))
+    val includeType = json("type").num.toInt match {
+      case 1 => PhpIncludeType.include
+      case 2 => PhpIncludeType.includeOnce
+      case 3 => PhpIncludeType.require
+      case 4 => PhpIncludeType.requireOnce
+      case other =>
+        logger.warn(s"Unhandled include type: $other. Defaulting to regular include.")
+        PhpIncludeType.include
+    }
+
+    PhpIncludeExpr(expr, includeType, PhpAttributes(json))
+  }
+
   private def readClassConstFetch(json: Value): PhpClassConstFetchExpr = {
     val classNameType = json("class")("nodeType").str
     val className =
@@ -676,6 +723,9 @@ object Domain {
       case "Expr_Print"    => readPrint(json)
       case "Expr_Ternary"  => readTernaryOp(json)
       case "Expr_Throw"    => readThrow(json)
+      case "Expr_List"     => readList(json)
+      case "Expr_New"      => readNew(json)
+      case "Expr_Include"  => readInclude(json)
 
       case "Expr_ClassConstFetch" => readClassConstFetch(json)
       case "Expr_ConstFetch"      => readConstFetch(json)
