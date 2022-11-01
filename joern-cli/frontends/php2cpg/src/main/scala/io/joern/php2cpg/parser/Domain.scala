@@ -483,7 +483,7 @@ object Domain {
 
   final case class PhpConstFetchExpr(name: PhpNameExpr, attributes: PhpAttributes) extends PhpExpr
 
-  final case class PhpArrayExpr(items: List[PhpArrayItem], attributes: PhpAttributes) extends PhpExpr
+  final case class PhpArrayExpr(items: List[Option[PhpArrayItem]], attributes: PhpAttributes) extends PhpExpr
   final case class PhpArrayItem(
     key: Option[PhpExpr],
     value: PhpExpr,
@@ -784,7 +784,9 @@ object Domain {
   }
 
   private def readArray(json: Value): PhpArrayExpr = {
-    val items = json("items").arr.map(readArrayItem).toList
+    val items = json("items").arr.map { item =>
+      Option.unless(item.isNull)(readArrayItem(item))
+    }.toList
     PhpArrayExpr(items, PhpAttributes(json))
   }
 

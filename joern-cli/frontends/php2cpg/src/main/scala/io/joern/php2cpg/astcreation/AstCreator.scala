@@ -120,8 +120,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt)
       case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt)
       case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt)
-      case null =>
-        logger.warn("stmt was null")
+      // TODO Figure out if this is breaking any assumptions that will cause issues later.
+      case staticStmt: PhpStaticStmt => Ast().withChildren(astsForStaticStmt(staticStmt))
+      case unhandled =>
+        logger.error(s"Unhandled stmt $unhandled in $filename")
         ???
     }
   }
@@ -458,7 +460,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .fullName(fullName)
 
     scope.pushNewScope(namespaceBlock)
-    val bodyStmts = stmt.stmts.map(astForStmt)
+    val bodyStmts = astsForClassLikeBody(stmt.stmts, createDefaultConstructor = false)
     scope.popScope()
 
     Ast(namespaceBlock).withChildren(bodyStmts)
@@ -629,7 +631,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val createDefaultConstructor = stmt.classLikeType == ClassLikeTypes.Class
 
     scope.pushNewScope(typeDeclNode)
-    val bodyStmts = astsForClassBody(stmt.stmts, createDefaultConstructor)
+    val bodyStmts = astsForClassLikeBody(stmt.stmts, createDefaultConstructor)
     val modifiers = stmt.modifiers.map(modifierNode).map(Ast(_))
     scope.popScope()
 
@@ -650,7 +652,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   }
 
-  private def astsForClassBody(bodyStmts: List[PhpStmt], createDefaultConstructor: Boolean): List[Ast] = {
+  private def astsForClassLikeBody(bodyStmts: List[PhpStmt], createDefaultConstructor: Boolean): List[Ast] = {
     val classConsts = bodyStmts.collect { case cs: PhpConstStmt => cs }.flatMap(astsForConstStmt)
     val properties  = bodyStmts.collect { case cp: PhpPropertyStmt => cp }.flatMap(astsForPropertyStmt)
 
@@ -1170,10 +1172,15 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val idxTracker = new ArrayIndexTracker
 
     val tmpLocal = getTmpLocal(Some(TypeConstants.Array), line(expr))
-    scope.pushNewScope(tmpLocal)
+    scope.addToScope(tmpLocal.name, tmpLocal)
 
-    val itemAssignments = expr.items.map(assignForArrayItem(_, tmpLocal, idxTracker))
-    val arrayBlock      = NewBlock().lineNumber(line(expr))
+    val itemAssignments = expr.items.flatMap {
+      case Some(item) => Some(assignForArrayItem(item, tmpLocal, idxTracker))
+      case None =>
+        idxTracker.next // Skip an index
+        None
+    }
+    val arrayBlock = NewBlock().lineNumber(line(expr))
 
     Ast(arrayBlock)
       .withChild(Ast(tmpLocal))
