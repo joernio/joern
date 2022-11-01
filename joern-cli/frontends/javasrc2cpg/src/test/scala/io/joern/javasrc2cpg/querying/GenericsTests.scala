@@ -1,12 +1,11 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-class GenericsTests extends JavaSrcCodeToCpgFixture {
+class GenericsTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |import java.util.function.Function;
       |
       |// Box
@@ -72,7 +71,7 @@ class GenericsTests extends JavaSrcCodeToCpgFixture {
       |
       |// inheritsFrom Box
       |public class Test extends Box<String> {}
-      |""".stripMargin
+      |""".stripMargin)
 
   "it should create the correct generic typeDecl name" in {
     cpg.typeDecl.nameExact("Box").l match {

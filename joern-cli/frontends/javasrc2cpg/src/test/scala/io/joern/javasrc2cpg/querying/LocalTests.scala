@@ -1,20 +1,19 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Local
 import io.shiftleft.semanticcpg.language._
 
-class LocalTests extends JavaSrcCodeToCpgFixture {
+class LocalTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       | class Foo {
       |   int foo() {
       |     int x;
       |     Integer y = null;
       |   }
       | }
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain locals `x` and `y` with correct fields set" in {
     val List(x: Local) = cpg.local("x").l

@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Return
 import io.shiftleft.semanticcpg.language._
@@ -37,10 +37,9 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
   }
 
 }
-class TypeDeclTests extends JavaSrcCodeToCpgFixture {
+class TypeDeclTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       | package a.b.c.d;
       | class Bar extends Woo {
       |   int x;
@@ -75,7 +74,7 @@ class TypeDeclTests extends JavaSrcCodeToCpgFixture {
       |
       |   public void enumMethod() {}
       | }
-      | """.stripMargin
+      | """.stripMargin)
 
   "should create a default constructor if no constructor is defined" in {
     val typeFullName = "a.b.c.d.OuterClass$InnerClass$InnerClass2"

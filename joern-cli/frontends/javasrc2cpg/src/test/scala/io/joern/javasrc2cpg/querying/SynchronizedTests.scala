@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Block,
@@ -13,10 +13,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.semanticcpg.language._
 
-class SynchronizedTests extends JavaSrcCodeToCpgFixture {
+class SynchronizedTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |public class Foo {
       |  public static synchronized String foo(String s) {
       |    return s;
@@ -30,7 +29,7 @@ class SynchronizedTests extends JavaSrcCodeToCpgFixture {
       |  }
       |
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "it should process a synchronized method the same as a non-synchronized method" in {
     val List(method: Method) = cpg.method.name("foo").l

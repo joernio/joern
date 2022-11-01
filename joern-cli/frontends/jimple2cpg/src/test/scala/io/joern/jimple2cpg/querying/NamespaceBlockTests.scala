@@ -1,17 +1,16 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-class NamespaceBlockTests extends JimpleCodeToCpgFixture {
+class NamespaceBlockTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |package foo.bar;
       |class A {
       | static void foo() {}
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain two namespace blocks in total (<default>, foo.bar)" in {
     cpg.namespaceBlock.size shouldBe 2

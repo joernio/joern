@@ -1,20 +1,19 @@
 package io.joern.jimple2cpg.querying
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
 
-class InterfaceTests extends JimpleCodeToCpgFixture {
+class InterfaceTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |interface Foo {
       |
       |   int add(int x, int y);
       |
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain a type decl for `Foo` with correct fields" in {
     val List(x) = cpg.typeDecl.name("Foo").l

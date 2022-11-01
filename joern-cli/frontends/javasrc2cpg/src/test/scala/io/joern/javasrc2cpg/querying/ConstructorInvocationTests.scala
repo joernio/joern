@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local, Method}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
@@ -58,10 +58,9 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   }
 }
 
-class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
+class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |class Foo {
       |  int x;
       |
@@ -103,7 +102,7 @@ class ConstructorInvocationTests extends JavaSrcCodeToCpgFixture {
       |    bs[0] = new Bar(42);
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "it should create correct method nodes for constructors" in {
 
