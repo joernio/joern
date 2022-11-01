@@ -22,5 +22,6 @@ object QueryTags {
   val misconfiguration       = "misconfiguration"
   val insecureNetworkTraffic = "insecure-network-traffic"
   val pathTraversal          = "path-traversal"
+  val cryptography           = "cryptography"
 
 }
