@@ -1,14 +1,12 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
 import io.shiftleft.semanticcpg.language._
 
-class FieldAccessTests extends JavaSrcCodeToCpgFixture {
+class FieldAccessTests extends JavaSrcCode2CpgFixture {
 
-  implicit val resolver: ICallResolver = NoResolve
-
-  override val code: String =
+  val cpg = code(
     """
       |class Foo {
       |  public static int MAX_VALUE = 12;
@@ -44,7 +42,7 @@ class FieldAccessTests extends JavaSrcCodeToCpgFixture {
       |  g.value = 66;
       |}
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should handle static member accesses" in {
     val List(access: Call)                                             = cpg.method(".*foo.*").call(".*fieldAccess").l

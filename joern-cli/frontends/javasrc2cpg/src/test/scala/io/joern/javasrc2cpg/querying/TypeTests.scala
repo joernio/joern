@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
@@ -150,9 +150,9 @@ class NewTypeTests extends JavaSrcCode2CpgFixture {
   }
 }
 
-class TypeTests extends JavaSrcCodeToCpgFixture {
+class TypeTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
+  val cpg = code(
     """
       | package foo;
       |
@@ -187,7 +187,7 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
       |   }
       | }
       |
-      |""".stripMargin
+      |""".stripMargin)
 
   "should create TYPE node with correct fields for class" in {
     val List(x) = cpg.typ.name("Foo").l

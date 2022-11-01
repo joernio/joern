@@ -10,7 +10,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import java.io.File
 
 @deprecated("Please use Code2CpgFixture instead.", "2022-04-25")
-class CodeToCpgFixture(val frontend: LanguageFrontend) extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class CodeToCpgFixtureDELETE(val frontend: LanguageFrontend) extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   val code                   = ""
   var cpg: Cpg               = _

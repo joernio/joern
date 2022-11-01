@@ -1,18 +1,18 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
-class NamespaceBlockTests extends JavaSrcCodeToCpgFixture {
+class NamespaceBlockTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
+  val cpg = code(
     """
       |package foo.bar;
       |class A {
       | void foo() {}
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain two namespace blocks in total (<default>, foo.bar)" in {
     cpg.namespaceBlock.size shouldBe 2

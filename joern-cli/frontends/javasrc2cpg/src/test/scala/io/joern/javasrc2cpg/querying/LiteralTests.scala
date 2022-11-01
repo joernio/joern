@@ -1,13 +1,13 @@
 package io.joern.javasrc2cpg.querying
 
 import com.github.javaparser.ast.expr.LiteralExpr
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
 
-class LiteralTests extends JavaSrcCodeToCpgFixture {
+class LiteralTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
+  val cpg = code(
     """
       |class Test {
       |  public void foo() {
@@ -29,7 +29,7 @@ class LiteralTests extends JavaSrcCodeToCpgFixture {
       |    boolean p = false;
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   val expectedOutput = List(
     ("a", "0b10110010", "byte"),
