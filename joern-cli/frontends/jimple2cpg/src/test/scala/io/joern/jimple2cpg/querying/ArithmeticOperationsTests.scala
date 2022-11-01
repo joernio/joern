@@ -7,8 +7,7 @@ import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve, toNodeTypeSt
 
 class ArithmeticOperationsTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       | class Foo {
       |   static void main(int argc, char argv) {
       |     int a = 3;

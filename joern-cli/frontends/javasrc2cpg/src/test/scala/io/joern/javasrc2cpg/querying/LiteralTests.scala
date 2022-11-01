@@ -7,8 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class LiteralTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Test {
       |  public void foo() {
       |    byte a = 0b10110010;

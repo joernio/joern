@@ -7,8 +7,7 @@ import java.io.File
 
 class InterfaceTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |interface Foo {
       |
       |   int add(int x, int y);

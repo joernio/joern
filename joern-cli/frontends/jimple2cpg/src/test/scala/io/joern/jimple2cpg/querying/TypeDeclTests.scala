@@ -9,8 +9,7 @@ import java.io.File
 
 class TypeDeclTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       | package Foo;
       | abstract class Bar extends Woo {
       |   int x;

@@ -7,8 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class SpecialOperatorTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |public class Foo {
       |  public void foo(Object o) {
       |    if (o instanceof String) {

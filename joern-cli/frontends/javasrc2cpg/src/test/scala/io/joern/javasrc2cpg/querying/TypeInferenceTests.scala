@@ -210,8 +210,7 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
 
 class TypeInferenceTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |package pakfoo;
       |
       |import a.b.c.Bar;

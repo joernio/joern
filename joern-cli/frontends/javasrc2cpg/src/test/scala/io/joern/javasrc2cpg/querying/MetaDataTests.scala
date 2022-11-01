@@ -7,8 +7,7 @@ import overflowdb.traversal._
 
 class MetaDataTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {}
       |""".stripMargin)
 

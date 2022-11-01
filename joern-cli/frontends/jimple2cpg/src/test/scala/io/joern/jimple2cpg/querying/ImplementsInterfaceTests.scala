@@ -8,8 +8,7 @@ import java.io.File
 
 class ImplementsInterfaceTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
         |import java.io.Serializable;
         |
         |final class Foo implements Serializable {

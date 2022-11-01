@@ -15,8 +15,7 @@ import io.shiftleft.semanticcpg.language._
 
 class SynchronizedTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |public class Foo {
       |  public static synchronized String foo(String s) {
       |    return s;

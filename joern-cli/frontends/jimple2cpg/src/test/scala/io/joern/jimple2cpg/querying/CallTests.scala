@@ -9,8 +9,7 @@ class CallTests extends JimpleCode2CpgFixture {
 
   implicit val resolver: ICallResolver = NoResolve
 
-  val cpg = code(
-    """
+  val cpg = code("""
       | class Foo {
       |   static int add(int x, int y) {
       |     return x + y;

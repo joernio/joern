@@ -5,8 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CfgTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       | int foo(int x, int y) {
       |  if (y < 10)

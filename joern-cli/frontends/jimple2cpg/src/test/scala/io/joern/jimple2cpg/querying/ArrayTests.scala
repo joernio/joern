@@ -9,8 +9,7 @@ import org.scalatest.Failed
 
 class ArrayTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  public void foo() {
       |    int[] x = {0, 1, 2};

@@ -6,8 +6,7 @@ import org.scalatest.Ignore
 
 class MethodReturnTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """class Foo {
+  val cpg = code("""class Foo {
       |  int foo() { return 1; }
       |}
       |""".stripMargin)

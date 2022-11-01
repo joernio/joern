@@ -7,8 +7,7 @@ import java.io.File
 
 class MethodTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """ class Foo {
+  val cpg = code(""" class Foo {
       |   int foo(int param1, int param2) {
       |     return 1;
       |   }

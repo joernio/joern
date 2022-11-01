@@ -7,8 +7,7 @@ class DynamicCallGraphTests extends JimpleCode2CpgFixture {
 
   implicit val resolver: NoResolve.type = NoResolve
 
-  val cpg = code(
-    """
+  val cpg = code("""
 class Foo {
 
 	public static void main(String[] args){

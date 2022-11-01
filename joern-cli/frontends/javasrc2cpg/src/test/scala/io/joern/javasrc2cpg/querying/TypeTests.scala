@@ -152,8 +152,7 @@ class NewTypeTests extends JavaSrcCode2CpgFixture {
 
 class TypeTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       | package foo;
       |
       | class Foo {

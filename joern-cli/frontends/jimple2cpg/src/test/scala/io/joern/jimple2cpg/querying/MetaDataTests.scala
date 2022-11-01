@@ -6,8 +6,7 @@ import overflowdb.traversal.toNodeTraversalViaAdditionalImplicit
 
 class MetaDataTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {}
       |""".stripMargin)
 

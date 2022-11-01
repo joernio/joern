@@ -11,8 +11,7 @@ import io.shiftleft.semanticcpg.language._
   */
 class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  int x;
       |

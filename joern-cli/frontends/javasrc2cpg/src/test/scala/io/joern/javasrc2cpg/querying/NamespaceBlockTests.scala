@@ -6,8 +6,7 @@ import overflowdb.traversal._
 
 class NamespaceBlockTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |package foo.bar;
       |class A {
       | void foo() {}

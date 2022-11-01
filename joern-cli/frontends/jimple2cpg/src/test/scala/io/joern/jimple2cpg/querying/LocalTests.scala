@@ -7,8 +7,7 @@ import org.scalatest.Ignore
 
 class LocalTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       | @SuppressWarnings("deprecation")
       | class Foo {
       |   Integer foo() {

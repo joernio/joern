@@ -5,8 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class NamespaceBlockTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |package foo.bar;
       |class A {
       | static void foo() {}

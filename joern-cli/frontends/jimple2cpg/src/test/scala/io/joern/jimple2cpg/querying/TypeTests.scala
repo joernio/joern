@@ -6,8 +6,7 @@ import org.scalatest.Ignore
 
 class TypeTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       | package foo;
       |
       | class Foo {

@@ -7,8 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class SpecialOperatorTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  public void foo(Object o) {
       |    if (o instanceof String) {

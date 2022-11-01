@@ -60,8 +60,7 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
 
 class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  int x;
       |

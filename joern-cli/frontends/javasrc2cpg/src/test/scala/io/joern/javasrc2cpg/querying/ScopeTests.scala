@@ -7,8 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class ScopeTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Bar {
       |    public Object o = new Object();
       |    public static Object staticO = new Object();

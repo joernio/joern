@@ -5,8 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class GenericsTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |import java.util.function.Function;
       |
       |// Box

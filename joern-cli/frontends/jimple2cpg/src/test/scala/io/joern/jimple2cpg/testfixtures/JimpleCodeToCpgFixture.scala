@@ -21,10 +21,7 @@ trait JimpleFrontend extends LanguageFrontend {
   }
 }
 
-class JimpleCode2CpgFixture()
-  extends Code2CpgFixture(() => new JimpleTestCpg()) {
-
-}
+class JimpleCode2CpgFixture() extends Code2CpgFixture(() => new JimpleTestCpg()) {}
 
 class JimpleTestCpg() extends TestCpg with JimpleFrontend {
   override protected def codeFilePreProcessing(codeFile: Path): Unit = {

@@ -6,8 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class FieldAccessTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  public static int MAX_VALUE = 12;
       |  public int value;

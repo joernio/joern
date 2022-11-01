@@ -5,8 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class MethodReturnTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """class Foo {
+  val cpg = code("""class Foo {
       |  int foo() { return 1; }
       |}
       |""".stripMargin)

@@ -39,8 +39,7 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
 }
 class TypeDeclTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       | package a.b.c.d;
       | class Bar extends Woo {
       |   int x;

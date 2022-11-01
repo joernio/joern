@@ -5,8 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language._
 
 class EnumTests extends JimpleCode2CpgFixture {
-  val cpg = code(
-    """
+  val cpg = code("""
       |enum FuzzyBool {
       |  TRUE,
       |  FALSE,

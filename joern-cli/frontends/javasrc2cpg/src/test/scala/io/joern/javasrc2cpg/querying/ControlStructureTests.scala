@@ -721,8 +721,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
 
 class ControlStructureTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  int baz(Iterable<Integer> xs) {
       |    int sum = 0;

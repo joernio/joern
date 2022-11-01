@@ -259,8 +259,7 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
 
 class MemberTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  int x;
       |}

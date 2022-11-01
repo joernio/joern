@@ -8,8 +8,7 @@ import java.io.File
 
 class MethodTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(
-    """ class Foo {
+  val cpg = code(""" class Foo {
       |   int foo(int param1, int param2) {
       |     return 1;
       |   }
@@ -78,8 +77,7 @@ class MethodTests extends JavaSrcCode2CpgFixture {
 }
 
 class MethodTests2 extends JavaSrcCode2CpgFixture {
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  static class Sub {
       |    void foo() {
@@ -96,8 +94,7 @@ class MethodTests2 extends JavaSrcCode2CpgFixture {
 }
 
 class MethodTests3 extends JavaSrcCode2CpgFixture {
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  static void staticMethod(Integer x) { }
       |  void virtualMethod(Integer x) { }

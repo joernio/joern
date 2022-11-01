@@ -9,8 +9,7 @@ import java.io.File
 
 class FileTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       | package a.b;
       | class Foo { int bar() { return 1; } }
       |""".stripMargin)

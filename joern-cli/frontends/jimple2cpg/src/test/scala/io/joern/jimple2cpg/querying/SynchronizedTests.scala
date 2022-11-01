@@ -6,8 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class SynchronizedTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  public static synchronized String foo(String s) {
       |    return s;

@@ -6,8 +6,7 @@ import org.scalatest.Ignore
 
 class MemberTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  int x;
       |}

@@ -8,8 +8,7 @@ class FieldAccessTests extends JimpleCode2CpgFixture {
 
   implicit val resolver: ICallResolver = NoResolve
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       |  public static int MAX_VALUE = 12;
       |  public int value;

@@ -6,8 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, AnnotationLit
 
 class AnnotationTestMethod1 extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """import java.lang.annotation.*;
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.METHOD)
@@ -54,8 +53,7 @@ class AnnotationTestMethod1 extends JimpleCode2CpgFixture {
 }
 
 class AnnotationTestMethod2 extends JimpleCode2CpgFixture {
-  val cpg = code(
-    """import java.lang.annotation.*;
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.METHOD)
@@ -83,8 +81,7 @@ class AnnotationTestMethod2 extends JimpleCode2CpgFixture {
 }
 
 class AnnotationTestConstructor extends JimpleCode2CpgFixture {
-  val cpg = code(
-    """import java.lang.annotation.*;
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.CONSTRUCTOR)
@@ -112,8 +109,7 @@ class AnnotationTestConstructor extends JimpleCode2CpgFixture {
 }
 
 class AnnotationTestParameter extends JimpleCode2CpgFixture {
-  val cpg = code(
-    """import java.lang.annotation.*;
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.PARAMETER)
@@ -135,8 +131,7 @@ class AnnotationTestParameter extends JimpleCode2CpgFixture {
 }
 
 class AnnotationTestField extends JimpleCode2CpgFixture {
-  val cpg = code(
-    """import java.lang.annotation.*;
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.FIELD)
@@ -155,8 +150,7 @@ class AnnotationTestField extends JimpleCode2CpgFixture {
 }
 
 class AnnotationTestValue1 extends JimpleCode2CpgFixture {
-  val cpg = code(
-    """import java.lang.annotation.*;
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.METHOD)
@@ -190,8 +184,7 @@ class AnnotationTestValue1 extends JimpleCode2CpgFixture {
 }
 
 class AnnotationTestValue2 extends JimpleCode2CpgFixture {
-  val cpg = code(
-    """import java.lang.annotation.*;
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.METHOD)
@@ -245,8 +238,7 @@ class AnnotationTestValue2 extends JimpleCode2CpgFixture {
 }
 
 class AnnotationTestValue3 extends JimpleCode2CpgFixture {
-  val cpg = code(
-    """import java.lang.annotation.*;
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.METHOD)

@@ -7,8 +7,7 @@ import io.shiftleft.semanticcpg.language._
   */
 class ReflectionTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """
+  val cpg = code("""
       |class Foo {
       | static int add(int x, int y) {
       |   return x + y;

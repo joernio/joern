@@ -6,8 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class MethodParameterTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(
-    """package a;
+  val cpg = code("""package a;
       |class Foo {
       | int foo(int param1, Object param2) {
       |  return 0;
