@@ -118,8 +118,12 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case globalStmt: PhpGlobalStmt       => astForGlobalStmt(globalStmt)
       case useStmt: PhpUseStmt             => astForUseStmt(useStmt)
       case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt)
-      case null =>
-        logger.warn("stmt was null")
+      case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt)
+      case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt)
+      // TODO Figure out if this is breaking any assumptions that will cause issues later.
+      case staticStmt: PhpStaticStmt => Ast().withChildren(astsForStaticStmt(staticStmt))
+      case unhandled =>
+        logger.error(s"Unhandled stmt $unhandled in $filename")
         ???
     }
   }
@@ -257,6 +261,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case newExpr: PhpNewExpr       => astForNewExpr(newExpr)
       case matchExpr: PhpMatchExpr   => astForMatchExpr(matchExpr)
       case yieldExpr: PhpYieldExpr   => astForYieldExpr(yieldExpr)
+      case closure: PhpClosureExpr   => astForClosureExpr(closure)
 
       case yieldFromExpr: PhpYieldFromExpr             => astForYieldFromExpr(yieldFromExpr)
       case classConstFetchExpr: PhpClassConstFetchExpr => astForClassConstFetchExpr(classConstFetchExpr)
@@ -267,6 +272,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case propertyFetchExpr: PhpPropertyFetchExpr     => astForPropertyFetchExpr(propertyFetchExpr)
       case includeExpr: PhpIncludeExpr                 => astForIncludeExpr(includeExpr)
       case shellExecExpr: PhpShellExecExpr             => astForShellExecExpr(shellExecExpr)
+      case arrowFunction: PhpArrowFunction             => astForArrowFunc(arrowFunction)
 
       case null =>
         logger.warn("expr was null")
@@ -454,7 +460,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .fullName(fullName)
 
     scope.pushNewScope(namespaceBlock)
-    val bodyStmts = stmt.stmts.map(astForStmt)
+    val bodyStmts = astsForClassLikeBody(stmt.stmts, createDefaultConstructor = false)
     scope.popScope()
 
     Ast(namespaceBlock).withChildren(bodyStmts)
@@ -528,6 +534,16 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val groupPrefix = s"${stmt.prefix.name}\\"
     val imports     = stmt.uses.map(astForUseUse(_, groupPrefix))
     wrapMultipleInBlock(imports, line(stmt))
+  }
+
+  private def astForForeachStmt(stmt: PhpForeachStmt): Ast = {
+    // TODO Actually implement this
+    Ast()
+  }
+
+  private def astforTraitUseStmt(stmt: PhpTraitUseStmt): Ast = {
+    // TODO Actually implement this
+    Ast()
   }
 
   private def astForUseUse(stmt: PhpUseUse, namePrefix: String = ""): Ast = {
@@ -615,7 +631,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val createDefaultConstructor = stmt.classLikeType == ClassLikeTypes.Class
 
     scope.pushNewScope(typeDeclNode)
-    val bodyStmts = astsForClassBody(stmt.stmts, createDefaultConstructor)
+    val bodyStmts = astsForClassLikeBody(stmt.stmts, createDefaultConstructor)
     val modifiers = stmt.modifiers.map(modifierNode).map(Ast(_))
     scope.popScope()
 
@@ -636,7 +652,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   }
 
-  private def astsForClassBody(bodyStmts: List[PhpStmt], createDefaultConstructor: Boolean): List[Ast] = {
+  private def astsForClassLikeBody(bodyStmts: List[PhpStmt], createDefaultConstructor: Boolean): List[Ast] = {
     val classConsts = bodyStmts.collect { case cs: PhpConstStmt => cs }.flatMap(astsForConstStmt)
     val properties  = bodyStmts.collect { case cp: PhpPropertyStmt => cp }.flatMap(astsForPropertyStmt)
 
@@ -1156,10 +1172,15 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val idxTracker = new ArrayIndexTracker
 
     val tmpLocal = getTmpLocal(Some(TypeConstants.Array), line(expr))
-    scope.pushNewScope(tmpLocal)
+    scope.addToScope(tmpLocal.name, tmpLocal)
 
-    val itemAssignments = expr.items.map(assignForArrayItem(_, tmpLocal, idxTracker))
-    val arrayBlock      = NewBlock().lineNumber(line(expr))
+    val itemAssignments = expr.items.flatMap {
+      case Some(item) => Some(assignForArrayItem(item, tmpLocal, idxTracker))
+      case None =>
+        idxTracker.next // Skip an index
+        None
+    }
+    val arrayBlock = NewBlock().lineNumber(line(expr))
 
     Ast(arrayBlock)
       .withChild(Ast(tmpLocal))
@@ -1260,6 +1281,16 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     Ast(yieldNode)
       .withChildren(maybeKey.toList)
       .withChildren(maybeVal.toList)
+  }
+
+  private def astForClosureExpr(expr: PhpClosureExpr): Ast = {
+    // TODO Actually implement this (with uses)
+    Ast()
+  }
+
+  private def astForArrowFunc(expr: PhpArrowFunction): Ast = {
+    // TODO Actually implement this
+    Ast()
   }
 
   private def astForYieldFromExpr(expr: PhpYieldFromExpr): Ast = {

@@ -28,7 +28,7 @@ object PhpParser {
     val filename       = inputFile.name
 
     ExternalCommand.run(phpParseCommand(filename), inputDirectory, separateStdErr = true) match {
-      case Success(outputLines) => processParserOutput(outputLines, filename)
+      case Success(outputLines) => processParserOutput(outputLines, inputFile.canonicalPath)
 
       case Failure(exception) =>
         logger.error(s"php-parser failed to parse input file $inputPath", exception)
@@ -43,21 +43,23 @@ object PhpParser {
   }
 
   private def linesToJsonValue(lines: Seq[String], filename: String): Option[ujson.Value] = {
-    val jsonString =
-      lines
-        .dropWhile(_.charAt(0) != '[')
-        .mkString("\n")
+    if (lines.exists(_.startsWith("["))) {
+      val jsonString = lines.dropWhile(_.charAt(0) != '[').mkString("\n")
+      Try(Option(ujson.read(jsonString))) match {
+        case Success(Some(value)) => Some(value)
 
-    Try(Option(ujson.read(jsonString))) match {
-      case Success(Some(value)) => Some(value)
+        case Success(None) =>
+          logger.error(s"Parsing json string for $filename resulted in null return value")
+          None
 
-      case Success(None) =>
-        logger.error(s"Parsing json string for $filename resulted in null return value")
-        None
+        case Failure(exception) =>
+          logger.error(s"Parsing json string for $filename failed with exception", exception)
+          None
+      }
 
-      case Failure(exception) =>
-        logger.error(s"Parsing json string for $filename failed with exception", exception)
-        None
+    } else {
+      logger.warn(s"No JSON output for $filename")
+      None
     }
   }
 
