@@ -13,8 +13,6 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
       |c = foo(a, b)
       |print(c)
       |""".stripMargin)
-
-  "first test" in {
     val source = cpg.literal("42")
     val sink   = cpg.call.code("print.*").argument
     sink.reachableByFlows(source).size shouldBe 1
@@ -28,42 +26,31 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
       |""".stripMargin)
     def source = cpg.literal("42")
     def sink   = cpg.call("sink").argument
-    source.size shouldBe 1
-    sink.size shouldBe 1
     sink.reachableByFlows(source).size shouldBe 1
   }
-    "call test 2" in {
-      val cpg: Cpg = code(
-        """
-          |def foo():
-          |    return 42
-          |bar = foo()
-          |print(bar)
-          |""".stripMargin)
 
-      def source = cpg.literal("42")
+  "inter procedural call 1" in {
+    val cpg: Cpg = code("""
+      |def foo():
+      |    return 42
+      |bar = foo()
+      |print(bar)
+      |""".stripMargin)
+    def source = cpg.literal("42")
+    def sink   = cpg.call("print")
+    sink.reachableByFlows(source).size shouldBe 1
+  }
 
-      def sink = cpg.call("print")
-
-      sink.reachableByFlows(source).size shouldBe 1
-    }
-
-    "call test 3" in {
-      val cpg: Cpg = code(
-        """
-          |def foo(input):
-          |    sink(input)
-          |
-          |def main():
-          |    source = 42
-          |    foo(source)
-          |
-          |""".stripMargin)
-
-      def source = cpg.literal("42")
-
-      def sink = cpg.call("sink")
-
-      sink.reachableByFlows(source).size shouldBe 1
-    }
+  "inter procedural call 2" in {
+    val cpg: Cpg = code("""
+      |def foo(input):
+      |    sink(input)
+      |def main():
+      |    source = 42
+      |    foo(source)
+      |""".stripMargin)
+    def source = cpg.literal("42")
+    def sink   = cpg.call("sink")
+    sink.reachableByFlows(source).size shouldBe 1
+  }
 }
