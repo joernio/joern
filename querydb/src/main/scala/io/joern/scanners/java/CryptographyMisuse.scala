@@ -25,7 +25,7 @@ object CryptographyMisuse extends QueryBundle {
           | MD5 and SHA-1 are considered weak and insecure; an attacker can easily use an MD5 collision to forge valid
           | digital certificates or use dictionary/brute-force attacks to obtain passwords. Use SHA-256 instead.
           |""".stripMargin,
-      score = 8,
+      score = 7,
       withStrRep({ cpg =>
         def source = cpg.literal("\"MD5\"|\"SHA-1\"")
 
@@ -33,6 +33,28 @@ object CryptographyMisuse extends QueryBundle {
           cpg.method.fullName("java.security.MessageDigest.getInstance.*").parameter
 
         sink.reachableBy(source).l
+      }),
+      tags = List(QueryTags.cryptography, QueryTags.default)
+    )
+
+  @q
+  def lowIterationPbeKey()(implicit context: EngineContext): Query =
+    Query.make(
+      name = "low-pbe-key-iterations",
+      author = Crew.dave,
+      title = "Low number of iterations detected for password-based encryption.",
+      description = """
+          | Do not use password-based encryption with iterations count less than 1000. You should use the maximum number
+          | of rounds which is tolerable, performance-wise, in your application.
+          |""".stripMargin,
+      score = 6,
+      withStrRep({ cpg =>
+        def source = cpg.literal.code("\\d+")
+
+        def sink =
+          cpg.method.fullName("javax.crypto.spec.PBEKeySpec.<init>.*").parameter
+
+        sink.reachableBy(source).dedup.filter(f => Integer.parseInt(f.code) < 1000).l
       }),
       tags = List(QueryTags.cryptography, QueryTags.default)
     )
