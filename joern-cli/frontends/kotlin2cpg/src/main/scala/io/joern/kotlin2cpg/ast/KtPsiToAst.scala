@@ -251,6 +251,9 @@ trait KtPsiToAst {
         memberSetCallAst(ctorParam, classFullName)
     }
 
+    val anonymousInitExpressions = ktClass.getAnonymousInitializers.asScala
+    val anonymousInitAsts        = anonymousInitExpressions.flatMap(astsForExpression(_, None))
+
     val constructorMethodReturn = methodReturnNode(
       TypeConstants.void,
       None,
@@ -260,7 +263,7 @@ trait KtPsiToAst {
     val constructorAst = methodAst(
       primaryCtorMethodNode,
       constructorParamsAsts.flatMap(_.root.collectAll[NewMethodParameterIn]),
-      blockAst(blockNode("", TypeConstants.void), memberSetCalls),
+      blockAst(blockNode("", TypeConstants.void), memberSetCalls ++ anonymousInitAsts),
       constructorMethodReturn
     )
     val node = bindingNode(primaryCtorMethodNode.name, primaryCtorMethodNode.signature, primaryCtorMethodNode.fullName)
