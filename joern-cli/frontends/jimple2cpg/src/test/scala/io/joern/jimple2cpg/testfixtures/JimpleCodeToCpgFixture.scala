@@ -3,7 +3,7 @@ package io.joern.jimple2cpg.testfixtures
 import io.joern.jimple2cpg.{Config, Jimple2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.Cpg
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, CodeToCpgFixture, LanguageFrontend, TestCpg}
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path}
