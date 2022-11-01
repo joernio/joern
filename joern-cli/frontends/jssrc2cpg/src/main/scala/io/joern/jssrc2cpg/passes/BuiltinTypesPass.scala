@@ -16,18 +16,16 @@ class BuiltinTypesPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
     diffGraph.addNode(namespaceBlock)
 
-    Defines.values.zipWithIndex.map { case (typeName: Defines.Tpe, index) =>
-      val typeNameLabel = typeName.label
-
+    Defines.JSTYPES.zipWithIndex.map { case (typeName: String, index) =>
       val tpe = NewType()
-        .name(typeNameLabel)
-        .fullName(typeNameLabel)
-        .typeDeclFullName(typeNameLabel)
+        .name(typeName)
+        .fullName(typeName)
+        .typeDeclFullName(typeName)
       diffGraph.addNode(tpe)
 
       val typeDecl = NewTypeDecl()
-        .name(typeNameLabel)
-        .fullName(typeNameLabel)
+        .name(typeName)
+        .fullName(typeName)
         .isExternal(false)
         .astParentType(NodeTypes.NAMESPACE_BLOCK)
         .astParentFullName(Defines.GLOBAL_NAMESPACE)

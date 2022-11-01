@@ -838,4 +838,185 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "match expressions" should {
+    "work without a default case" in {
+      val cpg = code("""<?php
+			 |match ($condition) {
+			 |  $a => "A",
+			 |  $b, $c => "NOT A",
+			 |}
+			 |""".stripMargin)
+
+      inside(cpg.controlStructure.l) { case List(matchStructure) =>
+        matchStructure.controlStructureType shouldBe ControlStructureTypes.MATCH
+        matchStructure.code shouldBe "match ($condition)"
+        matchStructure.lineNumber shouldBe Some(2)
+
+        inside(matchStructure.condition.l) { case List(condition: Identifier) =>
+          condition.name shouldBe "condition"
+          condition.code shouldBe "$condition"
+          condition.lineNumber shouldBe Some(2)
+        }
+
+        inside(matchStructure.astChildren.collectAll[Block].astChildren.l) {
+          case List(
+                aTarget: JumpTarget,
+                aValue: Literal,
+                bTarget: JumpTarget,
+                cTarget: JumpTarget,
+                otherValue: Literal
+              ) =>
+            aTarget.code shouldBe "$a"
+            aTarget.lineNumber shouldBe Some(3)
+
+            aValue.code shouldBe "\"A\""
+            aValue.lineNumber shouldBe Some(3)
+
+            bTarget.code shouldBe "$b"
+            bTarget.lineNumber shouldBe Some(4)
+
+            cTarget.code shouldBe "$c"
+            cTarget.lineNumber shouldBe Some(4)
+
+            otherValue.code shouldBe "\"NOT A\""
+            otherValue.lineNumber shouldBe Some(4)
+        }
+      }
+    }
+  }
+
+  "work with a default case" in {
+    val cpg = code("""<?php
+                    |match ($condition) {
+                    |  $a => "A",
+                    |  $b, $c => "NOT A",
+										|  default => "DEFAULT",
+                    |}
+                    |""".stripMargin)
+
+    inside(cpg.controlStructure.l) { case List(matchStructure) =>
+      matchStructure.controlStructureType shouldBe ControlStructureTypes.MATCH
+      matchStructure.code shouldBe "match ($condition)"
+      matchStructure.lineNumber shouldBe Some(2)
+
+      inside(matchStructure.condition.l) { case List(condition: Identifier) =>
+        condition.name shouldBe "condition"
+        condition.code shouldBe "$condition"
+        condition.lineNumber shouldBe Some(2)
+      }
+
+      inside(matchStructure.astChildren.collectAll[Block].astChildren.l) {
+        case List(
+              aTarget: JumpTarget,
+              aValue: Literal,
+              bTarget: JumpTarget,
+              cTarget: JumpTarget,
+              otherValue: Literal,
+              defaultTarget: JumpTarget,
+              defaultValue: Literal
+            ) =>
+          aTarget.code shouldBe "$a"
+          aTarget.lineNumber shouldBe Some(3)
+
+          aValue.code shouldBe "\"A\""
+          aValue.lineNumber shouldBe Some(3)
+
+          bTarget.code shouldBe "$b"
+          bTarget.lineNumber shouldBe Some(4)
+
+          cTarget.code shouldBe "$c"
+          cTarget.lineNumber shouldBe Some(4)
+
+          otherValue.code shouldBe "\"NOT A\""
+          otherValue.lineNumber shouldBe Some(4)
+
+          defaultTarget.code shouldBe "default"
+          defaultTarget.lineNumber shouldBe Some(5)
+
+          defaultValue.code shouldBe "\"DEFAULT\""
+          defaultValue.lineNumber shouldBe Some(5)
+      }
+    }
+  }
+
+  "yield from should be represented as a yield with the correct code field" in {
+    val cpg = code("""<?php
+		 |function foo($xs) {
+		 |  yield from $xs;
+		 |}
+		 |""".stripMargin)
+
+    inside(cpg.controlStructure.l) { case List(yieldStructure) =>
+      yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
+      yieldStructure.code shouldBe "yield from $xs"
+      yieldStructure.lineNumber shouldBe Some(3)
+
+      inside(yieldStructure.astChildren.l) { case List(xs: Identifier) =>
+        xs.name shouldBe "xs"
+        xs.code shouldBe "$xs"
+        xs.lineNumber shouldBe Some(3)
+      }
+    }
+  }
+
+  "yield expressions" should {
+    "be created when they have no value" in {
+      val cpg = code("""<?php
+			 |function foo() {
+			 |  yield;
+			 |}
+			 |""".stripMargin)
+
+      inside(cpg.controlStructure.l) { case List(yieldStructure) =>
+        yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
+        yieldStructure.code shouldBe "yield"
+        yieldStructure.lineNumber shouldBe Some(3)
+
+        yieldStructure.astChildren.size shouldBe 0
+      }
+    }
+
+    "be created when they have values without keys" in {
+      val cpg = code("""<?php
+                      |function foo() {
+                      |  yield 1;
+                      |}
+                      |""".stripMargin)
+
+      inside(cpg.controlStructure.l) { case List(yieldStructure) =>
+        yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
+        yieldStructure.code shouldBe "yield 1"
+        yieldStructure.lineNumber shouldBe Some(3)
+
+        inside(yieldStructure.astChildren.l) { case List(value: Literal) =>
+          value.code shouldBe "1"
+          value.lineNumber shouldBe Some(3)
+        }
+      }
+    }
+
+    "be created when they have values with keys" in {
+      val cpg = code("""<?php
+                      |function foo($x) {
+                      |  yield 1 => $x;
+                      |}
+                      |""".stripMargin)
+
+      inside(cpg.controlStructure.l) { case List(yieldStructure) =>
+        yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
+        yieldStructure.code shouldBe "yield 1 => $x"
+        yieldStructure.lineNumber shouldBe Some(3)
+
+        inside(yieldStructure.astChildren.l) { case List(key: Literal, value: Identifier) =>
+          key.code shouldBe "1"
+          key.lineNumber shouldBe Some(3)
+
+          value.name shouldBe "x"
+          value.code shouldBe "$x"
+          value.lineNumber shouldBe Some(3)
+        }
+      }
+    }
+  }
 }

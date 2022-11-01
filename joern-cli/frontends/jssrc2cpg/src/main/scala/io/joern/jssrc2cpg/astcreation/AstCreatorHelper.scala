@@ -7,8 +7,10 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
 import org.apache.commons.lang.StringUtils
 import ujson.Value
 
@@ -60,6 +62,22 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def nodeType(node: Value): BabelNode = fromString(node("type").str)
+
+  protected def codeForNodes(nodes: Seq[NewNode]): Option[String] = nodes.collectFirst {
+    case id: NewIdentifier => id.name.replace("...", "")
+    case clazz: NewTypeRef => clazz.code.stripPrefix("class ")
+  }
+
+  protected def nameForBabelNodeInfo(nodeInfo: BabelNodeInfo, defaultName: Option[String]): String = {
+    defaultName
+      .orElse(codeForBabelNodeInfo(nodeInfo).headOption)
+      .getOrElse {
+        val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
+        val localNode = createLocalNode(tmpName, Defines.ANY)
+        diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+        tmpName
+      }
+  }
 
   protected def generateUnusedVariableName(
     usedVariableNames: mutable.HashMap[String, Int],
@@ -181,6 +199,14 @@ trait AstCreatorHelper { this: AstCreator =>
     }
   }
 
+  protected def stripQuotes(str: String): String = str
+    .stripPrefix("\"")
+    .stripSuffix("\"")
+    .stripPrefix("'")
+    .stripSuffix("'")
+    .stripPrefix("`")
+    .stripSuffix("`")
+
   /** In JS it is possible to create anonymous classes. We have to handle this here.
     */
   private def calcTypeName(classNode: BabelNodeInfo): String =
@@ -236,7 +262,7 @@ trait AstCreatorHelper { this: AstCreator =>
                   case None =>
                     val methodScopeNode = methodScope.scopeNode
                     val localNode =
-                      createLocalNode(origin.variableName, Defines.ANY.label, Some(closureBindingIdProperty))
+                      createLocalNode(origin.variableName, Defines.ANY, Some(closureBindingIdProperty))
                     diffGraph.addEdge(methodScopeNode, localNode, EdgeTypes.AST)
                     val closureBindingNode = createClosureBindingNode(closureBindingIdProperty, origin.variableName)
                     methodScope.capturingRefId.foreach(ref =>
@@ -268,7 +294,7 @@ trait AstCreatorHelper { this: AstCreator =>
     methodScopeNodeId: NewNode,
     variableName: String
   ): (NewNode, ScopeType) = {
-    val local = createLocalNode(variableName, Defines.ANY.label)
+    val local = createLocalNode(variableName, Defines.ANY)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     (local, MethodScope)
   }

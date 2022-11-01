@@ -99,7 +99,7 @@ class DdgGenerator(semantics: Semantics) {
               addEdge(block, call)
             }
           case Some(node: Call) =>
-            addEdge(node, call, nodeToEdgeLabel(node))
+            addEdge(node, block, nodeToEdgeLabel(node))
             addEdge(block, call)
           case _ => // Do nothing
         }

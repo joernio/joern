@@ -762,7 +762,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
             val renderedFqName = TypeRenderer.renderFqName(originalDesc)
             if (
               renderedFqName.startsWith(TypeConstants.kotlinLetPrefix) ||
-              renderedFqName.startsWith(TypeConstants.kotlinAlsoPrefix)
+              renderedFqName.startsWith(TypeConstants.kotlinAlsoPrefix) ||
+              renderedFqName.startsWith(TypeConstants.kotlinTakeIfPrefix) ||
+              renderedFqName.startsWith(TypeConstants.kotlinTakeUnlessPrefix)
             ) {
               Some(TypeConstants.scopeFunctionItParameterName)
             } else if (

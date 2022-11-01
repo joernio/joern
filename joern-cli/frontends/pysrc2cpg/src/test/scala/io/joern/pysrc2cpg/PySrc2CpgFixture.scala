@@ -5,10 +5,12 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.pysrc2cpg.Py2CpgOnFileSystem.buildCpg
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.passes.frontend.PythonCallLinker
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+
+import java.io.File
+import java.nio.file.Paths
 
 trait PythonFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".py"
@@ -18,7 +20,6 @@ trait PythonFrontend extends LanguageFrontend {
     cpgOutFile.deleteOnExit()
     val config = Py2CpgOnFileSystemConfig(cpgOutFile.path, sourceCodePath.toPath, None)
     val cpg    = buildCpg(config)
-    new PythonCallLinker(cpg).createAndApply()
     cpg
   }
 }

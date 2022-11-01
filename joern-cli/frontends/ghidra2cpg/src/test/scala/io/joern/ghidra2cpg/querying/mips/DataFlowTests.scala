@@ -12,7 +12,7 @@ import io.shiftleft.semanticcpg.layers._
 class DataFlowTests extends GhidraBinToCpgSuite {
 
   implicit val resolver: ICallResolver = NoResolve
-  implicit var context: EngineContext = EngineContext()
+  implicit var context: EngineContext  = EngineContext()
 
   override def passes(cpg: Cpg): Unit = {
     applyDefaultOverlays(cpg)
@@ -25,7 +25,6 @@ class DataFlowTests extends GhidraBinToCpgSuite {
     super.beforeAll()
     buildCpgForBin("linux/mips/t1_to_t9")
   }
-
 
   "should find flows through `add*` instructions" in {
     def source = cpg.call.code("li t1,0x2a").argument(1)

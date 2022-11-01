@@ -5,7 +5,6 @@ import java.nio.file.Paths
 
 object Environment {
 
-  val IS_WIN: Boolean   = scala.util.Properties.isWin
   val IS_MAC: Boolean   = scala.util.Properties.isMac
   val IS_LINUX: Boolean = scala.util.Properties.isLinux
 

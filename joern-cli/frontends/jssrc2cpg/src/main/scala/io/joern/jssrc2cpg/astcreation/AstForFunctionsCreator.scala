@@ -8,13 +8,11 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{
-  IdentifierBase,
   NewIdentifier,
   NewMethod,
   NewMethodParameterIn,
   NewModifier,
-  NewTypeDecl,
-  TypeRefBase
+  NewTypeDecl
 }
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import ujson.{Arr, Value}
@@ -30,22 +28,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
     paramNodeInfo: BabelNodeInfo,
     paramName: String
   ): Ast = {
-    val ast = astForNodeWithFunctionReferenceAndCall(elementNodeInfo.json("argument"))
-    val defaultName = ast.nodes.collectFirst {
-      case id: IdentifierBase => id.name.replace("...", "")
-      case clazz: TypeRefBase => clazz.code.stripPrefix("class ")
-    }
-    val restName = codeForExportObject(paramNodeInfo, defaultName).headOption
-      .getOrElse {
-        if (defaultName.isEmpty) {
-          val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
-          val localNode = createLocalNode(tmpName, Defines.ANY.label)
-          diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
-          tmpName
-        } else { defaultName.get }
-      }
-      .replace("...", "")
-
+    val ast         = astForNodeWithFunctionReferenceAndCall(elementNodeInfo.json("argument"))
+    val defaultName = codeForNodes(ast.nodes.toSeq)
+    val restName    = nameForBabelNodeInfo(paramNodeInfo, defaultName)
     ast.root match {
       case Some(_: NewIdentifier) =>
         val keyNode = Ast(createFieldIdentifierNode(restName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber))
