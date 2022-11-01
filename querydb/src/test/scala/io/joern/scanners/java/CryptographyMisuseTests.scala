@@ -7,8 +7,8 @@ class CryptographyMisuseTests extends JavaQueryTestSuite {
   override def queryBundle = CryptographyMisuse
 
   "the `unsafeHashAlgo` query" when {
-    "find use of MD5 hash algorithm" in {
-      code(
+    "find use of the MD5 hash algorithm" in {
+      val cpg = code(
         """import java.lang.CloneNotSupportedException;
           |import java.security.DigestException;
           |import java.security.MessageDigest;
@@ -29,8 +29,8 @@ class CryptographyMisuseTests extends JavaQueryTestSuite {
           |}
           |""".stripMargin)
       val query = queryBundle.unsafeHashAlgo()
-      val results = findMatchingCalls(cpg, query)
-      println(results)
+      val results = findMatchingLiterals(cpg, query)
+      results shouldBe List("\"MD5\"")
     }
   }
 

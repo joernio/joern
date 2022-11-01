@@ -6,7 +6,7 @@ import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.util.QueryUtil
 import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, StoredNode}
 
 class JavaQueryTestSuite extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
   val argumentProvider = new QDBArgumentProvider(3)
@@ -36,8 +36,8 @@ class JavaQueryTestSuite extends JavaSrcCode2CpgFixture(withOssDataflow = true) 
     q(cpg).flatMap(_.evidence).collect { case c: Call => c.code }
   }
 
-  def findMatchingCode(cpg: Cpg, q: Query): List[String] = {
-    q(cpg).flatMap(_.evidence).collect { case c: StoredNode => c.property("CODE", "") }
+  def findMatchingLiterals(cpg: Cpg, q: Query): List[String] = {
+    q(cpg).flatMap(_.evidence).collect { case c: Literal => c.code }
   }
 
   def findMatchingMethods(cpg: Cpg, q: Query): List[String] = {
