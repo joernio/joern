@@ -1,21 +1,12 @@
 package io.joern.console
 
-import os.{Path, pwd}
 import better.files.*
-import dotty.tools.Settings
-import dotty.tools.dotc.core.Contexts.{Context, ctx}
-import dotty.tools.io.{ClassPath, Directory, PlainDirectory}
-import dotty.tools.repl.State
-import dotty.tools.scripting.{ScriptingDriver, Util}
-import io.joern.x2cpg.utils.dependency.DependencyResolver
 import os.{Path, pwd}
 import scala.jdk.CollectionConverters._
 
 import java.io.{InputStream, PrintStream, File as JFile}
 import java.net.URLClassLoader
 import java.nio.file.{Files, Path, Paths}
-import java.util
-import java.util.stream
 import java.util.stream.Collectors
 
 case class Config(
@@ -324,14 +315,6 @@ trait ScriptExecution { this: BridgeBase =>
          |openForInputPath(\"$name\")
          |""".stripMargin
     }
-  }
-
-  private def replClasspath(dependencies: Seq[java.io.File]): String = {
-    val inheritedClasspath = System.getProperty("java.class.path")
-    val separator = System.getProperty("path.separator")
-
-    val entriesForDeps = dependencies.mkString(separator)
-    s"$inheritedClasspath$separator$entriesForDeps"
   }
 
 }
