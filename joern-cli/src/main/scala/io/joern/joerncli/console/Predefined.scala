@@ -17,7 +17,7 @@ object Predefined {
       |import _root_.io.joern.dataflowengineoss.language._
       |import _root_.io.shiftleft.semanticcpg.language._
       |import overflowdb._
-      |import overflowdb.traversal._
+      |import overflowdb.traversal.{`package` => _, help => _, _}
       |import scala.jdk.CollectionConverters._
       |implicit val resolver: ICallResolver = NoResolve
       |implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
