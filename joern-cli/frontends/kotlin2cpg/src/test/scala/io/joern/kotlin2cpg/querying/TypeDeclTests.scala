@@ -15,6 +15,21 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+
+  "CPG for code with class declaration with two init blocks" should {
+    val cpg = code("""
+       |package no.such.package
+       |class YourNewMostFavoriteNewsletter {
+       |    init { println("            𝖘𝖚𝖇𝖘𝖈𝖗𝖎𝖇𝖊 𝖓𝖔𝖜         ") }
+       |    init { println("   https://grugq.substack.com/   ") }
+       |}
+       | """.stripMargin)
+
+    "should contain CALL nodes for the calls inside the init blocks" in {
+      cpg.call.code("println.*").size shouldBe 2
+    }
+  }
+
   "CPG for code with class declaration with one member" should {
     val cpg = code("""
         |package mypkg

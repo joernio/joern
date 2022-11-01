@@ -113,6 +113,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     expr match {
       case typedExpr: KtAnnotatedExpression         => astsForExpression(typedExpr.getBaseExpression, argIdxOpt)
       case typedExpr: KtArrayAccessExpression       => Seq(astForArrayAccess(typedExpr, argIdxOpt))
+      case typedExpr: KtAnonymousInitializer        => astsForExpression(typedExpr.getBody, argIdxOpt)
       case typedExpr: KtBinaryExpression            => Seq(astForBinaryExpr(typedExpr, argIdxOpt))
       case typedExpr: KtBlockExpression             => astsForBlock(typedExpr, argIdxOpt)
       case typedExpr: KtBinaryExpressionWithTypeRHS => Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxOpt))
