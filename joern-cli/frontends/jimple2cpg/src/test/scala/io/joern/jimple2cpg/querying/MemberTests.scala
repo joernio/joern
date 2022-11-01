@@ -1,17 +1,17 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
 
-class MemberTests extends JimpleCodeToCpgFixture {
+class MemberTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
+  val cpg = code(
     """
       |class Foo {
       |  int x;
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain MEMBER node with correct properties" in {
     val List(x) = cpg.member("x").l

@@ -1,11 +1,11 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language._
 
-class EnumTests extends JimpleCodeToCpgFixture {
-  override val code: String =
+class EnumTests extends JimpleCode2CpgFixture {
+  val cpg = code(
     """
       |enum FuzzyBool {
       |  TRUE,
@@ -23,7 +23,7 @@ class EnumTests extends JimpleCodeToCpgFixture {
       |    this.label = label;
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "it should contain the basic enum methods" in {
     cpg.typeDecl.name(".*FuzzyBool.*").method.filterNot(_.name.contains("$")).size shouldBe 4

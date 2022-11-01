@@ -1,15 +1,15 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 import java.io.File
 
-class TypeDeclTests extends JimpleCodeToCpgFixture {
+class TypeDeclTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
+  val cpg = code(
     """
       | package Foo;
       | abstract class Bar extends Woo {
@@ -17,7 +17,7 @@ class TypeDeclTests extends JimpleCodeToCpgFixture {
       |   int method () { return 1; }
       | };
       | class Woo {}
-      | """.stripMargin
+      | """.stripMargin)
 
   "should contain a type decl for `foo` with correct fields" in {
     val List(x) = cpg.typeDecl.name("Bar").l

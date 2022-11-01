@@ -1,12 +1,12 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Unknown}
 import io.shiftleft.semanticcpg.language._
 
-class IfGotoTests extends JimpleCodeToCpgFixture {
+class IfGotoTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
+  val cpg = code(
     """
       |class Foo {
       |
@@ -27,7 +27,7 @@ class IfGotoTests extends JimpleCodeToCpgFixture {
       |   }
       |
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should identify `goto` blocks" in {
     cpg.all.collect { case x: Unknown => x }.code.toSetMutable shouldBe Set("goto 9", "goto 5")

@@ -1,17 +1,15 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Failed
 
-class ArrayTests extends JimpleCodeToCpgFixture {
+class ArrayTests extends JimpleCode2CpgFixture {
 
-  implicit val resolver: ICallResolver = NoResolve
-
-  override val code: String =
+  val cpg = code(
     """
       |class Foo {
       |  public void foo() {
@@ -28,7 +26,7 @@ class ArrayTests extends JimpleCodeToCpgFixture {
       |    x[1] = x[0] + 2;
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should initialize array with three address code initialization expressions" in {
     def m = cpg.method(".*foo.*")

@@ -1,12 +1,12 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
 
-class TypeTests extends JimpleCodeToCpgFixture {
+class TypeTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
+  val cpg = code(
     """
       | package foo;
       |
@@ -18,7 +18,7 @@ class TypeTests extends JimpleCodeToCpgFixture {
       |     return 1;
       |   }
       | }
-      |""".stripMargin
+      |""".stripMargin)
 
   "should create TYPE node with correct fields for class member" in {
     val List(x) = cpg.typ.name("Long").l

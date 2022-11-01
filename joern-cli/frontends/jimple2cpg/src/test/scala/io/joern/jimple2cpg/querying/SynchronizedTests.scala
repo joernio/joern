@@ -1,12 +1,12 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
-class SynchronizedTests extends JimpleCodeToCpgFixture {
+class SynchronizedTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
+  val cpg = code(
     """
       |class Foo {
       |  public static synchronized String foo(String s) {
@@ -21,7 +21,7 @@ class SynchronizedTests extends JimpleCodeToCpgFixture {
       |  }
       |
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "it should process a synchronized method the same as a non-synchronized method" in {
     val List(method: Method) = cpg.method.name("foo").l

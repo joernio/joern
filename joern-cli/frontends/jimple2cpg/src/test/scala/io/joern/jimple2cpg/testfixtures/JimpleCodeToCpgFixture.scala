@@ -1,16 +1,17 @@
 package io.joern.jimple2cpg.testfixtures
 
 import io.joern.jimple2cpg.{Config, Jimple2Cpg}
+import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.Cpg
-import io.joern.x2cpg.testfixtures.{CodeToCpgFixture, LanguageFrontend}
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, CodeToCpgFixture, LanguageFrontend, TestCpg}
 
 import java.io.{File, PrintWriter}
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 import java.util.Collections
 import javax.tools.{JavaCompiler, JavaFileObject, StandardLocation, ToolProvider}
 import scala.jdk.CollectionConverters
 
-class JimpleFrontend extends LanguageFrontend {
+trait JimpleFrontend extends LanguageFrontend {
 
   override val fileSuffix: String = ".java"
 
@@ -20,18 +21,19 @@ class JimpleFrontend extends LanguageFrontend {
   }
 }
 
-class JimpleCodeToCpgFixture extends CodeToCpgFixture(new JimpleFrontend) {
+class JimpleCode2CpgFixture()
+  extends Code2CpgFixture(() => new JimpleTestCpg()) {
 
-  override def writeCodeToFile(sourceCode: String): File = {
-    val tmpDir = Files.createTempDirectory("semanticcpgtest").toFile
-    tmpDir.deleteOnExit()
-    val codeFile = File.createTempFile("Test", frontend.fileSuffix, tmpDir)
-    codeFile.deleteOnExit()
-    new PrintWriter(codeFile) { write(sourceCode); close() }
-    JimpleCodeToCpgFixture.compileJava(codeFile)
-    tmpDir
+}
+
+class JimpleTestCpg() extends TestCpg with JimpleFrontend {
+  override protected def codeFilePreProcessing(codeFile: Path): Unit = {
+    JimpleCodeToCpgFixture.compileJava(codeFile.toFile)
   }
 
+  override protected def applyPasses(): Unit = {
+    X2Cpg.applyDefaultOverlays(this)
+  }
 }
 
 object JimpleCodeToCpgFixture {
