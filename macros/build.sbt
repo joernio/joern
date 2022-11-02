@@ -23,5 +23,3 @@ scalacOptions ++= Seq() ++ (
 )
 
 enablePlugins(JavaAppPackaging)
-
-Test / packageBin / publishArtifact := true

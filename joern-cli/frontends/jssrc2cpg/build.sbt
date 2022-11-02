@@ -14,8 +14,6 @@ libraryDependencies ++= Seq(
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
 )
 
-Test / packageBin / publishArtifact := true
-
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
 
 scalacOptions ++= Seq() ++ (
