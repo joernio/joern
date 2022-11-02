@@ -131,17 +131,16 @@ class AndroidMisconfigurationsTests extends AndroidQueryTestSuite {
 
     "should not match when the minSdk version is v16-18 and a call to SecureRandom.getInstance with a non-PRNG " +
       "algorithm is set" in {
-      val cpg = code(
-        """import java.security.SecureRandom
+        val cpg = code("""import java.security.SecureRandom
           |
           |fun main() {
           |    SecureRandom random = SecureRandom.getInstance("PKCS11")
           |}
           |""".stripMargin)
-        .moreCode(makeBuildGradle(minSdk = 18), "build.gradle")
-      val query = queryBundle.vulnerablePRNGOnAndroidv16_18()
-      findMatchingConfigFiles(cpg, query) shouldBe Set()
-    }
+          .moreCode(makeBuildGradle(minSdk = 18), "build.gradle")
+        val query = queryBundle.vulnerablePRNGOnAndroidv16_18()
+        findMatchingConfigFiles(cpg, query) shouldBe Set()
+      }
 
     "should not match when the minSdk version is v16-18 but no call to SecureRandom is present" in {
       val cpg = code("import java.security.SecureRandom\nfun main() = println(\"I'm okay\")")
