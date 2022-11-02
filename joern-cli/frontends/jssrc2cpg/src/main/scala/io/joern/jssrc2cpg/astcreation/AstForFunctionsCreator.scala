@@ -3,18 +3,10 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier => _, _}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewIdentifier,
-  NewMethod,
-  NewMethodParameterIn,
-  NewModifier,
-  NewTypeDecl
-}
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import ujson.{Arr, Value}
 
 import scala.collection.mutable
