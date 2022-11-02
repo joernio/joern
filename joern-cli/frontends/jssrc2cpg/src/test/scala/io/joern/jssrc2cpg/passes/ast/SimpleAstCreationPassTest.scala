@@ -1,15 +1,24 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.passes.AbstractPassTest
+import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines, EcmaBuiltins}
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import io.joern.jssrc2cpg.passes.Defines
-import io.joern.jssrc2cpg.passes.EcmaBuiltins
 
 class SimpleAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple fragments" should {
+
+    "have return node for arrow functions" in AstFixture("const foo = () => 42;") { cpg =>
+      // Return node is necessary data flow
+      val methodBlock = cpg.method("anonymous").astChildren.isBlock
+      val literal     = methodBlock.astChildren.isReturn.astChildren.isLiteral.head
+      literal.code shouldBe "42"
+    }
+
+    "have only 1 Block Node for arrow functions" in AstFixture("const foo = () => {return 42;}") { cpg =>
+      cpg.method("anonymous").ast.isBlock.size shouldBe 1
+    }
 
     "have correct structure for FILENAME property" in AstFixture("let x = 1;") { cpg =>
       cpg.namespaceBlock.filenameExact("code.js").size shouldBe 1
