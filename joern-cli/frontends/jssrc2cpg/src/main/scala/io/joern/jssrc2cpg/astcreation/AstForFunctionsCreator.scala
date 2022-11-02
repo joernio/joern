@@ -7,7 +7,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier => _, _}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
-import ujson.{Arr, Value}
+import ujson.Value
 
 import scala.collection.mutable
 
@@ -339,9 +339,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     methodAstParentStack.push(methodNode)
 
-    val blockJson                 = func.json("body")
-    val blockNodeInfo             = createBabelNodeInfo(blockJson)
-    val blockNode                 = createBlockNode(blockNodeInfo)
+    val bodyJson                  = func.json("body")
+    val bodyNodeInfo              = createBabelNodeInfo(bodyJson)
+    val blockNode                 = createBlockNode(bodyNodeInfo)
     val blockAst                  = Ast(blockNode)
     val additionalBlockStatements = mutable.ArrayBuffer.empty[Ast]
 
@@ -360,8 +360,16 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val paramNodes = handleParameters(func.json("params").arr.toSeq, additionalBlockStatements)
 
     val bodyStmtAsts = func.node match {
-      case ArrowFunctionExpression => createBlockStatementAsts(Arr(blockJson))
-      case _                       => createBlockStatementAsts(blockJson("body"))
+      case ArrowFunctionExpression =>
+        bodyNodeInfo.node match {
+          case BlockStatement =>
+            // when body contains more than one statement, use bodyJson("body")) to avoid double Block node
+            createBlockStatementAsts(bodyJson("body"))
+          case _ =>
+            // when body is just one expression like const foo = () => 42, generate a Return node
+            createReturnAst(createReturnNode(bodyNodeInfo), List(astForNode(bodyJson))) :: Nil
+        }
+      case _ => createBlockStatementAsts(bodyJson("body"))
     }
     setIndices(methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts)
 
