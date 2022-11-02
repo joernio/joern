@@ -28,9 +28,8 @@ class CfgDominator[NodeType](adapter: CfgAdapter[NodeType]) {
     val dominators = Array.fill(indexOf.size)(UNDEFINED)
     dominators(indexOf(cfgEntry)) = indexOf(cfgEntry)
 
-    /** Retrieve index of immediate dominator for node with given index. If the index is `UNDEFINED`, UNDEFINED is
-      * returned.
-      */
+    /* Retrieve index of immediate dominator for node with given index. If the index is `UNDEFINED`, UNDEFINED is
+     * returned. */
     def safeDominators(index: Int): Int = {
       if (index != UNDEFINED) {
         dominators(index)
