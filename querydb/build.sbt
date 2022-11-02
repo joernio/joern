@@ -5,12 +5,14 @@ enablePlugins(JavaAppPackaging)
 dependsOn(
   Projects.console,
   Projects.macros,
-  Projects.javasrc2cpg,
   Projects.ghidra2cpg,
+  Projects.javasrc2cpg,
+  Projects.kotlin2cpg,
+  Projects.ghidra2cpg  % "test->test",
   Projects.javasrc2cpg % "test->test",
-  Projects.ghidra2cpg % "test->test",
-  Projects.c2cpg      % "test->test",
-  Projects.kotlin2cpg % "test->test"
+  Projects.kotlin2cpg  % "test->test",
+  Projects.c2cpg       % "test->test",
+  Projects.kotlin2cpg  % "test->test"
 )
 
 libraryDependencies ++= Seq(
