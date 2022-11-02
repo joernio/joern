@@ -25,7 +25,7 @@ object CryptographyMisuse extends QueryBundle {
           | MD5 and SHA-1 are considered weak and insecure; an attacker can easily use an MD5 collision to forge valid
           | digital certificates or use dictionary/brute-force attacks to obtain passwords. Use SHA-256 instead.
           |""".stripMargin,
-      score = 7,
+      score = 6,
       withStrRep({ cpg =>
         def source = cpg.literal("\"MD5\"|\"SHA-1\"")
 
@@ -34,7 +34,23 @@ object CryptographyMisuse extends QueryBundle {
 
         sink.reachableBy(source).l
       }),
-      tags = List(QueryTags.cryptography, QueryTags.default)
+      tags = List(QueryTags.cryptography, QueryTags.default),
+      codeExamples = CodeExamples(
+        List(
+          """
+          |String algo = "MD5";
+          |MessageDigest md = MessageDigest.getInstance(algo);
+          |""".stripMargin,
+          """
+          |String algo = "SHA-1";
+          |MessageDigest md = MessageDigest.getInstance(algo);
+          |""".stripMargin
+        ),
+        List("""
+          |String algo = "SHA-256";
+          |MessageDigest md = MessageDigest.getInstance(algo);
+          |""".stripMargin)
+      )
     )
 
   @q
@@ -56,7 +72,17 @@ object CryptographyMisuse extends QueryBundle {
 
         sink.reachableBy(source).dedup.filter(f => Integer.parseInt(f.code) < 1000).l
       }),
-      tags = List(QueryTags.cryptography, QueryTags.default)
+      tags = List(QueryTags.cryptography, QueryTags.default),
+      codeExamples = CodeExamples(
+        List("""
+            |SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
+            |SecretKey key = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, 500, keyLength));
+            |""".stripMargin),
+        List("""
+            |SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
+            |SecretKey key = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, 4000, keyLength));
+            |""".stripMargin)
+      )
     )
 
 }
