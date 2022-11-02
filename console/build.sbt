@@ -31,8 +31,6 @@ libraryDependencies ++= Seq(
   "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
 )
 
-Test / packageBin / publishArtifact := true
-
 scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "-encoding",
