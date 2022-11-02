@@ -19,9 +19,9 @@ object QueryTags {
   val integers               = "integers"
   val strings                = "strings"
   val sqlInjection           = "sql-injection"
-  val compilerOptimization   = "compiler-optimization"
   val misconfiguration       = "misconfiguration"
   val insecureNetworkTraffic = "insecure-network-traffic"
   val pathTraversal          = "path-traversal"
+  val cryptography           = "cryptography"
 
 }
