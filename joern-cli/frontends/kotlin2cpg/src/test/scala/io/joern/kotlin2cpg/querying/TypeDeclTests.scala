@@ -30,6 +30,28 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "CPG for code with class declaration and secondary constructor" should {
+    val cpg = code("""
+       |package no.such.pkg
+       |
+       |class AClass() {
+       |    init { println("inside first init block") }
+       |    init { println("inside second init block") }
+       |    constructor(p: Int) : this() {
+       |        println("secondary ctor called with parameter $x")
+       |    }
+       |}
+       | """.stripMargin)
+
+    "should contain METHOD for the secondary ctor with a call to the primary ctor as the first child of its BLOCK" in {
+      val List(secondaryCtor: Method) =
+        cpg.method.name("<init>").where(_.parameter.nameExact("p")).l
+      val List(firstCallOfSecondaryCtor: Call) =
+        secondaryCtor.block.astChildren.collectAll[Call].take(1).l
+      firstCallOfSecondaryCtor.methodFullName shouldBe "no.such.pkg.AClass.<init>:void()"
+    }
+  }
+
   "CPG for code with class declaration with one member" should {
     val cpg = code("""
         |package mypkg

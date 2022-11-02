@@ -190,7 +190,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.methodReturn.lineNumber shouldBe Some(6)
       m.methodReturn.columnNumber shouldBe Some(4)
 
-      m.block.astChildren.map(_.code).l shouldBe List("this.bar = bar")
+      m.block.astChildren.map(_.code).l shouldBe List("<init>", "this.bar = bar")
 
       val List(mThisParam: MethodParameterIn, firstParam: MethodParameterIn, secondParam: MethodParameterIn) =
         m.parameter.l
@@ -198,13 +198,13 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       firstParam.name shouldBe "foo"
       secondParam.name shouldBe "bar"
 
-      val b                           = m.block
-      val List(firstBlockChild: Call) = b.astChildren.l
-      firstBlockChild.methodFullName shouldBe Operators.assignment
-      firstBlockChild.code shouldBe "this.bar = bar"
-      firstBlockChild.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      val b                                     = m.block
+      val List(_: Call, secondBlockChild: Call) = b.astChildren.l
+      secondBlockChild.methodFullName shouldBe Operators.assignment
+      secondBlockChild.code shouldBe "this.bar = bar"
+      secondBlockChild.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-      val List(assignmentLhs: Call, assignmentRhs: Identifier) = firstBlockChild.argument.l
+      val List(assignmentLhs: Call, assignmentRhs: Identifier) = secondBlockChild.argument.l
       assignmentLhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignmentLhs.methodFullName shouldBe Operators.fieldAccess
       assignmentLhs.name shouldBe Operators.fieldAccess
