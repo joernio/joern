@@ -146,7 +146,7 @@ trait KtPsiToAst {
     }
   }
 
-  def secondaryCtorAsts(ctors: Seq[KtSecondaryConstructor], classFullName: String)(implicit
+  def secondaryCtorAsts(ctors: Seq[KtSecondaryConstructor], classFullName: String, primaryCtorCall: NewCall)(implicit
     typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     ctors.map { ctor =>
@@ -165,7 +165,8 @@ trait KtPsiToAst {
 
       val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++
         withIndex(constructorParams) { (p, idx) => astForParameter(p, idx) }
-      val ctorMethodBlockAst = Option(ctor.getBodyExpression).map(astsForBlock(_, None)).getOrElse(Seq(Ast()))
+      val ctorMethodBlockAst =
+        astsForBlock(ctor.getBodyExpression, None, preStatements = Some(Seq(Ast(primaryCtorCall))))
       scope.popScope()
 
       val ctorMethodReturnNode =
@@ -276,7 +277,18 @@ trait KtPsiToAst {
         Ast(memberNode(param.getName, typeFullName, line(param), column(param)))
     }
 
-    val secondaryConstructorAsts = secondaryCtorAsts(ktClass.getSecondaryConstructors.asScala.toSeq, classFullName)
+    val primaryCtorCall =
+      callNode(
+        TypeConstants.initPrefix,
+        primaryCtorMethodNode.name,
+        primaryCtorMethodNode.fullName,
+        primaryCtorMethodNode.signature,
+        constructorMethodReturn.typeFullName,
+        DispatchTypes.STATIC_DISPATCH
+      )
+
+    val secondaryConstructorAsts =
+      secondaryCtorAsts(ktClass.getSecondaryConstructors.asScala.toSeq, classFullName, primaryCtorCall)
     val _componentNMethodAsts = ktClass match {
       case typedExpr: KtClass if typedExpr.isData =>
         componentNMethodAsts(typeDecl, ktClass.getPrimaryConstructor.getValueParameters.asScala.toSeq)
@@ -389,7 +401,8 @@ trait KtPsiToAst {
     argIdx: Option[Int],
     pushToScope: Boolean = true,
     localsForCaptures: List[NewLocal] = List(),
-    implicitReturnAroundLastStatement: Boolean = false
+    implicitReturnAroundLastStatement: Boolean = false,
+    preStatements: Option[Seq[Ast]] = None
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node = withArgumentIndex(
@@ -417,7 +430,10 @@ trait KtPsiToAst {
 
     if (pushToScope) scope.popScope()
     Seq(
-      blockAst(node, localsForCaptures.map(Ast(_)) ++ allStatementsButLastAsts ++ lastStatementAsts)
+      blockAst(
+        node,
+        localsForCaptures.map(Ast(_)) ++ preStatements.getOrElse(Seq()) ++ allStatementsButLastAsts ++ lastStatementAsts
+      )
     ) ++ declarationAsts
   }
 
