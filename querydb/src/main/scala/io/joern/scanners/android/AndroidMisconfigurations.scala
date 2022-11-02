@@ -4,6 +4,7 @@ import io.joern.scanners._
 import io.joern.console._
 import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.Traversal
 
 object AndroidMisconfigurations extends QueryBundle {
 
@@ -192,5 +193,54 @@ object AndroidMisconfigurations extends QueryBundle {
           )
         )
       )
+    )
+
+  /** <a
+    * href="https://www.researchgate.net/publication/262257979_Predictability_of_Android_OpenSSL%27s_Pseudo_random_number_generator">Predictability
+    * of Android OpenSSL's Pseudo random number generator</a>
+    */
+  @q
+  def vulnerablePRNGOnAndroidv16_18(): Query =
+    Query.make(
+      name = "vuln-prng-android-v16_18",
+      author = Crew.dave,
+      title = "Vulnerable underlying PRNG used on currently set version of Android",
+      description = """
+          |The underlying PRNG is vulnerable on Android v16-18. If the application is implemented by utilizing
+          |org.webkit package and a key exchange scheme is RSA, the PreMasterSecret of the first SSL session
+          |can be recovered using the restored PRNG states.
+          |
+          |For more information, see "Predictability of Android OpenSSL's Pseudo random number generator" by S.H. Kim 
+          |et. al.
+          |""".stripMargin,
+      score = 6,
+      withStrRep({ cpg =>
+        def groovyBuildGradleFiles = cpg.configFile.name(".*build.gradle")
+
+        val targetSdkVersionMatch = """^[^t]+minSdk[^0-9]+(\d+)""".r
+        val insecureSdkVersionMin = 16
+        val insecureSdkVersionMax = 18
+        def satisfiesConfig = groovyBuildGradleFiles.filter { gradleFile =>
+          gradleFile.content
+            .split('\n')
+            .exists { line =>
+              targetSdkVersionMatch
+                .findAllIn(line)
+                .matchData
+                .exists { m =>
+                  m.groupCount > 0 &&
+                  m.group(1).toInt >= insecureSdkVersionMin
+                  m.group(1).toInt <= insecureSdkVersionMax
+                }
+            }
+        }
+        if (
+          cpg.call.methodFullNameExact("java.security.SecureRandom.<init>:void()").nonEmpty && satisfiesConfig.nonEmpty
+        )
+          satisfiesConfig
+        else
+          Traversal.empty
+      }),
+      tags = List(QueryTags.android, QueryTags.cryptography, QueryTags.misconfiguration)
     )
 }

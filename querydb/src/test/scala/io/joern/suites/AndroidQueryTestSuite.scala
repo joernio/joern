@@ -45,4 +45,46 @@ class AndroidQueryTestSuite extends Code2CpgFixture(() => new DefaultTestCpgWith
   def findMatchingConfigFiles(cpg: Cpg, q: Query): Set[String] = {
     q(cpg).flatMap(_.evidence).collect { case c: ConfigFile => c }.name.toSetImmutable
   }
+
+  def makeAndroidXml(allowBackup: Boolean): String = {
+    s"""|<?xml version="1.0" encoding="utf-8"?>
+        |<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+        |    package="com.example.slimandroid">
+        |
+        |    <application
+        |        android:allowBackup="$allowBackup"
+        |        android:label="SlimAndroid"
+        |        android:supportsRtl="true"
+        |        android:theme="@style/Theme.AppCompat">
+        |        <activity
+        |            android:name=".MainActivity"
+        |            android:exported="true">
+        |            <intent-filter>
+        |                <action android:name="android.intent.action.MAIN" />
+        |                <category android:name="android.intent.category.LAUNCHER" />
+        |            </intent-filter>
+        |        </activity>
+        |    </application>
+        |</manifest>""".stripMargin
+  }
+
+  def makeBuildGradle(targetSdk: Int = 23, minSdk: Int = 23): String = {
+    s"""
+       |plugins {
+       |    id 'com.android.application'
+       |    id 'kotlin-android'
+       |}
+       |
+       |android {
+       |    compileSdk 32
+       |    defaultConfig {
+       |        applicationId "com.example.slimandroid"
+       |        minSdk $minSdk
+       |        targetSdk $targetSdk
+       |        versionCode 1
+       |        versionName "1.0"
+       |    }
+       |}
+       |""".stripMargin
+  }
 }
