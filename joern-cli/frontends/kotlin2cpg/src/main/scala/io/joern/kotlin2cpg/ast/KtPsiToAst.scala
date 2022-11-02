@@ -165,7 +165,7 @@ trait KtPsiToAst {
 
       val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++
         withIndex(constructorParams) { (p, idx) => astForParameter(p, idx) }
-      val ctorMethodBlockAst = Option(ctor.getBodyExpression).map(astsForBlock(_, None)).getOrElse(Seq(Ast()))
+      val ctorMethodBlockAst = astsForBlock(ctor.getBodyExpression, None)
       scope.popScope()
 
       val ctorMethodReturnNode =
