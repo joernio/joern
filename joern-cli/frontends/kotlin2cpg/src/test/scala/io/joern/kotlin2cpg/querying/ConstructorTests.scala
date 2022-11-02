@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
+import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, MethodParameterIn}
@@ -190,7 +191,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.methodReturn.lineNumber shouldBe Some(6)
       m.methodReturn.columnNumber shouldBe Some(4)
 
-      m.block.astChildren.map(_.code).l shouldBe List("<init>", "this.bar = bar")
+      m.block.astChildren.map(_.code).l shouldBe List(Constants.init, "this.bar = bar")
 
       val List(mThisParam: MethodParameterIn, firstParam: MethodParameterIn, secondParam: MethodParameterIn) =
         m.parameter.l
