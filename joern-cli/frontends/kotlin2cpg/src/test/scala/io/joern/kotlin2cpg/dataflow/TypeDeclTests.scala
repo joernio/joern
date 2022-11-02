@@ -114,4 +114,32 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
     }
   }
 
+  "CPG for code with class extending another class" should {
+    val cpg = code("""
+       |open class AClass { open fun printP(p: String) = println(p) }
+       |class BClass : AClass() { override fun printP(p: String) = super.printP(p + "_") }
+       |fun doSomething(x: String) {
+       |    val b = BClass()
+       |    b.printP(x)
+       |}
+       |""".stripMargin)
+
+    "should find a flow through fn of superclass" in {
+      val source = cpg.method.name("doSomething").parameter
+      val sink   = cpg.call.code("println.*").argument
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSet shouldBe
+        Set(
+          List(
+            ("doSomething(x)", Some(4)),
+            ("b.printP(x)", Some(6)),
+            ("printP(this, p)", Some(3)),
+            ("p + \"_\"", Some(3)),
+            ("printP(this, p)", Some(2)),
+            ("println(p)", Some(2))
+          )
+        )
+    }
+  }
+
 }
