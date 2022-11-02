@@ -2,9 +2,11 @@ package io.joern.scanners.android
 
 import io.joern.scanners._
 import io.joern.console._
+import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
+import io.joern.dataflowengineoss.language._
 
 object AndroidMisconfigurations extends QueryBundle {
 
@@ -200,7 +202,7 @@ object AndroidMisconfigurations extends QueryBundle {
     * of Android OpenSSL's Pseudo random number generator</a>
     */
   @q
-  def vulnerablePRNGOnAndroidv16_18(): Query =
+  def vulnerablePRNGOnAndroidv16_18()(implicit context: EngineContext): Query =
     Query.make(
       name = "vuln-prng-android-v16_18",
       author = Crew.dave,
@@ -234,8 +236,13 @@ object AndroidMisconfigurations extends QueryBundle {
                 }
             }
         }
+
+        def source         = cpg.literal("\".*PRNG.*\"")
+        def sink           = cpg.call.code(".*SecureRandom.getInstance.*")
+        def defaultSecRand = cpg.call.methodFullNameExact("java.security.SecureRandom.<init>:void()")
         if (
-          cpg.call.methodFullNameExact("java.security.SecureRandom.<init>:void()").nonEmpty && satisfiesConfig.nonEmpty
+          (defaultSecRand.nonEmpty || sink.reachableBy(source).nonEmpty) &&
+          satisfiesConfig.nonEmpty
         )
           satisfiesConfig
         else
