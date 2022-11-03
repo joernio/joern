@@ -283,4 +283,22 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       c.methodFullName shouldBe "kotlin.Int.toFloat:float()"
     }
   }
+
+  "CPG for code with call to ctor using named arguments" should {
+    val cpg = code("""
+      |package no.such.pkg
+      |class Person(val firstName: String, val lastName: String)
+      |fun doSomething(x: String, y: String) {
+      |    val p = Person(lastName = y, firstName = x)
+      |    println(p.firstName)
+      |    println(p.lastName)
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments that have the argument name set" in {
+      val List(c) = cpg.call.code("Person.*").l
+      c.argument(1).argumentName shouldBe Some("lastName")
+      c.argument(2).argumentName shouldBe Some("firstName")
+    }
+  }
 }
