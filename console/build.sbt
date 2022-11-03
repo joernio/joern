@@ -17,7 +17,7 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
-  "com.michaelpollmeier" %% "scala-repl-pp"     % "0.0.5",
+  "com.michaelpollmeier" %% "scala-repl-pp"     % "0.0.7",
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
   "com.github.scopt"     %% "scopt"             % ScoptVersion,
   "org.typelevel"        %% "cats-effect"       % Versions.cats,
