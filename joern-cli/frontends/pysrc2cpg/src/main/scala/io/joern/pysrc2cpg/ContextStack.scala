@@ -20,8 +20,8 @@ class ContextStack {
     val order: AutoIncIndex
     val variables: mutable.Map[String, nodes.NewNode]
     var lambdaCounter: Int
-    val locallyDefinedProcedures: mutable.Map[String, NewNode]   = mutable.HashMap.empty
-    val importedProcedures: mutable.Map[String, (Alias, String)] = mutable.HashMap.empty
+    val locallyDefinedProcedures: mutable.Map[String, NewNode] = mutable.HashMap.empty
+    val importedProcedures: mutable.Map[String, String]        = mutable.HashMap.empty
   }
 
   private class MethodContext(
@@ -116,11 +116,19 @@ class ContextStack {
     }
   }
 
-  def pushImportedProcedure(alais: Alias, sourceModule: String): Unit = {
+  def pushImportedProcedure(alias: Alias, sourceModule: String): Unit = {
+    def calculateFullNameForImport(alias: Alias, modulePath: String): String = {
+      val splitModule = modulePath.split("\\.")
+      val moduleTail  = splitModule.tail
+      s"${splitModule.head}.py:${splitModule.tail.mkString(".")}${if (moduleTail.isEmpty) "" else "."}<module>.${alias.name}"
+    }
+
     stack.headOption match {
-      case Some(head) if alais.asName.isDefined => head.importedProcedures.put(alais.asName.get, (alais, sourceModule))
-      case Some(head) if alais.asName.isEmpty   => head.importedProcedures.put(alais.name, (alais, sourceModule))
-      case _                                    =>
+      case Some(head) if alias.asName.isDefined =>
+        head.importedProcedures.put(alias.asName.get, calculateFullNameForImport(alias, sourceModule))
+      case Some(head) if alias.asName.isEmpty =>
+        head.importedProcedures.put(alias.name, calculateFullNameForImport(alias, sourceModule))
+      case _ =>
     }
   }
 
@@ -145,12 +153,11 @@ class ContextStack {
     * if true.
     *
     * @param name
-    *   the name of the procedure.
+    *   the name or alias of the procedure.
     * @return
-    *   the alias and name of the module from which the procedure is imported if this procedure is imported, empty if
-    *   otherwise.
+    *   the full name of the method (using the defined name).
     */
-  def getImportedProcedure(name: String): Option[(Alias, String)] = {
+  def getImportedProcedure(name: String): Option[String] = {
     stack.headOption match {
       case Some(head) => head.importedProcedures.get(name)
       case None       => None

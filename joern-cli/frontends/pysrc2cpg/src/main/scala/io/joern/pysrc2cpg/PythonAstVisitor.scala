@@ -1692,11 +1692,9 @@ class PythonAstVisitor(
         } else if (maybeImported.isDefined) {
           // If the call is to an imported procedure then we will use the alias information (if present) to create the
           // method full name
-          val (alias, sourceModule) = maybeImported.get
-          println(calculateFullNameForImport(alias, sourceModule))
           callNode
             .dispatchType(DispatchTypes.STATIC_DISPATCH)
-            .methodFullName(s"${calculateFullNameForImport(alias, sourceModule)}")
+            .methodFullName(maybeImported.get)
         } else {
           callNode
         }
@@ -1931,11 +1929,6 @@ class PythonAstVisitor(
     }
   }
 
-  private def calculateFullNameForImport(alias: Alias, modulePath: String): String = {
-    val splitModule = modulePath.split("\\.")
-    val moduleTail  = splitModule.tail
-    s"${splitModule.head}.py:${splitModule.tail.mkString(".")}${if (moduleTail.isEmpty) "" else "."}<module>.${alias.name}"
-  }
 }
 
 object PythonAstVisitor {
