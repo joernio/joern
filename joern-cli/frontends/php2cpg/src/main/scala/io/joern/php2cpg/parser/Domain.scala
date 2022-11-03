@@ -27,6 +27,8 @@ object Domain {
     // Used for $array[] = $var type assignments
     val emptyArrayIdx = "<operator>.emptyArrayIdx"
     val errorSuppress = "<operator>.errorSuppress"
+    // Double arrow operator used to represent key/value pairs: key => value
+    val doubleArrow = "<operator>.doubleArrow"
 
     val assignmentCoalesceOp = "<operator>.assignmentCoalesce"
     val assignmentConcatOp   = "<operator>.assignmentConcat"
@@ -44,6 +46,7 @@ object Domain {
     val shellExec   = "shell_exec"
     val unset       = "unset"
     val global      = "global"
+    val isNull      = "is_null"
   }
 
   object PhpDomainTypeConstants {

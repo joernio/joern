@@ -536,9 +536,103 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     wrapMultipleInBlock(imports, line(stmt))
   }
 
+  private def astForKeyValPair(key: PhpExpr, value: PhpExpr, lineNo: Option[Integer]): Ast = {
+    val keyAst   = astForExpr(key)
+    val valueAst = astForExpr(value)
+
+    val code     = s"${rootCode(keyAst)} => ${rootCode(valueAst)}"
+    val callNode = operatorCallNode(PhpBuiltins.doubleArrow, code, line = lineNo)
+    callAst(callNode, keyAst :: valueAst :: Nil)
+  }
+
   private def astForForeachStmt(stmt: PhpForeachStmt): Ast = {
-    // TODO Actually implement this
-    Ast()
+    val iteratorAst   = astForExpr(stmt.iterExpr)
+    val iteratorLocal = getTmpLocal(typeFullName = None, lineNumber = line(stmt), prefix = "iter_")
+
+    val assignItemTargetAst = stmt.keyVar match {
+      case Some(key) => astForKeyValPair(key, stmt.valueVar, line(stmt))
+      case None      => astForExpr(stmt.valueVar)
+    }
+
+    // Initializer asts
+    // - Iterator assign
+    val iterIdent         = identifierAstFromLocal(iteratorLocal, line(stmt))
+    val iterValue         = astForExpr(stmt.iterExpr)
+    val iteratorAssignAst = simpleAssignAst(iterIdent, iterValue, line(stmt))
+
+    // - Assigned item assign
+    val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iteratorLocal)
+
+    // Condition ast
+    val valueAst     = astForExpr(stmt.valueVar)
+    val isNullCode   = s"${PhpBuiltins.isNull}(${rootCode(valueAst)})"
+    val isNullCall   = operatorCallNode(PhpBuiltins.isNull, isNullCode, Some(TypeConstants.Bool), line(stmt))
+    val notIsNull    = operatorCallNode(Operators.logicalNot, s"!$isNullCode", line = line(stmt))
+    val isNullAst    = callAst(isNullCall, valueAst :: Nil)
+    val conditionAst = callAst(notIsNull, isNullAst :: Nil)
+
+    // Update asts
+    val nextIterIdent = identifierAstFromLocal(iteratorLocal, line(stmt))
+    val nextSignature = "void()"
+    val nextCallNode = NewCall()
+      .name("next")
+      .methodFullName(s"Iterator.next:$nextSignature")
+      .signature(nextSignature)
+      .code(s"${rootCode(nextIterIdent)}->next()")
+      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+      .lineNumber(line(stmt))
+    val nextCallAst = callAst(nextCallNode, receiver = Some(nextIterIdent))
+    val itemUpdateAst = itemInitAst.root match {
+      case Some(initRoot: AstNodeNew) => itemInitAst.subTreeCopy(initRoot)
+      case _ =>
+        logger.warn(s"Could not copy foreach init ast in $filename")
+        Ast()
+    }
+
+    val bodyAst = stmtBlockAst(stmt.stmts, line(stmt))
+
+    val ampPrefix   = if (stmt.assignByRef) "&" else ""
+    val foreachCode = s"foreach (${rootCode(iteratorAst)} as $ampPrefix${rootCode(assignItemTargetAst)})"
+    val foreachNode = NewControlStructure().controlStructureType(ControlStructureTypes.FOR).code(foreachCode)
+    Ast(foreachNode)
+      .withChild(wrapMultipleInBlock(iteratorAssignAst :: itemInitAst :: Nil, line(stmt)))
+      .withChild(conditionAst)
+      .withChild(wrapMultipleInBlock(nextCallAst :: itemUpdateAst :: Nil, line(stmt)))
+      .withChild(bodyAst)
+      .withConditionEdges(foreachNode, conditionAst.root.toList)
+  }
+
+  private def getItemAssignAstForForeach(
+    stmt: PhpForeachStmt,
+    assignItemTargetAst: Ast,
+    iteratorLocal: NewLocal
+  ): Ast = {
+    val iteratorIdentifierAst = identifierAstFromLocal(iteratorLocal, line(stmt))
+    val currentCallSignature  = s"${Defines.UnresolvedSignature}(0)"
+    val currentCallNode = NewCall()
+      .name("current")
+      .methodFullName(s"Iterator.current:$currentCallSignature")
+      .signature(currentCallSignature)
+      .code(s"${rootCode(iteratorIdentifierAst)}->current()")
+      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+      .lineNumber(line(stmt))
+    val currentCallAst = callAst(currentCallNode, receiver = Some(iteratorIdentifierAst))
+
+    val valueAst = if (stmt.assignByRef) {
+      val addressOfCode = s"&${rootCode(currentCallAst)}"
+      val addressOfCall = operatorCallNode(Operators.addressOf, addressOfCode, line = line(stmt))
+      callAst(addressOfCall, currentCallAst :: Nil)
+    } else {
+      currentCallAst
+    }
+
+    simpleAssignAst(assignItemTargetAst, valueAst, line(stmt))
+  }
+
+  private def simpleAssignAst(target: Ast, source: Ast, lineNo: Option[Integer]): Ast = {
+    val code     = s"${rootCode(target)} = ${rootCode(source)}"
+    val callNode = operatorCallNode(Operators.assignment, code, line = lineNo)
+    callAst(callNode, target :: source :: Nil)
   }
 
   private def astforTraitUseStmt(stmt: PhpTraitUseStmt): Ast = {
@@ -677,6 +771,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case enumCase: PhpEnumCaseStmt => Some(astForEnumCase(enumCase))
 
+      case expr: PhpExpr => Some(astForExpr(expr))
+
       case other =>
         logger.warn(s"Found unhandled class body stmt $other")
         Some(astForStmt(other))
@@ -722,7 +818,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val methodBody = blockAst(NewBlock(), scope.getFieldInits)
 
-    val methodReturn = NewMethodReturn().typeFullName(TypeConstants.Any)
+    val methodReturn = NewMethodReturn().typeFullName(TypeConstants.Any).code("RET")
 
     methodAstWithAnnotations(methodNode, thisParam :: Nil, methodBody, methodReturn, modifiers)
   }
@@ -1149,8 +1245,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     callAst(callNode, args.toList)
   }
 
-  private def getTmpLocal(typeFullName: Option[String], lineNumber: Option[Integer]): NewLocal = {
-    val name = getNewTmpName
+  private def getTmpLocal(typeFullName: Option[String], lineNumber: Option[Integer], prefix: String = ""): NewLocal = {
+    val name = s"$prefix$getNewTmpName"
 
     val local = NewLocal()
       .name(name)
@@ -1158,6 +1254,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .lineNumber(lineNumber)
 
     typeFullName.foreach(local.typeFullName(_))
+
+    scope.addToScope(name, local)
 
     local
   }
@@ -1172,7 +1270,6 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val idxTracker = new ArrayIndexTracker
 
     val tmpLocal = getTmpLocal(Some(TypeConstants.Array), line(expr))
-    scope.addToScope(tmpLocal.name, tmpLocal)
 
     val itemAssignments = expr.items.flatMap {
       case Some(item) => Some(assignForArrayItem(item, tmpLocal, idxTracker))
