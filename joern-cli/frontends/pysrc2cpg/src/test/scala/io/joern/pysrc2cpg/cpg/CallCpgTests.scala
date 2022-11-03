@@ -150,8 +150,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "call following a definition within the same module" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Py2CpgTestContext.buildCpg("""
         |def func(a, b):
         | return a + b
         |
@@ -169,8 +168,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "call from a function defined from an imported module" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Py2CpgTestContext.buildCpg("""
         |from foo import foo_func
         |from foo.bar import bar_func
         |from foo import faz as baz
@@ -184,7 +182,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
       val callNode = cpg.call.codeExact("foo_func(a, b)").head
       callNode.name shouldBe "foo_func"
       callNode.signature shouldBe ""
-      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(6)
       callNode.methodFullName shouldBe "foo.py:<module>.foo_func"
     }
@@ -193,7 +191,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
       val callNode = cpg.call.codeExact("bar_func(a, b)").head
       callNode.name shouldBe "bar_func"
       callNode.signature shouldBe ""
-      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(7)
       callNode.methodFullName shouldBe "foo.py:bar.<module>.bar_func"
     }
@@ -202,7 +200,7 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
       val callNode = cpg.call.codeExact("baz(a, b)").head
       callNode.name shouldBe "baz"
       callNode.signature shouldBe ""
-      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(8)
       callNode.methodFullName shouldBe "foo.py:<module>.faz"
     }

@@ -1684,17 +1684,13 @@ class PythonAstVisitor(
         val maybeLocallyDefined = contextStack.getLocallyDefinedProcedure(name)
         val maybeImported       = contextStack.getImportedProcedure(name)
         if (maybeLocallyDefined.isDefined && maybeLocallyDefined.get.isInstanceOf[NewMethod]) {
-          // If the call is to a procedure that is locally defined and has a method parent it will be a static dispatch
-          // and we can use our local context to generate the full name
-          callNode
-            .dispatchType(DispatchTypes.STATIC_DISPATCH)
-            .methodFullName(s"${calculateFullNameFromContext(name)}")
+          // If the call is to a procedure that is locally defined and has a method parent we can use our local context
+          // to generate the full name
+          callNode.methodFullName(s"${calculateFullNameFromContext(name)}")
         } else if (maybeImported.isDefined) {
           // If the call is to an imported procedure then we will use the alias information (if present) to create the
           // method full name
-          callNode
-            .dispatchType(DispatchTypes.STATIC_DISPATCH)
-            .methodFullName(maybeImported.get)
+          callNode.methodFullName(maybeImported.get)
         } else {
           callNode
         }
