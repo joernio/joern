@@ -1,5 +1,6 @@
 package io.joern.x2cpg.passes.frontend
 
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
@@ -75,7 +76,10 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     methodsByFullName: MethodsByFullNameType
   ): Unit = {
     cpg.call.foreach { call =>
-      if (call.dispatchType == DispatchTypes.STATIC_DISPATCH) {
+      if (
+        call.dispatchType == DispatchTypes.STATIC_DISPATCH &&
+        call.methodFullName != Defines.DynamicCallUnknownFallName
+      ) {
         methodsByFullName
           .get(call.methodFullName)
           .foreach(diffGraph.addEdge(call, _, EdgeTypes.CALL))

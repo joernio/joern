@@ -6,6 +6,8 @@ import io.joern.jssrc2cpg.passes.{Defines, EcmaBuiltins, GlobalBuiltins}
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
 import scala.util.Try
@@ -33,14 +35,25 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callName: String
   ): Ast = {
     val args = astForNodes(callExpr.json("arguments").arr.toList)
-    val callNode =
-      createCallNode(
-        callExpr.code,
-        callName,
-        DispatchTypes.DYNAMIC_DISPATCH,
-        callExpr.lineNumber,
-        callExpr.columnNumber
-      )
+    val callNode = receiverNode match {
+      case _: NewIdentifier =>
+        NewCall()
+          .code(callExpr.code)
+          .name(callName)
+          .methodFullName("<unknownFullName>")
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .lineNumber(callExpr.lineNumber)
+          .columnNumber(callExpr.columnNumber)
+          .typeFullName(Defines.ANY)
+      case _ =>
+        createCallNode(
+          callExpr.code,
+          callName,
+          DispatchTypes.DYNAMIC_DISPATCH,
+          callExpr.lineNumber,
+          callExpr.columnNumber
+        )
+    }
     createCallAst(callNode, args, Some(Ast(receiverNode)), Some(Ast(baseNode)))
   }
 

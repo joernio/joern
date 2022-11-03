@@ -499,7 +499,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(fooCall) = block.astChildren.isCall.l
       fooCall.code shouldBe "foo(x)"
       fooCall.name shouldBe "foo"
-      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       val List(receiver) = fooCall.receiver.isIdentifier.l
       receiver.name shouldBe "foo"

@@ -1,7 +1,6 @@
 package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.passes.SimpleCpgPass
 import overflowdb.BatchedUpdate
@@ -89,11 +88,8 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
     cpg.call("require").where(_.inAssignment.target).map(Require.apply(_)).foreach { require =>
       require.methodFullName.foreach { fullName =>
-        cpg.method.fullNameExact(fullName).foreach { method =>
-          require.nodesToPatch.foreach { node =>
-            diffGraph.setNodeProperty(node, "METHOD_FULL_NAME", fullName)
-            diffGraph.addEdge(node, method, EdgeTypes.CALL)
-          }
+        require.nodesToPatch.foreach { node =>
+          diffGraph.setNodeProperty(node, "METHOD_FULL_NAME", fullName)
         }
       }
     }

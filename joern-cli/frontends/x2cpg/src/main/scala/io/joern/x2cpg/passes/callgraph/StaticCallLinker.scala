@@ -1,5 +1,6 @@
 package io.joern.x2cpg.passes.callgraph
 
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
@@ -35,10 +36,9 @@ class StaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   private def linkCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
     call.dispatchType match {
-      case DispatchTypes.STATIC_DISPATCH | DispatchTypes.INLINED =>
-        linkStaticCall(call, dstGraph)
-      case DispatchTypes.DYNAMIC_DISPATCH =>
-      // Do nothing
+      case DispatchTypes.STATIC_DISPATCH if call.methodFullName == Defines.DynamicCallUnknownFallName => // Do nothing
+      case DispatchTypes.STATIC_DISPATCH | DispatchTypes.INLINED => linkStaticCall(call, dstGraph)
+      case DispatchTypes.DYNAMIC_DISPATCH                        => // Do nothing
       case _ => logger.warn(s"Unknown dispatch type on dynamic CALL ${call.code}")
     }
   }
