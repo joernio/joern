@@ -171,18 +171,40 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
   "call from a function defined from an imported module" - {
     lazy val cpg = Py2CpgTestContext.buildCpg(
       """
-        |import func from foo
+        |from foo import foo_func
+        |from foo.bar import bar_func
+        |from foo import faz as baz
         |
-        |x = func(a, b)
+        |x = foo_func(a, b)
+        |y = bar_func(a, b)
+        |z = baz(a, b)
         |""".stripMargin)
 
-    "test call node properties" in {
-      val callNode = cpg.call.codeExact("func(a, b)").head
-      callNode.name shouldBe "func"
+    "test call node properties for normal import from module on root path" in {
+      val callNode = cpg.call.codeExact("foo_func(a, b)").head
+      callNode.name shouldBe "foo_func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      callNode.lineNumber shouldBe Some(4)
-      callNode.methodFullName shouldBe "foo.py:<module>.func"
+      callNode.lineNumber shouldBe Some(6)
+      callNode.methodFullName shouldBe "foo.py:<module>.foo_func"
+    }
+
+    "test call node properties for normal import from module deeper on a module path" in {
+      val callNode = cpg.call.codeExact("bar_func(a, b)").head
+      callNode.name shouldBe "bar_func"
+      callNode.signature shouldBe ""
+      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      callNode.lineNumber shouldBe Some(7)
+      callNode.methodFullName shouldBe "foo.py:bar.<module>.bar_func"
+    }
+
+    "test call node properties for aliased import from module on root path" in {
+      val callNode = cpg.call.codeExact("baz(a, b)").head
+      callNode.name shouldBe "baz"
+      callNode.signature shouldBe ""
+      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      callNode.lineNumber shouldBe Some(8)
+      callNode.methodFullName shouldBe "foo.py:<module>.faz"
     }
   }
 

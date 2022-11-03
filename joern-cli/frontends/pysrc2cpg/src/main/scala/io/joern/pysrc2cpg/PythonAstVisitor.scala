@@ -3,6 +3,7 @@ package io.joern.pysrc2cpg
 import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
 import io.joern.pythonparser.ast
+import io.joern.pythonparser.ast.Alias
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -1167,7 +1168,9 @@ class PythonAstVisitor(
       moduleName = moduleName.appended('.')
     }
     moduleName += importFrom.module.getOrElse("")
-
+    // Save procedures imported explicitly so we know where they are from if they are not invoked off of a path or
+    // receiver
+    importFrom.names.foreach(alias => contextStack.pushImportedProcedure(alias, moduleName))
     createTransformedImport(moduleName, importFrom.names, lineAndColOf(importFrom))
   }
 
@@ -1335,6 +1338,7 @@ class PythonAstVisitor(
     val code     = codeOf(bodyNode) + " if " + codeOf(testNode) + " else " + codeOf(orElseNode)
     val callNode = nodeBuilder.callNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, lineAndColOf(ifExp))
 
+    // testNode is first argument to match semantics of Operators.conditional.
     // testNode is first argument to match semantics of Operators.conditional.
     addAstChildrenAsArguments(callNode, 1, testNode, bodyNode, orElseNode)
 
@@ -1675,14 +1679,26 @@ class PythonAstVisitor(
           case ast.Name(id, _) => id
           case _               => ""
         }
-        contextStack.getLocallyDefinedProcedure(name) match {
+
+        val callNode            = createCall(receiverNode, name, lineAndColOf(call), argumentNodes, keywordArgNodes)
+        val maybeLocallyDefined = contextStack.getLocallyDefinedProcedure(name)
+        val maybeImported       = contextStack.getImportedProcedure(name)
+        if (maybeLocallyDefined.isDefined && maybeLocallyDefined.get.isInstanceOf[NewMethod]) {
           // If the call is to a procedure that is locally defined and has a method parent it will be a static dispatch
-          // and we can use our local cotext to generate the full name
-          case Some(funcAstParent) if funcAstParent.isInstanceOf[NewMethod] =>
-            createCall(receiverNode, name, lineAndColOf(call), argumentNodes, keywordArgNodes)
-              .dispatchType(DispatchTypes.STATIC_DISPATCH)
-              .methodFullName(s"${calculateFullNameFromContext(name)}")
-          case _ => createCall(receiverNode, name, lineAndColOf(call), argumentNodes, keywordArgNodes)
+          // and we can use our local context to generate the full name
+          callNode
+            .dispatchType(DispatchTypes.STATIC_DISPATCH)
+            .methodFullName(s"${calculateFullNameFromContext(name)}")
+        } else if (maybeImported.isDefined) {
+          // If the call is to an imported procedure then we will use the alias information (if present) to create the
+          // method full name
+          val (alias, sourceModule) = maybeImported.get
+          println(calculateFullNameForImport(alias, sourceModule))
+          callNode
+            .dispatchType(DispatchTypes.STATIC_DISPATCH)
+            .methodFullName(s"${calculateFullNameForImport(alias, sourceModule)}")
+        } else {
+          callNode
         }
     }
   }
@@ -1913,6 +1929,12 @@ class PythonAstVisitor(
     } else {
       relFileName + ":" + name
     }
+  }
+
+  private def calculateFullNameForImport(alias: Alias, modulePath: String): String = {
+    val splitModule = modulePath.split("\\.")
+    val moduleTail  = splitModule.tail
+    s"${splitModule.head}.py:${splitModule.tail.mkString(".")}${if (moduleTail.isEmpty) "" else "."}<module>.${alias.name}"
   }
 }
 

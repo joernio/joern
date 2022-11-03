@@ -3,6 +3,7 @@ package io.joern.pysrc2cpg
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewIdentifier, NewLocal, NewMethod, NewNode}
 import io.joern.pysrc2cpg.memop._
+import io.joern.pythonparser.ast.Alias
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -19,8 +20,8 @@ class ContextStack {
     val order: AutoIncIndex
     val variables: mutable.Map[String, nodes.NewNode]
     var lambdaCounter: Int
-    val locallyDefinedProcedures: mutable.Map[String, NewNode] = mutable.HashMap.empty
-    val importedProcedures: mutable.Map[String, String]        = mutable.HashMap.empty
+    val locallyDefinedProcedures: mutable.Map[String, NewNode]   = mutable.HashMap.empty
+    val importedProcedures: mutable.Map[String, (Alias, String)] = mutable.HashMap.empty
   }
 
   private class MethodContext(
@@ -115,19 +116,43 @@ class ContextStack {
     }
   }
 
-  /** Determines if the given method name refers to a locally defined method and will return the AST parent of that
-    * method if true.
+  def pushImportedProcedure(alais: Alias, sourceModule: String): Unit = {
+    stack.headOption match {
+      case Some(head) if alais.asName.isDefined => head.importedProcedures.put(alais.asName.get, (alais, sourceModule))
+      case Some(head) if alais.asName.isEmpty   => head.importedProcedures.put(alais.name, (alais, sourceModule))
+      case _                                    =>
+    }
+  }
+
+  /** Determines if the given method name refers to a locally defined procedure and will return the AST parent of that
+    * procedure if true.
     *
     * TODO: The AST parent can help resolve shadowed names but for now they are being overwritten because a map is used
     *
     * @param name
-    *   the name of the method.
+    *   the name of the procedure.
     * @return
     *   the AST parent of the method if it is locally defined, empty if otherwise.
     */
   def getLocallyDefinedProcedure(name: String): Option[NewNode] = {
     stack.headOption match {
       case Some(head) => head.locallyDefinedProcedures.get(name)
+      case None       => None
+    }
+  }
+
+  /** Determines if the given method name refers to an imported procedure and will return the AST parent of that method
+    * if true.
+    *
+    * @param name
+    *   the name of the procedure.
+    * @return
+    *   the alias and name of the module from which the procedure is imported if this procedure is imported, empty if
+    *   otherwise.
+    */
+  def getImportedProcedure(name: String): Option[(Alias, String)] = {
+    stack.headOption match {
+      case Some(head) => head.importedProcedures.get(name)
       case None       => None
     }
   }
