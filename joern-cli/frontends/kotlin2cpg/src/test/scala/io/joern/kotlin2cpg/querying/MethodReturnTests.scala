@@ -15,7 +15,7 @@ class MethodReturnTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should have a METHOD_RETURN node with correct props set" in {
       val List(x) = cpg.method.name("foo").methodReturn.l
-      x.code shouldBe "int"
+      x.code shouldBe "RET"
       x.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
       x.order shouldBe 4
       x.lineNumber shouldBe Some(2)

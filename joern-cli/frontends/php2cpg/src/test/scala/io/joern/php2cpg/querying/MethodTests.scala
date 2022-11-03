@@ -2,7 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local, MethodReturn}
 import io.shiftleft.semanticcpg.language._
 
 class MethodTests extends PhpCode2CpgFixture {
@@ -51,6 +51,17 @@ class MethodTests extends PhpCode2CpgFixture {
         literal.code shouldBe "42"
         literal.lineNumber shouldBe Some(3)
       }
+    }
+  }
+
+  "have a method return with the correct fields set" in {
+    val cpg = code("""<?php
+     |function foo() {}
+     |""".stripMargin)
+    inside(cpg.method.name("foo").methodReturn.l) { case List(methodReturn: MethodReturn) =>
+      methodReturn.code shouldBe "RET"
+      methodReturn.lineNumber shouldBe Some(2)
+    // TODO Add type test once those are added.
     }
   }
 }

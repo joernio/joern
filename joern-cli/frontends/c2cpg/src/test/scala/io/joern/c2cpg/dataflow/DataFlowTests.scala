@@ -80,7 +80,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         val flows  = sink.reachableByFlows(source)
 
         flows.map(flowToResultPairs).toSetMutable shouldBe
-          Set(List(("main(int x)", Some(2)), ("return x;", Some(3)), ("int", Some(2))))
+          Set(List(("main(int x)", Some(2)), ("return x;", Some(3)), ("RET", Some(2))))
       }
     }
 
@@ -112,7 +112,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
               ("y = k + 2", Some(4)),
               ("y + 3", Some(5)),
               ("return y + 3;", Some(5)),
-              ("int", Some(2))
+              ("RET", Some(2))
             )
           )
       }
@@ -153,7 +153,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         flows.map(flowToResultPairs).toSetMutable shouldBe
           Set(
             List(
-              ("double", Some(7)),
+              ("RET", Some(7)),
               ("source(2)", Some(16)),
               ("k = source(2)", Some(16)),
               ("point.x = k", Some(18)),
@@ -195,7 +195,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         flows.map(flowToResultPairs).toSetMutable shouldBe
           Set(
             List(
-              ("int", Some(2)),
+              ("RET", Some(2)),
               ("source()", Some(11)),
               ("k = source()", Some(11)),
               ("foo(k)", Some(12)),
@@ -240,7 +240,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         flows.map(flowToResultPairs).toSetMutable shouldBe
           Set(
             List(
-              ("struct Point", Some(7)),
+              ("RET", Some(7)),
               ("source(2)", Some(17)),
               ("point = source(2)", Some(17)),
               ("sink(point.x)", Some(18)),
@@ -301,7 +301,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
         flows.map(flowToResultPairs).toSetMutable shouldBe Set(
           List(
-            ("int", Some(2)),
+            ("RET", Some(2)),
             ("source()", Some(6)),
             ("c[1][2] = source()", Some(6)),
             ("sink(c[1])", Some(8)),
@@ -333,7 +333,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
         flows.map(flowToResultPairs).toSetMutable shouldBe Set(
           List(
-            ("int", Some(3)),
+            ("RET", Some(3)),
             ("source()", Some(7)),
             ("arg->field = source()", Some(7)),
             ("sink((*arg).field)", Some(8)),
@@ -364,7 +364,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
         flows.map(flowToResultPairs).toSetMutable shouldBe Set(
           List(
-            ("int", Some(2)),
+            ("RET", Some(2)),
             ("source()", Some(6)),
             ("arg[0] = source()", Some(6)),
             ("sink(*arg)", Some(7)),
@@ -934,7 +934,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         List(
           ("source()", Some(4)),
           ("return source();", Some(4)),
-          ("int", Some(3)),
+          ("RET", Some(3)),
           ("bar()", Some(8)),
           ("y = bar()", Some(8)),
           ("sink(y)", Some(9))
@@ -949,7 +949,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         List(
           ("source()", Some(4)),
           ("return source();", Some(4)),
-          ("int", Some(3)),
+          ("RET", Some(3)),
           ("bar()", Some(8)),
           ("y = bar()", Some(8)),
           ("sink(y)", Some(9)),
@@ -990,7 +990,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
       flows.map(flowToResultPairs).toSetMutable shouldBe Set(
         List(
-          ("double", Some(7)),
+          ("RET", Some(7)),
           ("source(2)", Some(16)),
           ("k = source(2)", Some(16)),
           ("point.x = k", Some(18)),
@@ -1031,7 +1031,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
       flows.map(flowToResultPairs).toSetMutable shouldBe Set(
         List(
-          ("struct Point", Some(7)),
+          ("RET", Some(7)),
           ("source(2)", Some(17)),
           ("point = source(2)", Some(17)),
           ("sink(point.x)", Some(18)),
@@ -1342,7 +1342,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
           ("source()", Some(6)),
           ("sink(int arg)", Some(2)),
           ("return arg;", Some(2)),
-          ("int", Some(2)),
+          ("RET", Some(2)),
           ("sink(source())", Some(6))
         )
       )
