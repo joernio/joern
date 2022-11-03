@@ -107,7 +107,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   @tailrec
-  final def astsForExpression(expr: KtExpression, argIdxOpt: Option[Int])(implicit
+  final def astsForExpression(expr: KtExpression, argIdxOpt: Option[Int], argNameOpt: Option[String] = None)(implicit
     typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     expr match {
@@ -119,7 +119,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtBinaryExpressionWithTypeRHS => Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxOpt))
       case typedExpr: KtBreakExpression             => Seq(astForBreak(typedExpr))
       case typedExpr: KtCallExpression              => Seq(astForCall(typedExpr, argIdxOpt))
-      case typedExpr: KtConstantExpression          => Seq(astForLiteral(typedExpr, argIdxOpt))
+      case typedExpr: KtConstantExpression          => Seq(astForLiteral(typedExpr, argIdxOpt, argNameOpt))
       case typedExpr: KtClass                       => astsForClassOrObject(typedExpr)
       case typedExpr: KtClassLiteralExpression      => Seq(astForClassLiteral(typedExpr, argIdxOpt))
       case typedExpr: KtSafeQualifiedExpression     => Seq(astForQualifiedExpression(typedExpr, argIdxOpt))
@@ -133,7 +133,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtLabeledExpression           => astsForExpression(typedExpr.getBaseExpression, argIdxOpt)
       case typedExpr: KtLambdaExpression            => Seq(astForLambda(typedExpr, argIdxOpt))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
-        Seq(astForNameReference(typedExpr, argIdxOpt))
+        Seq(astForNameReference(typedExpr, argIdxOpt, argNameOpt))
       // TODO: callable reference
       case _: KtNameReferenceExpression               => Seq()
       case typedExpr: KtObjectLiteralExpression       => Seq(astForUnknown(typedExpr, argIdxOpt))

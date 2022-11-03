@@ -1532,7 +1532,8 @@ trait KtPsiToAst {
       val initReceiverAst  = Ast(initReceiverNode).withRefEdge(initReceiverNode, node)
 
       val argAsts = withIndex(typedCall.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-        astsForExpression(arg.getArgumentExpression, Some(idx))
+        val argNameOpt = if (arg.isNamed) Some(arg.getArgumentName.getAsName.toString) else None
+        astsForExpression(arg.getArgumentExpression, Some(idx), argNameOpt)
       }.flatten
 
       val initAst = callAst(initCallNode, argAsts, Some(initReceiverAst), withRecvArgEdge = true)
@@ -1548,14 +1549,14 @@ trait KtPsiToAst {
     }
   }
 
-  def astForNameReference(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
+  def astForNameReference(expr: KtNameReferenceExpression, argIdx: Option[Int], argName: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     if (typeInfoProvider.isReferenceToClass(expr)) astForNameReferenceToType(expr, argIdx)
     else if (typeInfoProvider.isReferencingMember(expr)) {
       astForNameReferenceToMember(expr, argIdx)
     } else {
-      astForNonSpecialNameReference(expr, argIdx)
+      astForNonSpecialNameReference(expr, argIdx, argName)
     }
   }
 
@@ -1598,21 +1599,24 @@ trait KtPsiToAst {
     callAst(withArgumentIndex(node, argIdx), List(thisAst, Ast(_fieldIdentifierNode)))
   }
 
-  private def astForNonSpecialNameReference(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def astForNonSpecialNameReference(
+    expr: KtNameReferenceExpression,
+    argIdx: Option[Int],
+    argName: Option[String] = None
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
     val name         = expr.getIdentifier.getText
-    val node         = withArgumentIndex(identifierNode(name, typeFullName, line(expr), column(expr)), argIdx)
+    val node =
+      withArgumentName(withArgumentIndex(identifierNode(name, typeFullName, line(expr), column(expr)), argIdx), argName)
     astWithRefEdgeMaybe(name, node)
   }
 
-  def astForLiteral(expr: KtConstantExpression, argIdx: Option[Int])(implicit
+  def astForLiteral(expr: KtConstantExpression, argIdx: Option[Int], argName: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node         = literalNode(expr.getText, typeFullName, line(expr), column(expr))
-    Ast(withArgumentIndex(node, argIdx))
+    Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
   }
 
   def astForBinaryExpr(expr: KtBinaryExpression, argIdx: Option[Int])(implicit
