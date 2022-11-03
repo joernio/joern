@@ -1,15 +1,19 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.parser.Domain.PhpBuiltins
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Block,
+  Call,
   ControlStructure,
   Identifier,
   JumpLabel,
   JumpTarget,
-  Literal
+  Literal,
+  Local
 }
 import io.shiftleft.semanticcpg.language._
 
@@ -1017,6 +1021,199 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           value.lineNumber shouldBe Some(3)
         }
       }
+    }
+  }
+
+  "foreach statements with only simple values should be represented as a for" in {
+    val cpg = code("""<?php
+     |function foo($arr) {
+     |  foreach ($arr as $val) {
+     |    echo $val;
+     |  }
+     |}
+     |""".stripMargin)
+
+    val foreachStruct = inside(cpg.method.name("foo").body.astChildren.l) {
+      case List(iterLocal: Local, valLocal: Local, foreachStruct: ControlStructure) =>
+        iterLocal.name shouldBe "iter_tmp0"
+        valLocal.name shouldBe "val"
+
+        foreachStruct
+    }
+
+    foreachStruct.code shouldBe "foreach ($arr as $val)"
+
+    val (initAsts, conditionAst, updateAsts, body) = inside(foreachStruct.astChildren.l) {
+      case List(initAsts: Block, conditionAst: Call, updateAsts: Block, body: Block) =>
+        (initAsts, conditionAst, updateAsts, body)
+    }
+
+    inside(initAsts.astChildren.l) { case List(iterInit: Call, valInit: Call) =>
+      iterInit.name shouldBe Operators.assignment
+      iterInit.code shouldBe "$iter_tmp0 = $arr"
+      inside(iterInit.argument.l) { case List(iterTemp: Identifier, iterExpr: Identifier) =>
+        iterTemp.name shouldBe "iter_tmp0"
+        iterTemp.code shouldBe "$iter_tmp0"
+        iterTemp.argumentIndex shouldBe 1
+
+        iterExpr.name shouldBe "arr"
+        iterExpr.code shouldBe "$arr"
+        iterExpr.argumentIndex shouldBe 2
+      }
+
+      valInit.name shouldBe Operators.assignment
+      valInit.code shouldBe "$val = $iter_tmp0->current()"
+      inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
+        valId.name shouldBe "val"
+        valId.code shouldBe "$val"
+        valId.argumentIndex shouldBe 1
+
+        currentCall.name shouldBe "current"
+        currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
+        currentCall.code shouldBe "$iter_tmp0->current()"
+        inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
+          iterRecv.name shouldBe "iter_tmp0"
+          iterRecv.argumentIndex shouldBe 0
+        }
+      }
+    }
+
+    conditionAst.name shouldBe Operators.logicalNot
+    conditionAst.code shouldBe "!is_null($val)"
+    inside(conditionAst.astChildren.l) { case List(isNullCall: Call) =>
+      isNullCall.name shouldBe "is_null"
+      isNullCall.code shouldBe "is_null($val)"
+    }
+
+    inside(updateAsts.astChildren.l) { case List(nextCall: Call, valAssign: Call) =>
+      nextCall.name shouldBe "next"
+      nextCall.methodFullName shouldBe "Iterator.next:void()"
+      nextCall.code shouldBe "$iter_tmp0->next()"
+      inside(nextCall.receiver.l) { case List(iterTmp: Identifier) =>
+        iterTmp.name shouldBe "iter_tmp0"
+        iterTmp.code shouldBe "$iter_tmp0"
+        iterTmp.argumentIndex shouldBe 0
+      }
+
+      valAssign.name shouldBe Operators.assignment
+      valAssign.code shouldBe "$val = $iter_tmp0->current()"
+    }
+
+    inside(body.astChildren.l) { case List(echoCall: Call) =>
+      echoCall.code shouldBe "echo $val"
+    }
+  }
+
+  "foreach statements with assignments by ref should be represented as a for" in {
+    val cpg = code("""<?php
+                    |function foo($arr) {
+                    |  foreach ($arr as &$val) {
+                    |    echo $val;
+                    |  }
+                    |}
+                    |""".stripMargin)
+
+    val foreachStruct = inside(cpg.method.name("foo").body.astChildren.l) {
+      case List(iterLocal: Local, valLocal: Local, foreachStruct: ControlStructure) =>
+        iterLocal.name shouldBe "iter_tmp0"
+        valLocal.name shouldBe "val"
+
+        foreachStruct
+    }
+
+    foreachStruct.code shouldBe "foreach ($arr as &$val)"
+
+    val (initAsts, updateAsts, body) = inside(foreachStruct.astChildren.l) {
+      case List(initAsts: Block, _, updateAsts: Block, body: Block) =>
+        (initAsts, updateAsts, body)
+    }
+
+    inside(initAsts.astChildren.l) { case List(_: Call, valInit: Call) =>
+      valInit.name shouldBe Operators.assignment
+      valInit.code shouldBe "$val = &$iter_tmp0->current()"
+      inside(valInit.argument.l) { case List(valId: Identifier, addressOfCall: Call) =>
+        valId.name shouldBe "val"
+        valId.code shouldBe "$val"
+        valId.argumentIndex shouldBe 1
+
+        addressOfCall.name shouldBe Operators.addressOf
+        addressOfCall.code shouldBe "&$iter_tmp0->current()"
+
+        inside(addressOfCall.argument.l) { case List(currentCall: Call) =>
+          currentCall.name shouldBe "current"
+          currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
+          currentCall.code shouldBe "$iter_tmp0->current()"
+          inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
+            iterRecv.name shouldBe "iter_tmp0"
+            iterRecv.argumentIndex shouldBe 0
+          }
+        }
+      }
+    }
+
+    inside(updateAsts.astChildren.l) { case List(_: Call, valAssign: Call) =>
+      valAssign.name shouldBe Operators.assignment
+      valAssign.code shouldBe "$val = &$iter_tmp0->current()"
+    }
+
+    inside(body.astChildren.l) { case List(echoCall: Call) =>
+      echoCall.code shouldBe "echo $val"
+    }
+  }
+
+  "foreach statements with key-val should be represented as a for" in {
+    val cpg = code("""<?php
+                    |function foo($arr) {
+                    |  foreach ($arr as $key => $val) {
+                    |    echo $val;
+                    |  }
+                    |}
+                    |""".stripMargin)
+
+    val foreachStruct = inside(cpg.method.name("foo").body.astChildren.l) {
+      case List(iterLocal: Local, keyLocal: Local, valLocal: Local, foreachStruct: ControlStructure) =>
+        iterLocal.name shouldBe "iter_tmp0"
+        keyLocal.name shouldBe "key"
+        valLocal.name shouldBe "val"
+
+        foreachStruct
+    }
+
+    foreachStruct.code shouldBe "foreach ($arr as $key => $val)"
+
+    val (initAsts, updateAsts, body) = inside(foreachStruct.astChildren.l) {
+      case List(initAsts: Block, _, updateAsts: Block, body: Block) =>
+        (initAsts, updateAsts, body)
+    }
+
+    inside(initAsts.astChildren.l) { case List(_: Call, valInit: Call) =>
+      valInit.name shouldBe Operators.assignment
+      valInit.code shouldBe "$key => $val = $iter_tmp0->current()"
+      inside(valInit.argument.l) { case List(valPair: Call, currentCall: Call) =>
+        valPair.name shouldBe PhpBuiltins.doubleArrow
+        valPair.code shouldBe "$key => $val"
+        inside(valPair.argument.l) { case List(keyId: Identifier, valId: Identifier) =>
+          keyId.name shouldBe "key"
+          valId.name shouldBe "val"
+        }
+
+        currentCall.name shouldBe "current"
+        currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
+        currentCall.code shouldBe "$iter_tmp0->current()"
+        inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
+          iterRecv.name shouldBe "iter_tmp0"
+          iterRecv.argumentIndex shouldBe 0
+        }
+      }
+    }
+
+    inside(updateAsts.astChildren.l) { case List(_: Call, valAssign: Call) =>
+      valAssign.name shouldBe Operators.assignment
+      valAssign.code shouldBe "$key => $val = $iter_tmp0->current()"
+    }
+
+    inside(body.astChildren.l) { case List(echoCall: Call) =>
+      echoCall.code shouldBe "echo $val"
     }
   }
 }

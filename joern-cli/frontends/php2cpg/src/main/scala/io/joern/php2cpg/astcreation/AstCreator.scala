@@ -561,13 +561,15 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val iteratorAssignAst = simpleAssignAst(iterIdent, iterValue, line(stmt))
 
     // - Assigned item assign
-    val itemInitAst = getItemAssignAstForForeach(stmt, iteratorLocal)
+    val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iteratorLocal)
 
     // Condition ast
     val valueAst     = astForExpr(stmt.valueVar)
     val isNullCode   = s"${PhpBuiltins.isNull}(${rootCode(valueAst)})"
     val isNullCall   = operatorCallNode(PhpBuiltins.isNull, isNullCode, Some(TypeConstants.Bool), line(stmt))
-    val conditionAst = callAst(isNullCall, valueAst :: Nil)
+    val notIsNull    = operatorCallNode(Operators.logicalNot, s"!$isNullCode", line = line(stmt))
+    val isNullAst    = callAst(isNullCall, valueAst :: Nil)
+    val conditionAst = callAst(notIsNull, isNullAst :: Nil)
 
     // Update asts
     val nextIterIdent = identifierAstFromLocal(iteratorLocal, line(stmt))
@@ -576,7 +578,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .name("next")
       .methodFullName(s"Iterator.next:$nextSignature")
       .signature(nextSignature)
-      .code(s"$nextIterIdent->next()")
+      .code(s"${rootCode(nextIterIdent)}->next()")
       .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
       .lineNumber(line(stmt))
     val nextCallAst = callAst(nextCallNode, receiver = Some(nextIterIdent))
@@ -589,7 +591,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val bodyAst = stmtBlockAst(stmt.stmts, line(stmt))
 
-    val foreachCode = s"for(${rootCode(iteratorAst)} as ${rootCode(assignItemTargetAst)})"
+    val ampPrefix   = if (stmt.assignByRef) "&" else ""
+    val foreachCode = s"foreach (${rootCode(iteratorAst)} as $ampPrefix${rootCode(assignItemTargetAst)})"
     val foreachNode = NewControlStructure().controlStructureType(ControlStructureTypes.FOR).code(foreachCode)
     Ast(foreachNode)
       .withChild(wrapMultipleInBlock(iteratorAssignAst :: itemInitAst :: Nil, line(stmt)))
@@ -815,7 +818,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val methodBody = blockAst(NewBlock(), scope.getFieldInits)
 
-    val methodReturn = NewMethodReturn().typeFullName(TypeConstants.Any)
+    val methodReturn = NewMethodReturn().typeFullName(TypeConstants.Any).code("RET")
 
     methodAstWithAnnotations(methodNode, thisParam :: Nil, methodBody, methodReturn, modifiers)
   }
@@ -1252,6 +1255,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     typeFullName.foreach(local.typeFullName(_))
 
+    scope.addToScope(name, local)
+
     local
   }
 
@@ -1265,7 +1270,6 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val idxTracker = new ArrayIndexTracker
 
     val tmpLocal = getTmpLocal(Some(TypeConstants.Array), line(expr))
-    scope.addToScope(tmpLocal.name, tmpLocal)
 
     val itemAssignments = expr.items.flatMap {
       case Some(item) => Some(assignForArrayItem(item, tmpLocal, idxTracker))
