@@ -19,6 +19,8 @@ class ContextStack {
     val order: AutoIncIndex
     val variables: mutable.Map[String, nodes.NewNode]
     var lambdaCounter: Int
+    val locallyDefinedProcedures: mutable.Map[String, NewNode] = mutable.HashMap.empty
+    val importedProcedures: mutable.Map[String, String]        = mutable.HashMap.empty
   }
 
   private class MethodContext(
@@ -93,6 +95,7 @@ class ContextStack {
     if (moduleMethodContext.isEmpty) {
       moduleMethodContext = Some(methodContext)
     }
+    pushLocallyDefinedProcedure(name, astParent)
     push(methodContext)
   }
 
@@ -103,6 +106,30 @@ class ContextStack {
   def pushSpecialContext(): Unit = {
     val methodContext = findEnclosingMethodContext(stack)
     push(new SpecialBlockContext(methodContext.astParent, methodContext.order))
+  }
+
+  def pushLocallyDefinedProcedure(name: String, astParent: NewNode): Unit = {
+    stack.headOption match {
+      case Some(head) => head.locallyDefinedProcedures.put(name, astParent)
+      case None       =>
+    }
+  }
+
+  /** Determines if the given method name refers to a locally defined method and will return the AST parent of that
+    * method if true.
+    *
+    * TODO: The AST parent can help resolve shadowed names but for now they are being overwritten because a map is used
+    *
+    * @param name
+    *   the name of the method.
+    * @return
+    *   the AST parent of the method if it is locally defined, empty if otherwise.
+    */
+  def getLocallyDefinedProcedure(name: String): Option[NewNode] = {
+    stack.headOption match {
+      case Some(head) => head.locallyDefinedProcedures.get(name)
+      case None       => None
+    }
   }
 
   def pop(): Unit = {

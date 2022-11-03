@@ -149,4 +149,41 @@ class CallCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "call following a definition within the same module" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg(
+      """
+        |def func(a, b):
+        | return a + b
+        |
+        |x = func(a, b)
+        |""".stripMargin)
+
+    "test call node properties" in {
+      val callNode = cpg.call.codeExact("func(a, b)").head
+      callNode.name shouldBe "func"
+      callNode.signature shouldBe ""
+      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      callNode.lineNumber shouldBe Some(5)
+      callNode.methodFullName shouldBe "test.py:<module>.func"
+    }
+  }
+
+  "call from a function defined from an imported module" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg(
+      """
+        |import func from foo
+        |
+        |x = func(a, b)
+        |""".stripMargin)
+
+    "test call node properties" in {
+      val callNode = cpg.call.codeExact("func(a, b)").head
+      callNode.name shouldBe "func"
+      callNode.signature shouldBe ""
+      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      callNode.lineNumber shouldBe Some(4)
+      callNode.methodFullName shouldBe "foo.py:<module>.func"
+    }
+  }
+
 }

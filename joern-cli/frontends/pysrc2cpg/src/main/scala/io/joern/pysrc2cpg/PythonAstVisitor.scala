@@ -4,7 +4,7 @@ import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
 import io.joern.pythonparser.ast
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -1675,7 +1675,15 @@ class PythonAstVisitor(
           case ast.Name(id, _) => id
           case _               => ""
         }
-        createCall(receiverNode, name, lineAndColOf(call), argumentNodes, keywordArgNodes)
+        contextStack.getLocallyDefinedProcedure(name) match {
+          // If the call is to a procedure that is locally defined and has a method parent it will be a static dispatch
+          // and we can use our local cotext to generate the full name
+          case Some(funcAstParent) if funcAstParent.isInstanceOf[NewMethod] =>
+            createCall(receiverNode, name, lineAndColOf(call), argumentNodes, keywordArgNodes)
+              .dispatchType(DispatchTypes.STATIC_DISPATCH)
+              .methodFullName(s"${calculateFullNameFromContext(name)}")
+          case _ => createCall(receiverNode, name, lineAndColOf(call), argumentNodes, keywordArgNodes)
+        }
     }
   }
 
