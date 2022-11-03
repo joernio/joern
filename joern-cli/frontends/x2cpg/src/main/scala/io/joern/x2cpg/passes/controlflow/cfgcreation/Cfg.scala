@@ -23,9 +23,11 @@ import org.slf4j.LoggerFactory
   * @param caseLabels
   *   labels beginning with "case"
   * @param breaks
-  *   unresolved breaks collected along the way
+  *   unresolved breaks collected along the way together with an integer value which indicates the number of loop/switch
+  *   levels to break
   * @param continues
-  *   unresolved continues collected along the way
+  *   unresolved continues collected along the way together with an integer value which indicates the number of
+  *   loop/switch levels after which to continue
   * @param jumpsToLabel
   *   unresolved gotos, labeled break and labeld continues collected along the way
   */
@@ -34,15 +36,13 @@ case class Cfg(
   edges: List[CfgEdge] = List(),
   fringe: List[(CfgNode, CfgEdgeType)] = List(),
   labeledNodes: Map[String, CfgNode] = Map(),
-  breaks: List[CfgNode] = List(),
-  continues: List[CfgNode] = List(),
+  breaks: List[(CfgNode, Int)] = List(),
+  continues: List[(CfgNode, Int)] = List(),
   caseLabels: List[CfgNode] = List(),
   jumpsToLabel: List[(CfgNode, String)] = List()
 ) {
 
   import Cfg._
-
-  private val logger = LoggerFactory.getLogger(getClass)
 
   /** Create a new CFG in which `other` is appended to this CFG. All nodes of the fringe are connected to `other`'s
     * entry node and the new fringe is `other`'s fringe. The diffgraphs, jumps, and labels are the sum of those present
@@ -102,6 +102,8 @@ case class Cfg(
 case class CfgEdge(src: CfgNode, dst: CfgNode, edgeType: CfgEdgeType)
 
 object Cfg {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   def from(cfgs: Cfg*): Cfg = {
     Cfg(
@@ -175,6 +177,20 @@ object Cfg {
       destinations.map { n =>
         CfgEdge(l, n, cfgEdgeType)
       }
+    }
+  }
+
+  def takeCurrentLevel(nodesWithLevel: List[(CfgNode, Int)]): List[CfgNode] = {
+    nodesWithLevel.collect {
+      case (node, level) if level == 1 =>
+        node
+    }
+  }
+
+  def reduceAndFilterLevel(nodesWithLevel: List[(CfgNode, Int)]): List[(CfgNode, Int)] = {
+    nodesWithLevel.collect {
+      case (node, level) if level != 1 =>
+        (node, level - 1)
     }
   }
 

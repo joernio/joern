@@ -458,6 +458,18 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(".c")) {
       succOf("default:") shouldBe expected(("z", AlwaysEdge))
       succOf("z") shouldBe expected(("RET", AlwaysEdge))
     }
+
+    "be correct for switch containing continue statement" in {
+      implicit val cpg: Cpg = code("""
+          |while (i < 1) {
+          |  switch (j) {
+          |    case 0:
+          |      continue;
+          |  }
+          |}
+          |""".stripMargin)
+      succOf("continue;") shouldBe expected(("i", AlwaysEdge))
+    }
   }
 
   "Cfg for if" should {
