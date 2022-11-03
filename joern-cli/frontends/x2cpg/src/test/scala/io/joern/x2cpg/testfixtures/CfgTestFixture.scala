@@ -1,15 +1,19 @@
-package io.joern.jssrc2cpg.passes.cfg
+package io.joern.x2cpg.testfixtures
 
-import io.joern.jssrc2cpg.passes.AbstractPassTest
+import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
-import io.shiftleft.codepropertygraph.generated.nodes.Method
-
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Method}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
-abstract class AbstractCfgPassTest extends AbstractPassTest {
+abstract class CfgTestCpg extends TestCpg {
+  override protected def applyPasses(): Unit = {
+    new CfgCreationPass(this).createAndApply()
+  }
+}
+
+class CfgTestFixture[T <: CfgTestCpg](testCpgFactory: () => T) extends Code2CpgFixture(testCpgFactory) {
 
   private def matchCode(node: CfgNode, code: String): Boolean = node match {
     case method: Method => method.name == code
@@ -19,13 +23,15 @@ abstract class AbstractCfgPassTest extends AbstractPassTest {
   // index is zero based and describes which node to take if multiple node match the code string.
   case class ExpectationInfo(code: String, index: Int, cfgEdgeKind: CfgEdgeType)
 
-  implicit def toExpectationInfoShort(pair: (String, CfgEdgeType)): ExpectationInfo =
+  implicit def toExpectationInfoShort(pair: (String, CfgEdgeType)): ExpectationInfo = {
     ExpectationInfo(pair._1, 0, pair._2)
+  }
 
-  implicit def toExpectationInfoFull(pair: (String, Int, CfgEdgeType)): ExpectationInfo =
+  implicit def toExpectationInfoFull(pair: (String, Int, CfgEdgeType)): ExpectationInfo = {
     ExpectationInfo(pair._1, pair._2, pair._3)
+  }
 
-  def expected(pairs: ExpectationInfo*)(implicit cpg: Cpg): Set[String] =
+  def expected(pairs: ExpectationInfo*)(implicit cpg: Cpg): Set[String] = {
     pairs.map { case ExpectationInfo(code, index, _) =>
       cpg.method.ast.isCfgNode.toVector
         .collect {
@@ -34,9 +40,10 @@ abstract class AbstractCfgPassTest extends AbstractPassTest {
         .lift(index)
         .getOrElse(fail(s"No node found for code = '$code' and index '$index'!"))
     }.toSet
+  }
 
   // index is zero based and describes which node to take if multiple node match the code string.
-  def succOf(code: String, index: Int = 0)(implicit cpg: Cpg): Set[String] =
+  def succOf(code: String, index: Int = 0)(implicit cpg: Cpg): Set[String] = {
     cpg.method.ast.isCfgNode.toVector
       .collect {
         case node if matchCode(node, code) => node
@@ -47,8 +54,9 @@ abstract class AbstractCfgPassTest extends AbstractPassTest {
       .cast[CfgNode]
       .code
       .toSetImmutable
+  }
 
-  def succOf(code: String, nodeType: String)(implicit cpg: Cpg): Set[String] =
+  def succOf(code: String, nodeType: String)(implicit cpg: Cpg): Set[String] = {
     cpg.method.ast.isCfgNode
       .label(nodeType)
       .toVector
@@ -60,5 +68,5 @@ abstract class AbstractCfgPassTest extends AbstractPassTest {
       .cast[CfgNode]
       .code
       .toSetImmutable
-
+  }
 }
