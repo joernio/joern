@@ -1,12 +1,16 @@
 package io.joern.jssrc2cpg.passes.cfg
 
+import io.joern.jssrc2cpg.testfixtures.JsCfgTestCpg
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.AlwaysEdge
+import io.joern.x2cpg.testfixtures.CfgTestFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 
-class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
+class JsClassesCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) {
 
   "CFG generation for constructor" should {
-    "be correct for simple new" in CfgFixture("new MyClass()") { implicit cpg =>
+    "be correct for simple new" in {
+      implicit val cpg: Cpg = code("new MyClass()")
       succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected((".alloc", AlwaysEdge))
       succOf(".alloc") shouldBe expected(("_tmp_0 = .alloc", AlwaysEdge))
@@ -18,7 +22,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("new MyClass()") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for simple new with arguments" in CfgFixture("new MyClass(arg1, arg2)") { implicit cpg =>
+    "be correct for simple new with arguments" in {
+      implicit val cpg: Cpg = code("new MyClass(arg1, arg2)")
       succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected((".alloc", AlwaysEdge))
       succOf(".alloc") shouldBe expected(("_tmp_0 = .alloc", AlwaysEdge))
@@ -32,7 +37,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("new MyClass(arg1, arg2)") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for new with access path" in CfgFixture("new foo.bar.MyClass()") { implicit cpg =>
+    "be correct for new with access path" in {
+      implicit val cpg: Cpg = code("new foo.bar.MyClass()")
       succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected((".alloc", AlwaysEdge))
       succOf(".alloc") shouldBe expected(("_tmp_0 = .alloc", AlwaysEdge))
@@ -48,7 +54,8 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("new foo.bar.MyClass()") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be structure for throw new exceptions" in CfgFixture("function foo() { throw new Foo() }") { implicit cpg =>
+    "be structure for throw new exceptions" in {
+      implicit val cpg: Cpg = code("function foo() { throw new Foo() }")
       succOf("foo", NodeTypes.METHOD) shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected((".alloc", AlwaysEdge))
       succOf(".alloc") shouldBe expected(("_tmp_0 = .alloc", AlwaysEdge))
@@ -63,32 +70,35 @@ class JsClassesCfgCreationPassTest extends AbstractCfgPassTest {
   }
 
   "CFG generation for classes" should {
-    "be correct for methods in class type decls" in CfgFixture("""
-       |class ClassA {
-       |  foo() {
-       |    bar()
-       |  }
-       |}
-       |""".stripMargin) { implicit cpg =>
+    "be correct for methods in class type decls" in {
+      implicit val cpg: Cpg = code("""
+                                     |class ClassA {
+                                     |  foo() {
+                                     |    bar()
+                                     |  }
+                                     |}
+                                     |""".stripMargin)
       succOf("foo", NodeTypes.METHOD) shouldBe expected(("bar", AlwaysEdge))
       succOf("bar") shouldBe expected(("this", AlwaysEdge))
       succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("bar()", AlwaysEdge))
       succOf("bar()") shouldBe expected(("RET", 2, AlwaysEdge))
     }
 
-    "be correct for methods in class type decls with assignment" in CfgFixture("""
-       |var a = class ClassA {
-       |  foo() {
-       |    bar()
-       |  }
-       |}
-       |""".stripMargin) { implicit cpg =>
+    "be correct for methods in class type decls with assignment" in {
+      implicit val cpg: Cpg = code("""
+                                     |var a = class ClassA {
+                                     |  foo() {
+                                     |    bar()
+                                     |  }
+                                     |}
+                                     |""".stripMargin)
       succOf(":program") shouldBe expected(("a", AlwaysEdge))
       // call to constructor of ClassA
       succOf("a") shouldBe expected(("class ClassA", AlwaysEdge))
     }
 
-    "be correct for outer method of anonymous class declaration" in CfgFixture("var a = class {}") { implicit cpg =>
+    "be correct for outer method of anonymous class declaration" in {
+      implicit val cpg: Cpg = code("var a = class {}")
       succOf(":program") shouldBe expected(("a", AlwaysEdge))
       succOf("a") shouldBe expected(("class _anon_cdecl", AlwaysEdge))
       succOf("class _anon_cdecl") shouldBe expected(("var a = class {}", AlwaysEdge))
