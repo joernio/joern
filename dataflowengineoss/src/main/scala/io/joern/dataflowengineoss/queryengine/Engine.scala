@@ -38,6 +38,8 @@ class Engine(context: EngineContext) {
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService = new ExecutorCompletionService[Vector[ReachableByResult]](executorService)
 
+  private val started : mutable.Set[ReachableByTask] = mutable.Set()
+
   def shutdown(): Unit = {
     executorService.shutdown()
   }
@@ -72,14 +74,14 @@ class Engine(context: EngineContext) {
     * submitted accordingly. Once no more tasks can be created, the list of results is returned.
     */
   private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): List[ReachableByResult] = {
-    var result = List[ReachableByResult]()
+    var completedResults = List[ReachableByResult]()
 
     /** For a list of results, determine partial and complete results. Store complete results and derive and submit
       * tasks from partial results.
       */
     def handleResultsOfTask(resultsOfTask: Vector[ReachableByResult]): Unit = {
       val (partial, complete) = resultsOfTask.partition(_.partial)
-      result ++= complete
+      completedResults ++= complete
       val newTasks = new TaskCreator(sources).createFromResults(partial)
       newTasks.foreach(submitTask)
     }
@@ -102,10 +104,15 @@ class Engine(context: EngineContext) {
 
     tasks.foreach(submitTask)
     runUntilAllTasksAreSolved()
-    deduplicate(result.toVector).toList
+    deduplicate(completedResults.toVector).toList
   }
 
   private def submitTask(task: ReachableByTask): Unit = {
+    if (started.contains(task)) {
+      println("REACHED")
+      return
+    }
+    started.add(task)
     numberOfTasksRunning += 1
     completionService.submit(
       new TaskSolver(if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable), context)
