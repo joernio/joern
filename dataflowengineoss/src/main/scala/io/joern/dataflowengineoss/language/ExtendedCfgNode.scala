@@ -33,18 +33,14 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     result
   }
 
-  def reachableBy[NodeType <: StoredNode](
-    sourceTravs: Traversal[NodeType]*
-  )(implicit context: EngineContext): Traversal[NodeType] = {
+  def reachableBy[NodeType](sourceTravs: Traversal[NodeType]*)(implicit context: EngineContext): Traversal[NodeType] = {
     val sources = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs: _*)
     val reachedSources =
       reachableByInternal(sources).map(_.startingPoint)
     Traversal.from(reachedSources).cast[NodeType]
   }
 
-  def reachableByFlows[A <: StoredNode](
-    sourceTravs: Traversal[A]*
-  )(implicit context: EngineContext): Traversal[Path] = {
+  def reachableByFlows[A](sourceTravs: Traversal[A]*)(implicit context: EngineContext): Traversal[Path] = {
     val sources        = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs: _*)
     val startingPoints = sources.map(_.startingPoint)
     val paths = reachableByInternal(sources)
@@ -66,7 +62,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     paths.to(Traversal)
   }
 
-  def reachableByDetailed[NodeType <: StoredNode](
+  def reachableByDetailed[NodeType](
     sourceTravs: Traversal[NodeType]*
   )(implicit context: EngineContext): List[ReachableByResult] = {
     val sources = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs: _*)
@@ -101,9 +97,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 }
 
 object ExtendedCfgNode {
-  def sourceTravsToStartingPoints[NodeType <: StoredNode](
-    sourceTravs: Traversal[NodeType]*
-  ): List[StartingPointWithSource] = {
+  def sourceTravsToStartingPoints[NodeType](sourceTravs: Traversal[NodeType]*): List[StartingPointWithSource] = {
     val fjp     = ForkJoinPool.commonPool()
     val results = fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*))
     fjp.shutdown()
@@ -205,7 +199,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     }
 }
 
-class SourceTravsToStartingPointsTask[NodeType <: StoredNode](sourceTravs: Traversal[NodeType]*)
+class SourceTravsToStartingPointsTask[NodeType](sourceTravs: Traversal[NodeType]*)
     extends RecursiveTask[List[StartingPointWithSource]] {
   override def compute(): List[StartingPointWithSource] = {
     val sources: List[StoredNode] = sourceTravs
