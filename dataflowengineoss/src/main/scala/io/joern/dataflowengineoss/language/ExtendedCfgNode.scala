@@ -8,10 +8,18 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
+import org.slf4j.LoggerFactory
 import overflowdb.traversal._
 
-import java.util.concurrent.{ForkJoinPool, ForkJoinTask, RecursiveTask}
+import java.util.concurrent.{
+  ForkJoinPool,
+  ForkJoinTask,
+  RecursiveTask,
+  RejectedExecutionException,
+  RejectedExecutionHandler
+}
 import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
 
 case class StartingPointWithSource(startingPoint: CfgNode, source: StoredNode)
 
@@ -97,11 +105,19 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 }
 
 object ExtendedCfgNode {
+
+  private val log = LoggerFactory.getLogger(ExtendedCfgNode.getClass)
+
   def sourceTravsToStartingPoints[NodeType](sourceTravs: Traversal[NodeType]*): List[StartingPointWithSource] = {
-    val fjp     = ForkJoinPool.commonPool()
-    val results = fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*))
-    fjp.shutdown()
-    results
+    val fjp = ForkJoinPool.commonPool()
+    try {
+      fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*))
+    } catch {
+      case e: RejectedExecutionException =>
+        log.error("Unable to execute 'SourceTravsToStartingPoints` task", e); List()
+    } finally {
+      fjp.shutdown()
+    }
   }
 }
 
@@ -201,6 +217,9 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
 class SourceTravsToStartingPointsTask[NodeType](sourceTravs: Traversal[NodeType]*)
     extends RecursiveTask[List[StartingPointWithSource]] {
+
+  private val log = LoggerFactory.getLogger(this.getClass)
+
   override def compute(): List[StartingPointWithSource] = {
     val sources: List[StoredNode] = sourceTravs
       .flatMap(_.toList)
@@ -209,7 +228,11 @@ class SourceTravsToStartingPointsTask[NodeType](sourceTravs: Traversal[NodeType]
       .toList
       .sortBy(_.id)
     val tasks = sources.map(src => (src, new SourceToStartingPoints(src).fork()))
-    while (tasks.exists(t => !t._2.isDone)) {}
-    tasks.flatMap { case (src, t: ForkJoinTask[List[CfgNode]]) => t.get().map(s => StartingPointWithSource(s, src)) }
+    tasks.flatMap { case (src, t: ForkJoinTask[List[CfgNode]]) =>
+      Try(t.get()) match {
+        case Failure(e)       => log.error("Unable to complete 'SourceToStartingPoints' task", e); List()
+        case Success(sources) => sources.map(s => StartingPointWithSource(s, src))
+      }
+    }
   }
 }
