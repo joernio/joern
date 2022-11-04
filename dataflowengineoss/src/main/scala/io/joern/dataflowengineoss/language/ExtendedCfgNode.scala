@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
-import java.util.concurrent.{ForkJoinPool, RecursiveTask}
+import java.util.concurrent.{ForkJoinPool, ForkJoinTask, RecursiveTask}
 import scala.collection.mutable
 
 case class StartingPointWithSource(startingPoint: CfgNode, source: StoredNode)
@@ -33,15 +33,19 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     result
   }
 
-  def reachableBy[NodeType <: StoredNode](sourceTravs: Traversal[NodeType]*)(implicit context: EngineContext): Traversal[NodeType] = {
-    val sources = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs:_*)
+  def reachableBy[NodeType <: StoredNode](
+    sourceTravs: Traversal[NodeType]*
+  )(implicit context: EngineContext): Traversal[NodeType] = {
+    val sources = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs: _*)
     val reachedSources =
       reachableByInternal(sources).map(_.startingPoint)
     Traversal.from(reachedSources).cast[NodeType]
   }
 
-  def reachableByFlows[A <: StoredNode](sourceTravs: Traversal[A]*)(implicit context: EngineContext): Traversal[Path] = {
-    val sources        = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs:_*)
+  def reachableByFlows[A <: StoredNode](
+    sourceTravs: Traversal[A]*
+  )(implicit context: EngineContext): Traversal[Path] = {
+    val sources        = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs: _*)
     val startingPoints = sources.map(_.startingPoint)
     val paths = reachableByInternal(sources)
       .map { result =>
@@ -65,7 +69,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   def reachableByDetailed[NodeType <: StoredNode](
     sourceTravs: Traversal[NodeType]*
   )(implicit context: EngineContext): List[ReachableByResult] = {
-    val sources = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs:_*)
+    val sources = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs: _*)
     reachableByInternal(sources)
   }
 
@@ -97,45 +101,22 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 }
 
 object ExtendedCfgNode {
-  def sourceTravsToStartingPoints[NodeType <: StoredNode](sourceTravs: Traversal[NodeType]*): List[StartingPointWithSource] = {
-    val fjp                         = ForkJoinPool.commonPool()
-    val results = fjp.invoke(new SourceTravsToStartingPoints(sourceTravs:_*))
+  def sourceTravsToStartingPoints[NodeType <: StoredNode](
+    sourceTravs: Traversal[NodeType]*
+  ): List[StartingPointWithSource] = {
+    val fjp     = ForkJoinPool.commonPool()
+    val results = fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*))
     fjp.shutdown()
     results
   }
 }
 
-class SourceTravsToStartingPoints[NodeType <: StoredNode](sourceTravs: Traversal[NodeType]*)
-    extends RecursiveTask[List[StartingPointWithSource]] {
-
-  /** The code below deals with member variables, and specifically with the situation where literals that initialize
-    * static members are passed to `reachableBy` as sources. In this case, we determine the first usages of this member
-    * in each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements would be
-    * problematic, but it works quite well in practice.
-    */
-  def sourceToStartingPoints(src: StoredNode): List[CfgNode] = {
-    src match {
-      case lit: Literal =>
-        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
-      case member: Member =>
-        val initializedMember = memberToInitializedMembers(member)
-        usages(targetsToClassIdentifierPair(initializedMember))
-      case x => List(x).collect { case y: CfgNode => y }
-    }
-  }
-
-  def sourceTravsToStartingPoints(sourceTravs: Seq[Traversal[StoredNode]]): List[StartingPointWithSource] = {
-    val sources: List[StoredNode] = sourceTravs
-      .flatMap(_.toList)
-      .collect { case n: StoredNode => n }
-      .dedup
-      .toList
-      .sortBy(_.id)
-    // TODO: make usage tasks to fork with
-    sources.flatMap { src =>
-      sourceToStartingPoints(src).map(s => StartingPointWithSource(s, src))
-    }
-  }
+/** The code below deals with member variables, and specifically with the situation where literals that initialize
+  * static members are passed to `reachableBy` as sources. In this case, we determine the first usages of this member in
+  * each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements would be
+  * problematic, but it works quite well in practice.
+  */
+class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode]] {
 
   private def usages(pairs: List[(TypeDecl, Expression)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, expression) =>
@@ -213,8 +194,28 @@ class SourceTravsToStartingPoints[NodeType <: StoredNode](sourceTravs: Traversal
   private def targetsToClassIdentifierPair(targets: List[Expression]): List[(TypeDecl, Expression)] = {
     targets.flatMap(target => target.method.typeDecl.map { typeDecl => (typeDecl, target) })
   }
+  override def compute(): List[CfgNode] =
+    src match {
+      case lit: Literal =>
+        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
+      case member: Member =>
+        val initializedMember = memberToInitializedMembers(member)
+        usages(targetsToClassIdentifierPair(initializedMember))
+      case x => List(x).collect { case y: CfgNode => y }
+    }
+}
 
+class SourceTravsToStartingPointsTask[NodeType <: StoredNode](sourceTravs: Traversal[NodeType]*)
+    extends RecursiveTask[List[StartingPointWithSource]] {
   override def compute(): List[StartingPointWithSource] = {
-    sourceTravsToStartingPoints(sourceTravs)
+    val sources: List[StoredNode] = sourceTravs
+      .flatMap(_.toList)
+      .collect { case n: StoredNode => n }
+      .dedup
+      .toList
+      .sortBy(_.id)
+    val tasks = sources.map(src => (src, new SourceToStartingPoints(src).fork()))
+    while (tasks.exists(t => !t._2.isDone)) {}
+    tasks.flatMap { case (src, t: ForkJoinTask[List[CfgNode]]) => t.get().map(s => StartingPointWithSource(s, src)) }
   }
 }
