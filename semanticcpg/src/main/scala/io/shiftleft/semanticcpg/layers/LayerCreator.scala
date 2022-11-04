@@ -58,5 +58,5 @@ abstract class LayerCreator {
 
 }
 
-class LayerCreatorContext(val cpg: Cpg, val outputDir: Option[String] = None) {}
+class LayerCreatorContext(val cpg: Cpg, val inputDir: Option[String] = None, val outputDir: Option[String] = None) {}
 class LayerCreatorOptions()

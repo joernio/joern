@@ -11,7 +11,7 @@ object Base {
   val description: String = "base layer (linked frontend CPG)"
   def defaultOpts         = new LayerCreatorOptions()
 
-  def passes(cpg: Cpg): Iterator[CpgPassBase] = Iterator(
+  def passes(cpg: Cpg, inputDir: Option[String] = None): Iterator[CpgPassBase] = Iterator(
     new FileCreationPass(cpg),
     new NamespaceCreator(cpg),
     new TypeDeclStubCreator(cpg),
@@ -20,7 +20,8 @@ object Base {
     new MethodDecoratorPass(cpg),
     new AstLinkerPass(cpg),
     new ContainsEdgePass(cpg),
-    new TypeUsagePass(cpg)
+    new TypeUsagePass(cpg),
+    new VersionControlPass(cpg, inputDir)
   )
 
 }
@@ -30,9 +31,10 @@ class Base extends LayerCreator {
   override val description: String = Base.description
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
-    val cpg = context.cpg
+    val cpg      = context.cpg
+    val inputDir = context.inputDir
     cpg.graph.indexManager.createNodePropertyIndex(PropertyNames.FULL_NAME)
-    Base.passes(cpg).zipWithIndex.foreach { case (pass, index) =>
+    Base.passes(cpg, inputDir).zipWithIndex.foreach { case (pass, index) =>
       runPass(pass, context, storeUndoInfo, index)
     }
   }
