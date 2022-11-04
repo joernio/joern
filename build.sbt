@@ -30,7 +30,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   semanticcpg,
   c2cpg,
   x2cpg,
-  // pysrc2cpg,
+  pysrc2cpg,
   php2cpg,
   jssrc2cpg,
   javasrc2cpg,
