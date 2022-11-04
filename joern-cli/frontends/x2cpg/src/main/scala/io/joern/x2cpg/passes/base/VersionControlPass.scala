@@ -39,6 +39,7 @@ class VersionControlPass(cpg: Cpg, inputDir: Option[String] = None) extends Simp
     val projectPath   = vcsDir.parent.pathAsString
     val remote        = getRemoteUrl(projectPath, vcs)
     val branchDetails = getRevIdAuthorNameRevMsg(projectPath, vcs)
+    val changedFiles  = getListOfChangedFilesInLastRevision(projectPath, vcs)
     println(branchDetails)
   }
 
@@ -56,7 +57,7 @@ class VersionControlPass(cpg: Cpg, inputDir: Option[String] = None) extends Simp
     }
   }
 
-  private def getRevIdAuthorNameRevMsg(projectPath: String, vcs: String): RevisionDetails = {
+  private def getRevIdAuthorNameRevMsg(projectPath: String, vcs: String): RevisionDetails =
     vcs match {
       case "GIT" =>
         val d = "_#_"
@@ -77,6 +78,18 @@ class VersionControlPass(cpg: Cpg, inputDir: Option[String] = None) extends Simp
         }
       case "SVN" => RevisionDetails()
       case _     => RevisionDetails()
+    }
+
+  private def getListOfChangedFilesInLastRevision(projectPath: String, vcs: String): Seq[String] = {
+    vcs match {
+      case "GIT" =>
+        ExternalCommand.run("git diff --name-only HEAD HEAD~1", projectPath, separateStdErr = true) match {
+          case Failure(e) =>
+            log.error("Unable to retrieve Git branch", e); Seq()
+          case Success(msg) => msg
+        }
+      case "SVN" => Seq()
+      case _     => Seq()
     }
   }
 
