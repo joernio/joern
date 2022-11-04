@@ -139,7 +139,7 @@ class ObjectTests extends JavaDataflowFixture {
 
   it should "find a path if a safe field is accessed (approximation)" in {
     val (source, sink) = getConstSourceSink("test2")
-    sink.reachableBy(source).size shouldBe 2
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "find a path if a field is directly reassigned to `MALICIOUS`" in {
@@ -160,13 +160,13 @@ class ObjectTests extends JavaDataflowFixture {
 
   it should "find a path to a void printer via a field" in {
     val (source, sink) = getMultiFnSourceSink("test6", "printS")
-    sink.reachableBy(source).size shouldBe 2
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "not find a path to a void printer via a safe field" in {
     val (source, sink) = getMultiFnSourceSink("test7", "printT")
     // TODO: This should not find a path, but does due to over-tainting.
-    sink.reachableBy(source).size shouldBe 2
+    sink.reachableBy(source).size shouldBe 1
   }
 
   it should "not find a path if `MALICIOUS` is overwritten via a setter" in {
