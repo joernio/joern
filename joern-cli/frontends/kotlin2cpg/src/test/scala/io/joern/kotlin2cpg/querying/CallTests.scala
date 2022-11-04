@@ -301,4 +301,22 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       c.argument(2).argumentName shouldBe Some("firstName")
     }
   }
+
+  "CPG for code with call with named arguments of user-defined fn" should {
+    val cpg = code("""
+       |package no.such.pkg
+       |fun printNextLineRm(file: String, line: String) {
+       |    println("file: $file")
+       |    println("line: $line")
+       |}
+       |fun doSomething() = printNextLineRm(line = "MD_Update(&m,buf,j);", file = "rand_lcl.h")
+       |""".stripMargin)
+
+    "should contain a CALL node with arguments that have the argument name set" in {
+      val List(c) = cpg.call.code("printNextLineRm.*").l
+      c.argument(1).argumentName shouldBe Some("line")
+      c.argument(2).argumentName shouldBe Some("file")
+    }
+  }
+
 }
