@@ -1,11 +1,30 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local}
 import io.shiftleft.semanticcpg.language._
 
 class MethodTests extends PhpCode2CpgFixture {
+
+  "method nodes should be created with the correct fields" in {
+    val cpg = code("""<?php
+     |function foo(): int {}
+     |""".stripMargin)
+
+    inside(cpg.method.name("foo").l) { case List(fooMethod) =>
+      fooMethod.fullName shouldBe s"foo:${Defines.UnresolvedSignature}(0)"
+      fooMethod.lineNumber shouldBe Some(2)
+      fooMethod.code shouldBe "function foo()"
+
+      inside(fooMethod.methodReturn.l) { case List(methodReturn) =>
+        methodReturn.typeFullName shouldBe "int"
+        methodReturn.code shouldBe "RET"
+        methodReturn.lineNumber shouldBe Some(2)
+      }
+    }
+  }
 
   "static variables without default values should be represented as the correct local nodes" in {
     val cpg = code("""<?php

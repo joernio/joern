@@ -20,8 +20,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   private val logger = LoggerFactory.getLogger(AstCreator.getClass)
   private val scope  = new Scope()
 
-  private val tmpKeyPool            = new IntervalKeyPool(first = 0, last = Long.MaxValue)
-  private def getNewTmpName: String = s"tmp${tmpKeyPool.next.toString}"
+  private val tmpKeyPool                                    = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+  private def getNewTmpName(prefix: String = "tmp"): String = s"$prefix${tmpKeyPool.next.toString}"
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val ast = astForPhpFile(phpAst)
@@ -55,7 +55,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val globalTypeDecl = NewTypeDecl()
       .name(namespaceBlock.name)
-      .fullName(namespaceBlock.fullName)
+      .fullName(namespaceBlock.name)
       .astParentFullName(namespaceBlock.fullName)
       .code(namespaceBlock.code)
       .filename(filename)
@@ -74,6 +74,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val constAsts                = fileConsts.flatMap(fc => astsForConstStmt(fc.asInstanceOf[PhpConstStmt]))
     val methodChildren           = otherStmts.map(astForStmt)
     val clinitAst                = astForStaticAndConstInits
+    val closureMethodAsts        = scope.getAndClearAnonymousMethods
 
     scope.popScope() // Global method
     scope.popScope() // Global typeDecl
@@ -88,6 +89,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       Ast(globalTypeDecl)
         .withChildren(constAsts)
         .withChildren(clinitAst.toList)
+        .withChildren(closureMethodAsts)
         .withChild(globalMethodAst)
 
     Ast(namespaceBlock).withChild(globalTypeDeclAst)
@@ -170,23 +172,14 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     asts
   }
 
-  private def astForMethodDecl(decl: PhpMethodDecl, bodyPrefixAsts: List[Ast] = Nil): Ast = {
+  private def astForMethodDecl(
+    decl: PhpMethodDecl,
+    bodyPrefixAsts: List[Ast] = Nil,
+    fullNameOverride: Option[String] = None
+  ): Ast = {
     val namespacePrefix = getNamespacePrefixForName
     val signature       = s"${Defines.UnresolvedSignature}(${decl.params.size})"
-    val fullName        = s"$namespacePrefix${decl.name.name}:$signature"
-
-    val methodNode =
-      NewMethod()
-        .name(decl.name.name)
-        .fullName(fullName)
-        .signature(signature)
-        .code(decl.name.name)
-        .lineNumber(line(decl))
-        .isExternal(false)
-
-    scope.pushNewScope(methodNode)
-
-    val returnType = decl.returnType.map(_.name).getOrElse(TypeConstants.Any)
+    val fullName        = fullNameOverride.getOrElse(s"$namespacePrefix${decl.name.name}:$signature")
 
     val modifiers = decl.modifiers.map(modifierNode)
     val thisParam = if (decl.isClassMethod && !modifiers.exists(_.modifierType == ModifierTypes.STATIC)) {
@@ -194,12 +187,33 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     } else {
       None
     }
+
     val parameters = thisParam.toList ++ setParamIndices(decl.params.map(astForParam))
+
+    val modifierString = decl.modifiers match {
+      case Nil       => ""
+      case modifiers => modifiers.mkString(" ") + " "
+    }
+    val methodCode = s"${modifierString}function ${decl.name.name}(${parameters.map(rootCode(_)).mkString(",")})"
+
+    val methodNode =
+      NewMethod()
+        .name(decl.name.name)
+        .fullName(fullName)
+        .signature(signature)
+        .code(methodCode)
+        .lineNumber(line(decl))
+        .isExternal(false)
+
+    scope.pushNewScope(methodNode)
+
+    val returnType = decl.returnType.map(_.name).getOrElse(TypeConstants.Any)
+
     val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap {
       case staticStmt: PhpStaticStmt => astsForStaticStmt(staticStmt)
       case stmt                      => astForStmt(stmt) :: Nil
     }
-    val methodReturn = methodReturnNode(returnType, line = line(decl), column = None)
+    val methodReturn = methodReturnNode(returnType, line = line(decl), column = None).code("RET")
 
     val declLocals = scope.getLocalsInScope.map(Ast(_))
     val methodBody = blockAst(NewBlock(), declLocals ++ methodBodyStmts)
@@ -272,7 +286,6 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case propertyFetchExpr: PhpPropertyFetchExpr     => astForPropertyFetchExpr(propertyFetchExpr)
       case includeExpr: PhpIncludeExpr                 => astForIncludeExpr(includeExpr)
       case shellExecExpr: PhpShellExecExpr             => astForShellExecExpr(shellExecExpr)
-      case arrowFunction: PhpArrowFunction             => astForArrowFunc(arrowFunction)
 
       case null =>
         logger.warn("expr was null")
@@ -713,7 +726,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val code         = codeForClassStmt(stmt, name)
 
     val namespacePrefix =
-      scope.getEnclosingNamespaceName.filter(_ != NamespaceTraversal.globalNamespaceName).map(_ + ".").getOrElse("")
+      scope.getEnclosingNamespaceName
+        .filterNot(name => name.contains(NamespaceTraversal.globalNamespaceName))
+        .map(_ + ".")
+        .getOrElse("")
     val fullName = s"$namespacePrefix${name.name}"
 
     val typeDeclNode = NewTypeDecl()
@@ -780,9 +796,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
         Some(astForStmt(other))
     }
 
-    val clinitAst = astForStaticAndConstInits
+    val clinitAst           = astForStaticAndConstInits
+    val anonymousMethodAsts = scope.getAndClearAnonymousMethods
 
-    List(classConsts, properties, clinitAst, constructorAst, otherBodyStmts).flatten
+    List(classConsts, properties, clinitAst, constructorAst, anonymousMethodAsts, otherBodyStmts).flatten
   }
 
   private def astForConstructor(maybeDecl: Option[PhpMethodDecl], createDefaultConstructor: Boolean): Option[Ast] = {
@@ -798,7 +815,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def getNamespacePrefixForName: String = {
-    scope.getEnclosingTypeDeclType.map(typeName => s"$typeName.").getOrElse("")
+    scope.getEnclosingTypeDeclType
+      .filterNot(_ == NamespaceTraversal.globalNamespaceName)
+      .map(typeName => s"$typeName.")
+      .getOrElse("")
   }
 
   private def defaultConstructorAst(): Ast = {
@@ -1248,7 +1268,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def getTmpLocal(typeFullName: Option[String], lineNumber: Option[Integer], prefix: String = ""): NewLocal = {
-    val name = s"$prefix$getNewTmpName"
+    val name = s"$prefix${getNewTmpName()}"
 
     val local = NewLocal()
       .name(name)
@@ -1386,13 +1406,65 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForClosureExpr(expr: PhpClosureExpr): Ast = {
-    // TODO Actually implement this (with uses)
-    Ast()
-  }
+    val methodName     = getNewTmpName("__closure")
+    val typePrefix     = getNamespacePrefixForName
+    val methodFullName = s"$typePrefix$methodName:${Defines.UnresolvedSignature}(${expr.params.size})"
+    val methodRef      = NewMethodRef().methodFullName(methodFullName).code(methodFullName).lineNumber(line(expr))
 
-  private def astForArrowFunc(expr: PhpArrowFunction): Ast = {
-    // TODO Actually implement this
-    Ast()
+    val localsForUses = expr.uses.flatMap { closureUse =>
+      val variableAst = astForExpr(closureUse.variable)
+
+      variableAst.root match {
+        case Some(identifier: NewIdentifier) =>
+          // This is the expected case and is handled well
+          Some(NewLocal().name(identifier.name).code(identifier.code))
+        case Some(expr: ExpressionNew) =>
+          // Results here may be bad, but its' the best we're likely to do
+          Some(NewLocal().name(expr.code).code(expr.code))
+        case None =>
+          // This should never happen
+          logger.warn(s"Found empty ast for closure use in $filename")
+          None
+      }
+    }
+
+    // Add closure bindings to diffgraph
+    localsForUses.foreach { local =>
+      scope.lookupVariable(local.name).map { capturedNode =>
+        val closureBindingId = s"$filename:$methodName:${local.name}"
+        val closureBindingNode = NewClosureBinding()
+          .closureBindingId(closureBindingId)
+          .closureOriginalName(local.name)
+          .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+
+        local.closureBindingId(closureBindingId)
+
+        diffGraph.addNode(closureBindingNode)
+        diffGraph.addEdge(closureBindingNode, capturedNode, EdgeTypes.REF)
+        diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
+      }
+    }
+
+    // Create method for closure
+    val name      = PhpNameExpr(methodName, expr.attributes)
+    val modifiers = Nil
+    val methodDecl = PhpMethodDecl(
+      name,
+      expr.params,
+      modifiers,
+      expr.returnType,
+      expr.stmts,
+      expr.returnByRef,
+      namespacedName = None,
+      isClassMethod = expr.isStatic,
+      expr.attributes
+    )
+    val methodAst = astForMethodDecl(methodDecl, localsForUses.map(Ast(_)), Some(methodFullName))
+
+    // Add method to scope to be attached to typeDecl later
+    scope.addAnonymousMethod(methodAst)
+
+    Ast(methodRef)
   }
 
   private def astForYieldFromExpr(expr: PhpYieldFromExpr): Ast = {

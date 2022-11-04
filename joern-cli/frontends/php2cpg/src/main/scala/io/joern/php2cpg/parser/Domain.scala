@@ -527,17 +527,10 @@ object Domain {
     uses: List[PhpClosureUse],
     isStatic: Boolean,
     returnByRef: Boolean,
+    isArrowFunc: Boolean,
     attributes: PhpAttributes
   ) extends PhpExpr
   final case class PhpClosureUse(variable: PhpExpr, byRef: Boolean, attributes: PhpAttributes) extends PhpExpr
-  final case class PhpArrowFunction(
-    params: List[PhpParam],
-    expr: PhpExpr,
-    returnType: Option[PhpNameExpr],
-    isStatic: Boolean,
-    returnByRef: Boolean,
-    attributes: PhpAttributes
-  ) extends PhpExpr
 
   private def escapeString(value: String): String = {
     value
@@ -744,14 +737,15 @@ object Domain {
   }
 
   private def readClosure(json: Value): PhpClosureExpr = {
-    val params     = json("params").arr.map(readParam).toList
-    val stmts      = json("stmts").arr.map(readStmt).toList
-    val returnType = Option.unless(json("returnType").isNull)(readType(json("returnType")))
-    val uses       = json("uses").arr.map(readClosureUse).toList
-    val isStatic   = json("static").bool
-    val isByRef    = json("byRef").bool
+    val params      = json("params").arr.map(readParam).toList
+    val stmts       = json("stmts").arr.map(readStmt).toList
+    val returnType  = Option.unless(json("returnType").isNull)(readType(json("returnType")))
+    val uses        = json("uses").arr.map(readClosureUse).toList
+    val isStatic    = json("static").bool
+    val isByRef     = json("byRef").bool
+    val isArrowFunc = false
 
-    PhpClosureExpr(params, stmts, returnType, uses, isStatic, isByRef, PhpAttributes(json))
+    PhpClosureExpr(params, stmts, returnType, uses, isStatic, isByRef, isArrowFunc, PhpAttributes(json))
   }
 
   private def readClosureUse(json: Value): PhpClosureUse = {
@@ -826,14 +820,27 @@ object Domain {
     PhpShellExecExpr(parts, PhpAttributes(json))
   }
 
-  private def readArrowFunction(json: Value): PhpArrowFunction = {
+  private def readArrowFunction(json: Value): PhpClosureExpr = {
     val params      = json("params").arr.map(readParam).toList
     val expr        = readExpr(json("expr"))
     val returnType  = Option.unless(json("returnType").isNull)(readType(json("returnType")))
     val isStatic    = json("static").bool
     val returnByRef = json("byRef").bool
+    val uses        = Nil // Not defined for arrow shorthand
+    val isArrowFunc = true
 
-    PhpArrowFunction(params, expr, returnType, isStatic, returnByRef, PhpAttributes(json))
+    // Introduce a return here to keep arrow functions consistent with regular closures while allowing easy code re-use.
+    val syntheticReturn = PhpReturnStmt(Some(expr), expr.attributes)
+    PhpClosureExpr(
+      params,
+      syntheticReturn :: Nil,
+      returnType,
+      uses,
+      isStatic,
+      returnByRef,
+      isArrowFunc,
+      PhpAttributes(json)
+    )
   }
 
   private def readPropertyFetch(
