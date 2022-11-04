@@ -1,11 +1,10 @@
 package io.joern.x2cpg.passes
 
 import better.files.File
-import io.joern.x2cpg.passes.base.{NamespaceCreator, VersionControlPass}
+import io.joern.x2cpg.passes.base.VersionControlPass
 import io.joern.x2cpg.testfixtures.EmptyGraphFixture
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
