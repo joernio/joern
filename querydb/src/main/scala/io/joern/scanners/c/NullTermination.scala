@@ -29,7 +29,7 @@ object NullTermination extends QueryBundle {
         |""".stripMargin,
       score = 4,
       withStrRep({ cpg =>
-        val allocations = cpg.method(".*malloc$").callIn.argument(1).l
+        val allocations = cpg.method(".*malloc$").callIn.argument(1)
         cpg
           .method("(?i)strncpy")
           .callIn
