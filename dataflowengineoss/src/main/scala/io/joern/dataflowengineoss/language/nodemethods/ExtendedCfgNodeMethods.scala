@@ -20,7 +20,7 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     */
   def astNode: AstNode = node
 
-  def reachableBy[NodeType](sourceTravs: Traversal[NodeType]*)(implicit context: EngineContext): Traversal[NodeType] =
+  def reachableBy(sourceTravs: Traversal[NodeType]*)(implicit context: EngineContext): Traversal[NodeType] =
     node.start.reachableBy(sourceTravs: _*)
 
   def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Traversal[CfgNode] = {
