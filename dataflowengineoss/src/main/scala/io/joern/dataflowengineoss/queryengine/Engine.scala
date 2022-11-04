@@ -25,6 +25,8 @@ case class ReachableByTask(
   callSiteStack: mutable.Stack[Call] = mutable.Stack()
 )
 
+case class TaskFingerprint(sink: CfgNode, sources: Set[CfgNode], callDepth: Int, callSiteStack: mutable.Stack[Call])
+
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
   * in parallel, creating and submitting new tasks upon completion of tasks. This class deals only with task scheduling,
   * while the creation of new tasks from existing tasks is handled by the class `TaskCreator`.
@@ -38,7 +40,7 @@ class Engine(context: EngineContext) {
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService = new ExecutorCompletionService[Vector[ReachableByResult]](executorService)
 
-  private val started : mutable.Set[ReachableByTask] = mutable.Set()
+  private val started: mutable.Set[TaskFingerprint] = mutable.Set()
 
   def shutdown(): Unit = {
     executorService.shutdown()
@@ -108,11 +110,11 @@ class Engine(context: EngineContext) {
   }
 
   private def submitTask(task: ReachableByTask): Unit = {
-    if (started.contains(task)) {
-      println("REACHED")
+    val fingerprint = TaskFingerprint(task.sink, task.sources, task.callDepth, task.callSiteStack)
+    if (started.contains(fingerprint)) {
       return
     }
-    started.add(task)
+    started.add(fingerprint)
     numberOfTasksRunning += 1
     completionService.submit(
       new TaskSolver(if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable), context)
