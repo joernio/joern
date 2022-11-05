@@ -101,17 +101,18 @@ object JoernExport extends App {
     val context = new LayerCreatorContext(cpg)
 
     format match {
+      case Format.Dot if representation == Representation.All || representation == Representation.Cpg =>
+        exportWithOdbFormat(cpg, representation, outDir, DotExporter)
       case Format.Dot =>
         exportDot(representation, outDir, context)
       case Format.Neo4jCsv =>
         exportWithOdbFormat(cpg, representation, outDir, Neo4jCsvExporter)
       case Format.Graphml =>
         exportWithOdbFormat(cpg, representation, outDir, GraphMLExporter)
-      case Format.Dot =>
-        exportWithOdbFormat(cpg, representation, outDir, DotExporter)
       case Format.Graphson =>
         exportWithOdbFormat(cpg, representation, outDir, GraphSONExporter)
     }
+
   }
 
   private def exportDot(repr: Representation.Value, outDir: Path, context: LayerCreatorContext): Unit = {
