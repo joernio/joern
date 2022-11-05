@@ -872,7 +872,7 @@ object Domain {
         case ujson.Null     => Nil
         case arr: ujson.Arr => arr.arr.map(readName).toList
         case obj: ujson.Obj => readName(obj) :: Nil
-        case other => throw new NotImplementedError(s"unexpected 'extends' entry '$other' of type ${other.getClass}")
+        case other          => throw new NotImplementedError(s"unexpected 'extends' entry '$other' of type ${other.getClass}")
       }
       .getOrElse(Nil)
   }
