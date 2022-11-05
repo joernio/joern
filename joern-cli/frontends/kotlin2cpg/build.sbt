@@ -5,7 +5,6 @@ val kotlinVersion = "1.6.21"
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test", Projects.javasrc2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "com.github.pathikrit"    %% "better-files"               % "3.9.1",
   "com.lihaoyi"             %% "requests"                   % "0.7.0",
   "com.lihaoyi"             %% "ujson"                      % "2.0.0",
   "com.squareup.tools.build" % "maven-archeologist"         % "0.0.10",

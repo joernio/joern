@@ -36,7 +36,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   jssrc2cpg,
   javasrc2cpg,
   jimple2cpg,
-  // kotlin2cpg
+  kotlin2cpg
 )
 
 ThisBuild / libraryDependencies += 
