@@ -2,7 +2,6 @@ package io.joern.kotlin2cpg.passes
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.ast.KtPsiToAst
 import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._

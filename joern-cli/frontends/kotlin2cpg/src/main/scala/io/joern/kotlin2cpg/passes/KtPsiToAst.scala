@@ -1,6 +1,5 @@
-package io.joern.kotlin2cpg.ast
+package io.joern.kotlin2cpg.passes
 
-import io.joern.kotlin2cpg.passes.{AstCreator, BindingInfo, ClosureBindingDef, NestedDeclaration}
 import io.joern.kotlin2cpg.ast.Nodes._
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
