@@ -47,7 +47,7 @@ class AstCreator(
   // where the respective nodes are defined. Instead we put them under the parent TYPE_DECL in which they are defined.
   // To achieve this we need this extra stack.
   protected val methodAstParentStack          = new Stack[NewNode]()
-  protected val metaTypeRefIdStack            = new Stack[NewTypeRef]
+  protected val typeRefIdStack                = new Stack[NewTypeRef]
   protected val dynamicInstanceTypeStack      = new Stack[String]
   protected val localAstParentStack           = new Stack[NewBlock]()
   protected val rootTypeDecl                  = new Stack[NewTypeDecl]()
@@ -105,7 +105,7 @@ class AstCreator(
 
     methodAstParentStack.push(programMethod)
 
-    val blockNode = NewBlock().typeFullName("ANY")
+    val blockNode = NewBlock().typeFullName(Defines.ANY)
 
     scope.pushNewMethodScope(fullName, name, blockNode, None)
     localAstParentStack.push(blockNode)
@@ -119,7 +119,7 @@ class AstCreator(
     val methodReturn = NewMethodReturn()
       .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(Defines.ANY.label)
+      .typeFullName(Defines.ANY)
 
     localAstParentStack.pop()
     scope.popScope()
@@ -220,12 +220,16 @@ class AstCreator(
   protected def astForNodeWithFunctionReference(json: Value): Ast = {
     val nodeInfo = createBabelNodeInfo(json)
     nodeInfo.node match {
-      case FunctionDeclaration =>
-        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
-      case FunctionExpression =>
-        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
-      case ArrowFunctionExpression =>
-        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
+      case _: FunctionLike => astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
+      case _               => astForNode(json)
+    }
+  }
+
+  protected def astForNodeWithFunctionReferenceAndCall(json: Value): Ast = {
+    val nodeInfo = createBabelNodeInfo(json)
+    nodeInfo.node match {
+      case _: FunctionLike =>
+        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
       case _ => astForNode(json)
     }
   }

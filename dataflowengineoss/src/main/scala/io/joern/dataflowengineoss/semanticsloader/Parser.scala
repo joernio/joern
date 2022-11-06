@@ -29,6 +29,15 @@ class Semantics private (methodToSemantic: mutable.Map[String, FlowSemantic]) {
 
   def forMethod(fullName: String): Option[FlowSemantic] = methodToSemantic.get(fullName)
 
+  def serialize: String = {
+    elements
+      .sortBy(_.methodFullName)
+      .map { elem =>
+        s"\"${elem.methodFullName}\" " + elem.mappings.map { case (x, y) => s"$x -> $y" }.mkString(" ")
+      }
+      .mkString("\n")
+  }
+
 }
 case class FlowSemantic(methodFullName: String, mappings: List[(Int, Int)])
 
@@ -48,7 +57,7 @@ class Parser() {
     val lexer       = new SemanticsLexer(charStream)
     val tokenStream = new CommonTokenStream(lexer)
     val parser      = new SemanticsParser(tokenStream)
-    val treeWalker  = new ParseTreeWalker();
+    val treeWalker  = new ParseTreeWalker()
 
     val tree     = parser.taintSemantics()
     val listener = new Listener()

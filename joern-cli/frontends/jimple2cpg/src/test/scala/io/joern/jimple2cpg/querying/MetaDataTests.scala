@@ -1,15 +1,14 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.toNodeTraversalViaAdditionalImplicit
 
-class MetaDataTests extends JimpleCodeToCpgFixture {
+class MetaDataTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |class Foo {}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain exactly one node with all mandatory fields set" in {
     val List(x) = cpg.metaData.l

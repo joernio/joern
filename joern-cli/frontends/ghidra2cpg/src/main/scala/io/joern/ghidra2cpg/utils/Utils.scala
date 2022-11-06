@@ -104,12 +104,4 @@ object Utils {
   def getInstructions(program: Program, function: Function): Seq[Instruction] =
     program.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
 
-  def connectCallToArgument(diffGraphBuilder: DiffGraphBuilder, call: CfgNodeNew, argument: CfgNodeNew): Unit = {
-    diffGraphBuilder.addNode(argument)
-    diffGraphBuilder.addEdge(call, argument, EdgeTypes.ARGUMENT)
-    diffGraphBuilder.addEdge(call, argument, EdgeTypes.AST)
-  }
-
-  def sanitizeMethodName(methodName: String): String =
-    methodName.split(">").lastOption.getOrElse(methodName).replace("[", "").replace("]", "")
 }

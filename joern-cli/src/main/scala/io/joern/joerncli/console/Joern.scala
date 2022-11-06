@@ -1,3 +1,3 @@
 package io.joern.joerncli.console
 
-object Joern extends JoernConsole {}
+object Joern extends JoernConsole

@@ -140,9 +140,22 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
       "test.vue"
     ) { cpg =>
       cpg.file.name.l shouldBe List("test.vue")
-      cpg.call.code.l shouldBe List("exports[\"default\"]", "exports[\"default\"] = HelloWorld")
+      cpg.assignment.code.l shouldBe List(
+        "var Component = require(\"vue-property-decorator\").Component",
+        "var Prop = require(\"vue-property-decorator\").Prop",
+        "var Vue = require(\"vue-property-decorator\").Vue",
+        "exports[\"default\"] = HelloWorld"
+      )
+      cpg.local.code.l shouldBe List("Component", "Prop", "Vue", "msg")
 
-      inside(cpg.identifier.l) { case List(exports, msg, helloWorld) =>
+      inside(cpg.identifier.l) { case List(exports, comp, prop, vue, msg, helloWorld) =>
+        comp.name shouldBe "Component"
+        comp.code shouldBe "Component"
+        prop.name shouldBe "Prop"
+        prop.code shouldBe "Prop"
+        vue.name shouldBe "Vue"
+        vue.code shouldBe "Vue"
+
         exports.name shouldBe "exports"
         exports.code shouldBe "exports"
         msg.name shouldBe "msg"
@@ -155,7 +168,7 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
         helloWorld.code shouldBe "HelloWorld"
       }
 
-      inside(cpg.staticImport.l) { case List(component, prop, vue) =>
+      inside(cpg.imports.l) { case List(component, prop, vue) =>
         component.importedAs shouldBe Some("Component")
         component.importedEntity shouldBe Some("vue-property-decorator")
         component.code shouldBe "import { Component, Prop, Vue } from 'vue-property-decorator'"

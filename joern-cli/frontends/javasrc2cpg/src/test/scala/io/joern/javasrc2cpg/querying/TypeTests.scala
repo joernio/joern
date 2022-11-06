@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
@@ -150,10 +150,9 @@ class NewTypeTests extends JavaSrcCode2CpgFixture {
   }
 }
 
-class TypeTests extends JavaSrcCodeToCpgFixture {
+class TypeTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       | package foo;
       |
       | class Foo {
@@ -187,7 +186,7 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
       |   }
       | }
       |
-      |""".stripMargin
+      |""".stripMargin)
 
   "should create TYPE node with correct fields for class" in {
     val List(x) = cpg.typ.name("Foo").l
@@ -245,10 +244,8 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should default to <unresolvedType> with a matching type node for unresolved types" in {
-    val List(x)    = cpg.typ(TypeConstants.UnresolvedType).l
     val List(node) = cpg.identifier.name("UnknownType").l
-    node.typeFullName shouldBe TypeConstants.UnresolvedType
-    node.typ.headOption shouldBe Some(x)
+    node.typeFullName shouldBe "ANY"
   }
 
   "should handle primitive type arrays" in {
@@ -274,8 +271,8 @@ class TypeTests extends JavaSrcCodeToCpgFixture {
   }
 
   "should use correct type for super calls" in {
-    val List(call) = cpg.call.name("<init>").l
-    call.methodFullName shouldBe "java.lang.Object.<init>:void()"
+    val List(call) = cpg.call.name(io.joern.x2cpg.Defines.ConstructorMethodName).l
+    call.methodFullName shouldBe s"java.lang.Object.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
     call.typeFullName shouldBe "void"
     call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 

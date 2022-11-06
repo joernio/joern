@@ -7,142 +7,111 @@ import io.shiftleft.semanticcpg.language._
 class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
   implicit val resolver: ICallResolver = NoResolve
 
-  "CPG for code with user-defined class containing one member defined inline" should {
+  "CPG for code with class definition with member defined inside ctor" should {
     val cpg = code("""
-      |class AClass { var x: String = "INITIAL" }
-      |fun f1(p: String) {
-      |    val aClass = AClass()
-      |    aClass.x = p
-      |    println(aClass.x)
-      |}
-      |""".stripMargin)
-
-    "should find a flow through an assignment call of its member" in {
-      val source = cpg.method.name("f1").parameter
-      val sink   = cpg.method.name("println").callIn.argument
-      val flows  = sink.reachableByFlows(source)
-      flows.map(flowToResultPairs).toSet shouldBe
-        Set(List(("f1(p)", Some(3)), ("aClass.x = p", Some(5)), ("println(aClass.x)", Some(6))))
-    }
-  }
-
-  "CPG for code with user-defined class containing one member defined inside its ctor" should {
-    val cpg = code("""
-      |class AClass(var x: String)
-      |fun f1(p: String) {
-      |    val aClass = AClass()
-      |    aClass.x = p
-      |    println(aClass.x)
-      |}
-      |""".stripMargin)
-
-    "should find a flow through an assignment call of its member" in {
-      val source = cpg.method.name("f1").parameter
-      val sink   = cpg.method.name("println").callIn.argument
-      val flows  = sink.reachableByFlows(source)
-      flows.map(flowToResultPairs).toSet shouldBe
-        Set(List(("f1(p)", Some(3)), ("aClass.x = p", Some(5)), ("println(aClass.x)", Some(6))))
-    }
-  }
-
-  "CPG for code with user-defined class with one method" should {
-    val cpg = code("""
-      |class AClass { fun itsFn(q: String) { println(q) } }
-      |fun f1(p: String) {
-      |    val aClass = AClass()
-      |    aClass.itsFn(p)
-      |}
-      |""".stripMargin)
-
-    "should find a flow through the explicit parameter of the method" in {
-      val source = cpg.method.name("f1").parameter
-      val sink   = cpg.method.name("println").callIn.argument
-      val flows  = sink.reachableByFlows(source)
-      flows.map(flowToResultPairs).toSet shouldBe
-        Set(
-          List(("f1(p)", Some(3)), ("aClass.itsFn(p)", Some(5)), ("itsFn(this, q)", Some(2)), ("println(q)", Some(2)))
-        )
-    }
-  }
-
-  "CPG for code with user-defined class with one method without paramters" should {
-    val cpg = code("class AClass { fun printThis() { println(this) } }")
-
-    "should find a flow from the method's implicit _this_ to the call using _this_" in {
-      val source = cpg.method.name("printThis").parameter
-      val sink   = cpg.method.name("println").callIn.argument
-      val flows  = sink.reachableByFlows(source)
-      flows.map(flowToResultPairs).toSet shouldBe
-        Set(List(("printThis(this)", Some(1)), ("println(this)", Some(1))))
-    }
-  }
-
-  "CPG for code with user-defined class with one extension function" should {
-    val cpg = code("""
-      |class AClass
-      |fun AClass.itsFn(q: String) { println(q) }
-      |fun f1(p: String) {
-      |    val aClass = AClass()
-      |    aClass.itsFn(p)
-      |}
-      |""".stripMargin)
-
-    "should find a flow through the extension function" in {
-      val source = cpg.method.name("f1").parameter
-      val sink   = cpg.method.name("println").callIn.argument
-      val flows  = sink.reachableByFlows(source)
-      flows.map(flowToResultPairs).toSet shouldBe
-        Set(List(("f1(p)", Some(4)), ("aClass.itsFn(p)", Some(6)), ("itsFn(q)", Some(3)), ("println(q)", Some(3))))
-    }
-  }
-
-  "CPG for code with call to ctor" should {
-    val cpg = code("""
-        |class AClass(val x: String)
-        |fun f1(p: String) {
-        |  val aClass = AClass(p)
-        |  println(aClass.x)
+        |class AClass(var x: String) {
+        |    fun printX() = println(this.x)
         |}
+        |fun f1(p: String) {
+        |    val aClass = AClass(p)
+        |    aClass.printX()
+        |}
+        |fun main() = f1("SOMETHING")
         |""".stripMargin)
 
-    "should find a flow through the constructor" in {
+    "should find a flow through member assigned in ctor" in {
       val source = cpg.method.name("f1").parameter
-      val sink   = cpg.method.name("println").callIn.argument
+      val sink   = cpg.call.methodFullName(".*println.*").argument
       val flows  = sink.reachableByFlows(source)
       flows.map(flowToResultPairs).toSet shouldBe
         Set(
           List(
-            ("f1(p)", Some(3)),
-            ("AClass(p)", Some(4)),
+            ("f1(p)", Some(5)),
+            ("AClass(p)", Some(6)),
             ("<init>(this, x)", Some(2)),
             ("this.x = x", Some(-1)),
             ("void", Some(-1)),
-            ("AClass(p)", Some(4)),
-            ("println(aClass.x)", Some(5))
+            ("AClass(p)", Some(6)),
+            ("aClass.printX()", Some(7)),
+            ("printX(this)", Some(3)),
+            ("println(this.x)", Some(3))
           )
         )
     }
   }
 
-  "CPG for code with call to secondary ctor" should {
+  "CPG for code with type alias of class definition with member defined inside ctor" should {
     val cpg = code("""
-        |class AClass {
-        |  constructor(x: String) {
-        |    println(x)
-        |  }
-        |}
-        |
-        |fun f1(p: String) {
-        |  val aClass = AClass(p)
-        |}
-        |""".stripMargin)
+      |typealias AnAlias = AClass
+      |class AClass {
+      |    var x: String
+      |    constructor(q: String) {
+      |        this.x = q
+      |    }
+      |    fun printX() = println(this.x)
+      |}
+      |fun f1(p: String) {
+      |    val aClass = AnAlias(p)
+      |    aClass.printX()
+      |}
+      |fun main() = f1("SOMETHING"
+      |""".stripMargin)
 
-    "should find a flow through " in {
+    "should find a flow through member assigned in ctor" in {
       val source = cpg.method.name("f1").parameter
-      val sink   = cpg.method.name("println").callIn.argument
+      val sink   = cpg.call.methodFullName(".*println.*").argument
       val flows  = sink.reachableByFlows(source)
       flows.map(flowToResultPairs).toSet shouldBe
-        Set(List(("f1(p)", Some(8)), ("AClass(p)", Some(9)), ("<init>(this, x)", Some(3)), ("println(x)", Some(4))))
+        Set(
+          List(
+            ("f1(p)", Some(10)),
+            ("AnAlias(p)", Some(11)),
+            ("<init>(this, q)", Some(5)),
+            ("this.x = q", Some(6)),
+            ("void", Some(-1)),
+            ("AnAlias(p)", Some(11)),
+            ("aClass.printX()", Some(12)),
+            ("printX(this)", Some(8)),
+            ("println(this.x)", Some(8))
+          )
+        )
     }
   }
+
+  "CPG for code with class definition with member assignment inside secondary ctor" should {
+    val cpg = code("""
+      |class AClass {
+      |    var x: String
+      |    constructor(q: String) {
+      |        this.x = q
+      |    }
+      |    fun printX() = println(this.x)
+      |}
+      |fun f1(p: String) {
+      |    val aClass = AClass(p)
+      |    aClass.printX()
+      |}
+      |""".stripMargin)
+
+    "should find a flow through member assigned in ctor" in {
+      val source = cpg.method.name("f1").parameter
+      val sink   = cpg.call.methodFullName(".*println.*").argument
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSet shouldBe
+        Set(
+          List(
+            ("f1(p)", Some(9)),
+            ("AClass(p)", Some(10)),
+            ("<init>(this, q)", Some(4)),
+            ("this.x = q", Some(5)),
+            ("void", Some(-1)),
+            ("AClass(p)", Some(10)),
+            ("aClass.printX()", Some(11)),
+            ("printX(this)", Some(7)),
+            ("println(this.x)", Some(7))
+          )
+        )
+    }
+  }
+
 }

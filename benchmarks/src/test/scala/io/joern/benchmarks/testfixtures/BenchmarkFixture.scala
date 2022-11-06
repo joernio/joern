@@ -1,22 +1,21 @@
 package io.joern.benchmarks.testfixtures
 
-import io.joern.console.cpgcreation.guessLanguage
 import io.joern.benchmarks.BenchmarkTags._
+import io.joern.console.cpgcreation.guessLanguage
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.javasrc2cpg.{JavaSrc2Cpg, Config => JavaSrcConfig}
 import io.joern.jimple2cpg.{Jimple2Cpg, Config => JimpleConfig}
-import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
-import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.utils.ProjectRoot
+import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest._
 import overflowdb.traversal.Traversal
 
 import scala.util.Failure
@@ -33,7 +32,7 @@ abstract class BenchmarkFixture(
   val semanticsFile: String            = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
   lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))
   implicit val resolver: ICallResolver = NoResolve
-  implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics, EngineConfig(maxCallDepth = 4))
+  implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics)
 
   private lazy val targetFiles = getListOfFiles(ProjectRoot.relativise(constructTargetFilePath))
   private lazy val targetDir   = moveToTempDir(targetFiles)
@@ -140,8 +139,8 @@ class BenchmarkCpgContext {
     val cpg = guessLanguage(inputPath) match {
       case Some(language: String) =>
         language match {
-          case Languages.JAVASRC => JavaSrc2Cpg().createCpg(JavaSrcConfig(inputPath, cpgPath))
-          case Languages.JAVA    => Jimple2Cpg().createCpg(JimpleConfig(inputPath, cpgPath))
+          case Languages.JAVASRC => JavaSrc2Cpg().createCpgWithOverlays(JavaSrcConfig(inputPath, cpgPath))
+          case Languages.JAVA    => Jimple2Cpg().createCpgWithOverlays(JimpleConfig(inputPath, cpgPath))
           case _ => Failure(new RuntimeException(s"No supported language frontend for the benchmark at '$inputPath'"))
         }
       case None =>
@@ -149,10 +148,11 @@ class BenchmarkCpgContext {
           new RuntimeException(s"Unable to guess which language frontend to use to parse the benchmark at '$inputPath'")
         )
     }
-    applyDefaultOverlays(cpg.get)
-    val context = new LayerCreatorContext(cpg.get)
-    val options = new OssDataFlowOptions()
-    new OssDataFlow(options).run(context)
+    val context                          = new LayerCreatorContext(cpg.get)
+    val options                          = new OssDataFlowOptions()
+    val semanticsFile: String            = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
+    lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))
+    new OssDataFlow(options)(defaultSemantics).run(context)
     cpg.get
   }
 

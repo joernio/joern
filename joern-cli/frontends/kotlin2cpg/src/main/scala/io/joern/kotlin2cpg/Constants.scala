@@ -13,7 +13,7 @@ object Constants {
   val getIteratorMethodName          = "iterator"
   val hasNextIteratorMethodName      = "hasNext"
   val importKeyword                  = "import"
-  val init                           = "<init>"
+  val init                           = io.joern.x2cpg.Defines.ConstructorMethodName
   val iteratorPrefix                 = "iterator_"
   val javaUtilIterator               = "java.util.Iterator"
   val lambdaBindingName              = "invoke"    // the underlying _invoke_ fn for Kotlin FunctionX types

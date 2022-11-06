@@ -3,6 +3,7 @@ package io.joern.x2cpg
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -56,9 +57,15 @@ abstract class AstCreatorBase(filename: String) {
   /** Creates an AST that represents a method stub, containing information about the method, its parameters, and the
     * return type.
     */
-  def methodStubAst(method: NewMethod, parameters: Seq[NewMethodParameterIn], methodReturn: NewMethodReturn): Ast =
+  def methodStubAst(
+    method: NewMethod,
+    parameters: Seq[NewMethodParameterIn],
+    methodReturn: NewMethodReturn,
+    modifiers: Seq[NewModifier] = Nil
+  ): Ast =
     Ast(method)
       .withChildren(parameters.map(Ast(_)))
+      .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))
 
   /** Create a method return node
@@ -76,6 +83,19 @@ abstract class AstCreatorBase(filename: String) {
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .lineNumber(line)
       .columnNumber(column)
+
+  def staticInitMethodAst(initAsts: List[Ast], fullName: String, signature: Option[String], returnType: String): Ast = {
+    val methodNode = NewMethod()
+      .name(Defines.StaticInitMethodName)
+      .fullName(fullName)
+    if (signature.isDefined) {
+      methodNode.signature(signature.get)
+    }
+    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
+    val body           = blockAst(NewBlock(), initAsts)
+    val methodReturn   = methodReturnNode(returnType, None, None, None)
+    methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
+  }
 
   /** For a given return node and arguments, create an AST that represents the return instruction. The main purpose of
     * this method is to automatically assign the correct argument indices.
@@ -107,12 +127,53 @@ abstract class AstCreatorBase(filename: String) {
     }
   }
 
+  def wrapMultipleInBlock(asts: Seq[Ast], lineNumber: Option[Integer]): Ast = {
+    asts.toList match {
+      case Nil => blockAst(NewBlock().lineNumber(lineNumber))
+
+      case ast :: Nil => ast
+
+      case asts => blockAst(NewBlock().lineNumber(lineNumber), asts)
+    }
+  }
+
+  def forAst(
+    forNode: NewControlStructure,
+    locals: Seq[Ast],
+    initAsts: Seq[Ast],
+    conditionAsts: Seq[Ast],
+    updateAsts: Seq[Ast],
+    bodyAst: Ast
+  ): Ast = {
+    val lineNumber = forNode.lineNumber
+    Ast(forNode)
+      .withChildren(locals)
+      .withChild(wrapMultipleInBlock(initAsts, lineNumber))
+      .withChild(wrapMultipleInBlock(conditionAsts, lineNumber))
+      .withChild(wrapMultipleInBlock(updateAsts, lineNumber))
+      .withChild(bodyAst)
+      .withConditionEdges(forNode, conditionAsts.flatMap(_.root).toList)
+  }
+
+  /** For the given try body, catch ASTs and finally AST, create a try-catch-finally AST with orders set correctly for
+    * the ossdataflow engine.
+    */
+  def tryCatchAst(tryNode: NewControlStructure, tryBodyAst: Ast, catchAsts: Seq[Ast], finallyAst: Option[Ast]): Ast = {
+    tryBodyAst.root.collect { case x: ExpressionNew => x }.foreach(_.order = 1)
+    catchAsts.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 2)
+    finallyAst.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 3)
+
+    Ast(tryNode)
+      .withChild(tryBodyAst)
+      .withChildren(catchAsts)
+      .withChildren(finallyAst.toList)
+  }
+
   /** For a given block node and statement ASTs, create an AST that represents the block. The main purpose of this
     * method is to increase the readability of the code which creates block asts.
     */
   def blockAst(blockNode: NewBlock, statements: List[Ast] = List()): Ast = {
-    Ast(blockNode)
-      .withChildren(statements)
+    Ast(blockNode).withChildren(statements)
   }
 
   /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
@@ -168,6 +229,11 @@ abstract class AstCreatorBase(filename: String) {
         node
       case None => node
     }
+  }
+
+  def withArgumentName[T <: ExpressionNew](node: T, argNameOpt: Option[String]): T = {
+    node.argumentName = argNameOpt
+    node
   }
 
   /** Absolute path for the given file name

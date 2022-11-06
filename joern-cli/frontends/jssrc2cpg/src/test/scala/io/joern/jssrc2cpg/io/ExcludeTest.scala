@@ -36,7 +36,6 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
     testFiles.foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      file.write(s"""console.log("${file.canonicalPath}");""")
     }
     dir
   }

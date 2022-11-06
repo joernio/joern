@@ -1,6 +1,8 @@
 package io.joern.dataflowengineoss.queryengine
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.passes.reachingdef.EdgeValidator
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
@@ -23,6 +25,8 @@ case class ReachableByTask(
   callSiteStack: mutable.Stack[Call] = mutable.Stack()
 )
 
+case class TaskFingerprint(sink: CfgNode, sources: Set[CfgNode], callDepth: Int, callSiteStack: mutable.Stack[Call])
+
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
   * in parallel, creating and submitting new tasks upon completion of tasks. This class deals only with task scheduling,
   * while the creation of new tasks from existing tasks is handled by the class `TaskCreator`.
@@ -35,6 +39,8 @@ class Engine(context: EngineContext) {
   private var numberOfTasksRunning: Int        = 0
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService = new ExecutorCompletionService[Vector[ReachableByResult]](executorService)
+
+  private val started: mutable.Set[TaskFingerprint] = mutable.Set()
 
   def shutdown(): Unit = {
     executorService.shutdown()
@@ -70,14 +76,14 @@ class Engine(context: EngineContext) {
     * submitted accordingly. Once no more tasks can be created, the list of results is returned.
     */
   private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): List[ReachableByResult] = {
-    var result = List[ReachableByResult]()
+    var completedResults = List[ReachableByResult]()
 
     /** For a list of results, determine partial and complete results. Store complete results and derive and submit
       * tasks from partial results.
       */
     def handleResultsOfTask(resultsOfTask: Vector[ReachableByResult]): Unit = {
       val (partial, complete) = resultsOfTask.partition(_.partial)
-      result ++= complete
+      completedResults ++= complete
       val newTasks = new TaskCreator(sources).createFromResults(partial)
       newTasks.foreach(submitTask)
     }
@@ -100,10 +106,15 @@ class Engine(context: EngineContext) {
 
     tasks.foreach(submitTask)
     runUntilAllTasksAreSolved()
-    deduplicate(result.toVector).toList
+    deduplicate(completedResults.toVector).toList
   }
 
   private def submitTask(task: ReachableByTask): Unit = {
+    val fingerprint = TaskFingerprint(task.sink, task.sources, task.callDepth, task.callSiteStack)
+    if (started.contains(fingerprint)) {
+      return
+    }
+    started.add(fingerprint)
     numberOfTasksRunning += 1
     completionService.submit(
       new TaskSolver(if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable), context)
@@ -122,21 +133,49 @@ object Engine {
     * @param path
     *   the path that has been expanded to reach the `curNode`
     */
-  def expandIn(curNode: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[PathElement] = {
+  def expandIn(curNode: CfgNode, path: Vector[PathElement], callSiteStack: mutable.Stack[Call] = mutable.Stack())(
+    implicit semantics: Semantics
+  ): Vector[PathElement] = {
+    ddgInE(curNode, path, callSiteStack).flatMap(x => elemForEdge(x, callSiteStack))
+  }
+
+  private def elemForEdge(e: Edge, callSiteStack: mutable.Stack[Call] = mutable.Stack())(implicit
+    semantics: Semantics
+  ): Option[PathElement] = {
+    val curNode  = e.inNode().asInstanceOf[CfgNode]
+    val parNode  = e.outNode().asInstanceOf[CfgNode]
+    val outLabel = Some(e.property(Properties.VARIABLE)).getOrElse("")
+
+    if (!EdgeValidator.isValidEdge(curNode, parNode)) {
+      return None
+    }
+
     curNode match {
-      case argument: Expression =>
-        val (arguments, nonArguments) = ddgInE(curNode, path).partition(_.outNode().isInstanceOf[Expression])
-        val elemsForArguments = arguments.flatMap { e =>
-          elemForArgument(e, argument)
+      case childNode: Expression =>
+        parNode match {
+          case parentNode: Expression =>
+            val parentNodeCall = parentNode.inCall.l
+            val sameCallSite   = parentNode.inCall.l == childNode.start.inCall.l
+            val visible = if (sameCallSite) {
+              val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
+              val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
+              (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
+            } else {
+              parentNode.isDefined
+            }
+            val isOutputArg = isOutputArgOfInternalMethod(parentNode)
+            Some(PathElement(parentNode, callSiteStack.clone(), visible, isOutputArg, outEdgeLabel = outLabel))
+          case parentNode if parentNode != null =>
+            Some(PathElement(parentNode, callSiteStack.clone(), outEdgeLabel = outLabel))
+          case null =>
+            None
         }
-        val elems = elemsForArguments ++ nonArguments.flatMap(edgeToPathElement)
-        elems
       case _ =>
-        ddgInE(curNode, path).flatMap(edgeToPathElement)
+        Some(PathElement(parNode, callSiteStack.clone(), outEdgeLabel = outLabel))
     }
   }
 
-  private def isOutputArgOfInternalMethod(arg: Expression)(implicit semantics: Semantics): Boolean = {
+  def isOutputArgOfInternalMethod(arg: Expression)(implicit semantics: Semantics): Boolean = {
     arg.inCall.l match {
       case List(call) =>
         methodsForCall(call)
@@ -149,90 +188,28 @@ object Engine {
     }
   }
 
-  /** Convert an edge to a path element. This function may return `None` if the edge is found to lead to an argument
-    * that isn't used, according to semantics. It may also return `None` if the child node is an output argument of an
-    * internal function.
-    */
-  private def edgeToPathElement(e: Edge)(implicit semantics: Semantics): Option[PathElement] = {
-    val parentNode = e.outNode().asInstanceOf[CfgNode]
-    val childNode  = e.inNode().asInstanceOf[CfgNode]
-    val outLabel   = Some(e.property(Properties.VARIABLE)).getOrElse("")
-
-    childNode match {
-      case exp: Expression if !exp.isUsed =>
-        None
-      case _ =>
-        Some(PathElement(parentNode, outEdgeLabel = outLabel))
-    }
-  }
-
   /** For a given node `node`, return all incoming reaching definition edges, unless the source node is (a) a METHOD
     * node, (b) already present on `path`, or (c) a CALL node to a method where the semantic indicates that taint is
     * propagated to it.
     */
-  private def ddgInE(node: CfgNode, path: Vector[PathElement])(implicit semantics: Semantics): Vector[Edge] = {
+  private def ddgInE(
+    node: CfgNode,
+    path: Vector[PathElement],
+    callSiteStack: mutable.Stack[Call] = mutable.Stack()
+  ): Vector[Edge] = {
     node
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
       .filter { e =>
         e.outNode() match {
           case srcNode: CfgNode =>
-            !srcNode.isInstanceOf[Method] && !path.map(_.node).contains(srcNode) && !isCallRetval(srcNode)
+            !srcNode.isInstanceOf[Method] && !path
+              .map(x => (x.node, x.callSiteStack))
+              .contains((srcNode, callSiteStack))
           case _ => false
         }
       }
       .toVector
-  }
-
-  private def isCallRetval(node: StoredNode)(implicit semantics: Semantics): Boolean = {
-    node match {
-      case call: Call =>
-        val sem = semantics.forMethod(call.methodFullName)
-        sem.isDefined && !sem.get.mappings.map(_._2).contains(-1)
-      case _ =>
-        false
-    }
-  }
-
-  /** For a given `(parentNode, curNode)` pair, determine whether to expand into `parentNode`. If so, return a
-    * corresponding path element or None if `parentNode` should not be followed. The Path element contains a Boolean
-    * field to specify whether it should be visible in the flow or not, a decision that can also only be made by looking
-    * at both the parent and the child.
-    */
-  private def elemForArgument(e: Edge, curNode: Expression)(implicit semantics: Semantics): Option[PathElement] = {
-
-    val parentNode     = e.outNode().asInstanceOf[Expression]
-    val parentNodeCall = parentNode.inCall.l
-    val sameCallSite   = parentNode.inCall.l == curNode.start.inCall.l
-
-    if (sameCallSite && isOutputArgOfInternalMethod(parentNode)) {
-      return None
-    }
-
-    if (
-      sameCallSite && parentNode.isUsed && curNode.isDefined ||
-      !sameCallSite && curNode.isUsed
-    ) {
-
-      val visible = if (sameCallSite) {
-        val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
-        val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
-        (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
-      } else {
-        parentNode.isDefined
-      }
-      val isOutputArg = isOutputArgOfInternalMethod(parentNode)
-      Some(
-        PathElement(
-          parentNode,
-          visible,
-          isOutputArg,
-          outEdgeLabel = Some(e.property(Properties.VARIABLE)).getOrElse("")
-        )
-      )
-    } else {
-      None
-    }
   }
 
   def argToOutputParams(arg: Expression): Traversal[MethodParameterOut] = {
@@ -272,7 +249,7 @@ object Engine {
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
     vec
       .groupBy { x =>
-        (x.path.headOption ++ x.path.lastOption, x.partial, x.callDepth)
+        (x.path.headOption.map(_.node) ++ x.path.lastOption.map(_.node), x.partial, x.callDepth)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
@@ -300,7 +277,7 @@ object Engine {
   * @param config
   *   additional configurations for the data flow engine.
   */
-case class EngineContext(semantics: Semantics, config: EngineConfig = EngineConfig())
+case class EngineContext(semantics: Semantics = DefaultSemantics(), config: EngineConfig = EngineConfig())
 
 /** Various configurations for the data flow engine.
   * @param maxCallDepth
@@ -311,7 +288,7 @@ case class EngineContext(semantics: Semantics, config: EngineConfig = EngineConf
   *   enables sharing of previously calculated paths among other tasks.
   */
 case class EngineConfig(
-  var maxCallDepth: Int = 2,
+  var maxCallDepth: Int = 4,
   initialTable: Option[ResultTable] = None,
   shareCacheBetweenTasks: Boolean = true
 )

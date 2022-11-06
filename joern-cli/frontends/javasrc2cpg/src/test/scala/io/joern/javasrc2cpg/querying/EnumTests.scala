@@ -1,12 +1,11 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language._
 
-class EnumTests extends JavaSrcCodeToCpgFixture {
-  override val code: String =
-    """
+class EnumTests extends JavaSrcCode2CpgFixture {
+  val cpg = code("""
       |public enum FuzzyBool {
       |  TRUE,
       |  FALSE,
@@ -23,7 +22,7 @@ class EnumTests extends JavaSrcCodeToCpgFixture {
       |    this.label = label;
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "it should parse a basic enum without values" in {
     cpg.typeDecl.name(".*FuzzyBool.*").nonEmpty shouldBe true
@@ -63,8 +62,8 @@ class EnumTests extends JavaSrcCodeToCpgFixture {
     r.code shouldBe "RED(\"Red\")"
     r.astChildren.isCall.size shouldBe 1
     val call = r.astChildren.isCall.head
-    call.name shouldBe "Color.<init>"
-    call.methodFullName shouldBe "Color.<init>"
+    call.name shouldBe s"Color.${io.joern.x2cpg.Defines.ConstructorMethodName}"
+    call.methodFullName shouldBe s"Color.${io.joern.x2cpg.Defines.ConstructorMethodName}"
     call.order shouldBe 1
     call.astChildren.size shouldBe 1
     call.astChildren.head shouldBe a[Literal]

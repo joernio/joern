@@ -21,21 +21,21 @@ object Definition {
 }
 
 object ReachingDefProblem {
-  def create(method: Method): DataFlowProblem[mutable.BitSet] = {
+  def create(method: Method): DataFlowProblem[StoredNode, mutable.BitSet] = {
     val flowGraph = new ReachingDefFlowGraph(method)
     val transfer  = new OptimizedReachingDefTransferFunction(flowGraph)
     val init      = new ReachingDefInit(transfer.gen)
     def meet: (mutable.BitSet, mutable.BitSet) => mutable.BitSet =
       (x: mutable.BitSet, y: mutable.BitSet) => { x.union(y) }
 
-    new DataFlowProblem[mutable.BitSet](flowGraph, transfer, meet, init, true, mutable.BitSet())
+    new DataFlowProblem[StoredNode, mutable.BitSet](flowGraph, transfer, meet, init, true, mutable.BitSet())
   }
 
 }
 
 /** The control flow graph as viewed by the data flow solver.
   */
-class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
+class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -76,7 +76,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
       case paramOut: MethodParameterOut => paramOut -> nextParamOutOrExit(paramOut)
       case cfgNode: CfgNode             => cfgNode  -> cfgNextOrFirstOutParam(cfgNode)
       case n =>
-        logger.warn(s"Node type ${n.getClass.getSimpleName} should not be part of the CFG");
+        logger.warn(s"Node type ${n.getClass.getSimpleName} should not be part of the CFG")
         n -> List()
     }.toMap
   }
@@ -91,7 +91,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
       case n if n == exitNode                                   => n -> lastOutputParamOrLastNodeOfBody()
       case n @ (cfgNode: CfgNode)                               => n -> cfgNode.cfgPrev.l
       case n =>
-        logger.warn(s"Node type ${n.getClass.getSimpleName} should not be part of the CFG");
+        logger.warn(s"Node type ${n.getClass.getSimpleName} should not be part of the CFG")
         n -> List()
     }.toMap
   }
@@ -114,7 +114,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
   }
 
   private def nextParamOutOrExit(paramOut: MethodParameterOut): List[StoredNode] = {
-    val nextParam = paramOut.method.parameter.index(paramOut.index.head + 1).asOutput.headOption
+    val nextParam = paramOut.method.parameter.index(paramOut.index + 1).asOutput.headOption
     if (nextParam.isDefined) { nextParam.toList }
     else { List(exitNode) }
   }
@@ -136,7 +136,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
   }
 
   private def previousOutputParamOrLastNodeOfBody(paramOut: MethodParameterOut): List[StoredNode] = {
-    val prevParam = paramOut.method.parameter.index(paramOut.index.head - 1).asOutput.headOption
+    val prevParam = paramOut.method.parameter.index(paramOut.index - 1).asOutput.headOption
     if (prevParam.isDefined) { prevParam.toList }
     else { lastActualCfgNode.toList }
   }
@@ -150,11 +150,12 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph {
 
 /** For each node of the graph, this transfer function defines how it affects the propagation of definitions.
   */
-class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends TransferFunction[mutable.BitSet] {
+class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
+    extends TransferFunction[StoredNode, mutable.BitSet] {
 
   private val nodeToNumber = flowGraph.nodeToNumber
 
-  val method = flowGraph.method
+  val method: Method = flowGraph.method
 
   val gen: Map[StoredNode, mutable.BitSet] =
     initGen(method).withDefaultValue(mutable.BitSet())
@@ -346,7 +347,7 @@ class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
   private def withoutLoneIdentifiers(g: Map[StoredNode, mutable.BitSet]): Map[StoredNode, mutable.BitSet] = {
     g.map { case (k, defs) =>
       k match {
-        case call: Call if (loneIdentifiers.contains(call)) =>
+        case call: Call if loneIdentifiers.contains(call) =>
           (call, defs.filterNot(loneIdentifiers(call).contains(_)))
         case _ => (k, defs)
       }
@@ -354,7 +355,7 @@ class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
   }
 }
 
-class ReachingDefInit(gen: Map[StoredNode, mutable.BitSet]) extends InOutInit[mutable.BitSet] {
+class ReachingDefInit(gen: Map[StoredNode, mutable.BitSet]) extends InOutInit[StoredNode, mutable.BitSet] {
   override def initIn: Map[StoredNode, mutable.BitSet] =
     Map
       .empty[StoredNode, mutable.BitSet]

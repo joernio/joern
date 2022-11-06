@@ -1,9 +1,47 @@
 package io.joern.c2cpg.passes.types
 
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
 class StructTypeTests extends CCodeToCpgSuite {
+
+  "Struct with array members" should {
+    val cpg = code("""
+        |#define SIZE 5
+        |struct Foo {
+        |  char a[SIZE];
+        |  char b[SIZE - 1];
+        |  char c[10];
+        |};
+        |""".stripMargin)
+
+    "contain correct fields for all members" in {
+      val List(typeDeclNode) = cpg.typeDecl.nameExact("Foo").l
+      typeDeclNode.member.name.toSetImmutable shouldBe Set("a", "b", "c")
+      typeDeclNode.member.code.toSetImmutable shouldBe Set("a[SIZE]", "b[SIZE - 1]", "c[10]")
+    }
+
+    "initialize array members correctly" in {
+      val List(clInitMethod)                    = cpg.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
+      val List(aInitCall, bInitCall, cInitCall) = clInitMethod.call.nameExact(Operators.arrayInitializer).l
+
+      aInitCall.code shouldBe "a[SIZE]"
+      val List(argAInit) = aInitCall.argument.l
+      argAInit.code shouldBe "SIZE"
+
+      bInitCall.code shouldBe "b[SIZE - 1]"
+      val List(argBInit) = bInitCall.argument.l
+      argBInit.code shouldBe "SIZE - 1"
+      val List(subtractionCall) = bInitCall.ast.isCall.nameExact(Operators.subtraction).l
+      subtractionCall.code shouldBe "5 - 1"
+
+      cInitCall.code shouldBe "c[10]"
+      val List(argCInit) = cInitCall.argument.l
+      argCInit.code shouldBe "10"
+    }
+
+  }
 
   "Type decl test project" should {
     val cpg = code("""

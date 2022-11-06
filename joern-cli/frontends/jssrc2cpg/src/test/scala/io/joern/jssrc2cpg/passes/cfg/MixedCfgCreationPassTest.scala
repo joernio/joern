@@ -1,14 +1,18 @@
 package io.joern.jssrc2cpg.passes.cfg
 
+import io.joern.jssrc2cpg.testfixtures.JsCfgTestCpg
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.AlwaysEdge
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.FalseEdge
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.TrueEdge
+import io.joern.x2cpg.testfixtures.CfgTestFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 
-class MixedCfgCreationPassTest extends AbstractCfgPassTest {
+class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) {
 
   "CFG generation for destructing assignment" should {
-    "be correct for object destruction assignment with declaration" in CfgFixture("var {a, b} = x") { implicit cpg =>
+    "be correct for object destruction assignment with declaration" in {
+      implicit val cpg: Cpg = code("var {a, b} = x")
       succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
@@ -25,12 +29,12 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("b", 1) shouldBe expected(("_tmp_0.b", AlwaysEdge))
       succOf("_tmp_0.b") shouldBe expected(("b = _tmp_0.b", AlwaysEdge))
       succOf("b = _tmp_0.b") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("{a, b}", AlwaysEdge))
+      succOf("{a, b}") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for object destruction assignment with declaration and ternary init" in CfgFixture(
-      "const { a, b } = test() ? foo() : bar();"
-    ) { implicit cpg =>
+    "be correct for object destruction assignment with declaration and ternary init" in {
+      implicit val cpg: Cpg = code("const { a, b } = test() ? foo() : bar();")
       succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected(("test", AlwaysEdge))
       succOf("test") shouldBe expected(("this", AlwaysEdge))
@@ -52,33 +56,34 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("b", 1) shouldBe expected(("_tmp_0.b", AlwaysEdge))
       succOf("_tmp_0.b") shouldBe expected(("b = _tmp_0.b", AlwaysEdge))
       succOf("b = _tmp_0.b") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("{ a, b }", AlwaysEdge))
+      succOf("{ a, b }") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for object destruction assignment with reassignment" in CfgFixture("var {a: n, b: m} = x") {
-      implicit cpg =>
-        succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
-        succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
-        succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
+    "be correct for object destruction assignment with reassignment" in {
+      implicit val cpg: Cpg = code("var {a: n, b: m} = x")
+      succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
+      succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
+      succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
 
-        succOf("_tmp_0 = x") shouldBe expected(("n", AlwaysEdge))
-        succOf("n") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
-        succOf("_tmp_0", 1) shouldBe expected(("a", AlwaysEdge))
-        succOf("a") shouldBe expected(("_tmp_0.a", AlwaysEdge))
-        succOf("_tmp_0.a") shouldBe expected(("n = _tmp_0.a", AlwaysEdge))
+      succOf("_tmp_0 = x") shouldBe expected(("n", AlwaysEdge))
+      succOf("n") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
+      succOf("_tmp_0", 1) shouldBe expected(("a", AlwaysEdge))
+      succOf("a") shouldBe expected(("_tmp_0.a", AlwaysEdge))
+      succOf("_tmp_0.a") shouldBe expected(("n = _tmp_0.a", AlwaysEdge))
 
-        succOf("n = _tmp_0.a") shouldBe expected(("m", AlwaysEdge))
-        succOf("m") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
-        succOf("_tmp_0", 2) shouldBe expected(("b", AlwaysEdge))
-        succOf("b") shouldBe expected(("_tmp_0.b", AlwaysEdge))
-        succOf("_tmp_0.b") shouldBe expected(("m = _tmp_0.b", AlwaysEdge))
-        succOf("m = _tmp_0.b") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-        succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("n = _tmp_0.a") shouldBe expected(("m", AlwaysEdge))
+      succOf("m") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("b", AlwaysEdge))
+      succOf("b") shouldBe expected(("_tmp_0.b", AlwaysEdge))
+      succOf("_tmp_0.b") shouldBe expected(("m = _tmp_0.b", AlwaysEdge))
+      succOf("m = _tmp_0.b") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("{a: n, b: m}", AlwaysEdge))
+      succOf("{a: n, b: m}") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for object destruction assignment with reassignment and defaults" in CfgFixture(
-      "var {a: n = 1, b: m = 2} = x"
-    ) { implicit cpg =>
+    "be correct for object destruction assignment with reassignment and defaults" in {
+      implicit val cpg: Cpg = code("var {a: n = 1, b: m = 2} = x")
       succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
@@ -119,10 +124,12 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
         expected(("m = _tmp_0.b === void 0 ? 2 : _tmp_0.b", AlwaysEdge))
       succOf("m = _tmp_0.b === void 0 ? 2 : _tmp_0.b") shouldBe
         expected(("_tmp_0", 5, AlwaysEdge))
-      succOf("_tmp_0", 5) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 5) shouldBe expected(("{a: n = 1, b: m = 2}", AlwaysEdge))
+      succOf("{a: n = 1, b: m = 2}") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for object destruction assignment with rest" in CfgFixture("var {a, ...rest} = x") { implicit cpg =>
+    "be correct for object destruction assignment with rest" in {
+      implicit val cpg: Cpg = code("var {a, ...rest} = x")
       succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
@@ -140,18 +147,21 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("_tmp_0.rest") shouldBe expected(("rest = _tmp_0.rest", AlwaysEdge))
       succOf("rest = _tmp_0.rest") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
 
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("{a, ...rest}", AlwaysEdge))
+      succOf("{a, ...rest}") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for object destruction assignment with computed property name" ignore CfgFixture(
-      "var {[propName]: n} = x"
-    ) { _ => }
+    "be correct for object destruction assignment with computed property name" ignore {
+      implicit val cpg: Cpg = code("var {[propName]: n} = x")
 
-    "be correct for nested object destruction assignment with defaults as parameter" in CfgFixture("""
-       |function userId({id = {}, b} = {}) {
-       |  return id
-       |}
-       |""".stripMargin) { implicit cpg =>
+    }
+
+    "be correct for nested object destruction assignment with defaults as parameter" in {
+      implicit val cpg: Cpg = code("""
+                                           |function userId({id = {}, b} = {}) {
+                                           |  return id
+                                           |}
+                                           |""".stripMargin)
       succOf("userId", NodeTypes.METHOD) shouldBe expected(("_tmp_1", AlwaysEdge))
       succOf("_tmp_1") shouldBe expected(("param1_0", AlwaysEdge))
       succOf("param1_0") shouldBe expected(("void 0", AlwaysEdge))
@@ -161,7 +171,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
         ("param1_0", 1, FalseEdge)
       )
       succOf("param1_0", 1) shouldBe expected(("param1_0 === void 0 ? {} : param1_0", AlwaysEdge))
-      succOf("_tmp_0") shouldBe expected(("param1_0 === void 0 ? {} : param1_0", AlwaysEdge))
+      succOf("_tmp_0") shouldBe expected(("{}", AlwaysEdge))
+      succOf("{}") shouldBe expected(("param1_0 === void 0 ? {} : param1_0", AlwaysEdge))
       succOf("param1_0 === void 0 ? {} : param1_0") shouldBe expected(
         ("_tmp_1 = param1_0 === void 0 ? {} : param1_0", AlwaysEdge)
       )
@@ -175,7 +186,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
         ("_tmp_2", TrueEdge), // holds {}
         ("_tmp_1", 2, FalseEdge)
       )
-      succOf("_tmp_2") shouldBe expected(("_tmp_1.id === void 0 ? {} : _tmp_1.id", AlwaysEdge))
+      succOf("_tmp_2") shouldBe expected(("{}", AlwaysEdge))
+      succOf("{}", 1) shouldBe expected(("_tmp_1.id === void 0 ? {} : _tmp_1.id", AlwaysEdge))
       succOf("_tmp_1", 2) shouldBe expected(("id", 2, AlwaysEdge))
 
       succOf("_tmp_1.id === void 0 ? {} : _tmp_1.id") shouldBe expected(
@@ -190,14 +202,17 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("b", 1) shouldBe expected(("_tmp_1.b", AlwaysEdge))
       succOf("_tmp_1.b") shouldBe expected(("b = _tmp_1.b", AlwaysEdge))
       succOf("b = _tmp_1.b") shouldBe expected(("_tmp_1", 4, AlwaysEdge))
-      succOf("_tmp_1", 4) shouldBe expected(("id", 3, AlwaysEdge))
+      succOf("_tmp_1", 4) shouldBe expected(("{id = {}, b}", AlwaysEdge))
+      succOf("{id = {}, b}") shouldBe expected(("id", AlwaysEdge))
+
     }
 
-    "be correct for object destruction assignment as parameter" in CfgFixture("""
-        |function userId({id}) {
-        |  return id
-        |}
-        |""".stripMargin) { implicit cpg =>
+    "be correct for object destruction assignment as parameter" in {
+      implicit val cpg: Cpg = code("""
+                                     |function userId({id}) {
+                                     |  return id
+                                     |}
+                                     |""".stripMargin)
       succOf("userId", NodeTypes.METHOD) shouldBe expected(("id", AlwaysEdge))
       succOf("id") shouldBe expected(("param1_0", AlwaysEdge))
       succOf("param1_0") shouldBe expected(("id", 1, AlwaysEdge))
@@ -208,7 +223,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("return id") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for array destruction assignment with declaration" in CfgFixture("var [a, b] = x") { implicit cpg =>
+    "be correct for array destruction assignment with declaration" in {
+      implicit val cpg: Cpg = code("var [a, b] = x")
       succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
@@ -226,10 +242,12 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("1") shouldBe expected(("_tmp_0[1]", AlwaysEdge))
       succOf("_tmp_0[1]") shouldBe expected(("b = _tmp_0[1]", AlwaysEdge))
       succOf("b = _tmp_0[1]") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("[a, b]", AlwaysEdge))
+      succOf("[a, b]") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for array destruction assignment without declaration" in CfgFixture("[a, b] = x") { implicit cpg =>
+    "be correct for array destruction assignment without declaration" in {
+      implicit val cpg: Cpg = code("[a, b] = x")
       succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
@@ -247,55 +265,57 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("1") shouldBe expected(("_tmp_0[1]", AlwaysEdge))
       succOf("_tmp_0[1]") shouldBe expected(("b = _tmp_0[1]", AlwaysEdge))
       succOf("b = _tmp_0[1]") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("[a, b]", AlwaysEdge))
+      succOf("[a, b]") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for array destruction assignment with defaults" in CfgFixture("var [a = 1, b = 2] = x") {
-      implicit cpg =>
-        succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
-        succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
-        succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
+    "be correct for array destruction assignment with defaults" in {
+      implicit val cpg: Cpg = code("var [a = 1, b = 2] = x")
+      succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
+      succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
+      succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
 
-        succOf("_tmp_0 = x") shouldBe expected(("a", AlwaysEdge))
+      succOf("_tmp_0 = x") shouldBe expected(("a", AlwaysEdge))
 
-        // test statement
-        succOf("a") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
-        succOf("_tmp_0", 1) shouldBe expected(("0", AlwaysEdge))
-        succOf("0") shouldBe expected(("_tmp_0[0]", AlwaysEdge))
-        succOf("_tmp_0[0]") shouldBe expected(("void 0", AlwaysEdge))
-        succOf("void 0") shouldBe expected(("_tmp_0[0] === void 0", AlwaysEdge))
+      // test statement
+      succOf("a") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
+      succOf("_tmp_0", 1) shouldBe expected(("0", AlwaysEdge))
+      succOf("0") shouldBe expected(("_tmp_0[0]", AlwaysEdge))
+      succOf("_tmp_0[0]") shouldBe expected(("void 0", AlwaysEdge))
+      succOf("void 0") shouldBe expected(("_tmp_0[0] === void 0", AlwaysEdge))
 
-        // true, false cases
-        succOf("_tmp_0[0] === void 0") shouldBe expected(("1", TrueEdge), ("_tmp_0", 2, FalseEdge))
-        succOf("_tmp_0", 2) shouldBe expected(("0", 1, AlwaysEdge))
-        succOf("0", 1) shouldBe expected(("_tmp_0[0]", 1, AlwaysEdge))
-        succOf("_tmp_0[0]", 1) shouldBe expected(("_tmp_0[0] === void 0 ? 1 : _tmp_0[0]", AlwaysEdge))
-        succOf("_tmp_0[0] === void 0 ? 1 : _tmp_0[0]") shouldBe expected(
-          ("a = _tmp_0[0] === void 0 ? 1 : _tmp_0[0]", AlwaysEdge)
-        )
-        succOf("a = _tmp_0[0] === void 0 ? 1 : _tmp_0[0]") shouldBe expected(("b", AlwaysEdge))
+      // true, false cases
+      succOf("_tmp_0[0] === void 0") shouldBe expected(("1", TrueEdge), ("_tmp_0", 2, FalseEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("0", 1, AlwaysEdge))
+      succOf("0", 1) shouldBe expected(("_tmp_0[0]", 1, AlwaysEdge))
+      succOf("_tmp_0[0]", 1) shouldBe expected(("_tmp_0[0] === void 0 ? 1 : _tmp_0[0]", AlwaysEdge))
+      succOf("_tmp_0[0] === void 0 ? 1 : _tmp_0[0]") shouldBe expected(
+        ("a = _tmp_0[0] === void 0 ? 1 : _tmp_0[0]", AlwaysEdge)
+      )
+      succOf("a = _tmp_0[0] === void 0 ? 1 : _tmp_0[0]") shouldBe expected(("b", AlwaysEdge))
 
-        // test statement
-        succOf("b") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-        succOf("_tmp_0", 3) shouldBe expected(("1", 1, AlwaysEdge))
-        succOf("1", 1) shouldBe expected(("_tmp_0[1]", AlwaysEdge))
-        succOf("_tmp_0[1]") shouldBe expected(("void 0", 1, AlwaysEdge))
-        succOf("void 0", 1) shouldBe expected(("_tmp_0[1] === void 0", AlwaysEdge))
+      // test statement
+      succOf("b") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("1", 1, AlwaysEdge))
+      succOf("1", 1) shouldBe expected(("_tmp_0[1]", AlwaysEdge))
+      succOf("_tmp_0[1]") shouldBe expected(("void 0", 1, AlwaysEdge))
+      succOf("void 0", 1) shouldBe expected(("_tmp_0[1] === void 0", AlwaysEdge))
 
-        // true, false cases
-        succOf("_tmp_0[1] === void 0") shouldBe expected(("2", TrueEdge), ("_tmp_0", 4, FalseEdge))
-        succOf("_tmp_0", 4) shouldBe expected(("1", 2, AlwaysEdge))
-        succOf("1", 2) shouldBe expected(("_tmp_0[1]", 1, AlwaysEdge))
-        succOf("_tmp_0[1]", 1) shouldBe expected(("_tmp_0[1] === void 0 ? 2 : _tmp_0[1]", AlwaysEdge))
-        succOf("_tmp_0[1] === void 0 ? 2 : _tmp_0[1]") shouldBe expected(
-          ("b = _tmp_0[1] === void 0 ? 2 : _tmp_0[1]", AlwaysEdge)
-        )
-        succOf("b = _tmp_0[1] === void 0 ? 2 : _tmp_0[1]") shouldBe expected(("_tmp_0", 5, AlwaysEdge))
-
-        succOf("_tmp_0", 5) shouldBe expected(("RET", AlwaysEdge))
+      // true, false cases
+      succOf("_tmp_0[1] === void 0") shouldBe expected(("2", TrueEdge), ("_tmp_0", 4, FalseEdge))
+      succOf("_tmp_0", 4) shouldBe expected(("1", 2, AlwaysEdge))
+      succOf("1", 2) shouldBe expected(("_tmp_0[1]", 1, AlwaysEdge))
+      succOf("_tmp_0[1]", 1) shouldBe expected(("_tmp_0[1] === void 0 ? 2 : _tmp_0[1]", AlwaysEdge))
+      succOf("_tmp_0[1] === void 0 ? 2 : _tmp_0[1]") shouldBe expected(
+        ("b = _tmp_0[1] === void 0 ? 2 : _tmp_0[1]", AlwaysEdge)
+      )
+      succOf("b = _tmp_0[1] === void 0 ? 2 : _tmp_0[1]") shouldBe expected(("_tmp_0", 5, AlwaysEdge))
+      succOf("_tmp_0", 5) shouldBe expected(("[a = 1, b = 2]", AlwaysEdge))
+      succOf("[a = 1, b = 2]") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for array destruction assignment with ignores" in CfgFixture("var [a, , b] = x") { implicit cpg =>
+    "be correct for array destruction assignment with ignores" in {
+      implicit val cpg: Cpg = code("var [a, , b] = x")
       succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
@@ -313,10 +333,12 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("2") shouldBe expected(("_tmp_0[2]", AlwaysEdge))
       succOf("_tmp_0[2]") shouldBe expected(("b = _tmp_0[2]", AlwaysEdge))
       succOf("b = _tmp_0[2]") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("[a, , b]", AlwaysEdge))
+      succOf("[a, , b]") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for array destruction assignment with rest" in CfgFixture("var [a, ...rest] = x") { implicit cpg =>
+    "be correct for array destruction assignment with rest" in {
+      implicit val cpg: Cpg = code("var [a, ...rest] = x")
       succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
@@ -334,14 +356,16 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("1") shouldBe expected(("_tmp_0[1]", AlwaysEdge))
       succOf("_tmp_0[1]") shouldBe expected(("rest = _tmp_0[1]", AlwaysEdge))
       succOf("rest = _tmp_0[1]") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
-      succOf("_tmp_0", 3) shouldBe expected(("RET", AlwaysEdge))
+      succOf("_tmp_0", 3) shouldBe expected(("[a, ...rest]", AlwaysEdge))
+      succOf("[a, ...rest]") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for array destruction assignment as parameter" in CfgFixture("""
-       |function userId([id]) {
-       |  return id
-       |}
-       |""".stripMargin) { implicit cpg =>
+    "be correct for array destruction assignment as parameter" in {
+      implicit val cpg: Cpg = code("""
+                                     |function userId([id]) {
+                                     |  return id
+                                     |}
+                                     |""".stripMargin)
       succOf("userId", NodeTypes.METHOD) shouldBe expected(("id", AlwaysEdge))
       succOf("id") shouldBe expected(("param1_0", AlwaysEdge))
       succOf("param1_0") shouldBe expected(("id", 1, AlwaysEdge))
@@ -353,7 +377,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
     }
 
     "CFG generation for spread arguments" should {
-      "have correct structure for method spread argument" in CfgFixture("foo(...args)") { implicit cpg =>
+      "have correct structure for method spread argument" in {
+        implicit val cpg: Cpg = code("foo(...args)")
         succOf(":program") shouldBe expected(("foo", AlwaysEdge))
         succOf("foo") shouldBe expected(("this", AlwaysEdge))
         succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("...args", AlwaysEdge))
@@ -365,7 +390,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
   }
 
   "CFG generation for await/async" should {
-    "be correct for await/async" in CfgFixture("async function x(foo) { await foo() }") { implicit cpg =>
+    "be correct for await/async" in {
+      implicit val cpg: Cpg = code("async function x(foo) { await foo() }")
       succOf("x", NodeTypes.METHOD) shouldBe expected(("foo", AlwaysEdge))
       succOf("foo", NodeTypes.IDENTIFIER) shouldBe expected(("this", AlwaysEdge))
       succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("foo()", AlwaysEdge))
@@ -375,14 +401,16 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
   }
 
   "CFG generation for instanceof/delete" should {
-    "be correct for instanceof" in CfgFixture("x instanceof Foo") { implicit cpg =>
+    "be correct for instanceof" in {
+      implicit val cpg: Cpg = code("x instanceof Foo")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("Foo", AlwaysEdge))
       succOf("Foo") shouldBe expected(("x instanceof Foo", AlwaysEdge))
       succOf("x instanceof Foo", NodeTypes.CALL) shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for delete" in CfgFixture("delete foo.x") { implicit cpg =>
+    "be correct for delete" in {
+      implicit val cpg: Cpg = code("delete foo.x")
       succOf(":program") shouldBe expected(("foo", AlwaysEdge))
       succOf("foo") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("foo.x", AlwaysEdge))
@@ -392,7 +420,8 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
   }
 
   "CFG generation for default parameters" should {
-    "be correct for method parameter with default" in CfgFixture("function foo(a = 1) { }") { implicit cpg =>
+    "be correct for method parameter with default" in {
+      implicit val cpg: Cpg = code("function foo(a = 1) { }")
       succOf("foo", NodeTypes.METHOD) shouldBe expected(("a", AlwaysEdge))
       succOf("a", NodeTypes.IDENTIFIER) shouldBe expected(("a", 2, AlwaysEdge))
       succOf("a", 2) shouldBe expected(("void 0", AlwaysEdge))
@@ -404,29 +433,30 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("a = a === void 0 ? 1 : a") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for multiple method parameters with default" in CfgFixture("function foo(a = 1, b = 2) { }") {
-      implicit cpg =>
-        succOf("foo", NodeTypes.METHOD) shouldBe expected(("a", AlwaysEdge))
-        succOf("a", NodeTypes.IDENTIFIER) shouldBe expected(("a", 1, AlwaysEdge))
-        succOf("a", 2) shouldBe expected(("void 0", AlwaysEdge))
-        succOf("void 0") shouldBe expected(("a === void 0", AlwaysEdge))
-        succOf("a === void 0") shouldBe expected(("1", TrueEdge), ("a", 2, FalseEdge))
-        succOf("1") shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
-        succOf("a", 3) shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
-        succOf("a === void 0 ? 1 : a") shouldBe expected(("a = a === void 0 ? 1 : a", AlwaysEdge))
-        succOf("a = a === void 0 ? 1 : a") shouldBe expected(("b", AlwaysEdge))
+    "be correct for multiple method parameters with default" in {
+      implicit val cpg: Cpg = code("function foo(a = 1, b = 2) { }")
+      succOf("foo", NodeTypes.METHOD) shouldBe expected(("a", AlwaysEdge))
+      succOf("a", NodeTypes.IDENTIFIER) shouldBe expected(("a", 1, AlwaysEdge))
+      succOf("a", 2) shouldBe expected(("void 0", AlwaysEdge))
+      succOf("void 0") shouldBe expected(("a === void 0", AlwaysEdge))
+      succOf("a === void 0") shouldBe expected(("1", TrueEdge), ("a", 2, FalseEdge))
+      succOf("1") shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
+      succOf("a", 3) shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
+      succOf("a === void 0 ? 1 : a") shouldBe expected(("a = a === void 0 ? 1 : a", AlwaysEdge))
+      succOf("a = a === void 0 ? 1 : a") shouldBe expected(("b", AlwaysEdge))
 
-        succOf("b", NodeTypes.IDENTIFIER) shouldBe expected(("b", 1, AlwaysEdge))
-        succOf("b", 2) shouldBe expected(("void 0", 1, AlwaysEdge))
-        succOf("void 0", 1) shouldBe expected(("b === void 0", AlwaysEdge))
-        succOf("b === void 0") shouldBe expected(("2", TrueEdge), ("b", 2, FalseEdge))
-        succOf("2") shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
-        succOf("b", 3) shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
-        succOf("b === void 0 ? 2 : b") shouldBe expected(("b = b === void 0 ? 2 : b", AlwaysEdge))
-        succOf("b = b === void 0 ? 2 : b") shouldBe expected(("RET", AlwaysEdge))
+      succOf("b", NodeTypes.IDENTIFIER) shouldBe expected(("b", 1, AlwaysEdge))
+      succOf("b", 2) shouldBe expected(("void 0", 1, AlwaysEdge))
+      succOf("void 0", 1) shouldBe expected(("b === void 0", AlwaysEdge))
+      succOf("b === void 0") shouldBe expected(("2", TrueEdge), ("b", 2, FalseEdge))
+      succOf("2") shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
+      succOf("b", 3) shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
+      succOf("b === void 0 ? 2 : b") shouldBe expected(("b = b === void 0 ? 2 : b", AlwaysEdge))
+      succOf("b = b === void 0 ? 2 : b") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for method mixed parameters with default" in CfgFixture("function foo(a, b = 1) { }") { implicit cpg =>
+    "be correct for method mixed parameters with default" in {
+      implicit val cpg: Cpg = code("function foo(a, b = 1) { }")
       succOf("foo", NodeTypes.METHOD) shouldBe expected(("b", AlwaysEdge))
       succOf("b", 1) shouldBe expected(("b", 2, AlwaysEdge))
       succOf("b", 2) shouldBe expected(("void 0", AlwaysEdge))
@@ -438,26 +468,27 @@ class MixedCfgCreationPassTest extends AbstractCfgPassTest {
       succOf("b = b === void 0 ? 1 : b") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for multiple method mixed parameters with default" in CfgFixture("function foo(x, a = 1, b = 2) { }") {
-      implicit cpg =>
-        succOf("foo", NodeTypes.METHOD) shouldBe expected(("a", AlwaysEdge))
-        succOf("a", 1) shouldBe expected(("a", 2, AlwaysEdge))
-        succOf("a", 2) shouldBe expected(("void 0", AlwaysEdge))
-        succOf("void 0") shouldBe expected(("a === void 0", AlwaysEdge))
-        succOf("a === void 0") shouldBe expected(("1", TrueEdge), ("a", 3, FalseEdge))
-        succOf("1") shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
-        succOf("a", 3) shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
-        succOf("a === void 0 ? 1 : a") shouldBe expected(("a = a === void 0 ? 1 : a", AlwaysEdge))
-        succOf("a = a === void 0 ? 1 : a") shouldBe expected(("b", AlwaysEdge))
+    "be correct for multiple method mixed parameters with default" in {
+      implicit val cpg: Cpg = code("function foo(x, a = 1, b = 2) { }")
 
-        succOf("b", 1) shouldBe expected(("b", 2, AlwaysEdge))
-        succOf("b", 2) shouldBe expected(("void 0", 1, AlwaysEdge))
-        succOf("void 0", 1) shouldBe expected(("b === void 0", AlwaysEdge))
-        succOf("b === void 0") shouldBe expected(("2", TrueEdge), ("b", 3, FalseEdge))
-        succOf("2") shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
-        succOf("b", 3) shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
-        succOf("b === void 0 ? 2 : b") shouldBe expected(("b = b === void 0 ? 2 : b", AlwaysEdge))
-        succOf("b = b === void 0 ? 2 : b") shouldBe expected(("RET", AlwaysEdge))
+      succOf("foo", NodeTypes.METHOD) shouldBe expected(("a", AlwaysEdge))
+      succOf("a", 1) shouldBe expected(("a", 2, AlwaysEdge))
+      succOf("a", 2) shouldBe expected(("void 0", AlwaysEdge))
+      succOf("void 0") shouldBe expected(("a === void 0", AlwaysEdge))
+      succOf("a === void 0") shouldBe expected(("1", TrueEdge), ("a", 3, FalseEdge))
+      succOf("1") shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
+      succOf("a", 3) shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
+      succOf("a === void 0 ? 1 : a") shouldBe expected(("a = a === void 0 ? 1 : a", AlwaysEdge))
+      succOf("a = a === void 0 ? 1 : a") shouldBe expected(("b", AlwaysEdge))
+
+      succOf("b", 1) shouldBe expected(("b", 2, AlwaysEdge))
+      succOf("b", 2) shouldBe expected(("void 0", 1, AlwaysEdge))
+      succOf("void 0", 1) shouldBe expected(("b === void 0", AlwaysEdge))
+      succOf("b === void 0") shouldBe expected(("2", TrueEdge), ("b", 3, FalseEdge))
+      succOf("2") shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
+      succOf("b", 3) shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
+      succOf("b === void 0 ? 2 : b") shouldBe expected(("b = b === void 0 ? 2 : b", AlwaysEdge))
+      succOf("b = b === void 0 ? 2 : b") shouldBe expected(("RET", AlwaysEdge))
     }
   }
 

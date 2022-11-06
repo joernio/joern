@@ -7,27 +7,6 @@ class AndroidMisconfigurationsTests extends AndroidQueryTestSuite {
   override def queryBundle = AndroidMisconfigurations
 
   "the `manifestXmlBackupEnabled` query" when {
-    def makeAndroidXml(allowBackup: Boolean): String = {
-      s"""|<?xml version="1.0" encoding="utf-8"?>
-          |<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          |    package="com.example.slimandroid">
-          |
-          |    <application
-          |        android:allowBackup="$allowBackup"
-          |        android:label="SlimAndroid"
-          |        android:supportsRtl="true"
-          |        android:theme="@style/Theme.AppCompat">
-          |        <activity
-          |            android:name=".MainActivity"
-          |            android:exported="true">
-          |            <intent-filter>
-          |                <action android:name="android.intent.action.MAIN" />
-          |                <category android:name="android.intent.category.LAUNCHER" />
-          |            </intent-filter>
-          |        </activity>
-          |    </application>
-          |</manifest>""".stripMargin
-    }
 
     "should match a config file when `allowBackup` is set to `true`" in {
       val cpg = code("fun main() = println(0xbadf00d)")
@@ -77,25 +56,6 @@ class AndroidMisconfigurationsTests extends AndroidQueryTestSuite {
   }
 
   "the `tapJacking` query" when {
-    def makeBuildGradle(targetSdk: Int): String = {
-      s"""
-         |plugins {
-         |    id 'com.android.application'
-         |    id 'kotlin-android'
-         |}
-         |
-         |android {
-         |    compileSdk 32
-         |    defaultConfig {
-         |        applicationId "com.example.slimandroid"
-         |        minSdk 23
-         |        targetSdk $targetSdk
-         |        versionCode 1
-         |        versionName "1.0"
-         |    }
-         |}
-         |""".stripMargin
-    }
 
     "should match on all multi-file positive examples" in {
       val q = queryBundle.tapJacking()
@@ -130,7 +90,7 @@ class AndroidMisconfigurationsTests extends AndroidQueryTestSuite {
 
     "should not match a CONFIG_FILE when `targetSdkVersion` is set to `23`" in {
       val cpg = code("fun main() = println(0xbadf00d)")
-        .moreCode(makeBuildGradle(23), "build.gradle")
+        .moreCode(makeBuildGradle(), "build.gradle")
       val query = queryBundle.tapJacking()
       findMatchingConfigFiles(cpg, query) shouldBe Set()
     }
@@ -139,6 +99,65 @@ class AndroidMisconfigurationsTests extends AndroidQueryTestSuite {
       val cpg = code("fun main() = println(0xbadf00d)")
         .moreCode("", "build.gradle")
       val query = queryBundle.tapJacking()
+      findMatchingConfigFiles(cpg, query) shouldBe Set()
+    }
+  }
+
+  "the `vulnerablePRNGOnAndroidv16_18` query" when {
+    "should match when the minSdk version is v16-18 and a call to SecureRandom default constructor is present" in {
+      val cpg = code("""import java.security.SecureRandom
+          |
+          |fun main() {
+          |    SecureRandom random = new SecureRandom()
+          |}
+          |""".stripMargin)
+        .moreCode(makeBuildGradle(minSdk = 16), "build.gradle")
+      val query = queryBundle.vulnerablePRNGOnAndroidv16_18()
+      findMatchingConfigFiles(cpg, query) shouldBe Set("build.gradle")
+    }
+
+    "should match when the minSdk version is v16-18 and a call to SecureRandom.getInstance with a PRNG algorithm " +
+      "is set" in {
+        val cpg = code("""import java.security.SecureRandom
+          |
+          |fun main() {
+          |    SecureRandom random = SecureRandom.getInstance("NativePRNG")
+          |}
+          |""".stripMargin)
+          .moreCode(makeBuildGradle(minSdk = 18), "build.gradle")
+        val query = queryBundle.vulnerablePRNGOnAndroidv16_18()
+        findMatchingConfigFiles(cpg, query) shouldBe Set("build.gradle")
+      }
+
+    "should not match when the minSdk version is v16-18 and a call to SecureRandom.getInstance with a non-PRNG " +
+      "algorithm is set" in {
+        val cpg = code("""import java.security.SecureRandom
+          |
+          |fun main() {
+          |    SecureRandom random = SecureRandom.getInstance("PKCS11")
+          |}
+          |""".stripMargin)
+          .moreCode(makeBuildGradle(minSdk = 18), "build.gradle")
+        val query = queryBundle.vulnerablePRNGOnAndroidv16_18()
+        findMatchingConfigFiles(cpg, query) shouldBe Set()
+      }
+
+    "should not match when the minSdk version is v16-18 but no call to SecureRandom is present" in {
+      val cpg = code("import java.security.SecureRandom\nfun main() = println(\"I'm okay\")")
+        .moreCode(makeBuildGradle(minSdk = 17), "build.gradle")
+      val query = queryBundle.vulnerablePRNGOnAndroidv16_18()
+      findMatchingConfigFiles(cpg, query) shouldBe Set()
+    }
+
+    "should not match when the minSdk version is 18 > and a call to SecureRandom is present" in {
+      val cpg = code("""import java.security.SecureRandom
+          |
+          |fun main() {
+          |    SecureRandom random = new SecureRandom()
+          |}
+          |""".stripMargin)
+        .moreCode(makeBuildGradle(minSdk = 19), "build.gradle")
+      val query = queryBundle.vulnerablePRNGOnAndroidv16_18()
       findMatchingConfigFiles(cpg, query) shouldBe Set()
     }
   }

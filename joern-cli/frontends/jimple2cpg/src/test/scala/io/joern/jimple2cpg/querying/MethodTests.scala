@@ -1,19 +1,18 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
 
-class MethodTests extends JimpleCodeToCpgFixture {
+class MethodTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
-    """ class Foo {
+  val cpg = code(""" class Foo {
       |   int foo(int param1, int param2) {
       |     return 1;
       |   }
       | }
-      |""".stripMargin
+      |""".stripMargin)
 
   /* The equivalent Jimple code looks like
     int foo(int, int)
@@ -28,7 +27,7 @@ class MethodTests extends JimpleCodeToCpgFixture {
    */
 
   "should contain exactly one non-stub method node with correct fields" in {
-    val List(x) = cpg.method.nameNot("<init>").isExternal(false).l
+    val List(x) = cpg.method.nameNot(io.joern.x2cpg.Defines.ConstructorMethodName).isExternal(false).l
     x.name shouldBe "foo"
     x.fullName shouldBe "Foo.foo:int(int,int)"
     x.code shouldBe "int foo(int param1, int param2)"

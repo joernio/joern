@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.kotlin2cpg.types.TypeConstants
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
@@ -21,7 +22,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a CALL node with an MFN starting with a placeholder type" in {
       val List(c) = cpg.call.drop(1).take(1).l
-      c.methodFullName shouldBe TypeConstants.cpgUnresolved + ".flatMap:ANY(ANY)"
+      c.methodFullName shouldBe Defines.UnresolvedNamespace + ".flatMap:ANY(ANY)"
     }
   }
 
@@ -112,7 +113,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a CALL node with the correct MFN set when type info is not available" in {
       val List(c) = cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code("bar")).argument(2).isCall.l
-      c.methodFullName shouldBe TypeConstants.cpgUnresolved + ".filter:ANY(ANY)"
+      c.methodFullName shouldBe Defines.UnresolvedNamespace + ".filter:ANY(ANY)"
     }
   }
 
@@ -133,7 +134,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a METHOD node with a MFN property starting with `kotlin.Any`" in {
       val List(m) = cpg.method.fullName(".*getFileSize.*").l
-      m.fullName shouldBe "codepropertygraph.Unresolved.getFileSize:int(boolean)"
+      m.fullName shouldBe s"${Defines.UnresolvedNamespace}.getFileSize:int(boolean)"
     }
   }
 

@@ -18,9 +18,8 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         fileA.write("someCodeA();")
         fileB.write("someCodeB();")
 
-        val cpg       = Cpg.emptyCpg
-        val filenames = Seq(fileA, fileB)
-        new ConfigPass(cpg, filenames, Config(inputPath = dir.pathAsString)).createAndApply()
+        val cpg = Cpg.emptyCpg
+        new ConfigPass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
 
         val List(configFileA, configFileB) = cpg.configFile.l
         configFileA.name shouldBe "a.vue"
@@ -43,9 +42,34 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         fileB.write("b")
         fileC.write("c")
 
-        val cpg   = Cpg.emptyCpg
-        val files = Seq(fileA, fileB, fileC)
-        new ConfigPass(cpg, files, Config(inputPath = dir.pathAsString)).createAndApply()
+        val cpg = Cpg.emptyCpg
+        new ConfigPass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
+
+        val List(configFileA, configFileB, configFileC) = cpg.configFile.l
+        configFileA.name shouldBe "a.conf.js"
+        configFileA.content shouldBe "a"
+        configFileB.name shouldBe "b.config.js"
+        configFileB.content shouldBe "b"
+        configFileC.name shouldBe "c.json"
+        configFileC.content shouldBe "c"
+      }
+    }
+
+    "ignore ConfigFiles correctly for simple JS project" in {
+      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
+        val fileA = dir / "a.conf.js"
+        val fileB = dir / "b.config.js"
+        val fileC = dir / "c.json"
+        fileA.write("a")
+        fileB.write("b")
+        fileC.write("c")
+
+        // should be ignored
+        val d = (dir / Defines.NODE_MODULES_FOLDER).createDirectory()
+        (d / "d.json").write("d")
+
+        val cpg = Cpg.emptyCpg
+        new ConfigPass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
 
         val List(configFileA, configFileB, configFileC) = cpg.configFile.l
         configFileA.name shouldBe "a.conf.js"
@@ -68,9 +92,8 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         fileA.write("a")
         fileB.write("b")
 
-        val cpg   = Cpg.emptyCpg
-        val files = Seq(fileA, fileB)
-        new ConfigPass(cpg, files, Config(inputPath = dir.pathAsString)).createAndApply()
+        val cpg = Cpg.emptyCpg
+        new ConfigPass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
 
         val List(configFileA, configFileB) = cpg.configFile.l
         configFileA.name shouldBe "a.html"
@@ -91,13 +114,25 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         val fileB = dir / "b.key"
         fileB.write("-----BEGIN SOME OTHER KEY-----\nthis is fine\n-----END SOME OTHER KEY-----")
 
-        val cpg   = Cpg.emptyCpg
-        val files = Seq(fileA, fileB)
-        new PrivateKeyFilePass(cpg, files, Config(inputPath = dir.pathAsString)).createAndApply()
+        val cpg = Cpg.emptyCpg
+        new PrivateKeyFilePass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
 
         val List(configFileA) = cpg.configFile.l
         configFileA.name shouldBe "a.key"
         configFileA.content shouldBe "Content omitted for security reasons."
+      }
+    }
+
+    "ignore ConfigFiles correctly" in {
+      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
+        val d     = (dir / Defines.NODE_MODULES_FOLDER).createDirectory()
+        val fileA = d / "a.key"
+        fileA.write("-----BEGIN RSA PRIVATE KEY-----\n123456789\n-----END RSA PRIVATE KEY-----")
+
+        val cpg = Cpg.emptyCpg
+        new PrivateKeyFilePass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
+
+        cpg.configFile shouldBe empty
       }
     }
 

@@ -71,7 +71,7 @@ class Decompiler(val decompInterface: DecompInterface) {
         }
       val res = decompInterface.decompileFunction(function, timeoutInSeconds, null)
       this.cache = ccCurrent.updated(addr, res)
-      if (res == null) None else Some(res)
+      Option(res)
     }
   }
 }

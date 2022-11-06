@@ -9,7 +9,13 @@ val CirceVersion          = "0.14.2"
 val AmmoniteVersion       = "2.5.3"
 val ZeroturnaroundVersion = "1.15"
 
-dependsOn(Projects.semanticcpg, Projects.macros, Projects.c2cpg % Test, Projects.x2cpg % "compile->compile;test->test")
+dependsOn(
+  Projects.semanticcpg,
+  Projects.macros,
+  Projects.jssrc2cpg,
+  Projects.c2cpg % Test,
+  Projects.x2cpg % "compile->compile;test->test"
+)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
@@ -24,8 +30,6 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"          %% "cask"              % CaskVersion,
   "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
 )
-
-Test / packageBin / publishArtifact := true
 
 scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.

@@ -1,20 +1,20 @@
 package io.joern.javasrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
+import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, CodeToCpgFixture, LanguageFrontend}
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import io.shiftleft.utils.ProjectRoot
 import overflowdb.traversal.Traversal
 
 import java.io.File
 
-class JavaSrcFrontend(delombokMode: String) extends LanguageFrontend {
+trait JavaSrcFrontend extends LanguageFrontend {
+  protected val delombokMode: String
 
   override val fileSuffix: String = ".java"
 
@@ -25,25 +25,31 @@ class JavaSrcFrontend(delombokMode: String) extends LanguageFrontend {
   }
 }
 
-class JavaSrcCodeToCpgFixture extends CodeToCpgFixture(new JavaSrcFrontend(delombokMode = "default")) {}
+class JavaSrcTestCpg(override protected val delombokMode: String) extends TestCpg with JavaSrcFrontend {
+  private var _withOssDataflow = false
 
-class JavaSrcCode2CpgFixture(withOssDataflow: Boolean = false, delombokMode: String = "default")
-    extends Code2CpgFixture(new JavaSrcFrontend(delombokMode)) {
+  def withOssDataflow(value: Boolean = true): this.type = {
+    _withOssDataflow = value
+    this
+  }
 
-  val semanticsFile: String            = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-  lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))
-  implicit val resolver: ICallResolver = NoResolve
-  implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics, EngineConfig(maxCallDepth = 4))
+  override def applyPasses(): Unit = {
+    X2Cpg.applyDefaultOverlays(this)
 
-  override def applyPasses(cpg: Cpg): Unit = {
-    super.applyPasses(cpg)
-
-    if (withOssDataflow) {
-      val context = new LayerCreatorContext(cpg)
+    if (_withOssDataflow) {
+      val context = new LayerCreatorContext(this)
       val options = new OssDataFlowOptions()
       new OssDataFlow(options).run(context)
     }
   }
+
+}
+
+class JavaSrcCode2CpgFixture(withOssDataflow: Boolean = false, delombokMode: String = "default")
+    extends Code2CpgFixture(() => new JavaSrcTestCpg(delombokMode).withOssDataflow(withOssDataflow)) {
+
+  implicit val resolver: ICallResolver           = NoResolve
+  implicit lazy val engineContext: EngineContext = EngineContext()
 
   def getConstSourceSink(
     cpg: Cpg,

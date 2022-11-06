@@ -2,11 +2,8 @@ package io.joern.pysrc2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.passes.{DiffGraph, IntervalKeyPool}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-
-import scala.collection.parallel
 
 object Py2Cpg {
   case class InputPair(content: String, absFileName: String, relFileName: String)

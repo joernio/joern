@@ -9,18 +9,24 @@ import java.util.Comparator
 import scala.collection.mutable
 
 // Lazily populated test CPG which is created upon first access to the underlying graph.
-class TestCpg(frontend: LanguageFrontend, fixture: Code2CpgFixture) extends Cpg() {
+// The trait LanguageFrontend is mixed in and not property/field of this class in order
+// to allow the configuration of language frontend specific properties on the CPG object.
+abstract class TestCpg extends Cpg() with LanguageFrontend {
   private var _graph            = Option.empty[Graph]
   private val codeFileNamePairs = mutable.ArrayBuffer.empty[(String, Path)]
   private var fileNameCounter   = 0
 
-  def moreCode(code: String): TestCpg = {
-    val result = moreCode(code, s"Test$fileNameCounter${frontend.fileSuffix}")
+  protected def codeFilePreProcessing(codeFile: Path): Unit = {}
+
+  protected def applyPasses(): Unit
+
+  def moreCode(code: String): this.type = {
+    moreCode(code, s"Test$fileNameCounter${fileSuffix}")
     fileNameCounter += 1
-    result
+    this
   }
 
-  def moreCode(code: String, fileName: String): TestCpg = {
+  def moreCode(code: String, fileName: String): this.type = {
     checkGraphEmpty()
     codeFileNamePairs.append((code, Paths.get(fileName)))
     this
@@ -39,7 +45,9 @@ class TestCpg(frontend: LanguageFrontend, fixture: Code2CpgFixture) extends Cpg(
         Files.createDirectories(tmpDir.resolve(fileName.getParent))
       }
       val codeAsBytes = code.getBytes(StandardCharsets.UTF_8)
-      Files.write(tmpDir.resolve(Paths.get(fileName.toString)), codeAsBytes)
+      val codeFile    = tmpDir.resolve(Paths.get(fileName.toString))
+      Files.write(codeFile, codeAsBytes)
+      codeFilePreProcessing(codeFile)
     }
     tmpDir
   }
@@ -55,8 +63,8 @@ class TestCpg(frontend: LanguageFrontend, fixture: Code2CpgFixture) extends Cpg(
     if (_graph.isEmpty) {
       val codeDir = codeToFileSystem()
       try {
-        _graph = Some(frontend.execute(codeDir.toFile).graph)
-        fixture.applyPasses(this)
+        _graph = Some(execute(codeDir.toFile).graph)
+        applyPasses()
       } finally {
         deleteDir(codeDir)
       }

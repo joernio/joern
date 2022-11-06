@@ -1,12 +1,11 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language._
 
-class EnumTests extends JimpleCodeToCpgFixture {
-  override val code: String =
-    """
+class EnumTests extends JimpleCode2CpgFixture {
+  val cpg = code("""
       |enum FuzzyBool {
       |  TRUE,
       |  FALSE,
@@ -23,7 +22,7 @@ class EnumTests extends JimpleCodeToCpgFixture {
       |    this.label = label;
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "it should contain the basic enum methods" in {
     cpg.typeDecl.name(".*FuzzyBool.*").method.filterNot(_.name.contains("$")).size shouldBe 4
@@ -39,11 +38,11 @@ class EnumTests extends JimpleCodeToCpgFixture {
     valueOf.lineNumber shouldBe Some(1)
 
     constructor.order shouldBe 3
-    constructor.name shouldBe "<init>"
+    constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
     constructor.lineNumber shouldBe Some(1)
 
     staticInit.order shouldBe 4
-    staticInit.name shouldBe "<clinit>"
+    staticInit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
     staticInit.lineNumber shouldBe Some(2)
   }
 
@@ -88,7 +87,7 @@ class EnumTests extends JimpleCodeToCpgFixture {
     val List(redCall, blueCall) = cpg.typeDecl
       .name(".*Color.*")
       .method
-      .name("<clinit>")
+      .name(io.joern.x2cpg.Defines.StaticInitMethodName)
       .ast
       .isCall
       .code(".*.Color(.+, \\d+, .+)")
@@ -96,7 +95,7 @@ class EnumTests extends JimpleCodeToCpgFixture {
 
     r.code shouldBe "RED"
 
-    redCall.name shouldBe "<init>"
+    redCall.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
     redCall.methodFullName shouldBe "Color.<init>:void(java.lang.String,int,java.lang.String)"
     redCall.astChildren.size shouldBe 4
     redCall.astChildren.last shouldBe a[Literal]
@@ -104,7 +103,7 @@ class EnumTests extends JimpleCodeToCpgFixture {
 
     b.code shouldBe "BLUE"
 
-    blueCall.name shouldBe "<init>"
+    blueCall.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
     blueCall.methodFullName shouldBe "Color.<init>:void(java.lang.String,int,java.lang.String)"
     blueCall.astChildren.size shouldBe 4
     blueCall.astChildren.last shouldBe a[Literal]

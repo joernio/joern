@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
@@ -9,10 +9,9 @@ import io.shiftleft.semanticcpg.language._
 /** These tests are based off of those found in javasrc2cpg but modified to fit to Jimple's 3-address code rule and flat
   * AST.
   */
-class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
+class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |class Foo {
       |  int x;
       |
@@ -50,10 +49,10 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
       |    bs[0] = new Bar(42);
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "it should create correct method nodes for constructors" in {
-    cpg.method.name("<init>").where(_.fullName("^Foo.*")).l match {
+    cpg.method.name(io.joern.x2cpg.Defines.ConstructorMethodName).where(_.fullName("^Foo.*")).l match {
       case List(cons: Method) =>
         cons.fullName shouldBe "Foo.<init>:void(int)"
         cons.signature shouldBe "void(int)"
@@ -72,7 +71,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
         fail(s"Expected single Foo constructor, but got $res")
     }
 
-    cpg.method.name("<init>").where(_.fullName("^Bar.*")).l match {
+    cpg.method.name(io.joern.x2cpg.Defines.ConstructorMethodName).where(_.fullName("^Bar.*")).l match {
       case List(cons1: Method, cons2: Method) =>
         cons1.fullName shouldBe "Bar.<init>:void(int)"
         cons1.signature shouldBe "void(int)"
@@ -110,7 +109,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
-        init.name shouldBe "<init>"
+        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe "Bar.<init>:void(int,int)"
         init.callOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -148,7 +147,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
-        init.name shouldBe "<init>"
+        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe "Bar.<init>:void(int,int)"
         init.callOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -192,7 +191,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
-        init.name shouldBe "<init>"
+        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe "Bar.<init>:void(int)"
         init.callOut.head.fullName shouldBe "Bar.<init>:void(int)"
         init.signature shouldBe "void(int)"
@@ -217,7 +216,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
       case List(method) =>
         val List(assignAddition: Call, init: Call, addition: Call) = method.call.l
 
-        init.name shouldBe "<init>"
+        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe "Bar.<init>:void(int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
@@ -247,7 +246,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
     cpg.typeDecl.name("Bar").method.fullNameExact("Bar.<init>:void(int)").l match {
       case List(method) =>
         val List(alloc: Call) = method.call.l
-        alloc.name shouldBe "<init>"
+        alloc.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         alloc.methodFullName shouldBe "Foo.<init>:void(int)"
         alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         alloc.typeFullName shouldBe "void"

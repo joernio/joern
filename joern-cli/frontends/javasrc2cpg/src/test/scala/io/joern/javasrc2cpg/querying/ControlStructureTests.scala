@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.javasrc2cpg.util.NameConstants
 import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
@@ -59,7 +59,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           frAssignRhs.name shouldBe Operators.alloc
           frAssignRhs.typeFullName shouldBe "java.io.FileReader"
 
-          frInit.name shouldBe NameConstants.Init
+          frInit.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
           val List(frInitThis: Identifier, frInitArg: Identifier) = frInit.argument.l
           frInitThis.name shouldBe "fr"
           frInitThis.typeFullName shouldBe "java.io.FileReader"
@@ -77,7 +77,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           brAssignRhs.name shouldBe Operators.alloc
           brAssignRhs.typeFullName shouldBe "java.io.BufferedReader"
 
-          brInit.name shouldBe NameConstants.Init
+          brInit.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
           val List(brInitThis: Identifier, brInitArg: Identifier) = brInit.argument.l
           brInitThis.name shouldBe "br"
           brInitThis.typeFullName shouldBe "java.io.BufferedReader"
@@ -719,10 +719,9 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
   }
 }
 
-class ControlStructureTests extends JavaSrcCodeToCpgFixture {
+class ControlStructureTests extends JavaSrcCode2CpgFixture {
 
-  override val code =
-    """
+  val cpg = code("""
       |class Foo {
       |  int baz(Iterable<Integer> xs) {
       |    int sum = 0;
@@ -786,7 +785,7 @@ class ControlStructureTests extends JavaSrcCodeToCpgFixture {
       |    }
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should identify `try` block" in {
     cpg.method.name("foo").tryBlock.code.l shouldBe List("try")

@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.dotgenerator
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
 import io.joern.dataflowengineoss.language._
@@ -17,7 +18,7 @@ class DdgGenerator {
   val edgeType          = "DDG"
   private val edgeCache = mutable.Map[StoredNode, List[Edge]]()
 
-  def generate(methodNode: Method)(implicit semantics: Semantics): Graph = {
+  def generate(methodNode: Method)(implicit semantics: Semantics = DefaultSemantics()): Graph = {
     val entryNode                  = methodNode
     val paramNodes                 = methodNode.parameter.l
     val allOtherNodes              = methodNode.cfgNode.l
@@ -59,8 +60,7 @@ class DdgGenerator {
   }
 
   private def shouldBeDisplayed(v: Node): Boolean = !(
-    v.isInstanceOf[Block] ||
-      v.isInstanceOf[ControlStructure] ||
+    v.isInstanceOf[ControlStructure] ||
       v.isInstanceOf[JumpTarget]
   )
 
@@ -90,7 +90,9 @@ class DdgGenerator {
 
     val allInEdges = v
       .inE(EdgeTypes.REACHING_DEF)
-      .map(x => Edge(x.outNode.asInstanceOf[StoredNode], v, true, x.property(Properties.VARIABLE), edgeType))
+      .map(x =>
+        Edge(x.outNode.asInstanceOf[StoredNode], v, srcVisible = true, x.property(Properties.VARIABLE), edgeType)
+      )
 
     v match {
       case cfgNode: CfgNode =>

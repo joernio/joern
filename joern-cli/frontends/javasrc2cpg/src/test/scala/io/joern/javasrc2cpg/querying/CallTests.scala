@@ -1,12 +1,116 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
+import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.jIteratortoTraversal
+import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
+  "calls to unresolved lambda parameters" should {
+    val cpg = code("""
+		 |class Foo {
+		 |  public void isSuccess(ExecutorService executorService) {
+		 |    var responses = executorService.invokeAll(flagCalls);
+		 |    responses.stream().filter(r -> {
+		 |      return r.get().getStatusCode() == 200;
+		 |    });
+		 |  }
+		 |}""".stripMargin)
+
+    "have the correct call name" in {
+      cpg.call
+        .name("get")
+        .methodFullName
+        .head shouldBe s"${Defines.UnresolvedNamespace}.get:${Defines.UnresolvedSignature}(0)"
+    }
+  }
+
+  "calls to instance methods in same class" should {
+    "have ref edges from implicit `this` for an explicit constructor invocation" in {
+      val cpg = code("""
+			 |class Foo {
+			 |  public Foo() {
+			 |    this(42);
+			 |  }
+			 |
+			 |  public Foo(int x) {}
+			 |}
+			 |""".stripMargin)
+
+      cpg.method
+        .fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()")
+        .call
+        .nameExact(io.joern.x2cpg.Defines.ConstructorMethodName)
+        .receiver
+        .l match {
+        case List(thisNode: Identifier) =>
+          thisNode.outE.collectAll[Ref].map(_.inNode).l match {
+            case List(paramNode: MethodParameterIn) =>
+              paramNode.name shouldBe "this"
+              paramNode.method.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
+
+            case result => fail(s"Expected REF edge to method parameter but found $result")
+          }
+
+        case result => fail(s"Expected <init> call with `this` receiver but found $result")
+      }
+    }
+    "have ref edges from implicit `this` to method parameter" in {
+      val cpg = code("""
+			 |class Foo {
+			 |  public void test() {
+			 |    foo(42);
+			 |  }
+			 |
+			 |  public void foo(int x) {}
+			 |}""".stripMargin)
+
+      cpg.method.name("test").call.name("foo").receiver.outE.collectAll[Ref].l match {
+        case List(ref) =>
+          ref.inNode match {
+            case param: MethodParameterIn =>
+              param.name shouldBe "this"
+              param.index shouldBe 0
+              param.method.fullName shouldBe "Foo.test:void()"
+
+            case result => fail(s"Expected ref edge to method param but found $result")
+          }
+
+        case result => fail(s"Expected out ref edge but got $result")
+      }
+    }
+
+    "have ref edges from explicit `this` to method parameter" in {
+      val cpg = code("""
+                      |class Foo {
+                      |  public void test() {
+                      |    this.foo(42);
+                      |  }
+                      |
+                      |  public void foo(int x) {}
+                      |}""".stripMargin)
+
+      cpg.method.name("test").call.name("foo").receiver.outE.collectAll[Ref].l match {
+        case List(ref) =>
+          ref.inNode match {
+            case param: MethodParameterIn =>
+              param.name shouldBe "this"
+              param.index shouldBe 0
+              param.method.fullName shouldBe "Foo.test:void()"
+
+            case result => fail(s"Expected ref edge to method param but found $result")
+          }
+
+        case result => fail(s"Expected out ref edge but got $result")
+      }
+    }
+  }
+
   "call to method in different class" should {
     lazy val cpg = code(
       """
@@ -93,7 +197,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
           |  }
           |}
           |""".stripMargin)
-      cpg.call.name("<init>").l match {
+      cpg.call.name(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
         case List(initCall: Call) =>
           initCall.code shouldBe "new Foo()"
 
@@ -178,12 +282,9 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
   }
 }
 
-class CallTests extends JavaSrcCodeToCpgFixture {
+class CallTests extends JavaSrcCode2CpgFixture {
 
-  implicit val resolver: ICallResolver = NoResolve
-
-  override val code: String =
-    """
+  lazy val cpg = code("""
       |package test;
       | class Foo {
       |   int add(int x, int y) {
@@ -234,7 +335,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
       |      bar();
       |    }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain a call node for `add` with correct fields" in {
     val List(x) = cpg.call("add").l
@@ -289,8 +390,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
   "should handle unresolved calls with appropriate defaults" in {
     val List(call: Call) = cpg.typeDecl.name("Foo").ast.isCall.name("foo").l
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-    call.methodFullName shouldBe "test.Foo.foo:void(int)"
-    call.signature shouldBe "void(int)"
+    call.methodFullName shouldBe s"test.Foo.foo:${Defines.UnresolvedSignature}(1)"
+    call.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
     call.code shouldBe "foo(argc)"
   }
 
@@ -356,7 +457,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
 
     argument.name shouldBe Operators.fieldAccess
     argument.typeFullName shouldBe "test.MyObject"
-    argument.code shouldBe "obj"
+    argument.code shouldBe "this.obj"
     argument.order shouldBe 2
     argument.argumentIndex shouldBe 1
 
@@ -380,9 +481,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
   }
 }
 
-class CallTests2 extends JavaSrcCodeToCpgFixture {
-  override val code: String =
-    """
+class CallTests2 extends JavaSrcCode2CpgFixture {
+  lazy val cpg = code("""
       |class Foo {
       |    public static class Ops {
       |        public <T> T ident(T x) {
@@ -395,7 +495,7 @@ class CallTests2 extends JavaSrcCodeToCpgFixture {
       |        return ret;
       |    }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "test methodFullName for call to generic function" in {
     cpg.call(".*ident.*").methodFullName.head shouldBe "Foo$Ops.ident:java.lang.Object(java.lang.Object)"

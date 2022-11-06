@@ -201,10 +201,10 @@ object JoernScan extends App with BridgeBase {
     val url = urlForVersion(version)
     println(s"Downloading default query bundle from: $url")
     val r          = requests.get(url)
-    val queryDbZip = (outDir / "querydb.zip")
+    val queryDbZip = outDir / "querydb.zip"
     val absPath    = queryDbZip.path.toAbsolutePath.toString
     queryDbZip.writeBytes(r.bytes.iterator)
-    println(s"Wrote: ${queryDbZip.size} bytes to ${absPath}")
+    println(s"Wrote: ${queryDbZip.size} bytes to $absPath")
     absPath
   }
 
@@ -257,7 +257,7 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val allQueries = getQueriesFromQueryDb(new JoernDefaultArgumentProvider(options.maxCallDepth))
-    if (allQueries.length == 0) {
+    if (allQueries.isEmpty) {
       println("No queries found, you probably forgot to install a query database.")
       return
     }

@@ -20,8 +20,8 @@ import overflowdb.traversal.Traversal
   *            / \       / \
   *           x  10     x   1
   * }}}
-  * This tree can be translated into a control flow graph, by translating the sub tree rooted in `x < 10` and that of `x
-  * += 1` and connecting their control flow graphs according to the semantics of `if`:
+  * This tree can be translated into a control flow graph, by translating the sub tree rooted in `x < 10` and that of
+  * `x+= 1` and connecting their control flow graphs according to the semantics of `if`:
   * {{{
   *            [x < 10]----
   *               |t     f|
@@ -106,7 +106,15 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForConditionalExpression(call)
       case call: Call if call.dispatchType == DispatchTypes.INLINED =>
         cfgForInlinedCall(call)
-      case _: Call | _: FieldIdentifier | _: Identifier | _: Literal | _: Unknown =>
+      case block: Block =>
+        // Only include block nodes that do not describe the entire
+        // method body or the bodies of control structures
+        if (block._astIn.hasNext && (block.astParent.isMethod || block.astParent.isControlStructure)) {
+          cfgForChildren(block)
+        } else {
+          cfgForChildren(node) ++ cfgForSingleNode(node.asInstanceOf[CfgNode])
+        }
+      case _: Call | _: FieldIdentifier | _: Identifier | _: Literal | _: Block | _: Unknown =>
         cfgForChildren(node) ++ cfgForSingleNode(node.asInstanceOf[CfgNode])
       case _ =>
         cfgForChildren(node)
@@ -148,21 +156,39 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     */
   protected def cfgForBreakStatement(node: ControlStructure): Cfg = {
     node.astChildren.find(_.order == 1) match {
-      case Some(jumpLabel) =>
-        val labelName = jumpLabel.asInstanceOf[JumpLabel].name
+      case Some(jumpLabel: JumpLabel) =>
+        val labelName = jumpLabel.name
         Cfg(entryNode = Some(node), jumpsToLabel = List((node, labelName)))
+      case Some(literal: Literal) =>
+        // In case we find a literal, it is assumed to be an integer literal which
+        // indicates how many loop/switch levels the break shall apply to.
+        val numberOfLevels = Integer.valueOf(literal.code)
+        Cfg(entryNode = Some(node), breaks = List((node, numberOfLevels)))
+      case Some(_) =>
+        throw new NotImplementedError(
+          "Only jump labels and integer literals are currently supported for break statements."
+        )
       case None =>
-        Cfg(entryNode = Some(node), breaks = List(node))
+        Cfg(entryNode = Some(node), breaks = List((node, 1)))
     }
   }
 
   protected def cfgForContinueStatement(node: ControlStructure): Cfg = {
     node.astChildren.find(_.order == 1) match {
-      case Some(jumpLabel) =>
-        val labelName = jumpLabel.asInstanceOf[JumpLabel].name
+      case Some(jumpLabel: JumpLabel) =>
+        val labelName = jumpLabel.name
         Cfg(entryNode = Some(node), jumpsToLabel = List((node, labelName)))
+      case Some(literal: Literal) =>
+        // In case we find a literal, it is assumed to be an integer literal which
+        // indicates how many loop levels the continue shall apply to.
+        val numberOfLevels = Integer.valueOf(literal.code)
+        Cfg(entryNode = Some(node), continues = List((node, numberOfLevels)))
+      case Some(_) =>
+        throw new NotImplementedError(
+          "Only jump labels and integer literals are currently supported for continue statements."
+        )
       case None =>
-        Cfg(entryNode = Some(node), continues = List(node))
+        Cfg(entryNode = Some(node), continues = List((node, 1)))
     }
   }
 
@@ -312,9 +338,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       edgesFromFringeTo(innerCfg, innerCfg.entryNode) ++
       edgesFromFringeTo(conditionCfg, bodyCfg.entryNode, TrueEdge) ++ {
         if (loopExprCfg.entryNode.isDefined) {
-          edges(bodyCfg.continues, loopExprCfg.entryNode)
+          edges(takeCurrentLevel(bodyCfg.continues), loopExprCfg.entryNode)
         } else {
-          edges(bodyCfg.continues, innerCfg.entryNode)
+          edges(takeCurrentLevel(bodyCfg.continues), innerCfg.entryNode)
         }
       }
 
@@ -323,9 +349,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .copy(
         entryNode = entryNode,
         edges = newEdges ++ initExprCfg.edges ++ innerCfg.edges,
-        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ bodyCfg.breaks.map((_, AlwaysEdge)),
-        breaks = List(),
-        continues = List()
+        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ takeCurrentLevel(bodyCfg.breaks).map((_, AlwaysEdge)),
+        breaks = reduceAndFilterLevel(bodyCfg.breaks),
+        continues = reduceAndFilterLevel(bodyCfg.continues)
       )
   }
 
@@ -338,7 +364,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val innerCfg     = bodyCfg ++ conditionCfg
 
     val diffGraphs =
-      edges(bodyCfg.continues, conditionCfg.entryNode) ++
+      edges(takeCurrentLevel(bodyCfg.continues), conditionCfg.entryNode) ++
         edgesFromFringeTo(bodyCfg, conditionCfg.entryNode) ++
         edgesFromFringeTo(conditionCfg, innerCfg.entryNode, TrueEdge)
 
@@ -348,9 +374,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         entryNode = if (bodyCfg != Cfg.empty) { bodyCfg.entryNode }
         else { conditionCfg.entryNode },
         edges = diffGraphs ++ bodyCfg.edges ++ conditionCfg.edges,
-        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ bodyCfg.breaks.map((_, AlwaysEdge)),
-        breaks = List(),
-        continues = List()
+        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ takeCurrentLevel(bodyCfg.breaks).map((_, AlwaysEdge)),
+        breaks = reduceAndFilterLevel(bodyCfg.breaks),
+        continues = reduceAndFilterLevel(bodyCfg.continues)
       )
   }
 
@@ -365,16 +391,17 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode) ++
       edgesFromFringeTo(trueCfg, falseCfg.entryNode) ++
       edgesFromFringeTo(trueCfg, conditionCfg.entryNode) ++
-      edges(trueCfg.continues, conditionCfg.entryNode)
+      edges(takeCurrentLevel(trueCfg.continues), conditionCfg.entryNode)
 
     Cfg
       .from(conditionCfg, trueCfg, falseCfg)
       .copy(
         entryNode = conditionCfg.entryNode,
         edges = diffGraphs ++ conditionCfg.edges ++ trueCfg.edges ++ falseCfg.edges,
-        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ trueCfg.breaks.map((_, AlwaysEdge)) ++ falseCfg.fringe,
-        breaks = List(),
-        continues = List()
+        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ takeCurrentLevel(trueCfg.breaks)
+          .map((_, AlwaysEdge)) ++ falseCfg.fringe,
+        breaks = reduceAndFilterLevel(trueCfg.breaks),
+        continues = reduceAndFilterLevel(trueCfg.continues)
       )
   }
 
@@ -395,11 +422,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         fringe = {
           if (!hasDefaultCase) { conditionCfg.fringe.withEdgeType(FalseEdge) }
           else { List() }
-        } ++ bodyCfg.breaks
-          .map((_, AlwaysEdge)) ++ bodyCfg.fringe,
+        } ++ takeCurrentLevel(bodyCfg.breaks).map((_, AlwaysEdge)) ++ bodyCfg.fringe,
         caseLabels = List(),
-        breaks = List(),
-        continues = List()
+        breaks = reduceAndFilterLevel(bodyCfg.breaks),
+        continues = bodyCfg.continues
       )
   }
 

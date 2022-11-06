@@ -4,7 +4,6 @@ import better.files.File
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.shiftleft.codepropertygraph.Cpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -25,15 +24,6 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         new AstCreationPass(cpg, astgenResult, config).createAndApply()
         f(cpg)
         file.delete()
-      }
-    }
-  }
-
-  protected object CfgFixture extends Fixture {
-    def apply(code: String, filename: String = "code.js")(f: Cpg => Unit): Unit = {
-      AstFixture(code, filename) { cpg =>
-        new CfgCreationPass(cpg).createAndApply()
-        f(cpg)
       }
     }
   }

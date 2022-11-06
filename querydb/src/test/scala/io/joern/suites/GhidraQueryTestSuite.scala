@@ -14,11 +14,6 @@ class GhidraQueryTestSuite extends DataFlowBinToCpgSuite {
   val argumentProvider              = new QDBArgumentProvider(3)
   override val binDirectory: String = ProjectRoot.relativise("querydb/src/test/resources/testbinaries")
 
-  override def beforeAll(): Unit = {
-    semanticsFilename = argumentProvider.testSemanticsFilename
-    super.beforeAll()
-  }
-
   protected def queryBundle: QueryBundle = QueryUtil.EmptyBundle
 
   protected def allQueries: List[Query] = QueryUtil.allQueries(queryBundle, argumentProvider)

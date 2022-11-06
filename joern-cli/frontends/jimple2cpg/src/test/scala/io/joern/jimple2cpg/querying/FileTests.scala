@@ -1,19 +1,18 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 import java.io.{File => JFile}
 import java.io.File
 
-class FileTests extends JimpleCodeToCpgFixture {
+class FileTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       | package a.b;
       | class Foo { int bar() { return 1; } }
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain two file nodes in total with correct order" in {
     cpg.file.order.l shouldBe List(0, 0)
@@ -39,7 +38,7 @@ class FileTests extends JimpleCodeToCpgFixture {
       .name(".*.class".replace("/", s"\\${JFile.separator}"))
       .method
       .name
-      .toSetMutable shouldBe Set("bar", "<init>")
+      .toSetMutable shouldBe Set("bar", io.joern.x2cpg.Defines.ConstructorMethodName)
   }
 
   "should allow traversing from file to its type declarations via namespace block" in {

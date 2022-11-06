@@ -3,11 +3,11 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.datastructures.MethodScope
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
+import io.joern.x2cpg
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstNodeBuilder { this: AstCreator =>
@@ -185,7 +185,7 @@ trait AstNodeBuilder { this: AstCreator =>
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .lineNumber(line)
       .columnNumber(column)
-      .typeFullName(tpe.getOrElse(Defines.ANY.label))
+      .typeFullName(tpe.getOrElse(Defines.ANY))
     scope.addVariable(name, param, MethodScope)
     param
   }
@@ -217,7 +217,7 @@ trait AstNodeBuilder { this: AstCreator =>
     NewMember()
       .code(code)
       .name(name)
-      .typeFullName(Defines.ANY.label)
+      .typeFullName(Defines.ANY)
       .dynamicTypeHintFullName(dynamicTypeOption.toList)
 
   protected def createMethodNode(methodName: String, methodFullName: String, func: BabelNodeInfo): NewMethod = {
@@ -299,11 +299,13 @@ trait AstNodeBuilder { this: AstCreator =>
   ): NewCall = NewCall()
     .code(code)
     .name(callName)
-    .methodFullName(callName)
+    .methodFullName(
+      if (dispatchType == DispatchTypes.STATIC_DISPATCH) callName else x2cpg.Defines.DynamicCallUnknownFallName
+    )
     .dispatchType(dispatchType)
     .lineNumber(line)
     .columnNumber(column)
-    .typeFullName(Defines.ANY.label)
+    .typeFullName(Defines.ANY)
 
   protected def createVoidCallNode(line: Option[Integer], column: Option[Integer]): NewCall =
     createCallNode("void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH, line, column)
@@ -323,39 +325,17 @@ trait AstNodeBuilder { this: AstCreator =>
     dynamicTypeOption: Option[String],
     line: Option[Integer],
     column: Option[Integer]
-  ): NewLiteral =
+  ): NewLiteral = {
+    val typeFullName = dynamicTypeOption match {
+      case Some(value) if Defines.JSTYPES.contains(value) => value
+      case _                                              => Defines.ANY
+    }
     NewLiteral()
       .code(code)
-      .typeFullName(Defines.ANY.label)
+      .typeFullName(typeFullName)
       .lineNumber(line)
       .columnNumber(column)
       .dynamicTypeHintFullName(dynamicTypeOption.toList)
-
-  protected def createAstForFakeStaticInitMethod(
-    name: String,
-    filename: String,
-    lineNumber: Option[Integer],
-    childrenAsts: Seq[Ast]
-  ): Ast = {
-    val code = childrenAsts.flatMap(_.nodes.headOption.map(_.asInstanceOf[NewCall].code)).mkString(",")
-    val fakeStaticInitMethod =
-      NewMethod()
-        .name("<sinit>")
-        .fullName(s"$name:<sinit>")
-        .code(code)
-        .filename(filename)
-        .lineNumber(lineNumber)
-        .astParentType(NodeTypes.TYPE_DECL)
-        .astParentFullName(name)
-
-    val blockNode = NewBlock().typeFullName("ANY")
-
-    val methodReturn = NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName("ANY")
-
-    Ast(fakeStaticInitMethod).withChild(Ast(blockNode).withChildren(childrenAsts)).withChild(Ast(methodReturn))
   }
 
   protected def createEqualsCallAst(
@@ -384,14 +364,10 @@ trait AstNodeBuilder { this: AstCreator =>
 
   protected def createIdentifierNode(name: String, node: BabelNodeInfo): NewIdentifier = {
     val dynamicInstanceTypeOption = name match {
-      case "this" =>
-        dynamicInstanceTypeStack.headOption
-      case "console" =>
-        Some(Defines.CONSOLE.label)
-      case "Math" =>
-        Some(Defines.MATH.label)
-      case _ =>
-        None
+      case "this"    => dynamicInstanceTypeStack.headOption
+      case "console" => Some(Defines.CONSOLE)
+      case "Math"    => Some(Defines.MATH)
+      case _         => None
     }
     createIdentifierNode(name, dynamicInstanceTypeOption, node.lineNumber, node.columnNumber)
   }
@@ -406,24 +382,24 @@ trait AstNodeBuilder { this: AstCreator =>
     .code(name)
     .lineNumber(line)
     .columnNumber(column)
-    .typeFullName(Defines.ANY.label)
+    .typeFullName(Defines.ANY)
     .dynamicTypeHintFullName(dynamicTypeOption.toList)
 
   protected def createStaticCallNode(
     code: String,
-    methodName: String,
+    callName: String,
     fullName: String,
     line: Option[Integer],
     column: Option[Integer]
   ): NewCall = NewCall()
     .code(code)
-    .name(methodName)
+    .name(callName)
     .methodFullName(fullName)
     .dispatchType(DispatchTypes.STATIC_DISPATCH)
     .signature("")
     .lineNumber(line)
     .columnNumber(column)
-    .typeFullName(Defines.ANY.label)
+    .typeFullName(Defines.ANY)
 
   protected def createLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal =
     NewLocal().code(name).name(name).typeFullName(typeFullName).closureBindingId(closureBindingId).order(0)
@@ -450,7 +426,7 @@ trait AstNodeBuilder { this: AstCreator =>
 
   protected def createBlockNode(node: BabelNodeInfo): NewBlock =
     NewBlock()
-      .typeFullName(Defines.ANY.label)
+      .typeFullName(Defines.ANY)
       .code(node.code)
       .lineNumber(node.lineNumber)
       .columnNumber(node.columnNumber)
@@ -474,7 +450,7 @@ trait AstNodeBuilder { this: AstCreator =>
         methodName,
         astParentType = astParentType,
         astParentFullName = astParentFullName
-      ).inheritsFromTypeFullName(List(Defines.ANY.label))
+      ).inheritsFromTypeFullName(List(Defines.ANY))
 
     // Problem for https://github.com/ShiftLeftSecurity/codescience/issues/3626 here.
     // As the type (thus, the signature) of the function node is unknown (i.e., ANY*)

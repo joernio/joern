@@ -1,12 +1,11 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-class GenericsTests extends JavaSrcCodeToCpgFixture {
+class GenericsTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |import java.util.function.Function;
       |
       |// Box
@@ -72,7 +71,7 @@ class GenericsTests extends JavaSrcCodeToCpgFixture {
       |
       |// inheritsFrom Box
       |public class Test extends Box<String> {}
-      |""".stripMargin
+      |""".stripMargin)
 
   "it should create the correct generic typeDecl name" in {
     cpg.typeDecl.nameExact("Box").l match {
@@ -110,21 +109,18 @@ class GenericsTests extends JavaSrcCodeToCpgFixture {
   }
 
   "it should erase generic types in parameters" in {
-    cpg.method.name("map").l match {
-      case method :: Nil =>
-        method.fullName shouldBe "Box.map:Box(java.util.function.Function)"
-        method.signature shouldBe "Box(java.util.function.Function)"
-    }
+    val List(method) = cpg.method.name("map").l
+    method.fullName shouldBe "Box.map:Box(java.util.function.Function)"
+    method.signature shouldBe "Box(java.util.function.Function)"
 
-    cpg.method.name("map").parameter.name("f").l match {
-      case param :: Nil => param.typeFullName shouldBe "java.util.function.Function"
-    }
+    val List(param) = cpg.method.name("map").parameter.name("f").l
+    param.typeFullName shouldBe "java.util.function.Function"
   }
 
   "it should create correct constructor calls" in {
-    cpg.method.name("map").call.nameExact("<init>").l match {
+    cpg.method.name("map").call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
       case const :: Nil =>
-        const.methodFullName shouldBe "Box.<init>:void()"
+        const.methodFullName shouldBe s"Box.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
         const.signature shouldBe "void()"
 
       case res => fail(s"Expected call to <init> but got $res")

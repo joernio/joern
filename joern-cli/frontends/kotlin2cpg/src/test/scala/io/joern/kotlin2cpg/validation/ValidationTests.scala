@@ -749,6 +749,7 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         .fullNameNot(".*<lambda>.*")
         .fullNameNot(".*<init>.*")
         .fullNameNot("<operator>.*")
+        .fullNameNot("<unresolvedNamespace>.*")
         .fullName(".*>.*")
         .fullName
         .l shouldBe List()
@@ -759,6 +760,7 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         .methodFullNameNot(".*<lambda>.*")
         .methodFullNameNot(".*<init>.*")
         .methodFullNameNot("<operator>.*")
+        .methodFullNameNot("<unresolvedNamespace>.*")
         .methodFullName(".*>.*")
         .methodFullName
         .l shouldBe List()
@@ -851,10 +853,9 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(bCtorCall) = cpg.call.methodFullName(".*BClass.*init.*").l
       bCtorCall.methodFullName shouldBe bCtor.fullName
 
-      val List(cCtor1, cCtor2)         = cpg.method.fullName(".*CClass.*init.*").l
-      val List(cCtorCall1, cCtorCall2) = cpg.call.methodFullName(".*CClass.*init.*").l
-      cCtorCall1.methodFullName shouldBe cCtor1.fullName
-      cCtorCall2.methodFullName shouldBe cCtor2.fullName
+      val ctorMethods = cpg.method.fullName(".*CClass.*init.*").toSet
+      val ctorCalls   = cpg.call.methodFullName(".*CClass.*init.*").toSet
+      ctorCalls.map(_.methodFullName).subsetOf(ctorMethods.map(_.fullName)) shouldBe true
     }
   }
 

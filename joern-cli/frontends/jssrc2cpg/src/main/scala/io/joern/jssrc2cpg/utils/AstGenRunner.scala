@@ -18,26 +18,14 @@ object AstGenRunner {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private val EXECUTABLE_NAME = if (Environment.IS_MAC) {
-    "astgen-macos"
-  } else if (Environment.IS_LINUX) {
-    "astgen-linux"
-  } else {
-    "astgen-win.exe"
-  }
-
-  private val EXECUTABLE_DIR: String = {
-    val dir      = AstGenRunner.getClass.getProtectionDomain.getCodeSource.getLocation.toString
-    val fixedDir = new java.io.File(dir.substring("file:".length, dir.indexOf("jssrc2cpg"))).toString
-    Paths.get(fixedDir, "jssrc2cpg/bin/astgen").toAbsolutePath.toString
-  }
+  private val LINE_LENGTH_THRESHOLD: Int = 10000
 
   private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
 
-  private val MINIFIED_PATH_REGEX: Regex = ".*([.-]min\\.js|bundle\\.js)".r
+  private val MINIFIED_PATH_REGEX: Regex = ".*([.-]min\\..*js|bundle\\.js)".r
 
-  private val IGNORED_FOLDERS_REGEX: Seq[Regex] =
-    List("__.*__".r, "\\..*".r, "jest-cache".r, "codemods".r, "e2e".r, "e2e-beta".r, "eslint-rules".r, "flow-typed".r)
+  private val IGNORED_TESTS_REGEX: Seq[Regex] =
+    List(".*[.-]spec\\.js".r, ".*[.-]mock\\.js".r, ".*[.-]e2e\\.js".r, ".*[.-]test\\.js".r)
 
   private val IGNORED_FILES_REGEX: Seq[Regex] = List(
     ".*jest\\.config.*".r,
@@ -46,7 +34,7 @@ object AstGenRunner {
     ".*babel\\.config\\.js".r,
     ".*chunk-vendors.*\\.js".r, // commonly found in webpack / vue.js projects
     ".*app~.*\\.js".r,          // commonly found in webpack / vue.js projects
-    ".*\\.chunk\\.js".r,        // see: https://github.com/ShiftLeftSecurity/product/issues/8197
+    ".*\\.chunk\\.js".r,
     ".*\\.babelrc.*".r,
     ".*\\.eslint.*".r,
     ".*\\.tslint.*".r,
@@ -56,6 +44,30 @@ object AstGenRunner {
     ".*\\.cjs\\.js".r,
     ".*eslint-local-rules\\.js".r
   )
+
+  private val EXECUTABLE_NAME = if (Environment.IS_MAC) {
+    "astgen-macos"
+  } else if (Environment.IS_LINUX) {
+    "astgen-linux"
+  } else {
+    "astgen-win.exe"
+  }
+
+  private val EXECUTABLE_DIR: String = {
+    val dir        = AstGenRunner.getClass.getProtectionDomain.getCodeSource.getLocation.toString
+    val indexOfLib = dir.lastIndexOf("lib")
+    val fixedDir = if (indexOfLib != -1) {
+      new java.io.File(dir.substring("file:".length, indexOfLib)).toString
+    } else {
+      val indexOfTarget = dir.lastIndexOf("target")
+      if (indexOfTarget != -1) {
+        new java.io.File(dir.substring("file:".length, indexOfTarget)).toString
+      } else {
+        "."
+      }
+    }
+    Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
+  }
 
   case class AstGenRunnerResult(
     parsedFiles: List[(String, String)] = List.empty,
@@ -91,12 +103,25 @@ object AstGenRunner {
     }
   }
 
+  def isMinifiedFile(filePath: String): Boolean = filePath match {
+    case p if MINIFIED_PATH_REGEX.matches(p) => true
+    case p if File(p).exists && p.endsWith(".js") =>
+      val lines             = IOUtils.readLinesInFile(File(filePath).path)
+      val linesOfCode       = lines.size
+      val longestLineLength = if (lines.isEmpty) 0 else lines.map(_.length).max
+      if (longestLineLength >= LINE_LENGTH_THRESHOLD && linesOfCode <= 50) {
+        logger.debug(s"'$filePath' seems to be a minified file (contains a line with length $longestLineLength)")
+        true
+      } else false
+    case _ => false
+  }
+
   private def ignoredByDefault(filePath: String, config: Config, out: File): Boolean = {
-    val resolvedFilePath       = filePath.stripSuffix(".json").replace(out.pathAsString, config.inputPath)
-    lazy val isInIgnoredFolder = IGNORED_FOLDERS_REGEX.exists(_.matches(resolvedFilePath))
-    lazy val isIgnoredFile     = IGNORED_FILES_REGEX.exists(_.matches(resolvedFilePath))
-    lazy val isMinifiedFile    = MINIFIED_PATH_REGEX.matches(resolvedFilePath)
-    if (isInIgnoredFolder || isIgnoredFile || isMinifiedFile) {
+    val resolvedFilePath   = filePath.stripSuffix(".json").replace(out.pathAsString, config.inputPath)
+    lazy val isIgnored     = IGNORED_FILES_REGEX.exists(_.matches(resolvedFilePath))
+    lazy val isIgnoredTest = IGNORED_TESTS_REGEX.exists(_.matches(resolvedFilePath))
+    lazy val isMinified    = isMinifiedFile(resolvedFilePath)
+    if (isIgnored || isIgnoredTest || isMinified) {
       logger.debug(s"'$resolvedFilePath' ignored by default")
       true
     } else {

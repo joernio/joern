@@ -5,17 +5,15 @@ import io.joern.console.{CodeSnippet, Query, QueryBundle}
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.joern.console.scan._
 import io.shiftleft.utils.ProjectRoot
 
 class KotlinQueryTestSuite extends KotlinCode2CpgFixture(withOssDataflow = true) {
-  var semanticsFilename = ProjectRoot.relativise("joern-cli/src/main/resources/default.semantics")
-  val argumentProvider  = new QDBArgumentProvider(3)
+  val argumentProvider = new QDBArgumentProvider(3)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    semanticsFilename = argumentProvider.testSemanticsFilename
   }
 
   def queryBundle: QueryBundle = QueryUtil.EmptyBundle
@@ -45,6 +43,10 @@ class KotlinQueryTestSuite extends KotlinCode2CpgFixture(withOssDataflow = true)
 
   def findMatchingCalls(cpg: Cpg, q: Query): List[String] = {
     q(cpg).flatMap(_.evidence).collect { case c: Call => c.code }
+  }
+
+  def findMatchingMethods(cpg: Cpg, q: Query): List[String] = {
+    q(cpg).flatMap(_.evidence).collect { case c: Method => c.name }
   }
 
   protected val cpg: TestCpg = code(concatQueryCodeExamples)
