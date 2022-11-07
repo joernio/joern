@@ -6,9 +6,7 @@ import io.joern.console.scan._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.iterableToTraversal
 
-class UseAfterFreeReturnTests extends CQueryTestSuite {
-
-  override def queryBundle = UseAfterFree
+class UseAfterFreeReturnTests extends CQueryTestSuite(UseAfterFree) {
 
   "should flag `bad` function only" in {
     val x = queryBundle.freeReturnedValue()

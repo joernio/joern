@@ -2,9 +2,7 @@ package io.joern.scanners.java
 
 import io.joern.suites.JavaQueryTestSuite
 
-class CryptographyMisuseTests extends JavaQueryTestSuite {
-
-  override def queryBundle = CryptographyMisuse
+class CryptographyMisuseTests extends JavaQueryTestSuite(CryptographyMisuse) {
 
   "the `unsafeHashAlgo` query" when {
     "find the use of the MD5 hash algorithm" in {

@@ -5,9 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.semanticcpg.language._
 import io.joern.console.scan._
 
-class IntegerTruncationsTests extends CQueryTestSuite {
-
-  override def queryBundle = IntegerTruncations
+class IntegerTruncationsTests extends CQueryTestSuite(IntegerTruncations) {
 
   "find truncation in assignment of `strlen` to `int`" in {
     queryBundle.strlenAssignmentTruncations()(cpg) match {

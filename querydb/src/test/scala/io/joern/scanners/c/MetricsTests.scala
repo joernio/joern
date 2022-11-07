@@ -4,9 +4,7 @@ import io.joern.suites.CQueryTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.console.scan._
 
-class MetricsTests extends CQueryTestSuite {
-
-  override def queryBundle = Metrics
+class MetricsTests extends CQueryTestSuite(Metrics) {
 
   "find functions with too many parameters" in {
     queryBundle.tooManyParameters()(cpg).map(_.evidence) match {
