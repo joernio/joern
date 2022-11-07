@@ -206,7 +206,6 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.lineNumber shouldBe Some(6)
       callNode.methodFullName shouldBe "foo.py:<module>.foo_func"
-//      callNode.callee.fullName should "foo.py:<module>.foo_func"
     }
 
     "test call node properties for normal import from module deeper on a module path" in {
@@ -216,7 +215,6 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.lineNumber shouldBe Some(7)
       callNode.methodFullName shouldBe "foo/bar/__init__.py:<module>.bar_func"
-//      callNode.callee.fullName should "foo/bar/__init__.py:<module>.bar_func"
     }
 
     "test call node properties for aliased import from module on root path" in {
@@ -226,7 +224,6 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.lineNumber shouldBe Some(8)
       callNode.methodFullName shouldBe "foo.py:<module>.faz"
-//      callNode.callee.fullName should "foo.py:<module>.faz"
     }
   }
 
