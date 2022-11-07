@@ -772,8 +772,8 @@ object Domain {
     val constantName = json("name") match {
       case str: Str => Some(PhpNameExpr(str.value, PhpAttributes(json)))
       case obj: Obj if obj("nodeType").strOpt.contains("Expr_Error") => None
-      case obj: Obj => Some(readName(obj))
-      case other    => throw new NotImplementedError(s"unexpected constant name '$other' of type ${other.getClass}")
+      case obj: Obj                                                  => Some(readName(obj))
+      case other => throw new NotImplementedError(s"unexpected constant name '$other' of type ${other.getClass}")
     }
 
     PhpClassConstFetchExpr(className, constantName, PhpAttributes(json))
@@ -865,7 +865,7 @@ object Domain {
         case ujson.Null     => Nil
         case arr: ujson.Arr => arr.arr.map(readName).toList
         case obj: ujson.Obj => readName(obj) :: Nil
-        case other          => throw new NotImplementedError(s"unexpected 'extends' entry '$other' of type ${other.getClass}")
+        case other => throw new NotImplementedError(s"unexpected 'extends' entry '$other' of type ${other.getClass}")
       }
       .getOrElse(Nil)
   }
