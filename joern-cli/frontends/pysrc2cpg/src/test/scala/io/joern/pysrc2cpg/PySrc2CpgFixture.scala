@@ -8,6 +8,7 @@ import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.frontend.{PythonDynamicCallLinker, PythonStaticCallLinker}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 trait PythonFrontend extends LanguageFrontend {
@@ -46,6 +47,7 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
 class PySrc2CpgFixture(withOssDataflow: Boolean = false)
     extends Code2CpgFixture(() => new PySrcTestCpg().withOssDataflow(withOssDataflow)) {
 
-  implicit val context: EngineContext = EngineContext()
+  implicit val resolver: ICallResolver = NoResolve
+  implicit val context: EngineContext  = EngineContext()
 
 }

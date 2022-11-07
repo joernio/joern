@@ -25,27 +25,31 @@ class PythonStaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
       .collect { case call: Call if !call.name.equals("import") => call }
       .foreach(c =>
         methodsInScope.get(c.name) match {
-          case Some(procInScope: ProcInScope) =>
-            builder.setNodeProperty(c, PropertyNames.METHOD_FULL_NAME, procInScope.fullName)
-            builder.setNodeProperty(c, PropertyNames.DISPATCH_TYPE, DispatchTypes.STATIC_DISPATCH.name())
-            linkCalleeIfPresent(c, procInScope.fullName, builder)
-          case None => // "out of scope" call
+          case Some(procInScope: ProcInScope) => linkCalleeIfPresent(c, procInScope, builder)
+          case None                           => // "out of scope" call
         }
       )
   }
 
   /** If we can find the method that this name belongs to, then link the call edge.
     * @param call
-    *   The source call node.
-    * @param methodFullName
-    *   the target method full name.
+    *   the source call node.
+    * @param procInScope
+    *   scope information about the callee.
     * @param builder
     *   the diff graph builder.
     */
-  def linkCalleeIfPresent(call: Call, methodFullName: String, builder: DiffGraphBuilder): Unit = {
-    cpg.method.fullNameExact(methodFullName).headOption match {
-      case Some(callee) => builder.addEdge(call, callee, EdgeTypes.CALL)
-      case None         => // no method found
+  def linkCalleeIfPresent(call: Call, procInScope: ProcInScope, builder: DiffGraphBuilder): Unit = {
+    (cpg.method.fullNameExact(procInScope.fullNameAsPyFile).toSeq ++
+      cpg.method.fullNameExact(procInScope.fullNameAsInit).toSeq).headOption match {
+      // We give preference to the "as Py" version as it is a more precisely qualified name and what happens to be
+      // chosen over the other in local experiments
+      case Some(callee) =>
+        builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, callee.fullName)
+        builder.setNodeProperty(call, PropertyNames.DISPATCH_TYPE, DispatchTypes.STATIC_DISPATCH.name())
+        builder.addEdge(call, callee, EdgeTypes.CALL)
+      case None => // no existing method found, but we have enough context to confirm that it is static
+        builder.setNodeProperty(call, PropertyNames.DISPATCH_TYPE, DispatchTypes.STATIC_DISPATCH.name())
     }
   }
 
@@ -62,12 +66,12 @@ class PythonStaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     val maybeAlias  = if (astChildren.size >= 4) Some(astChildren(3).code) else None
     if (module.isEmpty) {
       if (func.contains(".")) {
-        // Case 1: We have imported a function using a qualified path, e.g., import foo.bar
+        // Case 1: We have imported a function using a qualified path, e.g., import foo.bar => (bar.py or bar/__init.py)
         val splitFunc = func.split("\\.")
         val name      = splitFunc.tail.mkString(".")
         ProcInScope(name, s"${splitFunc(0)}.py:<module>.$name")
       } else {
-        // Case 2: We have imported a module, e.g., import foo
+        // Case 2: We have imported a module, e.g., import foo => (foo.py or foo/__init.py)
         ProcInScope(func, s"$func.py:<module>")
       }
     } else {
@@ -101,9 +105,18 @@ class PythonStaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
   /** Defines how a procedure is available to be called in the current scope.
     * @param callingName
     *   how this procedure is to be called, i.e., alias name, name with path, etc.
-    * @param fullName
-    *   the full name to where this method is defined, i.e., the defining Method node's full name.
+    * @param fullNameAsPyFile
+    *   the full name to where this method is defined where it's assumed to be defined under a named Python file.
     */
-  case class ProcInScope(callingName: String, fullName: String)
+  case class ProcInScope(callingName: String, fullNameAsPyFile: String) {
+
+    /** @return
+      *   the he full name of the procedure where it's assumed that it is defined within an <code>__init.py__</code> of
+      *   the module.
+      */
+    def fullNameAsInit: String = fullNameAsPyFile.replace(".py", "/__init__.py")
+
+    override def toString: String = s"Either($fullNameAsPyFile or $fullNameAsInit)"
+  }
 
 }
