@@ -8,7 +8,8 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ConfigFile
 import io.shiftleft.semanticcpg.language._
 
-class AndroidQueryTestSuite[QB <: QueryBundle](val queryBundle: QB) extends KotlinCode2CpgFixture(withOssDataflow = true, withDefaultJars = true) {
+class AndroidQueryTestSuite[QB <: QueryBundle](val queryBundle: QB)
+    extends KotlinCode2CpgFixture(withOssDataflow = true, withDefaultJars = true) {
 
   val argumentProvider = new QDBArgumentProvider(3)
 

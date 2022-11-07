@@ -9,7 +9,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.joern.console.scan._
 import io.shiftleft.utils.ProjectRoot
 
-class KotlinQueryTestSuite[QB <: QueryBundle](val queryBundle: QB) extends KotlinCode2CpgFixture(withOssDataflow = true) {
+class KotlinQueryTestSuite[QB <: QueryBundle](val queryBundle: QB)
+    extends KotlinCode2CpgFixture(withOssDataflow = true) {
   val argumentProvider = new QDBArgumentProvider(3)
 
   override def beforeAll(): Unit = {
