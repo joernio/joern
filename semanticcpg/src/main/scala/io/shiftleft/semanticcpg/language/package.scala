@@ -261,7 +261,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     new ExpressionTraversal[A](iterableToTraversal(a))
 }
 
-trait LowPrioImplicits extends overflowdb.traversal.Implicits {
+trait LowPrioImplicits extends overflowdb.traversal.Implicits { // TODO move to generated `NodeTraversalImplicits`
   implicit def singleToCfgNodeTraversal[A <: CfgNode](a: A): CfgNodeTraversal[A] =
     new CfgNodeTraversal[A](Traversal.fromSingle(a))
   implicit def iterOnceToCfgNodeTraversal[A <: CfgNode](a: IterableOnce[A]): CfgNodeTraversal[A] =
