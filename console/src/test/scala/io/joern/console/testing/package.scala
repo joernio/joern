@@ -15,7 +15,7 @@ package object testing {
       val cpgPath = project.get.path.resolve("cpg.bin")
       File.usingTemporaryFile("console", suffix = "cpg.bin") { tmpCpg =>
         cp(cpgPath, tmpCpg)
-        Try(console.workspace.reset())
+        Try(console.workspace.reset)
         fun(tmpCpg)
       }
     }
