@@ -5,6 +5,9 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.NodeOps
 
+import java.io.File
+import scala.Seq
+
 class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "call on identifier" should {
@@ -196,7 +199,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
           |def bar_func(a, b):
           | return a - b
           |""".stripMargin,
-      "foo/bar/__init__.py"
+      Seq("foo", "bar", "__init__.py").mkString(File.separator)
     )
 
     "test call node properties for normal import from module on root path" in {
@@ -214,7 +217,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.lineNumber shouldBe Some(7)
-      callNode.methodFullName shouldBe "foo/bar/__init__.py:<module>.bar_func"
+      callNode.methodFullName shouldBe Seq("foo", "bar", "__init__.py:<module>.bar_func").mkString(File.separator)
     }
 
     "test call node properties for aliased import from module on root path" in {

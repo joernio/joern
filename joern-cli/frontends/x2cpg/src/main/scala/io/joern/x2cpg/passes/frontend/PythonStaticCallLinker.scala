@@ -7,6 +7,8 @@ import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
+import java.io.File
+
 /** Attempts to set the <code>methodFullName</code> and <code>dispatchType</code> properties of "static" calls.
   * @param cpg
   *   the target code property graph.
@@ -78,9 +80,9 @@ class PythonStaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
       maybeAlias match {
         // TODO: This assumes importing from modules and never importing nested method
         // Case 3:  We have imported a function from a module using an alias, e.g. import bar from foo as faz
-        case Some(alias) => ProcInScope(alias, s"${module.replaceAll("\\.", "/")}.py:<module>.$func")
+        case Some(alias) => ProcInScope(alias, s"${module.replaceAll("\\.", File.separator)}.py:<module>.$func")
         // Case 4: We have imported a function from a module, e.g. import bar from foo
-        case None => ProcInScope(func, s"${module.replaceAll("\\.", "/")}.py:<module>.$func")
+        case None => ProcInScope(func, s"${module.replaceAll("\\.", File.separator)}.py:<module>.$func")
       }
     }
   }
@@ -114,7 +116,7 @@ class PythonStaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
       *   the he full name of the procedure where it's assumed that it is defined within an <code>__init.py__</code> of
       *   the module.
       */
-    def fullNameAsInit: String = fullNameAsPyFile.replace(".py", "/__init__.py")
+    def fullNameAsInit: String = fullNameAsPyFile.replace(".py", s"${File.separator}__init__.py")
 
     override def toString: String = s"Either($fullNameAsPyFile or $fullNameAsInit)"
   }
