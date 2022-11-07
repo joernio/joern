@@ -163,7 +163,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val callNode = cpg.call.codeExact("func(a, b)").head
       callNode.name shouldBe "func"
       callNode.signature shouldBe ""
-      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.lineNumber shouldBe Some(5)
       callNode.methodFullName shouldBe "test.py:<module>.func"
     }
