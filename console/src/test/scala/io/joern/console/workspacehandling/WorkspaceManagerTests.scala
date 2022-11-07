@@ -54,7 +54,7 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
         WorkspaceTests.createFakeProject(tmpDir, "1")
         val manager = new WorkspaceManager(tmpDir.toString)
         manager.numberOfProjects shouldBe 1
-        manager.reset()
+        manager.reset
         manager.numberOfProjects shouldBe 0
       }
     }
