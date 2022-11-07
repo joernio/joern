@@ -187,7 +187,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val callNode = cpg.call.codeExact("foo_func(a, b)").head
       callNode.name shouldBe "foo_func"
       callNode.signature shouldBe ""
-      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.lineNumber shouldBe Some(6)
       callNode.methodFullName shouldBe "foo.py:<module>.foo_func"
     }
@@ -196,16 +196,16 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val callNode = cpg.call.codeExact("bar_func(a, b)").head
       callNode.name shouldBe "bar_func"
       callNode.signature shouldBe ""
-      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.lineNumber shouldBe Some(7)
-      callNode.methodFullName shouldBe "foo.py:bar.<module>.bar_func"
+      callNode.methodFullName shouldBe "foo/bar.py:<module>.bar_func"
     }
 
     "test call node properties for aliased import from module on root path" in {
       val callNode = cpg.call.codeExact("baz(a, b)").head
       callNode.name shouldBe "baz"
       callNode.signature shouldBe ""
-      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.lineNumber shouldBe Some(8)
       callNode.methodFullName shouldBe "foo.py:<module>.faz"
     }
