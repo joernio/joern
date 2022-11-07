@@ -3,7 +3,6 @@ package io.joern.pysrc2cpg
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewIdentifier, NewLocal, NewMethod, NewNode}
 import io.joern.pysrc2cpg.memop._
-import io.joern.pythonparser.ast.Alias
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable

@@ -3,9 +3,8 @@ package io.joern.pysrc2cpg
 import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
 import io.joern.pythonparser.ast
-import io.joern.pythonparser.ast.Alias
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -1168,8 +1167,6 @@ class PythonAstVisitor(
       moduleName = moduleName.appended('.')
     }
     moduleName += importFrom.module.getOrElse("")
-    // Save procedures imported explicitly so we know where they are from if they are not invoked off of a path or
-    // receiver
     createTransformedImport(moduleName, importFrom.names, lineAndColOf(importFrom))
   }
 
@@ -1337,7 +1334,6 @@ class PythonAstVisitor(
     val code     = codeOf(bodyNode) + " if " + codeOf(testNode) + " else " + codeOf(orElseNode)
     val callNode = nodeBuilder.callNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, lineAndColOf(ifExp))
 
-    // testNode is first argument to match semantics of Operators.conditional.
     // testNode is first argument to match semantics of Operators.conditional.
     addAstChildrenAsArguments(callNode, 1, testNode, bodyNode, orElseNode)
 
@@ -1678,7 +1674,6 @@ class PythonAstVisitor(
           case ast.Name(id, _) => id
           case _               => ""
         }
-
         createCall(receiverNode, name, lineAndColOf(call), argumentNodes, keywordArgNodes)
     }
   }
@@ -1910,7 +1905,6 @@ class PythonAstVisitor(
       relFileName + ":" + name
     }
   }
-
 }
 
 object PythonAstVisitor {
