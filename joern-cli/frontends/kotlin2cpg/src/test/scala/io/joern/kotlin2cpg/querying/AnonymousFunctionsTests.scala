@@ -7,7 +7,7 @@ import org.scalatest.Ignore
 @Ignore
 class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with anonymous function as argument" should {
     val cpg = code("""

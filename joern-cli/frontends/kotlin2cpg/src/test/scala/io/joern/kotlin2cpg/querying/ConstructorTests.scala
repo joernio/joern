@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language._
 
 class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for a class declaration with an implicit constructor" should {
     val cpg = code("""
