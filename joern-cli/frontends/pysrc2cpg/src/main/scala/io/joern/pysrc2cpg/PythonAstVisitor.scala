@@ -1170,7 +1170,6 @@ class PythonAstVisitor(
     moduleName += importFrom.module.getOrElse("")
     // Save procedures imported explicitly so we know where they are from if they are not invoked off of a path or
     // receiver
-    importFrom.names.foreach(alias => contextStack.pushImportedProcedure(alias, moduleName))
     createTransformedImport(moduleName, importFrom.names, lineAndColOf(importFrom))
   }
 
@@ -1680,20 +1679,7 @@ class PythonAstVisitor(
           case _               => ""
         }
 
-        val callNode            = createCall(receiverNode, name, lineAndColOf(call), argumentNodes, keywordArgNodes)
-        val maybeLocallyDefined = contextStack.getLocallyDefinedProcedure(name)
-        val maybeImported       = contextStack.getImportedProcedure(name)
-        if (maybeLocallyDefined.isDefined && maybeLocallyDefined.get.isInstanceOf[NewMethod]) {
-          // If the call is to a procedure that is locally defined and has a method parent we can use our local context
-          // to generate the full name
-          callNode.methodFullName(s"${calculateFullNameFromContext(name)}")
-        } else if (maybeImported.isDefined) {
-          // If the call is to an imported procedure then we will use the alias information (if present) to create the
-          // method full name
-          callNode.methodFullName(maybeImported.get)
-        } else {
-          callNode
-        }
+        createCall(receiverNode, name, lineAndColOf(call), argumentNodes, keywordArgNodes)
     }
   }
 

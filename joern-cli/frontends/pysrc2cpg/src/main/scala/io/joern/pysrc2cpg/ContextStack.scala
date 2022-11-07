@@ -20,8 +20,6 @@ class ContextStack {
     val order: AutoIncIndex
     val variables: mutable.Map[String, nodes.NewNode]
     var lambdaCounter: Int
-    val locallyDefinedProcedures: mutable.Map[String, NewNode] = mutable.HashMap.empty
-    val importedProcedures: mutable.Map[String, String]        = mutable.HashMap.empty
   }
 
   private class MethodContext(
@@ -96,7 +94,6 @@ class ContextStack {
     if (moduleMethodContext.isEmpty) {
       moduleMethodContext = Some(methodContext)
     }
-    pushLocallyDefinedProcedure(name, astParent)
     push(methodContext)
   }
 
@@ -107,61 +104,6 @@ class ContextStack {
   def pushSpecialContext(): Unit = {
     val methodContext = findEnclosingMethodContext(stack)
     push(new SpecialBlockContext(methodContext.astParent, methodContext.order))
-  }
-
-  def pushLocallyDefinedProcedure(name: String, astParent: NewNode): Unit = {
-    stack.headOption match {
-      case Some(head) => head.locallyDefinedProcedures.put(name, astParent)
-      case None       =>
-    }
-  }
-
-  def pushImportedProcedure(alias: Alias, sourceModule: String): Unit = {
-    def calculateFullNameForImport(alias: Alias, modulePath: String): String = {
-      val splitModule = modulePath.split("\\.")
-      val moduleTail  = splitModule.tail
-      s"${splitModule.head}.py:${splitModule.tail.mkString(".")}${if (moduleTail.isEmpty) "" else "."}<module>.${alias.name}"
-    }
-
-    stack.headOption match {
-      case Some(head) if alias.asName.isDefined =>
-        head.importedProcedures.put(alias.asName.get, calculateFullNameForImport(alias, sourceModule))
-      case Some(head) if alias.asName.isEmpty =>
-        head.importedProcedures.put(alias.name, calculateFullNameForImport(alias, sourceModule))
-      case _ =>
-    }
-  }
-
-  /** Determines if the given method name refers to a locally defined procedure and will return the AST parent of that
-    * procedure if true.
-    *
-    * TODO: The AST parent can help resolve shadowed names but for now they are being overwritten because a map is used
-    *
-    * @param name
-    *   the name of the procedure.
-    * @return
-    *   the AST parent of the method if it is locally defined, empty if otherwise.
-    */
-  def getLocallyDefinedProcedure(name: String): Option[NewNode] = {
-    stack.headOption match {
-      case Some(head) => head.locallyDefinedProcedures.get(name)
-      case None       => None
-    }
-  }
-
-  /** Determines if the given method name refers to an imported procedure and will return the AST parent of that method
-    * if true.
-    *
-    * @param name
-    *   the name or alias of the procedure.
-    * @return
-    *   the full name of the method (using the defined name).
-    */
-  def getImportedProcedure(name: String): Option[String] = {
-    stack.headOption match {
-      case Some(head) => head.importedProcedures.get(name)
-      case None       => None
-    }
   }
 
   def pop(): Unit = {
