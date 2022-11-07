@@ -5,7 +5,6 @@ enablePlugins(JavaAppPackaging)
 val ScoptVersion          = "4.0.1"
 val CaskVersion           = "0.8.3"
 val CirceVersion          = "0.14.3"
-val AmmoniteVersion       = "2.5.4-14-dc4c47bc"
 val ZeroturnaroundVersion = "1.15"
 
 dependsOn(
