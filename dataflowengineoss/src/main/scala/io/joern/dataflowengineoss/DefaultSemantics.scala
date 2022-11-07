@@ -1,71 +1,130 @@
 package io.joern.dataflowengineoss
 
+import io.joern.dataflowengineoss.DefaultSemantics.F
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.Operators
 
 object DefaultSemantics {
 
+  /** @return
+    *   a default set of common external procedure calls for all languages.
+    */
   def apply(): Semantics = {
-    val list = List(
-      F(Operators.addition, List((1, -1), (2, -1))),
-      F(Operators.addressOf, List((1, -1))),
-      F(Operators.assignment, List((2, 1))),
-      F(Operators.assignmentAnd, List((2, 1), (1, 1))),
-      F(Operators.assignmentArithmeticShiftRight, List((2, 1), (1, 1))),
-      F(Operators.assignmentDivision, List((2, 1), (1, 1))),
-      F(Operators.assignmentExponentiation, List((2, 1), (1, 1))),
-      F(Operators.assignmentLogicalShiftRight, List((2, 1), (1, 1))),
-      F(Operators.assignmentMinus, List((2, 1), (1, 1))),
-      F(Operators.assignmentModulo, List((2, 1), (1, 1))),
-      F(Operators.assignmentMultiplication, List((2, 1), (1, 1))),
-      F(Operators.assignmentOr, List((2, 1), (1, 1))),
-      F(Operators.assignmentPlus, List((2, 1), (1, 1))),
-      F(Operators.assignmentShiftLeft, List((2, 1), (1, 1))),
-      F(Operators.assignmentXor, List((2, 1), (1, 1))),
-      F(Operators.cast, List((1, -1), (2, -1))),
-      F(Operators.computedMemberAccess, List((1, -1))),
-      F(Operators.conditional, List((2, -1), (3, -1))),
-      F(Operators.elvis, List((1, -1), (2, -1))),
-      F(Operators.notNullAssert, List((1, -1))),
-      F(Operators.fieldAccess, List((1, -1))),
-      F(Operators.getElementPtr, List((1, -1))),
-
-      // TODO does this still exist?
-      F("<operator>.incBy", List((1, 1), (2, 1), (3, 1), (4, 1))),
-      F(Operators.indexAccess, List((1, -1))),
-      F(Operators.indirectComputedMemberAccess, List((1, -1))),
-      F(Operators.indirectFieldAccess, List((1, -1))),
-      F(Operators.indirectIndexAccess, List((1, -1), (2, 1))),
-      F(Operators.indirectMemberAccess, List((1, -1))),
-      F(Operators.indirection, List((1, -1))),
-      F(Operators.memberAccess, List((1, -1))),
-      F(Operators.pointerShift, List((1, -1))),
-      F(Operators.postDecrement, List((1, 1))),
-      F(Operators.postIncrement, List((1, 1))),
-      F(Operators.preDecrement, List((1, 1))),
-      F(Operators.preIncrement, List((1, 1))),
-      F(Operators.sizeOf, List()),
-      F("free", List((1, 1))),
-      F("scanf", List((2, 2))),
-      F("strcmp", List((1, -1), (2, -1))),
-      F("java.io.PrintWriter.println:void(java.lang.String)", List((1, -1))),
-      F("java.io.PrintStream.println:void(java.lang.String)", List((1, -1))),
-
-      //  some of those operators have duplicate mappings due to a typo
-      //  - see https://github.com/ShiftLeftSecurity/codepropertygraph/pull/1630
-
-      F("<operators>.assignmentExponentiation", List((2, 1), (1, 1))),
-      F("<operators>.assignmentModulo", List((2, 1), (1, 1))),
-      F("<operators>.assignmentShiftLeft", List((2, 1), (1, 1))),
-      F("<operators>.assignmentLogicalShiftRight", List((2, 1), (1, 1))),
-      F("<operators>.assignmentArithmeticShiftRight", List((2, 1), (1, 1))),
-      F("<operators>.assignmentAnd", List((2, 1), (1, 1))),
-      F("<operators>.assignmentOr", List((2, 1), (1, 1))),
-      F("<operators>.assignmentXor", List((2, 1), (1, 1)))
-    )
+    val list = operatorFlows ++ cFlows ++ javaFlows
     Semantics.fromList(list)
   }
 
   private def F = FlowSemantic
+
+  def operatorFlows: List[FlowSemantic] = List(
+    F(Operators.addition, List((1, -1), (2, -1))),
+    F(Operators.addressOf, List((1, -1))),
+    F(Operators.assignment, List((2, 1))),
+    F(Operators.assignmentAnd, List((2, 1), (1, 1))),
+    F(Operators.assignmentArithmeticShiftRight, List((2, 1), (1, 1))),
+    F(Operators.assignmentDivision, List((2, 1), (1, 1))),
+    F(Operators.assignmentExponentiation, List((2, 1), (1, 1))),
+    F(Operators.assignmentLogicalShiftRight, List((2, 1), (1, 1))),
+    F(Operators.assignmentMinus, List((2, 1), (1, 1))),
+    F(Operators.assignmentModulo, List((2, 1), (1, 1))),
+    F(Operators.assignmentMultiplication, List((2, 1), (1, 1))),
+    F(Operators.assignmentOr, List((2, 1), (1, 1))),
+    F(Operators.assignmentPlus, List((2, 1), (1, 1))),
+    F(Operators.assignmentShiftLeft, List((2, 1), (1, 1))),
+    F(Operators.assignmentXor, List((2, 1), (1, 1))),
+    F(Operators.cast, List((1, -1), (2, -1))),
+    F(Operators.computedMemberAccess, List((1, -1))),
+    F(Operators.conditional, List((2, -1), (3, -1))),
+    F(Operators.elvis, List((1, -1), (2, -1))),
+    F(Operators.notNullAssert, List((1, -1))),
+    F(Operators.fieldAccess, List((1, -1))),
+    F(Operators.getElementPtr, List((1, -1))),
+
+    // TODO does this still exist?
+    F("<operator>.incBy", List((1, 1), (2, 1), (3, 1), (4, 1))),
+    F(Operators.indexAccess, List((1, -1))),
+    F(Operators.indirectComputedMemberAccess, List((1, -1))),
+    F(Operators.indirectFieldAccess, List((1, -1))),
+    F(Operators.indirectIndexAccess, List((1, -1), (2, 1))),
+    F(Operators.indirectMemberAccess, List((1, -1))),
+    F(Operators.indirection, List((1, -1))),
+    F(Operators.memberAccess, List((1, -1))),
+    F(Operators.pointerShift, List((1, -1))),
+    F(Operators.postDecrement, List((1, 1))),
+    F(Operators.postIncrement, List((1, 1))),
+    F(Operators.preDecrement, List((1, 1))),
+    F(Operators.preIncrement, List((1, 1))),
+    F(Operators.sizeOf, List()),
+
+    //  some of those operators have duplicate mappings due to a typo
+    //  - see https://github.com/ShiftLeftSecurity/codepropertygraph/pull/1630
+
+    F("<operators>.assignmentExponentiation", List((2, 1), (1, 1))),
+    F("<operators>.assignmentModulo", List((2, 1), (1, 1))),
+    F("<operators>.assignmentShiftLeft", List((2, 1), (1, 1))),
+    F("<operators>.assignmentLogicalShiftRight", List((2, 1), (1, 1))),
+    F("<operators>.assignmentArithmeticShiftRight", List((2, 1), (1, 1))),
+    F("<operators>.assignmentAnd", List((2, 1), (1, 1))),
+    F("<operators>.assignmentOr", List((2, 1), (1, 1))),
+    F("<operators>.assignmentXor", List((2, 1), (1, 1)))
+  )
+
+  /** Semantic summaries for common external C/C++ calls.
+    *
+    * @see
+    *   <a href="https://www.ibm.com/docs/en/i/7.3?topic=extensions-standard-c-library-functions-table-by-name">Standard
+    *   C Library Functions</a>
+    */
+  def cFlows: List[FlowSemantic] = List(
+    F("abs", List((1, -1))),
+    F("abort", List()),
+    F("asctime", List((1, -1))),
+    F("asctime_r", List((1, -1))),
+    F("atof", List((1, -1))),
+    F("atoi", List((1, -1))),
+    F("atol", List((1, -1))),
+    F("calloc", List((1, -1), (2, -1))),
+    F("ceil", List((1, 1))),
+    F("clock", List()),
+    F("ctime", List((1, -1))),
+    F("ctime64", List((1, -1))),
+    F("ctime_r", List((1, -1))),
+    F("ctime64_r", List((1, -1))),
+    F("difftime", List((1, -1), (2, -1))),
+    F("difftime64", List((1, -1), (2, -1))),
+    F("div", List((1, -1), (2, -1))),
+    F("exit", List((1, 1))),
+    F("exp", List((1, -1))),
+    F("fabs", List((1, -1))),
+    F("fclose", List((1, 1), (1, -1))),
+    F("fdopen", List((1, -1), (2, -1))),
+    F("feof", List((1, 1), (1, -1))),
+    F("ferror", List((1, 1), (1, -1))),
+    F("fflush", List((1, 1), (1, -1))),
+    F("fgetc", List((1, 1), (1, -1))),
+    F("fwrite", List((1, 1), (1, -1), (2, -1), (3, -1), (4, -1))),
+    F("free", List((1, 1))),
+    F("getc", List((1, 1))),
+    F("scanf", List((2, 2))),
+    F("strcmp", List((1, -1), (2, -1))),
+    F("strlen", List((1, 1), (1, -1))),
+    F("strncpy", List((1, -1), (2, -1))),
+    F("strncat", List((1, -1), (2, -1))),
+  )
+
+  /** Semantic summaries for common external Java calls.
+    */
+  def javaFlows: List[FlowSemantic] = List(
+    F("java.lang.String.split:java.lang.String[](java.lang.String)", List((1, -1))),
+    F("java.io.PrintWriter.println:void(java.lang.String)", List((1, -1))),
+    F("java.io.PrintStream.println:void(java.lang.String)", List((1, -1))),
+    F("android.text.TextUtils.isEmpty:boolean(java.lang.String)", List((1, -1))),
+    F("org.apache.http.HttpResponse.getStatusLine:org.apache.http.StatusLine()", List((0, 0)))
+  )
+
+  /** @return
+    *   procedure semantics for operators and common external Java calls only.
+    */
+  def javaSemantics(): Semantics = Semantics.fromList(operatorFlows ++ javaFlows)
 
 }
