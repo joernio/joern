@@ -6,7 +6,6 @@ import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.NodeOps
 
 import java.io.File
-import scala.Seq
 
 class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
 

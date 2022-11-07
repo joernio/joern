@@ -8,6 +8,7 @@ import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
+import java.util.regex.Matcher
 
 /** Attempts to set the <code>methodFullName</code> and <code>dispatchType</code> properties of "static" calls.
   * @param cpg
@@ -77,12 +78,13 @@ class PythonStaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
         ProcInScope(func, s"$func.py:<module>")
       }
     } else {
+      val sep = Matcher.quoteReplacement(File.separator)
       maybeAlias match {
         // TODO: This assumes importing from modules and never importing nested method
         // Case 3:  We have imported a function from a module using an alias, e.g. import bar from foo as faz
-        case Some(alias) => ProcInScope(alias, s"${module.replaceAll("\\.", File.separator)}.py:<module>.$func")
+        case Some(alias) => ProcInScope(alias, s"${module.replaceAll("\\.", sep)}.py:<module>.$func")
         // Case 4: We have imported a function from a module, e.g. import bar from foo
-        case None => ProcInScope(func, s"${module.replaceAll("\\.", File.separator)}.py:<module>.$func")
+        case None => ProcInScope(func, s"${module.replaceAll("\\.", sep)}.py:<module>.$func")
       }
     }
   }
