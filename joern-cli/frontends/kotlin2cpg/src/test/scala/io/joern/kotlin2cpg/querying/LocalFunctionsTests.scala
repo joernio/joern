@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class LocalFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with a simple local fn declaration" should {
     val cpg = code("""

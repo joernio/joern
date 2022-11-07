@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with destructuring declaration and a variable as RHS" should {
     val cpg = code("""

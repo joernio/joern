@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes}
 import io.shiftleft.semanticcpg.language._
 
 class SafeQualifiedExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with safe qualified expression" should {
     val cpg = code("""

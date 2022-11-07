@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class GenericsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with simple user-defined fn using generics" should {
     val cpg = code("""
