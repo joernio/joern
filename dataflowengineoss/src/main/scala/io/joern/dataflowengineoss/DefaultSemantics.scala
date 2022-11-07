@@ -75,15 +75,15 @@ object DefaultSemantics {
     *   C Library Functions</a>
     */
   def cFlows: List[FlowSemantic] = List(
-    F("abs", List((1, -1))),
+    F("abs", List((1, 1), (1, -1))),
     F("abort", List()),
-    F("asctime", List((1, -1))),
-    F("asctime_r", List((1, -1))),
-    F("atof", List((1, -1))),
-    F("atoi", List((1, -1))),
-    F("atol", List((1, -1))),
+    F("asctime", List((1, 1), (1, -1))),
+    F("asctime_r", List((1, 1), (1, -1))),
+    F("atof", List((1, 1), (1, -1))),
+    F("atoi", List((1, 1), (1, -1))),
+    F("atol", List((1, 1), (1, -1))),
     F("calloc", List((1, -1), (2, -1))),
-    F("ceil", List((1, 1))),
+    F("ceil", List((1, 1), (1, 1))),
     F("clock", List()),
     F("ctime", List((1, -1))),
     F("ctime64", List((1, -1))),
@@ -91,7 +91,7 @@ object DefaultSemantics {
     F("ctime64_r", List((1, -1))),
     F("difftime", List((1, -1), (2, -1))),
     F("difftime64", List((1, -1), (2, -1))),
-    F("div", List((1, -1), (2, -1))),
+    F("div", List((1, 1), (1, -1), (2, 2), (2, -1))),
     F("exit", List((1, 1))),
     F("exp", List((1, -1))),
     F("fabs", List((1, -1))),
@@ -105,17 +105,17 @@ object DefaultSemantics {
     F("free", List((1, 1))),
     F("getc", List((1, 1))),
     F("scanf", List((2, 2))),
-    F("strcmp", List((1, -1), (2, -1))),
+    F("strcmp", List((1, 1), (1, -1), (2, 2), (2, -1))),
     F("strlen", List((1, 1), (1, -1))),
-    F("strncpy", List((1, -1), (2, -1))),
-    F("strncat", List((1, -1), (2, -1)))
+    F("strncpy", List((1, 1), (2, 2), (3, 3), (1, -1), (2, -1))),
+    F("strncat", List((1, 1), (1, -1), (2, 2), (2, -1)))
   )
 
   /** Semantic summaries for common external Java calls.
     */
   def javaFlows: List[FlowSemantic] = List(
-    F("java.lang.String.split:java.lang.String[](java.lang.String)", List((1, -1))),
-    F("java.lang.String.split:java.lang.String[](java.lang.String,int)", List((1, -1), (2, -1))),
+    F("java.lang.String.split:java.lang.String[](java.lang.String)", List((1, 1), (1, -1))),
+    F("java.lang.String.split:java.lang.String[](java.lang.String,int)", List((1, 1), (1, -1), (2, -1))),
     F("java.lang.String.compareTo:int(java.lang.String)", List((0, -1), (1, -1))),
     F("java.io.PrintWriter.print:void(java.lang.String)", List((1, 1))),
     F("java.io.PrintWriter.println:void(java.lang.String)", List((1, 1))),
@@ -129,17 +129,17 @@ object DefaultSemantics {
     F("java.sql.PreparedStatement.prepareStatement:setLong(int,long)", List((1, 1), (2, 2))),
     F("java.sql.PreparedStatement.prepareStatement:setShort(int,short)", List((1, 1), (2, 2))),
     F("java.sql.PreparedStatement.prepareStatement:setString(int,java.lang.String)", List((1, 1), (2, 2))),
-    F("org.apache.http.HttpRequest.<init>:void(org.apache.http.RequestLine)", List((1, 0))),
-    F("org.apache.http.HttpRequest.<init>:void(java.lang.String,java.lang.String)", List((1, 0), (2, 0))),
+    F("org.apache.http.HttpRequest.<init>:void(org.apache.http.RequestLine)", List((1, 1), (1, 0))),
+    F("org.apache.http.HttpRequest.<init>:void(java.lang.String,java.lang.String)", List((1, 1), (1, 0), (2, 0))),
     F(
       "org.apache.http.HttpRequest.<init>:void(java.lang.String,java.lang.String,org.apache.http.ProtocolVersion)",
-      List((1, 0), (2, 0), (3, 0))
+      List((1, 1), (1, 0), (2, 2), (2, 0), (3, 3), (3, 0))
     ),
     F("org.apache.http.HttpResponse.getStatusLine:org.apache.http.StatusLine()", List((0, -1))),
-    F("org.apache.http.HttpResponse.setStatusLine:void(org.apache.http.StatusLine)", List((0, -1))),
-    F("org.apache.http.HttpResponse.setReasonPhrase:void(java.lang.String)", List((0, -1))),
+    F("org.apache.http.HttpResponse.setStatusLine:void(org.apache.http.StatusLine)", List((1, 1), (0, -1))),
+    F("org.apache.http.HttpResponse.setReasonPhrase:void(java.lang.String)", List((1, 1), (0, -1))),
     F("org.apache.http.HttpResponse.getEntity:org.apache.http.HttpEntity()", List((0, -1))),
-    F("org.apache.http.HttpResponse.setEntity:void(org.apache.http.HttpEntity)", List((1, 0)))
+    F("org.apache.http.HttpResponse.setEntity:void(org.apache.http.HttpEntity)", List((1, 1), (1, 0)))
   )
 
   /** @return
