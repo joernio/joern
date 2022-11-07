@@ -104,7 +104,10 @@ object JoernExport extends App {
       case Format.Dot if representation == Representation.All || representation == Representation.Cpg =>
         exportWithOdbFormat(cpg, representation, outDir, DotExporter)
       case Format.Dot =>
-        exportDot(representation, outDir, context)
+        if (representation == Representation.All || representation == Representation.Cpg)
+          exportWithOdbFormat(cpg, representation, outDir, DotExporter)
+        else
+          exportDot(representation, outDir, context)
       case Format.Neo4jCsv =>
         exportWithOdbFormat(cpg, representation, outDir, Neo4jCsvExporter)
       case Format.Graphml =>

@@ -851,7 +851,7 @@ trait KtPsiToAst {
     val hasNonRefExprRHS = expr.getInitializer match {
       case _: KtNameReferenceExpression => false
       case _: KtExpression              => true
-      case _                            => false
+      case null                         => false
     }
     val isCtor = expr.getInitializer match {
       case typedExpr: KtCallExpression => typeInfoProvider.isConstructorCall(typedExpr).getOrElse(false)

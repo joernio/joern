@@ -277,6 +277,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case null =>
         logger.warn("expr was null")
         ???
+
+      case other => throw new NotImplementedError(s"unexpected expession '$other' of type ${other.getClass}")
     }
   }
 
@@ -1323,6 +1325,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case classNameExpr: PhpExpr =>
         astForSimpleNewExpr(expr, classNameExpr)
+
+      case other =>
+        throw new NotImplementedError(s"unexpected expession '$other' of type ${other.getClass}")
     }
   }
 
