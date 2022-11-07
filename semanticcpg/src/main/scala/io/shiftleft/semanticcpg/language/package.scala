@@ -18,7 +18,7 @@ import io.shiftleft.semanticcpg.language.types.expressions.generalizations.{
 import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => OriginalCall, _}
 import io.shiftleft.semanticcpg.language.types.propertyaccessors._
 import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod, _}
-import overflowdb.traversal._
+import overflowdb.traversal.Traversal
 import overflowdb.NodeOrDetachedNode
 
 /** Language for traversing the code property graph
@@ -261,7 +261,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     new ExpressionTraversal[A](iterableToTraversal(a))
 }
 
-trait LowPrioImplicits {
+trait LowPrioImplicits extends overflowdb.traversal.Implicits { // TODO move to generated `NodeTraversalImplicits`
   implicit def singleToCfgNodeTraversal[A <: CfgNode](a: A): CfgNodeTraversal[A] =
     new CfgNodeTraversal[A](Traversal.fromSingle(a))
   implicit def iterOnceToCfgNodeTraversal[A <: CfgNode](a: IterableOnce[A]): CfgNodeTraversal[A] =
