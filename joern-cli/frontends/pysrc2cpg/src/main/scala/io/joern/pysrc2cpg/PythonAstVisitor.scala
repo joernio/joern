@@ -1167,6 +1167,7 @@ class PythonAstVisitor(
       moduleName = moduleName.appended('.')
     }
     moduleName += importFrom.module.getOrElse("")
+
     createTransformedImport(moduleName, importFrom.names, lineAndColOf(importFrom))
   }
 
