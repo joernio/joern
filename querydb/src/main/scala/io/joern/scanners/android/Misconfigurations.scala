@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 import io.joern.dataflowengineoss.language._
 
-object AndroidMisconfigurations extends QueryBundle {
+object Misconfigurations extends QueryBundle {
 
   @q
   def manifestXmlBackupEnabled(): Query =
