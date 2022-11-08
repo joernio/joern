@@ -1413,14 +1413,15 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val localsForUses = expr.uses.flatMap { closureUse =>
       val variableAst = astForExpr(closureUse.variable)
+      val codePref    = if (closureUse.byRef) "&" else ""
 
       variableAst.root match {
         case Some(identifier: NewIdentifier) =>
           // This is the expected case and is handled well
-          Some(NewLocal().name(identifier.name).code(identifier.code))
+          Some(NewLocal().name(identifier.name).code(codePref ++ identifier.code))
         case Some(expr: ExpressionNew) =>
           // Results here may be bad, but its' the best we're likely to do
-          Some(NewLocal().name(expr.code).code(expr.code))
+          Some(NewLocal().name(expr.code).code(codePref ++ expr.code))
         case None =>
           // This should never happen
           logger.warn(s"Found empty ast for closure use in $filename")
@@ -1460,6 +1461,14 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       expr.attributes
     )
     val methodAst = astForMethodDecl(methodDecl, localsForUses.map(Ast(_)), Some(methodFullName))
+
+    val usesCode = localsForUses match {
+      case Nil    => ""
+      case locals => s" use(${locals.map(_.code).mkString(", ")})"
+    }
+    methodAst.root.collect { case method: NewMethod => method }.foreach { methodNode =>
+      methodNode.code(methodNode.code ++ usesCode)
+    }
 
     // Add method to scope to be attached to typeDecl later
     scope.addAnonymousMethod(methodAst)
