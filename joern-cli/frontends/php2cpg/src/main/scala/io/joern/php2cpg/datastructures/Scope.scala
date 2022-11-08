@@ -16,6 +16,7 @@ class Scope extends X2CpgScope[String, NewNode, NewNode] {
   private var localStack: List[mutable.ArrayBuffer[NewLocal]]     = Nil
   private var constAndStaticInits: List[mutable.ArrayBuffer[Ast]] = Nil
   private var fieldInits: List[mutable.ArrayBuffer[Ast]]          = Nil
+  private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
 
   override def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
@@ -63,6 +64,14 @@ class Scope extends X2CpgScope[String, NewNode, NewNode] {
       case _ => // Nothing to do here
     }
     super.addToScope(identifier, variable)
+  }
+
+  def addAnonymousMethod(methodAst: Ast): Unit = anonymousMethods.addOne(methodAst)
+
+  def getAndClearAnonymousMethods: List[Ast] = {
+    val methods = anonymousMethods.toList
+    anonymousMethods.clear()
+    methods
   }
 
   def getEnclosingNamespaceName: Option[String] =
