@@ -165,20 +165,15 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
       new PluginManager(InstallConfig().rootPath).add(config.addPlugin.get)
     } else if (config.rmPlugin.isDefined) {
       new PluginManager(InstallConfig().rootPath).rm(config.rmPlugin.get)
+    } else if (config.scriptFile.isDefined) {
+      runScript(config)
+    } else if (config.server) {
+      GlobalReporting.enable()
+      startHttpServer(config)
+    } else if (config.pluginToRun.isDefined) {
+      runPlugin(config, slProduct.name)
     } else {
-      config.scriptFile match {
-        case None =>
-          if (config.server) {
-            GlobalReporting.enable()
-            startHttpServer(config)
-          } else if (config.pluginToRun.isDefined) {
-            runPlugin(config, slProduct.name)
-          } else {
-            startInteractiveShell(config)
-          }
-        case Some(scriptFile) =>
-          runScript(scriptFile, config)
-      }
+      startInteractiveShell(config)
     }
   }
 
