@@ -5,9 +5,10 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.pysrc2cpg.Py2CpgOnFileSystem.buildCpg
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.passes.frontend.PythonCallLinker
+import io.joern.x2cpg.passes.frontend.{PythonDynamicCallLinker, PythonStaticCallLinker}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 trait PythonFrontend extends LanguageFrontend {
@@ -32,7 +33,8 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
 
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
-    new PythonCallLinker(this).createAndApply()
+    new PythonStaticCallLinker(this).createAndApply()
+    new PythonDynamicCallLinker(this).createAndApply()
 
     if (_withOssDataflow) {
       val context = new LayerCreatorContext(this)
@@ -45,6 +47,7 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
 class PySrc2CpgFixture(withOssDataflow: Boolean = false)
     extends Code2CpgFixture(() => new PySrcTestCpg().withOssDataflow(withOssDataflow)) {
 
-  implicit val context: EngineContext = EngineContext()
+  implicit val resolver: ICallResolver = NoResolve
+  implicit val context: EngineContext  = EngineContext()
 
 }
