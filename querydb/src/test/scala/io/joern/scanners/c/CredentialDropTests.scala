@@ -2,9 +2,7 @@ package io.joern.scanners.c
 
 import io.joern.suites.CQueryTestSuite
 
-class CredentialDropTests extends CQueryTestSuite {
-
-  override def queryBundle = CredentialDrop
+class CredentialDropTests extends CQueryTestSuite(CredentialDrop) {
 
   "find cases where user changes are not preceded by calls to set*gid and setgroups" in {
     val query   = queryBundle.userCredDrop()

@@ -2,9 +2,7 @@ package io.joern.scanners.android
 
 import io.joern.suites.AndroidQueryTestSuite
 
-class AndroidMisconfigurationsTests extends AndroidQueryTestSuite {
-
-  override def queryBundle = AndroidMisconfigurations
+class AndroidMisconfigurationsTests extends AndroidQueryTestSuite(AndroidMisconfigurations) {
 
   "the `manifestXmlBackupEnabled` query" when {
 

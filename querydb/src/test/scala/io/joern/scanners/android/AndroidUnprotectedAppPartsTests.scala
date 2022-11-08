@@ -6,8 +6,7 @@ import io.joern.suites.KotlinQueryTestSuite
 import overflowdb.traversal.iterableToTraversal
 import io.shiftleft.semanticcpg.language._
 
-class AndroidUnprotectedAppPartsTests extends KotlinQueryTestSuite {
-  override def queryBundle = AndroidUnprotectedAppParts
+class AndroidUnprotectedAppPartsTests extends KotlinQueryTestSuite(AndroidUnprotectedAppParts) {
 
   "should match all positive examples" in {
     val query = queryBundle.intentRedirection()

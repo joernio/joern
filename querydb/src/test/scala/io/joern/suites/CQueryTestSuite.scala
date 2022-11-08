@@ -9,11 +9,9 @@ import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.semanticcpg.language._
 
-class CQueryTestSuite extends DataFlowCodeToCpgSuite {
+class CQueryTestSuite[QB <: QueryBundle](val queryBundle: QB) extends DataFlowCodeToCpgSuite {
 
   private val argumentProvider = new QDBArgumentProvider(3)
-
-  def queryBundle: QueryBundle = QueryUtil.EmptyBundle
 
   def allQueries: List[Query] = QueryUtil.allQueries(queryBundle, argumentProvider)
 

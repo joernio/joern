@@ -2,8 +2,7 @@ package io.joern.scanners.ghidra
 
 import io.joern.suites.GhidraQueryTestSuite
 
-class UserInputIntoDangerousFunctionsTests extends GhidraQueryTestSuite {
-  override def queryBundle = UserInputIntoDangerousFunctions
+class UserInputIntoDangerousFunctionsTests extends GhidraQueryTestSuite(UserInputIntoDangerousFunctions) {
 
   "getenvToStrcpy query" when {
     def query = queryBundle.getenvToStrcpy()

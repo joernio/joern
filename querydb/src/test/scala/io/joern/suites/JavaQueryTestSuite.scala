@@ -8,14 +8,13 @@ import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, StoredNode}
 
-class JavaQueryTestSuite extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
+class JavaQueryTestSuite[QB <: QueryBundle](val queryBundle: QB)
+    extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
   val argumentProvider = new QDBArgumentProvider(3)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
   }
-
-  def queryBundle: QueryBundle = QueryUtil.EmptyBundle
 
   def allQueries: List[Query] = QueryUtil.allQueries(queryBundle, argumentProvider)
 
