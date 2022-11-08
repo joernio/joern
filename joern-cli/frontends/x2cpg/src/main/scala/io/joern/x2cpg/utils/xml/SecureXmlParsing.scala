@@ -1,11 +1,12 @@
 package io.joern.x2cpg.utils.xml
 
 import javax.xml.parsers.SAXParserFactory
+import scala.util.Try
 import scala.xml.{Elem, XML}
 
 object SecureXmlParsing {
   def parseXml(content: String): Option[Elem] = {
-    try {
+    Try {
       val spf = SAXParserFactory.newInstance()
 
       spf.setValidating(false)
@@ -18,10 +19,7 @@ object SecureXmlParsing {
       spf.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
       spf.setFeature("http://xml.org/sax/features/external-general-entities", false)
 
-      Some(XML.withSAXParser(spf.newSAXParser()).loadString(content))
-    } catch {
-      case _: Throwable =>
-        None
-    }
+      XML.withSAXParser(spf.newSAXParser()).loadString(content)
+    }.toOption
   }
 }
