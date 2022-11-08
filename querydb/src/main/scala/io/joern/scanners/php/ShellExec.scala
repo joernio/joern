@@ -18,8 +18,7 @@ object ShellExec extends QueryBundle {
       name = "shell-exec",
       author = Crew.niko,
       title = "Shell exec: A parameter is used in an insecure `shell-exec` call.",
-      description =
-        """
+      description = """
           |An attacker controlled parameter is used in an insecure `shell-exec` call.
           |
           |If the parameter is not validated and sanitized, this is a remote code execution.
