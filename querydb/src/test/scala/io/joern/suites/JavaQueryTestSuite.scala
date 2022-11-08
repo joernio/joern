@@ -1,7 +1,7 @@
 package io.joern.suites
 
 import io.joern.console.scan._
-import io.joern.console.{Query, QueryBundle}
+import io.joern.console.{CodeSnippet, Query, QueryBundle}
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.util.QueryUtil
 import io.joern.x2cpg.testfixtures.TestCpg
@@ -30,6 +30,14 @@ class JavaQueryTestSuite[QB <: QueryBundle](val queryBundle: QB)
           )
       }
       .mkString("\n")
+
+  protected def cpgForSnippets(snippets: List[CodeSnippet]): Cpg = {
+    val first = snippets(0)
+    val cpg   = code(first.content, first.filename)
+    snippets.drop(1).foldLeft(cpg) { (foldCpg, e) =>
+      foldCpg.moreCode(e.content, e.filename)
+    }
+  }
 
   def findMatchingCalls(cpg: Cpg, q: Query): List[String] = {
     q(cpg).flatMap(_.evidence).collect { case c: Call => c.code }

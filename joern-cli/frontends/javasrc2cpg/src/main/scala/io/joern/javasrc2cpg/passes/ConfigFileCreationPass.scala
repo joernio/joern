@@ -83,7 +83,9 @@ class ConfigFileCreationPass(projectDir: String, cpg: Cpg) extends ConcurrentWri
     // DIRECT WEB REMOTING
     pathEndFilter("dwr.xml"),
     // MYBATIS
-    mybatisFilter
+    mybatisFilter,
+    // ANDROID
+    pathEndFilter("AndroidManifest.xml")
   )
 
   private def isConfigFile(file: File): Boolean = {
