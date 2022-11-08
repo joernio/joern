@@ -94,7 +94,7 @@ object ProgramHandlingUtil {
           zip
             .entries()
             .asScala
-            .filter(f => !f.isDirectory && f.getName.contains(".class"))
+            .filter(f => !f.isDirectory && f.getName.endsWith(".class"))
             .flatMap(entry => {
               val sourceCodePathFile = new File(sourceCodePath)
               // Handle the case if the input source code path is an archive itself

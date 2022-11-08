@@ -10,9 +10,7 @@ dependsOn(Projects.joerncli)
 dependsOn(Projects.javasrc2cpg)
 dependsOn(Projects.jimple2cpg)
 
-libraryDependencies ++= Seq(
-  "org.scalatest"           %% "scalatest"        % Versions.scalatest % Test
-)
+libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % Versions.scalatest % Test)
 
 Compile / doc / sources ~= (_ filter (_ => false))
 

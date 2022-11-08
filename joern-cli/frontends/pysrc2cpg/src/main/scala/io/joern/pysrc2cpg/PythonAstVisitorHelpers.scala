@@ -5,6 +5,7 @@ import io.joern.pythonparser.ast
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
+import scala.collection.immutable.{::, Nil}
 import scala.collection.mutable
 
 trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
@@ -67,8 +68,13 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
           createIdentifierNode("import", Load, lineAndCol),
           "import",
           lineAndCol,
-          nodeBuilder.stringLiteralNode(from, lineAndCol) ::
-            nodeBuilder.stringLiteralNode(alias.name, lineAndCol) :: Nil,
+          Seq(
+            nodeBuilder.stringLiteralNode(from, lineAndCol),
+            nodeBuilder.stringLiteralNode(alias.name, lineAndCol)
+          ) ++ (alias.asName match {
+            case Some(aliasName) => Seq(nodeBuilder.stringLiteralNode(aliasName, lineAndCol))
+            case None            => Seq()
+          }),
           Nil
         )
 

@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, Member}
 import io.shiftleft.semanticcpg.language._
@@ -257,10 +257,9 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
   }
 }
 
-class MemberTests extends JavaSrcCodeToCpgFixture {
+class MemberTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |class Foo {
       |  int x;
       |}
@@ -283,7 +282,7 @@ class MemberTests extends JavaSrcCodeToCpgFixture {
       |        System.out.println("Second static block");
       |    }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   private def hasStaticMod(member: Member): Boolean = {
     member.modifier.exists(_.modifierType == ModifierTypes.STATIC)

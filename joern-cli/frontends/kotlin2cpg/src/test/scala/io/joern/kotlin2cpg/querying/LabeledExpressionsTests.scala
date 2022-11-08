@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class LabeledExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with simple call to `println` prefixed by a label" should {
     val cpg = code("""

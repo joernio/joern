@@ -231,6 +231,11 @@ abstract class AstCreatorBase(filename: String) {
     }
   }
 
+  def withArgumentName[T <: ExpressionNew](node: T, argNameOpt: Option[String]): T = {
+    node.argumentName = argNameOpt
+    node
+  }
+
   /** Absolute path for the given file name
     */
   def absolutePath(filename: String): String =

@@ -38,10 +38,7 @@ trait AstForTypesCreator { this: AstCreator =>
     seenAliasTypes.add(aliasTypeDeclNode)
 
     val typeDeclNodeAst =
-      if (
-        !Defines.values
-          .exists { case typeName: Defines.Tpe => typeName.label == name } && !seenAliasTypes.exists(_.name == name)
-      ) {
+      if (!Defines.JSTYPES.contains(name) && !seenAliasTypes.exists(_.name == name)) {
         val (typeName, typeFullName) = calcTypeNameAndFullName(alias, Some(name))
         val typeDeclNode = createTypeDeclNode(
           typeName,
@@ -230,12 +227,8 @@ trait AstForTypesCreator { this: AstCreator =>
     if (calls.isEmpty) {
       Ast(typeDeclNode).withChildren(member)
     } else {
-      val init = staticInitMethodAst(
-        calls,
-        s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
-        None,
-        Defines.ANY.label
-      )
+      val init =
+        staticInitMethodAst(calls, s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}", None, Defines.ANY)
       Ast(typeDeclNode).withChildren(member).withChild(init)
     }
   }
@@ -327,7 +320,7 @@ trait AstForTypesCreator { this: AstCreator =>
         staticMemberInitCalls ++ staticInitBlockAsts,
         s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
-        Defines.ANY.label
+        Defines.ANY
       )
       Ast.storeInDiffGraph(init, diffGraph)
       diffGraph.addEdge(typeDeclNode, init.nodes.head, EdgeTypes.AST)

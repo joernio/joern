@@ -1,15 +1,14 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
 import java.io.File
 
-class MethodTests extends JavaSrcCodeToCpgFixture {
+class MethodTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """ class Foo {
+  val cpg = code(""" class Foo {
       |   int foo(int param1, int param2) {
       |     return 1;
       |   }
@@ -24,7 +23,7 @@ class MethodTests extends JavaSrcCodeToCpgFixture {
       | class Baz {
       |   void baz() {}
       | }
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain exactly one non-stub method node in Foo with correct fields" in {
     val List(x) =
@@ -77,9 +76,8 @@ class MethodTests extends JavaSrcCodeToCpgFixture {
 
 }
 
-class MethodTests2 extends JavaSrcCodeToCpgFixture {
-  override val code: String =
-    """
+class MethodTests2 extends JavaSrcCode2CpgFixture {
+  val cpg = code("""
       |class Foo {
       |  static class Sub {
       |    void foo() {
@@ -89,20 +87,19 @@ class MethodTests2 extends JavaSrcCodeToCpgFixture {
       |  static void method(Integer x) {
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
   "test methodFullName for call to static method of different class without scope" in {
     cpg.call("method").methodFullName.head shouldBe "Foo.method:void(java.lang.Integer)"
   }
 }
 
-class MethodTests3 extends JavaSrcCodeToCpgFixture {
-  override val code: String =
-    """
+class MethodTests3 extends JavaSrcCode2CpgFixture {
+  val cpg = code("""
       |class Foo {
       |  static void staticMethod(Integer x) { }
       |  void virtualMethod(Integer x) { }
       |}
-      |""".stripMargin
+      |""".stripMargin)
   "test method virtual modifier" in {
     cpg.method("staticMethod").isVirtual.size shouldBe 0
     cpg.method("virtualMethod").isVirtual.fullName.head shouldBe "Foo.virtualMethod:void(java.lang.Integer)"

@@ -7,7 +7,7 @@ import org.scalatest.Ignore
 @Ignore
 class InnerClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with a simple inner class declaration" should {
     val cpg = code("""

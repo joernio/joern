@@ -1,14 +1,13 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
 /** Right now reflection is mostly unsupported. This should be extended in later when it is.
   */
-class ReflectionTests extends JimpleCodeToCpgFixture {
+class ReflectionTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |class Foo {
       | static int add(int x, int y) {
       |   return x + y;
@@ -19,7 +18,7 @@ class ReflectionTests extends JimpleCodeToCpgFixture {
       |   var fooMethod = fooClazz.getMethod("add", int.class, int.class);
       | }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should assign the class and method variables correctly" in {
     val List(fooClazz, fooMethod) = cpg.method("foo").ast.isIdentifier.name("fooClazz", "fooMethod").take(2).l

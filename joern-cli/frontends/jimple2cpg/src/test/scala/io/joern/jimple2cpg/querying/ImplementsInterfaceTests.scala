@@ -1,15 +1,14 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 import java.io.File
 
-class ImplementsInterfaceTests extends JimpleCodeToCpgFixture {
+class ImplementsInterfaceTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
         |import java.io.Serializable;
         |
         |final class Foo implements Serializable {
@@ -19,7 +18,7 @@ class ImplementsInterfaceTests extends JimpleCodeToCpgFixture {
         |   }
         |
         |}
-        |""".stripMargin
+        |""".stripMargin)
 
   "should contain a type decl for `Foo` with correct fields" in {
     val List(x) = cpg.typeDecl.name("Foo").l

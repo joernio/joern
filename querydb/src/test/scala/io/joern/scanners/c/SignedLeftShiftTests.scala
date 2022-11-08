@@ -2,9 +2,7 @@ package io.joern.scanners.c
 
 import io.joern.suites.CQueryTestSuite
 
-class SignedLeftShiftTests extends CQueryTestSuite {
-
-  override def queryBundle = SignedLeftShift
+class SignedLeftShiftTests extends CQueryTestSuite(SignedLeftShift) {
 
   "find signed left shift" in {
     val query   = queryBundle.signedLeftShift()

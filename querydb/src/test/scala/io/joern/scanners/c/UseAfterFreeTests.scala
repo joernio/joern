@@ -3,9 +3,7 @@ package io.joern.scanners.c
 import io.joern.suites.CQueryTestSuite
 import io.joern.x2cpg.testfixtures.TestCpg
 
-class UseAfterFreeTests extends CQueryTestSuite {
-
-  override def queryBundle = UseAfterFree
+class UseAfterFreeTests extends CQueryTestSuite(UseAfterFree) {
 
   override val cpg: TestCpg = code("""
     |void good(a_struct_type *a_struct) {

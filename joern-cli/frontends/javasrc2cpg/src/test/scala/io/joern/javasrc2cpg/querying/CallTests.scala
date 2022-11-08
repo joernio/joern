@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
@@ -282,12 +282,9 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
   }
 }
 
-class CallTests extends JavaSrcCodeToCpgFixture {
+class CallTests extends JavaSrcCode2CpgFixture {
 
-  implicit val resolver: ICallResolver = NoResolve
-
-  override val code: String =
-    """
+  lazy val cpg = code("""
       |package test;
       | class Foo {
       |   int add(int x, int y) {
@@ -338,7 +335,7 @@ class CallTests extends JavaSrcCodeToCpgFixture {
       |      bar();
       |    }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain a call node for `add` with correct fields" in {
     val List(x) = cpg.call("add").l
@@ -484,9 +481,8 @@ class CallTests extends JavaSrcCodeToCpgFixture {
   }
 }
 
-class CallTests2 extends JavaSrcCodeToCpgFixture {
-  override val code: String =
-    """
+class CallTests2 extends JavaSrcCode2CpgFixture {
+  lazy val cpg = code("""
       |class Foo {
       |    public static class Ops {
       |        public <T> T ident(T x) {
@@ -499,7 +495,7 @@ class CallTests2 extends JavaSrcCodeToCpgFixture {
       |        return ret;
       |    }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "test methodFullName for call to generic function" in {
     cpg.call(".*ident.*").methodFullName.head shouldBe "Foo$Ops.ident:java.lang.Object(java.lang.Object)"

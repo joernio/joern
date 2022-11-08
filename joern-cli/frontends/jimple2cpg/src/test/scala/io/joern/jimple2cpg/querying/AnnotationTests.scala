@@ -1,13 +1,12 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, AnnotationLiteral, ArrayInitializer}
 
-class AnnotationTestMethod1 extends JimpleCodeToCpgFixture {
+class AnnotationTestMethod1 extends JimpleCode2CpgFixture {
 
-  override val code =
-    """import java.lang.annotation.*;
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.METHOD)
@@ -24,7 +23,7 @@ class AnnotationTestMethod1 extends JimpleCodeToCpgFixture {
       |
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "test annotation node properties" in {
     val annotationNode = cpg.method.name("function").annotation.head
@@ -53,9 +52,8 @@ class AnnotationTestMethod1 extends JimpleCodeToCpgFixture {
   }
 }
 
-class AnnotationTestMethod2 extends JimpleCodeToCpgFixture {
-  override val code =
-    """import java.lang.annotation.*;
+class AnnotationTestMethod2 extends JimpleCode2CpgFixture {
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.METHOD)
@@ -68,7 +66,7 @@ class AnnotationTestMethod2 extends JimpleCodeToCpgFixture {
       |
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "test annotation node properties" in {
     val annotationNode = cpg.method.name("function").annotation.head
@@ -82,9 +80,8 @@ class AnnotationTestMethod2 extends JimpleCodeToCpgFixture {
   }
 }
 
-class AnnotationTestConstructor extends JimpleCodeToCpgFixture {
-  override val code =
-    """import java.lang.annotation.*;
+class AnnotationTestConstructor extends JimpleCode2CpgFixture {
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.CONSTRUCTOR)
@@ -97,7 +94,7 @@ class AnnotationTestConstructor extends JimpleCodeToCpgFixture {
       |
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "test annotation node properties" in {
     val annotationNode = cpg.method.fullNameExact("SomeClass.<init>:void()").annotation.head
@@ -111,9 +108,8 @@ class AnnotationTestConstructor extends JimpleCodeToCpgFixture {
   }
 }
 
-class AnnotationTestParameter extends JimpleCodeToCpgFixture {
-  override val code =
-    """import java.lang.annotation.*;
+class AnnotationTestParameter extends JimpleCode2CpgFixture {
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.PARAMETER)
@@ -125,7 +121,7 @@ class AnnotationTestParameter extends JimpleCodeToCpgFixture {
       |
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
   "test annotation node properties" in {
     val annotationNode = cpg.method.name("function").parameter.name("x").annotation.head
     annotationNode.code shouldBe "@MarkerAnnotation()"
@@ -134,9 +130,8 @@ class AnnotationTestParameter extends JimpleCodeToCpgFixture {
   }
 }
 
-class AnnotationTestField extends JimpleCodeToCpgFixture {
-  override val code =
-    """import java.lang.annotation.*;
+class AnnotationTestField extends JimpleCode2CpgFixture {
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.FIELD)
@@ -145,7 +140,7 @@ class AnnotationTestField extends JimpleCodeToCpgFixture {
       |class SomeClass {
       |  @MarkerAnnotation int x;
       |}
-      |""".stripMargin
+      |""".stripMargin)
   "test annotation node properties" in {
     val annotationNode = cpg.typeDecl.name("SomeClass").member.name("x").annotation.head
     annotationNode.code shouldBe "@MarkerAnnotation()"
@@ -154,9 +149,8 @@ class AnnotationTestField extends JimpleCodeToCpgFixture {
   }
 }
 
-class AnnotationTestValue1 extends JimpleCodeToCpgFixture {
-  override val code =
-    """import java.lang.annotation.*;
+class AnnotationTestValue1 extends JimpleCode2CpgFixture {
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.METHOD)
@@ -173,7 +167,7 @@ class AnnotationTestValue1 extends JimpleCodeToCpgFixture {
       |
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
   "test annotation node properties" in {
     val annotationNode = cpg.method.name("function").annotation.head
     annotationNode.code shouldBe "@NormalAnnotation(value = 2)"
@@ -189,9 +183,8 @@ class AnnotationTestValue1 extends JimpleCodeToCpgFixture {
   }
 }
 
-class AnnotationTestValue2 extends JimpleCodeToCpgFixture {
-  override val code =
-    """import java.lang.annotation.*;
+class AnnotationTestValue2 extends JimpleCode2CpgFixture {
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.METHOD)
@@ -208,7 +201,7 @@ class AnnotationTestValue2 extends JimpleCodeToCpgFixture {
       |
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
   "test annotation node properties" in {
     val annotationNode = cpg.method.name("function").annotation.head
     annotationNode.code shouldBe "@NormalAnnotation(value = {\"aaa\", \"bbb\"})"
@@ -244,9 +237,8 @@ class AnnotationTestValue2 extends JimpleCodeToCpgFixture {
   }
 }
 
-class AnnotationTestValue3 extends JimpleCodeToCpgFixture {
-  override val code =
-    """import java.lang.annotation.*;
+class AnnotationTestValue3 extends JimpleCode2CpgFixture {
+  val cpg = code("""import java.lang.annotation.*;
       |
       |@Retention(RetentionPolicy.RUNTIME)
       |@Target(ElementType.METHOD)
@@ -267,7 +259,7 @@ class AnnotationTestValue3 extends JimpleCodeToCpgFixture {
       |
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
   "test annotation node properties" in {
     val annotationNode = cpg.method.name("function").annotation.head
     annotationNode.code shouldBe "@NormalAnnotation(value = @OtherAnnotation())"

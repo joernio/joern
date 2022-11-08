@@ -85,13 +85,13 @@ class DdgGenerator(semantics: Semantics) {
         block.astChildren.lastOption match {
           case None => // Do nothing
           case Some(node: Identifier) =>
-            val edgesToAdd = in(node).toList.flatMap { inDef =>
-              numberToNode.get(inDef) match {
-                case Some(identifier: Identifier) => Some(identifier)
-                case Some(call: Call)             => Some(call)
-                case _                            => None
+            val edgesToAdd = in(node).toList
+              .flatMap(numberToNode.get)
+              .filter(inDef => usageAnalyzer.isUsing(node, inDef))
+              .collect {
+                case identifier: Identifier => identifier
+                case call: Call             => call
               }
-            }
             edgesToAdd.foreach { inNode =>
               addEdge(inNode, block, nodeToEdgeLabel(inNode))
             }
@@ -99,7 +99,7 @@ class DdgGenerator(semantics: Semantics) {
               addEdge(block, call)
             }
           case Some(node: Call) =>
-            addEdge(node, call, nodeToEdgeLabel(node))
+            addEdge(node, block, nodeToEdgeLabel(node))
             addEdge(block, call)
           case _ => // Do nothing
         }
@@ -222,7 +222,8 @@ private class UsageAnalyzer(
 ) {
 
   val numberToNode: Map[Definition, StoredNode] = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-  private val allNodes                          = in.keys.toList
+
+  private val allNodes             = in.keys.toList
   private val containerSet         = Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess)
   private val indirectionAccessSet = Set(Operators.addressOf, Operators.indirection)
   val usedIncomingDefs: Map[StoredNode, Map[StoredNode, Set[Definition]]] = initUsedIncomingDefs()
@@ -237,13 +238,13 @@ private class UsageAnalyzer(
     uses(node).map { use =>
       use -> in(node).filter { inElement =>
         val inElemNode = numberToNode(inElement)
-        sameVariable(use, inElemNode) || isContainer(use, inElemNode) || isPart(use, inElemNode) || isAlias(
-          use,
-          inElemNode
-        )
+        isUsing(use, inElemNode)
       }
     }.toMap
   }
+
+  def isUsing(use: StoredNode, inElemNode: StoredNode): Boolean =
+    sameVariable(use, inElemNode) || isContainer(use, inElemNode) || isPart(use, inElemNode) || isAlias(use, inElemNode)
 
   /** Determine whether the node `use` describes a container for `inElement`, e.g., use = `ptr` while inElement =
     * `ptr->foo`.
@@ -304,7 +305,7 @@ private class UsageAnalyzer(
 
   /** Compares arguments of calls with incoming definitions to see if they refer to the same variable
     */
-  def sameVariable(use: StoredNode, inElement: StoredNode): Boolean = {
+  private def sameVariable(use: StoredNode, inElement: StoredNode): Boolean = {
     inElement match {
       case param: MethodParameterIn =>
         nodeToString(use).contains(param.name)

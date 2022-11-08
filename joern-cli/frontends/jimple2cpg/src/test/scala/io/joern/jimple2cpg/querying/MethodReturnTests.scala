@@ -1,15 +1,14 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-class MethodReturnTests extends JimpleCodeToCpgFixture {
+class MethodReturnTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
-    """class Foo {
+  val cpg = code("""class Foo {
       |  int foo() { return 1; }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should have METHOD_RETURN node with correct fields" in {
     val List(x) = cpg.method.name("foo").methodReturn.typeFullName("int").l

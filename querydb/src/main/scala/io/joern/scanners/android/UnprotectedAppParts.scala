@@ -9,7 +9,7 @@ import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
-object AndroidUnprotectedAppParts extends QueryBundle {
+object UnprotectedAppParts extends QueryBundle {
   implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
   implicit val resolver: ICallResolver      = NoResolve
 

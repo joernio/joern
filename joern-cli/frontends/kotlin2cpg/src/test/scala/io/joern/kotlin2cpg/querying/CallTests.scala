@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with two functions with the same name, but different params" should {
     val cpg = code("""
@@ -283,4 +283,40 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       c.methodFullName shouldBe "kotlin.Int.toFloat:float()"
     }
   }
+
+  "CPG for code with call to ctor using named arguments" should {
+    val cpg = code("""
+      |package no.such.pkg
+      |class Person(val firstName: String, val lastName: String)
+      |fun doSomething(x: String, y: String) {
+      |    val p = Person(lastName = y, firstName = x)
+      |    println(p.firstName)
+      |    println(p.lastName)
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments that have the argument name set" in {
+      val List(c) = cpg.call.code("Person.*").l
+      c.argument(1).argumentName shouldBe Some("lastName")
+      c.argument(2).argumentName shouldBe Some("firstName")
+    }
+  }
+
+  "CPG for code with call with named arguments of user-defined fn" should {
+    val cpg = code("""
+       |package no.such.pkg
+       |fun printNextLineRm(file: String, line: String) {
+       |    println("file: $file")
+       |    println("line: $line")
+       |}
+       |fun doSomething() = printNextLineRm(line = "MD_Update(&m,buf,j);", file = "rand_lcl.h")
+       |""".stripMargin)
+
+    "should contain a CALL node with arguments that have the argument name set" in {
+      val List(c) = cpg.call.code("printNextLineRm.*").l
+      c.argument(1).argumentName shouldBe Some("line")
+      c.argument(2).argumentName shouldBe Some("file")
+    }
+  }
+
 }

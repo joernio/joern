@@ -1,16 +1,15 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
-class MetaDataTests extends JavaSrcCodeToCpgFixture {
+class MetaDataTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |class Foo {}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should contain exactly one node with all mandatory fields set" in {
     val List(x) = cpg.metaData.l

@@ -1,13 +1,13 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language.{NoResolve, _}
 
-class StaticCallGraphTests extends JimpleCodeToCpgFixture {
+class StaticCallGraphTests extends JimpleCode2CpgFixture {
 
   implicit val resolver: NoResolve.type = NoResolve
 
-  override val code = """
+  val cpg = code("""
        class Foo {
         static int add(int x, int y) {
          return x + y;
@@ -17,7 +17,7 @@ class StaticCallGraphTests extends JimpleCodeToCpgFixture {
          return 0;
         }
        }
-    """
+    """)
 
   "should find that add is called by main" in {
     cpg.method.name("add").caller.name.toSetMutable shouldBe Set("main")
