@@ -8,7 +8,6 @@ import io.joern.scanners._
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
-// The queries are tied to springframework
 object ShellExec extends QueryBundle {
 
   implicit val resolver: ICallResolver = NoResolve
