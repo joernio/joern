@@ -36,7 +36,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  }
           |}
           |""".stripMargin)
-      succOf("break(2)") shouldBe expected(("ANY", AlwaysEdge))
+      succOf("break(2)") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for continue with level 1" in {
@@ -82,7 +82,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  } while ($j < 1);
           |} while ($i < 1);
           |""".stripMargin)
-      succOf("break(2)") shouldBe expected(("ANY", AlwaysEdge))
+      succOf("break(2)") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for continue with level 1" in {
@@ -128,7 +128,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  }
           |}
           |""".stripMargin)
-      succOf("break(2)") shouldBe expected(("ANY", AlwaysEdge))
+      succOf("break(2)") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for continue with level 1" in {
@@ -180,7 +180,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |    $k;
           |}
           |""".stripMargin)
-      succOf("break(2)") shouldBe expected(("ANY", AlwaysEdge))
+      succOf("break(2)") shouldBe expected(("RET", AlwaysEdge))
     }
   }
 }
