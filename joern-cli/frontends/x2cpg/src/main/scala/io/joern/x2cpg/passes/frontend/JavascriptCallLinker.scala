@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.frontend
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.passes.SimpleCpgPass
@@ -78,13 +78,19 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
       if (call.dispatchType == DispatchTypes.STATIC_DISPATCH) {
         methodsByFullName
           .get(call.methodFullName)
-          .foreach(diffGraph.addEdge(call, _, EdgeTypes.CALL))
+          .foreach { method =>
+            diffGraph.addEdge(call, method, EdgeTypes.CALL)
+            diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
+          }
       } else {
         getReceiverIdentifierName(call).foreach { name =>
           for (
             file   <- call.file.headOption;
             method <- methodsByNameAndFile.get((file.name, name))
-          ) { diffGraph.addEdge(call, method, EdgeTypes.CALL) }
+          ) {
+            diffGraph.addEdge(call, method, EdgeTypes.CALL)
+            diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
+          }
         }
       }
     }
