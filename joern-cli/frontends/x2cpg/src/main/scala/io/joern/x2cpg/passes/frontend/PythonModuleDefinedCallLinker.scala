@@ -1,20 +1,21 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
 import java.util.regex.Matcher
 
-/** Attempts to set the <code>methodFullName</code> and <code>dispatchType</code> properties of "static" calls.
+/** Attempts to set the <code>methodFullName</code> and <code>dispatchType</code> properties of calls where the callees
+  * are defined under a module.
+  *
   * @param cpg
   *   the target code property graph.
   */
-class PythonStaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class PythonModuleDefinedCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   override def run(builder: DiffGraphBuilder): Unit =
     cpg.method.where(_.nameExact("<module>")).foreach(module => runOnModule(module, builder))
@@ -49,10 +50,8 @@ class PythonStaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
       // chosen over the other in local experiments
       case Some(callee) =>
         builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, callee.fullName)
-        builder.setNodeProperty(call, PropertyNames.DISPATCH_TYPE, DispatchTypes.STATIC_DISPATCH.name())
         builder.addEdge(call, callee, EdgeTypes.CALL)
-      case None => // no existing method found, but we have enough context to confirm that it is static
-        builder.setNodeProperty(call, PropertyNames.DISPATCH_TYPE, DispatchTypes.STATIC_DISPATCH.name())
+      case None => // no existing method found
     }
   }
 

@@ -165,7 +165,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val callNode = cpg.call.codeExact("func(a, b)").head
       callNode.name shouldBe "func"
       callNode.signature shouldBe ""
-      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(5)
       callNode.methodFullName shouldBe "test.py:<module>.func"
     }
@@ -205,7 +205,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val callNode = cpg.call.codeExact("foo_func(a, b)").head
       callNode.name shouldBe "foo_func"
       callNode.signature shouldBe ""
-      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(6)
       callNode.methodFullName shouldBe "foo.py:<module>.foo_func"
     }
@@ -214,7 +214,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val callNode = cpg.call.codeExact("bar_func(a, b)").head
       callNode.name shouldBe "bar_func"
       callNode.signature shouldBe ""
-      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(7)
       callNode.methodFullName shouldBe Seq("foo", "bar", "__init__.py:<module>.bar_func").mkString(File.separator)
     }
@@ -223,7 +223,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val callNode = cpg.call.codeExact("baz(a, b)").head
       callNode.name shouldBe "baz"
       callNode.signature shouldBe ""
-      callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(8)
       callNode.methodFullName shouldBe "foo.py:<module>.faz"
     }
