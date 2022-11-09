@@ -5,7 +5,7 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.pysrc2cpg.Py2CpgOnFileSystem.buildCpg
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.passes.frontend.{PythonDynamicCallLinker, PythonStaticCallLinker}
+import io.joern.x2cpg.passes.frontend.{PythonNaiveCallLinker, PythonModuleDefinedCallLinker}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
@@ -33,8 +33,8 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
 
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
-    new PythonStaticCallLinker(this).createAndApply()
-    new PythonDynamicCallLinker(this).createAndApply()
+    new PythonModuleDefinedCallLinker(this).createAndApply()
+    new PythonNaiveCallLinker(this).createAndApply()
 
     if (_withOssDataflow) {
       val context = new LayerCreatorContext(this)
