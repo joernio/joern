@@ -1,13 +1,14 @@
 package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Local}
 import io.shiftleft.passes.SimpleCpgPass
 import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.{NodeOps, Traversal}
+import overflowdb.traversal.{NodeOps, Traversal, iterableToTraversal}
 
+import java.io.File
 import java.nio.file.Paths
 
 /** This pass enhances the call graph and call nodes by interpreting assignments of the form `foo = require("module")`.
@@ -63,7 +64,7 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
       .map(stripQuotes)
       .map { x =>
         val path = Paths.get(dirHoldingModule, x).toAbsolutePath.normalize.toString
-        if (path.endsWith(".mjs")) {
+        if (path.endsWith(".mjs") || path.endsWith(".js")) {
           path
         } else {
           path + ".js"
@@ -84,14 +85,24 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
     val nodesToPatch: List[Call] = call.file.method.ast.isCall.nameExact(target).dedup.l
 
+    def relativeExport: String = fileToInclude.stripPrefix(dirHoldingModule + File.separator)
+
   }
 
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
     cpg.call("require").where(_.inAssignment.target).map(Require.apply(_)).foreach { require =>
+      // Set types of locals on the LHS of a require
+      require.call.method.ast.isIdentifier
+        .filter(_.code.equals(require.target))
+        .collectFirst(i => i.refsTo.collectAll[Local].headOption)
+        .flatten
+        .foreach { definingLocal =>
+          diffGraph.setNodeProperty(definingLocal, PropertyNames.TYPE_FULL_NAME, s"<export>::${require.relativeExport}")
+        }
       require.methodFullName.foreach { fullName =>
         cpg.method.fullNameExact(fullName).foreach { method =>
           require.nodesToPatch.foreach { node =>
-            diffGraph.setNodeProperty(node, "METHOD_FULL_NAME", fullName)
+            diffGraph.setNodeProperty(node, PropertyNames.METHOD_FULL_NAME, fullName)
             diffGraph.addEdge(node, method, EdgeTypes.CALL)
           }
         }

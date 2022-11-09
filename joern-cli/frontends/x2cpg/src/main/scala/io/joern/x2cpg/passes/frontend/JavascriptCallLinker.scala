@@ -1,10 +1,8 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, PropertyNames, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Declaration, Identifier, Local}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.NodeOps
@@ -53,7 +51,7 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
             Some(assignee.name)
           case assignee: nodes.Call
               if assignee.methodFullName == Operators.fieldAccess &&
-                JS_EXPORT_NAMES.contains(assignee.argument(1).code) =>
+                (JS_EXPORT_NAMES.contains(assignee.argument(1).code) || assignee.code.startsWith("_tmp_")) =>
             Some(assignee.argument(2).asInstanceOf[nodes.FieldIdentifier].canonicalName)
           case _ => None
         }
@@ -80,17 +78,24 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
           .get(call.methodFullName)
           .foreach { method =>
             diffGraph.addEdge(call, method, EdgeTypes.CALL)
-            diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
           }
       } else {
-        getReceiverIdentifierName(call).foreach { name =>
-          for (
-            file   <- call.file.headOption;
-            method <- methodsByNameAndFile.get((file.name, name))
-          ) {
-            diffGraph.addEdge(call, method, EdgeTypes.CALL)
-            diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
-          }
+        callOffOfRequire(call) match {
+          case Some(requirePath) =>
+            methodsByNameAndFile.get((requirePath, call.name)).foreach { method =>
+              diffGraph.addEdge(call, method, EdgeTypes.CALL)
+              diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
+            }
+          case None =>
+            getReceiverIdentifierName(call).foreach { name =>
+              for (
+                file   <- call.file.headOption;
+                method <- methodsByNameAndFile.get((file.name, name))
+              ) {
+                diffGraph.addEdge(call, method, EdgeTypes.CALL)
+                diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
+              }
+            }
         }
       }
     }
@@ -98,6 +103,24 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   private def callReceiverOption(callNode: nodes.Call): Option[nodes.Expression] =
     callNode._receiverOut.nextOption().map(_.asInstanceOf[nodes.Expression])
+
+  /** If a call is made on a receiver that contains the result of a <code>require</code> then the
+    * [[io.joern.jssrc2cpg.passes.RequirePass]] should have marked the ref [[Local]] node with the file name.
+    * @param call
+    *   the call to investigate for a <code>require</code> reference.
+    * @return
+    *   the argument given to the declaring require if present.
+    */
+  private def callOffOfRequire(call: nodes.Call): Option[String] = {
+    callReceiverOption(call).flatMap {
+      case c: Call if c.methodFullName == Operators.fieldAccess =>
+        c.argument(1).collectAll[Identifier].refsTo.collectFirst { case local: Local => local.typeFullName } match {
+          case Some(requirePath) if requirePath.startsWith("<export>::") => Some(requirePath.stripPrefix("<export>::"))
+          case _                                                         => None
+        }
+      case _ => None
+    }
+  }
 
   private def fromFieldAccess(c: nodes.Call): Option[String] =
     if (c.methodFullName == Operators.fieldAccess && JS_EXPORT_NAMES.contains(c.argument(1).code)) {
