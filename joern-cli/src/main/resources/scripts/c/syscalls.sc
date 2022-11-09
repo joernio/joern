@@ -409,6 +409,10 @@ private val linuxSyscalls: Set[String] = Set(
   "writev"
 )
 
-@main def main(): List[Call] = {
-  cpg.call.filter(c => linuxSyscalls.contains(c.name)).l
+@main def main(inputPath: String) = {
+  importCode(inputPath)
+  val calls = cpg.call.filter(c => linuxSyscalls.contains(c.name)).name
+
+  val expected = Set("gettimeofday", "exit")
+  assertContains("calls", calls, expected)
 }

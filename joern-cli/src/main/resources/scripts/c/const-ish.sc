@@ -1,13 +1,17 @@
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Member, Method}
-import io.joern.dataflowengineoss.language._
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
-
-@main def main() = {
-  cpg.method.internal.filter { method =>
+@main def main(inputPath: String) = {
+  importCode(inputPath)
+  val methods = cpg.method.internal.filter { method =>
     method.start.assignment.target
       .reachableBy(method.parameter.filter(_.code.contains("const")))
       .nonEmpty
-  }.toSetImmutable
+  }.name
+
+  val expected = Set(
+    "modify_const_struct_member_cpp_cast",
+    "modify_const_struct_member_c_cast",
+    "modify_const_struct_cpp_cast",
+    "modify_const_struct_c_cast"
+  )
+  assertContains("methods", methods, expected)
+
 }

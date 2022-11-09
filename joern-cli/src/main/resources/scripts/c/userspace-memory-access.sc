@@ -15,6 +15,10 @@ private val calls: Set[String] = Set(
   "vm_iomap_memory"
 )
 
-@main def main(): List[Call] = {
-  cpg.call.filter(call => calls.contains(call.name)).l
+@main def main(inputPath: String) = {
+  importCode(inputPath)
+  val calls0 = cpg.call.filter(call => calls.contains(call.name)).name
+
+  val expected = Set("get_user")
+  assertContains("calls", calls0, expected)
 }
