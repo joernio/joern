@@ -7,9 +7,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class RunScriptTests extends AnyWordSpec with Matchers {
-  val projectRoot = os.Path(ProjectRoot.find.path.toAbsolutePath)
-  val scriptsRoot =  projectRoot / "scripts"
-  val testCodeRoot = s"${projectRoot.toNIO}/joern-cli/src/test/resources/testcode"
+  import RunScriptTests._
 
   Seq(
     ("c/pointer-to-int.sc", "unsafe-ptr"),
@@ -18,20 +16,26 @@ class RunScriptTests extends AnyWordSpec with Matchers {
     ("c/malloc-overflow.sc", "malloc-overflow"),
     ("c/malloc-leak.sc", "leak"),
     ("c/const-ish.sc", "const-ish"),
-  ).foreach { case (scriptFileName, codePathName) =>
-    s"Executing '$scriptFileName' on '$codePathName'" in {
-      exec(scriptsRoot/os.RelPath(scriptFileName), codePathName)
+  ).foreach { case (scriptFileName, codePathRelative) =>
+    s"Executing '$scriptFileName' on '$codePathRelative'" in {
+      exec(os.RelPath(scriptFileName), s"$testCodeRoot/$codePathRelative")
     }
   }
 
-  def exec(scriptPath: os.Path, codePathRelative: String): Unit = {
+}
+
+object RunScriptTests {
+  val projectRoot = os.Path(ProjectRoot.find.path.toAbsolutePath)
+  val scriptsRoot =  projectRoot / "scripts"
+  val testCodeRoot = s"${projectRoot.toNIO}/joern-cli/src/test/resources/testcode"
+
+  def exec(scriptPath: os.RelPath, codePathAbsolute: String): Unit = {
     AmmoniteBridge.runScript(
       Config(
-        scriptFile = Some(scriptPath),
-        params = Map("inputPath" -> s"$testCodeRoot/$codePathRelative"),
+        scriptFile = Some(scriptsRoot/scriptPath),
+        params = Map("inputPath" -> codePathAbsolute),
         additionalImports = List(scriptsRoot/"assertions.sc")
       )
     )
   }
-
 }
