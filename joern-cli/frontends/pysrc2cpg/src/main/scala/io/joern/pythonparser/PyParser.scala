@@ -16,7 +16,7 @@ class PyParser {
   }
 
   def parse(inputStream: InputStream): iast = {
-    pythonParser = new PythonParser(inputStream)
+    pythonParser = new PythonParser(new CharStreamImpl(inputStream))
     // We start in INDENT_CHECK lexer state because we want to detect indentations
     // also for the first line.
     pythonParser.token_source.SwitchTo(PythonParserConstants.INDENT_CHECK)

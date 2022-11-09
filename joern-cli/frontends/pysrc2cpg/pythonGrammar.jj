@@ -5,6 +5,7 @@ options {
     STATIC = false;
     TOKEN_EXTENDS = "PositionToken";
     COMMON_TOKEN_ACTION = true;
+    USER_CHAR_STREAM = true;
 }
 PARSER_BEGIN(PythonParser)
 package io.joern.pythonparser;
@@ -165,8 +166,9 @@ TOKEN_MGR_DECLS:
   int formatSpecOpenCurly = 0;
 
   void CommonTokenAction(Token token) {
-    token.startPos = input_stream.tokenBegin;
-    token.endPos = input_stream.bufpos + 1;
+    CharStreamImpl inputStreamImpl = (CharStreamImpl)input_stream;
+    token.startPos = inputStreamImpl.getBeginPos();
+    token.endPos = token.startPos + token.image.length();
   }
 }
 
