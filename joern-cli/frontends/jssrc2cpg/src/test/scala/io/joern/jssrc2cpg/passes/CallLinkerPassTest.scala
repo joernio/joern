@@ -57,7 +57,9 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
           |    console.log("Howdy World!");
           |  }
           |}
-          |""".stripMargin, "baz.js")
+          |""".stripMargin,
+        "baz.js"
+      )
 
       inside(cpg.method.fullNameExact("bar.js::program:anonymous").l) { case List(m) =>
         m.name shouldBe "anonymous"
