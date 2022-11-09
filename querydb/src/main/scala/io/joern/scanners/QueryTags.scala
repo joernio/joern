@@ -23,5 +23,6 @@ object QueryTags {
   val insecureNetworkTraffic = "insecure-network-traffic"
   val pathTraversal          = "path-traversal"
   val cryptography           = "cryptography"
+  val remoteCodeExecution    = "remote-code-execution"
 
 }
