@@ -5,8 +5,8 @@ import better.files.File
 import io.joern.console.cpgcreation.ImportCode
 import io.joern.console.testing.TestCpgGeneratorFactory
 import io.joern.console.workspacehandling.Project
-import io.joern.console.{Console, ConsoleConfig, InstallConfig}
-import io.joern.joerncli.console.JoernConsole
+import io.joern.console.{Config, Console, ConsoleConfig, InstallConfig}
+import io.joern.joerncli.console.{Joern, JoernConsole}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -42,17 +42,22 @@ object ConsoleFixture {
 class ConsoleTests extends AnyWordSpec with Matchers {
 
   "run" should {
-    "provide a human readable overview of overlay creators" in ConsoleFixture({ dir =>
+    "provide a human readable overview of overlay creators" in ConsoleFixture { dir =>
       new TestJoernConsole(dir)
-    }) { (console, codeDir) =>
+    } { (console, codeDir) =>
       File.usingTemporaryFile("console") { myScript =>
         console.importCode(codeDir.toString)
         val cpg = console.cpg
+        println("XXX0")
+        println(cpg)
         myScript.write(s"""
                             | if (!run.toString.contains("base"))
                             |     throw new RuntimeException("base layer not applied...?")
                             |""".stripMargin)
-        console.CpgScriptRunner(cpg).runScript(myScript.toString)
+//        console.CpgScriptRunner(cpg).runScript(myScript.toString)
+
+//        JoernScan.runScript(Config(scriptFile = Some(os.Path(myScript.path))))
+        ???
       }
     }
   }
@@ -68,7 +73,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
                             | if (help.cpg.toString.isEmpty)
                             |     throw new RuntimeException("no help text available...?")
                             |""".stripMargin)
-        console.CpgScriptRunner(cpg).runScript(myScript.toString)
+        ???
+//        console.CpgScriptRunner(cpg).runScript(myScript.toString)
       }
     }
   }

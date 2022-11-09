@@ -1,11 +1,8 @@
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 
-@main def main(): List[Call] = {
-  cpg
+@main def main(inputPath: String) = {
+  importCode(inputPath)
+  val calls = cpg
     .call("malloc")
     .filter { mallocCall =>
       mallocCall.argument(1) match {
@@ -13,6 +10,12 @@ import overflowdb.traversal._
           subCall.name == Operators.addition || subCall.name == Operators.multiplication
         case _ => false
       }
-    }
-    .l
+    }.code
+
+  val expected = Set(
+    "malloc(sizeof(int) * 42)",
+    "malloc(sizeof(int) * 3)",
+    "malloc(sizeof(int) + 55)"
+  )
+  assertContains("calls", calls, expected)
 }

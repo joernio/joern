@@ -224,7 +224,8 @@ trait ScriptExecution { this: BridgeBase =>
   }
 
   // TODO factor out into separate class and file...
-  protected def runScript(scriptFile: os.Path, config: Config): Unit = {
+  def runScript(config: Config): Unit = {
+    val scriptFile = config.scriptFile.getOrElse(throw new AssertionError("no script file configured"))
     if (!os.exists(scriptFile)) {
       System.err.println(s"given script file $scriptFile does not exist")
       System.exit(1)
@@ -325,7 +326,7 @@ trait PluginHandling { this: BridgeBase =>
     println("Available layer creators")
     println()
     withTemporaryScript(codeToListPlugins(), slProduct.name) { file =>
-      runScript(os.Path(file.path.toString), config)
+      runScript(config.copy(scriptFile = Some(os.Path(file.path))))
     }
   }
 
@@ -345,7 +346,7 @@ trait PluginHandling { this: BridgeBase =>
     }
     val code = loadOrCreateCpg(config, productName)
     withTemporaryScript(code, productName) { file =>
-      runScript(os.Path(file.path.toString), config)
+      runScript(config.copy(scriptFile = Some(os.Path(file.path))))
     }
   }
 
