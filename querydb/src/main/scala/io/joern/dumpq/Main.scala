@@ -6,9 +6,11 @@ import io.joern.dataflowengineoss.semanticsloader.Semantics
 import org.json4s.{Formats, NoTypeHints}
 import org.json4s.native.Serialization
 
-object Main extends App {
+object Main {
 
-  dumpQueries()
+  def main(args: Array[String]) = {
+    dumpQueries()
+  }
 
   def dumpQueries(): Unit = {
     implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
