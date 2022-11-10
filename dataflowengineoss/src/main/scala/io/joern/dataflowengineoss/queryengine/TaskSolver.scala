@@ -32,10 +32,6 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       implicit val sem: Semantics = context.semantics
       val path                    = PathElement(task.sink, task.callSiteStack) +: task.initialPath
       results(path, task.sources, task.table, task.callSiteStack)
-      // TODO why do we update the call depth here?
-      task.table.get(task.sink, task.callSiteStack).get.map { r =>
-        r.copy(callDepth = task.callDepth)
-      }
     }
   }
 
