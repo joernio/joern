@@ -36,7 +36,7 @@ class Engine(context: EngineContext) {
   private var numberOfTasksRunning: Int        = 0
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService =
-    new ExecutorCompletionService[(Vector[ReachableByResult], Vector[ReachableByTask])](executorService)
+    new ExecutorCompletionService[(ReachableByTask, Vector[ReachableByTask])](executorService)
 
   def shutdown(): Unit = {
     executorService.shutdown()
@@ -77,10 +77,13 @@ class Engine(context: EngineContext) {
     /** For a list of results, determine partial and complete results. Store complete results and derive and submit
       * tasks from partial results.
       */
-    def handleResultsOfTask(resultsOfTask: (Vector[ReachableByResult], Vector[ReachableByTask])): Unit = {
-      result ++= resultsOfTask._1
-      val newTasks = resultsOfTask._2
-      newTasks.foreach(submitTask)
+    def handleResultsOfTask(resultsOfTask: (ReachableByTask, Vector[ReachableByTask])): Unit = {
+      result ++= fromTable(resultsOfTask._1)
+      resultsOfTask._2.foreach(submitTask)
+    }
+
+    def fromTable(task: ReachableByTask): Iterable[ReachableByResult] = {
+      task.table.get(task.sink, task.callSiteStack).toVector.flatMap { l => l.filterNot(_.partial) }
     }
 
     def runUntilAllTasksAreSolved(): Unit = {

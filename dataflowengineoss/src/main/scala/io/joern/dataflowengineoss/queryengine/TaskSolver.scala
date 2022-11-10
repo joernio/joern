@@ -19,7 +19,7 @@ import scala.collection.mutable
   *   state of the data flow engine
   */
 class TaskSolver(task: ReachableByTask, context: EngineContext)
-    extends Callable[(Vector[ReachableByResult], Vector[ReachableByTask])] {
+    extends Callable[(ReachableByTask, Vector[ReachableByTask])] {
 
   implicit val sem: Semantics = context.semantics
   import Engine._
@@ -27,15 +27,15 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
   /** Entry point of callable. First checks if the maximum call depth has been exceeded, in which case an empty result
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
-  override def call(): (Vector[ReachableByResult], Vector[ReachableByTask]) = {
+  override def call(): (ReachableByTask, Vector[ReachableByTask]) = {
     if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
-      (Vector(), Vector())
+      (task, Vector())
     } else {
-      val path                = PathElement(task.sink, task.callSiteStack) +: task.initialPath
-      val resultsOfTask       = results(path, task.sources, task.table, task.callSiteStack)
-      val (partial, complete) = resultsOfTask.partition(_.partial)
-      val newTasks            = new TaskCreator(task.sources).createFromResults(partial)
-      (complete, newTasks)
+      val path          = PathElement(task.sink, task.callSiteStack) +: task.initialPath
+      val resultsOfTask = results(path, task.sources, task.table, task.callSiteStack)
+      val partial       = resultsOfTask.filter(_.partial)
+      val newTasks      = new TaskCreator(task.sources).createFromResults(partial)
+      (task, newTasks)
     }
   }
 
