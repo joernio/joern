@@ -52,9 +52,23 @@ class ResultTable(
     table.get(Key(node, stack))
   }
 
+  def get(key: Key): Option[Vector[ReachableByResult]] = {
+    table.get(key)
+  }
+
   /** Returns all keys to allow for iteration through the table.
     */
   def keys(): Vector[Key] = table.keys.toVector
+
+  /** Temporary method that allows merging a table into an existing table.
+    */
+  def addTable(other: ResultTable): Unit = {
+    other.keys().foreach { key =>
+      other.get(key.node, key.stack).foreach { result =>
+        this.add(key, result)
+      }
+    }
+  }
 
 }
 

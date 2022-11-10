@@ -57,14 +57,14 @@ class Engine(context: EngineContext) {
     solveTasks(tasks)
   }
 
+  /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
+    */
+  def newResultTable() =
+    context.config.initialTable.map(x => new ResultTable(x.table.clone)).getOrElse(new ResultTable)
+
   /** Create one task per sink where each task has its own result table.
     */
   private def createOneTaskPerSink(sourcesSet: Set[CfgNode], sinks: List[CfgNode]) = {
-
-    /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
-      */
-    def newResultTable() =
-      context.config.initialTable.map(x => new ResultTable(x.table.clone)).getOrElse(new ResultTable)
     sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable()))
   }
 
@@ -72,18 +72,14 @@ class Engine(context: EngineContext) {
     * submitted accordingly. Once no more tasks can be created, the list of results is returned.
     */
   private def solveTasks(tasks: List[ReachableByTask]): List[ReachableByResult] = {
-    var result = List[ReachableByResult]()
+    val table = newResultTable()
 
     /** For a list of results, determine partial and complete results. Store complete results and derive and submit
       * tasks from partial results.
       */
     def handleResultsOfTask(resultsOfTask: (ReachableByTask, Vector[ReachableByTask])): Unit = {
-      result ++= fromTable(resultsOfTask._1)
+      table.addTable(resultsOfTask._1.table)
       resultsOfTask._2.foreach(submitTask)
-    }
-
-    def fromTable(task: ReachableByTask): Iterable[ReachableByResult] = {
-      task.table.get(task.sink, task.callSiteStack).toVector.flatMap { l => l.filterNot(_.partial) }
     }
 
     def runUntilAllTasksAreSolved(): Unit = {
@@ -104,7 +100,15 @@ class Engine(context: EngineContext) {
 
     tasks.foreach(submitTask)
     runUntilAllTasksAreSolved()
-    deduplicate(result.toVector).toList
+    extractResults(table)
+  }
+
+  private def extractResults(table: ResultTable): List[ReachableByResult] = {
+    val result = table.keys().flatMap { key =>
+      val r = table.get(key).get
+      r.filterNot(_.partial)
+    }
+    deduplicate(result).toList
   }
 
   private def submitTask(task: ReachableByTask): Unit = {
