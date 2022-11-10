@@ -33,7 +33,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       val path                    = PathElement(task.sink, task.callSiteStack) +: task.initialPath
       results(path, task.sources, task.table, task.callSiteStack)
       // TODO why do we update the call depth here?
-      task.table.get(task.sink).get.map { r =>
+      task.table.get(task.sink, task.callSiteStack).get.map { r =>
         r.copy(callDepth = task.callDepth)
       }
     }
@@ -71,12 +71,16 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       */
     def computeResultsForParents() = {
       expandIn(curNode, path, callSiteStack).iterator.flatMap { parent =>
-        createResultsFromCacheOrCompute(parent, path)
+        createResultsFromCacheOrCompute(parent, path, callSiteStack)
       }.toVector
     }
 
-    def createResultsFromCacheOrCompute(elemToPrepend: PathElement, path: Vector[PathElement]) = {
-      val cachedResult = table.createFromTable(elemToPrepend, path)
+    def createResultsFromCacheOrCompute(
+      elemToPrepend: PathElement,
+      path: Vector[PathElement],
+      callSiteStack: List[Call]
+    ) = {
+      val cachedResult = table.createFromTable(elemToPrepend, callSiteStack, path)
       if (cachedResult.isDefined) {
         QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
         cachedResult.get
@@ -136,7 +140,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       case _ =>
         deduplicate(computeResultsForParents())
     }
-    table.add(curNode, res)
+    table.add(curNode, callSiteStack, res)
     res
   }
 

@@ -5,16 +5,21 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
+case class Key(node: StoredNode, stack: List[Call])
+
 /** The Result Table is a cache that allows retrieving known paths for nodes, that is, paths that end in the node.
   */
 class ResultTable(
-  val table: mutable.Map[StoredNode, Vector[ReachableByResult]] =
-    new java.util.concurrent.ConcurrentHashMap[StoredNode, Vector[ReachableByResult]].asScala
+  val table: mutable.Map[Key, Vector[ReachableByResult]] =
+    new java.util.concurrent.ConcurrentHashMap[Key, Vector[ReachableByResult]].asScala
 ) {
+
+  def add(node: StoredNode, stack: List[Call], results: Vector[ReachableByResult]): Unit =
+    add(Key(node, stack), results)
 
   /** Add all results in `results` to table at `key`, appending to existing results.
     */
-  def add(key: StoredNode, results: Vector[ReachableByResult]): Unit = {
+  def add(key: Key, results: Vector[ReachableByResult]): Unit = {
     table.asJava.compute(
       key,
       { (_, existingValue) =>
@@ -27,8 +32,12 @@ class ResultTable(
     * for each result, determine the path up to `first` and prepend it to `path`, giving us new results via table
     * lookup.
     */
-  def createFromTable(first: PathElement, remainder: Vector[PathElement]): Option[Vector[ReachableByResult]] = {
-    table.get(first.node).map { res =>
+  def createFromTable(
+    first: PathElement,
+    stack: List[Call],
+    remainder: Vector[PathElement]
+  ): Option[Vector[ReachableByResult]] = {
+    table.get(Key(first.node, stack)).map { res =>
       res.map { r =>
         val pathToFirstNode = r.path.slice(0, r.path.map(_.node).indexOf(first.node))
         val completePath    = pathToFirstNode ++ (first +: remainder)
@@ -39,13 +48,13 @@ class ResultTable(
 
   /** Retrieve list of results for `node` or None if they are not available in the table.
     */
-  def get(node: StoredNode): Option[Vector[ReachableByResult]] = {
-    table.get(node)
+  def get(node: StoredNode, stack: List[Call]): Option[Vector[ReachableByResult]] = {
+    table.get(Key(node, stack))
   }
 
   /** Returns all keys to allow for iteration through the table.
     */
-  def keys(): Vector[StoredNode] = table.keys.toVector
+  def keys(): Vector[Key] = table.keys.toVector
 
 }
 
