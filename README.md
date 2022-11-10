@@ -38,20 +38,16 @@ chmod +x ./joern-install.sh
 sudo ./joern-install.sh
 joern
 
-Compiling (synthetic)/ammonite/predef/interpBridge.sc
-Compiling (synthetic)/ammonite/predef/replBridge.sc
-Compiling (synthetic)/ammonite/predef/DefaultPredef.sc
-Compiling /home/tmp/shiftleft/joern/(console)
-
      ██╗ ██████╗ ███████╗██████╗ ███╗   ██╗
      ██║██╔═══██╗██╔════╝██╔══██╗████╗  ██║
      ██║██║   ██║█████╗  ██████╔╝██╔██╗ ██║
 ██   ██║██║   ██║██╔══╝  ██╔══██╗██║╚██╗██║
 ╚█████╔╝╚██████╔╝███████╗██║  ██║██║ ╚████║
  ╚════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝
+Version: 1.2.0
+Type `help` to begin
 
 joern>
-
 ```
 
 If the installation script fails for any reason, try
