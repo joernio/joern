@@ -18,7 +18,8 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
   private type MethodsByNameAndFileType = mutable.HashMap[(String, String), nodes.Method]
   private type MethodsByFullNameType    = mutable.HashMap[String, nodes.Method]
 
-  private val JS_EXPORT_NAMES = IndexedSeq("module.exports", "exports")
+  private val JS_EXPORT_NAMES  = IndexedSeq("module.exports", "exports")
+  private val JS_EXPORT_PREFIX = "<export>::"
 
   private def isStaticSingleAssignmentLocal(ident: nodes.Identifier): Boolean =
     ident.refsTo
@@ -81,11 +82,15 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
           }
       } else {
         callOffOfRequire(call) match {
-          case Some(requirePath) =>
-            methodsByNameAndFile.get((requirePath, call.name)).foreach { method =>
+          case Some(requirePaths: Seq[String]) =>
+            val originalMethodFullName = call.methodFullName
+            requirePaths.flatMap(rp => methodsByNameAndFile.get((rp, call.name))).foreach { method =>
               diffGraph.addEdge(call, method, EdgeTypes.CALL)
               diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
             }
+            // If there are more than one call edges then it is unsound to set METHOD_FULL_NAME to something
+            if (call.outE(EdgeTypes.CALL).size > 1)
+              diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, originalMethodFullName)
           case None =>
             getReceiverIdentifierName(call).foreach { name =>
               for (
@@ -105,18 +110,22 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     callNode._receiverOut.nextOption().map(_.asInstanceOf[nodes.Expression])
 
   /** If a call is made on a receiver that contains the result of a <code>require</code> then the
-    * [[io.joern.jssrc2cpg.passes.RequirePass]] should have marked the ref [[Local]] node with the file name.
+    * [[io.joern.jssrc2cpg.passes.RequirePass]] should have marked the ref [[Local]] node with the file name under
+    * <code>DYNAMIC_TYPE_HINT_FULL_NAME</code>.
     * @param call
     *   the call to investigate for a <code>require</code> reference.
     * @return
     *   the argument given to the declaring require if present.
     */
-  private def callOffOfRequire(call: nodes.Call): Option[String] = {
+  private def callOffOfRequire(call: nodes.Call): Option[Seq[String]] = {
     callReceiverOption(call).flatMap {
       case c: Call if c.methodFullName == Operators.fieldAccess =>
-        c.argument(1).collectAll[Identifier].refsTo.collectFirst { case local: Local => local.typeFullName } match {
-          case Some(requirePath) if requirePath.startsWith("<export>::") => Some(requirePath.stripPrefix("<export>::"))
-          case _                                                         => None
+        c.argument(1).collectAll[Identifier].refsTo.collectFirst {
+          case local: Local if local.dynamicTypeHintFullName.exists(_.startsWith(JS_EXPORT_PREFIX)) =>
+            local.dynamicTypeHintFullName.filter(_.startsWith(JS_EXPORT_PREFIX)).map(_.stripPrefix(JS_EXPORT_PREFIX))
+        } match {
+          case Some(requirePaths: Seq[String]) => Some(requirePaths)
+          case _                               => None
         }
       case _ => None
     }

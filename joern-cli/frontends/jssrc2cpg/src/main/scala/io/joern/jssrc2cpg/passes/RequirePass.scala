@@ -1,12 +1,12 @@
 package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Local}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
-import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.{NodeOps, Traversal, iterableToTraversal}
+import overflowdb.BatchedUpdate
+import overflowdb.traversal.{NodeOps, Traversal}
 
 import java.io.File
 import java.nio.file.Paths
@@ -97,7 +97,13 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
         .collectFirst(i => i.refsTo.collectAll[Local].headOption)
         .flatten
         .foreach { definingLocal =>
-          diffGraph.setNodeProperty(definingLocal, PropertyNames.TYPE_FULL_NAME, s"<export>::${require.relativeExport}")
+          (definingLocal.referencingIdentifiers ++ Seq(definingLocal)).foreach { refId =>
+            diffGraph.setNodeProperty(
+              refId,
+              PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+              definingLocal.dynamicTypeHintFullName ++ Seq(s"<export>::${require.relativeExport}")
+            )
+          }
         }
       require.methodFullName.foreach { fullName =>
         cpg.method.fullNameExact(fullName).foreach { method =>
