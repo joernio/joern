@@ -14,6 +14,8 @@ import io.shiftleft.semanticcpg.language.NoResolve
 import overflowdb.traversal.{Traversal, jIteratortoTraversal}
 import io.shiftleft.semanticcpg.language._
 
+import scala.::
+
 /** Creation of new tasks from results of completed tasks.
   */
 class TaskCreator(sources: Set[CfgNode]) {
@@ -37,18 +39,17 @@ class TaskCreator(sources: Set[CfgNode]) {
   private def tasksForParams(results: Vector[ReachableByResult]): Vector[ReachableByTask] = {
     startsAtParameter(results).flatMap { result =>
       val param = result.path.head.node.asInstanceOf[MethodParameterIn]
-      if (result.callSiteStack.isEmpty) {
-        // Case 1
-        paramToArgs(param).map { arg =>
-          ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1)
-        }
-      } else {
-        // Case 2
-        val newCallSiteStack = result.callSiteStack.clone()
-        val callSite         = newCallSiteStack.pop()
-        paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
-          ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth - 1, newCallSiteStack)
-        }
+      // Case 2
+      result.callSiteStack match {
+        case callSite :: tail =>
+          paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
+            ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth - 1, tail)
+          }
+        case _ =>
+          // Case 1
+          paramToArgs(param).map { arg =>
+            ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1)
+          }
       }
     }
   }
@@ -99,16 +100,28 @@ class TaskCreator(sources: Set[CfgNode]) {
       methodReturns.flatMap { case (call, methodReturn) =>
         val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
         if (returnStatements.isEmpty) {
-          val newPath       = path
-          val callSiteStack = result.callSiteStack.clone()
-          callSiteStack.push(call)
-          List(ReachableByTask(methodReturn, sources, new ResultTable, newPath, callDepth + 1, callSiteStack))
+          val newPath = path
+          List(
+            ReachableByTask(
+              methodReturn,
+              sources,
+              new ResultTable,
+              newPath,
+              callDepth + 1,
+              call :: result.callSiteStack
+            )
+          )
         } else {
           returnStatements.map { returnStatement =>
-            val newPath       = Vector(PathElement(methodReturn, result.callSiteStack.clone())) ++ path
-            val callSiteStack = result.callSiteStack.clone()
-            callSiteStack.push(call)
-            ReachableByTask(returnStatement, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
+            val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
+            ReachableByTask(
+              returnStatement,
+              sources,
+              new ResultTable,
+              newPath,
+              callDepth + 1,
+              call :: result.callSiteStack
+            )
           }
         }
       }
@@ -124,9 +137,8 @@ class TaskCreator(sources: Set[CfgNode]) {
         outParams
           .filterNot(_.method.isExternal)
           .map { p =>
-            val callSiteStack = result.callSiteStack.clone()
-            arg.inCall.headOption.foreach { x => callSiteStack.push(x) }
-            ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, callSiteStack)
+            val newStack = arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
+            ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, newStack)
           }
       }
     }

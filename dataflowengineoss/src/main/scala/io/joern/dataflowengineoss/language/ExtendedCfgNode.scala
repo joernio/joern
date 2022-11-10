@@ -96,7 +96,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
         r
       } else {
         r.copy(path =
-          PathElement(startingPointToSource(r.startingPoint).asInstanceOf[CfgNode], r.callSiteStack.clone()) +: r.path
+          PathElement(startingPointToSource(r.startingPoint).asInstanceOf[CfgNode], r.callSiteStack) +: r.path
         )
       }
     }

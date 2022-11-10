@@ -65,7 +65,7 @@ class ResultTable(
 case class ReachableByResult(
   path: Vector[PathElement],
   table: ResultTable,
-  callSiteStack: mutable.Stack[Call],
+  callSiteStack: List[Call],
   callDepth: Int = 0,
   partial: Boolean = false
 ) {
@@ -103,7 +103,7 @@ case class ReachableByResult(
   */
 case class PathElement(
   node: CfgNode,
-  callSiteStack: mutable.Stack[Call] = mutable.Stack(),
+  callSiteStack: List[Call] = List(),
   visible: Boolean = true,
   isOutputArg: Boolean = false,
   outEdgeLabel: String = ""
