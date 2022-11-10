@@ -29,8 +29,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
       Vector()
     } else {
-      implicit val sem: Semantics = context.semantics
-      val path                    = PathElement(task.sink, task.callSiteStack) +: task.initialPath
+      val path = PathElement(task.sink, task.callSiteStack) +: task.initialPath
       results(path, task.sources, task.table, task.callSiteStack)
     }
   }
@@ -58,9 +57,10 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     sources: Set[NodeType],
     table: ResultTable,
     callSiteStack: List[Call]
-  )(implicit semantics: Semantics): Vector[ReachableByResult] = {
+  ): Vector[ReachableByResult] = {
 
-    val curNode = path.head.node
+    implicit val sem: Semantics = context.semantics
+    val curNode                 = path.head.node
 
     /** For each parent of the current node, determined via `expandIn`, check if results are available in the result
       * table. If not, determine results recursively.
