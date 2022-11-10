@@ -18,19 +18,24 @@ import scala.collection.mutable
   * @param context
   *   state of the data flow engine
   */
-class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable[Vector[ReachableByResult]] {
+class TaskSolver(task: ReachableByTask, context: EngineContext)
+    extends Callable[(Vector[ReachableByResult], Vector[ReachableByTask])] {
 
+  implicit val sem: Semantics = context.semantics
   import Engine._
 
   /** Entry point of callable. First checks if the maximum call depth has been exceeded, in which case an empty result
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
-  override def call(): Vector[ReachableByResult] = {
+  override def call(): (Vector[ReachableByResult], Vector[ReachableByTask]) = {
     if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
-      Vector()
+      (Vector(), Vector())
     } else {
-      val path = PathElement(task.sink, task.callSiteStack) +: task.initialPath
-      results(path, task.sources, task.table, task.callSiteStack)
+      val path                = PathElement(task.sink, task.callSiteStack) +: task.initialPath
+      val resultsOfTask       = results(path, task.sources, task.table, task.callSiteStack)
+      val (partial, complete) = resultsOfTask.partition(_.partial)
+      val newTasks            = new TaskCreator(task.sources).createFromResults(partial)
+      (complete, newTasks)
     }
   }
 
@@ -59,8 +64,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     callSiteStack: List[Call]
   ): Vector[ReachableByResult] = {
 
-    implicit val sem: Semantics = context.semantics
-    val curNode                 = path.head.node
+    val curNode = path.head.node
 
     /** For each parent of the current node, determined via `expandIn`, check if results are available in the result
       * table. If not, determine results recursively.

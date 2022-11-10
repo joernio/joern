@@ -35,7 +35,8 @@ class Engine(context: EngineContext) {
   private val logger: Logger                   = LoggerFactory.getLogger(this.getClass)
   private var numberOfTasksRunning: Int        = 0
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
-  private val completionService = new ExecutorCompletionService[Vector[ReachableByResult]](executorService)
+  private val completionService =
+    new ExecutorCompletionService[(Vector[ReachableByResult], Vector[ReachableByTask])](executorService)
 
   def shutdown(): Unit = {
     executorService.shutdown()
@@ -53,7 +54,7 @@ class Engine(context: EngineContext) {
     }
     val sourcesSet = sources.toSet
     val tasks      = createOneTaskPerSink(sourcesSet, sinks)
-    solveTasks(tasks, sourcesSet)
+    solveTasks(tasks)
   }
 
   /** Create one task per sink where each task has its own result table.
@@ -70,16 +71,15 @@ class Engine(context: EngineContext) {
   /** Submit tasks to a worker pool, solving them in parallel. Upon receiving results for a task, new tasks are
     * submitted accordingly. Once no more tasks can be created, the list of results is returned.
     */
-  private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): List[ReachableByResult] = {
+  private def solveTasks(tasks: List[ReachableByTask]): List[ReachableByResult] = {
     var result = List[ReachableByResult]()
 
     /** For a list of results, determine partial and complete results. Store complete results and derive and submit
       * tasks from partial results.
       */
-    def handleResultsOfTask(resultsOfTask: Vector[ReachableByResult]): Unit = {
-      val (partial, complete) = resultsOfTask.partition(_.partial)
-      result ++= complete
-      val newTasks = new TaskCreator(sources).createFromResults(partial)
+    def handleResultsOfTask(resultsOfTask: (Vector[ReachableByResult], Vector[ReachableByTask])): Unit = {
+      result ++= resultsOfTask._1
+      val newTasks = resultsOfTask._2
       newTasks.foreach(submitTask)
     }
 
