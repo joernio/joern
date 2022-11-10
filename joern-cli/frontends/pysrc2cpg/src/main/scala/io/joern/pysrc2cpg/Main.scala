@@ -20,23 +20,25 @@ class ParsedArguments(arguments: Seq[String]) extends ScallopConf(arguments) {
   verify()
 }
 
-object Main extends App {
-  val parsedArguments = new ParsedArguments(args.toSeq)
+object Main {
+  def main(args: Array[String]) = {
+    val parsedArguments = new ParsedArguments(args.toSeq)
 
-  val ignoreVenvDir =
-    if (parsedArguments.ignoreVenvDir.toOption.get) {
-      parsedArguments.venvDir.toOption
-    } else {
-      None
-    }
+    val ignoreVenvDir =
+      if (parsedArguments.ignoreVenvDir.toOption.get) {
+        parsedArguments.venvDir.toOption
+      } else {
+        None
+      }
 
-  val py2CpgConfig =
-    Py2CpgOnFileSystemConfig(
-      Paths.get(parsedArguments.output.toOption.get),
-      Paths.get(parsedArguments.input.toOption.get),
-      ignoreVenvDir.map(Paths.get(_))
-    )
+    val py2CpgConfig =
+      Py2CpgOnFileSystemConfig(
+        Paths.get(parsedArguments.output.toOption.get),
+        Paths.get(parsedArguments.input.toOption.get),
+        ignoreVenvDir.map(Paths.get(_))
+      )
 
-  val cpg = Py2CpgOnFileSystem.buildCpg(py2CpgConfig)
-  cpg.close()
+    val cpg = Py2CpgOnFileSystem.buildCpg(py2CpgConfig)
+    cpg.close()
+  }
 }
