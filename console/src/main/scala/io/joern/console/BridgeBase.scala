@@ -37,7 +37,7 @@ case class Config(
 
 /** Base class for ReplBridge, split by topic into multiple self types.
   */
-trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling {
+trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandling with ServerHandling {
 
   def slProduct: SLProduct
 
@@ -197,8 +197,7 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
 }
 
 // TODO rename - why is this called `ScriptExecution` if it really implements scripts and repl?
-trait ScriptExecution { this: BridgeBase =>
-
+trait InteractiveShell { this: BridgeBase =>
   protected def startInteractiveShell(config: Config) = {
     val replConfig = config.cpgToLoad.map { cpgFile =>
       "importCpg(\"" + cpgFile + "\")"
@@ -222,7 +221,10 @@ trait ScriptExecution { this: BridgeBase =>
     ))
   }
 
-  // TODO factor out into separate class and file...
+}
+
+trait ScriptExecution { this: BridgeBase =>
+
   def runScript(config: Config): Unit = {
     val scriptFile = config.scriptFile.getOrElse(throw new AssertionError("no script file configured"))
     if (!os.exists(scriptFile)) {
@@ -270,7 +272,6 @@ trait ScriptExecution { this: BridgeBase =>
          |""".stripMargin
     }
   }
-
 }
 
 trait PluginHandling { this: BridgeBase =>
