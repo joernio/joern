@@ -81,6 +81,63 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
         call.methodFullName shouldBe "baz.js::program:anonymous"
       }
     }
+
+    "link all calls in a conservative, sound, and flow-insensitive manner" in {
+      val cpg: Cpg = code(
+        """
+          |var barOrBaz = require('./bar.js');
+          |barOrBaz = require('./baz.js');
+          |
+          |barOrBaz.sayhi();
+          |""".stripMargin,
+        "foo.js"
+      ).moreCode(
+        """
+          |module.exports = {
+          |  sayhi: function() {            // this will be called anonymous
+          |    console.log("Hello World, love BAR");
+          |  }
+          |}
+          |""".stripMargin,
+        "bar.js"
+      ).moreCode(
+        """
+          |module.exports = {
+          |  sayhi: function() {            // this will be called anonymous
+          |    console.log("Howdy World, love BAZ");
+          |  }
+          |}
+          |""".stripMargin,
+        "baz.js"
+      )
+
+      // Because of flow-insensitivity, it could point to either "sayhi"
+      inside(cpg.call("sayhi").callee(NoResolve).l) { case List(m1, m2) =>
+        m1.fullName shouldBe "bar.js::program:anonymous"
+        m2.fullName shouldBe "baz.js::program:anonymous"
+      }
+
+      inside(cpg.method.fullNameExact("bar.js::program:anonymous").l) { case List(m) =>
+        m.name shouldBe "anonymous"
+        m.fullName shouldBe "bar.js::program:anonymous"
+      }
+
+      inside(cpg.method.fullNameExact("bar.js::program:anonymous").callIn(NoResolve).l) { case List(call) =>
+        call.code shouldBe "barOrBaz.sayhi()"
+        call.methodFullName shouldBe "<unknownFullName>"
+      }
+
+      inside(cpg.method.fullNameExact("baz.js::program:anonymous").l) { case List(m) =>
+        m.name shouldBe "anonymous"
+        m.fullName shouldBe "baz.js::program:anonymous"
+      }
+
+      inside(cpg.method.fullNameExact("baz.js::program:anonymous").callIn(NoResolve).l) { case List(call) =>
+        call.code shouldBe "barOrBaz.sayhi()"
+        call.methodFullName shouldBe "<unknownFullName>"
+      }
+    }
+
   }
 
 }

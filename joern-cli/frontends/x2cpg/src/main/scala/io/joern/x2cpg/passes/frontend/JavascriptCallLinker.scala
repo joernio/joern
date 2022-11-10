@@ -83,14 +83,14 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
       } else {
         callOffOfRequire(call) match {
           case Some(requirePaths: Seq[String]) =>
-            val originalMethodFullName = call.methodFullName
-            requirePaths.flatMap(rp => methodsByNameAndFile.get((rp, call.name))).foreach { method =>
+            val callees = requirePaths.flatMap(rp => methodsByNameAndFile.get((rp, call.name)))
+            callees.foreach { method =>
               diffGraph.addEdge(call, method, EdgeTypes.CALL)
               diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
             }
             // If there are more than one call edges then it is unsound to set METHOD_FULL_NAME to something
-            if (call.outE(EdgeTypes.CALL).size > 1)
-              diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, originalMethodFullName)
+            if (callees.size > 1)
+              diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, "<unknownFullName>")
           case None =>
             getReceiverIdentifierName(call).foreach { name =>
               for (

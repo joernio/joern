@@ -1,11 +1,11 @@
 package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Local, StoredNode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
+import overflowdb.{BatchedUpdate, NodeRef}
 import overflowdb.traversal.{NodeOps, Traversal}
 
 import java.io.File
@@ -83,31 +83,51 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
     val target: String = call.inAssignment.target.code.head
 
-    val nodesToPatch: List[Call] = call.file.method.ast.isCall.nameExact(target).dedup.l
+    val callsToPatch: List[Call] = call.file.method.ast.isCall.nameExact(target).dedup.l
+
+    val localsOrIdentifiersToPatch: List[LocalOrIdentifier] = call.file.method.ast.isIdentifier
+      .nameExact(target)
+      .collect { case i: Identifier => Seq(i) ++ i.refsTo.collectAll[Local].toSeq }
+      .flatten
+      .collect { case i: StoredNode => LocalOrIdentifier(i) }
+      .dedup
+      .toList
 
     def relativeExport: String = fileToInclude.stripPrefix(dirHoldingModule + File.separator)
 
   }
 
+  case class LocalOrIdentifier(node: StoredNode) {
+    def dynamicTypeHintFullName: Seq[String] = node match {
+      case x: Identifier => x.dynamicTypeHintFullName
+      case x: Local      => x.dynamicTypeHintFullName
+      case _             => Seq()
+    }
+  }
+
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
-    cpg.call("require").where(_.inAssignment.target).map(Require.apply(_)).foreach { require =>
-      // Set types of locals on the LHS of a require
-      require.call.method.ast.isIdentifier
-        .filter(_.code.equals(require.target))
-        .collectFirst(i => i.refsTo.collectAll[Local].headOption)
-        .flatten
-        .foreach { definingLocal =>
-          (definingLocal.referencingIdentifiers ++ Seq(definingLocal)).foreach { refId =>
-            diffGraph.setNodeProperty(
-              refId,
-              PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-              definingLocal.dynamicTypeHintFullName ++ Seq(s"<export>::${require.relativeExport}")
-            )
-          }
+    val requires = cpg
+      .call("require")
+      .where(_.inAssignment.target)
+      .map(Require.apply(_))
+      .toSeq
+    // Set dynamic type hints of affected locals and identifiers
+    requires
+      .groupBy(require => require.localsOrIdentifiersToPatch)
+      .foreach { case (ns: List[LocalOrIdentifier], rs: Seq[Require]) =>
+        ns.foreach { n =>
+          diffGraph.setNodeProperty(
+            n.node,
+            PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+            n.dynamicTypeHintFullName ++ rs.map(x => s"<export>::${x.relativeExport}")
+          )
         }
+      }
+    // Set method full names of calls to patch
+    requires.foreach { require =>
       require.methodFullName.foreach { fullName =>
         cpg.method.fullNameExact(fullName).foreach { method =>
-          require.nodesToPatch.foreach { node =>
+          require.callsToPatch.foreach { node =>
             diffGraph.setNodeProperty(node, PropertyNames.METHOD_FULL_NAME, fullName)
             diffGraph.addEdge(node, method, EdgeTypes.CALL)
           }
