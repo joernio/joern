@@ -248,8 +248,11 @@ object Engine {
 
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
     vec
-      .groupBy { x =>
-        (x.path.headOption.map(_.node) ++ x.path.lastOption.map(_.node), x.partial, x.callDepth)
+      .groupBy { result =>
+        val head = result.path.headOption.map(_.node)
+        val last = result.path.lastOption.map(_.node)
+        val startAndEnd = (head ++ last).l
+        (startAndEnd, result.partial, result.callDepth)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
