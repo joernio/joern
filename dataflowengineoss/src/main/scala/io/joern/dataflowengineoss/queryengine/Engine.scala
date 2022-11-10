@@ -136,8 +136,7 @@ object Engine {
   def expandIn(curNode: CfgNode, path: Vector[PathElement], callSiteStack: mutable.Stack[Call] = mutable.Stack())(
     implicit semantics: Semantics
   ): Vector[PathElement] = {
-    val ret = ddgInE(curNode, path, callSiteStack).flatMap(x => elemForEdge(x, callSiteStack))
-    ret
+    ddgInE(curNode, path, callSiteStack).flatMap(x => elemForEdge(x, callSiteStack))
   }
 
   private def elemForEdge(e: Edge, callSiteStack: mutable.Stack[Call] = mutable.Stack())(implicit
@@ -247,63 +246,27 @@ object Engine {
     }
   }
 
-  case class Tuple3a(a: Int, b: Boolean, c: Int)
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
-    val ret = {
-      if (DebugMode.enabled) println(s"XX0 vec.size: ${vec.size}")
-      if (DebugMode.enabled) {
-        val set = vec
-          .sortBy(_.path.head.node.id).map { x =>
-          val a = x.path.headOption.map(_.node)
-          val b = x.path.lastOption.map(_.node)
-          val ab = a ++ b // always len 2
-          val xPartial = x.partial // same between scala2/3
-          val xCallDepth = x.callDepth // always 0
-          println(s"XXX1 a=${a.get.id}; b=${b.get.id}; $xPartial")
-//          Tuple3a(ab, xPartial, xCallDepth)
-          (ab.toList, xPartial, xCallDepth)
-        }.to(Set)
-        println(s"XXX0 set.size=${set.size}")
+    vec
+      .groupBy { x =>
+        (x.path.headOption.map(_.node) ++ x.path.lastOption.map(_.node), x.partial, x.callDepth)
       }
+      .map { case (_, list) =>
+        val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
+        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+          case Nil    => Nil
+          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
+        }).map(_._2)
 
-      val grouped = {
-        vec
-          .sortBy(_.path.head.node.id)
-          .groupBy { x =>
-            val a = x.path.headOption.map(_.node)
-            val b = x.path.lastOption.map(_.node)
-            val ab = a ++ b // always len 2
-            val xPartial = x.partial // same between scala2/3
-            val xCallDepth = x.callDepth // always 0
-//            if (DebugMode.enabled) println(s"XXX1 a=${a.get.id}; b=${b.get.id}; $xPartial")
-            (ab.l, xPartial, xCallDepth)
-          }
-      }
-      if (DebugMode.enabled) println(s"XXX2 grouped.size=${grouped.size}")
-      grouped.map { case (_, list) =>
-        if (DebugMode.enabled) println(s"XXX4 list.size: ${list.size}")
-          val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
-          val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
-            case Nil => Nil
-            case h :: t => h :: t.takeWhile(y => y._1 == h._1)
-          }).map(_._2)
-
-//          if (DebugMode.enabled) println(s"XX6 withMaxLength.length: ${withMaxLength.length}")
-
-          if (withMaxLength.length == 1) {
-            withMaxLength.head
-          } else {
-            withMaxLength.minBy { x =>
-              x.path.map(_.node.id()).mkString("-")
-            }
+        if (withMaxLength.length == 1) {
+          withMaxLength.head
+        } else {
+          withMaxLength.minBy { x =>
+            x.path.map(_.node.id()).mkString("-")
           }
         }
-        .toVector
-    }
-
-    if (DebugMode.enabled)
-      println(s"deduplicate result.size: ${ret.size}")
-    ret
+      }
+      .toVector
   }
 
 }
