@@ -2,6 +2,7 @@ package io.joern.jssrc2cpg.passes
 
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
 
 class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
@@ -69,6 +70,10 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       inside(cpg.method.fullNameExact("bar.js::program:anonymous").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "bar.sayhi()"
         call.methodFullName shouldBe "bar.js::program:anonymous"
+        inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
+          receiver.name shouldBe "bar"
+          receiver.typeFullName shouldBe "<export>::bar.js"
+        }
       }
 
       inside(cpg.method.fullNameExact("baz.js::program:anonymous").l) { case List(m) =>
@@ -79,6 +84,10 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       inside(cpg.method.fullNameExact("baz.js::program:anonymous").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "baz.sayhowdy()"
         call.methodFullName shouldBe "baz.js::program:anonymous"
+        inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
+          receiver.name shouldBe "baz"
+          receiver.typeFullName shouldBe "<export>::baz.js"
+        }
       }
     }
 
@@ -125,6 +134,10 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       inside(cpg.method.fullNameExact("bar.js::program:anonymous").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "barOrBaz.sayhi()"
         call.methodFullName shouldBe "<unknownFullName>"
+        inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
+          receiver.name shouldBe "barOrBaz"
+          receiver.typeFullName shouldBe "ANY"
+        }
       }
 
       inside(cpg.method.fullNameExact("baz.js::program:anonymous").l) { case List(m) =>
@@ -135,6 +148,10 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       inside(cpg.method.fullNameExact("baz.js::program:anonymous").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "barOrBaz.sayhi()"
         call.methodFullName shouldBe "<unknownFullName>"
+        inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
+          receiver.name shouldBe "barOrBaz"
+          receiver.typeFullName shouldBe "ANY"
+        }
       }
     }
 

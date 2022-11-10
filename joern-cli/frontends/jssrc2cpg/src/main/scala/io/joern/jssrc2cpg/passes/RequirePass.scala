@@ -1,11 +1,12 @@
 package io.joern.jssrc2cpg.passes
 
+import io.joern.jssrc2cpg.passes.RequirePass.JS_EXPORT_PREFIX
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Local, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Identifier, Local}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.{BatchedUpdate, NodeRef}
+import overflowdb.BatchedUpdate
 import overflowdb.traversal.{NodeOps, Traversal}
 
 import java.io.File
@@ -85,24 +86,36 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
     val callsToPatch: List[Call] = call.file.method.ast.isCall.nameExact(target).dedup.l
 
-    val localsOrIdentifiersToPatch: List[LocalOrIdentifier] = call.file.method.ast.isIdentifier
-      .nameExact(target)
-      .collect { case i: Identifier => Seq(i) ++ i.refsTo.collectAll[Local].toSeq }
-      .flatten
-      .collect { case i: StoredNode => LocalOrIdentifier(i) }
-      .dedup
-      .toList
+    val variableToPatch: VariableInformation = VariableInformation(
+      call.file.method.ast.isIdentifier
+        .nameExact(target)
+        .collect { case i: Identifier => Seq(i) ++ i.refsTo.collectAll[Local].toSeq }
+        .flatten
+        .collect { case i: AstNode => i }
+        .dedup
+        .toList
+    )
 
     def relativeExport: String = fileToInclude.stripPrefix(dirHoldingModule + File.separator)
 
   }
 
-  case class LocalOrIdentifier(node: StoredNode) {
-    def dynamicTypeHintFullName: Seq[String] = node match {
-      case x: Identifier => x.dynamicTypeHintFullName
-      case x: Local      => x.dynamicTypeHintFullName
-      case _             => Seq()
-    }
+  /** Represents a local and all of its reference identifiers.
+    * @param nodes
+    *   an [[AstNode]] list of a local and its reference identifiers.
+    */
+  case class VariableInformation(nodes: List[AstNode]) {
+
+    /** Whether this variable has been set as immutable or not.
+      */
+    lazy val isImmutable: Boolean = nodes.exists(_.inAssignment.code.exists(_.startsWith("const ")))
+
+    /** The dynamic type hints attached to this variable. This assumes all nodes have the same property value at this
+      * time.
+      */
+    lazy val dynamicTypeHintFullName: Seq[String] = nodes.headOption
+      .map(_.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, IndexedSeq.empty[String]))
+      .getOrElse(IndexedSeq.empty[String])
   }
 
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
@@ -111,15 +124,16 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
       .where(_.inAssignment.target)
       .map(Require.apply(_))
       .toSeq
-    // Set dynamic type hints of affected locals and identifiers
+    // Set type hints of affected locals and identifiers
     requires
-      .groupBy(require => require.localsOrIdentifiersToPatch)
-      .foreach { case (ns: List[LocalOrIdentifier], rs: Seq[Require]) =>
-        ns.foreach { n =>
+      .groupBy(require => require.variableToPatch)
+      .foreach { case (varInfo: VariableInformation, rs: Seq[Require]) =>
+        varInfo.nodes.foreach { n =>
           diffGraph.setNodeProperty(
             n.node,
-            PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-            n.dynamicTypeHintFullName ++ rs.map(x => s"<export>::${x.relativeExport}")
+            if (varInfo.isImmutable) PropertyNames.TYPE_FULL_NAME else PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+            if (varInfo.isImmutable) rs.map(x => s"$JS_EXPORT_PREFIX${x.relativeExport}").headOption.getOrElse("ANY")
+            else varInfo.dynamicTypeHintFullName ++ rs.map(x => s"$JS_EXPORT_PREFIX${x.relativeExport}")
           )
         }
       }
@@ -146,4 +160,8 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
   }
 
+}
+
+object RequirePass {
+  val JS_EXPORT_PREFIX: String = "<export>::"
 }
