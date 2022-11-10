@@ -40,7 +40,7 @@ abstract class WorkspaceLoader[ProjectType <: Project] {
       case Success(v) => Some(v)
       case Failure(e) =>
         System.err.println(s"Error loading project at $path - skipping: ")
-        System.err.println(e.printStackTrace)
+        e.printStackTrace
         None
     }
   }

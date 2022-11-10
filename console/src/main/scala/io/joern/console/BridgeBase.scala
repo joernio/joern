@@ -196,7 +196,6 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
   protected def onExitCode: String
 }
 
-// TODO rename - why is this called `ScriptExecution` if it really implements scripts and repl?
 trait InteractiveShell { this: BridgeBase =>
   protected def startInteractiveShell(config: Config) = {
     val replConfig = config.cpgToLoad.map { cpgFile =>
