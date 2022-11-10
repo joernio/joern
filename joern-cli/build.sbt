@@ -12,6 +12,8 @@ libraryDependencies ++= Seq(
   "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test
 )
 
+Test/compile := (Test/compile).dependsOn((Projects.c2cpg/stage)).value
+
 enablePlugins(UniversalPlugin)
 enablePlugins(JavaAppPackaging)
 //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
