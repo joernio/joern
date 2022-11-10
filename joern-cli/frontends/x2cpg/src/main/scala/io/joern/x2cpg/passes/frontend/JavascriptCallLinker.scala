@@ -1,14 +1,11 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Local}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.NodeOps
-import overflowdb.traversal.jIteratortoTraversal
+import overflowdb.traversal.{NodeOps, jIteratortoTraversal}
 
 import scala.collection.mutable
 
@@ -20,7 +17,8 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
   private type MethodsByNameAndFileType = mutable.HashMap[(String, String), nodes.Method]
   private type MethodsByFullNameType    = mutable.HashMap[String, nodes.Method]
 
-  private val JS_EXPORT_NAMES = IndexedSeq("module.exports", "exports")
+  private val JS_EXPORT_NAMES  = IndexedSeq("module.exports", "exports")
+  private val JS_EXPORT_PREFIX = "<export>::"
 
   private def isStaticSingleAssignmentLocal(ident: nodes.Identifier): Boolean =
     ident.refsTo
@@ -53,7 +51,7 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
             Some(assignee.name)
           case assignee: nodes.Call
               if assignee.methodFullName == Operators.fieldAccess &&
-                JS_EXPORT_NAMES.contains(assignee.argument(1).code) =>
+                (JS_EXPORT_NAMES.contains(assignee.argument(1).code) || assignee.code.startsWith("_tmp_")) =>
             Some(assignee.argument(2).asInstanceOf[nodes.FieldIdentifier].canonicalName)
           case _ => None
         }
@@ -76,15 +74,35 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
   ): Unit = {
     cpg.call.foreach { call =>
       if (call.dispatchType == DispatchTypes.STATIC_DISPATCH) {
+        // Case 1: This call is static so the methodFullName points us to our callee, typically reserved for <operator>
         methodsByFullName
           .get(call.methodFullName)
-          .foreach(diffGraph.addEdge(call, _, EdgeTypes.CALL))
+          .foreach { method =>
+            diffGraph.addEdge(call, method, EdgeTypes.CALL)
+          }
       } else {
-        getReceiverIdentifierName(call).foreach { name =>
-          for (
-            file   <- call.file.headOption;
-            method <- methodsByNameAndFile.get((file.name, name))
-          ) { diffGraph.addEdge(call, method, EdgeTypes.CALL) }
+        val imports = receiverImports(call)
+        if (imports.nonEmpty) {
+          // Case 2: This call's receiver is associated with a "require" statement's module.exports
+          val callees = imports.flatMap(rp => methodsByNameAndFile.get((rp, call.name)))
+          callees.foreach { method =>
+            diffGraph.addEdge(call, method, EdgeTypes.CALL)
+            diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
+          }
+          // If there are more than one call edges then it is unsound to set METHOD_FULL_NAME to something
+          if (callees.size > 1)
+            diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, "<unknownFullName>")
+        } else {
+          // Case 3: We look for a definition of the function within the scope of the caller's file
+          getReceiverIdentifierName(call).foreach { name =>
+            for (
+              file   <- call.file.headOption;
+              method <- methodsByNameAndFile.get((file.name, name))
+            ) {
+              diffGraph.addEdge(call, method, EdgeTypes.CALL)
+              diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
+            }
+          }
         }
       }
     }
@@ -92,6 +110,33 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   private def callReceiverOption(callNode: nodes.Call): Option[nodes.Expression] =
     callNode._receiverOut.nextOption().map(_.asInstanceOf[nodes.Expression])
+
+  /** If a call is made on a receiver that contains the result of a <code>require</code> then the
+    * [[io.joern.jssrc2cpg.passes.RequirePass]] should have marked the ref [[Local]] and [[Identifier]] nodes with the
+    * file name under <code>TYPE_FULL_NAME</code> (if immutable) or <code>DYNAMIC_TYPE_HINT_FULL_NAME</code> (if
+    * mutable).
+    * @param call
+    *   the call to investigate for a <code>require</code> reference.
+    * @return
+    *   the argument given to the declaring require(s) if present.
+    */
+  private def receiverImports(call: nodes.Call): Seq[String] = {
+    callReceiverOption(call)
+      .flatMap {
+        case c: Call if c.methodFullName == Operators.fieldAccess =>
+          c.argument(1).collectAll[Identifier].collectFirst {
+            case receiver: Identifier if receiver.dynamicTypeHintFullName.exists(_.startsWith(JS_EXPORT_PREFIX)) =>
+              receiver.dynamicTypeHintFullName
+                .filter(_.startsWith(JS_EXPORT_PREFIX))
+                .map(_.stripPrefix(JS_EXPORT_PREFIX))
+            case receiver: Identifier if receiver.typeFullName.startsWith(JS_EXPORT_PREFIX) =>
+              Seq(receiver.typeFullName.stripPrefix(JS_EXPORT_PREFIX))
+          }
+        case _ => None
+      }
+      .toSeq
+      .flatten
+  }
 
   private def fromFieldAccess(c: nodes.Call): Option[String] =
     if (c.methodFullName == Operators.fieldAccess && JS_EXPORT_NAMES.contains(c.argument(1).code)) {
