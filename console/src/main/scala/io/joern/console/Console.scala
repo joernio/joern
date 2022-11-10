@@ -18,10 +18,8 @@ import scala.sys.process.Process
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
-class Console[T <: Project](
-  loader: WorkspaceLoader[T],
-  baseDir: File = File.currentWorkingDirectory
-) extends Reporting {
+class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.currentWorkingDirectory)
+    extends Reporting {
 
   import Console._
 
@@ -440,7 +438,7 @@ class Console[T <: Project](
 }
 
 object Console {
-  val nameOfLegacyCpgInProject     = "cpg.bin.zip"
+  val nameOfLegacyCpgInProject = "cpg.bin.zip"
 
   def deriveNameFromInputPath[T <: Project](inputPath: String, workspace: WorkspaceManager[T]): String = {
     val name    = File(inputPath).name

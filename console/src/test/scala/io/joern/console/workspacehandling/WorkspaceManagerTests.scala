@@ -176,10 +176,7 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
     def createFakeProjectAndOpen(workspaceFile: File, projectName: String): WorkspaceManager[Project] = {
       WorkspaceTests.createFakeProject(workspaceFile, projectName)
       val manager = new WorkspaceManager[Project](workspaceFile.toString)
-      manager.openProject(
-        projectName,
-        (_: String) => Some(Cpg.emptyCpg)
-      )
+      manager.openProject(projectName, (_: String) => Some(Cpg.emptyCpg))
       manager
     }
 

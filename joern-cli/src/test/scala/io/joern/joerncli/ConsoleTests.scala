@@ -32,4 +32,3 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     }
   }
 }
-

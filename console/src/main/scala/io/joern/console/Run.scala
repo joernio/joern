@@ -79,7 +79,9 @@ object Run {
          |  override def toString() : String = {
          |    val columnNames = List("name", "description")
          |    val rows =
-         |      ${layerCreatorTypeNames.map { case (varName, typeName) => s"""List("$varName",$typeName.description.trim)""" }}
+         |      ${layerCreatorTypeNames.map { case (varName, typeName) =>
+          s"""List("$varName",$typeName.description.trim)"""
+        }}
          |    "\\n" + Table(columnNames, rows).render
          |  }
          |""".stripMargin

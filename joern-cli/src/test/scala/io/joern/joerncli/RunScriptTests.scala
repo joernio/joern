@@ -15,7 +15,7 @@ class RunScriptTests extends AnyWordSpec with Matchers {
     ("c/userspace-memory-access.sc", "syscalls"),
     ("c/malloc-overflow.sc", "malloc-overflow"),
     ("c/malloc-leak.sc", "leak"),
-    ("c/const-ish.sc", "const-ish"),
+    ("c/const-ish.sc", "const-ish")
   ).foreach { case (scriptFileName, codePathRelative) =>
     s"Executing '$scriptFileName' on '$codePathRelative'" in {
       exec(os.RelPath(scriptFileName), s"$testCodeRoot/$codePathRelative")
@@ -25,16 +25,16 @@ class RunScriptTests extends AnyWordSpec with Matchers {
 }
 
 object RunScriptTests {
-  val projectRoot = os.Path(ProjectRoot.find.path.toAbsolutePath)
-  val scriptsRoot =  projectRoot / "scripts"
+  val projectRoot  = os.Path(ProjectRoot.find.path.toAbsolutePath)
+  val scriptsRoot  = projectRoot / "scripts"
   val testCodeRoot = s"${projectRoot.toNIO}/joern-cli/src/test/resources/testcode"
 
   def exec(scriptPath: os.RelPath, codePathAbsolute: String): Unit = {
     ReplBridge.runScript(
       Config(
-        scriptFile = Some(scriptsRoot/scriptPath),
+        scriptFile = Some(scriptsRoot / scriptPath),
         params = Map("inputPath" -> codePathAbsolute),
-        additionalImports = List(scriptsRoot/"assertions.sc")
+        additionalImports = List(scriptsRoot / "assertions.sc")
       )
     )
   }

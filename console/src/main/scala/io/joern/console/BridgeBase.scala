@@ -67,7 +67,9 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
       opt[Seq[String]]("dependency")
         .valueName("com.michaelpollmeier:versionsort:1.0.7,...")
         .action((x, c) => c.copy(dependencies = x.toList))
-        .text("resolve dependency (and it's transitive dependencies) for given maven coordinate(s): comma-separated list. use `--verbose` to print resolved jars")
+        .text(
+          "resolve dependency (and it's transitive dependencies) for given maven coordinate(s): comma-separated list. use `--verbose` to print resolved jars"
+        )
 
       opt[String]("command")
         .action((x, c) => c.copy(command = Some(x)))
@@ -208,16 +210,18 @@ trait InteractiveShell { this: BridgeBase =>
 
     val predefCode = predefPlus(replConfig.toList)
 
-    replpp.InteractiveShell.run(replpp.Config(
-      predefCode = Some(predefCode),
-      predefFiles = config.additionalImports,
-      nocolors = config.nocolors,
-      dependencies = config.dependencies,
-      verbose = config.verbose,
-      greeting = greeting,
-      prompt = Option(promptStr),
-      onExitCode = Option(onExitCode)
-    ))
+    replpp.InteractiveShell.run(
+      replpp.Config(
+        predefCode = Some(predefCode),
+        predefFiles = config.additionalImports,
+        nocolors = config.nocolors,
+        dependencies = config.dependencies,
+        verbose = config.verbose,
+        greeting = greeting,
+        prompt = Option(promptStr),
+        onExitCode = Option(onExitCode)
+      )
+    )
   }
 
 }
@@ -389,7 +393,7 @@ trait ServerHandling { this: BridgeBase =>
         serverHost = config.serverHost,
         serverPort = config.serverPort,
         serverAuthUsername = config.serverAuthUsername,
-        serverAuthPassword = config.serverAuthPassword,
+        serverAuthPassword = config.serverAuthPassword
       )
     )
   }
