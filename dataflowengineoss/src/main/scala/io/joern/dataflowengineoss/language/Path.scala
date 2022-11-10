@@ -23,13 +23,15 @@ object Path {
 
   implicit val show: Show[Path] = { path =>
     Table(
-      columnNames = Array("nodeType", "tracked", "lineNumber", "method", "file"),
+      // TODO do not commit this debug change
+//      columnNames = Array("nodeType", "tracked", "lineNumber", "method", "file"),
+      columnNames = Array("nodeType", "tracked", "lineNumber", "method"),
       rows = path.elements.map { cfgNode =>
         val nodeType   = cfgNode.getClass.getSimpleName
         val method     = cfgNode.method
         val methodName = method.name
         val lineNumber = cfgNode.lineNumber.getOrElse("N/A").toString
-        val fileName   = method.file.name.headOption.getOrElse("N/A")
+//        val fileName   = method.file.name.headOption.getOrElse("N/A")
         val statement = cfgNode match {
           case _: MethodParameterIn =>
             val paramsPretty = method.parameter.toList.sortBy(_.index).map(_.code).mkString(", ")
@@ -37,7 +39,8 @@ object Path {
           case _ => cfgNode.statement.repr
         }
         val tracked = StringUtils.normalizeSpace(StringUtils.abbreviate(statement, 20))
-        Array(nodeType, tracked, lineNumber, methodName, fileName)
+//        Array(nodeType, tracked, lineNumber, methodName, fileName)
+        Array(nodeType, tracked, lineNumber, methodName)
       }
     ).render
   }
