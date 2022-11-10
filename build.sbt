@@ -51,9 +51,6 @@ ThisBuild / scalacOptions ++= Seq(
   "-deprecation" // Emit warning and location for usages of deprecated APIs.
 )
 
-
-ThisBuild/Compile/packageDoc/publishArtifact := false
-
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
   val distributionFile = file("target/joern-cli.zip")
