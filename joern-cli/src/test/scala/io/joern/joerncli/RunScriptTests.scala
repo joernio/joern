@@ -1,7 +1,7 @@
 package io.joern.joerncli
 
 import io.joern.console.Config
-import io.joern.joerncli.console.AmmoniteBridge
+import io.joern.joerncli.console.ReplBridge
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -30,7 +30,7 @@ object RunScriptTests {
   val testCodeRoot = s"${projectRoot.toNIO}/joern-cli/src/test/resources/testcode"
 
   def exec(scriptPath: os.RelPath, codePathAbsolute: String): Unit = {
-    AmmoniteBridge.runScript(
+    ReplBridge.runScript(
       Config(
         scriptFile = Some(scriptsRoot/scriptPath),
         params = Map("inputPath" -> codePathAbsolute),

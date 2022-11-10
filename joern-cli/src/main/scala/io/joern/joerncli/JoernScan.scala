@@ -7,7 +7,7 @@ import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.joerncli.JoernScan.getQueriesFromQueryDb
 import io.joern.joerncli.Scan.{allTag, defaultTag}
-import io.joern.joerncli.console.AmmoniteBridge
+import io.joern.joerncli.console.ReplBridge
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
@@ -173,7 +173,7 @@ object JoernScan extends BridgeBase {
         language = config.language,
         frontendArgs = frontendArgs.toArray
       )
-    runAmmonite(shellConfig)
+    run(shellConfig)
     println(s"Run `joern --for-input-path ${config.src}` to explore interactively")
   }
 
@@ -217,7 +217,7 @@ object JoernScan extends BridgeBase {
     val rmPluginConfig = io.joern.console
       .Config()
       .copy(rmPlugin = Some("querydb"))
-    runAmmonite(rmPluginConfig)
+    run(rmPluginConfig)
   }
 
   private def addQueryDatabase(absPath: String): Unit = {
@@ -225,7 +225,7 @@ object JoernScan extends BridgeBase {
     val addPluginConfig = io.joern.console
       .Config()
       .copy(addPlugin = Some(absPath))
-    runAmmonite(addPluginConfig)
+    run(addPluginConfig)
   }
 
   private def urlForVersion(version: String): String = {
@@ -236,12 +236,12 @@ object JoernScan extends BridgeBase {
     }
   }
 
-  override protected def predefPlus(lines: List[String]): String = AmmoniteBridge.predefPlus(lines)
-  override protected def promptStr                             = AmmoniteBridge.promptStr
+  override protected def predefPlus(lines: List[String]): String = ReplBridge.predefPlus(lines)
+  override protected def promptStr                             = ReplBridge.promptStr
 
-  override protected def greeting: String = AmmoniteBridge.greeting
+  override protected def greeting: String = ReplBridge.greeting
 
-  override protected def onExitCode = AmmoniteBridge.onExitCode
+  override protected def onExitCode = ReplBridge.onExitCode
 }
 
 object Scan {

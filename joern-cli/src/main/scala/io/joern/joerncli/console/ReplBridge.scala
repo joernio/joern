@@ -4,12 +4,12 @@ import io.joern.console.{BridgeBase, JoernProduct}
 
 import java.io.PrintStream
 
-object AmmoniteBridge extends BridgeBase {
+object ReplBridge extends BridgeBase {
 
   override val slProduct = JoernProduct
 
   def main(args: Array[String]): Unit = {
-    runAmmonite(parseConfig(args))
+    run(parseConfig(args))
   }
 
   /** Code that is executed when starting the shell

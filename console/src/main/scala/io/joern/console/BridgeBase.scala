@@ -35,7 +35,7 @@ case class Config(
   dependencies: Seq[String] = Seq.empty
 )
 
-/** Base class for Ammonite Bridge, split by topic into multiple self types.
+/** Base class for ReplBridge, split by topic into multiple self types.
   */
 trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling {
 
@@ -156,9 +156,8 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
     parser.parse(args, Config()).get
   }
 
-  /** Entry point for Joern's integrated ammonite shell
-    */
-  protected def runAmmonite(config: Config): Unit = {
+  /** Entry point for Joern's integrated REPL and plugin manager */
+  protected def run(config: Config): Unit = {
     if (config.listPlugins) {
       printPluginsAndLayerCreators(config)
     } else if (config.addPlugin.isDefined) {
@@ -337,8 +336,7 @@ trait PluginHandling { this: BridgeBase =>
       |""".stripMargin
   }
 
-  /** Run plugin by generating a temporary script based on the given config and executing the script via ammonite.
-    */
+  /** Run plugin by generating a temporary script based on the given config and execute the script */
   protected def runPlugin(config: Config, productName: String): Unit = {
     if (config.src.isEmpty) {
       println("You must supply a source directory with the --src flag")
