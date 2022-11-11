@@ -124,12 +124,13 @@ object BindingTable {
     typeDecl: T,
     getBindingTable: ResolvedReferenceTypeDeclaration => BindingTable,
     methodSignature: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String,
-    adapter: BindingTableAdapter[T]
+    adapter: BindingTableAdapter[T],
+    typeEqualsDecl: (ResolvedReferenceTypeDeclaration, T) => Boolean
   ): BindingTable = {
     val bindingTable = new BindingTable()
 
     // Take over all binding table entries for parent class/interface binding tables.
-    adapter.directParents(typeDecl).foreach { parentTypeDecl =>
+    adapter.directParents(typeDecl).filterNot(typeEqualsDecl(_, typeDecl)).foreach { parentTypeDecl =>
       val parentBindingTable = getBindingTable(parentTypeDecl)
       parentBindingTable.getEntries.foreach { entry =>
         bindingTable.add(entry)

@@ -1,4 +1,4 @@
-package io.joern.javasrc2cpg.util
+package io.joern.javasrc2cpg.typesolvers
 
 import com.github.javaparser.ast.`type`.{PrimitiveType, Type}
 import com.github.javaparser.resolution.SymbolResolver
@@ -7,21 +7,11 @@ import com.github.javaparser.resolution.declarations.{
   ResolvedTypeDeclaration,
   ResolvedTypeParameterDeclaration
 }
+import com.github.javaparser.resolution.types._
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
-import com.github.javaparser.resolution.types.{
-  ResolvedArrayType,
-  ResolvedLambdaConstraintType,
-  ResolvedPrimitiveType,
-  ResolvedReferenceType,
-  ResolvedType,
-  ResolvedTypeVariable,
-  ResolvedUnionType,
-  ResolvedVoidType,
-  ResolvedWildcard
-}
 import com.github.javaparser.symbolsolver.logic.InferenceVariableType
 import com.github.javaparser.symbolsolver.model.typesystem.{LazyType, NullType}
-import io.joern.javasrc2cpg.util.TypeInfoCalculator.{TypeConstants, TypeNameConstants}
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{TypeConstants, TypeNameConstants}
 import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
 

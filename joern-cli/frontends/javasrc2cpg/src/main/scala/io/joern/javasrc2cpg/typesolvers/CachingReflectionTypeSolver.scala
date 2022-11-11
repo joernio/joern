@@ -1,4 +1,4 @@
-package io.joern.javasrc2cpg.util
+package io.joern.javasrc2cpg.typesolvers
 
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
 import com.github.javaparser.symbolsolver.cache.GuavaCache
