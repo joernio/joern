@@ -84,6 +84,9 @@ class ConfigFileCreationPass(projectDir: String, cpg: Cpg) extends ConcurrentWri
     pathEndFilter("dwr.xml"),
     // MYBATIS
     mybatisFilter,
+    // BUILD SYSTEM
+    pathEndFilter("build.gradle"),
+    pathEndFilter("build.gradle.kts"),
     // ANDROID
     pathEndFilter("AndroidManifest.xml")
   )
