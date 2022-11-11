@@ -55,7 +55,7 @@ class ResultTableTests extends AnyWordSpec with Matchers {
       val pathContainingPivot = Vector(PathElement(node4), PathElement(pivotNode), PathElement(node3))
       val table               = new ResultTable
       table.add(pivotNode, List(), Vector(ReachableByResult(pathContainingPivot, new ResultTable, List())))
-      table.createFromTable(PathElement(pivotNode), List(), Vector(PathElement(node1))) match {
+      table.createFromTable(PathElement(pivotNode), Vector(PathElement(node1))) match {
         case Some(Vector(ReachableByResult(path, _, _, _, _))) =>
           path.map(_.node.id) shouldBe List(node4.id, pivotNode.id, node1.id)
         case _ => fail()

@@ -80,7 +80,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
       path: Vector[PathElement],
       callSiteStack: List[Call]
     ) = {
-      val cachedResult = table.createFromTable(elemToPrepend, callSiteStack, path)
+      val cachedResult = table.createFromTable(elemToPrepend, path)
       if (cachedResult.isDefined) {
         QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
         cachedResult.get

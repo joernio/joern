@@ -32,12 +32,8 @@ class ResultTable(
     * for each result, determine the path up to `first` and prepend it to `path`, giving us new results via table
     * lookup.
     */
-  def createFromTable(
-    first: PathElement,
-    stack: List[Call],
-    remainder: Vector[PathElement]
-  ): Option[Vector[ReachableByResult]] = {
-    table.get(Key(first.node, stack)).map { res =>
+  def createFromTable(first: PathElement, remainder: Vector[PathElement]): Option[Vector[ReachableByResult]] = {
+    table.get(Key(first.node, first.callSiteStack)).map { res =>
       res.map { r =>
         val pathToFirstNode = r.path.slice(0, r.path.map(_.node).indexOf(first.node))
         val completePath    = pathToFirstNode ++ (first +: remainder)
