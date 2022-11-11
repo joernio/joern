@@ -37,11 +37,16 @@ case class JoernScanConfig(
   listLanguages: Boolean = false
 )
 
-object JoernScan extends App with BridgeBase {
+object JoernScan extends BridgeBase {
 
   val implementationVersion = getClass.getPackage.getImplementationVersion
 
-  val (scanArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
+  def main(args: Array[String]) = {
+    val (scanArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
+    optionParser.parse(scanArgs, JoernScanConfig()).foreach { config =>
+      run(config, frontendArgs)
+    }
+  }
 
   val optionParser = new scopt.OptionParser[JoernScanConfig]("joern-scan") {
     head(
@@ -106,9 +111,7 @@ object JoernScan extends App with BridgeBase {
     note(s"Args specified after the ${CpgBasedTool.ARGS_DELIMITER} separator will be passed to the front-end verbatim")
   }
 
-  optionParser.parse(scanArgs, JoernScanConfig()).foreach(run)
-
-  private def run(config: JoernScanConfig): Unit = {
+  private def run(config: JoernScanConfig, frontendArgs: List[String]): Unit = {
     if (config.dump) {
       dumpQueriesAsJson(config.dumpDestination)
     } else if (config.listQueryNames) {
@@ -118,7 +121,7 @@ object JoernScan extends App with BridgeBase {
     } else if (config.updateQueryDb) {
       updateQueryDatabase(config.queryDbVersion)
     } else {
-      runScanPlugin(config)
+      runScanPlugin(config, frontendArgs)
     }
   }
 
@@ -143,7 +146,7 @@ object JoernScan extends App with BridgeBase {
     println(s.toString())
   }
 
-  private def runScanPlugin(config: JoernScanConfig): Unit = {
+  private def runScanPlugin(config: JoernScanConfig, frontendArgs: List[String]): Unit = {
 
     if (config.src == "") {
       println(optionParser.usage)
