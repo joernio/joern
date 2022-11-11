@@ -28,7 +28,6 @@ class AccessPathTests extends AnyWordSpec {
             case (AddressOf, IndirectionAccess) =>
               Elements.newIfNonEmpty(elements.dropRight(1))
             case (IndirectionAccess, AddressOf) =>
-
               /** We also collapse *&. This is WRONG (you cannot deref a pointer and then un-deref the result). However,
                 * it is sometimes valid as a syntactic construct, and the language should make sure that this only
                 * occurs in such settings.
