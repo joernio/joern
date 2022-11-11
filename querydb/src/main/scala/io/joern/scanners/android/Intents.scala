@@ -21,8 +21,8 @@ object Intents extends QueryBundle {
       description = "-",
       score = 9,
       withStrRep({ cpg =>
-        import io.joern.querylib.android.AndroidManifestXmlTraversal
-        val exportedActivityNames = new AndroidManifestXmlTraversal(cpg.configFile).exportedAndroidActivityNames.l
+        import io.joern.querydb.language.android.ManifestXmlTraversal
+        val exportedActivityNames = new ManifestXmlTraversal(cpg.configFile).exportedAndroidActivityNames.l
         def exportedActivities =
           cpg.typeDecl.filter { node => exportedActivityNames.contains(node.name) }
         def getIntentCalls =
