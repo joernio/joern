@@ -1,4 +1,4 @@
-package io.joern.querylib.android
+package io.joern.querydb.language.android
 
 import io.joern.x2cpg.utils.xml.SecureXmlParsing
 import io.shiftleft.codepropertygraph.generated.nodes
@@ -9,7 +9,7 @@ object Constants {
   val androidManifestXml = "AndroidManifest.xml"
 }
 
-class AndroidManifestXmlTraversal(val traversal: Traversal[nodes.ConfigFile]) extends AnyVal {
+class ManifestXmlTraversal(val traversal: Traversal[nodes.ConfigFile]) extends AnyVal {
   def exportedAndroidActivityNames =
     traversal
       .filter(_.name.endsWith(Constants.androidManifestXml))

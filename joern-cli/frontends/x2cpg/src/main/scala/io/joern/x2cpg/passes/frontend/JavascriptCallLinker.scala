@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.frontend
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.{NodeOps, jIteratortoTraversal}
