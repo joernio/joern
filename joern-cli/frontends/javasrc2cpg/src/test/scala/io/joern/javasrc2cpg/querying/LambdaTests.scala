@@ -1,19 +1,17 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.edges.{Binds, Capture, Ref}
+import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Binding,
-  Block,
   Call,
   ClosureBinding,
   Identifier,
   Local,
   MethodParameterIn,
   MethodRef,
-  Return,
-  TypeDecl
+  Return
 }
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
@@ -91,7 +89,6 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
 
     "create a method body for the lambda method" in {
-      val x = 24;
       cpg.typeDecl.name("Foo").method.name(".*lambda.*").block.astChildren.l match {
         case List(_: Local, _: Local, returnNode: Return) =>
           returnNode.code shouldBe "return lambdaInput.length() > 5 ? \"Long\" : fallback;"

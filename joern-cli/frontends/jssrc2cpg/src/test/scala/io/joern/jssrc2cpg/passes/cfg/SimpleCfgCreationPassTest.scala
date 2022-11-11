@@ -9,6 +9,8 @@ import io.joern.x2cpg.testfixtures.CfgTestFixture
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.Cpg
 
+import scala.annotation.unused
+
 class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) {
 
   "CFG generation for simple fragments" should {
@@ -240,6 +242,7 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
     }
 
     "be correct for chained calls" ignore {
+      @unused
       implicit val cpg: Cpg = code("x.foo(y).bar(z)")
       // TODO the current style of writing this tests in unmaintainable.
     }

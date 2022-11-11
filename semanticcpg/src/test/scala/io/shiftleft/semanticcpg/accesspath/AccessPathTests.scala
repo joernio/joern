@@ -15,22 +15,19 @@ class AccessPathTests extends AnyWordSpec {
       element match {
         case _ if !elements.isEmpty =>
           (elements.last, element) match {
-            case (last: PointerShift, elem: PointerShift) => {
+            case (last: PointerShift, elem: PointerShift) =>
               val newOffset = last.logicalOffset + elem.logicalOffset
 
               if (newOffset == 0) Elements.newIfNonEmpty(elements.dropRight(1))
               else
                 Elements.newIfNonEmpty(elements.updated(elements.length - 1, PointerShift(newOffset)))
-            }
-            case (_: PointerShift, VariablePointerShift) => {
+            case (_: PointerShift, VariablePointerShift) =>
               new Elements(elements.updated(elements.length - 1, VariablePointerShift))
-            }
             case (VariablePointerShift, _: PointerShift) | (VariablePointerShift, VariablePointerShift) =>
               this.el
-            case (AddressOf, IndirectionAccess) => {
+            case (AddressOf, IndirectionAccess) =>
               Elements.newIfNonEmpty(elements.dropRight(1))
-            }
-            case (IndirectionAccess, AddressOf) => {
+            case (IndirectionAccess, AddressOf) =>
 
               /** We also collapse *&. This is WRONG (you cannot deref a pointer and then un-deref the result). However,
                 * it is sometimes valid as a syntactic construct, and the language should make sure that this only
@@ -39,7 +36,6 @@ class AccessPathTests extends AnyWordSpec {
                 * un-invertible, though!
                 */
               Elements.newIfNonEmpty(elements.dropRight(1))
-            }
             case _ => Elements.newIfNonEmpty(elements :+ element)
           }
         case PointerShift(0) =>

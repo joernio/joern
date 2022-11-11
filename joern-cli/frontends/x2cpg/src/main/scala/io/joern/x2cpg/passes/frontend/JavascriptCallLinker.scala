@@ -2,7 +2,6 @@ package io.joern.x2cpg.passes.frontend
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Local}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.{NodeOps, jIteratortoTraversal}
@@ -112,9 +111,9 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     callNode._receiverOut.nextOption().map(_.asInstanceOf[nodes.Expression])
 
   /** If a call is made on a receiver that contains the result of a <code>require</code> then the
-    * [[io.joern.jssrc2cpg.passes.RequirePass]] should have marked the ref [[Local]] and [[Identifier]] nodes with the
-    * file name under <code>TYPE_FULL_NAME</code> (if immutable) or <code>DYNAMIC_TYPE_HINT_FULL_NAME</code> (if
-    * mutable).
+    * [[io.joern.jssrc2cpg.passes.RequirePass]] should have marked the ref [[nodes.Local]] and [[nodes.Identifier]]
+    * nodes with the file name under <code>TYPE_FULL_NAME</code> (if immutable) or
+    * <code>DYNAMIC_TYPE_HINT_FULL_NAME</code> (if mutable).
     * @param call
     *   the call to investigate for a <code>require</code> reference.
     * @return
@@ -123,13 +122,14 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
   private def receiverImports(call: nodes.Call): Seq[String] = {
     callReceiverOption(call)
       .flatMap {
-        case c: Call if c.methodFullName == Operators.fieldAccess =>
-          c.argument(1).collectAll[Identifier].collectFirst {
-            case receiver: Identifier if receiver.dynamicTypeHintFullName.exists(_.startsWith(JS_EXPORT_PREFIX)) =>
+        case c: nodes.Call if c.methodFullName == Operators.fieldAccess =>
+          c.argument(1).collectAll[nodes.Identifier].collectFirst {
+            case receiver: nodes.Identifier
+                if receiver.dynamicTypeHintFullName.exists(_.startsWith(JS_EXPORT_PREFIX)) =>
               receiver.dynamicTypeHintFullName
                 .filter(_.startsWith(JS_EXPORT_PREFIX))
                 .map(_.stripPrefix(JS_EXPORT_PREFIX))
-            case receiver: Identifier if receiver.typeFullName.startsWith(JS_EXPORT_PREFIX) =>
+            case receiver: nodes.Identifier if receiver.typeFullName.startsWith(JS_EXPORT_PREFIX) =>
               Seq(receiver.typeFullName.stripPrefix(JS_EXPORT_PREFIX))
           }
         case _ => None

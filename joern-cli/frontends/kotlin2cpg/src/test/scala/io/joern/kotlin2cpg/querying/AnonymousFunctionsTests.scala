@@ -4,12 +4,15 @@ import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
 
+import scala.annotation.unused
+
 @Ignore
 class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with anonymous function as argument" should {
+    @unused
     val cpg = code("""
         |package mypkg
         |

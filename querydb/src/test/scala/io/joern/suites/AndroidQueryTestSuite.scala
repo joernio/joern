@@ -16,7 +16,7 @@ class AndroidQueryTestSuite[QB <: QueryBundle](val queryBundle: QB)
   def allQueries: List[Query] = QueryUtil.allQueries(queryBundle, argumentProvider)
 
   protected def cpgForSnippets(snippets: List[CodeSnippet]): Cpg = {
-    val first = snippets(0)
+    val first = snippets.head
     val cpg   = code(first.content, first.filename)
     snippets.drop(1).foldLeft(cpg) { (foldCpg, e) =>
       foldCpg.moreCode(e.content, e.filename)

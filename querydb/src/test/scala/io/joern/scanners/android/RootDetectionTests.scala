@@ -2,9 +2,7 @@ package io.joern.scanners.android
 
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.joern.suites.{KotlinQueryTestSuite}
-import io.shiftleft.semanticcpg.language._
-import io.joern.dataflowengineoss.language._
+import io.joern.suites.KotlinQueryTestSuite
 
 class RootDetectionTests extends KotlinQueryTestSuite(RootDetection) {
   implicit val engineContext: EngineContext = EngineContext(Semantics.empty)

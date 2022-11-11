@@ -404,7 +404,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       // TODO: test more here
 
       val List(getNext: Call, component1: Call, component2: Call) =
-        controlStructureSecondChild.astChildren.drop(3).take(3).l
+        controlStructureSecondChild.astChildren.slice(3, 6).l
       getNext.order shouldBe 4
       getNext.methodFullName shouldBe Operators.assignment
       getNext.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH

@@ -102,7 +102,7 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   /** Represents a local and all of its reference identifiers.
     * @param nodes
-    *   an [[AstNode]] list of a local and its reference identifiers.
+    *   a list of a local and its reference identifiers.
     */
   case class VariableInformation(nodes: List[AstNode]) {
 

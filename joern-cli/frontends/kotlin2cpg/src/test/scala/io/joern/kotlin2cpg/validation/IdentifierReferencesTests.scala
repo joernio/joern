@@ -31,7 +31,7 @@ class IdentifierReferencesTests extends KotlinCode2CpgFixture(withOssDataflow = 
       outerScopeX.referencingIdentifiers.size shouldBe 2
       outerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(5, 7)
 
-      val List(innerScopeX: Local) = cpg.local.nameExact("x").whereNot(_.closureBindingId).drop(1).take(1).l
+      val List(innerScopeX: Local) = cpg.local.nameExact("x").whereNot(_.closureBindingId).slice(1, 2).l
       innerScopeX.referencingIdentifiers.size shouldBe 1
       innerScopeX.referencingIdentifiers.lineNumber.l shouldBe List(8)
     }

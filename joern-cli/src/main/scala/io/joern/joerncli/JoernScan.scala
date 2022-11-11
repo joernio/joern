@@ -14,6 +14,7 @@ import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, Layer
 import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 object JoernScanConfig {
@@ -137,7 +138,7 @@ object JoernScan extends App with BridgeBase {
   }
 
   private def listLanguages(): Unit = {
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s ++= "Available languages (case insensitive):\n"
     s ++= Languages.ALL.asScala.map(lang => s"- ${lang.toLowerCase}").mkString("\n")
     println(s.toString())
