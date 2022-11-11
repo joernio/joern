@@ -100,15 +100,7 @@ class Engine(context: EngineContext) {
 
     tasks.foreach(submitTask)
     runUntilAllTasksAreSolved()
-    extractResults(table)
-  }
-
-  private def extractResults(table: ResultTable): List[ReachableByResult] = {
-    val result = table.keys().flatMap { key =>
-      val r = table.get(key).get
-      r.filterNot(_.partial)
-    }
-    deduplicate(result).toList
+    deduplicate(table.extractResults()).toList
   }
 
   private def submitTask(task: ReachableByTask): Unit = {

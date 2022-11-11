@@ -28,6 +28,16 @@ class ResultTable(
     )
   }
 
+  /** Temporary method that allows merging a table into an existing table.
+    */
+  def addTable(other: ResultTable): Unit = {
+    other.keys().foreach { key =>
+      other.get(key.node, key.stack).foreach { result =>
+        this.add(key, result)
+      }
+    }
+  }
+
   /** For a given path, determine whether results for the first element (`first`) are stored in the table, and if so,
     * for each result, determine the path up to `first` and prepend it to `path`, giving us new results via table
     * lookup.
@@ -42,29 +52,22 @@ class ResultTable(
     }
   }
 
-  /** Retrieve list of results for `node` or None if they are not available in the table.
+  /** Traverse the table to generate results containing complete paths from this result table.
     */
+  def extractResults(): Vector[ReachableByResult] = {
+    this.keys().flatMap { key =>
+      val r = table(key)
+      r.filterNot(_.partial)
+    }
+  }
+
   def get(node: StoredNode, stack: List[Call]): Option[Vector[ReachableByResult]] = {
     table.get(Key(node, stack))
   }
 
-  def get(key: Key): Option[Vector[ReachableByResult]] = {
-    table.get(key)
-  }
-
   /** Returns all keys to allow for iteration through the table.
     */
-  def keys(): Vector[Key] = table.keys.toVector
-
-  /** Temporary method that allows merging a table into an existing table.
-    */
-  def addTable(other: ResultTable): Unit = {
-    other.keys().foreach { key =>
-      other.get(key.node, key.stack).foreach { result =>
-        this.add(key, result)
-      }
-    }
-  }
+  private def keys(): Vector[Key] = table.keys.toVector
 
 }
 
