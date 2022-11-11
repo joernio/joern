@@ -12,11 +12,8 @@ import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
 
 import java.util.concurrent._
-import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
-
-case class TaskFingerprint(sink: CfgNode, sources: Set[CfgNode], callDepth: Int, callSiteStack: List[Call])
 
 case class ReachableByTask(
   sink: CfgNode,
@@ -40,8 +37,6 @@ class Engine(context: EngineContext) {
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService =
     new ExecutorCompletionService[(ReachableByTask, Vector[ReachableByTask])](executorService)
-
-  private val started: mutable.Set[TaskFingerprint] = mutable.Set()
 
   def shutdown(): Unit = {
     executorService.shutdown()
@@ -109,12 +104,6 @@ class Engine(context: EngineContext) {
   }
 
   private def submitTask(task: ReachableByTask): Unit = {
-    val fingerprint = TaskFingerprint(task.sink, task.sources, task.callDepth, task.callSiteStack)
-    if (started.contains(fingerprint)) {
-      return
-    }
-    started.add(fingerprint)
-
     numberOfTasksRunning += 1
     completionService.submit(
       new TaskSolver(if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable), context)
