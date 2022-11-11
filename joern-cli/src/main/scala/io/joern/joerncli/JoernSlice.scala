@@ -4,7 +4,6 @@ import scala.util.Using
 import io.shiftleft.semanticcpg.language._
 
 import scala.jdk.CollectionConverters._
-import overflowdb.traversal._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.joerncli.console.Joern.semantics

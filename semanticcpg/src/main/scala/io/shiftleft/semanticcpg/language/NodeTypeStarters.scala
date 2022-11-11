@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
 import overflowdb._
 import overflowdb.traversal.help
 import overflowdb.traversal.help.Doc
-import overflowdb.traversal.{Traversal, TraversalSource, jIteratortoTraversal, toElementTraversal, InitialTraversal}
+import overflowdb.traversal.{Traversal, TraversalSource, InitialTraversal}
 
 @help.TraversalSource
 class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {

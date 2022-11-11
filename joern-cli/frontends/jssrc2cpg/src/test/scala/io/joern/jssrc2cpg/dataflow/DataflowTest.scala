@@ -5,7 +5,6 @@ import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 
 class DataflowTest extends DataFlowCodeToCpgSuite {
 

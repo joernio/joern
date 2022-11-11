@@ -5,7 +5,6 @@ import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Method}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 
 abstract class CfgTestCpg extends TestCpg {
   override protected def applyPasses(): Unit = {
