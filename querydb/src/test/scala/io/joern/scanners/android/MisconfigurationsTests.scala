@@ -58,7 +58,7 @@ class MisconfigurationsTests extends AndroidQueryTestSuite(Misconfigurations) {
     "should match on all multi-file positive examples" in {
       val q = queryBundle.tapJacking()
       q.multiFileCodeExamples.positive.filter(_.nonEmpty).foreach { codeExample =>
-        val first = codeExample(0)
+        val first = codeExample.head
         val cpg   = code(first.content, first.filename)
         val finalCpg = codeExample.drop(1).foldLeft(cpg) { (foldCpg, example) =>
           foldCpg.moreCode(example.content, example.filename)
@@ -70,7 +70,7 @@ class MisconfigurationsTests extends AndroidQueryTestSuite(Misconfigurations) {
     "should not on all multi-file negative examples" in {
       val q = queryBundle.tapJacking()
       q.multiFileCodeExamples.negative.filter(_.nonEmpty).foreach { codeExample =>
-        val first = codeExample(0)
+        val first = codeExample.head
         val cpg   = code(first.content, first.filename)
         val finalCpg = codeExample.drop(1).foldLeft(cpg) { (foldCpg, example) =>
           foldCpg.moreCode(example.content, example.filename)

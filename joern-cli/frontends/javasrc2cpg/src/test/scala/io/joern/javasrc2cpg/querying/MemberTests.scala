@@ -368,7 +368,7 @@ class MemberTests extends JavaSrcCode2CpgFixture {
               field.code shouldBe "isStatic"
 
             case res =>
-              fail(s"Expected member field access but got ${res}")
+              fail(s"Expected member field access but got $res")
           }
 
           isStaticObjectInit.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"

@@ -167,7 +167,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should contain a METHOD node for the secondary constructor with the correct number of parameters" in {
-      cpg.typeDecl.fullNameExact("mypkg.Foo").method.drop(1).take(1).parameter.size shouldBe 3
+      cpg.typeDecl.fullNameExact("mypkg.Foo").method.slice(1, 2).parameter.size shouldBe 3
     }
 
     "should contain a METHOD node for the primary constructor with properties set correctly" in {
@@ -182,7 +182,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should contain a METHOD node for the secondary constructor with properties set correctly" in {
-      val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.drop(1).take(1).l
+      val List(m) = cpg.typeDecl.fullNameExact("mypkg.Foo").method.slice(1, 2).l
       m.fullName shouldBe "mypkg.Foo.<init>:void(java.lang.String,int)"
       m.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       m.lineNumber shouldBe Some(6)

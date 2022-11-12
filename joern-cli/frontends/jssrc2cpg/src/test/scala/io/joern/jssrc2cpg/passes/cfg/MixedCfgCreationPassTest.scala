@@ -8,6 +8,8 @@ import io.joern.x2cpg.testfixtures.CfgTestFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 
+import scala.annotation.unused
+
 class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) {
 
   "CFG generation for destructing assignment" should {
@@ -152,8 +154,8 @@ class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) 
     }
 
     "be correct for object destruction assignment with computed property name" ignore {
+      @unused
       implicit val cpg: Cpg = code("var {[propName]: n} = x")
-
     }
 
     "be correct for nested object destruction assignment with defaults as parameter" in {

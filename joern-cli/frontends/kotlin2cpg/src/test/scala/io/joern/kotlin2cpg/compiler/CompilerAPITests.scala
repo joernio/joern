@@ -27,7 +27,7 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
       compilerMessageSourceLocation: CompilerMessageSourceLocation
     ): Unit = {
       if (compilerMessageSeverity.isError) {
-        logger.debug(s"Received message from compiler: ${message}")
+        logger.debug(s"Received message from compiler: $message")
         errorCount += 1
       }
     }

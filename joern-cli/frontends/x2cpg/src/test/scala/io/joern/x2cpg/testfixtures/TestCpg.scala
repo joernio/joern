@@ -21,7 +21,7 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
   protected def applyPasses(): Unit
 
   def moreCode(code: String): this.type = {
-    moreCode(code, s"Test$fileNameCounter${fileSuffix}")
+    moreCode(code, s"Test$fileNameCounter$fileSuffix")
     fileNameCounter += 1
     this
   }
