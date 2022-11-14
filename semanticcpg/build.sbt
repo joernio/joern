@@ -1,6 +1,6 @@
 name := "semanticcpg"
 
-crossScalaVersions := Seq("2.13.8", "3.2.1")
+crossScalaVersions := Seq("2.13.10", "3.2.1")
 
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
