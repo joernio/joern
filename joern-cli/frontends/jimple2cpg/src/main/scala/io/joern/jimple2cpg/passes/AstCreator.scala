@@ -270,7 +270,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
 
   private def astsForAnnotations(annotation: AnnotationTag, order: Int, methodDeclaration: AbstractHost): Ast = {
     val annoType = registerType(parseAsmType(annotation.getType))
-    val name     = if (annoType.contains('.')) annoType.substring(annoType.indexOf('.'), annoType.length) else annoType
+    val name     = annoType.split('.').last
     val elementNodes = withOrder(annotation.getElems.asScala) { case (a, order) =>
       astForAnnotationElement(a, order, methodDeclaration)
     }
