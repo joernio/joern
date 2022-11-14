@@ -109,13 +109,13 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) => {
         val resultsForNode = Vector(ReachableByResult(path, table, callSiteStack, task.seed))
-        table.add(curNode, resultsForNode)
+        table.add(curNode, callSiteStack, resultsForNode)
         resultsForNode ++ deduplicate(computeResultsForParents())
       }
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn => {
         val resultsForNode = Vector(ReachableByResult(path, table, callSiteStack, task.seed, partial = true))
-        table.add(curNode, resultsForNode)
+        table.add(curNode, callSiteStack, resultsForNode)
         resultsForNode
       }
       // Case 3: we have reached a call to an internal method without semantic (return value) and
@@ -124,7 +124,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
           if isCallToInternalMethodWithoutSemantic(call)
             && !isArgOrRetOfMethodWeCameFrom(call, path) => {
         val resultsForNode = createPartialResultForOutputArgOrRet()
-        table.add(curNode, resultsForNode)
+        table.add(curNode, callSiteStack, resultsForNode)
         resultsForNode
       }
 
@@ -135,7 +135,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
             && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c))
             && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) => {
         val resultsForNode = createPartialResultForOutputArgOrRet()
-        table.add(curNode, resultsForNode)
+        table.add(curNode, callSiteStack, resultsForNode)
         resultsForNode
       }
 
