@@ -41,7 +41,7 @@ class ResultExtractor(table: ResultTable, sinks: List[CfgNode]) {
 
     val resultsViaChildren = result.seed
       .map { seed =>
-        table.table.get(Key(seed, List())) match {
+        table.table.get(seed) match {
           case Some(entry) =>
             entry.flatMap { childResult =>
               assemblePaths(source, childResult, table, visited ++ Set(result)).map { c =>
