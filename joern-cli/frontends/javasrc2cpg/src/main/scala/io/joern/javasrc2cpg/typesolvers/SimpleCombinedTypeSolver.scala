@@ -7,11 +7,8 @@ import com.github.javaparser.symbolsolver.model.resolution.{SymbolReference, Typ
 import com.google.common.cache.{CacheBuilder, LoadingCache}
 import org.slf4j.LoggerFactory
 
-import java.util.Objects
 import scala.collection.mutable
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.Try
-import scala.util.control.Breaks.break
 
 class SimpleCombinedTypeSolver extends TypeSolver {
 

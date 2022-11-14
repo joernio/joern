@@ -199,8 +199,8 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
     val reflectionTypeSolver = new CachingReflectionTypeSolver()
     val sourceTypeSolver     = EagerSourceTypeSolver(typesAsts)
 
-    combinedTypeSolver.appendSolver(sourceTypeSolver)
-    combinedTypeSolver.appendSolver(reflectionTypeSolver)
+    combinedTypeSolver.add(sourceTypeSolver)
+    combinedTypeSolver.add(reflectionTypeSolver)
 
     // Add solvers for inference jars
     val jarsList = config.inferenceJarPaths.flatMap(recursiveJarsFromPath).toList
@@ -208,7 +208,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       .flatMap { path =>
         Try(new JarTypeSolver(path)).toOption
       }
-      .foreach { combinedTypeSolver.appendSolver(_) }
+      .foreach { combinedTypeSolver.add(_) }
 
     new JavaSymbolSolver(combinedTypeSolver)
   }
