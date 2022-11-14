@@ -78,8 +78,7 @@ class Engine(context: EngineContext) {
     * submitted accordingly. Once no more tasks can be created, the list of results is returned.
     */
   private def solveTasks(tasks: List[ReachableByTask], sinks: List[CfgNode]): List[ReachableByResult] = {
-    val table     = newResultTable()
-    val extractor = new ResultExtractor(sinks)
+    val table = newResultTable()
 
     /** For a list of results, determine partial and complete results. Store complete results and derive and submit
       * tasks from partial results.
@@ -107,7 +106,7 @@ class Engine(context: EngineContext) {
 
     tasks.foreach(submitTask)
     runUntilAllTasksAreSolved()
-    deduplicate(extractor.extractResults(table)).toList
+    deduplicate(new ResultExtractor(table, sinks).results).toList
   }
 
   private def submitTask(task: ReachableByTask): Unit = {

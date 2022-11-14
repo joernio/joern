@@ -2,19 +2,24 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 
-class ResultExtractor(sinks: List[CfgNode]) {
+import scala.collection.mutable
+
+class ResultExtractor(table: ResultTable, sinks: List[CfgNode]) {
+
+  private val knownPairs: mutable.Set[(CfgNode, CfgNode)] = mutable.Set()
 
   /** Traverse the table to generate results containing complete paths from this result table.
     */
-  def extractResults(table: ResultTable): Vector[ReachableByResult] = {
+  val results: Vector[ReachableByResult] = {
     val sourceResults = table.keys().flatMap { key =>
       val r = table.table(key)
       r.filterNot(_.partial)
     }
-    sourceResults.flatMap(x => recoverPaths(x, table))
+    sourceResults.flatMap(x => assemblePaths(x.path.head.node, x, table))
   }
 
-  private def recoverPaths(
+  private def assemblePaths(
+    source: CfgNode,
     result: ReachableByResult,
     table: ResultTable,
     visited: Set[ReachableByResult] = Set()
@@ -25,6 +30,10 @@ class ResultExtractor(sinks: List[CfgNode]) {
 
     val resultsEndingHere = result.seed match {
       case Some(s) if sinks.contains(s) =>
+        if (knownPairs.contains((source, s))) {
+          return Vector()
+        }
+        knownPairs.add((source, s))
         Vector(result.copy(path = result.path ++ Vector(PathElement(s))))
       case _ =>
         Vector()
@@ -35,7 +44,7 @@ class ResultExtractor(sinks: List[CfgNode]) {
         table.table.get(Key(seed, List())) match {
           case Some(entry) =>
             entry.flatMap { childResult =>
-              recoverPaths(childResult, table, visited ++ Set(result)).map { c =>
+              assemblePaths(source, childResult, table, visited ++ Set(result)).map { c =>
                 result.copy(path = result.path ++ c.path)
               }
             }
