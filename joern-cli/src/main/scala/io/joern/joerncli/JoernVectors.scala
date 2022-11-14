@@ -1,21 +1,18 @@
 package io.joern.joerncli
 
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.Json
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
-import io.joern.joerncli.EmbeddingGenerator.SparseVectorWithExplicitFeature
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
-
-import scala.util.Using
 import io.shiftleft.semanticcpg.language._
-import org.json4s.JsonAST.JString
-import org.json4s.{CustomSerializer, DefaultFormats}
+import org.json4s.DefaultFormats
 import org.json4s.native.Serialization
-import overflowdb.traversal._
+import overflowdb.traversal.Traversal
 
-import scala.jdk.CollectionConverters._
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
+import scala.util.Using
 import scala.util.hashing.MurmurHash3
 
 class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, String)] {
