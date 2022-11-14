@@ -232,9 +232,10 @@ abstract class FunctionPass(
               case "Scalar" =>
                 val scalar =
                   opObject.asInstanceOf[Scalar].toString(16, false, false, "", "")
+
                 val node = nodes
                   .NewLiteral()
-                  .code(scalar)
+                  .code(s"0x${scalar}")
                   .order(index + 1)
                   .typeFullName(scalar)
                   .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
@@ -245,7 +246,7 @@ abstract class FunctionPass(
                   opObject.asInstanceOf[GenericAddress].toString()
                 val node = nodes
                   .NewLiteral()
-                  .code(genericAddress)
+                  .code(s"0x${genericAddress}")
                   .order(index + 1)
                   .typeFullName(genericAddress)
                   .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))

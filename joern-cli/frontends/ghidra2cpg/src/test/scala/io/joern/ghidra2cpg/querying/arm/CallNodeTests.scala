@@ -44,7 +44,7 @@ class CallNodeTests extends GhidraBinToCpgSuite {
       .where(
         _.argument
           .order(1)
-          .code("0x14")
+          .code("w0")
       )
       .l
     results match {
