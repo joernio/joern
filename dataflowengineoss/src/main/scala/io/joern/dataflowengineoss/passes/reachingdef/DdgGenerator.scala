@@ -28,6 +28,7 @@ class DdgGenerator(semantics: Semantics) {
     */
   def addReachingDefEdges(
     dstGraph: DiffGraphBuilder,
+    method: Method,
     problem: DataFlowProblem[StoredNode, mutable.BitSet],
     solution: Solution[StoredNode, mutable.BitSet]
   ): Unit = {
@@ -37,7 +38,6 @@ class DdgGenerator(semantics: Semantics) {
     val in           = solution.in
     val gen          = solution.problem.transferFunction.asInstanceOf[ReachingDefTransferFunction].gen
 
-    val method        = problem.flowGraph.entryNode.asInstanceOf[Method]
     val allNodes      = in.keys.toList
     val usageAnalyzer = new UsageAnalyzer(problem, in)
 
@@ -149,9 +149,8 @@ class DdgGenerator(semantics: Semantics) {
     /** This is part of the Lone-identifier optimization: as we remove lone identifiers from `gen` sets, we must now
       * retrieve them and create an edge from each lone identifier to the exit node.
       */
-    def addEdgesFromLoneIdentifiersToExit(): Unit = {
+    def addEdgesFromLoneIdentifiersToExit(method: Method): Unit = {
       val numberToNode     = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-      val method           = problem.flowGraph.entryNode.asInstanceOf[Method]
       val exitNode         = method.methodReturn
       val transferFunction = solution.problem.transferFunction.asInstanceOf[OptimizedReachingDefTransferFunction]
       val genOnce          = transferFunction.loneIdentifiers
@@ -171,7 +170,7 @@ class DdgGenerator(semantics: Semantics) {
       case _                            =>
     }
     addEdgesToExitNode(method.methodReturn)
-    addEdgesFromLoneIdentifiersToExit()
+    addEdgesFromLoneIdentifiersToExit(method)
   }
 
   private def addEdge(fromNode: StoredNode, toNode: StoredNode, variable: String = "")(implicit
