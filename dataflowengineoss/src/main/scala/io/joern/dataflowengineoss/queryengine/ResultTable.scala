@@ -15,7 +15,7 @@ class ResultTable(
 ) {
 
   def add(node: StoredNode, stack: List[Call], results: Vector[ReachableByResult]): Unit =
-    add(Key(node, stack), results)
+    add(Key(node, List()), results)
 
   /** Add all results in `results` to table at `key`, appending to existing results.
     */
@@ -54,22 +54,13 @@ class ResultTable(
     }
   }
 
-  /** Traverse the table to generate results containing complete paths from this result table.
-    */
-  def extractResults(): Vector[ReachableByResult] = {
-    this.keys().flatMap { key =>
-      val r = table(key)
-      r.filterNot(_.partial)
-    }
-  }
-
   def get(node: StoredNode, stack: List[Call]): Option[Vector[ReachableByResult]] = {
     table.get(Key(node, stack))
   }
 
   /** Returns all keys to allow for iteration through the table.
     */
-  private def keys(): Vector[Key] = table.keys.toVector
+  def keys(): Vector[Key] = table.keys.toVector
 
 }
 
@@ -90,6 +81,7 @@ case class ReachableByResult(
   path: Vector[PathElement],
   table: ResultTable,
   callSiteStack: List[Call],
+  seed: Option[CfgNode] = None,
   callDepth: Int = 0,
   partial: Boolean = false
 ) {

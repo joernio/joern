@@ -97,6 +97,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
           PathElement(path.head.node, callSiteStack, isOutputArg = true) +: path.tail,
           table,
           callSiteStack,
+          task.seed,
           partial = true
         )
       )
@@ -107,13 +108,13 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) => {
-        val resultsForNode = Vector(ReachableByResult(path, table, callSiteStack))
+        val resultsForNode = Vector(ReachableByResult(path, table, callSiteStack, task.seed))
         table.add(curNode, callSiteStack, resultsForNode)
         resultsForNode ++ deduplicate(computeResultsForParents())
       }
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn => {
-        val resultsForNode = Vector(ReachableByResult(path, table, callSiteStack, partial = true))
+        val resultsForNode = Vector(ReachableByResult(path, table, callSiteStack, task.seed, partial = true))
         table.add(curNode, callSiteStack, resultsForNode)
         resultsForNode
       }

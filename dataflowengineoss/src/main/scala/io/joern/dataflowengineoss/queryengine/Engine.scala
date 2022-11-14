@@ -12,8 +12,11 @@ import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
 
 import java.util.concurrent._
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
+
+case class TaskFingerprint(sink: CfgNode, sources: Set[CfgNode], callDepth: Int, callSiteStack: List[Call])
 
 case class ReachableByTask(
   sink: CfgNode,
@@ -21,7 +24,8 @@ case class ReachableByTask(
   table: ResultTable,
   initialPath: Vector[PathElement] = Vector(),
   callDepth: Int = 0,
-  callSiteStack: List[Call] = List()
+  callSiteStack: List[Call] = List(),
+  seed: Option[CfgNode] = None
 )
 
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
@@ -37,6 +41,8 @@ class Engine(context: EngineContext) {
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService =
     new ExecutorCompletionService[(ReachableByTask, Vector[ReachableByTask])](executorService)
+
+  private val started: mutable.Set[TaskFingerprint] = mutable.Set()
 
   def shutdown(): Unit = {
     executorService.shutdown()
@@ -54,7 +60,7 @@ class Engine(context: EngineContext) {
     }
     val sourcesSet = sources.toSet
     val tasks      = createOneTaskPerSink(sourcesSet, sinks)
-    solveTasks(tasks)
+    solveTasks(tasks, sinks)
   }
 
   /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
@@ -71,8 +77,9 @@ class Engine(context: EngineContext) {
   /** Submit tasks to a worker pool, solving them in parallel. Upon receiving results for a task, new tasks are
     * submitted accordingly. Once no more tasks can be created, the list of results is returned.
     */
-  private def solveTasks(tasks: List[ReachableByTask]): List[ReachableByResult] = {
-    val table = newResultTable()
+  private def solveTasks(tasks: List[ReachableByTask], sinks: List[CfgNode]): List[ReachableByResult] = {
+    val table     = newResultTable()
+    val extractor = new ResultExtractor(sinks)
 
     /** For a list of results, determine partial and complete results. Store complete results and derive and submit
       * tasks from partial results.
@@ -100,10 +107,17 @@ class Engine(context: EngineContext) {
 
     tasks.foreach(submitTask)
     runUntilAllTasksAreSolved()
-    deduplicate(table.extractResults()).toList
+    deduplicate(extractor.extractResults(table)).toList
   }
 
   private def submitTask(task: ReachableByTask): Unit = {
+
+    val fingerprint = TaskFingerprint(task.sink, task.sources, task.callDepth, task.callSiteStack)
+    if (started.contains(fingerprint)) {
+      return
+    }
+    started.add(fingerprint)
+
     numberOfTasksRunning += 1
     completionService.submit(
       new TaskSolver(if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable), context)
@@ -252,15 +266,15 @@ object Engine {
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
-        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+        val withMinLength = (lenIdPathPairs.sortBy(_._1) match {
           case Nil    => Nil
           case h :: t => h :: t.takeWhile(y => y._1 == h._1)
         }).map(_._2)
 
-        if (withMaxLength.length == 1) {
-          withMaxLength.head
+        if (withMinLength.length == 1) {
+          withMinLength.head
         } else {
-          withMaxLength.minBy { x =>
+          withMinLength.minBy { x =>
             x.path.map(_.node.id()).mkString("-")
           }
         }
