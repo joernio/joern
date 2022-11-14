@@ -20,6 +20,13 @@ class ResultTable(
   /** Add all results in `results` to table at `key`, appending to existing results.
     */
   def add(key: Key, results: Vector[ReachableByResult]): Unit = {
+
+//    results.foreach { res =>
+//      if (res.path.head.node != key.node) {
+//        throw new RuntimeException("Still happens")
+//      }
+//    }
+
     table.asJava.compute(
       key,
       { (_, existingValue) =>

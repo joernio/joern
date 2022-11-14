@@ -97,33 +97,8 @@ class TaskCreator(sources: Set[CfgNode]) {
         .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
         .to(Traversal)
 
-      methodReturns.flatMap { case (call, methodReturn) =>
-        val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
-        if (returnStatements.isEmpty) {
-          val newPath = path
-          List(
-            ReachableByTask(
-              methodReturn,
-              sources,
-              new ResultTable,
-              newPath,
-              callDepth + 1,
-              call :: result.callSiteStack
-            )
-          )
-        } else {
-          returnStatements.map { returnStatement =>
-            val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
-            ReachableByTask(
-              returnStatement,
-              sources,
-              new ResultTable,
-              newPath,
-              callDepth + 1,
-              call :: result.callSiteStack
-            )
-          }
-        }
+      methodReturns.map { case (call, methodReturn) =>
+        ReachableByTask(methodReturn, sources, new ResultTable, path, callDepth + 1, call :: result.callSiteStack)
       }
     }
 

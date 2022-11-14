@@ -182,7 +182,7 @@ object Engine {
     * propagated to it.
     */
   private def ddgInE(node: CfgNode, path: Vector[PathElement], callSiteStack: List[Call] = List()): Vector[Edge] = {
-    node
+    val edges = node
       .inE(EdgeTypes.REACHING_DEF)
       .asScala
       .filter { e =>
@@ -194,7 +194,21 @@ object Engine {
           case _ => false
         }
       }
-      .toVector
+
+    // When traversing into METHOD_RETURNs of callees (that's the case when the callSiteStack is non-empty),
+    // we only want to honor edges from RETURN to METHOD_RETURN, not edges from all statements that propagate
+    // to the exit node unharmed.
+    if (callSiteStack.nonEmpty) {
+      edges.filter { e =>
+        if (e.inNode().isInstanceOf[MethodReturn]) {
+          e.outNode().isInstanceOf[Return]
+        } else {
+          true
+        }
+      }.toVector
+    } else {
+      edges.toVector
+    }
   }
 
   def argToOutputParams(arg: Expression): Traversal[MethodParameterOut] = {

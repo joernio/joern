@@ -464,7 +464,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     flows.map(flowToResultPairs).toSetMutable shouldBe Set(List(("source(a.b)", 3), ("sink(a.b)", 4)))
   }
 
-  "Flows for statements to METHOD_RETURN" in {
+  "Flows for statements to METHOD_RETURN" ignore {
     val cpg: Cpg = code("""
         |function foo(y, x) {
         |  free(y);

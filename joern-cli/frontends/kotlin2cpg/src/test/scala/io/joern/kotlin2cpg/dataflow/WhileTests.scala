@@ -22,15 +22,9 @@ class WhileTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
       val source = cpg.method.name("f1").parameter
       val sink   = cpg.method.name("println").callIn.argument
       val flows  = sink.reachableByFlows(source)
+
       flows.map(flowToResultPairs).toSet shouldBe
-        Set(
-          List(
-            ("f1(p)", Some(2)),
-            ("var someVal = p", Some(3)),
-            ("someVal += 1", Some(5)),
-            ("println(someVal)", Some(7))
-          )
-        )
+        Set(List(("f1(p)", Some(2)), ("var someVal = p", Some(3)), ("println(someVal)", Some(7))))
     }
   }
 

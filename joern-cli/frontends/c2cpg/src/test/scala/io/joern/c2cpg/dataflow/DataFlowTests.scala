@@ -412,8 +412,8 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
               ("getpid()", Some(9)),
               ("a = getpid()", Some(9)),
               ("a == 666", Some(10)),
-              ("a * 666", Some(12)),
-              ("a = a * 666", Some(12)),
+              ("a * 777", Some(17)),
+              ("a = a * 777", Some(17)),
               ("return a;", Some(18))
             )
           )
