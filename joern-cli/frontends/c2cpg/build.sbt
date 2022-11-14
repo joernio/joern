@@ -1,6 +1,6 @@
 name               := "c2cpg"
-scalaVersion       := "2.13.10"
-crossScalaVersions := Seq("2.13.10", "3.1.3")
+scalaVersion       := "2.13.8"
+crossScalaVersions := Seq("2.13.8", "3.1.3")
 
 dependsOn(Projects.semanticcpg, Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
 
