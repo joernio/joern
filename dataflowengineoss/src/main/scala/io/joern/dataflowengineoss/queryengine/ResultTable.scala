@@ -20,6 +20,8 @@ class ResultTable(
   /** Add all results in `results` to table at `key`, appending to existing results.
     */
   def add(key: Key, results: Vector[ReachableByResult]): Unit = {
+    // TODO enforce this assertion via the API
+    assert(results.map(_.path.head.node).distinct == Vector(key.node))
     table.asJava.compute(
       key,
       { (_, existingValue) =>
