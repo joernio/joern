@@ -31,10 +31,13 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
     if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
       (task, Vector())
     } else {
-      val path          = PathElement(task.sink, task.callSiteStack) +: task.initialPath
-      val resultsOfTask = results(path, task.sources, task.table, task.callSiteStack)
-      val partial       = resultsOfTask.filter(_.partial)
-      val newTasks      = new TaskCreator(task.sources).createFromResults(partial)
+      val path = PathElement(task.sink, task.callSiteStack) +: task.initialPath
+      computeResults(path, task.sources, task.table, task.callSiteStack)
+      val partial = task.table.keys().flatMap { key =>
+        val r = task.table.table(key)
+        r.filter(_.partial)
+      }
+      val newTasks = new TaskCreator(task.sources).createFromResults(partial)
       (task, newTasks)
     }
   }
@@ -57,12 +60,12 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
     * @param callSiteStack
     *   This stack holds all call sites we expanded to arrive at the generation of the current task
     */
-  private def results[NodeType <: CfgNode](
+  private def computeResults[NodeType <: CfgNode](
     path: Vector[PathElement],
     sources: Set[NodeType],
     table: ResultTable,
     callSiteStack: List[Call]
-  ): Vector[ReachableByResult] = {
+  ): Unit = {
 
     val curNode = path.head.node
 
@@ -87,7 +90,10 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
       } else {
         QueryEngineStatistics.incrementBy(PATH_CACHE_MISSES, 1L)
         val newPath = elemToPrepend +: path
-        results(newPath, sources, table, callSiteStack)
+        computeResults(newPath, sources, table, callSiteStack)
+        task.table.keys().flatMap { key =>
+          task.table.table(key)
+        }
       }
     }
 
@@ -105,18 +111,17 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
 
     /** Determine results for the current node
       */
-    val res = curNode match {
+    curNode match {
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) => {
         val resultsForNode = Vector(ReachableByResult(path, table, callSiteStack, task.seed))
         table.add(curNode, resultsForNode)
-        resultsForNode ++ deduplicate(computeResultsForParents())
+        computeResultsForParents()
       }
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn => {
         val resultsForNode = Vector(ReachableByResult(path, table, callSiteStack, task.seed, partial = true))
         table.add(curNode, resultsForNode)
-        resultsForNode
       }
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
@@ -125,7 +130,6 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
             && !isArgOrRetOfMethodWeCameFrom(call, path) => {
         val resultsForNode = createPartialResultForOutputArgOrRet()
         table.add(curNode, resultsForNode)
-        resultsForNode
       }
 
       // Case 4: we have reached an argument to an internal method without semantic (output argument) and
@@ -136,15 +140,13 @@ class TaskSolver(task: ReachableByTask, context: EngineContext)
             && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) => {
         val resultsForNode = createPartialResultForOutputArgOrRet()
         table.add(curNode, resultsForNode)
-        resultsForNode
       }
 
       // All other cases: expand into parents
       case _ => {
-        deduplicate(computeResultsForParents())
+        computeResultsForParents()
       }
     }
-    res
   }
 
   private def isArgOrRetOfMethodWeCameFrom(call: Call, path: Vector[PathElement]): Boolean =
