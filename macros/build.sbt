@@ -1,7 +1,7 @@
 name := "macros"
 
 scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.1.3")
+crossScalaVersions := Seq("2.13.8", "3.2.1")
 
 dependsOn(Projects.semanticcpg % Test)
 
@@ -23,5 +23,3 @@ scalacOptions ++= Seq() ++ (
 )
 
 enablePlugins(JavaAppPackaging)
-
-Test / packageBin / publishArtifact := true

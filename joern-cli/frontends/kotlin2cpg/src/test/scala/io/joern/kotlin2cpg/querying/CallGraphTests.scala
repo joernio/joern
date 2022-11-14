@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CallGraphTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with simple function declaration" should {
 

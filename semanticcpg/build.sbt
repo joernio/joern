@@ -1,6 +1,6 @@
 name := "semanticcpg"
 
-crossScalaVersions := Seq("2.13.8", "3.1.3")
+crossScalaVersions := Seq("2.13.8", "3.2.1")
 
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
@@ -11,4 +11,3 @@ libraryDependencies ++= Seq(
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
 
 compile / javacOptions ++= Seq("-g") //debug symbols
-Test / packageBin / publishArtifact := true

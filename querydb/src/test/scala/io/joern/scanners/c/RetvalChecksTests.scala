@@ -2,9 +2,7 @@ package io.joern.scanners.c
 
 import io.joern.suites.CQueryTestSuite
 
-class RetvalChecksTests extends CQueryTestSuite {
-
-  override def queryBundle = RetvalChecks
+class RetvalChecksTests extends CQueryTestSuite(RetvalChecks) {
 
   "should find unchecked read and not flag others" in {
     val query   = queryBundle.uncheckedReadRecvMalloc()

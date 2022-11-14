@@ -105,7 +105,7 @@ class AstCreator(
 
     methodAstParentStack.push(programMethod)
 
-    val blockNode = NewBlock().typeFullName("ANY")
+    val blockNode = NewBlock().typeFullName(Defines.ANY)
 
     scope.pushNewMethodScope(fullName, name, blockNode, None)
     localAstParentStack.push(blockNode)
@@ -119,7 +119,7 @@ class AstCreator(
     val methodReturn = NewMethodReturn()
       .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(Defines.ANY.label)
+      .typeFullName(Defines.ANY)
 
     localAstParentStack.pop()
     scope.popScope()

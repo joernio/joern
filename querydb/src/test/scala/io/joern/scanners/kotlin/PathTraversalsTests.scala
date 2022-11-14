@@ -2,9 +2,7 @@ package io.joern.scanners.kotlin
 
 import io.joern.suites.KotlinQueryTestSuite
 
-class PathTraversalsTests extends KotlinQueryTestSuite {
-
-  override def queryBundle = PathTraversals
+class PathTraversalsTests extends KotlinQueryTestSuite(PathTraversals) {
 
   "should match on all multi-file positive examples" in {
     val q = queryBundle.unzipDirectoryTraversal()

@@ -1,15 +1,24 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.passes.AbstractPassTest
+import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines, EcmaBuiltins}
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import io.joern.jssrc2cpg.passes.Defines
-import io.joern.jssrc2cpg.passes.EcmaBuiltins
 
 class SimpleAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple fragments" should {
+
+    "have return node for arrow functions" in AstFixture("const foo = () => 42;") { cpg =>
+      // Return node is necessary data flow
+      val methodBlock = cpg.method("anonymous").astChildren.isBlock
+      val literal     = methodBlock.astChildren.isReturn.astChildren.isLiteral.head
+      literal.code shouldBe "42"
+    }
+
+    "have only 1 Block Node for arrow functions" in AstFixture("const foo = () => {return 42;}") { cpg =>
+      cpg.method("anonymous").ast.isBlock.size shouldBe 1
+    }
 
     "have correct structure for FILENAME property" in AstFixture("let x = 1;") { cpg =>
       cpg.namespaceBlock.filenameExact("code.js").size shouldBe 1
@@ -19,6 +28,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(typeDecls) = cpg.typeDecl.nameExact(":program").l
       typeDecls.filename shouldBe "code.js"
+    }
+
+    "have correct type for literals" in AstFixture("let x = 1; let y = 'y'; let z = false;") { cpg =>
+      val List(x, y, z) = cpg.literal.l
+      x.typeFullName shouldBe Defines.NUMBER
+      y.typeFullName shouldBe Defines.STRING
+      z.typeFullName shouldBe Defines.BOOLEAN
     }
 
     "have correct structure for multiple declarators in one place" in AstFixture("let x = 1, y = 2, z = 3;") { cpg =>
@@ -185,6 +201,32 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         runtimeCall.astChildren.isLiteral.codeExact("\"\\..\"").l
       argument3.order shouldBe 3
       argument3.argumentIndex shouldBe 3
+    }
+
+    "have correct structure for different string literals" in AstFixture("""
+        |var keyA = "AAA";
+        |var keyB = 'BBB';
+        |var keyC = `CCC`;
+        |var keyD = `DDD"`;
+        |var keyE = "EE EE E";
+        |var keyF = "F-FF-F";
+        |""".stripMargin) { cpg =>
+      cpg.literal.code.l shouldBe List(
+        """"AAA"""",
+        """"BBB"""",
+        """"CCC"""",
+        """"DDD""""",
+        """"EE EE E"""",
+        """"F-FF-F""""
+      )
+      cpg.call.code.l shouldBe List(
+        """var keyA = "AAA"""",
+        """var keyB = 'BBB'""",
+        """var keyC = `CCC`""",
+        """var keyD = `DDD"`""",
+        """var keyE = "EE EE E"""",
+        """var keyF = "F-FF-F""""
+      )
     }
 
     "have correct structure for try" in AstFixture("""
@@ -616,28 +658,28 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct structure for empty method" in AstFixture("function method(x) {}") { cpg =>
       val List(method) = cpg.method.nameExact("method").l
       method.astChildren.isBlock.size shouldBe 1
-      method.methodReturn.typeFullName shouldBe Defines.ANY.label
-      method.parameter.index(0).nameExact("this").typeFullName(Defines.ANY.label).size shouldBe 1
-      method.parameter.index(1).nameExact("x").typeFullName(Defines.ANY.label).size shouldBe 1
+      method.methodReturn.typeFullName shouldBe Defines.ANY
+      method.parameter.index(0).nameExact("this").typeFullName(Defines.ANY).size shouldBe 1
+      method.parameter.index(1).nameExact("x").typeFullName(Defines.ANY).size shouldBe 1
     }
 
     "have correct structure for empty method with rest parameter" in AstFixture("function method(x, ...args) {}") {
       cpg =>
         val List(method) = cpg.method.nameExact("method").l
-        method.methodReturn.typeFullName shouldBe Defines.ANY.label
+        method.methodReturn.typeFullName shouldBe Defines.ANY
 
         val List(t, x, args) = method.parameter.l
         t.index shouldBe 0
         t.name shouldBe "this"
-        t.typeFullName shouldBe Defines.ANY.label
+        t.typeFullName shouldBe Defines.ANY
         x.index shouldBe 1
         x.name shouldBe "x"
-        x.typeFullName shouldBe Defines.ANY.label
+        x.typeFullName shouldBe Defines.ANY
         args.index shouldBe 2
         args.name shouldBe "args"
         args.code shouldBe "...args"
         args.isVariadic shouldBe true
-        args.typeFullName shouldBe Defines.ANY.label
+        args.typeFullName shouldBe Defines.ANY
     }
 
     "have correct structure for decl assignment" in AstFixture("function foo(x) { var local = 1; }") { cpg =>
@@ -647,10 +689,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.ANY.label
+      t.typeFullName shouldBe Defines.ANY
       x.index shouldBe 1
       x.name shouldBe "x"
-      x.typeFullName shouldBe Defines.ANY.label
+      x.typeFullName shouldBe Defines.ANY
 
       val List(local) = block.astChildren.isLocal.l
       local.name shouldBe "local"
@@ -669,10 +711,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.ANY.label
+      t.typeFullName shouldBe Defines.ANY
       x.index shouldBe 1
       x.name shouldBe "x"
-      x.typeFullName shouldBe Defines.ANY.label
+      x.typeFullName shouldBe Defines.ANY
 
       val List(local) = block.astChildren.isLocal.l
       local.name shouldBe "local"
@@ -692,13 +734,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x, y) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.ANY.label
+      t.typeFullName shouldBe Defines.ANY
       x.index shouldBe 1
       x.name shouldBe "x"
-      x.typeFullName shouldBe Defines.ANY.label
+      x.typeFullName shouldBe Defines.ANY
       y.index shouldBe 2
       y.name shouldBe "y"
-      y.typeFullName shouldBe Defines.ANY.label
+      y.typeFullName shouldBe Defines.ANY
 
       val List(firstLocal, secondLocal) = block.astChildren.isLocal.l
       firstLocal.name shouldBe "local1"
@@ -1319,7 +1361,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       program.astChildren.isBlock.size shouldBe 1
       val blockMethodReturn = program.methodReturn
       blockMethodReturn.code shouldBe "RET"
-      blockMethodReturn.typeFullName shouldBe Defines.ANY.label
+      blockMethodReturn.typeFullName shouldBe Defines.ANY
     }
 
   }

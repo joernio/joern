@@ -15,6 +15,43 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+
+  "CPG for code with class declaration with two init blocks" should {
+    val cpg = code("""
+       |package no.such.package
+       |class YourNewMostFavoriteNewsletter {
+       |    init { println("            𝖘𝖚𝖇𝖘𝖈𝖗𝖎𝖇𝖊 𝖓𝖔𝖜         ") }
+       |    init { println("   https://grugq.substack.com/   ") }
+       |}
+       | """.stripMargin)
+
+    "should contain CALL nodes for the calls inside the init blocks" in {
+      cpg.call.code("println.*").size shouldBe 2
+    }
+  }
+
+  "CPG for code with class declaration and secondary constructor" should {
+    val cpg = code("""
+       |package no.such.pkg
+       |
+       |class AClass() {
+       |    init { println("inside first init block") }
+       |    init { println("inside second init block") }
+       |    constructor(p: Int) : this() {
+       |        println("secondary ctor called with parameter $x")
+       |    }
+       |}
+       | """.stripMargin)
+
+    "should contain METHOD for the secondary ctor with a call to the primary ctor as the first child of its BLOCK" in {
+      val List(secondaryCtor: Method) =
+        cpg.method.name("<init>").where(_.parameter.nameExact("p")).l
+      val List(firstCallOfSecondaryCtor: Call) =
+        secondaryCtor.block.astChildren.collectAll[Call].take(1).l
+      firstCallOfSecondaryCtor.methodFullName shouldBe "no.such.pkg.AClass.<init>:void()"
+    }
+  }
+
   "CPG for code with class declaration with one member" should {
     val cpg = code("""
         |package mypkg

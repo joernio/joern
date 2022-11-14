@@ -2,7 +2,6 @@ package io.joern.kotlin2cpg.passes
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.ast.KtPsiToAst
 import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
@@ -107,43 +106,45 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   @tailrec
-  final def astsForExpression(expr: KtExpression, argIdxOpt: Option[Int])(implicit
+  final def astsForExpression(expr: KtExpression, argIdxOpt: Option[Int], argNameOpt: Option[String] = None)(implicit
     typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     expr match {
-      case typedExpr: KtAnnotatedExpression         => astsForExpression(typedExpr.getBaseExpression, argIdxOpt)
-      case typedExpr: KtArrayAccessExpression       => Seq(astForArrayAccess(typedExpr, argIdxOpt))
-      case typedExpr: KtBinaryExpression            => Seq(astForBinaryExpr(typedExpr, argIdxOpt))
-      case typedExpr: KtBlockExpression             => astsForBlock(typedExpr, argIdxOpt)
-      case typedExpr: KtBinaryExpressionWithTypeRHS => Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxOpt))
-      case typedExpr: KtBreakExpression             => Seq(astForBreak(typedExpr))
-      case typedExpr: KtCallExpression              => Seq(astForCall(typedExpr, argIdxOpt))
-      case typedExpr: KtConstantExpression          => Seq(astForLiteral(typedExpr, argIdxOpt))
-      case typedExpr: KtClass                       => astsForClassOrObject(typedExpr)
-      case typedExpr: KtClassLiteralExpression      => Seq(astForClassLiteral(typedExpr, argIdxOpt))
-      case typedExpr: KtSafeQualifiedExpression     => Seq(astForQualifiedExpression(typedExpr, argIdxOpt))
-      case typedExpr: KtContinueExpression          => Seq(astForContinue(typedExpr))
-      case typedExpr: KtDestructuringDeclaration    => astsForDestructuringDeclaration(typedExpr)
-      case typedExpr: KtDotQualifiedExpression      => Seq(astForQualifiedExpression(typedExpr, argIdxOpt))
-      case typedExpr: KtDoWhileExpression           => Seq(astForDoWhile(typedExpr))
-      case typedExpr: KtForExpression               => Seq(astForFor(typedExpr))
-      case typedExpr: KtIfExpression                => Seq(astForIf(typedExpr, argIdxOpt))
-      case typedExpr: KtIsExpression                => Seq(astForIsExpression(typedExpr, argIdxOpt))
-      case typedExpr: KtLabeledExpression           => astsForExpression(typedExpr.getBaseExpression, argIdxOpt)
-      case typedExpr: KtLambdaExpression            => Seq(astForLambda(typedExpr, argIdxOpt))
+      case typedExpr: KtAnnotatedExpression   => astsForExpression(typedExpr.getBaseExpression, argIdxOpt)
+      case typedExpr: KtArrayAccessExpression => Seq(astForArrayAccess(typedExpr, argIdxOpt, argNameOpt))
+      case typedExpr: KtAnonymousInitializer  => astsForExpression(typedExpr.getBody, argIdxOpt)
+      case typedExpr: KtBinaryExpression      => Seq(astForBinaryExpr(typedExpr, argIdxOpt))
+      case typedExpr: KtBlockExpression       => astsForBlock(typedExpr, argIdxOpt)
+      case typedExpr: KtBinaryExpressionWithTypeRHS =>
+        Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxOpt, argNameOpt))
+      case typedExpr: KtBreakExpression          => Seq(astForBreak(typedExpr))
+      case typedExpr: KtCallExpression           => Seq(astForCall(typedExpr, argIdxOpt))
+      case typedExpr: KtConstantExpression       => Seq(astForLiteral(typedExpr, argIdxOpt, argNameOpt))
+      case typedExpr: KtClass                    => astsForClassOrObject(typedExpr)
+      case typedExpr: KtClassLiteralExpression   => Seq(astForClassLiteral(typedExpr, argIdxOpt, argNameOpt))
+      case typedExpr: KtSafeQualifiedExpression  => Seq(astForQualifiedExpression(typedExpr, argIdxOpt))
+      case typedExpr: KtContinueExpression       => Seq(astForContinue(typedExpr))
+      case typedExpr: KtDestructuringDeclaration => astsForDestructuringDeclaration(typedExpr)
+      case typedExpr: KtDotQualifiedExpression   => Seq(astForQualifiedExpression(typedExpr, argIdxOpt))
+      case typedExpr: KtDoWhileExpression        => Seq(astForDoWhile(typedExpr))
+      case typedExpr: KtForExpression            => Seq(astForFor(typedExpr))
+      case typedExpr: KtIfExpression             => Seq(astForIf(typedExpr, argIdxOpt))
+      case typedExpr: KtIsExpression             => Seq(astForIsExpression(typedExpr, argIdxOpt, argNameOpt))
+      case typedExpr: KtLabeledExpression        => astsForExpression(typedExpr.getBaseExpression, argIdxOpt)
+      case typedExpr: KtLambdaExpression         => Seq(astForLambda(typedExpr, argIdxOpt))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
-        Seq(astForNameReference(typedExpr, argIdxOpt))
+        Seq(astForNameReference(typedExpr, argIdxOpt, argNameOpt))
       // TODO: callable reference
       case _: KtNameReferenceExpression               => Seq()
       case typedExpr: KtObjectLiteralExpression       => Seq(astForUnknown(typedExpr, argIdxOpt))
       case typedExpr: KtParenthesizedExpression       => astsForExpression(typedExpr.getExpression, argIdxOpt)
-      case typedExpr: KtPostfixExpression             => Seq(astForPostfixExpression(typedExpr, argIdxOpt))
-      case typedExpr: KtPrefixExpression              => Seq(astForPrefixExpression(typedExpr, argIdxOpt))
+      case typedExpr: KtPostfixExpression             => Seq(astForPostfixExpression(typedExpr, argIdxOpt, argNameOpt))
+      case typedExpr: KtPrefixExpression              => Seq(astForPrefixExpression(typedExpr, argIdxOpt, argNameOpt))
       case typedExpr: KtProperty if typedExpr.isLocal => astsForProperty(typedExpr)
       case typedExpr: KtReturnExpression              => Seq(astForReturnExpression(typedExpr))
-      case typedExpr: KtStringTemplateExpression      => Seq(astForStringTemplate(typedExpr, argIdxOpt))
-      case typedExpr: KtSuperExpression               => Seq(astForSuperExpression(typedExpr, argIdxOpt))
-      case typedExpr: KtThisExpression                => Seq(astForThisExpression(typedExpr, argIdxOpt))
+      case typedExpr: KtStringTemplateExpression      => Seq(astForStringTemplate(typedExpr, argIdxOpt, argNameOpt))
+      case typedExpr: KtSuperExpression               => Seq(astForSuperExpression(typedExpr, argIdxOpt, argNameOpt))
+      case typedExpr: KtThisExpression                => Seq(astForThisExpression(typedExpr, argIdxOpt, argNameOpt))
       case typedExpr: KtThrowExpression               => Seq(astForUnknown(typedExpr, argIdxOpt))
       case typedExpr: KtTryExpression                 => Seq(astForTry(typedExpr, argIdxOpt))
       case typedExpr: KtWhenExpression                => Seq(astForWhen(typedExpr, argIdxOpt))

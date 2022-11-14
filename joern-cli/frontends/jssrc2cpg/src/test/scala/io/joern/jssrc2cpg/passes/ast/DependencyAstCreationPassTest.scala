@@ -308,9 +308,10 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |export = foo;
         |export = bar;
         |export = function func(param) {};
+        |export = function () {}; // anonymous
         |export = class ClassA {};
         |""".stripMargin) { cpg =>
-      cpg.local.code.l shouldBe List("foo", "bar", "func")
+      cpg.local.code.l shouldBe List("foo", "bar", "func", "anonymous")
       cpg.typeDecl.name.l should contain allElementsOf List("func", "ClassA")
       cpg.assignment.code.l shouldBe List(
         "var foo = 1",
@@ -319,6 +320,8 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         "exports.bar = bar",
         "function func = function func(param) {}",
         "exports.func = func",
+        "function anonymous = function () {}",
+        "exports.anonymous = anonymous",
         "exports.ClassA = ClassA"
       )
     }
@@ -375,9 +378,10 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
     "have correct structure for export all with from clause" in AstFixture("""
        |export * from "Foo";
        |export * as B from "Bar";
-       |export * from "./some/Module";
+       |export * from "./some/ModuleA";
+       |export * from './some/ModuleB';
        |""".stripMargin) { cpg =>
-      val List(dep1, dep2, dep3) = cpg.dependency.l
+      val List(dep1, dep2, dep3, dep4) = cpg.dependency.l
 
       dep1.name shouldBe "Foo"
       dep1.dependencyGroupId shouldBe Some("Foo")
@@ -387,18 +391,31 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       dep2.dependencyGroupId shouldBe Some("Bar")
       dep2.version shouldBe "require"
 
-      dep3.name shouldBe "Module"
-      dep3.dependencyGroupId shouldBe Some("./some/Module")
+      dep3.name shouldBe "ModuleA"
+      dep3.dependencyGroupId shouldBe Some("./some/ModuleA")
       dep3.version shouldBe "require"
+
+      dep4.name shouldBe "ModuleB"
+      dep4.dependencyGroupId shouldBe Some("./some/ModuleB")
+      dep4.version shouldBe "require"
 
       cpg.assignment.code.l shouldBe List(
         "var _Foo = require(\"Foo\")",
         "exports.Foo = _Foo",
         "var _Bar = require(\"Bar\")",
         "exports.B = _Bar",
-        "var _Module = require(\"./some/Module\")",
-        "exports.Module = _Module"
+        "var _ModuleA = require(\"./some/ModuleA\")",
+        "exports.ModuleA = _ModuleA",
+        "var _ModuleB = require(\"./some/ModuleB\")",
+        "exports.ModuleB = _ModuleB"
       )
+
+      val List(dep4ReqAssignment) = cpg.assignment.codeExact("var _ModuleB = require(\"./some/ModuleB\")").l
+      dep4ReqAssignment.source.code shouldBe "require(\"./some/ModuleB\")"
+      dep4ReqAssignment.target.code shouldBe "_ModuleB"
+      val List(dep4ExpAssignment) = cpg.assignment.codeExact("exports.ModuleB = _ModuleB").l
+      dep4ExpAssignment.source.code shouldBe "_ModuleB"
+      dep4ExpAssignment.target.code shouldBe "exports.ModuleB"
     }
 
   }

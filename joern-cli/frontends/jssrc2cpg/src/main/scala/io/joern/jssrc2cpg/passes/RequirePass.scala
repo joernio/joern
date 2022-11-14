@@ -1,13 +1,15 @@
 package io.joern.jssrc2cpg.passes
 
+import io.joern.jssrc2cpg.passes.RequirePass.JS_EXPORT_PREFIX
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Identifier, Local}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.SimpleCpgPass
-import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate
 import overflowdb.traversal.{NodeOps, Traversal}
 
+import java.io.File
 import java.nio.file.Paths
 
 /** This pass enhances the call graph and call nodes by interpreting assignments of the form `foo = require("module")`.
@@ -63,7 +65,7 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
       .map(stripQuotes)
       .map { x =>
         val path = Paths.get(dirHoldingModule, x).toAbsolutePath.normalize.toString
-        if (path.endsWith(".mjs")) {
+        if (path.endsWith(".mjs") || path.endsWith(".js")) {
           path
         } else {
           path + ".js"
@@ -82,16 +84,65 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
     val target: String = call.inAssignment.target.code.head
 
-    val nodesToPatch: List[Call] = call.file.method.ast.isCall.nameExact(target).dedup.l
+    val callsToPatch: List[Call] = call.file.method.ast.isCall.nameExact(target).dedup.l
+
+    val variableToPatch: VariableInformation = VariableInformation(
+      call.file.method.ast.isIdentifier
+        .nameExact(target)
+        .collect { case i: Identifier => Seq(i) ++ i.refsTo.collectAll[Local].toSeq }
+        .flatten
+        .collect { case i: AstNode => i }
+        .dedup
+        .toList
+    )
+
+    def relativeExport: String = fileToInclude.stripPrefix(dirHoldingModule + File.separator)
 
   }
 
+  /** Represents a local and all of its reference identifiers.
+    * @param nodes
+    *   a list of a local and its reference identifiers.
+    */
+  case class VariableInformation(nodes: List[AstNode]) {
+
+    /** Whether this variable has been set as immutable or not.
+      */
+    lazy val isImmutable: Boolean = nodes.exists(_.inAssignment.code.exists(_.startsWith("const ")))
+
+    /** The dynamic type hints attached to this variable. This assumes all nodes have the same property value at this
+      * time.
+      */
+    lazy val dynamicTypeHintFullName: Seq[String] = nodes.headOption
+      .map(_.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, IndexedSeq.empty[String]))
+      .getOrElse(IndexedSeq.empty[String])
+  }
+
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
-    cpg.call("require").where(_.inAssignment.target).map(Require.apply(_)).foreach { require =>
+    val requires = cpg
+      .call("require")
+      .where(_.inAssignment.target)
+      .map(Require.apply(_))
+      .toSeq
+    // Set type hints of affected locals and identifiers
+    requires
+      .groupBy(require => require.variableToPatch)
+      .foreach { case (varInfo: VariableInformation, rs: Seq[Require]) =>
+        varInfo.nodes.foreach { n =>
+          diffGraph.setNodeProperty(
+            n.node,
+            if (varInfo.isImmutable) PropertyNames.TYPE_FULL_NAME else PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+            if (varInfo.isImmutable) rs.map(x => s"$JS_EXPORT_PREFIX${x.relativeExport}").headOption.getOrElse("ANY")
+            else varInfo.dynamicTypeHintFullName ++ rs.map(x => s"$JS_EXPORT_PREFIX${x.relativeExport}")
+          )
+        }
+      }
+    // Set method full names of calls to patch
+    requires.foreach { require =>
       require.methodFullName.foreach { fullName =>
         cpg.method.fullNameExact(fullName).foreach { method =>
-          require.nodesToPatch.foreach { node =>
-            diffGraph.setNodeProperty(node, "METHOD_FULL_NAME", fullName)
+          require.callsToPatch.foreach { node =>
+            diffGraph.setNodeProperty(node, PropertyNames.METHOD_FULL_NAME, fullName)
             diffGraph.addEdge(node, method, EdgeTypes.CALL)
           }
         }
@@ -109,4 +160,8 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
   }
 
+}
+
+object RequirePass {
+  val JS_EXPORT_PREFIX: String = "<export>::"
 }

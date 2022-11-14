@@ -1,5 +1,6 @@
 package io.joern.php2cpg.querying
 
+import io.joern.php2cpg.parser.Domain.PhpBuiltins
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
@@ -148,7 +149,10 @@ class MemberTests extends PhpCode2CpgFixture {
   }
 
   "non-class consts" should {
-    val cpg = code("<?php\nconst X = 'X';")
+    val cpg = code("""<?php
+        |const X = 'X';
+        |echo X;
+        |""".stripMargin)
 
     "be treated as members of global typeDecl" in {
       inside(cpg.member.l) { case List(xMember) =>
@@ -165,6 +169,19 @@ class MemberTests extends PhpCode2CpgFixture {
     "be initialized in the global typedecl's <clinit> method" in {
       inside(cpg.call.nameExact(Operators.assignment).l) { case List(assign) =>
         checkConstAssign(assign, "X")
+      }
+    }
+
+    "be fetched as a field access for a global field" in {
+      inside(cpg.call.name("echo").argument.l) { case List(constFetch: Call) =>
+        constFetch.name shouldBe Operators.fieldAccess
+        constFetch.lineNumber shouldBe Some(3)
+        constFetch.code shouldBe "X"
+
+        inside(constFetch.argument.l) { case List(globalIdentifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+          globalIdentifier.name shouldBe "<global>"
+          fieldIdentifier.canonicalName shouldBe "X"
+        }
       }
     }
   }

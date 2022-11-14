@@ -21,7 +21,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
         |""".stripMargin)
 
     "should contain a CALL node with an MFN starting with a placeholder type" in {
-      val List(c) = cpg.call.drop(1).take(1).l
+      val List(c) = cpg.call.slice(1, 2).l
       c.methodFullName shouldBe Defines.UnresolvedNamespace + ".flatMap:ANY(ANY)"
     }
   }

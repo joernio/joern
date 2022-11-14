@@ -16,10 +16,12 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
   private val codeFileNamePairs = mutable.ArrayBuffer.empty[(String, Path)]
   private var fileNameCounter   = 0
 
+  protected def codeFilePreProcessing(codeFile: Path): Unit = {}
+
   protected def applyPasses(): Unit
 
   def moreCode(code: String): this.type = {
-    moreCode(code, s"Test$fileNameCounter${fileSuffix}")
+    moreCode(code, s"Test$fileNameCounter$fileSuffix")
     fileNameCounter += 1
     this
   }
@@ -43,7 +45,9 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
         Files.createDirectories(tmpDir.resolve(fileName.getParent))
       }
       val codeAsBytes = code.getBytes(StandardCharsets.UTF_8)
-      Files.write(tmpDir.resolve(Paths.get(fileName.toString)), codeAsBytes)
+      val codeFile    = tmpDir.resolve(Paths.get(fileName.toString))
+      Files.write(codeFile, codeAsBytes)
+      codeFilePreProcessing(codeFile)
     }
     tmpDir
   }

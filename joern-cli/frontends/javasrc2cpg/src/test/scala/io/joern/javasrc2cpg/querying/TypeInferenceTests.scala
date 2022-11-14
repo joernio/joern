@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
@@ -208,10 +208,9 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
   }
 }
 
-class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
+class TypeInferenceTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |package pakfoo;
       |
       |import a.b.c.Bar;
@@ -262,7 +261,7 @@ class TypeInferenceTests extends JavaSrcCodeToCpgFixture {
       |        Foo f = new Foo();
       |    }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should find typeFullName from matching import" in {
     cpg.method.name("test1").local.nameExact("b").l match {

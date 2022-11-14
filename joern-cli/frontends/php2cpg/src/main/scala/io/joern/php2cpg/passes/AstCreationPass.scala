@@ -25,7 +25,7 @@ class AstCreationPass(inputPath: String, cpg: Cpg) extends ConcurrentWriterCpgPa
         diffGraph.absorb(new AstCreator(filename, parseResult, global).createAst())
 
       case None =>
-        logger.error(s"Could not parse file $filename. Results will be missing!")
+        logger.warn(s"Could not parse file $filename. Results will be missing!")
     }
   }
 

@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, CodeToCpgFixture, DefaultTestCpg, LanguageFrontend, TestCpg}
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
 import io.shiftleft.semanticcpg.language._
@@ -24,11 +24,6 @@ trait JavaSrcFrontend extends LanguageFrontend {
     new JavaSrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 }
-
-class JavaSrcCodeToCpgFixture
-    extends CodeToCpgFixture(new JavaSrcFrontend {
-      override protected val delombokMode = "default"
-    })
 
 class JavaSrcTestCpg(override protected val delombokMode: String) extends TestCpg with JavaSrcFrontend {
   private var _withOssDataflow = false

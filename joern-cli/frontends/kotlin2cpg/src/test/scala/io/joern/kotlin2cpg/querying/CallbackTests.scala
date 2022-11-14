@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CallbackTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with callback and additional parameter" should {
     val cpg = code("""

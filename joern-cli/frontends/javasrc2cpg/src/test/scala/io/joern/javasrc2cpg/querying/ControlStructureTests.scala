@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.{JavaSrcCode2CpgFixture, JavaSrcCodeToCpgFixture}
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.javasrc2cpg.util.NameConstants
 import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
@@ -719,10 +719,9 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
   }
 }
 
-class ControlStructureTests extends JavaSrcCodeToCpgFixture {
+class ControlStructureTests extends JavaSrcCode2CpgFixture {
 
-  override val code =
-    """
+  val cpg = code("""
       |class Foo {
       |  int baz(Iterable<Integer> xs) {
       |    int sum = 0;
@@ -786,7 +785,7 @@ class ControlStructureTests extends JavaSrcCodeToCpgFixture {
       |    }
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "should identify `try` block" in {
     cpg.method.name("foo").tryBlock.code.l shouldBe List("try")

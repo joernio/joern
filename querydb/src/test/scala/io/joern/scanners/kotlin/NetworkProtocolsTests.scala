@@ -5,9 +5,7 @@ import io.joern.suites.KotlinQueryTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import overflowdb.traversal.iterableToTraversal
 
-class NetworkProtocolsTests extends KotlinQueryTestSuite {
-
-  override def queryBundle = NetworkProtocols
+class NetworkProtocolsTests extends KotlinQueryTestSuite(NetworkProtocols) {
 
   "should find calls relevant to insecure network protocol usage" in {
     val query = queryBundle.usageOfInsecureProtocol()

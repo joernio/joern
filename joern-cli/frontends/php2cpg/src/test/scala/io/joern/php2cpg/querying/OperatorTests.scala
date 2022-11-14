@@ -1,12 +1,13 @@
 package io.joern.php2cpg.querying
 
-import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.{PhpBuiltins, PhpDomainTypeConstants}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class OperatorTests extends PhpCode2CpgFixture {
 
@@ -442,6 +443,212 @@ class OperatorTests extends PhpCode2CpgFixture {
 
         className.name shouldBe "Foo"
         className.code shouldBe "Foo"
+      }
+    }
+  }
+
+  "temporary list implementation should work" in {
+    // TODO This is a simple placeholder implementation that represents most of the useful information
+    //  in the AST, while being pretty much unusable for dataflow. A better implementation needs to follow.
+    val cpg = code("<?php\nlist($a, $b) = $arr;")
+
+    inside(cpg.call.nameExact(PhpBuiltins.listFunc).l) { case List(listCall: Call) =>
+      listCall.methodFullName shouldBe PhpBuiltins.listFunc
+      listCall.code shouldBe "list($a,$b)"
+      listCall.lineNumber shouldBe Some(2)
+      inside(listCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.lineNumber shouldBe Some(2)
+
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.lineNumber shouldBe Some(2)
+      }
+    }
+  }
+
+  "include calls" should {
+    "be correctly represented for normal includes" in {
+      val cpg = code("<?php\ninclude 'path';")
+
+      inside(cpg.call.l) { case List(includeCall: Call) =>
+        includeCall.name shouldBe "include"
+        includeCall.methodFullName shouldBe "include"
+        includeCall.code shouldBe "include \"path\""
+        inside(includeCall.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+
+    "be correctly represented for include_once" in {
+      val cpg = code("<?php\ninclude_once 'path';")
+
+      inside(cpg.call.l) { case List(includeOnceCall: Call) =>
+        includeOnceCall.name shouldBe "include_once"
+        includeOnceCall.methodFullName shouldBe "include_once"
+        includeOnceCall.code shouldBe "include_once \"path\""
+        inside(includeOnceCall.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+
+    "be correctly represented for normal requires" in {
+      val cpg = code("<?php\nrequire 'path';")
+
+      inside(cpg.call.l) { case List(requireCall: Call) =>
+        requireCall.name shouldBe "require"
+        requireCall.methodFullName shouldBe "require"
+        requireCall.code shouldBe "require \"path\""
+        inside(requireCall.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+
+    "be correctly represented for require once" in {
+      val cpg = code("<?php\nrequire_once 'path';")
+
+      inside(cpg.call.l) { case List(requireOnce: Call) =>
+        requireOnce.name shouldBe "require_once"
+        requireOnce.methodFullName shouldBe "require_once"
+        requireOnce.code shouldBe "require_once \"path\""
+        inside(requireOnce.argument.l) { case List(pathLiteral: Literal) =>
+          pathLiteral.code shouldBe "\"path\""
+        }
+      }
+    }
+  }
+
+  "declare calls without statements should be correctly represented" in {
+    val cpg = code("<?php\ndeclare(ticks=1, encoding='UTF-8');")
+
+    val declareCall = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareCall: Call) =>
+          declareCall
+        }
+    }
+
+    declareCall.name shouldBe PhpBuiltins.declareFunc
+    declareCall.methodFullName shouldBe PhpBuiltins.declareFunc
+    declareCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    declareCall.code shouldBe "declare(ticks=1,encoding=\"UTF-8\")"
+    declareCall.lineNumber shouldBe Some(2)
+
+    inside(declareCall.argument.l) { case List(tickAssign: Call, encodingAssign: Call) =>
+      tickAssign.name shouldBe Operators.assignment
+      tickAssign.lineNumber shouldBe Some(2)
+      tickAssign.code shouldBe "ticks=1"
+
+      inside(tickAssign.argument.l) { case List(ticksIdentifier: Identifier, value: Literal) =>
+        ticksIdentifier.name shouldBe "ticks"
+        ticksIdentifier.code shouldBe "ticks"
+
+        value.code shouldBe "1"
+      }
+
+      encodingAssign.name shouldBe Operators.assignment
+      encodingAssign.lineNumber shouldBe Some(2)
+      encodingAssign.code shouldBe "encoding=\"UTF-8\""
+
+      inside(encodingAssign.argument.l) { case List(encodingIdentifier: Identifier, value: Literal) =>
+        encodingIdentifier.name shouldBe "encoding"
+        encodingIdentifier.code shouldBe "encoding"
+
+        value.code shouldBe "\"UTF-8\""
+      }
+    }
+  }
+
+  "declare calls with an empty statement list should have the correct block structure" in {
+    val cpg = code("""<?php
+        |declare(ticks=1) {}
+        |""".stripMargin)
+
+    val declareBlock = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareBlock: Block) =>
+          declareBlock
+        }
+    }
+
+    inside(declareBlock.astChildren.l) { case List(declareCall: Call) =>
+      declareCall.code shouldBe "declare(ticks=1)"
+    }
+  }
+
+  "declare calls with non-empty statement lists should have the correct block structure" in {
+    val cpg = code("""<?php
+        |declare(ticks=1) {
+        |  echo $x;
+        |}
+        |""".stripMargin)
+
+    val declareBlock = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
+      case List(globalMethod) =>
+        inside(globalMethod.body.astChildren.l) { case List(declareBlock: Block) =>
+          declareBlock
+        }
+    }
+
+    inside(declareBlock.astChildren.l) { case List(declareCall: Call, echoCall: Call) =>
+      declareCall.code shouldBe "declare(ticks=1)"
+      echoCall.code shouldBe "echo $x"
+    }
+  }
+
+  "shell_exec calls should be handled" in {
+    val cpg = code("<?php\n`ls -la`")
+
+    inside(cpg.call.name("shell_exec").l) { case List(shellCall) =>
+      shellCall.methodFullName shouldBe "shell_exec"
+      shellCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      shellCall.code shouldBe "`ls -la`"
+      shellCall.lineNumber shouldBe Some(2)
+
+      inside(shellCall.argument.l) { case List(command: Literal) =>
+        command.code shouldBe "\"ls -la\""
+      }
+    }
+  }
+
+  "unset calls should be handled" in {
+    val cpg = code("<?php\nunset($a, $b)")
+
+    inside(cpg.call.l) { case List(unsetCall) =>
+      unsetCall.name shouldBe "unset"
+      unsetCall.methodFullName shouldBe "unset"
+      unsetCall.code shouldBe "unset($a, $b)"
+      unsetCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      unsetCall.lineNumber shouldBe Some(2)
+
+      inside(unsetCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
+        aArg.name shouldBe "a"
+        aArg.code shouldBe "$a"
+        aArg.lineNumber shouldBe Some(2)
+
+        bArg.name shouldBe "b"
+        bArg.code shouldBe "$b"
+        bArg.lineNumber shouldBe Some(2)
+      }
+    }
+  }
+
+  "global calls should handle simple and non-simple args" in {
+    val cpg = code("<?php\nglobal $a, $$b")
+
+    inside(cpg.call.l) { case List(globalCall) =>
+      globalCall.name shouldBe "global"
+      globalCall.methodFullName shouldBe "global"
+      globalCall.code shouldBe "global $a, $$b"
+      globalCall.lineNumber shouldBe Some(2)
+
+      inside(globalCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
+        aArg.name shouldBe "a"
+        bArg.name shouldBe "b"
       }
     }
   }

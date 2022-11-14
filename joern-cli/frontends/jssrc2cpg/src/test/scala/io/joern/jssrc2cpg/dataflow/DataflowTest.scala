@@ -5,7 +5,6 @@ import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 
 class DataflowTest extends DataFlowCodeToCpgSuite {
 
@@ -177,14 +176,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     val source = cpg.identifier.name("a")
     val sink   = cpg.call.code("foo.*").argument
     val flows  = sink.reachableByFlows(source)
-
-    flows.map(flowToResultPairs).toSetMutable shouldBe Set(
-      List(("var b = a", 6), ("foo(b)", 7)),
-      List(("var a = x", 5), ("var b = a", 6), ("foo(b)", 7)),
-      List(("var a = x", 5), ("var b = a", 6), ("foo(b)", 7), ("foo(this, y)", 2), ("RET", 2), ("foo(b)", 7)),
-      List(("var b = a", 6), ("foo(b)", 7), ("foo(this, y)", 2), ("RET", 2), ("foo(b)", 7))
-    )
-
+    flows.size shouldBe 2
   }
 
   "Flow from function foo to a" in {
@@ -611,6 +603,20 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     sink.size shouldBe 1
     src.size shouldBe 1
     sink.reachableBy(src).size shouldBe 1
+  }
+
+  "Should not reach irrelevant nodes" in {
+    val cpg: Cpg = code("""
+        |const irrelevant = "irrelevant";
+        |const a = { } ;
+        |sink(a);
+        |""".stripMargin)
+
+    val sink = cpg.call("sink").l
+    val src  = cpg.literal("\"irrelevant\"").l
+    sink.size shouldBe 1
+    src.size shouldBe 1
+    sink.reachableBy(src).size shouldBe 0
   }
 
 }

@@ -44,7 +44,7 @@ class CachingReflectionTypeSolver extends ReflectionTypeSolver {
           cache.put(name, symbolReference)
           symbolReference
         } catch {
-          case e: NoClassDefFoundError =>
+          case _: NoClassDefFoundError =>
             // We can safely ignore this one because it is triggered when there are package names which are almost the
             // same as class name, with the exclusion of the case.
             // For example:
@@ -52,7 +52,7 @@ class CachingReflectionTypeSolver extends ReflectionTypeSolver {
             // (wrong name: com/github/javaparser/printer/concretesyntaxmodel)
             // note that this exception seems to be thrown only on certain platform (mac yes, linux no)
             SymbolReference.unsolved(classOf[ResolvedReferenceTypeDeclaration])
-          case e: ClassNotFoundException =>
+          case _: ClassNotFoundException =>
             // it could be an inner class
             val symbolReference = innerClassLookup(name)
             cache.put(name, symbolReference)

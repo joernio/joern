@@ -2,9 +2,7 @@ package io.joern.scanners.c
 
 import io.joern.suites.CQueryTestSuite
 
-class DangerousFunctionsTests extends CQueryTestSuite {
-
-  override def queryBundle = DangerousFunctions
+class DangerousFunctionsTests extends CQueryTestSuite(DangerousFunctions) {
 
   "find insecure gets() function usage" in {
     val query   = queryBundle.getsUsed()

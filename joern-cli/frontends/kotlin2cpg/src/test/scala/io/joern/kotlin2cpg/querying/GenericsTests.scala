@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class GenericsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with simple user-defined fn using generics" should {
     val cpg = code("""
@@ -43,7 +43,7 @@ class GenericsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain CALL nodes with the correct METHOD_FULL_NAME props set" in {
       val List(c1) = cpg.call.code("getAnInstance.*").take(1).l
       c1.methodFullName shouldBe "mypkg.getAnInstance:java.lang.Object(java.lang.String)"
-      val List(c2) = cpg.call.code("getAnInstance.*").drop(1).take(1).l
+      val List(c2) = cpg.call.code("getAnInstance.*").slice(1, 2).l
       c2.methodFullName shouldBe "mypkg.getAnInstance:java.lang.Object(java.lang.String)"
     }
 
@@ -89,7 +89,7 @@ class GenericsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain CALL nodes with the correct METHOD_FULL_NAME props set" in {
       val List(c1) = cpg.call.code("getAnInstance.*").take(1).l
       c1.methodFullName shouldBe "mypkg.getAnInstance:mypkg.AClass(java.lang.String)"
-      val List(c2) = cpg.call.code("getAnInstance.*").drop(1).take(1).l
+      val List(c2) = cpg.call.code("getAnInstance.*").slice(1, 2).l
       c2.methodFullName shouldBe "mypkg.getAnInstance:mypkg.AClass(java.lang.String)"
     }
 

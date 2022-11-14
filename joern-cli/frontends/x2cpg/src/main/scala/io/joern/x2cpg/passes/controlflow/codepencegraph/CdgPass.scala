@@ -36,9 +36,8 @@ class CdgPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
     postDomFrontiers.foreach { case (node, postDomFrontierNodes) =>
       postDomFrontierNodes.foreach {
         case postDomFrontierNode @ (_: Literal | _: Identifier | _: Call | _: MethodRef | _: Unknown |
-            _: ControlStructure | _: JumpTarget) => {
+            _: ControlStructure | _: JumpTarget) =>
           dstGraph.addEdge(postDomFrontierNode, node, EdgeTypes.CDG)
-        }
         case postDomFrontierNode =>
           val nodeLabel  = postDomFrontierNode.label
           val containsIn = postDomFrontierNode._containsIn

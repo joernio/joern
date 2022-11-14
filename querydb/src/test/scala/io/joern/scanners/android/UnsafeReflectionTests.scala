@@ -2,9 +2,7 @@ package io.joern.scanners.android
 
 import io.joern.suites.AndroidQueryTestSuite
 
-class UnsafeReflectionTests extends AndroidQueryTestSuite {
-
-  override def queryBundle = UnsafeReflection
+class UnsafeReflectionTests extends AndroidQueryTestSuite(UnsafeReflection) {
 
   private def makeBuildGradle(targetSdk: Int): String = {
     s"""

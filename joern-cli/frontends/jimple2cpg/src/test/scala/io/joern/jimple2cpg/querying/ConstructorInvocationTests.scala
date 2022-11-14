@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
@@ -9,10 +9,9 @@ import io.shiftleft.semanticcpg.language._
 /** These tests are based off of those found in javasrc2cpg but modified to fit to Jimple's 3-address code rule and flat
   * AST.
   */
-class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
+class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |class Foo {
       |  int x;
       |
@@ -50,7 +49,7 @@ class ConstructorInvocationTests extends JimpleCodeToCpgFixture {
       |    bs[0] = new Bar(42);
       |  }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "it should create correct method nodes for constructors" in {
     cpg.method.name(io.joern.x2cpg.Defines.ConstructorMethodName).where(_.fullName("^Foo.*")).l match {

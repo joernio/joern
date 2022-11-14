@@ -25,6 +25,8 @@ case class ReachableByTask(
   callSiteStack: mutable.Stack[Call] = mutable.Stack()
 )
 
+case class TaskFingerprint(sink: CfgNode, sources: Set[CfgNode], callDepth: Int, callSiteStack: mutable.Stack[Call])
+
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
   * in parallel, creating and submitting new tasks upon completion of tasks. This class deals only with task scheduling,
   * while the creation of new tasks from existing tasks is handled by the class `TaskCreator`.
@@ -37,6 +39,8 @@ class Engine(context: EngineContext) {
   private var numberOfTasksRunning: Int        = 0
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService = new ExecutorCompletionService[Vector[ReachableByResult]](executorService)
+
+  private val started: mutable.Set[TaskFingerprint] = mutable.Set()
 
   def shutdown(): Unit = {
     executorService.shutdown()
@@ -72,14 +76,14 @@ class Engine(context: EngineContext) {
     * submitted accordingly. Once no more tasks can be created, the list of results is returned.
     */
   private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): List[ReachableByResult] = {
-    var result = List[ReachableByResult]()
+    var completedResults = List[ReachableByResult]()
 
     /** For a list of results, determine partial and complete results. Store complete results and derive and submit
       * tasks from partial results.
       */
     def handleResultsOfTask(resultsOfTask: Vector[ReachableByResult]): Unit = {
       val (partial, complete) = resultsOfTask.partition(_.partial)
-      result ++= complete
+      completedResults ++= complete
       val newTasks = new TaskCreator(sources).createFromResults(partial)
       newTasks.foreach(submitTask)
     }
@@ -102,10 +106,15 @@ class Engine(context: EngineContext) {
 
     tasks.foreach(submitTask)
     runUntilAllTasksAreSolved()
-    deduplicate(result.toVector).toList
+    deduplicate(completedResults.toVector).toList
   }
 
   private def submitTask(task: ReachableByTask): Unit = {
+    val fingerprint = TaskFingerprint(task.sink, task.sources, task.callDepth, task.callSiteStack)
+    if (started.contains(fingerprint)) {
+      return
+    }
+    started.add(fingerprint)
     numberOfTasksRunning += 1
     completionService.submit(
       new TaskSolver(if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable), context)
@@ -239,8 +248,11 @@ object Engine {
 
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
     vec
-      .groupBy { x =>
-        (x.path.headOption.map(_.node) ++ x.path.lastOption.map(_.node), x.partial, x.callDepth)
+      .groupBy { result =>
+        val head        = result.path.headOption.map(_.node)
+        val last        = result.path.lastOption.map(_.node)
+        val startAndEnd = (head ++ last).l
+        (startAndEnd, result.partial, result.callDepth)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList

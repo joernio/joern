@@ -2,10 +2,13 @@ package io.joern.scanners.android
 
 import io.joern.scanners._
 import io.joern.console._
+import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.Traversal
+import io.joern.dataflowengineoss.language._
 
-object AndroidMisconfigurations extends QueryBundle {
+object Misconfigurations extends QueryBundle {
 
   @q
   def manifestXmlBackupEnabled(): Query =
@@ -18,31 +21,7 @@ object AndroidMisconfigurations extends QueryBundle {
           |""".stripMargin,
       score = 3,
       withStrRep({ cpg =>
-        import javax.xml.parsers.SAXParserFactory
-        import scala.xml.{Elem, XML}
-
-        object SecureXmlParsing {
-          def parseXml(content: String): Option[Elem] = {
-            try {
-              val spf = SAXParserFactory.newInstance()
-
-              spf.setValidating(false)
-              spf.setNamespaceAware(false)
-              spf.setXIncludeAware(false)
-              spf.setFeature("http://xml.org/sax/features/validation", false)
-              spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
-              spf.setFeature("http://apache.org/xml/features/nonvalidating/load-dtd-grammar", false)
-              spf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
-              spf.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
-              spf.setFeature("http://xml.org/sax/features/external-general-entities", false)
-
-              Some(XML.withSAXParser(spf.newSAXParser()).loadString(content))
-            } catch {
-              case _: Throwable =>
-                None
-            }
-          }
-        }
+        import io.joern.x2cpg.utils.xml.SecureXmlParsing
 
         val androidUri = "http://schemas.android.com/apk/res/android"
         cpg.configFile
@@ -192,5 +171,59 @@ object AndroidMisconfigurations extends QueryBundle {
           )
         )
       )
+    )
+
+  /** <a
+    * href="https://www.researchgate.net/publication/262257979_Predictability_of_Android_OpenSSL%27s_Pseudo_random_number_generator">Predictability
+    * of Android OpenSSL's Pseudo random number generator</a>
+    */
+  @q
+  def vulnerablePRNGOnAndroidv16_18()(implicit context: EngineContext): Query =
+    Query.make(
+      name = "vuln-prng-android-v16_18",
+      author = Crew.dave,
+      title = "Vulnerable underlying PRNG used on currently set version of Android",
+      description = """
+          |The underlying PRNG is vulnerable on Android v16-18. If the application is implemented by utilizing
+          |org.webkit package and a key exchange scheme is RSA, the PreMasterSecret of the first SSL session
+          |can be recovered using the restored PRNG states.
+          |
+          |For more information, see "Predictability of Android OpenSSL's Pseudo random number generator" by S.H. Kim 
+          |et. al.
+          |""".stripMargin,
+      score = 6,
+      withStrRep({ cpg =>
+        def groovyBuildGradleFiles = cpg.configFile.name(".*build.gradle")
+
+        val targetSdkVersionMatch = """^[^t]+minSdk[^0-9]+(\d+)""".r
+        val insecureSdkVersionMin = 16
+        val insecureSdkVersionMax = 18
+        def satisfiesConfig = groovyBuildGradleFiles.filter { gradleFile =>
+          gradleFile.content
+            .split('\n')
+            .exists { line =>
+              targetSdkVersionMatch
+                .findAllIn(line)
+                .matchData
+                .exists { m =>
+                  m.groupCount > 0 &&
+                  m.group(1).toInt >= insecureSdkVersionMin
+                  m.group(1).toInt <= insecureSdkVersionMax
+                }
+            }
+        }
+
+        def source         = cpg.literal("\".*PRNG.*\"")
+        def sink           = cpg.call.code(".*SecureRandom.getInstance.*")
+        def defaultSecRand = cpg.call.methodFullNameExact("java.security.SecureRandom.<init>:void()")
+        if (
+          (defaultSecRand.nonEmpty || sink.reachableBy(source).nonEmpty) &&
+          satisfiesConfig.nonEmpty
+        )
+          satisfiesConfig
+        else
+          Traversal.empty
+      }),
+      tags = List(QueryTags.android, QueryTags.cryptography, QueryTags.misconfiguration)
     )
 }

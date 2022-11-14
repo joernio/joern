@@ -1,20 +1,18 @@
 name               := "jssrc2cpg"
 scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.1.3")
+crossScalaVersions := Seq("2.13.8", "3.2.1")
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
-val astGenVersion = "2.2.0"
+val astGenVersion = "2.3.0"
 
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"               %% "upickle"           % "2.0.0",
-  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.13.3",
+  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.14.0",
   "org.apache.logging.log4j"   % "log4j-slf4j-impl"  % Versions.log4j     % Runtime,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
 )
-
-Test / packageBin / publishArtifact := true
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
 

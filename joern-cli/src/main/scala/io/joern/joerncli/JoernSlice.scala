@@ -4,7 +4,6 @@ import scala.util.Using
 import io.shiftleft.semanticcpg.language._
 
 import scala.jdk.CollectionConverters._
-import overflowdb.traversal._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.joerncli.console.Joern.semantics
@@ -12,7 +11,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import overflowdb.Edge
 
-object JoernSlice extends App {
+object JoernSlice {
   case class Config(
     cpgFileName: String = "cpg.bin",
     outFile: String = "slice.bin",
@@ -22,7 +21,17 @@ object JoernSlice extends App {
 
   case class Slice(nodes: List[CfgNode], edges: Map[CfgNode, List[Edge]])
 
-  private def parseConfig: Option[Config] =
+  def main(args: Array[String]) = {
+    parseConfig(args).foreach { config =>
+      Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
+        val slice = calculateSlice(cpg, config.sourceFile, config.sourceLine)
+        storeSliceInNewCpg(config.outFile, slice)
+      }
+    }
+
+  }
+
+  private def parseConfig(args: Array[String]): Option[Config] =
     new scopt.OptionParser[Config]("joern-slice") {
       head("Extract intra-procedural backward slice for a line of code")
       help("help")
@@ -40,13 +49,6 @@ object JoernSlice extends App {
         .text("output CPG file")
         .action((x, c) => c.copy(outFile = x))
     }.parse(args, Config())
-
-  parseConfig.foreach { config =>
-    Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
-      val slice = calculateSlice(cpg, config.sourceFile, config.sourceLine)
-      storeSliceInNewCpg(config.outFile, slice)
-    }
-  }
 
   private def calculateSlice(cpg: Cpg, sourceFile: String, sourceLine: Int): Slice = {
     val sinks = cpg.file.nameExact(sourceFile).ast.lineNumber(sourceLine).isCall.argument.l

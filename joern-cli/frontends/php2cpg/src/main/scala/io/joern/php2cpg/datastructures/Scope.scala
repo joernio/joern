@@ -1,26 +1,40 @@
 package io.joern.php2cpg.datastructures
 
+import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{Scope => X2CpgScope}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
 class Scope extends X2CpgScope[String, NewNode, NewNode] {
 
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
   private var localStack: List[mutable.ArrayBuffer[NewLocal]]     = Nil
   private var constAndStaticInits: List[mutable.ArrayBuffer[Ast]] = Nil
   private var fieldInits: List[mutable.ArrayBuffer[Ast]]          = Nil
+  private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
 
   override def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
-      case _: NewMethod => localStack = mutable.ArrayBuffer[NewLocal]() :: localStack
+      case _: NewMethod =>
+        localStack = mutable.ArrayBuffer[NewLocal]() :: localStack
+        super.pushNewScope(scopeNode)
+
       case _: NewTypeDecl =>
         constAndStaticInits = mutable.ArrayBuffer[Ast]() :: constAndStaticInits
         fieldInits = mutable.ArrayBuffer[Ast]() :: fieldInits
-      case _ => // Nothing to do here
+        super.pushNewScope(scopeNode)
+
+      case _: NewNamespaceBlock =>
+        super.pushNewScope(scopeNode)
+
+      case invalid =>
+        logger.warn(s"pushNewScope called with invalid node $invalid. Ignoring!")
     }
-    super.pushNewScope(scopeNode)
   }
 
   override def popScope(): Option[NewNode] = {
@@ -50,6 +64,14 @@ class Scope extends X2CpgScope[String, NewNode, NewNode] {
       case _ => // Nothing to do here
     }
     super.addToScope(identifier, variable)
+  }
+
+  def addAnonymousMethod(methodAst: Ast): Unit = anonymousMethods.addOne(methodAst)
+
+  def getAndClearAnonymousMethods: List[Ast] = {
+    val methods = anonymousMethods.toList
+    anonymousMethods.clear()
+    methods
   }
 
   def getEnclosingNamespaceName: Option[String] =

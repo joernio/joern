@@ -9,27 +9,16 @@ import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
 
 class AstCreationPass(filesWithMeta: Iterable[KtFileWithMeta], typeInfoProvider: TypeInfoProvider, cpg: Cpg)
-    extends ConcurrentWriterCpgPass[String](cpg) {
+    extends ConcurrentWriterCpgPass[KtFileWithMeta](cpg) {
   val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def generateParts(): Array[String] =
-    filesWithMeta.map { ktFileWithMeta => ktFileWithMeta.f.getVirtualFilePath }.toArray
+  override def generateParts(): Array[KtFileWithMeta] =
+    filesWithMeta.toArray
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
-    val fileWithMeta = filesWithMeta
-      .filter { ktFileWithMeta =>
-        ktFileWithMeta.f.getVirtualFilePath == filename
-      }
-      .toList
-      .headOption
-    fileWithMeta match {
-      case Some(fm) =>
-        diffGraph.absorb(new AstCreator(fm, typeInfoProvider, global).createAst())
-        logger.debug(s"AST created for file at `$filename`.")
-      case None =>
-        logger.info(s"Could not find file at `$filename`.")
-    }
+  override def runOnPart(diffGraph: DiffGraphBuilder, fileWithMeta: KtFileWithMeta): Unit = {
+    diffGraph.absorb(new AstCreator(fileWithMeta, typeInfoProvider, global).createAst())
+    logger.debug(s"AST created for file at `${fileWithMeta.f.getVirtualFilePath}`.")
   }
 
 }

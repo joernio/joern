@@ -1,13 +1,13 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Method, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.{iterableToTraversal}
+import overflowdb.traversal.iterableToTraversal
 
 class LocalClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  implicit val resolver = NoResolve
+  implicit val resolver: ICallResolver = NoResolve
 
   "CPG for code with a simple local fn declaration" should {
     val cpg = code("""

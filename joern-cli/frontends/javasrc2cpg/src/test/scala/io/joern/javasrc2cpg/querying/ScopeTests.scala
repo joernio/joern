@@ -1,14 +1,13 @@
 package io.joern.javasrc2cpg.querying
 
-import io.joern.javasrc2cpg.testfixtures.JavaSrcCodeToCpgFixture
+import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
 import io.shiftleft.semanticcpg.language._
 
-class ScopeTests extends JavaSrcCodeToCpgFixture {
+class ScopeTests extends JavaSrcCode2CpgFixture {
 
-  override val code: String =
-    """
+  val cpg = code("""
       |class Bar {
       |    public Object o = new Object();
       |    public static Object staticO = new Object();
@@ -114,7 +113,7 @@ class ScopeTests extends JavaSrcCodeToCpgFixture {
       |        return Bar.staticO.toString();
       |    }
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "it should create field access for simple non-static access as call scope" in {
     cpg.method.name("test8").call.name("toString").argument.l match {

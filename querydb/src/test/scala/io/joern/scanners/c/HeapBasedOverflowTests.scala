@@ -4,9 +4,7 @@ import io.joern.suites.CQueryTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.console.scan._
 
-class HeapBasedOverflowTests extends CQueryTestSuite {
-
-  override def queryBundle = HeapBasedOverflow
+class HeapBasedOverflowTests extends CQueryTestSuite(HeapBasedOverflow) {
 
   "find calls to malloc/memcpy system with different expressions in arguments" in {
     val x = queryBundle.mallocMemcpyIntOverflow()

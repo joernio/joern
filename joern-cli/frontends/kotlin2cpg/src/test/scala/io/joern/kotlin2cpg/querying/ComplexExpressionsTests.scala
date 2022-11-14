@@ -37,7 +37,7 @@ class ComplexExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
       cpg.call
         .methodFullName(Operators.logicalAnd)
-        .filter(_.outE.filter { x => x.isInstanceOf[Argument] }.size == 0)
+        .filter(!_.outE.exists { x => x.isInstanceOf[Argument] })
         .code
         .l shouldBe Seq()
     }
@@ -47,7 +47,7 @@ class ComplexExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
       cpg.call
         .methodFullName(Operators.logicalOr)
-        .filter(_.outE.filter { x => x.isInstanceOf[Argument] }.size == 0)
+        .filter(!_.outE.exists { x => x.isInstanceOf[Argument] })
         .code
         .l shouldBe Seq()
     }
@@ -85,7 +85,7 @@ class ComplexExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
       cpg.call
         .methodFullName(Operators.logicalAnd)
-        .filter(_.outE.filter { x => x.isInstanceOf[Argument] }.size == 0)
+        .filter(!_.outE.exists { x => x.isInstanceOf[Argument] })
         .code
         .l shouldBe Seq()
     }

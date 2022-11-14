@@ -29,9 +29,8 @@ class PreprocessorPassTests extends AnyWordSpec with Matchers {
         val filename = "test.c"
         val file     = dir / filename
         file.write(code)
-        val config = Config(inputPath = dir.path.toString, includePathsAutoDiscovery = false)
-
-        val stmts = new PreprocessorPass(config).run().toList
+        val config = Config(inputPath = dir.path.toString)
+        val stmts  = new PreprocessorPass(config).run().toList
         stmts shouldBe List("SYMBOL", "FOO=true")
       }
     }
@@ -56,9 +55,8 @@ class PreprocessorPassTests extends AnyWordSpec with Matchers {
         val filename = "test.c"
         val file     = dir / filename
         file.write(code)
-        val config =
-          Config(inputPath = dir.path.toString, defines = Set("SYMBOL"), includePathsAutoDiscovery = false)
-        val stmts = new PreprocessorPass(config).run().toList
+        val config = Config(inputPath = dir.path.toString, defines = Set("SYMBOL"))
+        val stmts  = new PreprocessorPass(config).run().toList
         stmts shouldBe List("SYMBOL=true", "FOO=true")
       }
     }

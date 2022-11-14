@@ -1,6 +1,6 @@
 name               := "c2cpg"
 scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.1.3")
+crossScalaVersions := Seq("2.13.8", "3.2.1")
 
 dependsOn(Projects.semanticcpg, Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
 
@@ -12,8 +12,6 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j" % "log4j-slf4j-impl"           % Versions.log4j     % Runtime,
   "org.scalatest"           %% "scalatest"                  % Versions.scalatest % Test
 )
-
-Test / packageBin / publishArtifact := true
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
 

@@ -1,21 +1,18 @@
 package io.joern.joerncli
 
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.Json
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
-import io.joern.joerncli.EmbeddingGenerator.SparseVectorWithExplicitFeature
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
-
-import scala.util.Using
 import io.shiftleft.semanticcpg.language._
-import org.json4s.JsonAST.JString
-import org.json4s.{CustomSerializer, DefaultFormats}
+import org.json4s.DefaultFormats
 import org.json4s.native.Serialization
-import overflowdb.traversal._
+import overflowdb.traversal.Traversal
 
-import scala.jdk.CollectionConverters._
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
+import scala.util.Using
 import scala.util.hashing.MurmurHash3
 
 class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, String)] {
@@ -134,12 +131,39 @@ trait EmbeddingGenerator[T, S] {
 
 }
 
-object JoernVectors extends App {
+object JoernVectors {
 
   implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
   case class Config(cpgFileName: String = "cpg.bin", outDir: String = "out", dimToFeature: Boolean = false)
 
-  private def parseConfig: Option[Config] =
+  def main(args: Array[String]) = {
+    parseConfig(args).foreach { config =>
+      exitIfInvalid(config.outDir, config.cpgFileName)
+      Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
+        val generator = new BagOfPropertiesForNodes()
+        val embedding = generator.embed(cpg)
+        println("{")
+        println("\"objects\":")
+        traversalToJson(embedding.objects, { x: String => generator.defaultToString(x) })
+        if (config.dimToFeature) {
+          println(",\"dimToFeature\": ")
+          println(Serialization.write(embedding.dimToStructure))
+        }
+        println(",\"vectors\":")
+        traversalToJson(embedding.vectors, generator.vectorToString)
+        println(",\"edges\":")
+        traversalToJson(
+          cpg.graph.edges().map { x =>
+            Map("src" -> x.outNode().id(), "dst" -> x.inNode().id(), "label" -> x.label())
+          },
+          { x: Map[String, Any] => generator.defaultToString(x) }
+        )
+        println("}")
+      }
+    }
+  }
+
+  private def parseConfig(args: Array[String]): Option[Config] =
     new scopt.OptionParser[Config]("joern-vectors") {
       head("Extract vector representations of code from CPG")
       help("help")
@@ -154,31 +178,6 @@ object JoernVectors extends App {
         .text("Provide map from dimensions to features")
         .action((_, c) => c.copy(dimToFeature = true))
     }.parse(args, Config())
-
-  parseConfig.foreach { config =>
-    exitIfInvalid(config.outDir, config.cpgFileName)
-    Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
-      val generator = new BagOfPropertiesForNodes()
-      val embedding = generator.embed(cpg)
-      println("{")
-      println("\"objects\":")
-      traversalToJson(embedding.objects, { x: String => generator.defaultToString(x) })
-      if (config.dimToFeature) {
-        println(",\"dimToFeature\": ")
-        println(Serialization.write(embedding.dimToStructure))
-      }
-      println(",\"vectors\":")
-      traversalToJson(embedding.vectors, generator.vectorToString)
-      println(",\"edges\":")
-      traversalToJson(
-        cpg.graph.edges().map { x =>
-          Map("src" -> x.outNode().id(), "dst" -> x.inNode().id(), "label" -> x.label())
-        },
-        { x: Map[String, Any] => generator.defaultToString(x) }
-      )
-      println("}")
-    }
-  }
 
   private def traversalToJson[X](trav: Traversal[X], vectorToString: X => String): Unit = {
     println("[")

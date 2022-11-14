@@ -9,10 +9,20 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
-object JoernParse extends App {
-
+object JoernParse {
   // Special string used to separate joern-parse opts from frontend-specific opts
-  val ARGS_DELIMITER = "--frontend-args"
+  val ARGS_DELIMITER          = "--frontend-args"
+  val DEFAULT_CPG_OUT_FILE    = "cpg.bin"
+  var generator: CpgGenerator = _
+
+  def main(args: Array[String]) = {
+    run(args) match {
+      case Right(msg) => println(msg)
+      case Left(errMsg) =>
+        println(s"Failure: $errMsg")
+        System.exit(1)
+    }
+  }
 
   val optionParser = new scopt.OptionParser[ParserConfig]("joern-parse") {
     arg[String]("input")
@@ -55,22 +65,10 @@ object JoernParse extends App {
     note(s"Args specified after the $ARGS_DELIMITER separator will be passed to the front-end verbatim")
   }
 
-  val DEFAULT_CPG_OUT_FILE = "cpg.bin"
+  private def run(args: Array[String]): Either[String, String] = {
+    val (parserArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
+    val installConfig              = new InstallConfig()
 
-  val (parserArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
-  val installConfig              = new InstallConfig()
-
-  var generator: CpgGenerator = _
-
-  run() match {
-    case Right(msg) => println(msg)
-
-    case Left(errMsg) =>
-      println(s"Failure: $errMsg")
-      System.exit(1)
-  }
-
-  private def run(): Either[String, String] = {
     parseConfig(parserArgs) match {
       case Right(config) =>
         if (config.listLanguages) {
@@ -79,7 +77,7 @@ object JoernParse extends App {
           for {
             _        <- checkInputPath(config)
             language <- getLanguage(config)
-            _        <- generateCpg(config, language)
+            _        <- generateCpg(installConfig, frontendArgs, config, language)
             _        <- applyDefaultOverlays(config)
           } yield newCpgCreatedString(config.outputCpgFile)
 
@@ -122,7 +120,12 @@ object JoernParse extends App {
     }
   }
 
-  private def generateCpg(config: ParserConfig, language: String): Either[String, String] = {
+  private def generateCpg(
+    installConfig: InstallConfig,
+    frontendArgs: List[String],
+    config: ParserConfig,
+    language: String
+  ): Either[String, String] = {
     if (config.enhanceOnly) {
       Right("No generation required")
     } else {

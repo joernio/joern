@@ -14,6 +14,7 @@ import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, Layer
 import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 object JoernScanConfig {
@@ -37,11 +38,16 @@ case class JoernScanConfig(
   listLanguages: Boolean = false
 )
 
-object JoernScan extends App with BridgeBase {
+object JoernScan extends BridgeBase {
 
   val implementationVersion = getClass.getPackage.getImplementationVersion
 
-  val (scanArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
+  def main(args: Array[String]) = {
+    val (scanArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
+    optionParser.parse(scanArgs, JoernScanConfig()).foreach { config =>
+      run(config, frontendArgs)
+    }
+  }
 
   val optionParser = new scopt.OptionParser[JoernScanConfig]("joern-scan") {
     head(
@@ -106,9 +112,7 @@ object JoernScan extends App with BridgeBase {
     note(s"Args specified after the ${CpgBasedTool.ARGS_DELIMITER} separator will be passed to the front-end verbatim")
   }
 
-  optionParser.parse(scanArgs, JoernScanConfig()).foreach(run)
-
-  private def run(config: JoernScanConfig): Unit = {
+  private def run(config: JoernScanConfig, frontendArgs: List[String]): Unit = {
     if (config.dump) {
       dumpQueriesAsJson(config.dumpDestination)
     } else if (config.listQueryNames) {
@@ -118,7 +122,7 @@ object JoernScan extends App with BridgeBase {
     } else if (config.updateQueryDb) {
       updateQueryDatabase(config.queryDbVersion)
     } else {
-      runScanPlugin(config)
+      runScanPlugin(config, frontendArgs)
     }
   }
 
@@ -137,13 +141,13 @@ object JoernScan extends App with BridgeBase {
   }
 
   private def listLanguages(): Unit = {
-    val s = new StringBuilder()
+    val s = new mutable.StringBuilder()
     s ++= "Available languages (case insensitive):\n"
     s ++= Languages.ALL.asScala.map(lang => s"- ${lang.toLowerCase}").mkString("\n")
     println(s.toString())
   }
 
-  private def runScanPlugin(config: JoernScanConfig): Unit = {
+  private def runScanPlugin(config: JoernScanConfig, frontendArgs: List[String]): Unit = {
 
     if (config.src == "") {
       println(optionParser.usage)

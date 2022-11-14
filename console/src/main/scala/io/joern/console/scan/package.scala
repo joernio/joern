@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.traversal._
+import overflowdb.traversal.Traversal
 
 package object scan {
 

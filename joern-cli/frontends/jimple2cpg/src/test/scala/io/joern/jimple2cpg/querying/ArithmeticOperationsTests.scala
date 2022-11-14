@@ -1,16 +1,13 @@
 package io.joern.jimple2cpg.querying
 
-import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve, toNodeTypeStarters, _}
 
-class ArithmeticOperationsTests extends JimpleCodeToCpgFixture {
+class ArithmeticOperationsTests extends JimpleCode2CpgFixture {
 
-  implicit val resolver: ICallResolver = NoResolve
-
-  override val code: String =
-    """
+  val cpg = code("""
       | class Foo {
       |   static void main(int argc, char argv) {
       |     int a = 3;
@@ -23,7 +20,7 @@ class ArithmeticOperationsTests extends JimpleCodeToCpgFixture {
       |     float h = 3.4f;
       |   }
       | }
-      |""".stripMargin
+      |""".stripMargin)
 
   val vars = Seq(
     ("a", "byte"),

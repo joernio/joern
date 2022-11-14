@@ -1,6 +1,6 @@
 name               := "x2cpg"
 scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.1.3")
+crossScalaVersions := Seq("2.13.8", "3.2.1")
 
 dependsOn(Projects.semanticcpg)
 
@@ -10,8 +10,6 @@ libraryDependencies ++= Seq(
   "org.gradle"               % "gradle-tooling-api" % Versions.gradleTooling % Optional,
   "org.scalatest"           %% "scalatest"          % Versions.scalatest     % Test
 )
-
-Test / packageBin / publishArtifact := true
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
 
