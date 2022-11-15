@@ -20,11 +20,7 @@ class ManifestXmlTraversal(val traversal: Traversal[nodes.ConfigFile]) extends A
       .filter(_.label == "application")
       .flatMap { applicationNode =>
         val activityName = applicationNode.attribute(Constants.androidUri, "usesCleartextTraffic")
-        activityName match {
-          case Some(n) if n.toString == "true" => Some(true)
-          case Some(_)                         => Some(false)
-          case None                            => None
-        }
+        activityName.map(_.toString == "true")
       }
 
   def exportedAndroidActivityNames =

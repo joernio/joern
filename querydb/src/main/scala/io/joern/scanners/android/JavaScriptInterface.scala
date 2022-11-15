@@ -61,8 +61,8 @@ object JavaScriptInterface extends QueryBundle {
           else Traversal.empty
         val exposedJavaScriptInterfaceObjectNames =
           exposedJavaScriptInterfaceObjects.collect {
-            case expression: Identifier => expression.typeFullName
-            case expression: Call       => expression.typeFullName
+            case ident: Identifier => ident.typeFullName
+            case call: Call        => call.typeFullName
           }.l
         def exposedJavaScriptInterfaceMethods =
           cpg.annotation
