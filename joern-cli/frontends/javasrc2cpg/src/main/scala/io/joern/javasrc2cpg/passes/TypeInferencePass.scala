@@ -15,8 +15,9 @@ import scala.jdk.OptionConverters.RichOptional
 
 class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
-  private val cache  = new GuavaCache(CacheBuilder.newBuilder().build[String, Option[Method]]())
+  private val logger         = LoggerFactory.getLogger(this.getClass)
+  private val cache          = new GuavaCache(CacheBuilder.newBuilder().build[String, Option[Method]]())
+  private val namePartsCache = new GuavaCache(CacheBuilder.newBuilder().build[String, NameParts]())
 
   private case class NameParts(typeDecl: Option[String], signature: Option[String])
 
@@ -43,34 +44,34 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
   }
 
   private def getNameParts(fullName: String): NameParts = {
-    fullName match {
-      case NamePartsPattern(maybeTd, maybeSig) =>
-        val typeDecl  = Option(maybeTd).map(_.init)
-        val signature = Option(maybeSig)
-        NameParts(typeDecl, signature)
+    namePartsCache.get(fullName).toScala.getOrElse {
+      val nameParts = fullName match {
+        case NamePartsPattern(maybeTd, maybeSig) =>
+          val typeDecl  = Option(maybeTd).map(_.init)
+          val signature = Option(maybeSig)
+          NameParts(typeDecl, signature)
 
-      case _ =>
-        logger.warn(s"Could not extract name parts from $fullName")
-        NameParts(None, None)
+        case _ =>
+          logger.warn(s"Could not extract name parts from $fullName")
+          NameParts(None, None)
+      }
+      namePartsCache.put(fullName, nameParts)
+      nameParts
     }
   }
 
   private def getReplacementMethod(call: Call): Option[Method] = {
-    cache.get(call.methodFullName).toScala match {
-      case Some(result) =>
-        result
+    cache.get(call.methodFullName).toScala.getOrElse {
+      val callNameParts    = getNameParts(call.methodFullName)
+      val candidateMethods = cpg.method.internal.nameExact(call.name)
 
-      case None =>
-        val callNameParts    = getNameParts(call.methodFullName)
-        val candidateMethods = cpg.method.internal.nameExact(call.name)
-
-        val uniqueMatchingMethod = candidateMethods.find(isMatchingMethod(_, call, callNameParts)).flatMap { method =>
-          val otherMatchingMethod = candidateMethods.find(isMatchingMethod(_, call, callNameParts))
-          // Only return a resulting method if exactly one matching method is found.
-          Option.when(otherMatchingMethod.isEmpty)(method)
-        }
-        cache.put(call.methodFullName, uniqueMatchingMethod)
-        uniqueMatchingMethod
+      val uniqueMatchingMethod = candidateMethods.find(isMatchingMethod(_, call, callNameParts)).flatMap { method =>
+        val otherMatchingMethod = candidateMethods.find(isMatchingMethod(_, call, callNameParts))
+        // Only return a resulting method if exactly one matching method is found.
+        Option.when(otherMatchingMethod.isEmpty)(method)
+      }
+      cache.put(call.methodFullName, uniqueMatchingMethod)
+      uniqueMatchingMethod
     }
   }
   override def runOnPart(diffGraph: DiffGraphBuilder, call: Call): Unit = {

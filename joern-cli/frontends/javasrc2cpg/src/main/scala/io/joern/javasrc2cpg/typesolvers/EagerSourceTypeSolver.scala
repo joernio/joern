@@ -11,7 +11,8 @@ import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.Try
 
-class EagerSourceTypeSolver(asts: List[JpAstWithMeta]) extends TypeSolver {
+class EagerSourceTypeSolver(asts: List[JpAstWithMeta], combinedTypeSolver: SimpleCombinedTypeSolver)
+    extends TypeSolver {
 
   private val logger             = LoggerFactory.getLogger(this.getClass)
   private var parent: TypeSolver = _
@@ -31,9 +32,9 @@ class EagerSourceTypeSolver(asts: List[JpAstWithMeta]) extends TypeSolver {
                 name
             }
             val resolvedSymbol = Try(
-              SymbolReference.solved(JavaParserFacade.get(this).getTypeDeclaration(typeDeclaration)): SymbolReference[
-                ResolvedReferenceTypeDeclaration
-              ]
+              SymbolReference.solved(
+                JavaParserFacade.get(combinedTypeSolver).getTypeDeclaration(typeDeclaration)
+              ): SymbolReference[ResolvedReferenceTypeDeclaration]
             ).getOrElse(SymbolReference.unsolved(classOf[ResolvedReferenceTypeDeclaration]))
             name -> resolvedSymbol
           }
@@ -63,7 +64,7 @@ class EagerSourceTypeSolver(asts: List[JpAstWithMeta]) extends TypeSolver {
 }
 
 object EagerSourceTypeSolver {
-  def apply(asts: List[JpAstWithMeta]): EagerSourceTypeSolver = {
-    new EagerSourceTypeSolver(asts)
+  def apply(asts: List[JpAstWithMeta], combinedTypeSolver: SimpleCombinedTypeSolver): EagerSourceTypeSolver = {
+    new EagerSourceTypeSolver(asts, combinedTypeSolver)
   }
 }

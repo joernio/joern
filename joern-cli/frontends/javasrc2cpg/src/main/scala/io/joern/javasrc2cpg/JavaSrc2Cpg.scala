@@ -66,6 +66,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       val javaparserAsts    = getSplitJavaparserAsts(sourceDirectories, config)
       val symbolSolver      = createSymbolSolver(javaparserAsts.typesAsts, config)
       javaparserAsts.analysisAsts.map(_.compilationUnit).foreach(symbolSolver.inject)
+      javaparserAsts.typesAsts.map(_.compilationUnit).foreach(symbolSolver.inject)
 
       val astCreationPass = new AstCreationPass(javaparserAsts.analysisAsts, config, cpg, symbolSolver)
       astCreationPass.createAndApply()
@@ -74,23 +75,6 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       new TypeInferencePass(cpg).createAndApply()
     }
   }
-
-  // private def populateCombinedTypeSolver(solver: CombinedTypeSolver, typesAsts: List[JpAstWithMeta], config: Config): Unit = {
-  //   val reflectionTypeSolver = new CachingReflectionTypeSolver()
-  //   val sourceTypeSolver = EagerSourceTypeSolver(typesAsts)
-
-  //   // Source type solver should be the fastest, so check that first.
-  //   solver.add(sourceTypeSolver)
-  //   solver.add(reflectionTypeSolver)
-
-  //   // Add solvers for inference jars
-  //   val jarsList = config.inferenceJarPaths.flatMap(recursiveJarsFromPath).toList
-  //   (jarsList ++ getDependencyList(config))
-  //     .flatMap { path =>
-  //       Try(new JarTypeSolver(path)).toOption
-  //     }
-  //     .foreach { solver.add(_) }
-  // }
 
   private def getSourcesFromDir(sourceDir: String): List[String] = {
     SourceRootFinder.getSourceRoots(sourceDir).flatMap(SourceFiles.determine(_, sourceFileExtensions))
@@ -197,10 +181,11 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   private def createSymbolSolver(typesAsts: List[JpAstWithMeta], config: Config): JavaSymbolSolver = {
     val combinedTypeSolver   = new SimpleCombinedTypeSolver()
     val reflectionTypeSolver = new CachingReflectionTypeSolver()
-    val sourceTypeSolver     = EagerSourceTypeSolver(typesAsts)
-
-    combinedTypeSolver.add(sourceTypeSolver)
     combinedTypeSolver.add(reflectionTypeSolver)
+
+    val sourceTypeSolver = EagerSourceTypeSolver(typesAsts, combinedTypeSolver)
+    // The sourceTypeSolver will often be the fastest due to there being no possibility of encountering a SOE on lookup.
+    combinedTypeSolver.prepend(sourceTypeSolver)
 
     // Add solvers for inference jars
     val jarsList = config.inferenceJarPaths.flatMap(recursiveJarsFromPath).toList

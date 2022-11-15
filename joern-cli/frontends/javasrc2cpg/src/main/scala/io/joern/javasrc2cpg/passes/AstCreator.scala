@@ -1167,7 +1167,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case x: TryStmt          => astsForTry(x)
       case x: WhileStmt        => Seq(astForWhile(x))
       case x =>
-        logger.warn(s"Attempting to generate AST for unknown statement $x")
+        logger.warn(s"Attempting to generate AST for unknown statement of type ${x.getClass}")
         Seq(unknownAst(x))
     }
   }

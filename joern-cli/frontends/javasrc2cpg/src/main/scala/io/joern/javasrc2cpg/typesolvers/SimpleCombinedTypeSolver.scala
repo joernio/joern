@@ -24,6 +24,11 @@ class SimpleCombinedTypeSolver extends TypeSolver {
     typeSolver.setParent(this)
   }
 
+  def prepend(typeSolver: TypeSolver): Unit = {
+    typeSolvers.prepend(typeSolver)
+    typeSolver.setParent(this)
+  }
+
   private def unsolved: SymbolReference[ResolvedReferenceTypeDeclaration] =
     SymbolReference.unsolved(classOf[ResolvedReferenceTypeDeclaration])
 
