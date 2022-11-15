@@ -18,12 +18,10 @@ class DataFlowProblem[Node, V](
   * wrapper that takes care of these minor discrepancies.
   */
 trait FlowGraph[Node] {
-  val entryNode: Node
-  val exitNode: Node
   val allNodesReversePostOrder: List[Node]
   val allNodesPostOrder: List[Node]
-  val succ: Map[Node, List[Node]]
-  val pred: Map[Node, List[Node]]
+  def succ(node: Node): IterableOnce[Node]
+  def pred(node: Node): IterableOnce[Node]
 }
 
 /** This is actually a function family consisting of one transfer function for each node of the flow graph. Each
