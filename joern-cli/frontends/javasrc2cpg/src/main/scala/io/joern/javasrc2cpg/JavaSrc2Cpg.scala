@@ -19,7 +19,7 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import org.slf4j.LoggerFactory
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Paths
 import scala.collection.parallel.CollectionConverters._
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
