@@ -10,6 +10,19 @@ object Constants {
 }
 
 class ManifestXmlTraversal(val traversal: Traversal[nodes.ConfigFile]) extends AnyVal {
+  def usesCleartextTraffic =
+    traversal
+      .filter(_.name.endsWith(Constants.androidManifestXml))
+      .map(_.content)
+      .flatMap(SecureXmlParsing.parseXml)
+      .filter(_.label == "manifest")
+      .flatMap(_.child)
+      .filter(_.label == "application")
+      .flatMap { applicationNode =>
+        val activityName = applicationNode.attribute(Constants.androidUri, "usesCleartextTraffic")
+        activityName.map(_.toString == "true")
+      }
+
   def exportedAndroidActivityNames =
     traversal
       .filter(_.name.endsWith(Constants.androidManifestXml))
