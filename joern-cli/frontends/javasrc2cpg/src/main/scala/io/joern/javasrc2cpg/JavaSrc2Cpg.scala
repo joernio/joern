@@ -8,7 +8,7 @@ import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver
 import io.joern.javasrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, TypeInferencePass}
-import io.joern.javasrc2cpg.typesolvers.{CachingReflectionTypeSolver, SimpleCombinedTypeSolver, EagerSourceTypeSolver}
+import io.joern.javasrc2cpg.typesolvers.{CachingReflectionTypeSolver, EagerSourceTypeSolver, SimpleCombinedTypeSolver}
 import io.joern.javasrc2cpg.util.{Delombok, SourceRootFinder}
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.shiftleft.codepropertygraph.Cpg
@@ -20,6 +20,7 @@ import io.joern.x2cpg.utils.dependency.DependencyResolver
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
+import java.util.regex.Pattern
 import scala.collection.parallel.CollectionConverters._
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
@@ -106,9 +107,13 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
     val typesSources    = getSourcesFromDir(sourceDirectories.typesSourceDir)
 
     val analysisAstsMap = analysisSources.par.flatMap { sourceFilename =>
-      val originalFilename = sourceFilename.replaceAll(sourceDirectories.analysisSourceDir, config.inputPath)
-      val sourceFileInfo   = SourceFileInfo(sourceFilename, originalFilename)
-      val maybeParsedFile  = parseFile(sourceFilename)
+      val originalFilename = sourceFilename.replaceAll(
+        // Pattern.quote used to escape Windows paths
+        Pattern.quote(sourceDirectories.analysisSourceDir),
+        config.inputPath
+      )
+      val sourceFileInfo  = SourceFileInfo(sourceFilename, originalFilename)
+      val maybeParsedFile = parseFile(sourceFilename)
 
       maybeParsedFile.map(cu => sourceFilename -> JpAstWithMeta(sourceFileInfo, cu))
     }.toMap
