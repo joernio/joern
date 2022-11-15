@@ -23,8 +23,8 @@ class ResultTableTests extends AnyWordSpec with Matchers {
       val node1 = cpg.literal.head
       val node2 = cpg.literal.last
       val table = new ResultTable
-      val res1  = Vector(ReachableByResult(Vector(PathElement(node1)), new ResultTable, List()))
-      val res2  = Vector(ReachableByResult(Vector(PathElement(node2)), new ResultTable, List()))
+      val res1  = Vector(ReachableByResult(Vector(PathElement(node1)), new ResultTable, List(), node1))
+      val res2  = Vector(ReachableByResult(Vector(PathElement(node2)), new ResultTable, List(), node1))
       table.add(node1, res1)
       table.add(node2, res2)
       table.get(node1) match {
@@ -53,7 +53,7 @@ class ResultTableTests extends AnyWordSpec with Matchers {
       val node3               = cpg.literal.code("woo").head
       val pathContainingPivot = Vector(PathElement(pivotNode), PathElement(node3))
       val table               = new ResultTable
-      table.add(pivotNode, Vector(ReachableByResult(pathContainingPivot, new ResultTable, List())))
+      table.add(pivotNode, Vector(ReachableByResult(pathContainingPivot, new ResultTable, List(), node1)))
       table.createFromTable(PathElement(pivotNode), Vector(PathElement(node1))) match {
         case Some(Vector(ReachableByResult(path, _, _, _, _, _))) =>
           path.map(_.node.id) shouldBe List(pivotNode.id, node1.id)

@@ -16,7 +16,7 @@ class ResultTable(
     */
   def add(node: StoredNode, results: Vector[ReachableByResult]): Unit = {
     // TODO enforce this assertion via the API
-    assert(results.map(_.path.head.node).distinct == Vector(node))
+    // assert(results.map(_.path.last.node).distinct == Vector(node))
     table.asJava.compute(
       node,
       { (_, existingValue) =>
@@ -76,7 +76,7 @@ case class ReachableByResult(
   path: Vector[PathElement],
   table: ResultTable,
   callSiteStack: List[Call],
-  seed: Option[CfgNode] = None,
+  seed: CfgNode,
   callDepth: Int = 0,
   partial: Boolean = false
 ) {

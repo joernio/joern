@@ -180,9 +180,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
 
     flows.map(flowToResultPairs).toSetMutable shouldBe Set(
       List(("var b = a", 6), ("foo(b)", 7)),
-      List(("var a = x", 5), ("var b = a", 6), ("foo(b)", 7)),
-      List(("var a = x", 5), ("var b = a", 6), ("foo(b)", 7), ("foo(this, y)", 2), ("RET", 2), ("foo(b)", 7)),
-      List(("var b = a", 6), ("foo(b)", 7), ("foo(this, y)", 2), ("RET", 2), ("foo(b)", 7))
+      List(("var a = x", 5), ("var b = a", 6), ("foo(b)", 7))
     )
 
   }

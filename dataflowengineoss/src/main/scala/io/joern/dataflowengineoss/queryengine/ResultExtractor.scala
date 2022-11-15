@@ -29,7 +29,7 @@ class ResultExtractor(table: ResultTable, sinks: List[CfgNode]) {
     }
 
     val resultsEndingHere = result.seed match {
-      case Some(s) if sinks.contains(s) =>
+      case s if sinks.contains(s) =>
         if (knownPairs.contains((source, s))) {
           return Vector()
         }
@@ -39,19 +39,15 @@ class ResultExtractor(table: ResultTable, sinks: List[CfgNode]) {
         Vector()
     }
 
-    val resultsViaChildren = result.seed
-      .map { seed =>
-        table.table.get(seed) match {
-          case Some(entry) =>
-            entry.flatMap { childResult =>
-              assemblePaths(source, childResult, table, visited ++ Set(result)).map { c =>
-                result.copy(path = result.path ++ c.path)
-              }
-            }
-          case _ => Vector(result)
+    val resultsViaChildren = table.table.get(result.seed) match {
+      case Some(entry) =>
+        entry.flatMap { childResult =>
+          assemblePaths(source, childResult, table, visited ++ Set(result)).map { c =>
+            result.copy(path = result.path ++ c.path)
+          }
         }
-      }
-      .getOrElse(Vector(result))
+      case _ => Vector(result)
+    }
 
     resultsEndingHere ++ resultsViaChildren
   }

@@ -43,12 +43,12 @@ class TaskCreator(sources: Set[CfgNode]) {
       result.callSiteStack match {
         case callSite :: tail =>
           paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
-            ReachableByTask(arg, sources, new ResultTable, Vector(), result.callDepth - 1, tail, Some(param))
+            ReachableByTask(arg, sources, new ResultTable, param, Vector(), result.callDepth - 1, tail)
           }
         case _ =>
           // Case 1
           paramToArgs(param).map { arg =>
-            ReachableByTask(arg, sources, new ResultTable, Vector(), result.callDepth + 1, List(), Some(param))
+            ReachableByTask(arg, sources, new ResultTable, param, Vector(), result.callDepth + 1, List())
           }
       }
     }
@@ -102,10 +102,10 @@ class TaskCreator(sources: Set[CfgNode]) {
           methodReturn,
           sources,
           new ResultTable,
+          call,
           Vector(),
           callDepth + 1,
-          call :: result.callSiteStack,
-          Some(call)
+          call :: result.callSiteStack
         )
       }
     }
@@ -121,7 +121,7 @@ class TaskCreator(sources: Set[CfgNode]) {
           .filterNot(_.method.isExternal)
           .map { p =>
             val newStack = arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
-            ReachableByTask(p, sources, new ResultTable, Vector(), callDepth + 1, newStack, Some(arg))
+            ReachableByTask(p, sources, new ResultTable, arg, Vector(), callDepth + 1, newStack)
           }
       }
     }

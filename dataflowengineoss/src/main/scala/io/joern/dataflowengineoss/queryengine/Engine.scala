@@ -22,10 +22,10 @@ case class ReachableByTask(
   sink: CfgNode,
   sources: Set[CfgNode],
   table: ResultTable,
+  seed: CfgNode,
   initialPath: Vector[PathElement] = Vector(),
   callDepth: Int = 0,
-  callSiteStack: List[Call] = List(),
-  seed: Option[CfgNode] = None
+  callSiteStack: List[Call] = List()
 )
 
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
@@ -71,7 +71,7 @@ class Engine(context: EngineContext) {
   /** Create one task per sink where each task has its own result table.
     */
   private def createOneTaskPerSink(sourcesSet: Set[CfgNode], sinks: List[CfgNode]) = {
-    sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable()))
+    sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable(), sink))
   }
 
   /** Submit tasks to a worker pool, solving them in parallel. Upon receiving results for a task, new tasks are
