@@ -120,7 +120,6 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
 
     val analysisAsts = analysisAstsMap.values.toList
     val typesAsts = typesSources.par.flatMap { sourceFilename =>
-      // Always want to usecombinedTypeSolver
       val sourceFileInfo = SourceFileInfo(sourceFilename, sourceFilename)
       analysisAstsMap
         .get(sourceFilename)
