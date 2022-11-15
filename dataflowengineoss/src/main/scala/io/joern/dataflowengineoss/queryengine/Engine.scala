@@ -38,7 +38,8 @@ class Engine(context: EngineContext) {
   private val logger: Logger                   = LoggerFactory.getLogger(this.getClass)
   private var numberOfTasksRunning: Int        = 0
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
-  private val completionService = new ExecutorCompletionService[Vector[ReachableByResult]](executorService)
+  private val completionService =
+    new ExecutorCompletionService[(Vector[ReachableByResult], Vector[ReachableByTask])](executorService)
 
   private val started: mutable.Set[TaskFingerprint] = mutable.Set()
 
@@ -81,11 +82,10 @@ class Engine(context: EngineContext) {
     /** For a list of results, determine partial and complete results. Store complete results and derive and submit
       * tasks from partial results.
       */
-    def handleResultsOfTask(resultsOfTask: Vector[ReachableByResult]): Unit = {
-      val (partial, complete) = resultsOfTask.partition(_.partial)
-      completedResults ++= complete
-      val newTasks = new TaskCreator(sources).createFromResults(partial)
-      newTasks.foreach(submitTask)
+    def handleResultsOfTask(resultsOfTask: (Vector[ReachableByResult], Vector[ReachableByTask])): Unit = {
+      completedResults ++= resultsOfTask._1
+      val newTasks = resultsOfTask._2
+      newTasks.foreach(task => submitTask(task, sources))
     }
 
     def runUntilAllTasksAreSolved(): Unit = {
@@ -104,12 +104,12 @@ class Engine(context: EngineContext) {
       }
     }
 
-    tasks.foreach(submitTask)
+    tasks.foreach(task => submitTask(task, sources))
     runUntilAllTasksAreSolved()
     deduplicate(completedResults.toVector).toList
   }
 
-  private def submitTask(task: ReachableByTask): Unit = {
+  private def submitTask(task: ReachableByTask, sources: Set[CfgNode]): Unit = {
     val fingerprint = TaskFingerprint(task.sink, task.sources, task.callDepth, task.callSiteStack)
     if (started.contains(fingerprint)) {
       return
@@ -117,7 +117,11 @@ class Engine(context: EngineContext) {
     started.add(fingerprint)
     numberOfTasksRunning += 1
     completionService.submit(
-      new TaskSolver(if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable), context)
+      new TaskSolver(
+        if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable),
+        context,
+        sources
+      )
     )
   }
 
