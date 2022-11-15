@@ -27,28 +27,27 @@ class TaskCreator(sources: Set[CfgNode]) {
     * arguments of call sites, but we need to be careful here not to create unrealizable paths. We achieve this by
     * holding a call stack in results.
     *
-    * Case 1: walking backward from the sink, we have only expanded into callers so far, that is, the call stack is
-    * empty. In this case, the next tasks need to explore each call site to the method.
-    *
-    * Case 2: we expanded into a callee that we identified on the way, e.g., a method `y = transform(x)`, and we have
+    * Case 1: we expanded into a callee that we identified on the way, e.g., a method `y = transform(x)`, and we have
     * reached the parameter of that method (`transform`). Upon doing so, we recorded the call site that we expanded in
     * `result.callSite`. We would now like to continue exploring from the corresponding argument at that call site only.
+    *
+    * Case 2: walking backward from the sink, we have only expanded into callers so far, that is, the call stack is
+    * empty. In this case, the next tasks need to explore each call site to the method.
     */
   private def tasksForParams(results: Vector[ReachableByResult]): Vector[ReachableByTask] = {
     startsAtParameter(results).flatMap { result =>
       val param = result.path.head.node.asInstanceOf[MethodParameterIn]
-      if (result.callSiteStack.isEmpty) {
-        // Case 1
-        paramToArgs(param).map { arg =>
-          ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1)
-        }
-      } else {
-        // Case 2
-        val newCallSiteStack = result.callSiteStack.clone()
-        val callSite         = newCallSiteStack.pop()
-        paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
-          ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth - 1, newCallSiteStack)
-        }
+      result.callSiteStack match {
+        case callSite :: tail =>
+          // Case 1
+          paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
+            ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth - 1, tail)
+          }
+        case _ =>
+          // Case 2
+          paramToArgs(param).map { arg =>
+            ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1)
+          }
       }
     }
   }
@@ -99,16 +98,28 @@ class TaskCreator(sources: Set[CfgNode]) {
       methodReturns.flatMap { case (call, methodReturn) =>
         val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
         if (returnStatements.isEmpty) {
-          val newPath       = path
-          val callSiteStack = result.callSiteStack.clone()
-          callSiteStack.push(call)
-          List(ReachableByTask(methodReturn, sources, new ResultTable, newPath, callDepth + 1, callSiteStack))
+          val newPath = path
+          List(
+            ReachableByTask(
+              methodReturn,
+              sources,
+              new ResultTable,
+              newPath,
+              callDepth + 1,
+              call :: result.callSiteStack
+            )
+          )
         } else {
           returnStatements.map { returnStatement =>
-            val newPath       = Vector(PathElement(methodReturn, result.callSiteStack.clone())) ++ path
-            val callSiteStack = result.callSiteStack.clone()
-            callSiteStack.push(call)
-            ReachableByTask(returnStatement, sources, new ResultTable, newPath, callDepth + 1, callSiteStack)
+            val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
+            ReachableByTask(
+              returnStatement,
+              sources,
+              new ResultTable,
+              newPath,
+              callDepth + 1,
+              call :: result.callSiteStack
+            )
           }
         }
       }
@@ -124,9 +135,8 @@ class TaskCreator(sources: Set[CfgNode]) {
         outParams
           .filterNot(_.method.isExternal)
           .map { p =>
-            val callSiteStack = result.callSiteStack.clone()
-            arg.inCall.headOption.foreach { x => callSiteStack.push(x) }
-            ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, callSiteStack)
+            val newStack = arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
+            ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, newStack)
           }
       }
     }

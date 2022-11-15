@@ -30,7 +30,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       Vector()
     } else {
       implicit val sem: Semantics = context.semantics
-      val path                    = PathElement(task.sink, task.callSiteStack.clone()) +: task.initialPath
+      val path                    = PathElement(task.sink, task.callSiteStack) +: task.initialPath
       results(path, task.sources, task.table, task.callSiteStack)
       // TODO why do we update the call depth here?
       task.table.get(task.sink).get.map { r =>
@@ -61,7 +61,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     path: Vector[PathElement],
     sources: Set[NodeType],
     table: ResultTable,
-    callSiteStack: mutable.Stack[Call]
+    callSiteStack: List[Call]
   )(implicit semantics: Semantics): Vector[ReachableByResult] = {
 
     val curNode = path.head.node
@@ -90,7 +90,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     def createPartialResultForOutputArgOrRet() = {
       Vector(
         ReachableByResult(
-          PathElement(path.head.node, callSiteStack.clone(), isOutputArg = true) +: path.tail,
+          PathElement(path.head.node, callSiteStack, isOutputArg = true) +: path.tail,
           table,
           callSiteStack,
           partial = true
