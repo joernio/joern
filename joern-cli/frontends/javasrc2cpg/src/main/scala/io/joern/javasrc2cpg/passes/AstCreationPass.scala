@@ -3,30 +3,20 @@ package io.joern.javasrc2cpg.passes
 import better.files.File
 import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.Node.Parsedness
-import com.github.javaparser.resolution.UnsolvedSymbolException
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
 import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.cache.{GuavaCache, NoCache}
-import com.github.javaparser.symbolsolver.model.resolution.SymbolReference
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
-import com.github.javaparser.symbolsolver.resolution.typesolvers.{
-  CombinedTypeSolver,
-  JarTypeSolver,
-  JavaParserTypeSolver
-}
+import com.github.javaparser.symbolsolver.resolution.typesolvers.{JarTypeSolver, JavaParserTypeSolver}
 import com.google.common.cache.CacheBuilder
 import io.joern.javasrc2cpg.typesolvers.SimpleCombinedTypeSolver
 import io.joern.javasrc2cpg.{Config, SourceDirectoryInfo, SourceFileInfo}
-import io.joern.javasrc2cpg.util.{CachingReflectionTypeSolver, SourceRootFinder}
+import io.joern.javasrc2cpg.util.CachingReflectionTypeSolver
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.dependency.DependencyResolver
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.Predicate
 import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters._
 import scala.util.{Success, Try}
@@ -38,8 +28,6 @@ class AstCreationPass(sourceInfo: SourceDirectoryInfo, config: Config, cpg: Cpg,
   private val logger              = LoggerFactory.getLogger(classOf[AstCreationPass])
   lazy private val symbolResolver = createSymbolSolver()
   private val parserConfig        = new ParserConfiguration().setLanguageLevel(LanguageLevel.CURRENT)
-  private val finished            = new AtomicInteger(0)
-  private val timeInit            = System.nanoTime()
 
   override def generateParts(): Array[SourceFileInfo] = sourceInfo.sourceFiles.toArray
 
@@ -64,12 +52,6 @@ class AstCreationPass(sourceInfo: SourceDirectoryInfo, config: Config, cpg: Cpg,
         diffGraph.absorb(new AstCreator(fileInfo.originalFileName, result, global, symbolResolver).createAst())
       case _ =>
         logger.warn("Failed to parse file " + fileInfo.analysisFileName)
-    }
-
-    if (finished.addAndGet(1) % 250 == 0) {
-      val timeNow = System.nanoTime()
-      logger.info(s"Finished $finished")
-      logger.info(s"Elapsed: ${(timeNow - timeInit) / 1000000000.0}")
     }
   }
 
