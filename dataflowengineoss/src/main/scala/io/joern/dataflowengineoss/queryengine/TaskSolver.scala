@@ -18,24 +18,29 @@ import scala.collection.mutable
   * @param context
   *   state of the data flow engine
   */
-class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable[Vector[ReachableByResult]] {
+class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[CfgNode])
+    extends Callable[(Vector[ReachableByResult], Vector[ReachableByTask])] {
 
   import Engine._
 
   /** Entry point of callable. First checks if the maximum call depth has been exceeded, in which case an empty result
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
-  override def call(): Vector[ReachableByResult] = {
+  override def call(): (Vector[ReachableByResult], Vector[ReachableByTask]) = {
     if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
-      Vector()
+      (Vector(), Vector())
     } else {
       implicit val sem: Semantics = context.semantics
       val path                    = PathElement(task.sink, task.callSiteStack) +: task.initialPath
       results(path, task.sources, task.table, task.callSiteStack)
       // TODO why do we update the call depth here?
-      task.table.get(task.sink).get.map { r =>
+      val finalResults = task.table.get(task.sink).get.map { r =>
         r.copy(callDepth = task.callDepth)
       }
+
+      val (partial, complete) = finalResults.partition(_.partial)
+      val newTasks            = new TaskCreator(sources).createFromResults(partial)
+      (complete, newTasks)
     }
   }
 
