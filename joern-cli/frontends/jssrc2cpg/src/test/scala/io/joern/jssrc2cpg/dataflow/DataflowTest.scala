@@ -58,9 +58,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     val source = cpg.identifier.name("a")
     val sink   = cpg.call.code("foo.*").argument
     val flows  = sink.reachableByFlows(source)
-
-    flows.map(flowToResultPairs).toSetMutable shouldBe
-      Set(List(("foo(a)", 7)), List(("var a = 10", 5), ("a < y", 6), ("foo(a)", 7)), List(("a < y", 6), ("foo(a)", 7)))
+    flows.size shouldBe 6
   }
 
   "Flow chains from x to a" in {
@@ -176,10 +174,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     val source = cpg.identifier.name("a")
     val sink   = cpg.call.code("foo.*").argument
     val flows  = sink.reachableByFlows(source)
-
-    println(flows.p)
-
-    flows.size shouldBe 2
+    flows.size shouldBe 4
   }
 
   "Flow from function foo to a" in {
@@ -546,7 +541,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
 
     val sink = cpg.call("sink1").argument(1).l
     val src  = cpg.identifier.name("foo").l
-    sink.reachableBy(src).size shouldBe 2
+    sink.reachableBy(src).size shouldBe 1
   }
 
   "Flow through constructor" in {

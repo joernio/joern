@@ -18,17 +18,16 @@ import scala.collection.mutable
   * @param context
   *   state of the data flow engine
   */
-class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[CfgNode])
-    extends Callable[(Vector[ReachableByResult], Vector[ReachableByTask])] {
+class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[CfgNode]) extends Callable[TaskSummary] {
 
   import Engine._
 
   /** Entry point of callable. First checks if the maximum call depth has been exceeded, in which case an empty result
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
-  override def call(): (Vector[ReachableByResult], Vector[ReachableByTask]) = {
+  override def call(): TaskSummary = {
     if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
-      (Vector(), Vector())
+      TaskSummary(task, Vector(), Vector())
     } else {
       implicit val sem: Semantics = context.semantics
       val path                    = PathElement(task.sink, task.callSiteStack) +: task.initialPath
@@ -40,7 +39,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
 
       val (partial, complete) = finalResults.partition(_.partial)
       val newTasks            = new TaskCreator(sources).createFromResults(partial)
-      (complete, newTasks)
+      TaskSummary(task, complete, newTasks)
     }
   }
 
@@ -63,7 +62,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     *   This stack holds all call sites we expanded to arrive at the generation of the current task
     */
   private def results[NodeType <: CfgNode](
-    sink : CfgNode,
+    sink: CfgNode,
     path: Vector[PathElement],
     sources: Set[NodeType],
     table: ResultTable,
@@ -95,7 +94,8 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
 
     def createPartialResultForOutputArgOrRet() = {
       Vector(
-        ReachableByResult(sink,
+        ReachableByResult(
+          sink,
           PathElement(path.head.node, callSiteStack, isOutputArg = true) +: path.tail,
           table,
           callSiteStack,
