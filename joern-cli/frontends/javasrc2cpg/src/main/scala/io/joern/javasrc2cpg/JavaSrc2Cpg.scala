@@ -102,6 +102,10 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
     }
   }
 
+  private def escapeBackslash(path: String): String = {
+    path.replaceAll(raw"\\", raw"\\\\")
+  }
+
   private def getSplitJavaparserAsts(sourceDirectories: SplitDirectories, config: Config): SplitJpAsts = {
     val analysisSources = getSourcesFromDir(sourceDirectories.analysisSourceDir)
     val typesSources    = getSourcesFromDir(sourceDirectories.typesSourceDir)
@@ -109,8 +113,8 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
     val analysisAstsMap = analysisSources.par.flatMap { sourceFilename =>
       val originalFilename = sourceFilename.replaceAll(
         // Pattern.quote used to escape Windows paths
-        Pattern.quote(sourceDirectories.analysisSourceDir),
-        config.inputPath
+        escapeBackslash(sourceDirectories.analysisSourceDir),
+        escapeBackslash(config.inputPath)
       )
       val sourceFileInfo  = SourceFileInfo(sourceFilename, originalFilename)
       val maybeParsedFile = parseFile(sourceFilename)
