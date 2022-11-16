@@ -148,7 +148,7 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
       )
       cpg.local.code.l shouldBe List("Component", "Prop", "Vue", "msg")
 
-      inside(cpg.identifier.l) { case List(exports, comp, prop, vue, msg, helloWorld) =>
+      inside(cpg.identifier.l) { case List(comp, prop, vue, msg, exports, helloWorld) =>
         comp.name shouldBe "Component"
         comp.code shouldBe "Component"
         prop.name shouldBe "Prop"
