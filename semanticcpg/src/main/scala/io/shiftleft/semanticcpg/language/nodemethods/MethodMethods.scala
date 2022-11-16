@@ -33,7 +33,7 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
   }
 
   def cfgNode: Traversal[CfgNode] =
-    method._containsOut.collectAll[CfgNode]
+    method ++ method._containsOut.collectAll[CfgNode] ++ method.methodReturn
 
   /** List of CFG nodes in reverse post order
     */

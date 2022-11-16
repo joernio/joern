@@ -13,7 +13,7 @@ class CfgGenerator {
   val edgeType: String = EdgeTypes.CFG
 
   def generate(methodNode: Method): Graph = {
-    val vertices          = methodNode.cfgNode.l ++ List(methodNode, methodNode.methodReturn) ++ methodNode.parameter.l
+    val vertices          = methodNode.cfgNode.l ++ methodNode.parameter.l
     val verticesToDisplay = vertices.filter(cfgNodeShouldBeDisplayed)
 
     def edgesToDisplay(srcNode: StoredNode, visited: List[StoredNode] = List()): List[Edge] = {
