@@ -11,6 +11,33 @@ import overflowdb.traversal.jIteratortoTraversal
 import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
+  "calls to static methods in different files should be resolved correctly" in {
+    val cpg = code(
+      """
+        |public class Foo {
+        |  public static Foo foo(String arg) {
+        |    return new Foo();
+        |  }
+        |
+        |  public static Foo foo(int x) {
+        |    return new Foo();
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "Foo.java"
+    ).moreCode("""
+        |class Bar {
+        |  public static void bar(String barArg) {
+        |    Foo.foo(barArg);
+        |  }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("bar").call.l) { case List(fooCall) =>
+      fooCall.methodFullName shouldBe "Foo.foo:Foo(java.lang.String)"
+    }
+  }
+
   "calls to unresolved lambda parameters" should {
     val cpg = code("""
 		 |class Foo {

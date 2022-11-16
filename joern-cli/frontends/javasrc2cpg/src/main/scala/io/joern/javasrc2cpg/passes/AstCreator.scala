@@ -86,6 +86,8 @@ import com.github.javaparser.resolution.declarations.{
 }
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
+import com.github.javaparser.symbolsolver.JavaSymbolSolver
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.x2cpg.utils.NodeBuilders.{
   annotationLiteralNode,
@@ -105,10 +107,9 @@ import io.joern.javasrc2cpg.util.{
   LambdaBindingInfo,
   NameConstants,
   NodeTypeInfo,
-  Scope,
-  TypeInfoCalculator
+  Scope
 }
-import io.joern.javasrc2cpg.util.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
 import io.joern.javasrc2cpg.util.Util.{
   composeMethodFullName,
   composeMethodLikeSignature,
@@ -198,14 +199,14 @@ object AstWithStaticInit {
 
 /** Translate a Java Parser AST into a CPG AST
   */
-class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Global, symbolResolver: SymbolResolver)
+class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Global, symbolSolver: JavaSymbolSolver)
     extends AstCreatorBase(filename) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
   import AstCreator._
 
   private val scopeStack                       = Scope()
-  private val typeInfoCalc: TypeInfoCalculator = TypeInfoCalculator(global, symbolResolver)
+  private val typeInfoCalc: TypeInfoCalculator = TypeInfoCalculator(global, symbolSolver)
   private val partialConstructorQueue: mutable.ArrayBuffer[PartialConstructor] = mutable.ArrayBuffer.empty
   private val bindingTableCache = mutable.HashMap.empty[String, BindingTable]
 
@@ -373,12 +374,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
     bindingTableCache.getOrElseUpdate(
       fullName,
-      createBindingTable(
+      createBindingTable[ResolvedReferenceTypeDeclaration](
         fullName,
         typeDecl,
         getBindingTable,
         methodSignature,
-        new BindingTableAdapterForJavaparser(methodSignature)
+        new BindingTableAdapterForJavaparser(methodSignature),
+        (parentDecl, thisDecl) => thisDecl.getQualifiedName == parentDecl.getQualifiedName
       )
     )
   }
@@ -388,12 +390,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     bindingTableCache.getOrElseUpdate(
       fullName,
-      createBindingTable(
+      createBindingTable[LambdaBindingInfo](
         fullName,
         lambdaBindingInfo,
         getBindingTable,
         methodSignature,
-        new BindingTableAdapterForLambdas()
+        new BindingTableAdapterForLambdas(),
+        (parentDecl, thisInfo) => parentDecl.getQualifiedName == thisInfo.fullName
       )
     )
   }
@@ -992,10 +995,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
 
-    val maybeResolved = tryWithSafeStackOverflow(methodDeclaration.resolve())
-    val expectedReturnType = Try(
-      symbolResolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])
-    ).toOption
+    val maybeResolved      = tryWithSafeStackOverflow(methodDeclaration.resolve())
+    val expectedReturnType = Try(symbolSolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])).toOption
     val returnTypeFullName = expectedReturnType
       .flatMap(typeInfoCalc.fullName)
       .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString, wildcardFallback = true))
@@ -1166,7 +1167,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case x: TryStmt          => astsForTry(x)
       case x: WhileStmt        => Seq(astForWhile(x))
       case x =>
-        logger.warn(s"Attempting to generate AST for unknown statement $x")
+        logger.warn(s"Attempting to generate AST for unknown statement of type ${x.getClass}")
         Seq(unknownAst(x))
     }
   }
@@ -2113,7 +2114,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         variableTypeFullName.orElse(initializerTypeFullName)
 
       // Need the actual resolvedType here for when the RHS is a lambda expression.
-      val resolvedExpectedType = Try(symbolResolver.toResolvedType(variable.getType, classOf[ResolvedType])).toOption
+      val resolvedExpectedType = Try(symbolSolver.toResolvedType(variable.getType, classOf[ResolvedType])).toOption
       val initializerAsts      = astsForExpression(initializer, ExpectedType(typeFullName, resolvedExpectedType))
 
       val typeName = typeFullName
