@@ -23,7 +23,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
   /** Successors in the CFG
     */
   def cfgNext: Traversal[CfgNode] = {
-    Traversal.fromSingle(node).cfgNext
+    node._cfgOut.filterNot(_.isInstanceOf[MethodReturn]).collectAll[CfgNode]
   }
 
   /** Maps each node in the traversal to a traversal returning its n successors.
@@ -43,7 +43,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
   /** Predecessors in the CFG
     */
   def cfgPrev: Traversal[CfgNode] = {
-    Traversal.fromSingle(node).cfgPrev
+    node._cfgIn.filterNot(_.isInstanceOf[Method]).collectAll[CfgNode]
   }
 
   /** Recursively determine all nodes on which this CFG node is control-dependent.
