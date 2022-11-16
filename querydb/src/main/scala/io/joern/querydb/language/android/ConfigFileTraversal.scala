@@ -4,12 +4,7 @@ import io.joern.x2cpg.utils.xml.SecureXmlParsing
 import io.shiftleft.codepropertygraph.generated.nodes
 import overflowdb.traversal._
 
-object Constants {
-  val androidUri         = "http://schemas.android.com/apk/res/android"
-  val androidManifestXml = "AndroidManifest.xml"
-}
-
-class ManifestXmlTraversal(val traversal: Traversal[nodes.ConfigFile]) extends AnyVal {
+class ConfigFileTraversal(val traversal: Traversal[nodes.ConfigFile]) extends AnyVal {
   def usesCleartextTraffic =
     traversal
       .filter(_.name.endsWith(Constants.androidManifestXml))
