@@ -18,6 +18,22 @@ class ConfigFileTraversal(val traversal: Traversal[nodes.ConfigFile]) extends An
         activityName.map(_.toString == "true")
       }
 
+  def hasReadExternalStoragePermission =
+    traversal
+      .filter(_.name.endsWith(Constants.androidManifestXml))
+      .map(_.content)
+      .flatMap(SecureXmlParsing.parseXml)
+      .filter(_.label == "manifest")
+      .flatMap(_.child)
+      .filter(_.label == "uses-permission")
+      .flatMap { applicationNode =>
+        val activityName = applicationNode.attribute(Constants.androidUri, "name")
+        activityName match {
+          case Some(n) if n.toString == "android.permission.READ_EXTERNAL_STORAGE" => Some(true)
+          case _                                                                   => None
+        }
+      }
+
   def exportedAndroidActivityNames =
     traversal
       .filter(_.name.endsWith(Constants.androidManifestXml))
