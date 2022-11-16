@@ -42,6 +42,7 @@ class Engine(context: EngineContext) {
     new ExecutorCompletionService[(Vector[ReachableByResult], Vector[ReachableByTask])](executorService)
 
   private val started: mutable.Set[TaskFingerprint] = mutable.Set()
+  private var held : List[ReachableByTask] = List()
 
   def shutdown(): Unit = {
     executorService.shutdown()
@@ -83,7 +84,22 @@ class Engine(context: EngineContext) {
       * tasks from partial results.
       */
     def handleResultsOfTask(resultsOfTask: (Vector[ReachableByResult], Vector[ReachableByTask])): Unit = {
-      completedResults ++= resultsOfTask._1
+      val newResults = resultsOfTask._1
+      completedResults ++= newResults
+
+      // There's a race here: it may be that a task that would wait on this has not been held yet, that is,
+      // it may be that the new results are available before we've started a task that would wait on them.
+      newResults.filterNot(_.partial).foreach{ newResult =>
+        val (completable, toHold) = held.partition( x => x.sink == newResult.sink && x.callSiteStack == newResult.callSiteStack)
+        held = toHold
+        completable.foreach{ c =>
+          newResult.table.createFromTable(PathElement(c.sink), c.initialPath).toList.foreach{ x =>
+            println("reached")
+            completedResults ++= x.filter(y => sources.contains(y.path.head.node))
+          }
+        }
+      }
+
       val newTasks = resultsOfTask._2
       newTasks.foreach(task => submitTask(task, sources))
     }
@@ -112,6 +128,7 @@ class Engine(context: EngineContext) {
   private def submitTask(task: ReachableByTask, sources: Set[CfgNode]): Unit = {
     val fingerprint = TaskFingerprint(task.sink, task.sources, task.callDepth, task.callSiteStack)
     if (started.contains(fingerprint)) {
+      held = held.appended(task)
       return
     }
     started.add(fingerprint)

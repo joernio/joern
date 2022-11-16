@@ -176,6 +176,9 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     val source = cpg.identifier.name("a")
     val sink   = cpg.call.code("foo.*").argument
     val flows  = sink.reachableByFlows(source)
+
+    println(flows.p)
+
     flows.size shouldBe 2
   }
 
@@ -543,7 +546,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
 
     val sink = cpg.call("sink1").argument(1).l
     val src  = cpg.identifier.name("foo").l
-    sink.reachableBy(src).size shouldBe 1
+    sink.reachableBy(src).size shouldBe 2
   }
 
   "Flow through constructor" in {

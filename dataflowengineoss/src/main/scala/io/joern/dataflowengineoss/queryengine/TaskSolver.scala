@@ -32,7 +32,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     } else {
       implicit val sem: Semantics = context.semantics
       val path                    = PathElement(task.sink, task.callSiteStack) +: task.initialPath
-      results(path, task.sources, task.table, task.callSiteStack)
+      results(task.sink, path, task.sources, task.table, task.callSiteStack)
       // TODO why do we update the call depth here?
       val finalResults = task.table.get(task.sink).get.map { r =>
         r.copy(callDepth = task.callDepth)
@@ -63,6 +63,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     *   This stack holds all call sites we expanded to arrive at the generation of the current task
     */
   private def results[NodeType <: CfgNode](
+    sink : CfgNode,
     path: Vector[PathElement],
     sources: Set[NodeType],
     table: ResultTable,
@@ -88,13 +89,13 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       } else {
         QueryEngineStatistics.incrementBy(PATH_CACHE_MISSES, 1L)
         val newPath = elemToPrepend +: path
-        results(newPath, sources, table, callSiteStack)
+        results(sink, newPath, sources, table, callSiteStack)
       }
     }
 
     def createPartialResultForOutputArgOrRet() = {
       Vector(
-        ReachableByResult(
+        ReachableByResult(sink,
           PathElement(path.head.node, callSiteStack, isOutputArg = true) +: path.tail,
           table,
           callSiteStack,
@@ -108,7 +109,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(path, table, callSiteStack)) ++ deduplicate(computeResultsForParents())
+        Vector(ReachableByResult(sink, path, table, callSiteStack)) ++ deduplicate(computeResultsForParents())
       // Case 1.5: the second node on the path is a METHOD_RETURN and its a source. This clumsy check is necessary because
       // for method returns, the derived tasks we create in TaskCreator jump immediately to the RETURN statements in
       // order to only pick up values that actually propagate via a RETURN and don't just flow to METHOD_RETURN because
@@ -117,11 +118,11 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
           if path.size > 1
             && path(1).node.isInstanceOf[MethodReturn]
             && sources.contains(path(1).node.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(path.drop(1), table, callSiteStack)) ++ deduplicate(computeResultsForParents())
+        Vector(ReachableByResult(sink, path.drop(1), table, callSiteStack)) ++ deduplicate(computeResultsForParents())
 
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
-        Vector(ReachableByResult(path, table, callSiteStack, partial = true))
+        Vector(ReachableByResult(sink, path, table, callSiteStack, partial = true))
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
       case call: Call

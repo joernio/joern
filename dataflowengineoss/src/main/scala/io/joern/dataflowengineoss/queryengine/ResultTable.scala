@@ -63,6 +63,7 @@ class ResultTable(
   *   backwards into method output parameters.
   */
 case class ReachableByResult(
+  sink : CfgNode,
   path: Vector[PathElement],
   table: ResultTable,
   callSiteStack: List[Call],
