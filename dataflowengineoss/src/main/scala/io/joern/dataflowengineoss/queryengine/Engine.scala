@@ -27,6 +27,12 @@ case class ReachableByTask(
 
 case class TaskFingerprint(sink: CfgNode, sources: Set[CfgNode], callDepth: Int, callSiteStack: List[Call])
 
+case class TaskSummary(
+  task: ReachableByTask,
+  results: Vector[ReachableByResult],
+  followupTasks: Vector[ReachableByTask]
+)
+
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
   * in parallel, creating and submitting new tasks upon completion of tasks. This class deals only with task scheduling,
   * while the creation of new tasks from existing tasks is handled by the class `TaskCreator`.
@@ -39,9 +45,12 @@ class Engine(context: EngineContext) {
   private var numberOfTasksRunning: Int        = 0
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService =
-    new ExecutorCompletionService[(Vector[ReachableByResult], Vector[ReachableByTask])](executorService)
+    new ExecutorCompletionService[TaskSummary](executorService)
 
   private val started: mutable.Set[TaskFingerprint] = mutable.Set()
+  private var held: List[ReachableByTask]           = List()
+
+  private var taskResultTable: ResultTable = newResultTable()
 
   def shutdown(): Unit = {
     executorService.shutdown()
@@ -62,14 +71,14 @@ class Engine(context: EngineContext) {
     solveTasks(tasks, sourcesSet)
   }
 
+  /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
+    */
+  private def newResultTable() =
+    context.config.initialTable.map(x => new ResultTable(x.table.clone)).getOrElse(new ResultTable)
+
   /** Create one task per sink where each task has its own result table.
     */
   private def createOneTaskPerSink(sourcesSet: Set[CfgNode], sinks: List[CfgNode]) = {
-
-    /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
-      */
-    def newResultTable() =
-      context.config.initialTable.map(x => new ResultTable(x.table.clone)).getOrElse(new ResultTable)
     sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable()))
   }
 
@@ -79,12 +88,14 @@ class Engine(context: EngineContext) {
   private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): List[ReachableByResult] = {
     var completedResults = List[ReachableByResult]()
 
-    /** For a list of results, determine partial and complete results. Store complete results and derive and submit
-      * tasks from partial results.
-      */
-    def handleResultsOfTask(resultsOfTask: (Vector[ReachableByResult], Vector[ReachableByTask])): Unit = {
-      completedResults ++= resultsOfTask._1
-      val newTasks = resultsOfTask._2
+    def handleSummary(taskSummary: TaskSummary): Unit = {
+      val task       = taskSummary.task
+      val newResults = taskSummary.results
+      completedResults ++= newResults
+      newResults.filter(x => x.sink == task.sink && !x.partial).foreach { result =>
+        taskResultTable.add(result.sink, Vector(result))
+      }
+      val newTasks = taskSummary.followupTasks
       newTasks.foreach(task => submitTask(task, sources))
     }
 
@@ -95,7 +106,7 @@ class Engine(context: EngineContext) {
         } match {
           case Success(resultsOfTask) =>
             numberOfTasksRunning -= 1
-            handleResultsOfTask(resultsOfTask)
+            handleSummary(resultsOfTask)
           case Failure(exception) =>
             numberOfTasksRunning -= 1
             logger.warn(s"SolveTask failed with exception:", exception)
@@ -106,12 +117,23 @@ class Engine(context: EngineContext) {
 
     tasks.foreach(task => submitTask(task, sources))
     runUntilAllTasksAreSolved()
+    val n = completeHeldTasks(sources)
+    completedResults ++= n
     deduplicate(completedResults.toVector).toList
+  }
+
+  private def completeHeldTasks(sources: Set[CfgNode]): List[ReachableByResult] = {
+    held.flatMap { heldTask =>
+      taskResultTable.createFromTable(PathElement(heldTask.sink), heldTask.initialPath).toList.flatMap { x =>
+        x.filter(y => sources.contains(y.path.head.node))
+      }
+    }
   }
 
   private def submitTask(task: ReachableByTask, sources: Set[CfgNode]): Unit = {
     val fingerprint = TaskFingerprint(task.sink, task.sources, task.callDepth, task.callSiteStack)
     if (started.contains(fingerprint)) {
+      held = held.appended(task)
       return
     }
     started.add(fingerprint)

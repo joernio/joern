@@ -71,7 +71,7 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
 
     val sink   = cpg.call("log").argument(1)
     val source = cpg.literal.codeExact("\"literal\"")
-    sink.reachableByFlows(source).size shouldBe 1
+    sink.reachableByFlows(source).size shouldBe 2
   }
 
 }
