@@ -19,4 +19,22 @@ class NodeTypeStarters(cpg: Cpg) {
 
   def dexClassLoader: Traversal[Local] =
     cpg.local.typeFullNameExact("dalvik.system.DexClassLoader")
+
+  def broadcastReceivers: Traversal[TypeDecl] =
+    cpg.method
+      .nameExact("onReceive")
+      .where(_.parameter.index(1).typeFullNameExact("android.content.Context"))
+      .where(_.parameter.index(2).typeFullNameExact("android.content.Intent"))
+      .typeDecl
+
+  def registerReceiver: Traversal[Call] =
+    cpg.call
+      .nameExact("registerReceiver")
+      .typeFullNameExact("void")
+      .where(_.argument(2).isIdentifier.typeFullNameExact("android.content.IntentFilter"))
+
+  def registeredBroadcastReceivers =
+    cpg.broadcastReceivers.filter { broadcastReceiver =>
+      cpg.registerReceiver.argument(1).isIdentifier.typeFullName.exists(_ == broadcastReceiver.fullName)
+    }
 }

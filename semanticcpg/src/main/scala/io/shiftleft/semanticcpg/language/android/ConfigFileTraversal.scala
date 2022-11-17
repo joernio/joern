@@ -73,4 +73,33 @@ class ConfigFileTraversal(val traversal: Traversal[nodes.ConfigFile]) extends An
           }
         } else None
       }
+
+  def exportedBroadcastReceiverNames =
+    traversal
+      .filter(_.name.endsWith(Constants.androidManifestXml))
+      .map(_.content)
+      .flatMap(SecureXmlParsing.parseXml)
+      .filter(_.label == "manifest")
+      .flatMap(_.child)
+      .filter(_.label == "application")
+      .flatMap(_.child)
+      .filter(_.label == "receiver")
+      .flatMap { receiverNode =>
+        val hasIntentFilter = receiverNode.flatMap(_.child).filter(_.label == "intent-filter").nonEmpty
+        if (hasIntentFilter) {
+          val isExported = receiverNode.attribute(Constants.androidUri, "exported")
+          isExported match {
+            case Some(n) if n.toString == "true" => Some(receiverNode)
+            case _                               => None
+          }
+        } else None
+      }
+      .flatMap { node =>
+        val name = node.attribute(Constants.androidUri, "name")
+        name match {
+          case Some(n) => Some(n.toString().stripPrefix("."))
+          case _       => None
+        }
+      }
+
 }
