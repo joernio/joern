@@ -12,4 +12,12 @@ class NodeTypeStarters(cpg: Cpg) {
 
   def appManifest: Traversal[ConfigFile] =
     cpg.configFile.filter(_.name.endsWith(Constants.androidManifestXml))
+
+  def getExternalStorageDir =
+    cpg.call
+      .nameExact("getExternalStorageDirectory")
+      .where(_.argument(0).isIdentifier.typeFullNameExact("android.os.Environment"))
+
+  def dexClassLoader: Traversal[Local] =
+    cpg.local.typeFullNameExact("dalvik.system.DexClassLoader")
 }
