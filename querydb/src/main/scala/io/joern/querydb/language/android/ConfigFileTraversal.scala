@@ -1,6 +1,6 @@
 package io.joern.querydb.language.android
 
-import io.joern.x2cpg.utils.xml.SecureXmlParsing
+import io.joern.semanticcpg.utils.SecureXmlParsing
 import io.shiftleft.codepropertygraph.generated.nodes
 import overflowdb.traversal._
 
