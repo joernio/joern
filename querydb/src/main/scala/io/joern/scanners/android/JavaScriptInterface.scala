@@ -24,7 +24,7 @@ object JavaScriptInterface extends QueryBundle {
       score = 9,
       withStrRep({ cpg =>
         import overflowdb.traversal.Traversal
-        import io.joern.querydb.language.android._
+        import io.shiftleft.semanticcpg.language.android._
         import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 
         def webViewsWithInsecureLoadUrlCalls =

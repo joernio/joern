@@ -1,4 +1,4 @@
-package io.joern.querydb.language.android
+package io.shiftleft.semanticcpg.language.android
 
 object Constants {
   val androidUri         = "http://schemas.android.com/apk/res/android"

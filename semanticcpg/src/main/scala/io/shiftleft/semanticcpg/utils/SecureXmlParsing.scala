@@ -1,4 +1,4 @@
-package io.joern.x2cpg.utils.xml
+package io.joern.semanticcpg.utils
 
 import javax.xml.parsers.SAXParserFactory
 import scala.util.Try
