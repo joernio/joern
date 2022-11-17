@@ -13,7 +13,7 @@ class NodeTypeStarters(cpg: Cpg) {
   def appManifest: Traversal[ConfigFile] =
     cpg.configFile.filter(_.name.endsWith(Constants.androidManifestXml))
 
-  def getExternalStorageDir =
+  def getExternalStorageDir: Traversal[Call] =
     cpg.call
       .nameExact("getExternalStorageDirectory")
       .where(_.argument(0).isIdentifier.typeFullNameExact("android.os.Environment"))
