@@ -11,6 +11,29 @@ import overflowdb.traversal.jIteratortoTraversal
 import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
+
+  "constructor init method call" should {
+    lazy val cpg = code("""
+        |class Foo {
+        |  Foo(long aaa) {
+        |  }
+        |  static void method() {
+        |    Foo foo = new Foo(1);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct methodFullName and signature" in {
+      val initCall = cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).head
+      initCall.signature shouldBe "void(long)"
+      initCall.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(long)"
+    }
+
+    "contain a call to `<init>` with one of the arguments containing a REF edge to the newly-defined local" in {
+      cpg.call.nameExact("<init>").argument(0).isIdentifier.outE.collectAll[Ref].l should not be List()
+    }
+  }
+
   "calls to static methods in different files should be resolved correctly" in {
     val cpg = code(
       """

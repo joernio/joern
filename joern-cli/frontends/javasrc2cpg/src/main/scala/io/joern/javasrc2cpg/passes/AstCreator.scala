@@ -2151,6 +2151,15 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val initNode = partialConstructor.initNode
     val args     = partialConstructor.initArgs
 
+    targetAst.root match {
+      case Some(identifier: NewIdentifier) =>
+        scopeStack.lookupVariable(identifier.name).foreach { nodeInfo =>
+          diffGraph.addEdge(identifier, nodeInfo.node, EdgeTypes.REF)
+        }
+
+      case _ => // Nothing to do in this case
+    }
+
     callAst(initNode, args.toList, Some(targetAst), withRecvArgEdge = true)
   }
 
