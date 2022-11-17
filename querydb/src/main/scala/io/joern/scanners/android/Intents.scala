@@ -21,7 +21,7 @@ object Intents extends QueryBundle {
       description = "-",
       score = 9,
       withStrRep({ cpg =>
-        import io.joern.querydb.language.android._
+        import io.shiftleft.semanticcpg.language.android._
         val exportedActivityNames = cpg.configFile.exportedAndroidActivityNames.l
         def exportedActivities =
           cpg.typeDecl.filter { node => exportedActivityNames.contains(node.name) }

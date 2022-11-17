@@ -1,4 +1,4 @@
-package io.joern.querydb.language.android
+package io.shiftleft.semanticcpg.language.android
 
 import io.shiftleft.codepropertygraph.generated.nodes
 import overflowdb.traversal._

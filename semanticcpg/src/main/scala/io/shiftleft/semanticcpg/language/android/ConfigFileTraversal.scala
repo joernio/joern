@@ -1,4 +1,4 @@
-package io.joern.querydb.language.android
+package io.shiftleft.semanticcpg.language.android
 
 import io.joern.semanticcpg.utils.SecureXmlParsing
 import io.shiftleft.codepropertygraph.generated.nodes

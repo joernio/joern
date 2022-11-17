@@ -23,7 +23,7 @@ object ExternalStorage extends QueryBundle {
       score = 9,
       withStrRep({ cpg =>
         import overflowdb.traversal.Traversal
-        import io.joern.querydb.language.android._
+        import io.shiftleft.semanticcpg.language.android._
         import io.joern.x2cpg.Defines.ConstructorMethodName
 
         def externalStorageReads =

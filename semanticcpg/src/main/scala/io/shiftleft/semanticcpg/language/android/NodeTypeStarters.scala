@@ -1,6 +1,5 @@
-package io.joern.querydb.language.android.starters
+package io.shiftleft.semanticcpg.language.android
 
-import io.joern.querydb.language.android.Constants
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._

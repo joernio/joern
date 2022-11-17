@@ -1,12 +1,14 @@
-package io.joern.querydb.language
+package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{ConfigFile, Literal, Local, Method}
-import overflowdb.traversal.{Traversal, iterableToTraversal}
+import overflowdb.traversal.Traversal
 
+/** Language extensions for android. */
 package object android {
-  implicit def toNodeTypeStartersFlows(cpg: Cpg): starters.NodeTypeStarters =
-    new starters.NodeTypeStarters(cpg)
+
+  implicit def toNodeTypeStartersFlows(cpg: Cpg): NodeTypeStarters =
+    new NodeTypeStarters(cpg)
 
   implicit def singleToLocalExt[A <: Local](a: A): LocalTraversal =
     new LocalTraversal(Traversal.fromSingle(a))
@@ -25,4 +27,5 @@ package object android {
 
   implicit def iterOnceToMethodExt[A <: Method](a: IterableOnce[A]): MethodTraversal =
     new MethodTraversal(iterableToTraversal(a))
+
 }
