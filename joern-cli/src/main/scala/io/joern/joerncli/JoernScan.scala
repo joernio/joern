@@ -39,6 +39,7 @@ case class JoernScanConfig(
 )
 
 object JoernScan extends BridgeBase {
+  override val slProduct = JoernProduct
 
   val implementationVersion = getClass.getPackage.getImplementationVersion
 
