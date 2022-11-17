@@ -24,17 +24,26 @@ object ExternalStorage extends QueryBundle {
       withStrRep({ cpg =>
         import overflowdb.traversal.Traversal
         import io.joern.querydb.language.android._
+        import io.joern.x2cpg.Defines.ConstructorMethodName
 
         def externalStorageReads =
-          if (cpg.appManifest.hasReadExternalStoragePermission.nonEmpty) {
-            cpg.call
-              .nameExact("getExternalStorageDirectory")
-              .where(_.argument(0).isIdentifier.typeFullNameExact("android.os.Environment"))
-          } else Traversal.empty
+          if (cpg.appManifest.hasReadExternalStoragePermission.nonEmpty)
+            cpg.getExternalStorageDir
+          else Traversal.empty
+        def dexClassLoadersWithExternalStorageInit =
+          cpg.dexClassLoader
+            .where(
+              _.method.call
+                .nameExact(ConstructorMethodName)
+                .where(_.argument(0).isIdentifier.typeFullNameExact("dalvik.system.DexClassLoader"))
+                .where(_.argument(1).reachableBy(externalStorageReads))
+            )
+        def loadClassCalls =
+          dexClassLoadersWithExternalStorageInit.referencingIdentifiers.inCall.nameExact("loadClass")
         def reflectInvoke = cpg.call.methodFullNameExact(
           "java.lang.reflect.Method.invoke:java.lang.Object(java.lang.Object,java.lang.Object[])"
         )
-        reflectInvoke.where(_.argument(1).reachableBy(externalStorageReads))
+        reflectInvoke.where(_.argument(1).reachableBy(loadClassCalls))
       }),
       tags = List(QueryTags.android),
       multiFileCodeExamples = MultiFileCodeExamples(
