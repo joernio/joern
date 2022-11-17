@@ -25,32 +25,25 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val restName    = nameForBabelNodeInfo(paramNodeInfo, defaultName)
     ast.root match {
       case Some(_: NewIdentifier) =>
-        val keyNode = Ast(createFieldIdentifierNode(restName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber))
+        val keyNode = createFieldIdentifierNode(restName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
         val tpe     = typeFor(elementNodeInfo)
         val localParamNode = createIdentifierNode(restName, elementNodeInfo)
         localParamNode.typeFullName = tpe
         val paramNode = createIdentifierNode(paramName, elementNodeInfo)
         val accessAst =
-          createFieldAccessCallAst(
-            paramNode,
-            keyNode.nodes.head,
-            elementNodeInfo.lineNumber,
-            elementNodeInfo.columnNumber
-          )
-        Ast.storeInDiffGraph(accessAst, diffGraph)
+          createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
         createAssignmentCallAst(
-          localParamNode,
-          accessAst.nodes.head,
+          Ast(localParamNode),
+          accessAst,
           s"$restName = ${codeOf(accessAst.nodes.head)}",
           elementNodeInfo.lineNumber,
           elementNodeInfo.columnNumber
         )
       case _ =>
-        Ast.storeInDiffGraph(ast, diffGraph)
         val localParamNode = createIdentifierNode(restName, elementNodeInfo)
         createAssignmentCallAst(
-          localParamNode,
-          ast.nodes.head,
+          Ast(localParamNode),
+          ast,
           s"$restName = ${codeOf(ast.nodes.head)}",
           elementNodeInfo.lineNumber,
           elementNodeInfo.columnNumber
@@ -97,7 +90,6 @@ trait AstForFunctionsCreator { this: AstCreator =>
               nodeInfo.columnNumber
             )
             val rhsAst = astForNodeWithFunctionReference(rhsElement)
-            Ast.storeInDiffGraph(rhsAst, diffGraph)
             additionalBlockStatements.addOne(astForDeconstruction(lhsNodeInfo, rhsAst, Some(paramName)))
             param
           case _ =>
@@ -139,10 +131,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
                   createFieldIdentifierNode(elemName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
                 val accessAst =
                   createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
-                Ast.storeInDiffGraph(accessAst, diffGraph)
                 createAssignmentCallAst(
-                  localParamNode,
-                  accessAst.nodes.head,
+                  Ast(localParamNode),
+                  accessAst,
                   s"$elemName = ${codeOf(accessAst.nodes.head)}",
                   elementNodeInfo.lineNumber,
                   elementNodeInfo.columnNumber
@@ -178,10 +169,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
                 createFieldIdentifierNode(elemName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
               val accessAst =
                 createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
-              Ast.storeInDiffGraph(accessAst, diffGraph)
               createAssignmentCallAst(
-                localParamNode,
-                accessAst.nodes.head,
+                Ast(localParamNode),
+                accessAst,
                 s"$elemName = ${codeOf(accessAst.nodes.head)}",
                 elementNodeInfo.lineNumber,
                 elementNodeInfo.columnNumber
@@ -221,10 +211,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val rhsElement = element.json("right")
 
     val rhsAst = astForNodeWithFunctionReference(rhsElement)
-    Ast.storeInDiffGraph(rhsAst, diffGraph)
 
     val lhsAst = astForNode(lhsElement)
-    Ast.storeInDiffGraph(lhsAst, diffGraph)
 
     val testAst = {
       val keyNode = createIdentifierNode(codeOf(lhsAst.nodes.head), element)
@@ -235,17 +223,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
         element.lineNumber,
         element.columnNumber
       )
-      val equalsCallAst = createEqualsCallAst(keyNode, voidCallNode, element.lineNumber, element.columnNumber)
+      val equalsCallAst = createEqualsCallAst(Ast(keyNode), Ast(voidCallNode), element.lineNumber, element.columnNumber)
       equalsCallAst
     }
-    Ast.storeInDiffGraph(testAst, diffGraph)
     val falseNode = createIdentifierNode(codeOf(lhsAst.nodes.head), element)
     val ternaryNodeAst =
-      createTernaryCallAst(testAst.nodes.head, rhsAst.nodes.head, falseNode, element.lineNumber, element.columnNumber)
-    Ast.storeInDiffGraph(ternaryNodeAst, diffGraph)
+      createTernaryCallAst(testAst, rhsAst, Ast(falseNode), element.lineNumber, element.columnNumber)
     createAssignmentCallAst(
-      lhsAst.nodes.head,
-      ternaryNodeAst.nodes.head,
+      lhsAst,
+      ternaryNodeAst,
       s"${codeOf(lhsAst.nodes.head)} = ${codeOf(ternaryNodeAst.nodes.head)}",
       element.lineNumber,
       element.columnNumber

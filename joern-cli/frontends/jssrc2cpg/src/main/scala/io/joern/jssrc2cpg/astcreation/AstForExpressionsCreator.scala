@@ -28,7 +28,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   private def handleCallNodeArgs(
     callExpr: BabelNodeInfo,
-    receiverNode: NewNode,
+    receiverAst: Ast,
     baseNode: NewNode,
     callName: String
   ): Ast = {
@@ -41,7 +41,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         callExpr.lineNumber,
         callExpr.columnNumber
       )
-    createCallAst(callNode, args, Some(Ast(receiverNode)), Some(Ast(baseNode)))
+    createCallAst(callNode, args, Some(receiverAst), Some(Ast(baseNode)))
   }
 
   protected def astForCallExpression(callExpr: BabelNodeInfo): Ast = {
@@ -57,8 +57,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           base.node match {
             case Identifier =>
               val receiverAst = astForNodeWithFunctionReference(callee.json)
-              Ast.storeInDiffGraph(receiverAst, diffGraph)
-              val baseNode = createIdentifierNode(base.code, base)
+              val baseNode    = createIdentifierNode(base.code, base)
               scope.addVariableReference(base.code, baseNode)
               (receiverAst, baseNode, member.code)
             case _ =>
@@ -66,34 +65,24 @@ trait AstForExpressionsCreator { this: AstCreator =>
               val baseTmpNode = createIdentifierNode(tmpVarName, base)
               scope.addVariableReference(tmpVarName, baseTmpNode)
               val baseAst = astForNodeWithFunctionReference(base.json)
-              Ast.storeInDiffGraph(baseAst, diffGraph)
-              val code = s"(${codeOf(baseTmpNode)} = ${base.code})"
+              val code    = s"(${codeOf(baseTmpNode)} = ${base.code})"
               val tmpAssignmentAst =
-                createAssignmentCallAst(baseTmpNode, baseAst.nodes.head, code, base.lineNumber, base.columnNumber)
+                createAssignmentCallAst(Ast(baseTmpNode), baseAst, code, base.lineNumber, base.columnNumber)
               val memberNode = createFieldIdentifierNode(member.code, member.lineNumber, member.columnNumber)
               val fieldAccessAst =
-                createFieldAccessCallAst(
-                  tmpAssignmentAst.nodes.head,
-                  memberNode,
-                  callee.lineNumber,
-                  callee.columnNumber
-                )
+                createFieldAccessCallAst(tmpAssignmentAst, memberNode, callee.lineNumber, callee.columnNumber)
               val thisTmpNode = createIdentifierNode(tmpVarName, callee)
               scope.addVariableReference(tmpVarName, thisTmpNode)
-
-              Ast.storeInDiffGraph(tmpAssignmentAst, diffGraph)
-              Ast.storeInDiffGraph(fieldAccessAst, diffGraph)
 
               (fieldAccessAst, thisTmpNode, member.code)
           }
         case _ =>
           val receiverAst = astForNodeWithFunctionReference(callee.json)
-          Ast.storeInDiffGraph(receiverAst, diffGraph)
-          val thisNode = createIdentifierNode("this", callee)
+          val thisNode    = createIdentifierNode("this", callee)
           scope.addVariableReference(thisNode.name, thisNode)
           (receiverAst, thisNode, callee.code)
       }
-      handleCallNodeArgs(callExpr, receiverAst.nodes.head, baseNode, callName)
+      handleCallNodeArgs(callExpr, receiverAst, baseNode, callName)
     }
   }
 
@@ -135,10 +124,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val tmpAllocNode2 = createIdentifierNode(tmpAllocName, newExpr)
 
     val receiverNode = astForNodeWithFunctionReference(callee)
-    Ast.storeInDiffGraph(receiverNode, diffGraph)
 
     // TODO: place "<operator>.new" into the schema
-    val callNode = handleCallNodeArgs(newExpr, receiverNode.nodes.head, tmpAllocNode2, "<operator>.new")
+    val callNode = handleCallNodeArgs(newExpr, receiverNode, tmpAllocNode2, "<operator>.new")
 
     val tmpAllocReturnNode = Ast(createIdentifierNode(tmpAllocName, newExpr))
 
@@ -150,19 +138,17 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForMemberExpression(memberExpr: BabelNodeInfo): Ast = {
-    val baseAst = astForNodeWithFunctionReference(memberExpr.json("object"))
-    Ast.storeInDiffGraph(baseAst, diffGraph)
+    val baseAst          = astForNodeWithFunctionReference(memberExpr.json("object"))
     val memberIsComputed = memberExpr.json("computed").bool
     val memberNodeInfo   = createBabelNodeInfo(memberExpr.json("property"))
     if (memberIsComputed) {
       val memberAst = astForNode(memberNodeInfo.json)
-      Ast.storeInDiffGraph(memberAst, diffGraph)
-      createIndexAccessCallAst(baseAst.nodes.head, memberAst.nodes.head, memberExpr.lineNumber, memberExpr.columnNumber)
+      createIndexAccessCallAst(baseAst, memberAst, memberExpr.lineNumber, memberExpr.columnNumber)
     } else {
       val memberAst = Ast(
         createFieldIdentifierNode(memberNodeInfo.code, memberNodeInfo.lineNumber, memberNodeInfo.columnNumber)
       )
-      createFieldAccessCallAst(baseAst.nodes.head, memberAst.nodes.head, memberExpr.lineNumber, memberExpr.columnNumber)
+      createFieldAccessCallAst(baseAst, memberAst.nodes.head, memberExpr.lineNumber, memberExpr.columnNumber)
     }
   }
 
@@ -214,16 +200,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val testAst       = astForNode(ternary.json("test"))
     val consequentAst = astForNodeWithFunctionReference(ternary.json("consequent"))
     val alternateAst  = astForNodeWithFunctionReference(ternary.json("alternate"))
-    Ast.storeInDiffGraph(testAst, diffGraph)
-    Ast.storeInDiffGraph(consequentAst, diffGraph)
-    Ast.storeInDiffGraph(alternateAst, diffGraph)
-    createTernaryCallAst(
-      testAst.nodes.head,
-      consequentAst.nodes.head,
-      alternateAst.nodes.head,
-      ternary.lineNumber,
-      ternary.columnNumber
-    )
+    createTernaryCallAst(testAst, consequentAst, alternateAst, ternary.lineNumber, ternary.columnNumber)
   }
 
   protected def astForLogicalExpression(logicalExpr: BabelNodeInfo): Ast =
@@ -478,12 +455,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
       val leftHandSideFieldAccessAst =
         createFieldAccessCallAst(leftHandSideTmpNode, lhsNode, nodeInfo.lineNumber, nodeInfo.columnNumber)
 
-      Ast.storeInDiffGraph(leftHandSideFieldAccessAst, diffGraph)
-      Ast.storeInDiffGraph(rhsAst, diffGraph)
-
       createAssignmentCallAst(
-        leftHandSideFieldAccessAst.nodes.head,
-        rhsAst.nodes.head,
+        leftHandSideFieldAccessAst,
+        rhsAst,
         s"$tmpName.${lhsNode.canonicalName} = ${codeOf(rhsAst.nodes.head)}",
         nodeInfo.lineNumber,
         nodeInfo.columnNumber

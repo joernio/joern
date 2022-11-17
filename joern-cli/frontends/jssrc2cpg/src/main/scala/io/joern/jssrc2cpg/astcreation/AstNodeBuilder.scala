@@ -260,6 +260,23 @@ trait AstNodeBuilder { this: AstCreator =>
     createCallAst(callNode, arguments)
   }
 
+  protected def createIndexAccessCallAst(
+    baseAst: Ast,
+    partAst: Ast,
+    line: Option[Integer],
+    column: Option[Integer]
+  ): Ast = {
+    val callNode = createCallNode(
+      s"${codeOf(baseAst.nodes.head)}[${codeOf(partAst.nodes.head)}]",
+      Operators.indexAccess,
+      DispatchTypes.STATIC_DISPATCH,
+      line,
+      column
+    )
+    val arguments = List(baseAst, partAst)
+    createCallAst(callNode, arguments)
+  }
+
   protected def createFieldAccessCallAst(
     baseNode: NewNode,
     partNode: NewNode,
@@ -277,16 +294,33 @@ trait AstNodeBuilder { this: AstCreator =>
     createCallAst(callNode, arguments)
   }
 
-  protected def createTernaryCallAst(
-    testNode: NewNode,
-    trueNode: NewNode,
-    falseNode: NewNode,
+  protected def createFieldAccessCallAst(
+    baseAst: Ast,
+    partNode: NewNode,
     line: Option[Integer],
     column: Option[Integer]
   ): Ast = {
-    val code      = codeOf(testNode) + " ? " + codeOf(trueNode) + " : " + codeOf(falseNode)
-    val callNode  = createCallNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, line, column)
-    val arguments = List(Ast(testNode), Ast(trueNode), Ast(falseNode))
+    val callNode = createCallNode(
+      codeOf(baseAst.nodes.head) + "." + codeOf(partNode),
+      Operators.fieldAccess,
+      DispatchTypes.STATIC_DISPATCH,
+      line,
+      column
+    )
+    val arguments = List(baseAst, Ast(partNode))
+    createCallAst(callNode, arguments)
+  }
+
+  protected def createTernaryCallAst(
+    testAst: Ast,
+    trueAst: Ast,
+    falseAst: Ast,
+    line: Option[Integer],
+    column: Option[Integer]
+  ): Ast = {
+    val code     = codeOf(testAst.nodes.head) + " ? " + codeOf(trueAst.nodes.head) + " : " + codeOf(falseAst.nodes.head)
+    val callNode = createCallNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, line, column)
+    val arguments = List(testAst, trueAst, falseAst)
     createCallAst(callNode, arguments)
   }
 
@@ -338,15 +372,10 @@ trait AstNodeBuilder { this: AstCreator =>
       .dynamicTypeHintFullName(dynamicTypeOption.toList)
   }
 
-  protected def createEqualsCallAst(
-    destId: NewNode,
-    sourceId: NewNode,
-    line: Option[Integer],
-    column: Option[Integer]
-  ): Ast = {
-    val code      = codeOf(destId) + " === " + codeOf(sourceId)
+  protected def createEqualsCallAst(dest: Ast, source: Ast, line: Option[Integer], column: Option[Integer]): Ast = {
+    val code      = codeOf(dest.nodes.head) + " === " + codeOf(source.nodes.head)
     val callNode  = createCallNode(code, Operators.equals, DispatchTypes.STATIC_DISPATCH, line, column)
-    val arguments = List(Ast(destId), Ast(sourceId))
+    val arguments = List(dest, source)
     createCallAst(callNode, arguments)
   }
 
@@ -359,6 +388,18 @@ trait AstNodeBuilder { this: AstCreator =>
   ): Ast = {
     val callNode  = createCallNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(Ast(destId), Ast(sourceId))
+    createCallAst(callNode, arguments)
+  }
+
+  protected def createAssignmentCallAst(
+    dest: Ast,
+    source: Ast,
+    code: String,
+    line: Option[Integer],
+    column: Option[Integer]
+  ): Ast = {
+    val callNode  = createCallNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, line, column)
+    val arguments = List(dest, source)
     createCallAst(callNode, arguments)
   }
 
