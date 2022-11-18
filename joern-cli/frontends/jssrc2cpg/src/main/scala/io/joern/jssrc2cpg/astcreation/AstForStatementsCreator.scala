@@ -42,7 +42,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   protected def createBlockStatementAsts(json: Value): List[Ast] = {
     val blockStmts = sortBlockStatements(json.arr.map(createBabelNodeInfo).toList)
     val blockAsts  = blockStmts.map(stmt => astForNodeWithFunctionReferenceAndCall(stmt.json))
-    setIndices(blockAsts)
+    setArgIndices(blockAsts)
     blockAsts
   }
 
@@ -51,7 +51,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
     val blockStatementAsts = createBlockStatementAsts(block.json("body"))
-    setIndices(blockStatementAsts)
+    setArgIndices(blockStatementAsts)
     localAstParentStack.pop()
     scope.popScope()
     Ast(blockNode).withChildren(blockStatementAsts)
@@ -184,7 +184,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     localAstParentStack.pop()
 
     val labelAsts = List(Ast(labeledNode), bodyAst)
-    setIndices(labelAsts)
+    setArgIndices(labelAsts)
     Ast(blockNode).withChildren(labelAsts)
   }
 
@@ -258,7 +258,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     localAstParentStack.push(blockNode)
 
     val casesAsts = switchStmt.json("cases").arr.flatMap(c => astsForSwitchCase(createBabelNodeInfo(c)))
-    setIndices(casesAsts.toList)
+    setArgIndices(casesAsts.toList)
 
     scope.popScope()
     localAstParentStack.pop()

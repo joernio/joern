@@ -114,7 +114,7 @@ class AstCreator(
       createParameterInNode("this", "this", 0, isVariadic = false, line = lineNumber, column = columnNumber)
 
     val methodChildren = astsForFile(astNodeInfo)
-    setIndices(methodChildren)
+    setArgIndices(methodChildren)
 
     val methodReturn = NewMethodReturn()
       .code("RET")

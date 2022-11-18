@@ -80,41 +80,23 @@ trait AstNodeBuilder { this: AstCreator =>
     ast.root.foreach { case expr: ExpressionNew => expr.order = order }
   }
 
-  protected def setIndices(
+  protected def setArgIndices(
     asts: List[Ast],
-    receiver: Option[Ast] = None,
-    countEmpty: Boolean = false,
     base: Option[Ast] = None
   ): Unit = {
     var currIndex = 1
-    var currOrder = if (base.isDefined) 2 else 1
 
     asts.foreach { a =>
       a.root match {
         case Some(x: ExpressionNew) =>
           x.argumentIndex = currIndex
-          //x.order = currOrder
           currIndex = currIndex + 1
-          currOrder = currOrder + 1
-        case None if !countEmpty => // do nothing
+        case None => // do nothing
         case _ =>
           currIndex = currIndex + 1
-          currOrder = currOrder + 1
       }
     }
-    val baseRoot = base.flatMap(_.root).toList
-    baseRoot match {
-      case List(x: ExpressionNew) =>
-        x.argumentIndex = 0
-        //x.order = 1
-      case _ =>
-    }
-    val receiverRoot = receiver.flatMap(_.root).toList
-    receiverRoot match {
-      case List(x: ExpressionNew) =>
-        //x.order = 0
-      case _ =>
-    }
+    base.flatMap(_.root).foreach{ case expr: ExpressionNew => expr.argumentIndex = 0}
   }
 
   protected def createCallAst(
@@ -123,7 +105,7 @@ trait AstNodeBuilder { this: AstCreator =>
     receiver: Option[Ast] = None,
     base: Option[Ast] = None
   ): Ast = {
-    setIndices(arguments, receiver, base = base)
+    setArgIndices(arguments, base = base)
 
     val receiverRoot = receiver.flatMap(_.root).toList
     val rcvAst       = receiver.getOrElse(Ast())
@@ -139,7 +121,7 @@ trait AstNodeBuilder { this: AstCreator =>
   }
 
   protected def createReturnAst(returnNode: NewReturn, arguments: List[Ast] = List()): Ast = {
-    setIndices(arguments)
+    setArgIndices(arguments)
     Ast(returnNode)
       .withChildren(arguments)
       .withArgEdges(returnNode, arguments.flatMap(_.root))

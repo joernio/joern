@@ -176,7 +176,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val asts = fromAst +: (specifierAsts ++ declAsts.flatten)
-    setIndices(asts)
+    setArgIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }
 
@@ -190,7 +190,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val asts = declAsts.toList.flatten
-    setIndices(asts)
+    setArgIndices(asts)
     blockAst(createBlockNode(assignment), asts)
   }
 
@@ -206,7 +206,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val asts = declAsts.toList.flatten
-    setIndices(asts)
+    setArgIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }
 
@@ -223,7 +223,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration)
 
     val asts = List(fromCallAst, assignmentCallAst)
-    setIndices(asts)
+    setArgIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }
 
@@ -237,7 +237,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val declAsts = declaration.json("declarations").arr.toList.map(astForVariableDeclarator(_, scopeType, kind))
     declAsts match {
       case head :: tail =>
-        setIndices(declAsts)
+        setArgIndices(declAsts)
         tail.foreach { declAst =>
           declAst.root.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
           Ast.storeInDiffGraph(declAst, diffGraph)
@@ -633,7 +633,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     localAstParentStack.pop()
 
     val blockChildren = assignmentTmpCallAst +: subTreeAsts :+ Ast(returnTmpNode)
-    setIndices(blockChildren)
+    setArgIndices(blockChildren)
     Ast(blockNode).withChildren(blockChildren)
   }
 
