@@ -76,6 +76,10 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column)
   }
 
+  protected def setOrderExplicitly(ast: Ast, order: Int): Unit = {
+    ast.root.foreach { case expr: ExpressionNew => expr.order = order }
+  }
+
   protected def setIndices(
     asts: List[Ast],
     receiver: Option[Ast] = None,
@@ -89,7 +93,7 @@ trait AstNodeBuilder { this: AstCreator =>
       a.root match {
         case Some(x: ExpressionNew) =>
           x.argumentIndex = currIndex
-          x.order = currOrder
+          //x.order = currOrder
           currIndex = currIndex + 1
           currOrder = currOrder + 1
         case None if !countEmpty => // do nothing
@@ -102,13 +106,13 @@ trait AstNodeBuilder { this: AstCreator =>
     baseRoot match {
       case List(x: ExpressionNew) =>
         x.argumentIndex = 0
-        x.order = 1
+        //x.order = 1
       case _ =>
     }
     val receiverRoot = receiver.flatMap(_.root).toList
     receiverRoot match {
       case List(x: ExpressionNew) =>
-        x.order = 0
+        //x.order = 0
       case _ =>
     }
   }

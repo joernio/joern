@@ -166,14 +166,12 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       constructorCall.astChildren.isIdentifier.nameExact("MyClass").size shouldBe 1
 
       val List(receiver) = constructorCall.receiver.isIdentifier.nameExact("MyClass").l
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(tmpArg0) = constructorCall.astChildren.isIdentifier.nameExact(tmpName).l
-      tmpArg0.order shouldBe 1
       tmpArg0.argumentIndex shouldBe 0
 
       val List(tmpArg0Argument) = constructorCall.argument.isIdentifier.nameExact(tmpName).l
-      tmpArg0Argument.order shouldBe 1
       tmpArg0Argument.argumentIndex shouldBe 0
 
       val List(returnTmp) = newCallBlock.astChildren.isIdentifier.l
@@ -204,14 +202,12 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       constructorCall.astChildren.isIdentifier.nameExact("MyClass").size shouldBe 1
 
       val List(receiver) = constructorCall.receiver.isIdentifier.nameExact("MyClass").l
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(tmpArg0) = constructorCall.astChildren.isIdentifier.nameExact(tmpName).l
-      tmpArg0.order shouldBe 1
       tmpArg0.argumentIndex shouldBe 0
 
       val List(tmpArg0Argument) = constructorCall.argument.isIdentifier.nameExact(tmpName).l
-      tmpArg0Argument.order shouldBe 1
       tmpArg0Argument.argumentIndex shouldBe 0
 
       val List(arg1) = constructorCall.astChildren.isIdentifier.nameExact("arg1").l
@@ -258,14 +254,12 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
 
       val List(receiver) = constructorCall.receiver.isCall.codeExact("foo.bar.MyClass").l
       receiver.name shouldBe Operators.fieldAccess
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(tmpArg0) = constructorCall.astChildren.isIdentifier.nameExact(tmpName).l
-      tmpArg0.order shouldBe 1
       tmpArg0.argumentIndex shouldBe 0
 
       val List(tmpArg0Argument) = constructorCall.argument.isIdentifier.nameExact(tmpName).l
-      tmpArg0Argument.order shouldBe 1
       tmpArg0Argument.argumentIndex shouldBe 0
 
       val List(returnTmp) = newCallBlock.astChildren.isIdentifier.l
@@ -299,14 +293,12 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       constructorCall.astChildren.isIdentifier.nameExact("Foo").size shouldBe 1
 
       val List(receiver) = constructorCall.receiver.isIdentifier.nameExact("Foo").l
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(tmpArg0) = constructorCall.astChildren.isIdentifier.nameExact(tmpName).l
-      tmpArg0.order shouldBe 1
       tmpArg0.argumentIndex shouldBe 0
 
       val List(tmpArg0Argument) = constructorCall.argument.isIdentifier.nameExact(tmpName).l
-      tmpArg0Argument.order shouldBe 1
       tmpArg0Argument.argumentIndex shouldBe 0
 
       val List(returnTmp) = newCallBlock.astChildren.isIdentifier.l

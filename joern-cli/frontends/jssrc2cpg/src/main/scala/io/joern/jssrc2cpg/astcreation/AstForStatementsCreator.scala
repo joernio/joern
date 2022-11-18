@@ -82,9 +82,13 @@ trait AstForStatementsCreator { this: AstCreator =>
         astForNode(Obj(finalizer))
       }
       .getOrElse(Ast())
-    val tryChildren = List(bodyAst, catchAst, finalizerAst)
-    setIndices(tryChildren, countEmpty = true)
-    Ast(tryNode).withChildren(tryChildren)
+    // The semantics of try statement children is defined by there order value.
+    // Thus we set the here explicitly and do not rely on the usual consecutive
+    // ordering.
+    setOrderExplicitly(bodyAst, 1)
+    setOrderExplicitly(catchAst, 2)
+    setOrderExplicitly(finalizerAst, 3)
+    Ast(tryNode).withChildren(List(bodyAst, catchAst, finalizerAst))
   }
 
   def astForIfStatement(ifStmt: BabelNodeInfo): Ast = {
@@ -96,8 +100,13 @@ trait AstForStatementsCreator { this: AstCreator =>
         astForNode(Obj(alternate))
       }
       .getOrElse(Ast())
-    val ifChildren = List(testAst, consequentAst, alternateAst)
-    setIndices(ifChildren)
+    // The semantics of if statement children is partially defined by there order value.
+    // The consequentAst must have order == 2 and alternateAst must have order == 3.
+    // Only to avoid collision we set testAst to 1
+    // because the semantics of it is already indicated via the condition edge.
+    setOrderExplicitly(testAst, 1)
+    setOrderExplicitly(consequentAst, 2)
+    setOrderExplicitly(alternateAst, 3)
     Ast(ifNode)
       .withChild(testAst)
       .withConditionEdge(ifNode, testAst.nodes.head)
@@ -109,7 +118,11 @@ trait AstForStatementsCreator { this: AstCreator =>
     val whileNode = createControlStructureNode(doWhileStmt, ControlStructureTypes.DO)
     val testAst   = astForNode(doWhileStmt.json("test"))
     val bodyAst   = astForNode(doWhileStmt.json("body"))
-    setIndices(List(bodyAst, testAst))
+    // The semantics of do-while statement children is partially defined by there order value.
+    // The bodyAst must have order == 1. Only to avoid collision we set testAst to 2
+    // because the semantics of it is already indicated via the condition edge.
+    setOrderExplicitly(bodyAst, 1)
+    setOrderExplicitly(testAst, 2)
     Ast(whileNode).withChild(bodyAst).withChild(testAst).withConditionEdge(whileNode, testAst.nodes.head)
   }
 
@@ -117,7 +130,11 @@ trait AstForStatementsCreator { this: AstCreator =>
     val whileNode = createControlStructureNode(whileStmt, ControlStructureTypes.WHILE)
     val testAst   = astForNode(whileStmt.json("test"))
     val bodyAst   = astForNode(whileStmt.json("body"))
-    setIndices(List(testAst, bodyAst))
+    // The semantics of while statement children is partially defined by there order value.
+    // The bodyAst must have order == 2. Only to avoid collision we set testAst to 1
+    // because the semantics of it is already indicated via the condition edge.
+    setOrderExplicitly(testAst, 1)
+    setOrderExplicitly(bodyAst, 2)
     Ast(whileNode).withChild(testAst).withConditionEdge(whileNode, testAst.nodes.head).withChild(bodyAst)
   }
 
@@ -139,7 +156,14 @@ trait AstForStatementsCreator { this: AstCreator =>
       }
       .getOrElse(Ast())
     val bodyAst = astForNode(forStmt.json("body"))
-    setIndices(List(initAst, testAst, updateAst, bodyAst), countEmpty = true)
+
+    // The semantics of for statement children is defined by there order value.
+    // Thus we set the here explicitly and do not rely on the usual consecutive
+    // ordering.
+    setOrderExplicitly(initAst, 1)
+    setOrderExplicitly(testAst, 2)
+    setOrderExplicitly(updateAst, 3)
+    setOrderExplicitly(bodyAst, 4)
     Ast(forNode).withChild(initAst).withChild(testAst).withChild(updateAst).withChild(bodyAst)
   }
 
@@ -229,6 +253,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val switchExpressionAst = astForNode(switchStmt.json("discriminant"))
 
     val blockNode = createBlockNode(switchStmt)
+    val blockAst = Ast(blockNode)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
@@ -238,11 +263,15 @@ trait AstForStatementsCreator { this: AstCreator =>
     scope.popScope()
     localAstParentStack.pop()
 
-    setIndices(List(switchExpressionAst, Ast(blockNode)))
+    // The semantics of switch statement children is partially defined by there order value.
+    // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
+    // because the semantics of it is already indicated via the condition edge.
+    setOrderExplicitly(switchExpressionAst, 1)
+    setOrderExplicitly(blockAst, 2)
     Ast(switchNode)
       .withChild(switchExpressionAst)
       .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
-      .withChild(Ast(blockNode).withChildren(casesAsts))
+      .withChild(blockAst.withChildren(casesAsts))
   }
 
   /** De-sugaring from:

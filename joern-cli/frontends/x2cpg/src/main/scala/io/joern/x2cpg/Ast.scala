@@ -1,8 +1,8 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew, NewBlock, NewCall, NewControlStructure, NewFieldIdentifier, NewIdentifier, NewLiteral, NewMethodRef, NewNode, NewReturn, NewTypeRef, NewUnknown}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 case class AstEdge(src: NewNode, dst: NewNode)
@@ -146,6 +146,28 @@ case class Ast(
 
   def withArgEdges(src: NewNode, dsts: Seq[NewNode]): Ast = {
     this.copy(argEdges = argEdges ++ dsts.map(AstEdge(src, _)))
+  }
+
+  def withArgEdges(src: NewNode, dsts: Seq[NewNode], argIndexStart: Int): Ast = {
+    var index = argIndexStart
+    this.copy(argEdges = argEdges ++ dsts.map { dst =>
+      addArgumentIndex(dst, index)
+      index += 1
+      AstEdge(src, dst)
+    })
+  }
+
+  private def addArgumentIndex(node: NewNode, argIndex: Int): Unit = node match {
+    case n: NewBlock            => n.argumentIndex = argIndex
+    case n: NewCall             => n.argumentIndex = argIndex
+    case n: NewFieldIdentifier  => n.argumentIndex = argIndex
+    case n: NewIdentifier       => n.argumentIndex = argIndex
+    case n: NewMethodRef        => n.argumentIndex = argIndex
+    case n: NewTypeRef          => n.argumentIndex = argIndex
+    case n: NewUnknown          => n.argumentIndex = argIndex
+    case n: NewControlStructure => n.argumentIndex = argIndex
+    case n: NewLiteral          => n.argumentIndex = argIndex
+    case n: NewReturn           => n.argumentIndex = argIndex
   }
 
   def withConditionEdges(src: NewNode, dsts: List[NewNode]): Ast = {

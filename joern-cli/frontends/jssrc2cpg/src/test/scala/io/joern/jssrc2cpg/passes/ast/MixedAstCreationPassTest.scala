@@ -1086,14 +1086,12 @@ class MixedAstCreationPassTest extends AbstractPassTest {
 
       val List(receiver) = fooCall.receiver.isIdentifier.l
       receiver.name shouldBe "foo"
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(argumentThis) = fooCall.astChildren.isIdentifier.nameExact("this").l
-      argumentThis.order shouldBe 1
       argumentThis.argumentIndex shouldBe 0
 
       val List(argument1) = fooCall.astChildren.isIdentifier.nameExact("args").l
-      argument1.order shouldBe 2
       argument1.argumentIndex shouldBe 1
     }
 
@@ -1104,14 +1102,12 @@ class MixedAstCreationPassTest extends AbstractPassTest {
 
       val List(receiver) = fooCall.receiver.isIdentifier.l
       receiver.name shouldBe "foo"
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(argumentThis) = fooCall.astChildren.isIdentifier.nameExact("this").l
-      argumentThis.order shouldBe 1
       argumentThis.argumentIndex shouldBe 0
 
       val List(argument1) = fooCall.astChildren.isCall.codeExact("x.bar()").l
-      argument1.order shouldBe 2
       argument1.argumentIndex shouldBe 1
     }
   }
