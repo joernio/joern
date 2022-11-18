@@ -469,7 +469,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
     scope.popScope()
     localAstParentStack.pop()
 
+    val allBlockChildren = propertiesAsts :+ Ast(tmpNode)
     setArgIndices(propertiesAsts)
-    Ast(blockNode).withChildren(propertiesAsts).withChild(Ast(tmpNode))
+    Ast(blockNode).withChildren(allBlockChildren)
   }
 }
