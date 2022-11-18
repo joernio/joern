@@ -108,7 +108,6 @@ trait AstNodeBuilder { this: AstCreator =>
     val receiverRoot = receiver.flatMap(_.root).toList
     receiverRoot match {
       case List(x: ExpressionNew) =>
-        x.argumentIndex = 0
         x.order = 0
       case _ =>
     }

@@ -1489,7 +1489,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     val List(pushCallReceiver) = pushCall.receiver.isCall.l
     pushCallReceiver.name shouldBe Operators.fieldAccess
-    pushCallReceiver.argumentIndex shouldBe 0
+    pushCallReceiver.argumentIndex shouldBe -1
 
     val pushCallReceiverBase = pushCallReceiver.argument(1).asInstanceOf[Identifier]
     pushCallReceiverBase.name shouldBe "_tmp_0"
