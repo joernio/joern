@@ -2,7 +2,21 @@ package io.joern.x2cpg
 
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew, NewBlock, NewCall, NewControlStructure, NewFieldIdentifier, NewIdentifier, NewLiteral, NewMethodRef, NewNode, NewReturn, NewTypeRef, NewUnknown}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
+  ExpressionNew,
+  NewBlock,
+  NewCall,
+  NewControlStructure,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewLiteral,
+  NewMethodRef,
+  NewNode,
+  NewReturn,
+  NewTypeRef,
+  NewUnknown
+}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 case class AstEdge(src: NewNode, dst: NewNode)

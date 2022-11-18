@@ -80,10 +80,7 @@ trait AstNodeBuilder { this: AstCreator =>
     ast.root.foreach { case expr: ExpressionNew => expr.order = order }
   }
 
-  protected def setArgIndices(
-    asts: List[Ast],
-    base: Option[Ast] = None
-  ): Unit = {
+  protected def setArgIndices(asts: List[Ast], base: Option[Ast] = None): Unit = {
     var currIndex = 1
 
     asts.foreach { a =>
@@ -96,7 +93,7 @@ trait AstNodeBuilder { this: AstCreator =>
           currIndex = currIndex + 1
       }
     }
-    base.flatMap(_.root).foreach{ case expr: ExpressionNew => expr.argumentIndex = 0}
+    base.flatMap(_.root).foreach { case expr: ExpressionNew => expr.argumentIndex = 0 }
   }
 
   protected def createCallAst(

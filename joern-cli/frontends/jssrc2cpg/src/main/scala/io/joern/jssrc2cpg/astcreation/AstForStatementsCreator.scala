@@ -253,7 +253,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val switchExpressionAst = astForNode(switchStmt.json("discriminant"))
 
     val blockNode = createBlockNode(switchStmt)
-    val blockAst = Ast(blockNode)
+    val blockAst  = Ast(blockNode)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
