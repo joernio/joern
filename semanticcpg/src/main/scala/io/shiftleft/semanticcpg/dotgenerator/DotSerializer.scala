@@ -4,10 +4,11 @@ import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.utils.MemberAccess
+import org.apache.commons.lang.StringUtils
 
-import java.util.Optional
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
+import scala.jdk.OptionConverters.RichOptional
 import scala.language.postfixOps
 
 object DotSerializer {
@@ -36,6 +37,7 @@ object DotSerializer {
       case Some(r) => namedGraphBegin(r)
       case None    => defaultGraphBegin()
     }
+    sb.append("node [shape=\"rect\"];\n")
     val nodeStrings = graph.vertices.map(nodeToDot)
     val edgeStrings = graph.edges.map(e => edgeToDot(e, withEdgeTypes))
     val subgraphStrings = graph.subgraph.zipWithIndex.map { case ((subgraph, nodes), idx) =>
@@ -61,23 +63,30 @@ object DotSerializer {
   }
 
   private def stringRepr(vertex: StoredNode): String = {
-    val maybeLineNo: Optional[AnyRef] = vertex.propertyOption(PropertyNames.LINE_NUMBER)
-    escape(vertex match {
-      case call: Call                            => (call.name, call.code).toString
-      case expr: Expression                      => (expr.label, expr.code, toCfgNode(expr).code).toString
-      case method: Method                        => (method.label, method.name).toString
-      case ret: MethodReturn                     => (ret.label, ret.typeFullName).toString
-      case param: MethodParameterIn              => ("PARAM", param.code).toString
-      case local: Local                          => (local.label, s"${local.code}: ${local.typeFullName}").toString
-      case target: JumpTarget                    => (target.label, target.name).toString
-      case modifier: Modifier                    => (modifier.label, modifier.modifierType).toString()
-      case annoAssign: AnnotationParameterAssign => (annoAssign.label, annoAssign.code).toString()
-      case annoParam: AnnotationParameter        => (annoParam.label, annoParam.code).toString()
-      case typ: Type                             => (typ.label, typ.name).toString()
-      case typeDecl: TypeDecl                    => (typeDecl.label, typeDecl.name).toString()
-      case member: Member                        => (member.label, member.name).toString()
-      case _                                     => ""
-    }) + (if (maybeLineNo.isPresent) s"<SUB>${maybeLineNo.get()}</SUB>" else "")
+    val lineOpt = vertex.propertyOption(PropertyNames.LINE_NUMBER).toScala.map(_.toString)
+    val list = (vertex match {
+      case call: Call                            => List(call.label, call.name, call.code)
+      case expr: Expression                      => List(expr.label, expr.code, toCfgNode(expr).code)
+      case method: Method                        => List(method.label, method.name)
+      case ret: MethodReturn                     => List(ret.label, ret.typeFullName)
+      case param: MethodParameterIn              => List("PARAM", param.code)
+      case local: Local                          => List(local.label, s"${local.code}: ${local.typeFullName}")
+      case target: JumpTarget                    => List(target.label, target.name)
+      case modifier: Modifier                    => List(modifier.label, modifier.modifierType)
+      case annoAssign: AnnotationParameterAssign => List(annoAssign.label, annoAssign.code)
+      case annoParam: AnnotationParameter        => List(annoParam.label, annoParam.code)
+      case typ: Type                             => List(typ.label, typ.name)
+      case typeDecl: TypeDecl                    => List(typeDecl.label, typeDecl.name)
+      case member: Member                        => List(member.label, member.name)
+      case others: AstNode                       => List(others.label, others.code)
+    }).map(StringUtils.abbreviate(_, 50))
+      .map(StringUtils.normalizeSpace)
+      .map(escape)
+    (lineOpt match {
+      case Some(line) => s"${list.head}, $line" :: list.tail
+      case None       => list
+    }).distinct // expr.code, toCfgNode(expr).code could be the same
+      .mkString("<BR/>")
   }
 
   private def toCfgNode(node: StoredNode): CfgNode = {
