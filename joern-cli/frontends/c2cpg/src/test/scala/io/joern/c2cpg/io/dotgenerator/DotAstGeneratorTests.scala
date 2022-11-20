@@ -32,7 +32,7 @@ class DotAstGeneratorTests extends CCodeToCpgSuite {
       inside(cpg.method.name("my_func").dotAst.l) { case List(x) =>
         x should (
           startWith("digraph \"my_func\"") and
-            include("""[label = <CONTROL_STRUCTURE, 5<BR/>if (y &gt; 42)>]""") and
+            include("""[label = <CONTROL_STRUCTURE, 5<BR/>if (y &gt; 42)> ]""") and
             endWith("}\n")
         )
       }
@@ -60,9 +60,9 @@ class DotAstGeneratorTests extends CCodeToCpgSuite {
       inside(cpg.method.name("lemon").dotAst.l) { case List(x) =>
         x should (
           startWith("digraph \"lemon\"") and
-            include("""[label = <CALL, 18<BR/>goog<BR/>goog(&quot;\&quot;yes\&quot;&quot;)>]""") and
+            include("""[label = <CALL, 18<BR/>goog<BR/>goog(&quot;\&quot;yes\&quot;&quot;)> ]""") and
             include(
-              """[label = <LITERAL, 18<BR/>&quot;\&quot;yes\&quot;&quot;<BR/>goog(&quot;\&quot;yes\&quot;&quot;)>]"""
+              """[label = <LITERAL, 18<BR/>&quot;\&quot;yes\&quot;&quot;<BR/>goog(&quot;\&quot;yes\&quot;&quot;)> ]"""
             ) and
             endWith("}\n")
         )

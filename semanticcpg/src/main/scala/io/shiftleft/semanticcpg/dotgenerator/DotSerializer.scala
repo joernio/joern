@@ -105,7 +105,7 @@ object DotSerializer {
   }
 
   private def nodeToDot(node: StoredNode): String = {
-    s""""${node.id}" [label = <${stringRepr(node)}>]""".stripMargin
+    s""""${node.id}" [label = <${stringRepr(node)}> ]""".stripMargin
   }
 
   private def edgeToDot(edge: Edge, withEdgeTypes: Boolean): String = {
