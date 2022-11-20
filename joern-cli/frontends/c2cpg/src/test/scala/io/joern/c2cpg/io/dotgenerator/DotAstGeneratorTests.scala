@@ -32,7 +32,7 @@ class DotAstGeneratorTests extends CCodeToCpgSuite {
       inside(cpg.method.name("my_func").dotAst.l) { case List(x) =>
         x should (
           startWith("digraph \"my_func\"") and
-            include("""[label = <CALL, 5<BR/>&lt;operator&gt;.greaterThan<BR/>y &gt; 42>]""") and
+            include("""[label = <CONTROL_STRUCTURE, 5<BR/>if (y &gt; 42)>]""") and
             endWith("}\n")
         )
       }
