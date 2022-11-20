@@ -66,7 +66,7 @@ object DotSerializer {
     val lineOpt = vertex.propertyOption(PropertyNames.LINE_NUMBER).toScala.map(_.toString)
     val list = (vertex match {
       case call: Call               => List(call.label, call.name, call.code)
-      case expr: Expression         => List(expr.label, expr.code)
+      case expr: Expression         => List(expr.label, expr.code, toCfgNode(expr).code)
       case ret: MethodReturn        => List(ret.label, ret.code, ret.typeFullName)
       case param: MethodParameterIn => List("PARAMETER", param.name, param.typeFullName)
       case local: Local             => List(local.label, local.name, local.typeFullName)
