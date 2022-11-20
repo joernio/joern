@@ -52,7 +52,7 @@ class DotAstGeneratorTests extends CCodeToCpgSuite {
 
     "allow plotting sub trees of methods" in {
       inside(cpg.method.ast.isControlStructure.code(".*y > 42.*").dotAst.l) { case List(x, _) =>
-        x should (include("y &gt; 42") and include("IDENTIFIER, 5<BR/>y<BR/>y ") and not include "x * 2")
+        x should (include("y &gt; 42") and include("IDENTIFIER, 5<BR/>y") and not include "x * 2")
       }
     }
 
