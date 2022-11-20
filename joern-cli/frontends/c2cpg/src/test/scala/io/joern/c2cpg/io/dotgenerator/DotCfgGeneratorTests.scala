@@ -21,7 +21,7 @@ class DotCfgGeneratorTests extends CCodeToCpgSuite {
       inside(cpg.method.name("main").dotCfg.l) { case List(dotStr) =>
         dotStr should (
           startWith("digraph \"main\" {") and
-            include("(&lt;operator&gt;.assignment,i = 0)") and
+            include("&lt;operator&gt;.assignment<BR/>i = 0") and
             endWith("}\n")
         )
       }
