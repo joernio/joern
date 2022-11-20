@@ -61,9 +61,7 @@ class DotAstGeneratorTests extends CCodeToCpgSuite {
         x should (
           startWith("digraph \"lemon\"") and
             include("""[label = <CALL, 18<BR/>goog<BR/>goog(&quot;\&quot;yes\&quot;&quot;)> ]""") and
-            include(
-              """[label = <LITERAL, 18<BR/>&quot;\&quot;yes\&quot;&quot;<BR/>goog(&quot;\&quot;yes\&quot;&quot;)> ]"""
-            ) and
+            include("""[label = <LITERAL, 18<BR/>&quot;\&quot;yes\&quot;&quot;> ]""") and
             endWith("}\n")
         )
       }
