@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.psi.{
   KtClassOrObject,
   KtDestructuringDeclarationEntry,
   KtExpression,
+  KtFile,
   KtLambdaArgument,
   KtLambdaExpression,
   KtNameReferenceExpression,
@@ -107,4 +108,6 @@ trait TypeInfoProvider {
   def isRefToCompanionObject(expr: KtNameReferenceExpression): Boolean
 
   def typeFullName(expr: KtClassOrObject, defaultValue: String): String
+
+  def typeFromImports(name: String, file: KtFile): Option[String]
 }
