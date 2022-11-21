@@ -284,7 +284,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val mAst = if (methodBlockContent.isEmpty) {
       methodStubAst(methodNode, thisNode +: paramNodes, methodReturnNode, List(virtualModifierNode))
     } else {
-      setIndices(methodBlockContent)
+      setArgIndices(methodBlockContent)
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
       methodAst(methodNode, thisNode +: paramNodes, bodyAst, methodReturnNode)
     }
@@ -357,7 +357,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         }
       case _ => createBlockStatementAsts(bodyJson("body"))
     }
-    setIndices(methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts)
+    setArgIndices(methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts)
 
     val methodReturnNode = createMethodReturnNode(func)
 

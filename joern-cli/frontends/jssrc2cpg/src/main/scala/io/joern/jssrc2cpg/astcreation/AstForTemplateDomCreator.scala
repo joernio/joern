@@ -15,7 +15,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
     val closingAst   = safeObj(jsxElem.json, "closingElement").map(e => astForNode(Obj(e))).getOrElse(Ast())
 
     val allChildrenAsts = openingAst +: childrenAsts :+ closingAst
-    setIndices(allChildrenAsts)
+    setArgIndices(allChildrenAsts)
 
     Ast(domNode).withChildren(allChildrenAsts)
   }
@@ -28,14 +28,14 @@ trait AstForTemplateDomCreator { this: AstCreator =>
       jsxFragment.columnNumber
     )
     val childrenAsts = astForNodes(jsxFragment.json("children").arr.toList)
-    setIndices(childrenAsts)
+    setArgIndices(childrenAsts)
     Ast(domNode).withChildren(childrenAsts)
   }
 
   protected def astForJsxAttribute(jsxAttr: BabelNodeInfo): Ast = {
     val domNode  = createTemplateDomNode(jsxAttr.node.toString, jsxAttr.code, jsxAttr.lineNumber, jsxAttr.columnNumber)
     val valueAst = safeObj(jsxAttr.json, "value").map(e => astForNode(Obj(e))).getOrElse(Ast())
-    setIndices(List(valueAst))
+    setArgIndices(List(valueAst))
     Ast(domNode).withChild(valueAst)
   }
 
@@ -47,7 +47,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
       jsxOpeningElem.columnNumber
     )
     val childrenAsts = astForNodes(jsxOpeningElem.json("attributes").arr.toList)
-    setIndices(childrenAsts)
+    setArgIndices(childrenAsts)
     Ast(domNode).withChildren(childrenAsts)
   }
 
@@ -76,7 +76,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
       case JSXEmptyExpression => Ast()
       case _                  => astForNode(nodeInfo.json)
     }
-    setIndices(List(exprAst))
+    setArgIndices(List(exprAst))
     Ast(domNode).withChild(exprAst)
   }
 
@@ -88,7 +88,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
       jsxSpreadAttr.columnNumber
     )
     val argAst = astForNode(jsxSpreadAttr.json("argument"))
-    setIndices(List(argAst))
+    setArgIndices(List(argAst))
     Ast(domNode).withChild(argAst)
   }
 

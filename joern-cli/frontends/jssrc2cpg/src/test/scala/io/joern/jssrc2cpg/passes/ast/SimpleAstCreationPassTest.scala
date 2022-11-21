@@ -503,14 +503,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(receiver) = fooCall.receiver.isIdentifier.l
       receiver.name shouldBe "foo"
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(argumentThis) = fooCall.astChildren.isIdentifier.nameExact("this").l
-      argumentThis.order shouldBe 1
       argumentThis.argumentIndex shouldBe 0
 
       val List(argument1) = fooCall.astChildren.isIdentifier.nameExact("x").l
-      argument1.order shouldBe 2
       argument1.argumentIndex shouldBe 1
     }
 
@@ -528,7 +526,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       receiver shouldBe receiverViaAst
       receiver.code shouldBe "(_tmp_0 = x.foo(y)).bar"
       receiver.name shouldBe Operators.fieldAccess
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(barIdentifier) = receiver.astChildren.isFieldIdentifier.l
       barIdentifier.canonicalName shouldBe "bar"
@@ -537,7 +535,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(tmpAssignment) = receiver.astChildren.isCall.l
       tmpAssignment.code shouldBe "(_tmp_0 = x.foo(y))"
       tmpAssignment.name shouldBe "<operator>.assignment"
-      tmpAssignment.order shouldBe 1
 
       val List(tmpIdentifier) = tmpAssignment.astChildren.isIdentifier.l
       tmpIdentifier.name shouldBe "_tmp_0"
@@ -552,11 +549,9 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(thisArg) = barCall.astChildren.isIdentifier.argumentIndex(0).l
       thisArg.name shouldBe "_tmp_0"
-      thisArg.order shouldBe 1
 
       val List(zArg) = barCall.astChildren.isIdentifier.argumentIndex(1).l
       zArg.name shouldBe "z"
-      zArg.order shouldBe 2
     }
 
     "be correct for call on object" in AstFixture("""
@@ -609,10 +604,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(baseArg, arg) = call.argument.l.sortBy(_.order)
       baseArg.code shouldBe "a"
       baseArg.argumentIndex shouldBe 0
-      baseArg.order shouldBe 1
       arg.code shouldBe "x"
       arg.argumentIndex shouldBe 1
-      arg.order shouldBe 2
     }
 
     "have block for while body for while statement with brackets" in AstFixture("while (x < 0) {}") { cpg =>
@@ -1489,23 +1482,23 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     val List(pushCallReceiver) = pushCall.receiver.isCall.l
     pushCallReceiver.name shouldBe Operators.fieldAccess
-    pushCallReceiver.argumentIndex shouldBe 0
+    pushCallReceiver.argumentIndex shouldBe -1
 
     val pushCallReceiverBase = pushCallReceiver.argument(1).asInstanceOf[Identifier]
     pushCallReceiverBase.name shouldBe "_tmp_0"
-    pushCallReceiverBase.order shouldBe 1
+    pushCallReceiverBase.argumentIndex shouldBe 1
 
     val pushCallReceiverMember = pushCallReceiver.argument(2).asInstanceOf[FieldIdentifier]
     pushCallReceiverMember.canonicalName shouldBe "push"
-    pushCallReceiverMember.order shouldBe 2
+    pushCallReceiverMember.argumentIndex shouldBe 2
 
     val pushCallThis = pushCall.argument(1).asInstanceOf[Identifier]
     pushCallThis.name shouldBe "_tmp_0"
-    pushCallThis.order shouldBe 1
+    pushCallThis.argumentIndex shouldBe 1
 
     val pushCallArg = pushCall.argument(2).asInstanceOf[Literal]
     pushCallArg.code shouldBe element.toString
-    pushCallArg.order shouldBe 2
+    pushCallArg.argumentIndex shouldBe 2
   }
 
 }
