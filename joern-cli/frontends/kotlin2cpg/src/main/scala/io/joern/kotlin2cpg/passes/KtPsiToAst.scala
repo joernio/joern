@@ -205,7 +205,7 @@ trait KtPsiToAst {
     val explicitBaseTypeFullNames = ktClass.getSuperTypeListEntries.asScala
       .map(_.getTypeAsUserType)
       .collect { case t if t != null => t.getText }
-      // TODO: write test and pick up code from git@github.com:RedApparat/Fotoapparat.git
+      .map { typ => typeInfoProvider.typeFromImports(typ, ktClass.getContainingKtFile).getOrElse(typ) }
       .toList
 
     val baseTypeFullNames    = typeInfoProvider.inheritanceTypes(ktClass, explicitBaseTypeFullNames)

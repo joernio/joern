@@ -30,6 +30,8 @@ import org.jetbrains.kotlin.psi.{
   KtDestructuringDeclarationEntry,
   KtElement,
   KtExpression,
+  KtFile,
+  KtImportDirective,
   KtLambdaExpression,
   KtNameReferenceExpression,
   KtNamedFunction,
@@ -509,18 +511,27 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     s"${TypeConstants.javaLangObject}($paramsString)"
   }
 
-  def parameterType(expr: KtParameter, defaultValue: String): String = {
+  def parameterType(parameter: KtParameter, defaultValue: String): String = {
     // TODO: add specific test for no binding info of parameter
     // triggered by exception in https://github.com/agrosner/DBFlow
     // TODO: ...also test cases for non-null binding info for other fns
     val render = for {
-      mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
+      mapForEntity <- Option(bindingsForEntity(bindingContext, parameter))
       variableDesc <- Option(mapForEntity.get(BindingContext.VALUE_PARAMETER.getKey))
       render = TypeRenderer.render(variableDesc.getType)
       if isValidRender(render)
     } yield render
 
-    render.getOrElse(defaultValue)
+    render match {
+      case Some(value) if value == Defines.UnresolvedNamespace =>
+        Option(parameter.getTypeReference)
+          .map { typeRef =>
+            typeFromImports(typeRef.getText, parameter.getContainingKtFile).getOrElse(typeRef.getText)
+          }
+          .getOrElse(defaultValue)
+      case Some(aValue) => aValue
+      case None         => defaultValue
+    }
   }
 
   def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean = {
@@ -742,6 +753,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         case null => None
       }
       .getOrElse(defaultValue)
+  }
+  def typeFromImports(name: String, file: KtFile): Option[String] = {
+    file.getImportList.getImports.asScala.flatMap { directive =>
+      if (directive.getImportedName != null && directive.getImportedName.toString == name.stripSuffix("?"))
+        Some(directive.getImportPath.getPathStr)
+      else None
+    }.headOption
   }
 
   def implicitParameterName(expr: KtLambdaExpression): Option[String] = {
