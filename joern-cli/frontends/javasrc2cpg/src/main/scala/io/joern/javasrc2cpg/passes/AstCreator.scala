@@ -543,7 +543,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val implementedTypes = decl.getImplementedTypes.asScala
       val inheritsFromTypeNames =
         (extendedTypes ++ implementedTypes).flatMap { typ =>
-          typeInfoCalc.fullName(typ)
+          typeInfoCalc.fullName(typ).orElse(scopeStack.lookupVariableType(typ.getNameAsString))
         }
       val maybeJavaObjectType = if (extendedTypes.isEmpty) {
         typeInfoCalc.registerType(TypeConstants.Object)
