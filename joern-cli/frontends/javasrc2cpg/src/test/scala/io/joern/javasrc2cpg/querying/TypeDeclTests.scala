@@ -9,6 +9,26 @@ import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import java.io.File
 
 class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
+  "typedecls extending unresolved types available in imports should have inheritsFrom set" in {
+    val cpg = code("""package io.vrooom.vulnerableapp;
+        |
+        |import android.content.BroadcastReceiver;
+        |import android.content.Context;
+        |import android.content.Intent;
+        |import android.util.Log;
+        |
+        |public class CustomReceiver extends BroadcastReceiver {
+        |    public WriteFileBroadcastReceiver() {}
+        |    @Override
+        |    public void onReceive(Context context, Intent intent) {
+        |    }
+        |}
+        |""".stripMargin)
+    inside(cpg.typeDecl.name("CustomReceiver").inheritsFromTypeFullName.l) { case List(name) =>
+      name shouldBe "android.content.BroadcastReceiver"
+    }
+  }
+
   "the AST for an interface declaration" should {
     "not have a default constructor defined" in {
       val cpg = code("""
