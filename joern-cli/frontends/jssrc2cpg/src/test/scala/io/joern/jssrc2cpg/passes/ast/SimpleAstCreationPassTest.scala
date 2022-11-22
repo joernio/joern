@@ -334,11 +334,38 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       checkObjectInitialization(block, ("foo", "foo")) // ref to foo
     }
 
-    "have correct structure for object with computed property name" ignore AstFixture("""
+    "have correct structure for object with computed property name" in AstFixture("""
       |var x = {
       | [ 1 + 1 ]: value()
-      |}
-      |""".stripMargin) { _ => }
+      |}""".stripMargin) { cpg =>
+      val List(methodBlock) = cpg.method.nameExact(":program").astChildren.isBlock.l
+      val List(localX)      = methodBlock.local.nameExact("x").l
+      val List(assignment)  = methodBlock.astChildren.isCall.l
+      val List(identifierX) = assignment.astChildren.isIdentifier.l
+
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+
+      val List(block) = assignment.astChildren.isBlock.l
+      checkObjectInitialization(block, ("_computed_object_property_0", "value()"))
+    }
+
+    "have correct structure for object with property names with quotes" in AstFixture("""var x = {
+        | "a": 1,
+        | 'b': 2
+        |}""".stripMargin) { cpg =>
+      val List(methodBlock) = cpg.method.nameExact(":program").astChildren.isBlock.l
+      val List(localX)      = methodBlock.local.nameExact("x").l
+      val List(assignment)  = methodBlock.astChildren.isCall.l
+      val List(identifierX) = assignment.astChildren.isIdentifier.l
+
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+
+      val List(block) = assignment.astChildren.isBlock.l
+      checkObjectInitialization(block, ("a", "1"))
+      checkObjectInitialization(block, ("b", "2"))
+    }
 
     "have correct structure for conditional expression" in AstFixture("x ? y : z;") { cpg =>
       val List(program) = cpg.method.nameExact(":program").l
