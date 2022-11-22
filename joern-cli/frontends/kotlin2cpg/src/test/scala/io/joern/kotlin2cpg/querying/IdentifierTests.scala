@@ -38,4 +38,40 @@ class IdentifierTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       cpg.identifier("args").columnNumber.l.head shouldBe 18
     }
   }
+
+  "CPG for code with various missing types, but some information available in the imports" should {
+    val cpg = code("""package io.vrooom.vulnerableapp
+       |
+       |import android.os.Bundle
+       |import android.support.v7.app.AppCompatActivity
+       |import android.webkit.WebView
+       |import android.content.IntentFilter
+       |
+       |class MainActivity : AppCompatActivity() {
+       |    override fun onCreate(savedInstanceState: Bundle?) {
+       |        super.onCreate(savedInstanceState)
+       |        setContentView(R.layout.activity_main)
+       |
+       |        val filter: IntentFilter = IntentFilter()
+       |        filter.addAction(packageName + "io.vrooom.intent.action.WRITE_FILE")
+       |        val receiver = WriteFileBroadcastReceiver()
+       |        registerReceiver(receiver, filter)
+       |    }
+       |}
+       |""".stripMargin)
+
+    "contain a LOCAL node with the TYPE_FULL_NAME taken from the imports" in {
+      cpg.identifier("filter").typeFullName.l.head shouldBe "android.content.IntentFilter"
+    }
+
+    "contain an IDENTIFIER node with the TYPE_FULL_NAME taken from the LOCAL node" in {
+      cpg.call
+        .code("registerReceiver.*")
+        .argument
+        .codeExact("filter")
+        .isIdentifier
+        .typeFullName
+        .head shouldBe "android.content.IntentFilter"
+    }
+  }
 }
