@@ -40,13 +40,13 @@ class IdentifierTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "CPG for code with various missing types, but some information available in the imports" should {
-    val cpg = code("""|package io.vrooom.vulnerableapp
+    val cpg = code("""package io.vrooom.vulnerableapp
        |
        |import android.os.Bundle
        |import android.support.v7.app.AppCompatActivity
        |import android.webkit.WebView
        |import android.content.IntentFilter
-
+       |
        |class MainActivity : AppCompatActivity() {
        |    override fun onCreate(savedInstanceState: Bundle?) {
        |        super.onCreate(savedInstanceState)
