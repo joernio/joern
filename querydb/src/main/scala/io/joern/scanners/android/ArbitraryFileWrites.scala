@@ -178,7 +178,7 @@ object ArbitraryFileWrites extends QueryBundle {
                  |class MainActivity : AppCompatActivity() {
                  |    override fun onCreate(savedInstanceState: Bundle?) {
                  |        super.onCreate(savedInstanceState)
-                 |        setContentView(R.layout.activity_main
+                 |        setContentView(R.layout.activity_main)
                  |
                  |        val filter: IntentFilter = IntentFilter()
                  |        filter.addAction(packageName + "io.vrooom.intent.action.WRITE_FILE")
