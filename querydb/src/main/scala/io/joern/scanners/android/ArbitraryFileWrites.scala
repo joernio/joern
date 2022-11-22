@@ -165,7 +165,7 @@ object ArbitraryFileWrites extends QueryBundle {
                  |    }
                  |}
                  |""".stripMargin,
-              "io/vrooom/vulnerableapp/WriteFileBroadcastReceiver.kt"
+              "WriteFileBroadcastReceiver.kt"
             ),
             CodeSnippet(
               """|package io.vrooom.vulnerableapp
@@ -187,7 +187,7 @@ object ArbitraryFileWrites extends QueryBundle {
                  |    }
                  |}
                  |""".stripMargin,
-              "io/vrooom/vulnerableapp/MainActivity.kt"
+              "MainActivity.kt"
             ),
             CodeSnippet(
               """|<?xml version="1.0" encoding="utf-8"?>
