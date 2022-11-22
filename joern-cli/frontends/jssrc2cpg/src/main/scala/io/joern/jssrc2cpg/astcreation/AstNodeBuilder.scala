@@ -330,11 +330,14 @@ trait AstNodeBuilder { this: AstCreator =>
     name: String,
     line: Option[Integer],
     column: Option[Integer]
-  ): NewFieldIdentifier = NewFieldIdentifier()
-    .code(name)
-    .canonicalName(name)
-    .lineNumber(line)
-    .columnNumber(column)
+  ): NewFieldIdentifier = {
+    val cleanedName = stripQuotes(name)
+    NewFieldIdentifier()
+      .code(cleanedName)
+      .canonicalName(cleanedName)
+      .lineNumber(line)
+      .columnNumber(column)
+  }
 
   protected def createLiteralNode(
     code: String,

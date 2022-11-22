@@ -8,8 +8,6 @@ import io.joern.x2cpg.testfixtures.CfgTestFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 
-import scala.annotation.unused
-
 class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) {
 
   "CFG generation for destructing assignment" should {
@@ -153,17 +151,28 @@ class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) 
       succOf("{a, ...rest}") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for object destruction assignment with computed property name" ignore {
-      @unused
+    "be correct for object destruction assignment with computed property name" in {
       implicit val cpg: Cpg = code("var {[propName]: n} = x")
+      succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
+      succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
+      succOf("x") shouldBe expected(("_tmp_0 = x", AlwaysEdge))
+
+      succOf("_tmp_0 = x") shouldBe expected(("n", AlwaysEdge))
+      succOf("n") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
+      succOf("_tmp_0", 1) shouldBe expected(("propName", AlwaysEdge))
+      succOf("propName") shouldBe expected(("_tmp_0.propName", AlwaysEdge))
+      succOf("_tmp_0.propName") shouldBe expected(("n = _tmp_0.propName", AlwaysEdge))
+
+      succOf("n = _tmp_0.propName") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("{[propName]: n}", AlwaysEdge))
+      succOf("{[propName]: n}") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for nested object destruction assignment with defaults as parameter" in {
       implicit val cpg: Cpg = code("""
-                                           |function userId({id = {}, b} = {}) {
-                                           |  return id
-                                           |}
-                                           |""".stripMargin)
+       |function userId({id = {}, b} = {}) {
+       |  return id
+       |}""".stripMargin)
       succOf("userId", NodeTypes.METHOD) shouldBe expected(("_tmp_1", AlwaysEdge))
       succOf("_tmp_1") shouldBe expected(("param1_0", AlwaysEdge))
       succOf("param1_0") shouldBe expected(("void 0", AlwaysEdge))
@@ -211,10 +220,9 @@ class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) 
 
     "be correct for object destruction assignment as parameter" in {
       implicit val cpg: Cpg = code("""
-                                     |function userId({id}) {
-                                     |  return id
-                                     |}
-                                     |""".stripMargin)
+       |function userId({id}) {
+       |  return id
+       |}""".stripMargin)
       succOf("userId", NodeTypes.METHOD) shouldBe expected(("id", AlwaysEdge))
       succOf("id") shouldBe expected(("param1_0", AlwaysEdge))
       succOf("param1_0") shouldBe expected(("id", 1, AlwaysEdge))

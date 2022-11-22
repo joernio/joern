@@ -836,9 +836,28 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       tmpReturnIdentifier.name shouldBe "_tmp_0"
     }
 
-    "have correct structure for object destruction assignment with computed property name" ignore AstFixture(
+    "have correct structure for object destruction assignment with computed property name" in AstFixture(
       "var {[propName]: n} = x"
-    ) { _ => }
+    ) { cpg =>
+      val List(program)      = cpg.method.nameExact(":program").l
+      val List(programBlock) = program.astChildren.isBlock.l
+      programBlock.astChildren.isLocal.nameExact("n").size shouldBe 1
+
+      val List(destructionBlock) = programBlock.astChildren.isBlock.l
+      destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
+      destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+      val List(assignmentToN) = destructionBlock.astChildren.isCall.codeExact("n = _tmp_0.propName").l
+      assignmentToN.astChildren.isIdentifier.size shouldBe 1
+
+      val List(fieldAccessN) = assignmentToN.astChildren.isCall.codeExact("_tmp_0.propName").l
+      fieldAccessN.name shouldBe Operators.fieldAccess
+      fieldAccessN.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      fieldAccessN.astChildren.isFieldIdentifier.canonicalNameExact("propName").size shouldBe 1
+
+      val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
+      tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
 
     "have correct structure for nested object destruction assignment with defaults as parameter" in AstFixture("""
        |function userId({id = {}, b} = {}) {

@@ -9,8 +9,6 @@ import io.joern.x2cpg.testfixtures.CfgTestFixture
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.Cpg
 
-import scala.annotation.unused
-
 class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) {
 
   "CFG generation for simple fragments" should {
@@ -241,10 +239,22 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
       succOf("foo(a + 1, b)") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for chained calls" ignore {
-      @unused
+    "be correct for chained calls" in {
       implicit val cpg: Cpg = code("x.foo(y).bar(z)")
-      // TODO the current style of writing this tests in unmaintainable.
+      succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
+      succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
+      succOf("x") shouldBe expected(("foo", AlwaysEdge))
+      succOf("foo") shouldBe expected(("x.foo", AlwaysEdge))
+      succOf("x.foo") shouldBe expected(("x", 1, AlwaysEdge))
+      succOf("x", 1) shouldBe expected(("y", AlwaysEdge))
+      succOf("y") shouldBe expected(("x.foo(y)", AlwaysEdge))
+      succOf("x.foo(y)") shouldBe expected(("(_tmp_0 = x.foo(y))", AlwaysEdge))
+      succOf("(_tmp_0 = x.foo(y))") shouldBe expected(("bar", AlwaysEdge))
+      succOf("bar") shouldBe expected(("(_tmp_0 = x.foo(y)).bar", AlwaysEdge))
+      succOf("(_tmp_0 = x.foo(y)).bar") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
+      succOf("_tmp_0", 1) shouldBe expected(("z", AlwaysEdge))
+      succOf("z") shouldBe expected(("x.foo(y).bar(z)", AlwaysEdge))
+      succOf("x.foo(y).bar(z)") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for unary expression '++'" in {

@@ -435,7 +435,14 @@ trait AstForExpressionsCreator { this: AstCreator =>
           val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
           (keyNode, astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true))
         case ObjectProperty =>
-          val keyName = code(nodeInfo.json("key"))
+          val key = createBabelNodeInfo(nodeInfo.json("key"))
+          val keyName = key.node match {
+            case Identifier if nodeInfo.json("computed").bool =>
+              key.code
+            case _ if nodeInfo.json("computed").bool =>
+              generateUnusedVariableName(usedVariableNames, "_computed_object_property")
+            case _ => key.code
+          }
           val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
           val ast     = astForNodeWithFunctionReference(nodeInfo.json("value"))
           (keyNode, ast)
