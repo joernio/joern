@@ -1610,8 +1610,18 @@ trait KtPsiToAst {
     argIdx: Option[Int],
     argName: Option[String] = None
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
-    val name         = expr.getIdentifier.getText
+    val fallBackTypeName = scope.lookupVariable(expr.getIdentifier.getText) match {
+      case Some(n: NewLocal)             => n.typeFullName
+      case Some(n: NewMethodParameterIn) => n.typeFullName
+      case None                          => Defines.UnresolvedNamespace
+    }
+    val typeFromProvider = typeInfoProvider.typeFullName(expr, fallBackTypeName)
+    val typeFullName =
+      if (typeFromProvider == Defines.UnresolvedNamespace && fallBackTypeName != Defines.UnresolvedNamespace)
+        registerType(fallBackTypeName)
+      else
+        registerType(typeFromProvider)
+    val name = expr.getIdentifier.getText
     val node =
       withArgumentName(withArgumentIndex(identifierNode(name, typeFullName, line(expr), column(expr)), argIdx), argName)
     astWithRefEdgeMaybe(name, node)

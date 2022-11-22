@@ -193,11 +193,23 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def propertyType(expr: KtProperty, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
-      .map(_.getType)
-      .map(TypeRenderer.render(_))
-      .filter(isValidRender)
-      .getOrElse(defaultValue)
+    val render =
+      Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
+        .map(_.getType)
+        .map(TypeRenderer.render(_))
+        .filter(isValidRender)
+
+    render match {
+      case Some(value) if value == Defines.UnresolvedNamespace =>
+        Option(expr.getTypeReference)
+          .map { typeRef =>
+            typeFromImports(typeRef.getText, expr.getContainingKtFile).getOrElse(typeRef.getText)
+          }
+          .getOrElse(defaultValue)
+      case Some(aValue) => aValue
+      case None         => defaultValue
+    }
+
   }
 
   def typeFullName(expr: KtClassOrObject, defaultValue: String): String = {

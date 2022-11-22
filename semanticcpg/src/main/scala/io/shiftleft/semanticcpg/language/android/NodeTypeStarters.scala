@@ -30,7 +30,6 @@ class NodeTypeStarters(cpg: Cpg) {
   def registerReceiver: Traversal[Call] =
     cpg.call
       .nameExact("registerReceiver")
-      .typeFullNameExact("void")
       .where(_.argument(2).isIdentifier.typeFullNameExact("android.content.IntentFilter"))
 
   def registeredBroadcastReceivers =
