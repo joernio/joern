@@ -8,8 +8,7 @@ import io.shiftleft.semanticcpg.language._
 class CfgTests extends PhpCode2CpgFixture {
   "the CFG for match constructs" when {
     "the match does not have a default case" should {
-      val cpg = code(
-        """<?php
+      val cpg = code("""<?php
           |function foo() {
           |  match (cond()) {
           |    'X' => body1(),
@@ -19,11 +18,12 @@ class CfgTests extends PhpCode2CpgFixture {
           |}
           |""".stripMargin)
       "find that the jump targets and sink call are CFG successors of cond call" in {
-        inside(cpg.call.name("cond").cfgNext.l) { case List(xTarget: JumpTarget, yTarget: JumpTarget, zTarget: JumpTarget, sink: Call) =>
-          xTarget.name shouldBe "case \"X\""
-          yTarget.name shouldBe "case \"Y\""
-          zTarget.name shouldBe "case \"Z\""
-          sink.code shouldBe "sink()"
+        inside(cpg.call.name("cond").cfgNext.l) {
+          case List(xTarget: JumpTarget, yTarget: JumpTarget, zTarget: JumpTarget, sink: Call) =>
+            xTarget.name shouldBe "case \"X\""
+            yTarget.name shouldBe "case \"Y\""
+            zTarget.name shouldBe "case \"Z\""
+            sink.code shouldBe "sink()"
         }
       }
 
@@ -41,8 +41,7 @@ class CfgTests extends PhpCode2CpgFixture {
     }
 
     "the match has a default case" should {
-      val cpg = code(
-        """<?php
+      val cpg = code("""<?php
           |function foo() {
           |  match (cond()) {
           |    'X' => body1(),
@@ -54,11 +53,12 @@ class CfgTests extends PhpCode2CpgFixture {
           |""".stripMargin)
 
       "only the jump targets are CFG successors of the cond call" in {
-        inside(cpg.call.name("cond").cfgNext.l) { case List(xTarget: JumpTarget, yTarget: JumpTarget, zTarget: JumpTarget, defaultTarget: JumpTarget) =>
-          xTarget.name shouldBe "case \"X\""
-          yTarget.name shouldBe "case \"Y\""
-          zTarget.name shouldBe "case \"Z\""
-          defaultTarget.name shouldBe "default"
+        inside(cpg.call.name("cond").cfgNext.l) {
+          case List(xTarget: JumpTarget, yTarget: JumpTarget, zTarget: JumpTarget, defaultTarget: JumpTarget) =>
+            xTarget.name shouldBe "case \"X\""
+            yTarget.name shouldBe "case \"Y\""
+            zTarget.name shouldBe "case \"Z\""
+            defaultTarget.name shouldBe "default"
         }
       }
 

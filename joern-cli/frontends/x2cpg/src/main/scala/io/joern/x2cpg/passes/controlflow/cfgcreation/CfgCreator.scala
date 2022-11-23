@@ -412,23 +412,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   protected def cfgForSwitchStatement(node: ControlStructure): Cfg = {
     val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
     val bodyCfg      = Traversal.fromSingle(node).whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val diffGraphs   = edgesToMultiple(conditionCfg.fringe.map(_._1), bodyCfg.caseLabels, CaseEdge)
 
-    val hasDefaultCase = bodyCfg.caseLabels.exists(x => x.asInstanceOf[JumpTarget].name == "default")
-
-    Cfg
-      .from(conditionCfg, bodyCfg)
-      .copy(
-        entryNode = conditionCfg.entryNode,
-        edges = diffGraphs ++ conditionCfg.edges ++ bodyCfg.edges,
-        fringe = {
-          if (!hasDefaultCase) { conditionCfg.fringe.withEdgeType(FalseEdge) }
-          else { List() }
-        } ++ takeCurrentLevel(bodyCfg.breaks).map((_, AlwaysEdge)) ++ bodyCfg.fringe,
-        caseLabels = List(),
-        breaks = reduceAndFilterLevel(bodyCfg.breaks),
-        continues = bodyCfg.continues
-      )
+    cfgForSwitchLike(conditionCfg, bodyCfg :: Nil)
   }
 
   /** CFG creation for if statements of the form `if(condition) body`, optionally followed by `else body2`.
@@ -564,20 +549,27 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   protected def cfgForMatchExpression(node: ControlStructure): Cfg = {
     val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
     val bodyCfgs     = Traversal.fromSingle(node).whenTrue.headOption.map(cfgsForMatchCases).getOrElse(Nil)
-    val diffGraphs   = edgesToMultiple(conditionCfg.fringe.map(_._1), bodyCfgs.flatMap(_.caseLabels), CaseEdge)
 
+    cfgForSwitchLike(conditionCfg, bodyCfgs)
+  }
+
+  protected def cfgForSwitchLike(conditionCfg: Cfg, bodyCfgs: List[Cfg]): Cfg = {
     val hasDefaultCase = bodyCfgs.flatMap(_.caseLabels).exists(x => x.asInstanceOf[JumpTarget].name == "default")
+    val caseEdges      = edgesToMultiple(conditionCfg.fringe.map(_._1), bodyCfgs.flatMap(_.caseLabels), CaseEdge)
+    val breakFringe    = takeCurrentLevel(bodyCfgs.flatMap(_.breaks)).map((_, AlwaysEdge))
 
     Cfg
       .from(conditionCfg :: bodyCfgs: _*)
       .copy(
         entryNode = conditionCfg.entryNode,
-        edges = diffGraphs ++ conditionCfg.edges ++ bodyCfgs.flatMap(_.edges),
+        edges = caseEdges ++ conditionCfg.edges ++ bodyCfgs.flatMap(_.edges),
         fringe = {
           if (!hasDefaultCase) { conditionCfg.fringe.withEdgeType(FalseEdge) }
           else { Nil }
-        } ++ bodyCfgs.flatMap(_.fringe),
-        caseLabels = List()
+        } ++ breakFringe ++ bodyCfgs.flatMap(_.fringe),
+        caseLabels = List(),
+        breaks = reduceAndFilterLevel(bodyCfgs.flatMap(_.breaks)),
+        continues = bodyCfgs.flatMap(_.continues)
       )
   }
 }
