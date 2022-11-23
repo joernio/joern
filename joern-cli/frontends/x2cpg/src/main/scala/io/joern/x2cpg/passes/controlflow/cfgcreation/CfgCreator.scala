@@ -145,6 +145,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForSwitchStatement(node)
       case ControlStructureTypes.TRY =>
         cfgForTryStatement(node)
+      case ControlStructureTypes.MATCH =>
+        cfgForMatchExpression(node)
       case _ =>
         Cfg.empty
     }
@@ -535,6 +537,42 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
           }
         )
     }
+  }
+
+  private def cfgsForMatchBody(body: AstNode): List[Cfg] = {
+    // TODO This is super ugly. Refactor once the idea is shown to work.
+    val cases = scala.collection.mutable.ArrayBuffer(scala.collection.mutable.ArrayBuffer[AstNode]())
+    body.astChildren.foreach {
+      case jt: JumpTarget => cases.last.append(jt)
+      case node: AstNode =>
+        cases.last.append(node)
+        cases.append(scala.collection.mutable.ArrayBuffer[AstNode]())
+    }
+    cases.init.map {
+      _.map(cfgFor).reduceOption((x, y) => x ++ y).getOrElse(Cfg.empty)
+    }.toList
+  }
+
+  protected def cfgForMatchExpression(node: ControlStructure): Cfg = {
+    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val bodyCfgs     = Traversal.fromSingle(node).whenTrue.headOption.map(cfgsForMatchBody).getOrElse(Nil)
+    val diffGraphs = bodyCfgs.flatMap { bodyCfg =>
+      edgesToMultiple(conditionCfg.fringe.map(_._1), bodyCfg.caseLabels, CaseEdge)
+    }
+
+    val hasDefaultCase = bodyCfgs.flatMap(_.caseLabels).exists(x => x.asInstanceOf[JumpTarget].name == "default")
+
+    Cfg
+      .from(conditionCfg :: bodyCfgs: _*)
+      .copy(
+        entryNode = conditionCfg.entryNode,
+        edges = diffGraphs ++ conditionCfg.edges ++ bodyCfgs.flatMap(_.edges),
+        fringe = {
+          if (!hasDefaultCase) { conditionCfg.fringe.withEdgeType(FalseEdge) }
+          else { List() }
+        } ++ bodyCfgs.flatMap(_.fringe),
+        caseLabels = List()
+      )
   }
 }
 
