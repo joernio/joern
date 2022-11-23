@@ -21,6 +21,9 @@ Documentation: https://docs.joern.io/
 
 Specification: https://cpg.joern.io
 
+<!-- drop in a few months, e.g. march 2023 -->
+## Announcement: upgrading from Joern 1.1.x to 1.2.x: see notes [below](#12x-upgrade-to-scala-3)
+
 ## Requirements
 
 - JDK 11 (newer versions _might_ work, but have not been properly tested)
@@ -98,3 +101,49 @@ are:
 For more instructions on how to run benchmarks individually head over to the `benchmarks` subproject. If you would
 like the benchmark results to be written to a file instead of printed to STDOUT, set the path to the environment 
 variable `JOERN_BENCHMARK_RESULT_FILE`.
+
+## Upgrade notes
+
+### 1.2.x: Upgrade to Scala 3
+Joern is based on Scala. As of Joern 1.2.x we upgraded from Scala 2 to Scala 3. 
+This is a major version upgrade and Scala 3 is essentially a new language with a new REPL implementation, so this may sound scary. 
+
+That being said, both the Scala as well as Joern maintainers have made an effort to minimize changes to the API, in order to ease the transition for users. Most importantly, the Joern workspace DSL (`importCode(...)` etc.) and the CPG Traversal DSL (e.g. `cpg.method.name("foo").l`) are unchanged. The latter is based on Scala collections API, which is actually identical (a shared library) between Scala 2 and Scala 3. 
+
+Depending on your level of integration with Joern you most likely won't notice anything. If you do, please check the list below, and if that doesn't help: open a [github issue](https://github.com/joernio/joern/issues/new) or hit us up on [discord](https://discord.gg/vv4MH284Hc).
+
+Common issues when upgrading Scala 2 to Scala 3:
+
+1. anonymous functions need an extra parenthesis around their parameter list:
+```scala
+Seq(1,2,3).map { i: Int => i + 1 }   
+// error: parentheses are required around the parameter of a lambda
+
+// option 1: add parentheses, as suggested by compiler:
+Seq(1,2,3).map { (i: Int) => i + 1 }
+
+// option 2: drop type annotation (if possible):
+Seq(1,2,3).map { i => i + 1 }
+```
+
+2. `main` entrypoint: `def main` instead of `extends App`
+See https://docs.scala-lang.org/scala3/book/methods-main-methods.html
+```scala
+object Main extends App {
+  println("hello world")
+}
+
+// depending on usage, may lead to NullPointerExceptions
+// context: Scala3 doesn't support the 'magic' DelayedInit trait
+
+// rewrite to:
+object Main {
+  def main(args: Array[String]) = {
+    println("hello world")
+  }
+}
+```
+
+
+
+  
