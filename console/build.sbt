@@ -17,7 +17,6 @@ dependsOn(
 
 libraryDependencies ++= Seq(
   "com.michaelpollmeier" %% "scala-repl-pp"     % "0.0.7",
-  "io.shiftleft"         %% "overflowdb-traversal" % "1.157+2-de13c891",
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
   "com.github.scopt"     %% "scopt"             % ScoptVersion,
   "org.typelevel"        %% "cats-effect"       % Versions.cats,
