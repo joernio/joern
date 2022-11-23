@@ -10,6 +10,7 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
+import scala.collection.parallel.CollectionConverters._
 
 import java.util.concurrent._
 import scala.collection.mutable
@@ -123,11 +124,11 @@ class Engine(context: EngineContext) {
   }
 
   private def completeHeldTasks(sources: Set[CfgNode]): List[ReachableByResult] = {
-    held.flatMap { heldTask =>
+    held.par.flatMap { heldTask =>
       taskResultTable.createFromTable(PathElement(heldTask.sink), heldTask.initialPath).toList.flatMap { x =>
         x.filter(y => sources.contains(y.path.head.node))
       }
-    }
+    }.toList
   }
 
   private def submitTask(task: ReachableByTask, sources: Set[CfgNode]): Unit = {
