@@ -871,16 +871,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
                 cTarget: JumpTarget,
                 otherValue: Literal
               ) =>
-            aTarget.code shouldBe "$a"
+            aTarget.code shouldBe "case $a"
             aTarget.lineNumber shouldBe Some(3)
 
             aValue.code shouldBe "\"A\""
             aValue.lineNumber shouldBe Some(3)
 
-            bTarget.code shouldBe "$b"
+            bTarget.code shouldBe "case $b"
             bTarget.lineNumber shouldBe Some(4)
 
-            cTarget.code shouldBe "$c"
+            cTarget.code shouldBe "case $c"
             cTarget.lineNumber shouldBe Some(4)
 
             otherValue.code shouldBe "\"NOT A\""
@@ -920,16 +920,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
               defaultTarget: JumpTarget,
               defaultValue: Literal
             ) =>
-          aTarget.code shouldBe "$a"
+          aTarget.code shouldBe "case $a"
           aTarget.lineNumber shouldBe Some(3)
 
           aValue.code shouldBe "\"A\""
           aValue.lineNumber shouldBe Some(3)
 
-          bTarget.code shouldBe "$b"
+          bTarget.code shouldBe "case $b"
           bTarget.lineNumber shouldBe Some(4)
 
-          cTarget.code shouldBe "$c"
+          cTarget.code shouldBe "case $c"
           cTarget.lineNumber shouldBe Some(4)
 
           otherValue.code shouldBe "\"NOT A\""
