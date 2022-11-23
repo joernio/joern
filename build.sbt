@@ -51,6 +51,10 @@ ThisBuild / scalacOptions ++= Seq(
   "-deprecation" // Emit warning and location for usages of deprecated APIs.
 )
 
+// we want to consume this from a java8 build
+compile / javacOptions ++= Seq("--release", "8")
+scalacOptions += "-Xtarget:8"
+
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
   val distributionFile = file("target/joern-cli.zip")

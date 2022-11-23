@@ -12,10 +12,5 @@ libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % Versions.scalatest 
 
 Compile / doc / sources ~= (_ filter (_ => false))
 
-// we want to consume this from a java8 build
-compile / javacOptions ++= Seq("--release", "8")
-
-scalacOptions += "-Xtarget:8"
-
 trapExit    := false
 Test / fork := true
