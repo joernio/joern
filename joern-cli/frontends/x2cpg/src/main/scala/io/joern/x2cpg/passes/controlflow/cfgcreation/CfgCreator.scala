@@ -539,26 +539,32 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     }
   }
 
-  private def cfgsForMatchBody(body: AstNode): List[Cfg] = {
-    // TODO This is super ugly. Refactor once the idea is shown to work.
-    val cases = scala.collection.mutable.ArrayBuffer(scala.collection.mutable.ArrayBuffer[AstNode]())
-    body.astChildren.foreach {
-      case jt: JumpTarget => cases.last.append(jt)
-      case node: AstNode =>
-        cases.last.append(node)
-        cases.append(scala.collection.mutable.ArrayBuffer[AstNode]())
-    }
-    cases.init.map {
-      _.map(cfgFor).reduceOption((x, y) => x ++ y).getOrElse(Cfg.empty)
-    }.toList
+  /** The CFGs for match cases are modeled after PHP match expressions and assumes that a case will always consist of
+    * one or more JumpTargets followed by a single expression. The CFG also assumes an implicit `break` at the end of
+    * each match case.
+    */
+  protected def cfgsForMatchCases(body: AstNode): List[Cfg] = {
+    body.astChildren
+      .foldLeft(List(Cfg.empty)) { case (currCfg :: prevCfgs, astNode) =>
+        astNode match {
+          case jumpTarget: JumpTarget =>
+            val jumpCfg = cfgForJumpTarget(jumpTarget)
+            (currCfg ++ jumpCfg) :: prevCfgs
+
+          case node: AstNode =>
+            val nodeCfg = cfgFor(node)
+            Cfg.empty :: (currCfg ++ nodeCfg) :: prevCfgs
+        }
+      }
+      .reverse
   }
 
+  /** CFG creation for match expressions of the form `match { case condition: expr ... }`
+    */
   protected def cfgForMatchExpression(node: ControlStructure): Cfg = {
     val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val bodyCfgs     = Traversal.fromSingle(node).whenTrue.headOption.map(cfgsForMatchBody).getOrElse(Nil)
-    val diffGraphs = bodyCfgs.flatMap { bodyCfg =>
-      edgesToMultiple(conditionCfg.fringe.map(_._1), bodyCfg.caseLabels, CaseEdge)
-    }
+    val bodyCfgs     = Traversal.fromSingle(node).whenTrue.headOption.map(cfgsForMatchCases).getOrElse(Nil)
+    val diffGraphs   = edgesToMultiple(conditionCfg.fringe.map(_._1), bodyCfgs.flatMap(_.caseLabels), CaseEdge)
 
     val hasDefaultCase = bodyCfgs.flatMap(_.caseLabels).exists(x => x.asInstanceOf[JumpTarget].name == "default")
 
@@ -569,7 +575,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         edges = diffGraphs ++ conditionCfg.edges ++ bodyCfgs.flatMap(_.edges),
         fringe = {
           if (!hasDefaultCase) { conditionCfg.fringe.withEdgeType(FalseEdge) }
-          else { List() }
+          else { Nil }
         } ++ bodyCfgs.flatMap(_.fringe),
         caseLabels = List()
       )

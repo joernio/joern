@@ -1370,7 +1370,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     // TODO Don't just throw away the condition asts here (also for switch cases)
     val targets = matchArm.conditions.map { condition =>
       val conditionAst = astForExpr(condition)
-      val code         = rootCode(conditionAst, NameConstants.Unknown)
+      // In PHP cases aren't labeled with `case`, but this is used by the CFG creator to differentiate between
+      // case/default labels and other labels.
+      val code = s"case ${rootCode(conditionAst, NameConstants.Unknown)}"
       NewJumpTarget().name(code).code(code).lineNumber(line(condition))
     }
     val defaultLabel = Option.when(matchArm.isDefault)(

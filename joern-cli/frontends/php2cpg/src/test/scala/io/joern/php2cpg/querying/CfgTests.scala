@@ -2,10 +2,85 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.parser.Domain.PhpBuiltins
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, JumpTarget}
 import io.shiftleft.semanticcpg.language._
 
 class CfgTests extends PhpCode2CpgFixture {
+  "the CFG for match constructs" when {
+    "the match does not have a default case" should {
+      val cpg = code(
+        """<?php
+          |function foo() {
+          |  match (cond()) {
+          |    'X' => body1(),
+          |    'Y', 'Z' => body2(),
+          |  };
+          |  sink();
+          |}
+          |""".stripMargin)
+      "find that the jump targets and sink call are CFG successors of cond call" in {
+        inside(cpg.call.name("cond").cfgNext.l) { case List(xTarget: JumpTarget, yTarget: JumpTarget, zTarget: JumpTarget, sink: Call) =>
+          xTarget.name shouldBe "case \"X\""
+          yTarget.name shouldBe "case \"Y\""
+          zTarget.name shouldBe "case \"Z\""
+          sink.code shouldBe "sink()"
+        }
+      }
+
+      "find that the sink call is the CFG successor of the body1 call" in {
+        inside(cpg.call.name("body1").cfgNext.l) { case List(sinkCall: Call) =>
+          sinkCall.code shouldBe "sink()"
+        }
+      }
+
+      "find that the sink call is the CFG successor of the body2 call" in {
+        inside(cpg.call.name("body2").cfgNext.l) { case List(sinkCall: Call) =>
+          sinkCall.code shouldBe "sink()"
+        }
+      }
+    }
+
+    "the match has a default case" should {
+      val cpg = code(
+        """<?php
+          |function foo() {
+          |  match (cond()) {
+          |    'X' => body1(),
+          |    'Y', 'Z' => body2(),
+          |    default => body3(),
+          |  };
+          |  sink();
+          |}
+          |""".stripMargin)
+
+      "only the jump targets are CFG successors of the cond call" in {
+        inside(cpg.call.name("cond").cfgNext.l) { case List(xTarget: JumpTarget, yTarget: JumpTarget, zTarget: JumpTarget, defaultTarget: JumpTarget) =>
+          xTarget.name shouldBe "case \"X\""
+          yTarget.name shouldBe "case \"Y\""
+          zTarget.name shouldBe "case \"Z\""
+          defaultTarget.name shouldBe "default"
+        }
+      }
+
+      "find that the sink call is the CFG successor of the body1 call" in {
+        inside(cpg.call.name("body1").cfgNext.l) { case List(sinkCall: Call) =>
+          sinkCall.code shouldBe "sink()"
+        }
+      }
+
+      "find that the sink call is the CFG successor of the body2 call" in {
+        inside(cpg.call.name("body2").cfgNext.l) { case List(sinkCall: Call) =>
+          sinkCall.code shouldBe "sink()"
+        }
+      }
+
+      "find that the sink call is the CFG successor of the body3 call" in {
+        inside(cpg.call.name("body3").cfgNext.l) { case List(sinkCall: Call) =>
+          sinkCall.code shouldBe "sink()"
+        }
+      }
+    }
+  }
 
   "the CFG for if constructs" should {
     val cpg = code("""<?php
