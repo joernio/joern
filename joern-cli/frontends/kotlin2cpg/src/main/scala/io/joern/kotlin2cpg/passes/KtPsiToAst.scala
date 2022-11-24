@@ -86,11 +86,12 @@ trait KtPsiToAst {
 
   def astsForDeclaration(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     decl match {
-      case d: KtClass             => astsForClassOrObject(d)
-      case d: KtObjectDeclaration => astsForClassOrObject(d)
-      case d: KtNamedFunction     => astsForMethod(d)
-      case d: KtTypeAlias         => Seq(astForTypeAlias(d))
-      case d: KtProperty          => Seq(astForUnknown(d, None)) // TODO: these are globals, represent them correctly
+      case c: KtClass                => astsForClassOrObject(c)
+      case o: KtObjectDeclaration    => astsForClassOrObject(o)
+      case n: KtNamedFunction        => astsForMethod(n)
+      case t: KtTypeAlias            => Seq(astForTypeAlias(t))
+      case s: KtSecondaryConstructor => Seq(astForUnknown(s, None))
+      case p: KtProperty             => Seq(astForUnknown(p, None)) // TODO: these are globals, represent them correctly
       case unhandled =>
         logger.error(
           s"Unknown declaration type encountered with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
@@ -302,6 +303,12 @@ trait KtPsiToAst {
       .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))
       .getOrElse(List())
     val memberAsts = classDeclarations.toSeq.map(astForMember)
+    val innerTypeDeclAsts =
+      classDeclarations.toSeq
+        .collectAll[KtClassOrObject]
+        .filterNot(typeInfoProvider.isCompanionObject(_))
+        .map(astsForDeclaration(_))
+        .flatten
 
     val classFunctions = Option(ktClass.getBody)
       .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
@@ -335,7 +342,7 @@ trait KtPsiToAst {
     val companionObjectAsts = ktClass.getCompanionObjects.asScala.flatMap(astsForClassOrObject)
     scope.popScope()
 
-    Seq(finalAst) ++ companionObjectAsts
+    Seq(finalAst) ++ companionObjectAsts ++ innerTypeDeclAsts
   }
 
   def astsForMethod(ktFn: KtNamedFunction, needsThisParameter: Boolean = false, withVirtualModifier: Boolean = false)(
