@@ -362,4 +362,16 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       td.fullName shouldBe "mypkg.doSomething.AClass"
     }
   }
+
+  "CPG for code with nested class definition" should {
+    val cpg = code("""package no.such.pkg
+        |import another.made.up.pkg.SomeClass
+        |class AClass { class AnotherClass : SomeClass() }
+        |""".stripMargin)
+
+    "should contain a TYPE_DECL node for the nested class" in {
+      val List(td) = cpg.typeDecl.nameExact("AnotherClass").l
+      td.inheritsFromTypeFullName shouldBe List("another.made.up.pkg.SomeClass")
+    }
+  }
 }
