@@ -145,6 +145,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForSwitchStatement(node)
       case ControlStructureTypes.TRY =>
         cfgForTryStatement(node)
+      case ControlStructureTypes.MATCH =>
+        cfgForMatchExpression(node)
       case _ =>
         Cfg.empty
     }
@@ -410,23 +412,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   protected def cfgForSwitchStatement(node: ControlStructure): Cfg = {
     val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
     val bodyCfg      = Traversal.fromSingle(node).whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val diffGraphs   = edgesToMultiple(conditionCfg.fringe.map(_._1), bodyCfg.caseLabels, CaseEdge)
 
-    val hasDefaultCase = bodyCfg.caseLabels.exists(x => x.asInstanceOf[JumpTarget].name == "default")
-
-    Cfg
-      .from(conditionCfg, bodyCfg)
-      .copy(
-        entryNode = conditionCfg.entryNode,
-        edges = diffGraphs ++ conditionCfg.edges ++ bodyCfg.edges,
-        fringe = {
-          if (!hasDefaultCase) { conditionCfg.fringe.withEdgeType(FalseEdge) }
-          else { List() }
-        } ++ takeCurrentLevel(bodyCfg.breaks).map((_, AlwaysEdge)) ++ bodyCfg.fringe,
-        caseLabels = List(),
-        breaks = reduceAndFilterLevel(bodyCfg.breaks),
-        continues = bodyCfg.continues
-      )
+    cfgForSwitchLike(conditionCfg, bodyCfg :: Nil)
   }
 
   /** CFG creation for if statements of the form `if(condition) body`, optionally followed by `else body2`.
@@ -535,6 +522,55 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
           }
         )
     }
+  }
+
+  /** The CFGs for match cases are modeled after PHP match expressions and assumes that a case will always consist of
+    * one or more JumpTargets followed by a single expression. The CFG also assumes an implicit `break` at the end of
+    * each match case.
+    */
+  protected def cfgsForMatchCases(body: AstNode): List[Cfg] = {
+    body.astChildren
+      .foldLeft(List(Cfg.empty)) { case (currCfg :: prevCfgs, astNode) =>
+        astNode match {
+          case jumpTarget: JumpTarget =>
+            val jumpCfg = cfgForJumpTarget(jumpTarget)
+            (currCfg ++ jumpCfg) :: prevCfgs
+
+          case node: AstNode =>
+            val nodeCfg = cfgFor(node)
+            Cfg.empty :: (currCfg ++ nodeCfg) :: prevCfgs
+        }
+      }
+      .reverse
+  }
+
+  /** CFG creation for match expressions of the form `match { case condition: expr ... }`
+    */
+  protected def cfgForMatchExpression(node: ControlStructure): Cfg = {
+    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val bodyCfgs     = Traversal.fromSingle(node).whenTrue.headOption.map(cfgsForMatchCases).getOrElse(Nil)
+
+    cfgForSwitchLike(conditionCfg, bodyCfgs)
+  }
+
+  protected def cfgForSwitchLike(conditionCfg: Cfg, bodyCfgs: List[Cfg]): Cfg = {
+    val hasDefaultCase = bodyCfgs.flatMap(_.caseLabels).exists(x => x.asInstanceOf[JumpTarget].name == "default")
+    val caseEdges      = edgesToMultiple(conditionCfg.fringe.map(_._1), bodyCfgs.flatMap(_.caseLabels), CaseEdge)
+    val breakFringe    = takeCurrentLevel(bodyCfgs.flatMap(_.breaks)).map((_, AlwaysEdge))
+
+    Cfg
+      .from(conditionCfg :: bodyCfgs: _*)
+      .copy(
+        entryNode = conditionCfg.entryNode,
+        edges = caseEdges ++ conditionCfg.edges ++ bodyCfgs.flatMap(_.edges),
+        fringe = {
+          if (!hasDefaultCase) { conditionCfg.fringe.withEdgeType(FalseEdge) }
+          else { Nil }
+        } ++ breakFringe ++ bodyCfgs.flatMap(_.fringe),
+        caseLabels = List(),
+        breaks = reduceAndFilterLevel(bodyCfgs.flatMap(_.breaks)),
+        continues = bodyCfgs.flatMap(_.continues)
+      )
   }
 }
 
