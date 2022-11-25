@@ -7,25 +7,28 @@ jobs:
       matrix:
         os: [ubuntu-20.04, windows-2019, macos-11]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 1
       - name: Set up JDK 1.11
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v3
         with:
-          java-version: 1.11
+          distribution: 'temurin'
+          java-version: '11'
+          cache: 'sbt'
       - name: Compile and run tests
         run: sbt clean +test
   formatting:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 1
       - name: Set up JDK 1.11
-        uses: actions/setup-java@v1
         with:
-          java-version: 1.11
+          distribution: 'temurin'
+          java-version: '11'
+          cache: 'sbt'
       - name: Check formatting
         run: sbt ++2.13.8 scalafmtCheck test:scalafmtCheck
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
@@ -33,13 +36,15 @@ jobs:
   test-scripts:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 1
       - name: Set up JDK 1.11
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v3
         with:
-          java-version: 1.11
+          distribution: 'temurin'
+          java-version: '11'
+          cache: 'sbt'
       - run: ./testDistro.sh
       - run: |
           mkdir /tmp/foo
