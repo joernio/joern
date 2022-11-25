@@ -2,9 +2,9 @@ package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewType
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 
-class TypeNodePass(usedTypes: List[(String, String)], cpg: Cpg) extends SimpleCpgPass(cpg, "types") {
+class TypeNodePass(usedTypes: List[(String, String)], cpg: Cpg) extends CpgPass(cpg, "types") {
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val filteredTypes = usedTypes.filterNot { case (name, _) =>
       name == Defines.ANY || Defines.JSTYPES.contains(name)

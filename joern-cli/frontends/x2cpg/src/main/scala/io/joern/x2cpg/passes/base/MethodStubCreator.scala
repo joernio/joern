@@ -4,7 +4,7 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
@@ -15,7 +15,7 @@ case class NameAndSignature(name: String, signature: String, fullName: String)
 
 /** This pass has no other pass as prerequisite.
   */
-class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
 
   // Since the method fullNames for fuzzyc are not unique, we do not have
   // a 1to1 relation and may overwrite some values. This is ok for now.

@@ -1,6 +1,6 @@
 package io.joern.console
 
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -19,7 +19,7 @@ class Commit(opts: CommitOptions) extends LayerCreator {
   override val storeOverlayName: Boolean = false
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
-    val pass: SimpleCpgPass = new SimpleCpgPass(context.cpg) {
+    val pass: CpgPass = new CpgPass(context.cpg) {
       override val name = "commit"
       override def run(builder: DiffGraphBuilder): Unit = {
         builder.absorb(opts.diffGraphBuilder)

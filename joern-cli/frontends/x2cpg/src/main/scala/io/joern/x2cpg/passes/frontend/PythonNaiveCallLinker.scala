@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.frontend
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
@@ -10,7 +10,7 @@ import overflowdb.traversal.jIteratortoTraversal
   * @param cpg
   *   the target code property graph.
   */
-class PythonNaiveCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class PythonNaiveCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     val methodNameToNode = cpg.method.toList.groupBy(_.name)

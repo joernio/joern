@@ -2,14 +2,14 @@ package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Properties
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
 object Overlays {
 
   def appendOverlayName(cpg: Cpg, overlayName: String): Unit = {
-    new SimpleCpgPass(cpg) {
+    new CpgPass(cpg) {
       override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
         cpg.metaData.headOption match {
           case Some(metaData) =>
@@ -23,7 +23,7 @@ object Overlays {
   }
 
   def removeLastOverlayName(cpg: Cpg): Unit = {
-    new SimpleCpgPass(cpg) {
+    new CpgPass(cpg) {
       override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
         cpg.metaData.headOption match {
           case Some(metaData) =>
