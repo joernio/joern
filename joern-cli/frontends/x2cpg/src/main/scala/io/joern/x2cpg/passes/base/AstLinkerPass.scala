@@ -9,10 +9,10 @@ import io.joern.x2cpg.passes.callgraph.MethodRefLinker.{
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 
-class AstLinkerPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class AstLinkerPass(cpg: Cpg) extends CpgPass(cpg) {
 
   import MethodRefLinker.{logFailedSrcLookup, logger}
 

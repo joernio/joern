@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.callgraph
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, PropertyNames}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.{NodeDb, NodeRef}
@@ -21,7 +21,7 @@ import scala.jdk.CollectionConverters._
   * Based on the algorithm by Jang, Dongseok & Tatlock, Zachary & Lerner, Sorin. (2014). SAFEDISPATCH: Securing C++
   * Virtual Calls from Memory Corruption Attacks. 10.14722/ndss.2014.23287.
   */
-class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   import DynamicCallLinker._
   // Used to track potential method candidates for a given method fullname. Since our method full names contain the type

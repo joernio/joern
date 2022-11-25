@@ -4,9 +4,9 @@ import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 
-class JsMetaDataPass(cpg: Cpg, hash: String, inputPath: String) extends SimpleCpgPass(cpg) {
+class JsMetaDataPass(cpg: Cpg, hash: String, inputPath: String) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val absolutePathToRoot = File(inputPath).path.toAbsolutePath.toString

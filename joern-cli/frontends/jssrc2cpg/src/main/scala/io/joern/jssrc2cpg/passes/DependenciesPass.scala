@@ -5,11 +5,11 @@ import io.joern.jssrc2cpg.utils.PackageJsonParser
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewDependency
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 
 import java.nio.file.Paths
 
-class DependenciesPass(cpg: Cpg, config: Config) extends SimpleCpgPass(cpg) {
+class DependenciesPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val packagesJsons = SourceFiles

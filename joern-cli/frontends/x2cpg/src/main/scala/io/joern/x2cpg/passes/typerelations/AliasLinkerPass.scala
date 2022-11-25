@@ -3,10 +3,10 @@ package io.joern.x2cpg.passes.typerelations
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.joern.x2cpg.passes.callgraph.MethodRefLinker.{linkToMultiple, typeFullNameToNode}
 
-class AliasLinkerPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class AliasLinkerPass(cpg: Cpg) extends CpgPass(cpg) {
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     // Create ALIAS_OF edges from TYPE_DECL nodes to
     // TYPE

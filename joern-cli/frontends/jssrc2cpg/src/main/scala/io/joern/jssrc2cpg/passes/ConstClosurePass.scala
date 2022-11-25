@@ -1,14 +1,14 @@
 package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
 /** A pass that identifies assignments of closures to constants and updates `METHOD` nodes accordingly.
   */
-class ConstClosurePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
     for {
       assignment      <- cpg.assignment

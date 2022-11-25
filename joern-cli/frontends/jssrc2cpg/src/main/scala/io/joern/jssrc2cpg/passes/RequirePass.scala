@@ -4,7 +4,7 @@ import io.joern.jssrc2cpg.passes.RequirePass.JS_EXPORT_PREFIX
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Identifier, Local}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 import overflowdb.traversal.{NodeOps, Traversal}
@@ -14,7 +14,7 @@ import java.nio.file.Paths
 
 /** This pass enhances the call graph and call nodes by interpreting assignments of the form `foo = require("module")`.
   */
-class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
 
   private val codeRoot = cpg.metaData.root.headOption.getOrElse("")
 

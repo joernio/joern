@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.frontend
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
@@ -15,7 +15,7 @@ import java.util.regex.Matcher
   * @param cpg
   *   the target code property graph.
   */
-class PythonModuleDefinedCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(builder: DiffGraphBuilder): Unit =
     cpg.method.where(_.nameExact("<module>")).foreach(module => runOnModule(module, builder))

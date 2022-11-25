@@ -3,9 +3,9 @@ package io.joern.ghidra2cpg.passes
 import io.joern.ghidra2cpg._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 
-class TypesPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class TypesPass(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     Types.types

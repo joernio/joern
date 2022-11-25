@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.frontend
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.{NodeOps, jIteratortoTraversal}
 
@@ -12,7 +12,7 @@ import scala.collection.mutable
 /** The Javascript specific call linker links static call sites (by full name) and call sites to methods in the same
   * file (by name).
   */
-class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class JavascriptCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   private type MethodsByNameAndFileType = mutable.HashMap[(String, String), Method]
   private type MethodsByFullNameType    = mutable.HashMap[String, Method]
