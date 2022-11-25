@@ -1,13 +1,15 @@
 package io.joern.kotlin2cpg.types
 
 import io.joern.x2cpg.Defines
-import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, SimpleFunctionDescriptor}
+import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, DeclarationDescriptorWithSource, SimpleFunctionDescriptor}
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, TypeUtils, UnresolvedType}
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
+import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
 import org.jetbrains.kotlin.types.typeUtil.TypeUtilsKt
-import org.jetbrains.kotlin.resolve.jvm.JvmPrimitiveType
+import org.jetbrains.kotlin.resolve.jvm.{JvmClassName, JvmPrimitiveType}
+import org.jetbrains.kotlin.resolve.source.KotlinSourceElement
 
 import scala.jdk.CollectionConverters._
 
@@ -41,6 +43,18 @@ object TypeRenderer {
   def renderFqName(desc: DeclarationDescriptor): String = {
     val renderer = descriptorRenderer()
     val fqName   = DescriptorUtils.getFqName(desc)
+    if (desc.isInstanceOf[DeclarationDescriptorWithSource]) {
+      val source = desc.asInstanceOf[DeclarationDescriptorWithSource].getSource
+      if (source.isInstanceOf[KotlinSourceElement]) {
+        val psi = source.asInstanceOf[KotlinSourceElement].getPsi
+        if (psi.isInstanceOf[KtClass] && psi.asInstanceOf[KtClass].isInner) {
+          val classId = source.asInstanceOf[KotlinSourceElement].getPsi.asInstanceOf[KtClass].getClassId
+          if (classId != null) {
+            return JvmClassName.byClassId(classId).toString
+          }
+        }
+      }
+    }
     stripped(renderer.renderFqName(fqName))
   }
 
@@ -73,10 +87,12 @@ object TypeRenderer {
             }
           } else {
             val descriptor = TypeUtils.getClassDescriptor(t)
-            if (DescriptorUtils.isCompanionObject(descriptor)) {
+            if (descriptor.isInner) {
+              JvmClassName.byClassId(descriptor.getSource.asInstanceOf[KotlinSourceElement].getPsi.asInstanceOf[KtClass].getClassId).toString
+            } else if (DescriptorUtils.isCompanionObject(descriptor)) {
               val rendered            = stripped(renderer.renderFqName(fqName))
               val companionObjectName = descriptor.getName
-              // replaces `apkg.ContaininClass.CompanionObjectName` with `apkg.ContainingClass$CompanionObjectName`
+              // replaces `apkg.ContainingClass.CompanionObjectName` with `apkg.ContainingClass$CompanionObjectName`
               rendered.replaceFirst("\\." + companionObjectName, "\\$" + companionObjectName)
             } else {
               descriptor.getContainingDeclaration match {

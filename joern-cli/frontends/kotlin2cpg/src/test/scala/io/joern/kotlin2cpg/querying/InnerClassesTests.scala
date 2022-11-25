@@ -2,9 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Ignore
 
-@Ignore
 class InnerClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   implicit val resolver: ICallResolver = NoResolve
@@ -25,5 +23,9 @@ class InnerClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     // TODO: add the test cases
+
+    "should contain inner class name `Outer$Inner`" in {
+      cpg.typ.fullNameExact("Outer$Inner").l.size shouldBe 1
+    }
   }
 }
