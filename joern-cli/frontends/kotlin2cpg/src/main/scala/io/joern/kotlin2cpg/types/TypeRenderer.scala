@@ -87,9 +87,7 @@ object TypeRenderer {
             }
           } else {
             val descriptor = TypeUtils.getClassDescriptor(t)
-            if (descriptor.isInner) {
-              JvmClassName.byClassId(descriptor.getSource.asInstanceOf[KotlinSourceElement].getPsi.asInstanceOf[KtClass].getClassId).toString
-            } else if (DescriptorUtils.isCompanionObject(descriptor)) {
+            if (DescriptorUtils.isCompanionObject(descriptor)) {
               val rendered            = stripped(renderer.renderFqName(fqName))
               val companionObjectName = descriptor.getName
               // replaces `apkg.ContainingClass.CompanionObjectName` with `apkg.ContainingClass$CompanionObjectName`
