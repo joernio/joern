@@ -73,9 +73,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
 
       val filesWithJavaExtension = SourceFiles.determine(sourceDir, Set(".java"))
       if (filesWithJavaExtension.nonEmpty) {
-        logger.info(
-          s"Found ${filesWithJavaExtension.size} files with the `.java` extension which will not be included in the result."
-        )
+        logger.info(s"Found ${filesWithJavaExtension.size} files with the `.java` extension.")
       }
 
       val dependenciesPaths = if (jar4ImportServiceOpt.isDefined) {
@@ -112,7 +110,13 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       }
       val plugins = Seq()
       val environment =
-        CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
+        CompilerAPI.makeEnvironment(
+          dirsForSourcesToCompile,
+          filesWithJavaExtension,
+          defaultContentRootJars,
+          plugins,
+          messageCollector
+        )
 
       val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
       val sources = sourceEntries.filterNot { entry =>

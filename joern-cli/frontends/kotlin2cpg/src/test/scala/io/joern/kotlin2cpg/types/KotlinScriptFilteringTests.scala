@@ -10,8 +10,9 @@ import org.scalatest.Ignore
 class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
   "Running `CompilerAPI.makeEnvironment` on external project with lots of KotlinScript sources" - {
     "should return an empty binding context" in {
-      val sourceDir   = "src/test/resources/external_projects/kotlin-dsl"
-      val environment = CompilerAPI.makeEnvironment(Seq(sourceDir), Seq(), Seq(), new ErrorLoggingMessageCollector)
+      val sourceDir = "src/test/resources/external_projects/kotlin-dsl"
+      val environment =
+        CompilerAPI.makeEnvironment(Seq(sourceDir), Seq(), Seq(), Seq(), new ErrorLoggingMessageCollector)
       environment.getSourceFiles should not be List()
 
       val nameGenerator = new DefaultTypeInfoProvider(environment)
@@ -23,7 +24,7 @@ class KotlinScriptFilteringTests extends AnyFreeSpec with Matchers {
       val sourceDir               = "src/test/resources/external_projects/kotlin-dsl"
       val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
       val environment =
-        CompilerAPI.makeEnvironment(dirsForSourcesToCompile, Seq(), Seq(), new ErrorLoggingMessageCollector)
+        CompilerAPI.makeEnvironment(dirsForSourcesToCompile, Seq(), Seq(), Seq(), new ErrorLoggingMessageCollector)
       environment.getSourceFiles should not be List()
 
       val nameGenerator = new DefaultTypeInfoProvider(environment)
