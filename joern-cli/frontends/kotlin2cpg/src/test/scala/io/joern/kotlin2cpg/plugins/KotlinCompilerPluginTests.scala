@@ -52,7 +52,7 @@ class KotlinCompilerPluginTests extends AnyFreeSpec with Matchers {
       val plugins          = Seq()
       val messageCollector = new ErrorCountMessageCollector()
       val environment =
-        CompilerAPI.makeEnvironment(Seq(sourceDir), defaultContentRootJarPaths, plugins, messageCollector)
+        CompilerAPI.makeEnvironment(Seq(sourceDir), Seq(), defaultContentRootJarPaths, plugins, messageCollector)
       val nameGenerator = new DefaultTypeInfoProvider(environment)
       nameGenerator.bindingContext should not be null
       messageCollector.hasErrors() shouldBe true
@@ -68,7 +68,7 @@ class KotlinCompilerPluginTests extends AnyFreeSpec with Matchers {
       val plugins          = Seq(allOpenPluginInfo)
       val messageCollector = new ErrorCountMessageCollector()
       val environment =
-        CompilerAPI.makeEnvironment(Seq(sourceDir), defaultContentRootJarPaths, plugins, messageCollector)
+        CompilerAPI.makeEnvironment(Seq(sourceDir), Seq(), defaultContentRootJarPaths, plugins, messageCollector)
       val nameGenerator = new DefaultTypeInfoProvider(environment)
       nameGenerator.bindingContext should not be null
       messageCollector.hasErrors() shouldBe false

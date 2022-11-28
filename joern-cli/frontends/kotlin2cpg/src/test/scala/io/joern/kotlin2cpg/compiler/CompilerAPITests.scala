@@ -46,7 +46,7 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
         .map { f => DefaultContentRootJarPath(f.pathAsString, false) }
         .toSeq
       val messageCollector = new ErrorCountMessageCollector()
-      val environment      = CompilerAPI.makeEnvironment(Seq(projectDirPath), contentRoots, Seq(), messageCollector)
+      val environment = CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), contentRoots, Seq(), messageCollector)
 
       KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       messageCollector.hasErrors() shouldBe false
@@ -54,7 +54,7 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
 
     "should receive a compiler error message when the dependencies of the project have not been provided" in {
       val messageCollector = new ErrorCountMessageCollector()
-      val environment      = CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), Seq(), messageCollector)
+      val environment      = CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), Seq(), Seq(), messageCollector)
 
       KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       messageCollector.hasErrors() shouldBe true

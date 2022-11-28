@@ -6,7 +6,7 @@ import java.io.{File, FileOutputStream}
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.config.KotlinSourceRoot
 import org.jetbrains.kotlin.cli.jvm.compiler.{EnvironmentConfigFiles, KotlinCoreEnvironment}
-import org.jetbrains.kotlin.cli.jvm.config.JvmClasspathRoot
+import org.jetbrains.kotlin.cli.jvm.config.{JavaSourceRoot, JvmClasspathRoot}
 import org.jetbrains.kotlin.config.{CommonConfigurationKeys, CompilerConfiguration, CompilerConfigurationKey}
 import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmProtoBufUtil
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.cli.common.messages.{
   MessageCollector
 }
 import org.slf4j.LoggerFactory
+
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 case class CompilerPluginInfo(
@@ -31,6 +32,7 @@ object CompilerAPI {
 
   def makeEnvironment(
     forDirectories: Seq[String],
+    javaSourceRoots: Seq[String],
     defaultContentRootJarPaths: Seq[DefaultContentRootJarPath] = List(),
     compilerPlugins: Seq[CompilerPluginInfo] = Seq(),
     messageCollector: MessageCollector
@@ -72,6 +74,12 @@ object CompilerAPI {
         }
       }
     }
+
+    javaSourceRoots.foreach { source =>
+      val f = new File(source)
+      config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JavaSourceRoot(f, ""))
+    }
+
     config.put(CommonConfigurationKeys.MODULE_NAME, JvmProtoBufUtil.DEFAULT_MODULE_NAME)
 
     val configFiles = EnvironmentConfigFiles.JVM_CONFIG_FILES
