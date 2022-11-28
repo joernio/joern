@@ -77,8 +77,21 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
     }
   }
 
-  private def getSourcesFromDir(sourceDir: String): List[String] = {
-    SourceRootFinder.getSourceRoots(sourceDir).flatMap(SourceFiles.determine(_, sourceFileExtensions))
+  /** Will extract source files from the given path if it is a directory, or in the case of a single file, will check
+    * the file's extension and return a singleton list of the file if the file extension is supported.
+    * @param sourcePath
+    *   the input directory or source file.
+    * @return
+    *   a list of all source files.
+    */
+  private def getSourcesFromDir(sourcePath: String): List[String] = {
+    val f = File(sourcePath)
+    if (f.isDirectory)
+      SourceRootFinder.getSourceRoots(sourcePath).flatMap(SourceFiles.determine(_, sourceFileExtensions))
+    else if (f.hasExtension && f.extension.exists(f => sourceFileExtensions.contains(f)))
+      List(sourcePath)
+    else
+      List.empty
   }
 
   private def parseFile(filename: String): Option[CompilationUnit] = {
