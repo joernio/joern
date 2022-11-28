@@ -7,6 +7,10 @@ SCRIPT_ABS_DIR=$(dirname "$SCRIPT_ABS_PATH")
 
 JOERN="$SCRIPT_ABS_DIR"/../joern
 
+# first, run a simplistic smoke test
+$JOERN --script tests/frontends-smoketest.sc
+
+# now test all frontends with proper input code
 frontends=(c jssrc javasrc java ghidra pythonsrc)
 declare -A minMethodCount=(
   [c]=2
