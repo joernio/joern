@@ -101,10 +101,9 @@ object JoernExport extends App {
     val context = new LayerCreatorContext(cpg)
 
     format match {
+      case Format.Dot if representation == Representation.All || representation == Representation.Cpg =>
+        exportWithOdbFormat(cpg, representation, outDir, DotExporter)
       case Format.Dot =>
-        if (representation == Representation.All || representation == Representation.Cpg)
-          exportWithOdbFormat(cpg, representation, outDir, DotExporter)
-        else
           exportDot(representation, outDir, context)
       case Format.Neo4jCsv =>
         exportWithOdbFormat(cpg, representation, outDir, Neo4jCsvExporter)
