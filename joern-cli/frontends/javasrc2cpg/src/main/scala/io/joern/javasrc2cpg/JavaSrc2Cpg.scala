@@ -88,11 +88,10 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
     val f = File(sourcePath)
     if (f.isDirectory)
       SourceRootFinder.getSourceRoots(sourcePath).flatMap(SourceFiles.determine(_, sourceFileExtensions))
-    else if (f.hasExtension && f.extension.exists(f => sourceFileExtensions.contains(f))) {
+    else if (f.hasExtension && f.extension.exists(f => sourceFileExtensions.contains(f)))
       List(sourcePath)
-    } else {
+    else
       List.empty
-    }
   }
 
   private def parseFile(filename: String): Option[CompilationUnit] = {
