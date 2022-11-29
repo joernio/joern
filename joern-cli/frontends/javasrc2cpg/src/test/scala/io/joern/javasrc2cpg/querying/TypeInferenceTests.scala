@@ -169,15 +169,6 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "create a constructor based on import info" in {
-      cpg.method.name("test2").call.nameExact("<operator>.alloc").l match {
-        case alloc :: Nil =>
-          alloc.typeFullName shouldBe "a.b.c.Bar"
-          alloc.signature shouldBe "a.b.c.Bar()"
-          alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-
-        case res => fail(s"Expected single alloc call but got $res")
-      }
-
       val init = cpg.method.name("test2").call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
         case init :: Nil => init
         case res         => fail(s"Expected single init call but got $res")

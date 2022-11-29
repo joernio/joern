@@ -2398,14 +2398,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val argumentTypes = argumentTypesForMethodLike(maybeResolvedExpr)
 
-    val allocSignature = typeFullName.map(composeMethodLikeSignature(_, Nil)).getOrElse(composeUnresolvedSignature(0))
     val allocNode = operatorCallNode(
       Operators.alloc,
       expr.toString,
       typeFullName.orElse(Some(TypeConstants.Any)),
       line(expr),
       column(expr)
-    ).signature(allocSignature)
+    )
 
     val initCall = initNode(
       typeFullName.orElse(Some(TypeConstants.Any)),
