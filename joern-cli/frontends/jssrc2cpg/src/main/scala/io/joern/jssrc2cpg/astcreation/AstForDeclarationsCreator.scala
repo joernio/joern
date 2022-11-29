@@ -265,8 +265,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   }
 
   private def astForVariableDeclarator(declarator: Value, scopeType: ScopeType, kind: String): Ast = {
-    val id   = createBabelNodeInfo(declarator("id"))
-    val init = Try(createBabelNodeInfo(declarator("init"))).toOption
+    val id             = createBabelNodeInfo(declarator("id"))
+    val init           = Try(createBabelNodeInfo(declarator("init"))).toOption
+    val declaratorCode = s"$kind ${code(declarator)}"
 
     val typeFullName = init match {
       case Some(f @ BabelNodeInfo(_: FunctionLike, _, _, _, _, _, _)) =>
@@ -292,7 +293,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       val nodeInfo = createBabelNodeInfo(id.json)
       nodeInfo.node match {
         case ObjectPattern | ArrayPattern =>
-          astForDeconstruction(nodeInfo, sourceAst)
+          astForDeconstruction(nodeInfo, sourceAst, declaratorCode)
         case _ =>
           val destAst = id.node match {
             case Identifier => astForIdentifier(id, Some(typeFullName))
@@ -303,7 +304,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
             createAssignmentCallAst(
               destAst,
               sourceAst,
-              s"$kind ${code(declarator)}",
+              declaratorCode,
               line = line(declarator),
               column = column(declarator)
             )
@@ -470,7 +471,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val lhsAst = nodeInfo.node match {
       case ObjectPattern | ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        astForDeconstruction(nodeInfo, sourceAst)
+        astForDeconstruction(nodeInfo, sourceAst, element.code)
       case _ => astForNode(lhsElement)
     }
 
@@ -513,7 +514,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val lhsAst = nodeInfo.node match {
       case ObjectPattern | ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
-        astForDeconstruction(nodeInfo, sourceAst)
+        astForDeconstruction(nodeInfo, sourceAst, element.code)
       case _ => astForNode(lhsElement)
     }
 
@@ -563,10 +564,15 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     createTernaryCallAst(testAst, sourceAst, Ast(falseNode), pattern.lineNumber, pattern.columnNumber)
   }
 
-  protected def astForDeconstruction(pattern: BabelNodeInfo, sourceAst: Ast, paramName: Option[String] = None): Ast = {
+  protected def astForDeconstruction(
+    pattern: BabelNodeInfo,
+    sourceAst: Ast,
+    code: String,
+    paramName: Option[String] = None
+  ): Ast = {
     val localTmpName = generateUnusedVariableName(usedVariableNames, "_tmp")
 
-    val blockNode = createBlockNode(pattern)
+    val blockNode = createBlockNode(pattern, Some(code))
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 

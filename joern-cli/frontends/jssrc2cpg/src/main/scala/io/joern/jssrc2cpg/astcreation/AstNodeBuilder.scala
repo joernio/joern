@@ -450,10 +450,10 @@ trait AstNodeBuilder { this: AstCreator =>
       .lineNumber(line)
       .columnNumber(column)
 
-  protected def createBlockNode(node: BabelNodeInfo): NewBlock =
+  protected def createBlockNode(node: BabelNodeInfo, customCode: Option[String] = None): NewBlock =
     NewBlock()
       .typeFullName(Defines.ANY)
-      .code(node.code)
+      .code(customCode.getOrElse(node.code))
       .lineNumber(node.lineNumber)
       .columnNumber(node.columnNumber)
 
