@@ -132,12 +132,15 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
       val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
       astCreator.createAndApply()
-      new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
+      val kotlinAstCreatorTypes = astCreator.global.usedTypes.keys().asScala.toList
+      new TypeNodePass(kotlinAstCreatorTypes, cpg).createAndApply()
 
       if (config.includeJavaSourceFiles && filesWithJavaExtension.nonEmpty) {
         val javaAstCreator = JavasrcInterop.astCreationPass(filesWithJavaExtension, cpg)
         javaAstCreator.createAndApply()
-        new TypeNodePass(javaAstCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
+        val javaAstCreatorTypes                           = javaAstCreator.global.usedTypes.keys().asScala.toList
+        val javaAstCreatorTypesMinusKotlinAstCreatorTypes = javaAstCreatorTypes.toSet -- kotlinAstCreatorTypes.toSet
+        new TypeNodePass(javaAstCreatorTypesMinusKotlinAstCreatorTypes.toList, cpg).createAndApply()
       }
 
       val configCreator = new ConfigPass(configFiles, cpg)
