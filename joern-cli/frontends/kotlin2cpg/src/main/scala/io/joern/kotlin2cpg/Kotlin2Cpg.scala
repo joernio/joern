@@ -19,8 +19,8 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
-
 import com.squareup.tools.maven.resolution.ArtifactResolver
+import io.joern.kotlin2cpg.interop.JavasrcInterop
 import java.net.{MalformedURLException, URL}
 import java.nio.file.{Files, Paths}
 import scala.util.Try
@@ -133,6 +133,12 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
       astCreator.createAndApply()
       new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
+
+      if (config.includeJavaSourceFiles && filesWithJavaExtension.nonEmpty) {
+        val javaAstCreator = JavasrcInterop.astCreationPass(filesWithJavaExtension, cpg)
+        javaAstCreator.createAndApply()
+        new TypeNodePass(javaAstCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
+      }
 
       val configCreator = new ConfigPass(configFiles, cpg)
       configCreator.createAndApply()

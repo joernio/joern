@@ -4,7 +4,7 @@ import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
 class JavaInteroperabilityTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
-  "CPG for code with call to `takeIf`" should {
+  "CPG for code with Java interop" should {
     val cpg = code(
       """package no.such.pkg
         |fun main() {
@@ -28,6 +28,11 @@ class JavaInteroperabilityTests extends KotlinCode2CpgFixture(withOssDataflow = 
     "should contain a CALL node with the correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.call.code("c.someFunction.*").l
       c.methodFullName shouldBe "no.such.pkg.SomeJavaClass.someFunction:void(java.lang.String)"
+    }
+
+    "should contain a CALL node for the call found inside the file written in Java" in {
+      val List(c) = cpg.call.codeExact("System.out.println(text)").l
+      c.methodFullName shouldBe "java.io.PrintStream.println:void(java.lang.String)"
     }
   }
 }

@@ -15,7 +15,8 @@ final case class Config(
   downloadDependencies: Boolean = false,
   gradleProjectName: Option[String] = None,
   gradleConfigurationName: Option[String] = None,
-  jar4importServiceUrl: Option[String] = None
+  jar4importServiceUrl: Option[String] = None,
+  includeJavaSourceFiles: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
