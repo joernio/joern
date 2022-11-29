@@ -179,7 +179,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     nodeInfo.node match {
       case ObjectPattern | ArrayPattern =>
         val rhsAst = astForNodeWithFunctionReference(assignment.json("right"))
-        astForDeconstruction(nodeInfo, rhsAst)
+        astForDeconstruction(nodeInfo, rhsAst, assignment.code)
       case _ =>
         val lhsAst = astForNode(assignment.json("left"))
         val rhsAst = astForNodeWithFunctionReference(assignment.json("right"))

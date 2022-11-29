@@ -536,11 +536,11 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
 
       val List(destructionBlock) = programBlock.astChildren.isBlock.l
+      destructionBlock.code shouldBe "var {a, b} = x"
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
       destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
 
-      val List(assignmentToA) =
-        destructionBlock.astChildren.isCall.codeExact("a = _tmp_0.a").l
+      val List(assignmentToA) = destructionBlock.astChildren.isCall.codeExact("a = _tmp_0.a").l
       assignmentToA.astChildren.isIdentifier.size shouldBe 1
 
       val List(fieldAccessA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0.a").l
