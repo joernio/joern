@@ -48,8 +48,8 @@ class Engine(context: EngineContext) {
   private val completionService =
     new ExecutorCompletionService[TaskSummary](executorService)
 
-  private val started: mutable.Set[(CfgNode, List[CfgNode])] = mutable.Set()
-  private var held: List[ReachableByTask]                    = List()
+  private val started: mutable.Set[TaskFingerprint] = mutable.Set()
+  private var held: List[ReachableByTask]           = List()
 
   private var taskResultTable: ResultTable = newResultTable()
 
@@ -135,11 +135,11 @@ class Engine(context: EngineContext) {
     // We assume here that all tasks in `tasks` have different fingerprints,
     // which we ensure on task creation via deduplication.
     val (tasksToHold, tasksToSolve) = tasks.par.partition { t =>
-      val fingerprint = (t.sink, t.callSiteStack)
+      val fingerprint = TaskFingerprint(t.sink, t.callSiteStack)
       started.contains(fingerprint)
     }
     held ++= tasksToHold
-    started ++= tasksToSolve.map(t => (t.sink, t.callSiteStack))
+    started ++= tasksToSolve.map(t => TaskFingerprint(t.sink, t.callSiteStack))
     numberOfTasksRunning += tasksToSolve.size
     tasksToSolve.foreach(t => completionService.submit(new TaskSolver(t, context, sources)))
   }
