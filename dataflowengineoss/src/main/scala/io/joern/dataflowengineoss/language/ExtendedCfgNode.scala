@@ -67,12 +67,8 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
           Some(Path(removeConsecutiveDuplicates(visiblePathElements.map(_.node))))
         }
       }
-      .par
       .filter(_.isDefined)
-      .par
       .dedup
-      .toVector
-      .par
       .flatten
       .toVector
     paths.to(Traversal)

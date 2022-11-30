@@ -91,7 +91,7 @@ class Engine(context: EngineContext) {
 
     def handleSummary(taskSummary: TaskSummary): Unit = {
       val newTasks = taskSummary.followupTasks
-      newTasks.par.foreach(task => submitTask(task, sources))
+      newTasks.foreach(task => submitTask(task, sources))
       val task       = taskSummary.task
       val newResults = taskSummary.results
       completedResults ++= newResults
@@ -116,7 +116,7 @@ class Engine(context: EngineContext) {
       }
     }
 
-    tasks.par.foreach(task => submitTask(task, sources))
+    tasks.foreach(task => submitTask(task, sources))
     runUntilAllTasksAreSolved()
     val n = completeHeldTasks(sources)
     completedResults ++= n
