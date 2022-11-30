@@ -21,6 +21,9 @@ import java.util.concurrent.{
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
+import scala.collection.parallel.CollectionConverters._
+import java.util.concurrent._
+
 case class StartingPointWithSource(startingPoint: CfgNode, source: StoredNode)
 
 /** Base class for nodes that can occur in data flows
@@ -51,7 +54,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   def reachableByFlows[A](sourceTravs: Traversal[A]*)(implicit context: EngineContext): Traversal[Path] = {
     val sources        = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs: _*)
     val startingPoints = sources.map(_.startingPoint)
-    val paths = reachableByInternal(sources)
+    val paths = reachableByInternal(sources).par
       .map { result =>
         // We can get back results that start in nodes that are invisible
         // according to the semantic, e.g., arguments that are only used
@@ -67,12 +70,13 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
       .filter(_.isDefined)
       .dedup
       .flatten
+      .toVector
     paths.to(Traversal)
   }
 
   def reachableByDetailed[NodeType](
     sourceTravs: Traversal[NodeType]*
-  )(implicit context: EngineContext): List[ReachableByResult] = {
+  )(implicit context: EngineContext): Vector[ReachableByResult] = {
     val sources = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs: _*)
     reachableByInternal(sources)
   }
@@ -83,7 +87,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 
   private def reachableByInternal(
     startingPointsWithSources: List[StartingPointWithSource]
-  )(implicit context: EngineContext): List[ReachableByResult] = {
+  )(implicit context: EngineContext): Vector[ReachableByResult] = {
     val sinks  = traversal.dedup.toList.sortBy(_.id)
     val engine = new Engine(context)
     val result = engine.backwards(sinks, startingPointsWithSources.map(_.startingPoint))
@@ -91,7 +95,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     engine.shutdown()
     val sources               = startingPointsWithSources.map(_.source)
     val startingPointToSource = startingPointsWithSources.map { x => x.startingPoint -> x.source }.toMap
-    result.map { r =>
+    val res = result.par.map { r =>
       if (sources.contains(r.startingPoint) || !startingPointToSource(r.startingPoint).isInstanceOf[CfgNode]) {
         r
       } else {
@@ -100,6 +104,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
         )
       }
     }
+    res.toVector
   }
 
 }

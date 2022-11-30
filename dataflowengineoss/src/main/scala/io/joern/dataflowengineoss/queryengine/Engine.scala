@@ -10,8 +10,8 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
-import scala.collection.parallel.CollectionConverters._
 
+import scala.collection.parallel.CollectionConverters._
 import java.util.concurrent._
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -60,7 +60,7 @@ class Engine(context: EngineContext) {
   /** Determine flows from sources to sinks by exploring the graph backwards from sinks to sources. Returns the list of
     * results along with a ResultTable, a cache of known paths created during the analysis.
     */
-  def backwards(sinks: List[CfgNode], sources: List[CfgNode]): List[ReachableByResult] = {
+  def backwards(sinks: List[CfgNode], sources: List[CfgNode]): Vector[ReachableByResult] = {
     if (sources.isEmpty) {
       logger.info("Attempting to determine flows from empty list of sources.")
     }
@@ -86,18 +86,18 @@ class Engine(context: EngineContext) {
   /** Submit tasks to a worker pool, solving them in parallel. Upon receiving results for a task, new tasks are
     * submitted accordingly. Once no more tasks can be created, the list of results is returned.
     */
-  private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): List[ReachableByResult] = {
+  private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): Vector[ReachableByResult] = {
     var completedResults = List[ReachableByResult]()
 
     def handleSummary(taskSummary: TaskSummary): Unit = {
+      val newTasks = taskSummary.followupTasks
+      newTasks.foreach(task => submitTask(task, sources))
       val task       = taskSummary.task
       val newResults = taskSummary.results
       completedResults ++= newResults
       newResults.filter(x => x.sink == task.sink && !x.partial).foreach { result =>
         taskResultTable.add(result.sink, Vector(result))
       }
-      val newTasks = taskSummary.followupTasks
-      newTasks.foreach(task => submitTask(task, sources))
     }
 
     def runUntilAllTasksAreSolved(): Unit = {
@@ -120,7 +120,7 @@ class Engine(context: EngineContext) {
     runUntilAllTasksAreSolved()
     val n = completeHeldTasks(sources)
     completedResults ++= n
-    deduplicate(completedResults.toVector).toList
+    deduplicate(completedResults.toVector)
   }
 
   private def completeHeldTasks(sources: Set[CfgNode]): List[ReachableByResult] = {
