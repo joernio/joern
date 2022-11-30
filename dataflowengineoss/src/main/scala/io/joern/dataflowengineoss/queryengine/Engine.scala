@@ -26,7 +26,7 @@ case class ReachableByTask(
   callSiteStack: List[Call] = List()
 )
 
-case class TaskFingerprint(sink: CfgNode, sources: Set[CfgNode], callDepth: Int, callSiteStack: List[Call])
+case class TaskFingerprint(sink: CfgNode, callSiteStack: List[Call])
 
 case class TaskSummary(
   task: ReachableByTask,
@@ -91,7 +91,7 @@ class Engine(context: EngineContext) {
 
     def handleSummary(taskSummary: TaskSummary): Unit = {
       val newTasks = taskSummary.followupTasks
-      newTasks.foreach(task => submitTask(task, sources))
+      submitTasks(newTasks, sources)
       val task       = taskSummary.task
       val newResults = taskSummary.results
       completedResults ++= newResults
@@ -116,7 +116,7 @@ class Engine(context: EngineContext) {
       }
     }
 
-    tasks.foreach(task => submitTask(task, sources))
+    submitTasks(tasks.toVector, sources)
     runUntilAllTasksAreSolved()
     val n = completeHeldTasks(sources)
     completedResults ++= n
@@ -131,21 +131,17 @@ class Engine(context: EngineContext) {
     }.toList
   }
 
-  private def submitTask(task: ReachableByTask, sources: Set[CfgNode]): Unit = {
-    val fingerprint = TaskFingerprint(task.sink, task.sources, task.callDepth, task.callSiteStack)
-    if (started.contains(fingerprint)) {
-      held = held.appended(task)
-      return
+  private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
+    // We assume here that all tasks in `tasks` have different fingerprints,
+    // which we ensure on task creation via deduplication.
+    val (tasksToHold, tasksToSolve) = tasks.par.partition { t =>
+      val fingerprint = TaskFingerprint(t.sink, t.callSiteStack)
+      started.contains(fingerprint)
     }
-    started.add(fingerprint)
-    numberOfTasksRunning += 1
-    completionService.submit(
-      new TaskSolver(
-        if (context.config.shareCacheBetweenTasks) task else task.copy(table = new ResultTable),
-        context,
-        sources
-      )
-    )
+    held ++= tasksToHold
+    started ++= tasksToSolve.map(t => TaskFingerprint(t.sink, t.callSiteStack))
+    numberOfTasksRunning += tasksToSolve.size
+    tasksToSolve.foreach(t => completionService.submit(new TaskSolver(t, context, sources)))
   }
 
 }

@@ -38,7 +38,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       }
 
       val (partial, complete) = finalResults.partition(_.partial)
-      val newTasks            = new TaskCreator(sources).createFromResults(partial)
+      val newTasks = new TaskCreator(sources).createFromResults(partial).distinctBy(t => (t.sink, t.callSiteStack))
       TaskSummary(task, complete, newTasks)
     }
   }
