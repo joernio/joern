@@ -2,7 +2,6 @@ package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.toNodeTraversalViaAdditionalImplicit
 
 class MetaDataTests extends JimpleCode2CpgFixture {
 
