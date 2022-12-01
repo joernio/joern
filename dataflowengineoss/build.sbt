@@ -6,8 +6,7 @@ dependsOn(Projects.semanticcpg, Projects.x2cpg)
 
 libraryDependencies ++= Seq(
   "org.antlr"      % "antlr4-runtime" % Versions.antlr,
-  "org.scalatest" %% "scalatest"      % Versions.scalatest % Test,
-  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
+  "org.scalatest" %% "scalatest"      % Versions.scalatest % Test
 )
 
 enablePlugins(Antlr4Plugin)

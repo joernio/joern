@@ -124,11 +124,11 @@ class Engine(context: EngineContext) {
   }
 
   private def completeHeldTasks(sources: Set[CfgNode]): List[ReachableByResult] = {
-    held.par.flatMap { heldTask =>
+    held.flatMap { heldTask =>
       taskResultTable.createFromTable(PathElement(heldTask.sink), heldTask.initialPath).toList.flatMap { x =>
         x.filter(y => sources.contains(y.path.head.node))
       }
-    }.toList
+    }
   }
 
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
