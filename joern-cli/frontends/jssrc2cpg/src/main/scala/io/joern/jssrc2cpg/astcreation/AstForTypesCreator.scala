@@ -331,7 +331,8 @@ trait AstForTypesCreator { this: AstCreator =>
       diffGraph.addEdge(methodAstParentStack.head, typeRefNode, EdgeTypes.AST)
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
       // the class definition assigned to its constructor
-      val classIdNode        = createIdentifierNode(typeName, Some(typeFullName), clazz.lineNumber, clazz.columnNumber)
+      val classIdNode =
+        createIdentifierNode(typeName, Some(constructorNode.fullName), clazz.lineNumber, clazz.columnNumber)
       val constructorRefNode = createMethodRefNode(constructorNode.code, constructorNode.fullName, clazz)
       createAssignmentCallAst(
         classIdNode,

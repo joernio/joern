@@ -41,7 +41,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").size shouldBe 1
       inside(cpg.assignment.argument.l) { case List(id: Identifier, constructorRef: MethodRef) =>
         id.name shouldBe "ClassA"
-        id.dynamicTypeHintFullName shouldBe List("code.js::program:ClassA")
+        id.dynamicTypeHintFullName shouldBe List(s"code.js::program:ClassA:${Defines.ConstructorMethodName}")
         constructorRef.code shouldBe "constructor() {}"
         constructorRef.typeFullName shouldBe s"code.js::program:ClassA:${Defines.ConstructorMethodName}"
         constructorRef.methodFullName shouldBe s"code.js::program:ClassA:${Defines.ConstructorMethodName}"
