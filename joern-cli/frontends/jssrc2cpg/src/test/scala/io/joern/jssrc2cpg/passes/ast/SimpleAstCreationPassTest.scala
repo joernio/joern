@@ -515,6 +515,20 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       lambda2MethodRef.methodFullName shouldBe lambda2FullName
     }
 
+    "be correct for ThisExpression" in AstFixture("function foo() { this.bar = 1 }") { cpg =>
+      val List(thisIdentifier: Identifier) = cpg.fieldAccess.argument(1).l
+      thisIdentifier.name shouldBe "this"
+      thisIdentifier.code shouldBe "this"
+
+      val List(thisParameter: MethodParameterIn) = cpg.method.name("foo").parameter.l
+      thisParameter.name shouldBe "this"
+      thisParameter.code shouldBe "this"
+
+      val referencingIdentifiers =
+        cpg.method.name("foo").parameter.name("this").referencingIdentifiers.l
+      referencingIdentifiers shouldBe cpg.fieldAccess.argument(1).l
+    }
+
     "be correct for call expression" in AstFixture("""
          |function method(x) {
          |  foo(x);

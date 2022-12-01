@@ -86,15 +86,16 @@ trait AstForExpressionsCreator { this: AstCreator =>
     }
   }
 
-  protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast =
-    Ast(
-      createLiteralNode(
-        thisExpr.code,
-        dynamicInstanceTypeStack.headOption.orElse(Some(Defines.ANY)),
-        thisExpr.lineNumber,
-        thisExpr.columnNumber
-      )
+  protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast = {
+    val thisNode = createIdentifierNode(
+      thisExpr.code,
+      dynamicInstanceTypeStack.headOption.orElse(Some(Defines.ANY)),
+      thisExpr.lineNumber,
+      thisExpr.columnNumber
     )
+    scope.addVariableReference(thisExpr.code, thisNode)
+    Ast(thisNode)
+  }
 
   protected def astForNewExpression(newExpr: BabelNodeInfo): Ast = {
     val callee    = newExpr.json("callee")
