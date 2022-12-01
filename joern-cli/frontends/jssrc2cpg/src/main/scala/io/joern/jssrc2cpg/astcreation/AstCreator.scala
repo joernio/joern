@@ -131,8 +131,8 @@ class AstCreator(
   protected def astForNode(json: Value): Ast = {
     val nodeInfo = createBabelNodeInfo(json)
     nodeInfo.node match {
-      case ClassDeclaration          => astForClass(nodeInfo)
-      case DeclareClass              => astForClass(nodeInfo)
+      case ClassDeclaration          => astForClass(nodeInfo, shouldCreateAssignmentCall = true)
+      case DeclareClass              => astForClass(nodeInfo, shouldCreateAssignmentCall = true)
       case ClassExpression           => astForClass(nodeInfo)
       case TSInterfaceDeclaration    => astForInterface(nodeInfo)
       case TSModuleDeclaration       => astForModule(nodeInfo)
