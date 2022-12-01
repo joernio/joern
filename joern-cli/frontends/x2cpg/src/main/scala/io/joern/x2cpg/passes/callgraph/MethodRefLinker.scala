@@ -8,6 +8,7 @@ import io.joern.x2cpg.passes.callgraph.MethodRefLinker._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb._
 import overflowdb.traversal._
+import overflowdb.traversal.ChainedImplicitsTemp._
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._

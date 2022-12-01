@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   AstNodeNew,
