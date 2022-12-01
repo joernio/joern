@@ -1,7 +1,10 @@
 package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.AbstractPassTest
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
 import io.shiftleft.semanticcpg.language._
 
 class JsClassesAstCreationPassTest extends AbstractPassTest {
@@ -32,6 +35,17 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
 
     "have a TYPE_DECL for ClassA" in AstFixture("var x = class ClassA {}") { cpg =>
       cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").size shouldBe 1
+    }
+
+    "have a synthetic assignment for ClassA" in AstFixture("class ClassA {}") { cpg =>
+      cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").size shouldBe 1
+      inside(cpg.assignment.argument.l) { case List(id: Identifier, constructorRef: MethodRef) =>
+        id.name shouldBe "ClassA"
+        id.dynamicTypeHintFullName shouldBe List("code.js::program:ClassA")
+        constructorRef.code shouldBe "constructor() {}"
+        constructorRef.typeFullName shouldBe s"code.js::program:ClassA:${Defines.ConstructorMethodName}"
+        constructorRef.methodFullName shouldBe s"code.js::program:ClassA:${Defines.ConstructorMethodName}"
+      }
     }
 
     "have constructor binding in TYPE_DECL for ClassA" in AstFixture("""

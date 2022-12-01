@@ -111,22 +111,22 @@ trait AstForTypesCreator { this: AstCreator =>
   private def findClassConstructor(clazz: BabelNodeInfo): Option[Value] =
     classMembers(clazz).find(isConstructor)
 
-  private def createClassConstructor(classExpr: BabelNodeInfo, constructorContent: List[Ast]): Ast =
+  private def createClassConstructor(classExpr: BabelNodeInfo, constructorContent: List[Ast]): MethodAst =
     findClassConstructor(classExpr) match {
       case Some(classConstructor) if hasKey(classConstructor, "body") =>
         val result =
           createMethodAstAndNode(createBabelNodeInfo(classConstructor), methodBlockContent = constructorContent)
         diffGraph.addEdge(result.methodNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
-        result.methodAst
+        result
       case Some(classConstructor) =>
         val methodNode =
           createMethodDefinitionNode(createBabelNodeInfo(classConstructor), methodBlockContent = constructorContent)
         diffGraph.addEdge(methodNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
-        Ast(methodNode)
+        MethodAst(Ast(methodNode), methodNode, Ast(methodNode))
       case _ =>
         val result = createFakeConstructor("constructor() {}", classExpr, methodBlockContent = constructorContent)
         diffGraph.addEdge(result.methodNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
-        result.methodAst
+        result
     }
 
   private def interfaceConstructor(typeName: String, tsInterface: BabelNodeInfo): NewMethod =
@@ -249,7 +249,7 @@ trait AstForTypesCreator { this: AstCreator =>
     (nodeInfo == ClassMethod || nodeInfo == ClassPrivateMethod || !isInitializedMember(json))
   }
 
-  protected def astForClass(clazz: BabelNodeInfo): Ast = {
+  protected def astForClass(clazz: BabelNodeInfo, shouldCreateAssignmentCall: Boolean = false): Ast = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(clazz)
     registerType(typeName, typeFullName)
 
@@ -290,11 +290,12 @@ trait AstForTypesCreator { this: AstCreator =>
       .filter(m => !isStaticMember(m) && isInitializedMember(m))
       .map(m => astForClassMember(m, typeDeclNode))
 
-    val constructorAst = createClassConstructor(clazz, memberInitCalls)
+    val constructor     = createClassConstructor(clazz, memberInitCalls)
+    val constructorNode = constructor.methodNode
 
     val constructorBindingNode = createBindingNode()
     diffGraph.addEdge(typeDeclNode, constructorBindingNode, EdgeTypes.BINDS)
-    diffGraph.addEdge(constructorBindingNode, constructorAst.nodes.head, EdgeTypes.REF)
+    diffGraph.addEdge(constructorBindingNode, constructorNode, EdgeTypes.REF)
 
     // adding all class methods / functions and uninitialized, non-static members
     allClassMembers
@@ -325,7 +326,23 @@ trait AstForTypesCreator { this: AstCreator =>
       Ast.storeInDiffGraph(init, diffGraph)
       diffGraph.addEdge(typeDeclNode, init.nodes.head, EdgeTypes.AST)
     }
-    Ast(typeRefNode)
+
+    if (shouldCreateAssignmentCall) {
+      diffGraph.addEdge(methodAstParentStack.head, typeRefNode, EdgeTypes.AST)
+      // return a synthetic assignment to enable tracing of the implicitly created identifier for
+      // the class definition assigned to its constructor
+      val classIdNode        = createIdentifierNode(typeName, Some(typeFullName), clazz.lineNumber, clazz.columnNumber)
+      val constructorRefNode = createMethodRefNode(constructorNode.code, constructorNode.fullName, clazz)
+      createAssignmentCallAst(
+        classIdNode,
+        constructorRefNode,
+        s"$typeName = ${constructorNode.fullName}",
+        clazz.lineNumber,
+        clazz.columnNumber
+      )
+    } else {
+      Ast(typeRefNode)
+    }
   }
 
   protected def addModifier(node: NewNode, json: Value): Unit = createBabelNodeInfo(json).node match {

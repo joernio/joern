@@ -144,11 +144,12 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
         "var Component = require(\"vue-property-decorator\").Component",
         "var Prop = require(\"vue-property-decorator\").Prop",
         "var Vue = require(\"vue-property-decorator\").Vue",
+        "HelloWorld = test.vue::program:HelloWorld:<init>",
         "exports[\"default\"] = HelloWorld"
       )
       cpg.local.code.l shouldBe List("Component", "Prop", "Vue", "msg")
 
-      inside(cpg.identifier.l) { case List(comp, prop, vue, msg, exports, helloWorld) =>
+      inside(cpg.identifier.l) { case List(comp, prop, vue, msg, helloWorld1, exports, helloWorld2) =>
         comp.name shouldBe "Component"
         comp.code shouldBe "Component"
         prop.name shouldBe "Prop"
@@ -164,8 +165,13 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
         parentTemplateDom(msg).code shouldBe "{{ msg }}"
         parentTemplateDom(parentTemplateDom(msg)).name shouldBe "JSXElement"
         parentTemplateDom(parentTemplateDom(msg)).code shouldBe "<h1>{{ msg }}</h1>"
-        helloWorld.name shouldBe "HelloWorld"
-        helloWorld.code shouldBe "HelloWorld"
+
+        // from implicit identifier for the class definition
+        helloWorld1.name shouldBe "HelloWorld"
+        helloWorld1.code shouldBe "HelloWorld"
+        // from the export
+        helloWorld2.name shouldBe "HelloWorld"
+        helloWorld2.code shouldBe "HelloWorld"
       }
 
       inside(cpg.imports.l) { case List(component, prop, vue) =>
