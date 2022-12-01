@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.language
 
+import better.files.File.OpenOptions
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement, ReachableByResult}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
@@ -11,16 +12,10 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
-import java.util.concurrent.{
-  ForkJoinPool,
-  ForkJoinTask,
-  RecursiveTask,
-  RejectedExecutionException,
-  RejectedExecutionHandler
-}
+import java.nio.file.StandardOpenOption
+import java.util.concurrent.{ForkJoinPool, ForkJoinTask, RecursiveTask, RejectedExecutionException}
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
-
 import scala.collection.parallel.CollectionConverters._
 import java.util.concurrent._
 
@@ -88,6 +83,11 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   private def reachableByInternal(
     startingPointsWithSources: List[StartingPointWithSource]
   )(implicit context: EngineContext): Vector[ReachableByResult] = {
+    better.files
+      .File("res_1.csv")
+      .write(s"HEAD_NODE,PARENT_METHOD_SIZE,CASE_TYPE,SOLVE_OUTCOME,RESULT_SIZE,PATH_SIZE,CALL_STACK_SIZE,CONNECTED_DATA_NODES,DURATION\n")(openOptions =
+        Seq(StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+      )
     val sinks  = traversal.dedup.toList.sortBy(_.id)
     val engine = new Engine(context)
     val result = engine.backwards(sinks, startingPointsWithSources.map(_.startingPoint))
