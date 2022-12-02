@@ -1527,19 +1527,15 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     val pushCallReceiverBase = pushCallReceiver.argument(1).asInstanceOf[Identifier]
     pushCallReceiverBase.name shouldBe "_tmp_0"
-    pushCallReceiverBase.argumentIndex shouldBe 1
 
     val pushCallReceiverMember = pushCallReceiver.argument(2).asInstanceOf[FieldIdentifier]
     pushCallReceiverMember.canonicalName shouldBe "push"
-    pushCallReceiverMember.argumentIndex shouldBe 2
 
-    val pushCallThis = pushCall.argument(1).asInstanceOf[Identifier]
+    val pushCallThis = pushCall.argument(0).asInstanceOf[Identifier]
     pushCallThis.name shouldBe "_tmp_0"
-    pushCallThis.argumentIndex shouldBe 1
 
-    val pushCallArg = pushCall.argument(2).asInstanceOf[Literal]
+    val pushCallArg = pushCall.argument(1).asInstanceOf[Literal]
     pushCallArg.code shouldBe element.toString
-    pushCallArg.argumentIndex shouldBe 2
   }
 
 }
