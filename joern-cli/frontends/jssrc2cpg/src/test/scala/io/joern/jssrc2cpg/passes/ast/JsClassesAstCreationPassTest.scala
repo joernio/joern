@@ -48,6 +48,19 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       }
     }
 
+    "have locals / closure bindings for implicit variables from class definitions" in AstFixture("""
+        |class A {}
+        |function b() {
+        |  new A();
+        |}""".stripMargin) { cpg =>
+      cpg.typeDecl.nameExact("A").fullNameExact("code.js::program:A").size shouldBe 1
+      val List(localA) = cpg.method.name(":program").local.name("A").l
+      localA.code shouldBe "A"
+      val List(funcLocalA) = cpg.method.name("b").local.name("A").l
+      funcLocalA.code shouldBe "A"
+      funcLocalA.closureBindingId shouldBe Some("code.js::program:b:A")
+    }
+
     "have constructor binding in TYPE_DECL for ClassA" in AstFixture("""
         |var x = class ClassA {
         |  constructor() {}

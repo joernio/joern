@@ -1,5 +1,6 @@
 package io.joern.jssrc2cpg.astcreation
 
+import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack._
@@ -334,6 +335,12 @@ trait AstForTypesCreator { this: AstCreator =>
       val classIdNode =
         createIdentifierNode(typeName, Some(constructorNode.fullName), clazz.lineNumber, clazz.columnNumber)
       val constructorRefNode = createMethodRefNode(constructorNode.code, constructorNode.fullName, clazz)
+
+      val idLocal = createLocalNode(typeName, Defines.ANY)
+      diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
+      scope.addVariable(typeName, idLocal, BlockScope)
+      scope.addVariableReference(typeName, classIdNode)
+
       createAssignmentCallAst(
         classIdNode,
         constructorRefNode,

@@ -147,7 +147,7 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
         "HelloWorld = test.vue::program:HelloWorld:<init>",
         "exports[\"default\"] = HelloWorld"
       )
-      cpg.local.code.l shouldBe List("Component", "Prop", "Vue", "msg")
+      cpg.local.code.l shouldBe List("Component", "Prop", "Vue", "HelloWorld", "msg")
 
       inside(cpg.identifier.l) { case List(comp, prop, vue, msg, helloWorld1, exports, helloWorld2) =>
         comp.name shouldBe "Component"
