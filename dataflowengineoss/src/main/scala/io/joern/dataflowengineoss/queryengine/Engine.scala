@@ -271,7 +271,7 @@ object Engine {
         val head        = result.path.headOption.map(_.node)
         val last        = result.path.lastOption.map(_.node)
         val startAndEnd = (head ++ last).l
-        (startAndEnd, result.partial, result.callDepth)
+        (result.sink, startAndEnd, result.partial, result.callDepth)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
