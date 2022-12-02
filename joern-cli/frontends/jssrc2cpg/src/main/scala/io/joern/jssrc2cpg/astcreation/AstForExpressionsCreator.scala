@@ -386,8 +386,14 @@ trait AstForExpressionsCreator { this: AstCreator =>
           val receiverNode = createFieldAccessCallAst(baseNode, memberNode, elementLineNumber, elementColumnNumber)
           val thisPushNode = createIdentifierNode(tmpName, elementNodeInfo)
 
-          val argAsts = List(Ast(thisPushNode), elementNode)
-          Some(createCallAst(pushCallNode, argAsts, Some(receiverNode)))
+          Some(
+            createCallAst(
+              pushCallNode,
+              List(elementNode),
+              receiver = Some(receiverNode),
+              base = Some(Ast(thisPushNode))
+            )
+          )
         case _ => None // skip
       }
 
