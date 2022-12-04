@@ -2675,12 +2675,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         val name         = param.getNameAsString
         val typeFullName = maybeType.getOrElse(s"${Defines.UnresolvedNamespace}")
         val code         = s"$typeFullName $name"
+        val evalStrat =
+          if (param.getType.isPrimitiveType) EvaluationStrategies.BY_VALUE else EvaluationStrategies.BY_SHARING
         val paramNode = NewMethodParameterIn()
           .name(name)
           .index(idx + 1)
           .order(idx + 1)
           .code(code)
-          .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+          .evaluationStrategy(evalStrat)
           .typeFullName(typeFullName)
           .lineNumber(line(expr))
         typeInfoCalc.registerType(typeFullName)
@@ -3165,7 +3167,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(scopeStack.lookupVariableType(parameter.getTypeAsString, wildcardFallback = true))
         .map(_ ++ maybeArraySuffix)
         .getOrElse(s"${Defines.UnresolvedNamespace}.${parameter.getTypeAsString}")
-
+    val evalStrat =
+      if (parameter.getType.isPrimitiveType) EvaluationStrategies.BY_VALUE else EvaluationStrategies.BY_SHARING
     typeInfoCalc.registerType(typeFullName)
 
     val parameterNode = NewMethodParameterIn()
@@ -3173,7 +3176,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .code(parameter.toString)
       .lineNumber(line(parameter))
       .columnNumber(column(parameter))
-      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      .evaluationStrategy(evalStrat)
       .typeFullName(typeFullName)
       .index(childNum)
       .order(childNum)
