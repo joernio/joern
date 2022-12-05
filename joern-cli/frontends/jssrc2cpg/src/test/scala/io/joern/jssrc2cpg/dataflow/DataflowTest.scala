@@ -58,7 +58,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     val source = cpg.identifier.name("a")
     val sink   = cpg.call.code("foo.*").argument
     val flows  = sink.reachableByFlows(source)
-    flows.size shouldBe 9
+    flows.size shouldBe 6
   }
 
   "Flow chains from x to a" in {

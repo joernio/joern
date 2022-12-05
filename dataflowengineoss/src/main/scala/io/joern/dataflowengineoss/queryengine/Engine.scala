@@ -26,8 +26,6 @@ case class ReachableByTask(
   callSiteStack: List[Call] = List()
 )
 
-case class TaskFingerprint(sink: CfgNode, callSiteStack: List[Call])
-
 case class TaskSummary(
   task: ReachableByTask,
   results: Vector[ReachableByResult],
@@ -47,11 +45,6 @@ class Engine(context: EngineContext) {
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService =
     new ExecutorCompletionService[TaskSummary](executorService)
-
-  private val started: mutable.Set[TaskFingerprint] = mutable.Set()
-  private var held: List[ReachableByTask]           = List()
-
-  private var taskResultTable: ResultTable = newResultTable()
 
   def shutdown(): Unit = {
     executorService.shutdown()
@@ -95,9 +88,6 @@ class Engine(context: EngineContext) {
       val task       = taskSummary.task
       val newResults = taskSummary.results
       completedResults ++= newResults
-      newResults.filter(x => x.sink == task.sink && !x.partial).foreach { result =>
-        taskResultTable.add(result.sink, Vector(result))
-      }
     }
 
     def runUntilAllTasksAreSolved(): Unit = {
@@ -118,30 +108,12 @@ class Engine(context: EngineContext) {
 
     submitTasks(tasks.toVector, sources)
     runUntilAllTasksAreSolved()
-    val n = completeHeldTasks(sources)
-    completedResults ++= n
     deduplicate(completedResults.toVector)
   }
 
-  private def completeHeldTasks(sources: Set[CfgNode]): List[ReachableByResult] = {
-    held.par.flatMap { heldTask =>
-      taskResultTable.createFromTable(PathElement(heldTask.sink), heldTask.initialPath).toList.flatMap { x =>
-        x.filter(y => sources.contains(y.path.head.node))
-      }
-    }.toList
-  }
-
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
-    // We assume here that all tasks in `tasks` have different fingerprints,
-    // which we ensure on task creation via deduplication.
-    val (tasksToHold, tasksToSolve) = tasks.par.partition { t =>
-      val fingerprint = TaskFingerprint(t.sink, t.callSiteStack)
-      started.contains(fingerprint)
-    }
-    held ++= tasksToHold
-    started ++= tasksToSolve.map(t => TaskFingerprint(t.sink, t.callSiteStack))
-    numberOfTasksRunning += tasksToSolve.size
-    tasksToSolve.foreach(t => completionService.submit(new TaskSolver(t, context, sources)))
+    numberOfTasksRunning += tasks.size
+    tasks.foreach(t => completionService.submit(new TaskSolver(t, context, sources)))
   }
 
 }
@@ -271,7 +243,7 @@ object Engine {
         val head        = result.path.headOption.map(_.node)
         val last        = result.path.lastOption.map(_.node)
         val startAndEnd = (head ++ last).l
-        (result.sink, startAndEnd, result.partial, result.callDepth)
+        (startAndEnd, result.partial, result.callDepth)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
