@@ -1,7 +1,7 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
-import io.joern.php2cpg.parser.Domain.{PhpBuiltins, PhpDomainTypeConstants}
+import io.joern.php2cpg.parser.Domain.{PhpOperators, PhpDomainTypeConstants}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, TypeRef}
@@ -40,8 +40,8 @@ class OperatorTests extends PhpCode2CpgFixture {
         ("$a &= $b", Operators.assignmentAnd),
         ("$a |= $b", Operators.assignmentOr),
         ("$a ^= $b", Operators.assignmentXor),
-        ("$a ??= $b", PhpBuiltins.assignmentCoalesceOp),
-        ("$a .= $b", PhpBuiltins.assignmentConcatOp),
+        ("$a ??= $b", PhpOperators.assignmentCoalesceOp),
+        ("$a .= $b", PhpOperators.assignmentConcatOp),
         ("$a /= $b", Operators.assignmentDivision),
         ("$a -= $b", Operators.assignmentMinus),
         ("$a %= $b", Operators.assignmentModulo),
@@ -126,29 +126,29 @@ class OperatorTests extends PhpCode2CpgFixture {
         ("1 ^ 2", Operators.xor),
         ("$a && $b", Operators.logicalAnd),
         ("$a || $b", Operators.logicalOr),
-        ("$a ?? $b", PhpBuiltins.coalesceOp),
-        ("$a . $b", PhpBuiltins.concatOp),
+        ("$a ?? $b", PhpOperators.coalesceOp),
+        ("$a . $b", PhpOperators.concatOp),
         ("$a / $b", Operators.division),
         ("$a == $b", Operators.equals),
         ("$a >= $b", Operators.greaterEqualsThan),
         ("$a > $b", Operators.greaterThan),
-        ("$a === $b", PhpBuiltins.identicalOp),
+        ("$a === $b", PhpOperators.identicalOp),
         ("$a and $b", Operators.logicalAnd),
         ("$a or $b", Operators.logicalOr),
-        ("$a xor $b", PhpBuiltins.logicalXorOp),
+        ("$a xor $b", PhpOperators.logicalXorOp),
         ("$a - $b", Operators.minus),
         ("$a % $b", Operators.modulo),
         ("$a * $b", Operators.multiplication),
         ("$a != $b", Operators.notEquals),
         ("$a <> $b", Operators.notEquals),
-        ("$a !== $b", PhpBuiltins.notIdenticalOp),
+        ("$a !== $b", PhpOperators.notIdenticalOp),
         ("$a + $b", Operators.plus),
         ("$a ** $b", Operators.exponentiation),
         ("$a << $b", Operators.shiftLeft),
         ("$a >> $b", Operators.arithmeticShiftRight),
         ("$a <= $b", Operators.lessEqualsThan),
         ("$a < $b", Operators.lessThan),
-        ("$a <=> $b", PhpBuiltins.spaceshipOp)
+        ("$a <=> $b", PhpOperators.spaceshipOp)
       )
 
       def normalizeLogicalOps(input: String): String = {
@@ -214,11 +214,11 @@ class OperatorTests extends PhpCode2CpgFixture {
     "handle a single argument" in {
       val cpg = code("<?php\nisset($a)")
 
-      val call = inside(cpg.call.nameExact(PhpBuiltins.issetFunc).l) { case List(call) =>
+      val call = inside(cpg.call.nameExact("isset").l) { case List(call) =>
         call
       }
 
-      call.methodFullName shouldBe PhpBuiltins.issetFunc
+      call.methodFullName shouldBe PhpOperators.issetFunc
       call.typeFullName shouldBe TypeConstants.Bool
       call.lineNumber shouldBe Some(2)
 
@@ -232,11 +232,11 @@ class OperatorTests extends PhpCode2CpgFixture {
     "handle multiple arguments" in {
       val cpg = code("<?php\nisset($a, $b, $c)")
 
-      val call = inside(cpg.call.nameExact(PhpBuiltins.issetFunc).l) { case List(call) =>
+      val call = inside(cpg.call.nameExact("isset").l) { case List(call) =>
         call
       }
 
-      call.methodFullName shouldBe PhpBuiltins.issetFunc
+      call.methodFullName shouldBe PhpOperators.issetFunc
       call.typeFullName shouldBe TypeConstants.Bool
       call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       call.lineNumber shouldBe Some(2)
@@ -260,8 +260,8 @@ class OperatorTests extends PhpCode2CpgFixture {
   "print calls should be created correctly" in {
     val cpg = code("<?php\nprint(\"Hello, world\");")
 
-    inside(cpg.call.nameExact(PhpBuiltins.printFunc).l) { case List(printCall) =>
-      printCall.methodFullName shouldBe "print"
+    inside(cpg.call.nameExact("print").l) { case List(printCall) =>
+      printCall.methodFullName shouldBe "__builtin.print"
       printCall.typeFullName shouldBe TypeConstants.Int
       printCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       printCall.lineNumber shouldBe Some(2)
@@ -301,11 +301,11 @@ class OperatorTests extends PhpCode2CpgFixture {
 
     "be created correctly for the shorthand elvis operator" in {
       val cpg = code("<?php\n$a ?: $b")
-      val call = inside(cpg.call.nameExact(PhpBuiltins.elvisOp).l) { case List(elvisOp) =>
+      val call = inside(cpg.call.nameExact(PhpOperators.elvisOp).l) { case List(elvisOp) =>
         elvisOp
       }
 
-      call.methodFullName shouldBe PhpBuiltins.elvisOp
+      call.methodFullName shouldBe PhpOperators.elvisOp
       call.code shouldBe "$a ?: $b"
       call.lineNumber shouldBe Some(2)
 
@@ -325,8 +325,8 @@ class OperatorTests extends PhpCode2CpgFixture {
     val cpg = code("<?php\nclone $x")
 
     inside(cpg.call.l) { case List(cloneCall) =>
-      cloneCall.name shouldBe PhpBuiltins.cloneFunc
-      cloneCall.methodFullName shouldBe PhpBuiltins.cloneFunc
+      cloneCall.name shouldBe "clone"
+      cloneCall.methodFullName shouldBe PhpOperators.cloneFunc
       cloneCall.code shouldBe "clone $x"
       cloneCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       cloneCall.lineNumber shouldBe Some(2)
@@ -342,8 +342,8 @@ class OperatorTests extends PhpCode2CpgFixture {
     val cpg = code("<?php\nempty($x)")
 
     inside(cpg.call.l) { case List(emptyCall) =>
-      emptyCall.name shouldBe PhpBuiltins.emptyFunc
-      emptyCall.methodFullName shouldBe PhpBuiltins.emptyFunc
+      emptyCall.name shouldBe "empty"
+      emptyCall.methodFullName shouldBe PhpOperators.emptyFunc
       emptyCall.code shouldBe "empty($x)"
       emptyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       emptyCall.lineNumber shouldBe Some(2)
@@ -359,8 +359,8 @@ class OperatorTests extends PhpCode2CpgFixture {
     val cpg = code("<?php\neval($x)")
 
     inside(cpg.call.l) { case List(evalCall) =>
-      evalCall.name shouldBe PhpBuiltins.evalFunc
-      evalCall.methodFullName shouldBe PhpBuiltins.evalFunc
+      evalCall.name shouldBe "eval"
+      evalCall.methodFullName shouldBe PhpOperators.evalFunc
       evalCall.code shouldBe "eval($x)"
       evalCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       evalCall.lineNumber shouldBe Some(2)
@@ -376,8 +376,8 @@ class OperatorTests extends PhpCode2CpgFixture {
     "be represented with an empty arg list if no args are given" in {
       val cpg = code("<?php\nexit;")
       inside(cpg.call.l) { case List(exitCall) =>
-        exitCall.name shouldBe PhpBuiltins.exitFunc
-        exitCall.methodFullName shouldBe PhpBuiltins.exitFunc
+        exitCall.name shouldBe "exit"
+        exitCall.methodFullName shouldBe PhpOperators.exitFunc
         exitCall.typeFullName shouldBe TypeConstants.Void
         exitCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         exitCall.lineNumber shouldBe Some(2)
@@ -389,8 +389,8 @@ class OperatorTests extends PhpCode2CpgFixture {
     "be represented with an empty arg list if an empty args list is given" in {
       val cpg = code("<?php\nexit();")
       inside(cpg.call.l) { case List(exitCall) =>
-        exitCall.name shouldBe PhpBuiltins.exitFunc
-        exitCall.methodFullName shouldBe PhpBuiltins.exitFunc
+        exitCall.name shouldBe "exit"
+        exitCall.methodFullName shouldBe PhpOperators.exitFunc
         exitCall.typeFullName shouldBe TypeConstants.Void
         exitCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         exitCall.lineNumber shouldBe Some(2)
@@ -402,8 +402,8 @@ class OperatorTests extends PhpCode2CpgFixture {
     "have the correct arg child if an arg is given" in {
       val cpg = code("<?php\nexit(0);")
       inside(cpg.call.l) { case List(exitCall) =>
-        exitCall.name shouldBe PhpBuiltins.exitFunc
-        exitCall.methodFullName shouldBe PhpBuiltins.exitFunc
+        exitCall.name shouldBe "exit"
+        exitCall.methodFullName shouldBe PhpOperators.exitFunc
         exitCall.typeFullName shouldBe TypeConstants.Void
         exitCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         exitCall.lineNumber shouldBe Some(2)
@@ -418,8 +418,8 @@ class OperatorTests extends PhpCode2CpgFixture {
   "the error suppress operator should work" in {
     val cpg = code("<?php\n@foo();")
 
-    inside(cpg.call.nameExact(PhpBuiltins.errorSuppress).l) { case List(errorSuppress) =>
-      errorSuppress.methodFullName shouldBe PhpBuiltins.errorSuppress
+    inside(cpg.call.nameExact(PhpOperators.errorSuppress).l) { case List(errorSuppress) =>
+      errorSuppress.methodFullName shouldBe PhpOperators.errorSuppress
       errorSuppress.code shouldBe "@foo()"
 
       inside(errorSuppress.argument.l) { case List(fooCall: Call) =>
@@ -452,8 +452,8 @@ class OperatorTests extends PhpCode2CpgFixture {
     //  in the AST, while being pretty much unusable for dataflow. A better implementation needs to follow.
     val cpg = code("<?php\nlist($a, $b) = $arr;")
 
-    inside(cpg.call.nameExact(PhpBuiltins.listFunc).l) { case List(listCall: Call) =>
-      listCall.methodFullName shouldBe PhpBuiltins.listFunc
+    inside(cpg.call.nameExact("list").l) { case List(listCall: Call) =>
+      listCall.methodFullName shouldBe PhpOperators.listFunc
       listCall.code shouldBe "list($a,$b)"
       listCall.lineNumber shouldBe Some(2)
       inside(listCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
@@ -532,8 +532,8 @@ class OperatorTests extends PhpCode2CpgFixture {
         }
     }
 
-    declareCall.name shouldBe PhpBuiltins.declareFunc
-    declareCall.methodFullName shouldBe PhpBuiltins.declareFunc
+    declareCall.name shouldBe PhpOperators.declareFunc
+    declareCall.methodFullName shouldBe PhpOperators.declareFunc
     declareCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     declareCall.code shouldBe "declare(ticks=1,encoding=\"UTF-8\")"
     declareCall.lineNumber shouldBe Some(2)
@@ -604,7 +604,7 @@ class OperatorTests extends PhpCode2CpgFixture {
     val cpg = code("<?php\n`ls -la`")
 
     inside(cpg.call.name("shell_exec").l) { case List(shellCall) =>
-      shellCall.methodFullName shouldBe "shell_exec"
+      shellCall.methodFullName shouldBe "__builtin.shell_exec"
       shellCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       shellCall.code shouldBe "`ls -la`"
       shellCall.lineNumber shouldBe Some(2)
@@ -620,7 +620,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.l) { case List(unsetCall) =>
       unsetCall.name shouldBe "unset"
-      unsetCall.methodFullName shouldBe "unset"
+      unsetCall.methodFullName shouldBe "__builtin.unset"
       unsetCall.code shouldBe "unset($a, $b)"
       unsetCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       unsetCall.lineNumber shouldBe Some(2)
@@ -650,6 +650,17 @@ class OperatorTests extends PhpCode2CpgFixture {
         aArg.name shouldBe "a"
         bArg.name shouldBe "b"
       }
+    }
+  }
+
+  "calls to builtins defined in resources/builtin_functions.txt should be handled correctly" in {
+    val cpg = code("<?php\nabs($a)")
+
+    inside(cpg.call.l) { case List(absCall) =>
+      absCall.name shouldBe "abs"
+      absCall.methodFullName shouldBe "__builtin.abs"
+      absCall.code shouldBe "abs($a)"
+      absCall.signature.isEmpty shouldBe true
     }
   }
 }

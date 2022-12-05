@@ -1,5 +1,6 @@
 package io.joern.php2cpg.parser
 
+import io.joern.php2cpg.astcreation.PhpBuiltins
 import io.joern.php2cpg.parser.Domain.PhpAssignment.{AssignTypeMap, isAssignType}
 import io.joern.php2cpg.parser.Domain.PhpBinaryOp.{BinaryOpTypeMap, isBinaryOpType}
 import io.joern.php2cpg.parser.Domain.PhpCast.{CastTypeMap, isCastType}
@@ -14,7 +15,7 @@ import scala.util.{Success, Try}
 
 object Domain {
 
-  object PhpBuiltins {
+  object PhpOperators {
     // TODO Decide which of these should be moved to codepropertygraph
     val coalesceOp     = "<operator>.coalesce"
     val concatOp       = "<operator>.concat"
@@ -33,20 +34,22 @@ object Domain {
     val assignmentCoalesceOp = "<operator>.assignmentCoalesce"
     val assignmentConcatOp   = "<operator>.assignmentConcat"
 
-    val encaps    = "encaps"
-    val issetFunc = "isset"
-    val printFunc = "print"
-    val cloneFunc = "clone"
-    val emptyFunc = "empty"
-    val evalFunc  = "eval"
-    val exitFunc  = "exit"
-    // Used for multiple assignments for example `list($a, $b) = $someArray`
-    val listFunc    = "list"
+    val encaps      = "encaps"
     val declareFunc = "declare"
-    val shellExec   = "shell_exec"
-    val unset       = "unset"
     val global      = "global"
-    val isNull      = "is_null"
+
+    // These are handled as special cases for builtins since they have separate AST nodes in the PHP-parser output.
+    val issetFunc = s"${PhpBuiltins.Prefix}.isset"
+    val printFunc = s"${PhpBuiltins.Prefix}.print"
+    val cloneFunc = s"${PhpBuiltins.Prefix}.clone"
+    val emptyFunc = s"${PhpBuiltins.Prefix}.empty"
+    val evalFunc  = s"${PhpBuiltins.Prefix}.eval"
+    val exitFunc  = s"${PhpBuiltins.Prefix}.exit"
+    // Used for multiple assignments for example `list($a, $b) = $someArray`
+    val listFunc  = s"${PhpBuiltins.Prefix}.list"
+    val isNull    = s"${PhpBuiltins.Prefix}.is_null"
+    val unset     = s"${PhpBuiltins.Prefix}.unset"
+    val shellExec = s"${PhpBuiltins.Prefix}.shell_exec"
   }
 
   object PhpDomainTypeConstants {
@@ -351,28 +354,28 @@ object Domain {
       "Expr_BinaryOp_BitwiseXor"     -> Operators.xor,
       "Expr_BinaryOp_BooleanAnd"     -> Operators.logicalAnd,
       "Expr_BinaryOp_BooleanOr"      -> Operators.logicalOr,
-      "Expr_BinaryOp_Coalesce"       -> PhpBuiltins.coalesceOp,
-      "Expr_BinaryOp_Concat"         -> PhpBuiltins.concatOp,
+      "Expr_BinaryOp_Coalesce"       -> PhpOperators.coalesceOp,
+      "Expr_BinaryOp_Concat"         -> PhpOperators.concatOp,
       "Expr_BinaryOp_Div"            -> Operators.division,
       "Expr_BinaryOp_Equal"          -> Operators.equals,
       "Expr_BinaryOp_GreaterOrEqual" -> Operators.greaterEqualsThan,
       "Expr_BinaryOp_Greater"        -> Operators.greaterThan,
-      "Expr_BinaryOp_Identical"      -> PhpBuiltins.identicalOp,
+      "Expr_BinaryOp_Identical"      -> PhpOperators.identicalOp,
       "Expr_BinaryOp_LogicalAnd"     -> Operators.logicalAnd,
       "Expr_BinaryOp_LogicalOr"      -> Operators.logicalOr,
-      "Expr_BinaryOp_LogicalXor"     -> PhpBuiltins.logicalXorOp,
+      "Expr_BinaryOp_LogicalXor"     -> PhpOperators.logicalXorOp,
       "Expr_BinaryOp_Minus"          -> Operators.minus,
       "Expr_BinaryOp_Mod"            -> Operators.modulo,
       "Expr_BinaryOp_Mul"            -> Operators.multiplication,
       "Expr_BinaryOp_NotEqual"       -> Operators.notEquals,
-      "Expr_BinaryOp_NotIdentical"   -> PhpBuiltins.notIdenticalOp,
+      "Expr_BinaryOp_NotIdentical"   -> PhpOperators.notIdenticalOp,
       "Expr_BinaryOp_Plus"           -> Operators.plus,
       "Expr_BinaryOp_Pow"            -> Operators.exponentiation,
       "Expr_BinaryOp_ShiftLeft"      -> Operators.shiftLeft,
       "Expr_BinaryOp_ShiftRight"     -> Operators.arithmeticShiftRight,
       "Expr_BinaryOp_SmallerOrEqual" -> Operators.lessEqualsThan,
       "Expr_BinaryOp_Smaller"        -> Operators.lessThan,
-      "Expr_BinaryOp_Spaceship"      -> PhpBuiltins.spaceshipOp
+      "Expr_BinaryOp_Spaceship"      -> PhpOperators.spaceshipOp
     )
 
     def isBinaryOpType(typeName: String): Boolean = {
@@ -410,8 +413,8 @@ object Domain {
       "Expr_AssignOp_BitwiseAnd" -> Operators.assignmentAnd,
       "Expr_AssignOp_BitwiseOr"  -> Operators.assignmentOr,
       "Expr_AssignOp_BitwiseXor" -> Operators.assignmentXor,
-      "Expr_AssignOp_Coalesce"   -> PhpBuiltins.assignmentCoalesceOp,
-      "Expr_AssignOp_Concat"     -> PhpBuiltins.assignmentConcatOp,
+      "Expr_AssignOp_Coalesce"   -> PhpOperators.assignmentCoalesceOp,
+      "Expr_AssignOp_Concat"     -> PhpOperators.assignmentConcatOp,
       "Expr_AssignOp_Div"        -> Operators.assignmentDivision,
       "Expr_AssignOp_Minus"      -> Operators.assignmentMinus,
       "Expr_AssignOp_Mod"        -> Operators.assignmentModulo,

@@ -1,7 +1,7 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
-import io.joern.php2cpg.parser.Domain.PhpBuiltins
+import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
@@ -1190,7 +1190,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       valInit.name shouldBe Operators.assignment
       valInit.code shouldBe "$key => $val = $iter_tmp0->current()"
       inside(valInit.argument.l) { case List(valPair: Call, currentCall: Call) =>
-        valPair.name shouldBe PhpBuiltins.doubleArrow
+        valPair.name shouldBe PhpOperators.doubleArrow
         valPair.code shouldBe "$key => $val"
         inside(valPair.argument.l) { case List(keyId: Identifier, valId: Identifier) =>
           keyId.name shouldBe "key"
