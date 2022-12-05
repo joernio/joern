@@ -10,12 +10,32 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
-
-import scala.collection.parallel.CollectionConverters._
 import java.util.concurrent._
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
+/**
+ * @param sink
+ * The sink for which to find flows
+ *
+ * @param sources
+ * The set of sources from which to find flows
+ *
+ * @param table
+ * An initial result table to use for this task
+ *
+ * @param initialPath
+ * A path from the sink downwards towards another sink (excluding the sink)
+ *
+ * @param callDepth
+ *
+ * The number of calls we expanded in order to create this result
+ *
+ * @param callSiteStack
+ *
+ * The call sites that were expanded in order to create this result
+ *
+ * */
 case class ReachableByTask(
   sink: CfgNode,
   sources: Set[CfgNode],
