@@ -483,8 +483,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForDeclareStmt(stmt: PhpDeclareStmt): Ast = {
     val declareAssignAsts = stmt.declares.map(astForDeclareItem)
-    val declareCode       = s"${PhpBuiltins.declareFunc}(${declareAssignAsts.map(rootCode(_)).mkString(",")})"
-    val declareNode       = operatorCallNode(PhpBuiltins.declareFunc, declareCode, line = line(stmt))
+    val declareCode       = s"${PhpOperators.declareFunc}(${declareAssignAsts.map(rootCode(_)).mkString(",")})"
+    val declareNode       = operatorCallNode(PhpOperators.declareFunc, declareCode, line = line(stmt))
     val declareAst        = callAst(declareNode, declareAssignAsts)
 
     stmt.stmts match {
@@ -519,10 +519,14 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     Ast(callNode)
   }
 
+  private def stripBuiltinPrefix(name: String): String = name.replaceAll(s"${PhpBuiltins.Prefix}.", "")
+
   private def astForUnsetStmt(stmt: PhpUnsetStmt): Ast = {
-    val args     = stmt.vars.map(astForExpr)
-    val code     = s"${PhpBuiltins.unset}(${args.map(rootCode(_)).mkString(", ")})"
-    val callNode = operatorCallNode(PhpBuiltins.unset, code, typeFullName = Some(TypeConstants.Void), line = line(stmt))
+    val name = stripBuiltinPrefix(PhpOperators.unset)
+    val args = stmt.vars.map(astForExpr)
+    val code = s"$name(${args.map(rootCode(_)).mkString(", ")})"
+    val callNode = operatorCallNode(name, code, typeFullName = Some(TypeConstants.Void), line = line(stmt))
+      .methodFullName(PhpOperators.unset)
     callAst(callNode, args)
   }
 
@@ -531,9 +535,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     // it's very difficult to figure out correct scopes for global variables.
 
     val varsAsts = stmt.vars.map(astForExpr)
-    val code     = s"${PhpBuiltins.global} ${varsAsts.map(rootCode(_)).mkString(", ")}"
+    val code     = s"${PhpOperators.global} ${varsAsts.map(rootCode(_)).mkString(", ")}"
 
-    val globalCallNode = operatorCallNode(PhpBuiltins.global, code, Some(TypeConstants.Void), line(stmt))
+    val globalCallNode = operatorCallNode(PhpOperators.global, code, Some(TypeConstants.Void), line(stmt))
 
     callAst(globalCallNode, varsAsts)
   }
@@ -556,7 +560,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val valueAst = astForExpr(value)
 
     val code     = s"${rootCode(keyAst)} => ${rootCode(valueAst)}"
-    val callNode = operatorCallNode(PhpBuiltins.doubleArrow, code, line = lineNo)
+    val callNode = operatorCallNode(PhpOperators.doubleArrow, code, line = lineNo)
     callAst(callNode, keyAst :: valueAst :: Nil)
   }
 
@@ -579,9 +583,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iteratorLocal)
 
     // Condition ast
-    val valueAst     = astForExpr(stmt.valueVar)
-    val isNullCode   = s"${PhpBuiltins.isNull}(${rootCode(valueAst)})"
-    val isNullCall   = operatorCallNode(PhpBuiltins.isNull, isNullCode, Some(TypeConstants.Bool), line(stmt))
+    val isNullName = stripBuiltinPrefix(PhpOperators.isNull)
+    val valueAst   = astForExpr(stmt.valueVar)
+    val isNullCode = s"$isNullName(${rootCode(valueAst)})"
+    val isNullCall = operatorCallNode(isNullName, isNullCode, Some(TypeConstants.Bool), line(stmt))
+      .methodFullName(PhpOperators.isNull)
     val notIsNull    = operatorCallNode(Operators.logicalNot, s"!$isNullCode", line = line(stmt))
     val isNullAst    = callAst(isNullCall, valueAst :: Nil)
     val conditionAst = callAst(notIsNull, isNullAst :: Nil)
@@ -1002,8 +1008,12 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         s"${nameExpr.name}.$name:${Defines.UnresolvedSignature}(${arguments.size})"
 
+      case None if PhpBuiltins.FuncNames.contains(name) =>
+        // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
+        s"${PhpBuiltins.Prefix}.$name"
+
       // Function call
-      case None =>
+      case None if !PhpBuiltins.FuncNames.contains(name) =>
         val namespacePrefix = scope.getEnclosingNamespaceName match {
           case Some(NamespaceTraversal.globalNamespaceName) => ""
           case Some(name)                                   => s"$name."
@@ -1114,7 +1124,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
         Ast(NewLiteral().code(value).typeFullName(TypeConstants.Float).lineNumber(line(scalar)))
       case PhpEncapsed(parts, _) =>
         val callNode =
-          operatorCallNode(PhpBuiltins.encaps, code = /* TODO */ PhpBuiltins.encaps, line = line(scalar))
+          operatorCallNode(PhpOperators.encaps, code = /* TODO */ PhpOperators.encaps, line = line(scalar))
         val args = parts.map(astForExpr)
         callAst(callNode, args)
       case PhpEncapsedPart(value, _) =>
@@ -1180,20 +1190,24 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForIssetExpr(issetExpr: PhpIsset): Ast = {
+    val name = stripBuiltinPrefix(PhpOperators.issetFunc)
     val args = issetExpr.vars.map(astForExpr)
-    val code = s"${PhpBuiltins.issetFunc}(${args.map(rootCode(_).mkString(","))})"
+    val code = s"$name(${args.map(rootCode(_).mkString(","))})"
 
     val callNode =
-      operatorCallNode(PhpBuiltins.issetFunc, code, typeFullName = Some(TypeConstants.Bool), line = line(issetExpr))
+      operatorCallNode(name, code, typeFullName = Some(TypeConstants.Bool), line = line(issetExpr))
+        .methodFullName(PhpOperators.issetFunc)
 
     callAst(callNode, args)
   }
   private def astForPrintExpr(printExpr: PhpPrint): Ast = {
+    val name = stripBuiltinPrefix(PhpOperators.printFunc)
     val arg  = astForExpr(printExpr.expr)
-    val code = s"${PhpBuiltins.printFunc}(${rootCode(arg)})"
+    val code = s"$name(${rootCode(arg)})"
 
     val callNode =
-      operatorCallNode(PhpBuiltins.printFunc, code, typeFullName = Some(TypeConstants.Int), line = line(printExpr))
+      operatorCallNode(name, code, typeFullName = Some(TypeConstants.Int), line = line(printExpr))
+        .methodFullName(PhpOperators.printFunc)
 
     callAst(callNode, arg :: Nil)
   }
@@ -1203,7 +1217,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val maybeThenAst = ternaryOp.thenExpr.map(astForExpr)
     val elseAst      = astForExpr(ternaryOp.elseExpr)
 
-    val operatorName = if (maybeThenAst.isDefined) Operators.conditional else PhpBuiltins.elvisOp
+    val operatorName = if (maybeThenAst.isDefined) Operators.conditional else PhpOperators.elvisOp
     val code = maybeThenAst match {
       case Some(thenAst) => s"${rootCode(conditionAst)} ? ${rootCode(thenAst)} : ${rootCode(elseAst)}"
       case None          => s"${rootCode(conditionAst)} ?: ${rootCode(elseAst)}"
@@ -1229,40 +1243,48 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForClone(expr: PhpCloneExpr): Ast = {
+    val name    = stripBuiltinPrefix(PhpOperators.cloneFunc)
     val argAst  = astForExpr(expr.expr)
     val argType = rootType(argAst)
-    val code    = s"clone ${rootCode(argAst)}"
+    val code    = s"$name ${rootCode(argAst)}"
 
-    val callNode = operatorCallNode(PhpBuiltins.cloneFunc, code, argType, line(expr))
+    val callNode = operatorCallNode(name, code, argType, line(expr))
+      .methodFullName(PhpOperators.cloneFunc)
 
     callAst(callNode, argAst :: Nil)
   }
 
   private def astForEmpty(expr: PhpEmptyExpr): Ast = {
+    val name   = stripBuiltinPrefix(PhpOperators.emptyFunc)
     val argAst = astForExpr(expr.expr)
-    val code   = s"empty(${rootCode(argAst)})"
+    val code   = s"$name(${rootCode(argAst)})"
 
     val callNode =
-      operatorCallNode(PhpBuiltins.emptyFunc, code, typeFullName = Some(TypeConstants.Bool), line = line(expr))
+      operatorCallNode(name, code, typeFullName = Some(TypeConstants.Bool), line = line(expr))
+        .methodFullName(PhpOperators.emptyFunc)
 
     callAst(callNode, argAst :: Nil)
   }
 
   private def astForEval(expr: PhpEvalExpr): Ast = {
+    val name   = stripBuiltinPrefix(PhpOperators.evalFunc)
     val argAst = astForExpr(expr.expr)
-    val code   = s"eval(${rootCode(argAst)})"
+    val code   = s"$name(${rootCode(argAst)})"
 
     val callNode =
-      operatorCallNode(PhpBuiltins.evalFunc, code, typeFullName = Some(TypeConstants.Bool), line = line(expr))
+      operatorCallNode(name, code, typeFullName = Some(TypeConstants.Bool), line = line(expr))
+        .methodFullName(PhpOperators.evalFunc)
 
     callAst(callNode, argAst :: Nil)
   }
 
   private def astForExit(expr: PhpExitExpr): Ast = {
+    val name = stripBuiltinPrefix(PhpOperators.exitFunc)
     val args = expr.expr.map(astForExpr)
-    val code = s"exit(${args.map(rootCode(_)).getOrElse("")})"
+    val code = s"$name(${args.map(rootCode(_)).getOrElse("")})"
 
-    val callNode = operatorCallNode(PhpBuiltins.exitFunc, code, Some(TypeConstants.Void), line(expr))
+    val callNode = operatorCallNode(name, code, Some(TypeConstants.Void), line(expr))
+      .methodFullName(PhpOperators.exitFunc)
 
     callAst(callNode, args.toList)
   }
@@ -1331,9 +1353,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
      * implement the above lowering or to think of a better way to do it.
      */
 
+    val name     = stripBuiltinPrefix(PhpOperators.listFunc)
     val args     = expr.items.flatten.map { item => astForExpr(item.value) }
-    val listCode = s"${PhpBuiltins.listFunc}(${args.map(rootCode(_)).mkString(",")})"
-    val listNode = operatorCallNode(PhpBuiltins.listFunc, listCode, line = line(expr))
+    val listCode = s"$name(${args.map(rootCode(_)).mkString(",")})"
+    val listNode = operatorCallNode(name, listCode, line = line(expr))
+      .methodFullName(PhpOperators.listFunc)
 
     callAst(listNode, args)
   }
@@ -1598,7 +1622,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       val parentCall = operatorCallNode(Operators.addressOf, s"&$valueCode", line = line(item))
       callAst(parentCall, exprAst :: Nil)
     } else if (item.unpack) {
-      val parentCall = operatorCallNode(PhpBuiltins.unpack, s"...$valueCode", line = line(item))
+      val parentCall = operatorCallNode(PhpOperators.unpack, s"...$valueCode", line = line(item))
       callAst(parentCall, exprAst :: Nil)
     } else {
       exprAst
@@ -1617,7 +1641,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
         callAst(accessNode, variableAst :: dimensionAst :: Nil)
 
       case None =>
-        val accessNode = operatorCallNode(PhpBuiltins.emptyArrayIdx, s"$variableCode[]", line = line(expr))
+        val accessNode = operatorCallNode(PhpOperators.emptyArrayIdx, s"$variableCode[]", line = line(expr))
         callAst(accessNode, variableAst :: Nil)
     }
   }
@@ -1626,7 +1650,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val childAst = astForExpr(expr.expr)
 
     val code         = s"@${rootCode(childAst)}"
-    val suppressNode = operatorCallNode(PhpBuiltins.errorSuppress, code, line = line(expr))
+    val suppressNode = operatorCallNode(PhpOperators.errorSuppress, code, line = line(expr))
     rootType(childAst).foreach(suppressNode.typeFullName(_))
 
     callAst(suppressNode, childAst :: Nil)
@@ -1676,7 +1700,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val args = expr.parts.map(astForExpr)
     val code = s"`${args.map(rootCode(_)).mkString("").replaceAll("\"", "")}`"
 
-    val callNode = operatorCallNode(PhpBuiltins.shellExec, code, line = line(expr))
+    val callNode = operatorCallNode(stripBuiltinPrefix(PhpOperators.shellExec), code, line = line(expr))
+      .methodFullName(PhpOperators.shellExec)
 
     callAst(callNode, args)
   }
@@ -1732,26 +1757,26 @@ object AstCreator {
     Operators.xor                            -> "^",
     Operators.logicalAnd                     -> "&&",
     Operators.logicalOr                      -> "||",
-    PhpBuiltins.coalesceOp                   -> "??",
-    PhpBuiltins.concatOp                     -> ".",
+    PhpOperators.coalesceOp                  -> "??",
+    PhpOperators.concatOp                    -> ".",
     Operators.division                       -> "/",
     Operators.equals                         -> "==",
     Operators.greaterEqualsThan              -> ">=",
     Operators.greaterThan                    -> ">",
-    PhpBuiltins.identicalOp                  -> "===",
-    PhpBuiltins.logicalXorOp                 -> "xor",
+    PhpOperators.identicalOp                 -> "===",
+    PhpOperators.logicalXorOp                -> "xor",
     Operators.minus                          -> "-",
     Operators.modulo                         -> "%",
     Operators.multiplication                 -> "*",
     Operators.notEquals                      -> "!=",
-    PhpBuiltins.notIdenticalOp               -> "!==",
+    PhpOperators.notIdenticalOp              -> "!==",
     Operators.plus                           -> "+",
     Operators.exponentiation                 -> "**",
     Operators.shiftLeft                      -> "<<",
     Operators.arithmeticShiftRight           -> ">>",
     Operators.lessEqualsThan                 -> "<=",
     Operators.lessThan                       -> "<",
-    PhpBuiltins.spaceshipOp                  -> "<=>",
+    PhpOperators.spaceshipOp                 -> "<=>",
     Operators.not                            -> "~",
     Operators.logicalNot                     -> "!",
     Operators.postDecrement                  -> "--",
@@ -1764,8 +1789,8 @@ object AstCreator {
     Operators.assignmentAnd                  -> "&=",
     Operators.assignmentOr                   -> "|=",
     Operators.assignmentXor                  -> "^=",
-    PhpBuiltins.assignmentCoalesceOp         -> "??=",
-    PhpBuiltins.assignmentConcatOp           -> ".=",
+    PhpOperators.assignmentCoalesceOp        -> "??=",
+    PhpOperators.assignmentConcatOp          -> ".=",
     Operators.assignmentDivision             -> "/=",
     Operators.assignmentMinus                -> "-=",
     Operators.assignmentModulo               -> "%=",
