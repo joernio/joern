@@ -97,7 +97,6 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
         ReachableByResult(
           sink,
           PathElement(path.head.node, callSiteStack, isOutputArg = true) +: path.tail,
-          table,
           callSiteStack,
           partial = true
         )
@@ -109,7 +108,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(sink, path, table, callSiteStack)) ++ deduplicate(computeResultsForParents())
+        Vector(ReachableByResult(sink, path, callSiteStack)) ++ deduplicate(computeResultsForParents())
       // Case 1.5: the second node on the path is a METHOD_RETURN and its a source. This clumsy check is necessary because
       // for method returns, the derived tasks we create in TaskCreator jump immediately to the RETURN statements in
       // order to only pick up values that actually propagate via a RETURN and don't just flow to METHOD_RETURN because
@@ -118,11 +117,11 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
           if path.size > 1
             && path(1).node.isInstanceOf[MethodReturn]
             && sources.contains(path(1).node.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(sink, path.drop(1), table, callSiteStack)) ++ deduplicate(computeResultsForParents())
+        Vector(ReachableByResult(sink, path.drop(1), callSiteStack)) ++ deduplicate(computeResultsForParents())
 
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
-        Vector(ReachableByResult(sink, path, table, callSiteStack, partial = true))
+        Vector(ReachableByResult(sink, path, callSiteStack, partial = true))
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
       case call: Call

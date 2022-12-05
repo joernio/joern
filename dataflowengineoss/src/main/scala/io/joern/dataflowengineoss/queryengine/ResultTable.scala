@@ -51,10 +51,11 @@ class ResultTable(
 
 /** A (partial) result, informing about a path that exists from a source to another node in the graph.
   *
+  * @param sink
+  * the sink node of the task that yields this result
+  *
   * @param path
   *   this is the main result - a known path
-  * @param table
-  *   the result table - kept to allow for detailed inspection of intermediate paths
   * @param callSiteStack
   *   the call site stack containing the call sites that were expanded to kick off the task. We require this to match
   *   call sites to exclude non-realizable paths through other callers
@@ -65,7 +66,6 @@ class ResultTable(
 case class ReachableByResult(
   sink: CfgNode,
   path: Vector[PathElement],
-  table: ResultTable,
   callSiteStack: List[Call],
   callDepth: Int = 0,
   partial: Boolean = false

@@ -13,7 +13,6 @@ import overflowdb.traversal.{NodeOps, Traversal}
 
 import scala.collection.parallel.CollectionConverters._
 import java.util.concurrent._
-import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -85,7 +84,6 @@ class Engine(context: EngineContext) {
     def handleSummary(taskSummary: TaskSummary): Unit = {
       val newTasks = taskSummary.followupTasks
       submitTasks(newTasks, sources)
-      val task       = taskSummary.task
       val newResults = taskSummary.results
       completedResults ++= newResults
     }
@@ -119,6 +117,8 @@ class Engine(context: EngineContext) {
 }
 
 object Engine {
+
+  private val logger: Logger                   = LoggerFactory.getLogger(Engine.getClass)
 
   /** Traverse from a node to incoming DDG nodes, taking into account semantics. This method is exposed via the `ddgIn`
     * step, but is also called by the engine internally by the `TaskSolver`.
