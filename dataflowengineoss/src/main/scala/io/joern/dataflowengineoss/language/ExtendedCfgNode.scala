@@ -11,16 +11,9 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
-import java.util.concurrent.{
-  ForkJoinPool,
-  ForkJoinTask,
-  RecursiveTask,
-  RejectedExecutionException,
-  RejectedExecutionHandler
-}
+import java.util.concurrent.{ForkJoinPool, ForkJoinTask, RecursiveTask, RejectedExecutionException, RejectedExecutionHandler}
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
-
 import scala.collection.parallel.CollectionConverters._
 import java.util.concurrent._
 
@@ -130,6 +123,9 @@ object ExtendedCfgNode {
   * static members are passed to `reachableBy` as sources. In this case, we determine the first usages of this member in
   * each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements would be
   * problematic, but it works quite well in practice.
+  *
+  * The code also translates METHOD_RETURN to the corresponding call sites for backward compatability.
+  *
   */
 class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode]] {
 
@@ -211,6 +207,8 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
   override def compute(): List[CfgNode] =
     src match {
+      case methodReturn : MethodReturn =>
+        methodReturn.method.callIn.l
       case lit: Literal =>
         List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
       case member: Member =>
