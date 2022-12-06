@@ -295,13 +295,12 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
     "Exclusions behind over-taint" should {
       "not kill flows" in {
-        val source = cpg.method.name("source").methodReturn
+        val source = cpg.call("source")
         val sink   = cpg.method.name("sink").parameter
         val flows  = sink.reachableByFlows(source)
 
         flows.map(flowToResultPairs).toSetMutable shouldBe Set(
           List(
-            ("int", Some(2)),
             ("source()", Some(6)),
             ("c[1][2] = source()", Some(6)),
             ("sink(c[1])", Some(8)),
@@ -327,13 +326,12 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
     "Pointer-to-struct, arrow vs star-dot" should {
       "actually find flows" in {
-        val source = cpg.method.name("source").methodReturn
+        val source = cpg.call("source")
         val sink   = cpg.method.name("sink").parameter
         val flows  = sink.reachableByFlows(source)
 
         flows.map(flowToResultPairs).toSetMutable shouldBe Set(
           List(
-            ("int", Some(3)),
             ("source()", Some(7)),
             ("arg->field = source()", Some(7)),
             ("sink((*arg).field)", Some(8)),
@@ -358,18 +356,12 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
     "Pointer deref vs array access" should {
       "actually find flows" in {
-        val source = cpg.method.name("source").methodReturn
+        val source = cpg.call("source")
         val sink   = cpg.method.name("sink").parameter
         val flows  = sink.reachableByFlows(source)
 
         flows.map(flowToResultPairs).toSetMutable shouldBe Set(
-          List(
-            ("int", Some(2)),
-            ("source()", Some(6)),
-            ("arg[0] = source()", Some(6)),
-            ("sink(*arg)", Some(7)),
-            ("sink(int i)", Some(3))
-          )
+          List(("source()", Some(6)), ("arg[0] = source()", Some(6)), ("sink(*arg)", Some(7)), ("sink(int i)", Some(3)))
         )
       }
     }
@@ -438,7 +430,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
     "NOP on overtaint" should {
       "not widen the search" in {
-        val source = cpg.method.name("source").methodReturn
+        val source = cpg.call("source")
         val sink   = cpg.method.name("sink").parameter
         val flows  = sink.reachableByFlows(source)
 
@@ -448,7 +440,6 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
           flows.map(flowToResultPairs).toSetMutable shouldBe Set(
             // bad flow. delete once fixed, here for documentation only
             List(
-              ("$ret", Some(2)),
               ("source()", Some(8)),
               ("p2", None),
               ("p1", None),
@@ -984,13 +975,12 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "struct data flow" in {
-      val source = cpg.method.name("source").methodReturn
+      val source = cpg.call("source")
       val sink   = cpg.method.name("sink").parameter.name("x")
       val flows  = sink.reachableByFlows(source)
 
       flows.map(flowToResultPairs).toSetMutable shouldBe Set(
         List(
-          ("double", Some(7)),
           ("source(2)", Some(16)),
           ("k = source(2)", Some(16)),
           ("point.x = k", Some(18)),
@@ -1025,13 +1015,12 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "tainted struct" in {
-      val source = cpg.method.name("source").methodReturn
+      val source = cpg.call("source")
       val sink   = cpg.method.name("sink").parameter.name("x")
       val flows  = sink.reachableByFlows(source)
 
       flows.map(flowToResultPairs).toSetMutable shouldBe Set(
         List(
-          ("struct Point", Some(7)),
           ("source(2)", Some(17)),
           ("point = source(2)", Some(17)),
           ("sink(point.x)", Some(18)),
@@ -1059,7 +1048,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "not find any flows" in {
-      val source = cpg.method.name("source").methodReturn
+      val source = cpg.call("source")
       val sink   = cpg.method.name("sink").parameter
       val flows  = sink.reachableByFlows(source)
       flows.size shouldBe 0
@@ -1080,7 +1069,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "find flow" in {
-      val source = cpg.method.name("source").methodReturn
+      val source = cpg.call("source")
       val sink   = cpg.method.name("sink").parameter
       val flows  = sink.reachableByFlows(source)
 
@@ -1101,7 +1090,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "find flows (pointer-to-struct/arrows vs star-dot)" in {
-      val source = cpg.method.name("source").methodReturn
+      val source = cpg.call("source")
       val sink   = cpg.method.name("sink").parameter
       val flows  = sink.reachableByFlows(source)
       flows.size shouldBe 1
@@ -1121,7 +1110,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "handle deref vs array access correctly" in {
-      val source = cpg.method.name("source").methodReturn
+      val source = cpg.call("source")
       val sink   = cpg.call.codeExact("*arg")
       val flows  = sink.reachableByFlows(source)
       flows.size shouldBe 1

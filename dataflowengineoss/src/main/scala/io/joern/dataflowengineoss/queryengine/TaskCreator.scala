@@ -97,30 +97,16 @@ class TaskCreator(sources: Set[CfgNode]) {
 
       methodReturns.flatMap { case (call, methodReturn) =>
         val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
-        if (returnStatements.isEmpty) {
-          val newPath = path
-          List(
-            ReachableByTask(
-              methodReturn,
-              sources,
-              new ResultTable,
-              newPath,
-              callDepth + 1,
-              call :: result.callSiteStack
-            )
+        returnStatements.map { returnStatement =>
+          val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
+          ReachableByTask(
+            returnStatement,
+            sources,
+            new ResultTable,
+            newPath,
+            callDepth + 1,
+            call :: result.callSiteStack
           )
-        } else {
-          returnStatements.map { returnStatement =>
-            val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
-            ReachableByTask(
-              returnStatement,
-              sources,
-              new ResultTable,
-              newPath,
-              callDepth + 1,
-              call :: result.callSiteStack
-            )
-          }
         }
       }
     }

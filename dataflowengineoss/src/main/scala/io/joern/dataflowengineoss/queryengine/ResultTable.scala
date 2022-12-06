@@ -52,7 +52,7 @@ class ResultTable(
 /** A (partial) result, informing about a path that exists from a source to another node in the graph.
   *
   * @param sink
-  * the sink node of the task that yields this result
+  *   the sink node of the task that yields this result
   *
   * @param path
   *   this is the main result - a known path

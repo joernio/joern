@@ -14,28 +14,26 @@ import java.util.concurrent._
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-/**
- * @param sink
- * The sink for which to find flows
- *
- * @param sources
- * The set of sources from which to find flows
- *
- * @param table
- * An initial result table to use for this task
- *
- * @param initialPath
- * A path from the sink downwards towards another sink (excluding the sink)
- *
- * @param callDepth
- *
- * The number of calls we expanded in order to create this result
- *
- * @param callSiteStack
- *
- * The call sites that were expanded in order to create this result
- *
- * */
+/** @param sink
+  *   The sink for which to find flows
+  *
+  * @param sources
+  *   The set of sources from which to find flows
+  *
+  * @param table
+  *   An initial result table to use for this task
+  *
+  * @param initialPath
+  *   A path from the sink downwards towards another sink (excluding the sink)
+  *
+  * @param callDepth
+  *
+  * The number of calls we expanded in order to create this result
+  *
+  * @param callSiteStack
+  *
+  * The call sites that were expanded in order to create this result
+  */
 case class ReachableByTask(
   sink: CfgNode,
   sources: Set[CfgNode],
@@ -138,7 +136,7 @@ class Engine(context: EngineContext) {
 
 object Engine {
 
-  private val logger: Logger                   = LoggerFactory.getLogger(Engine.getClass)
+  private val logger: Logger = LoggerFactory.getLogger(Engine.getClass)
 
   /** Traverse from a node to incoming DDG nodes, taking into account semantics. This method is exposed via the `ddgIn`
     * step, but is also called by the engine internally by the `TaskSolver`.
