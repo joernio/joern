@@ -1110,7 +1110,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "handle deref vs array access correctly" in {
-      val source = cpg.call("source")
+      val source = cpg.method.name("source").methodReturn
       val sink   = cpg.call.codeExact("*arg")
       val flows  = sink.reachableByFlows(source)
       flows.size shouldBe 1
