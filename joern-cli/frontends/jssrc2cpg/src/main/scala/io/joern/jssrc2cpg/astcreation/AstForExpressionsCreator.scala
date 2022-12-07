@@ -81,7 +81,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           val receiverAst = astForNodeWithFunctionReference(callee.json)
           val thisNode    = createIdentifierNode("this", callee)
           scope.addVariableReference(thisNode.name, thisNode)
-          (receiverAst, thisNode, callee.code)
+          (receiverAst, thisNode, calleeCode)
       }
       handleCallNodeArgs(callExpr, receiverAst, baseNode, callName)
     }

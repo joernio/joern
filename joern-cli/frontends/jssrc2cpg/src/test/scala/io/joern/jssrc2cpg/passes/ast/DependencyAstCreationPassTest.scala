@@ -66,6 +66,17 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       depB.dependencyGroupId shouldBe Some("depB")
     }
 
+    "have correct locals and require calls for imports" in AstFixture("import path = require('path')") { cpg =>
+      val List(localPath) = cpg.local.l
+      localPath.name shouldBe "path"
+      localPath.referencingIdentifiers.head.name shouldBe "path"
+
+      val List(reqCall) = cpg.call.codeExact("require(\"path\")").l
+      reqCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      reqCall.receiver.head.code shouldBe "require"
+      reqCall.argument.argumentIndex(1).head.code shouldBe "\"path\""
+    }
+
     "have correct import nodes" in AstFixture("""
         |import {a} from "depA";
         |import {b} from "depB";

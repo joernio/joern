@@ -347,13 +347,21 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val sourceCall = createCallNode(
       s"$REQUIRE_KEYWORD(${sourceCallArgNode.code})",
       REQUIRE_KEYWORD,
-      DispatchTypes.STATIC_DISPATCH,
+      DispatchTypes.DYNAMIC_DISPATCH,
       nodeInfo.lineNumber,
       nodeInfo.columnNumber
     )
 
+    val receiverNode = createIdentifierNode(REQUIRE_KEYWORD, nodeInfo)
+    val thisNode     = createIdentifierNode("this", nodeInfo)
+    scope.addVariableReference(thisNode.name, thisNode)
+    val callAst = createCallAst(
+      sourceCall,
+      List(Ast(sourceCallArgNode)),
+      receiver = Some(Ast(receiverNode)),
+      base = Some(Ast(thisNode))
+    )
     val sourceAst = if (isImportN) {
-      val callAst = createCallAst(sourceCall, List(Ast(sourceCallArgNode)))
       val fieldAccessCall = createFieldAccessCallAst(
         callAst,
         createFieldIdentifierNode(name, nodeInfo.lineNumber, nodeInfo.columnNumber),
@@ -362,7 +370,6 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       )
       fieldAccessCall
     } else {
-      val callAst = createCallAst(sourceCall, List(Ast(sourceCallArgNode)))
       callAst
     }
     val assigmentCallAst =
