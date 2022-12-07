@@ -297,6 +297,12 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
   def tag(name: String): Traversal[Tag] =
     tag.name(name)
 
+  /** Traverse to all template DOM nodes
+    */
+  @Doc(info = "All template DOM nodes")
+  def templateDom: Traversal[TemplateDom] =
+    InitialTraversal.from[TemplateDom](cpg.graph, NodeTypes.TEMPLATE_DOM)
+
   /** Traverse to all type references
     */
   @Doc(info = "All type references")
