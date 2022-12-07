@@ -179,6 +179,11 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
   def isParameter: Traversal[MethodParameterIn] =
     traversal.collectAll[MethodParameterIn]
 
+  /** Traverse only to AST nodes that are TemplateDom nodes
+    */
+  def isTemplateDom: Traversal[TemplateDom] =
+    traversal.collectAll[TemplateDom]
+
   /** Traverse only to AST nodes that are TYPE_DECL
     */
   def isTypeDecl: Traversal[TypeDecl] =
