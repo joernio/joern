@@ -106,6 +106,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       val id           = createIdentifierNode(s"_$strippedCode", declaration)
       val localNode    = createLocalNode(id.code, Defines.ANY)
       scope.addVariable(id.code, localNode, BlockScope)
+      scope.addVariableReference(id.code, id)
       diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 
       val sourceCallArgNode =
@@ -338,6 +339,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val destNode  = createIdentifierNode(destName, nodeInfo)
     val localNode = createLocalNode(destName, Defines.ANY)
     scope.addVariable(destName, localNode, BlockScope)
+    scope.addVariableReference(destName, destNode)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 
     val destAst           = Ast(destNode)
@@ -577,9 +579,10 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     localAstParentStack.push(blockNode)
 
     val localNode = createLocalNode(localTmpName, Defines.ANY)
+    val tmpNode   = createIdentifierNode(localTmpName, pattern)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
-
-    val tmpNode = createIdentifierNode(localTmpName, pattern)
+    scope.addVariable(localTmpName, localNode, BlockScope)
+    scope.addVariableReference(localTmpName, tmpNode)
 
     val rhsAssignmentAst = paramName.map(createParamAst(pattern, _, sourceAst)).getOrElse(sourceAst)
     val assignmentTmpCallAst =

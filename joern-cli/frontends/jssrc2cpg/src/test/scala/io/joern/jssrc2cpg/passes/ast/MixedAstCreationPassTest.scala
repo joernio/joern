@@ -532,13 +532,17 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     "have correct structure for object destruction assignment with declaration" in AstFixture("var {a, b} = x") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
-      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
-      programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+      val List(localA)       = programBlock.astChildren.isLocal.nameExact("a").l
+      localA.referencingIdentifiers.name.head shouldBe "a"
+      val List(localB) = programBlock.astChildren.isLocal.nameExact("b").l
+      localB.referencingIdentifiers.name.head shouldBe "b"
 
       val List(destructionBlock) = programBlock.astChildren.isBlock.l
       destructionBlock.code shouldBe "var {a, b} = x"
-      destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
       destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
+
+      val List(localTmp) = destructionBlock.astChildren.isLocal.nameExact("_tmp_0").l
+      localTmp.referencingIdentifiers.name.head shouldBe "_tmp_0"
 
       val List(assignmentToA) = destructionBlock.astChildren.isCall.codeExact("a = _tmp_0.a").l
       assignmentToA.astChildren.isIdentifier.size shouldBe 1

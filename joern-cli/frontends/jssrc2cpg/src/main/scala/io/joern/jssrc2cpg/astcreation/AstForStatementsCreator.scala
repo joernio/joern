@@ -1,5 +1,6 @@
 package io.joern.jssrc2cpg.astcreation
 
+import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack._
@@ -367,8 +368,9 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
 
     val loopVariableLocalNode = createLocalNode(loopVariableName, Defines.ANY)
+    val loopVariableNode      = createIdentifierNode(loopVariableName, forInOfStmt)
     diffGraph.addEdge(localAstParentStack.head, loopVariableLocalNode, EdgeTypes.AST)
-    val loopVariableNode = createIdentifierNode(loopVariableName, forInOfStmt)
+    scope.addVariable(loopVariableName, loopVariableNode, BlockScope)
 
     // while loop:
     val whileLoopNode =

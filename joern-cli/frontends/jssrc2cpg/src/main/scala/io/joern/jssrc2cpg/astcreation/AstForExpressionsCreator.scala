@@ -1,5 +1,6 @@
 package io.joern.jssrc2cpg.astcreation
 
+import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.{Defines, EcmaBuiltins, GlobalBuiltins}
@@ -106,9 +107,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     val tmpAllocName      = generateUnusedVariableName(usedVariableNames, "_tmp")
     val localTmpAllocNode = createLocalNode(tmpAllocName, Defines.ANY)
+    val tmpAllocNode1     = createIdentifierNode(tmpAllocName, newExpr)
     diffGraph.addEdge(localAstParentStack.head, localTmpAllocNode, EdgeTypes.AST)
-
-    val tmpAllocNode1 = createIdentifierNode(tmpAllocName, newExpr)
+    scope.addVariable(tmpAllocName, tmpAllocNode1, BlockScope)
+    scope.addVariableReference(tmpAllocName, tmpAllocNode1)
 
     val allocCallNode =
       createCallNode(".alloc", Operators.alloc, DispatchTypes.STATIC_DISPATCH, newExpr.lineNumber, newExpr.columnNumber)
@@ -349,9 +351,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
       val tmpName      = generateUnusedVariableName(usedVariableNames, "_tmp")
       val localTmpNode = createLocalNode(tmpName, Defines.ANY)
-      diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
-
       val tmpArrayNode = createIdentifierNode(tmpName, arrExpr)
+      diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
+      scope.addVariable(tmpName, tmpArrayNode, BlockScope)
+      scope.addVariableReference(tmpName, tmpArrayNode)
 
       val arrayCallNode = createCallNode(
         EcmaBuiltins.arrayFactory + "()",
