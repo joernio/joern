@@ -506,7 +506,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       codeBuilder.append("static ")
     }
 
-    val classPrefix = if (isInterface) "interface " else "class "
+    val classPrefix =
+      if (isInterface)
+        "interface "
+      else if (typ.isEnumDeclaration)
+        "enum "
+      else
+        "class "
     codeBuilder.append(classPrefix)
     codeBuilder.append(typ.getNameAsString)
 
