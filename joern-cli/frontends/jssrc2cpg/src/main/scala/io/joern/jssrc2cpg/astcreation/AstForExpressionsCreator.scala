@@ -109,7 +109,6 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val localTmpAllocNode = createLocalNode(tmpAllocName, Defines.ANY)
     val tmpAllocNode1     = createIdentifierNode(tmpAllocName, newExpr)
     diffGraph.addEdge(localAstParentStack.head, localTmpAllocNode, EdgeTypes.AST)
-    scope.addVariable(tmpAllocName, tmpAllocNode1, BlockScope)
     scope.addVariableReference(tmpAllocName, tmpAllocNode1)
 
     val allocCallNode =
@@ -353,7 +352,6 @@ trait AstForExpressionsCreator { this: AstCreator =>
       val localTmpNode = createLocalNode(tmpName, Defines.ANY)
       val tmpArrayNode = createIdentifierNode(tmpName, arrExpr)
       diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
-      scope.addVariable(tmpName, tmpArrayNode, BlockScope)
       scope.addVariableReference(tmpName, tmpArrayNode)
 
       val arrayCallNode = createCallNode(
