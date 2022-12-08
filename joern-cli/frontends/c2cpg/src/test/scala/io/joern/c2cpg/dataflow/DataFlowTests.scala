@@ -2166,7 +2166,7 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
         |
         |void bar() {
         |	int val = 42, a;
-        |	a = val++; // broken
+        |	a = val++;
         |	sink(a);
         |}
         |
@@ -2175,7 +2175,7 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
     "find flows" in {
       val sink = cpg.method("sink").parameter.index(1).l
       val src  = cpg.literal.l
-      sink.reachableBy(src).size shouldBe 2
+      sink.reachableBy(src).method.name.toSet shouldBe Set("foo", "bar")
     }
   }
 }
