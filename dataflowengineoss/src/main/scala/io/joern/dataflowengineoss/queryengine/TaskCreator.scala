@@ -1,22 +1,18 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
+import io.joern.dataflowengineoss.queryengine.Engine.{argToOutputParams, semanticsForCall}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  CfgNode,
-  Expression,
-  MethodParameterIn,
-  MethodParameterOut,
-  Return
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, MethodParameterIn, MethodParameterOut, Return}
 import io.shiftleft.semanticcpg.language.NoResolve
 import overflowdb.traversal.{Traversal, jIteratortoTraversal}
 import io.shiftleft.semanticcpg.language._
 
 /** Creation of new tasks from results of completed tasks.
   */
-class TaskCreator(sources: Set[CfgNode]) {
+class TaskCreator(sources: Set[CfgNode])(implicit val semantics : Semantics) {
+
+  implicit val s : Semantics = semantics
 
   /** For a given list of results and sources, generate new tasks.
     */
@@ -96,8 +92,10 @@ class TaskCreator(sources: Set[CfgNode]) {
         .to(Traversal)
 
       methodReturns.flatMap { case (call, methodReturn) =>
+        val method = methodReturn.method.head
+        val semantics = semanticsForCall(call)
         val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
-        if (returnStatements.isEmpty) {
+        if (method.isExternal) {
           val newPath = path
           List(
             ReachableByTask(
