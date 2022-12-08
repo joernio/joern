@@ -94,6 +94,7 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
       val param = NewMethodParameterIn()
         .code(nameAndCode)
         .order(parameterOrder)
+        .index(parameterOrder)
         .name(nameAndCode)
         .evaluationStrategy(EvaluationStrategies.BY_VALUE)
         .typeFullName("ANY")
