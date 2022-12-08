@@ -1199,12 +1199,15 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |
         |""".stripMargin)
 
-    "find that there is no flow from `y = 1` to exit node" in {
+    "find that there is a flow from `y = 1` to exit node" in {
+      // This one may be a bit surprising, but what's happening here
+      // is that the expression "y = 1" flows to the exit node, and
+      // since that is influenced by 1, there is in fact a flow from
+      // "1" to the exit node.
       val source = cpg.literal("1")
       val sink   = cpg.method("foo").methodReturn
-
-      val flows = sink.reachableByFlows(source)
-      flows.size shouldBe 0
+      val flows  = sink.reachableByFlows(source)
+      flows.size shouldBe 1
     }
   }
 
@@ -2151,6 +2154,31 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
     "find flow for maxCallDepth = -1" in {
       def freeArg = cpg.call("free").argument(1)
       freeArg.reachableByFlows(freeArg).count(path => path.elements.size > 1) shouldBe 1
+    }
+  }
+
+  "DataFlowTest69" should {
+    val cpg = code("""
+        |void sink(int);
+        |
+        |void foo() {
+        |	int val = 42, a, b;
+        |	a = b = val;
+        |	sink(a);
+        |}
+        |
+        |void bar() {
+        |	int val = 42, a;
+        |	a = val++;
+        |	sink(a);
+        |}
+        |
+        |""".stripMargin)
+
+    "find flows" in {
+      val sink = cpg.method("sink").parameter.index(1).l
+      val src  = cpg.literal.l
+      sink.reachableBy(src).method.name.toSet shouldBe Set("foo", "bar")
     }
   }
 }
