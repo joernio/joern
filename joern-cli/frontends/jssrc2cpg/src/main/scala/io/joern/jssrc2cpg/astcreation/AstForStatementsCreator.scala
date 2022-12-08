@@ -295,9 +295,9 @@ trait AstForStatementsCreator { this: AstCreator =>
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
     val iteratorLocalNode = createLocalNode(iteratorName, Defines.ANY)
+    val iteratorNode      = createIdentifierNode(iteratorName, forInOfStmt)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
-
-    val iteratorNode = createIdentifierNode(iteratorName, forInOfStmt)
+    scope.addVariableReference(iteratorName, iteratorNode)
 
     val callNode = createCallNode(
       "Object.keys(" + collectionName + ")[Symbol.iterator]()",
@@ -356,8 +356,9 @@ trait AstForStatementsCreator { this: AstCreator =>
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
     val resultLocalNode = createLocalNode(resultName, Defines.ANY)
+    val resultNode      = createIdentifierNode(resultName, forInOfStmt)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
-    val resultNode = createIdentifierNode(resultName, forInOfStmt)
+    scope.addVariableReference(resultName, resultNode)
 
     // loop variable:
     val nodeInfo = createBabelNodeInfo(forInOfStmt.json("left"))
@@ -367,8 +368,9 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
 
     val loopVariableLocalNode = createLocalNode(loopVariableName, Defines.ANY)
+    val loopVariableNode      = createIdentifierNode(loopVariableName, forInOfStmt)
     diffGraph.addEdge(localAstParentStack.head, loopVariableLocalNode, EdgeTypes.AST)
-    val loopVariableNode = createIdentifierNode(loopVariableName, forInOfStmt)
+    scope.addVariableReference(loopVariableName, loopVariableNode)
 
     // while loop:
     val whileLoopNode =

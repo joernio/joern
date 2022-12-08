@@ -149,29 +149,30 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
       )
       cpg.local.code.l shouldBe List("Component", "Prop", "Vue", "HelloWorld", "msg")
 
-      inside(cpg.identifier.l) { case List(comp, prop, vue, msg, helloWorld1, exports, helloWorld2) =>
-        comp.name shouldBe "Component"
-        comp.code shouldBe "Component"
-        prop.name shouldBe "Prop"
-        prop.code shouldBe "Prop"
-        vue.name shouldBe "Vue"
-        vue.code shouldBe "Vue"
+      inside(cpg.identifier.nameNot("this", "require").l) {
+        case List(comp, prop, vue, msg, helloWorld1, exports, helloWorld2) =>
+          comp.name shouldBe "Component"
+          comp.code shouldBe "Component"
+          prop.name shouldBe "Prop"
+          prop.code shouldBe "Prop"
+          vue.name shouldBe "Vue"
+          vue.code shouldBe "Vue"
 
-        exports.name shouldBe "exports"
-        exports.code shouldBe "exports"
-        msg.name shouldBe "msg"
-        msg.code shouldBe "msg"
-        parentTemplateDom(msg).name shouldBe "JSXExpressionContainer"
-        parentTemplateDom(msg).code shouldBe "{{ msg }}"
-        parentTemplateDom(parentTemplateDom(msg)).name shouldBe "JSXElement"
-        parentTemplateDom(parentTemplateDom(msg)).code shouldBe "<h1>{{ msg }}</h1>"
+          exports.name shouldBe "exports"
+          exports.code shouldBe "exports"
+          msg.name shouldBe "msg"
+          msg.code shouldBe "msg"
+          parentTemplateDom(msg).name shouldBe "JSXExpressionContainer"
+          parentTemplateDom(msg).code shouldBe "{{ msg }}"
+          parentTemplateDom(parentTemplateDom(msg)).name shouldBe "JSXElement"
+          parentTemplateDom(parentTemplateDom(msg)).code shouldBe "<h1>{{ msg }}</h1>"
 
-        // from implicit identifier for the class definition
-        helloWorld1.name shouldBe "HelloWorld"
-        helloWorld1.code shouldBe "HelloWorld"
-        // from the export
-        helloWorld2.name shouldBe "HelloWorld"
-        helloWorld2.code shouldBe "HelloWorld"
+          // from implicit identifier for the class definition
+          helloWorld1.name shouldBe "HelloWorld"
+          helloWorld1.code shouldBe "HelloWorld"
+          // from the export
+          helloWorld2.name shouldBe "HelloWorld"
+          helloWorld2.code shouldBe "HelloWorld"
       }
 
       inside(cpg.imports.l) { case List(component, prop, vue) =>

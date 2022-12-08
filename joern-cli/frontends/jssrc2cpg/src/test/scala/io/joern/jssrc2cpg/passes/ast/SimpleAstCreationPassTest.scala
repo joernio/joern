@@ -515,6 +515,18 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       lambda2MethodRef.methodFullName shouldBe lambda2FullName
     }
 
+    "be correct for lambdas returning lambdas" in AstFixture("() => async () => { }") { cpg =>
+      cpg.method.fullName.l shouldBe List(
+        "code.js::program",
+        "code.js::program:anonymous:anonymous",
+        "code.js::program:anonymous"
+      )
+      val List(ret) = cpg.method.fullNameExact("code.js::program:anonymous").block.astChildren.isReturn.l
+      ret.code shouldBe "async () => { }"
+      val List(ref: MethodRef) = ret.astChildren.l
+      ref.methodFullName shouldBe "code.js::program:anonymous:anonymous"
+    }
+
     "be correct for ThisExpression" in AstFixture("function foo() { this.bar = 1 }") { cpg =>
       val List(thisIdentifier: Identifier) = cpg.fieldAccess.argument(1).l
       thisIdentifier.name shouldBe "this"
