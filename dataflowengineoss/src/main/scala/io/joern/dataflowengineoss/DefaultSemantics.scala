@@ -18,7 +18,7 @@ object DefaultSemantics {
   def operatorFlows: List[FlowSemantic] = List(
     F(Operators.addition, List((1, -1), (2, -1))),
     F(Operators.addressOf, List((1, -1))),
-    F(Operators.assignment, List((2, 1))),
+    F(Operators.assignment, List((2, 1), (2, -1))),
     F(Operators.assignmentAnd, List((2, 1), (1, 1))),
     F(Operators.assignmentArithmeticShiftRight, List((2, 1), (1, 1))),
     F(Operators.assignmentDivision, List((2, 1), (1, 1))),
@@ -49,10 +49,10 @@ object DefaultSemantics {
     F(Operators.indirection, List((1, -1))),
     F(Operators.memberAccess, List((1, -1))),
     F(Operators.pointerShift, List((1, -1))),
-    F(Operators.postDecrement, List((1, 1))),
-    F(Operators.postIncrement, List((1, 1))),
-    F(Operators.preDecrement, List((1, 1))),
-    F(Operators.preIncrement, List((1, 1))),
+    F(Operators.postDecrement, List((1, 1), (1, -1))),
+    F(Operators.postIncrement, List((1, 1), (1, -1))),
+    F(Operators.preDecrement, List((1, 1), (1, -1))),
+    F(Operators.preIncrement, List((1, 1), (1, -1))),
     F(Operators.sizeOf, List()),
 
     //  some of those operators have duplicate mappings due to a typo

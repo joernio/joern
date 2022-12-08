@@ -2153,4 +2153,29 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       freeArg.reachableByFlows(freeArg).count(path => path.elements.size > 1) shouldBe 1
     }
   }
+
+  "DataFlowTest69" should {
+    val cpg = code("""
+        |void sink(int);
+        |
+        |void foo() {
+        |	int val = 42, a, b;
+        |	a = b = val;
+        |	sink(a);
+        |}
+        |
+        |void bar() {
+        |	int val = 42, a;
+        |	a = val++; // broken
+        |	sink(a);
+        |}
+        |
+        |""".stripMargin)
+
+    "find flows" in {
+      val sink = cpg.method("sink").parameter.index(1).l
+      val src  = cpg.literal.l
+      sink.reachableBy(src).size shouldBe 2
+    }
+  }
 }
