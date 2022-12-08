@@ -100,16 +100,9 @@ class TaskCreator(sources: Set[CfgNode]) {
         val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
         if (method.isExternal) {
           val newPath = path
-          List(
-            ReachableByTask(
-              methodReturn,
-              sources,
-              new ResultTable,
-              newPath,
-              callDepth + 1,
-              call :: result.callSiteStack
-            )
-          )
+          (call.receiver.l ++ call.argument.l).map { arg =>
+            ReachableByTask(arg, sources, new ResultTable, newPath, callDepth, result.callSiteStack)
+          }
         } else {
           returnStatements.map { returnStatement =>
             val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
