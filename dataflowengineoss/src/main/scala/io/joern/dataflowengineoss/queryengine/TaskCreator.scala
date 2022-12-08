@@ -1,7 +1,6 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.joern.dataflowengineoss.queryengine.Engine.{argToOutputParams, semanticsForCall}
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Call,
@@ -17,9 +16,7 @@ import io.shiftleft.semanticcpg.language._
 
 /** Creation of new tasks from results of completed tasks.
   */
-class TaskCreator(sources: Set[CfgNode])(implicit val semantics: Semantics) {
-
-  implicit val s: Semantics = semantics
+class TaskCreator(sources: Set[CfgNode]) {
 
   /** For a given list of results and sources, generate new tasks.
     */
@@ -100,9 +97,7 @@ class TaskCreator(sources: Set[CfgNode])(implicit val semantics: Semantics) {
 
       methodReturns.flatMap { case (call, methodReturn) =>
         val method           = methodReturn.method.head
-        val semantics        = semanticsForCall(call)
         val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
-        // TODO handle semantics
         if (method.isExternal) {
           val newPath = path
           List(
