@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
+import io.joern.dataflowengineoss.queryengine.Engine.{argToOutputParams, semanticsForCall}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Call,
@@ -16,7 +17,9 @@ import io.shiftleft.semanticcpg.language._
 
 /** Creation of new tasks from results of completed tasks.
   */
-class TaskCreator(sources: Set[CfgNode]) {
+class TaskCreator(sources: Set[CfgNode])(implicit semantics: Semantics) {
+
+  implicit val s: Semantics = semantics
 
   /** For a given list of results and sources, generate new tasks.
     */
@@ -96,17 +99,33 @@ class TaskCreator(sources: Set[CfgNode]) {
         .to(Traversal)
 
       methodReturns.flatMap { case (call, methodReturn) =>
-        val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
-        returnStatements.map { returnStatement =>
-          val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
-          ReachableByTask(
-            returnStatement,
-            sources,
-            new ResultTable,
-            newPath,
-            callDepth + 1,
-            call :: result.callSiteStack
-          )
+        if (methodReturn.method.isExternal) {
+          val semantics = semanticsForCall(call)
+          val taintedParameters = if (semantics.isEmpty) {
+            methodReturn.method.parameter.l
+          } else {
+            val indices = semantics.flatMap { semantic =>
+              semantic.mappings.collect { case (src, dst) if dst == -1 => src }
+            }
+            methodReturn.method.parameter.index(indices: _*).l
+          }
+          taintedParameters.map { param =>
+            val newPath = Vector(PathElement(param, result.callSiteStack)) ++ path
+            ReachableByTask(param, sources, new ResultTable, newPath, callDepth + 1, call :: result.callSiteStack)
+          }
+        } else {
+          val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
+          returnStatements.map { returnStatement =>
+            val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
+            ReachableByTask(
+              returnStatement,
+              sources,
+              new ResultTable,
+              newPath,
+              callDepth + 1,
+              call :: result.callSiteStack
+            )
+          }
         }
       }
     }
