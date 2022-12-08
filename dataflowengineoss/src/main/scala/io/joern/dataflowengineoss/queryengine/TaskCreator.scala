@@ -101,13 +101,14 @@ class TaskCreator(sources: Set[CfgNode])(implicit semantics: Semantics) {
       methodReturns.flatMap { case (call, methodReturn) =>
         if (methodReturn.method.isExternal) {
           val semantics = semanticsForCall(call)
+          val method = methodReturn.method
           val taintedParameters = if (semantics.isEmpty) {
-            methodReturn.method.parameter.l
+            method.parameter.l
           } else {
             val indices = semantics.flatMap { semantic =>
               semantic.mappings.collect { case (src, dst) if dst == -1 => src }
             }
-            methodReturn.method.parameter.index(indices: _*).l
+            method.parameter.index(indices: _*).l
           }
           taintedParameters.map { param =>
             val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path

@@ -5,13 +5,14 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes}
 import io.shiftleft.passes.CpgPass
+import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
 import scala.util.Try
 
-case class NameAndSignature(name: String, signature: String, fullName: String)
+case class NameAndSignature(name: String, signature: String, fullName: String, dispatchType : String)
 
 /** This pass has no other pass as prerequisite.
   */
@@ -28,14 +29,14 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
     }
 
     for (call <- cpg.call if call.methodFullName != Defines.DynamicCallUnknownFallName) {
-      methodToParameterCount.put(NameAndSignature(call.name, call.signature, call.methodFullName), call.argument.size)
+      methodToParameterCount.put(NameAndSignature(call.name, call.signature, call.methodFullName, call.dispatchType), call.argument.size)
     }
 
     for (
-      (NameAndSignature(name, signature, fullName), parameterCount) <- methodToParameterCount
+      (NameAndSignature(name, signature, fullName, dispatchType), parameterCount) <- methodToParameterCount
       if !methodFullNameToNode.contains(fullName)
     ) {
-      createMethodStub(name, fullName, signature, parameterCount, dstGraph)
+      createMethodStub(name, fullName, signature, parameterCount, dispatchType, dstGraph)
     }
   }
 
@@ -65,6 +66,7 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
     fullName: String,
     signature: String,
     parameterCount: Int,
+    dispatchType: String,
     dstGraph: DiffGraphBuilder
   ): NewMethod = {
     val methodNode = addLineNumberInfo(
@@ -81,7 +83,13 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
 
     dstGraph.addNode(methodNode)
 
-    (1 to parameterCount).foreach { parameterOrder =>
+    val startIndex = if (dispatchType == DispatchTypes.DYNAMIC_DISPATCH) {
+      0
+    } else {
+      1
+    }
+
+    (startIndex to parameterCount).foreach { parameterOrder =>
       val nameAndCode = s"p$parameterOrder"
       val param = NewMethodParameterIn()
         .code(nameAndCode)
