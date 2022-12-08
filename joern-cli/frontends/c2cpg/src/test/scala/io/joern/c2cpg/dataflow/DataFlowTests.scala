@@ -1199,12 +1199,15 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |
         |""".stripMargin)
 
-    "find that there is no flow from `y = 1` to exit node" in {
+    "find that there is a flow from `y = 1` to exit node" in {
+      // This one may be a bit surprising, but what's happening here
+      // is that the expression "y = 1" flows to the exit node, and
+      // since that is influenced by 1, there is in fact a flow from
+      // "1" to the exit node.
       val source = cpg.literal("1")
       val sink   = cpg.method("foo").methodReturn
-
-      val flows = sink.reachableByFlows(source)
-      flows.size shouldBe 0
+      val flows  = sink.reachableByFlows(source)
+      flows.size shouldBe 1
     }
   }
 
