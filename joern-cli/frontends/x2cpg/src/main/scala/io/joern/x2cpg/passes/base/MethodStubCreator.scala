@@ -83,7 +83,7 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
 
     dstGraph.addNode(methodNode)
 
-    val startIndex = if (dispatchType == DispatchTypes.DYNAMIC_DISPATCH) {
+    val startIndex = if (dispatchType == DispatchTypes.DYNAMIC_DISPATCH.toString) {
       0
     } else {
       1
