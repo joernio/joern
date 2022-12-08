@@ -110,7 +110,7 @@ class TaskCreator(sources: Set[CfgNode])(implicit semantics: Semantics) {
             methodReturn.method.parameter.index(indices: _*).l
           }
           taintedParameters.map { param =>
-            val newPath = Vector(PathElement(param, result.callSiteStack)) ++ path
+            val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
             ReachableByTask(param, sources, new ResultTable, newPath, callDepth + 1, call :: result.callSiteStack)
           }
         } else {
