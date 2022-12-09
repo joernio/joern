@@ -72,8 +72,10 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def fileName(node: IASTNode): String = {
     val f = nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
-    if (f.startsWith(config.inputPath)) {
-      Paths.get(config.inputPath).relativize(Paths.get(f)).toString
+    if (f.contains(config.inputPath)) {
+      val path        = Paths.get(f).toAbsolutePath
+      val projectPath = Paths.get(config.inputPath).toAbsolutePath
+      projectPath.relativize(path).toString
     } else {
       f
     }

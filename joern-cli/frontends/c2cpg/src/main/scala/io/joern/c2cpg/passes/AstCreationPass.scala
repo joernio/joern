@@ -41,9 +41,10 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
-    val path    = Paths.get(filename)
-    val relPath = Paths.get(config.inputPath).relativize(path).toString
-    val fileLOC = IOUtils.readLinesInFile(path).size
+    val path        = Paths.get(filename).toAbsolutePath
+    val projectPath = Paths.get(config.inputPath).toAbsolutePath
+    val relPath     = projectPath.relativize(path).toString
+    val fileLOC     = IOUtils.readLinesInFile(path).size
     val (gotCpg, duration) = TimeUtils.time {
       val parseResult = parser.parse(path)
       parseResult match {
