@@ -26,12 +26,11 @@ class BuiltinTypesPass(cpg: Cpg) extends CpgPass(cpg) {
       val typeDecl = NewTypeDecl()
         .name(typeName)
         .fullName(typeName)
-        .isExternal(false)
+        .isExternal(true)
         .astParentType(NodeTypes.NAMESPACE_BLOCK)
         .astParentFullName(Defines.GLOBAL_NAMESPACE)
         .order(index + 1)
         .filename("builtintypes")
-        .isExternal(true)
 
       diffGraph.addNode(typeDecl)
       diffGraph.addEdge(namespaceBlock, typeDecl, EdgeTypes.AST)
