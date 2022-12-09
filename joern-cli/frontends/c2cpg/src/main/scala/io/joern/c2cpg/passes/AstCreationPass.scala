@@ -31,7 +31,7 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
 
   private def headerFiles: Set[String] = {
     val allHeaderFiles         = SourceFiles.determine(config.inputPath, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
-    val alreadySeenHeaderFiles = CGlobal.headerFiles
+    val alreadySeenHeaderFiles = CGlobal.headerFiles.map(Paths.get(config.inputPath, _).toString)
     allHeaderFiles -- alreadySeenHeaderFiles
   }
 
@@ -42,13 +42,14 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val path    = Paths.get(filename)
+    val relPath = Paths.get(config.inputPath).relativize(path).toString
     val fileLOC = IOUtils.readLinesInFile(path).size
     val (gotCpg, duration) = TimeUtils.time {
       val parseResult = parser.parse(path)
       parseResult match {
         case Some(translationUnit) =>
           report.addReportInfo(filename, fileLOC, parsed = true)
-          val localDiff = new AstCreator(filename, config, translationUnit, file2OffsetTable).createAst()
+          val localDiff = new AstCreator(relPath, config, translationUnit, file2OffsetTable).createAst()
           diffGraph.absorb(localDiff)
           true
         case None =>

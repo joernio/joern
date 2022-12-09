@@ -43,6 +43,8 @@ class AstCreator(
   // To achieve this we need this extra stack.
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
+  override def absolutePath(filename: String): String = filename
+
   def createAst(): DiffGraphBuilder = {
     val ast = astForTranslationUnit(cdtAst)
     Ast.storeInDiffGraph(ast, diffGraph)
@@ -53,7 +55,7 @@ class AstCreator(
     val namespaceBlock = globalNamespaceBlock()
     methodAstParentStack.push(namespaceBlock)
     val ast = Ast(namespaceBlock).withChild(
-      astInFakeMethod(namespaceBlock.fullName, absolutePath(filename), iASTTranslationUnit)
+      astInFakeMethod(namespaceBlock.fullName, fileName(iASTTranslationUnit), iASTTranslationUnit)
     )
     if (config.includeComments) {
       val commentsAsts = cdtAst.getComments.map(comment => astForComment(comment)).toIndexedSeq

@@ -26,17 +26,6 @@ class FileTests extends CCodeToCpgSuite {
     cpg.file(FileTraversal.UNKNOWN).hash.l shouldBe List()
   }
 
-  "should contain exactly one non-placeholder file with absolute path in `name`" in {
-    val List(x) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
-    x.name should (
-      startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:"   // Windows
-    )
-    // C-frontend currently does not set hash but should do so
-    // in the future
-    x.hash shouldBe None
-  }
-
   "should allow traversing from file to its namespace blocks" in {
     cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSetMutable shouldBe Set(
       NamespaceTraversal.globalNamespaceName
