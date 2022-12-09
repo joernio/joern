@@ -15,8 +15,8 @@ class ConfigPass(cpg: Cpg, config: Config, report: Report = new Report()) extend
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  protected val allExtensions: Set[String]      = Set(".json", ".js", ".vue", ".html")
-  protected val selectedExtensions: Set[String] = Set(".json", ".config.js", ".conf.js", ".vue", ".html")
+  protected val allExtensions: Set[String]      = Set(".json", ".js", ".vue", ".html", ".pug")
+  protected val selectedExtensions: Set[String] = Set(".json", ".config.js", ".conf.js", ".vue", ".html", ".pug")
 
   override def generateParts(): Array[File] =
     configFiles(config, allExtensions).toArray
