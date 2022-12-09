@@ -85,7 +85,6 @@ class Engine(context: EngineContext) {
     def handleSummary(taskSummary: TaskSummary): Unit = {
       val newTasks = taskSummary.followupTasks
       submitTasks(newTasks, sources)
-      val task       = taskSummary.task
       val newResults = taskSummary.results
       completedResults ++= newResults
     }

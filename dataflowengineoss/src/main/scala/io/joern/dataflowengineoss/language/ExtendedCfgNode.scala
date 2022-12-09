@@ -211,6 +211,8 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
   override def compute(): List[CfgNode] =
     src match {
+      case methodReturn: MethodReturn =>
+        methodReturn.method.callIn.l
       case lit: Literal =>
         List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
       case member: Member =>
