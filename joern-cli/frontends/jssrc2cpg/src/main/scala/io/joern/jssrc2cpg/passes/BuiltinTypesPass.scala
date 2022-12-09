@@ -31,6 +31,7 @@ class BuiltinTypesPass(cpg: Cpg) extends CpgPass(cpg) {
         .astParentFullName(Defines.GLOBAL_NAMESPACE)
         .order(index + 1)
         .filename("builtintypes")
+        .isExternal(true)
 
       diffGraph.addNode(typeDecl)
       diffGraph.addEdge(namespaceBlock, typeDecl, EdgeTypes.AST)
