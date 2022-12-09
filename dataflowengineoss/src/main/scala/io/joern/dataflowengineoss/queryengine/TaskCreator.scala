@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Return
 }
 import io.shiftleft.semanticcpg.language.NoResolve
-import overflowdb.traversal.{Traversal, jIteratortoTraversal}
+import overflowdb.traversal._
 import io.shiftleft.semanticcpg.language._
 
 /** Creation of new tasks from results of completed tasks.
@@ -98,7 +98,7 @@ class TaskCreator(sources: Set[CfgNode]) {
       methodReturns.flatMap { case (call, methodReturn) =>
         val method           = methodReturn.method.head
         val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
-        if (method.isExternal) {
+        if (method.isExternal || method.start.isStub.nonEmpty) {
           List()
         } else {
           returnStatements.map { returnStatement =>
