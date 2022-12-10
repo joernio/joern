@@ -88,10 +88,7 @@ class ClassTypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
       x.inheritsFromTypeFullName shouldBe List("bar")
       x.aliasTypeFullName shouldBe None
       x.order shouldBe 1
-      x.filename should (
-        startWith(File.separator) or // Unix
-          startWith regex "[A-Z]:"   // Windows
-      )
+      x.filename shouldBe "Test0.cpp"
       x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
     }
 
@@ -104,10 +101,7 @@ class ClassTypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
       x.aliasTypeFullName shouldBe Some("int")
       x.code shouldBe "typedef int mytype;"
       x.order shouldBe 2
-      x.filename should (
-        startWith(File.separator) or // Unix
-          startWith regex "[A-Z]:"   // Windows
-      )
+      x.filename shouldBe "Test0.cpp"
       x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
     }
 

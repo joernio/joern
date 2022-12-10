@@ -49,7 +49,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   private def fileOffsetTable(node: IASTNode): Array[Int] = {
     val f = fileName(node)
-    file2OffsetTable.computeIfAbsent(f, _ => genFileOffsetTable(Paths.get(f)))
+    file2OffsetTable.computeIfAbsent(f, _ => genFileOffsetTable(Paths.get(config.inputPath, f)))
   }
 
   private def genFileOffsetTable(fileName: Path): Array[Int] = {
@@ -71,7 +71,14 @@ trait AstCreatorHelper { this: AstCreator =>
     Option(cdtAst.flattenLocationsToFile(node.getNodeLocations.lastOption.toArray)).map(_.asFileLocation())
 
   protected def fileName(node: IASTNode): String = {
-    nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
+    val f = nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
+    if (f.contains(config.inputPath)) {
+      val path        = Paths.get(f).toAbsolutePath
+      val projectPath = Paths.get(config.inputPath).toAbsolutePath
+      projectPath.relativize(path).toString
+    } else {
+      f
+    }
   }
 
   protected def line(node: IASTNode): Option[Integer] = {

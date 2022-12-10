@@ -23,10 +23,7 @@ class MethodTests extends CCodeToCpgSuite {
         x.signature shouldBe "int main (int,char**)"
         x.isExternal shouldBe false
         x.order shouldBe 1
-        x.filename should (
-          startWith(File.separator) or // Unix
-            startWith regex "[A-Z]:"   // Windows
-        )
+        x.filename shouldBe "Test0.c"
         x.lineNumber shouldBe Some(2)
         x.lineNumberEnd shouldBe Some(3)
         x.columnNumber shouldBe Some(3)

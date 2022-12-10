@@ -1,6 +1,5 @@
 package io.joern.c2cpg.passes
 
-import better.files.File
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
@@ -19,10 +18,9 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
   private val systemIncludePaths =
     IncludeAutoDiscovery.discoverIncludePathsC(config) ++ IncludeAutoDiscovery.discoverIncludePathsCPP(config)
 
-  private val absolutePath: String = File(config.inputPath).path.toAbsolutePath.normalize().toString
-  private val filename: String     = s"$absolutePath:<includes>"
-  private val globalName: String   = NamespaceTraversal.globalNamespaceName
-  private val fullName: String     = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
+  private val filename: String   = "<includes>"
+  private val globalName: String = NamespaceTraversal.globalNamespaceName
+  private val fullName: String   = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
 
   private val typeDeclFullNames: Set[String] = cpg.typeDecl.fullName.toSetImmutable
 
