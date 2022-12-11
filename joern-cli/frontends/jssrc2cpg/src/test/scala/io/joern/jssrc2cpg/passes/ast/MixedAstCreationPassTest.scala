@@ -192,6 +192,18 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       outerLocalXViaRef shouldBe outerLocalX
     }
 
+    "have correct closure binding (destructing assignment)" in AstFixture("""
+        |const {closureA} = null;
+        |const [closureB] = null;
+        |let f = function() {
+        |  console.log(closureA);
+        |  console.log(closureB);
+        |};
+        """.stripMargin) { cpg =>
+      cpg.local.name("closureA").closureBindingId.l shouldBe List("code.js::program:anonymous:closureA")
+      cpg.local.name("closureB").closureBindingId.l shouldBe List("code.js::program:anonymous:closureB")
+    }
+
     "have correct closure binding (single variable)" in AstFixture("""
          | function foo()
          | {
@@ -532,9 +544,10 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     "have correct structure for object destruction assignment with declaration" in AstFixture("var {a, b} = x") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
-      val List(localA)       = programBlock.astChildren.isLocal.nameExact("a").l
+
+      val List(localA) = cpg.local.nameExact("a").l
+      val List(localB) = cpg.local.nameExact("b").l
       localA.referencingIdentifiers.name.head shouldBe "a"
-      val List(localB) = programBlock.astChildren.isLocal.nameExact("b").l
       localB.referencingIdentifiers.name.head shouldBe "b"
 
       val List(destructionBlock) = programBlock.astChildren.isBlock.l
@@ -569,8 +582,8 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     ) { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
-      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
-      programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+      cpg.local.nameExact("a").size shouldBe 1
+      cpg.local.nameExact("b").size shouldBe 1
 
       val List(destructionBlock) = programBlock.astChildren.isBlock.l
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
@@ -600,8 +613,8 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       cpg =>
         val List(program)      = cpg.method.nameExact(":program").l
         val List(programBlock) = program.astChildren.isBlock.l
-        programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
-        programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+        cpg.local.nameExact("a").size shouldBe 1
+        cpg.local.nameExact("b").size shouldBe 1
 
         val List(destructionBlock) = programBlock.astChildren.isBlock.l
         destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
@@ -684,8 +697,8 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       cpg =>
         val List(program)      = cpg.method.nameExact(":program").l
         val List(programBlock) = program.astChildren.isBlock.l
-        programBlock.astChildren.isLocal.nameExact("n").size shouldBe 1
-        programBlock.astChildren.isLocal.nameExact("m").size shouldBe 1
+        cpg.local.nameExact("n").size shouldBe 1
+        cpg.local.nameExact("m").size shouldBe 1
 
         val List(destructionBlock) = programBlock.astChildren.isBlock.l
         destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
@@ -782,8 +795,8 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       cpg =>
         val List(program)      = cpg.method.nameExact(":program").l
         val List(programBlock) = program.astChildren.isBlock.l
-        programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
-        programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+        cpg.local.nameExact("a").size shouldBe 1
+        cpg.local.nameExact("b").size shouldBe 1
 
         val List(fooCall)          = programBlock.astChildren.isCall.l
         val List(destructionBlock) = fooCall.astChildren.isBlock.l
@@ -813,8 +826,8 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     "have correct structure for object destruction assignment with rest" in AstFixture("var {a, ...rest} = x") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
-      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
-      programBlock.astChildren.isLocal.nameExact("rest").size shouldBe 1
+      cpg.local.nameExact("a").size shouldBe 1
+      cpg.local.nameExact("rest").size shouldBe 1
 
       val List(destructionBlock) = programBlock.astChildren.isBlock.l
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
@@ -845,7 +858,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     ) { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
-      programBlock.astChildren.isLocal.nameExact("n").size shouldBe 1
+      cpg.local.nameExact("n").size shouldBe 1
 
       val List(destructionBlock) = programBlock.astChildren.isBlock.l
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
@@ -916,8 +929,8 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     "have correct structure for array destruction assignment with declaration" in AstFixture("var [a, b] = x") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
-      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
-      programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+      cpg.local.nameExact("a").size shouldBe 1
+      cpg.local.nameExact("b").size shouldBe 1
 
       val List(destructionBlock) = programBlock.astChildren.isBlock.l
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
@@ -947,8 +960,8 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     "have correct structure for array destruction assignment without declaration" in AstFixture("[a, b] = x") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
-      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
-      programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+      cpg.local.nameExact("a").size shouldBe 1
+      cpg.local.nameExact("b").size shouldBe 1
 
       val List(destructionBlock) = programBlock.astChildren.isBlock.l
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
@@ -1031,8 +1044,8 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     "have correct structure for array destruction assignment with ignores" in AstFixture("var [a, , b] = x") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
-      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
-      programBlock.astChildren.isLocal.nameExact("b").size shouldBe 1
+      cpg.local.nameExact("a").size shouldBe 1
+      cpg.local.nameExact("b").size shouldBe 1
 
       val List(destructionBlock) = programBlock.astChildren.isBlock.l
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
@@ -1061,8 +1074,8 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     "have correct structure for array destruction assignment with rest" in AstFixture("var [a, ...rest] = x") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
-      programBlock.astChildren.isLocal.nameExact("a").size shouldBe 1
-      programBlock.astChildren.isLocal.nameExact("rest").size shouldBe 1
+      cpg.local.nameExact("a").size shouldBe 1
+      cpg.local.nameExact("rest").size shouldBe 1
 
       val List(destructionBlock) = programBlock.astChildren.isBlock.l
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1

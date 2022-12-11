@@ -439,7 +439,12 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   }
 
   private def convertDestructingObjectElement(element: BabelNodeInfo, key: BabelNodeInfo, localTmpName: String): Ast = {
-    val valueAst           = astForNode(element.json)
+    val valueAst = astForNode(element.json)
+
+    val localNode = createLocalNode(element.code, Defines.ANY)
+    diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+    scope.addVariable(element.code, localNode, MethodScope)
+
     val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
     val keyNode            = createFieldIdentifierNode(key.code, key.lineNumber, key.columnNumber)
     val accessAst = createFieldAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
@@ -453,7 +458,12 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   }
 
   private def convertDestructingArrayElement(element: BabelNodeInfo, index: Int, localTmpName: String): Ast = {
-    val valueAst           = astForNode(element.json)
+    val valueAst = astForNode(element.json)
+
+    val localNode = createLocalNode(element.code, Defines.ANY)
+    diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+    scope.addVariable(element.code, localNode, MethodScope)
+
     val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
     val keyNode =
       createLiteralNode(index.toString, Some(Defines.NUMBER), element.lineNumber, element.columnNumber)
