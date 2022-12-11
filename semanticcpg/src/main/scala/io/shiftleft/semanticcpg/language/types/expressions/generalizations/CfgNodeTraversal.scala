@@ -22,14 +22,13 @@ class CfgNodeTraversal[A <: CfgNode](val traversal: Traversal[A]) extends AnyVal
     traversal.map {
       case method: Method =>
         method
-      case methodReturn: MethodReturn =>
-        methodReturn.method
       case expression: Expression =>
         expression.method
       case callRepr: CallRepr =>
         callRepr._astIn.onlyChecked.asInstanceOf[Method]
       case jumpTarget: JumpTarget =>
         jumpTarget.method
+      case x => x.method
     }
 
   /** Traverse to next expression in CFG.
