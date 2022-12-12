@@ -29,6 +29,3 @@ joern-cli/workspace
 **/astgen-linux
 **/php2cpg/bin/vendor/
 **/php2cpg/bin/composer*
-
-
-.DS_Store
