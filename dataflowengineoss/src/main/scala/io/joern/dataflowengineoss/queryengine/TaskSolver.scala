@@ -20,35 +20,24 @@ import scala.collection.mutable
   *   state of the data flow engine
   */
 class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[CfgNode]) extends Callable[TaskSummary] {
-  var depth: Int    = 0
-  val maxDepth: Int = 100
+  var depth: Int = 0
   import Engine._
 
   /** Entry point of callable. First checks if the maximum call depth has been exceeded, in which case an empty result
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
   override def call(): TaskSummary = {
-    val threadname = Thread.currentThread().getName
-    val startTime  = Calendar.getInstance().getTime
-    val id         = UUID.randomUUID().toString
-    val summary    = processInternal(id, task, context, sources)
-    val result     = processSummary(id, summary)
-    val endTime    = Calendar.getInstance().getTime
-//    println(
-//      s" Start time - ${startTime} - End time ${endTime} - task id - ${id} - Depth ${depth}- thread - ${threadname} done.."
-//    )
-    result
+    val id      = UUID.randomUUID().toString
+    val summary = processInternal(id, task, context, sources)
+    processSummary(id, summary)
   }
 
   private def processSummary(id: String, summary: TaskSummary): TaskSummary = {
-    val startTime  = Calendar.getInstance().getTime
-    val endTime    = Calendar.getInstance().getTime
-    val threadname = Thread.currentThread().getName
     if (summary.followupTasks.size > 0) {
+      // In order to limit the number of depth (lets say 1000) this thread should handle the partial task.
+      // Convert above if condition to (summary.followupTasks.size > 0 && depth < 1000)
+
       depth += 1
-//      println(
-//        s" Start time - ${startTime} - End time ${endTime} - task id - ${id} - Depth ${depth}- thread - ${threadname} process summary.."
-//      )
       var totalRes      = List[ReachableByResult]()
       var followupTasks = List[ReachableByTask]()
       totalRes ++= summary.results
