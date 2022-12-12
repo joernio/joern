@@ -21,6 +21,7 @@ case class ReachableByTask(
   sink: CfgNode,
   sources: Set[CfgNode],
   table: ResultTable,
+  previousSinks: List[CfgNode],
   initialPath: Vector[PathElement] = Vector(),
   callDepth: Int = 0,
   callSiteStack: List[Call] = List()
@@ -31,6 +32,8 @@ case class TaskSummary(
   results: Vector[ReachableByResult],
   followupTasks: Vector[ReachableByTask]
 )
+
+case class TaskFingerprint(sink: CfgNode, callSiteStack: List[Call])
 
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
   * in parallel, creating and submitting new tasks upon completion of tasks. This class deals only with task scheduling,
@@ -48,6 +51,9 @@ class Engine(context: EngineContext) {
 
   private val mainResultTable: ResultTable = newResultTable()
 
+  private val started: mutable.Set[TaskFingerprint] = mutable.Set()
+  private var held: List[ReachableByTask]           = List()
+
   def shutdown(): Unit = {
     executorService.shutdown()
   }
@@ -62,24 +68,18 @@ class Engine(context: EngineContext) {
     if (sinks.isEmpty) {
       logger.info("Attempting to determine flows to empty list of sinks.")
     }
-    val sourcesSet      = sources.toSet
-    val tasks           = createOneTaskPerSink(sourcesSet, sinks)
-    val originalResults = solveTasks(tasks, sourcesSet)
-
-    printTableStatistics()
-    val resultsFromTable = deduplicate(extractResultsFromTable(sinks))
-    if (originalResults.toSet != resultsFromTable.toSet) {
-      println("Original: " + originalResults.size)
-      println("New: " + resultsFromTable.size)
-      throw new RuntimeException("not the same")
-    }
-
-    resultsFromTable
+    val sourcesSet = sources.toSet
+    val tasks      = createOneTaskPerSink(sourcesSet, sinks)
+    solveTasks(tasks, sourcesSet)
+    deduplicate(extractResultsFromTable(sinks) ++ completeHeldTasks())
   }
 
-  private def printTableStatistics(): Unit = {
-    val numberOfEntries = mainResultTable.keys().map { key => mainResultTable.get(key).get.size }.toList.sum
-    println("Number of entries: " + numberOfEntries)
+  private def completeHeldTasks(): List[ReachableByResult] = {
+    val completedResults = held.par.flatMap { heldTask =>
+      mainResultTable.createFromTable(PathElement(heldTask.sink), heldTask.initialPath).toList.flatMap(_.toList)
+    }.toList
+    println("reached")
+    completedResults
   }
 
   private def extractResultsFromTable(sinks: List[CfgNode]): Vector[ReachableByResult] = {
@@ -99,35 +99,35 @@ class Engine(context: EngineContext) {
   /** Create one task per sink where each task has its own result table.
     */
   private def createOneTaskPerSink(sourcesSet: Set[CfgNode], sinks: List[CfgNode]) = {
-    sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable()))
+    sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable(), List(sink)))
   }
 
   /** Submit tasks to a worker pool, solving them in parallel. Upon receiving results for a task, new tasks are
     * submitted accordingly. Once no more tasks can be created, the list of results is returned.
     */
-  private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): Vector[ReachableByResult] = {
-    var completedResults = List[ReachableByResult]()
-
+  private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): Unit = {
     def handleSummary(taskSummary: TaskSummary): Unit = {
       val newTasks = taskSummary.followupTasks
       submitTasks(newTasks, sources)
       val newResults = taskSummary.results
-      val sink       = taskSummary.task.sink
-      addResultsToMainTable(newResults, sink)
-      completedResults ++= newResults
+      addResultsToMainTable(newResults)
     }
 
-    def addResultsToMainTable(newResults: Vector[ReachableByResult], sink: CfgNode): Unit = {
-      val slicedResults = newResults.map { r =>
-        val pathToSink = r.path.slice(0, r.path.map(_.node).indexOf(sink))
-        val newPath    = pathToSink ++ List(PathElement(sink))
-        r.copy(path = newPath)
-      }
-      mainResultTable.add(sink, slicedResults)
+    def addResultsToMainTable(newResults: Vector[ReachableByResult]): Unit = {
       newResults.foreach { r =>
-        val finalSink = r.path.last.node
-        mainResultTable.add(finalSink, Vector(r))
+        r.previousSinks.foreach { sink =>
+          val slicedResults = newResults.map { r =>
+            val pathToSink = r.path.slice(0, r.path.map(_.node).indexOf(sink))
+            val newPath    = pathToSink ++ List(PathElement(sink))
+            r.copy(path = newPath)
+          }
+          mainResultTable.add(sink, slicedResults)
+        }
       }
+//      newResults.foreach { r =>
+//        val finalSink = r.path.last.node
+//        mainResultTable.add(finalSink, Vector(r))
+//      }
     }
 
     def runUntilAllTasksAreSolved(): Unit = {
@@ -148,12 +148,18 @@ class Engine(context: EngineContext) {
 
     submitTasks(tasks.toVector, sources)
     runUntilAllTasksAreSolved()
-    deduplicate(completedResults.toVector)
   }
 
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
-    numberOfTasksRunning += tasks.size
-    tasks.foreach(t => completionService.submit(new TaskSolver(t, context, sources)))
+
+    val (tasksToHold, tasksToSolve) = tasks.par.partition { t =>
+      val fingerprint = TaskFingerprint(t.sink, t.callSiteStack)
+      started.contains(fingerprint)
+    }
+    held ++= tasksToHold
+    started ++= tasksToSolve.map(t => TaskFingerprint(t.sink, t.callSiteStack))
+    numberOfTasksRunning += tasksToSolve.size
+    tasksToSolve.foreach(t => completionService.submit(new TaskSolver(t, context, sources)))
   }
 
 }

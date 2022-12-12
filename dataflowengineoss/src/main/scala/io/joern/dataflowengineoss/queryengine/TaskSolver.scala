@@ -36,8 +36,12 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       val finalResults = task.table.get(task.sink).get.map { r =>
         r.copy(callDepth = task.callDepth)
       }
-
       val (partial, complete) = finalResults.partition(_.partial)
+
+      if (task.sink.isInstanceOf[MethodParameterOut]) {
+        println("yep")
+      }
+
       val newTasks = new TaskCreator(sources).createFromResults(partial).distinctBy(t => (t.sink, t.callSiteStack))
       TaskSummary(task, complete, newTasks)
     }
@@ -98,6 +102,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
           sink,
           PathElement(path.head.node, callSiteStack, isOutputArg = true) +: path.tail,
           callSiteStack,
+          task.previousSinks,
           partial = true
         )
       )
@@ -108,10 +113,12 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(sink, path, callSiteStack)) ++ deduplicate(computeResultsForParents())
+        Vector(ReachableByResult(sink, path, callSiteStack, task.previousSinks)) ++ deduplicate(
+          computeResultsForParents()
+        )
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
-        Vector(ReachableByResult(sink, path, callSiteStack, partial = true))
+        Vector(ReachableByResult(sink, path, callSiteStack, task.previousSinks, partial = true))
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
       case call: Call

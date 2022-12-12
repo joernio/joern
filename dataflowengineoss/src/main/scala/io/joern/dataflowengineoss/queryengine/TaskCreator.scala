@@ -41,12 +41,27 @@ class TaskCreator(sources: Set[CfgNode]) {
         case callSite :: tail =>
           // Case 1
           paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
-            ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth - 1, tail)
+            ReachableByTask(
+              arg,
+              sources,
+              new ResultTable,
+              result.previousSinks :+ arg,
+              result.path,
+              result.callDepth - 1,
+              tail
+            )
           }
         case _ =>
           // Case 2
           paramToArgs(param).map { arg =>
-            ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1)
+            ReachableByTask(
+              arg,
+              sources,
+              new ResultTable,
+              result.previousSinks :+ arg,
+              result.path,
+              result.callDepth + 1
+            )
           }
       }
     }
@@ -101,7 +116,15 @@ class TaskCreator(sources: Set[CfgNode]) {
         if (method.isExternal || method.start.isStub.nonEmpty) {
           val newPath = path
           (call.receiver.l ++ call.argument.l).map { arg =>
-            ReachableByTask(arg, sources, new ResultTable, newPath, callDepth, result.callSiteStack)
+            ReachableByTask(
+              arg,
+              sources,
+              new ResultTable,
+              result.previousSinks :+ arg,
+              newPath,
+              callDepth,
+              result.callSiteStack
+            )
           }
         } else {
           returnStatements.map { returnStatement =>
@@ -110,6 +133,7 @@ class TaskCreator(sources: Set[CfgNode]) {
               returnStatement,
               sources,
               new ResultTable,
+              result.previousSinks :+ returnStatement,
               newPath,
               callDepth + 1,
               call :: result.callSiteStack
@@ -130,7 +154,7 @@ class TaskCreator(sources: Set[CfgNode]) {
           .filterNot(_.method.isExternal)
           .map { p =>
             val newStack = arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
-            ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, newStack)
+            ReachableByTask(p, sources, new ResultTable, result.previousSinks :+ p, path, callDepth + 1, newStack)
           }
       }
     }

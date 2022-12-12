@@ -66,6 +66,7 @@ case class ReachableByResult(
   sink: CfgNode,
   path: Vector[PathElement],
   callSiteStack: List[Call],
+  previousSinks: List[CfgNode],
   callDepth: Int = 0,
   partial: Boolean = false
 ) {
