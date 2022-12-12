@@ -28,7 +28,7 @@ class CfgNodeTraversal[A <: CfgNode](val traversal: Traversal[A]) extends AnyVal
         callRepr._astIn.onlyChecked.asInstanceOf[Method]
       case jumpTarget: JumpTarget =>
         jumpTarget.method
-      case x => x.method
+      case cfgNode => cfgNode.method   // refers to `semanticcpg.language.nodemethods.CfgNodeMethods.method`
     }
 
   /** Traverse to next expression in CFG.
