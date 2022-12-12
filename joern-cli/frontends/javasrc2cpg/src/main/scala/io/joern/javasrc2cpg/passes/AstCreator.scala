@@ -803,6 +803,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val annotationAsts = constructorDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toList
 
+    val modifiers =
+      NewModifier().modifierType(ModifierTypes.CONSTRUCTOR) :: modifiersForMethod(constructorDeclaration).filterNot(
+        _.modifierType == ModifierTypes.VIRTUAL
+      )
+
     scopeStack.popScope()
 
     methodAstWithAnnotations(
@@ -810,7 +815,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       thisAst :: parameterAsts,
       bodyAst,
       methodReturn,
-      annotations = annotationAsts
+      modifiers,
+      annotationAsts
     )
   }
 
@@ -966,13 +972,24 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def modifiersForMethod(methodDeclaration: MethodDeclaration): Seq[NewModifier] = {
+  private def abstractModifierForCallable(
+    callableDeclaration: CallableDeclaration[_],
+    isInterfaceMethod: Boolean
+  ): Option[NewModifier] = {
+    callableDeclaration match {
+      case methodDeclaration: MethodDeclaration =>
+        Option.when(methodDeclaration.isAbstract || (isInterfaceMethod && !methodDeclaration.isDefault)) {
+          modifierNode(ModifierTypes.ABSTRACT)
+        }
+
+      case _ => None
+    }
+  }
+
+  private def modifiersForMethod(methodDeclaration: CallableDeclaration[_]): List[NewModifier] = {
     val isInterfaceMethod = scopeStack.getEnclosingTypeDecl.exists(_.code.contains("interface "))
 
-    val abstractModifier =
-      Option.when(methodDeclaration.isAbstract || (isInterfaceMethod && !methodDeclaration.isDefault)) {
-        modifierNode(ModifierTypes.ABSTRACT)
-      }
+    val abstractModifier = abstractModifierForCallable(methodDeclaration, isInterfaceMethod)
 
     val staticVirtualModifierType = if (methodDeclaration.isStatic) ModifierTypes.STATIC else ModifierTypes.VIRTUAL
     val staticVirtualModifier     = Some(modifierNode(staticVirtualModifierType))
@@ -981,6 +998,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       Some(ModifierTypes.PUBLIC)
     } else if (methodDeclaration.isPrivate) {
       Some(ModifierTypes.PRIVATE)
+    } else if (methodDeclaration.isProtected) {
+      Some(ModifierTypes.PROTECTED)
     } else if (isInterfaceMethod) {
       // TODO: more robust interface check
       Some(ModifierTypes.PUBLIC)
