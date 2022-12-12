@@ -2,14 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  CfgNode,
-  Expression,
-  MethodParameterIn,
-  MethodParameterOut,
-  Return
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, Literal, MethodParameterIn, MethodParameterOut, Return}
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.{NodeOps, Traversal}
@@ -120,7 +113,9 @@ class TaskCreator(sources: Set[CfgNode]) {
     }
 
     val forArgs = outArgsAndCalls.flatMap { case (result, args, path, callDepth) =>
-      args.toList.flatMap { case arg: Expression =>
+      args
+        .filterNot(a => a.isInstanceOf[Literal])
+        .toList.flatMap { case arg: Expression =>
         val outParams = if (result.callSiteStack.nonEmpty) {
           List[MethodParameterOut]()
         } else {
