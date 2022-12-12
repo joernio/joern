@@ -65,7 +65,6 @@ class ResultTable(
 case class ReachableByResult(
   sink: CfgNode,
   path: Vector[PathElement],
-  table: ResultTable,
   callSiteStack: List[Call],
   callDepth: Int = 0,
   partial: Boolean = false

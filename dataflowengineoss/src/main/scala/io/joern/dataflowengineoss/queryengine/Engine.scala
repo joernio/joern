@@ -68,11 +68,12 @@ class Engine(context: EngineContext) {
 
     printTableStatistics()
     val resultsFromTable = deduplicate(extractResultsFromTable(sinks))
-    if (originalResults.size != resultsFromTable.size) {
+    if (originalResults.toSet != resultsFromTable.toSet) {
       println("Original: " + originalResults.size)
       println("New: " + resultsFromTable.size)
       throw new RuntimeException("not the same")
     }
+
     resultsFromTable
   }
 
