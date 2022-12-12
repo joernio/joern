@@ -34,12 +34,6 @@ object CodeDumper {
         logger.info(s"dump not supported for language '$lang'")
         ""
       case (Some(node), Some(lang)) =>
-        val filename = location.filename match {
-          case f if Paths.get(f).isAbsolute =>
-            f
-          case f =>
-            rootPath.map(r => Paths.get(r, f).toAbsolutePath.toString).getOrElse(f)
-        }
         val method: Option[Method] = node match {
           case n: Method     => Some(n)
           case n: Expression => Some(n.method)
@@ -52,6 +46,10 @@ object CodeDumper {
               val rawCode = if (lang == Languages.GHIDRA) {
                 m.code
               } else {
+                val filename = location.filename match {
+                  case f if Paths.get(f).isAbsolute => f
+                  case f => rootPath.map(r => Paths.get(r, f).toAbsolutePath.toString).getOrElse(f)
+                }
                 code(filename, m.lineNumber.get, m.lineNumberEnd.get, location.lineNumber)
               }
               if (highlight) {
