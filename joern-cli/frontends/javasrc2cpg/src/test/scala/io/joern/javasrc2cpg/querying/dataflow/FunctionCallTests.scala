@@ -42,7 +42,11 @@ class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true
           |""".stripMargin)
 
       val (source, sink) = getMultiFnSourceSink(cpg, "test", "printSimpleString")
-      sink.reachableBy(source).size shouldBe 1
+      val l              = sink.l
+      println("Sinks: " + l)
+      val src = source.l
+      println("Sources: " + src)
+      l.reachableBy(src).size shouldBe 1
     }
 
     "find paths through calls with varargs" when {

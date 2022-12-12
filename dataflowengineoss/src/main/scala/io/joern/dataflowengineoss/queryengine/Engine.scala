@@ -62,9 +62,32 @@ class Engine(context: EngineContext) {
     if (sinks.isEmpty) {
       logger.info("Attempting to determine flows to empty list of sinks.")
     }
-    val sourcesSet = sources.toSet
-    val tasks      = createOneTaskPerSink(sourcesSet, sinks)
-    solveTasks(tasks, sourcesSet)
+    val sourcesSet      = sources.toSet
+    val tasks           = createOneTaskPerSink(sourcesSet, sinks)
+    val originalResults = solveTasks(tasks, sourcesSet)
+
+    printTableStatistics()
+    val resultsFromTable = extractResultsFromTable(sinks)
+    if (originalResults.size != resultsFromTable.size) {
+      println("Original: " + originalResults.size)
+      println("New: " + resultsFromTable.size)
+      throw new RuntimeException("not the same")
+    }
+    originalResults
+  }
+
+  private def printTableStatistics(): Unit = {
+    val numberOfEntries = mainResultTable.keys().map { key => mainResultTable.get(key).get.size }.toList.sum
+    println("Number of entries: " + numberOfEntries)
+  }
+
+  private def extractResultsFromTable(sinks: List[CfgNode]): Vector[ReachableByResult] = {
+    sinks.flatMap { sink =>
+      mainResultTable.get(sink) match {
+        case Some(results) => results
+        case _             => Vector()
+      }
+    }.toVector
   }
 
   /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
@@ -88,29 +111,22 @@ class Engine(context: EngineContext) {
       val newTasks = taskSummary.followupTasks
       submitTasks(newTasks, sources)
       val newResults = taskSummary.results
-      val sink = taskSummary.task.sink
+      val sink       = taskSummary.task.sink
       addResultsToMainTable(newResults, sink)
       completedResults ++= newResults
     }
 
-    def addResultsToMainTable(newResults : Vector[ReachableByResult], sink : CfgNode) : Unit = {
+    def addResultsToMainTable(newResults: Vector[ReachableByResult], sink: CfgNode): Unit = {
       val slicedResults = newResults.map { r =>
         val pathToSink = r.path.slice(0, r.path.map(_.node).indexOf(sink))
         val newPath    = pathToSink ++ List(PathElement(sink))
         r.copy(path = newPath)
       }
-      // What we have in here now are paths from sources
-      // all the way down to the sink, and I would think
-      // that at the end of the analysis, we indeed have
-      // ALL paths from sources to the sink.
-      // We're assuming now - and that's the part we need
-      // to prove - that kicking off a task once is enough
-      // and we can then, after tasks have completed,
-      // reconstruct results from this table.
-      // First change would be to extract results from
-      // this table, which should work by just looking
-      // up paths to all sinks.
       mainResultTable.add(sink, slicedResults)
+      newResults.foreach { r =>
+        val finalSink = r.path.last.node
+        mainResultTable.add(finalSink, Vector(r))
+      }
     }
 
     def runUntilAllTasksAreSolved(): Unit = {
@@ -131,13 +147,7 @@ class Engine(context: EngineContext) {
 
     submitTasks(tasks.toVector, sources)
     runUntilAllTasksAreSolved()
-    printTableStatistics()
     deduplicate(completedResults.toVector)
-  }
-
-  private def printTableStatistics() = {
-    val numberOfEntries = mainResultTable.keys().map { key => mainResultTable.get(key).get.size }.toList.sum
-    println("Number of entries: " + numberOfEntries)
   }
 
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
