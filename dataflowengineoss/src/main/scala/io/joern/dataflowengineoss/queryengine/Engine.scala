@@ -75,11 +75,9 @@ class Engine(context: EngineContext) {
   }
 
   private def completeHeldTasks(): List[ReachableByResult] = {
-    val completedResults = held.par.flatMap { heldTask =>
+    held.par.flatMap { heldTask =>
       mainResultTable.createFromTable(PathElement(heldTask.sink), heldTask.initialPath).toList.flatMap(_.toList)
     }.toList
-    println("reached")
-    completedResults
   }
 
   private def extractResultsFromTable(sinks: List[CfgNode]): Vector[ReachableByResult] = {
@@ -124,10 +122,6 @@ class Engine(context: EngineContext) {
           mainResultTable.add(sink, slicedResults)
         }
       }
-//      newResults.foreach { r =>
-//        val finalSink = r.path.last.node
-//        mainResultTable.add(finalSink, Vector(r))
-//      }
     }
 
     def runUntilAllTasksAreSolved(): Unit = {

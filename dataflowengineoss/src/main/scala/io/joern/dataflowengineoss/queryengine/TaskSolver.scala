@@ -37,11 +37,6 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
         r.copy(callDepth = task.callDepth)
       }
       val (partial, complete) = finalResults.partition(_.partial)
-
-      if (task.sink.isInstanceOf[MethodParameterOut]) {
-        println("yep")
-      }
-
       val newTasks = new TaskCreator(sources).createFromResults(partial).distinctBy(t => (t.sink, t.callSiteStack))
       TaskSummary(task, complete, newTasks)
     }
