@@ -48,6 +48,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def fileOffsetTable(node: IASTNode): Array[Int] = {
+    // file path is relative for project files but absolute for system header files
     val path = fileName(node) match {
       case f if Paths.get(f).isAbsolute => Paths.get(f)
       case f                            => Paths.get(config.inputPath, f)
