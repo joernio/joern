@@ -30,8 +30,12 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
     SourceFiles.determine(config.inputPath, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
 
   private def headerFiles: Set[String] = {
-    val allHeaderFiles         = SourceFiles.determine(config.inputPath, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
-    val alreadySeenHeaderFiles = CGlobal.headerFiles.map(Paths.get(config.inputPath, _).toString)
+    val allHeaderFiles = SourceFiles.determine(config.inputPath, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
+    val alreadySeenHeaderFiles = CGlobal.headerFiles.map {
+      // file path is relative for project files but absolute for system header files
+      case f if Paths.get(f).isAbsolute => f
+      case f                            => Paths.get(config.inputPath, f).toString
+    }
     allHeaderFiles -- alreadySeenHeaderFiles
   }
 
