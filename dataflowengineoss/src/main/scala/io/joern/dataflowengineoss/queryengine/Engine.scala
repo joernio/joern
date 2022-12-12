@@ -67,13 +67,13 @@ class Engine(context: EngineContext) {
     val originalResults = solveTasks(tasks, sourcesSet)
 
     printTableStatistics()
-    val resultsFromTable = extractResultsFromTable(sinks)
+    val resultsFromTable = deduplicate(extractResultsFromTable(sinks))
     if (originalResults.size != resultsFromTable.size) {
       println("Original: " + originalResults.size)
       println("New: " + resultsFromTable.size)
       throw new RuntimeException("not the same")
     }
-    originalResults
+    resultsFromTable
   }
 
   private def printTableStatistics(): Unit = {
