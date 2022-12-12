@@ -43,9 +43,8 @@ object CodeDumper {
         method
           .collect {
             case m: Method if m.lineNumber.isDefined && m.lineNumberEnd.isDefined =>
-              val rawCode = if (lang == Languages.GHIDRA) {
-                m.code
-              } else {
+              val rawCode = if (lang == Languages.GHIDRA) { m.code }
+              else {
                 val filename = location.filename match {
                   case f if Paths.get(f).isAbsolute => f
                   case f => rootPath.map(r => Paths.get(r, f).toAbsolutePath.toString).getOrElse(f)
