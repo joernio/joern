@@ -26,11 +26,7 @@ case class ReachableByTask(
   callSiteStack: List[Call] = List()
 )
 
-case class TaskSummary(
-  task: ReachableByTask,
-  results: Vector[ReachableByResult],
-  followupTasks: Vector[ReachableByTask]
-)
+case class TaskSummary(results: Vector[ReachableByResult], followupTasks: Vector[ReachableByTask])
 
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
   * in parallel, creating and submitting new tasks upon completion of tasks. This class deals only with task scheduling,
