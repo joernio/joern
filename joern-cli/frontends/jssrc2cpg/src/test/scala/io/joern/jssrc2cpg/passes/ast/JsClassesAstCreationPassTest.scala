@@ -61,19 +61,6 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       funcLocalA.closureBindingId shouldBe Some("code.js::program:b:A")
     }
 
-    "have constructor binding in TYPE_DECL for ClassA" in AstFixture("""
-        |var x = class ClassA {
-        |  constructor() {}
-        |}""".stripMargin) { cpg =>
-      val List(classATypeDecl)     = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(constructorBinding) = classATypeDecl.bindsOut.l
-      constructorBinding.name shouldBe ""
-      constructorBinding.signature shouldBe ""
-      val List(boundMethod) = constructorBinding.refOut.l
-      boundMethod.fullName shouldBe s"code.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
-      boundMethod.code shouldBe "constructor() {}"
-    }
-
     "have member for static method in TYPE_DECL for ClassA" in AstFixture("""
        |var x = class ClassA {
        |  static staticFoo() {}
