@@ -294,10 +294,6 @@ trait AstForTypesCreator { this: AstCreator =>
     val constructor     = createClassConstructor(clazz, memberInitCalls)
     val constructorNode = constructor.methodNode
 
-    val constructorBindingNode = createBindingNode()
-    diffGraph.addEdge(typeDeclNode, constructorBindingNode, EdgeTypes.BINDS)
-    diffGraph.addEdge(constructorBindingNode, constructorNode, EdgeTypes.REF)
-
     // adding all class methods / functions and uninitialized, non-static members
     allClassMembers
       .filter(member => isClassMethodOrUninitializedMember(member) && !isStaticMember(member))
