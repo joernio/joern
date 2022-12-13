@@ -48,8 +48,12 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def fileOffsetTable(node: IASTNode): Array[Int] = {
-    val f = fileName(node)
-    file2OffsetTable.computeIfAbsent(f, _ => genFileOffsetTable(Paths.get(config.inputPath, f)))
+    // file path is relative for project files but absolute for system header files
+    val path = fileName(node) match {
+      case f if Paths.get(f).isAbsolute => Paths.get(f)
+      case f                            => Paths.get(config.inputPath, f)
+    }
+    file2OffsetTable.computeIfAbsent(path.toString, _ => genFileOffsetTable(path))
   }
 
   private def genFileOffsetTable(fileName: Path): Array[Int] = {
