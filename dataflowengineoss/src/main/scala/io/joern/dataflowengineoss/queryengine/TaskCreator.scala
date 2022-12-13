@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Call,
   CfgNode,
   Expression,
-  Literal,
   MethodParameterIn,
   MethodParameterOut,
   Return
@@ -121,23 +120,19 @@ class TaskCreator(sources: Set[CfgNode]) {
     }
 
     val forArgs = outArgsAndCalls.flatMap { case (result, args, path, callDepth) =>
-      args
-        .filterNot(a => a.isInstanceOf[Literal])
-        .toList
-        .flatMap { case arg: Expression =>
-          val outParams = if (result.callSiteStack.nonEmpty) {
-            List[MethodParameterOut]()
-          } else {
-            argToOutputParams(arg).l
-          }
-          outParams
-            .filterNot(_.method.isExternal)
-            .map { p =>
-              val newStack =
-                arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
-              ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, newStack)
-            }
+      args.toList.flatMap { case arg: Expression =>
+        val outParams = if (result.callSiteStack.nonEmpty) {
+          List[MethodParameterOut]()
+        } else {
+          argToOutputParams(arg).l
         }
+        outParams
+          .filterNot(_.method.isExternal)
+          .map { p =>
+            val newStack = arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
+            ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, newStack)
+          }
+      }
     }
 
     forCalls ++ forArgs
