@@ -843,7 +843,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       fieldAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
       fieldAccessA.astChildren.isFieldIdentifier.canonicalNameExact("a").size shouldBe 1
 
-      val List(restCall) = destructionBlock.astChildren.isCall.nameExact("<operator>.starredUnpack").l
+      val List(restCall) = destructionBlock.astChildren.isCall.nameExact("<operator>.spread").l
       restCall.code shouldBe "...rest"
       val List(tmpArg: Identifier) = restCall.argument(1).l
       tmpArg.code shouldBe "_tmp_0"
@@ -1092,7 +1092,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       indexAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
       indexAccessA.astChildren.codeExact("0").size shouldBe 1
 
-      val List(restCall) = destructionBlock.astChildren.isCall.nameExact("<operator>.starredUnpack").l
+      val List(restCall) = destructionBlock.astChildren.isCall.nameExact("<operator>.spread").l
       restCall.code shouldBe "...rest"
       val List(tmpArg: Call) = restCall.argument(1).l
       tmpArg.code shouldBe "_tmp_0[1]"
@@ -1131,7 +1131,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(argumentThis) = fooCall.astChildren.isIdentifier.nameExact("this").l
       argumentThis.argumentIndex shouldBe 0
 
-      val List(argument1) = fooCall.astChildren.isCall.nameExact("<operator>.starredUnpack").l
+      val List(argument1) = fooCall.astChildren.isCall.nameExact("<operator>.spread").l
       argument1.argumentIndex shouldBe 1
       argument1.code shouldBe "...args"
       argument1.argument(1).code shouldBe "args"
@@ -1149,7 +1149,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(argumentThis) = fooCall.astChildren.isIdentifier.nameExact("this").l
       argumentThis.argumentIndex shouldBe 0
 
-      val List(argument1) = fooCall.astChildren.isCall.nameExact("<operator>.starredUnpack").l
+      val List(argument1) = fooCall.astChildren.isCall.nameExact("<operator>.spread").l
       argument1.argumentIndex shouldBe 1
       argument1.code shouldBe "...x.bar()"
       val List(arg: Call) = argument1.argument(1).l

@@ -273,7 +273,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       checkObjectInitialization(block, ("key1", "\"value\""))
       checkObjectInitialization(block, ("key2", "2"))
 
-      val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.starredUnpack").l
+      val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.spread").l
       spreadObjectCall.code shouldBe "...rest"
       val List(tmpArg: Identifier) = spreadObjectCall.argument(1).l
       tmpArg.code shouldBe "_tmp_0"
@@ -302,7 +302,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       checkObjectInitialization(block, ("key1", "\"value\""))
       checkObjectInitialization(block, ("key2", "2"))
 
-      val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.starredUnpack").l
+      val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.spread").l
       spreadObjectCall.code shouldBe "...x.foo()"
       val List(tmpArg: Identifier) = spreadObjectCall.argument(1).l
       tmpArg.code shouldBe "_tmp_0"

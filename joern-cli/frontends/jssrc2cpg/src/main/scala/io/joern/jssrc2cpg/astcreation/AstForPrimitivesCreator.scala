@@ -38,7 +38,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val ast = astForNodeWithFunctionReference(spreadElement.json("argument"))
     val callNode = createCallNode(
       spreadElement.code,
-      "<operator>.starredUnpack",
+      "<operator>.spread",
       DispatchTypes.STATIC_DISPATCH,
       spreadElement.lineNumber,
       spreadElement.columnNumber
