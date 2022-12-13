@@ -4,6 +4,8 @@ import io.joern.jssrc2cpg.passes.AbstractPassTest
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
 
 class MixedAstCreationPassTest extends AbstractPassTest {
@@ -841,13 +843,13 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       fieldAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
       fieldAccessA.astChildren.isFieldIdentifier.canonicalNameExact("a").size shouldBe 1
 
-      val List(assignmentToRest) = destructionBlock.astChildren.isCall.codeExact("rest = _tmp_0.rest").l
-      assignmentToRest.astChildren.isIdentifier.size shouldBe 1
-
-      val List(fieldAccessRest) = assignmentToRest.astChildren.isCall.codeExact("_tmp_0.rest").l
-      fieldAccessRest.name shouldBe Operators.fieldAccess
-      fieldAccessRest.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
-      fieldAccessRest.astChildren.isFieldIdentifier.canonicalNameExact("rest").size shouldBe 1
+      val List(restCall) = destructionBlock.astChildren.isCall.nameExact("<operator>.spread").l
+      restCall.code shouldBe "...rest"
+      val List(tmpArg: Identifier) = restCall.argument(1).l
+      tmpArg.code shouldBe "_tmp_0"
+      tmpArg.name shouldBe "_tmp_0"
+      val List(restArg: Identifier) = restCall.argument(2).l
+      restArg.code shouldBe "rest"
 
       val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
       tmpReturnIdentifier.name shouldBe "_tmp_0"
@@ -1090,13 +1092,15 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       indexAccessA.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
       indexAccessA.astChildren.codeExact("0").size shouldBe 1
 
-      val List(assignmentToB) = destructionBlock.astChildren.isCall.codeExact("rest = _tmp_0[1]").l
-      assignmentToB.astChildren.isIdentifier.size shouldBe 1
-
-      val List(indexAccessB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0[1]").l
-      indexAccessB.name shouldBe Operators.indexAccess
-      indexAccessB.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
-      indexAccessB.astChildren.isLiteral.codeExact("1").size shouldBe 1
+      val List(restCall) = destructionBlock.astChildren.isCall.nameExact("<operator>.spread").l
+      restCall.code shouldBe "...rest"
+      val List(tmpArg: Call) = restCall.argument(1).l
+      tmpArg.code shouldBe "_tmp_0[1]"
+      tmpArg.name shouldBe Operators.indexAccess
+      tmpArg.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
+      tmpArg.astChildren.isLiteral.codeExact("1").size shouldBe 1
+      val List(restArg: Identifier) = restCall.argument(2).l
+      restArg.code shouldBe "rest"
 
       val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
       tmpReturnIdentifier.name shouldBe "_tmp_0"
@@ -1127,8 +1131,10 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(argumentThis) = fooCall.astChildren.isIdentifier.nameExact("this").l
       argumentThis.argumentIndex shouldBe 0
 
-      val List(argument1) = fooCall.astChildren.isIdentifier.nameExact("args").l
+      val List(argument1) = fooCall.astChildren.isCall.nameExact("<operator>.spread").l
       argument1.argumentIndex shouldBe 1
+      argument1.code shouldBe "...args"
+      argument1.argument(1).code shouldBe "args"
     }
 
     "have correct structure for complex method spread argument" in AstFixture("foo(...x.bar())") { cpg =>
@@ -1143,8 +1149,11 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(argumentThis) = fooCall.astChildren.isIdentifier.nameExact("this").l
       argumentThis.argumentIndex shouldBe 0
 
-      val List(argument1) = fooCall.astChildren.isCall.codeExact("x.bar()").l
+      val List(argument1) = fooCall.astChildren.isCall.nameExact("<operator>.spread").l
       argument1.argumentIndex shouldBe 1
+      argument1.code shouldBe "...x.bar()"
+      val List(arg: Call) = argument1.argument(1).l
+      arg.code shouldBe "x.bar()"
     }
   }
 

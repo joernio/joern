@@ -201,7 +201,7 @@ class AstCreator(
       case BigIntLiteral             => astForBigIntLiteral(nodeInfo)
       case TemplateLiteral           => astForTemplateLiteral(nodeInfo)
       case TemplateElement           => astForTemplateElement(nodeInfo)
-      case SpreadElement             => astForSpreadElement(nodeInfo)
+      case SpreadElement             => astForSpreadOrRestElement(nodeInfo)
       case JSXElement                => astForJsxElement(nodeInfo)
       case JSXOpeningElement         => astForJsxOpeningElement(nodeInfo)
       case JSXClosingElement         => astForJsxClosingElement(nodeInfo)
