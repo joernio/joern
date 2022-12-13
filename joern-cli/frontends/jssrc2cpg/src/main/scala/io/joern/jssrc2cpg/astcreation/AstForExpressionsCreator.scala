@@ -1,6 +1,5 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.{Defines, EcmaBuiltins, GlobalBuiltins}
@@ -437,46 +436,46 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     val propertiesAsts = objExpr.json("properties").arr.toList.map { property =>
       val nodeInfo = createBabelNodeInfo(property)
-      val (lhsNode, rhsAst) = nodeInfo.node match {
-        case ObjectMethod =>
-          val keyName = nodeInfo.json("key")("name").str
-          val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
-          (keyNode, astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true))
-        case ObjectProperty =>
-          val key = createBabelNodeInfo(nodeInfo.json("key"))
-          val keyName = key.node match {
-            case Identifier if nodeInfo.json("computed").bool =>
-              key.code
-            case _ if nodeInfo.json("computed").bool =>
-              generateUnusedVariableName(usedVariableNames, "_computed_object_property")
-            case _ => key.code
-          }
-          val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
-          val ast     = astForNodeWithFunctionReference(nodeInfo.json("value"))
-          (keyNode, ast)
+      nodeInfo.node match {
         case SpreadElement =>
-          val ast         = astForNodeWithFunctionReferenceAndCall(nodeInfo.json("argument"))
-          val defaultName = codeForNodes(ast.root.toSeq)
-          val keyName     = nameForBabelNodeInfo(nodeInfo, defaultName)
-          val keyNode     = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
-          (keyNode, ast)
+          val arg1Ast = Ast(createIdentifierNode(tmpName, nodeInfo))
+          astForSpreadOrRestElement(nodeInfo, Some(arg1Ast))
         case _ =>
-          // can't happen as per https://github.com/babel/babel/blob/main/packages/babel-types/src/ast-types/generated/index.ts#L573
-          // just to make the compiler happy here.
-          ???
+          val (lhsNode, rhsAst) = nodeInfo.node match {
+            case ObjectMethod =>
+              val keyName = nodeInfo.json("key")("name").str
+              val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
+              (keyNode, astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true))
+            case ObjectProperty =>
+              val key = createBabelNodeInfo(nodeInfo.json("key"))
+              val keyName = key.node match {
+                case Identifier if nodeInfo.json("computed").bool =>
+                  key.code
+                case _ if nodeInfo.json("computed").bool =>
+                  generateUnusedVariableName(usedVariableNames, "_computed_object_property")
+                case _ => key.code
+              }
+              val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
+              val ast     = astForNodeWithFunctionReference(nodeInfo.json("value"))
+              (keyNode, ast)
+            case _ =>
+              // can't happen as per https://github.com/babel/babel/blob/main/packages/babel-types/src/ast-types/generated/index.ts#L573
+              // just to make the compiler happy here.
+              ???
+          }
+
+          val leftHandSideTmpNode = createIdentifierNode(tmpName, nodeInfo)
+          val leftHandSideFieldAccessAst =
+            createFieldAccessCallAst(leftHandSideTmpNode, lhsNode, nodeInfo.lineNumber, nodeInfo.columnNumber)
+
+          createAssignmentCallAst(
+            leftHandSideFieldAccessAst,
+            rhsAst,
+            s"$tmpName.${lhsNode.canonicalName} = ${codeOf(rhsAst.nodes.head)}",
+            nodeInfo.lineNumber,
+            nodeInfo.columnNumber
+          )
       }
-
-      val leftHandSideTmpNode = createIdentifierNode(tmpName, nodeInfo)
-      val leftHandSideFieldAccessAst =
-        createFieldAccessCallAst(leftHandSideTmpNode, lhsNode, nodeInfo.lineNumber, nodeInfo.columnNumber)
-
-      createAssignmentCallAst(
-        leftHandSideFieldAccessAst,
-        rhsAst,
-        s"$tmpName.${lhsNode.canonicalName} = ${codeOf(rhsAst.nodes.head)}",
-        nodeInfo.lineNumber,
-        nodeInfo.columnNumber
-      )
     }
 
     val tmpNode = createIdentifierNode(tmpName, objExpr)

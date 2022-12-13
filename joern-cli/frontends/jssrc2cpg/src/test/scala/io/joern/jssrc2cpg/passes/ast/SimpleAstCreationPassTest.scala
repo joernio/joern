@@ -272,7 +272,15 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(block) = assignment.astChildren.isBlock.l
       checkObjectInitialization(block, ("key1", "\"value\""))
       checkObjectInitialization(block, ("key2", "2"))
-      checkObjectInitialization(block, ("rest", "rest"))
+
+      val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.starredUnpack").l
+      spreadObjectCall.code shouldBe "...rest"
+      val List(tmpArg: Identifier) = spreadObjectCall.argument(1).l
+      tmpArg.code shouldBe "_tmp_0"
+      tmpArg.name shouldBe "_tmp_0"
+      val List(restArg: Identifier) = spreadObjectCall.argument(2).l
+      restArg.code shouldBe "rest"
+      restArg.name shouldBe "rest"
     }
 
     "have correct structure for 1 object with complex rest" in AstFixture("""
@@ -293,7 +301,14 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(block) = assignment.astChildren.isBlock.l
       checkObjectInitialization(block, ("key1", "\"value\""))
       checkObjectInitialization(block, ("key2", "2"))
-      checkObjectInitialization(block, ("_tmp_1", "x.foo()"))
+
+      val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.starredUnpack").l
+      spreadObjectCall.code shouldBe "...x.foo()"
+      val List(tmpArg: Identifier) = spreadObjectCall.argument(1).l
+      tmpArg.code shouldBe "_tmp_0"
+      tmpArg.name shouldBe "_tmp_0"
+      val List(restArg: Call) = spreadObjectCall.argument(2).l
+      restArg.code shouldBe "x.foo()"
     }
 
     "have correct structure for 1 object with computed values" in AstFixture("""

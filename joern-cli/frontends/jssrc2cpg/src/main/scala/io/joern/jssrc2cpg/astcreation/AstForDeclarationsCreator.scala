@@ -520,7 +520,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     )
   }
 
-  protected def convertDestructingObjectElementWithDefault(
+  private def convertDestructingObjectElementWithDefault(
     element: BabelNodeInfo,
     key: BabelNodeInfo,
     localTmpName: String
@@ -617,8 +617,8 @@ trait AstForDeclarationsCreator { this: AstCreator =>
           val nodeInfo = createBabelNodeInfo(element)
           nodeInfo.node match {
             case RestElement =>
-              val restElementNodeInfo = createBabelNodeInfo(nodeInfo.json("argument"))
-              convertDestructingObjectElement(restElementNodeInfo, restElementNodeInfo, localTmpName)
+              val arg1Ast = Ast(createIdentifierNode(localTmpName, nodeInfo))
+              astForSpreadOrRestElement(nodeInfo, Some(arg1Ast))
             case _ =>
               val nodeInfo = createBabelNodeInfo(element("value"))
               nodeInfo.node match {
@@ -640,8 +640,12 @@ trait AstForDeclarationsCreator { this: AstCreator =>
             val nodeInfo = createBabelNodeInfo(element)
             nodeInfo.node match {
               case RestElement =>
-                val restElementNodeInfo = createBabelNodeInfo(nodeInfo.json("argument"))
-                convertDestructingArrayElement(restElementNodeInfo, index, localTmpName)
+                val fieldAccessTmpNode = createIdentifierNode(localTmpName, nodeInfo)
+                val keyNode =
+                  createLiteralNode(index.toString, Some(Defines.NUMBER), nodeInfo.lineNumber, nodeInfo.columnNumber)
+                val accessAst =
+                  createIndexAccessCallAst(fieldAccessTmpNode, keyNode, nodeInfo.lineNumber, nodeInfo.columnNumber)
+                astForSpreadOrRestElement(nodeInfo, Some(accessAst))
               case Identifier =>
                 convertDestructingArrayElement(nodeInfo, index, localTmpName)
               case AssignmentPattern =>
