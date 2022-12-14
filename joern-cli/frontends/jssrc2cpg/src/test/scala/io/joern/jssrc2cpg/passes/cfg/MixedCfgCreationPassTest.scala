@@ -140,12 +140,10 @@ class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) 
       succOf("a", 1) shouldBe expected(("_tmp_0.a", AlwaysEdge))
       succOf("_tmp_0.a") shouldBe expected(("a = _tmp_0.a", AlwaysEdge))
 
-      succOf("a = _tmp_0.a") shouldBe expected(("rest", AlwaysEdge))
-      succOf("rest") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
-      succOf("_tmp_0", 2) shouldBe expected(("rest", 1, AlwaysEdge))
-      succOf("rest", 1) shouldBe expected(("_tmp_0.rest", AlwaysEdge))
-      succOf("_tmp_0.rest") shouldBe expected(("rest = _tmp_0.rest", AlwaysEdge))
-      succOf("rest = _tmp_0.rest") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
+      succOf("a = _tmp_0.a") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("_tmp_0", 2) shouldBe expected(("rest", AlwaysEdge))
+      succOf("rest") shouldBe expected(("...rest", AlwaysEdge))
+      succOf("...rest") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
 
       succOf("_tmp_0", 3) shouldBe expected(("var {a, ...rest} = x", AlwaysEdge))
       succOf("var {a, ...rest} = x") shouldBe expected(("RET", AlwaysEdge))
@@ -360,22 +358,22 @@ class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) 
       succOf("0") shouldBe expected(("_tmp_0[0]", AlwaysEdge))
       succOf("_tmp_0[0]") shouldBe expected(("a = _tmp_0[0]", AlwaysEdge))
 
-      succOf("a = _tmp_0[0]") shouldBe expected(("rest", AlwaysEdge))
-      succOf("rest") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("a = _tmp_0[0]") shouldBe expected(("_tmp_0", 2, AlwaysEdge))
       succOf("_tmp_0", 2) shouldBe expected(("1", AlwaysEdge))
       succOf("1") shouldBe expected(("_tmp_0[1]", AlwaysEdge))
-      succOf("_tmp_0[1]") shouldBe expected(("rest = _tmp_0[1]", AlwaysEdge))
-      succOf("rest = _tmp_0[1]") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
+      succOf("_tmp_0[1]") shouldBe expected(("rest", AlwaysEdge))
+      succOf("rest") shouldBe expected(("...rest", AlwaysEdge))
+      succOf("...rest") shouldBe expected(("_tmp_0", 3, AlwaysEdge))
       succOf("_tmp_0", 3) shouldBe expected(("var [a, ...rest] = x", AlwaysEdge))
       succOf("var [a, ...rest] = x") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for array destruction assignment as parameter" in {
       implicit val cpg: Cpg = code("""
-                                     |function userId([id]) {
-                                     |  return id
-                                     |}
-                                     |""".stripMargin)
+       |function userId([id]) {
+       |  return id
+       |}
+       |""".stripMargin)
       succOf("userId", NodeTypes.METHOD) shouldBe expected(("id", AlwaysEdge))
       succOf("id") shouldBe expected(("param1_0", AlwaysEdge))
       succOf("param1_0") shouldBe expected(("id", 1, AlwaysEdge))
@@ -391,7 +389,8 @@ class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) 
         implicit val cpg: Cpg = code("foo(...args)")
         succOf(":program") shouldBe expected(("foo", AlwaysEdge))
         succOf("foo") shouldBe expected(("this", AlwaysEdge))
-        succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("...args", AlwaysEdge))
+        succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("args", AlwaysEdge))
+        succOf("args") shouldBe expected(("...args", AlwaysEdge))
         succOf("...args") shouldBe expected(("foo(...args)", AlwaysEdge))
         succOf("foo(...args)") shouldBe expected(("RET", AlwaysEdge))
       }

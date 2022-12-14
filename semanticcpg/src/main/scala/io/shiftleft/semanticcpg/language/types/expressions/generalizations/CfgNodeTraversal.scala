@@ -1,6 +1,5 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
-import io.shiftleft.Implicits.JavaIteratorDeco
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language._
@@ -19,18 +18,7 @@ class CfgNodeTraversal[A <: CfgNode](val traversal: Traversal[A]) extends AnyVal
   /** Traverse to enclosing method
     */
   def method: Traversal[Method] =
-    traversal.map {
-      case method: Method =>
-        method
-      case methodReturn: MethodReturn =>
-        methodReturn.method
-      case expression: Expression =>
-        expression.method
-      case callRepr: CallRepr =>
-        callRepr._astIn.onlyChecked.asInstanceOf[Method]
-      case jumpTarget: JumpTarget =>
-        jumpTarget.method
-    }
+    traversal.map(_.method) // refers to `semanticcpg.language.nodemethods.CfgNodeMethods.method`
 
   /** Traverse to next expression in CFG.
     */
