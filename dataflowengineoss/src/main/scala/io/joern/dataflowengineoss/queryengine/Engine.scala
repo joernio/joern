@@ -233,7 +233,7 @@ object Engine {
   }
 
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
-    vec
+    vec.par
       .groupBy { result =>
         val head        = result.path.headOption.map(_.node)
         val last        = result.path.lastOption.map(_.node)
