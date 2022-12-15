@@ -1,10 +1,10 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.datastructures.CGlobal
+import io.joern.c2cpg.utils.IOUtils
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
-import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
@@ -48,16 +48,12 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def fileOffsetTable(node: IASTNode): Array[Int] = {
-    // file path is relative for project files but absolute for system header files
-    val path = fileName(node) match {
-      case f if Paths.get(f).isAbsolute => Paths.get(f)
-      case f                            => Paths.get(config.inputPath, f)
-    }
-    file2OffsetTable.computeIfAbsent(path.toString, _ => genFileOffsetTable(path))
+    val path = IOUtils.toAbsolutePath(fileName(node), config)
+    file2OffsetTable.computeIfAbsent(path, _ => genFileOffsetTable(Paths.get(path)))
   }
 
-  private def genFileOffsetTable(fileName: Path): Array[Int] = {
-    val asCharArray = IOUtils.readLinesInFile(fileName).mkString("\n").toCharArray
+  private def genFileOffsetTable(absolutePath: Path): Array[Int] = {
+    val asCharArray = io.shiftleft.utils.IOUtils.readLinesInFile(absolutePath).mkString("\n").toCharArray
     val offsets     = mutable.ArrayBuffer.empty[Int]
 
     for (i <- Range(0, asCharArray.length)) {
@@ -75,14 +71,8 @@ trait AstCreatorHelper { this: AstCreator =>
     Option(cdtAst.flattenLocationsToFile(node.getNodeLocations.lastOption.toArray)).map(_.asFileLocation())
 
   protected def fileName(node: IASTNode): String = {
-    val f = nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
-    if (f.contains(config.inputPath)) {
-      val path        = Paths.get(f).toAbsolutePath
-      val projectPath = Paths.get(config.inputPath).toAbsolutePath
-      projectPath.relativize(path).toString
-    } else {
-      f
-    }
+    val path = nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
+    IOUtils.toRelativePath(path, config)
   }
 
   protected def line(node: IASTNode): Option[Integer] = {

@@ -5,10 +5,9 @@ import io.joern.c2cpg.astcreation.AstCreator
 import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.joern.c2cpg.passes.AstCreationPass.InputFiles
-import io.joern.c2cpg.utils.{Report, TimeUtils}
+import io.joern.c2cpg.utils.{IOUtils, Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
-import io.shiftleft.utils.IOUtils
 import io.joern.x2cpg.SourceFiles
 
 import java.nio.file.Paths
@@ -30,12 +29,8 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
     SourceFiles.determine(config.inputPath, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
 
   private def headerFiles: Set[String] = {
-    val allHeaderFiles = SourceFiles.determine(config.inputPath, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
-    val alreadySeenHeaderFiles = CGlobal.headerFiles.map {
-      // file path is relative for project files but absolute for system header files
-      case f if Paths.get(f).isAbsolute => f
-      case f                            => Paths.get(config.inputPath, f).toString
-    }
+    val allHeaderFiles         = SourceFiles.determine(config.inputPath, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
+    val alreadySeenHeaderFiles = CGlobal.headerFiles.map(IOUtils.toAbsolutePath(_, config))
     allHeaderFiles -- alreadySeenHeaderFiles
   }
 
@@ -45,10 +40,9 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
-    val path        = Paths.get(filename).toAbsolutePath
-    val projectPath = Paths.get(config.inputPath).toAbsolutePath
-    val relPath     = projectPath.relativize(path).toString
-    val fileLOC     = IOUtils.readLinesInFile(path).size
+    val path    = Paths.get(filename).toAbsolutePath
+    val relPath = IOUtils.toRelativePath(path.toString, config)
+    val fileLOC = io.shiftleft.utils.IOUtils.readLinesInFile(path).size
     val (gotCpg, duration) = TimeUtils.time {
       val parseResult = parser.parse(path)
       parseResult match {

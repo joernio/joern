@@ -3,10 +3,7 @@ package io.joern.c2cpg.passes.types
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-
-import java.io.File
+import io.shiftleft.semanticcpg.language.types.structure.{FileTraversal, NamespaceTraversal}
 
 class ClassTypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
 

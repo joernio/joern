@@ -441,28 +441,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         val source = cpg.method.name("source").methodReturn
         val sink   = cpg.method.name("sink").parameter
         val flows  = sink.reachableByFlows(source)
-
-        // Issue: at nop, we have overtaint. Hence we track both into and around the call.
-        // The into-part returns unchanged, and is reconstructed with overtaint. Once we track c[?], we are lost.
-        pendingUntilFixed(
-          flows.map(flowToResultPairs).toSetMutable shouldBe Set(
-            // bad flow. delete once fixed, here for documentation only
-            List(
-              ("$ret", Some(2)),
-              ("source()", Some(8)),
-              ("p2", None),
-              ("p1", None),
-              ("c[2]", Some(8)),
-              ("c[1]", Some(10)),
-              ("arg", Some(3))
-            )
-          )
-        )
-
-        pendingUntilFixed({
-          flows.size shouldBe 0
-        })
-
+        flows.size shouldBe 0
       }
     }
 
