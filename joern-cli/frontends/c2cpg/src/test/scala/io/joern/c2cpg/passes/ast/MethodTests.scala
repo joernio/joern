@@ -6,8 +6,6 @@ import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-import java.io.File
-
 class MethodTests extends CCodeToCpgSuite {
 
   "MethodTest1" should {

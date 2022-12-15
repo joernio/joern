@@ -167,10 +167,10 @@ trait MacroHandler { this: AstCreator =>
     }
   }
 
-  def isExpandedFromMacro(node: IASTNode): Boolean =
+  private def isExpandedFromMacro(node: IASTNode): Boolean =
     expandedFromMacro(node).nonEmpty
 
-  def expandedFromMacro(node: IASTNode): Option[IASTMacroExpansionLocation] = {
+  private def expandedFromMacro(node: IASTNode): Option[IASTMacroExpansionLocation] = {
     val locations = node.getNodeLocations
     if (locations.nonEmpty) {
       node.getNodeLocations.headOption

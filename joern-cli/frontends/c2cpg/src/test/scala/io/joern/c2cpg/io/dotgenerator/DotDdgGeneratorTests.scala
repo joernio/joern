@@ -1,10 +1,7 @@
 package io.joern.c2cpg.io.dotgenerator
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.joern.dataflowengineoss.dotgenerator.DdgGenerator
 import io.joern.dataflowengineoss.language._
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, Method}
 import io.shiftleft.semanticcpg.language._
 
 class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
