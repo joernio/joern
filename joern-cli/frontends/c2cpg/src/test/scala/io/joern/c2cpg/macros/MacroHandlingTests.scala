@@ -5,10 +5,6 @@ import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.codepropertygraph.generated.nodes.Literal
-import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language._
 
 class MacroHandlingTests extends CCodeToCpgSuite {
@@ -24,26 +20,32 @@ class MacroHandlingTests extends CCodeToCpgSuite {
     """.stripMargin)
 
     "should correctly expand macro" in {
-      val List(x: Call) = cpg.method("foo").call.nameExact(Operators.assignment).l
+      val List(x) = cpg.method("foo").call.nameExact(Operators.assignment).l
       x.code shouldBe "*y = 10 + 2"
       x.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      val List(macroCall: Call) = cpg.method("foo").call.nameExact("A_MACRO").l
+
+      val List(macroCall) = cpg.method("foo").call.nameExact("A_MACRO").l
       macroCall.code shouldBe "A_MACRO(*y, 2)"
-      val List(arg1: Call, arg2: Literal) = macroCall.argument.l.sortBy(_.order)
+
+      val List(arg1) = macroCall.argument.isCall.l
       arg1.name shouldBe Operators.indirection
       arg1.code shouldBe "*y"
       arg1.order shouldBe 1
       arg1.argumentIndex shouldBe 1
-      val List(identifier: Identifier) = arg1.argument.l
+
+      val List(identifier) = arg1.argument.isIdentifier.l
       identifier.name shouldBe "y"
       identifier.order shouldBe 1
+      identifier.argumentIndex shouldBe 1
+
+      val List(arg2) = macroCall.argument.isLiteral.l
       arg2.code shouldBe "2"
       arg2.order shouldBe 2
       arg2.argumentIndex shouldBe 2
     }
 
     "should create a METHOD for the expanded macro" in {
-      val List(m: Method) = cpg.method.name("A_MACRO").l
+      val List(m) = cpg.method.name("A_MACRO").l
       m.fullName.endsWith("A_MACRO:2") shouldBe true
       m.filename.endsWith(".c") shouldBe true
       m.lineNumber shouldBe Some(2)
@@ -67,15 +69,22 @@ class MacroHandlingTests extends CCodeToCpgSuite {
     """.stripMargin)
 
     "should correctly expand macro inside macro" in {
-      val List(x: Call) = cpg.method("foo").call.nameExact(Operators.assignment).l
+      val List(x) = cpg.method("foo").call.nameExact(Operators.assignment).l
       x.code shouldBe "y = (y + 1)"
-      val List(identifier: Identifier, call2: Call) = x.astChildren.l.sortBy(_.order)
+
+      val List(identifier) = x.argument.isIdentifier.l
       identifier.code shouldBe "y"
+      identifier.argumentIndex shouldBe 1
+      val List(call2) = x.argument.isCall.l
       call2.code shouldBe "y + 1"
-      val List(arg1: Identifier, arg2: Literal) = call2.argument.l.sortBy(_.argumentIndex)
+      call2.argumentIndex shouldBe 2
+
+      val List(arg1) = call2.argument.isIdentifier.l
       arg1.name shouldBe "y"
       arg1.order shouldBe 1
       arg1.argumentIndex shouldBe 1
+
+      val List(arg2) = call2.argument.isLiteral.l
       arg2.code shouldBe "1"
       arg2.order shouldBe 2
       arg2.argumentIndex shouldBe 2
@@ -93,10 +102,12 @@ class MacroHandlingTests extends CCodeToCpgSuite {
     """.stripMargin)
 
     "should correctly expand macro inside macro" in {
-      val List(x: Call) = cpg.method("foo").call.nameExact("printf").l
+      val List(x) = cpg.method("foo").call.nameExact("printf").l
       x.code shouldBe "printf(y)"
-      val List(arg: Identifier) = x.argument.l
+
+      val List(arg) = x.argument.isIdentifier.l
       arg.name shouldBe "y"
+      arg.argumentIndex shouldBe 1
     }
   }
 
@@ -130,7 +141,7 @@ class MacroHandlingTests extends CCodeToCpgSuite {
     """.stripMargin)
 
     "should correctly include calls to macros" in {
-      val List(call1: Call) = cpg.method("foo").call.nameExact("A_MACRO").l
+      val List(call1) = cpg.method("foo").call.nameExact("A_MACRO").l
       call1.code shouldBe "A_MACRO(dst, ptr, 1)"
       call1.name shouldBe "A_MACRO"
       call1.methodFullName.endsWith("A_MACRO:3") shouldBe true
@@ -138,12 +149,13 @@ class MacroHandlingTests extends CCodeToCpgSuite {
       call1.columnNumber shouldBe Some(1)
       call1.typeFullName shouldBe "ANY"
       call1.dispatchType shouldBe DispatchTypes.INLINED
+
       val List(arg1, arg2, arg3) = call1.argument.l.sortBy(_.order)
       arg1.code shouldBe "dst"
       arg2.code shouldBe "ptr"
       arg3.code shouldBe "1"
 
-      val List(call2: Call) = cpg.method("foo").call.nameExact("A_MACRO_2").l
+      val List(call2) = cpg.method("foo").call.nameExact("A_MACRO_2").l
       call2.code shouldBe "A_MACRO_2()"
       call2.name shouldBe "A_MACRO_2"
       call2.methodFullName.endsWith("A_MACRO_2:0") shouldBe true
@@ -164,7 +176,7 @@ class MacroHandlingTests extends CCodeToCpgSuite {
     """.stripMargin)
 
     "should correctly include call to macro that is only a constant in a return" in {
-      val List(call: Call) = cpg.method("foo").call.l
+      val List(call) = cpg.method("foo").call.l
       call.name shouldBe "A_MACRO"
       call.code shouldBe "A_MACRO"
       call.argument.size shouldBe 0
@@ -180,7 +192,7 @@ class MacroHandlingTests extends CCodeToCpgSuite {
     """.stripMargin)
 
     "should correctly include call to macro that is only a constant (no brackets) in a return" in {
-      val List(call: Call) = cpg.method("foo").call.l
+      val List(call) = cpg.method("foo").call.l
       call.name shouldBe "A_MACRO"
       call.code shouldBe "A_MACRO"
       call.argument.size shouldBe 0
@@ -215,9 +227,10 @@ class CfgMacroTests extends DataFlowCodeToCpgSuite {
     |}""".stripMargin)
 
   "should create correct CFG for macro expansion and find data flow" in {
-    val List(callToMacro: Call) = cpg.method("foo").call.dispatchType(DispatchTypes.INLINED).l
+    val List(callToMacro) = cpg.method("foo").call.dispatchType(DispatchTypes.INLINED).l
     callToMacro.argument.code.l shouldBe List("x")
     callToMacro.cfgNext.code.toSetMutable shouldBe Set("x", "i_read")
+
     val source = cpg.method("foo").call.name("MP4_GET4BYTES").argument(1).l
     val sink   = cpg.method("foo").call.name("sink").argument(1).l
     val flows  = sink.reachableByFlows(source)
