@@ -13,9 +13,11 @@ import overflowdb.traversal.{NodeOps, Traversal}
 
 import scala.collection.parallel.CollectionConverters._
 import java.util.concurrent._
-import scala.collection.mutable
 import scala.jdk.CollectionConverters._
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 
 case class ReachableByTask(
   sink: CfgNode,
@@ -37,14 +39,8 @@ class Engine(context: EngineContext) {
   import Engine._
 
   private val logger: Logger                   = LoggerFactory.getLogger(this.getClass)
-  private var numberOfTasksRunning: Int        = 0
-  private val executorService: ExecutorService = Executors.newWorkStealingPool()
-  private val completionService =
-    new ExecutorCompletionService[TaskSummary](executorService)
 
-  def shutdown(): Unit = {
-    executorService.shutdown()
-  }
+  def shutdown(): Unit = {}
 
   /** Determine flows from sources to sinks by exploring the graph backwards from sinks to sources. Returns the list of
     * results along with a ResultTable, a cache of known paths created during the analysis.
@@ -72,45 +68,58 @@ class Engine(context: EngineContext) {
     sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable()))
   }
 
-  /** Submit tasks to a worker pool, solving them in parallel. Upon receiving results for a task, new tasks are
-    * submitted accordingly. Once no more tasks can be created, the list of results is returned.
-    */
   private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): Vector[ReachableByResult] = {
-    var completedResults = List[ReachableByResult]()
+    var completedResults = Vector[ReachableByResult]()
 
     def handleSummary(taskSummary: TaskSummary): Unit = {
       val newTasks = taskSummary.followupTasks
       submitTasks(newTasks, sources)
       val newResults = taskSummary.results
-      completedResults ++= newResults
-    }
 
-    def runUntilAllTasksAreSolved(): Unit = {
-      while (numberOfTasksRunning > 0) {
-        Try {
-          completionService.take.get
-        } match {
-          case Success(resultsOfTask) =>
-            numberOfTasksRunning -= 1
-            handleSummary(resultsOfTask)
-          case Failure(exception) =>
-            numberOfTasksRunning -= 1
-            logger.warn(s"SolveTask failed with exception:", exception)
-            exception.printStackTrace()
-        }
+      if( newResults.length == 0 ){
+        return
       }
+
+      synchronized( completedResults ++= newResults )
     }
 
+    def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
+      TaskSolver.futuresStartedCounter.incrementAndGet()
+      Future {
+        tasks.foreach(t => {
+          val ts = new TaskSolver(t, context, sources)
+          val resultsOfTask = ts.call()
+          handleSummary(resultsOfTask)
+        }
+        )
+      }.onComplete(_ => {
+        TaskSolver.futuresEndedCounter.incrementAndGet()
+      })
+    }
+
+    val startTimeSec: Long = System.currentTimeMillis / 1000
     submitTasks(tasks.toVector, sources)
-    runUntilAllTasksAreSolved()
-    deduplicate(completedResults.toVector)
-  }
 
-  private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
-    numberOfTasksRunning += tasks.size
-    tasks.foreach(t => completionService.submit(new TaskSolver(t, context, sources)))
-  }
+    do{
+      Thread.sleep(1000)
+    }while (TaskSolver.futuresStartedCounter.get() > TaskSolver.futuresEndedCounter.get() ||
+      TaskSolver.totalTaskCounter.get() > TaskSolver.doneTaskCounter.get())
 
+    val taskFinishTimeSec: Long = System.currentTimeMillis / 1000
+
+    TaskSolver.printStats()
+
+    println("Generated " + completedResults.length +
+      " results. Starting deduplication" )
+    val dedupResult = deduplicate(completedResults)
+    val allDoneTimeSec: Long = System.currentTimeMillis / 1000
+
+    println("Time measurement -----> Task processing: " +
+      ( taskFinishTimeSec - startTimeSec) + " seconds" +
+      ", Deduplication: " + ( allDoneTimeSec - taskFinishTimeSec) +
+    ", Deduped results size: " + dedupResult.length)
+    dedupResult
+  }
 }
 
 object Engine {
@@ -233,7 +242,7 @@ object Engine {
   }
 
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
-    vec
+    vec.par
       .groupBy { result =>
         val head        = result.path.headOption.map(_.node)
         val last        = result.path.lastOption.map(_.node)
