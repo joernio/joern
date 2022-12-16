@@ -18,7 +18,6 @@ import scala.concurrent.{Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-
 case class ReachableByTask(
   sink: CfgNode,
   sources: Set[CfgNode],
@@ -38,7 +37,7 @@ class Engine(context: EngineContext) {
 
   import Engine._
 
-  private val logger: Logger                   = LoggerFactory.getLogger(this.getClass)
+  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   def shutdown(): Unit = {}
 
@@ -76,22 +75,21 @@ class Engine(context: EngineContext) {
       submitTasks(newTasks, sources)
       val newResults = taskSummary.results
 
-      if( newResults.length == 0 ){
+      if (newResults.length == 0) {
         return
       }
 
-      synchronized( completedResults ++= newResults )
+      synchronized(completedResults ++= newResults)
     }
 
     def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
       TaskSolver.futuresStartedCounter.incrementAndGet()
       Future {
         tasks.foreach(t => {
-          val ts = new TaskSolver(t, context, sources)
+          val ts            = new TaskSolver(t, context, sources)
           val resultsOfTask = ts.call()
           handleSummary(resultsOfTask)
-        }
-        )
+        })
       }.onComplete(_ => {
         TaskSolver.futuresEndedCounter.incrementAndGet()
       })
@@ -100,24 +98,28 @@ class Engine(context: EngineContext) {
     val startTimeSec: Long = System.currentTimeMillis / 1000
     submitTasks(tasks.toVector, sources)
 
-    do{
+    do {
       Thread.sleep(1000)
-    }while (TaskSolver.futuresStartedCounter.get() > TaskSolver.futuresEndedCounter.get() ||
+    } while (TaskSolver.futuresStartedCounter.get() > TaskSolver.futuresEndedCounter.get() ||
       TaskSolver.totalTaskCounter.get() > TaskSolver.doneTaskCounter.get())
 
     val taskFinishTimeSec: Long = System.currentTimeMillis / 1000
 
     TaskSolver.printStats()
 
-    println("Generated " + completedResults.length +
-      " results. Starting deduplication" )
-    val dedupResult = deduplicate(completedResults)
+    println(
+      "Generated " + completedResults.length +
+        " results. Starting deduplication"
+    )
+    val dedupResult          = deduplicate(completedResults)
     val allDoneTimeSec: Long = System.currentTimeMillis / 1000
 
-    println("Time measurement -----> Task processing: " +
-      ( taskFinishTimeSec - startTimeSec) + " seconds" +
-      ", Deduplication: " + ( allDoneTimeSec - taskFinishTimeSec) +
-    ", Deduped results size: " + dedupResult.length)
+    println(
+      "Time measurement -----> Task processing: " +
+        (taskFinishTimeSec - startTimeSec) + " seconds" +
+        ", Deduplication: " + (allDoneTimeSec - taskFinishTimeSec) +
+        ", Deduped results size: " + dedupResult.length
+    )
     dedupResult
   }
 }

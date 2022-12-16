@@ -9,14 +9,14 @@ import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
 import java.util.concurrent.{Callable}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong}
 
-object TaskSolver{
-  val totalTaskCounter = new AtomicInteger(0)
-  val doneTaskCounter = new AtomicInteger(0)
+object TaskSolver {
+  val totalTaskCounter      = new AtomicInteger(0)
+  val doneTaskCounter       = new AtomicInteger(0)
   val futuresStartedCounter = new AtomicInteger(0)
-  val futuresEndedCounter = new AtomicInteger(0)
-  val lastDoneTasks = new AtomicInteger(0)
-  val lastPrintTime = new AtomicLong()
-  val myTurn = new AtomicBoolean()
+  val futuresEndedCounter   = new AtomicInteger(0)
+  val lastDoneTasks         = new AtomicInteger(0)
+  val lastPrintTime         = new AtomicLong()
+  val myTurn                = new AtomicBoolean()
 
   def printStats(): Unit = {
 
@@ -32,18 +32,20 @@ object TaskSolver{
       return
     }
 
-    val totalTasks = totalTaskCounter.get()
-    val doneTasks = doneTaskCounter.get()
+    val totalTasks     = totalTaskCounter.get()
+    val doneTasks      = doneTaskCounter.get()
     val futuresStarted = futuresStartedCounter.get()
-    val futuresEnded = futuresEndedCounter.get()
-    val backlog = futuresStarted - futuresEnded
+    val futuresEnded   = futuresEndedCounter.get()
+    val backlog        = futuresStarted - futuresEnded
 
-    println(" Total tasks: " + totalTasks +
-      ", Done tasks: " + doneTasks +
-      ", Futures started: " + futuresStarted +
-      ", Futures ended: " + futuresEnded +
-      ", Future backlog: " + backlog +
-      ", Tasks per sec: " + (doneTasks - lastDoneTasks.get()))
+    println(
+      " Total tasks: " + totalTasks +
+        ", Done tasks: " + doneTasks +
+        ", Futures started: " + futuresStarted +
+        ", Futures ended: " + futuresEnded +
+        ", Future backlog: " + backlog +
+        ", Tasks per sec: " + (doneTasks - lastDoneTasks.get())
+    )
     lastDoneTasks.set(doneTasks)
     myTurn.getAndSet(false)
   }
@@ -59,33 +61,30 @@ object TaskSolver{
   * @param context
   *   state of the data flow engine
   */
-class TaskSolver(task: ReachableByTask, context: EngineContext,
-                 sources: Set[CfgNode]
-                ) extends Callable[TaskSummary] {
+class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[CfgNode]) extends Callable[TaskSummary] {
 
   import Engine._
 
-
   def call(): TaskSummary = {
-      totalTaskCounter.incrementAndGet()
+    totalTaskCounter.incrementAndGet()
 
-      if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
-        doneTaskCounter.incrementAndGet()
-        TaskSummary(Vector(), Vector())
-      } else {
-        implicit val sem: Semantics = context.semantics
-        val path = PathElement(task.sink, task.callSiteStack) +: task.initialPath
-        results(task.sink, path, task.sources, task.table, task.callSiteStack)
-        // TODO why do we update the call depth here?
-        val finalResults = task.table.get(task.sink).get.map { r =>
-          r.copy(callDepth = task.callDepth)
-        }
+    if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
+      doneTaskCounter.incrementAndGet()
+      TaskSummary(Vector(), Vector())
+    } else {
+      implicit val sem: Semantics = context.semantics
+      val path                    = PathElement(task.sink, task.callSiteStack) +: task.initialPath
+      results(task.sink, path, task.sources, task.table, task.callSiteStack)
+      // TODO why do we update the call depth here?
+      val finalResults = task.table.get(task.sink).get.map { r =>
+        r.copy(callDepth = task.callDepth)
+      }
 
-        val (partial, complete) = finalResults.partition(_.partial)
-        val newTasks = new TaskCreator(sources).createFromResults(partial).distinctBy(t => (t.sink, t.callSiteStack))
-        doneTaskCounter.incrementAndGet()
-        TaskSolver.printStats()
-        TaskSummary(complete, newTasks)
+      val (partial, complete) = finalResults.partition(_.partial)
+      val newTasks = new TaskCreator(sources).createFromResults(partial).distinctBy(t => (t.sink, t.callSiteStack))
+      doneTaskCounter.incrementAndGet()
+      TaskSolver.printStats()
+      TaskSummary(complete, newTasks)
     }
   }
 
