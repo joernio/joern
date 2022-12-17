@@ -3,10 +3,11 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
 import io.joern.dataflowengineoss.queryengine.TaskSolver.{doneTaskCounter, totalTaskCounter}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.cpgloading.ProtoToCpg.logger
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
 
-import java.util.concurrent.{Callable}
+import java.util.concurrent.Callable
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong}
 
 object TaskSolver {
@@ -38,7 +39,7 @@ object TaskSolver {
     val futuresEnded   = futuresEndedCounter.get()
     val backlog        = futuresStarted - futuresEnded
 
-    println(
+    logger.debug(
       " Total tasks: " + totalTasks +
         ", Done tasks: " + doneTasks +
         ", Futures started: " + futuresStarted +

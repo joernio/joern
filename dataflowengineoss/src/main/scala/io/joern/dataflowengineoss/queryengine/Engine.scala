@@ -16,7 +16,6 @@ import java.util.concurrent._
 import scala.jdk.CollectionConverters._
 import scala.concurrent.{Future}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 case class ReachableByTask(
   sink: CfgNode,
@@ -107,14 +106,14 @@ class Engine(context: EngineContext) {
 
     TaskSolver.printStats()
 
-    println(
+    logger.debug(
       "Generated " + completedResults.length +
         " results. Starting deduplication"
     )
     val dedupResult          = deduplicate(completedResults)
     val allDoneTimeSec: Long = System.currentTimeMillis / 1000
 
-    println(
+    logger.debug(
       "Time measurement -----> Task processing: " +
         (taskFinishTimeSec - startTimeSec) + " seconds" +
         ", Deduplication: " + (allDoneTimeSec - taskFinishTimeSec) +
