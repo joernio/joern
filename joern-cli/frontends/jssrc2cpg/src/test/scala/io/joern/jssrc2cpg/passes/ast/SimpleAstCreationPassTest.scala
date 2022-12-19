@@ -85,7 +85,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct structure for index access" in AstFixture("if(d = decorators[i]) foo();") { cpg =>
       val List(indexAccessCall) = cpg.call(Operators.indexAccess).l
       indexAccessCall.code shouldBe "decorators[i]"
-      val List(baseArg: Identifier, indexArg: Identifier) = indexAccessCall.argument.l
+      val List(baseArg, indexArg) = indexAccessCall.argument.isIdentifier.l
       baseArg.name shouldBe "decorators"
       baseArg.argumentIndex shouldBe 1
       indexArg.name shouldBe "i"
@@ -275,12 +275,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.spread").l
       spreadObjectCall.code shouldBe "...rest"
-      val List(tmpArg: Identifier) = spreadObjectCall.argument(1).l
+      val List(tmpArg: Identifier, restArg) = spreadObjectCall.argument.isIdentifier.l
       tmpArg.code shouldBe "_tmp_0"
       tmpArg.name shouldBe "_tmp_0"
-      val List(restArg: Identifier) = spreadObjectCall.argument(2).l
+      tmpArg.argumentIndex shouldBe 1
       restArg.code shouldBe "rest"
       restArg.name shouldBe "rest"
+      restArg.argumentIndex shouldBe 2
     }
 
     "have correct structure for 1 object with complex rest" in AstFixture("""
@@ -304,11 +305,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.spread").l
       spreadObjectCall.code shouldBe "...x.foo()"
-      val List(tmpArg: Identifier) = spreadObjectCall.argument(1).l
+      val List(tmpArg) = spreadObjectCall.argument.isIdentifier.l
       tmpArg.code shouldBe "_tmp_0"
       tmpArg.name shouldBe "_tmp_0"
-      val List(restArg: Call) = spreadObjectCall.argument(2).l
+      tmpArg.argumentIndex shouldBe 1
+      val List(restArg) = spreadObjectCall.argument.isCall.l
       restArg.code shouldBe "x.foo()"
+      restArg.argumentIndex shouldBe 2
     }
 
     "have correct structure for 1 object with computed values" in AstFixture("""
@@ -538,22 +541,22 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       )
       val List(ret) = cpg.method.fullNameExact("code.js::program:anonymous").block.astChildren.isReturn.l
       ret.code shouldBe "async () => { }"
-      val List(ref: MethodRef) = ret.astChildren.l
+      val List(ref) = ret.astChildren.isMethodRef.l
       ref.methodFullName shouldBe "code.js::program:anonymous:anonymous"
     }
 
     "be correct for ThisExpression" in AstFixture("function foo() { this.bar = 1 }") { cpg =>
-      val List(thisIdentifier: Identifier) = cpg.fieldAccess.argument(1).l
+      val List(thisIdentifier) = cpg.fieldAccess.argument.isIdentifier.l
       thisIdentifier.name shouldBe "this"
       thisIdentifier.code shouldBe "this"
+      thisIdentifier.argumentIndex shouldBe 1
 
-      val List(thisParameter: MethodParameterIn) = cpg.method.name("foo").parameter.l
+      val List(thisParameter) = cpg.method.name("foo").parameter.l
       thisParameter.name shouldBe "this"
       thisParameter.code shouldBe "this"
 
-      val referencingIdentifiers =
-        cpg.method.name("foo").parameter.name("this").referencingIdentifiers.l
-      referencingIdentifiers shouldBe cpg.fieldAccess.argument(1).l
+      val referencingIdentifiers = cpg.method.name("foo").parameter.name("this").referencingIdentifiers.l
+      referencingIdentifiers shouldBe List(thisIdentifier)
     }
 
     "be correct for call expression" in AstFixture("""
@@ -1439,12 +1442,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     val List(call) = node.astChildren.isCall.codeExact(s"_tmp_0.$keyName = $assignedValue").l
     call.methodFullName shouldBe Operators.assignment
 
-    val List(tmpAccess: Call, value) = call.astChildren.l
+    val List(tmpAccess) = call.argument(1).l.isCall.l
     tmpAccess.code shouldBe s"_tmp_0.$keyName"
     tmpAccess.methodFullName shouldBe Operators.fieldAccess
     tmpAccess.argumentIndex shouldBe 1
+    val List(value) = call.argument(2).l
     value.code shouldBe assignedValue
-    value.property(Properties.ARGUMENT_INDEX) shouldBe 2
 
     val List(leftHandSideTmpId) = tmpAccess.astChildren.isIdentifier.nameExact("_tmp_0").l
     leftHandSideTmpId.code shouldBe "_tmp_0"

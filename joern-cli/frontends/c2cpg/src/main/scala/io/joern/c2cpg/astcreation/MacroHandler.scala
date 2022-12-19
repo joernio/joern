@@ -20,6 +20,16 @@ import scala.collection.mutable
 
 trait MacroHandler { this: AstCreator =>
 
+  private val nodeOffsetMacroPairs: mutable.Stack[(Int, IASTPreprocessorMacroDefinition)] = {
+    mutable.Stack.from(
+      cdtAst.getNodeLocations.toList
+        .collect { case exp: IASTMacroExpansionLocation =>
+          (exp.asFileLocation().getNodeOffset, exp.getExpansion.getMacroDefinition)
+        }
+        .sortBy(_._1)
+    )
+  }
+
   /** For the given node, determine if it is expanded from a macro, and if so, create a Call node to represent the macro
     * invocation and attach `ast` as its child.
     */
@@ -47,40 +57,34 @@ trait MacroHandler { this: AstCreator =>
     * (Some(macroDefinition, arguments)) if a macro definition matches and None otherwise.
     */
   private def extractMatchingMacro(node: IASTNode): Option[(IASTPreprocessorMacroDefinition, List[String])] = {
-    expandedFromMacro(node)
-      .filterNot { m =>
-        isExpandedFrom(node.getParent, m)
-      }
-      .foreach { m =>
-        val nodeOffset = node.getFileLocation.getNodeOffset
-        val macroName  = ASTStringUtil.getSimpleName(m.getExpansion.getMacroDefinition.getName)
-        while (nodeOffsetMacroPairs.headOption.exists(x => x._1 <= nodeOffset)) {
-          val (_, macroDefinition) = nodeOffsetMacroPairs.head
-          nodeOffsetMacroPairs.remove(0)
-          val name = ASTStringUtil.getSimpleName(macroDefinition.getName)
-          if (macroName == name) {
-            val arguments = new MacroArgumentExtractor(cdtAst, node.getFileLocation).getArguments
-            return Some((macroDefinition, arguments))
-          }
+    val expansionLocations = expandedFromMacro(node).filterNot(isExpandedFrom(node.getParent, _))
+    val nodeOffset         = node.getFileLocation.getNodeOffset
+    var matchingMacro      = Option.empty[(IASTPreprocessorMacroDefinition, List[String])]
+
+    expansionLocations.foreach { macroLocation =>
+      while (matchingMacro.isEmpty && nodeOffsetMacroPairs.headOption.exists(_._1 <= nodeOffset)) {
+        val (_, macroDefinition) = nodeOffsetMacroPairs.pop()
+        val macroExpansionName   = ASTStringUtil.getSimpleName(macroLocation.getExpansion.getMacroDefinition.getName)
+        val macroDefinitionName  = ASTStringUtil.getSimpleName(macroDefinition.getName)
+        if (macroExpansionName == macroDefinitionName) {
+          val arguments = new MacroArgumentExtractor(cdtAst, node.getFileLocation).getArguments
+          matchingMacro = Some((macroDefinition, arguments))
         }
       }
-    None
+    }
+
+    matchingMacro
   }
 
   /** Determine whether `node` is expanded from the macro expansion at `loc`.
     */
-  private def isExpandedFrom(node: IASTNode, loc: IASTMacroExpansionLocation) = {
-    expandedFromMacro(node)
-      .map(_.getExpansion.getMacroDefinition)
-      .contains(loc.getExpansion.getMacroDefinition)
-  }
+  private def isExpandedFrom(node: IASTNode, loc: IASTMacroExpansionLocation): Boolean =
+    expandedFromMacro(node).map(_.getExpansion.getMacroDefinition).contains(loc.getExpansion.getMacroDefinition)
 
   private def argumentTrees(arguments: List[String], ast: Ast): List[Option[Ast]] = {
     arguments.zipWithIndex.map { case (arg, i) =>
       val rootNode = argForCode(arg, ast)
-      rootNode.map { x =>
-        ast.subTreeCopy(x.asInstanceOf[AstNodeNew], i + 1)
-      }
+      rootNode.map(x => ast.subTreeCopy(x.asInstanceOf[AstNodeNew], i + 1))
     }
   }
 
@@ -123,15 +127,6 @@ trait MacroHandler { this: AstCreator =>
     callAst(callNode, argAsts)
   }
 
-  private val nodeOffsetMacroPairs: mutable.Buffer[(Int, IASTPreprocessorMacroDefinition)] = {
-    cdtAst.getNodeLocations.toList
-      .collect { case exp: IASTMacroExpansionLocation =>
-        (exp.asFileLocation().getNodeOffset, exp.getExpansion.getMacroDefinition)
-      }
-      .sortBy(_._1)
-      .toBuffer
-  }
-
   /** Create a full name field that encodes line information that can be picked up by the MethodStubCreator in order to
     * create a METHOD node with the correct location information.
     */
@@ -167,14 +162,12 @@ trait MacroHandler { this: AstCreator =>
     }
   }
 
-  private def isExpandedFromMacro(node: IASTNode): Boolean =
-    expandedFromMacro(node).nonEmpty
+  private def isExpandedFromMacro(node: IASTNode): Boolean = expandedFromMacro(node).nonEmpty
 
   private def expandedFromMacro(node: IASTNode): Option[IASTMacroExpansionLocation] = {
     val locations = node.getNodeLocations
     if (locations.nonEmpty) {
-      node.getNodeLocations.headOption
-        .collect { case x: IASTMacroExpansionLocation => x }
+      node.getNodeLocations.headOption.collect { case x: IASTMacroExpansionLocation => x }
     } else {
       None
     }

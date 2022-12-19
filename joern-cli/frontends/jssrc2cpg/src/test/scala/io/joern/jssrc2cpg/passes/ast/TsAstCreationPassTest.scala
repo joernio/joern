@@ -71,9 +71,9 @@ class TsAstCreationPassTest extends AbstractPassTest {
 
     "have correct structure for casts" in AstFixture(
       """
-        | const x = "foo" as string;
-        | var y = 1 as int;
-        | let z = true as boolean;
+        |const x = "foo" as string;
+        |var y = 1 as int;
+        |let z = true as boolean;
         |""".stripMargin,
       "code.ts"
     ) { cpg =>
@@ -96,8 +96,8 @@ class TsAstCreationPassTest extends AbstractPassTest {
 
     "have correct structure for import assignments" in AstFixture(
       """
-        |import fs = require('fs')
-        |import models = require('../models/index')
+        |import fs = require('fs');
+        |import models = require('../models/index');
         |""".stripMargin,
       "code.ts"
     ) { cpg =>
@@ -119,9 +119,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
     }
 
     "have correct structure for declared functions" in AstFixture(
-      """
-        |declare function foo(arg: string): string
-        |""".stripMargin,
+      "declare function foo(arg: string): string",
       "code.ts"
     ) { cpg =>
       val List(func) = cpg.method("foo").l

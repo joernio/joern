@@ -156,7 +156,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
   }
 
   "AST generation for constructor" should {
-    "have correct structure for simple new" in AstFixture("new MyClass()") { cpg =>
+    "have correct structure for simple new" in AstFixture("new MyClass();") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
       val List(newCallBlock) = programBlock.astChildren.isBlock.codeExact("new MyClass()").l
@@ -192,7 +192,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       returnTmp.name shouldBe tmpName
     }
 
-    "have correct structure for simple new with arguments" in AstFixture("new MyClass(arg1, arg2)") { cpg =>
+    "have correct structure for simple new with arguments" in AstFixture("new MyClass(arg1, arg2);") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
       val List(newCallBlock) = programBlock.astChildren.isBlock.codeExact("new MyClass(arg1, arg2)").l
@@ -240,7 +240,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       returnTmp.name shouldBe tmpName
     }
 
-    "have correct structure for new with access path" in AstFixture("new foo.bar.MyClass()") { cpg =>
+    "have correct structure for new with access path" in AstFixture("new foo.bar.MyClass();") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
       val List(newCallBlock) = programBlock.astChildren.isBlock.codeExact("new foo.bar.MyClass()").l
@@ -280,9 +280,9 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       returnTmp.name shouldBe tmpName
     }
 
-    "have correct structure for throw new exceptions" in AstFixture("function foo() { throw new Foo() }") { cpg =>
+    "have correct structure for throw new exceptions" in AstFixture("function foo() { throw new Foo(); }") { cpg =>
       val List(fooBlock)  = cpg.method.nameExact("foo").astChildren.isBlock.l
-      val List(throwCall) = fooBlock.astChildren.isCall.codeExact("throw new Foo()").l
+      val List(throwCall) = fooBlock.astChildren.isCall.codeExact("throw new Foo();").l
       throwCall.name shouldBe "<operator>.throw"
 
       val List(newCallBlock) = throwCall.astChildren.isBlock.codeExact("new Foo()").l

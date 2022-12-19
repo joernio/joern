@@ -6,8 +6,8 @@ import io.shiftleft.semanticcpg.language._
 
 class TSTypesTest extends AbstractPassTest {
   "have correct types for variables" in TsAstFixture("""
-     |var x: string = ""
-     |var y: Foo = null
+     |var x: string = "";
+     |var y: Foo = null;
      |""".stripMargin) { cpg =>
     inside(cpg.identifier.l) { case List(x, y) =>
       x.name shouldBe "x"
@@ -22,7 +22,7 @@ class TSTypesTest extends AbstractPassTest {
   "have correct types for TS intrinsics" in TsAstFixture("""
      |type NickName = "user2069"
      |type ModifiedNickName = Uppercase<NickName>
-     |var x: ModifiedNickName = ""
+     |var x: ModifiedNickName = "";
      |""".stripMargin) { cpg =>
     inside(cpg.identifier.l) { case List(x) =>
       x.name shouldBe "x"

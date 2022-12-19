@@ -14,7 +14,6 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
         |function sayhi() {
         |  console.log("Hello World!");
         |}
-        |
         |sayhi();
         |""".stripMargin)
 
@@ -42,10 +41,10 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() {            // this will be called anonymous
+          |  sayhi: function() { // this will be called anonymous
           |    console.log("Hello World!");
           |  },
-          |  saybye: function() {           // this will be called anonymous1
+          |  saybye: function() { // this will be called anonymous1
           |    console.log("Good-bye!");
           |  }
           |}
@@ -54,7 +53,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhowdy: function() {       // this will be called anonymous
+          |  sayhowdy: function() { // this will be called anonymous
           |    console.log("Howdy World!");
           |  }
           |}
@@ -103,7 +102,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() {            // this will be called anonymous
+          |  sayhi: function() { // this will be called anonymous
           |    console.log("Hello World, love BAR");
           |  }
           |}
@@ -112,7 +111,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() {            // this will be called anonymous
+          |  sayhi: function() { // this will be called anonymous
           |    console.log("Howdy World, love BAZ");
           |  }
           |}
