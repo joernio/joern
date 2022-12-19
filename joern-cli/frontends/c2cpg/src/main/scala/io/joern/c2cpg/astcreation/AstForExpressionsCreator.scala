@@ -113,33 +113,31 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   private def astForUnaryExpression(unary: IASTUnaryExpression): Ast = {
     val operatorMethod = unary.getOperator match {
-      case IASTUnaryExpression.op_prefixIncr  => Operators.preIncrement
-      case IASTUnaryExpression.op_prefixDecr  => Operators.preDecrement
-      case IASTUnaryExpression.op_plus        => Operators.plus
-      case IASTUnaryExpression.op_minus       => Operators.minus
-      case IASTUnaryExpression.op_star        => Operators.indirection
-      case IASTUnaryExpression.op_amper       => Operators.addressOf
-      case IASTUnaryExpression.op_tilde       => Operators.not
-      case IASTUnaryExpression.op_not         => Operators.logicalNot
-      case IASTUnaryExpression.op_sizeof      => Operators.sizeOf
-      case IASTUnaryExpression.op_postFixIncr => Operators.postIncrement
-      case IASTUnaryExpression.op_postFixDecr => Operators.postDecrement
-      case IASTUnaryExpression.op_throw       => "<operator>.throw"
-      case IASTUnaryExpression.op_typeid      => "<operator>.typeOf"
-      case _                                  => "<operator>.unknown"
+      case IASTUnaryExpression.op_prefixIncr       => Operators.preIncrement
+      case IASTUnaryExpression.op_prefixDecr       => Operators.preDecrement
+      case IASTUnaryExpression.op_plus             => Operators.plus
+      case IASTUnaryExpression.op_minus            => Operators.minus
+      case IASTUnaryExpression.op_star             => Operators.indirection
+      case IASTUnaryExpression.op_amper            => Operators.addressOf
+      case IASTUnaryExpression.op_tilde            => Operators.not
+      case IASTUnaryExpression.op_not              => Operators.logicalNot
+      case IASTUnaryExpression.op_sizeof           => Operators.sizeOf
+      case IASTUnaryExpression.op_postFixIncr      => Operators.postIncrement
+      case IASTUnaryExpression.op_postFixDecr      => Operators.postDecrement
+      case IASTUnaryExpression.op_throw            => "<operator>.throw"
+      case IASTUnaryExpression.op_typeid           => "<operator>.typeOf"
+      case IASTUnaryExpression.op_bracketedPrimary => "<operator>.bracketedPrimary"
+      case _                                       => "<operator>.unknown"
     }
 
-    if (unary.getOperator == IASTUnaryExpression.op_bracketedPrimary) {
-      astForExpression(unary.getOperand)
+    if (
+      unary.getOperator == IASTUnaryExpression.op_bracketedPrimary &&
+      !unary.getOperand.isInstanceOf[IASTExpressionList]
+    ) {
+      nullSafeAst(unary.getOperand)
     } else {
       val cpgUnary = newCallNode(unary, operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
-      val operandExpr = unary.getOperand match {
-        // special handling for operand expression in brackets - we simply ignore the brackets
-        case opExpr: IASTUnaryExpression if opExpr.getOperator == IASTUnaryExpression.op_bracketedPrimary =>
-          opExpr.getOperand
-        case opExpr => opExpr
-      }
-      val operand = nullSafeAst(operandExpr)
+      val operand  = nullSafeAst(unary.getOperand)
       callAst(cpgUnary, List(operand))
     }
   }
