@@ -6,6 +6,7 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.javasrc2cpg.{JavaSrc2Cpg, Config => JavaSrcConfig}
 import io.joern.jimple2cpg.{Jimple2Cpg, Config => JimpleConfig}
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
@@ -29,9 +30,8 @@ abstract class BenchmarkFixture(
     with Matchers
     with BeforeAndAfterAll {
 
-  val semanticsFile: String            = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
-  lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))
-  implicit val resolver: ICallResolver = NoResolve
+  lazy val defaultSemantics: Semantics           = DefaultSemantics()
+  implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext(defaultSemantics)
 
   private lazy val targetFiles = getListOfFiles(ProjectRoot.relativise(constructTargetFilePath))
@@ -150,8 +150,7 @@ class BenchmarkCpgContext {
     }
     val context                          = new LayerCreatorContext(cpg.get)
     val options                          = new OssDataFlowOptions()
-    val semanticsFile: String            = ProjectRoot.relativise("benchmarks/src/test/resources/default.semantics")
-    lazy val defaultSemantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFile))
+    lazy val defaultSemantics: Semantics = DefaultSemantics()
     new OssDataFlow(options)(defaultSemantics).run(context)
     cpg.get
   }

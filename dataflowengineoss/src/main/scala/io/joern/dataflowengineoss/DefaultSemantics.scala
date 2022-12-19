@@ -3,6 +3,8 @@ package io.joern.dataflowengineoss
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.Operators
 
+import scala.annotation.unused
+
 object DefaultSemantics {
 
   /** @return
@@ -148,6 +150,7 @@ object DefaultSemantics {
   /** @return
     *   procedure semantics for operators and common external Java calls only.
     */
+  @unused
   def javaSemantics(): Semantics = Semantics.fromList(operatorFlows ++ javaFlows)
 
 }
