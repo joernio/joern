@@ -12,13 +12,13 @@ case class TaskFingerprint(sink: CfgNode, callSiteStack: List[Call], callDepth: 
 /** The Result Table is a cache that allows retrieving known paths for nodes, that is, paths that end in the node.
   */
 class ResultTable(
-  val table: mutable.Map[StoredNode, Vector[ReachableByResult]] =
-    new java.util.concurrent.ConcurrentHashMap[StoredNode, Vector[ReachableByResult]].asScala
+  val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] =
+    new java.util.concurrent.ConcurrentHashMap[TaskFingerprint, Vector[ReachableByResult]].asScala
 ) {
 
   /** Add all results in `results` to table at `key`, appending to existing results.
     */
-  def add(key: StoredNode, results: Vector[ReachableByResult]): Unit = {
+  def add(key: TaskFingerprint, results: Vector[ReachableByResult]): Unit = {
     table.asJava.compute(
       key,
       { (_, existingValue) =>
@@ -31,11 +31,17 @@ class ResultTable(
     * for each result, determine the path up to `first` and prepend it to `path`, giving us new results via table
     * lookup.
     */
-  def createFromTable(first: PathElement, remainder: Vector[PathElement]): Option[Vector[ReachableByResult]] = {
-    table.get(first.node).map { res =>
+  def createFromTable(
+    first: PathElement,
+    callSiteStack: List[Call],
+    callDepth: Int,
+    remainder: Vector[PathElement]
+  ): Option[Vector[ReachableByResult]] = {
+    table.get(TaskFingerprint(first.node, callSiteStack, callDepth)).map { res =>
       res.map { r =>
-        val pathToFirstNode = r.path.slice(0, r.path.map(_.node).indexOf(first.node))
-        val completePath    = pathToFirstNode ++ (first +: remainder)
+        val pathToFirstNode =
+          r.path.slice(0, r.path.map(x => (x.node, x.callSiteStack)).indexOf((first.node, first.callSiteStack)))
+        val completePath = pathToFirstNode ++ (first +: remainder)
         r.copy(path = Vector(completePath.head) ++ completePath.tail)
       }
     }
@@ -43,13 +49,13 @@ class ResultTable(
 
   /** Retrieve list of results for `node` or None if they are not available in the table.
     */
-  def get(node: StoredNode): Option[Vector[ReachableByResult]] = {
-    table.get(node)
+  def get(key: TaskFingerprint): Option[Vector[ReachableByResult]] = {
+    table.get(key)
   }
 
   /** Returns all keys to allow for iteration through the table.
     */
-  def keys(): Vector[StoredNode] = table.keys.toVector
+  def keys(): Vector[TaskFingerprint] = table.keys.toVector
 
 }
 

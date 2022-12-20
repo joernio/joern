@@ -34,7 +34,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       val table                   = new ResultTable
       results(task.sink, path, table, task.callSiteStack)
       // TODO why do we update the call depth here?
-      val finalResults = table.get(task.sink).get.map { r =>
+      val finalResults = table.get(task.fingerprint).get.map { r =>
         r.copy(taskStack = r.taskStack.dropRight(1) :+ r.fingerprint.copy(callDepth = task.callDepth))
       }
       val (partial, complete) = finalResults.partition(_.partial)
@@ -77,7 +77,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     }
 
     def createResultsFromCacheOrCompute(elemToPrepend: PathElement, path: Vector[PathElement]) = {
-      val cachedResult = table.createFromTable(elemToPrepend, path)
+      val cachedResult = table.createFromTable(elemToPrepend, task.callSiteStack, task.callDepth, path)
       if (cachedResult.isDefined) {
         QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
         cachedResult.get
@@ -126,7 +126,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       case _ =>
         deduplicate(computeResultsForParents())
     }
-    table.add(curNode, res)
+    table.add(TaskFingerprint(curNode, task.callSiteStack, task.callDepth), res)
     res
   }
 
