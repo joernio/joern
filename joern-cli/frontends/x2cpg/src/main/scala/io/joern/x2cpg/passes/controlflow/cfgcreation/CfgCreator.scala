@@ -92,12 +92,12 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         Cfg.empty
       case _: MethodRef | _: TypeRef | _: MethodReturn =>
         cfgForSingleNode(node.asInstanceOf[CfgNode])
-      case n: ControlStructure =>
-        cfgForControlStructure(n)
-      case n: JumpTarget =>
-        cfgForJumpTarget(n)
-      case actualRet: Return =>
-        cfgForReturn(actualRet)
+      case controlStructure: ControlStructure =>
+        cfgForControlStructure(controlStructure)
+      case jumpTarget: JumpTarget =>
+        cfgForJumpTarget(jumpTarget)
+      case ret: Return =>
+        cfgForReturn(ret)
       case call: Call if call.name == Operators.logicalAnd =>
         cfgForAndExpression(call)
       case call: Call if call.name == Operators.logicalOr =>
@@ -106,19 +106,23 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForConditionalExpression(call)
       case call: Call if call.dispatchType == DispatchTypes.INLINED =>
         cfgForInlinedCall(call)
-      case block: Block =>
-        // Only include block nodes that do not describe the entire
-        // method body or the bodies of control structures
-        if (block._astIn.hasNext && (block.astParent.isMethod || block.astParent.isControlStructure)) {
-          cfgForChildren(block)
-        } else {
-          cfgForChildren(node) ++ cfgForSingleNode(node.asInstanceOf[CfgNode])
-        }
+      case block: Block if blockMatches(block) =>
+        cfgForChildren(block)
+      case _: Block =>
+        cfgForChildren(node) ++ cfgForSingleNode(node.asInstanceOf[CfgNode])
       case _: Call | _: FieldIdentifier | _: Identifier | _: Literal | _: Block | _: Unknown =>
         cfgForChildren(node) ++ cfgForSingleNode(node.asInstanceOf[CfgNode])
       case _ =>
         cfgForChildren(node)
     }
+
+  /** Only include block nodes that do not describe the entire method body or the bodies of control structures or
+    * inlined calls.
+    */
+  private def blockMatches(block: Block): Boolean =
+    block._astIn.hasNext &&
+      (block.astParent.isMethod || block.astParent.isControlStructure ||
+        block.astParent.exists(_.collectAll[Call].exists(_.dispatchType == DispatchTypes.INLINED)))
 
   /** A second layer of dispatching for control structures. This could as well be part of `cfgFor` and has only been
     * placed into a separate function to increase readability.

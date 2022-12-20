@@ -2197,4 +2197,24 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "DataFlowTest71" should {
+    val cpg = code("""
+        |#define BAR(x) (x)
+        |
+        |void foo() {
+        |  int v1 = 0;
+        |  if (BAR(v1)) v1 = 1;
+        |}
+        |""".stripMargin)
+    "find flows" in {
+      val source = cpg.identifier("v1").l
+      val sink   = cpg.method("foo").methodReturn.l
+      sink.reachableByFlows(source).l.map(flowToResultPairs).toSet shouldBe Set(
+        List(("v1 = 0", Some(5)), ("BAR(v1)", Some(6)), ("void", Some(4))),
+        List(("v1 = 1", Some(6)), ("void", Some(4))),
+        List(("BAR(v1)", Some(6)), ("void", Some(4)))
+      )
+    }
+  }
+
 }
