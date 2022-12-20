@@ -264,7 +264,7 @@ object Engine {
       .groupBy { result =>
         val head = result.path.headOption.map(x => (x.node, x.callSiteStack)).get
         val last = result.path.lastOption.map(x => (x.node, x.callSiteStack)).get
-        (head, last, result.partial, result.fingerprint)
+        (head, last, result.partial)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
