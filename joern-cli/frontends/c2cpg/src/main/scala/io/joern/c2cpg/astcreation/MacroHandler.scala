@@ -34,21 +34,16 @@ trait MacroHandler { this: AstCreator =>
     * invocation and attach `ast` as its child.
     */
   def asChildOfMacroCall(node: IASTNode, ast: Ast): Ast = {
-    val macroCallAst = extractMatchingMacro(node).map { case (mac, args) =>
-      createMacroCallAst(ast, node, mac, args)
-    }
-    if (macroCallAst.isDefined) {
-      val newAst = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], argIndex = 1)
-      // We need to wrap the copied AST as it may contain CPG nodes not being allowed
-      // to be connected via AST edges under a CALL. E.g., LOCALs.
-      val b = Ast(
-        NewBlock()
-          .argumentIndex(1)
-          .typeFullName(registerType(Defines.voidTypeName))
-      )
-      macroCallAst.get.withChild(b.withChild(newAst))
-    } else {
-      ast
+    val matchingMacro = extractMatchingMacro(node)
+    val macroCallAst  = matchingMacro.map { case (mac, args) => createMacroCallAst(ast, node, mac, args) }
+    macroCallAst match {
+      case Some(callAst) =>
+        val newAst = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], argIndex = 1)
+        // We need to wrap the copied AST as it may contain CPG nodes not being allowed
+        // to be connected via AST edges under a CALL. E.g., LOCALs.
+        val b = NewBlock().argumentIndex(1).typeFullName(registerType(Defines.voidTypeName))
+        callAst.withChild(blockAst(b, List(newAst)))
+      case None => ast
     }
   }
 
@@ -112,7 +107,7 @@ trait MacroHandler { this: AstCreator =>
     arguments: List[String]
   ): Ast = {
     val name    = ASTStringUtil.getSimpleName(macroDef.getName)
-    val code    = node.getRawSignature.replaceAll(";$", "")
+    val code    = node.getRawSignature.stripSuffix(";")
     val argAsts = argumentTrees(arguments, ast).map(_.getOrElse(Ast()))
 
     val callNode = NewCall()
@@ -131,17 +126,11 @@ trait MacroHandler { this: AstCreator =>
     * create a METHOD node with the correct location information.
     */
   private def fullName(macroDef: IASTPreprocessorMacroDefinition, argAsts: List[Ast]) = {
-    val name         = ASTStringUtil.getSimpleName(macroDef.getName)
-    val fileLocation = macroDef.getFileLocation
-
-    if (fileLocation != null) {
-      val lineNo    = fileLocation.getStartingLineNumber
-      val lineNoEnd = lineEnd(macroDef).getOrElse("-1")
-      val fileName  = fileLocation.getFileName.replace(":", "")
-      fileName + ":" + lineNo + ":" + lineNoEnd + ":" + name + ":" + argAsts.size
-    } else {
-      "<empty>:-1:-1:" + name + ":" + argAsts.size
-    }
+    val name      = ASTStringUtil.getSimpleName(macroDef.getName)
+    val filename  = fileName(macroDef)
+    val lineNo    = line(macroDef).getOrElse(-1)
+    val lineNoEnd = lineEnd(macroDef).getOrElse(-1)
+    filename + ":" + lineNo + ":" + lineNoEnd + ":" + name + ":" + argAsts.size
   }
 
   /** The CDT utility method is unfortunately in a class that is marked as deprecated, however, this is because the CDT
