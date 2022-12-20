@@ -3,7 +3,6 @@ package io.joern.pysrc2cpg
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.pysrc2cpg.Py2CpgOnFileSystem.buildCpg
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.frontend.{PythonNaiveCallLinker, PythonModuleDefinedCallLinker}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
@@ -15,10 +14,9 @@ trait PythonFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".py"
 
   override def execute(sourceCodePath: java.io.File): Cpg = {
-    val cpgOutFile = File.newTemporaryFile(suffix = "cpg.bin")
-    cpgOutFile.deleteOnExit()
-    val config = Py2CpgOnFileSystemConfig(cpgOutFile.path, sourceCodePath.toPath, None)
-    val cpg    = buildCpg(config)
+    val config = Config(sourceCodePath.getAbsolutePath)
+    val py2cpg = new Py2Cpg()
+    val cpg    = py2cpg.createCpg(config).get
     cpg
   }
 }

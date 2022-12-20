@@ -1,44 +1,74 @@
 package io.joern.pysrc2cpg
 
-import org.rogach.scallop._
+import io.joern.pysrc2cpg.Frontend.{cmdLineParser, defaultConfig}
+import io.joern.pysrc2cpg.utils.Environment
+import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
+import scopt.OParser
 
 import java.nio.file.Paths
+import scala.util.matching.Regex
 
-class ParsedArguments(arguments: Seq[String]) extends ScallopConf(arguments) {
-  val output: ScallopOption[String] =
-    opt[String](default = Some("out.cpg"), short = 'o', descr = "Output file name. Defaults to out.cpg")
+final case class Config(
+                         inputPath: String = "",
+                         outputPath: String = X2CpgConfig.defaultOutputPath,
+                         ignoredFilesRegex: Regex = "".r,
+                         ignoredFiles: Seq[String] = Seq.empty,
+                         venvDir: String = ".venv",
+                         ignoreVenvDir: Boolean = true
+                       ) extends X2CpgConfig[Config] {
 
-  val input: ScallopOption[String] = trailArg[String](descr = "Input directory name")
+  def createPathForIgnore(ignore: String): String = {
+    val path = Paths.get(ignore)
+    if (path.isAbsolute) {
+      path.toString
+    } else {
+      Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString
+    }
+  }
 
-  val venvDir: ScallopOption[String] =
-    opt[String](default = Some(".venv"), noshort = true, descr = "Virtual environment directory. Defaults to .venv.")
-  val ignoreVenvDir: ScallopOption[Boolean] = opt[Boolean](
-    default = Some(true),
-    noshort = true,
-    descr = "Specifies whether venv-dir is ignored. Default to true."
-  )
-  verify()
+  override def withInputPath(inputPath: String): Config = copy(inputPath = inputPath)
+  override def withOutputPath(x: String): Config        = copy(outputPath = x)
 }
 
-object Main {
-  def main(args: Array[String]) = {
-    val parsedArguments = new ParsedArguments(args.toSeq)
+private object Frontend {
+  implicit val defaultConfig: Config = Config()
 
-    val ignoreVenvDir =
-      if (parsedArguments.ignoreVenvDir.toOption.get) {
-        parsedArguments.venvDir.toOption
-      } else {
-        None
-      }
-
-    val py2CpgConfig =
-      Py2CpgOnFileSystemConfig(
-        Paths.get(parsedArguments.output.toOption.get),
-        Paths.get(parsedArguments.input.toOption.get),
-        ignoreVenvDir.map(Paths.get(_))
-      )
-
-    val cpg = Py2CpgOnFileSystem.buildCpg(py2CpgConfig)
-    cpg.close()
+  val cmdLineParser: OParser[Unit, Config] = {
+    val builder = OParser.builder[Config]
+    import builder._
+    OParser.sequence(
+      programName("pysrc2cpg"),
+      opt[Seq[String]]("exclude") // TODO maybe remove this from frontend. Also test this
+        .valueName("<file1>,<file2>,...")
+        .action((x, c) => c.copy(ignoredFiles = c.ignoredFiles ++ x.map(c.createPathForIgnore)))
+        .text("files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)"),
+      opt[String]("exclude-regex")
+        .action((x, c) => c.copy(ignoredFilesRegex = x.r))
+        .text("a regex specifying files to exclude during CPG generation (the absolute file path is matched)"),
+      opt[Boolean]("ignore-venv-dir")
+        .action((x, c) => c.copy(ignoreVenvDir = x))
+        .text("specify whether to ignore venv-dir or not (defaults to true)"),
+      opt[String]("venv-dir")
+        .action((x, c) => c.copy(venvDir = x))
+        .text("path of virtual environment directory to ignore (defaults to .venv)")
+    )
   }
+
+}
+
+object Main extends X2CpgMain(cmdLineParser, new Py2Cpg()) {
+
+  def run(config: Config, py2Cpg: Py2Cpg): Unit = {
+    val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
+    var newIgnoredFiles = config.ignoredFiles
+    if (config.ignoreVenvDir) {
+      newIgnoredFiles = config.ignoredFiles ++ Seq(config.createPathForIgnore(config.venvDir))
+    }
+    if (Environment.pathExists(absPath)) {
+      py2Cpg.run(config.copy(inputPath = absPath, ignoredFiles = newIgnoredFiles))
+    } else {
+      System.exit(1)
+    }
+  }
+
 }

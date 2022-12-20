@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import scala.collection.mutable
+import scala.util.Try
 
 object Py2CpgTestContext {
   def buildCpg(code: String, file: String = "test.py"): Cpg = {
@@ -31,12 +32,11 @@ class Py2CpgTestContext {
 
   def buildCpg: Cpg = {
     if (buildResult.isEmpty) {
-      val cpg    = new Cpg()
-      val py2Cpg = new Py2Cpg(codeAndFile.map(inputPair => () => inputPair), cpg)
-      py2Cpg.buildCpg()
+      var cpg    = new Cpg()
+      val py2Cpg = new Py2Cpg()
+      val config = Config(inputPath = "test.py")
+      cpg = py2Cpg.createCpg(config).get
 
-      val context = new LayerCreatorContext(cpg)
-      defaultOverlayCreators().foreach(_.run(context))
       buildResult = Some(cpg)
     }
     buildResult.get
