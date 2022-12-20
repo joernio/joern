@@ -5,7 +5,6 @@ import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
 
-import java.util.{Calendar, UUID}
 import java.util.concurrent.Callable
 import scala.collection.mutable
 
@@ -20,47 +19,15 @@ import scala.collection.mutable
   *   state of the data flow engine
   */
 class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[CfgNode]) extends Callable[TaskSummary] {
-  var depth: Int = 0
+
   import Engine._
 
   /** Entry point of callable. First checks if the maximum call depth has been exceeded, in which case an empty result
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
   override def call(): TaskSummary = {
-    val id      = UUID.randomUUID().toString
-    val summary = processInternal(id, task, context, sources)
-    processSummary(id, summary)
-  }
-
-  private def processSummary(id: String, summary: TaskSummary): TaskSummary = {
-    if (summary.followupTasks.size > 0) {
-      // In order to limit the number of depth (lets say 1000) this thread should handle the partial task.
-      // Convert above if condition to (summary.followupTasks.size > 0 && depth < 1000)
-
-      depth += 1
-      var totalRes      = List[ReachableByResult]()
-      var followupTasks = List[ReachableByTask]()
-      totalRes ++= summary.results
-      summary.followupTasks.foreach(subtask => {
-        val internalSum = processInternal(id, subtask, context, sources)
-        val resSum      = processSummary(id, internalSum)
-        totalRes ++= resSum.results
-        followupTasks ++= resSum.followupTasks
-      })
-      TaskSummary(totalRes.toVector, followupTasks.toVector)
-    } else {
-      summary
-    }
-  }
-
-  private def processInternal(
-    id: String,
-    task: ReachableByTask,
-    context: EngineContext,
-    sources: Set[CfgNode]
-  ): TaskSummary = {
     if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
-      TaskSummary(Vector(), Vector())
+      TaskSummary(task, Vector(), Vector())
     } else {
       implicit val sem: Semantics = context.semantics
       val path                    = PathElement(task.sink, task.callSiteStack) +: task.initialPath
@@ -72,7 +39,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
 
       val (partial, complete) = finalResults.partition(_.partial)
       val newTasks = new TaskCreator(sources).createFromResults(partial).distinctBy(t => (t.sink, t.callSiteStack))
-      TaskSummary(complete, newTasks)
+      TaskSummary(task, complete, newTasks)
     }
   }
 
