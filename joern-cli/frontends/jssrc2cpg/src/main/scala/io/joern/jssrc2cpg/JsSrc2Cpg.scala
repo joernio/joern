@@ -41,6 +41,7 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
     }
   }
 
+  // This method is intended for internal use only and may be removed at any time.
   def createCpgWithAllOverlays(config: Config): Try[Cpg] = {
     val maybeCpg = createCpgWithOverlays(config)
     maybeCpg.map { cpg =>
