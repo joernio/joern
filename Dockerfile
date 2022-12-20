@@ -1,7 +1,7 @@
 FROM alpine:latest
 
 # dependencies
-RUN apk update && apk upgrade && apk add --no-cache openjdk11-jre python3 git curl gnupg bash nss ncurses
+RUN apk update && apk upgrade && apk add --no-cache openjdk11-jre python3 git curl gnupg bash nss ncurses php7
 RUN ln -sf python3 /usr/bin/python
 
 # sbt
