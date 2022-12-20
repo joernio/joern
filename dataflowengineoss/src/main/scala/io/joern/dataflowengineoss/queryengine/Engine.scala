@@ -236,10 +236,9 @@ object Engine {
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
     vec
       .groupBy { result =>
-        val head        = result.path.headOption.map(_.node)
-        val last        = result.path.lastOption.map(_.node)
-        val startAndEnd = (head ++ last).l
-        (startAndEnd, result.partial, result.callDepth)
+        val head = result.path.headOption.map(x => (x.node, x.callSiteStack)).get
+        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack)).get
+        (head, last, result.partial, result.fingerprint)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
@@ -252,7 +251,9 @@ object Engine {
           withMaxLength.head
         } else {
           withMaxLength.minBy { x =>
-            x.path.map(_.node.id()).mkString("-")
+            x.taskStack.map(x => x.sink.id + ":" + x.callSiteStack.map(_.id).mkString("|") + x.callDepth) + " " + x.path
+              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+              .mkString("-")
           }
         }
       }
