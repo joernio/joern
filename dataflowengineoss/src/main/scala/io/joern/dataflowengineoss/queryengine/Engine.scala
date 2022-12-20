@@ -10,23 +10,30 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
-
-import scala.collection.parallel.CollectionConverters._
 import java.util.concurrent._
 import scala.jdk.CollectionConverters._
 import scala.concurrent.{Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-case class ReachableByTask(
-  sink: CfgNode,
-  sources: Set[CfgNode],
-  table: ResultTable,
-  initialPath: Vector[PathElement] = Vector(),
-  callDepth: Int = 0,
-  callSiteStack: List[Call] = List()
-)
+/** @param taskStack
+  *   The list of tasks that was solved to arrive at this task, including the current task, which is to be solved as the
+  *   last element of the list.
+  *
+  * @param initialPath
+  *   The path from the current sink downwards to previous sinks.
+  */
+case class ReachableByTask(taskStack: List[TaskFingerprint], initialPath: Vector[PathElement]) {
+  def fingerprint: TaskFingerprint = taskStack.last
+  def sink: CfgNode                = fingerprint.sink
+  def callSiteStack: List[Call]    = fingerprint.callSiteStack
+  def callDepth: Int               = fingerprint.callDepth
+}
 
-case class TaskSummary(results: Vector[ReachableByResult], followupTasks: Vector[ReachableByTask])
+case class TaskSummary(
+  task: ReachableByTask,
+  results: Vector[ReachableByResult],
+  followupTasks: Vector[ReachableByTask]
+)
 
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
   * in parallel, creating and submitting new tasks upon completion of tasks. This class deals only with task scheduling,
@@ -51,19 +58,14 @@ class Engine(context: EngineContext) {
       logger.info("Attempting to determine flows to empty list of sinks.")
     }
     val sourcesSet = sources.toSet
-    val tasks      = createOneTaskPerSink(sourcesSet, sinks)
+    val tasks      = createOneTaskPerSink(sinks)
     solveTasks(tasks, sourcesSet)
   }
 
-  /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
-    */
-  private def newResultTable() =
-    context.config.initialTable.map(x => new ResultTable(x.table.clone)).getOrElse(new ResultTable)
-
   /** Create one task per sink where each task has its own result table.
     */
-  private def createOneTaskPerSink(sourcesSet: Set[CfgNode], sinks: List[CfgNode]) = {
-    sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable()))
+  private def createOneTaskPerSink(sinks: List[CfgNode]) = {
+    sinks.map(sink => ReachableByTask(List(TaskFingerprint(sink, List(), 0)), Vector()))
   }
 
   private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): Vector[ReachableByResult] = {
@@ -245,10 +247,9 @@ object Engine {
   def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
     vec.par
       .groupBy { result =>
-        val head        = result.path.headOption.map(_.node)
-        val last        = result.path.lastOption.map(_.node)
-        val startAndEnd = (head ++ last).l
-        (startAndEnd, result.partial, result.callDepth)
+        val head = result.path.headOption.map(x => (x.node, x.callSiteStack)).get
+        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack)).get
+        (head, last, result.partial, result.fingerprint)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
@@ -261,7 +262,11 @@ object Engine {
           withMaxLength.head
         } else {
           withMaxLength.minBy { x =>
-            x.path.map(_.node.id()).mkString("-")
+            x.taskStack
+              .map(x => x.sink.id + ":" + x.callSiteStack.map(_.id).mkString("|") + x.callDepth)
+              .toString + " " + x.path
+              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+              .mkString("-")
           }
         }
       }

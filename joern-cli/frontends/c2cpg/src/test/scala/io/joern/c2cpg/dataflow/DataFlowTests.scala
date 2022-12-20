@@ -2160,4 +2160,61 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       sink.reachableBy(src).method.name.toSet shouldBe Set("foo", "bar")
     }
   }
+
+  "DataFlowTest70" should {
+    val cpg = code("""
+        |int foo() {
+        |  int v1, v2 = 0;
+        |  if((v1 = 1, v2 == 2) || v2 <= 3) return v2;
+        |  return 0;
+        |}
+        |""".stripMargin)
+    "find flows" in {
+      val source = cpg.identifier("v2").l
+      val sink   = cpg.method("foo").methodReturn.l
+      sink.reachableByFlows(source).l.map(flowToResultPairs).toSet shouldBe Set(
+        List(
+          ("v2 == 2", Some(4)),
+          ("(v1 = 1, v2 == 2)", Some(4)),
+          ("(v1 = 1, v2 == 2) || v2 <= 3", Some(4)),
+          ("int", Some(2))
+        ),
+        List(
+          ("v2 = 0", Some(3)),
+          ("v2 == 2", Some(4)),
+          ("(v1 = 1, v2 == 2)", Some(4)),
+          ("(v1 = 1, v2 == 2) || v2 <= 3", Some(4)),
+          ("int", Some(2))
+        ),
+        List(
+          ("v2 <= 3", Some(4)),
+          ("(v1 = 1, v2 == 2)", Some(4)),
+          ("(v1 = 1, v2 == 2) || v2 <= 3", Some(4)),
+          ("int", Some(2))
+        ),
+        List(("return v2;", Some(4)), ("int", Some(2)))
+      )
+    }
+  }
+
+  "DataFlowTest71" should {
+    val cpg = code("""
+        |#define BAR(x) (x)
+        |
+        |void foo() {
+        |  int v1 = 0;
+        |  if (BAR(v1)) v1 = 1;
+        |}
+        |""".stripMargin)
+    "find flows" in {
+      val source = cpg.identifier("v1").l
+      val sink   = cpg.method("foo").methodReturn.l
+      sink.reachableByFlows(source).l.map(flowToResultPairs).toSet shouldBe Set(
+        List(("v1 = 0", Some(5)), ("BAR(v1)", Some(6)), ("void", Some(4))),
+        List(("v1 = 1", Some(6)), ("void", Some(4))),
+        List(("BAR(v1)", Some(6)), ("void", Some(4)))
+      )
+    }
+  }
+
 }

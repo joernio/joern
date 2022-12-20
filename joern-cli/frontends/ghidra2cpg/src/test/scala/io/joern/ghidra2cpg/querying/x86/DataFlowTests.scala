@@ -5,11 +5,11 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
-import io.shiftleft.semanticcpg.language.{ICallResolver, _}
+import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers._
-import io.shiftleft.utils.ProjectRoot
 
 class DataFlowTests extends GhidraBinToCpgSuite {
 
@@ -30,9 +30,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
   }
 
   "The data flow should contain " in {
-    implicit val resolver: ICallResolver = NoResolve
-    val semanticsFilename    = ProjectRoot.relativise("dataflowengineoss/src/test/resources/default.semantics")
-    val semantics: Semantics = Semantics.fromList(new Parser().parseFile(semanticsFilename))
+    val semantics: Semantics            = DefaultSemantics()
     implicit val context: EngineContext = EngineContext(semantics)
 
     def source = cpg.method.name("dataflow").call.code("MOV EDX,EAX").argument.code("EAX")
