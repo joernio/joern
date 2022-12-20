@@ -1,9 +1,13 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, StoredNode}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
+
+/** The TaskFingerprint uniquely identifies a task.
+  */
+case class TaskFingerprint(sink: CfgNode, callSiteStack: List[Call], callDepth: Int)
 
 /** The Result Table is a cache that allows retrieving known paths for nodes, that is, paths that end in the node.
   */
@@ -51,25 +55,23 @@ class ResultTable(
 
 /** A (partial) result, informing about a path that exists from a source to another node in the graph.
   *
+  * @param taskStack
+  *   The list of tasks that was solved to arrive at this task
+  *
   * @param path
-  *   this is the main result - a known path
-  * @param table
-  *   the result table - kept to allow for detailed inspection of intermediate paths
-  * @param callSiteStack
-  *   the call site stack containing the call sites that were expanded to kick off the task. We require this to match
-  *   call sites to exclude non-realizable paths through other callers
+  *   A path to the sink.
+  *
   * @param partial
   *   indicate whether this result stands on its own or requires further analysis, e.g., by expanding output arguments
   *   backwards into method output parameters.
   */
-case class ReachableByResult(
-  sink: CfgNode,
-  path: Vector[PathElement],
-  table: ResultTable,
-  callSiteStack: List[Call],
-  callDepth: Int = 0,
-  partial: Boolean = false
-) {
+case class ReachableByResult(taskStack: List[TaskFingerprint], path: Vector[PathElement], partial: Boolean = false) {
+
+  def fingerprint: TaskFingerprint = taskStack.last
+  def sink: CfgNode                = fingerprint.sink
+  def callSiteStack: List[Call]    = fingerprint.callSiteStack
+  def callDepth: Int               = fingerprint.callDepth
+
   def startingPoint: CfgNode = path.head.node
 
   /** If the result begins in an output argument, return it.

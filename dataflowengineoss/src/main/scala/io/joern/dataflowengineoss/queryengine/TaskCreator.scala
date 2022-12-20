@@ -2,21 +2,14 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  CfgNode,
-  Expression,
-  MethodParameterIn,
-  MethodParameterOut,
-  Return
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, MethodParameterIn, MethodParameterOut, Return}
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.{NodeOps, Traversal}
 
 /** Creation of new tasks from results of completed tasks.
   */
-class TaskCreator(sources: Set[CfgNode]) {
+class TaskCreator() {
 
   /** For a given list of results and sources, generate new tasks.
     */
@@ -41,12 +34,12 @@ class TaskCreator(sources: Set[CfgNode]) {
         case callSite :: tail =>
           // Case 1
           paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
-            ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth - 1, tail)
+            ReachableByTask(result.taskStack :+ TaskFingerprint(arg, tail, result.callDepth - 1), result.path)
           }
         case _ =>
           // Case 2
           paramToArgs(param).map { arg =>
-            ReachableByTask(arg, sources, new ResultTable, result.path, result.callDepth + 1)
+            ReachableByTask(result.taskStack :+ TaskFingerprint(arg, List(), result.callDepth + 1), result.path)
           }
       }
     }
@@ -101,19 +94,15 @@ class TaskCreator(sources: Set[CfgNode]) {
         if (method.isExternal || method.start.isStub.nonEmpty) {
           val newPath = path
           (call.receiver.l ++ call.argument.l).map { arg =>
-            ReachableByTask(arg, sources, new ResultTable, newPath, callDepth, result.callSiteStack)
+            val taskStack = result.taskStack :+ TaskFingerprint(arg, result.callSiteStack, callDepth)
+            ReachableByTask(taskStack, newPath)
           }
         } else {
           returnStatements.map { returnStatement =>
             val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
-            ReachableByTask(
-              returnStatement,
-              sources,
-              new ResultTable,
-              newPath,
-              callDepth + 1,
-              call :: result.callSiteStack
-            )
+            val taskStack =
+              result.taskStack :+ TaskFingerprint(returnStatement, call :: result.callSiteStack, callDepth + 1)
+            ReachableByTask(taskStack, newPath)
           }
         }
       }
@@ -130,7 +119,7 @@ class TaskCreator(sources: Set[CfgNode]) {
           .filterNot(_.method.isExternal)
           .map { p =>
             val newStack = arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
-            ReachableByTask(p, sources, new ResultTable, path, callDepth + 1, newStack)
+            ReachableByTask(result.taskStack :+ TaskFingerprint(p, newStack, callDepth + 1), path)
           }
       }
     }

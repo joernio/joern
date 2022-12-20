@@ -10,21 +10,23 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
-
-import scala.collection.parallel.CollectionConverters._
 import java.util.concurrent._
-import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-case class ReachableByTask(
-  sink: CfgNode,
-  sources: Set[CfgNode],
-  table: ResultTable,
-  initialPath: Vector[PathElement] = Vector(),
-  callDepth: Int = 0,
-  callSiteStack: List[Call] = List()
-)
+/** @param taskStack
+  *   The list of tasks that was solved to arrive at this task, including the current task, which is to be solved as the
+  *   last element of the list.
+  *
+  * @param initialPath
+  *   The path from the current sink downwards to previous sinks.
+  */
+case class ReachableByTask(taskStack: List[TaskFingerprint], initialPath: Vector[PathElement]) {
+  def fingerprint: TaskFingerprint = taskStack.last
+  def sink: CfgNode                = fingerprint.sink
+  def callSiteStack: List[Call]    = fingerprint.callSiteStack
+  def callDepth: Int               = fingerprint.callDepth
+}
 
 case class TaskSummary(
   task: ReachableByTask,
@@ -61,19 +63,14 @@ class Engine(context: EngineContext) {
       logger.info("Attempting to determine flows to empty list of sinks.")
     }
     val sourcesSet = sources.toSet
-    val tasks      = createOneTaskPerSink(sourcesSet, sinks)
+    val tasks      = createOneTaskPerSink(sinks)
     solveTasks(tasks, sourcesSet)
   }
 
-  /** Create a new result table. If `context.config.initialTable` is set, this initial table is cloned and returned.
-    */
-  private def newResultTable() =
-    context.config.initialTable.map(x => new ResultTable(x.table.clone)).getOrElse(new ResultTable)
-
   /** Create one task per sink where each task has its own result table.
     */
-  private def createOneTaskPerSink(sourcesSet: Set[CfgNode], sinks: List[CfgNode]) = {
-    sinks.map(sink => ReachableByTask(sink, sourcesSet, newResultTable()))
+  private def createOneTaskPerSink(sinks: List[CfgNode]) = {
+    sinks.map(sink => ReachableByTask(List(TaskFingerprint(sink, List(), 0)), Vector()))
   }
 
   /** Submit tasks to a worker pool, solving them in parallel. Upon receiving results for a task, new tasks are

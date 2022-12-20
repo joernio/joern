@@ -31,14 +31,14 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     } else {
       implicit val sem: Semantics = context.semantics
       val path                    = PathElement(task.sink, task.callSiteStack) +: task.initialPath
-      results(task.sink, path, task.sources, task.table, task.callSiteStack)
+      val table                   = new ResultTable
+      results(task.sink, path, table, task.callSiteStack)
       // TODO why do we update the call depth here?
-      val finalResults = task.table.get(task.sink).get.map { r =>
-        r.copy(callDepth = task.callDepth)
+      val finalResults = table.get(task.sink).get.map { r =>
+        r.copy(taskStack = r.taskStack.dropRight(1) :+ r.fingerprint.copy(callDepth = task.callDepth))
       }
-
       val (partial, complete) = finalResults.partition(_.partial)
-      val newTasks = new TaskCreator(sources).createFromResults(partial).distinctBy(t => (t.sink, t.callSiteStack))
+      val newTasks            = new TaskCreator().createFromResults(partial).distinctBy(t => (t.sink, t.callSiteStack))
       TaskSummary(task, complete, newTasks)
     }
   }
@@ -52,9 +52,6 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     * @param path
     *   This is a path from a node to the sink. The first node of the path is expanded by this method
     *
-    * @param sources
-    *   This is the set of sources, i.e., nodes where traversal should end.
-    *
     * @param table
     *   The result table is a cache of known results that we can re-use
     *
@@ -64,7 +61,6 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
   private def results[NodeType <: CfgNode](
     sink: CfgNode,
     path: Vector[PathElement],
-    sources: Set[NodeType],
     table: ResultTable,
     callSiteStack: List[Call]
   )(implicit semantics: Semantics): Vector[ReachableByResult] = {
@@ -88,17 +84,15 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       } else {
         QueryEngineStatistics.incrementBy(PATH_CACHE_MISSES, 1L)
         val newPath = elemToPrepend +: path
-        results(sink, newPath, sources, table, callSiteStack)
+        results(sink, newPath, table, callSiteStack)
       }
     }
 
     def createPartialResultForOutputArgOrRet() = {
       Vector(
         ReachableByResult(
-          sink,
+          task.taskStack,
           PathElement(path.head.node, callSiteStack, isOutputArg = true) +: path.tail,
-          table,
-          callSiteStack,
           partial = true
         )
       )
@@ -109,10 +103,10 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(sink, path, table, callSiteStack)) ++ deduplicate(computeResultsForParents())
+        Vector(ReachableByResult(task.taskStack, path)) ++ deduplicate(computeResultsForParents())
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
-        Vector(ReachableByResult(sink, path, table, callSiteStack, partial = true))
+        Vector(ReachableByResult(task.taskStack, path, partial = true))
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
       case call: Call
