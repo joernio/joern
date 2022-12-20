@@ -251,7 +251,9 @@ object Engine {
           withMaxLength.head
         } else {
           withMaxLength.minBy { x =>
-            x.taskStack.map(x => x.sink.id + ":" + x.callSiteStack.map(_.id).mkString("|") + x.callDepth) + " " + x.path
+            x.taskStack
+              .map(x => x.sink.id + ":" + x.callSiteStack.map(_.id).mkString("|") + x.callDepth)
+              .toString + " " + x.path
               .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
               .mkString("-")
           }
