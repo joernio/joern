@@ -10,7 +10,10 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
+
 import java.util.concurrent._
+import scala.collection.mutable
+import scala.collection.parallel.CollectionConverters._
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -49,6 +52,9 @@ class Engine(context: EngineContext) {
     new ExecutorCompletionService[TaskSummary](executorService)
 
   private val mainResultTable: ResultTable = new ResultTable
+
+  private val started: mutable.Buffer[ReachableByTask] = mutable.Buffer()
+  private var held: List[ReachableByTask]              = List()
 
   def shutdown(): Unit = {
     executorService.shutdown()
@@ -131,8 +137,16 @@ class Engine(context: EngineContext) {
     submitTasks(tasks.toVector, sources)
     runUntilAllTasksAreSolved()
     normalizeResultTable()
-    // printTableContents()
+    val completedResults = completeHeldTasks()
+    addCompletedTasksToMainTable(completedResults)
+    printTableContents()
     deduplicate(extractResultsFromTable(sinks))
+  }
+
+  private def addCompletedTasksToMainTable(results: List[ReachableByResult]): Unit = {
+    results.foreach { r =>
+      mainResultTable.add(r.fingerprint, Vector(r))
+    }
   }
 
   private def normalizeResultTable(): Unit = {
@@ -166,8 +180,50 @@ class Engine(context: EngineContext) {
   }
 
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
-    numberOfTasksRunning += tasks.size
-    tasks.foreach(t => completionService.submit(new TaskSolver(t, context, sources)))
+    val (tasksToHold, tasksToSolve) = tasks.par.partition { t =>
+      val fingerprint = TaskFingerprint(t.sink, t.callSiteStack, t.callDepth)
+      started.exists(x => x.fingerprint == fingerprint)
+    }
+    held ++= tasksToHold
+    started ++= tasksToSolve
+    numberOfTasksRunning += tasksToSolve.size
+    tasksToSolve.foreach(t => completionService.submit(new TaskSolver(t, context, sources)))
+  }
+
+  private def completeHeldTasks(): List[ReachableByResult] = {
+    val deduplicated = held.distinct
+    deduplicated.par.flatMap { heldTask =>
+      resultsForHeldTask(heldTask)
+    }.toList
+  }
+
+  private def resultsForHeldTask(heldTask: ReachableByTask): List[ReachableByResult] = {
+    mainResultTable.get(heldTask.fingerprint) match {
+      case Some(results) =>
+        results.flatMap { r =>
+          createResultsForHeldTaskAndTableResult(heldTask, r)
+        }.toList
+      case None => List()
+    }
+  }
+
+  private def createResultsForHeldTaskAndTableResult(
+    heldTask: ReachableByTask,
+    result: ReachableByResult
+  ): List[ReachableByResult] = {
+    heldTask.taskStack.indices.map { i =>
+      val parentTask = heldTask.taskStack(i)
+      val initialPathOnlyUpToSink =
+        heldTask.initialPath.slice(
+          0,
+          heldTask.initialPath
+            .map(x => (x.node, x.callSiteStack))
+            .indexOf((parentTask.sink, parentTask.callSiteStack)) + 1
+        )
+      val newPath      = result.path ++ initialPathOnlyUpToSink
+      val newTaskStack = heldTask.taskStack.slice(0, i + 1)
+      ReachableByResult(newTaskStack, newPath)
+    }.toList
   }
 
 }
