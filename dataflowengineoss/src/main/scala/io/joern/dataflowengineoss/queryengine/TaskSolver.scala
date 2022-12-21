@@ -30,12 +30,15 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       TaskSummary(task, Vector(), Vector())
     } else {
       implicit val sem: Semantics = context.semantics
-      val path                    = PathElement(task.sink, task.callSiteStack) +: task.initialPath
+      val path                    = Vector(PathElement(task.sink, task.callSiteStack))
       val table                   = new ResultTable
       results(task.sink, path, table, task.callSiteStack)
       // TODO why do we update the call depth here?
       val finalResults = table.get(task.fingerprint).get.map { r =>
-        r.copy(taskStack = r.taskStack.dropRight(1) :+ r.fingerprint.copy(callDepth = task.callDepth))
+        r.copy(
+          taskStack = r.taskStack.dropRight(1) :+ r.fingerprint.copy(callDepth = task.callDepth),
+          path = r.path ++ task.initialPath
+        )
       }
       val (partial, complete) = finalResults.partition(_.partial)
       val newTasks            = new TaskCreator().createFromResults(partial).distinctBy(t => (t.sink, t.callSiteStack))

@@ -130,7 +130,39 @@ class Engine(context: EngineContext) {
 
     submitTasks(tasks.toVector, sources)
     runUntilAllTasksAreSolved()
+    normalizeResultTable()
+    // printTableContents()
     deduplicate(extractResultsFromTable(sinks))
+  }
+
+  private def normalizeResultTable(): Unit = {
+    mainResultTable.keys().foreach { key =>
+      val results = mainResultTable.get(key).get
+      mainResultTable.table.put(key, deduplicate(results))
+    }
+  }
+
+  def printTableContents(): Unit = {
+    println(s"Number of keys: ${mainResultTable.keys().size}")
+    mainResultTable.table.iterator
+      .sortBy(_._1.sink.id)
+      .foreach { case (key, results) =>
+        println(
+          s"Key (sink/callsites/calldepth/#): ${key.sink.id}, ${key.callSiteStack.map(_.id).toString}, ${key.callDepth}, ${results.size}"
+        )
+        results
+          .map { r =>
+            (
+              r.path.head.node.id,
+              r.path.last.node.id,
+              r.path.size,
+              r.path.head.callSiteStack.map(_.id).toString,
+              r.path.last.callSiteStack.map(_.id).toString
+            )
+          }
+          .sorted
+          .foreach(println)
+      }
   }
 
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
