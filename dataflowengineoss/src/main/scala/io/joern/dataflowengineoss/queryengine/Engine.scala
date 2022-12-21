@@ -78,10 +78,7 @@ class Engine(context: EngineContext) {
         val pathToSink   = r.path.slice(0, r.path.map(_.node).indexOf(parentTask.sink))
         val newPath      = pathToSink :+ PathElement(parentTask.sink, parentTask.callSiteStack)
         val newTaskStack = r.taskStack.slice(0, i + 1)
-        //synchronized(mainResultTable.add(parentTask, Vector(r.copy(taskStack = newTaskStack, path = newPath))))
-        val results = Vector(r.copy(taskStack = newTaskStack, path = newPath))
-        synchronized(mainResultTable.add(parentTask, results))
-
+        synchronized(mainResultTable.add(parentTask, Vector(r.copy(taskStack = newTaskStack, path = newPath))))
       }
     }
   }
