@@ -10,9 +10,11 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
+
 import java.util.concurrent._
+import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 import scala.jdk.CollectionConverters._
-import scala.concurrent.{Future}
+import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /** @param taskStack
@@ -100,7 +102,7 @@ class Engine(context: EngineContext) {
     submitTasks(tasks.toVector, sources)
 
     do {
-      Thread.sleep(1000)
+      Thread.sleep(100)
     } while (TaskSolver.futuresStartedCounter.get() > TaskSolver.futuresEndedCounter.get() ||
       TaskSolver.totalTaskCounter.get() > TaskSolver.doneTaskCounter.get())
 
