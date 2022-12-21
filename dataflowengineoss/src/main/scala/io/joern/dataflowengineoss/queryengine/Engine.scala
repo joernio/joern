@@ -46,6 +46,7 @@ class Engine(context: EngineContext) {
   import Engine._
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  private val mainResultTable: ResultTable = new ResultTable
 
   def shutdown(): Unit = {}
 
@@ -61,7 +62,7 @@ class Engine(context: EngineContext) {
     }
     val sourcesSet = sources.toSet
     val tasks      = createOneTaskPerSink(sinks)
-    solveTasks(tasks, sourcesSet)
+    solveTasks(tasks, sourcesSet, sinks)
   }
 
   /** Create one task per sink where each task has its own result table.
@@ -70,26 +71,48 @@ class Engine(context: EngineContext) {
     sinks.map(sink => ReachableByTask(List(TaskFingerprint(sink, List(), 0)), Vector()))
   }
 
-  private def solveTasks(tasks: List[ReachableByTask], sources: Set[CfgNode]): Vector[ReachableByResult] = {
-    var completedResults = Vector[ReachableByResult]()
+  private def addResultsToMainTable(newResults: Vector[ReachableByResult]): Unit = {
+    newResults.foreach { r =>
+      r.taskStack.indices.foreach { i =>
+        val parentTask   = r.taskStack(i)
+        val pathToSink   = r.path.slice(0, r.path.map(_.node).indexOf(parentTask.sink))
+        val newPath      = pathToSink :+ PathElement(parentTask.sink, parentTask.callSiteStack)
+        val newTaskStack = r.taskStack.slice(0, i + 1)
+        //synchronized(mainResultTable.add(parentTask, Vector(r.copy(taskStack = newTaskStack, path = newPath))))
+        val results = Vector(r.copy(taskStack = newTaskStack, path = newPath))
+        synchronized(mainResultTable.add(parentTask, results))
+
+      }
+    }
+  }
+
+  private def extractResultsFromTable(sinks: List[CfgNode]): Vector[ReachableByResult] = {
+    sinks.flatMap { sink =>
+      mainResultTable.get(TaskFingerprint(sink, List(), 0)) match {
+        case Some(results) => results
+        case _             => Vector()
+      }
+    }.toVector
+  }
+
+  private def solveTasks(
+    tasks: List[ReachableByTask],
+    sources: Set[CfgNode],
+    sinks: List[CfgNode]
+  ): Vector[ReachableByResult] = {
 
     def handleSummary(taskSummary: TaskSummary): Unit = {
       val newTasks = taskSummary.followupTasks
       submitTasks(newTasks, sources)
       val newResults = taskSummary.results
-
-      if (newResults.length == 0) {
-        return
-      }
-
-      synchronized(completedResults ++= newResults)
+      addResultsToMainTable(newResults)
     }
 
     def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
       TaskSolver.futuresStartedCounter.incrementAndGet()
       Future {
         tasks.foreach(t => {
-          val ts            = new TaskSolver(t, context, sources)
+          val ts = new TaskSolver(t, context, sources)
           val resultsOfTask = ts.call()
           handleSummary(resultsOfTask)
         })
@@ -110,11 +133,7 @@ class Engine(context: EngineContext) {
 
     TaskSolver.printStats()
 
-    logger.debug(
-      "Generated " + completedResults.length +
-        " results. Starting deduplication"
-    )
-    val dedupResult          = deduplicate(completedResults)
+    val dedupResult          = deduplicate(extractResultsFromTable(sinks))
     val allDoneTimeSec: Long = System.currentTimeMillis / 1000
 
     logger.debug(
