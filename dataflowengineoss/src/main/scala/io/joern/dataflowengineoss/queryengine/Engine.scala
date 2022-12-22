@@ -172,13 +172,14 @@ class Engine(context: EngineContext) {
   private def completeHeldTasks(): Unit = {
     val toProcess =
       held.distinct.sortBy(x => (x.fingerprint.sink.id, x.fingerprint.callSiteStack.map(_.id).toString, x.callDepth))
-    var change: Boolean = false
-    val affectedCells   = toProcess.flatMap(_.taskStack.dropRight(1)).distinct
+
+    val affectedCells = toProcess.flatMap(_.taskStack.dropRight(1)).distinct
     var oldResults: Map[TaskFingerprint, Set[ReachableByResult]] = affectedCells.map { fingerprint =>
       fingerprint -> mainResultTable.get(fingerprint).getOrElse(Vector()).toSet
     }.toMap
 
-    do {
+    var change: Boolean = true
+    while (change) {
       change = false
       val taskNewResultsPairs = toProcess.par.map { t =>
         val resultsForTask = resultsForHeldTask(t).filter { r =>
@@ -195,7 +196,7 @@ class Engine(context: EngineContext) {
           oldResults += (t.fingerprint -> (newResults ++ oldResults.getOrElse(t.fingerprint, Set())))
         }
       }
-    } while (change)
+    }
   }
 
   private def resultsForHeldTask(heldTask: ReachableByTask): List[ReachableByResult] = {
