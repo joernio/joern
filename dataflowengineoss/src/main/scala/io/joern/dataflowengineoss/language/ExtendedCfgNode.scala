@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss.language
 
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement, ReachableByResult}
+import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement, ReachableByResult, TableEntry}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
@@ -20,7 +20,6 @@ import java.util.concurrent.{
 }
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
-
 import scala.collection.parallel.CollectionConverters._
 import java.util.concurrent._
 
@@ -47,7 +46,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
   def reachableBy[NodeType](sourceTravs: Traversal[NodeType]*)(implicit context: EngineContext): Traversal[NodeType] = {
     val sources = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs: _*)
     val reachedSources =
-      reachableByInternal(sources).map(_.startingPoint)
+      reachableByInternal(sources).map(_.path.head.node)
     Traversal.from(reachedSources).cast[NodeType]
   }
 
@@ -76,7 +75,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 
   def reachableByDetailed[NodeType](
     sourceTravs: Traversal[NodeType]*
-  )(implicit context: EngineContext): Vector[ReachableByResult] = {
+  )(implicit context: EngineContext): Vector[TableEntry] = {
     val sources = ExtendedCfgNode.sourceTravsToStartingPoints(sourceTravs: _*)
     reachableByInternal(sources)
   }
@@ -87,7 +86,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 
   private def reachableByInternal(
     startingPointsWithSources: List[StartingPointWithSource]
-  )(implicit context: EngineContext): Vector[ReachableByResult] = {
+  )(implicit context: EngineContext): Vector[TableEntry] = {
     val sinks  = traversal.dedup.toList.sortBy(_.id)
     val engine = new Engine(context)
     val result = engine.backwards(sinks, startingPointsWithSources.map(_.startingPoint))
@@ -96,12 +95,11 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     val sources               = startingPointsWithSources.map(_.source)
     val startingPointToSource = startingPointsWithSources.map { x => x.startingPoint -> x.source }.toMap
     val res = result.par.map { r =>
-      if (sources.contains(r.startingPoint) || !startingPointToSource(r.startingPoint).isInstanceOf[CfgNode]) {
+      val startingPoint = r.path.head.node
+      if (sources.contains(startingPoint) || !startingPointToSource(startingPoint).isInstanceOf[CfgNode]) {
         r
       } else {
-        r.copy(path =
-          PathElement(startingPointToSource(r.startingPoint).asInstanceOf[CfgNode], r.callSiteStack) +: r.path
-        )
+        r.copy(path = PathElement(startingPointToSource(startingPoint).asInstanceOf[CfgNode]) +: r.path)
       }
     }
     res.toVector
