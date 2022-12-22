@@ -24,11 +24,10 @@ import scala.util.{Failure, Success, Try}
   * @param initialPath
   *   The path from the current sink downwards to previous sinks.
   */
-case class ReachableByTask(taskStack: List[TaskFingerprint], initialPath: Vector[PathElement]) {
+case class ReachableByTask(taskStack: List[TaskFingerprint], initialPath: Vector[PathElement], callDepth: Int) {
   def fingerprint: TaskFingerprint = taskStack.last
   def sink: CfgNode                = fingerprint.sink
   def callSiteStack: List[Call]    = fingerprint.callSiteStack
-  def callDepth: Int               = fingerprint.callDepth
 }
 
 case class TaskSummary(
@@ -78,7 +77,7 @@ class Engine(context: EngineContext) {
   /** Create one task per sink where each task has its own result table.
     */
   private def createOneTaskPerSink(sinks: List[CfgNode]) = {
-    sinks.map(sink => ReachableByTask(List(TaskFingerprint(sink, List(), 0)), Vector()))
+    sinks.map(sink => ReachableByTask(List(TaskFingerprint(sink, List())), Vector(), 0))
   }
 
   private def addResultsToMainTable(newResults: Vector[ReachableByResult]): Unit = {
@@ -95,7 +94,7 @@ class Engine(context: EngineContext) {
 
   private def extractResultsFromTable(sinks: List[CfgNode]): Vector[ReachableByResult] = {
     sinks.flatMap { sink =>
-      mainResultTable.get(TaskFingerprint(sink, List(), 0)) match {
+      mainResultTable.get(TaskFingerprint(sink, List())) match {
         case Some(results) => results
         case _             => Vector()
       }
@@ -136,53 +135,33 @@ class Engine(context: EngineContext) {
 
     submitTasks(tasks.toVector, sources)
     runUntilAllTasksAreSolved()
-    normalizeResultTable()
-    val completedResults = completeHeldTasks()
-    addCompletedTasksToMainTable(completedResults)
-    printTableContents()
+    deduplicateResultTable()
+    completeHeldTasks()
+    deduplicateResultTable()
     deduplicate(extractResultsFromTable(sinks))
   }
 
   private def addCompletedTasksToMainTable(results: List[ReachableByResult]): Unit = {
-    results.foreach { r =>
-      mainResultTable.add(r.fingerprint, Vector(r))
+    results.groupBy(_.fingerprint).foreach { case (fingerprint, resultList) =>
+      val old = mainResultTable.get(fingerprint).getOrElse(Vector())
+      mainResultTable.table.put(fingerprint, deduplicate(old ++ resultList))
     }
   }
 
-  private def normalizeResultTable(): Unit = {
+  private def deduplicateResultTable(): Unit = {
     mainResultTable.keys().foreach { key =>
       val results = mainResultTable.get(key).get
       mainResultTable.table.put(key, deduplicate(results))
     }
   }
 
-  def printTableContents(): Unit = {
-    println(s"Number of keys: ${mainResultTable.keys().size}")
-    mainResultTable.table.iterator
-      .sortBy(_._1.sink.id)
-      .foreach { case (key, results) =>
-        println(
-          s"Key (sink/callsites/calldepth/#): ${key.sink.id}, ${key.callSiteStack.map(_.id).toString}, ${key.callDepth}, ${results.size}"
-        )
-        results
-          .map { r =>
-            (
-              r.path.head.node.id,
-              r.path.last.node.id,
-              r.path.size,
-              r.path.head.callSiteStack.map(_.id).toString,
-              r.path.last.callSiteStack.map(_.id).toString
-            )
-          }
-          .sorted
-          .foreach(println)
-      }
-  }
-
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
     val (tasksToHold, tasksToSolve) = tasks.par.partition { t =>
-      val fingerprint = TaskFingerprint(t.sink, t.callSiteStack, t.callDepth)
-      started.exists(x => x.fingerprint == fingerprint)
+      val fingerprint = TaskFingerprint(t.sink, t.callSiteStack)
+      // We run tasks for all callDepths to be consistent
+      // TODO There is a possible optimization here: if we already know the results from
+      // another call-depth, we can jump straight to creation of new tasks.
+      started.exists(x => x.fingerprint == fingerprint && x.callDepth == t.callDepth)
     }
     held ++= tasksToHold
     started ++= tasksToSolve
@@ -190,11 +169,33 @@ class Engine(context: EngineContext) {
     tasksToSolve.foreach(t => completionService.submit(new TaskSolver(t, context, sources)))
   }
 
-  private def completeHeldTasks(): List[ReachableByResult] = {
-    val deduplicated = held.distinct
-    deduplicated.par.flatMap { heldTask =>
-      resultsForHeldTask(heldTask)
-    }.toList
+  private def completeHeldTasks(): Unit = {
+    val toProcess =
+      held.distinct.sortBy(x => (x.fingerprint.sink.id, x.fingerprint.callSiteStack.map(_.id).toString, x.callDepth))
+    var change: Boolean = false
+    val affectedCells   = toProcess.flatMap(_.taskStack.dropRight(1)).distinct
+    var oldResults: Map[TaskFingerprint, Set[ReachableByResult]] = affectedCells.map { fingerprint =>
+      fingerprint -> mainResultTable.get(fingerprint).getOrElse(Vector()).toSet
+    }.toMap
+
+    do {
+      change = false
+      val taskNewResultsPairs = toProcess.par.map { t =>
+        val resultsForTask = resultsForHeldTask(t).filter { r =>
+          val pathSeq = r.path.map(x => (x.node, x.callSiteStack, x.isOutputArg))
+          pathSeq.distinct.size == pathSeq.size
+        }.toSet
+        (t, resultsForTask -- oldResults.getOrElse(t.fingerprint, Set()))
+      }.seq
+
+      taskNewResultsPairs.foreach { case (t, newResults) =>
+        if (newResults.nonEmpty) {
+          addCompletedTasksToMainTable(newResults.toList)
+          change = true
+          oldResults += (t.fingerprint -> (newResults ++ oldResults.getOrElse(t.fingerprint, Set())))
+        }
+      }
+    } while (change)
   }
 
   private def resultsForHeldTask(heldTask: ReachableByTask): List[ReachableByResult] = {
@@ -211,19 +212,23 @@ class Engine(context: EngineContext) {
     heldTask: ReachableByTask,
     result: ReachableByResult
   ): List[ReachableByResult] = {
-    heldTask.taskStack.indices.map { i =>
-      val parentTask = heldTask.taskStack(i)
-      val initialPathOnlyUpToSink =
-        heldTask.initialPath.slice(
-          0,
-          heldTask.initialPath
-            .map(x => (x.node, x.callSiteStack))
-            .indexOf((parentTask.sink, parentTask.callSiteStack)) + 1
-        )
-      val newPath      = result.path ++ initialPathOnlyUpToSink
-      val newTaskStack = heldTask.taskStack.slice(0, i + 1)
-      ReachableByResult(newTaskStack, newPath)
-    }.toList
+    heldTask.taskStack
+      .dropRight(1)
+      .indices
+      .map { i =>
+        val parentTask = heldTask.taskStack(i)
+        val initialPathOnlyUpToSink =
+          heldTask.initialPath.slice(
+            0,
+            heldTask.initialPath
+              .map(x => (x.node, x.callSiteStack))
+              .indexOf((parentTask.sink, parentTask.callSiteStack)) + 1
+          )
+        val newPath      = result.path ++ initialPathOnlyUpToSink
+        val newTaskStack = heldTask.taskStack.slice(0, i + 1)
+        ReachableByResult(newTaskStack, newPath, heldTask.callDepth)
+      }
+      .toList
   }
 
 }
@@ -365,11 +370,12 @@ object Engine {
           withMaxLength.head
         } else {
           withMaxLength.minBy { x =>
-            x.taskStack
-              .map(x => x.sink.id.toString + ":" + x.callSiteStack.map(_.id).mkString("|") + x.callDepth)
-              .toString + " " + x.path
-              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
-              .mkString("-")
+            x.callDepth.toString + " " +
+              x.taskStack
+                .map(x => x.sink.id.toString + ":" + x.callSiteStack.map(_.id).mkString("|"))
+                .toString + " " + x.path
+                .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+                .mkString("-")
           }
         }
       }

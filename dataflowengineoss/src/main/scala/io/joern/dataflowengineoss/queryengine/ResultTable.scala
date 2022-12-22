@@ -7,7 +7,7 @@ import scala.jdk.CollectionConverters._
 
 /** The TaskFingerprint uniquely identifies a task.
   */
-case class TaskFingerprint(sink: CfgNode, callSiteStack: List[Call], callDepth: Int)
+case class TaskFingerprint(sink: CfgNode, callSiteStack: List[Call])
 
 /** The Result Table is a cache that allows retrieving known paths for nodes, that is, paths that end in the node.
   */
@@ -34,10 +34,9 @@ class ResultTable(
   def createFromTable(
     first: PathElement,
     callSiteStack: List[Call],
-    callDepth: Int,
     remainder: Vector[PathElement]
   ): Option[Vector[ReachableByResult]] = {
-    table.get(TaskFingerprint(first.node, callSiteStack, callDepth)).map { res =>
+    table.get(TaskFingerprint(first.node, callSiteStack)).map { res =>
       res.map { r =>
         val pathToFirstNode =
           r.path.slice(0, r.path.map(x => (x.node, x.callSiteStack)).indexOf((first.node, first.callSiteStack)))
@@ -71,12 +70,16 @@ class ResultTable(
   *   indicate whether this result stands on its own or requires further analysis, e.g., by expanding output arguments
   *   backwards into method output parameters.
   */
-case class ReachableByResult(taskStack: List[TaskFingerprint], path: Vector[PathElement], partial: Boolean = false) {
+case class ReachableByResult(
+  taskStack: List[TaskFingerprint],
+  path: Vector[PathElement],
+  callDepth: Int,
+  partial: Boolean = false
+) {
 
   def fingerprint: TaskFingerprint = taskStack.last
   def sink: CfgNode                = fingerprint.sink
   def callSiteStack: List[Call]    = fingerprint.callSiteStack
-  def callDepth: Int               = fingerprint.callDepth
 
   def startingPoint: CfgNode = path.head.node
 

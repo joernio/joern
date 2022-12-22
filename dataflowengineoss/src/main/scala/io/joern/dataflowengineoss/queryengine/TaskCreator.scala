@@ -9,17 +9,23 @@ import overflowdb.traversal.{NodeOps, Traversal}
 
 /** Creation of new tasks from results of completed tasks.
   */
-class TaskCreator() {
+class TaskCreator(context: EngineContext) {
 
   /** For a given list of results and sources, generate new tasks.
     */
   def createFromResults(results: Vector[ReachableByResult]): Vector[ReachableByTask] = {
     val newTasks = tasksForParams(results) ++ tasksForUnresolvedOutArgs(results)
-    removeTasksWithLoops(newTasks)
+    removeTasksWithLoopsAndTooHighCallDepth(newTasks)
   }
 
-  private def removeTasksWithLoops(tasks: Vector[ReachableByTask]): Vector[ReachableByTask] = {
-    tasks.filter { t =>
+  private def removeTasksWithLoopsAndTooHighCallDepth(tasks: Vector[ReachableByTask]): Vector[ReachableByTask] = {
+    val tasksWithValidCallDepth = if (context.config.maxCallDepth == -1) {
+      tasks
+    } else {
+      tasks.filter(_.callDepth <= context.config.maxCallDepth)
+    }
+
+    tasksWithValidCallDepth.filter { t =>
       t.taskStack.dedup.size == t.taskStack.size
     }
   }
@@ -42,12 +48,12 @@ class TaskCreator() {
         case callSite :: tail =>
           // Case 1
           paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
-            ReachableByTask(result.taskStack :+ TaskFingerprint(arg, tail, result.callDepth - 1), result.path)
+            ReachableByTask(result.taskStack :+ TaskFingerprint(arg, tail), result.path, result.callDepth - 1)
           }
         case _ =>
           // Case 2
           paramToArgs(param).map { arg =>
-            ReachableByTask(result.taskStack :+ TaskFingerprint(arg, List(), result.callDepth + 1), result.path)
+            ReachableByTask(result.taskStack :+ TaskFingerprint(arg, List()), result.path, result.callDepth + 1)
           }
       }
     }
@@ -102,15 +108,15 @@ class TaskCreator() {
         if (method.isExternal || method.start.isStub.nonEmpty) {
           val newPath = path
           (call.receiver.l ++ call.argument.l).map { arg =>
-            val taskStack = result.taskStack :+ TaskFingerprint(arg, result.callSiteStack, callDepth)
-            ReachableByTask(taskStack, newPath)
+            val taskStack = result.taskStack :+ TaskFingerprint(arg, result.callSiteStack)
+            ReachableByTask(taskStack, newPath, callDepth)
           }
         } else {
           returnStatements.map { returnStatement =>
             val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
             val taskStack =
-              result.taskStack :+ TaskFingerprint(returnStatement, call :: result.callSiteStack, callDepth + 1)
-            ReachableByTask(taskStack, newPath)
+              result.taskStack :+ TaskFingerprint(returnStatement, call :: result.callSiteStack)
+            ReachableByTask(taskStack, newPath, callDepth + 1)
           }
         }
       }
@@ -127,7 +133,7 @@ class TaskCreator() {
           .filterNot(_.method.isExternal)
           .map { p =>
             val newStack = arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
-            ReachableByTask(result.taskStack :+ TaskFingerprint(p, newStack, callDepth + 1), path)
+            ReachableByTask(result.taskStack :+ TaskFingerprint(p, newStack), path, callDepth + 1)
           }
       }
     }
