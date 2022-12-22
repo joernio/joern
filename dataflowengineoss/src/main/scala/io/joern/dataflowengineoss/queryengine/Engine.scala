@@ -397,8 +397,8 @@ object Engine {
   def deduplicateTableEntries(list: List[TableEntry]): List[TableEntry] = {
     list
       .groupBy { result =>
-        val head = result.path.headOption.map(x => (x.node, x.callSiteStack))
-        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack))
+        val head = result.path.headOption.map(x => (x.node, x.callSiteStack)).get
+        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack)).get
         (head, last)
       }
       .map { case (_, list) =>
