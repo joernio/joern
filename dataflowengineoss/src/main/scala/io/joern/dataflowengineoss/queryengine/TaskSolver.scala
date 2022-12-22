@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
 
 import java.util.concurrent.Callable
-import scala.collection.mutable
 
 /** Callable for solving a ReachableByTask
   *
@@ -35,9 +34,8 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       r.copy(callDepth = task.callDepth, path = r.path ++ task.initialPath)
     }
     val (partial, complete) = finalResults.partition(_.partial)
-    val newTasks            = new TaskCreator(context).createFromResults(partial) // .distinctBy(t => t.fingerprint)
-    TaskSummary(task, complete, newTasks)
-
+    val newTasks            = new TaskCreator(context).createFromResults(partial)
+    TaskSummary(complete, newTasks)
   }
 
   /** Recursively expand the DDG backwards and return a list of all results, given by at least a source node in

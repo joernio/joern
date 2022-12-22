@@ -18,27 +18,40 @@ import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 /** @param taskStack
-  *   The list of tasks that was solved to arrive at this task, including the current task, which is to be solved as the
-  *   last element of the list.
+  *   The list of tasks that was solved to arrive at this task, including the current task, which is to be solved. The
+  *   current task is the last element of the list.
   *
   * @param initialPath
   *   The path from the current sink downwards to previous sinks.
+  *
+  * @param callDepth
+  *   This denotes how many call sites we have traversed before creating this path. We use this parameter to limit the
+  *   depth of the analysis.
   */
 case class ReachableByTask(taskStack: List[TaskFingerprint], initialPath: Vector[PathElement], callDepth: Int) {
+
+  /** This tasks fingerprint: if two tasks have the same fingerprint, then the TaskSolver MUST return the same result
+    * for them. This is the basis of our caching scheme.
+    */
   def fingerprint: TaskFingerprint = taskStack.last
-  def sink: CfgNode                = fingerprint.sink
-  def callSiteStack: List[Call]    = fingerprint.callSiteStack
+
+  /** The sink at which we start the analysis (upwards)
+    */
+  def sink: CfgNode = fingerprint.sink
+
+  /** The call sites we have expanded downwards during this analysis. We need to keep track of this so that we do not
+    * end up expanding one call site and then returning to a different call site, which would produce an unreachable
+    * path.
+    */
+  def callSiteStack: List[Call] = fingerprint.callSiteStack
 }
 
-case class TaskSummary(
-  task: ReachableByTask,
-  results: Vector[ReachableByResult],
-  followupTasks: Vector[ReachableByTask]
-)
+case class TaskSummary(results: Vector[ReachableByResult], followupTasks: Vector[ReachableByTask])
 
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
   * in parallel, creating and submitting new tasks upon completion of tasks. This class deals only with task scheduling,
-  * while the creation of new tasks from existing tasks is handled by the class `TaskCreator`.
+  * while the creation of new tasks from existing tasks is handled by the class `TaskCreator`, and solving of tasks is
+  * taken care of by the `TaskSolver`.
   */
 class Engine(context: EngineContext) {
 
@@ -50,14 +63,12 @@ class Engine(context: EngineContext) {
   private val completionService =
     new ExecutorCompletionService[TaskSummary](executorService)
 
-  private val mainResultTable: ResultTable = new ResultTable
-
+  /** All results of tasks are accumulated in this table. At the end of the analysis, we extract results from the table
+    * and return them.
+    */
+  private val mainResultTable: ResultTable             = new ResultTable
   private val started: mutable.Buffer[ReachableByTask] = mutable.Buffer()
   private var held: List[ReachableByTask]              = List()
-
-  def shutdown(): Unit = {
-    executorService.shutdown()
-  }
 
   /** Determine flows from sources to sinks by exploring the graph backwards from sinks to sources. Returns the list of
     * results along with a ResultTable, a cache of known paths created during the analysis.
@@ -74,31 +85,8 @@ class Engine(context: EngineContext) {
     solveTasks(tasks, sourcesSet, sinks)
   }
 
-  /** Create one task per sink where each task has its own result table.
-    */
   private def createOneTaskPerSink(sinks: List[CfgNode]) = {
     sinks.map(sink => ReachableByTask(List(TaskFingerprint(sink, List())), Vector(), 0))
-  }
-
-  private def addResultsToMainTable(newResults: Vector[ReachableByResult]): Unit = {
-    newResults.foreach { r =>
-      r.taskStack.indices.foreach { i =>
-        val parentTask   = r.taskStack(i)
-        val pathToSink   = r.path.slice(0, r.path.map(_.node).indexOf(parentTask.sink))
-        val newPath      = pathToSink :+ PathElement(parentTask.sink, parentTask.callSiteStack)
-        val newTaskStack = r.taskStack.slice(0, i + 1)
-        mainResultTable.add(parentTask, Vector(r.copy(taskStack = newTaskStack, path = newPath)))
-      }
-    }
-  }
-
-  private def extractResultsFromTable(sinks: List[CfgNode]): Vector[ReachableByResult] = {
-    sinks.flatMap { sink =>
-      mainResultTable.get(TaskFingerprint(sink, List())) match {
-        case Some(results) => results
-        case _             => Vector()
-      }
-    }.toVector
   }
 
   /** Submit tasks to a worker pool, solving them in parallel. Upon receiving results for a task, new tasks are
@@ -115,6 +103,18 @@ class Engine(context: EngineContext) {
       submitTasks(newTasks, sources)
       val newResults = taskSummary.results
       addResultsToMainTable(newResults)
+    }
+
+    def addResultsToMainTable(newResults: Vector[ReachableByResult]): Unit = {
+      newResults.foreach { r =>
+        r.taskStack.indices.foreach { i =>
+          val parentTask   = r.taskStack(i)
+          val pathToSink   = r.path.slice(0, r.path.map(_.node).indexOf(parentTask.sink))
+          val newPath      = pathToSink :+ PathElement(parentTask.sink, parentTask.callSiteStack)
+          val newTaskStack = r.taskStack.slice(0, i + 1)
+          mainResultTable.add(parentTask, Vector(r.copy(taskStack = newTaskStack, path = newPath)))
+        }
+      }
     }
 
     def runUntilAllTasksAreSolved(): Unit = {
@@ -139,6 +139,15 @@ class Engine(context: EngineContext) {
     completeHeldTasks()
     deduplicateResultTable()
     deduplicate(extractResultsFromTable(sinks))
+  }
+
+  private def extractResultsFromTable(sinks: List[CfgNode]): Vector[ReachableByResult] = {
+    sinks.flatMap { sink =>
+      mainResultTable.get(TaskFingerprint(sink, List())) match {
+        case Some(results) => results
+        case _             => Vector()
+      }
+    }.toVector
   }
 
   private def addCompletedTasksToMainTable(results: List[ReachableByResult]): Unit = {
@@ -230,6 +239,12 @@ class Engine(context: EngineContext) {
         ReachableByResult(newTaskStack, newPath, heldTask.callDepth)
       }
       .toList
+  }
+
+  /** This must be called when one is done using the engine.
+    */
+  def shutdown(): Unit = {
+    executorService.shutdown()
   }
 
 }
