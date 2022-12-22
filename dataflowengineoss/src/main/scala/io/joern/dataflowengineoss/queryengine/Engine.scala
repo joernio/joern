@@ -58,7 +58,6 @@ class Engine(context: EngineContext) {
   import Engine._
 
   private val logger: Logger                   = LoggerFactory.getLogger(this.getClass)
-  private var numberOfTasksRunning: Int        = 0
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService =
     new ExecutorCompletionService[TaskSummary](executorService)
@@ -66,9 +65,10 @@ class Engine(context: EngineContext) {
   /** All results of tasks are accumulated in this table. At the end of the analysis, we extract results from the table
     * and return them.
     */
-  private val mainResultTable: ResultTable             = new ResultTable
+  private var mainResultTable: ResultTable             = new ResultTable
+  private var numberOfTasksRunning: Int                = 0
   private val started: mutable.Buffer[ReachableByTask] = mutable.Buffer()
-  private var held: List[ReachableByTask]              = List()
+  private val held: mutable.Buffer[ReachableByTask]    = mutable.Buffer()
 
   /** Determine flows from sources to sinks by exploring the graph backwards from sinks to sources. Returns the list of
     * results along with a ResultTable, a cache of known paths created during the analysis.
@@ -80,9 +80,17 @@ class Engine(context: EngineContext) {
     if (sinks.isEmpty) {
       logger.info("Attempting to determine flows to empty list of sinks.")
     }
+    reset()
     val sourcesSet = sources.toSet
     val tasks      = createOneTaskPerSink(sinks)
     solveTasks(tasks, sourcesSet, sinks)
+  }
+
+  private def reset(): Unit = {
+    mainResultTable = new ResultTable
+    numberOfTasksRunning = 0
+    started.clear()
+    held.clear()
   }
 
   private def createOneTaskPerSink(sinks: List[CfgNode]) = {
@@ -98,6 +106,9 @@ class Engine(context: EngineContext) {
     sinks: List[CfgNode]
   ): Vector[ReachableByResult] = {
 
+    /** Solving a task produces a list of summaries. The following method is called for each of these summaries. It
+      * submits new tasks and adds results to the result table.
+      */
     def handleSummary(taskSummary: TaskSummary): Unit = {
       val newTasks = taskSummary.followupTasks
       submitTasks(newTasks, sources)
@@ -105,8 +116,14 @@ class Engine(context: EngineContext) {
       addResultsToMainTable(newResults)
     }
 
-    def addResultsToMainTable(newResults: Vector[ReachableByResult]): Unit = {
-      newResults.foreach { r =>
+    /** Insert completed results into the task table. Each result includes a taskStack, which specifies the intermediate
+      * sinks encountered while solving the task. We translate the result into one table entry per intermediate sink,
+      * where the path of a table entry ends in the intermediate sink.
+      *
+      * TODO I believe the slicing operation here can be optimized.
+      */
+    def addResultsToMainTable(results: Vector[ReachableByResult]): Unit = {
+      results.foreach { r =>
         r.taskStack.indices.foreach { i =>
           val parentTask   = r.taskStack(i)
           val pathToSink   = r.path.slice(0, r.path.map(_.node).indexOf(parentTask.sink))
@@ -141,6 +158,13 @@ class Engine(context: EngineContext) {
     deduplicate(extractResultsFromTable(sinks))
   }
 
+  private def deduplicateResultTable(): Unit = {
+    mainResultTable.keys().foreach { key =>
+      val results = mainResultTable.get(key).get
+      mainResultTable.table.put(key, deduplicate(results))
+    }
+  }
+
   private def extractResultsFromTable(sinks: List[CfgNode]): Vector[ReachableByResult] = {
     sinks.flatMap { sink =>
       mainResultTable.get(TaskFingerprint(sink, List())) match {
@@ -154,13 +178,6 @@ class Engine(context: EngineContext) {
     results.groupBy(_.fingerprint).foreach { case (fingerprint, resultList) =>
       val old = mainResultTable.get(fingerprint).getOrElse(Vector())
       mainResultTable.table.put(fingerprint, deduplicate(old ++ resultList))
-    }
-  }
-
-  private def deduplicateResultTable(): Unit = {
-    mainResultTable.keys().foreach { key =>
-      val results = mainResultTable.get(key).get
-      mainResultTable.table.put(key, deduplicate(results))
     }
   }
 

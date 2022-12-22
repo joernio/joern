@@ -16,6 +16,8 @@ import java.util.concurrent.Callable
   *   the data flow problem to solve
   * @param context
   *   state of the data flow engine
+  * @param sources
+  *   the set of sources that we are looking to reach.
   */
 class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[CfgNode]) extends Callable[TaskSummary] {
 
