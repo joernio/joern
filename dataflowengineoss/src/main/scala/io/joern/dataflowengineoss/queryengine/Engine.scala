@@ -199,12 +199,8 @@ class Engine(context: EngineContext) {
     val toProcess =
       held.distinct.sortBy(x => (x.fingerprint.sink.id, x.fingerprint.callSiteStack.map(_.id).toString, x.callDepth))
 
-    val affectedCells = toProcess.flatMap(_.taskStack.dropRight(1)).distinct
-    var oldResults: Map[TaskFingerprint, Set[ReachableByResult]] = affectedCells.map { fingerprint =>
-      fingerprint -> mainResultTable.get(fingerprint).getOrElse(Vector()).toSet
-    }.toMap
-
-    var change: Boolean = true
+    var oldResultsProducedByTask: Map[ReachableByTask, Set[ReachableByResult]] = Map()
+    var change: Boolean                                                        = true
     while (change) {
       change = false
       val taskNewResultsPairs = toProcess.par.map { t =>
@@ -212,14 +208,14 @@ class Engine(context: EngineContext) {
           val pathSeq = r.path.map(x => (x.node, x.callSiteStack, x.isOutputArg))
           pathSeq.distinct.size == pathSeq.size
         }.toSet
-        (t, resultsForTask -- oldResults.getOrElse(t.fingerprint, Set()))
+        (t, resultsForTask -- oldResultsProducedByTask.getOrElse(t, Set()))
       }.seq
 
       taskNewResultsPairs.foreach { case (t, newResults) =>
         if (newResults.nonEmpty) {
           addCompletedTasksToMainTable(newResults.toList)
           change = true
-          oldResults += (t.fingerprint -> (newResults ++ oldResults.getOrElse(t.fingerprint, Set())))
+          oldResultsProducedByTask += (t -> (newResults ++ oldResultsProducedByTask.getOrElse(t, Set())))
         }
       }
     }
