@@ -37,7 +37,16 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     }
     val (partial, complete) = finalResults.partition(_.partial)
     val newTasks            = new TaskCreator(context).createFromResults(partial)
-    TaskSummary(complete, newTasks)
+    TaskSummary(complete.flatMap(r => resultToTableEntries(r)), newTasks)
+  }
+
+  private def resultToTableEntries(r: ReachableByResult): List[(TaskFingerprint, TableEntry)] = {
+    r.taskStack.indices.map { i =>
+      val parentTask = r.taskStack(i)
+      val pathToSink = r.path.slice(0, r.path.map(_.node).indexOf(parentTask.sink))
+      val newPath    = pathToSink :+ PathElement(parentTask.sink, parentTask.callSiteStack)
+      (parentTask, TableEntry(path = newPath))
+    }.toList
   }
 
   /** Recursively expand the DDG backwards and return a list of all results, given by at least a source node in
@@ -68,9 +77,9 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       * table. If not, determine results recursively.
       */
     def computeResultsForParents() = {
-      expandIn(curNode, path, callSiteStack).iterator.flatMap { parent =>
+      deduplicateResults(expandIn(curNode, path, callSiteStack).iterator.flatMap { parent =>
         createResultsFromCacheOrCompute(parent, path)
-      }.toVector
+      }.toVector)
     }
 
     def createResultsFromCacheOrCompute(elemToPrepend: PathElement, path: Vector[PathElement]) = {
@@ -101,7 +110,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(task.taskStack, path, task.callDepth)) ++ deduplicate(computeResultsForParents())
+        Vector(ReachableByResult(task.taskStack, path, task.callDepth)) ++ computeResultsForParents()
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
         Vector(ReachableByResult(task.taskStack, path, task.callDepth, partial = true))
@@ -122,7 +131,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
 
       // All other cases: expand into parents
       case _ =>
-        deduplicate(computeResultsForParents())
+        computeResultsForParents()
     }
     table.add(TaskFingerprint(curNode, task.callSiteStack), res)
     res

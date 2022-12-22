@@ -46,7 +46,7 @@ case class ReachableByTask(taskStack: List[TaskFingerprint], initialPath: Vector
   def callSiteStack: List[Call] = fingerprint.callSiteStack
 }
 
-case class TaskSummary(results: Vector[ReachableByResult], followupTasks: Vector[ReachableByTask])
+case class TaskSummary(tableEntries: Vector[(TaskFingerprint, TableEntry)], followupTasks: Vector[ReachableByTask])
 case class TableEntry(path: Vector[PathElement])
 
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
@@ -113,28 +113,16 @@ class Engine(context: EngineContext) {
     def handleSummary(taskSummary: TaskSummary): Unit = {
       val newTasks = taskSummary.followupTasks
       submitTasks(newTasks, sources)
-      val newResults = taskSummary.results
+      val newResults = taskSummary.tableEntries
       addResultsToMainTable(newResults)
     }
 
-    /** Insert completed results into the task table. Each result includes a taskStack, which specifies the intermediate
-      * sinks encountered while solving the task. We translate the result into one table entry per intermediate sink,
-      * where the path of a table entry ends in the intermediate sink.
-      *
-      * TODO I believe the slicing operation here can be optimized.
-      */
-    def addResultsToMainTable(results: Vector[ReachableByResult]): Unit = {
-      results.foreach { r =>
-        r.taskStack.indices.foreach { i =>
-          val parentTask = r.taskStack(i)
-          val pathToSink = r.path.slice(0, r.path.map(_.node).indexOf(parentTask.sink))
-          val newPath    = pathToSink :+ PathElement(parentTask.sink, parentTask.callSiteStack)
-          val newEntry   = TableEntry(path = newPath)
-          mainResultTable.updateWith(parentTask) {
-            case Some(list) => Some(list :+ newEntry)
-            case None       => Some(List(newEntry))
-          }
-
+    def addResultsToMainTable(results: Vector[(TaskFingerprint, TableEntry)]): Unit = {
+      results.groupBy(_._1).foreach { case (fingerprint, resultList) =>
+        val entries = resultList.map(_._2).toList
+        mainResultTable.updateWith(fingerprint) {
+          case Some(list) => Some(list ++ entries)
+          case None       => Some(entries)
         }
       }
     }
@@ -159,8 +147,7 @@ class Engine(context: EngineContext) {
     runUntilAllTasksAreSolved()
     deduplicateResultTable()
     completeHeldTasks()
-    deduplicateResultTable()
-    deduplicateTableEntries(extractResultsFromTable(sinks))
+    deduplicateFinal(extractResultsFromTable(sinks))
   }
 
   private def deduplicateResultTable(): Unit = {
@@ -179,9 +166,9 @@ class Engine(context: EngineContext) {
     }
   }
 
-  private def addCompletedTasksToMainTable(results: List[ReachableByResult]): Unit = {
-    results.groupBy(_.fingerprint).foreach { case (fingerprint, resultList) =>
-      val entries = resultList.map { r => TableEntry(r.path) }
+  private def addCompletedTasksToMainTable(results: List[(TaskFingerprint, TableEntry)]): Unit = {
+    results.groupBy(_._1).foreach { case (fingerprint, resultList) =>
+      val entries = resultList.map(_._2)
       val old     = mainResultTable.getOrElse(fingerprint, Vector()).toList
       mainResultTable.put(fingerprint, deduplicateTableEntries(old ++ entries))
     }
@@ -206,18 +193,17 @@ class Engine(context: EngineContext) {
   private def completeHeldTasks(): Unit = {
     val toProcess =
       held.distinct.sortBy(x => (x.fingerprint.sink.id, x.fingerprint.callSiteStack.map(_.id).toString, x.callDepth))
-
-    var resultsProducedByTask: Map[ReachableByTask, Set[ReachableByResult]] = Map()
-    var changed: Boolean                                                    = true
+    var resultsProducedByTask: Map[ReachableByTask, Set[(TaskFingerprint, TableEntry)]] = Map()
+    var changed: Boolean                                                                = true
     while (changed) {
       changed = false
       val taskResultsPairs = toProcess.par.map { t =>
         val resultsForTask = resultsForHeldTask(t).toSet
-        (t, resultsForTask)
+        val newResults     = resultsForTask -- resultsProducedByTask.getOrElse(t, Set())
+        (t, resultsForTask, newResults)
       }.seq
 
-      taskResultsPairs.foreach { case (t, resultsForTask) =>
-        val newResults = resultsForTask -- resultsProducedByTask.getOrElse(t, Set())
+      taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
         if (newResults.nonEmpty) {
           addCompletedTasksToMainTable(newResults.toList)
           changed = true
@@ -227,17 +213,16 @@ class Engine(context: EngineContext) {
     }
   }
 
-  private def resultsForHeldTask(heldTask: ReachableByTask): List[ReachableByResult] = {
+  private def resultsForHeldTask(heldTask: ReachableByTask): List[(TaskFingerprint, TableEntry)] = {
     mainResultTable.get(heldTask.fingerprint) match {
       case Some(results) =>
         results
           .flatMap { r =>
             createResultsForHeldTaskAndTableResult(heldTask, r)
           }
-          .toList
-          .filter { r =>
+          .filter { case (_, tableEntry) =>
             // Do not allow paths with loops
-            val pathSeq = r.path.map(x => (x.node, x.callSiteStack, x.isOutputArg, x.outEdgeLabel))
+            val pathSeq = tableEntry.path.map(x => (x.node, x.callSiteStack, x.isOutputArg, x.outEdgeLabel))
             pathSeq.distinct.size == pathSeq.size
           }
       case None => List()
@@ -247,7 +232,7 @@ class Engine(context: EngineContext) {
   private def createResultsForHeldTaskAndTableResult(
     heldTask: ReachableByTask,
     result: TableEntry
-  ): List[ReachableByResult] = {
+  ): List[(TaskFingerprint, TableEntry)] = {
     heldTask.taskStack
       .dropRight(1)
       .indices
@@ -260,9 +245,8 @@ class Engine(context: EngineContext) {
               .map(x => (x.node, x.callSiteStack))
               .indexOf((parentTask.sink, parentTask.callSiteStack)) + 1
           )
-        val newPath      = result.path ++ initialPathOnlyUpToSink
-        val newTaskStack = heldTask.taskStack.slice(0, i + 1)
-        ReachableByResult(newTaskStack, newPath, heldTask.callDepth)
+        val newPath = result.path ++ initialPathOnlyUpToSink
+        (parentTask, TableEntry(newPath))
       }
       .toList
   }
@@ -397,12 +381,12 @@ object Engine {
   def deduplicateTableEntries(list: List[TableEntry]): List[TableEntry] = {
     list
       .groupBy { result =>
-        val head = result.path.headOption.map(x => (x.node, x.callSiteStack)).get
-        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack)).get
+        val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
         (head, last)
       }
       .map { case (_, list) =>
-        val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
+        val lenIdPathPairs = list.map(x => (x.path.length, x))
         val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
           case Nil    => Nil
           case h :: t => h :: t.takeWhile(y => y._1 == h._1)
@@ -421,11 +405,38 @@ object Engine {
       .toList
   }
 
-  def deduplicate(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
+  def deduplicateFinal(list: List[TableEntry]): List[TableEntry] = {
+    list
+      .groupBy { result =>
+        val head = result.path.head.node
+        val last = result.path.last.node
+        (head, last)
+      }
+      .map { case (_, list) =>
+        val lenIdPathPairs = list.map(x => (x.path.length, x))
+        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+          case Nil    => Nil
+          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
+        }).map(_._2)
+
+        if (withMaxLength.length == 1) {
+          withMaxLength.head
+        } else {
+          withMaxLength.minBy { x =>
+            x.path
+              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+              .mkString("-")
+          }
+        }
+      }
+      .toList
+  }
+
+  def deduplicateResults(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
     vec
       .groupBy { result =>
-        val head = result.path.headOption.map(x => (x.node, x.callSiteStack)).get
-        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack)).get
+        val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
         (head, last, result.partial)
       }
       .map { case (_, list) =>
