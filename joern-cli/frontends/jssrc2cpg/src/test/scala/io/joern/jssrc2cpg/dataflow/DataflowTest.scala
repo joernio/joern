@@ -351,7 +351,10 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     val source = cpg.call.code("source.*")
     val sink   = cpg.call.code("sink.*").argument(1)
     val flows  = sink.reachableByFlows(source)
-    flows.size shouldBe 1
+
+    flows.map(flowToResultPairs).toSetMutable shouldBe Set(
+      List(("source()", 3), ("return source()", 3), ("RET", 2), ("bar()", 9), ("var y = bar()", 9), ("sink(y)", 10))
+    )
   }
 
   "Flow for using formal parameters as sink" in {
