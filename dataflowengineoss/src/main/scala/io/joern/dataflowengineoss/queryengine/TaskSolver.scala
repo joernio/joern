@@ -33,7 +33,10 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     results(task.sink, path, table, task.callSiteStack)
     // TODO why do we update the call depth here?
     val finalResults = table.get(task.fingerprint).get.map { r =>
-      r.copy(callDepth = task.callDepth, path = r.path ++ task.initialPath)
+      r.copy(
+        taskStack = r.taskStack.dropRight(1) :+ r.fingerprint.copy(callDepth = task.callDepth),
+        path = r.path ++ task.initialPath
+      )
     }
     val (partial, complete) = finalResults.partition(_.partial)
     val newTasks            = new TaskCreator(context).createFromResults(partial)
@@ -83,7 +86,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     }
 
     def createResultsFromCacheOrCompute(elemToPrepend: PathElement, path: Vector[PathElement]) = {
-      val cachedResult = table.createFromTable(elemToPrepend, task.callSiteStack, path)
+      val cachedResult = table.createFromTable(elemToPrepend, task.callSiteStack, path, task.callDepth)
       if (cachedResult.isDefined) {
         QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
         cachedResult.get
@@ -99,7 +102,6 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
         ReachableByResult(
           task.taskStack,
           PathElement(path.head.node, callSiteStack, isOutputArg = true) +: path.tail,
-          task.callDepth,
           partial = true
         )
       )
@@ -110,10 +112,10 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(task.taskStack, path, task.callDepth)) ++ computeResultsForParents()
+        Vector(ReachableByResult(task.taskStack, path)) ++ computeResultsForParents()
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
-        Vector(ReachableByResult(task.taskStack, path, task.callDepth, partial = true))
+        Vector(ReachableByResult(task.taskStack, path, partial = true))
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
       case call: Call
@@ -133,7 +135,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       case _ =>
         computeResultsForParents()
     }
-    table.add(TaskFingerprint(curNode, task.callSiteStack), res)
+    table.add(TaskFingerprint(curNode, task.callSiteStack, task.callDepth), res)
     res
   }
 

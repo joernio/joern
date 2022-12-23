@@ -48,12 +48,12 @@ class TaskCreator(context: EngineContext) {
         case callSite :: tail =>
           // Case 1
           paramToArgs(param).filter(x => x.inCall.exists(c => c == callSite)).map { arg =>
-            ReachableByTask(result.taskStack :+ TaskFingerprint(arg, tail), result.path, result.callDepth - 1)
+            ReachableByTask(result.taskStack :+ TaskFingerprint(arg, tail, result.callDepth - 1), result.path)
           }
         case _ =>
           // Case 2
           paramToArgs(param).map { arg =>
-            ReachableByTask(result.taskStack :+ TaskFingerprint(arg, List()), result.path, result.callDepth + 1)
+            ReachableByTask(result.taskStack :+ TaskFingerprint(arg, List(), result.callDepth + 1), result.path)
           }
       }
     }
@@ -108,15 +108,15 @@ class TaskCreator(context: EngineContext) {
         if (method.isExternal || method.start.isStub.nonEmpty) {
           val newPath = path
           (call.receiver.l ++ call.argument.l).map { arg =>
-            val taskStack = result.taskStack :+ TaskFingerprint(arg, result.callSiteStack)
-            ReachableByTask(taskStack, newPath, callDepth)
+            val taskStack = result.taskStack :+ TaskFingerprint(arg, result.callSiteStack, callDepth)
+            ReachableByTask(taskStack, newPath)
           }
         } else {
           returnStatements.map { returnStatement =>
             val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
             val taskStack =
-              result.taskStack :+ TaskFingerprint(returnStatement, call :: result.callSiteStack)
-            ReachableByTask(taskStack, newPath, callDepth + 1)
+              result.taskStack :+ TaskFingerprint(returnStatement, call :: result.callSiteStack, callDepth + 1)
+            ReachableByTask(taskStack, newPath)
           }
         }
       }
@@ -133,7 +133,7 @@ class TaskCreator(context: EngineContext) {
           .filterNot(_.method.isExternal)
           .map { p =>
             val newStack = arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
-            ReachableByTask(result.taskStack :+ TaskFingerprint(p, newStack), path, callDepth + 1)
+            ReachableByTask(result.taskStack :+ TaskFingerprint(p, newStack, callDepth + 1), path)
           }
       }
     }

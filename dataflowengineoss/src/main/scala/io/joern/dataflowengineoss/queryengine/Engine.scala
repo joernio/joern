@@ -28,7 +28,7 @@ import scala.util.{Failure, Success, Try}
   *   This denotes how many call sites we have traversed before creating this path. We use this parameter to limit the
   *   depth of the analysis.
   */
-case class ReachableByTask(taskStack: List[TaskFingerprint], initialPath: Vector[PathElement], callDepth: Int) {
+case class ReachableByTask(taskStack: List[TaskFingerprint], initialPath: Vector[PathElement]) {
 
   /** This tasks fingerprint: if two tasks have the same fingerprint, then the TaskSolver MUST return the same result
     * for them. This is the basis of our caching scheme.
@@ -44,6 +44,9 @@ case class ReachableByTask(taskStack: List[TaskFingerprint], initialPath: Vector
     * path.
     */
   def callSiteStack: List[Call] = fingerprint.callSiteStack
+
+  def callDepth: Int = fingerprint.callDepth
+
 }
 
 case class TaskSummary(tableEntries: Vector[(TaskFingerprint, TableEntry)], followupTasks: Vector[ReachableByTask])
@@ -95,7 +98,7 @@ class Engine(context: EngineContext) {
   }
 
   private def createOneTaskPerSink(sinks: List[CfgNode]) = {
-    sinks.map(sink => ReachableByTask(List(TaskFingerprint(sink, List())), Vector(), 0))
+    sinks.map(sink => ReachableByTask(List(TaskFingerprint(sink, List(), 0)), Vector()))
   }
 
   /** Submit tasks to a worker pool, solving them in parallel. Upon receiving results for a task, new tasks are
@@ -147,6 +150,7 @@ class Engine(context: EngineContext) {
     runUntilAllTasksAreSolved()
     deduplicateResultTable()
     completeHeldTasks()
+    deduplicateResultTable()
     deduplicateFinal(extractResultsFromTable(sinks))
   }
 
@@ -159,7 +163,7 @@ class Engine(context: EngineContext) {
 
   private def extractResultsFromTable(sinks: List[CfgNode]): List[TableEntry] = {
     sinks.flatMap { sink =>
-      mainResultTable.get(TaskFingerprint(sink, List())) match {
+      mainResultTable.get(TaskFingerprint(sink, List(), 0)) match {
         case Some(results) => results
         case _             => Vector()
       }
@@ -175,17 +179,15 @@ class Engine(context: EngineContext) {
   }
 
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
-    val (tasksToHold, tasksToSolve) = tasks.par.partition { t =>
-      val fingerprint = TaskFingerprint(t.sink, t.callSiteStack)
-      // We run tasks for all callDepths to be consistent
-      // TODO There is a possible optimization here: if we already know the results from
-      // another call-depth, we can jump straight to creation of new tasks.
-      started.exists(x => x.fingerprint == fingerprint && x.callDepth == t.callDepth)
+    tasks.foreach { task =>
+      if (started.exists(x => x.fingerprint == task.fingerprint)) {
+        held ++= Vector(task)
+      } else {
+        started ++= Vector(task)
+        numberOfTasksRunning += 1
+        completionService.submit(new TaskSolver(task, context, sources))
+      }
     }
-    held ++= tasksToHold
-    started ++= tasksToSolve
-    numberOfTasksRunning += tasksToSolve.size
-    tasksToSolve.foreach(t => completionService.submit(new TaskSolver(t, context, sources)))
   }
 
   /** Add results produced by held task until no more change can be observed.
@@ -336,8 +338,8 @@ object Engine {
         e.outNode() match {
           case srcNode: CfgNode =>
             !srcNode.isInstanceOf[Method] && !path
-              .map(x => (x.node, x.callSiteStack))
-              .contains((srcNode, callSiteStack))
+              .map(x => x.node)
+              .contains(srcNode)
           case _ => false
         }
       }
@@ -437,7 +439,7 @@ object Engine {
       .groupBy { result =>
         val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
         val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-        (head, last, result.partial)
+        (head, last, result.partial, result.callDepth)
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
