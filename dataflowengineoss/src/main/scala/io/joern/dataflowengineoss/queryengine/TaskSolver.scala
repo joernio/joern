@@ -112,7 +112,14 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(task.taskStack, path)) ++ computeResultsForParents()
+        if (x.isInstanceOf[MethodParameterIn]) {
+          Vector(
+            ReachableByResult(task.taskStack, path),
+            ReachableByResult(task.taskStack, path, partial = true)
+          ) ++ computeResultsForParents()
+        } else {
+          Vector(ReachableByResult(task.taskStack, path)) ++ computeResultsForParents()
+        }
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
         Vector(ReachableByResult(task.taskStack, path, partial = true))
