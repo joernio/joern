@@ -24,10 +24,7 @@ class TaskCreator(context: EngineContext) {
     } else {
       tasks.filter(_.callDepth <= context.config.maxCallDepth)
     }
-
-    tasksWithValidCallDepth.filter { t =>
-      t.taskStack.dedup.size == t.taskStack.size
-    }
+    tasksWithValidCallDepth
   }
 
   /** Create new tasks from all results that start in a parameter. In essence, we want to traverse to corresponding
