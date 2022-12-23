@@ -9,12 +9,26 @@ import overflowdb.traversal.{NodeOps, Traversal}
 
 /** Creation of new tasks from results of completed tasks.
   */
-class TaskCreator() {
+class TaskCreator(context: EngineContext) {
 
   /** For a given list of results and sources, generate new tasks.
     */
-  def createFromResults(results: Vector[ReachableByResult]): Vector[ReachableByTask] =
-    tasksForParams(results) ++ tasksForUnresolvedOutArgs(results)
+  def createFromResults(results: Vector[ReachableByResult]): Vector[ReachableByTask] = {
+    val newTasks = tasksForParams(results) ++ tasksForUnresolvedOutArgs(results)
+    removeTasksWithLoopsAndTooHighCallDepth(newTasks)
+  }
+
+  private def removeTasksWithLoopsAndTooHighCallDepth(tasks: Vector[ReachableByTask]): Vector[ReachableByTask] = {
+    val tasksWithValidCallDepth = if (context.config.maxCallDepth == -1) {
+      tasks
+    } else {
+      tasks.filter(_.callDepth <= context.config.maxCallDepth)
+    }
+
+    tasksWithValidCallDepth.filter { t =>
+      t.taskStack.dedup.size == t.taskStack.size
+    }
+  }
 
   /** Create new tasks from all results that start in a parameter. In essence, we want to traverse to corresponding
     * arguments of call sites, but we need to be careful here not to create unrealizable paths. We achieve this by

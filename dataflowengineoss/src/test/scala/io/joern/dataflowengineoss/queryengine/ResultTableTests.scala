@@ -58,7 +58,7 @@ class ResultTableTests extends AnyWordSpec with Matchers {
         TaskFingerprint(pivotNode, List(), 0),
         Vector(ReachableByResult(List(TaskFingerprint(node1, List(), 0)), pathContainingPivot))
       )
-      table.createFromTable(PathElement(pivotNode), List(), 0, Vector(PathElement(node1))) match {
+      table.createFromTable(PathElement(pivotNode), List(), Vector(PathElement(node1)), 0) match {
         case Some(Vector(ReachableByResult(_, path, _))) =>
           path.map(_.node.id) shouldBe List(node4.id, pivotNode.id, node1.id)
         case _ => fail()

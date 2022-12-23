@@ -34,8 +34,8 @@ class ResultTable(
   def createFromTable(
     first: PathElement,
     callSiteStack: List[Call],
-    callDepth: Int,
-    remainder: Vector[PathElement]
+    remainder: Vector[PathElement],
+    callDepth: Int
   ): Option[Vector[ReachableByResult]] = {
     table.get(TaskFingerprint(first.node, callSiteStack, callDepth)).map { res =>
       res.map { r =>
@@ -76,7 +76,8 @@ case class ReachableByResult(taskStack: List[TaskFingerprint], path: Vector[Path
   def fingerprint: TaskFingerprint = taskStack.last
   def sink: CfgNode                = fingerprint.sink
   def callSiteStack: List[Call]    = fingerprint.callSiteStack
-  def callDepth: Int               = fingerprint.callDepth
+
+  def callDepth: Int = fingerprint.callDepth
 
   def startingPoint: CfgNode = path.head.node
 
