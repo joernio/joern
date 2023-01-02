@@ -28,4 +28,6 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
     new PythonNaiveCallLinker(cpg).createAndApply()
     cpg
   }
+
+  override def isJvmBased = true
 }

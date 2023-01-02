@@ -85,6 +85,8 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
 
     def isAvailable: Boolean = true
 
+    override def isJvmBased = true
+
   }
 
 }

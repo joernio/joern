@@ -22,4 +22,6 @@ case class JavaSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends C
 
   override def isAvailable: Boolean =
     command.toFile.exists
+
+  override def isJvmBased = true
 }

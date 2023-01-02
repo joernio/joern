@@ -75,6 +75,7 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
   private def commercialAvailable: Boolean = rootPath.resolve("java2cpg.sh").toFile.exists()
   private def ossAvailable: Boolean        = rootPath.resolve("jimple2cpg").toFile.exists()
 
+  override def isJvmBased = true
 }
 
 object JavaCpgGenerator {

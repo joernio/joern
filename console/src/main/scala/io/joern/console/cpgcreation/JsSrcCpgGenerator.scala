@@ -28,4 +28,5 @@ case class JsSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cpg
     cpg
   }
 
+  override def isJvmBased = true
 }
