@@ -31,6 +31,13 @@ abstract class CpgGenerator() {
     }
     val cmd       = Seq[String](program) ++ arguments
     val exitValue = cmd.run().exitValue()
+    println(
+      s"""Invoking CPG generator in a separate process. Note that the new process will consume additional memory.
+         |If you are importing a large codebase (and/or running into memory issues), please try the following:
+         |1) exit joern
+         |2) invoke the frontend: `${cmd.mkString(" ")}`
+         |3) start joern, import the cpg: `importCpg("path/to/cpg")`
+         |""".stripMargin)
     if (exitValue == 0) {
       Some(cmd.toString)
     } else {
