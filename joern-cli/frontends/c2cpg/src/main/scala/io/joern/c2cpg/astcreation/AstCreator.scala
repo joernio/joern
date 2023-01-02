@@ -68,7 +68,7 @@ class AstCreator(
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
     */
   private def astInFakeMethod(fullName: String, path: String, iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val allDecls      = iASTTranslationUnit.getDeclarations
+    val allDecls      = iASTTranslationUnit.getDeclarations.toSeq
     val lineNumber    = allDecls.headOption.flatMap(line)
     val lineNumberEnd = allDecls.lastOption.flatMap(lineEnd)
 
@@ -104,17 +104,8 @@ class AstCreator(
       .typeFullName("ANY")
 
     val declsAsts = allDecls.flatMap { stmt =>
-      val r =
-        CGlobal.getAstsFromAstCache(
-          diffGraph,
-          fileName(stmt),
-          filename,
-          line(stmt),
-          column(stmt),
-          astsForDeclaration(stmt)
-        )
-      r
-    }.toIndexedSeq
+      CGlobal.getAstsFromAstCache(fileName(stmt), filename, line(stmt), column(stmt), astsForDeclaration(stmt))
+    }
 
     val methodReturn = NewMethodReturn()
       .code("RET")

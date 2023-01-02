@@ -33,43 +33,38 @@ object CGlobal extends Global {
   }
 
   def getAstsFromAstCache(
-    diffGraph: DiffGraphBuilder,
     filename: String,
     fromFilename: String,
     linenumber: Option[Integer],
     columnnumber: Option[Integer],
     astCreatorFunction: => Seq[Ast]
   ): Seq[Ast] = {
-    val (callCreatorFunc, addDirectlyToDiff) =
+    val callCreatorFunc =
       CGlobal.synchronized {
         if (
-          FileDefaults
-            .isHeaderFile(filename) && filename != fromFilename && linenumber.isDefined && columnnumber.isDefined
+          FileDefaults.isHeaderFile(filename) &&
+          filename != fromFilename &&
+          linenumber.isDefined &&
+          columnnumber.isDefined
         ) {
           if (!headerAstCache.contains(filename)) {
             headerAstCache.put(filename, mutable.HashSet((linenumber.get, columnnumber.get)))
-            (true, true)
+            true
           } else {
             if (!headerAstCache(filename).contains((linenumber.get, columnnumber.get))) {
               headerAstCache(filename).add((linenumber.get, columnnumber.get))
-              (true, true)
+              true
             } else {
-              (false, false)
+              false
             }
           }
         } else {
-          (true, false)
+          true
         }
       }
 
     if (callCreatorFunc) {
-      val asts = astCreatorFunction
-      if (addDirectlyToDiff) {
-        asts.foreach(Ast.storeInDiffGraph(_, diffGraph))
-        Seq.empty
-      } else {
-        asts
-      }
+      astCreatorFunction
     } else {
       Seq.empty
     }
