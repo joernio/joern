@@ -22,4 +22,6 @@ case class GhidraCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cp
 
   override def isAvailable: Boolean =
     command.toFile.exists
+
+  override def isJvmBased = true
 }

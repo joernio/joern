@@ -27,4 +27,6 @@ case class GoCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGen
   }
 
   override def isAvailable: Boolean = rootPath.resolve("go2cpg.sh").toFile.exists()
+
+  override def isJvmBased = false
 }

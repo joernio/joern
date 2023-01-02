@@ -24,4 +24,5 @@ case class CCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGene
   override def isAvailable: Boolean =
     command.toFile.exists
 
+  override def isJvmBased = true
 }

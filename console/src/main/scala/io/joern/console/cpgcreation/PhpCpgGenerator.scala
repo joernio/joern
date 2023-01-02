@@ -14,4 +14,6 @@ case class PhpCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGe
 
   override def isAvailable: Boolean =
     command.toFile.exists
+
+  override def isJvmBased = true
 }

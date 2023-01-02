@@ -15,6 +15,9 @@ abstract class CpgGenerator() {
 
   def isAvailable: Boolean
 
+  /** is this a JVM based frontend? if so, we'll invoke it with -Xmx for max heap settings */
+  def isJvmBased: Boolean
+
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     *
     * This method appends command line options in config.frontend.cmdLineParams to the shell command.

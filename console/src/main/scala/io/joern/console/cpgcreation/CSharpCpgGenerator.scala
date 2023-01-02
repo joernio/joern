@@ -27,4 +27,5 @@ case class CSharpCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cp
 
   override def isAvailable: Boolean = rootPath.resolve("csharp2cpg.sh").toFile.exists()
 
+  override def isJvmBased = false
 }
