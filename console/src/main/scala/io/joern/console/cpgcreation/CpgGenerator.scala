@@ -29,25 +29,35 @@ abstract class CpgGenerator() {
       System.err.println(s"CPG generator does not exist at: $program")
       return None
     }
-    val cmd       = Seq[String](program) ++ arguments
-    val exitValue = cmd.run().exitValue()
-    println(
-      s"""Invoking CPG generator in a separate process. Note that the new process will consume additional memory.
+    val cmd       = Seq(program) ++ maxMemoryParameter ++ arguments
+    val cmdString = cmd.mkString(" ")
+
+    println(s"""=======================================================================================================
+         |Invoking CPG generator in a separate process. Note that the new process will consume additional memory.
          |If you are importing a large codebase (and/or running into memory issues), please try the following:
          |1) exit joern
-         |2) invoke the frontend: `${cmd.mkString(" ")}`
+         |2) invoke the frontend: $cmdString
          |3) start joern, import the cpg: `importCpg("path/to/cpg")`
+         |=======================================================================================================
          |""".stripMargin)
+    val exitValue = cmd.run().exitValue()
     if (exitValue == 0) {
-      Some(cmd.toString)
+      Some(cmdString)
     } else {
       System.err.println(s"Error running shell command: $cmd")
       None
     }
   }
 
-  def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    cpg
+  protected lazy val maxMemoryParameter = {
+    if (isJvmBased) {
+      val maxValueInMegabytes = Runtime.getRuntime.maxMemory / 1024 / 1024
+      Seq(s"-J-Xmx${maxValueInMegabytes}m")
+    } else Nil
   }
+
+  /** override in specific cpg generators to make them apply post processing passes */
+  def applyPostProcessingPasses(cpg: Cpg): Cpg =
+    cpg
 
 }
