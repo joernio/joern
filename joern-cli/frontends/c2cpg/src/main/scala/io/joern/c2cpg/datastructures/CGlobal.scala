@@ -2,7 +2,6 @@ package io.joern.c2cpg.datastructures
 
 import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Global
 

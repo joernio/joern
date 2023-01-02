@@ -96,7 +96,7 @@ class TypeDeclTraversal(val traversal: Traversal[TypeDecl]) extends AnyVal {
   /** Traverse to canonical type which means unravel aliases until we find a non alias type declaration.
     */
   def canonicalType: Traversal[TypeDecl] =
-    traversal.repeat(_.unravelAlias)(_.until(_.isCanonical).times(maxAliasExpansions))
+    traversal.repeat(_.unravelAlias)(_.until(_.isCanonical).maxDepth(maxAliasExpansions))
 
   /** Direct alias type declarations.
     */

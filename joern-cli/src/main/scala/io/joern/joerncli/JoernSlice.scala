@@ -28,7 +28,6 @@ object JoernSlice {
         storeSliceInNewCpg(config.outFile, slice)
       }
     }
-
   }
 
   private def parseConfig(args: Array[String]): Option[Config] =
@@ -54,7 +53,7 @@ object JoernSlice {
     val sinks = cpg.file.nameExact(sourceFile).ast.lineNumber(sourceLine).isCall.argument.l
 
     implicit val context: EngineContext = EngineContext()
-    val sliceNodes                      = sinks.repeat(_.ddgIn)(_.times(20).emit).dedup.l
+    val sliceNodes                      = sinks.repeat(_.ddgIn)(_.maxDepth(20).emit).dedup.l
     val sliceEdges = sliceNodes
       .flatMap(_.outE)
       .filter(x => sliceNodes.contains(x.inNode()))
