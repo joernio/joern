@@ -86,7 +86,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     parameterNodes.lastOption.foreach {
       case p: NewMethodParameterIn if isVariadic(func) =>
         p.isVariadic = true
-        p.code = p.code + "..."
+        p.code = s"${p.code}..."
       case _ =>
     }
   }
@@ -103,9 +103,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case null => Defines.anyTypeName
     }
     val (name, fullname) = uniqueName("lambda", "", fullName(lambdaExpression))
-    val signature =
-      returnType + " " + fullname + " " + parameterListSignature(lambdaExpression, includeParamNames = false)
-    val code = returnType + " " + name + " " + parameterListSignature(lambdaExpression, includeParamNames = true)
+    val signature = s"$returnType $fullname ${parameterListSignature(lambdaExpression, includeParamNames = false)}"
+    val code      = s"$returnType $name ${parameterListSignature(lambdaExpression, includeParamNames = true)}"
     val methodNode = newMethodNode(
       lambdaExpression,
       StringUtils.normalizeSpace(name),
@@ -137,8 +136,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val fullname       = fullName(funcDecl)
     val templateParams = templateParameters(funcDecl).getOrElse("")
     val signature =
-      returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDecl, includeParamNames = false)
-    val code = returnType + " " + name + " " + parameterListSignature(funcDecl, includeParamNames = true)
+      s"$returnType $fullname$templateParams ${parameterListSignature(funcDecl, includeParamNames = false)}"
+    val code = s"$returnType $name ${parameterListSignature(funcDecl, includeParamNames = true)}"
     val methodNode =
       newMethodNode(funcDecl, StringUtils.normalizeSpace(name), code, StringUtils.normalizeSpace(fullname), filename)
         .isExternal(false)
@@ -165,8 +164,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val fullname       = fullName(funcDef)
     val templateParams = templateParameters(funcDef).getOrElse("")
     val signature =
-      returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDef, includeParamNames = false)
-    val code = returnType + " " + name + " " + parameterListSignature(funcDef, includeParamNames = true)
+      s"$returnType $fullname$templateParams ${parameterListSignature(funcDef, includeParamNames = false)}"
+    val code = s"$returnType $name ${parameterListSignature(funcDef, includeParamNames = true)}"
     val methodNode =
       newMethodNode(funcDef, StringUtils.normalizeSpace(name), code, StringUtils.normalizeSpace(fullname), filename)
         .isExternal(false)

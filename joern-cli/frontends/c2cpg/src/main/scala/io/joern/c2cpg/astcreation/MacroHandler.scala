@@ -119,7 +119,7 @@ trait MacroHandler { this: AstCreator =>
     val filename  = fileName(macroDef)
     val lineNo    = line(macroDef).getOrElse(-1)
     val lineNoEnd = lineEnd(macroDef).getOrElse(-1)
-    filename + ":" + lineNo + ":" + lineNoEnd + ":" + name + ":" + argAsts.size
+    s"$filename:$lineNo:$lineNoEnd:$name:${argAsts.size}"
   }
 
   /** The CDT utility method is unfortunately in a class that is marked as deprecated, however, this is because the CDT

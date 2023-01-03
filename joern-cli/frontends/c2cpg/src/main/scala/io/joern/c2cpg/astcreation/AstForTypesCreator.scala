@@ -37,7 +37,7 @@ trait AstForTypesCreator { this: AstCreator =>
   private def astForNamespaceDefinition(namespaceDefinition: ICPPASTNamespaceDefinition): Ast = {
     val (name, fullname) =
       uniqueName("namespace", namespaceDefinition.getName.getLastName.toString, fullName(namespaceDefinition))
-    val code         = "namespace " + fullname
+    val code         = s"namespace $fullname"
     val cpgNamespace = newNamespaceBlockNode(namespaceDefinition, name, fullname, code, fileName(namespaceDefinition))
     scope.pushNewScope(cpgNamespace)
 
@@ -59,7 +59,7 @@ trait AstForTypesCreator { this: AstCreator =>
       usingDeclarationMappings.put(name, fullname)
     }
 
-    val code         = "namespace " + name + " = " + fullname
+    val code         = s"namespace $name = $fullname"
     val cpgNamespace = newNamespaceBlockNode(namespaceAlias, name, fullname, code, fileName(namespaceAlias))
     Ast(cpgNamespace)
   }
@@ -120,7 +120,7 @@ trait AstForTypesCreator { this: AstCreator =>
     if (!isQualifiedName(simpleName)) {
       usingDecl.getParent match {
         case ns: ICPPASTNamespaceDefinition =>
-          usingDeclarationMappings.put(fullName(ns) + "." + mappedName, fixQualifiedName(simpleName))
+          usingDeclarationMappings.put(s"${fullName(ns)}.$mappedName", fixQualifiedName(simpleName))
         case _ =>
           usingDeclarationMappings.put(mappedName, fixQualifiedName(simpleName))
       }
