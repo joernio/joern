@@ -83,7 +83,14 @@ class AstCreator(
     val blockNode = newBlockNode(iASTTranslationUnit, registerType(Defines.anyTypeName))
 
     val declsAsts = allDecls.flatMap { stmt =>
-      CGlobal.getAstsFromAstCache(fileName(stmt), filename, line(stmt), column(stmt), astsForDeclaration(stmt))
+      CGlobal.getAstsFromAstCache(
+        diffGraph,
+        fileName(stmt),
+        filename,
+        line(stmt),
+        column(stmt),
+        astsForDeclaration(stmt)
+      )
     }
 
     val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName).code("RET")
