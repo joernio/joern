@@ -2,6 +2,7 @@ package io.joern.c2cpg.datastructures
 
 import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Global
 
@@ -32,38 +33,43 @@ object CGlobal extends Global {
   }
 
   def getAstsFromAstCache(
+    diffGraph: DiffGraphBuilder,
     filename: String,
     fromFilename: String,
     linenumber: Option[Int],
     columnnumber: Option[Int],
     astCreatorFunction: => Seq[Ast]
   ): Seq[Ast] = {
-    val callCreatorFunc =
+    val (callCreatorFunc, addDirectlyToDiff) =
       CGlobal.synchronized {
         if (
-          FileDefaults.isHeaderFile(filename) &&
-          filename != fromFilename &&
-          linenumber.isDefined &&
-          columnnumber.isDefined
+          FileDefaults
+            .isHeaderFile(filename) && filename != fromFilename && linenumber.isDefined && columnnumber.isDefined
         ) {
           if (!headerAstCache.contains(filename)) {
             headerAstCache.put(filename, mutable.HashSet((linenumber.get, columnnumber.get)))
-            true
+            (true, true)
           } else {
             if (!headerAstCache(filename).contains((linenumber.get, columnnumber.get))) {
               headerAstCache(filename).add((linenumber.get, columnnumber.get))
-              true
+              (true, true)
             } else {
-              false
+              (false, false)
             }
           }
         } else {
-          true
+          (true, false)
         }
       }
 
     if (callCreatorFunc) {
-      astCreatorFunction
+      val asts = astCreatorFunction
+      if (addDirectlyToDiff) {
+        asts.foreach(Ast.storeInDiffGraph(_, diffGraph))
+        Seq.empty
+      } else {
+        asts
+      }
     } else {
       Seq.empty
     }

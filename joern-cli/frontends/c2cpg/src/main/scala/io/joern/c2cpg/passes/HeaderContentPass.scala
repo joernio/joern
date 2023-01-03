@@ -63,10 +63,6 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
   private def createMissingAstEdges(dstGraph: DiffGraphBuilder): Unit = {
     val globalBlock = createGlobalBlock(dstGraph)
     cpg.all.not(_.inE(EdgeTypes.AST)).foreach {
-      case srcNode: Comment =>
-        dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
-      case srcNode: NamespaceBlock =>
-        dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
       case srcNode: Method =>
         dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
         if (systemIncludePaths.exists(p => srcNode.filename.startsWith(p.toString))) {
@@ -77,9 +73,9 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
         if (systemIncludePaths.exists(p => srcNode.filename.startsWith(p.toString))) {
           dstGraph.setNodeProperty(srcNode, PropertyNames.IS_EXTERNAL, true)
         }
-      case srcNode: Local =>
+      case _ @(_: MetaData | _: Binding | _: Type) => // do nothing
+      case srcNode =>
         dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
-      case _ => // do nothing
     }
   }
 
