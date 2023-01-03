@@ -75,6 +75,8 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
           throw new RuntimeException(exception)
       }
     }
+
+    superclassCache.clear()
   }
 
   /** Recursively returns all the sub-types of the given type declaration. Does not account for circular hierarchies.
