@@ -184,9 +184,6 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
             fallbackToStaticResolution(call, dstGraph)
           }
         }
-        // If we only find one method to resolve, we can set it to the full name if this is not already the case
-        if (tgts.size == 1 && call.methodFullName != tgts.head)
-          dstGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, tgts.head)
       case None if resolveCallInSuperClasses(call) =>
         // Resolve "hidden" inherited method and leave an alias for the result in validM, then retry
         linkDynamicCall(call, dstGraph)

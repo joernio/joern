@@ -91,8 +91,8 @@ class DynamicCallGraphTests2 extends JimpleCode2CpgFixture {
       |}
       |""".stripMargin)
 
-  "should find that foo is not defined and thus methodFullName should reflect the target callee" in {
-    cpg.call.name("foo").methodFullName.toSetMutable shouldBe Set("Foo.foo:int(int)")
+  "should find that foo is still called with the derived full name" in {
+    cpg.call.name("foo").methodFullName.toSetMutable shouldBe Set("Bar.foo:int(int)")
   }
 
   "should find that foo is not defined and thus point to the superclass implementation" in {
