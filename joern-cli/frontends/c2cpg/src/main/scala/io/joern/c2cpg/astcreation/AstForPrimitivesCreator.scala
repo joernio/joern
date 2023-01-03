@@ -1,6 +1,5 @@
 package io.joern.c2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.nodes.{NewComment, NewFieldIdentifier, NewIdentifier, NewLiteral}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
@@ -10,16 +9,12 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForComment(comment: IASTComment): Ast =
-    Ast(NewComment().code(nodeSignature(comment)).filename(fileName(comment)).lineNumber(line(comment)))
+    Ast(newCommentNode(comment, nodeSignature(comment), fileName(comment)))
 
   protected def astForLiteral(lit: IASTLiteralExpression): Ast = {
-    val tpe = cleanType(ASTTypeUtil.getType(lit.getExpressionType))
-    val litNode = NewLiteral()
-      .typeFullName(registerType(tpe))
-      .code(nodeSignature(lit))
-      .lineNumber(line(lit))
-      .columnNumber(column(lit))
-    Ast(litNode)
+    val tpe         = cleanType(ASTTypeUtil.getType(lit.getExpressionType))
+    val literalNode = newLiteralNode(lit, nodeSignature(lit), registerType(tpe))
+    Ast(literalNode)
   }
 
   protected def astForIdentifier(ident: IASTNode): Ast = {
@@ -47,12 +42,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case None => typeFor(ident)
     }
 
-    val cpgIdentifier = NewIdentifier()
-      .name(identifierName)
-      .typeFullName(registerType(cleanType(identifierTypeName)))
-      .code(nodeSignature(ident))
-      .lineNumber(line(ident))
-      .columnNumber(column(ident))
+    val cpgIdentifier =
+      newIdentifierNode(ident, identifierName, nodeSignature(ident), registerType(cleanType(identifierTypeName)))
 
     variableOption match {
       case Some((variable, _)) =>
@@ -62,14 +53,10 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
-    val op    = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
-    val ma    = newCallNode(fieldRef, op, op, DispatchTypes.STATIC_DISPATCH)
-    val owner = astForExpression(fieldRef.getFieldOwner)
-    val member = NewFieldIdentifier()
-      .canonicalName(fieldRef.getFieldName.toString)
-      .code(fieldRef.getFieldName.toString)
-      .lineNumber(line(fieldRef.getFieldName))
-      .columnNumber(column(fieldRef.getFieldName))
+    val op     = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
+    val ma     = newCallNode(fieldRef, op, op, DispatchTypes.STATIC_DISPATCH)
+    val owner  = astForExpression(fieldRef.getFieldOwner)
+    val member = newFieldIdentifierNode(fieldRef, fieldRef.getFieldName.toString, fieldRef.getFieldName.toString)
     callAst(ma, List(owner, Ast(member)))
   }
 
@@ -87,12 +74,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
     val ast = callAst(initCallNode, args)
     if (l.getClauses.length > MAX_INITIALIZERS) {
-      val placeholder = NewLiteral()
-        .typeFullName("ANY")
-        .code("<too-many-initializers>")
-        .argumentIndex(MAX_INITIALIZERS)
-        .lineNumber(line(l))
-        .columnNumber(column(l))
+      val placeholder =
+        newLiteralNode(l, "<too-many-initializers>", Defines.anyTypeName).argumentIndex(MAX_INITIALIZERS)
       ast.withChild(Ast(placeholder)).withArgEdge(initCallNode, placeholder)
     } else {
       ast
@@ -121,15 +104,10 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val owner = if (qualifier != Ast()) {
       qualifier
     } else {
-      Ast(NewLiteral().code("<global>").typeFullName("ANY"))
+      Ast(newLiteralNode(qualId.getLastName, "<global>", Defines.anyTypeName))
     }
 
-    val member = NewFieldIdentifier()
-      .canonicalName(qualId.getLastName.toString)
-      .code(qualId.getLastName.toString)
-      .lineNumber(line(qualId.getLastName))
-      .columnNumber(column(qualId.getLastName))
-
+    val member = newFieldIdentifierNode(qualId.getLastName, qualId.getLastName.toString, qualId.getLastName.toString)
     callAst(ma, List(owner, Ast(member)))
   }
 

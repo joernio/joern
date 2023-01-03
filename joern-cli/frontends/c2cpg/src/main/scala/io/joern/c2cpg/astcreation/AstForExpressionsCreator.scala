@@ -1,6 +1,6 @@
 package io.joern.c2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewIdentifier, NewMethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewMethodRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
@@ -56,10 +56,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   private def astForExpressionList(exprList: IASTExpressionList): Ast = {
-    val b = NewBlock()
-      .typeFullName(registerType(Defines.voidTypeName))
-      .lineNumber(line(exprList))
-      .columnNumber(column(exprList))
+    val b = newBlockNode(exprList, Defines.voidTypeName)
     Ast(b).withChildren(exprList.getExpressions.toIndexedSeq.map(astForExpression))
   }
 
@@ -188,7 +185,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     val expr    = astForExpression(castExpression.getOperand)
     val argNode = castExpression.getTypeId
-    val arg     = newUnknown(argNode)
+    val arg     = newUnknownNode(argNode)
 
     callAst(cpgCastExpression, List(Ast(arg), expr))
   }
@@ -229,7 +226,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val cpgCastExpression =
       newCallNode(typeIdInit, Operators.cast, Operators.cast, DispatchTypes.STATIC_DISPATCH)
 
-    val typeAst = newUnknown(typeIdInit.getTypeId)
+    val typeAst = newUnknownNode(typeIdInit.getTypeId)
     val expr    = astForNode(typeIdInit.getInitializer)
     callAst(cpgCastExpression, List(Ast(typeAst), expr))
   }

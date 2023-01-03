@@ -3,7 +3,7 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.datastructures.CGlobal
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.{Ast, AstCreatorBase}
@@ -68,49 +68,25 @@ class AstCreator(
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
     */
   private def astInFakeMethod(fullName: String, path: String, iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val allDecls      = iASTTranslationUnit.getDeclarations.toSeq
-    val lineNumber    = allDecls.headOption.flatMap(line)
-    val lineNumberEnd = allDecls.lastOption.flatMap(lineEnd)
+    val allDecls = iASTTranslationUnit.getDeclarations.toSeq
+    val name     = NamespaceTraversal.globalNamespaceName
 
-    val name = NamespaceTraversal.globalNamespaceName
-    val fakeGlobalTypeDecl = newTypeDecl(
-      name,
-      fullName,
-      filename,
-      name,
-      NodeTypes.NAMESPACE_BLOCK,
-      fullName,
-      line = lineNumber,
-      column = lineNumberEnd
-    )
-
+    val fakeGlobalTypeDecl =
+      newTypeDeclNode(iASTTranslationUnit, name, fullName, filename, name, NodeTypes.NAMESPACE_BLOCK, fullName)
     methodAstParentStack.push(fakeGlobalTypeDecl)
 
     val fakeGlobalMethod =
-      NewMethod()
-        .name(name)
-        .code(name)
-        .fullName(fullName)
-        .filename(path)
-        .lineNumber(lineNumber)
-        .lineNumberEnd(lineNumberEnd)
-        .astParentType(NodeTypes.TYPE_DECL)
-        .astParentFullName(fullName)
-
+      newMethodNode(iASTTranslationUnit, name, name, fullName, path, Some(NodeTypes.TYPE_DECL), Some(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewScope(fakeGlobalMethod)
 
-    val blockNode = NewBlock()
-      .typeFullName("ANY")
+    val blockNode = newBlockNode(iASTTranslationUnit, registerType(Defines.anyTypeName))
 
     val declsAsts = allDecls.flatMap { stmt =>
       CGlobal.getAstsFromAstCache(fileName(stmt), filename, line(stmt), column(stmt), astsForDeclaration(stmt))
     }
 
-    val methodReturn = NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName("ANY")
+    val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName).code("RET")
 
     Ast(fakeGlobalTypeDecl).withChild(
       Ast(fakeGlobalMethod)

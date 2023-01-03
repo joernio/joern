@@ -2,7 +2,7 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.utils.IOUtils
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
@@ -75,11 +75,11 @@ trait AstCreatorHelper { this: AstCreator =>
     IOUtils.toRelativePath(path, config)
   }
 
-  protected def line(node: IASTNode): Option[Integer] = {
+  protected def line(node: IASTNode): Option[Int] = {
     nullSafeFileLocation(node).map(_.getStartingLineNumber)
   }
 
-  protected def lineEnd(node: IASTNode): Option[Integer] = {
+  protected def lineEnd(node: IASTNode): Option[Int] = {
     nullSafeFileLocationLast(node).map(_.getEndingLineNumber)
   }
 
@@ -96,14 +96,14 @@ trait AstCreatorHelper { this: AstCreator =>
     column
   }
 
-  protected def column(node: IASTNode): Option[Integer] = {
+  protected def column(node: IASTNode): Option[Int] = {
     val loc = nullSafeFileLocation(node)
     loc.map { x =>
       offsetToColumn(node, x.getNodeOffset)
     }
   }
 
-  protected def columnEnd(node: IASTNode): Option[Integer] = {
+  protected def columnEnd(node: IASTNode): Option[Int] = {
     val loc = nullSafeFileLocation(node)
 
     loc.map { x =>
@@ -203,7 +203,7 @@ trait AstCreatorHelper { this: AstCreator =>
       val text = notHandledText(node)
       logger.info(text)
     }
-    Ast(newUnknown(node))
+    Ast(newUnknownNode(node))
   }
 
   protected def nullSafeCode(node: IASTNode): String = {
@@ -352,10 +352,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer): Ast = {
-    val b = NewBlock()
-      .typeFullName(registerType(Defines.voidTypeName))
-      .lineNumber(line(d))
-      .columnNumber(column(d))
+    val b = newBlockNode(d, Defines.voidTypeName)
     scope.pushNewScope(b)
     val op = Operators.assignment
 
@@ -371,10 +368,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer): Ast = {
-    val b = NewBlock()
-      .typeFullName(registerType(Defines.voidTypeName))
-      .lineNumber(line(d))
-      .columnNumber(column(d))
+    val b = newBlockNode(d, Defines.voidTypeName)
     scope.pushNewScope(b)
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>

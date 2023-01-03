@@ -17,6 +17,7 @@ import scala.annotation.tailrec
 trait AstForFunctionsCreator { this: AstCreator =>
 
   private def createFunctionTypeAndTypeDecl(
+    node: IASTNode,
     method: NewMethod,
     methodName: String,
     methodFullName: String,
@@ -28,17 +29,17 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
       val astParentType     = methodAstParentStack.head.label
       val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
-      val newTypeDeclNode =
-        newTypeDecl(
-          normalizedName,
-          normalizedFullName,
-          method.filename,
-          normalizedName,
-          astParentType,
-          astParentFullName
-        )
-      Ast.storeInDiffGraph(Ast(newTypeDeclNode), diffGraph)
-      newTypeDeclNode
+      val typeDeclNode = newTypeDeclNode(
+        node,
+        normalizedName,
+        normalizedFullName,
+        method.filename,
+        normalizedName,
+        astParentType,
+        astParentFullName
+      )
+      Ast.storeInDiffGraph(Ast(typeDeclNode), diffGraph)
+      typeDeclNode
     }
 
     method.astParentFullName = parentNode.fullName
@@ -81,10 +82,17 @@ trait AstForFunctionsCreator { this: AstCreator =>
     s"(${elements.mkString(",")}$variadic)"
   }
 
+  private def setVariadic(parameterNodes: Seq[NewMethodParameterIn], func: IASTNode): Unit = {
+    parameterNodes.lastOption.foreach {
+      case p: NewMethodParameterIn if isVariadic(func) =>
+        p.isVariadic = true
+        p.code = p.code + "..."
+      case _ =>
+    }
+  }
+
   protected def astForMethodRefForLambda(lambdaExpression: ICPPASTLambdaExpression): Ast = {
-    val linenumber   = line(lambdaExpression)
-    val columnnumber = column(lambdaExpression)
-    val filename     = fileName(lambdaExpression)
+    val filename = fileName(lambdaExpression)
 
     val returnType = lambdaExpression.getDeclarator match {
       case declarator: IASTDeclarator =>
@@ -98,45 +106,32 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val signature =
       returnType + " " + fullname + " " + parameterListSignature(lambdaExpression, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(lambdaExpression, includeParamNames = true)
-    val methodNode = NewMethod()
-      .name(StringUtils.normalizeSpace(name))
-      .code(code)
-      .isExternal(false)
-      .fullName(StringUtils.normalizeSpace(fullname))
-      .lineNumber(linenumber)
-      .lineNumberEnd(lineEnd(lambdaExpression))
-      .columnNumber(columnnumber)
-      .columnNumberEnd(columnEnd(lambdaExpression))
-      .signature(StringUtils.normalizeSpace(signature))
-      .filename(filename)
+    val methodNode = newMethodNode(
+      lambdaExpression,
+      StringUtils.normalizeSpace(name),
+      code,
+      StringUtils.normalizeSpace(fullname),
+      filename
+    ).isExternal(false).signature(StringUtils.normalizeSpace(signature))
 
     scope.pushNewScope(methodNode)
     val parameterNodes = withIndex(parameters(lambdaExpression.getDeclarator)) { (p, i) =>
       parameterNode(p, i)
     }
-
-    parameterNodes.lastOption.foreach {
-      case p: NewMethodParameterIn if isVariadic(lambdaExpression) =>
-        p.isVariadic = true
-        p.code = p.code + "..."
-      case _ =>
-    }
-
-    val r = methodStubAst(methodNode, parameterNodes, methodReturnNode(lambdaExpression, returnType))
+    setVariadic(parameterNodes, lambdaExpression)
 
     scope.popScope()
-    val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode, name, fullname, signature)
 
-    Ast.storeInDiffGraph(r.merge(typeDeclAst), diffGraph)
+    val stubAst =
+      methodStubAst(methodNode, parameterNodes, newMethodReturnNode(lambdaExpression, registerType(returnType)))
+    val typeDeclAst = createFunctionTypeAndTypeDecl(lambdaExpression, methodNode, name, fullname, signature)
+    Ast.storeInDiffGraph(stubAst.merge(typeDeclAst), diffGraph)
 
     Ast(newMethodRefNode(code, fullname, methodNode.astParentFullName, lambdaExpression))
   }
 
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
-    val linenumber   = line(funcDecl)
-    val columnnumber = column(funcDecl)
-    val filename     = fileName(funcDecl)
-
+    val filename       = fileName(funcDecl)
     val returnType     = typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
     val name           = shortName(funcDecl)
     val fullname       = fullName(funcDecl)
@@ -144,45 +139,27 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val signature =
       returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDecl, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(funcDecl, includeParamNames = true)
-    val methodNode = NewMethod()
-      .name(StringUtils.normalizeSpace(name))
-      .code(code)
-      .isExternal(false)
-      .fullName(StringUtils.normalizeSpace(fullname))
-      .lineNumber(linenumber)
-      .lineNumberEnd(lineEnd(funcDecl))
-      .columnNumber(columnnumber)
-      .columnNumberEnd(columnEnd(funcDecl))
-      .signature(StringUtils.normalizeSpace(signature))
-      .filename(filename)
+    val methodNode =
+      newMethodNode(funcDecl, StringUtils.normalizeSpace(name), code, StringUtils.normalizeSpace(fullname), filename)
+        .isExternal(false)
+        .signature(StringUtils.normalizeSpace(signature))
 
     scope.pushNewScope(methodNode)
 
     val parameterNodes = withIndex(parameters(funcDecl)) { (p, i) =>
       parameterNode(p, i)
     }
-
-    parameterNodes.lastOption.foreach {
-      case p: NewMethodParameterIn if isVariadic(funcDecl) =>
-        p.isVariadic = true
-        p.code = p.code + "..."
-      case _ =>
-    }
-
-    val r = methodStubAst(methodNode, parameterNodes, methodReturnNode(funcDecl, returnType))
+    setVariadic(parameterNodes, funcDecl)
 
     scope.popScope()
 
-    val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode, name, fullname, signature)
-
-    r.merge(typeDeclAst)
+    val stubAst     = methodStubAst(methodNode, parameterNodes, newMethodReturnNode(funcDecl, registerType(returnType)))
+    val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode, name, fullname, signature)
+    stubAst.merge(typeDeclAst)
   }
 
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
-    val linenumber   = line(funcDef)
-    val columnnumber = column(funcDef)
-    val filename     = fileName(funcDef)
-
+    val filename       = fileName(funcDef)
     val returnType     = typeForDeclSpecifier(funcDef.getDeclSpecifier)
     val name           = shortName(funcDef)
     val fullname       = fullName(funcDef)
@@ -190,17 +167,10 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val signature =
       returnType + " " + fullname + templateParams + " " + parameterListSignature(funcDef, includeParamNames = false)
     val code = returnType + " " + name + " " + parameterListSignature(funcDef, includeParamNames = true)
-    val methodNode = NewMethod()
-      .name(StringUtils.normalizeSpace(name))
-      .code(code)
-      .isExternal(false)
-      .fullName(StringUtils.normalizeSpace(fullname))
-      .lineNumber(linenumber)
-      .lineNumberEnd(lineEnd(funcDef))
-      .columnNumber(columnnumber)
-      .columnNumberEnd(columnEnd(funcDef))
-      .signature(StringUtils.normalizeSpace(signature))
-      .filename(filename)
+    val methodNode =
+      newMethodNode(funcDef, StringUtils.normalizeSpace(name), code, StringUtils.normalizeSpace(fullname), filename)
+        .isExternal(false)
+        .signature(StringUtils.normalizeSpace(signature))
 
     methodAstParentStack.push(methodNode)
     scope.pushNewScope(methodNode)
@@ -208,27 +178,20 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val parameterNodes = withIndex(parameters(funcDef)) { (p, i) =>
       parameterNode(p, i)
     }
+    setVariadic(parameterNodes, funcDef)
 
-    parameterNodes.lastOption.foreach {
-      case p: NewMethodParameterIn if isVariadic(funcDef) =>
-        p.isVariadic = true
-        p.code = p.code + "..."
-      case _ =>
-    }
-
-    val r = methodAst(
+    val stubAst = methodAst(
       methodNode,
       parameterNodes,
       astForMethodBody(Option(funcDef.getBody)),
-      methodReturnNode(funcDef, typeForDeclSpecifier(funcDef.getDeclSpecifier))
+      newMethodReturnNode(funcDef, registerType(typeForDeclSpecifier(funcDef.getDeclSpecifier)))
     )
 
     scope.popScope()
     methodAstParentStack.pop()
 
-    val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode, name, fullname, signature)
-
-    r.merge(typeDeclAst)
+    val typeDeclAst = createFunctionTypeAndTypeDecl(funcDef, methodNode, name, fullname, signature)
+    stubAst.merge(typeDeclAst)
   }
 
   private def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
@@ -260,18 +223,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
         (nodeSignature(other), nodeSignature(other), cleanType(typeForDeclSpecifier(other)), false)
     }
 
-    val parameterNode = NewMethodParameterIn()
-      .name(name)
-      .code(code)
-      .typeFullName(registerType(tpe))
-      .index(paramIndex)
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .isVariadic(variadic)
-      .lineNumber(line(parameter))
-      .columnNumber(column(parameter))
-
+    val parameterNode =
+      newParameterInNode(parameter, name, code, registerType(tpe), paramIndex, EvaluationStrategies.BY_VALUE, variadic)
     scope.addToScope(name, (parameterNode, tpe))
-
     parameterNode
   }
 
@@ -280,8 +234,5 @@ trait AstForFunctionsCreator { this: AstCreator =>
     case None                           => Ast(NewBlock())
     case Some(b)                        => astForNode(b)
   }
-
-  private def methodReturnNode(func: IASTNode, tpe: String): NewMethodReturn =
-    methodReturnNode(registerType(tpe), None, line(func), column(func))
 
 }
