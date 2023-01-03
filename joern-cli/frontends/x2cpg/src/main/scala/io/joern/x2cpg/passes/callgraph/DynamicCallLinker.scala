@@ -72,7 +72,6 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
         linkDynamicCall(call, dstGraph)
       } catch {
         case exception: Exception =>
-          exception.printStackTrace()
           throw new RuntimeException(exception)
       }
     }
