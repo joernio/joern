@@ -16,6 +16,9 @@ object EdgeValidator {
       case (childNode: Expression, parentNode)
           if isCallRetval(parentNode) || !isValidEdgeToExpression(parentNode, childNode) =>
         false
+      case (childNode: Expression, parentNode: Expression)
+          if parentNode.isArgToSameCallWith(childNode) && childNode.isDefined && parentNode.isUsed =>
+        parentNode.hasDefinedFlowTo(childNode)
       case (_: Expression, _: Expression)                  => true
       case (childNode: Expression, _) if !childNode.isUsed => false
       case (_: Expression, _)                              => true

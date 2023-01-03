@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss.language.nodemethods
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Method}
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, Method}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
@@ -21,6 +21,32 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     s.isEmpty || s.exists { semantic =>
       semantic.mappings.exists { case (_, dstIndex) =>
         dstIndex == node.argumentIndex
+      }
+    }
+  }
+
+  /** Determines if this node and the given target node are arguments to the same call.
+    * @param other
+    *   the node to compare
+    * @return
+    *   true if these nodes are arguments to the same call, false if otherwise.
+    */
+  def isArgToSameCallWith(other: Expression): Boolean =
+    node.astParent.collectAll[Call].headOption.equals(other.astParent.collectAll[Call].headOption)
+
+  /** Determines if this node has a flow to the given target node in the defined semantics.
+    * @param tgt
+    *   the target node to check.
+    * @param semantics
+    *   the pre-defined flow semantics.
+    * @return
+    *   true if there is flow defined between the two nodes, false if otherwise.
+    */
+  def hasDefinedFlowTo(tgt: Expression)(implicit semantics: Semantics): Boolean = {
+    val s = semanticsForCallByArg.l
+    s.isEmpty || s.exists { semantic =>
+      semantic.mappings.exists { case (srcIndex, dstIndex) =>
+        srcIndex == node.argumentIndex && dstIndex == tgt.argumentIndex
       }
     }
   }
