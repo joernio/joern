@@ -8,6 +8,7 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.{NodeDb, NodeRef}
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
@@ -29,7 +30,8 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   // the best interest of reproducibility during debugging.
   private val validM = mutable.Map.empty[String, mutable.LinkedHashSet[String]]
   // Used for dynamic programming as subtree's don't need to be recalculated later
-  private val subclassCache = mutable.Map.empty[String, mutable.LinkedHashSet[String]]
+  private val subclassCache   = mutable.Map.empty[String, mutable.LinkedHashSet[String]]
+  private val superclassCache = mutable.Map.empty[String, mutable.LinkedHashSet[String]]
   // Used for O(1) lookups on methods that will work without indexManager
   private val typeMap = mutable.Map.empty[String, TypeDecl]
   // For linking loose method stubs that cannot be resolved by crawling parent types
@@ -77,9 +79,9 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   /** Recursively returns all the sub-types of the given type declaration. Does not account for circular hierarchies.
     */
-  def allSubclasses(typDeclFullName: String): mutable.LinkedHashSet[String] = {
+  private def allSubclasses(typDeclFullName: String): mutable.LinkedHashSet[String] = {
     subclassCache.get(typDeclFullName) match {
-      case Some(value) => value
+      case Some(subClasses) => subClasses
       case None =>
         val directSubclasses =
           cpg.typ
@@ -100,6 +102,30 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
+  /** Recursively returns all the super-types of the given type declaration. Does not account for circular hierarchies.
+    */
+  private def allSuperClasses(typDeclFullName: String): mutable.LinkedHashSet[String] = {
+    superclassCache.get(typDeclFullName) match {
+      case Some(superClasses) => superClasses
+      case None =>
+        val directSuperClasses = mutable.LinkedHashSet.from(
+          cpg
+            .typeDecl(typDeclFullName)
+            .inheritsFromTypeFullName
+            .flatMap(t => cpg.typeDecl(t).fullName)
+            .toSet
+        )
+        // The second check makes sure that set is changing which wouldn't be the case in circular hierarchies
+        val totalSuperClasses: mutable.LinkedHashSet[String] = if (directSuperClasses.isEmpty) {
+          directSuperClasses ++ mutable.LinkedHashSet(typDeclFullName)
+        } else {
+          directSuperClasses.flatMap(t => allSubclasses(t)) ++ mutable.LinkedHashSet(typDeclFullName)
+        }
+        superclassCache.put(typDeclFullName, totalSuperClasses)
+        totalSuperClasses
+    }
+  }
+
   /** Returns the method from a sub-class implementing a method for the given subclass.
     */
   private def staticLookup(subclass: String, method: Method): Option[String] = {
@@ -114,6 +140,27 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
+  private def resolveCallInSuperClasses(call: Call): Boolean = {
+    val Array(fullName, signature) = call.methodFullName.split(":")
+    val typeDeclFullName           = fullName.replace(s".${call.name}", "")
+    val candidateInheritedMethods =
+      cpg.typeDecl
+        .fullNameExact(allSuperClasses(typeDeclFullName).toArray: _*)
+        .astChildren
+        .isMethod
+        .name(call.name)
+        .and(_.signatureExact(signature))
+        .fullName
+        .l
+    if (candidateInheritedMethods.nonEmpty) {
+      validM.put(call.methodFullName, mutable.LinkedHashSet.from(candidateInheritedMethods))
+      true
+    } else {
+      false
+    }
+  }
+
+  @tailrec
   private def linkDynamicCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
     validM.get(call.methodFullName) match {
       case Some(tgts) =>
@@ -130,7 +177,14 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
             fallbackToStaticResolution(call, dstGraph)
           }
         }
-      case None => fallbackToStaticResolution(call, dstGraph)
+        // If we only find one method to resolve, we can set it to the full name if this is not already the case
+        if (tgts.size == 1 && call.methodFullName != tgts.head)
+          dstGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, tgts.head)
+      case None if resolveCallInSuperClasses(call) =>
+        // Resolve "hidden" inherited method and leave an alias for the result in validM, then retry
+        linkDynamicCall(call, dstGraph)
+      case None =>
+        fallbackToStaticResolution(call, dstGraph)
     }
   }
 
