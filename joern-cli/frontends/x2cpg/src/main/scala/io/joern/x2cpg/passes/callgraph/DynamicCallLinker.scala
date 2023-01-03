@@ -72,6 +72,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
         linkDynamicCall(call, dstGraph)
       } catch {
         case exception: Exception =>
+          exception.printStackTrace()
           throw new RuntimeException(exception)
       }
     }
@@ -143,6 +144,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   private def resolveCallInSuperClasses(call: Call): Boolean = {
+    if (!call.methodFullName.contains(":")) return false
     val Array(fullName, signature) = call.methodFullName.split(":")
     val typeDeclFullName           = fullName.replace(s".${call.name}", "")
     val candidateInheritedMethods =
@@ -164,6 +166,9 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   @tailrec
   private def linkDynamicCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
+    // This call linker requires a method full name entry
+    if (call.methodFullName.equals("<empty>")) return
+
     validM.get(call.methodFullName) match {
       case Some(tgts) =>
         val callsOut = call.callOut.fullName.toSetImmutable
