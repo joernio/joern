@@ -122,7 +122,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   private def blockMatches(block: Block): Boolean =
     block._astIn.hasNext &&
       (block.astParent.isMethod || block.astParent.isControlStructure ||
-        block.astParent.exists(_.collectAll[Call].exists(_.dispatchType == DispatchTypes.INLINED)))
+        block.astParent.collectAll[Call].exists(_.dispatchType == DispatchTypes.INLINED))
 
   /** A second layer of dispatching for control structures. This could as well be part of `cfgFor` and has only been
     * placed into a separate function to increase readability.
