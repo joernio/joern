@@ -2,7 +2,7 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.utils.IOUtils
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
@@ -75,11 +75,11 @@ trait AstCreatorHelper { this: AstCreator =>
     IOUtils.toRelativePath(path, config)
   }
 
-  protected def line(node: IASTNode): Option[Integer] = {
+  protected def line(node: IASTNode): Option[Int] = {
     nullSafeFileLocation(node).map(_.getStartingLineNumber)
   }
 
-  protected def lineEnd(node: IASTNode): Option[Integer] = {
+  protected def lineEnd(node: IASTNode): Option[Int] = {
     nullSafeFileLocationLast(node).map(_.getEndingLineNumber)
   }
 
@@ -96,14 +96,14 @@ trait AstCreatorHelper { this: AstCreator =>
     column
   }
 
-  protected def column(node: IASTNode): Option[Integer] = {
+  protected def column(node: IASTNode): Option[Int] = {
     val loc = nullSafeFileLocation(node)
     loc.map { x =>
       offsetToColumn(node, x.getNodeOffset)
     }
   }
 
-  protected def columnEnd(node: IASTNode): Option[Integer] = {
+  protected def columnEnd(node: IASTNode): Option[Int] = {
     val loc = nullSafeFileLocation(node)
 
     loc.map { x =>
@@ -203,7 +203,7 @@ trait AstCreatorHelper { this: AstCreator =>
       val text = notHandledText(node)
       logger.info(text)
     }
-    Ast(newUnknown(node))
+    Ast(newUnknownNode(node))
   }
 
   protected def nullSafeCode(node: IASTNode): String = {
@@ -261,11 +261,11 @@ trait AstCreatorHelper { this: AstCreator =>
         }
       case alias: ICPPASTNamespaceAlias => alias.getMappingName.toString
       case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).nonEmpty =>
-        fullName(namespace.getParent) + "." + ASTStringUtil.getSimpleName(namespace.getName)
+        s"${fullName(namespace.getParent)}.${ASTStringUtil.getSimpleName(namespace.getName)}"
       case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).isEmpty =>
-        fullName(namespace.getParent) + "." + uniqueName("namespace", "", "")._1
+        s"${fullName(namespace.getParent)}.${uniqueName("namespace", "", "")._1}"
       case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).nonEmpty =>
-        fullName(cppClass.getParent) + "." + ASTStringUtil.getSimpleName(cppClass.getName)
+        s"${fullName(cppClass.getParent)}.${ASTStringUtil.getSimpleName(cppClass.getName)}"
       case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).isEmpty =>
         val name = cppClass.getParent match {
           case decl: IASTSimpleDeclaration =>
@@ -276,24 +276,25 @@ trait AstCreatorHelper { this: AstCreator =>
         }
         s"${fullName(cppClass.getParent)}.$name"
       case enumSpecifier: IASTEnumerationSpecifier =>
-        fullName(enumSpecifier.getParent) + "." + ASTStringUtil.getSimpleName(enumSpecifier.getName)
+        s"${fullName(enumSpecifier.getParent)}.${ASTStringUtil.getSimpleName(enumSpecifier.getName)}"
       case c: IASTCompositeTypeSpecifier =>
-        fullName(c.getParent) + "." + ASTStringUtil.getSimpleName(c.getName)
+        s"${fullName(c.getParent)}.${ASTStringUtil.getSimpleName(c.getName)}"
       case f: IASTFunctionDeclarator
           if ASTStringUtil.getSimpleName(f.getName).isEmpty && f.getNestedDeclarator != null =>
-        fullName(f.getParent) + "." + ASTStringUtil.getSimpleName(f.getNestedDeclarator.getName)
+        s"${fullName(f.getParent)}.${ASTStringUtil.getSimpleName(f.getNestedDeclarator.getName)}"
       case f: IASTFunctionDeclarator =>
-        fullName(f.getParent) + "." + ASTStringUtil.getSimpleName(f.getName)
+        s"${fullName(f.getParent)}.${ASTStringUtil.getSimpleName(f.getName)}"
       case f: ICPPASTLambdaExpression =>
-        fullName(f.getParent) + "."
+        s"${fullName(f.getParent)}."
       case f: IASTFunctionDefinition if f.getDeclarator != null =>
-        fullName(f.getParent) + "." + ASTStringUtil.getQualifiedName(f.getDeclarator.getName)
+        s"${fullName(f.getParent)}.${ASTStringUtil.getQualifiedName(f.getDeclarator.getName)}"
       case f: IASTFunctionDefinition =>
-        fullName(f.getParent) + "." + ASTStringUtil.getSimpleName(f.getDeclarator.getName)
+        s"${fullName(f.getParent)}.${ASTStringUtil.getSimpleName(f.getDeclarator.getName)}"
+      case e: IASTElaboratedTypeSpecifier =>
+        s"${fullName(e.getParent)}.${ASTStringUtil.getSimpleName(e.getName)}"
       case d: IASTIdExpression              => ASTStringUtil.getSimpleName(d.getName)
       case _: IASTTranslationUnit           => ""
       case u: IASTUnaryExpression           => nodeSignature(u.getOperand)
-      case e: IASTElaboratedTypeSpecifier   => fullName(e.getParent) + "." + ASTStringUtil.getSimpleName(e.getName)
       case other if other.getParent != null => fullName(other.getParent)
       case other if other != null           => notHandledYet(other); ""
       case null                             => ""
@@ -352,10 +353,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer): Ast = {
-    val b = NewBlock()
-      .typeFullName(registerType(Defines.voidTypeName))
-      .lineNumber(line(d))
-      .columnNumber(column(d))
+    val b = newBlockNode(d, Defines.voidTypeName)
     scope.pushNewScope(b)
     val op = Operators.assignment
 
@@ -371,10 +369,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer): Ast = {
-    val b = NewBlock()
-      .typeFullName(registerType(Defines.voidTypeName))
-      .lineNumber(line(d))
-      .columnNumber(column(d))
+    val b = newBlockNode(d, Defines.voidTypeName)
     scope.pushNewScope(b)
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>

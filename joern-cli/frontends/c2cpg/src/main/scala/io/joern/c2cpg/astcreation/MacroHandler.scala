@@ -1,14 +1,7 @@
 package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNodeNew,
-  ExpressionNew,
-  NewBlock,
-  NewCall,
-  NewFieldIdentifier,
-  NewNode
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew, NewBlock, NewFieldIdentifier, NewNode}
 import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
@@ -88,11 +81,9 @@ trait MacroHandler { this: AstCreator =>
     if (normalizedCode == "") {
       None
     } else {
-      ast.nodes
-        .collect { case x: AstNodeNew => x }
-        .find { x =>
-          x.isInstanceOf[ExpressionNew] && !x.isInstanceOf[NewFieldIdentifier] && x.code == normalizedCode
-        }
+      ast.nodes.collectFirst {
+        case x: ExpressionNew if !x.isInstanceOf[NewFieldIdentifier] && x.code == normalizedCode => x
+      }
     }
   }
 
@@ -110,14 +101,12 @@ trait MacroHandler { this: AstCreator =>
     val code    = node.getRawSignature.stripSuffix(";")
     val argAsts = argumentTrees(arguments, ast).map(_.getOrElse(Ast()))
 
-    val callNode = NewCall()
-      .name(StringUtils.normalizeSpace(name))
-      .methodFullName(StringUtils.normalizeSpace(fullName(macroDef, argAsts)))
-      .code(code)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .typeFullName(typeFor(node))
-      .dispatchType(DispatchTypes.INLINED)
+    val callNode = newCallNode(
+      node,
+      StringUtils.normalizeSpace(name),
+      StringUtils.normalizeSpace(fullName(macroDef, argAsts)),
+      DispatchTypes.INLINED
+    ).code(code).typeFullName(typeFor(node))
 
     callAst(callNode, argAsts)
   }
@@ -130,7 +119,7 @@ trait MacroHandler { this: AstCreator =>
     val filename  = fileName(macroDef)
     val lineNo    = line(macroDef).getOrElse(-1)
     val lineNoEnd = lineEnd(macroDef).getOrElse(-1)
-    filename + ":" + lineNo + ":" + lineNoEnd + ":" + name + ":" + argAsts.size
+    s"$filename:$lineNo:$lineNoEnd:$name:${argAsts.size}"
   }
 
   /** The CDT utility method is unfortunately in a class that is marked as deprecated, however, this is because the CDT

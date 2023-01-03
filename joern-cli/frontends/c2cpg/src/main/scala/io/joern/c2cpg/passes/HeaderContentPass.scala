@@ -1,6 +1,7 @@
 package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.Config
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
 import io.shiftleft.codepropertygraph.Cpg
@@ -42,13 +43,13 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
         .astParentType(NodeTypes.NAMESPACE_BLOCK)
         .astParentFullName(fullName)
 
-    val blockNode = NewBlock()
-      .typeFullName("ANY")
+    val blockNode = NewBlock().typeFullName(Defines.anyTypeName)
 
-    val methodReturn = NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName("ANY")
+    val methodReturn =
+      NewMethodReturn()
+        .code("RET")
+        .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+        .typeFullName(Defines.anyTypeName)
 
     val ast = Ast(includesFile).withChild(
       Ast(namespaceBlock)
