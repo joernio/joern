@@ -310,7 +310,7 @@ case class EngineContext(semantics: Semantics = DefaultSemantics(), config: Engi
   */
 case class EngineConfig(
   var maxCallDepth: Int = 4,
-  initialTable: Option[ResultTable] = None,
+  initialTable: Option[mutable.Map[TaskFingerprint, Vector[ReachableByResult]]] = None,
   shareCacheBetweenTasks: Boolean = true
 )
 
