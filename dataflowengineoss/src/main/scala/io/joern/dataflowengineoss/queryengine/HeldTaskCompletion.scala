@@ -13,13 +13,18 @@ class HeldTaskCompletion(
   /** Add results produced by held task until no more change can be observed.
     */
   def completeHeldTasks(): Unit = {
+
     deduplicateResultTable()
     val toProcess =
       heldTasks.distinct.sortBy(x =>
         (x.fingerprint.sink.id, x.fingerprint.callSiteStack.map(_.id).toString, x.callDepth)
       )
     var resultsProducedByTask: Map[ReachableByTask, Set[(TaskFingerprint, TableEntry)]] = Map()
-    var changed: Map[TaskFingerprint, Boolean] = toProcess.map { task => task.fingerprint -> true }.toMap
+
+    def allChanged  = toProcess.map { task => task.fingerprint -> true }.toMap
+    def noneChanged = toProcess.map { t => t.fingerprint -> false }.toMap
+
+    var changed: Map[TaskFingerprint, Boolean] = allChanged
 
     while (changed.values.toList.contains(true)) {
       val taskResultsPairs = toProcess
@@ -30,18 +35,16 @@ class HeldTaskCompletion(
           val newResults     = resultsForTask -- resultsProducedByTask.getOrElse(t, Set())
           (t, resultsForTask, newResults)
         }
+        .filter { case (_, _, newResults) => newResults.nonEmpty }
         .seq
 
-      changed = toProcess.map { t => t.fingerprint -> false }.toMap
-
+      changed = noneChanged
       taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
-        if (newResults.nonEmpty) {
-          addCompletedTasksToMainTable(newResults.toList)
-          newResults.foreach { case (fingerprint, _) =>
-            changed += fingerprint -> true
-          }
-          resultsProducedByTask += (t -> resultsForTask)
+        addCompletedTasksToMainTable(newResults.toList)
+        newResults.foreach { case (fingerprint, _) =>
+          changed += fingerprint -> true
         }
+        resultsProducedByTask += (t -> resultsForTask)
       }
     }
     deduplicateResultTable()
@@ -63,21 +66,22 @@ class HeldTaskCompletion(
     result: TableEntry
   ): List[(TaskFingerprint, TableEntry)] = {
     val parentTasks = heldTask.taskStack.dropRight(1)
+    val initialPath = heldTask.initialPath
     parentTasks
       .map { parentTask =>
-        val stopIndex = heldTask.initialPath
+        val stopIndex = initialPath
           .map(x => (x.node, x.callSiteStack))
           .indexOf((parentTask.sink, parentTask.callSiteStack)) + 1
-        val initialPathOnlyUpToSink =
-          heldTask.initialPath.slice(0, stopIndex)
-        val newPath = result.path ++ initialPathOnlyUpToSink
+        val initialPathOnlyUpToSink = initialPath.slice(0, stopIndex)
+        val newPath                 = result.path ++ initialPathOnlyUpToSink
         (parentTask, TableEntry(newPath))
       }
-      .filter { case (_, tableEntry) =>
-        // Do not allow paths with loops
-        val pathSeq = tableEntry.path.map(x => (x.node, x.callSiteStack, x.isOutputArg, x.outEdgeLabel))
-        pathSeq.distinct.size == pathSeq.size
-      }
+      .filter { case (_, tableEntry) => containsCycle(tableEntry) }
+  }
+
+  private def containsCycle(tableEntry: TableEntry): Boolean = {
+    val pathSeq = tableEntry.path.map(x => (x.node, x.callSiteStack, x.isOutputArg, x.outEdgeLabel))
+    pathSeq.distinct.size == pathSeq.size
   }
 
   private def addCompletedTasksToMainTable(results: List[(TaskFingerprint, TableEntry)]): Unit = {
