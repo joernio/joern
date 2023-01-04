@@ -196,19 +196,27 @@ class Engine(context: EngineContext) {
     val toProcess =
       held.distinct.sortBy(x => (x.fingerprint.sink.id, x.fingerprint.callSiteStack.map(_.id).toString, x.callDepth))
     var resultsProducedByTask: Map[ReachableByTask, Set[(TaskFingerprint, TableEntry)]] = Map()
-    var changed: Boolean                                                                = true
-    while (changed) {
-      changed = false
-      val taskResultsPairs = toProcess.par.map { t =>
-        val resultsForTask = resultsForHeldTask(t).toSet
-        val newResults     = resultsForTask -- resultsProducedByTask.getOrElse(t, Set())
-        (t, resultsForTask, newResults)
-      }.seq
+    var changed: Map[TaskFingerprint, Boolean] = toProcess.map { task => task.fingerprint -> true }.toMap
+    while (changed.values.toList.contains(true)) {
+
+      val taskResultsPairs = toProcess
+        .filter(t => changed(t.fingerprint))
+        .par
+        .map { t =>
+          val resultsForTask = resultsForHeldTask(t).toSet
+          val newResults     = resultsForTask -- resultsProducedByTask.getOrElse(t, Set())
+          (t, resultsForTask, newResults)
+        }
+        .seq
+
+      changed = toProcess.map { t => t.fingerprint -> false }.toMap
 
       taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
         if (newResults.nonEmpty) {
           addCompletedTasksToMainTable(newResults.toList)
-          changed = true
+          newResults.foreach { case (fingerprint, _) =>
+            changed += fingerprint -> true
+          }
           resultsProducedByTask += (t -> resultsForTask)
         }
       }
