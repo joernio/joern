@@ -1,5 +1,6 @@
 package io.joern.x2cpg.passes.callgraph
 
+import io.joern.x2cpg.Defines.DynamicCallUnknownFallName
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, Type, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, PropertyNames}
@@ -75,8 +76,6 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
           throw new RuntimeException(exception)
       }
     }
-
-    superclassCache.clear()
   }
 
   /** Recursively returns all the sub-types of the given type declaration. Does account for circular hierarchies.
@@ -98,7 +97,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       case Some(superClasses) => superClasses
       case None =>
         val totalSuperclasses = (cpg.typeDecl
-          .nameExact(typDeclFullName)
+          .fullNameExact(typDeclFullName)
           .headOption match {
           case Some(curr) => inheritTraversal(curr, inSuperDirection)
           case None       => mutable.LinkedHashSet.empty
@@ -113,17 +112,17 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     inSuperDirection: Boolean,
     visitedNodes: mutable.LinkedHashSet[TypeDecl] = mutable.LinkedHashSet.empty
   ): mutable.LinkedHashSet[TypeDecl] = {
-    // Make sure that the current node is in the visited set
+    if (visitedNodes.contains(cur)) return visitedNodes
     visitedNodes.addOne(cur)
+
     (if (inSuperDirection) cpg.typeDecl.fullNameExact(cur.fullName).flatMap(_.inheritsFromOut.referencedTypeDecl)
      else cpg.typ.fullNameExact(cur.fullName).flatMap(_.inheritsFromIn))
       .collectAll[TypeDecl]
-      .to(mutable.LinkedHashSet)
-      .diff(visitedNodes) match {
-      case classesToEval if classesToEval.isEmpty => mutable.LinkedHashSet.empty
+      .to(mutable.LinkedHashSet) match {
+      case classesToEval if classesToEval.isEmpty => visitedNodes
       case classesToEval =>
-        val totalTypes = visitedNodes ++ classesToEval
-        totalTypes ++ classesToEval.flatMap(t => inheritTraversal(t, inSuperDirection, totalTypes))
+        classesToEval.flatMap(t => inheritTraversal(t, inSuperDirection, visitedNodes))
+        visitedNodes
     }
   }
 
@@ -166,8 +165,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   @tailrec
   private def linkDynamicCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
     // This call linker requires a method full name entry
-    if (call.methodFullName.equals("<empty>")) return
-
+    if (call.methodFullName.equals("<empty>") || call.methodFullName.equals(DynamicCallUnknownFallName)) return
     validM.get(call.methodFullName) match {
       case Some(tgts) =>
         val callsOut = call.callOut.fullName.toSetImmutable
