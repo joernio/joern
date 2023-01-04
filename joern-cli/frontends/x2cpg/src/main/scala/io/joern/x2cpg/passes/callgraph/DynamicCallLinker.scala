@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.callgraph
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, Type, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
@@ -79,52 +79,51 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     superclassCache.clear()
   }
 
-  /** Recursively returns all the sub-types of the given type declaration. Does not account for circular hierarchies.
+  /** Recursively returns all the sub-types of the given type declaration. Does account for circular hierarchies.
     */
-  private def allSubclasses(typDeclFullName: String): mutable.LinkedHashSet[String] = {
-    subclassCache.get(typDeclFullName) match {
-      case Some(subClasses) => subClasses
+  private def allSubclasses(typDeclFullName: String): mutable.LinkedHashSet[String] =
+    inheritanceTraversal(typDeclFullName, subclassCache, inSuperDirection = false)
+
+  /** Recursively returns all the super-types of the given type declaration. Does account for circular hierarchies.
+    */
+  private def allSuperClasses(typDeclFullName: String): mutable.LinkedHashSet[String] =
+    inheritanceTraversal(typDeclFullName, superclassCache, inSuperDirection = true)
+
+  private def inheritanceTraversal(
+    typDeclFullName: String,
+    cache: mutable.Map[String, mutable.LinkedHashSet[String]],
+    inSuperDirection: Boolean
+  ): mutable.LinkedHashSet[String] = {
+    cache.get(typDeclFullName) match {
+      case Some(superClasses) => superClasses
       case None =>
-        val directSubclasses =
-          cpg.typ
-            .nameExact(typDeclFullName)
-            .flatMap(_.in(EdgeTypes.INHERITS_FROM).asScala)
-            .collect { case x: TypeDecl =>
-              x.fullName
-            }
-            .to(mutable.LinkedHashSet)
-        // The second check makes sure that set is changing which wouldn't be the case in circular hierarchies
-        val totalSubclasses: mutable.LinkedHashSet[String] = if (directSubclasses.isEmpty) {
-          directSubclasses ++ mutable.LinkedHashSet(typDeclFullName)
-        } else {
-          directSubclasses.flatMap(t => allSubclasses(t)) ++ mutable.LinkedHashSet(typDeclFullName)
-        }
-        subclassCache.put(typDeclFullName, totalSubclasses)
-        totalSubclasses
+        val totalSuperclasses = (cpg.typeDecl
+          .nameExact(typDeclFullName)
+          .headOption match {
+          case Some(curr) => inheritTraversal(curr, inSuperDirection)
+          case None       => mutable.LinkedHashSet.empty
+        }).map(_.fullName)
+        cache.put(typDeclFullName, totalSuperclasses)
+        totalSuperclasses
     }
   }
 
-  /** Recursively returns all the super-types of the given type declaration. Does not account for circular hierarchies.
-    */
-  private def allSuperClasses(typDeclFullName: String): mutable.LinkedHashSet[String] = {
-    superclassCache.get(typDeclFullName) match {
-      case Some(superClasses) => superClasses
-      case None =>
-        val directSuperClasses = mutable.LinkedHashSet.from(
-          cpg
-            .typeDecl(typDeclFullName)
-            .inheritsFromTypeFullName
-            .flatMap(t => cpg.typeDecl(t).fullName)
-            .toSet
-        )
-        // The second check makes sure that set is changing which wouldn't be the case in circular hierarchies
-        val totalSuperClasses: mutable.LinkedHashSet[String] = if (directSuperClasses.isEmpty) {
-          directSuperClasses ++ mutable.LinkedHashSet(typDeclFullName)
-        } else {
-          directSuperClasses.flatMap(t => allSubclasses(t)) ++ mutable.LinkedHashSet(typDeclFullName)
-        }
-        superclassCache.put(typDeclFullName, totalSuperClasses)
-        totalSuperClasses
+  private def inheritTraversal(
+    cur: TypeDecl,
+    inSuperDirection: Boolean,
+    visitedNodes: mutable.LinkedHashSet[TypeDecl] = mutable.LinkedHashSet.empty
+  ): mutable.LinkedHashSet[TypeDecl] = {
+    // Make sure that the current node is in the visited set
+    visitedNodes.addOne(cur)
+    (if (inSuperDirection) cpg.typeDecl.fullNameExact(cur.fullName).flatMap(_.inheritsFromOut.referencedTypeDecl)
+     else cpg.typ.fullNameExact(cur.fullName).flatMap(_.inheritsFromIn))
+      .collectAll[TypeDecl]
+      .to(mutable.LinkedHashSet)
+      .diff(visitedNodes) match {
+      case classesToEval if classesToEval.isEmpty => mutable.LinkedHashSet.empty
+      case classesToEval =>
+        val totalTypes = visitedNodes ++ classesToEval
+        totalTypes ++ classesToEval.flatMap(t => inheritTraversal(t, inSuperDirection, totalTypes))
     }
   }
 
