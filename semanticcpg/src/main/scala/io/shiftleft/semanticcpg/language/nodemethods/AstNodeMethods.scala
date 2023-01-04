@@ -64,6 +64,16 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
   def astParent: AstNode =
     node._astIn.onlyChecked.asInstanceOf[AstNode]
 
+  /** Direct children of node in the AST. Siblings are ordered by their `order` fields
+    */
+  def astChildren: Traversal[AstNode] =
+    node._astOut.cast[AstNode].sortBy(_.order)
+
+  /** Siblings of this node in the AST, ordered by their `order` fields
+    */
+  def astSiblings: Traversal[AstNode] =
+    astParent.astChildren.filter(_ != node)
+
   /** Nodes of the AST rooted in this node, including the node itself.
     */
   def ast: Traversal[AstNode] =

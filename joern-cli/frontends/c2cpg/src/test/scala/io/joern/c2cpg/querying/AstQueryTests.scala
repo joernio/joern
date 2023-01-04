@@ -132,6 +132,19 @@ class AstQueryTests extends CCodeToCpgSuite {
         .code
         .l shouldBe List("printf(\"reached\")")
     }
+
+    "astSiblings" in {
+      val local       = cpg.local.code("int x").head
+      val astSiblings = local.astSiblings.toSet
+
+      val assignment = cpg.call.code("x = 10").head
+      val condition  = cpg.controlStructure.code(".*(x > 10).*").head
+
+      astSiblings should contain(assignment)
+      astSiblings should contain(condition)
+      astSiblings should not contain local
+      astSiblings should have size 2
+    }
   }
 
   "querying the AST (code example 2)" should {
