@@ -17,7 +17,7 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
     namespaces: List[String] = List()
   ): Option[String] = {
     val arguments = Seq(inputPath, "-o", outputPath) ++ config.cmdLineParams
-    runShellCommand(command.toString, arguments).map(_ => outputPath)
+    runShellCommand(command.toString, arguments).toOption.map(_ => outputPath)
   }
 
   override def isAvailable: Boolean =

@@ -18,7 +18,7 @@ case class CCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGene
     namespaces: List[String] = List()
   ): Option[String] = {
     val arguments = config.cmdLineParams.toSeq ++ Seq(inputPath, "--output", outputPath)
-    runShellCommand(command.toString, arguments).map(_ => outputPath)
+    runShellCommand(command.toString, arguments).toOption.map(_ => outputPath)
   }
 
   override def isAvailable: Boolean =

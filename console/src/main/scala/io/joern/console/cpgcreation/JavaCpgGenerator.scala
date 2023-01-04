@@ -30,7 +30,7 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
     if (inputPath.endsWith(".apk")) {
       println("found .apk ending - will first transform it to a jar using dex2jar.sh")
       val dex2jar = rootPath.resolve("dex2jar.sh").toString
-      runShellCommand(dex2jar, Seq(inputPath)).flatMap { _ =>
+      runShellCommand(dex2jar, Seq(inputPath)).toOption.flatMap { _ =>
         val jarPath = s"$inputPath.jar"
         generateCommercial(jarPath, outputPath, namespaces)
       }
@@ -42,14 +42,14 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
         command = "powershell"
         arguments = Seq(rootPath.resolve("java2cpg.ps1").toString) ++ arguments
       }
-      runShellCommand(command, arguments).map(_ => outputPath)
+      runShellCommand(command, arguments).toOption.map(_ => outputPath)
     }
   }
 
   private def generateOss(inputPath: String, outputPath: String): Option[String] = {
     val command   = if (isWin) rootPath.resolve("jimple2cpg.bat") else rootPath.resolve("jimple2cpg")
     val arguments = config.cmdLineParams.toSeq ++ Seq(inputPath, "--output", outputPath)
-    runShellCommand(command.toString, arguments).map(_ => outputPath)
+    runShellCommand(command.toString, arguments).toOption.map(_ => outputPath)
   }
 
   private def jvmLanguages: List[String] = {

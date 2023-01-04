@@ -4,6 +4,7 @@ import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
 
 import scala.sys.process._
+import scala.util.Try
 
 /** A CpgGenerator generates Code Property Graphs from code. Each supported language implements a Generator, e.g.,
   * [[JavaCpgGenerator]] implements Java Archive to CPG conversion, while [[CSharpCpgGenerator]] translates C# projects
@@ -24,30 +25,27 @@ abstract class CpgGenerator() {
     */
   def generate(inputPath: String, outputPath: String = "cpg.bin.zip", namespaces: List[String] = List()): Option[String]
 
-  protected def runShellCommand(program: String, arguments: Seq[String]): Option[String] = {
-    if (!File(program).exists) {
-      System.err.println(s"CPG generator does not exist at: $program")
-      return None
-    }
-    val cmd       = Seq(program) ++ maxMemoryParameter ++ arguments
-    val cmdString = cmd.mkString(" ")
+  protected def runShellCommand(program: String, arguments: Seq[String]): Try[Unit] =
+    Try {
+      assert(File(program).exists, s"CPG generator does not exist at: $program")
 
-    println(s"""=======================================================================================================
-         |Invoking CPG generator in a separate process. Note that the new process will consume additional memory.
-         |If you are importing a large codebase (and/or running into memory issues), please try the following:
-         |1) exit joern
-         |2) invoke the frontend: $cmdString
-         |3) start joern, import the cpg: `importCpg("path/to/cpg")`
-         |=======================================================================================================
-         |""".stripMargin)
-    val exitValue = cmd.run().exitValue()
-    if (exitValue == 0) {
-      Some(cmdString)
-    } else {
-      System.err.println(s"Error running shell command: $cmd")
-      None
+      val cmd       = Seq(program) ++ maxMemoryParameter ++ arguments
+      val cmdString = cmd.mkString(" ")
+
+      println(
+        s"""=======================================================================================================
+           |Invoking CPG generator in a separate process. Note that the new process will consume additional memory.
+           |If you are importing a large codebase (and/or running into memory issues), please try the following:
+           |1) exit joern
+           |2) invoke the frontend: $cmdString
+           |3) start joern, import the cpg: `importCpg("path/to/cpg")`
+           |=======================================================================================================
+           |""".stripMargin
+      )
+
+      val exitValue = cmd.run().exitValue()
+      assert(exitValue == 0, s"Error running shell command: exitValue=$exitValue; $cmd")
     }
-  }
 
   protected lazy val maxMemoryParameter = {
     if (isJvmBased) {

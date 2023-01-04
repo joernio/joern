@@ -17,7 +17,7 @@ case class JsSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cpg
     namespaces: List[String] = List()
   ): Option[String] = {
     val arguments = Seq(inputPath, "--output", outputPath) ++ config.cmdLineParams
-    runShellCommand(command.toString, arguments).map(_ => outputPath)
+    runShellCommand(command.toString, arguments).toOption.map(_ => outputPath)
   }
 
   override def isAvailable: Boolean =
