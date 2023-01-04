@@ -56,8 +56,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   private def astForExpressionList(exprList: IASTExpressionList): Ast = {
-    val b = newBlockNode(exprList, Defines.voidTypeName)
-    Ast(b).withChildren(exprList.getExpressions.toIndexedSeq.map(astForExpression))
+    val cpgBlock  = newBlockNode(exprList, registerType(Defines.voidTypeName))
+    var currOrder = 1
+    val childAsts = exprList.getExpressions.map { expr =>
+      val r = nullSafeAst(expr, currOrder)
+      currOrder = currOrder + 1
+      r
+    }
+    val blockAst = Ast(cpgBlock).withChildren(childAsts.toIndexedSeq)
+    blockAst
   }
 
   private def astForCallExpression(call: IASTFunctionCallExpression): Ast = {

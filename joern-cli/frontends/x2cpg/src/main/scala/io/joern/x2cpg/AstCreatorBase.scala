@@ -65,6 +65,7 @@ abstract class AstCreatorBase(filename: String) {
   ): Ast =
     Ast(method)
       .withChildren(parameters.map(Ast(_)))
+      .withChild(Ast(NewBlock()))
       .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))
 
