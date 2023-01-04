@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
 
 import java.util.concurrent.Callable
+import scala.collection.mutable
 
 /** Callable for solving a ReachableByTask
   *
@@ -29,7 +30,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
   override def call(): TaskSummary = {
     implicit val sem: Semantics = context.semantics
     val path                    = Vector(PathElement(task.sink, task.callSiteStack))
-    val table                   = new ResultTable
+    val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()
     results(task.sink, path, table, task.callSiteStack)
     // TODO why do we update the call depth here?
     val finalResults = table.get(task.fingerprint).get.map { r =>
@@ -70,7 +71,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
   private def results[NodeType <: CfgNode](
     sink: CfgNode,
     path: Vector[PathElement],
-    table: ResultTable,
+    table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]],
     callSiteStack: List[Call]
   )(implicit semantics: Semantics): Vector[ReachableByResult] = {
 
@@ -80,13 +81,43 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       * table. If not, determine results recursively.
       */
     def computeResultsForParents() = {
-      deduplicateResults(expandIn(curNode, path, callSiteStack).iterator.flatMap { parent =>
+      deduplicateWithinTask(expandIn(curNode, path, callSiteStack).iterator.flatMap { parent =>
         createResultsFromCacheOrCompute(parent, path)
       }.toVector)
     }
 
+    def deduplicateWithinTask(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
+      vec
+        .groupBy { result =>
+          val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+          val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+          (head, last, result.partial, result.callDepth)
+        }
+        .map { case (_, list) =>
+          val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
+          val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+            case Nil    => Nil
+            case h :: t => h :: t.takeWhile(y => y._1 == h._1)
+          }).map(_._2)
+
+          if (withMaxLength.length == 1) {
+            withMaxLength.head
+          } else {
+            withMaxLength.minBy { x =>
+              x.callDepth.toString + " " +
+                x.taskStack
+                  .map(x => x.sink.id.toString + ":" + x.callSiteStack.map(_.id).mkString("|"))
+                  .toString + " " + x.path
+                  .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+                  .mkString("-")
+            }
+          }
+        }
+        .toVector
+    }
+
     def createResultsFromCacheOrCompute(elemToPrepend: PathElement, path: Vector[PathElement]) = {
-      val cachedResult = table.createFromTable(elemToPrepend, task.callSiteStack, path, task.callDepth)
+      val cachedResult = createFromTable(table, elemToPrepend, task.callSiteStack, path, task.callDepth)
       if (cachedResult.isDefined) {
         QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
         cachedResult.get
@@ -94,6 +125,27 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
         QueryEngineStatistics.incrementBy(PATH_CACHE_MISSES, 1L)
         val newPath = elemToPrepend +: path
         results(sink, newPath, table, callSiteStack)
+      }
+    }
+
+    /** For a given path, determine whether results for the first element (`first`) are stored in the table, and if so,
+      * for each result, determine the path up to `first` and prepend it to `path`, giving us new results via table
+      * lookup.
+      */
+    def createFromTable(
+      table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]],
+      first: PathElement,
+      callSiteStack: List[Call],
+      remainder: Vector[PathElement],
+      callDepth: Int
+    ): Option[Vector[ReachableByResult]] = {
+      table.get(TaskFingerprint(first.node, callSiteStack, callDepth)).map { res =>
+        res.map { r =>
+          val stopIndex       = r.path.map(x => (x.node, x.callSiteStack)).indexOf((first.node, first.callSiteStack))
+          val pathToFirstNode = r.path.slice(0, stopIndex)
+          val completePath    = pathToFirstNode ++ (first +: remainder)
+          r.copy(path = Vector(completePath.head) ++ completePath.tail)
+        }
       }
     }
 
@@ -142,7 +194,11 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       case _ =>
         computeResultsForParents()
     }
-    table.add(TaskFingerprint(curNode, task.callSiteStack, task.callDepth), res)
+    val key = TaskFingerprint(curNode, task.callSiteStack, task.callDepth)
+    table.updateWith(key) {
+      case Some(existingValue) => Some(existingValue ++ res)
+      case None                => Some(res)
+    }
     res
   }
 

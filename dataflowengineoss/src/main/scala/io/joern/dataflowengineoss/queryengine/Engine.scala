@@ -10,47 +10,10 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
-
 import java.util.concurrent._
 import scala.collection.mutable
-import scala.collection.parallel.CollectionConverters._
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
-
-/** @param taskStack
-  *   The list of tasks that was solved to arrive at this task, including the current task, which is to be solved. The
-  *   current task is the last element of the list.
-  *
-  * @param initialPath
-  *   The path from the current sink downwards to previous sinks.
-  *
-  * @param callDepth
-  *   This denotes how many call sites we have traversed before creating this path. We use this parameter to limit the
-  *   depth of the analysis.
-  */
-case class ReachableByTask(taskStack: List[TaskFingerprint], initialPath: Vector[PathElement]) {
-
-  /** This tasks fingerprint: if two tasks have the same fingerprint, then the TaskSolver MUST return the same result
-    * for them. This is the basis of our caching scheme.
-    */
-  def fingerprint: TaskFingerprint = taskStack.last
-
-  /** The sink at which we start the analysis (upwards)
-    */
-  def sink: CfgNode = fingerprint.sink
-
-  /** The call sites we have expanded downwards during this analysis. We need to keep track of this so that we do not
-    * end up expanding one call site and then returning to a different call site, which would produce an unreachable
-    * path.
-    */
-  def callSiteStack: List[Call] = fingerprint.callSiteStack
-
-  def callDepth: Int = fingerprint.callDepth
-
-}
-
-case class TaskSummary(tableEntries: Vector[(TaskFingerprint, TableEntry)], followupTasks: Vector[ReachableByTask])
-case class TableEntry(path: Vector[PathElement])
 
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
   * in parallel, creating and submitting new tasks upon completion of tasks. This class deals only with task scheduling,
@@ -117,12 +80,12 @@ class Engine(context: EngineContext) {
       val newTasks = taskSummary.followupTasks
       submitTasks(newTasks, sources)
       val newResults = taskSummary.tableEntries
-      addResultsToMainTable(newResults)
+      addEntriesToMainTable(newResults)
     }
 
-    def addResultsToMainTable(results: Vector[(TaskFingerprint, TableEntry)]): Unit = {
-      results.groupBy(_._1).foreach { case (fingerprint, resultList) =>
-        val entries = resultList.map(_._2).toList
+    def addEntriesToMainTable(entries: Vector[(TaskFingerprint, TableEntry)]): Unit = {
+      entries.groupBy(_._1).foreach { case (fingerprint, entryList) =>
+        val entries = entryList.map(_._2).toList
         mainResultTable.updateWith(fingerprint) {
           case Some(list) => Some(list ++ entries)
           case None       => Some(entries)
@@ -148,16 +111,19 @@ class Engine(context: EngineContext) {
 
     submitTasks(tasks.toVector, sources)
     runUntilAllTasksAreSolved()
-    deduplicateResultTable()
-    completeHeldTasks()
-    deduplicateResultTable()
+    new HeldTaskCompletion(held.toList, mainResultTable).completeHeldTasks()
     deduplicateFinal(extractResultsFromTable(sinks))
   }
 
-  private def deduplicateResultTable(): Unit = {
-    mainResultTable.keys.foreach { key =>
-      val results = mainResultTable(key)
-      mainResultTable.put(key, deduplicateTableEntries(results))
+  private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]): Unit = {
+    tasks.foreach { task =>
+      if (started.exists(x => x.fingerprint == task.fingerprint)) {
+        held ++= Vector(task)
+      } else {
+        started ++= Vector(task)
+        numberOfTasksRunning += 1
+        completionService.submit(new TaskSolver(task, context, sources))
+      }
     }
   }
 
@@ -170,93 +136,29 @@ class Engine(context: EngineContext) {
     }
   }
 
-  private def addCompletedTasksToMainTable(results: List[(TaskFingerprint, TableEntry)]): Unit = {
-    results.groupBy(_._1).foreach { case (fingerprint, resultList) =>
-      val entries = resultList.map(_._2)
-      val old     = mainResultTable.getOrElse(fingerprint, Vector()).toList
-      mainResultTable.put(fingerprint, deduplicateTableEntries(old ++ entries))
-    }
-  }
-
-  private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]) = {
-    tasks.foreach { task =>
-      if (started.exists(x => x.fingerprint == task.fingerprint)) {
-        held ++= Vector(task)
-      } else {
-        started ++= Vector(task)
-        numberOfTasksRunning += 1
-        completionService.submit(new TaskSolver(task, context, sources))
+  private def deduplicateFinal(list: List[TableEntry]): List[TableEntry] = {
+    list
+      .groupBy { result =>
+        val head = result.path.head.node
+        val last = result.path.last.node
+        (head, last)
       }
-    }
-  }
+      .map { case (_, list) =>
+        val lenIdPathPairs = list.map(x => (x.path.length, x))
+        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+          case Nil    => Nil
+          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
+        }).map(_._2)
 
-  /** Add results produced by held task until no more change can be observed.
-    */
-  private def completeHeldTasks(): Unit = {
-    val toProcess =
-      held.distinct.sortBy(x => (x.fingerprint.sink.id, x.fingerprint.callSiteStack.map(_.id).toString, x.callDepth))
-    var resultsProducedByTask: Map[ReachableByTask, Set[(TaskFingerprint, TableEntry)]] = Map()
-    var changed: Map[TaskFingerprint, Boolean] = toProcess.map { task => task.fingerprint -> true }.toMap
-    while (changed.values.toList.contains(true)) {
-
-      val taskResultsPairs = toProcess
-        .filter(t => changed(t.fingerprint))
-        .par
-        .map { t =>
-          val resultsForTask = resultsForHeldTask(t).toSet
-          val newResults     = resultsForTask -- resultsProducedByTask.getOrElse(t, Set())
-          (t, resultsForTask, newResults)
+        if (withMaxLength.length == 1) {
+          withMaxLength.head
+        } else {
+          withMaxLength.minBy { x =>
+            x.path
+              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+              .mkString("-")
+          }
         }
-        .seq
-
-      changed = toProcess.map { t => t.fingerprint -> false }.toMap
-
-      taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
-        if (newResults.nonEmpty) {
-          addCompletedTasksToMainTable(newResults.toList)
-          newResults.foreach { case (fingerprint, _) =>
-            changed += fingerprint -> true
-          }
-          resultsProducedByTask += (t -> resultsForTask)
-        }
-      }
-    }
-  }
-
-  private def resultsForHeldTask(heldTask: ReachableByTask): List[(TaskFingerprint, TableEntry)] = {
-    mainResultTable.get(heldTask.fingerprint) match {
-      case Some(results) =>
-        results
-          .flatMap { r =>
-            createResultsForHeldTaskAndTableResult(heldTask, r)
-          }
-          .filter { case (_, tableEntry) =>
-            // Do not allow paths with loops
-            val pathSeq = tableEntry.path.map(x => (x.node, x.callSiteStack, x.isOutputArg, x.outEdgeLabel))
-            pathSeq.distinct.size == pathSeq.size
-          }
-      case None => List()
-    }
-  }
-
-  private def createResultsForHeldTaskAndTableResult(
-    heldTask: ReachableByTask,
-    result: TableEntry
-  ): List[(TaskFingerprint, TableEntry)] = {
-    heldTask.taskStack
-      .dropRight(1)
-      .indices
-      .map { i =>
-        val parentTask = heldTask.taskStack(i)
-        val initialPathOnlyUpToSink =
-          heldTask.initialPath.slice(
-            0,
-            heldTask.initialPath
-              .map(x => (x.node, x.callSiteStack))
-              .indexOf((parentTask.sink, parentTask.callSiteStack)) + 1
-          )
-        val newPath = result.path ++ initialPathOnlyUpToSink
-        (parentTask, TableEntry(newPath))
       }
       .toList
   }
@@ -388,90 +290,6 @@ object Engine {
     }
   }
 
-  def deduplicateTableEntries(list: List[TableEntry]): List[TableEntry] = {
-    list
-      .groupBy { result =>
-        val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-        (head, last)
-      }
-      .map { case (_, list) =>
-        val lenIdPathPairs = list.map(x => (x.path.length, x))
-        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
-          case Nil    => Nil
-          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
-        }).map(_._2)
-
-        if (withMaxLength.length == 1) {
-          withMaxLength.head
-        } else {
-          withMaxLength.minBy { x =>
-            x.path
-              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
-              .mkString("-")
-          }
-        }
-      }
-      .toList
-  }
-
-  def deduplicateFinal(list: List[TableEntry]): List[TableEntry] = {
-    list
-      .groupBy { result =>
-        val head = result.path.head.node
-        val last = result.path.last.node
-        (head, last)
-      }
-      .map { case (_, list) =>
-        val lenIdPathPairs = list.map(x => (x.path.length, x))
-        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
-          case Nil    => Nil
-          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
-        }).map(_._2)
-
-        if (withMaxLength.length == 1) {
-          withMaxLength.head
-        } else {
-          withMaxLength.minBy { x =>
-            x.path
-              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
-              .mkString("-")
-          }
-        }
-      }
-      .toList
-  }
-
-  def deduplicateResults(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
-    vec
-      .groupBy { result =>
-        val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-        (head, last, result.partial, result.callDepth)
-      }
-      .map { case (_, list) =>
-        val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
-        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
-          case Nil    => Nil
-          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
-        }).map(_._2)
-
-        if (withMaxLength.length == 1) {
-          withMaxLength.head
-        } else {
-          withMaxLength.minBy { x =>
-            x.callDepth.toString + " " +
-              x.taskStack
-                .map(x => x.sink.id.toString + ":" + x.callSiteStack.map(_.id).mkString("|"))
-                .toString + " " + x.path
-                .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
-                .mkString("-")
-          }
-        }
-      }
-      .toVector
-  }
-
 }
 
 /** The execution context for the data flow engine.
@@ -492,7 +310,7 @@ case class EngineContext(semantics: Semantics = DefaultSemantics(), config: Engi
   */
 case class EngineConfig(
   var maxCallDepth: Int = 4,
-  initialTable: Option[ResultTable] = None,
+  initialTable: Option[mutable.Map[TaskFingerprint, Vector[ReachableByResult]]] = None,
   shareCacheBetweenTasks: Boolean = true
 )
 
