@@ -80,9 +80,39 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       * table. If not, determine results recursively.
       */
     def computeResultsForParents() = {
-      deduplicateResults(expandIn(curNode, path, callSiteStack).iterator.flatMap { parent =>
+      deduplicateWithinTask(expandIn(curNode, path, callSiteStack).iterator.flatMap { parent =>
         createResultsFromCacheOrCompute(parent, path)
       }.toVector)
+    }
+
+    def deduplicateWithinTask(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
+      vec
+        .groupBy { result =>
+          val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+          val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+          (head, last, result.partial, result.callDepth)
+        }
+        .map { case (_, list) =>
+          val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
+          val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+            case Nil    => Nil
+            case h :: t => h :: t.takeWhile(y => y._1 == h._1)
+          }).map(_._2)
+
+          if (withMaxLength.length == 1) {
+            withMaxLength.head
+          } else {
+            withMaxLength.minBy { x =>
+              x.callDepth.toString + " " +
+                x.taskStack
+                  .map(x => x.sink.id.toString + ":" + x.callSiteStack.map(_.id).mkString("|"))
+                  .toString + " " + x.path
+                  .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+                  .mkString("-")
+            }
+          }
+        }
+        .toVector
     }
 
     def createResultsFromCacheOrCompute(elemToPrepend: PathElement, path: Vector[PathElement]) = {

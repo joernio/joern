@@ -24,7 +24,6 @@ class TaskCreator(context: EngineContext) {
     } else {
       tasks.filter(_.callDepth <= context.config.maxCallDepth)
     }
-
     tasksWithValidCallDepth.filter { t =>
       t.taskStack.dedup.size == t.taskStack.size
     }

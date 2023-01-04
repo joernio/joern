@@ -10,6 +10,8 @@ import scala.jdk.CollectionConverters._
 case class TaskFingerprint(sink: CfgNode, callSiteStack: List[Call], callDepth: Int)
 
 /** The Result Table is a cache that allows retrieving known paths for nodes, that is, paths that end in the node.
+  *
+  * TODO we no longer access this table concurrently, so, using ConcurrentHashMap is no longer required.
   */
 class ResultTable(
   val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] =
