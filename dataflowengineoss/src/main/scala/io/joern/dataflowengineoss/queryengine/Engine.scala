@@ -115,15 +115,6 @@ class Engine(context: EngineContext) {
     deduplicateFinal(extractResultsFromTable(sinks))
   }
 
-  private def extractResultsFromTable(sinks: List[CfgNode]): List[TableEntry] = {
-    sinks.flatMap { sink =>
-      mainResultTable.get(TaskFingerprint(sink, List(), 0)) match {
-        case Some(results) => results
-        case _             => Vector()
-      }
-    }
-  }
-
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]): Unit = {
     tasks.foreach { task =>
       if (started.exists(x => x.fingerprint == task.fingerprint)) {
@@ -134,6 +125,42 @@ class Engine(context: EngineContext) {
         completionService.submit(new TaskSolver(task, context, sources))
       }
     }
+  }
+
+  private def extractResultsFromTable(sinks: List[CfgNode]): List[TableEntry] = {
+    sinks.flatMap { sink =>
+      mainResultTable.get(TaskFingerprint(sink, List(), 0)) match {
+        case Some(results) => results
+        case _             => Vector()
+      }
+    }
+  }
+
+  private def deduplicateFinal(list: List[TableEntry]): List[TableEntry] = {
+    list
+      .groupBy { result =>
+        val head = result.path.head.node
+        val last = result.path.last.node
+        (head, last)
+      }
+      .map { case (_, list) =>
+        val lenIdPathPairs = list.map(x => (x.path.length, x))
+        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+          case Nil    => Nil
+          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
+        }).map(_._2)
+
+        if (withMaxLength.length == 1) {
+          withMaxLength.head
+        } else {
+          withMaxLength.minBy { x =>
+            x.path
+              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+              .mkString("-")
+          }
+        }
+      }
+      .toList
   }
 
   /** This must be called when one is done using the engine.
@@ -261,33 +288,6 @@ object Engine {
     Engine.methodsForCall(call).flatMap { method =>
       semantics.forMethod(method.fullName)
     }
-  }
-
-  def deduplicateFinal(list: List[TableEntry]): List[TableEntry] = {
-    list
-      .groupBy { result =>
-        val head = result.path.head.node
-        val last = result.path.last.node
-        (head, last)
-      }
-      .map { case (_, list) =>
-        val lenIdPathPairs = list.map(x => (x.path.length, x))
-        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
-          case Nil    => Nil
-          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
-        }).map(_._2)
-
-        if (withMaxLength.length == 1) {
-          withMaxLength.head
-        } else {
-          withMaxLength.minBy { x =>
-            x.path
-              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
-              .mkString("-")
-          }
-        }
-      }
-      .toList
   }
 
 }
