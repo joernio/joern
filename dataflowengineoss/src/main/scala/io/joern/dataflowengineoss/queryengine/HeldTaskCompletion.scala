@@ -1,5 +1,4 @@
 package io.joern.dataflowengineoss.queryengine
-import io.joern.dataflowengineoss.queryengine.Engine.deduplicateTableEntries
 
 import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters._
@@ -14,6 +13,7 @@ class HeldTaskCompletion(
   /** Add results produced by held task until no more change can be observed.
     */
   def completeHeldTasks(): Unit = {
+    deduplicateResultTable()
     val toProcess =
       heldTasks.distinct.sortBy(x =>
         (x.fingerprint.sink.id, x.fingerprint.callSiteStack.map(_.id).toString, x.callDepth)
@@ -44,6 +44,7 @@ class HeldTaskCompletion(
         }
       }
     }
+    deduplicateResultTable()
   }
 
   private def resultsForHeldTask(heldTask: ReachableByTask): List[(TaskFingerprint, TableEntry)] = {
@@ -53,11 +54,6 @@ class HeldTaskCompletion(
           .flatMap { r =>
             createResultsForHeldTaskAndTableResult(heldTask, r)
           }
-          .filter { case (_, tableEntry) =>
-            // Do not allow paths with loops
-            val pathSeq = tableEntry.path.map(x => (x.node, x.callSiteStack, x.isOutputArg, x.outEdgeLabel))
-            pathSeq.distinct.size == pathSeq.size
-          }
       case None => List()
     }
   }
@@ -66,8 +62,8 @@ class HeldTaskCompletion(
     heldTask: ReachableByTask,
     result: TableEntry
   ): List[(TaskFingerprint, TableEntry)] = {
-    heldTask.taskStack
-      .dropRight(1)
+    val parentTasks = heldTask.taskStack.dropRight(1)
+    parentTasks
       .map { parentTask =>
         val stopIndex = heldTask.initialPath
           .map(x => (x.node, x.callSiteStack))
@@ -77,6 +73,11 @@ class HeldTaskCompletion(
         val newPath = result.path ++ initialPathOnlyUpToSink
         (parentTask, TableEntry(newPath))
       }
+      .filter { case (_, tableEntry) =>
+        // Do not allow paths with loops
+        val pathSeq = tableEntry.path.map(x => (x.node, x.callSiteStack, x.isOutputArg, x.outEdgeLabel))
+        pathSeq.distinct.size == pathSeq.size
+      }
   }
 
   private def addCompletedTasksToMainTable(results: List[(TaskFingerprint, TableEntry)]): Unit = {
@@ -85,6 +86,40 @@ class HeldTaskCompletion(
       val old     = resultTable.getOrElse(fingerprint, Vector()).toList
       resultTable.put(fingerprint, deduplicateTableEntries(old ++ entries))
     }
+  }
+
+  private def deduplicateResultTable(): Unit = {
+    resultTable.keys.foreach { key =>
+      val results = resultTable(key)
+      resultTable.put(key, deduplicateTableEntries(results))
+    }
+  }
+
+  private def deduplicateTableEntries(list: List[TableEntry]): List[TableEntry] = {
+    list
+      .groupBy { result =>
+        val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+        (head, last)
+      }
+      .map { case (_, list) =>
+        val lenIdPathPairs = list.map(x => (x.path.length, x))
+        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+          case Nil    => Nil
+          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
+        }).map(_._2)
+
+        if (withMaxLength.length == 1) {
+          withMaxLength.head
+        } else {
+          withMaxLength.minBy { x =>
+            x.path
+              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+              .mkString("-")
+          }
+        }
+      }
+      .toList
   }
 
 }

@@ -10,7 +10,6 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
 import overflowdb.traversal.{NodeOps, Traversal}
-
 import java.util.concurrent._
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -145,17 +144,8 @@ class Engine(context: EngineContext) {
 
     submitTasks(tasks.toVector, sources)
     runUntilAllTasksAreSolved()
-    deduplicateResultTable()
     new HeldTaskCompletion(held.toList, mainResultTable).completeHeldTasks()
-    deduplicateResultTable()
     deduplicateFinal(extractResultsFromTable(sinks))
-  }
-
-  private def deduplicateResultTable(): Unit = {
-    mainResultTable.keys.foreach { key =>
-      val results = mainResultTable(key)
-      mainResultTable.put(key, deduplicateTableEntries(results))
-    }
   }
 
   private def extractResultsFromTable(sinks: List[CfgNode]): List[TableEntry] = {
@@ -304,33 +294,6 @@ object Engine {
     Engine.methodsForCall(call).flatMap { method =>
       semantics.forMethod(method.fullName)
     }
-  }
-
-  def deduplicateTableEntries(list: List[TableEntry]): List[TableEntry] = {
-    list
-      .groupBy { result =>
-        val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-        (head, last)
-      }
-      .map { case (_, list) =>
-        val lenIdPathPairs = list.map(x => (x.path.length, x))
-        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
-          case Nil    => Nil
-          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
-        }).map(_._2)
-
-        if (withMaxLength.length == 1) {
-          withMaxLength.head
-        } else {
-          withMaxLength.minBy { x =>
-            x.path
-              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
-              .mkString("-")
-          }
-        }
-      }
-      .toList
   }
 
   def deduplicateFinal(list: List[TableEntry]): List[TableEntry] = {
