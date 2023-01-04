@@ -9,7 +9,7 @@ case class PhpCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGe
 
   override def generate(inputPath: String, outputPath: String, namespaces: List[String]): Option[String] = {
     val arguments = List(inputPath) ++ Seq("-o", outputPath) ++ config.cmdLineParams
-    runShellCommand(command.toString, arguments).map(_ => outputPath)
+    runShellCommand(command.toString, arguments).toOption.map(_ => outputPath)
   }
 
   override def isAvailable: Boolean =

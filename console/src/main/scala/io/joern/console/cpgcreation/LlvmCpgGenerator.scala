@@ -17,7 +17,7 @@ case class LlvmCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
   ): Option[String] = {
     val command   = rootPath.resolve("llvm2cpg.sh").toString
     val arguments = Seq("--output", outputPath) ++ config.cmdLineParams ++ List(inputPath)
-    runShellCommand(command, arguments).map(_ => outputPath)
+    runShellCommand(command, arguments).toOption.map(_ => outputPath)
   }
 
   override def isAvailable: Boolean = rootPath.resolve("llvm2cpg.sh").toFile.exists()

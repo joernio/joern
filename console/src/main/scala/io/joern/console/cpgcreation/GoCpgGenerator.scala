@@ -23,7 +23,7 @@ case class GoCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGen
       arguments = Seq(rootPath.resolve("go2cpg.ps1").toString) ++ arguments
     }
 
-    runShellCommand(command, arguments).map(_ => outputPath)
+    runShellCommand(command, arguments).toOption.map(_ => outputPath)
   }
 
   override def isAvailable: Boolean = rootPath.resolve("go2cpg.sh").toFile.exists()
