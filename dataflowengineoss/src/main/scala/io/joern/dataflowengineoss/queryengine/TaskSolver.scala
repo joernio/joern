@@ -7,21 +7,18 @@ import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
 
 import java.util.concurrent.Callable
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
 
 /** The Result Table is a cache that allows retrieving known paths for nodes, that is, paths that end in the node.
   */
-class ResultTable(val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()) {
+private class ResultTable(val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()) {
 
   /** Add all results in `results` to table at `key`, appending to existing results.
     */
   def add(key: TaskFingerprint, results: Vector[ReachableByResult]): Unit = {
-    table.asJava.compute(
-      key,
-      { (_, existingValue) =>
-        Option(existingValue).toVector.flatten ++ results
-      }
-    )
+    table.updateWith(key) {
+      case Some(existingValue) => Some(existingValue ++ results)
+      case None                => Some(results)
+    }
   }
 
   /** For a given path, determine whether results for the first element (`first`) are stored in the table, and if so,
