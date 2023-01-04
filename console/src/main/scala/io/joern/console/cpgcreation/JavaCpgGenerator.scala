@@ -1,8 +1,8 @@
 package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
-
 import java.nio.file.Path
+import scala.sys.process._
 
 /** Language frontend for Java archives (JAR files). Translates Java archives into code property graphs.
   */
@@ -29,11 +29,11 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
   private def generateCommercial(inputPath: String, outputPath: String, namespaces: List[String]): Option[String] = {
     if (inputPath.endsWith(".apk")) {
       println("found .apk ending - will first transform it to a jar using dex2jar.sh")
+
       val dex2jar = rootPath.resolve("dex2jar.sh").toString
-      runShellCommand(dex2jar, Seq(inputPath)).toOption.flatMap { _ =>
-        val jarPath = s"$inputPath.jar"
-        generateCommercial(jarPath, outputPath, namespaces)
-      }
+      s"$dex2jar $inputPath".run().exitValue()
+      val jarPath = s"$inputPath.jar"
+      generateCommercial(jarPath, outputPath, namespaces)
     } else {
       var command = rootPath.resolve("java2cpg.sh").toString
       var arguments =
