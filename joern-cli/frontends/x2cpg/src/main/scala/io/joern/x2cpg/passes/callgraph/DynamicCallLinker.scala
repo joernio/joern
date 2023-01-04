@@ -143,7 +143,8 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   private def resolveCallInSuperClasses(call: Call): Boolean = {
     if (!call.methodFullName.contains(":")) return false
-    val Array(fullName, signature) = call.methodFullName.split(":")
+    def split(str: String, n: Int) = (str.take(n), str.drop(n + 1))
+    val (fullName, signature)      = split(call.methodFullName, call.methodFullName.lastIndexOf(":"))
     val typeDeclFullName           = fullName.replace(s".${call.name}", "")
     val candidateInheritedMethods =
       cpg.typeDecl
