@@ -10,7 +10,7 @@ import scala.collection.mutable
 
 /** The Result Table is a cache that allows retrieving known paths for nodes, that is, paths that end in the node.
   */
-private class ResultTable(val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()) {
+class ResultTable(val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()) {
 
   /** Add all results in `results` to table at `key`, appending to existing results.
     */
