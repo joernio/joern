@@ -6,6 +6,55 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
 
 import java.util.concurrent.Callable
+import scala.collection.mutable
+import scala.jdk.CollectionConverters._
+
+/** The Result Table is a cache that allows retrieving known paths for nodes, that is, paths that end in the node.
+  */
+class ResultTable(val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()) {
+
+  /** Add all results in `results` to table at `key`, appending to existing results.
+    */
+  def add(key: TaskFingerprint, results: Vector[ReachableByResult]): Unit = {
+    table.asJava.compute(
+      key,
+      { (_, existingValue) =>
+        Option(existingValue).toVector.flatten ++ results
+      }
+    )
+  }
+
+  /** For a given path, determine whether results for the first element (`first`) are stored in the table, and if so,
+    * for each result, determine the path up to `first` and prepend it to `path`, giving us new results via table
+    * lookup.
+    */
+  def createFromTable(
+    first: PathElement,
+    callSiteStack: List[Call],
+    remainder: Vector[PathElement],
+    callDepth: Int
+  ): Option[Vector[ReachableByResult]] = {
+    table.get(TaskFingerprint(first.node, callSiteStack, callDepth)).map { res =>
+      res.map { r =>
+        val stopIndex       = r.path.map(x => (x.node, x.callSiteStack)).indexOf((first.node, first.callSiteStack))
+        val pathToFirstNode = r.path.slice(0, stopIndex)
+        val completePath    = pathToFirstNode ++ (first +: remainder)
+        r.copy(path = Vector(completePath.head) ++ completePath.tail)
+      }
+    }
+  }
+
+  /** Retrieve list of results for `node` or None if they are not available in the table.
+    */
+  def get(key: TaskFingerprint): Option[Vector[ReachableByResult]] = {
+    table.get(key)
+  }
+
+  /** Returns all keys to allow for iteration through the table.
+    */
+  def keys(): Vector[TaskFingerprint] = table.keys.toVector
+
+}
 
 /** Callable for solving a ReachableByTask
   *
