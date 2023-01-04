@@ -25,8 +25,9 @@ final case class Config(
     }
   }
 
-  override def withInputPath(inputPath: String): Config = copy(inputPath = inputPath)
-  override def withOutputPath(x: String): Config        = copy(outputPath = x)
+  override def withInputPath(inputPath: String): Config =
+    copy(inputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString)
+  override def withOutputPath(x: String): Config = copy(outputPath = x)
 }
 
 private object Frontend {
