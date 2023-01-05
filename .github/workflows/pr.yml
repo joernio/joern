@@ -5,7 +5,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-11]
+        os: [ubuntu-22.04, windows-2022, macos-12]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -19,7 +19,7 @@ jobs:
       - name: Compile and run tests
         run: sbt clean +test
   formatting:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -35,7 +35,7 @@ jobs:
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
         if: ${{ failure() }}
   test-scripts:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
         with:
