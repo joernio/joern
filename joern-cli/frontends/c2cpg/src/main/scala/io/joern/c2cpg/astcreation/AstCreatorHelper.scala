@@ -10,8 +10,10 @@ import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
 import org.eclipse.cdt.core.dom.ast.cpp._
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
+import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIdExpression, CPPASTQualifiedName, CPPFunction}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.{Path, Paths}
@@ -357,8 +359,8 @@ trait AstCreatorHelper { this: AstCreator =>
     scope.pushNewScope(b)
     val op = Operators.assignment
 
-    val calls = d.getDesignators.toList.map { des =>
-      val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH)
+    val calls = withIndex(d.getDesignators) { (des, o) =>
+      val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
       val left     = astForNode(des)
       val right    = astForNode(d.getOperand)
       callAst(callNode, List(left, right))
@@ -372,6 +374,7 @@ trait AstCreatorHelper { this: AstCreator =>
     val b = newBlockNode(d, Defines.voidTypeName)
     scope.pushNewScope(b)
     val op = Operators.assignment
+
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
       val left     = astForNode(des)
@@ -389,6 +392,22 @@ trait AstCreatorHelper { this: AstCreator =>
     callAst(callNode, args)
   }
 
+  private def astForCASTArrayRangeDesignator(des: CASTArrayRangeDesignator): Ast = {
+    val op         = Operators.arrayInitializer
+    val callNode   = newCallNode(des, op, op, DispatchTypes.STATIC_DISPATCH)
+    val floorAst   = nullSafeAst(des.getRangeFloor)
+    val ceilingAst = nullSafeAst(des.getRangeCeiling)
+    callAst(callNode, List(floorAst, ceilingAst))
+  }
+
+  private def astForCPPASTArrayRangeDesignator(des: CPPASTArrayRangeDesignator): Ast = {
+    val op         = Operators.arrayInitializer
+    val callNode   = newCallNode(des, op, op, DispatchTypes.STATIC_DISPATCH)
+    val floorAst   = nullSafeAst(des.getRangeFloor)
+    val ceilingAst = nullSafeAst(des.getRangeCeiling)
+    callAst(callNode, List(floorAst, ceilingAst))
+  }
+
   protected def astForNode(node: IASTNode): Ast = {
     node match {
       case id: IASTIdExpression if id.getName.isInstanceOf[CPPASTQualifiedName] =>
@@ -401,6 +420,8 @@ trait AstCreatorHelper { this: AstCreator =>
       case c: ICPPASTConstructorInitializer => astForCPPASTConstructorInitializer(c)
       case d: ICASTDesignatedInitializer    => astForCASTDesignatedInitializer(d)
       case d: ICPPASTDesignatedInitializer  => astForCPPASTDesignatedInitializer(d)
+      case d: CASTArrayRangeDesignator      => astForCASTArrayRangeDesignator(d)
+      case d: CPPASTArrayRangeDesignator    => astForCPPASTArrayRangeDesignator(d)
       case d: ICASTArrayDesignator          => nullSafeAst(d.getSubscriptExpression)
       case d: ICPPASTArrayDesignator        => nullSafeAst(d.getSubscriptExpression)
       case d: ICPPASTFieldDesignator        => astForNode(d.getName)
