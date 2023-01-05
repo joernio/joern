@@ -133,8 +133,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   private def blockMatches(block: Block): Boolean = {
     if (block._astIn.hasNext) {
       val parentNode = block.astParent
-      parentNode.isMethod || parentNode.isControlStructure ||
-      isLogicalOperator(parentNode) || isInlinedCall(parentNode)
+      parentNode.isMethod || parentNode.isControlStructure || isLogicalOperator(parentNode) || isInlinedCall(parentNode)
     } else false
   }
 

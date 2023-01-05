@@ -180,8 +180,7 @@ class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) 
         ("param1_0", 1, FalseEdge)
       )
       succOf("param1_0", 1) shouldBe expected(("param1_0 === void 0 ? {} : param1_0", AlwaysEdge))
-      succOf("_tmp_0") shouldBe expected(("{}", AlwaysEdge))
-      succOf("{}") shouldBe expected(("param1_0 === void 0 ? {} : param1_0", AlwaysEdge))
+      succOf("_tmp_0") shouldBe expected(("param1_0 === void 0 ? {} : param1_0", AlwaysEdge))
       succOf("param1_0 === void 0 ? {} : param1_0") shouldBe expected(
         ("_tmp_1 = param1_0 === void 0 ? {} : param1_0", AlwaysEdge)
       )
@@ -195,8 +194,7 @@ class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) 
         ("_tmp_2", TrueEdge), // holds {}
         ("_tmp_1", 2, FalseEdge)
       )
-      succOf("_tmp_2") shouldBe expected(("{}", AlwaysEdge))
-      succOf("{}", 1) shouldBe expected(("_tmp_1.id === void 0 ? {} : _tmp_1.id", AlwaysEdge))
+      succOf("_tmp_2") shouldBe expected(("_tmp_1.id === void 0 ? {} : _tmp_1.id", AlwaysEdge))
       succOf("_tmp_1", 2) shouldBe expected(("id", 2, AlwaysEdge))
 
       succOf("_tmp_1.id === void 0 ? {} : _tmp_1.id") shouldBe expected(
