@@ -2005,8 +2005,11 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       val source = cpg.identifier("v2").l
       val sink   = cpg.method("foo").methodReturn.l
       sink.reachableByFlows(source).l.map(flowToResultPairs).toSet shouldBe Set(
+        List(("return v2;", Some(4)), ("int", Some(2))),
         List(
           ("v2 == 2", Some(4)),
+          ("v1 = 1", Some(4)),
+          ("v1 = 1, v2 == 2", Some(4)),
           ("(v1 = 1, v2 == 2)", Some(4)),
           ("(v1 = 1, v2 == 2) || v2 <= 3", Some(4)),
           ("int", Some(2))
@@ -2014,6 +2017,8 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
         List(
           ("v2 = 0", Some(3)),
           ("v2 == 2", Some(4)),
+          ("v1 = 1", Some(4)),
+          ("v1 = 1, v2 == 2", Some(4)),
           ("(v1 = 1, v2 == 2)", Some(4)),
           ("(v1 = 1, v2 == 2) || v2 <= 3", Some(4)),
           ("int", Some(2))
@@ -2023,8 +2028,7 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
           ("(v1 = 1, v2 == 2)", Some(4)),
           ("(v1 = 1, v2 == 2) || v2 <= 3", Some(4)),
           ("int", Some(2))
-        ),
-        List(("return v2;", Some(4)), ("int", Some(2)))
+        )
       )
     }
   }

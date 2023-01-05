@@ -5,6 +5,7 @@ import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Block
 import io.shiftleft.semanticcpg.language._
 
 class MacroHandlingTests extends CCodeToCpgSuite {
@@ -196,6 +197,32 @@ class MacroHandlingTests extends CCodeToCpgSuite {
       call.name shouldBe "A_MACRO"
       call.code shouldBe "A_MACRO"
       call.argument.size shouldBe 0
+    }
+
+  }
+
+  "MacroHandlingTests7" should {
+    val cpg = code("""
+        |#define atomic_load_explicit(PTR, MO)					\
+        |  __extension__								\
+        |  ({									\
+        |    __auto_type __atomic_load_ptr = (PTR);				\
+        |    __typeof__ (*__atomic_load_ptr) __atomic_load_tmp;			\
+        |    __atomic_load (__atomic_load_ptr, &__atomic_load_tmp, (MO));	\
+        |    __atomic_load_tmp;							\
+        |  })
+        |
+        |#define atomic_load(PTR)  atomic_load_explicit (PTR, __ATOMIC_SEQ_CST)
+        |
+        |int foo(int *x) {
+        |  if ( atomic_load( &preparser->deactivated ) )
+        |    return;
+        |  foo();
+        |}
+    """.stripMargin)
+
+    "should not result in malformed CFGs when expanding a nested macro with block" in {
+      cpg.all.collectAll[Block].l.count(b => b.cfgOut.size > 1) shouldBe 0
     }
 
   }

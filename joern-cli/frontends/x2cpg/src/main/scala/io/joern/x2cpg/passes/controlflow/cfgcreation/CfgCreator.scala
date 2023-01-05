@@ -116,13 +116,26 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForChildren(node)
     }
 
+  private def isLogicalOperator(node: AstNode): Boolean = node match {
+    case call: Call =>
+      call.name == Operators.conditional || call.name == Operators.logicalOr || call.name == Operators.logicalAnd
+    case _ => false
+  }
+
+  private def isInlinedCall(node: AstNode): Boolean = node match {
+    case call: Call => call.dispatchType == DispatchTypes.INLINED
+    case _          => false
+  }
+
   /** Only include block nodes that do not describe the entire method body or the bodies of control structures or
-    * inlined calls.
+    * inlined calls or logical operators.
     */
-  private def blockMatches(block: Block): Boolean =
-    block._astIn.hasNext &&
-      (block.astParent.isMethod || block.astParent.isControlStructure ||
-        block.astParent.collectAll[Call].exists(_.dispatchType == DispatchTypes.INLINED))
+  private def blockMatches(block: Block): Boolean = {
+    if (block._astIn.hasNext) {
+      val parentNode = block.astParent
+      parentNode.isMethod || parentNode.isControlStructure || isLogicalOperator(parentNode) || isInlinedCall(parentNode)
+    } else false
+  }
 
   /** A second layer of dispatching for control structures. This could as well be part of `cfgFor` and has only been
     * placed into a separate function to increase readability.

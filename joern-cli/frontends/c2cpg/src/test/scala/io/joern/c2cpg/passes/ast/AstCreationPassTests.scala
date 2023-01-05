@@ -750,6 +750,21 @@ class AstCreationPassTests extends AbstractPassTest {
         .l shouldBe List("x")
     }
 
+    "be correct for expression list" in AstFixture("""
+        |void method(int x) {
+        |  return (__sync_synchronize(), foo(x));
+        |}
+      """.stripMargin) { cpg =>
+      val List(bracketedPrimaryCall) = cpg.call("<operator>.bracketedPrimary").l
+      val List(expressionListCall)   = bracketedPrimaryCall.argument.isCall.l
+      expressionListCall.name shouldBe "<operator>.expressionList"
+
+      val List(arg1) = expressionListCall.argument(1).collectAll[Call].l
+      arg1.code shouldBe "__sync_synchronize()"
+      val List(arg2) = expressionListCall.argument(2).collectAll[Call].l
+      arg2.code shouldBe "foo(x)"
+    }
+
     "be correct for call expression" in AstFixture("""
         |void method(int x) {
         |  foo(x);

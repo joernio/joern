@@ -33,9 +33,15 @@ trait MacroHandler { this: AstCreator =>
       case Some(callAst) =>
         val newAst = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], argIndex = 1)
         // We need to wrap the copied AST as it may contain CPG nodes not being allowed
-        // to be connected via AST edges under a CALL. E.g., LOCALs.
-        val b = NewBlock().argumentIndex(1).typeFullName(registerType(Defines.voidTypeName))
-        callAst.withChild(blockAst(b, List(newAst)))
+        // to be connected via AST edges under a CALL. E.g., LOCALs but only if its not already a BLOCK.
+        val childAst = newAst.root match {
+          case Some(_: NewBlock) =>
+            newAst
+          case _ =>
+            val b = NewBlock().argumentIndex(1).typeFullName(registerType(Defines.voidTypeName))
+            blockAst(b, List(newAst))
+        }
+        callAst.withChild(childAst)
       case None => ast
     }
   }
