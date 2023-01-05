@@ -1631,19 +1631,19 @@ class AstCreationPassTests extends AbstractPassTest {
 
     "be correct for designated initializers in plain C" in AstFixture("""
        |void foo() {
-       |  int a[3] = { [1] = 5, [2] = 10 };
+       |  int a[3] = { [1] = 5, [2] = 10, [3 ... 9] = 15 };
        |};
       """.stripMargin) { cpg =>
       inside(cpg.assignment.head.astChildren.l) { case List(ident: Identifier, call: Call) =>
         ident.typeFullName shouldBe "int[3]"
         ident.order shouldBe 1
-        call.code shouldBe "{ [1] = 5, [2] = 10 }"
+        call.code shouldBe "{ [1] = 5, [2] = 10, [3 ... 9] = 15 }"
         call.order shouldBe 2
         call.name shouldBe Operators.arrayInitializer
         call.methodFullName shouldBe Operators.arrayInitializer
-        val children = call.astMinusRoot.isCall.l
+        val children = call.astMinusRoot.isCall.name(Operators.assignment).l
         val args     = call.argument.astChildren.l
-        inside(children) { case List(call1, call2) =>
+        inside(children) { case List(call1, call2, call3) =>
           call1.code shouldBe "[1] = 5"
           call1.name shouldBe Operators.assignment
           call1.astMinusRoot.code.l shouldBe List("1", "5")
@@ -1652,6 +1652,53 @@ class AstCreationPassTests extends AbstractPassTest {
           call2.name shouldBe Operators.assignment
           call2.astMinusRoot.code.l shouldBe List("2", "10")
           call2.argument.code.l shouldBe List("2", "10")
+          call3.code shouldBe "[3 ... 9] = 15"
+          call3.name shouldBe Operators.assignment
+          val List(desCall) = call3.argument(1).collectAll[Call].l
+          val List(value)   = call3.argument(2).collectAll[Literal].l
+          value.code shouldBe "15"
+          desCall.name shouldBe Operators.arrayInitializer
+          desCall.code shouldBe "[3 ... 9]"
+          desCall.argument.code.l shouldBe List("3", "9")
+        }
+        children shouldBe args
+      }
+    }
+
+    "be correct for designated initializers in C++" in AstFixture(
+      """
+        |void foo() {
+        |  int a[3] = { [1] = 5, [2] = 10, [3 ... 9] = 15 };
+        |};
+      """.stripMargin,
+      "test.cpp"
+    ) { cpg =>
+      inside(cpg.assignment.head.astChildren.l) { case List(ident: Identifier, call: Call) =>
+        ident.typeFullName shouldBe "int[3]"
+        ident.order shouldBe 1
+        call.code shouldBe "{ [1] = 5, [2] = 10, [3 ... 9] = 15 }"
+        call.order shouldBe 2
+        call.name shouldBe Operators.arrayInitializer
+        call.methodFullName shouldBe Operators.arrayInitializer
+        val children = call.astMinusRoot.isCall.name(Operators.assignment).l
+        val args     = call.argument.astChildren.l
+        inside(children) { case List(call1, call2, call3) =>
+          call1.code shouldBe "[1] = 5"
+          call1.name shouldBe Operators.assignment
+          call1.astMinusRoot.code.l shouldBe List("1", "5")
+          call1.argument.code.l shouldBe List("1", "5")
+          call2.code shouldBe "[2] = 10"
+          call2.name shouldBe Operators.assignment
+          call2.astMinusRoot.code.l shouldBe List("2", "10")
+          call2.argument.code.l shouldBe List("2", "10")
+          call3.code shouldBe "[3 ... 9] = 15"
+          call3.name shouldBe Operators.assignment
+          val List(desCall) = call3.argument(1).collectAll[Call].l
+          val List(value)   = call3.argument(2).collectAll[Literal].l
+          value.code shouldBe "15"
+          desCall.name shouldBe Operators.arrayInitializer
+          desCall.code shouldBe "[3 ... 9]"
+          desCall.argument.code.l shouldBe List("3", "9")
         }
         children shouldBe args
       }
@@ -1685,7 +1732,7 @@ class AstCreationPassTests extends AbstractPassTest {
       }
     }
 
-    "be correct for designated initializers in C++" in AstFixture(
+    "be correct for designated struct initializers in C++" in AstFixture(
       """
        |class Point3D {
        | public:
