@@ -20,6 +20,7 @@ pdg-for-funcs.json
 joern-cli/workspace
 /workspace
 .bloop
+null
 /.bsp
 /gnupg-*
 /joern-cli/${sys:LOG_DIR}/
