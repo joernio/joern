@@ -34,6 +34,9 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     Ast(createLiteralNode(code, Some(Defines.STRING), stringLiteral.lineNumber, stringLiteral.columnNumber))
   }
 
+  protected def astForPrivateName(privateName: BabelNodeInfo): Ast =
+    astForIdentifier(createBabelNodeInfo(privateName.json("id")))
+
   protected def astForSpreadOrRestElement(spreadElement: BabelNodeInfo, arg1Ast: Option[Ast] = None): Ast = {
     val ast = astForNodeWithFunctionReference(spreadElement.json("argument"))
     val callNode = createCallNode(
@@ -127,9 +130,9 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         )
 
       val argumentAsts = expressions.zip(quasis).flatMap { case (expression, quasi) =>
-        List(astForNode(quasi), astForNode(expression))
+        List(astForNodeWithFunctionReference(quasi), astForNodeWithFunctionReference(expression))
       }
-      val argAsts = argumentAsts :+ astForNode(quasisTail)
+      val argAsts = argumentAsts :+ astForNodeWithFunctionReference(quasisTail)
       createCallAst(templateCall, argAsts)
     }
   }

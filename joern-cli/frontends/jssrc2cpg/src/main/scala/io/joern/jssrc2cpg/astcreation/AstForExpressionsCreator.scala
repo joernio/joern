@@ -13,7 +13,7 @@ import scala.util.Try
 trait AstForExpressionsCreator { this: AstCreator =>
 
   protected def astForExpressionStatement(exprStmt: BabelNodeInfo): Ast =
-    astForNode(exprStmt.json("expression"))
+    astForNodeWithFunctionReference(exprStmt.json("expression"))
 
   private def createBuiltinStaticCall(callExpr: BabelNodeInfo, callee: BabelNodeInfo, fullName: String): Ast = {
     val callName = callee.node match {
@@ -138,6 +138,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
     Ast(blockNode).withChild(assignmentTmpAllocCallNode).withChild(callNode).withChild(tmpAllocReturnNode)
   }
 
+  protected def astForMetaProperty(metaProperty: BabelNodeInfo): Ast = {
+    val metaAst        = astForIdentifier(createBabelNodeInfo(metaProperty.json("meta")))
+    val memberNodeInfo = createBabelNodeInfo(metaProperty.json("property"))
+    val memberAst = Ast(
+      createFieldIdentifierNode(memberNodeInfo.code, memberNodeInfo.lineNumber, memberNodeInfo.columnNumber)
+    )
+    createFieldAccessCallAst(metaAst, memberAst.nodes.head, metaProperty.lineNumber, metaProperty.columnNumber)
+  }
+
   protected def astForMemberExpression(memberExpr: BabelNodeInfo): Ast = {
     val baseAst          = astForNodeWithFunctionReference(memberExpr.json("object"))
     val memberIsComputed = memberExpr.json("computed").bool
@@ -154,27 +163,29 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForAssignmentExpression(assignment: BabelNodeInfo): Ast = {
-    val op = assignment.json("operator").str match {
-      case "="    => Operators.assignment
-      case "+="   => Operators.assignmentPlus
-      case "-="   => Operators.assignmentMinus
-      case "*="   => Operators.assignmentMultiplication
-      case "/="   => Operators.assignmentDivision
-      case "%="   => Operators.assignmentModulo
-      case "**="  => Operators.assignmentExponentiation
-      case "&="   => Operators.assignmentAnd
-      case "&&="  => Operators.assignmentAnd
-      case "|="   => Operators.assignmentOr
-      case "||="  => Operators.assignmentOr
-      case "^="   => Operators.assignmentXor
-      case "<<="  => Operators.assignmentShiftLeft
-      case ">>="  => Operators.assignmentArithmeticShiftRight
-      case ">>>=" => Operators.assignmentLogicalShiftRight
-      case "??="  => Operators.notNullAssert
-      case other =>
-        logger.warn(s"Unknown assignment operator: '$other'")
-        Operators.assignment
-    }
+    val op = if (hasKey(assignment.json, "operator")) {
+      assignment.json("operator").str match {
+        case "="    => Operators.assignment
+        case "+="   => Operators.assignmentPlus
+        case "-="   => Operators.assignmentMinus
+        case "*="   => Operators.assignmentMultiplication
+        case "/="   => Operators.assignmentDivision
+        case "%="   => Operators.assignmentModulo
+        case "**="  => Operators.assignmentExponentiation
+        case "&="   => Operators.assignmentAnd
+        case "&&="  => Operators.assignmentAnd
+        case "|="   => Operators.assignmentOr
+        case "||="  => Operators.assignmentOr
+        case "^="   => Operators.assignmentXor
+        case "<<="  => Operators.assignmentShiftLeft
+        case ">>="  => Operators.assignmentArithmeticShiftRight
+        case ">>>=" => Operators.assignmentLogicalShiftRight
+        case "??="  => Operators.notNullAssert
+        case other =>
+          logger.warn(s"Unknown assignment operator: '$other'")
+          Operators.assignment
+      }
+    } else Operators.assignment
 
     val nodeInfo = createBabelNodeInfo(assignment.json("left"))
     nodeInfo.node match {
@@ -198,7 +209,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForConditionalExpression(ternary: BabelNodeInfo): Ast = {
-    val testAst       = astForNode(ternary.json("test"))
+    val testAst       = astForNodeWithFunctionReference(ternary.json("test"))
     val consequentAst = astForNodeWithFunctionReference(ternary.json("consequent"))
     val alternateAst  = astForNodeWithFunctionReference(ternary.json("alternate"))
     createTernaryCallAst(testAst, consequentAst, alternateAst, ternary.lineNumber, ternary.columnNumber)
@@ -206,6 +217,20 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   protected def astForLogicalExpression(logicalExpr: BabelNodeInfo): Ast =
     astForBinaryExpression(logicalExpr)
+
+  protected def astForTSNonNullExpression(nonNullExpr: BabelNodeInfo): Ast = {
+    val op = Operators.notNullAssert
+    val callNode =
+      createCallNode(
+        nonNullExpr.code,
+        op,
+        DispatchTypes.STATIC_DISPATCH,
+        nonNullExpr.lineNumber,
+        nonNullExpr.columnNumber
+      )
+    val argAsts = List(astForNodeWithFunctionReference(nonNullExpr.json("expression")))
+    createCallAst(callNode, argAsts)
+  }
 
   protected def astForCastExpression(castExpr: BabelNodeInfo): Ast = {
     val op      = Operators.cast
@@ -253,7 +278,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         Operators.assignment
     }
 
-    val lhsAst = astForNode(binExpr.json("left"))
+    val lhsAst = astForNodeWithFunctionReference(binExpr.json("left"))
     val rhsAst = astForNodeWithFunctionReference(binExpr.json("right"))
 
     val callNode =
@@ -274,7 +299,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         Operators.assignment
     }
 
-    val argumentAst = astForNode(updateExpr.json("argument"))
+    val argumentAst = astForNodeWithFunctionReference(updateExpr.json("argument"))
 
     val callNode =
       createCallNode(updateExpr.code, op, DispatchTypes.STATIC_DISPATCH, updateExpr.lineNumber, updateExpr.columnNumber)
@@ -297,7 +322,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         Operators.assignment
     }
 
-    val argumentAst = astForNode(unaryExpr.json("argument"))
+    val argumentAst = astForNodeWithFunctionReference(unaryExpr.json("argument"))
 
     val callNode =
       createCallNode(unaryExpr.code, op, DispatchTypes.STATIC_DISPATCH, unaryExpr.lineNumber, unaryExpr.columnNumber)
@@ -324,7 +349,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       awaitExpr.lineNumber,
       awaitExpr.columnNumber
     )
-    val argAsts = List(astForNode(awaitExpr.json("argument")))
+    val argAsts = List(astForNodeWithFunctionReference(awaitExpr.json("argument")))
     createCallAst(callNode, argAsts)
   }
 
@@ -371,7 +396,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
           val elementLineNumber   = elementNodeInfo.lineNumber
           val elementColumnNumber = elementNodeInfo.columnNumber
           val elementCode         = elementNodeInfo.code
-          val elementNode         = astForNode(element)
+          val elementNode = elementNodeInfo.node match {
+            case RestElement =>
+              val arg1Ast = Ast(createIdentifierNode(tmpName, arrExpr))
+              astForSpreadOrRestElement(elementNodeInfo, Some(arg1Ast))
+            case _ =>
+              astForNodeWithFunctionReference(element)
+          }
 
           val pushCallNode = createCallNode(
             tmpName + s".push($elementCode)",
@@ -437,13 +468,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val propertiesAsts = objExpr.json("properties").arr.toList.map { property =>
       val nodeInfo = createBabelNodeInfo(property)
       nodeInfo.node match {
-        case SpreadElement =>
+        case SpreadElement | RestElement =>
           val arg1Ast = Ast(createIdentifierNode(tmpName, nodeInfo))
           astForSpreadOrRestElement(nodeInfo, Some(arg1Ast))
         case _ =>
           val (lhsNode, rhsAst) = nodeInfo.node match {
             case ObjectMethod =>
-              val keyName = nodeInfo.json("key")("name").str
+              val keyName =
+                if (hasKey(nodeInfo.json("key"), "name")) nodeInfo.json("key")("name").str
+                else code(nodeInfo.json("key"))
               val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
               (keyNode, astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true))
             case ObjectProperty =>

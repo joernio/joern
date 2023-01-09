@@ -139,7 +139,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
                   elementNodeInfo.columnNumber
                 )
               case RestElement => handleRestInParameters(elementNodeInfo, nodeInfo, paramName)
-              case _           => astForNode(elementNodeInfo.json)
+              case _           => astForNodeWithFunctionReference(elementNodeInfo.json)
             }
           case _ => Ast()
         })
@@ -177,7 +177,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
                 elementNodeInfo.columnNumber
               )
             case RestElement => handleRestInParameters(elementNodeInfo, nodeInfo, paramName)
-            case _           => astForNode(elementNodeInfo.json)
+            case _           => astForNodeWithFunctionReference(elementNodeInfo.json)
           }
         })
         param

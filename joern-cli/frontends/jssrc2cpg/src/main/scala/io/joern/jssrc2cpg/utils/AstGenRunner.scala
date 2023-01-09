@@ -88,7 +88,7 @@ object AstGenRunner {
     skipped.flatten
   }
 
-  private def ignoredByUserConfig(filePath: String, config: Config, out: File): Boolean = {
+  private def isIgnoredByUserConfig(filePath: String, config: Config, out: File): Boolean = {
     val resolvedFilePath = filePath.stripSuffix(".json").replace(out.pathAsString, config.inputPath)
     lazy val isInIgnoredFiles = config.ignoredFiles.exists {
       case ignorePath if File(ignorePath).isDirectory => resolvedFilePath.startsWith(ignorePath)
@@ -103,7 +103,7 @@ object AstGenRunner {
     }
   }
 
-  def isMinifiedFile(filePath: String): Boolean = filePath match {
+  private def isMinifiedFile(filePath: String): Boolean = filePath match {
     case p if MINIFIED_PATH_REGEX.matches(p) => true
     case p if File(p).exists && p.endsWith(".js") =>
       val lines             = IOUtils.readLinesInFile(File(filePath).path)
@@ -116,7 +116,7 @@ object AstGenRunner {
     case _ => false
   }
 
-  private def ignoredByDefault(filePath: String, config: Config, out: File): Boolean = {
+  private def isIgnoredByDefault(filePath: String, config: Config, out: File): Boolean = {
     val resolvedFilePath   = filePath.stripSuffix(".json").replace(out.pathAsString, config.inputPath)
     lazy val isIgnored     = IGNORED_FILES_REGEX.exists(_.matches(resolvedFilePath))
     lazy val isIgnoredTest = IGNORED_TESTS_REGEX.exists(_.matches(resolvedFilePath))
@@ -135,8 +135,8 @@ object AstGenRunner {
       // TODO: maybe we can enable that later on and use the type definitions there
       //  for enhancing the CPG with additional type information for functions
       case filePath if TYPE_DEFINITION_FILE_EXTENSIONS.exists(filePath.endsWith) => false
-      case filePath if ignoredByUserConfig(filePath, config, out)                => false
-      case filePath if ignoredByDefault(filePath, config, out)                   => false
+      case filePath if isIgnoredByUserConfig(filePath, config, out)              => false
+      case filePath if isIgnoredByDefault(filePath, config, out)                 => false
       case _                                                                     => true
     }
   }

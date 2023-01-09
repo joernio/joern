@@ -239,6 +239,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
         |  private b: string;
         |  public c: string;
         |  protected d: string;
+        |  #e: string; // also private
         |}
         |""".stripMargin,
       "code.ts"
@@ -247,7 +248,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
         greeter.name shouldBe "Greeter"
         cpg.typeDecl.isAbstract.head shouldBe greeter
         greeter.member.isStatic.head shouldBe greeter.member.name("a").head
-        greeter.member.isPrivate.head shouldBe greeter.member.name("b").head
+        greeter.member.isPrivate.l shouldBe greeter.member.name("b", "e").l
         greeter.member.isPublic.head shouldBe greeter.member.name("c").head
         greeter.member.isProtected.head shouldBe greeter.member.name("d").head
       }

@@ -10,9 +10,10 @@ trait AstForTemplateDomCreator { this: AstCreator =>
   protected def astForJsxElement(jsxElem: BabelNodeInfo): Ast = {
     val domNode = createTemplateDomNode(jsxElem.node.toString, jsxElem.code, jsxElem.lineNumber, jsxElem.columnNumber)
 
-    val openingAst   = astForNode(jsxElem.json("openingElement"))
+    val openingAst   = astForNodeWithFunctionReference(jsxElem.json("openingElement"))
     val childrenAsts = astForNodes(jsxElem.json("children").arr.toList)
-    val closingAst   = safeObj(jsxElem.json, "closingElement").map(e => astForNode(Obj(e))).getOrElse(Ast())
+    val closingAst =
+      safeObj(jsxElem.json, "closingElement").map(e => astForNodeWithFunctionReference(Obj(e))).getOrElse(Ast())
 
     val allChildrenAsts = openingAst +: childrenAsts :+ closingAst
     setArgIndices(allChildrenAsts)
@@ -34,7 +35,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
 
   protected def astForJsxAttribute(jsxAttr: BabelNodeInfo): Ast = {
     val domNode  = createTemplateDomNode(jsxAttr.node.toString, jsxAttr.code, jsxAttr.lineNumber, jsxAttr.columnNumber)
-    val valueAst = safeObj(jsxAttr.json, "value").map(e => astForNode(Obj(e))).getOrElse(Ast())
+    val valueAst = safeObj(jsxAttr.json, "value").map(e => astForNodeWithFunctionReference(Obj(e))).getOrElse(Ast())
     setArgIndices(List(valueAst))
     Ast(domNode).withChild(valueAst)
   }
@@ -74,7 +75,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
     val nodeInfo = createBabelNodeInfo(jsxExprContainer.json("expression"))
     val exprAst = nodeInfo.node match {
       case JSXEmptyExpression => Ast()
-      case _                  => astForNode(nodeInfo.json)
+      case _                  => astForNodeWithFunctionReference(nodeInfo.json)
     }
     setArgIndices(List(exprAst))
     Ast(domNode).withChild(exprAst)
@@ -87,7 +88,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
       jsxSpreadAttr.lineNumber,
       jsxSpreadAttr.columnNumber
     )
-    val argAst = astForNode(jsxSpreadAttr.json("argument"))
+    val argAst = astForNodeWithFunctionReference(jsxSpreadAttr.json("argument"))
     setArgIndices(List(argAst))
     Ast(domNode).withChild(argAst)
   }

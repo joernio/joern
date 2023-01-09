@@ -9,6 +9,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple fragments" should {
 
+    "have correct structure for non null expression" in AstFixture("const foo = bar!") { cpg =>
+      val List(nonNullCall) = cpg.call(Operators.notNullAssert).l
+      val List(arg)         = nonNullCall.argument.isIdentifier.l
+      arg.name shouldBe "bar"
+      arg.code shouldBe "bar"
+    }
+
     "have return node for arrow functions" in AstFixture("const foo = () => 42;") { cpg =>
       // Return node is necessary data flow
       val methodBlock = cpg.method("anonymous").astChildren.isBlock
@@ -1238,6 +1245,20 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
           val List(identifierZ) = nestedSwitchBlock.astChildren.isIdentifier.nameExact("z").l
           identifierZ.order shouldBe 2
+      }
+
+      "be correct for switch with lambda" in AstFixture("""
+          |switch ((x) => "") { }
+          |""".stripMargin) { cpg =>
+        val List(program)      = cpg.method.nameExact(":program").l
+        val List(programBlock) = program.astChildren.isBlock.l
+
+        val List(switch) = programBlock.astChildren.isControlStructure.l
+        switch.controlStructureType shouldBe ControlStructureTypes.SWITCH
+
+        val List(switchExpr) = switch.astChildren.isMethodRef.l
+        switchExpr.order shouldBe 1
+        switchExpr.code shouldBe "anonymous"
       }
     }
 
