@@ -1,9 +1,10 @@
 package io.joern.scanners.c
 
-import io.shiftleft.codepropertygraph.generated.{Operators, nodes}
-import overflowdb.traversal.Traversal
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
+import overflowdb.traversal.Traversal
+
+import scala.util.Try
 
 object QueryLangExtensions {
 
@@ -30,13 +31,7 @@ object QueryLangExtensions {
   implicit class LiteralExtension(litTrav: Traversal[nodes.Literal]) {
 
     def toInt: Traversal[Int] = {
-      litTrav.code.flatMap { lit =>
-        try {
-          List(lit.toInt)
-        } catch {
-          case _: Exception => List()
-        }
-      }
+      litTrav.code.flatMap { lit => Try(Integer.decode(lit).intValue()).toOption }
     }
   }
 
