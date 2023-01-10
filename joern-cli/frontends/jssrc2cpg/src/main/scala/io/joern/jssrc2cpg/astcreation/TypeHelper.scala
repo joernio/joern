@@ -105,14 +105,41 @@ trait TypeHelper { this: AstCreator =>
       Defines.ANY
   }
 
-  protected def typeFor(node: BabelNodeInfo): String =
-    Seq(TYPE_ANNOTATION_KEY, RETURN_TYPE_KEY).find(hasKey(node.json, _)) match {
-      case Some(key) =>
-        val tpe = typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
-        registerType(tpe, tpe)
-        tpe
-      case None =>
-        Defines.ANY
+  private def typeFromTypeMap(node: BabelNodeInfo): String =
+    start(node.json).flatMap(parserResult.typeMap.get) match {
+      case Some(value) if value == "string"  => Defines.STRING
+      case Some(value) if value == "number"  => Defines.NUMBER
+      case Some(value) if value == "null"    => Defines.NULL
+      case Some(value) if value == "boolean" => Defines.BOOLEAN
+      case Some(other)                       => other
+      case None                              => Defines.ANY
     }
+
+  protected def typeForFunc(func: BabelNodeInfo): String =
+    Seq(TYPE_ANNOTATION_KEY, RETURN_TYPE_KEY).find(hasKey(func.json, _)) match {
+      case Some(key) =>
+        typeForTypeAnnotation(createBabelNodeInfo(func.json(key)))
+      case None =>
+        val node = func.node match {
+          case TSCallSignatureDeclaration                              => func
+          case TSConstructSignatureDeclaration                         => func
+          case _ if safeStr(func.json, "kind").contains("method")      => createBabelNodeInfo(func.json("key"))
+          case _ if safeStr(func.json, "kind").contains("constructor") => func
+          case _ if func.json("id").isNull                             => func
+          case _                                                       => createBabelNodeInfo(func.json("id"))
+        }
+        typeFromTypeMap(node)
+    }
+
+  protected def typeFor(node: BabelNodeInfo): String = {
+    val tpe = Seq(TYPE_ANNOTATION_KEY, RETURN_TYPE_KEY).find(hasKey(node.json, _)) match {
+      case Some(key) =>
+        typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
+      case None =>
+        typeFromTypeMap(node)
+    }
+    registerType(tpe, tpe)
+    tpe
+  }
 
 }

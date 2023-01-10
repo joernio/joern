@@ -113,9 +113,9 @@ trait AstCreatorHelper { this: AstCreator =>
     case _                                => None
   }
 
-  private def start(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
-
   private def end(node: Value): Option[Int] = Try(node("end").num.toInt).toOption
+
+  protected def start(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
 
   protected def line(node: Value): Option[Integer] = start(node).map(getLineOfSource)
 
