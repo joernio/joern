@@ -1,12 +1,57 @@
 package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
+import io.joern.dataflowengineoss.queryengine.TaskSolver.{doneTaskCounter, totalTaskCounter}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.cpgloading.ProtoToCpg.logger
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
 
 import java.util.concurrent.Callable
 import scala.collection.mutable
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong}
+
+object TaskSolver {
+  val totalTaskCounter      = new AtomicInteger(0)
+  val doneTaskCounter       = new AtomicInteger(0)
+  val futuresStartedCounter = new AtomicInteger(0)
+  val futuresEndedCounter   = new AtomicInteger(0)
+  val lastDoneTasks         = new AtomicInteger(0)
+  val lastPrintTime         = new AtomicLong()
+  val myTurn                = new AtomicBoolean()
+
+  def printStats(): Unit = {
+
+    val now: Long = System.currentTimeMillis / 1000
+
+    if (now - lastPrintTime.get() < 1) {
+      return
+    }
+    lastPrintTime.set(now)
+
+    val prevVal = myTurn.getAndSet(true)
+    if (prevVal == true) {
+      return
+    }
+
+    val totalTasks     = totalTaskCounter.get()
+    val doneTasks      = doneTaskCounter.get()
+    val futuresStarted = futuresStartedCounter.get()
+    val futuresEnded   = futuresEndedCounter.get()
+    val backlog        = futuresStarted - futuresEnded
+
+    logger.debug(
+      " Total tasks: " + totalTasks +
+        ", Done tasks: " + doneTasks +
+        ", Futures started: " + futuresStarted +
+        ", Futures ended: " + futuresEnded +
+        ", Future backlog: " + backlog +
+        ", Tasks per sec: " + (doneTasks - lastDoneTasks.get())
+    )
+    lastDoneTasks.set(doneTasks)
+    myTurn.getAndSet(false)
+  }
+}
 
 /** Callable for solving a ReachableByTask
   *
@@ -28,6 +73,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
   override def call(): TaskSummary = {
+    totalTaskCounter.incrementAndGet()
     implicit val sem: Semantics = context.semantics
     val path                    = Vector(PathElement(task.sink, task.callSiteStack))
     val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()
@@ -41,6 +87,8 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     }
     val (partial, complete) = finalResults.partition(_.partial)
     val newTasks            = new TaskCreator(context).createFromResults(partial)
+    doneTaskCounter.incrementAndGet()
+    TaskSolver.printStats()
     TaskSummary(complete.flatMap(r => resultToTableEntries(r)), newTasks)
   }
 
