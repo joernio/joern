@@ -67,11 +67,12 @@ trait AstForStatementsCreator { this: AstCreator =>
       .getOrElse(Ast(retNode))
   }
 
-  private def astForCatchClause(catchClause: BabelNodeInfo): Ast = astForNode(catchClause.json("body"))
+  private def astForCatchClause(catchClause: BabelNodeInfo): Ast =
+    astForNodeWithFunctionReference(catchClause.json("body"))
 
   protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
     val tryNode = createControlStructureNode(tryStmt, ControlStructureTypes.TRY)
-    val bodyAst = astForNode(tryStmt.json("block"))
+    val bodyAst = astForNodeWithFunctionReference(tryStmt.json("block"))
     val catchAst = safeObj(tryStmt.json, "handler")
       .map { handler =>
         astForCatchClause(createBabelNodeInfo(Obj(handler)))
@@ -79,7 +80,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       .getOrElse(Ast())
     val finalizerAst = safeObj(tryStmt.json, "finalizer")
       .map { finalizer =>
-        astForNode(Obj(finalizer))
+        astForNodeWithFunctionReference(Obj(finalizer))
       }
       .getOrElse(Ast())
     // The semantics of try statement children is defined by there order value.
@@ -93,11 +94,11 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   def astForIfStatement(ifStmt: BabelNodeInfo): Ast = {
     val ifNode        = createControlStructureNode(ifStmt, ControlStructureTypes.IF)
-    val testAst       = astForNode(ifStmt.json("test"))
-    val consequentAst = astForNode(ifStmt.json("consequent"))
+    val testAst       = astForNodeWithFunctionReference(ifStmt.json("test"))
+    val consequentAst = astForNodeWithFunctionReference(ifStmt.json("consequent"))
     val alternateAst = safeObj(ifStmt.json, "alternate")
       .map { alternate =>
-        astForNode(Obj(alternate))
+        astForNodeWithFunctionReference(Obj(alternate))
       }
       .getOrElse(Ast())
     // The semantics of if statement children is partially defined by there order value.
@@ -116,8 +117,8 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   protected def astForDoWhileStatement(doWhileStmt: BabelNodeInfo): Ast = {
     val whileNode = createControlStructureNode(doWhileStmt, ControlStructureTypes.DO)
-    val testAst   = astForNode(doWhileStmt.json("test"))
-    val bodyAst   = astForNode(doWhileStmt.json("body"))
+    val testAst   = astForNodeWithFunctionReference(doWhileStmt.json("test"))
+    val bodyAst   = astForNodeWithFunctionReference(doWhileStmt.json("body"))
     // The semantics of do-while statement children is partially defined by there order value.
     // The bodyAst must have order == 1. Only to avoid collision we set testAst to 2
     // because the semantics of it is already indicated via the condition edge.
@@ -128,8 +129,8 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   protected def astForWhileStatement(whileStmt: BabelNodeInfo): Ast = {
     val whileNode = createControlStructureNode(whileStmt, ControlStructureTypes.WHILE)
-    val testAst   = astForNode(whileStmt.json("test"))
-    val bodyAst   = astForNode(whileStmt.json("body"))
+    val testAst   = astForNodeWithFunctionReference(whileStmt.json("test"))
+    val bodyAst   = astForNodeWithFunctionReference(whileStmt.json("body"))
     // The semantics of while statement children is partially defined by there order value.
     // The bodyAst must have order == 2. Only to avoid collision we set testAst to 1
     // because the semantics of it is already indicated via the condition edge.
@@ -142,20 +143,20 @@ trait AstForStatementsCreator { this: AstCreator =>
     val forNode = createControlStructureNode(forStmt, ControlStructureTypes.FOR)
     val initAst = safeObj(forStmt.json, "init")
       .map { init =>
-        astForNode(Obj(init))
+        astForNodeWithFunctionReference(Obj(init))
       }
       .getOrElse(Ast())
     val testAst = safeObj(forStmt.json, "test")
       .map { test =>
-        astForNode(Obj(test))
+        astForNodeWithFunctionReference(Obj(test))
       }
       .getOrElse(Ast(createLiteralNode("true", Some(Defines.BOOLEAN), forStmt.lineNumber, forStmt.columnNumber)))
     val updateAst = safeObj(forStmt.json, "update")
       .map { update =>
-        astForNode(Obj(update))
+        astForNodeWithFunctionReference(Obj(update))
       }
       .getOrElse(Ast())
-    val bodyAst = astForNode(forStmt.json("body"))
+    val bodyAst = astForNodeWithFunctionReference(forStmt.json("body"))
 
     // The semantics of for statement children is defined by there order value.
     // Thus we set the here explicitly and do not rely on the usual consecutive
@@ -227,7 +228,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForThrowStatement(throwStmt: BabelNodeInfo): Ast = {
-    val argumentAst = astForNode(throwStmt.json("argument"))
+    val argumentAst = astForNodeWithFunctionReference(throwStmt.json("argument"))
     val throwCallNode =
       createCallNode(
         throwStmt.code,
@@ -250,7 +251,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   protected def astForSwitchStatement(switchStmt: BabelNodeInfo): Ast = {
     val switchNode = createControlStructureNode(switchStmt, ControlStructureTypes.SWITCH)
 
-    val switchExpressionAst = astForNode(switchStmt.json("discriminant"))
+    val switchExpressionAst = astForNodeWithFunctionReference(switchStmt.json("discriminant"))
 
     val blockNode = createBlockNode(switchStmt)
     val blockAst  = Ast(blockNode)
@@ -325,7 +326,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       forInOfStmt.columnNumber
     )
 
-    val objectKeysCallArgs = List(astForNode(collection))
+    val objectKeysCallArgs = List(astForNodeWithFunctionReference(collection))
     val objectKeysCallAst  = createCallAst(objectKeysCallNode, objectKeysCallArgs)
 
     val indexBaseNode = createIdentifierNode("Symbol", forInOfStmt)
@@ -454,7 +455,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     localAstParentStack.push(whileLoopBlockNode)
 
     // while loop block:
-    val bodyAst = astForNode(forInOfStmt.json("body"))
+    val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
 
     val whileLoopBlockAst = Ast(whileLoopBlockNode).withChild(loopVariableAssignmentAst).withChild(bodyAst)
 

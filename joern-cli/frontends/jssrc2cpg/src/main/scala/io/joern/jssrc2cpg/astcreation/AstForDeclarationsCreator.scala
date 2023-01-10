@@ -27,6 +27,8 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   protected def codeForBabelNodeInfo(obj: BabelNodeInfo): Seq[String] = {
     val codes = obj.node match {
       case Identifier                                 => Seq(obj.code)
+      case NumericLiteral                             => Seq(obj.code)
+      case StringLiteral                              => Seq(obj.code)
       case AssignmentExpression                       => Seq(code(obj.json("left")))
       case ClassDeclaration                           => Seq(code(obj.json("id")))
       case TSTypeAliasDeclaration                     => Seq(code(obj.json("id")))
@@ -42,6 +44,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case ClassExpression if hasNoName(obj.json)     => Seq.empty
       case ClassExpression                            => Seq(code(obj.json("id")))
       case VariableDeclaration                        => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
+      case ObjectExpression                           => obj.json("properties").arr.toSeq.map(code)
+      case MemberExpression                           => Seq(code(obj.json("property")))
+      case JSXElement                                 => Seq.empty
       case _ =>
         notHandledYet(obj, "Retrieve code")
         Seq.empty
@@ -491,7 +496,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case ObjectPattern | ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
         astForDeconstruction(nodeInfo, sourceAst, element.code)
-      case _ => astForNode(lhsElement)
+      case _ => astForNodeWithFunctionReference(lhsElement)
     }
 
     val testAst = {
@@ -534,7 +539,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case ObjectPattern | ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
         astForDeconstruction(nodeInfo, sourceAst, element.code)
-      case _ => astForNode(lhsElement)
+      case _ => astForNodeWithFunctionReference(lhsElement)
     }
 
     val testAst = {
@@ -630,7 +635,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
                     createBabelNodeInfo(element("key")),
                     localTmpName
                   )
-                case _ => astForNode(nodeInfo.json)
+                case _ => astForNodeWithFunctionReference(nodeInfo.json)
               }
           }
         }
@@ -650,7 +655,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
                 convertDestructingArrayElement(nodeInfo, index, localTmpName)
               case AssignmentPattern =>
                 convertDestructingArrayElementWithDefault(nodeInfo, index, localTmpName)
-              case _ => astForNode(nodeInfo.json)
+              case _ => astForNodeWithFunctionReference(nodeInfo.json)
             }
           case _ => Ast()
         }

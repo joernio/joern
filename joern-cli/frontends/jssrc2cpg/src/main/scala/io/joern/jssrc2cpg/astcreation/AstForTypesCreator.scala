@@ -216,22 +216,31 @@ trait AstForTypesCreator { this: AstCreator =>
 
     addModifier(typeDeclNode, tsEnum.json)
 
+    val typeRefNode = createTypeRefNode(s"enum $typeName", typeFullName, tsEnum)
+
     methodAstParentStack.push(typeDeclNode)
     dynamicInstanceTypeStack.push(typeFullName)
+    typeRefIdStack.push(typeRefNode)
+    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
 
     val memberAsts = tsEnum.json("members").arr.toList.flatMap(m => astsForEnumMember(createBabelNodeInfo(m)))
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
+    typeRefIdStack.pop()
+    scope.popScope()
 
     val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
     if (calls.isEmpty) {
-      Ast(typeDeclNode).withChildren(member)
+      Ast.storeInDiffGraph(Ast(typeDeclNode).withChildren(member), diffGraph)
     } else {
       val init =
         staticInitMethodAst(calls, s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}", None, Defines.ANY)
-      Ast(typeDeclNode).withChildren(member).withChild(init)
+      Ast.storeInDiffGraph(Ast(typeDeclNode).withChildren(member).withChild(init), diffGraph)
     }
+
+    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode, EdgeTypes.AST)
+    Ast(typeRefNode)
   }
 
   private def isStaticMember(json: Value): Boolean = {
@@ -306,7 +315,7 @@ trait AstForTypesCreator { this: AstCreator =>
     // retrieving initialization calls from the static initialization block if any
     val staticInitBlock = allClassMembers.find(isStaticInitBlock)
     val staticInitBlockAsts =
-      staticInitBlock.map(block => block("body").arr.toList.map(astForNode)).getOrElse(List.empty)
+      staticInitBlock.map(block => block("body").arr.toList.map(astForNodeWithFunctionReference)).getOrElse(List.empty)
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
@@ -449,7 +458,7 @@ trait AstForTypesCreator { this: AstCreator =>
           val names = nodeInfo.node match {
             case TSPropertySignature =>
               if (hasKey(nodeInfo.json("key"), "value")) {
-                Seq(nodeInfo.json("key")("value").str)
+                Seq(safeStr(nodeInfo.json("key"), "value").getOrElse(code(nodeInfo.json("key")("value"))))
               } else Seq(code(nodeInfo.json("key")))
             case TSIndexSignature =>
               nodeInfo.json("parameters").arr.toSeq.map(_("name").str)
