@@ -110,9 +110,24 @@ class Engine(context: EngineContext) {
     }
 
     submitTasks(tasks.toVector, sources)
+    val startTimeSec: Long = System.currentTimeMillis / 1000
     runUntilAllTasksAreSolved()
+    val taskFinishTimeSec: Long = System.currentTimeMillis / 1000
+    println(
+      "Time measurement -----> Task processing done in " +
+        (taskFinishTimeSec - startTimeSec) + " seconds"
+    )
     new HeldTaskCompletion(held.toList, mainResultTable).completeHeldTasks()
-    deduplicateFinal(extractResultsFromTable(sinks))
+    val dedupResult          = deduplicateFinal(extractResultsFromTable(sinks))
+    val allDoneTimeSec: Long = System.currentTimeMillis / 1000
+
+    println(
+      "Time measurement -----> Task processing: " +
+        (taskFinishTimeSec - startTimeSec) + " seconds" +
+        ", Deduplication: " + (allDoneTimeSec - taskFinishTimeSec) +
+        ", Deduped results size: " + dedupResult.length
+    )
+    dedupResult
   }
 
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]): Unit = {
