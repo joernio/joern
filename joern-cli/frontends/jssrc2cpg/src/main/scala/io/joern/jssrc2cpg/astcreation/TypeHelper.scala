@@ -108,6 +108,7 @@ trait TypeHelper { this: AstCreator =>
   private def typeFromTypeMap(node: BabelNodeInfo): String =
     start(node.json).flatMap(parserResult.typeMap.get) match {
       case Some(value) if value == "string"  => Defines.STRING
+      case Some(value) if value.isEmpty      => Defines.STRING
       case Some(value) if value == "number"  => Defines.NUMBER
       case Some(value) if value == "null"    => Defines.NULL
       case Some(value) if value == "boolean" => Defines.BOOLEAN

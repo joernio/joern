@@ -271,42 +271,38 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   }
 
   private def astForVariableDeclarator(declarator: Value, scopeType: ScopeType, kind: String): Ast = {
-    val id             = createBabelNodeInfo(declarator("id"))
-    val init           = Try(createBabelNodeInfo(declarator("init"))).toOption
+    val idNodeInfo     = createBabelNodeInfo(declarator("id"))
+    val declNodeInfo   = createBabelNodeInfo(declarator)
+    val initNodeInfo   = Try(createBabelNodeInfo(declarator("init"))).toOption
     val declaratorCode = s"$kind ${code(declarator)}"
 
-    val typeFullName = init match {
-      case Some(f @ BabelNodeInfo(_: FunctionLike, _, _, _, _, _, _)) =>
-        val (_, methodFullName) = calcMethodNameAndFullName(f)
-        methodFullName
-      case _ => init.map(typeFor).getOrElse(Defines.ANY)
-    }
+    val typeFullName = typeFor(declNodeInfo)
 
-    val localNode = createLocalNode(id.code, typeFullName)
-    scope.addVariable(id.code, localNode, scopeType)
+    val localNode = createLocalNode(idNodeInfo.code, typeFullName)
+    scope.addVariable(idNodeInfo.code, localNode, scopeType)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 
-    if (init.isEmpty) {
+    if (initNodeInfo.isEmpty) {
       Ast()
     } else {
-      val sourceAst = init.get match {
+      val sourceAst = initNodeInfo.get match {
         case requireCall if requireCall.code.startsWith(s"$REQUIRE_KEYWORD(") =>
-          handleRequireCallForDependencies(createBabelNodeInfo(declarator), id.json, init.get.json)
+          handleRequireCallForDependencies(createBabelNodeInfo(declarator), idNodeInfo.json, initNodeInfo.get.json)
           astForNodeWithFunctionReference(requireCall.json)
         case initExpr =>
           astForNodeWithFunctionReference(initExpr.json)
       }
-      val nodeInfo = createBabelNodeInfo(id.json)
+      val nodeInfo = createBabelNodeInfo(idNodeInfo.json)
       nodeInfo.node match {
         case ObjectPattern | ArrayPattern =>
           astForDeconstruction(nodeInfo, sourceAst, declaratorCode)
         case _ =>
-          val destAst = id.node match {
-            case Identifier => astForIdentifier(id, Some(typeFullName))
-            case _          => astForNode(id.json)
+          val destAst = idNodeInfo.node match {
+            case Identifier => astForIdentifier(idNodeInfo, Some(typeFullName))
+            case _          => astForNode(idNodeInfo.json)
           }
 
-          val assigmentCallAst =
+          val assignmentCallAst =
             createAssignmentCallAst(
               destAst,
               sourceAst,
@@ -314,7 +310,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
               line = line(declarator),
               column = column(declarator)
             )
-          assigmentCallAst
+          assignmentCallAst
       }
     }
   }
