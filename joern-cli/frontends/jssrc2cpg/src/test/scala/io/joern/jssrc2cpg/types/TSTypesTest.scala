@@ -37,7 +37,7 @@ class TSTypesTest extends AbstractPassTest {
     val List(p2) = cpg.parameter("p2").l
     p2.typeFullName shouldBe Defines.STRING
     val List(barRet) = cpg.method("bar").methodReturn.l
-    barRet.typeFullName shouldBe s"(p1: ${Defines.NUMBER}, p2: ${Defines.STRING}) => Foo"
+    barRet.typeFullName shouldBe "Foo"
     cpg.typ.name.sorted.l shouldBe (List(
       ":program",
       io.joern.x2cpg.Defines.ConstructorMethodName,

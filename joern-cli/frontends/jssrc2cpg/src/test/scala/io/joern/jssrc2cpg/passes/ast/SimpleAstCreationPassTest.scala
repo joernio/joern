@@ -21,8 +21,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val methodBlock = cpg.method("anonymous").astChildren.isBlock
       val literal     = methodBlock.astChildren.isReturn.astChildren.isLiteral.head
       literal.code shouldBe "42"
+      val List(foo) = cpg.identifier("foo").l
+      foo.typeFullName shouldBe s"() => ${Defines.NUMBER}"
       val List(ret) = cpg.method("anonymous").methodReturn.l
-      ret.typeFullName shouldBe s"() => ${Defines.NUMBER}"
+      ret.typeFullName shouldBe Defines.NUMBER
     }
 
     "have only 1 Block Node for arrow functions" in AstFixture("const foo = () => {return 42;}") { cpg =>
@@ -731,7 +733,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct structure for empty method" in AstFixture("function method(x) {}") { cpg =>
       val List(method) = cpg.method.nameExact("method").l
       method.astChildren.isBlock.size shouldBe 1
-      method.methodReturn.typeFullName shouldBe s"(x: ${Defines.ANY}) => void"
+      method.methodReturn.typeFullName shouldBe "void"
       method.parameter.index(0).nameExact("this").typeFullName(Defines.ANY).size shouldBe 1
       method.parameter.index(1).nameExact("x").typeFullName(Defines.ANY).size shouldBe 1
     }
@@ -739,7 +741,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct structure for empty method with rest parameter" in AstFixture("function method(x, ...args) {}") {
       cpg =>
         val List(method) = cpg.method.nameExact("method").l
-        method.methodReturn.typeFullName shouldBe s"(x: ${Defines.ANY}, ...args: ${Defines.ANY}[]) => void"
+        method.methodReturn.typeFullName shouldBe "void"
 
         val List(t, x, args) = method.parameter.l
         t.index shouldBe 0
@@ -1448,7 +1450,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       program.astChildren.isBlock.size shouldBe 1
       val blockMethodReturn = program.methodReturn
       blockMethodReturn.code shouldBe "RET"
-      blockMethodReturn.typeFullName shouldBe "() => void"
+      blockMethodReturn.typeFullName shouldBe "void"
     }
 
   }

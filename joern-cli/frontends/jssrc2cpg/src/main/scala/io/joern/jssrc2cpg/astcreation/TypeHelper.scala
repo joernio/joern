@@ -114,7 +114,7 @@ trait TypeHelper { this: AstCreator =>
   }
 
   private def typeFromTypeMap(node: BabelNodeInfo): String =
-    start(node.json).flatMap(parserResult.typeMap.get) match {
+    pos(node.json).flatMap(parserResult.typeMap.get) match {
       case Some(value) if value == "string"  => Defines.STRING
       case Some(value) if value.isEmpty      => Defines.STRING
       case Some(value) if value == "number"  => Defines.NUMBER
@@ -128,28 +128,10 @@ trait TypeHelper { this: AstCreator =>
       case None => Defines.ANY
     }
 
-  protected def typeForFunc(func: BabelNodeInfo): String =
-    Seq(TYPE_ANNOTATION_KEY, RETURN_TYPE_KEY).find(hasKey(func.json, _)) match {
-      case Some(key) =>
-        typeForTypeAnnotation(createBabelNodeInfo(func.json(key)))
-      case None =>
-        val node = func.node match {
-          case TSCallSignatureDeclaration                              => func
-          case TSConstructSignatureDeclaration                         => func
-          case _ if safeStr(func.json, "kind").contains("method")      => createBabelNodeInfo(func.json("key"))
-          case _ if safeStr(func.json, "kind").contains("constructor") => func
-          case _ if func.json("id").isNull                             => func
-          case _                                                       => createBabelNodeInfo(func.json("id"))
-        }
-        typeFromTypeMap(node)
-    }
-
   protected def typeFor(node: BabelNodeInfo): String = {
     val tpe = Seq(TYPE_ANNOTATION_KEY, RETURN_TYPE_KEY).find(hasKey(node.json, _)) match {
-      case Some(key) =>
-        typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
-      case None =>
-        typeFromTypeMap(node)
+      case Some(key) => typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
+      case None      => typeFromTypeMap(node)
     }
     registerType(tpe, tpe)
     tpe

@@ -67,7 +67,7 @@ trait AstNodeBuilder { this: AstCreator =>
     val line   = func.lineNumber
     val column = func.columnNumber
     val code   = "RET"
-    val tpe    = typeForFunc(func)
+    val tpe    = typeFor(func)
     NewMethodReturn()
       .code(code)
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
