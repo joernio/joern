@@ -41,6 +41,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case FunctionDeclaration                        => Seq(code(obj.json("id")))
       case FunctionExpression if hasNoName(obj.json)  => Seq.empty
       case FunctionExpression                         => Seq(code(obj.json("id")))
+      case ArrowFunctionExpression                    => Seq.empty
       case ClassExpression if hasNoName(obj.json)     => Seq.empty
       case ClassExpression                            => Seq(code(obj.json("id")))
       case VariableDeclaration                        => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
