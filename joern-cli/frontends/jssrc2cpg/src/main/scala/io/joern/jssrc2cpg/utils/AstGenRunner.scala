@@ -76,7 +76,7 @@ object AstGenRunner {
 
   private def skippedFiles(in: File, astgenOut: List[String]): List[String] = {
     val skipped = astgenOut.collect {
-      case out if !out.startsWith("Converted") =>
+      case out if !out.startsWith("Converted") && !out.startsWith("Retrieving") =>
         val filename = out.substring(0, out.indexOf(" "))
         val reason   = out.substring(out.indexOf(" ") + 1)
         logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
