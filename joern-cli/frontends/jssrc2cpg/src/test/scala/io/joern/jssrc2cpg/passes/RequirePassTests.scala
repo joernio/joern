@@ -19,9 +19,7 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
          |testone();
       """.stripMargin,
       "sample.js"
-    )
-
-    cpg.moreCode(
+    ).moreCode(
       """
         |module.exports = function (nameparam) {
         |  console.log( "external func" + nameparam);
@@ -48,9 +46,7 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
          |bar(x);
       """.stripMargin,
       "sample.js"
-    )
-
-    cpg.moreCode(
+    ).moreCode(
       """
         |export function foo(x) {
         |  console.log(x);
