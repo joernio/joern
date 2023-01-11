@@ -9,6 +9,14 @@ trait TypeHelper { this: AstCreator =>
   private val TYPE_ANNOTATION_KEY   = "typeAnnotation"
   private val RETURN_TYPE_KEY       = "returnType"
   private val TYPE_NOT_HANDLED_TEXT = "Type calculation"
+  private val TYPE_REPLACEMENTS = Map(
+    " any"     -> s" ${Defines.ANY}",
+    " number"  -> s" ${Defines.NUMBER}",
+    " null"    -> s" ${Defines.NULL}",
+    " string"  -> s" ${Defines.STRING}",
+    " boolean" -> s" ${Defines.BOOLEAN}",
+    "typeof "  -> ""
+  )
 
   protected def isPlainTypeAlias(alias: BabelNodeInfo): Boolean = if (hasKey(alias.json, "right")) {
     createBabelNodeInfo(alias.json("right")).node.toString == TSTypeReference.toString
@@ -112,8 +120,12 @@ trait TypeHelper { this: AstCreator =>
       case Some(value) if value == "number"  => Defines.NUMBER
       case Some(value) if value == "null"    => Defines.NULL
       case Some(value) if value == "boolean" => Defines.BOOLEAN
-      case Some(other)                       => other
-      case None                              => Defines.ANY
+      case Some(value) if value == "any"     => Defines.ANY
+      case Some(other) =>
+        TYPE_REPLACEMENTS.foldLeft(other) { case (typeStr, (m, r)) =>
+          typeStr.replace(m, r)
+        }
+      case None => Defines.ANY
     }
 
   protected def typeForFunc(func: BabelNodeInfo): String =

@@ -44,6 +44,25 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         file.delete()
       }
     }
+
+    def apply(code1: String, filename1: String, code2: String, filename2: String)(f: Cpg => Unit): Unit = {
+      File.usingTemporaryDirectory("jssrc2cpgTests") { dir =>
+        val cpg   = newEmptyCpg()
+        val file1 = dir / filename1
+        file1.write(code1)
+        val file2 = dir / filename2
+        file2.write(code2)
+        val config          = Config(inputPath = dir.toString(), outputPath = dir.toString())
+        val astgenResult    = AstGenRunner.execute(config, dir)
+        val astCreationPass = new AstCreationPass(cpg, astgenResult, config)
+        astCreationPass.createAndApply()
+        new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
+        new BuiltinTypesPass(cpg).createAndApply()
+        f(cpg)
+        file1.delete()
+        file2.delete()
+      }
+    }
   }
 
 }

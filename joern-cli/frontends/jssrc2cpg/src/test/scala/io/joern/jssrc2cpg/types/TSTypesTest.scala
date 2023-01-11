@@ -37,13 +37,12 @@ class TSTypesTest extends AbstractPassTest {
     val List(p2) = cpg.parameter("p2").l
     p2.typeFullName shouldBe Defines.STRING
     val List(barRet) = cpg.method("bar").methodReturn.l
-    barRet.typeFullName shouldBe "(p1: number, p2: string) => Foo"
+    barRet.typeFullName shouldBe s"(p1: ${Defines.NUMBER}, p2: ${Defines.STRING}) => Foo"
     cpg.typ.name.sorted.l shouldBe (List(
       ":program",
       io.joern.x2cpg.Defines.ConstructorMethodName,
       "Foo",
-      "bar",
-      "typeof Foo"
+      "bar"
     ) ++ Defines.JSTYPES).sorted
   }
 
@@ -166,6 +165,24 @@ class TSTypesTest extends AbstractPassTest {
       alias.code shouldBe "type Alias = string"
       alias.aliasTypeFullName shouldBe empty
     }
+  }
+
+  "have correct types for cross file import" in TsAstFixture(
+    """
+      |export class Foo {
+      |  bar() { return "bar"; }
+      |}
+      |""".stripMargin,
+    "Foo.ts",
+    """
+      |import * as deps from "./Foo";
+      |
+      |var x = new deps.Foo().bar();
+      |""".stripMargin,
+    "index.ts"
+  ) { cpg =>
+    val List(x) = cpg.identifier("x").l
+    x.typeFullName shouldBe Defines.STRING
   }
 
 }
