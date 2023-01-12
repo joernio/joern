@@ -300,8 +300,8 @@ trait AstNodeBuilder { this: AstCreator =>
     line: Option[Integer],
     column: Option[Integer]
   ): Ast = {
-    val code     = s"${codeOf(testAst.nodes.head)} ? ${codeOf(trueAst.nodes.head)} : ${codeOf(falseAst.nodes.head)}"
-    val callNode = createCallNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, line, column)
+    val code      = s"${codeOf(testAst.nodes.head)} ? ${codeOf(trueAst.nodes.head)} : ${codeOf(falseAst.nodes.head)}"
+    val callNode  = createCallNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(testAst, trueAst, falseAst)
     createCallAst(callNode, arguments)
   }

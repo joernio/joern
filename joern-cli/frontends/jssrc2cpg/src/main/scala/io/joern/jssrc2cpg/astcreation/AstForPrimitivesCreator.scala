@@ -61,15 +61,27 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForRegExpLiteral(regExpLiteral: BabelNodeInfo): Ast =
     Ast(
-      createLiteralNode(regExpLiteral.code, Option(Defines.STRING), regExpLiteral.lineNumber, regExpLiteral.columnNumber)
+      createLiteralNode(
+        regExpLiteral.code,
+        Option(Defines.STRING),
+        regExpLiteral.lineNumber,
+        regExpLiteral.columnNumber
+      )
     )
 
   protected def astForRegexLiteral(regexLiteral: BabelNodeInfo): Ast =
-    Ast(createLiteralNode(regexLiteral.code, Option(Defines.STRING), regexLiteral.lineNumber, regexLiteral.columnNumber))
+    Ast(
+      createLiteralNode(regexLiteral.code, Option(Defines.STRING), regexLiteral.lineNumber, regexLiteral.columnNumber)
+    )
 
   protected def astForNumberLiteral(numberLiteral: BabelNodeInfo): Ast =
     Ast(
-      createLiteralNode(numberLiteral.code, Option(Defines.NUMBER), numberLiteral.lineNumber, numberLiteral.columnNumber)
+      createLiteralNode(
+        numberLiteral.code,
+        Option(Defines.NUMBER),
+        numberLiteral.lineNumber,
+        numberLiteral.columnNumber
+      )
     )
 
   protected def astForNumericLiteral(numericLiteral: BabelNodeInfo): Ast =
@@ -94,7 +106,12 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForBigIntLiteral(bigIntLiteral: BabelNodeInfo): Ast =
     Ast(
-      createLiteralNode(bigIntLiteral.code, Option(Defines.NUMBER), bigIntLiteral.lineNumber, bigIntLiteral.columnNumber)
+      createLiteralNode(
+        bigIntLiteral.code,
+        Option(Defines.NUMBER),
+        bigIntLiteral.lineNumber,
+        bigIntLiteral.columnNumber
+      )
     )
 
   protected def astForBooleanLiteral(booleanLiteral: BabelNodeInfo): Ast =

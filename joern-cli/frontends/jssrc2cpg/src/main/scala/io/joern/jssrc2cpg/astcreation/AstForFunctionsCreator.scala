@@ -90,7 +90,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
               nodeInfo.columnNumber
             )
             val rhsAst = astForNodeWithFunctionReference(rhsElement)
-            additionalBlockStatements.addOne(astForDeconstruction(lhsNodeInfo, rhsAst, nodeInfo.code, Option(paramName)))
+            additionalBlockStatements.addOne(
+              astForDeconstruction(lhsNodeInfo, rhsAst, nodeInfo.code, Option(paramName))
+            )
             param
           case _ =>
             additionalBlockStatements.addOne(convertParamWithDefault(nodeInfo))
