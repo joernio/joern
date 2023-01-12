@@ -13,7 +13,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
     val openingAst   = astForNodeWithFunctionReference(jsxElem.json("openingElement"))
     val childrenAsts = astForNodes(jsxElem.json("children").arr.toList)
     val closingAst =
-      safeObj(jsxElem.json, "closingElement").map(e => astForNodeWithFunctionReference(Obj(e))).getOrElse(Ast())
+      safeObj(jsxElem.json, "closingElement").fold(Ast())(e => astForNodeWithFunctionReference(Obj(e)))
 
     val allChildrenAsts = openingAst +: childrenAsts :+ closingAst
     setArgIndices(allChildrenAsts)
@@ -35,7 +35,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
 
   protected def astForJsxAttribute(jsxAttr: BabelNodeInfo): Ast = {
     val domNode  = createTemplateDomNode(jsxAttr.node.toString, jsxAttr.code, jsxAttr.lineNumber, jsxAttr.columnNumber)
-    val valueAst = safeObj(jsxAttr.json, "value").map(e => astForNodeWithFunctionReference(Obj(e))).getOrElse(Ast())
+    val valueAst = safeObj(jsxAttr.json, "value").fold(Ast())(e => astForNodeWithFunctionReference(Obj(e)))
     setArgIndices(List(valueAst))
     Ast(domNode).withChild(valueAst)
   }

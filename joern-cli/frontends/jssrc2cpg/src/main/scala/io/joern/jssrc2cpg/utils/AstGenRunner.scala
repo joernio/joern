@@ -80,7 +80,7 @@ object AstGenRunner {
         val filename = out.substring(0, out.indexOf(" "))
         val reason   = out.substring(out.indexOf(" ") + 1)
         logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
-        Some(filename)
+        Option(filename)
       case out =>
         logger.debug(s"\t+ $out")
         None

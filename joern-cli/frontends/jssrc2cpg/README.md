@@ -20,7 +20,7 @@ of the build process. To build jssrc2cpg issue the command `sbt stage`.
 
 jssrc2cpg uses a modified version of [@joern/astgen](https://github.com/joernio/astgen) under the hood.
 That version is available [here](https://github.com/max-leuthaeuser/astgen).
-Native binaries for Linux, MacOS, and Windows are generated as described [here](https://github.com/max-leuthaeuser/astgen#building).
+Native binaries for Linux, macOS, and Windows are generated as described [here](https://github.com/max-leuthaeuser/astgen#building).
 To build your own native binaries run the following commands:
 
 ```shell script

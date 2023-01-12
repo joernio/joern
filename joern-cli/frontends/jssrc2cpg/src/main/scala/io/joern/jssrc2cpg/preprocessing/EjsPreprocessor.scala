@@ -36,7 +36,7 @@ class EjsPreprocessor {
       case ma =>
         val start = ma.start + ma.group(1).length
         val end   = ma.end - ma.group(3).length
-        Some((start, end))
+        Option((start, end))
     }
 
     codeAsCharArray.zipWithIndex.foreach {
@@ -57,9 +57,9 @@ class EjsPreprocessor {
         val start = ma.start + ma.group(1).length
         val end   = ma.end - ma.group(3).length
         if (!alreadyReplaced.contains((start, end))) {
-          val replacementCode = ma.group(2) + ";"
-          codeWithoutSemicolon = codeWithoutSemicolon.substring(0, start) +
-            replacementCode + codeWithoutSemicolon.substring(end + 1, codeWithoutSemicolon.length)
+          val replacementCode = s"${ma.group(2)};"
+          codeWithoutSemicolon =
+            s"${codeWithoutSemicolon.substring(0, start)}$replacementCode${codeWithoutSemicolon.substring(end + 1, codeWithoutSemicolon.length)}"
           alreadyReplaced.append((start, end))
         }
       case _ => // others are fine already

@@ -72,7 +72,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           isVariadic = true,
           nodeInfo.lineNumber,
           nodeInfo.columnNumber,
-          Some(tpe)
+          Option(tpe)
         )
       case AssignmentPattern =>
         val lhsElement  = nodeInfo.json("left")
@@ -90,7 +90,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
               nodeInfo.columnNumber
             )
             val rhsAst = astForNodeWithFunctionReference(rhsElement)
-            additionalBlockStatements.addOne(astForDeconstruction(lhsNodeInfo, rhsAst, nodeInfo.code, Some(paramName)))
+            additionalBlockStatements.addOne(astForDeconstruction(lhsNodeInfo, rhsAst, nodeInfo.code, Option(paramName)))
             param
           case _ =>
             additionalBlockStatements.addOne(convertParamWithDefault(nodeInfo))
@@ -102,7 +102,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
               isVariadic = false,
               lhsNodeInfo.lineNumber,
               lhsNodeInfo.columnNumber,
-              Some(tpe)
+              Option(tpe)
             )
         }
       case ArrayPattern =>
@@ -115,7 +115,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           isVariadic = false,
           nodeInfo.lineNumber,
           nodeInfo.columnNumber,
-          Some(tpe)
+          Option(tpe)
         )
         additionalBlockStatements.addAll(nodeInfo.json("elements").arr.toList.map {
           case element if !element.isNull =>
@@ -154,7 +154,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           isVariadic = false,
           nodeInfo.lineNumber,
           nodeInfo.columnNumber,
-          Some(tpe)
+          Option(tpe)
         )
         additionalBlockStatements.addAll(nodeInfo.json("properties").arr.toList.map { element =>
           val elementNodeInfo = createBabelNodeInfo(element)
@@ -190,7 +190,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           isVariadic = false,
           nodeInfo.lineNumber,
           nodeInfo.columnNumber,
-          Some(tpe)
+          Option(tpe)
         )
       case _ =>
         val tpe = typeFor(nodeInfo)
@@ -201,7 +201,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           isVariadic = false,
           nodeInfo.lineNumber,
           nodeInfo.columnNumber,
-          Some(tpe)
+          Option(tpe)
         )
     }
   }
@@ -305,7 +305,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodRefNode = if (!shouldCreateFunctionReference) {
       None
-    } else { Some(createMethodRefNode(methodName, methodFullName, func)) }
+    } else { Option(createMethodRefNode(methodName, methodFullName, func)) }
 
     val callAst = if (shouldCreateAssignmentCall && shouldCreateFunctionReference) {
       val idNode  = createIdentifierNode(methodName, func)
