@@ -194,7 +194,7 @@ object AstGenRunner {
 
   def execute(config: Config, out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)
-    logger.debug(s"\t+ Running astgen in '$in' ...")
+    logger.info(s"Running astgen in '$in' ...")
     runAstGenNative(in, out) match {
       case Success(result) =>
         val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")), config, out)

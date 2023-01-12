@@ -67,14 +67,22 @@ trait TypeHelper { this: AstCreator =>
     case _                => Defines.ANY
   }
 
+  private def isStringType(tpe: String): Boolean =
+    tpe.startsWith("\"") && tpe.endsWith("\"")
+
+  private def isNumberType(tpe: String): Boolean =
+    tpe.toDoubleOption.isDefined
+
   private def typeFromTypeMap(node: BabelNodeInfo): String =
     pos(node.json).flatMap(parserResult.typeMap.get) match {
-      case Some(value) if value == "string"  => Defines.STRING
-      case Some(value) if value.isEmpty      => Defines.STRING
-      case Some(value) if value == "number"  => Defines.NUMBER
-      case Some(value) if value == "null"    => Defines.NULL
-      case Some(value) if value == "boolean" => Defines.BOOLEAN
-      case Some(value) if value == "any"     => Defines.ANY
+      case Some(value) if value.isEmpty       => Defines.STRING
+      case Some(value) if value == "string"   => Defines.STRING
+      case Some(value) if isStringType(value) => Defines.STRING
+      case Some(value) if value == "number"   => Defines.NUMBER
+      case Some(value) if isNumberType(value) => Defines.NUMBER
+      case Some(value) if value == "null"     => Defines.NULL
+      case Some(value) if value == "boolean"  => Defines.BOOLEAN
+      case Some(value) if value == "any"      => Defines.ANY
       case Some(other) =>
         TYPE_REPLACEMENTS.foldLeft(other) { case (typeStr, (m, r)) =>
           typeStr.replace(m, r)
