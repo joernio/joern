@@ -68,7 +68,7 @@ class TSTypesTest extends AbstractPassTest {
     inside(cpg.identifier.l) { case List(x) =>
       x.name shouldBe "x"
       x.code shouldBe "x"
-      x.typeFullName shouldBe "\"USER2069\"" // we can actually follow type intrinsics
+      x.typeFullName shouldBe Defines.STRING // we can actually follow type intrinsics
     }
   }
 

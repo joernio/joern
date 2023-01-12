@@ -15,6 +15,7 @@ trait TypeHelper { this: AstCreator =>
     " null"    -> s" ${Defines.NULL}",
     " string"  -> s" ${Defines.STRING}",
     " boolean" -> s" ${Defines.BOOLEAN}",
+    "{}"       -> Defines.OBJECT,
     "typeof "  -> ""
   )
 
