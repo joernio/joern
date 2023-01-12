@@ -83,7 +83,7 @@ class AstCreator(
     val lineNumberEnd   = astNodeInfo.lineNumberEnd
     val columnNumberEnd = astNodeInfo.columnNumberEnd
     val name            = ":program"
-    val fullName        = path + ":" + name
+    val fullName        = s"$path:$name"
 
     val programMethod =
       NewMethod()

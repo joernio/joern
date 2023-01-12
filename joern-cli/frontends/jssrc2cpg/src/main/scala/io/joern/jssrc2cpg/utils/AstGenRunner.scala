@@ -15,6 +15,15 @@ import scala.util.matching.Regex
 import scala.util.Try
 
 object AstGenRunner {
+  case class AstGenRunnerResult(
+    parsedFiles: List[(String, String)] = List.empty,
+    skippedFiles: List[(String, String)] = List.empty
+  )
+}
+
+class AstGenRunner(config: Config) {
+
+  import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -45,6 +54,12 @@ object AstGenRunner {
     ".*eslint-local-rules\\.js".r
   )
 
+  private val EXECUTABLE_ARGS = if (!config.tsTypes) {
+    " --no-tsTypes"
+  } else {
+    ""
+  }
+
   private val EXECUTABLE_NAME = if (Environment.IS_MAC) {
     "astgen-macos"
   } else if (Environment.IS_LINUX) {
@@ -54,7 +69,7 @@ object AstGenRunner {
   }
 
   private val EXECUTABLE_DIR: String = {
-    val dir        = AstGenRunner.getClass.getProtectionDomain.getCodeSource.getLocation.toString
+    val dir        = getClass.getProtectionDomain.getCodeSource.getLocation.toString
     val indexOfLib = dir.lastIndexOf("lib")
     val fixedDir = if (indexOfLib != -1) {
       new java.io.File(dir.substring("file:".length, indexOfLib)).toString
@@ -69,18 +84,13 @@ object AstGenRunner {
     Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
   }
 
-  case class AstGenRunnerResult(
-    parsedFiles: List[(String, String)] = List.empty,
-    skippedFiles: List[(String, String)] = List.empty
-  )
-
   private def skippedFiles(in: File, astgenOut: List[String]): List[String] = {
     val skipped = astgenOut.collect {
-      case out if !out.startsWith("Converted") =>
+      case out if !out.startsWith("Converted") && !out.startsWith("Retrieving") =>
         val filename = out.substring(0, out.indexOf(" "))
         val reason   = out.substring(out.indexOf(" ") + 1)
         logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
-        Some(filename)
+        Option(filename)
       case out =>
         logger.debug(s"\t+ $out")
         None
@@ -154,7 +164,7 @@ object AstGenRunner {
       jsFile
     }
 
-    val result = ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t ts -o $out", out.toString())
+    val result = ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME$EXECUTABLE_ARGS -t ts -o $out", out.toString())
 
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>
@@ -179,12 +189,13 @@ object AstGenRunner {
 
   private def vueFiles(in: File, out: File): Try[Seq[String]] = {
     val files = SourceFiles.determine(in.pathAsString, Set(".vue"))
-    if (files.nonEmpty) ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t vue -o $out", in.toString())
+    if (files.nonEmpty)
+      ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME$EXECUTABLE_ARGS -t vue -o $out", in.toString())
     else Success(Seq.empty)
   }
 
   private def jsFiles(in: File, out: File): Try[Seq[String]] =
-    ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME -t ts -o $out", in.toString())
+    ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME$EXECUTABLE_ARGS -t ts -o $out", in.toString())
 
   private def runAstGenNative(in: File, out: File): Try[Seq[String]] = for {
     ejsResult <- ejsFiles(in, out)
@@ -192,9 +203,9 @@ object AstGenRunner {
     jsResult  <- jsFiles(in, out)
   } yield jsResult ++ vueResult ++ ejsResult
 
-  def execute(config: Config, out: File): AstGenRunnerResult = {
+  def execute(out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)
-    logger.debug(s"\t+ Running astgen in '$in' ...")
+    logger.info(s"Running astgen in '$in' ...")
     runAstGenNative(in, out) match {
       case Success(result) =>
         val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")), config, out)

@@ -36,18 +36,14 @@ trait AstCreatorHelper { this: AstCreator =>
     BabelNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
   }
 
-  private def notHandledText(node: BabelNodeInfo): String =
-    s"""Node type '${node.node}' not handled yet!
-       |  Code: '${shortenCode(node.code, length = 50)}'
-       |  File: '${parserResult.fullPath}'
-       |  Line: ${node.lineNumber.getOrElse(-1)}
-       |  Column: ${node.columnNumber.getOrElse(-1)}
-       |  """.stripMargin
-
-  protected def notHandledYet(node: BabelNodeInfo, additionalInfo: String = ""): Ast = {
+  protected def notHandledYet(node: BabelNodeInfo): Ast = {
     val text =
-      if (additionalInfo.isEmpty) notHandledText(node)
-      else s"$additionalInfo: ${notHandledText(node)}"
+      s"""Node type '${node.node}' not handled yet!
+         |  Code: '${shortenCode(node.code, length = 50)}'
+         |  File: '${parserResult.fullPath}'
+         |  Line: ${node.lineNumber.getOrElse(-1)}
+         |  Column: ${node.columnNumber.getOrElse(-1)}
+         |  """.stripMargin
     logger.info(text)
     Ast(newUnknown(node))
   }
@@ -83,7 +79,7 @@ trait AstCreatorHelper { this: AstCreator =>
     usedVariableNames: mutable.HashMap[String, Int],
     variableName: String
   ): String = {
-    val counter             = usedVariableNames.get(variableName).map(_ + 1).getOrElse(0)
+    val counter             = usedVariableNames.get(variableName).fold(0)(_ + 1)
     val currentVariableName = s"${variableName}_$counter"
     usedVariableNames.put(variableName, counter)
     currentVariableName
@@ -109,13 +105,15 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def safeObj(node: Value, key: String): Option[mutable.LinkedHashMap[String, Value]] = Try(
     node(key).obj
   ) match {
-    case Success(value) if value.nonEmpty => Some(value)
+    case Success(value) if value.nonEmpty => Option(value)
     case _                                => None
   }
 
   private def start(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
 
   private def end(node: Value): Option[Int] = Try(node("end").num.toInt).toOption
+
+  protected def pos(node: Value): Option[Int] = Try(Math.max(node("start").num.toInt, 1)).toOption
 
   protected def line(node: Value): Option[Integer] = start(node).map(getLineOfSource)
 
@@ -251,13 +249,13 @@ trait AstCreatorHelper { this: AstCreator =>
         val localOrCapturedLocalNodeOption =
           if (currentScope.get.nameToVariableNode.contains(origin.variableName)) {
             done = true
-            Some(variableNodeId)
+            Option(variableNodeId)
           } else {
             currentScope.flatMap {
               case methodScope: MethodScopeElement
                   if methodScope.scopeNode.isInstanceOf[NewTypeDecl] || methodScope.scopeNode
                     .isInstanceOf[NewNamespaceBlock] =>
-                currentScope = Some(Scope.getEnclosingMethodScopeElement(currentScope))
+                currentScope = Option(Scope.getEnclosingMethodScopeElement(currentScope))
                 None
               case methodScope: MethodScopeElement =>
                 // We have reached a MethodScope and still did not find a local variable to link to.
@@ -271,14 +269,14 @@ trait AstCreatorHelper { this: AstCreator =>
                   case None =>
                     val methodScopeNode = methodScope.scopeNode
                     val localNode =
-                      createLocalNode(origin.variableName, Defines.ANY, Some(closureBindingIdProperty))
+                      createLocalNode(origin.variableName, Defines.ANY, Option(closureBindingIdProperty))
                     diffGraph.addEdge(methodScopeNode, localNode, EdgeTypes.AST)
                     val closureBindingNode = createClosureBindingNode(closureBindingIdProperty, origin.variableName)
                     methodScope.capturingRefId.foreach(ref =>
                       diffGraph.addEdge(ref, closureBindingNode, EdgeTypes.CAPTURE)
                     )
                     nextReference = closureBindingNode
-                    Some(localNode)
+                    Option(localNode)
                   case someLocalNode =>
                     // When there is already a LOCAL representing the capturing, we do not
                     // need to process the surrounding scope element as this has already

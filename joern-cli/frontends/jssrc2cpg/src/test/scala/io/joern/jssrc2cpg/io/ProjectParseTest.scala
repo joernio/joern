@@ -53,8 +53,8 @@ class ProjectParseTest extends JsSrc2CpgSuite with BeforeAndAfterAll {
     def apply(projectDir: File)(f: Cpg => Unit): Unit = {
       File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
         val cpg          = newEmptyCpg()
-        val config       = Config(inputPath = projectDir.toString, outputPath = tmpDir.toString)
-        val astgenResult = AstGenRunner.execute(config, tmpDir)
+        val config       = Config(inputPath = projectDir.toString, outputPath = tmpDir.toString, tsTypes = false)
+        val astgenResult = new AstGenRunner(config).execute(tmpDir)
         new AstCreationPass(cpg, astgenResult, config).createAndApply()
         f(cpg)
       }

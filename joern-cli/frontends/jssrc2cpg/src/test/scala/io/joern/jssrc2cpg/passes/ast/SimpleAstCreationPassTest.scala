@@ -515,9 +515,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     }
 
     "have two lambda functions in same scope level with different full names" in AstFixture("""
-          | var x = (a) => a
-          | var y = (b) => b
-        """.stripMargin) { cpg =>
+        |var x = (a) => a;
+        |var y = (b) => b;""".stripMargin) { cpg =>
       val lambda1FullName = "code.js::program:anonymous"
       val lambda2FullName = "code.js::program:anonymous1"
 
@@ -729,16 +728,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct structure for empty method" in AstFixture("function method(x) {}") { cpg =>
       val List(method) = cpg.method.nameExact("method").l
       method.astChildren.isBlock.size shouldBe 1
-      method.methodReturn.typeFullName shouldBe Defines.ANY
       method.parameter.index(0).nameExact("this").typeFullName(Defines.ANY).size shouldBe 1
       method.parameter.index(1).nameExact("x").typeFullName(Defines.ANY).size shouldBe 1
     }
 
     "have correct structure for empty method with rest parameter" in AstFixture("function method(x, ...args) {}") {
       cpg =>
-        val List(method) = cpg.method.nameExact("method").l
-        method.methodReturn.typeFullName shouldBe Defines.ANY
-
+        val List(method)     = cpg.method.nameExact("method").l
         val List(t, x, args) = method.parameter.l
         t.index shouldBe 0
         t.name shouldBe "this"
@@ -1395,10 +1391,9 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     }
 
     "be correct for member access used as return" in AstFixture("""
-          |function method(x) {
-          |  return x.a;
-          |}
-        """.stripMargin) { cpg =>
+      |function method(x) {
+      |  return x.a;
+      |}""".stripMargin) { cpg =>
       val List(method)          = cpg.method.nameExact("method").l
       val List(methodBlock)     = method.astChildren.isBlock.l
       val List(returnStatement) = methodBlock.astChildren.isReturn.l
@@ -1446,7 +1441,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       program.astChildren.isBlock.size shouldBe 1
       val blockMethodReturn = program.methodReturn
       blockMethodReturn.code shouldBe "RET"
-      blockMethodReturn.typeFullName shouldBe Defines.ANY
     }
 
   }
