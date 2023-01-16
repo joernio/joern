@@ -23,7 +23,7 @@ class TemplateDomAstCreationPassTest extends AbstractDomPassTest {
         |  return <h1>Hello, Stranger.</h1>;
         |}
         |""".stripMargin,
-      "test.tsx"
+      "code.tsx"
     ) { cpg =>
       inside(cpg.call.code("formatName.*").l) { case List(call) =>
         parentTemplateDom(call).code shouldBe "{formatName(user)}"

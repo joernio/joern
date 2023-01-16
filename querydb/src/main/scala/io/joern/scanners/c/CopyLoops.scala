@@ -26,7 +26,7 @@ object CopyLoops extends QueryBundle {
             (access.array, access.subscript.code.toSet)
           }
           .filter { case (buf, subscripts) =>
-            val incIdentifiers = buf.inAst.isControlStructure.astChildren
+            val incIdentifiers = buf.inAst.isControlStructure.isFor.astChildren
               .filterNot(_.isBlock)
               .assignment
               .target

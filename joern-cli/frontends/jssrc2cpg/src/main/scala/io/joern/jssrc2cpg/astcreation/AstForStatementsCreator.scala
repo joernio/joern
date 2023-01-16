@@ -59,12 +59,10 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   protected def astForReturnStatement(ret: BabelNodeInfo): Ast = {
     val retNode = createReturnNode(ret)
-    safeObj(ret.json, "argument")
-      .map { argument =>
-        val argAst = astForNodeWithFunctionReference(Obj(argument))
-        createReturnAst(retNode, List(argAst))
-      }
-      .getOrElse(Ast(retNode))
+    safeObj(ret.json, "argument").fold(Ast(retNode)) { argument =>
+      val argAst = astForNodeWithFunctionReference(Obj(argument))
+      createReturnAst(retNode, List(argAst))
+    }
   }
 
   private def astForCatchClause(catchClause: BabelNodeInfo): Ast =
@@ -73,16 +71,12 @@ trait AstForStatementsCreator { this: AstCreator =>
   protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
     val tryNode = createControlStructureNode(tryStmt, ControlStructureTypes.TRY)
     val bodyAst = astForNodeWithFunctionReference(tryStmt.json("block"))
-    val catchAst = safeObj(tryStmt.json, "handler")
-      .map { handler =>
-        astForCatchClause(createBabelNodeInfo(Obj(handler)))
-      }
-      .getOrElse(Ast())
-    val finalizerAst = safeObj(tryStmt.json, "finalizer")
-      .map { finalizer =>
-        astForNodeWithFunctionReference(Obj(finalizer))
-      }
-      .getOrElse(Ast())
+    val catchAst = safeObj(tryStmt.json, "handler").fold(Ast()) { handler =>
+      astForCatchClause(createBabelNodeInfo(Obj(handler)))
+    }
+    val finalizerAst = safeObj(tryStmt.json, "finalizer").fold(Ast()) { finalizer =>
+      astForNodeWithFunctionReference(Obj(finalizer))
+    }
     // The semantics of try statement children is defined by there order value.
     // Thus we set the here explicitly and do not rely on the usual consecutive
     // ordering.
@@ -96,11 +90,9 @@ trait AstForStatementsCreator { this: AstCreator =>
     val ifNode        = createControlStructureNode(ifStmt, ControlStructureTypes.IF)
     val testAst       = astForNodeWithFunctionReference(ifStmt.json("test"))
     val consequentAst = astForNodeWithFunctionReference(ifStmt.json("consequent"))
-    val alternateAst = safeObj(ifStmt.json, "alternate")
-      .map { alternate =>
-        astForNodeWithFunctionReference(Obj(alternate))
-      }
-      .getOrElse(Ast())
+    val alternateAst = safeObj(ifStmt.json, "alternate").fold(Ast()) { alternate =>
+      astForNodeWithFunctionReference(Obj(alternate))
+    }
     // The semantics of if statement children is partially defined by there order value.
     // The consequentAst must have order == 2 and alternateAst must have order == 3.
     // Only to avoid collision we set testAst to 1
@@ -141,21 +133,17 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   protected def astForForStatement(forStmt: BabelNodeInfo): Ast = {
     val forNode = createControlStructureNode(forStmt, ControlStructureTypes.FOR)
-    val initAst = safeObj(forStmt.json, "init")
-      .map { init =>
-        astForNodeWithFunctionReference(Obj(init))
-      }
-      .getOrElse(Ast())
-    val testAst = safeObj(forStmt.json, "test")
-      .map { test =>
-        astForNodeWithFunctionReference(Obj(test))
-      }
-      .getOrElse(Ast(createLiteralNode("true", Some(Defines.BOOLEAN), forStmt.lineNumber, forStmt.columnNumber)))
-    val updateAst = safeObj(forStmt.json, "update")
-      .map { update =>
-        astForNodeWithFunctionReference(Obj(update))
-      }
-      .getOrElse(Ast())
+    val initAst = safeObj(forStmt.json, "init").fold(Ast()) { init =>
+      astForNodeWithFunctionReference(Obj(init))
+    }
+    val testAst = safeObj(forStmt.json, "test").fold(
+      Ast(createLiteralNode("true", Option(Defines.BOOLEAN), forStmt.lineNumber, forStmt.columnNumber))
+    ) { test =>
+      astForNodeWithFunctionReference(Obj(test))
+    }
+    val updateAst = safeObj(forStmt.json, "update").fold(Ast()) { update =>
+      astForNodeWithFunctionReference(Obj(update))
+    }
     val bodyAst = astForNodeWithFunctionReference(forStmt.json("body"))
 
     // The semantics of for statement children is defined by there order value.
@@ -190,40 +178,36 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast = {
-    val labelAst = safeObj(breakStmt.json, "label")
-      .map { label =>
-        val labelNode = Obj(label)
-        val labelCode = code(labelNode)
-        Ast(
-          NewJumpLabel()
-            .parserTypeName(breakStmt.node.toString)
-            .name(labelCode)
-            .code(labelCode)
-            .lineNumber(breakStmt.lineNumber)
-            .columnNumber(breakStmt.columnNumber)
-            .order(1)
-        )
-      }
-      .getOrElse(Ast())
+    val labelAst = safeObj(breakStmt.json, "label").fold(Ast()) { label =>
+      val labelNode = Obj(label)
+      val labelCode = code(labelNode)
+      Ast(
+        NewJumpLabel()
+          .parserTypeName(breakStmt.node.toString)
+          .name(labelCode)
+          .code(labelCode)
+          .lineNumber(breakStmt.lineNumber)
+          .columnNumber(breakStmt.columnNumber)
+          .order(1)
+      )
+    }
     Ast(createControlStructureNode(breakStmt, ControlStructureTypes.BREAK)).withChild(labelAst)
   }
 
   protected def astForContinueStatement(continueStmt: BabelNodeInfo): Ast = {
-    val labelAst = safeObj(continueStmt.json, "label")
-      .map { label =>
-        val labelNode = Obj(label)
-        val labelCode = code(labelNode)
-        Ast(
-          NewJumpLabel()
-            .parserTypeName(continueStmt.node.toString)
-            .name(labelCode)
-            .code(labelCode)
-            .lineNumber(continueStmt.lineNumber)
-            .columnNumber(continueStmt.columnNumber)
-            .order(1)
-        )
-      }
-      .getOrElse(Ast())
+    val labelAst = safeObj(continueStmt.json, "label").fold(Ast()) { label =>
+      val labelNode = Obj(label)
+      val labelCode = code(labelNode)
+      Ast(
+        NewJumpLabel()
+          .parserTypeName(continueStmt.node.toString)
+          .name(labelCode)
+          .code(labelCode)
+          .lineNumber(continueStmt.lineNumber)
+          .columnNumber(continueStmt.columnNumber)
+          .order(1)
+      )
+    }
     Ast(createControlStructureNode(continueStmt, ControlStructureTypes.CONTINUE)).withChild(labelAst)
   }
 
@@ -301,7 +285,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     scope.addVariableReference(iteratorName, iteratorNode)
 
     val callNode = createCallNode(
-      "Object.keys(" + collectionName + ")[Symbol.iterator]()",
+      s"Object.keys($collectionName)[Symbol.iterator]()",
       "",
       DispatchTypes.DYNAMIC_DISPATCH,
       forInOfStmt.lineNumber,
@@ -311,7 +295,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val thisNode = createIdentifierNode("this", forInOfStmt)
 
     val indexCallNode = createCallNode(
-      "Object.keys(" + collectionName + ")[Symbol.iterator]",
+      s"Object.keys($collectionName)[Symbol.iterator]",
       Operators.indexAccess,
       DispatchTypes.STATIC_DISPATCH,
       forInOfStmt.lineNumber,
@@ -319,7 +303,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     )
 
     val objectKeysCallNode = createStaticCallNode(
-      "Object.keys(" + collectionName + ")",
+      s"Object.keys($collectionName)",
       "keys",
       "Object.keys",
       forInOfStmt.lineNumber,
@@ -340,11 +324,11 @@ trait AstForStatementsCreator { this: AstCreator =>
     val indexCallAst  = createCallAst(indexCallNode, indexCallArgs)
 
     val callNodeArgs = List(Ast(thisNode))
-    val callNodeAst  = createCallAst(callNode, callNodeArgs, receiver = Some(indexCallAst))
+    val callNodeAst  = createCallAst(callNode, callNodeArgs, receiver = Option(indexCallAst))
 
     val iteratorAssignmentNode =
       createCallNode(
-        iteratorName + " = " + "Object.keys(" + collectionName + ")[Symbol.iterator]()",
+        s"$iteratorName = Object.keys($collectionName)[Symbol.iterator]()",
         Operators.assignment,
         DispatchTypes.STATIC_DISPATCH,
         forInOfStmt.lineNumber,
@@ -379,7 +363,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // while loop test:
     val testCallNode = createCallNode(
-      "!(" + resultName + " = " + iteratorName + ".next()).done",
+      s"!($resultName = $iteratorName.next()).done",
       Operators.not,
       DispatchTypes.STATIC_DISPATCH,
       forInOfStmt.lineNumber,
@@ -387,7 +371,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     )
 
     val doneBaseNode = createCallNode(
-      "(" + resultName + " = " + iteratorName + ".next())",
+      s"($resultName = $iteratorName.next())",
       Operators.assignment,
       DispatchTypes.STATIC_DISPATCH,
       forInOfStmt.lineNumber,
@@ -397,7 +381,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val lhsNode = createIdentifierNode(resultName, forInOfStmt)
 
     val rhsNode = createCallNode(
-      iteratorName + ".next()",
+      s"$iteratorName.next()",
       "",
       DispatchTypes.DYNAMIC_DISPATCH,
       forInOfStmt.lineNumber,
@@ -414,7 +398,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val thisNextNode = createIdentifierNode(iteratorName, forInOfStmt)
 
     val rhsArgs = List(Ast(thisNextNode))
-    val rhsAst  = createCallAst(rhsNode, rhsArgs, receiver = Some(nextReceiverNode))
+    val rhsAst  = createCallAst(rhsNode, rhsArgs, receiver = Option(nextReceiverNode))
 
     val doneBaseArgs = List(Ast(lhsNode), rhsAst)
     val doneBaseAst  = createCallAst(doneBaseNode, doneBaseArgs)
@@ -440,7 +424,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
     val loopVariableAssignmentNode = createCallNode(
-      loopVariableName + " = " + resultName + ".value",
+      s"$loopVariableName = $resultName.value",
       Operators.assignment,
       DispatchTypes.STATIC_DISPATCH,
       forInOfStmt.lineNumber,

@@ -13,7 +13,8 @@ final case class Config(
   inputPath: String = "",
   outputPath: String = X2CpgConfig.defaultOutputPath,
   ignoredFilesRegex: Regex = "".r,
-  ignoredFiles: Seq[String] = Seq.empty
+  ignoredFiles: Seq[String] = Seq.empty,
+  tsTypes: Boolean = true
 ) extends X2CpgConfig[Config] {
 
   def createPathForIgnore(ignore: String): String = {
@@ -44,7 +45,11 @@ private object Frontend {
         .text("files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)"),
       opt[String]("exclude-regex")
         .action((x, c) => c.copy(ignoredFilesRegex = x.r))
-        .text("a regex specifying files to exclude during CPG generation (the absolute file path is matched)")
+        .text("a regex specifying files to exclude during CPG generation (the absolute file path is matched)"),
+      opt[Unit]("no-tsTypes")
+        .hidden()
+        .action((_, c) => c.copy(tsTypes = false))
+        .text("disable generation of types via Typescript")
     )
   }
 

@@ -41,7 +41,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         callExpr.lineNumber,
         callExpr.columnNumber
       )
-    createCallAst(callNode, args, Some(receiverAst), Some(Ast(baseNode)))
+    createCallAst(callNode, args, Option(receiverAst), Option(Ast(baseNode)))
   }
 
   protected def astForCallExpression(callExpr: BabelNodeInfo): Ast = {
@@ -89,7 +89,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast = {
     val thisNode = createIdentifierNode(
       thisExpr.code,
-      dynamicInstanceTypeStack.headOption.orElse(Some(Defines.ANY)),
+      dynamicInstanceTypeStack.headOption.orElse(Option(Defines.ANY)),
       thisExpr.lineNumber,
       thisExpr.columnNumber
     )
@@ -360,7 +360,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     if (elements.isEmpty) {
       Ast(
         createCallNode(
-          EcmaBuiltins.arrayFactory + "()",
+          s"${EcmaBuiltins.arrayFactory}()",
           EcmaBuiltins.arrayFactory,
           DispatchTypes.STATIC_DISPATCH,
           lineNumber,
@@ -379,7 +379,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       scope.addVariableReference(tmpName, tmpArrayNode)
 
       val arrayCallNode = createCallNode(
-        EcmaBuiltins.arrayFactory + "()",
+        s"${EcmaBuiltins.arrayFactory}()",
         EcmaBuiltins.arrayFactory,
         DispatchTypes.STATIC_DISPATCH,
         lineNumber,
@@ -399,13 +399,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
           val elementNode = elementNodeInfo.node match {
             case RestElement =>
               val arg1Ast = Ast(createIdentifierNode(tmpName, arrExpr))
-              astForSpreadOrRestElement(elementNodeInfo, Some(arg1Ast))
+              astForSpreadOrRestElement(elementNodeInfo, Option(arg1Ast))
             case _ =>
               astForNodeWithFunctionReference(element)
           }
 
           val pushCallNode = createCallNode(
-            tmpName + s".push($elementCode)",
+            s"$tmpName.push($elementCode)",
             "",
             DispatchTypes.DYNAMIC_DISPATCH,
             elementLineNumber,
@@ -417,12 +417,12 @@ trait AstForExpressionsCreator { this: AstCreator =>
           val receiverNode = createFieldAccessCallAst(baseNode, memberNode, elementLineNumber, elementColumnNumber)
           val thisPushNode = createIdentifierNode(tmpName, elementNodeInfo)
 
-          Some(
+          Option(
             createCallAst(
               pushCallNode,
               List(elementNode),
-              receiver = Some(receiverNode),
-              base = Some(Ast(thisPushNode))
+              receiver = Option(receiverNode),
+              base = Option(Ast(thisPushNode))
             )
           )
         case _ => None // skip
@@ -470,7 +470,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       nodeInfo.node match {
         case SpreadElement | RestElement =>
           val arg1Ast = Ast(createIdentifierNode(tmpName, nodeInfo))
-          astForSpreadOrRestElement(nodeInfo, Some(arg1Ast))
+          astForSpreadOrRestElement(nodeInfo, Option(arg1Ast))
         case _ =>
           val (lhsNode, rhsAst) = nodeInfo.node match {
             case ObjectMethod =>

@@ -266,7 +266,7 @@ trait AstNodeBuilder { this: AstCreator =>
     column: Option[Integer]
   ): Ast = {
     val callNode = createCallNode(
-      codeOf(baseNode) + "." + codeOf(partNode),
+      s"${codeOf(baseNode)}.${codeOf(partNode)}",
       Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
       line,
@@ -283,7 +283,7 @@ trait AstNodeBuilder { this: AstCreator =>
     column: Option[Integer]
   ): Ast = {
     val callNode = createCallNode(
-      codeOf(baseAst.nodes.head) + "." + codeOf(partNode),
+      s"${codeOf(baseAst.nodes.head)}.${codeOf(partNode)}",
       Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
       line,
@@ -300,8 +300,8 @@ trait AstNodeBuilder { this: AstCreator =>
     line: Option[Integer],
     column: Option[Integer]
   ): Ast = {
-    val code     = codeOf(testAst.nodes.head) + " ? " + codeOf(trueAst.nodes.head) + " : " + codeOf(falseAst.nodes.head)
-    val callNode = createCallNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, line, column)
+    val code      = s"${codeOf(testAst.nodes.head)} ? ${codeOf(trueAst.nodes.head)} : ${codeOf(falseAst.nodes.head)}"
+    val callNode  = createCallNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(testAst, trueAst, falseAst)
     createCallAst(callNode, arguments)
   }
@@ -358,7 +358,7 @@ trait AstNodeBuilder { this: AstCreator =>
   }
 
   protected def createEqualsCallAst(dest: Ast, source: Ast, line: Option[Integer], column: Option[Integer]): Ast = {
-    val code      = codeOf(dest.nodes.head) + " === " + codeOf(source.nodes.head)
+    val code      = s"${codeOf(dest.nodes.head)} === ${codeOf(source.nodes.head)}"
     val callNode  = createCallNode(code, Operators.equals, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(dest, source)
     createCallAst(callNode, arguments)
@@ -391,8 +391,8 @@ trait AstNodeBuilder { this: AstCreator =>
   protected def createIdentifierNode(name: String, node: BabelNodeInfo): NewIdentifier = {
     val dynamicInstanceTypeOption = name match {
       case "this"    => dynamicInstanceTypeStack.headOption
-      case "console" => Some(Defines.CONSOLE)
-      case "Math"    => Some(Defines.MATH)
+      case "console" => Option(Defines.CONSOLE)
+      case "Math"    => Option(Defines.MATH)
       case _         => None
     }
     createIdentifierNode(name, dynamicInstanceTypeOption, node.lineNumber, node.columnNumber)
@@ -432,9 +432,9 @@ trait AstNodeBuilder { this: AstCreator =>
 
   protected def createClosureBindingNode(closureBindingId: String, closureOriginalName: String): NewClosureBinding =
     NewClosureBinding()
-      .closureBindingId(Some(closureBindingId))
+      .closureBindingId(Option(closureBindingId))
       .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
-      .closureOriginalName(Some(closureOriginalName))
+      .closureOriginalName(Option(closureOriginalName))
 
   protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
 

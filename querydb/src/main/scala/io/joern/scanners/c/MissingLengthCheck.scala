@@ -51,38 +51,34 @@ object MissingLengthCheck extends QueryBundle {
   /** Names of potential length fields for the array named `arrayName` in the method `method`. Determined heuristically
     * via name matching.
     */
-  private def potentialLengthFields(arrayAccess: OpNodes.ArrayAccess, method: nodes.Method): List[String] = {
-    val arrayName = arrayAccess.simpleName.head
-    List(arrayName).flatMap { name =>
-      val normalizedName = name.replaceAll("s$", "")
+  private def potentialLengthFields(arrayAccess: OpNodes.ArrayAccess, method: nodes.Method): Seq[String] = {
+    arrayAccess.simpleName.flatMap { name =>
+      val normalizedName = name.stripSuffix("s")
       val regex          = s"(?i)$normalizedName(s?)(_?)(len|siz).*"
-      method.parameter.name(regex).name.l ++
-        method.local.name(regex).name.l
-    }
+      method.parameter.name(regex).name ++
+        method.local.name(regex).name
+    }.toSeq
   }
 
   /** For a given array access with a single constant offset and a set of variable names of potential length fields of
     * the array, determine whether a check of at least one of the potential length fields exist for each literal
     */
-  def checked(arrayAccess: OpNodes.ArrayAccess, lens: List[String]): Boolean = {
-    val arrayIndex = arrayAccess.argument(2).ast.isLiteral.toInt.head
+  def checked(arrayAccess: OpNodes.ArrayAccess, lens: Seq[String]): Boolean = {
+    val arrayIndex = arrayAccess.argument(2).ast.isLiteral.toInt.headOption match {
+      case Some(x) => x
+      case None    => return true // we can only deal with literals as indices here
+    }
+
     val lowerBounds = arrayAccess.method.controlStructure.condition
-      .where(_.ast.isIdentifier.name.filter { n =>
-        lens.contains(n)
-      })
+      .where(_.ast.isIdentifier.nameExact(lens: _*))
       .ast
       .isLiteral
-      .toInt ++ {
-      if (
+      .toInt ++
+      Option.when(
         arrayAccess.method.controlStructure.condition
           .codeExact(arrayAccess.array.code)
           .nonEmpty
-      ) {
-        List(0)
-      } else {
-        List()
-      }
-    }
+      )(0)
     lowerBounds.exists { bound =>
       bound >= arrayIndex
     }

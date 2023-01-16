@@ -40,7 +40,7 @@ trait AstForTypesCreator { this: AstCreator =>
 
     val typeDeclNodeAst =
       if (!Defines.JSTYPES.contains(name) && !seenAliasTypes.exists(_.name == name)) {
-        val (typeName, typeFullName) = calcTypeNameAndFullName(alias, Some(name))
+        val (typeName, typeFullName) = calcTypeNameAndFullName(alias, Option(name))
         val typeDeclNode = createTypeDeclNode(
           typeName,
           typeFullName,
@@ -48,7 +48,7 @@ trait AstForTypesCreator { this: AstCreator =>
           alias.code,
           astParentType,
           astParentFullName,
-          alias = Some(aliasFullName)
+          alias = Option(aliasFullName)
         )
         registerType(typeName, typeFullName)
         Ast(typeDeclNode)
@@ -165,7 +165,7 @@ trait AstForTypesCreator { this: AstCreator =>
       case ClassMethod | ClassPrivateMethod =>
         val function = createMethodAstAndNode(nodeInfo).methodNode
         addModifier(function, nodeInfo.json)
-        val dynamicTypeHintFullName = Some(function.fullName)
+        val dynamicTypeHintFullName = Option(function.fullName)
         createMemberNode(function.name, nodeInfo.code, dynamicTypeHintFullName)
       case _ =>
         val name = nodeInfo.node match {
@@ -339,7 +339,7 @@ trait AstForTypesCreator { this: AstCreator =>
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
       // the class definition assigned to its constructor
       val classIdNode =
-        createIdentifierNode(typeName, Some(constructorNode.fullName), clazz.lineNumber, clazz.columnNumber)
+        createIdentifierNode(typeName, Option(constructorNode.fullName), clazz.lineNumber, clazz.columnNumber)
       val constructorRefNode = createMethodRefNode(constructorNode.code, constructorNode.fullName, clazz)
 
       val idLocal = createLocalNode(typeName, Defines.ANY)
@@ -448,7 +448,7 @@ trait AstForTypesCreator { this: AstCreator =>
       val memberNodes = nodeInfo.node match {
         case TSCallSignatureDeclaration =>
           val functionNode            = createMethodDefinitionNode(nodeInfo)
-          val dynamicTypeHintFullName = Some(functionNode.fullName)
+          val dynamicTypeHintFullName = Option(functionNode.fullName)
           val bindingNode             = createBindingNode()
           diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
           diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)

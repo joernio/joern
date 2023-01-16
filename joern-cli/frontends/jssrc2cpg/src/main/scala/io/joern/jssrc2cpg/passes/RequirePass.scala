@@ -2,7 +2,7 @@ package io.joern.jssrc2cpg.passes
 
 import io.joern.jssrc2cpg.passes.RequirePass.JS_EXPORT_PREFIX
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Identifier, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Local}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
@@ -20,7 +20,7 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
 
   /** A map from file names to method full names based on assignments to `module.exports`.
     */
-  val fileNameToMethodFullName: Map[String, String] = {
+  private val fileNameToMethodFullName: Map[String, String] = {
     val moduleExportAssignments = cpg.assignment.where(_.target.codeExact("module.exports")).l
     Traversal(moduleExportAssignments).source.isMethodRef.flatMap { ref =>
       ref.file.name.headOption.map { x =>
@@ -32,7 +32,7 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
 
   /** A map from (filename, symbol) pairs to method full names based on `export` statements.
     */
-  val exportTable: Map[(String, String), String] = {
+  private val exportTable: Map[(String, String), String] = {
     val assignments = cpg.methodRef
       .where(_.method.fullName(".*::program"))
       .inAssignment
@@ -51,13 +51,12 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
 
   case class Require(call: Call) {
 
-    val symbol: String = call.astParent.fieldAccess.fieldIdentifier.canonicalName.headOption.getOrElse("")
+    private val symbol: String = call.astParent.fieldAccess.fieldIdentifier.canonicalName.headOption.getOrElse("")
 
-    val dirHoldingModule: String = call.file.name.headOption
-      .map(x => Paths.get(codeRoot, x).getParent.toAbsolutePath.normalize.toString)
-      .getOrElse("")
+    private val dirHoldingModule: String =
+      call.file.name.headOption.fold("")(x => Paths.get(codeRoot, x).getParent.toAbsolutePath.normalize.toString)
 
-    val fileToInclude: String = call
+    private val fileToInclude: String = call
       .argument(1)
       .start
       .isLiteral
@@ -68,7 +67,7 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
         if (path.endsWith(".mjs") || path.endsWith(".js")) {
           path
         } else {
-          path + ".js"
+          s"$path.js"
         }
       }
       .headOption
@@ -89,14 +88,12 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
     val variableToPatch: VariableInformation = VariableInformation(
       call.file.method.ast.isIdentifier
         .nameExact(target)
-        .collect { case i: Identifier => Seq(i) ++ i.refsTo.collectAll[Local].toSeq }
-        .flatten
-        .collect { case i: AstNode => i }
+        .flatMap(i => Seq(i) ++ i.refsTo.collectAll[Local].toSeq)
         .dedup
         .toList
     )
 
-    def relativeExport: String = fileToInclude.stripPrefix(dirHoldingModule + File.separator)
+    def relativeExport: String = fileToInclude.stripPrefix(s"$dirHoldingModule${File.separator}")
 
   }
 
@@ -113,9 +110,9 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
     /** The dynamic type hints attached to this variable. This assumes all nodes have the same property value at this
       * time.
       */
-    lazy val dynamicTypeHintFullName: Seq[String] = nodes.headOption
-      .map(_.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, IndexedSeq.empty[String]))
-      .getOrElse(IndexedSeq.empty[String])
+    lazy val dynamicTypeHintFullName: Seq[String] = nodes.headOption.fold(IndexedSeq.empty[String])(
+      _.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, IndexedSeq.empty[String])
+    )
   }
 
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
