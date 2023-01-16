@@ -28,8 +28,8 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       imports.map(extractMethodFromImport).map(f => f.callingName -> f).toMap ++
         extractLocallyDefinedMethods(module)
     val symbolTable = propagateImportedTypeToIdentifiers(module, methodsInScope, builder)
-    speculativelyLinkCallsOnIdentifiers(module, symbolTable, builder) ø
-      linkDirectCallsOnImportedFunctions(module, methodsInScope, builder)
+    speculativelyLinkCallsOnIdentifiers(module, symbolTable, builder)
+    linkDirectCallsOnImportedFunctions(module, methodsInScope, builder)
   }
 
   /** Links all calls directly from imports in this scope.
