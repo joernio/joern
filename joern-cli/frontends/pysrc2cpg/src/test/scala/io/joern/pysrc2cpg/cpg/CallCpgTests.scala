@@ -229,4 +229,22 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "call from a function from an external imported module" should {
+
+    lazy val cpg = code("""
+        |from sendgrid import SendGridAPIClient
+        |
+        |sg = SendGridAPIClient("SENGRID_KEY_WOLOLO")
+        |response = sg.send(message)
+        |""".stripMargin).cpg
+
+    "resolve sg call path from import information" in {
+      val List(x) = cpg.call("SendGridAPIClient").l
+      x.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient"
+      val List(y) = cpg.call("send").l
+      y.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.send"
+    }
+
+  }
+
 }
