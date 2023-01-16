@@ -82,13 +82,13 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
           builder.setNodeProperty(id, PropertyNames.TYPE_FULL_NAME, procInScope.fullNameAsPyFile)
           // Flow-insensitively mark the rest of the identifiers in this scope with the import info
           id.refsTo.flatMap(_._refIn).collectAll[Identifier].foreach { i =>
-            val newTypeHints = i.dynamicTypeHintFullName ++ List(procInScope.fullNameAsPyFile)
+            val newTypeHints = i.dynamicTypeHintFullName.toSet + procInScope.fullNameAsPyFile
             id.refsTo.headOption match {
-              case Some(decl) => symbolTable.put(decl, symbolTable.getOrElse(decl, Set()) ++ newTypeHints.toSet)
+              case Some(decl) => symbolTable.put(decl, symbolTable.getOrElse(decl, Set()) ++ newTypeHints)
               case None       =>
             }
             if (!i.equals(id))
-              builder.setNodeProperty(i, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, newTypeHints)
+              builder.setNodeProperty(i, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, newTypeHints.toSeq)
           }
         case (_, _) =>
       }
