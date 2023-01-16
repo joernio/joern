@@ -61,7 +61,7 @@ scalacOptions ++= Seq() ++ (
 )
 
 compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
-Test / fork := true
+Test / fork := false
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
