@@ -151,7 +151,8 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       case Some(callee) =>
         builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, callee.fullName)
         builder.addEdge(call, callee, EdgeTypes.CALL)
-      // This is not an application file, and thus may be external. We will label these all as py file imports
+        // This is not an application file, and thus may be external. We will label these all as py file imports
+        println(procInScope.fileName)
       case None if cpg.file.nameExact(procInScope.fileName).isEmpty =>
         builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, procInScope.fullNameAsPyFile)
       case None => // may be internal, but no existing method found
@@ -220,7 +221,10 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       */
     def fullNameAsInit: String = fullNameAsPyFile.replace(".py", s"${File.separator}__init__.py")
 
-    def fileName: String = fullNameAsPyFile.split(":").head
+    /** @return
+      *   the full file name from the method full name
+      */
+    def fileName: String = fullNameAsPyFile.substring(0, fullNameAsPyFile.lastIndexOf(":"))
 
     override def toString: String = s"Either($fullNameAsPyFile or $fullNameAsInit)"
   }
