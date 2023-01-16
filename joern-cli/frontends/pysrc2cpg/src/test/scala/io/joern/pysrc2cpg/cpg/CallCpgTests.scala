@@ -2,6 +2,7 @@ package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.NodeOps
 
@@ -244,14 +245,26 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |response = sg.send(message)
         |""".stripMargin).cpg
 
-    "resolve sg call path from import information" in {
+    "resolve 'sg' identifier types from import information" in {
+      val List(sgAssignment, sgElseWhere) = cpg.identifier("sg").take(2).l
+      sgAssignment.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient"
+      sgElseWhere.dynamicTypeHintFullName shouldBe Seq("sendgrid.py:<module>.SendGridAPIClient")
+    }
+
+    "resolve 'sg' call path from import information" in {
       val List(apiClient) = cpg.call("SendGridAPIClient").l
       apiClient.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient"
       val List(sendCall) = cpg.call("send").l
       sendCall.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.send"
     }
 
-    "resolve call path from identifier in child scope" in {
+    "resolve 'client' identifier types from import information" in {
+      val List(clientAssignment, clientElseWhere) = cpg.identifier("client").take(2).l
+      clientAssignment.typeFullName shouldBe "slack_sdk.py:<module>.WebClient"
+      clientElseWhere.dynamicTypeHintFullName shouldBe Seq("slack_sdk.py:<module>.WebClient")
+    }
+
+    "resolve 'client' call path from identifier in child scope" in {
       val List(client) = cpg.call("WebClient").l
       client.methodFullName shouldBe "slack_sdk.py:<module>.WebClient"
       val List(postMessage) = cpg.call("chat_postMessage").l

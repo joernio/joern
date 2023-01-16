@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyN
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 
-import java.io.File
+import java.io.{File => JFile}
 import java.util.regex.Matcher
 import scala.collection.mutable
 
@@ -28,8 +28,8 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       imports.map(extractMethodFromImport).map(f => f.callingName -> f).toMap ++
         extractLocallyDefinedMethods(module)
     val symbolTable = propagateImportedTypeToIdentifiers(module, methodsInScope, builder)
-    speculativelyLinkCallsOnIdentifiers(module, symbolTable, builder)
-    linkDirectCallsOnImportedFunctions(module, methodsInScope, builder)
+    speculativelyLinkCallsOnIdentifiers(module, symbolTable, builder) ø
+      linkDirectCallsOnImportedFunctions(module, methodsInScope, builder)
   }
 
   /** Links all calls directly from imports in this scope.
@@ -81,7 +81,8 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
           val procInScope = methodsInScope(call.name)
           builder.setNodeProperty(id, PropertyNames.TYPE_FULL_NAME, procInScope.fullNameAsPyFile)
           // Flow-insensitively mark the rest of the identifiers in this scope with the import info
-          id.refsTo.flatMap(_._refIn).collectAll[Identifier].foreach { i =>
+          // To accommodate identifiers being able to go under child methods, we refer to file scope
+          call.file.ast.collectAll[Identifier].filter(_.name.equals(id.name)).foreach { i =>
             val newTypeHints = i.dynamicTypeHintFullName.toSet + procInScope.fullNameAsPyFile
             id.refsTo.headOption match {
               case Some(decl) => symbolTable.put(decl, symbolTable.getOrElse(decl, Set()) ++ newTypeHints)
@@ -187,7 +188,7 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
         ProcInScope(func, s"$func.py:<module>")
       }
     } else {
-      val sep = Matcher.quoteReplacement(File.separator)
+      val sep = Matcher.quoteReplacement(JFile.separator)
       maybeAlias match {
         // TODO: This assumes importing from modules and never importing nested method
         // Case 3:  We have imported a function from a module using an alias, e.g. import bar from foo as faz
@@ -225,7 +226,7 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       *   the full name of the procedure where it's assumed that it is defined within an <code>__init.py__</code> of the
       *   module.
       */
-    def fullNameAsInit: String = fullNameAsPyFile.replace(".py", s"${File.separator}__init__.py")
+    def fullNameAsInit: String = fullNameAsPyFile.replace(".py", s"${JFile.separator}__init__.py")
 
     /** @return
       *   the full file name from the method full name
