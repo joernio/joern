@@ -81,15 +81,15 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
           val procInScope = methodsInScope(call.name)
           builder.setNodeProperty(id, PropertyNames.TYPE_FULL_NAME, procInScope.fullNameAsPyFile)
           // Flow-insensitively mark the rest of the identifiers in this scope with the import info
-          id.refsTo.flatMap(_._refIn).collectAll[Identifier].filterNot(_.equals(id)).foreach { i =>
+          id.refsTo.flatMap(_._refIn).collectAll[Identifier].foreach { i =>
             val newTypeHints = i.dynamicTypeHintFullName ++ List(procInScope.fullNameAsPyFile)
             id.refsTo.headOption match {
               case Some(decl) => symbolTable.put(decl, symbolTable.getOrElse(decl, Set()) ++ newTypeHints.toSet)
               case None       =>
             }
-            builder.setNodeProperty(i, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, newTypeHints)
+            if (!i.equals(id))
+              builder.setNodeProperty(i, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, newTypeHints)
           }
-
         case (_, _) =>
       }
     symbolTable.toMap
@@ -110,6 +110,13 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     symbolTable: Map[Declaration, Set[String]],
     builder: DiffGraphBuilder
   ): Unit = {
+
+    def findByNameAndFileMatch(idName: String): Set[String] =
+      symbolTable
+        .find { case (decl, _) => decl.name.equals(idName) && decl.file.headOption.equals(module.file.headOption) }
+        .map(_._2)
+        .getOrElse(Set())
+
     module.ast
       .collect {
         case call: Call if !call.name.startsWith("<operator>") => (call, call.argument.argumentIndex(0).headOption)
@@ -119,7 +126,7 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
           val potentialCallees = id.refsTo.headOption match {
             case Some(decl) =>
               symbolTable
-                .getOrElse(decl, Set())
+                .getOrElse(decl, findByNameAndFileMatch(id.name))
                 .filterNot(_.equals("ANY"))
                 .map(_.concat(s".${call.name}"))
             case None => Set.empty[String]
@@ -151,8 +158,7 @@ class PythonModuleDefinedCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       case Some(callee) =>
         builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, callee.fullName)
         builder.addEdge(call, callee, EdgeTypes.CALL)
-        // This is not an application file, and thus may be external. We will label these all as py file imports
-        println(procInScope.fileName)
+      // This is not an application file, and thus may be external. We will label these all as py file imports
       case None if cpg.file.nameExact(procInScope.fileName).isEmpty =>
         builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, procInScope.fullNameAsPyFile)
       case None => // may be internal, but no existing method found

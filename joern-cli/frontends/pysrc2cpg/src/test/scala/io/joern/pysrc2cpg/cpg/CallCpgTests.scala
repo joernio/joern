@@ -232,17 +232,30 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
   "call from a function from an external imported module" should {
 
     lazy val cpg = code("""
+        |from slack_sdk import WebClient
         |from sendgrid import SendGridAPIClient
         |
+        |client = WebClient(token="WOLOLO")
         |sg = SendGridAPIClient("SENGRID_KEY_WOLOLO")
+        |
+        |def send_slack_message(chan, msg):
+        |    client.chat_postMessage(channel=chan, text=msg)
+        |
         |response = sg.send(message)
         |""".stripMargin).cpg
 
     "resolve sg call path from import information" in {
-      val List(x) = cpg.call("SendGridAPIClient").l
-      x.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient"
-      val List(y) = cpg.call("send").l
-      y.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.send"
+      val List(apiClient) = cpg.call("SendGridAPIClient").l
+      apiClient.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient"
+      val List(sendCall) = cpg.call("send").l
+      sendCall.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.send"
+    }
+
+    "resolve call path from identifier in child scope" in {
+      val List(client) = cpg.call("WebClient").l
+      client.methodFullName shouldBe "slack_sdk.py:<module>.WebClient"
+      val List(postMessage) = cpg.call("chat_postMessage").l
+      postMessage.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.chat_postMessage"
     }
 
   }
