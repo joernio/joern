@@ -1,6 +1,6 @@
 package io.joern.jssrc2cpg.passes
 
-import io.joern.jssrc2cpg.passes.RequirePass.JS_EXPORT_PREFIX
+import io.joern.jssrc2cpg.passes.RequirePass.JsExportPrefix
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Local}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
@@ -129,8 +129,8 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
           diffGraph.setNodeProperty(
             n.node,
             if (varInfo.isImmutable) PropertyNames.TYPE_FULL_NAME else PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-            if (varInfo.isImmutable) rs.map(x => s"$JS_EXPORT_PREFIX${x.relativeExport}").headOption.getOrElse("ANY")
-            else varInfo.dynamicTypeHintFullName ++ rs.map(x => s"$JS_EXPORT_PREFIX${x.relativeExport}")
+            if (varInfo.isImmutable) rs.map(x => s"$JsExportPrefix${x.relativeExport}").headOption.getOrElse("ANY")
+            else varInfo.dynamicTypeHintFullName ++ rs.map(x => s"$JsExportPrefix${x.relativeExport}")
           )
         }
       }
@@ -160,5 +160,5 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
 }
 
 object RequirePass {
-  val JS_EXPORT_PREFIX: String = "<export>::"
+  val JsExportPrefix: String = "<export>::"
 }

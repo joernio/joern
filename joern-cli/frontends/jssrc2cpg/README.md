@@ -18,8 +18,7 @@ of the build process. To build jssrc2cpg issue the command `sbt stage`.
 
 ## JS/TS AST Generation
 
-jssrc2cpg uses a modified version of [@joern/astgen](https://github.com/joernio/astgen) under the hood.
-That version is available [here](https://github.com/joernio/astgen).
+jssrc2cpg uses [@joern/astgen](https://github.com/joernio/astgen) under the hood.
 Native binaries for Linux, macOS, and Windows are generated as described [here](https://github.com/joernio/astgen#building).
 To build your own native binaries run the following commands:
 
@@ -30,7 +29,7 @@ yarn install
 ```
 (requires `yarn`).
 
-Copy the resulting `astgen-linux`, `astgen-macos`, and `astgen-win.exe` to `joern/joern-cli/frontends/jssrc2cpg/bin/astgen`.
+Copy the resulting `astgen-linux`, `astgen-macos`, `astgen-macos-arm`, and `astgen-win.exe` to `joern/joern-cli/frontends/jssrc2cpg/bin/astgen`.
 
 ## Running
 
@@ -47,3 +46,4 @@ Run the following to see a complete list of available options:
 ## Warning
 
 This is work in progress. Use https://github.com/ShiftLeftSecurity/js2cpg as a mature alternative.
+
