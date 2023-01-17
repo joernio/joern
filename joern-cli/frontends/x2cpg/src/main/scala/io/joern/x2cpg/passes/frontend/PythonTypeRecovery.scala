@@ -221,7 +221,8 @@ class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
     override def compute(): Unit = {
       val VarDecl(filename, alias) = varDecl
       cpg
-        .file(filename)
+        .file
+        .nameExact(filename)
         .method
         .ast
         .foreach {
