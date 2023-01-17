@@ -34,7 +34,7 @@ class Engine(context: EngineContext) {
     */
   private val mainResultTable: mutable.Map[TaskFingerprint, List[TableEntry]] = mutable.Map()
   private var numberOfTasksRunning: Int                                       = 0
-  private val started: mutable.HashSet[TaskFingerprint]                        = mutable.HashSet[TaskFingerprint]()
+  private val started: mutable.HashSet[TaskFingerprint]                       = mutable.HashSet[TaskFingerprint]()
   private val held: mutable.Buffer[ReachableByTask]                           = mutable.Buffer()
 
   /** Determine flows from sources to sinks by exploring the graph backwards from sinks to sources. Returns the list of
@@ -132,7 +132,7 @@ class Engine(context: EngineContext) {
 
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]): Unit = {
     tasks.foreach { task =>
-      if (started.contains(task.fingerprint) ){
+      if (started.contains(task.fingerprint)) {
         held ++= Vector(task)
       } else {
         started.add(task.fingerprint)
