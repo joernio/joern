@@ -70,3 +70,5 @@ scalacOptions ++= Seq(
 
 // would love to reenable, but somehow StorageBackend.scala triggers a strange `[warn] method with a single empty parameter list overrides method without any parameter list` that doesn't make sense to me...
 scalacOptions -= "-Xfatal-warnings"
+
+Test / fork := false

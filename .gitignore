@@ -30,3 +30,6 @@ null
 **/astgen-linux
 **/php2cpg/bin/vendor/
 **/php2cpg/bin/composer*
+/foo.c
+/woo.c
+/cpg_*.bin.zip

@@ -13,6 +13,8 @@ libraryDependencies ++= Seq(
   "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test
 )
 
+Test / fork := false
+
 enablePlugins(UniversalPlugin)
 enablePlugins(JavaAppPackaging)
 //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
