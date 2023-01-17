@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 1
-      - name: Set up JDK 1.11
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'
           cache: 'sbt'
       - name: Install php deps for php2cpg
         run: joern-cli/frontends/php2cpg/bin/installdeps.sh

@@ -10,11 +10,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 1
-      - name: Set up JDK 1.11
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'
           cache: 'sbt'
       - name: Compile and run tests
         run: sbt clean +test
@@ -24,11 +24,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 1
-      - name: Set up JDK 1.11
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'
           cache: 'sbt'
       - name: Check formatting
         run: sbt ++2.13.8 scalafmtCheck test:scalafmtCheck
@@ -40,11 +40,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 1
-      - name: Set up JDK 1.11
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'
           cache: 'sbt'
       - run: ./testDistro.sh
       - run: |
