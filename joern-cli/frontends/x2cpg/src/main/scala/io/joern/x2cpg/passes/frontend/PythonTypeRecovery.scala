@@ -14,32 +14,38 @@ import java.util.concurrent.RecursiveTask
 import java.util.regex.Matcher
 import scala.collection.MapView
 import scala.collection.concurrent.TrieMap
+import scala.util.Try
 
 /** Based on a flow-insensitive symbol-table-style approach. This does not accurately determine the difference between
   * shadowed variables in the same file but this is due to REF edges not connecting children methods to parent scope
   * (yet).
   *
-  * TODO: Currently this just improves the type recovery of imported functions and fields.
+  * TODO: Currently this just improves the type recovery of imported function and types.
   */
 class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
 
   private val symbolTable = new SymbolTable()
   private val logger      = LogManager.getLogger(classOf[PythonTypeRecovery])
 
-  override def run(builder: DiffGraphBuilder): Unit = {
-    // Set aliases that point to imports for local and external methods/modules
-    def importCalls     = cpg.call.where(_.nameExact("import"))
-    def internalMethods = cpg.method.isExternal(false)
-    (importCalls ++ internalMethods).map(f => new SetImportTask(f).fork()).foreach(_.get())
-    // Prune import names if the methods exist in the CPG
-    pruneImports()
-    // Find identifiers that have been declared using imports
-    cpg.assignment.map(a => new SetDeclaredIdentifiersTask(a).fork()).foreach(_.get())
-    // Persist findings
-    symbolTable.view
-      .map { case (varDecl, typeHints) => new PersistRecoveredTypeTask(builder, varDecl, typeHints).fork() }
-      .foreach(_.get())
-  }
+  override def run(builder: DiffGraphBuilder): Unit =
+    try {
+      // Set aliases that point to imports for local and external methods/modules
+      def importCalls = cpg.call.where(_.nameExact("import"))
+
+      def internalMethods = cpg.method.isExternal(false)
+
+      (importCalls ++ internalMethods).map(f => new SetImportTask(f).fork()).foreach(_.get())
+      // Prune import names if the methods exist in the CPG
+      pruneImports()
+      // Find identifiers that have been declared using imports
+      cpg.assignment.map(a => new SetDeclaredIdentifiersTask(a).fork()).foreach(_.get())
+      // Persist findings
+      symbolTable.view
+        .map { case (varDecl, typeHints) => new PersistRecoveredTypeTask(builder, varDecl, typeHints).fork() }
+        .foreach(_.get())
+    } finally {
+      symbolTable.clear
+    }
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
@@ -305,6 +311,8 @@ class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
     def get(filename: String, idName: String): Set[String] = get(key(filename, idName))
 
     def view: MapView[VarDecl, Set[String]] = table.view
+
+    def clear: Unit = table.clear()
 
   }
 
