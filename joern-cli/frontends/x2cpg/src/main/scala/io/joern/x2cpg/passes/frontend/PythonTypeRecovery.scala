@@ -1,8 +1,9 @@
 package io.joern.x2cpg.passes.frontend
 
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
@@ -35,9 +36,6 @@ class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
     // TODO: Parallelize
     // Find identifiers that have been declared using imports
     cpg.assignment.foreach(setDeclaredIdentifierTypes)
-
-    symbolTable.view.foreach { case (VarDecl(f, n), v) => println((f, n, v)) }
-
     // TODO: Join
     // Persist findings
     // TODO: Parallelize + Join
@@ -47,14 +45,27 @@ class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
   private def setDeclaredIdentifierTypes(assignment: Assignment): Unit = {
     // TODO: Handle fields being imported and loaded with a new value
     assignment.argumentOut.take(2).l match {
-      case List(x: Identifier, y: Call) if symbolTable.contains(y.file.name.head, y.name) =>
-        val importedTypes = symbolTable.get(y.file.name.head, y.name)
-        symbolTable.put(y.file.name.head, x.name, importedTypes)
+      case List(i: Identifier, c: Call) if symbolTable.contains(c.file.name.head, c.name) =>
+        val importedTypes = symbolTable.get(c.file.name.head, c.name)
+        if (!c.code.endsWith(")")) {
+          // Case 1: The identifier is at the assignment to a function pointer. Lack of parenthesis should indicate this.
+          symbolTable.put(c.file.name.head, i.name, importedTypes)
+        } else if (c.name.charAt(0).isUpper && c.code.endsWith(")")) {
+          // Case 2: The identifier is receiving a constructor invocation, thus is now an instance of the type
+          symbolTable.put(
+            c.file.name.head,
+            i.name,
+            importedTypes.map(_.stripSuffix(s".${Defines.ConstructorMethodName}"))
+          )
+        } else {
+          // TODO: This identifier should contain the type of the return value of 'c'
+        }
       case _ =>
     }
   }
 
-  /** With the findings on the symbol table, will set the identifier type names appropriately.
+  /** With the findings on the symbol table, will look for variables assigned to function pointers or constructor
+    * invocations.
     * @param builder
     *   the builder.
     */
@@ -64,20 +75,48 @@ class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
         .file(filename)
         .method
         .ast
-        .collect {
-          case x: Local if x.name.equals(alias)      => x
-          case x: Identifier if x.name.equals(alias) => x
-        }
-        .foreach { i =>
-          i.inAssignment.argument.l match {
-            // Case 1: The identifier is at the assignment, and the RHS is only 1 type
-            case List(i: Identifier, c: Call) if symbolTable.get(c.file.name.head, c.name).size == 1 =>
-              builder.setNodeProperty(i, PropertyNames.TYPE_FULL_NAME, typeHints.head)
-            // Case 2: The identifier is elsewhere, but we are not tracking flow so it could be any of the types
-            case _ => builder.setNodeProperty(i, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typeHints.toSeq)
-          }
+        .foreach {
+          case x: Local if x.name.equals(alias) =>
+            builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typeHints.toSeq)
+          case x: Identifier if x.name.equals(alias) =>
+            (x.inCall.headOption, x.inCall.argument.take(2).l) match {
+              // Case 1: 'call' is an assignment
+              case (Some(call: Call), List(i: Identifier, c: Call)) if call.name.equals(Operators.assignment) =>
+                val idTypes   = symbolTable.get(i.file.name.head, i.name)
+                val callTypes = symbolTable.get(c.file.name.head, c.name)
+                persistType(call, callTypes)(builder)
+                if (idTypes.nonEmpty || callTypes.nonEmpty) {
+                  if (idTypes.equals(callTypes))
+                    // Case 1.1: This is a function pointer or constructor
+                    persistType(i, callTypes)(builder)
+                  else
+                    // Case 1.2: This is the return value of the function
+                    persistType(i, idTypes)(builder)
+                }
+              // Case 2: 'i' is the receiver of 'call'
+              case (Some(call: Call), List(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
+                persistType(i, typeHints)(builder)
+                persistType(call, typeHints)(builder)
+              // Case 3: 'i' is the receiver for a field access on member 'f'
+              case (Some(call: Call), List(i: Identifier, f: FieldIdentifier))
+                  if call.name.equals(Operators.fieldAccess) =>
+                persistType(i, typeHints)(builder)
+              // TODO: Handle fields
+              // Case 4: We are elsewhere
+              case _ => persistType(x, typeHints)(builder)
+            }
+          case x: Call if x.name.equals(alias) =>
+            builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typeHints.toSeq)
+          case _ =>
         }
     }
+
+  private def persistType(x: StoredNode, types: Set[String])(implicit builder: DiffGraphBuilder): Unit =
+    if (types.nonEmpty)
+      if (types.size == 1)
+        builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, types.head)
+      else
+        builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types.toSeq)
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
@@ -117,7 +156,7 @@ class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
     *   an internal method
     */
   private def setImports(m: Method): Unit = {
-    val calleeNames = ProcInScope(m.name, m.fullName).possibleCalleeNames
+    val calleeNames = ProcedureInScope(m.name, m.fullName).possibleCalleeNames
     symbolTable.put(m.filename, m.name, calleeNames)
   }
 
@@ -136,53 +175,69 @@ class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
     path: String,
     funcOrModule: String,
     maybeAlias: Option[String] = None
-  ): ProcInScope = {
+  ): ProcedureInScope = {
+    val isConstructor = funcOrModule.split("\\.").last.charAt(0).isUpper
     if (path.isEmpty) {
       if (funcOrModule.contains(".")) {
         // Case 1: We have imported a function using a qualified path, e.g., import foo.bar => (bar.py or bar/__init.py)
         val splitFunc = funcOrModule.split("\\.")
         val name      = splitFunc.tail.mkString(".")
-        ProcInScope(name, s"${splitFunc(0)}.py:<module>.$name")
+        ProcedureInScope(name, s"${splitFunc(0)}.py:<module>.$name", isConstructor)
       } else {
         // Case 2: We have imported a module, e.g., import foo => (foo.py or foo/__init.py)
-        ProcInScope(funcOrModule, s"$funcOrModule.py:<module>")
+        ProcedureInScope(funcOrModule, s"$funcOrModule.py:<module>", isConstructor)
       }
     } else {
       val sep = Matcher.quoteReplacement(JFile.separator)
       maybeAlias match {
         // TODO: This assumes importing from modules and never importing nested method
         // Case 3:  We have imported a function from a module using an alias, e.g. import bar from foo as faz
-        case Some(alias) => ProcInScope(alias, s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule")
+        case Some(alias) =>
+          ProcedureInScope(alias, s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule", isConstructor)
         // Case 4: We have imported a function from a module, e.g. import bar from foo
-        case None => ProcInScope(funcOrModule, s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule")
+        case None =>
+          ProcedureInScope(funcOrModule, s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule", isConstructor)
       }
     }
   }
 
-  case class VarDecl(filename: String, idName: String)
-
-  /** Defines how a procedure is available to be called in the current scope.
+  /** Defines how a procedure is available to be called in the current scope either by it being defined in this module
+    * or being imported.
     *
     * @param callingName
     *   how this procedure is to be called, i.e., alias name, name with path, etc.
     * @param fullNameAsPyFile
     *   the full name to where this method is defined where it's assumed to be defined under a named Python file.
     */
-  case class ProcInScope(callingName: String, fullNameAsPyFile: String) {
+  case class ProcedureInScope(callingName: String, fullNameAsPyFile: String, isConstructor: Boolean = false) {
 
     /** @return
       *   the full name of the procedure where it's assumed that it is defined within an <code>__init.py__</code> of the
       *   module.
       */
-    def fullNameAsInit: String = fullNameAsPyFile.replace(".py", s"${JFile.separator}__init__.py")
+    private def fullNameAsInit: String = fullNameAsPyFile.replace(".py", s"${JFile.separator}__init__.py")
 
     /** @return
       *   the two ways that this procedure could be resolved to in Python. This will be pruned later by comparing this
       *   to actual methods in the CPG.
       */
-    def possibleCalleeNames: Set[String] = Set(fullNameAsPyFile, fullNameAsInit)
-    override def toString: String        = s"Either($fullNameAsPyFile or $fullNameAsInit)"
+    def possibleCalleeNames: Set[String] =
+      if (isConstructor)
+        Set(fullNameAsPyFile.concat(s".${Defines.ConstructorMethodName}"))
+      else
+        Set(fullNameAsPyFile, fullNameAsInit)
+
+    override def toString: String = s"Either($fullNameAsPyFile or $fullNameAsInit)"
   }
+
+  /** Represents the scope of an identifier.
+    *
+    * @param filename
+    *   the file name in which this identifier belongs.
+    * @param idName
+    *   the name of the identifier.
+    */
+  case class VarDecl(filename: String, idName: String)
 
   /** A thread-safe symbol table that can represent multiple types per symbol.
     */
@@ -202,34 +257,21 @@ class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
         case None        => table.put(varDecl, typeFullNames)
       }
 
-    def append(filename: String, idName: String, typeFullName: String): Option[Set[String]] =
-      append(key(filename, idName), Set(typeFullName))
-
-    def append(filename: String, idName: String, typeFullNames: Set[String]): Option[Set[String]] =
-      append(key(filename, idName), typeFullNames)
-
     def put(varDecl: VarDecl, typeFullNames: Set[String]): Option[Set[String]] =
       table.put(varDecl, typeFullNames)
-
-    def put(filename: String, idName: String, typeFullName: String): Option[Set[String]] =
-      put(key(filename, idName), Set(typeFullName))
 
     def put(filename: String, idName: String, typeFullNames: Set[String]): Option[Set[String]] =
       put(key(filename, idName), typeFullNames)
 
-    def contains(varDecl: VarDecl): Boolean = table.contains(varDecl)
+    private def contains(varDecl: VarDecl): Boolean = table.contains(varDecl)
 
     def contains(filename: String, idName: String): Boolean = contains(key(filename, idName))
 
-    def get(varDecl: VarDecl): Set[String] = table.getOrElse(varDecl, Set.empty)
+    private def get(varDecl: VarDecl): Set[String] = table.getOrElse(varDecl, Set.empty)
 
     def get(filename: String, idName: String): Set[String] = get(key(filename, idName))
 
-    def clear: Unit = table.clear
-
     def view: MapView[VarDecl, Set[String]] = table.view
-
-    def keys: Iterable[VarDecl] = table.keys
 
   }
 
