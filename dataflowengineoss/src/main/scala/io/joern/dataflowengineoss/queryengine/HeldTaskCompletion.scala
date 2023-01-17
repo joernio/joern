@@ -132,6 +132,15 @@ class HeldTaskCompletion(
     }
   }
 
+  /** This method deduplicates the list of entries stored in a table cell.
+    *
+    * We treat entries as the same if their start and end point are the same. Points are given by nodes in the graph,
+    * the `callSiteStack` and the `isOutputArg` flag.
+    *
+    * For a group of flows that we treat as the same, we select the flow with the maximum length. If there are multiple
+    * flows with maximum length, then we compute a string representation of the flows - taking into account all fields
+    *   - and select the flow with maximum length that is smallest in terms of this string representation.
+    */
   private def deduplicateTableEntries(list: List[TableEntry]): List[TableEntry] = {
     list
       .groupBy { result =>
