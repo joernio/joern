@@ -113,7 +113,7 @@ class Engine(context: EngineContext) {
     val startTimeSec: Long = System.currentTimeMillis / 1000
     runUntilAllTasksAreSolved()
     val taskFinishTimeSec: Long = System.currentTimeMillis / 1000
-    println(
+    logger.debug(
       "Time measurement -----> Task processing done in " +
         (taskFinishTimeSec - startTimeSec) + " seconds"
     )
@@ -121,7 +121,7 @@ class Engine(context: EngineContext) {
     val dedupResult          = deduplicateFinal(extractResultsFromTable(sinks))
     val allDoneTimeSec: Long = System.currentTimeMillis / 1000
 
-    println(
+    logger.debug(
       "Time measurement -----> Task processing: " +
         (taskFinishTimeSec - startTimeSec) + " seconds" +
         ", Deduplication: " + (allDoneTimeSec - taskFinishTimeSec) +
