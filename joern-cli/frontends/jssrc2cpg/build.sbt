@@ -66,7 +66,7 @@ Test / fork := false
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 lazy val astGenDlUrl       = s"https://github.com/joernio/astgen/releases/download/v$astGenVersion/"
-lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-win.exe")
+lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-macos-arm", "astgen-win.exe")
 
 lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
 astGenDlTask := {

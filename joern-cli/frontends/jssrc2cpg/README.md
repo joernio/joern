@@ -30,7 +30,7 @@ yarn install
 ```
 (requires `yarn`).
 
-Copy the resulting `astgen-linux`, `astgen-macos`, and `astgen-win.exe` to `joern/joern-cli/frontends/jssrc2cpg/bin/astgen`.
+Copy the resulting `astgen-linux`, `astgen-macos`, `astgen-macos-arm`, and `astgen-win.exe` to `joern/joern-cli/frontends/jssrc2cpg/bin/astgen`.
 
 ## Running
 
