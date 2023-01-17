@@ -4,6 +4,17 @@ import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters._
 
 /** Complete held tasks using the result table. The result table is modified in the process.
+  *
+  * Results obtained when completing a held task depend on the following:
+  *
+  * (a) the `initialPath` of the held task (path from the node where the task was held down to a sink)
+  *
+  * (b) the entries in the table for `heldTask.fingerprint`.
+  *
+  * Upon completing a task, new results are stored in the table for each task of its `taskStack`. This means that we may
+  * not end up with all results when first completing a task because another task needs to be completed first so that
+  * all results for `heldTask.fingerprint` are available. We address this problem by computing results in a loop until
+  * no more changes can be observed.
   */
 class HeldTaskCompletion(
   heldTasks: List[ReachableByTask],
@@ -11,6 +22,16 @@ class HeldTaskCompletion(
 ) {
 
   /** Add results produced by held task until no more change can be observed.
+    *
+    * We use the following simple algorithm (that can possibly be optimized in the future):
+    *
+    * For each held `task`, we keep a Boolean `changed(task)`, which indicates whether new results for the `task` were
+    * produced. We initialize the Booleans to be true. Computation is terminated when all Booleans are false, that is,
+    * when no more changes in the result table can be observed.
+    *
+    * If we do detect a change, we determine all tasks for which changed results exist and recompute their results. We
+    * compare the results with those produced previously (stored in `resultsProducedByTask`). If any new results were
+    * created, `changed` is set to true for the result's table entry and `resultsProductByTask` is updated.
     */
   def completeHeldTasks(): Unit = {
 
@@ -50,7 +71,14 @@ class HeldTaskCompletion(
     deduplicateResultTable()
   }
 
+  /** In essence, completing a held task simply means appending the path stored in the held task to all results that are
+    * available for the held task in the table. In practice, we create one result for each task of the parent task's
+    * `taskStack`, so that we do not only get a new result for the sink, but one for each of the parent nodes on the
+    * way.
+    */
   private def resultsForHeldTask(heldTask: ReachableByTask): List[(TaskFingerprint, TableEntry)] = {
+    // Create a flat list of results by computing results for each
+    // table entry and appending them.
     resultTable.get(heldTask.fingerprint) match {
       case Some(results) =>
         results
@@ -61,6 +89,11 @@ class HeldTaskCompletion(
     }
   }
 
+  /** This method creates a list of results from a held task and a table entry by appending paths of the held task to
+    * the path stored in the held task (`initialPath`) up to each of its parent tasks.
+    *
+    * A possible optimization here is to store computed slices in a lazily populated table and attempt to look them up.
+    */
   private def createResultsForHeldTaskAndTableResult(
     heldTask: ReachableByTask,
     result: TableEntry
