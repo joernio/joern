@@ -1,6 +1,5 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
@@ -28,8 +27,10 @@ class PythonTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
     def calleeNames(c: Call): Seq[String] =
       (c.dynamicTypeHintFullName ++ Seq(c.typeFullName)).filterNot(_.equals("ANY")).map {
-        case typ if typ.endsWith(Defines.ConstructorMethodName) => typ
-        case typ                                                => s"$typ.${c.name}"
+        // Python call from  a type
+        case typ if typ.split("\\.").last.charAt(0).isUpper => s"$typ.${c.name}"
+        // Python call from a function pointer
+        case typ => typ
       }
 
     def callees(names: Seq[String]): Traversal[Method] = cpg.method.fullNameExact(names: _*)
