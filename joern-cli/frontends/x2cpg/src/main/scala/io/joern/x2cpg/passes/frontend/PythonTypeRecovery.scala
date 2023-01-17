@@ -14,7 +14,6 @@ import java.util.concurrent.RecursiveTask
 import java.util.regex.Matcher
 import scala.collection.MapView
 import scala.collection.concurrent.TrieMap
-import scala.util.Try
 
 /** Based on a flow-insensitive symbol-table-style approach. This does not accurately determine the difference between
   * shadowed variables in the same file but this is due to REF edges not connecting children methods to parent scope
@@ -220,8 +219,7 @@ class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
       extends RecursiveTask[Unit] {
     override def compute(): Unit = {
       val VarDecl(filename, alias) = varDecl
-      cpg
-        .file
+      cpg.file
         .nameExact(filename)
         .method
         .ast
