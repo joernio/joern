@@ -4,7 +4,7 @@ crossScalaVersions := Seq("2.13.8", "3.2.1")
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
-val astGenVersion = "2.9.0"
+val astGenVersion = "2.10.0"
 
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
@@ -66,7 +66,7 @@ Test / fork := false
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 lazy val astGenDlUrl       = s"https://github.com/joernio/astgen/releases/download/v$astGenVersion/"
-lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-win.exe")
+lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-macos-arm", "astgen-win.exe")
 
 lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
 astGenDlTask := {

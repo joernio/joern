@@ -52,7 +52,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
         func.fullName shouldBe "code.ts::program:foo"
         val List(_, arg) = cpg.method("foo").parameter.l
         arg.name shouldBe "arg"
-        arg.typeFullName shouldBe Defines.STRING
+        arg.typeFullName shouldBe Defines.String
         arg.code shouldBe "arg: string"
         arg.index shouldBe 1
         val List(parentTypeDecl) = cpg.typeDecl.name(":program").l

@@ -9,14 +9,14 @@ class BuiltinTypesPass(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val namespaceBlock = NewNamespaceBlock()
-      .name(Defines.GLOBAL_NAMESPACE)
-      .fullName(Defines.GLOBAL_NAMESPACE)
+      .name(Defines.GlobalNamespace)
+      .fullName(Defines.GlobalNamespace)
       .order(0)
       .filename("builtintypes")
 
     diffGraph.addNode(namespaceBlock)
 
-    Defines.JSTYPES.zipWithIndex.map { case (typeName: String, index) =>
+    Defines.JsTypes.zipWithIndex.map { case (typeName: String, index) =>
       val tpe = NewType()
         .name(typeName)
         .fullName(typeName)
@@ -28,7 +28,7 @@ class BuiltinTypesPass(cpg: Cpg) extends CpgPass(cpg) {
         .fullName(typeName)
         .isExternal(true)
         .astParentType(NodeTypes.NAMESPACE_BLOCK)
-        .astParentFullName(Defines.GLOBAL_NAMESPACE)
+        .astParentFullName(Defines.GlobalNamespace)
         .order(index + 1)
         .filename("builtintypes")
 

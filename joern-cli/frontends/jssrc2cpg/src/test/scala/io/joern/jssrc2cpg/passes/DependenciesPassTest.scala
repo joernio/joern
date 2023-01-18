@@ -13,7 +13,7 @@ class DependenciesPassTest extends AbstractPassTest {
 
     "ignore empty package.json" in {
       File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
-        val json = dir / PackageJsonParser.PACKAGE_JSON_FILENAME
+        val json = dir / PackageJsonParser.PackageJsonFilename
         json.write("")
         PackageJsonParser.isValidProjectPackageJson(json.path) shouldBe false
       }
@@ -21,7 +21,7 @@ class DependenciesPassTest extends AbstractPassTest {
 
     "ignore package.json without any useful content" in {
       File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
-        val json = dir / PackageJsonParser.PACKAGE_JSON_FILENAME
+        val json = dir / PackageJsonParser.PackageJsonFilename
         json.write("""
             |{
             |  "name": "something",
@@ -37,7 +37,7 @@ class DependenciesPassTest extends AbstractPassTest {
 
     "ignore package.json without dependencies" in {
       File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
-        val json = dir / PackageJsonParser.PACKAGE_JSON_FILENAME
+        val json = dir / PackageJsonParser.PackageJsonFilename
         json.write("{}")
         PackageJsonParser.isValidProjectPackageJson(json.path) shouldBe false
       }
@@ -73,7 +73,7 @@ class DependenciesPassTest extends AbstractPassTest {
           |  }
           |}
           |""".stripMargin,
-      packageJsonName = PackageJsonParser.PACKAGE_JSON_LOCK_FILENAME
+      packageJsonName = PackageJsonParser.PackageJsonLockFilename
     ) { cpg =>
       val List(depA, depB) = cpg.dependency.l
       depA.name shouldBe "dep1"
@@ -133,7 +133,7 @@ class DependenciesPassTest extends AbstractPassTest {
     def apply(
       code: String,
       packageJsonContent: String,
-      packageJsonName: String = PackageJsonParser.PACKAGE_JSON_FILENAME
+      packageJsonName: String = PackageJsonParser.PackageJsonFilename
     )(f: Cpg => Unit): Unit = {
       File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val file = dir / "file.js"
