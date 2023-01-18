@@ -94,7 +94,6 @@ public class Export {
         System.out.println("XXX0 using shadowed version");
         try {
             if (!dest.exists()) {
-                System.out.println("XXX1");
                 if (verbose) {
                     System.out.println("Copying Java " +
                             System.getProperty("java.version") +
@@ -103,13 +102,18 @@ public class Export {
                             " ...");
                     System.out.flush();
                 }
+                System.out.println("XXX1 - file doesn't exist - creating parent dirs");
                 dest.getParentFile().mkdirs();
+                System.out.println("XXX2 - parent dir created: exists=" + dest.getParentFile().exists());
                 java.nio.file.Files.copy(rt().toPath(), dest.toPath(),
                                          StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("XXX3");
                 return true;
             }
         } catch (IOException e) {
+            System.err.println("XXX4");
             e.printStackTrace();
+            System.err.println("XXX5");
             System.exit(-1);
         }
         return false;
