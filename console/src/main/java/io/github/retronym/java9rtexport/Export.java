@@ -90,8 +90,12 @@ public class Export {
         return tempFile;
     }
 
-    public static boolean rtTo(File dest, boolean verbose) {
-        System.out.println("XXX0 using shadowed version");
+    /**
+     * Needs to be `synchronized` because java.nio.file.Files.copy isn't thread safe:
+     * https://stackoverflow.com/questions/69796396/is-files-copy-a-thread-safe-function-in-java
+     * and our own handling of "if !exists, then copy" isn't either...
+     */
+    public static synchronized boolean rtTo(File dest, boolean verbose) {
         try {
             if (!dest.exists()) {
                 if (verbose) {
@@ -102,18 +106,12 @@ public class Export {
                             " ...");
                     System.out.flush();
                 }
-                System.out.println("XXX1 - file doesn't exist - creating parent dirs");
                 dest.getParentFile().mkdirs();
-                System.out.println("XXX2 - parent dir created: exists=" + dest.getParentFile().exists());
-                java.nio.file.Files.copy(rt().toPath(), dest.toPath(),
-                                         StandardCopyOption.REPLACE_EXISTING);
-                System.out.println("XXX3");
+                java.nio.file.Files.copy(rt().toPath(), dest.toPath());
                 return true;
             }
         } catch (IOException e) {
-            System.err.println("XXX4");
             e.printStackTrace();
-            System.err.println("XXX5");
             System.exit(-1);
         }
         return false;
