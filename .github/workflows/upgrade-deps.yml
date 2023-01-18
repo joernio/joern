@@ -19,7 +19,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'sbt'
       - name: Install php deps for php2cpg
         run: joern-cli/frontends/php2cpg/bin/installdeps.sh
       - name: Upgrade all (internal) dependencies
