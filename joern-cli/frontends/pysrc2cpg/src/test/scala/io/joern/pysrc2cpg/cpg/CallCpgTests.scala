@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.NodeOps
@@ -236,7 +237,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
-  "call from a function from an external imported module" should {
+  "call from a function from an external type" should {
 
     lazy val cpg = code("""
         |from slack_sdk import WebClient
@@ -248,8 +249,39 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |def send_slack_message(chan, msg):
         |    client.chat_postMessage(channel=chan, text=msg)
         |
+        |x = 123
+        |
+        |z = {'a': 123}
+        |z = [1, 2, 3]
+        |z = (1, 2, 3)
+        |# This should fail, as tuples are immutable
+        |z.append(4)
+        |
+        |def foo_shadowing():
+        |   x = "foo"
+        |
         |response = sg.send(message)
         |""".stripMargin).cpg
+
+    "resolve 'x' identifier types despite shadowing" in {
+      val List(xOuterScope, xInnerScope) = cpg.identifier("x").take(2).l
+      xOuterScope.dynamicTypeHintFullName shouldBe Seq("int", "str")
+      xInnerScope.dynamicTypeHintFullName shouldBe Seq("int", "str")
+    }
+
+    "resolve 'y' and 'z' identifier collection types" in {
+      val List(zDict, zList, zTuple) = cpg.identifier("z").take(3).l
+      zDict.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+      zList.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+      zTuple.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+    }
+
+    "resolve 'z' identifier calls conservatively" in {
+      // TODO: These should have callee entries but the method stubs are not present here
+      val List(zAppend) = cpg.call("append").l
+      zAppend.methodFullName shouldBe Defines.DynamicCallUnknownFallName
+      zAppend.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+    }
 
     "resolve 'sg' identifier types from import information" in {
       val List(sgAssignment, sgElseWhere) = cpg.identifier("sg").take(2).l
