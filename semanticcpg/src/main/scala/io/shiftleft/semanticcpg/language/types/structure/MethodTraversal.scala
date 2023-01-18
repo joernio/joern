@@ -153,6 +153,7 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
 
   /** Traverse to namespace */
   @Doc(info = "Namespace this method is declared in")
+  // TODO see if we can just make this `namespaceBlock.namespace`
   def namespace: Traversal[Namespace] = {
     traversal.choose(_.astParentType) {
       case NamespaceBlock.Label =>
@@ -161,6 +162,17 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
       case _ =>
         // other language frontends always embed their method in a TYPE_DECL
         _.definingTypeDecl.namespace
+    }
+  }
+
+  def namespaceBlock : Traversal[NamespaceBlock] = {
+    traversal.choose(_.astParentType) {
+      case NamespaceBlock.Label =>
+        // some language frontends don't have a TYPE_DECL for a METHOD
+        _.astParent.collectAll[NamespaceBlock]
+      case _ =>
+        // other language frontends always embed their method in a TYPE_DECL
+        _.definingTypeDecl.namespaceBlock
     }
   }
 

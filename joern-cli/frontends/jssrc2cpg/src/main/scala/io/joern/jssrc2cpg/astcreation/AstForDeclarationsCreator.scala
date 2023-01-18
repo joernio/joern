@@ -262,7 +262,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     names.foreach { name =>
       val dependencyNode = createDependencyNode(name, groupId, REQUIRE_KEYWORD)
       diffGraph.addNode(dependencyNode)
-      val importNode = createImportNodeAndAttachToAst(declarator, groupId, name)
+      val importNode = createImportNodeAndAttachToCpg(declarator, groupId, name)
       diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
     }
   }
@@ -321,7 +321,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
     val dependencyNode = createDependencyNode(name, referenceName, IMPORT_KEYWORD)
     diffGraph.addNode(dependencyNode)
-    val importNode = createImportNodeAndAttachToAst(impDecl, referenceName, name)
+    val importNode = createImportNodeAndAttachToCpg(impDecl, referenceName, name)
     diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
     astForRequireCallFromImport(name, None, referenceName, isImportN = false, impDecl)
   }
@@ -388,14 +388,14 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     if (specifiers.isEmpty) {
       val dependencyNode = createDependencyNode(source, source, IMPORT_KEYWORD)
       diffGraph.addNode(dependencyNode)
-      val importNode = createImportNodeAndAttachToAst(impDecl, source, source)
+      val importNode = createImportNodeAndAttachToCpg(impDecl, source, source)
       diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
       astForRequireCallFromImport(source, None, source, isImportN = false, impDecl)
     } else {
       val specs = impDecl.json("specifiers").arr.toList
       val depNodes = specs.map { importSpecifier =>
         val importedName   = importSpecifier("local")("name").str
-        val importNode     = createImportNodeAndAttachToAst(impDecl, source, importedName)
+        val importNode     = createImportNodeAndAttachToCpg(impDecl, source, importedName)
         val dependencyNode = createDependencyNode(importedName, source, IMPORT_KEYWORD)
         diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
         dependencyNode
@@ -424,7 +424,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
   }
 
-  private def createImportNodeAndAttachToAst(
+  private def createImportNodeAndAttachToCpg(
     impDecl: BabelNodeInfo,
     importedEntity: String,
     importedAs: String
