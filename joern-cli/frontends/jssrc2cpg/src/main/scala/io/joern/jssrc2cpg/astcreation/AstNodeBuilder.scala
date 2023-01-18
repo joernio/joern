@@ -184,16 +184,18 @@ trait AstNodeBuilder { this: AstCreator =>
   }
 
   protected def createImportNode(
-    impDecl: BabelNodeInfo,
+    code: String,
+    lineNumber: Option[Integer],
+    columnNumber: Option[Integer],
     importedEntity: Option[String],
     importedAs: String
   ): NewImport =
     NewImport()
-      .code(impDecl.code.stripSuffix(";"))
+      .code(code.stripSuffix(";"))
       .importedEntity(importedEntity)
       .importedAs(importedAs)
-      .lineNumber(impDecl.lineNumber)
-      .columnNumber(impDecl.columnNumber)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
 
   protected def createMemberNode(name: String, code: String, dynamicTypeOption: Option[String]): NewMember =
     NewMember()

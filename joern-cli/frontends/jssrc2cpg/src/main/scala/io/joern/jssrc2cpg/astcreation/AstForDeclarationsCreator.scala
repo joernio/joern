@@ -429,7 +429,14 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     importedEntity: String,
     importedAs: String
   ): NewImport = {
-    val impNode = createImportNode(impDecl, Option(importedEntity).filter(_.trim.nonEmpty), importedAs)
+
+    val impNode = createImportNode(
+      impDecl.code,
+      impDecl.lineNumber,
+      impDecl.columnNumber,
+      Option(importedEntity).filter(_.trim.nonEmpty),
+      importedAs
+    )
     methodAstParentStack.collectFirst { case namespaceBlockNode: NewNamespaceBlock =>
       diffGraph.addEdge(namespaceBlockNode, impNode, EdgeTypes.AST)
     }
