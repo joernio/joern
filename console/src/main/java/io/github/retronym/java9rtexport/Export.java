@@ -91,8 +91,10 @@ public class Export {
     }
 
     public static boolean rtTo(File dest, boolean verbose) {
+        System.out.println("XXX0 using shadowed version");
         try {
             if (!dest.exists()) {
+                System.out.println("XXX1");
                 if (verbose) {
                     System.out.println("Copying Java " +
                             System.getProperty("java.version") +
