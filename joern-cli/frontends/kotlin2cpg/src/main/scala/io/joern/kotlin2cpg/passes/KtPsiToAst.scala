@@ -63,9 +63,6 @@ trait KtPsiToAst {
         .isWildcard(isWildcard)
         .isExplicit(true)
         .importedEntity(directive.getImportPath.getPathStr)
-        .code(s"${Constants.importKeyword} ${directive.getImportPath.getPathStr}")
-        .lineNumber(line(directive))
-        .columnNumber(column(directive))
     Ast(node)
   }
 

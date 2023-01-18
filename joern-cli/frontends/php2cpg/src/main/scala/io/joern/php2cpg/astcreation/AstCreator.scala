@@ -675,7 +675,6 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .importedEntity(originalName)
       .importedAs(stmt.alias.map(_.name))
       .isExplicit(true)
-      .code(code)
 
     Ast(importNode)
   }

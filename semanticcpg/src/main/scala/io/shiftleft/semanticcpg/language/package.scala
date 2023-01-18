@@ -47,6 +47,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   implicit def toLiteralMethods(node: Literal): LiteralMethods          = new LiteralMethods(node)
   implicit def toLocalMethods(node: Local): LocalMethods                = new LocalMethods(node)
   implicit def toMethodRefMethods(node: MethodRef): MethodRefMethods    = new MethodRefMethods(node)
+  implicit def toImportMethods(node : Import) : ImportMethods = new ImportMethods(node)
 
   // Implicit conversions from Step[NodeType, Label] to corresponding Step classes.
   // If you introduce a new Step-type, that is, one that inherits from `Steps[NodeType]`,

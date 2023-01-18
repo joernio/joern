@@ -191,11 +191,8 @@ trait AstNodeBuilder { this: AstCreator =>
     importedAs: String
   ): NewImport =
     NewImport()
-      .code(code.stripSuffix(";"))
       .importedEntity(importedEntity)
       .importedAs(importedAs)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
 
   protected def createMemberNode(name: String, code: String, dynamicTypeOption: Option[String]): NewMember =
     NewMember()

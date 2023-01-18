@@ -84,16 +84,17 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |import * as d from "depD";
         |""".stripMargin) { cpg =>
       val List(a, b, c, d) = cpg.imports.l
-      a.code shouldBe "import {a} from \"depA\""
+      // TODO I want to be able to say `a.call` here
+      a.call.code.head shouldBe "import {a} from \"depA\""
       a.importedEntity shouldBe Some("depA")
       a.importedAs shouldBe Some("a")
-      b.code shouldBe "import {b} from \"depB\""
+      b.call.code.head shouldBe "import {b} from \"depB\""
       b.importedEntity shouldBe Some("depB")
       b.importedAs shouldBe Some("b")
-      c.code shouldBe "import {c} from \"\""
+      c.call.code.head shouldBe "import {c} from \"\""
       c.importedEntity should not be defined
       c.importedAs shouldBe Some("c")
-      d.code shouldBe "import * as d from \"depD\""
+      d.call.code.head shouldBe "import * as d from \"depD\""
       d.importedEntity shouldBe Some("depD")
       d.importedAs shouldBe Some("d")
       val List(n) = a.namespaceBlock.l
