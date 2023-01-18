@@ -1,5 +1,7 @@
 package io.joern.dataflowengineoss.queryengine
 
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
+
 import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters._
 
@@ -18,7 +20,7 @@ import scala.collection.parallel.CollectionConverters._
   */
 class HeldTaskCompletion(
   heldTasks: List[ReachableByTask],
-  resultTable: mutable.Map[TaskFingerprint, List[TableEntry]]
+  resultTable: mutable.Map[TaskFingerprint, List[TableEntry]],
 ) {
 
   /** Add results produced by held task until no more change can be observed.
@@ -46,6 +48,7 @@ class HeldTaskCompletion(
     def noneChanged = toProcess.map { t => t.fingerprint -> false }.toMap
 
     var changed: Map[TaskFingerprint, Boolean] = allChanged
+    val groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]]] = mutable.Map()
 
     while (changed.values.toList.contains(true)) {
       val taskResultsPairs = toProcess
@@ -61,7 +64,7 @@ class HeldTaskCompletion(
 
       changed = noneChanged
       taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
-        addCompletedTasksToMainTable(newResults.toList)
+        addCompletedTasksToMainTable(newResults.toList, groupMap)
         newResults.foreach { case (fingerprint, _) =>
           changed += fingerprint -> true
         }
@@ -117,11 +120,40 @@ class HeldTaskCompletion(
     pathSeq.distinct.size == pathSeq.size
   }
 
-  private def addCompletedTasksToMainTable(results: List[(TaskFingerprint, TableEntry)]): Unit = {
+  private def addCompletedTasksToMainTable(results: List[(TaskFingerprint, TableEntry)],
+                                           groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call],
+                                             Boolean),
+                                             (CfgNode, List[Call], Boolean)), List[TableEntry]]],
+  ): Unit = {
     results.groupBy(_._1).foreach { case (fingerprint, resultList) =>
       val entries = resultList.map(_._2)
       val old     = resultTable.getOrElse(fingerprint, Vector()).toList
-      resultTable.put(fingerprint, deduplicateTableEntries(old ++ entries))
+
+      val toGroups = groupMap.getOrElse( fingerprint, null )
+
+      val fromGroups = entries
+          .groupBy { result =>
+          val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+          val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+          (head, last)
+      }
+
+      val groups = if( toGroups != null ){
+        fromGroups ++ toGroups
+      }else {
+        val toGroupsNew = old
+          .groupBy { result =>
+            val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+            val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+            (head, last)
+          }
+        fromGroups ++ toGroupsNew
+      }
+
+      val mergedList = getListFromGroups(groups)
+      resultTable.put(fingerprint, mergedList)
+      groupMap.update(fingerprint, groups)
+      //println(s"Group insert: fingerprint: ${fingerprint}, Fingerprint hash: ${fingerprint.hashCode()}, group count: ${groups.size}")
     }
   }
 
@@ -141,7 +173,7 @@ class HeldTaskCompletion(
     * flows with maximum length, then we compute a string representation of the flows - taking into account all fields
     *   - and select the flow with maximum length that is smallest in terms of this string representation.
     */
-  private def deduplicateTableEntries(list: List[TableEntry]): List[TableEntry] = {
+  private def deduplicateTableEntries(list: List[TableEntry]): List[TableEntry]= {
     list
       .groupBy { result =>
         val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
@@ -167,5 +199,45 @@ class HeldTaskCompletion(
       }
       .toList
   }
+
+  private def mergeGroups(into: List[TableEntry], from: List[TableEntry]): Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]] = {
+    val toGroups = into
+      .groupBy { result =>
+        val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+        (head, last)
+      }
+
+    val fromGroups = from
+      .groupBy { result =>
+        val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+        (head, last)
+    }
+
+    toGroups ++ fromGroups
+  }
+
+  private def getListFromGroups(groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]]): List[TableEntry] = {
+    val mapped = groups.map { case (_, list) =>
+      val lenIdPathPairs = list.map(x => (x.path.length, x))
+      val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+        case Nil => Nil
+        case h :: t => h :: t.takeWhile(y => y._1 == h._1)
+      }).map(_._2)
+
+      if (withMaxLength.length == 1) {
+        withMaxLength.head
+      } else {
+        withMaxLength.minBy { x =>
+          x.path
+            .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+            .mkString("-")
+        }
+      }
+    }
+    mapped.toList
+  }
+
 
 }
