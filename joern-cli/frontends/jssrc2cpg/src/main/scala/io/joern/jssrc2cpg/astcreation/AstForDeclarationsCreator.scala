@@ -394,8 +394,10 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     } else {
       val specs = impDecl.json("specifiers").arr.toList
       val depNodes = specs.map { importSpecifier =>
+        val name           = importSpecifier("local")("name").str
         val importedName   = importSpecifier("local")("name").str
-        val importNode     = createImportNodeAndAttachToAst(impDecl, source, importedName)
+        val (_, reqName)   = reqNameFromImportSpecifier(importSpecifier, name)
+        val importNode     = createImportNodeAndAttachToAst(impDecl, s"$source:$reqName", importedName)
         val dependencyNode = createDependencyNode(importedName, source, ImportKeyword)
         diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
         dependencyNode
@@ -407,11 +409,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
           case ImportSpecifier => true
           case _               => false
         }
-        val (alias, reqName) = if (hasKey(importSpecifier, "imported")) {
-          (Option(name), importSpecifier("imported")("name").str)
-        } else {
-          (None, name)
-        }
+        val (alias, reqName) = reqNameFromImportSpecifier(importSpecifier, name)
         astForRequireCallFromImport(reqName, alias, source, isImportN = isImportN, impDecl)
       }
       if (requireCalls.isEmpty) {
@@ -421,6 +419,14 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       } else {
         blockAst(createBlockNode(impDecl), requireCalls)
       }
+    }
+  }
+
+  private def reqNameFromImportSpecifier(importSpecifier: Value, name: String) = {
+    if (hasKey(importSpecifier, "imported")) {
+      (Option(name), importSpecifier("imported")("name").str)
+    } else {
+      (None, name)
     }
   }
 
