@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
   "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test
 )
 
-Test / fork := false
+Test / fork := true
 
 enablePlugins(UniversalPlugin)
 enablePlugins(JavaAppPackaging)
