@@ -47,7 +47,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   implicit def toLiteralMethods(node: Literal): LiteralMethods          = new LiteralMethods(node)
   implicit def toLocalMethods(node: Local): LocalMethods                = new LocalMethods(node)
   implicit def toMethodRefMethods(node: MethodRef): MethodRefMethods    = new MethodRefMethods(node)
-  implicit def toImportMethods(node : Import) : ImportMethods = new ImportMethods(node)
+  implicit def toImportMethods(node: Import): ImportMethods             = new ImportMethods(node)
 
   // Implicit conversions from Step[NodeType, Label] to corresponding Step classes.
   // If you introduce a new Step-type, that is, one that inherits from `Steps[NodeType]`,
@@ -130,9 +130,6 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     new FileTraversal(Traversal.fromSingle(a))
   implicit def iterOnceToFileTrav[A <: File](a: IterableOnce[A]): FileTraversal =
     new FileTraversal(iterableToTraversal(a))
-
-  implicit def singleToImportTrav[A <: Import](a: A): ImportTraversal =
-    new ImportTraversal(Traversal.fromSingle(a))
 
   implicit def iterToImportTrav[A <: Import](a: IterableOnce[A]): ImportTraversal =
     new ImportTraversal(iterableToTraversal(a))

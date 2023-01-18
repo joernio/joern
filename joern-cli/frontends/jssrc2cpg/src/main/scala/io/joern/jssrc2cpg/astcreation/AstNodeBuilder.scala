@@ -183,13 +183,7 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column)
   }
 
-  protected def createImportNode(
-    code: String,
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer],
-    importedEntity: Option[String],
-    importedAs: String
-  ): NewImport =
+  protected def createImportNode(importedEntity: Option[String], importedAs: String): NewImport =
     NewImport()
       .importedEntity(importedEntity)
       .importedAs(importedAs)

@@ -165,7 +165,7 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
     }
   }
 
-  def namespaceBlock : Traversal[NamespaceBlock] = {
+  def namespaceBlock: Traversal[NamespaceBlock] = {
     traversal.choose(_.astParentType) {
       case NamespaceBlock.Label =>
         // some language frontends don't have a TYPE_DECL for a METHOD

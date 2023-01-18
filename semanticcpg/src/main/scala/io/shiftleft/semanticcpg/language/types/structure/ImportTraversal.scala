@@ -13,6 +13,6 @@ class ImportTraversal(val traversal: Traversal[Import]) extends AnyVal {
 
   def code: Traversal[String] = call.code
 
-  def code(regex : String): Traversal[Import] = traversal.where(_.call.code(regex))
+  def code(regex: String): Traversal[Import] = traversal.where(_.call.code(regex))
 
 }
