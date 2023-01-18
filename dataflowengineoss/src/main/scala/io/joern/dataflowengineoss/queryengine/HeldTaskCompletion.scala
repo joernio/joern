@@ -2,6 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 
+import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters._
 
@@ -127,10 +128,6 @@ class HeldTaskCompletion(
   ): Unit = {
     results.groupBy(_._1).foreach { case (fingerprint, resultList) =>
       val entries = resultList.map(_._2)
-      val old     = resultTable.getOrElse(fingerprint, Vector()).toList
-
-      val toGroups = groupMap.getOrElse( fingerprint, null )
-
       val fromGroups = entries
           .groupBy { result =>
           val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
@@ -138,22 +135,19 @@ class HeldTaskCompletion(
           (head, last)
       }
 
-      val groups = if( toGroups != null ){
-        fromGroups ++ toGroups
-      }else {
-        val toGroupsNew = old
-          .groupBy { result =>
-            val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-            val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-            (head, last)
-          }
-        fromGroups ++ toGroupsNew
-      }
+      val old     = resultTable.getOrElse(fingerprint, Vector()).toList
+      val toGroups = groupMap.getOrElse(fingerprint, old
+        .groupBy { result =>
+          val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+          val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+          (head, last)
+        })
 
+      val groups = fromGroups ++ toGroups
       val mergedList = getListFromGroups(groups)
+
       resultTable.put(fingerprint, mergedList)
       groupMap.update(fingerprint, groups)
-      //println(s"Group insert: fingerprint: ${fingerprint}, Fingerprint hash: ${fingerprint.hashCode()}, group count: ${groups.size}")
     }
   }
 
