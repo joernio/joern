@@ -194,24 +194,6 @@ class HeldTaskCompletion(
       .toList
   }
 
-  private def mergeGroups(into: List[TableEntry], from: List[TableEntry]): Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]] = {
-    val toGroups = into
-      .groupBy { result =>
-        val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-        (head, last)
-      }
-
-    val fromGroups = from
-      .groupBy { result =>
-        val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-        val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-        (head, last)
-    }
-
-    toGroups ++ fromGroups
-  }
-
   private def getListFromGroups(groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]]): List[TableEntry] = {
     val mapped = groups.map { case (_, list) =>
       val lenIdPathPairs = list.map(x => (x.path.length, x))
