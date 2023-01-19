@@ -73,7 +73,7 @@ trait AstCreatorHelper { this: AstCreator =>
     Option(cdtAst.flattenLocationsToFile(node.getNodeLocations.lastOption.toArray)).map(_.asFileLocation())
 
   protected def fileName(node: IASTNode): String = {
-    val path = nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
+    val path = nullSafeFileLocation(node).fold(filename)(_.getFileName)
     IOUtils.toRelativePath(path, config)
   }
 
@@ -150,7 +150,8 @@ trait AstCreatorHelper { this: AstCreator =>
       case t if t.contains("?") => Defines.anyTypeName
       case t if t.contains("#") => Defines.anyTypeName
       case t if t.contains("{") && t.contains("}") =>
-        val anonType = uniqueName("type", "", "")._1 + t.substring(0, t.indexOf("{")) + t.substring(t.indexOf("}") + 1)
+        val anonType =
+          s"${uniqueName("type", "", "")._1}${t.substring(0, t.indexOf("{"))}${t.substring(t.indexOf("}") + 1)}"
         anonType.replace(" ", "")
       case t if t.startsWith("[") && t.endsWith("]") => "[]"
       case t if t.contains(Defines.qualifiedNameSeparator) =>
@@ -165,6 +166,8 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def typeFor(node: IASTNode, stripKeywords: Boolean = true): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     node match {
+      case f: IASTFieldReference =>
+        cleanType(ASTTypeUtil.getType(f.getFieldOwner.getExpressionType), stripKeywords)
       case a: IASTArrayDeclarator if ASTTypeUtil.getNodeType(a).startsWith("? ") =>
         val tpe = getNodeSignature(a).replace("[]", "").strip()
         val arr = ASTTypeUtil.getNodeType(a).replace("? ", "")
@@ -209,7 +212,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def nullSafeCode(node: IASTNode): String = {
-    Option(node).map(nodeSignature).getOrElse("")
+    Option(node).fold("")(nodeSignature)
   }
 
   protected def nullSafeAst(node: IASTExpression, argIndex: Int): Ast = {
@@ -223,7 +226,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def nullSafeAst(node: IASTExpression): Ast =
-    Option(node).map(astForNode(_)).getOrElse(Ast())
+    Option(node).fold(Ast())(astForNode(_))
 
   protected def nullSafeAst(node: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
     Option(node).map(astsForStatement(_, argIndex)).getOrElse(Seq.empty)
@@ -252,7 +255,7 @@ trait AstCreatorHelper { this: AstCreator =>
           case f: CPPFunction if f.getDeclarations != null =>
             usingDeclarationMappings.getOrElse(
               fixQualifiedName(ASTStringUtil.getSimpleName(d.getName)),
-              f.getDeclarations.headOption.map(n => ASTStringUtil.getSimpleName(n.getName)).getOrElse(f.getName)
+              f.getDeclarations.headOption.fold(f.getName)(n => ASTStringUtil.getSimpleName(n.getName))
             )
           case f: CPPFunction if f.getDefinition != null =>
             usingDeclarationMappings.getOrElse(
@@ -271,9 +274,9 @@ trait AstCreatorHelper { this: AstCreator =>
       case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).isEmpty =>
         val name = cppClass.getParent match {
           case decl: IASTSimpleDeclaration =>
-            decl.getDeclarators.headOption
-              .map(n => ASTStringUtil.getSimpleName(n.getName))
-              .getOrElse(uniqueName("composite_type", "", "")._1)
+            decl.getDeclarators.headOption.fold(uniqueName("composite_type", "", "")._1)(n =>
+              ASTStringUtil.getSimpleName(n.getName)
+            )
           case _ => uniqueName("composite_type", "", "")._1
         }
         s"${fullName(cppClass.getParent)}.$name"
@@ -319,7 +322,7 @@ trait AstCreatorHelper { this: AstCreator =>
         val evaluation = d.getEvaluation.asInstanceOf[EvalBinding]
         evaluation.getBinding match {
           case f: CPPFunction if f.getDeclarations != null =>
-            f.getDeclarations.headOption.map(n => ASTStringUtil.getSimpleName(n.getName)).getOrElse(f.getName)
+            f.getDeclarations.headOption.fold(f.getName)(n => ASTStringUtil.getSimpleName(n.getName))
           case f: CPPFunction if f.getDefinition != null =>
             ASTStringUtil.getSimpleName(f.getDefinition.getName)
           case other =>

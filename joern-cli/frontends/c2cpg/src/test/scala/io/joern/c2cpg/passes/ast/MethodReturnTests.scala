@@ -15,8 +15,8 @@ class MethodReturnTests extends CCodeToCpgSuite {
       val List(x, _) = cpg.methodReturn.l
       x.code shouldBe "int*"
       x.typeFullName shouldBe "int*"
-      x.lineNumber shouldBe Some(2)
-      x.columnNumber shouldBe Some(2)
+      x.lineNumber shouldBe Option(2)
+      x.columnNumber shouldBe Option(2)
       // we expect the METHOD_RETURN node to be the right-most
       // child so that when traversing the AST from left to
       // right in CFG construction, we visit it last.
@@ -50,11 +50,11 @@ class MethodReturnTests extends CCodeToCpgSuite {
       val travReturns = cpg.method("main").methodReturn.toReturn.l
       inside(astReturns) { case List(ret1, ret2) =>
         ret1.code shouldBe "return 1;"
-        ret1.lineNumber shouldBe Some(4)
-        ret1.columnNumber shouldBe Some(5)
+        ret1.lineNumber shouldBe Option(4)
+        ret1.columnNumber shouldBe Option(5)
         ret2.code shouldBe "return 2;"
-        ret2.lineNumber shouldBe Some(6)
-        ret2.columnNumber shouldBe Some(3)
+        ret2.lineNumber shouldBe Option(6)
+        ret2.columnNumber shouldBe Option(3)
       }
       astReturns shouldBe cfgReturns
       astReturns shouldBe travReturns

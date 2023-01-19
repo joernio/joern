@@ -16,7 +16,7 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder) extends Inte
     val maybeFullPath = if (!getInclusionExists(path)) {
       headerFileFinder.find(path)
     } else {
-      Some(path)
+      Option(path)
     }
     maybeFullPath
       .map { foundPath =>
