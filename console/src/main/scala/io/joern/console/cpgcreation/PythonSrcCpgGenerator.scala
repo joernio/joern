@@ -1,7 +1,8 @@
 package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
-import io.joern.x2cpg.passes.frontend.{PythonTypeHintCallLinker, PythonNaiveCallLinker, PythonTypeRecovery}
+import io.joern.x2cpg.passes.frontend.impl.{PythonTypeHintCallLinker, PythonTypeRecovery}
+import io.joern.x2cpg.passes.frontend.PythonNaiveCallLinker
 import io.shiftleft.codepropertygraph.Cpg
 
 import java.nio.file.Path
