@@ -23,8 +23,8 @@ import scala.util.Try
 trait AstCreatorHelper { this: AstCreator =>
 
   // maximum length of code fields in number of characters
-  private val MAX_CODE_LENGTH: Int = 1000
-  private val MIN_CODE_LENGTH: Int = 50
+  private val MaxCodeLength: Int = 1000
+  private val MinCodeLength: Int = 50
 
   protected def createBabelNodeInfo(json: Value): BabelNodeInfo = {
     val c     = shortenCode(code(json))
@@ -69,7 +69,7 @@ trait AstCreatorHelper { this: AstCreator =>
       .orElse(codeForBabelNodeInfo(nodeInfo).headOption)
       .getOrElse {
         val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
-        val localNode = createLocalNode(tmpName, Defines.ANY)
+        val localNode = createLocalNode(tmpName, Defines.Any)
         diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
         tmpName
       }
@@ -91,8 +91,8 @@ trait AstCreatorHelper { this: AstCreator =>
     parserResult.fileContent.substring(startIndex, endIndex).trim
   }
 
-  private def shortenCode(code: String, length: Int = MAX_CODE_LENGTH): String =
-    StringUtils.abbreviate(code, math.max(MIN_CODE_LENGTH, length))
+  private def shortenCode(code: String, length: Int = MaxCodeLength): String =
+    StringUtils.abbreviate(code, math.max(MinCodeLength, length))
 
   protected def hasKey(node: Value, key: String): Boolean = Try(node(key)).isSuccess
 
@@ -269,7 +269,7 @@ trait AstCreatorHelper { this: AstCreator =>
                   case None =>
                     val methodScopeNode = methodScope.scopeNode
                     val localNode =
-                      createLocalNode(origin.variableName, Defines.ANY, Option(closureBindingIdProperty))
+                      createLocalNode(origin.variableName, Defines.Any, Option(closureBindingIdProperty))
                     diffGraph.addEdge(methodScopeNode, localNode, EdgeTypes.AST)
                     val closureBindingNode = createClosureBindingNode(closureBindingIdProperty, origin.variableName)
                     methodScope.capturingRefId.foreach(ref =>
@@ -301,7 +301,7 @@ trait AstCreatorHelper { this: AstCreator =>
     methodScopeNodeId: NewNode,
     variableName: String
   ): (NewNode, ScopeType) = {
-    val local = createLocalNode(variableName, Defines.ANY)
+    val local = createLocalNode(variableName, Defines.Any)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     (local, MethodScope)
   }

@@ -15,16 +15,16 @@ import scala.util.Success
 object PackageJsonParser {
   private val logger = LoggerFactory.getLogger(PackageJsonParser.getClass)
 
-  val PACKAGE_JSON_FILENAME      = "package.json"
-  val PACKAGE_JSON_LOCK_FILENAME = "package-lock.json"
+  val PackageJsonFilename     = "package.json"
+  val PackageJsonLockFilename = "package-lock.json"
 
-  private val projectDependencies =
+  private val ProjectDependencies =
     Seq("dependencies", "devDependencies", "peerDependencies", "optionalDependencies")
 
   private val cachedDependencies: TrieMap[Path, Map[String, String]] = TrieMap.empty
 
   def isValidProjectPackageJson(packageJsonPath: Path): Boolean = {
-    if (packageJsonPath.toString.endsWith(PackageJsonParser.PACKAGE_JSON_FILENAME)) {
+    if (packageJsonPath.toString.endsWith(PackageJsonParser.PackageJsonFilename)) {
       val isNotEmpty = Try(IOUtils.readLinesInFile(packageJsonPath)) match {
         case Success(content) =>
           content.forall(l => StringUtils.isNotBlank(StringUtils.normalizeSpace(l)))
@@ -40,7 +40,7 @@ object PackageJsonParser {
     cachedDependencies.getOrElseUpdate(
       packageJsonPath, {
         val depsPath     = packageJsonPath
-        val lockDepsPath = packageJsonPath.resolveSibling(Paths.get(PACKAGE_JSON_LOCK_FILENAME))
+        val lockDepsPath = packageJsonPath.resolveSibling(Paths.get(PackageJsonLockFilename))
 
         val lockDeps = Try {
           val content      = IOUtils.readLinesInFile(lockDepsPath).mkString("\n")
@@ -68,7 +68,7 @@ object PackageJsonParser {
           val packageJson  = objectMapper.readTree(content)
 
           var depToVersion = Map.empty[String, String]
-          projectDependencies
+          ProjectDependencies
             .foreach { dependency =>
               val dependencyIt = Option(packageJson.get(dependency))
                 .map(_.fields().asScala)
@@ -89,7 +89,7 @@ object PackageJsonParser {
             deps.get
           } else {
             logger.debug(
-              s"No project dependencies found in $PACKAGE_JSON_FILENAME or $PACKAGE_JSON_LOCK_FILENAME at '${depsPath.getParent}'."
+              s"No project dependencies found in $PackageJsonFilename or $PackageJsonLockFilename at '${depsPath.getParent}'."
             )
             Map.empty
           }

@@ -85,16 +85,16 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |""".stripMargin) { cpg =>
       val List(a, b, c, d) = cpg.imports.l
       a.code shouldBe "import {a} from \"depA\""
-      a.importedEntity shouldBe Some("depA")
+      a.importedEntity shouldBe Some("depA:a")
       a.importedAs shouldBe Some("a")
       b.code shouldBe "import {b} from \"depB\""
-      b.importedEntity shouldBe Some("depB")
+      b.importedEntity shouldBe Some("depB:b")
       b.importedAs shouldBe Some("b")
       c.code shouldBe "import {c} from \"\""
-      c.importedEntity should not be defined
+      c.importedEntity shouldBe Some(":c")
       c.importedAs shouldBe Some("c")
       d.code shouldBe "import * as d from \"depD\""
-      d.importedEntity shouldBe Some("depD")
+      d.importedEntity shouldBe Some("depD:d")
       d.importedAs shouldBe Some("d")
       val List(n) = a.namespaceBlock.l
       n.fullName shouldBe "code.js:<global>"

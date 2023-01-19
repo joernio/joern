@@ -17,10 +17,10 @@ import scala.util.Try
 
 trait AstForDeclarationsCreator { this: AstCreator =>
 
-  private val DEFAULTS_KEY    = "default"
-  private val EXPORT_KEYWORD  = "exports"
-  private val REQUIRE_KEYWORD = "require"
-  private val IMPORT_KEYWORD  = "import"
+  private val DefaultsKey    = "default"
+  private val ExportKeyword  = "exports"
+  private val RequireKeyword = "require"
+  private val ImportKeyword  = "import"
 
   private def hasName(json: Value): Boolean = hasKey(json, "id") && !json("id").isNull
 
@@ -48,12 +48,12 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   }
 
   private def createExportCallAst(name: String, exportName: String, declaration: BabelNodeInfo): Ast = {
-    val exportCallAst = if (name == DEFAULTS_KEY) {
+    val exportCallAst = if (name == DefaultsKey) {
       createIndexAccessCallAst(
         createIdentifierNode(exportName, declaration),
         createLiteralNode(
-          s"\"$DEFAULTS_KEY\"",
-          Option(Defines.STRING),
+          s"\"$DefaultsKey\"",
+          Option(Defines.String),
           declaration.lineNumber,
           declaration.columnNumber
         ),
@@ -92,7 +92,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       }
 
   private def extractExportFromNameFromExportDecl(declaration: BabelNodeInfo): String =
-    safeObj(declaration.json, "source").fold(EXPORT_KEYWORD) { d => s"_${stripQuotes(code(d))}" }
+    safeObj(declaration.json, "source").fold(ExportKeyword) { d => s"_${stripQuotes(code(d))}" }
 
   private def cleanImportName(name: String): String = if (name.contains("/")) {
     val stripped = name.stripSuffix("/")
@@ -100,12 +100,12 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   } else name
 
   private def createAstForFrom(fromName: String, declaration: BabelNodeInfo): Ast = {
-    if (fromName == EXPORT_KEYWORD) {
+    if (fromName == ExportKeyword) {
       Ast()
     } else {
       val strippedCode = cleanImportName(fromName).stripPrefix("_")
       val id           = createIdentifierNode(s"_$strippedCode", declaration)
-      val localNode    = createLocalNode(id.code, Defines.ANY)
+      val localNode    = createLocalNode(id.code, Defines.Any)
       scope.addVariable(id.code, localNode, BlockScope)
       scope.addVariableReference(id.code, id)
       diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
@@ -113,8 +113,8 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       val sourceCallArgNode =
         createLiteralNode(s"\"${fromName.stripPrefix("_")}\"", None, declaration.lineNumber, declaration.columnNumber)
       val sourceCall = createCallNode(
-        s"$REQUIRE_KEYWORD(${sourceCallArgNode.code})",
-        REQUIRE_KEYWORD,
+        s"$RequireKeyword(${sourceCallArgNode.code})",
+        RequireKeyword,
         DispatchTypes.STATIC_DISPATCH,
         declaration.lineNumber,
         declaration.columnNumber
@@ -158,8 +158,8 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val declAstAndNames = extractDeclarationsFromExportDecl(declaration, "declaration")
     val declAsts = declAstAndNames.toList.map { case (ast, names) =>
       ast +: names.map { name =>
-        if (exportName != EXPORT_KEYWORD)
-          diffGraph.addNode(createDependencyNode(name, exportName.stripPrefix("_"), REQUIRE_KEYWORD))
+        if (exportName != ExportKeyword)
+          diffGraph.addNode(createDependencyNode(name, exportName.stripPrefix("_"), RequireKeyword))
         val exportCallAst = createExportCallAst(name, exportName, declaration)
         createExportAssignmentCallAst(name, exportCallAst, declaration)
       }
@@ -167,13 +167,13 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
     val specifierAsts = specifiers.map {
       case (Some(name), Some(alias)) =>
-        if (exportName != EXPORT_KEYWORD)
-          diffGraph.addNode(createDependencyNode(alias.code, exportName.stripPrefix("_"), REQUIRE_KEYWORD))
+        if (exportName != ExportKeyword)
+          diffGraph.addNode(createDependencyNode(alias.code, exportName.stripPrefix("_"), RequireKeyword))
         val exportCallAst = createExportCallAst(alias.code, exportName, declaration)
         createExportAssignmentCallAst(name.code, exportCallAst, declaration)
       case (None, Some(alias)) =>
-        diffGraph.addNode(createDependencyNode(alias.code, exportName.stripPrefix("_"), REQUIRE_KEYWORD))
-        val exportCallAst = createExportCallAst(alias.code, EXPORT_KEYWORD, declaration)
+        diffGraph.addNode(createDependencyNode(alias.code, exportName.stripPrefix("_"), RequireKeyword))
+        val exportCallAst = createExportCallAst(alias.code, ExportKeyword, declaration)
         createExportAssignmentCallAst(exportName, exportCallAst, declaration)
       case _ => Ast()
     }
@@ -187,7 +187,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val expressionAstWithNames = extractDeclarationsFromExportDecl(assignment, "expression")
     val declAsts = expressionAstWithNames.map { case (ast, names) =>
       ast +: names.map { name =>
-        val exportCallAst = createExportCallAst(name, EXPORT_KEYWORD, assignment)
+        val exportCallAst = createExportCallAst(name, ExportKeyword, assignment)
         createExportAssignmentCallAst(name, exportCallAst, assignment)
       }
     }
@@ -203,7 +203,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
     val declAsts = declAstAndNames.map { case (ast, names) =>
       ast +: names.map { name =>
-        val exportCallAst = createExportCallAst(DEFAULTS_KEY, exportName, declaration)
+        val exportCallAst = createExportCallAst(DefaultsKey, exportName, declaration)
         createExportAssignmentCallAst(name, exportCallAst, declaration)
       }
     }
@@ -217,12 +217,12 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val exportName = extractExportFromNameFromExportDecl(declaration)
     val depGroupId = stripQuotes(code(declaration.json("source")))
     val name       = cleanImportName(depGroupId)
-    if (exportName != EXPORT_KEYWORD) {
-      diffGraph.addNode(createDependencyNode(name, depGroupId, REQUIRE_KEYWORD))
+    if (exportName != ExportKeyword) {
+      diffGraph.addNode(createDependencyNode(name, depGroupId, RequireKeyword))
     }
 
     val fromCallAst       = createAstForFrom(exportName, declaration)
-    val exportCallAst     = createExportCallAst(name, EXPORT_KEYWORD, declaration)
+    val exportCallAst     = createExportCallAst(name, ExportKeyword, declaration)
     val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration)
 
     val asts = List(fromCallAst, assignmentCallAst)
@@ -252,7 +252,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
   private def handleRequireCallForDependencies(declarator: BabelNodeInfo, lhs: Value, rhs: Value): Unit = {
     val rhsCode  = code(rhs)
-    val groupId  = rhsCode.substring(rhsCode.indexOf(s"$REQUIRE_KEYWORD(") + 9, rhsCode.indexOf(")") - 1)
+    val groupId  = rhsCode.substring(rhsCode.indexOf(s"$RequireKeyword(") + 9, rhsCode.indexOf(")") - 1)
     val nodeInfo = createBabelNodeInfo(lhs)
     val names = nodeInfo.node match {
       case ArrayPattern  => nodeInfo.json("elements").arr.toList.map(code)
@@ -260,7 +260,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case _             => List(code(lhs))
     }
     names.foreach { name =>
-      val dependencyNode = createDependencyNode(name, groupId, REQUIRE_KEYWORD)
+      val dependencyNode = createDependencyNode(name, groupId, RequireKeyword)
       diffGraph.addNode(dependencyNode)
       val importNode = createImportNodeAndAttachToAst(declarator, groupId, name)
       diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
@@ -283,7 +283,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       Ast()
     } else {
       val sourceAst = initNodeInfo.get match {
-        case requireCall if requireCall.code.startsWith(s"$REQUIRE_KEYWORD(") =>
+        case requireCall if requireCall.code.startsWith(s"$RequireKeyword(") =>
           handleRequireCallForDependencies(createBabelNodeInfo(declarator), idNodeInfo.json, initNodeInfo.get.json)
           astForNodeWithFunctionReference(requireCall.json)
         case initExpr =>
@@ -319,7 +319,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case TSExternalModuleReference => referenceNode.json("expression")("value").str
       case _                         => referenceNode.code
     }
-    val dependencyNode = createDependencyNode(name, referenceName, IMPORT_KEYWORD)
+    val dependencyNode = createDependencyNode(name, referenceName, ImportKeyword)
     diffGraph.addNode(dependencyNode)
     val importNode = createImportNodeAndAttachToAst(impDecl, referenceName, name)
     diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
@@ -335,7 +335,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   ): Ast = {
     val destName  = alias.getOrElse(name)
     val destNode  = createIdentifierNode(destName, nodeInfo)
-    val localNode = createLocalNode(destName, Defines.ANY)
+    val localNode = createLocalNode(destName, Defines.Any)
     scope.addVariable(destName, localNode, BlockScope)
     scope.addVariableReference(destName, destNode)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
@@ -343,14 +343,14 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val destAst           = Ast(destNode)
     val sourceCallArgNode = createLiteralNode(s"\"$from\"", None, nodeInfo.lineNumber, nodeInfo.columnNumber)
     val sourceCall = createCallNode(
-      s"$REQUIRE_KEYWORD(${sourceCallArgNode.code})",
-      REQUIRE_KEYWORD,
+      s"$RequireKeyword(${sourceCallArgNode.code})",
+      RequireKeyword,
       DispatchTypes.DYNAMIC_DISPATCH,
       nodeInfo.lineNumber,
       nodeInfo.columnNumber
     )
 
-    val receiverNode = createIdentifierNode(REQUIRE_KEYWORD, nodeInfo)
+    val receiverNode = createIdentifierNode(RequireKeyword, nodeInfo)
     val thisNode     = createIdentifierNode("this", nodeInfo)
     scope.addVariableReference(thisNode.name, thisNode)
     val callAst = createCallAst(
@@ -386,7 +386,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val specifiers = impDecl.json("specifiers").arr
 
     if (specifiers.isEmpty) {
-      val dependencyNode = createDependencyNode(source, source, IMPORT_KEYWORD)
+      val dependencyNode = createDependencyNode(source, source, ImportKeyword)
       diffGraph.addNode(dependencyNode)
       val importNode = createImportNodeAndAttachToAst(impDecl, source, source)
       diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
@@ -394,9 +394,11 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     } else {
       val specs = impDecl.json("specifiers").arr.toList
       val depNodes = specs.map { importSpecifier =>
+        val name           = importSpecifier("local")("name").str
         val importedName   = importSpecifier("local")("name").str
-        val importNode     = createImportNodeAndAttachToAst(impDecl, source, importedName)
-        val dependencyNode = createDependencyNode(importedName, source, IMPORT_KEYWORD)
+        val (_, reqName)   = reqNameFromImportSpecifier(importSpecifier, name)
+        val importNode     = createImportNodeAndAttachToAst(impDecl, s"$source:$reqName", importedName)
+        val dependencyNode = createDependencyNode(importedName, source, ImportKeyword)
         diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
         dependencyNode
       }
@@ -407,11 +409,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
           case ImportSpecifier => true
           case _               => false
         }
-        val (alias, reqName) = if (hasKey(importSpecifier, "imported")) {
-          (Option(name), importSpecifier("imported")("name").str)
-        } else {
-          (None, name)
-        }
+        val (alias, reqName) = reqNameFromImportSpecifier(importSpecifier, name)
         astForRequireCallFromImport(reqName, alias, source, isImportN = isImportN, impDecl)
       }
       if (requireCalls.isEmpty) {
@@ -421,6 +419,14 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       } else {
         blockAst(createBlockNode(impDecl), requireCalls)
       }
+    }
+  }
+
+  private def reqNameFromImportSpecifier(importSpecifier: Value, name: String) = {
+    if (hasKey(importSpecifier, "imported")) {
+      (Option(name), importSpecifier("imported")("name").str)
+    } else {
+      (None, name)
     }
   }
 
@@ -439,7 +445,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   private def convertDestructingObjectElement(element: BabelNodeInfo, key: BabelNodeInfo, localTmpName: String): Ast = {
     val valueAst = astForNode(element.json)
 
-    val localNode = createLocalNode(element.code, Defines.ANY)
+    val localNode = createLocalNode(element.code, Defines.Any)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
     scope.addVariable(element.code, localNode, MethodScope)
 
@@ -458,13 +464,13 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   private def convertDestructingArrayElement(element: BabelNodeInfo, index: Int, localTmpName: String): Ast = {
     val valueAst = astForNode(element.json)
 
-    val localNode = createLocalNode(element.code, Defines.ANY)
+    val localNode = createLocalNode(element.code, Defines.Any)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
     scope.addVariable(element.code, localNode, MethodScope)
 
     val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
     val keyNode =
-      createLiteralNode(index.toString, Option(Defines.NUMBER), element.lineNumber, element.columnNumber)
+      createLiteralNode(index.toString, Option(Defines.Number), element.lineNumber, element.columnNumber)
     val accessAst = createIndexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
     createAssignmentCallAst(
       valueAst,
@@ -495,7 +501,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val testAst = {
       val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
       val keyNode =
-        createLiteralNode(index.toString, Option(Defines.NUMBER), element.lineNumber, element.columnNumber)
+        createLiteralNode(index.toString, Option(Defines.Number), element.lineNumber, element.columnNumber)
       val accessAst =
         createIndexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
       val voidCallNode = createVoidCallNode(element.lineNumber, element.columnNumber)
@@ -504,7 +510,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val falseAst = {
       val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
       val keyNode =
-        createLiteralNode(index.toString, Option(Defines.NUMBER), element.lineNumber, element.columnNumber)
+        createLiteralNode(index.toString, Option(Defines.Number), element.lineNumber, element.columnNumber)
       createIndexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
     }
     val ternaryNodeAst =
@@ -593,7 +599,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
-    val localNode = createLocalNode(localTmpName, Defines.ANY)
+    val localNode = createLocalNode(localTmpName, Defines.Any)
     val tmpNode   = createIdentifierNode(localTmpName, pattern)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
     scope.addVariable(localTmpName, localNode, BlockScope)
@@ -640,7 +646,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
               case RestElement =>
                 val fieldAccessTmpNode = createIdentifierNode(localTmpName, nodeInfo)
                 val keyNode =
-                  createLiteralNode(index.toString, Option(Defines.NUMBER), nodeInfo.lineNumber, nodeInfo.columnNumber)
+                  createLiteralNode(index.toString, Option(Defines.Number), nodeInfo.lineNumber, nodeInfo.columnNumber)
                 val accessAst =
                   createIndexAccessCallAst(fieldAccessTmpNode, keyNode, nodeInfo.lineNumber, nodeInfo.columnNumber)
                 astForSpreadOrRestElement(nodeInfo, Option(accessAst))

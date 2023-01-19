@@ -137,7 +137,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       astForNodeWithFunctionReference(Obj(init))
     }
     val testAst = safeObj(forStmt.json, "test").fold(
-      Ast(createLiteralNode("true", Option(Defines.BOOLEAN), forStmt.lineNumber, forStmt.columnNumber))
+      Ast(createLiteralNode("true", Option(Defines.Boolean), forStmt.lineNumber, forStmt.columnNumber))
     ) { test =>
       astForNodeWithFunctionReference(Obj(test))
     }
@@ -279,7 +279,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
-    val iteratorLocalNode = createLocalNode(iteratorName, Defines.ANY)
+    val iteratorLocalNode = createLocalNode(iteratorName, Defines.Any)
     val iteratorNode      = createIdentifierNode(iteratorName, forInOfStmt)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
@@ -340,7 +340,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
-    val resultLocalNode = createLocalNode(resultName, Defines.ANY)
+    val resultLocalNode = createLocalNode(resultName, Defines.Any)
     val resultNode      = createIdentifierNode(resultName, forInOfStmt)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode)
@@ -352,7 +352,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       case _                   => code(nodeInfo.json)
     }
 
-    val loopVariableLocalNode = createLocalNode(loopVariableName, Defines.ANY)
+    val loopVariableLocalNode = createLocalNode(loopVariableName, Defines.Any)
     val loopVariableNode      = createIdentifierNode(loopVariableName, forInOfStmt)
     diffGraph.addEdge(localAstParentStack.head, loopVariableLocalNode, EdgeTypes.AST)
     scope.addVariableReference(loopVariableName, loopVariableNode)

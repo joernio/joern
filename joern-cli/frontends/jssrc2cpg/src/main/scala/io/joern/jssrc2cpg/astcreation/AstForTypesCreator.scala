@@ -39,7 +39,7 @@ trait AstForTypesCreator { this: AstCreator =>
     seenAliasTypes.add(aliasTypeDeclNode)
 
     val typeDeclNodeAst =
-      if (!Defines.JSTYPES.contains(name) && !seenAliasTypes.exists(_.name == name)) {
+      if (!Defines.JsTypes.contains(name) && !seenAliasTypes.exists(_.name == name)) {
         val (typeName, typeFullName) = calcTypeNameAndFullName(alias, Option(name))
         val typeDeclNode = createTypeDeclNode(
           typeName,
@@ -235,7 +235,7 @@ trait AstForTypesCreator { this: AstCreator =>
       Ast.storeInDiffGraph(Ast(typeDeclNode).withChildren(member), diffGraph)
     } else {
       val init =
-        staticInitMethodAst(calls, s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}", None, Defines.ANY)
+        staticInitMethodAst(calls, s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}", None, Defines.Any)
       Ast.storeInDiffGraph(Ast(typeDeclNode).withChildren(member).withChild(init), diffGraph)
     }
 
@@ -327,7 +327,7 @@ trait AstForTypesCreator { this: AstCreator =>
         staticMemberInitCalls ++ staticInitBlockAsts,
         s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
-        Defines.ANY
+        Defines.Any
       )
       Ast.storeInDiffGraph(init, diffGraph)
       diffGraph.addEdge(typeDeclNode, init.nodes.head, EdgeTypes.AST)
@@ -342,7 +342,7 @@ trait AstForTypesCreator { this: AstCreator =>
         createIdentifierNode(typeName, Option(constructorNode.fullName), clazz.lineNumber, clazz.columnNumber)
       val constructorRefNode = createMethodRefNode(constructorNode.code, constructorNode.fullName, clazz)
 
-      val idLocal = createLocalNode(typeName, Defines.ANY)
+      val idLocal = createLocalNode(typeName, Defines.Any)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
       scope.addVariable(typeName, idLocal, BlockScope)
       scope.addVariableReference(typeName, classIdNode)

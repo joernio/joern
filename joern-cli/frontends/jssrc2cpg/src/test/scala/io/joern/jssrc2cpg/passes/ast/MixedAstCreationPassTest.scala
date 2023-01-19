@@ -1290,7 +1290,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
     "make available `import` statements via cpg.imports" in AstFixture("import {x} from \"foo\";") { cpg =>
       val List(imp) = cpg.imports.l
       imp.code shouldBe "import {x} from \"foo\""
-      imp.importedEntity shouldBe Some("foo")
+      imp.importedEntity shouldBe Some("foo:x")
       imp.importedAs shouldBe Some("x")
 
     }

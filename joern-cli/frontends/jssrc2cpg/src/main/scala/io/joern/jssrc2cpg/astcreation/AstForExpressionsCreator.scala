@@ -89,7 +89,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast = {
     val thisNode = createIdentifierNode(
       thisExpr.code,
-      dynamicInstanceTypeStack.headOption.orElse(Option(Defines.ANY)),
+      dynamicInstanceTypeStack.headOption.orElse(Option(Defines.Any)),
       thisExpr.lineNumber,
       thisExpr.columnNumber
     )
@@ -105,7 +105,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     localAstParentStack.push(blockNode)
 
     val tmpAllocName      = generateUnusedVariableName(usedVariableNames, "_tmp")
-    val localTmpAllocNode = createLocalNode(tmpAllocName, Defines.ANY)
+    val localTmpAllocNode = createLocalNode(tmpAllocName, Defines.Any)
     val tmpAllocNode1     = createIdentifierNode(tmpAllocName, newExpr)
     diffGraph.addEdge(localAstParentStack.head, localTmpAllocNode, EdgeTypes.AST)
     scope.addVariableReference(tmpAllocName, tmpAllocNode1)
@@ -373,7 +373,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       localAstParentStack.push(blockNode)
 
       val tmpName      = generateUnusedVariableName(usedVariableNames, "_tmp")
-      val localTmpNode = createLocalNode(tmpName, Defines.ANY)
+      val localTmpNode = createLocalNode(tmpName, Defines.Any)
       val tmpArrayNode = createIdentifierNode(tmpName, arrExpr)
       diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
       scope.addVariableReference(tmpName, tmpArrayNode)
@@ -462,7 +462,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     localAstParentStack.push(blockNode)
 
     val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
-    val localNode = createLocalNode(tmpName, Defines.ANY)
+    val localNode = createLocalNode(tmpName, Defines.Any)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 
     val propertiesAsts = objExpr.json("properties").arr.toList.map { property =>
