@@ -256,8 +256,9 @@ class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
                 }
               // Case 2: 'i' is the receiver of 'call'
               case (Some(call: Call), List(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
-                persistType(i, typeHints)(builder)
-                persistType(call, typeHints)(builder)
+                val idHints = symbolTable.get(i)
+                persistType(i, idHints)(builder)
+                persistType(call, idHints)(builder)
               // Case 3: 'i' is the receiver for a field access on member 'f'
               case (Some(call: Call), List(i: Identifier, f: FieldIdentifier))
                   if call.name.equals(Operators.fieldAccess) =>
@@ -292,11 +293,9 @@ class PythonTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case node: CfgNode =>
-          val o = SBKey.fromNode(node)
-          this.equals(o)
-        case o: SBKey => filename.equals(o.filename) && idName.equals(o.idName)
-        case _        => false
+        case node: CfgNode => this.equals(SBKey.fromNode(node))
+        case o: SBKey      => filename.equals(o.filename) && idName.equals(o.idName)
+        case _             => false
       }
     }
 
