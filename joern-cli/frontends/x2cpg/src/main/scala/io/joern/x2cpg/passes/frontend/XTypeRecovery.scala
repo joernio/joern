@@ -7,7 +7,7 @@ import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
-import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.{LogManager, Logger}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
@@ -136,7 +136,7 @@ abstract class ScopedXProcedure(val callingName: String, val fullName: String, v
   */
 abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
 
-  protected val logger = LogManager.getLogger(classOf[SetXProcedureDefTask])
+  protected val logger: Logger = LogManager.getLogger(classOf[SetXProcedureDefTask])
 
   override def compute(): Unit =
     node match {
@@ -180,7 +180,7 @@ abstract class RecoverForXCompilationUnit(cu: AstNode, builder: DiffGraphBuilder
   override def compute(): Unit = try {
     // Conservatively populate local table with interprocedural knowledge
     // TODO: Only populate global knowledge that is in scope, i.e. imported
-    symbolTable.from(globalTable)
+    symbolTable.from(globalTable.view)
     // Populate local symbol table with assignments
     assignments.foreach(visitAssignments)
     // Persist findings
@@ -316,8 +316,8 @@ class SymbolTable {
 
   def apply(node: AstNode): Set[String] = table(fromNode(node))
 
-  def from(sb: SymbolTable): SymbolTable = {
-    table.addAll(sb.table); this
+  def from(sb: IterableOnce[(SBKey, Set[String])]): SymbolTable = {
+    table.addAll(sb); this
   }
 
   def put(sbKey: SBKey, typeFullNames: Set[String]): Option[Set[String]] =
