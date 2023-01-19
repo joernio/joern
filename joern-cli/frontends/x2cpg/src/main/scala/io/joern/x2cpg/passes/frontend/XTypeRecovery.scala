@@ -19,9 +19,22 @@ import scala.collection.concurrent.TrieMap
 /** Based on a flow-insensitive symbol-table-style approach. This does not accurately determine the difference between
   * shadowed variables in the same file but this is due to REF edges not connecting children methods to parent scope
   * (yet).
+  *
+  * The algorithm flows roughly as follows: <ol> <li> Scan the CPG for method signatures of methods which are in scope
+  * of each compilation unit, either by internally defined methods or by reading import signatures. This includes
+  * looking for aliases, e.g. import foo as bar. Store these details in the global table</li><li>TODO: While performing
+  * the above, note field/member assignments in the global table.</li><li>(Optionally) Prune these method signatures by
+  * checking their validity against the CPG.</li><li>Visit each compilation unit and:</li><ol><li>Visit assignments to
+  * populate where variables are assigned a value to extrapolate its type. Store these values in a local symbol
+  * table.</li><li>Find instances of where these variables are used and update their type information.</li><li>If this
+  * variable is the receiver of a call, make sure to set the type of the call accordingly.</li></ol></ol>
+  *
+  * The global and local symbol tables use the [[SymbolTable]] class to track possible type information.
   */
 abstract class XTypeRecovery(cpg: Cpg) extends CpgPass(cpg) {
 
+  /** Stores all interprocedural information, e.g., method signatures, field types, etc.
+    */
   protected val globalTable = new SymbolTable()
 
   override def run(builder: DiffGraphBuilder): Unit =
@@ -116,99 +129,6 @@ abstract class ScopedXProcedure(val callingName: String, val fullName: String, v
 
 }
 
-/** Represents an identifier at a specific scope.
-  *
-  * @param filename
-  *   the file name in which this identifier belongs.
-  * @param idName
-  *   the name of the identifier.
-  */
-case class SBKey(filename: String, idName: String) {
-
-  override def equals(obj: Any): Boolean = {
-    obj match {
-      case node: CfgNode => this.equals(SBKey.fromNode(node))
-      case o: SBKey      => filename.equals(o.filename) && idName.equals(o.idName)
-      case _             => false
-    }
-  }
-
-}
-
-object SBKey {
-
-  private val logger = LogManager.getLogger(classOf[SBKey])
-
-  def fromNode(node: AstNode): SBKey = {
-    val name = node match {
-      case x: Identifier => x.name
-      case x: Method     => x.name
-      case x: Call       => x.name
-      case x: Local      => x.name
-      case x             => x.code
-    }
-    val filename = node.file.name.headOption match {
-      case Some(fileName) => fileName
-      case None =>
-        logger.warn(
-          s"Unable to successfully use file name for symbol table, type recovery may become more imprecise. Node: ${node.propertiesMap()}"
-        );
-        ""
-    }
-    SBKey(filename, name)
-  }
-
-}
-
-/** A thread-safe symbol table that can represent multiple types per symbol.
-  */
-class SymbolTable {
-
-  import SBKey.fromNode
-
-  private val table = TrieMap.empty[SBKey, Set[String]]
-
-  def apply(sbKey: SBKey): Set[String] = table(sbKey)
-
-  def apply(node: AstNode): Set[String] = table(fromNode(node))
-
-  def from(sb: SymbolTable): SymbolTable = {
-    table.addAll(sb.table); this
-  }
-
-  def put(sbKey: SBKey, typeFullNames: Set[String]): Option[Set[String]] =
-    table.put(sbKey, typeFullNames)
-
-  def put(node: AstNode, typeFullNames: Set[String]): Option[Set[String]] =
-    put(fromNode(node), typeFullNames)
-
-  def append(node: AstNode, typeFullName: String): Option[Set[String]] =
-    append(node, Set(typeFullName))
-
-  def append(node: AstNode, typeFullNames: Set[String]): Option[Set[String]] =
-    append(fromNode(node), typeFullNames)
-
-  private def append(sbKey: SBKey, typeFullNames: Set[String]): Option[Set[String]] = {
-    table.get(sbKey) match {
-      case Some(ts) => table.put(sbKey, ts ++ typeFullNames)
-      case None     => table.put(sbKey, typeFullNames)
-    }
-  }
-
-  private def contains(sbKey: SBKey): Boolean = table.contains(sbKey)
-
-  def contains(node: AstNode): Boolean = contains(fromNode(node))
-
-  private def get(sbKey: SBKey): Set[String] = table.getOrElse(sbKey, Set.empty)
-
-  def get(node: AstNode): Set[String] = get(fromNode(node))
-
-  def view: MapView[SBKey, Set[String]] = table.view
-
-  def clear(): Unit = table.clear()
-
-}
-
 /** Tasks responsible for populating the symbol table with import data.
   *
   * @param node
@@ -250,6 +170,8 @@ abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
 abstract class RecoverForXCompilationUnit(cu: AstNode, builder: DiffGraphBuilder, globalTable: SymbolTable)
     extends RecursiveTask[Unit] {
 
+  /** Stores type information for local structures that live within this compilation unit, e.g. local variables.
+    */
   protected val symbolTable = new SymbolTable()
 
   private def assignments: Traversal[Assignment] =
@@ -322,5 +244,111 @@ abstract class RecoverForXCompilationUnit(cu: AstNode, builder: DiffGraphBuilder
         builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, types.head)
       else
         builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types.toSeq)
+
+}
+
+/** Represents an identifier of some AST node at a specific scope.
+  *
+  * @param filename
+  *   the file name in which this identifier belongs.
+  * @param idName
+  *   the name of the identifier.
+  */
+case class SBKey(filename: String, idName: String) {
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case node: CfgNode => this.equals(SBKey.fromNode(node))
+      case o: SBKey      => filename.equals(o.filename) && idName.equals(o.idName)
+      case _             => false
+    }
+  }
+
+}
+
+object SBKey {
+
+  private val logger = LogManager.getLogger(classOf[SBKey])
+
+  /** Convenience methods to convert a node to a [[SBKey]].
+    * @param node
+    *   the node to convert.
+    * @return
+    *   the corresponding [[SBKey]].
+    */
+  def fromNode(node: AstNode): SBKey = {
+    val name = node match {
+      case x: Identifier => x.name
+      case x: Method     => x.name
+      case x: Call       => x.name
+      case x: Local      => x.name
+      case x             => x.code
+    }
+    val filename = node.file.name.headOption match {
+      case Some(fileName) => fileName
+      case None =>
+        logger.warn(
+          s"Unable to successfully use file name for symbol table, type recovery may become more imprecise. Node: ${node.propertiesMap()}"
+        );
+        ""
+    }
+    SBKey(filename, name)
+  }
+
+}
+
+/** A thread-safe symbol table that can represent multiple types per symbol. Each node in an AST gets converted to an
+  * [[SBKey]] which gives contextual information to identify an AST entity. Each value in this table represents a set of
+  * types that the key could be in a flow-insensitive manner.
+  *
+  * The [[SymbolTable]] operates like a map with a few convenient methods that are designed for this structure's
+  * purpose.
+  *
+  * TODO: Local symbol tables likely need a different [[SBKey]] with different context info. This can be a generic type.
+  */
+class SymbolTable {
+
+  import SBKey.fromNode
+
+  private val table = TrieMap.empty[SBKey, Set[String]]
+
+  def apply(sbKey: SBKey): Set[String] = table(sbKey)
+
+  def apply(node: AstNode): Set[String] = table(fromNode(node))
+
+  def from(sb: SymbolTable): SymbolTable = {
+    table.addAll(sb.table); this
+  }
+
+  def put(sbKey: SBKey, typeFullNames: Set[String]): Option[Set[String]] =
+    table.put(sbKey, typeFullNames)
+
+  def put(node: AstNode, typeFullNames: Set[String]): Option[Set[String]] =
+    put(fromNode(node), typeFullNames)
+
+  def append(node: AstNode, typeFullName: String): Option[Set[String]] =
+    append(node, Set(typeFullName))
+
+  def append(node: AstNode, typeFullNames: Set[String]): Option[Set[String]] =
+    append(fromNode(node), typeFullNames)
+
+  private def append(sbKey: SBKey, typeFullNames: Set[String]): Option[Set[String]] = {
+    table.get(sbKey) match {
+      case Some(ts) => table.put(sbKey, ts ++ typeFullNames)
+      case None     => table.put(sbKey, typeFullNames)
+    }
+  }
+
+  private def contains(sbKey: SBKey): Boolean = table.contains(sbKey)
+
+  def contains(node: AstNode): Boolean = contains(fromNode(node))
+
+  private def get(sbKey: SBKey): Set[String] = table.getOrElse(sbKey, Set.empty)
+
+  def get(node: AstNode): Set[String] = get(fromNode(node))
+
+  def view: MapView[SBKey, Set[String]] = table.view
+
+  def clear(): Unit = table.clear()
 
 }

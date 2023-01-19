@@ -13,10 +13,6 @@ import java.io.{File => JFile}
 import java.util.regex.Matcher
 import scala.util.Try
 
-/** Based on a flow-insensitive symbol-table-style approach. This does not accurately determine the difference between
-  * shadowed variables in the same file but this is due to REF edges not connecting children methods to parent scope
-  * (yet).
-  */
 class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery(cpg) {
 
   override def importNodes: Traversal[CfgNode] = cpg.call.nameExact("import")
