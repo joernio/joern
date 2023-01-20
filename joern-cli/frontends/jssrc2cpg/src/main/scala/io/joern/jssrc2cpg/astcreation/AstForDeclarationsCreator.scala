@@ -121,15 +121,14 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       )
       val sourceAst =
         createCallAst(sourceCall, List(Ast(sourceCallArgNode)))
-      val assigmentCallAst =
-        createAssignmentCallAst(
-          Ast(id),
-          sourceAst,
-          s"var ${codeOf(id)} = ${codeOf(sourceAst.nodes.head)}",
-          declaration.lineNumber,
-          declaration.columnNumber
-        )
-      assigmentCallAst
+      val assignmentCallAst = createAssignmentCallAst(
+        Ast(id),
+        sourceAst,
+        s"var ${codeOf(id)} = ${codeOf(sourceAst.nodes.head)}",
+        declaration.lineNumber,
+        declaration.columnNumber
+      )
+      assignmentCallAst
     }
   }
 

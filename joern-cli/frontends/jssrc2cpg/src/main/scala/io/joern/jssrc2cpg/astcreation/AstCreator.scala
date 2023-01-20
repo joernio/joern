@@ -87,6 +87,7 @@ class AstCreator(
 
     val programMethod =
       NewMethod()
+        .order(1)
         .name(name)
         .code(name)
         .fullName(fullName)
@@ -100,7 +101,6 @@ class AstCreator(
 
     val functionTypeAndTypeDeclAst =
       createFunctionTypeAndTypeDeclAst(programMethod, methodAstParentStack.head, name, fullName, path)
-    Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
     rootTypeDecl.push(functionTypeAndTypeDeclAst.nodes.head.asInstanceOf[NewTypeDecl])
 
     methodAstParentStack.push(programMethod)
@@ -125,7 +125,9 @@ class AstCreator(
     scope.popScope()
     methodAstParentStack.pop()
 
-    methodAst(programMethod, List(thisParam), Ast(blockNode).withChildren(methodChildren), methodReturn)
+    functionTypeAndTypeDeclAst.withChild(
+      methodAst(programMethod, List(thisParam), Ast(blockNode).withChildren(methodChildren), methodReturn)
+    )
   }
 
   protected def astForNode(json: Value): Ast = {

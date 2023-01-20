@@ -11,7 +11,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
     "create methods for const exports" in TsAstFixture(
       "export const getApiA = (req: Request) => { const user = req.user as UserDocument; }"
     ) { cpg =>
-      cpg.method.name.l shouldBe List(":program", "anonymous")
+      cpg.method.name.sorted.l shouldBe List(":program", "anonymous")
       cpg.assignment.code.l shouldBe List(
         "const user = req.user as UserDocument",
         "const getApiA = (req: Request) => { const user = req.user as UserDocument; }",
@@ -31,17 +31,17 @@ class TsAstCreationPassTest extends AbstractPassTest {
       cpg.local.code.l shouldBe List("fs", "models")
       val List(fsDep, modelsDep) = cpg.dependency.l
       fsDep.name shouldBe "fs"
-      fsDep.dependencyGroupId shouldBe Some("fs")
+      fsDep.dependencyGroupId shouldBe Option("fs")
       modelsDep.name shouldBe "models"
-      modelsDep.dependencyGroupId shouldBe Some("../models/index")
+      modelsDep.dependencyGroupId shouldBe Option("../models/index")
 
       val List(fs, models) = cpg.imports.l
       fs.code shouldBe "import fs = require('fs')"
-      fs.importedEntity shouldBe Some("fs")
-      fs.importedAs shouldBe Some("fs")
+      fs.importedEntity shouldBe Option("fs")
+      fs.importedAs shouldBe Option("fs")
       models.code shouldBe "import models = require('../models/index')"
-      models.importedEntity shouldBe Some("../models/index")
-      models.importedAs shouldBe Some("models")
+      models.importedEntity shouldBe Option("../models/index")
+      models.importedAs shouldBe Option("models")
     }
 
     "have correct structure for declared functions" in TsAstFixture("declare function foo(arg: string): string") {
@@ -170,7 +170,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
         |interface A {};
         |interface B {};
         |""".stripMargin) { cpg =>
-      cpg.method.fullName.l shouldBe List(
+      cpg.method.fullName.sorted.l shouldBe List(
         "code.ts::program",
         s"code.ts::program:A:${io.joern.x2cpg.Defines.ConstructorMethodName}",
         s"code.ts::program:B:${io.joern.x2cpg.Defines.ConstructorMethodName}"

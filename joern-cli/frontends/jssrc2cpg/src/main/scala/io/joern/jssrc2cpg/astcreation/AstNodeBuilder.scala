@@ -34,7 +34,7 @@ trait AstNodeBuilder { this: AstCreator =>
 
   protected def createTypeDeclNode(
     name: String,
-    fullname: String,
+    fullName: String,
     filename: String,
     code: String,
     astParentType: String = "",
@@ -46,7 +46,7 @@ trait AstNodeBuilder { this: AstCreator =>
   ): NewTypeDecl =
     NewTypeDecl()
       .name(name)
-      .fullName(fullname)
+      .fullName(fullName)
       .code(code)
       .isExternal(false)
       .filename(filename)

@@ -149,7 +149,7 @@ class TSTypesTest extends AbstractPassTest {
   ) { cpg =>
     inside(cpg.typeDecl("ObjectFoo").l) { case List(objFoo) =>
       objFoo.fullName shouldBe "code.ts::program:ObjectFoo"
-      objFoo.aliasTypeFullName shouldBe Some("code.ts::program:Alias")
+      objFoo.aliasTypeFullName shouldBe Option("code.ts::program:Alias")
       objFoo.code shouldBe "type ObjectFoo = {\n  property: string,\n  method(): number,\n}"
     }
     inside(cpg.typeDecl("Alias").l) { case List(alias) =>
@@ -168,7 +168,7 @@ class TSTypesTest extends AbstractPassTest {
   ) { cpg =>
     inside(cpg.typeDecl("Foo").l) { case List(foo) =>
       foo.fullName shouldBe "code.ts::program:Foo"
-      foo.aliasTypeFullName shouldBe Some("code.ts::program:Alias")
+      foo.aliasTypeFullName shouldBe Option("code.ts::program:Alias")
       foo.code shouldBe "class Foo"
     }
     inside(cpg.typeDecl("Alias").l) { case List(alias) =>
@@ -190,7 +190,7 @@ class TSTypesTest extends AbstractPassTest {
   ) { cpg =>
     inside(cpg.typeDecl("ObjectFoo").l) { case List(objFoo) =>
       objFoo.fullName shouldBe "code.ts::program:ObjectFoo"
-      objFoo.aliasTypeFullName shouldBe Some("code.ts::program:Alias")
+      objFoo.aliasTypeFullName shouldBe Option("code.ts::program:Alias")
       objFoo.code shouldBe "type ObjectFoo = {\n  property: string,\n  method(): number,\n}"
     }
     inside(cpg.typeDecl("Alias").l) { case List(alias) =>
@@ -209,7 +209,7 @@ class TSTypesTest extends AbstractPassTest {
   ) { cpg =>
     inside(cpg.typeDecl("Foo").l) { case List(foo) =>
       foo.fullName shouldBe "code.ts::program:Foo"
-      foo.aliasTypeFullName shouldBe Some("code.ts::program:Alias")
+      foo.aliasTypeFullName shouldBe Option("code.ts::program:Alias")
       foo.code shouldBe "class Foo"
     }
     inside(cpg.typeDecl("Alias").l) { case List(alias) =>

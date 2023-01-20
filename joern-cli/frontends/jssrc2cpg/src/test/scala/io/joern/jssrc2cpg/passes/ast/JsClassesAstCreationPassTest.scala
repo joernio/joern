@@ -58,7 +58,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       localA.code shouldBe "A"
       val List(funcLocalA) = cpg.method.name("b").local.name("A").l
       funcLocalA.code shouldBe "A"
-      funcLocalA.closureBindingId shouldBe Some("code.js::program:b:A")
+      funcLocalA.closureBindingId shouldBe Option("code.js::program:b:A")
     }
 
     "have member for static method in TYPE_DECL for ClassA" in AstFixture("""
