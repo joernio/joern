@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.NodeOps
@@ -201,6 +202,13 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       Seq("foo", "bar", "__init__.py").mkString(File.separator)
     )
 
+    "test that the identifiers are not set to the function pointers but rather the 'ANY' return value" in {
+      val List(x, y, z) = cpg.identifier.name("x", "y", "z").l
+      x.typeFullName shouldBe "ANY"
+      y.typeFullName shouldBe "ANY"
+      z.typeFullName shouldBe "ANY"
+    }
+
     "test call node properties for normal import from module on root path" in {
       val callNode = cpg.call.codeExact("foo_func(a, b)").head
       callNode.name shouldBe "foo_func"
@@ -227,6 +235,80 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.lineNumber shouldBe Some(8)
       callNode.methodFullName shouldBe "foo.py:<module>.faz"
     }
+  }
+
+  "call from a function from an external type" should {
+
+    lazy val cpg = code("""
+        |from slack_sdk import WebClient
+        |from sendgrid import SendGridAPIClient
+        |
+        |client = WebClient(token="WOLOLO")
+        |sg = SendGridAPIClient("SENGRID_KEY_WOLOLO")
+        |
+        |def send_slack_message(chan, msg):
+        |    client.chat_postMessage(channel=chan, text=msg)
+        |
+        |x = 123
+        |
+        |z = {'a': 123}
+        |z = [1, 2, 3]
+        |z = (1, 2, 3)
+        |# This should fail, as tuples are immutable
+        |z.append(4)
+        |
+        |def foo_shadowing():
+        |   x = "foo"
+        |
+        |response = sg.send(message)
+        |""".stripMargin).cpg
+
+    "resolve 'x' identifier types despite shadowing" in {
+      val List(xOuterScope, xInnerScope) = cpg.identifier("x").take(2).l
+      xOuterScope.dynamicTypeHintFullName shouldBe Seq("int", "str")
+      xInnerScope.dynamicTypeHintFullName shouldBe Seq("int", "str")
+    }
+
+    "resolve 'y' and 'z' identifier collection types" in {
+      val List(zDict, zList, zTuple) = cpg.identifier("z").take(3).l
+      zDict.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+      zList.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+      zTuple.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+    }
+
+    "resolve 'z' identifier calls conservatively" in {
+      // TODO: These should have callee entries but the method stubs are not present here
+      val List(zAppend) = cpg.call("append").l
+      zAppend.methodFullName shouldBe Defines.DynamicCallUnknownFallName
+      zAppend.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+    }
+
+    "resolve 'sg' identifier types from import information" in {
+      val List(sgAssignment, sgElseWhere) = cpg.identifier("sg").take(2).l
+      sgAssignment.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient"
+      sgElseWhere.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient"
+    }
+
+    "resolve 'sg' call path from import information" in {
+      val List(apiClient) = cpg.call("SendGridAPIClient").l
+      apiClient.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.<init>"
+      val List(sendCall) = cpg.call("send").l
+      sendCall.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.send"
+    }
+
+    "resolve 'client' identifier types from import information" in {
+      val List(clientAssignment, clientElseWhere) = cpg.identifier("client").take(2).l
+      clientAssignment.typeFullName shouldBe "slack_sdk.py:<module>.WebClient"
+      clientElseWhere.typeFullName shouldBe "slack_sdk.py:<module>.WebClient"
+    }
+
+    "resolve 'client' call path from identifier in child scope" in {
+      val List(client) = cpg.call("WebClient").l
+      client.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.<init>"
+      val List(postMessage) = cpg.call("chat_postMessage").l
+      postMessage.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.chat_postMessage"
+    }
+
   }
 
 }
