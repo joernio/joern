@@ -21,7 +21,7 @@ import scala.language.postfixOps
   */
 class HeldTaskCompletion(
   heldTasks: List[ReachableByTask],
-  resultTable: mutable.Map[TaskFingerprint, List[TableEntry]],
+  resultTable: mutable.Map[TaskFingerprint, List[TableEntry]]
 ) {
 
   /** Add results produced by held task until no more change can be observed.
@@ -49,8 +49,14 @@ class HeldTaskCompletion(
     def noneChanged = toProcess.map { t => t.fingerprint -> false }.toMap
 
     var changed: Map[TaskFingerprint, Boolean] = allChanged
-    val groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]]] = mutable.Map()
-    val mergedListMap: mutable.Map[TaskFingerprint, mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]] = mutable.Map()
+    val groupMap
+      : mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
+        TableEntry
+      ]]] = mutable.Map()
+    val mergedListMap: mutable.Map[TaskFingerprint, mutable.Map[
+      ((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)),
+      TableEntry
+    ]] = mutable.Map()
 
     while (changed.values.toList.contains(true)) {
       val taskResultsPairs = toProcess
@@ -122,32 +128,42 @@ class HeldTaskCompletion(
     pathSeq.distinct.size == pathSeq.size
   }
 
-  private def addCompletedTasksToMainTable(results: List[(TaskFingerprint, TableEntry)],
-                                           groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call],
-                                             Boolean),
-                                             (CfgNode, List[Call], Boolean)), List[TableEntry]]],
-                                           mergedListMap: mutable.Map[TaskFingerprint, mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]]
+  private def addCompletedTasksToMainTable(
+    results: List[(TaskFingerprint, TableEntry)],
+    groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
+      TableEntry
+    ]]],
+    mergedListMap: mutable.Map[
+      TaskFingerprint,
+      mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
+    ]
   ): Unit = {
     results.groupBy(_._1).foreach { case (fingerprint, resultList) =>
       val entries = resultList.map(_._2)
       val newGroups = entries
-          .groupBy { result =>
-          val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-          val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
-          (head, last)
-      }
-
-      val old     = resultTable.getOrElse(fingerprint, Vector()).toList
-      val oldGroups = groupMap.getOrElse(fingerprint, old
         .groupBy { result =>
           val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
           val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
           (head, last)
-        })
+        }
 
-      val groupListMap = mergedListMap.getOrElse(fingerprint, mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]())
+      val old = resultTable.getOrElse(fingerprint, Vector()).toList
+      val oldGroups = groupMap.getOrElse(
+        fingerprint,
+        old
+          .groupBy { result =>
+            val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+            val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+            (head, last)
+          }
+      )
+
+      val groupListMap = mergedListMap.getOrElse(
+        fingerprint,
+        mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]()
+      )
       val mergedGroups = newGroups ++ oldGroups
-      val mergedList = getListFromGroups(mergedGroups, groupListMap)
+      val mergedList   = getListFromGroups(mergedGroups, groupListMap)
 
       resultTable.put(fingerprint, mergedList)
       groupMap.update(fingerprint, mergedGroups)
@@ -170,7 +186,7 @@ class HeldTaskCompletion(
     * flows with maximum length, then we compute a string representation of the flows - taking into account all fields
     *   - and select the flow with maximum length that is smallest in terms of this string representation.
     */
-  private def deduplicateTableEntries(list: List[TableEntry]): List[TableEntry]= {
+  private def deduplicateTableEntries(list: List[TableEntry]): List[TableEntry] = {
     list
       .groupBy { result =>
         val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
@@ -197,9 +213,10 @@ class HeldTaskCompletion(
       .toList
   }
 
-  private def getListFromGroups(groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]],
-                                groupListMap: mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
-                               ): List[TableEntry] = {
+  private def getListFromGroups(
+    groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]],
+    groupListMap: mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
+  ): List[TableEntry] = {
     val mapped = groups.map { case (key, list) =>
       val tableEntry = groupListMap.getOrElse(key, null)
 
@@ -208,12 +225,12 @@ class HeldTaskCompletion(
       } else {
         val lenIdPathPairs = list.map(x => (x.path.length, x))
         val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
-          case Nil => Nil
+          case Nil    => Nil
           case h :: t => h :: t.takeWhile(y => y._1 == h._1)
         }).map(_._2)
 
         if (withMaxLength.length == 1) {
-          groupListMap.update( key, withMaxLength.head)
+          groupListMap.update(key, withMaxLength.head)
           withMaxLength.head
         } else {
           val tableEntry = withMaxLength.minBy { x =>
@@ -221,7 +238,7 @@ class HeldTaskCompletion(
               .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
               .mkString("-")
           }
-          groupListMap.update( key, tableEntry )
+          groupListMap.update(key, tableEntry)
           tableEntry
         }
       }
