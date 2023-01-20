@@ -12,6 +12,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import ujson.Value
+import io.shiftleft.semanticcpg.language._
 
 import scala.util.Try
 
@@ -266,7 +267,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     names.foreach { name =>
       val dependencyNode = createDependencyNode(name, groupId, RequireKeyword)
       diffGraph.addNode(dependencyNode)
-      val importNode = createImportNodeAndAttachToAst(declarator, groupId, name, call)
+      val importNode = createImportNodeAndAttachToCall(declarator, groupId, name, call)
       diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
     }
   }
@@ -331,11 +332,12 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
     val dependencyNode = createDependencyNode(name, referenceName, ImportKeyword)
     diffGraph.addNode(dependencyNode)
-    val call = astForRequireCallFromImport(name, None, referenceName, isImportN = false, impDecl)
+    val assignment = astForRequireCallFromImport(name, None, referenceName, isImportN = false, impDecl)
+    val call       = assignment.nodes.collectFirst { case x: NewCall if x.name == "require" => x }
     val importNode =
-      createImportNodeAndAttachToAst(impDecl, referenceName, name, call.root.map(_.asInstanceOf[NewCall]))
+      createImportNodeAndAttachToCall(impDecl, referenceName, name, call)
     diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
-    call
+    assignment
   }
 
   private def astForRequireCallFromImport(
@@ -400,10 +402,11 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     if (specifiers.isEmpty) {
       val dependencyNode = createDependencyNode(source, source, ImportKeyword)
       diffGraph.addNode(dependencyNode)
-      val call       = astForRequireCallFromImport(source, None, source, isImportN = false, impDecl)
-      val importNode = createImportNodeAndAttachToAst(impDecl, source, source, call.root.map(_.asInstanceOf[NewCall]))
+      val assignment = astForRequireCallFromImport(source, None, source, isImportN = false, impDecl)
+      val call       = assignment.nodes.collectFirst { case x: NewCall if x.name == "require" => x }
+      val importNode = createImportNodeAndAttachToCall(impDecl, source, source, call)
       diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
-      call
+      assignment
     } else {
       val specs = impDecl.json("specifiers").arr.toList
       val requireCalls = specs.map { importSpecifier =>
@@ -413,18 +416,14 @@ trait AstForDeclarationsCreator { this: AstCreator =>
         }
         val name             = importSpecifier("local")("name").str
         val (alias, reqName) = reqNameFromImportSpecifier(importSpecifier, name)
-        val call             = astForRequireCallFromImport(reqName, alias, source, isImportN = isImportN, impDecl)
+        val assignment       = astForRequireCallFromImport(reqName, alias, source, isImportN = isImportN, impDecl)
         val importedName     = importSpecifier("local")("name").str
-        val importNode = createImportNodeAndAttachToAst(
-          impDecl,
-          s"$source:$reqName",
-          importedName,
-          call.root.map(_.asInstanceOf[NewCall])
-        )
-        val dependencyNode = createDependencyNode(importedName, source, ImportKeyword)
+        val call             = assignment.nodes.collectFirst { case x: NewCall if x.name == "require" => x }
+        val importNode       = createImportNodeAndAttachToCall(impDecl, s"$source:$reqName", importedName, call)
+        val dependencyNode   = createDependencyNode(importedName, source, ImportKeyword)
         diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
         diffGraph.addNode(dependencyNode)
-        call
+        assignment
       }
       if (requireCalls.isEmpty) {
         Ast()
@@ -444,13 +443,26 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
   }
 
-  private def createImportNodeAndAttachToAst(
+  def createImportNodeAndAttachToCall(
     impDecl: BabelNodeInfo,
     importedEntity: String,
     importedAs: String,
     call: Option[NewCall]
   ): NewImport = {
-    val impNode = createImportNode(impDecl, Option(importedEntity).filter(_.trim.nonEmpty), importedAs)
+    createImportNodeAndAttachToCall(impDecl.code.stripSuffix(";"), importedEntity, importedAs, call)
+  }
+
+  def createImportNodeAndAttachToCall( code : String,
+                                       importedEntity: String,
+                                       importedAs: String,
+                                       call: Option[NewCall]
+                                     ): NewImport = {
+    val impNode = NewImport()
+      .code(code)
+      .importedEntity(importedEntity)
+      .importedAs(importedAs)
+      .lineNumber(call.flatMap(_.lineNumber))
+      .columnNumber(call.flatMap(_.lineNumber))
     call.foreach { c => diffGraph.addEdge(c, impNode, EdgeTypes.IS_CALL_FOR_IMPORT) }
     impNode
   }
