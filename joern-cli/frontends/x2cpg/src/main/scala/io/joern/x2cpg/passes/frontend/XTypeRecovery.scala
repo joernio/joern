@@ -142,6 +142,7 @@ abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
     node match {
       case x: Method => visitImport(x)
       case x: Call   => visitImport(x)
+      case _         =>
     }
 
   /** Refers to the declared import information.
@@ -178,8 +179,9 @@ abstract class RecoverForXCompilationUnit(cu: AstNode, builder: DiffGraphBuilder
     cu.ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_))
 
   override def compute(): Unit = try {
-    // Conservatively populate local table with interprocedural knowledge
-    // TODO: Only populate global knowledge that is in scope, i.e. imported
+    // Conservatively populate local table with interprocedural knowledge, i.e. if every method and dependency was
+    // imported into this scope
+    // TODO: Only populate global knowledge that is in scope, what is imported and defined
     symbolTable.from(globalTable.view)
     // Populate local symbol table with assignments
     assignments.foreach(visitAssignments)
@@ -305,6 +307,8 @@ object SBKey {
   * purpose.
   *
   * TODO: Local symbol tables likely need a different [[SBKey]] with different context info. This can be a generic type.
+  * TODO: Global symbol table should likely need to tag when it refers to a method, import, or field and in which
+  * computational units it's definition is valid
   */
 class SymbolTable {
 
