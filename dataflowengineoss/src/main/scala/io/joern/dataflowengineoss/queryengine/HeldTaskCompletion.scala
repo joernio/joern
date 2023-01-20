@@ -135,7 +135,8 @@ class HeldTaskCompletion(
           (head, last)
       }
 
-      val toGroups = groupMap.getOrElse(fingerprint, resultTable.getOrElse(fingerprint, Vector()).toList
+      val old     = resultTable.getOrElse(fingerprint, Vector()).toList
+      val toGroups = groupMap.getOrElse(fingerprint, old
         .groupBy { result =>
           val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
           val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
