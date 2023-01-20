@@ -1,6 +1,7 @@
 package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.AbstractPassTest
+import io.joern.x2cpg.layers.Base
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
@@ -83,6 +84,7 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |import {c} from "";
         |import * as d from "depD";
         |""".stripMargin) { cpg =>
+      Base.passes(cpg).foreach(_.createAndApply)
       val List(a, b, c, d) = cpg.imports.l
       a.code shouldBe "import {a} from \"depA\""
       a.importedEntity shouldBe Option("depA:a")
