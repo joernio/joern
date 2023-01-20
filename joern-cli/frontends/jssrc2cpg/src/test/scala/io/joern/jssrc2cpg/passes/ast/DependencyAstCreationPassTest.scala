@@ -94,8 +94,8 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       c.importedEntity shouldBe Option(":c")
       c.importedAs shouldBe Option("c")
       d.code shouldBe "import * as d from \"depD\""
-      d.importedEntity shouldBe Option("depD:d")
-      d.importedAs shouldBe Option("d")
+      d.importedEntity shouldBe Some("depD:d")
+      d.importedAs shouldBe Some("d")
       val List(n) = a.namespaceBlock.l
       n.fullName shouldBe "code.js:<global>"
     }
