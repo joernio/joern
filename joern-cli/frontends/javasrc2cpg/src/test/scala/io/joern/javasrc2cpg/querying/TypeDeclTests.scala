@@ -217,7 +217,6 @@ class TypeDeclTests extends JavaSrcCode2CpgFixture {
         }
 
       case res =>
-        res.foreach(typ => println(typ.fullName))
         fail(s"Expected typeDecl for interface but got $res")
     }
   }
