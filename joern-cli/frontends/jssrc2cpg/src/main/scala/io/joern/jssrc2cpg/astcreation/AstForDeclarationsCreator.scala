@@ -9,7 +9,7 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import ujson.Value
 
@@ -451,9 +451,6 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     call: Option[NewCall]
   ): NewImport = {
     val impNode = createImportNode(impDecl, Option(importedEntity).filter(_.trim.nonEmpty), importedAs)
-    methodAstParentStack.collectFirst { case namespaceBlockNode: NewNamespaceBlock =>
-      diffGraph.addEdge(namespaceBlockNode, impNode, EdgeTypes.AST)
-    }
     call.foreach { c => diffGraph.addEdge(c, impNode, EdgeTypes.IS_CALL_FOR_IMPORT) }
     impNode
   }
