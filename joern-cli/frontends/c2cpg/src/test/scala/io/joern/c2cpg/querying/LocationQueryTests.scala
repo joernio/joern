@@ -20,7 +20,7 @@ class LocationQueryTests extends CCodeToCpgSuite {
     loc.methodFullName shouldBe "my_func"
     loc.methodShortName shouldBe "my_func"
     loc.symbol shouldBe "my_func"
-    loc.lineNumber shouldBe Some(2)
+    loc.lineNumber shouldBe Option(2)
     loc.filename should endWith(".c")
     loc.nodeLabel shouldBe "METHOD"
 
@@ -34,7 +34,7 @@ class LocationQueryTests extends CCodeToCpgSuite {
     loc.methodFullName shouldBe "my_func"
     loc.methodShortName shouldBe "my_func"
     loc.symbol shouldBe "param1"
-    loc.lineNumber shouldBe Some(2)
+    loc.lineNumber shouldBe Option(2)
     loc.filename should endWith(".c")
     loc.nodeLabel shouldBe "METHOD_PARAMETER_IN"
 
@@ -48,7 +48,7 @@ class LocationQueryTests extends CCodeToCpgSuite {
     loc.methodFullName shouldBe "my_func"
     loc.methodShortName shouldBe "my_func"
     loc.symbol shouldBe "$ret"
-    loc.lineNumber shouldBe Some(2)
+    loc.lineNumber shouldBe Option(2)
     loc.filename should endWith(".c")
     loc.nodeLabel shouldBe "METHOD_RETURN"
 
@@ -62,7 +62,7 @@ class LocationQueryTests extends CCodeToCpgSuite {
     loc.methodFullName shouldBe "my_func"
     loc.methodShortName shouldBe "my_func"
     loc.symbol shouldBe "foo(param1)"
-    loc.lineNumber shouldBe Some(3)
+    loc.lineNumber shouldBe Option(3)
     loc.filename should endWith(".c")
     loc.nodeLabel shouldBe "CALL"
 
@@ -76,7 +76,7 @@ class LocationQueryTests extends CCodeToCpgSuite {
     loc.methodFullName shouldBe "my_func"
     loc.methodShortName shouldBe "my_func"
     loc.symbol shouldBe "x"
-    loc.lineNumber shouldBe Some(3)
+    loc.lineNumber shouldBe Option(3)
     loc.filename should endWith(".c")
     loc.nodeLabel shouldBe "IDENTIFIER"
   }
@@ -89,7 +89,7 @@ class LocationQueryTests extends CCodeToCpgSuite {
     loc.methodFullName shouldBe "my_func"
     loc.methodShortName shouldBe "my_func"
     loc.symbol shouldBe "x"
-    loc.lineNumber shouldBe Some(3)
+    loc.lineNumber shouldBe Option(3)
     loc.filename should endWith(".c")
     loc.nodeLabel shouldBe "LOCAL"
   }

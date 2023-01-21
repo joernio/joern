@@ -62,7 +62,7 @@ trait MacroHandler { this: AstCreator =>
         val macroDefinitionName  = ASTStringUtil.getSimpleName(macroDefinition.getName)
         if (macroExpansionName == macroDefinitionName) {
           val arguments = new MacroArgumentExtractor(cdtAst, node.getFileLocation).getArguments
-          matchingMacro = Some((macroDefinition, arguments))
+          matchingMacro = Option((macroDefinition, arguments))
         }
       }
     }

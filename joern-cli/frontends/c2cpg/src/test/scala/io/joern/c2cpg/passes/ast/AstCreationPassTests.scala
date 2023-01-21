@@ -1864,12 +1864,12 @@ class AstCreationPassTests extends AbstractPassTest {
        |}
       """.stripMargin) { cpg =>
       inside(cpg.identifier.l) { case List(a, b, c) =>
-        a.lineNumber shouldBe Some(3)
-        a.columnNumber shouldBe Some(5)
-        b.lineNumber shouldBe Some(5)
-        b.columnNumber shouldBe Some(5)
-        c.lineNumber shouldBe Some(6)
-        c.columnNumber shouldBe Some(5)
+        a.lineNumber shouldBe Option(3)
+        a.columnNumber shouldBe Option(5)
+        b.lineNumber shouldBe Option(5)
+        b.columnNumber shouldBe Option(5)
+        c.lineNumber shouldBe Option(6)
+        c.columnNumber shouldBe Option(5)
       }
     }
 
