@@ -4,7 +4,7 @@ crossScalaVersions := Seq("2.13.8", "3.2.1")
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
-val astGenVersion = "2.10.0"
+val astGenVersion = "2.12.0"
 
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
@@ -65,8 +65,28 @@ Test / fork := false
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
-lazy val astGenDlUrl       = s"https://github.com/joernio/astgen/releases/download/v$astGenVersion/"
-lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-macos-arm", "astgen-win.exe")
+lazy val AstgenWin    = "astgen-win.exe"
+lazy val AstgenLinux  = "astgen-linux"
+lazy val AstgenMac    = "astgen-macos"
+lazy val AstgenMacArm = "astgen-macos-arm"
+
+lazy val astGenDlUrl = s"https://github.com/joernio/astgen/releases/download/v$astGenVersion/"
+
+def astGenBinaryNames = Environment.OperatingSystem match {
+  case _ if sys.props.get("ALL_PLATFORMS").contains("TRUE") =>
+    Seq(AstgenWin, AstgenLinux, AstgenMac, AstgenMacArm)
+  case Environment.OperatingSystemType.Windows =>
+    Seq(AstgenWin)
+  case Environment.OperatingSystemType.Linux =>
+    Seq(AstgenLinux)
+  case Environment.OperatingSystemType.Mac =>
+    Environment.Architecture match {
+      case Environment.ArchitectureType.X86 => Seq(AstgenMac)
+      case Environment.ArchitectureType.ARM => Seq(AstgenMacArm)
+    }
+  case Environment.OperatingSystemType.Unknown =>
+    Seq(AstgenWin, AstgenLinux, AstgenMac, AstgenMacArm)
+}
 
 lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
 astGenDlTask := {
@@ -90,7 +110,16 @@ astGenDlTask := {
   astGenDir.listFiles().foreach(_.setExecutable(true, false))
   distDir.listFiles().foreach(_.setExecutable(true, false))
 }
+
 Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
+
+lazy val astGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
+astGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
+
+stage := Def
+  .sequential(astGenSetAllPlatforms, Universal / stage)
+  .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
+  .value
 
 // Also remove astgen binaries with clean, e.g., to allow for updating them.
 // Sadly, we can't define the bin/ folders globally,
