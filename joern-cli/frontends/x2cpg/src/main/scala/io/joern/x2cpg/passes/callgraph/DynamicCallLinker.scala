@@ -147,7 +147,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     val typeDeclFullName           = fullName.replace(s".${call.name}", "")
     val candidateInheritedMethods =
       cpg.typeDecl
-        .fullNameExact(allSuperClasses(typeDeclFullName).toArray: _*)
+        .fullNameExact(allSuperClasses(typeDeclFullName).toIndexedSeq: _*)
         .astChildren
         .isMethod
         .name(call.name)
