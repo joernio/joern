@@ -21,7 +21,7 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
   private val filename: String   = "<includes>"
   private val globalName: String = NamespaceTraversal.globalNamespaceName
-  private val fullName: String   = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
+  private val fullName: String   = MetaDataPass.getGlobalNamespaceBlockFullName(Option(filename))
 
   private val typeDeclFullNames: Set[String] = cpg.typeDecl.fullName.toSetImmutable
 

@@ -33,7 +33,7 @@ trait PreprocessorStatementsLogger {
            |  Defined: ${s.taken()}""".stripMargin
       case _ => ""
     }
-    logger.info(text + additionalInfo)
+    logger.info(s"$text$additionalInfo")
   }
 
   protected def preprocessorStatements(translationUnit: IASTTranslationUnit): Iterable[IASTPreprocessorStatement] =

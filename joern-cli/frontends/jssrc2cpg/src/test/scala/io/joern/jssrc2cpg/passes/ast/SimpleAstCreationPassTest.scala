@@ -108,7 +108,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(arrayCall) = xAssignment.astChildren.isCall.l
       arrayCall.name shouldBe EcmaBuiltins.arrayFactory
-      arrayCall.code shouldBe EcmaBuiltins.arrayFactory + "()"
+      arrayCall.code shouldBe s"${EcmaBuiltins.arrayFactory}()"
       arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
@@ -128,7 +128,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(arrayCall) = tmpAssignment.astChildren.isCall.l
       arrayCall.name shouldBe EcmaBuiltins.arrayFactory
-      arrayCall.code shouldBe EcmaBuiltins.arrayFactory + "()"
+      arrayCall.code shouldBe s"${EcmaBuiltins.arrayFactory}()"
       arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       checkLiterals(pushBlock, 1)
@@ -416,7 +416,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(ns) = cpg.namespaceBlock.l
       ns.name shouldBe Defines.GlobalNamespace
-      ns.fullName should endWith("code.js:" + Defines.GlobalNamespace)
+      ns.fullName should endWith(s"code.js:${Defines.GlobalNamespace}")
       ns.order shouldBe 1
       ns.filename shouldBe file.name
     }
@@ -427,9 +427,9 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(ns) = cpg.namespaceBlock.l
       ns.name shouldBe Defines.GlobalNamespace
-      ns.fullName should endWith("code.js:" + Defines.GlobalNamespace)
+      ns.fullName should endWith(s"code.js:${Defines.GlobalNamespace}")
       ns.order shouldBe 1
-      ns.method.head.name shouldBe ":program"
+      ns.typeDecl.nameExact(":program").method.head.name shouldBe ":program"
     }
 
     "have correct structure for empty method nested in top level method" in AstFixture("function method(x) {}") { cpg =>
@@ -540,10 +540,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     }
 
     "be correct for lambdas returning lambdas" in AstFixture("() => async () => { }") { cpg =>
-      cpg.method.fullName.l shouldBe List(
+      cpg.method.fullName.sorted.l shouldBe List(
         "code.js::program",
-        "code.js::program:anonymous:anonymous",
-        "code.js::program:anonymous"
+        "code.js::program:anonymous",
+        "code.js::program:anonymous:anonymous"
       )
       val List(ret) = cpg.method.fullNameExact("code.js::program:anonymous").block.astChildren.isReturn.l
       ret.code shouldBe "async () => { }"
