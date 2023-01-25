@@ -6,12 +6,13 @@ import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import overflowdb.traversal.toNodeTraversal
 
 class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
@@ -45,11 +46,7 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
     val blockNode = NewBlock().typeFullName(Defines.anyTypeName)
 
-    val methodReturn =
-      NewMethodReturn()
-        .code("RET")
-        .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-        .typeFullName(Defines.anyTypeName)
+    val methodReturn = methodReturnNode(Defines.anyTypeName, line = None, column = None)
 
     val ast = Ast(includesFile).withChild(
       Ast(namespaceBlock)

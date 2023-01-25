@@ -219,7 +219,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case staticStmt: PhpStaticStmt => astsForStaticStmt(staticStmt)
       case stmt                      => astForStmt(stmt) :: Nil
     }
-    val methodReturn = methodReturnNode(returnType, line = line(decl), column = None).code("RET")
+    val methodReturn = methodReturnNode(returnType, line = line(decl), column = None)
 
     val declLocals = scope.getLocalsInScope.map(Ast(_))
     val methodBody = blockAst(NewBlock(), declLocals ++ methodBodyStmts)
@@ -852,7 +852,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val methodBody = blockAst(NewBlock(), scope.getFieldInits)
 
-    val methodReturn = NewMethodReturn().typeFullName(TypeConstants.Any).code("RET")
+    val methodReturn = methodReturnNode(TypeConstants.Any, line = None, column = None)
 
     methodAstWithAnnotations(methodNode, thisParam :: Nil, methodBody, methodReturn, modifiers)
   }
