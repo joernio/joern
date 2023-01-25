@@ -7,8 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "literals declared from built-in types" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |x = 123
         |
         |def foo_shadowing():
@@ -124,7 +123,8 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "resolve 'User' field types" in {
-      val List(id, firstname, age, address) = cpg.identifier.nameExact("id", "firstname", "age", "address").takeRight(4).l
+      val List(id, firstname, age, address) =
+        cpg.identifier.nameExact("id", "firstname", "age", "address").takeRight(4).l
       id.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
       firstname.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
       age.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
