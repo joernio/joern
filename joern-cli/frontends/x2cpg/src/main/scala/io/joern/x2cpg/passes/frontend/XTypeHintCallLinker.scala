@@ -24,12 +24,9 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     .filter(_.callee.isEmpty)
 
   def calleeNames(c: Call): Seq[String] =
-    (c.dynamicTypeHintFullName ++ Seq(c.typeFullName)).filterNot(_.equals("ANY")).map {
-      // Python call from  a type
-      case typ if typ.split("\\.").lastOption.exists(_.charAt(0).isUpper) => s"$typ.${c.name}"
-      // Python call from a function pointer
-      case typ => typ
-    }
+    (c.dynamicTypeHintFullName ++ Seq(c.typeFullName))
+      .filterNot(_.equals("ANY"))
+      .distinct
 
   private def callees(names: Seq[String]): Traversal[Method] = cpg.method.fullNameExact(names: _*)
 
