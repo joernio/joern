@@ -12,7 +12,7 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstForStatementsCreator { this: AstCreator =>
 
-  import AstCreatorHelper.OptionSafeAst
+  import io.joern.c2cpg.astcreation.AstCreatorHelper.OptionSafeAst
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, order: Int = -1): Ast = {
     val cpgBlock =

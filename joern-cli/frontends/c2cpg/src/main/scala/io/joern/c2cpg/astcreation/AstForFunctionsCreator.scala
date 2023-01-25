@@ -211,9 +211,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
         )
       case s: IASTSimpleDeclaration =>
         (
-          s.getDeclarators.headOption
-            .map(n => ASTStringUtil.getSimpleName(n.getName))
-            .getOrElse(uniqueName("parameter", "", "")._1),
+          s.getDeclarators.headOption.fold(uniqueName("parameter", "", "")._1)(n =>
+            ASTStringUtil.getSimpleName(n.getName)
+          ),
           nodeSignature(s),
           cleanType(typeForDeclSpecifier(s)),
           false

@@ -85,6 +85,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
         (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewMethodRef].methodFullName)
       case _ if rec.root.exists(_.isInstanceOf[NewIdentifier]) =>
         (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewIdentifier].name)
+      case _
+          if rec.root.exists(_.isInstanceOf[NewCall]) && call.getFunctionNameExpression
+            .isInstanceOf[IASTFieldReference] =>
+        (
+          DispatchTypes.STATIC_DISPATCH,
+          nodeSignature(call.getFunctionNameExpression.asInstanceOf[IASTFieldReference].getFieldName)
+        )
       case _ if rec.root.exists(_.isInstanceOf[NewCall]) =>
         (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewCall].code)
       case reference: IASTIdExpression =>
@@ -93,7 +100,11 @@ trait AstForExpressionsCreator { this: AstCreator =>
         (DispatchTypes.STATIC_DISPATCH, "")
     }
 
-    val cpgCall = newCallNode(call, name, name, dd)
+    val fullName = typeFor(call.getFunctionNameExpression) match {
+      case t if t != Defines.anyTypeName => s"$t.$name"
+      case _                             => name
+    }
+    val cpgCall = newCallNode(call, name, fullName, dd)
     val args    = call.getArguments.toList.map(a => astForNode(a))
     rec.root match {
       // Optimization: do not include the receiver if the receiver is just the function name,
@@ -104,7 +115,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       case Some(r: NewIdentifier) if r.name == name =>
         callAst(cpgCall, args)
       case Some(_) =>
-        callAst(cpgCall, args, Some(rec))
+        callAst(cpgCall, args, Option(rec))
       case None =>
         callAst(cpgCall, args)
     }

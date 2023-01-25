@@ -13,34 +13,13 @@ import java.io.{File => JFile}
 import java.util.regex.Matcher
 import scala.util.Try
 
-class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery(cpg) {
+class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
 
-  override def importNodes: Traversal[CfgNode] = cpg.call.nameExact("import")
-
-  override def generateSetProcedureDefTask(node: CfgNode, globalTable: SymbolTable): SetXProcedureDefTask =
-    new SetPythonProcedureDefTask(node, globalTable)
-
+  override def computationalUnit: Traversal[File] = cpg.file
   override def generateRecoveryForCompilationUnitTask(
-    unit: AstNode,
-    builder: DiffGraphBuilder,
-    globalTable: SymbolTable
-  ): RecoverForXCompilationUnit = new RecoverForPythonCompilationUnit(unit, builder, globalTable)
-
-  override def postVisitImports(): Unit = {
-    globalTable.view.foreach { case (k, v) =>
-      val ms = cpg.method.fullNameExact(v.toSeq: _*).l
-      val ts = cpg.typeDecl.fullNameExact(v.toSeq: _*).l
-      if (ts.nonEmpty)
-        globalTable.put(k, ts.fullName.toSet)
-      else if (ms.nonEmpty)
-        globalTable.put(k, ms.fullName.toSet)
-      else {
-        // This is likely external and we will ignore the init variant to be consistent
-        globalTable.put(k, globalTable(k).filterNot(_.contains("__init__.py")))
-      }
-    }
-  }
-
+    unit: File,
+    builder: DiffGraphBuilder
+  ): RecoverForXCompilationUnit[File] = new RecoverForPythonFile(cpg, unit, builder)
 }
 
 /** Defines how a procedure is available to be called in the current scope either by it being defined in this module or
@@ -77,7 +56,7 @@ class ScopedPythonProcedure(callingName: String, fullName: String, isConstructor
   * @param node
   *   a node that references import information.
   */
-class SetPythonProcedureDefTask(node: CfgNode, globalTable: SymbolTable) extends SetXProcedureDefTask(node) {
+class SetPythonProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey]) extends SetXProcedureDefTask(node) {
 
   /** Refers to the declared import information.
     *
@@ -88,18 +67,18 @@ class SetPythonProcedureDefTask(node: CfgNode, globalTable: SymbolTable) extends
     importCall.argumentOut.l match {
       case List(path: Literal, funcOrModule: Literal) =>
         val calleeNames = extractMethodDetailsFromImport(path.code, funcOrModule.code).possibleCalleeNames
-        globalTable.put(funcOrModule, calleeNames)
+        symbolTable.put(CallAlias(funcOrModule.code), calleeNames)
       case List(path: Literal, funcOrModule: Literal, alias: Literal) =>
         val calleeNames =
           extractMethodDetailsFromImport(path.code, funcOrModule.code, Option(alias.code)).possibleCalleeNames
-        globalTable.put(alias, calleeNames)
+        symbolTable.put(CallAlias(alias.code), calleeNames)
       case x => logger.warn(s"Unknown import pattern: ${x.map(_.label).mkString(", ")}")
     }
   }
 
   override def visitImport(m: Method): Unit = {
     val calleeNames = new ScopedPythonProcedure(m.name, m.fullName).possibleCalleeNames
-    globalTable.put(m, calleeNames)
+    symbolTable.put(m, calleeNames)
   }
 
   /** Parses all imports and identifies their full names and how they are to be called in this scope.
@@ -152,12 +131,32 @@ class SetPythonProcedureDefTask(node: CfgNode, globalTable: SymbolTable) extends
 /** Performs type recovery from the root of a compilation unit level
   *
   * @param cu
-  *   a compilation unit, e.g. file, procedure, type, etc.
+  *   a compilation unit, e.g. file.
   * @param builder
   *   the graph builder
   */
-class RecoverForPythonCompilationUnit(cu: AstNode, builder: DiffGraphBuilder, globalTable: SymbolTable)
-    extends RecoverForXCompilationUnit(cu, builder, globalTable) {
+class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder)
+    extends RecoverForXCompilationUnit[File](cu, builder) {
+
+  override def importNodes(cu: AstNode): Traversal[CfgNode] = cu.ast.isCall.nameExact("import")
+
+  override def postVisitImports(): Unit = {
+    symbolTable.view.foreach { case (k, v) =>
+      val ms = cpg.method.fullNameExact(v.toSeq: _*).l
+      val ts = cpg.typeDecl.fullNameExact(v.toSeq: _*).l
+      if (ts.nonEmpty)
+        symbolTable.put(k, ts.fullName.toSet)
+      else if (ms.nonEmpty)
+        symbolTable.put(k, ms.fullName.toSet)
+      else {
+        // This is likely external and we will ignore the init variant to be consistent
+        symbolTable.put(k, symbolTable(k).filterNot(_.contains("__init__.py")))
+      }
+    }
+  }
+
+  override def generateSetProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey]): SetXProcedureDefTask =
+    new SetPythonProcedureDefTask(node, symbolTable)
 
   /** Using assignment and import information (in the global symbol table), will propagate these types in the symbol
     * table.
@@ -168,8 +167,8 @@ class RecoverForPythonCompilationUnit(cu: AstNode, builder: DiffGraphBuilder, gl
   override def visitAssignments(assignment: Assignment): Unit = {
     // TODO: Handle fields being imported and loaded with a new value
     assignment.argumentOut.take(2).l match {
-      case List(i: Identifier, c: Call) if globalTable.contains(c) =>
-        val importedTypes = globalTable.get(c)
+      case List(i: Identifier, c: Call) if symbolTable.contains(c) =>
+        val importedTypes = symbolTable.get(c)
         if (!c.code.endsWith(")")) {
           // Case 1: The identifier is at the assignment to a function pointer. Lack of parenthesis should indicate this.
           symbolTable.append(i, importedTypes)

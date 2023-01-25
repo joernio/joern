@@ -49,8 +49,8 @@ class MacroHandlingTests extends CCodeToCpgSuite {
       val List(m) = cpg.method.name("A_MACRO").l
       m.fullName.endsWith("A_MACRO:2") shouldBe true
       m.filename.endsWith(".c") shouldBe true
-      m.lineNumber shouldBe Some(2)
-      m.lineNumberEnd shouldBe Some(2)
+      m.lineNumber shouldBe Option(2)
+      m.lineNumberEnd shouldBe Option(2)
       val List(param1, param2) = m.parameter.l.sortBy(_.order)
       param1.name shouldBe "p1"
       param2.name shouldBe "p2"
@@ -146,8 +146,8 @@ class MacroHandlingTests extends CCodeToCpgSuite {
       call1.code shouldBe "A_MACRO(dst, ptr, 1)"
       call1.name shouldBe "A_MACRO"
       call1.methodFullName.endsWith("A_MACRO:3") shouldBe true
-      call1.lineNumber shouldBe Some(22)
-      call1.columnNumber shouldBe Some(1)
+      call1.lineNumber shouldBe Option(22)
+      call1.columnNumber shouldBe Option(1)
       call1.typeFullName shouldBe "ANY"
       call1.dispatchType shouldBe DispatchTypes.INLINED
 
@@ -160,8 +160,8 @@ class MacroHandlingTests extends CCodeToCpgSuite {
       call2.code shouldBe "A_MACRO_2()"
       call2.name shouldBe "A_MACRO_2"
       call2.methodFullName.endsWith("A_MACRO_2:0") shouldBe true
-      call2.lineNumber shouldBe Some(24)
-      call2.columnNumber shouldBe Some(1)
+      call2.lineNumber shouldBe Option(24)
+      call2.columnNumber shouldBe Option(1)
       call2.typeFullName shouldBe "ANY"
       call2.argument.size shouldBe 0
       call2.dispatchType shouldBe DispatchTypes.INLINED
@@ -262,6 +262,6 @@ class CfgMacroTests extends DataFlowCodeToCpgSuite {
     val sink   = cpg.method("foo").call.name("sink").argument(1).l
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSetMutable shouldBe
-      Set(List(("MP4_GET4BYTES(x)", Some(21)), ("sink(x)", Some(22))))
+      Set(List(("MP4_GET4BYTES(x)", 21), ("sink(x)", 22)))
   }
 }
