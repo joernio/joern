@@ -94,6 +94,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{
   callNode,
   fieldIdentifierNode,
   identifierNode,
+  methodReturnNode,
   modifierNode,
   operatorCallNode
 }

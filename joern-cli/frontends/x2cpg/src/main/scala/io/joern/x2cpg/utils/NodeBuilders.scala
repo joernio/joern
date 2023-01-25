@@ -6,9 +6,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewCall,
   NewFieldIdentifier,
   NewIdentifier,
+  NewMethodReturn,
   NewModifier
 }
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 
 object NodeBuilders {
 
@@ -98,4 +99,20 @@ object NodeBuilders {
       .lineNumber(line)
       .columnNumber(column)
   }
+
+  /** Create a method return node
+    */
+  def methodReturnNode(
+    tfn: String,
+    dtfn: Option[String] = None,
+    line: Option[Integer],
+    column: Option[Integer]
+  ): NewMethodReturn =
+    NewMethodReturn()
+      .typeFullName(tfn)
+      .dynamicTypeHintFullName(dtfn)
+      .code(tfn)
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .lineNumber(line)
+      .columnNumber(column)
 }
