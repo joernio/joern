@@ -53,10 +53,6 @@ class HeldTaskCompletion(
       : mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
         TableEntry
       ]]] = mutable.Map()
-    val mergedListMap: mutable.Map[TaskFingerprint, mutable.Map[
-      ((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)),
-      TableEntry
-    ]] = mutable.Map()
 
     while (changed.values.toList.contains(true)) {
       val taskResultsPairs = toProcess
@@ -72,7 +68,7 @@ class HeldTaskCompletion(
 
       changed = noneChanged
       taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
-        addCompletedTasksToMainTable(newResults.toList, groupMap, mergedListMap)
+        addCompletedTasksToMainTable(newResults.toList, groupMap)
         newResults.foreach { case (fingerprint, _) =>
           changed += fingerprint -> true
         }
@@ -132,11 +128,7 @@ class HeldTaskCompletion(
     results: List[(TaskFingerprint, TableEntry)],
     groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
       TableEntry
-    ]]],
-    mergedListMap: mutable.Map[
-      TaskFingerprint,
-      mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
-    ]
+    ]]]
   ): Unit = {
     results.groupBy(_._1).foreach { case (fingerprint, resultList) =>
       val entries = resultList.map(_._2)
@@ -158,12 +150,9 @@ class HeldTaskCompletion(
           }
       )
 
-      val groupListMap = mergedListMap.getOrElse(
-        fingerprint,
-        mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]()
-      )
-      val mergedGroups = newGroups ++ oldGroups
-      val mergedList   = getListFromGroups(mergedGroups, groupListMap)
+      //val mergedGroups = newGroups ++ oldGroups
+      val mergedGroups = oldGroups ++ newGroups.map { case (k, v) => k -> (v ++ oldGroups.getOrElse(k, List())) }
+      val mergedList   = getListFromGroups(mergedGroups)
 
       resultTable.put(fingerprint, mergedList)
       groupMap.update(fingerprint, mergedGroups)
@@ -213,36 +202,26 @@ class HeldTaskCompletion(
       .toList
   }
 
-  private def getListFromGroups(
-    groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]],
-    groupListMap: mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
-  ): List[TableEntry] = {
-    val mapped = groups.map { case (key, list) =>
-      val tableEntry = groupListMap.getOrElse(key, null)
+  private def getListFromGroups(groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]]): List[TableEntry] = {
+    val mapped = groups.map { case (_, list) =>
+      val lenIdPathPairs = list.map(x => (x.path.length, x))
+      val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+        case Nil => Nil
+        case h :: t => h :: t.takeWhile(y => y._1 == h._1)
+      }).map(_._2)
 
-      if (tableEntry != null) {
-        tableEntry
+      if (withMaxLength.length == 1) {
+        withMaxLength.head
       } else {
-        val lenIdPathPairs = list.map(x => (x.path.length, x))
-        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
-          case Nil    => Nil
-          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
-        }).map(_._2)
-
-        if (withMaxLength.length == 1) {
-          groupListMap.update(key, withMaxLength.head)
-          withMaxLength.head
-        } else {
-          val tableEntry = withMaxLength.minBy { x =>
-            x.path
-              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
-              .mkString("-")
-          }
-          groupListMap.update(key, tableEntry)
-          tableEntry
+        withMaxLength.minBy { x =>
+          x.path
+            .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+            .mkString("-")
         }
       }
     }
     mapped.toList
   }
+
+
 }
