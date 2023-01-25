@@ -1,6 +1,6 @@
 package io.joern.jssrc2cpg.passes
 
-import io.joern.jssrc2cpg.passes.RequirePass.JsExportPrefix
+import io.joern.jssrc2cpg.passes.RequirePass.{JsExportPrefix, stripQuotes}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Local}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
@@ -147,7 +147,12 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
-  private def stripQuotes(str: String): String = {
+}
+
+object RequirePass {
+  val JsExportPrefix: String = "<export>::"
+
+  def stripQuotes(str: String): String = {
     if (str.length >= 2 && str.startsWith("\"") && str.endsWith("\"")) {
       str.substring(1, str.length - 1)
     } else if (str.length >= 2 && str.startsWith("'") && str.endsWith("'")) {
@@ -157,8 +162,4 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
-}
-
-object RequirePass {
-  val JsExportPrefix: String = "<export>::"
 }

@@ -35,6 +35,7 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
         new DependenciesPass(cpg, config).createAndApply()
         new ConfigPass(cpg, config, report).createAndApply()
         new PrivateKeyFilePass(cpg, config, report).createAndApply()
+        new ImportsPass(cpg).createAndApply()
 
         report.print()
       }
