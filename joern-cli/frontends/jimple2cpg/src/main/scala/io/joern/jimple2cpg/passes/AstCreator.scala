@@ -2,6 +2,7 @@ package io.joern.jimple2cpg.passes
 
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -1079,12 +1080,9 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
 
   private def astForMethodReturn(methodDeclaration: SootMethod): Ast = {
     val typeFullName = registerType(methodDeclaration.getReturnType.toQuotedString)
-    val methodReturnNode =
-      NewMethodReturn()
-        .order(methodDeclaration.getParameterCount + 2)
-        .typeFullName(typeFullName)
-        .code(typeFullName)
-        .lineNumber(line(methodDeclaration))
+    val methodReturnNode = NodeBuilders
+      .methodReturnNode(typeFullName, None, line(methodDeclaration), None)
+      .order(methodDeclaration.getParameterCount + 2)
     Ast(methodReturnNode)
   }
 

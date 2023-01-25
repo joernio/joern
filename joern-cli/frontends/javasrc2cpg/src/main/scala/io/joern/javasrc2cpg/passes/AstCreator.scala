@@ -94,6 +94,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{
   callNode,
   fieldIdentifierNode,
   identifierNode,
+  methodReturnNode,
   modifierNode,
   operatorCallNode
 }
@@ -688,7 +689,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val thisAst = Ast(thisNodeForMethod(typeFullName, lineNumber = None))
     val bodyAst = Ast(NewBlock()).withChildren(scopeStack.getMemberInitializers)
 
-    val returnNode = methodReturnNode(TypeConstants.Void, None, None, None)
+    val returnNode = methodReturnNode(TypeConstants.Void, line = None, column = None)
 
     val modifiers = List(modifierNode(ModifierTypes.CONSTRUCTOR), modifierNode(ModifierTypes.PUBLIC))
 

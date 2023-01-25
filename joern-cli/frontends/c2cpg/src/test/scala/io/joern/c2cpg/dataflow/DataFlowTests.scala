@@ -78,7 +78,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         val flows  = sink.reachableByFlows(source)
 
         flows.map(flowToResultPairs).toSetMutable shouldBe
-          Set(List(("main(int x)", 2), ("return x;", 3), ("int", 2)))
+          Set(List(("main(int x)", 2), ("return x;", 3), ("RET", 2)))
       }
     }
 
@@ -108,7 +108,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
               ("y = k + 2", 4),
               ("y + 3", 5),
               ("return y + 3;", 5),
-              ("int", 2)
+              ("RET", 2)
             )
           )
       }
@@ -147,7 +147,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         flows.map(flowToResultPairs).toSetMutable shouldBe
           Set(
             List(
-              ("double", 7),
+              ("RET", 7),
               ("source(2)", 16),
               ("k = source(2)", 16),
               ("point.x = k", 18),
@@ -188,7 +188,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         flows.map(flowToResultPairs).toSetMutable shouldBe
           Set(
             List(
-              ("int", 2),
+              ("RET", 2),
               ("source()", 11),
               ("k = source()", 11),
               ("foo(k)", 12),
@@ -231,13 +231,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
         flows.map(flowToResultPairs).toSetMutable shouldBe
           Set(
-            List(
-              ("struct Point", 7),
-              ("source(2)", 17),
-              ("point = source(2)", 17),
-              ("sink(point.x)", 18),
-              ("sink(int x)", 12)
-            )
+            List(("RET", 7), ("source(2)", 17), ("point = source(2)", 17), ("sink(point.x)", 18), ("sink(int x)", 12))
           )
       }
     }
@@ -290,7 +284,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         val flows  = sink.reachableByFlows(source)
 
         flows.map(flowToResultPairs).toSetMutable shouldBe Set(
-          List(("int", 2), ("source()", 6), ("c[1][2] = source()", 6), ("sink(c[1])", 8), ("sink(int* cont)", 3))
+          List(("RET", 2), ("source()", 6), ("c[1][2] = source()", 6), ("sink(c[1])", 8), ("sink(int* cont)", 3))
         )
       }
     }
@@ -315,7 +309,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         val flows  = sink.reachableByFlows(source)
 
         flows.map(flowToResultPairs).toSetMutable shouldBe Set(
-          List(("int", 3), ("source()", 7), ("arg->field = source()", 7), ("sink((*arg).field)", 8), ("sink(int i)", 4))
+          List(("RET", 3), ("source()", 7), ("arg->field = source()", 7), ("sink((*arg).field)", 8), ("sink(int i)", 4))
         )
       }
     }
@@ -339,7 +333,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         val flows  = sink.reachableByFlows(source)
 
         flows.map(flowToResultPairs).toSetMutable shouldBe Set(
-          List(("int", 2), ("source()", 6), ("arg[0] = source()", 6), ("sink(*arg)", 7), ("sink(int i)", 3))
+          List(("RET", 2), ("source()", 6), ("arg[0] = source()", 6), ("sink(*arg)", 7), ("sink(int i)", 3))
         )
       }
     }
@@ -795,7 +789,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val source = cpg.call("source")
       val sink   = cpg.call("sink").argument(1)
       sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
-        List(("source()", 3), ("return source();", 3), ("int", 2), ("bar()", 7), ("y = bar()", 7), ("sink(y)", 8))
+        List(("source()", 3), ("return source();", 3), ("RET", 2), ("bar()", 7), ("y = bar()", 7), ("sink(y)", 8))
       )
     }
 
@@ -806,7 +800,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         List(
           ("source()", 3),
           ("return source();", 3),
-          ("int", 2),
+          ("RET", 2),
           ("bar()", 7),
           ("y = bar()", 7),
           ("sink(y)", 8),
@@ -846,7 +840,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
       flows.map(flowToResultPairs).toSetMutable shouldBe Set(
         List(
-          ("double", 7),
+          ("RET", 7),
           ("source(2)", 16),
           ("k = source(2)", 16),
           ("point.x = k", 18),
@@ -885,13 +879,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val flows  = sink.reachableByFlows(source)
 
       flows.map(flowToResultPairs).toSetMutable shouldBe Set(
-        List(
-          ("struct Point", 7),
-          ("source(2)", 17),
-          ("point = source(2)", 17),
-          ("sink(point.x)", 18),
-          ("sink(int x)", 12)
-        )
+        List(("RET", 7), ("source(2)", 17), ("point = source(2)", 17), ("sink(point.x)", 18), ("sink(int x)", 12))
       )
     }
   }
@@ -1169,7 +1157,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val sink   = cpg.call("sink")
       val flows  = sink.reachableByFlows(source)
       flows.map(flowToResultPairs).toSetMutable shouldBe Set(
-        List(("source()", 6), ("sink(int arg)", 2), ("return arg;", 2), ("int", 2), ("sink(source())", 6))
+        List(("source()", 6), ("sink(int arg)", 2), ("return arg;", 2), ("RET", 2), ("sink(source())", 6))
       )
     }
   }
@@ -1921,14 +1909,14 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       val source = cpg.identifier("v2").l
       val sink   = cpg.method("foo").methodReturn.l
       sink.reachableByFlows(source).l.map(flowToResultPairs).toSet shouldBe Set(
-        List(("return v2;", 4), ("int", 2)),
+        List(("return v2;", 4), ("RET", 2)),
         List(
           ("v2 == 2", 4),
           ("v1 = 1", 4),
           ("v1 = 1, v2 == 2", 4),
           ("(v1 = 1, v2 == 2)", 4),
           ("(v1 = 1, v2 == 2) || v2 <= 3", 4),
-          ("int", 2)
+          ("RET", 2)
         ),
         List(
           ("v2 = 0", 3),
@@ -1937,9 +1925,9 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
           ("v1 = 1, v2 == 2", 4),
           ("(v1 = 1, v2 == 2)", 4),
           ("(v1 = 1, v2 == 2) || v2 <= 3", 4),
-          ("int", 2)
+          ("RET", 2)
         ),
-        List(("v2 <= 3", 4), ("(v1 = 1, v2 == 2)", 4), ("(v1 = 1, v2 == 2) || v2 <= 3", 4), ("int", 2))
+        List(("v2 <= 3", 4), ("(v1 = 1, v2 == 2)", 4), ("(v1 = 1, v2 == 2) || v2 <= 3", 4), ("RET", 2))
       )
     }
   }
@@ -1958,9 +1946,9 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       val source = cpg.identifier("v1").l
       val sink   = cpg.method("foo").methodReturn.l
       sink.reachableByFlows(source).l.map(flowToResultPairs).toSet shouldBe Set(
-        List(("v1 = 0", 5), ("BAR(v1)", 6), ("void", 4)),
-        List(("v1 = 1", 6), ("void", 4)),
-        List(("BAR(v1)", 6), ("void", 4))
+        List(("v1 = 0", 5), ("BAR(v1)", 6), ("RET", 4)),
+        List(("v1 = 1", 6), ("RET", 4)),
+        List(("BAR(v1)", 6), ("RET", 4))
       )
     }
   }

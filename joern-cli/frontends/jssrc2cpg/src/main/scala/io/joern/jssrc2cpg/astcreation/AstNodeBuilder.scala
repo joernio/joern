@@ -5,6 +5,7 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
@@ -64,16 +65,7 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(ret.columnNumber)
 
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
-    val line   = func.lineNumber
-    val column = func.columnNumber
-    val code   = "RET"
-    val tpe    = typeFor(func)
-    NewMethodReturn()
-      .code(code)
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(tpe)
-      .lineNumber(line)
-      .columnNumber(column)
+    methodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
   }
 
   protected def setOrderExplicitly(ast: Ast, order: Int): Unit = {

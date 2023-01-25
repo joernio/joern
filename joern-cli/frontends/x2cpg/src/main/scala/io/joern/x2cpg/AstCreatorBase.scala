@@ -1,7 +1,7 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -68,22 +68,6 @@ abstract class AstCreatorBase(filename: String) {
       .withChild(Ast(NewBlock()))
       .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))
-
-  /** Create a method return node
-    */
-  def methodReturnNode(
-    tfn: String,
-    dtfn: Option[String] = None,
-    line: Option[Integer],
-    column: Option[Integer]
-  ): NewMethodReturn =
-    NewMethodReturn()
-      .typeFullName(tfn)
-      .dynamicTypeHintFullName(dtfn)
-      .code(tfn)
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .lineNumber(line)
-      .columnNumber(column)
 
   def staticInitMethodAst(initAsts: List[Ast], fullName: String, signature: Option[String], returnType: String): Ast = {
     val methodNode = NewMethod()
