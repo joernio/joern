@@ -33,7 +33,7 @@ class MethodCfgLayoutTests extends CCodeToCpgSuite {
       call.name shouldBe Operators.assignment
 
       val ret = call.cfgOut.collectAll[MethodReturn].head
-      ret.code shouldBe "void"
+      ret.code shouldBe "RET"
     }
 
     "be correct for nested expression in method2" in {
@@ -53,7 +53,7 @@ class MethodCfgLayoutTests extends CCodeToCpgSuite {
       call2.name shouldBe Operators.assignment
 
       val ret = call2.cfgOut.collectAll[MethodReturn].head
-      ret.code shouldBe "void"
+      ret.code shouldBe "RET"
     }
   }
 

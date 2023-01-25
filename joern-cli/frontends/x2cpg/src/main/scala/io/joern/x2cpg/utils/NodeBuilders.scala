@@ -103,15 +103,15 @@ object NodeBuilders {
   /** Create a method return node
     */
   def methodReturnNode(
-    tfn: String,
-    dtfn: Option[String] = None,
+    typeFullName: String,
+    dynamicTypeHintFullName: Option[String] = None,
     line: Option[Integer],
     column: Option[Integer]
   ): NewMethodReturn =
     NewMethodReturn()
-      .typeFullName(tfn)
-      .dynamicTypeHintFullName(dtfn)
-      .code(tfn)
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHintFullName)
+      .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .lineNumber(line)
       .columnNumber(column)

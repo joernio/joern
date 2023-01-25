@@ -155,7 +155,7 @@ class MethodTests extends CCodeToCpgSuite {
 
     "have correct METHOD_RETURN node for method foo" in {
       val List(ret) = cpg.method.nameExact("foo").methodReturn.l
-      ret.code shouldBe "int"
+      ret.code shouldBe "RET"
       ret.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
       ret.lineNumber shouldBe Some(2)
       ret.columnNumber shouldBe Some(1)
