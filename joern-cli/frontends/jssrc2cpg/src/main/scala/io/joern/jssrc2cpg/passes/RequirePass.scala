@@ -116,8 +116,7 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val requires = cpg
-      .call("require")
+    val requires = cpg.imports.call.dedup
       .where(_.inAssignment.target)
       .map(Require.apply(_))
       .toSeq

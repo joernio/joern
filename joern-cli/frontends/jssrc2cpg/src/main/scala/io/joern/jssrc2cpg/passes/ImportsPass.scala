@@ -14,10 +14,10 @@ class ImportsPass(cpg: Cpg) extends CpgPass(cpg) {
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
     cpg
       .call("require")
-      .inAssignment
-      .codeNot("var .*")
-      .foreach { assignment =>
-        val call       = assignment.source.asInstanceOf[Call]
+      .flatMap { x =>
+        x.inAssignment.codeNot("var .*").map(y => (x, y))
+      }
+      .foreach { case (call, assignment) =>
         val importedAs = assignment.target.code
         val importedEntity =
           RequirePass.stripQuotes(call.argument(1).code)
