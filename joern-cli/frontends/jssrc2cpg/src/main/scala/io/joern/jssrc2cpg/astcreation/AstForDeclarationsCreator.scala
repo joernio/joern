@@ -452,11 +452,12 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     createImportNodeAndAttachToCall(impDecl.code.stripSuffix(";"), importedEntity, importedAs, call)
   }
 
-  def createImportNodeAndAttachToCall( code : String,
-                                       importedEntity: String,
-                                       importedAs: String,
-                                       call: Option[NewCall]
-                                     ): NewImport = {
+  def createImportNodeAndAttachToCall(
+    code: String,
+    importedEntity: String,
+    importedAs: String,
+    call: Option[NewCall]
+  ): NewImport = {
     val impNode = NewImport()
       .code(code)
       .importedEntity(importedEntity)
