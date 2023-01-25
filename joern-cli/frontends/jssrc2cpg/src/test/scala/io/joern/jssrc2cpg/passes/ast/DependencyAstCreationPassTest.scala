@@ -84,7 +84,7 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |import {c} from "";
         |import * as d from "depD";
         |""".stripMargin) { cpg =>
-      Base.passes(cpg).foreach(_.createAndApply)
+      Base.passes(cpg).foreach(_.createAndApply())
       val List(a, b, c, d) = cpg.imports.l
       a.code shouldBe "import {a} from \"depA\""
       a.importedEntity shouldBe Option("depA:a")
