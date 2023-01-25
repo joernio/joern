@@ -3,6 +3,7 @@ package io.joern.dataflowengineoss.queryengine
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.collection.parallel.CollectionConverters._
 import scala.language.postfixOps
 
@@ -204,8 +205,21 @@ class HeldTaskCompletion(
 
   private def getListFromGroups(groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]]): List[TableEntry] = {
     val mapped = groups.map { case (_, list) =>
-      val lenIdPathPairs = list.map(x => (x.path.length, x))
-      val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+      val maxLenBuf = ListBuffer[(Int, TableEntry)]()
+      var maxLen = 0
+      var maxLenIndex = 0
+
+      list.foreach(tableEntry => {
+        if (tableEntry.path.length > maxLen) {
+          maxLen = tableEntry.path.length
+          maxLenBuf.addOne( maxLen, tableEntry)
+          maxLenIndex = maxLenBuf.length - 1
+        } else if (tableEntry.path.length == maxLen) {
+          maxLenBuf.addOne(maxLen, tableEntry)
+        }
+      })
+
+      val withMaxLength = (maxLenBuf.slice(maxLenIndex, maxLenBuf.length).toList match {
         case Nil => Nil
         case h :: t => h :: t.takeWhile(y => y._1 == h._1)
       }).map(_._2)
