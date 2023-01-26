@@ -140,10 +140,15 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     */
   protected val symbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
 
+  /** Provides an entrypoint to add known symbols and their possible types.
+    */
+  def prepopulateSymbolTable(): Unit = {}
+
   private def assignments: Traversal[Assignment] =
     cu.ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_))
 
   override def compute(): Unit = try {
+    prepopulateSymbolTable()
     // Set known aliases that point to imports for local and external methods/modules
     setImportsFromDeclaredProcedures(importNodes(cu) ++ internalMethodNodes(cu))
     // Prune import names if the methods exist in the CPG

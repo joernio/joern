@@ -135,6 +135,30 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val Some(columnConstructor) = cpg.call("Column").headOption
       columnConstructor.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column.<init>"
     }
+
+    "recover paths for built-in calls" should {
+      lazy val cpg = code("""
+          |print("Hello world")
+          |max(1, 2)
+          |
+          |from foo import abs
+          |
+          |x = abs(-1)
+          |""".stripMargin)
+
+      "resolve 'print' and 'max' calls" in {
+        val Some(printCall) = cpg.call("print").headOption
+        printCall.methodFullName shouldBe "builtins.py:<module>.print"
+        val Some(maxCall) = cpg.call("max").headOption
+        maxCall.methodFullName shouldBe "builtins.py:<module>.max"
+      }
+
+      "select the imported abs over the built-in type when call is shadowed" in {
+        val Some(absCall) = cpg.call("abs").headOption
+        absCall.dynamicTypeHintFullName shouldBe Seq("foo.py:<module>.abs")
+      }
+
+    }
   }
 
 }

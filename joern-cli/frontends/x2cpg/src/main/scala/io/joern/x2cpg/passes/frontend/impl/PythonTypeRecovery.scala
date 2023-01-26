@@ -140,6 +140,15 @@ class SetPythonProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey
 class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder)
     extends RecoverForXCompilationUnit[File](cu, builder) {
 
+  /** Adds built-in functions to expect.
+    */
+  override def prepopulateSymbolTable(): Unit =
+    PythonTypeRecovery.BUILTINS
+      .map(t => (CallAlias(t), s"${PythonTypeRecovery.BUILTIN_PREFIX}.$t"))
+      .foreach { case (alias, typ) =>
+        symbolTable.put(alias, typ)
+      }
+
   override def importNodes(cu: AstNode): Traversal[CfgNode] = cu.ast.isCall.nameExact("import")
 
   override def postVisitImports(): Unit = {
@@ -242,4 +251,84 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder)
     }).hasNext
   }
 
+}
+
+object PythonTypeRecovery {
+
+  /** @see
+    *   <a href="https://docs.python.org/3/library/functions.html#func-dict">Python Built-in Functions</a>
+    */
+  lazy val BUILTINS: Set[String] = Set(
+    "abs",
+    "aiter",
+    "all",
+    "anext",
+    "ascii",
+    "bin",
+    "bool",
+    "breakpoint",
+    "bytearray",
+    "bytes",
+    "callable",
+    "chr",
+    "classmethod",
+    "compile",
+    "complex",
+    "delattr",
+    "dict",
+    "dir",
+    "divmod",
+    "enumerate",
+    "eval",
+    "exec",
+    "filter",
+    "float",
+    "format",
+    "frozenset",
+    "getattr",
+    "globals",
+    "hasattr",
+    "hash",
+    "help",
+    "hex",
+    "id",
+    "input",
+    "int",
+    "isinstance",
+    "issubclass",
+    "iter",
+    "len",
+    "list",
+    "locals",
+    "map",
+    "max",
+    "memoryview",
+    "min",
+    "next",
+    "object",
+    "oct",
+    "open",
+    "ord",
+    "pow",
+    "print",
+    "property",
+    "range",
+    "repr",
+    "reversed",
+    "round",
+    "set",
+    "setattr",
+    "slice",
+    "sorted",
+    "staticmethod",
+    "str",
+    "sum",
+    "super",
+    "tuple",
+    "type",
+    "vars",
+    "zip",
+    "__import__"
+  )
+  def BUILTIN_PREFIX = "builtins.py:<module>"
 }
