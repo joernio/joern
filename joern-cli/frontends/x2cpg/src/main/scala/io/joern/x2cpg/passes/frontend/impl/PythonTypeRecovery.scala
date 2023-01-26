@@ -3,9 +3,11 @@ package io.joern.x2cpg.passes.frontend.impl
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
@@ -178,25 +180,66 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder)
         } else {
           // TODO: This identifier should contain the type of the return value of 'c'
         }
-      case List(i: Identifier, l: Literal) if Try(java.lang.Integer.parseInt(l.code)).isSuccess =>
+      case List(i: Identifier, c: CfgNode)
+          if visitLiteralAssignment(i, c, symbolTable) => // if unsuccessful, then check next
+      case List(i: Identifier, c: Call) if c.receiver.isCall.name.exists(_.equals(Operators.fieldAccess)) =>
+        val field = c.receiver.isCall.name(Operators.fieldAccess).map(new OpNodes.FieldAccess(_)).head
+        visitCallFromFieldMember(i, c, field, symbolTable)
+      case _ =>
+    }
+  }
+
+  private def visitCallFromFieldMember(
+    i: Identifier,
+    c: Call,
+    field: FieldAccess,
+    symbolTable: SymbolTable[LocalKey]
+  ) = {
+    field.astChildren.l match {
+      case List(rec: Identifier, f: FieldIdentifier) if symbolTable.contains(rec) =>
+        val identifierFullName = symbolTable.get(rec).map(_.concat(s".${f.canonicalName}"))
+        val callMethodFullName =
+          if (f.canonicalName.charAt(0).isUpper)
+            identifierFullName.map(_.concat(s".${Defines.ConstructorMethodName}"))
+          else
+            identifierFullName
+        symbolTable.put(i, identifierFullName)
+        symbolTable.put(c, callMethodFullName)
+      case _ =>
+    }
+  }
+
+  /** Will handle literal value assignments.
+    * @param lhs
+    *   the identifier.
+    * @param rhs
+    *   the literal.
+    * @param symbolTable
+    *   the symbol table.
+    * @return
+    *   true if a literal assigment was successfully determined and added to the symbol table, false if otherwise.
+    */
+  private def visitLiteralAssignment(lhs: Identifier, rhs: CfgNode, symbolTable: SymbolTable[LocalKey]): Boolean = {
+    ((lhs, rhs) match {
+      case (i: Identifier, l: Literal) if Try(java.lang.Integer.parseInt(l.code)).isSuccess =>
         symbolTable.append(i, Set("int"))
-      case List(i: Identifier, l: Literal) if Try(java.lang.Double.parseDouble(l.code)).isSuccess =>
+      case (i: Identifier, l: Literal) if Try(java.lang.Double.parseDouble(l.code)).isSuccess =>
         symbolTable.append(i, Set("float"))
-      case List(i: Identifier, l: Literal) if "True".equals(l.code) || "False".equals(l.code) =>
+      case (i: Identifier, l: Literal) if "True".equals(l.code) || "False".equals(l.code) =>
         symbolTable.append(i, Set("bool"))
-      case List(i: Identifier, l: Literal) if l.code.matches("^(\"|').*(\"|')$") =>
+      case (i: Identifier, l: Literal) if l.code.matches("^(\"|').*(\"|')$") =>
         symbolTable.append(i, Set("str"))
-      case List(i: Identifier, c: Call) if c.name.equals("<operator>.listLiteral") =>
+      case (i: Identifier, c: Call) if c.name.equals("<operator>.listLiteral") =>
         symbolTable.append(i, Set("list"))
-      case List(i: Identifier, c: Call) if c.name.equals("<operator>.tupleLiteral") =>
+      case (i: Identifier, c: Call) if c.name.equals("<operator>.tupleLiteral") =>
         symbolTable.append(i, Set("tuple"))
-      case List(i: Identifier, b: Block)
+      case (i: Identifier, b: Block)
           if b.astChildren.isCall.headOption.exists(
             _.argument.isCall.exists(_.name.equals("<operator>.dictLiteral"))
           ) =>
         symbolTable.append(i, Set("dict"))
-      case _ =>
-    }
+      case _ => None
+    }).hasNext
   }
 
 }

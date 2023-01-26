@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._

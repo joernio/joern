@@ -186,7 +186,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     * @return
     *   the methods defined within this computational unit.
     */
-  private def internalMethodNodes(cu: AstNode): Traversal[Method] = cu.ast.isMethod.isExternal(false)
+  def internalMethodNodes(cu: AstNode): Traversal[Method] = cu.ast.isMethod.isExternal(false)
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
@@ -211,7 +211,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
           builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
         case x: Identifier if symbolTable.contains(x) =>
           (x.inCall.headOption, x.inCall.argument.take(2).l) match {
-            // Case 1: 'call' is an assignment
+            // Case 1: 'call' is an assignment from some dynamic dispatch call
             case (Some(call: Call), List(i: Identifier, c: Call)) if call.name.equals(Operators.assignment) =>
               val idTypes   = symbolTable.get(i)
               val callTypes = symbolTable.get(c)
@@ -224,16 +224,25 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
                   // Case 1.2: This is the return value of the function
                   persistType(i, idTypes)(builder)
               }
-            // Case 2: 'i' is the receiver of 'call'
-            case (Some(call: Call), List(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
+            // Case 1: 'call' is an assignment from some other data structure
+            case (Some(call: Call), List(i: Identifier, _)) if call.name.equals(Operators.assignment) =>
               val idHints = symbolTable.get(i)
               persistType(i, idHints)(builder)
               persistType(call, idHints)(builder)
+            // Case 2: 'i' is the receiver of 'call'
+            case (Some(call: Call), List(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
+              val idHints   = symbolTable.get(i)
+              val callTypes = symbolTable.get(call)
+              persistType(i, idHints)(builder)
+              if (callTypes.isEmpty) {
+                persistType(call, idHints)(builder)
+              } else {
+                persistType(call, callTypes)(builder)
+              }
             // Case 3: 'i' is the receiver for a field access on member 'f'
-            case (Some(call: Call), List(i: Identifier, _: FieldIdentifier))
+            case (Some(call: Call), List(i: Identifier, f: FieldIdentifier))
                 if call.name.equals(Operators.fieldAccess) =>
               persistType(i, symbolTable.get(x))(builder)
-            // TODO: Handle fields
             // Case 4: We are elsewhere
             case _ => persistType(x, symbolTable.get(x))(builder)
           }
@@ -275,9 +284,9 @@ object SBKey {
       case n: FieldIdentifier => FieldVar(n.canonicalName)
       case n: Identifier      => LocalVar(n.name)
       case n: Local           => LocalVar(n.name)
-//      case n: Literal         => CallAlias(n.code) // Some imports define calls via arguments
-      case n: Call   => CallAlias(n.name)
-      case n: Method => CallAlias(n.name)
+      case n: Call            => CallAlias(n.name)
+      case n: Method          => CallAlias(n.name)
+      case n: MethodRef       => CallAlias(n.code)
       case _ => throw new RuntimeException(s"Node of type ${node.label} is not supported in the type recovery pass.")
     }
   }
@@ -322,6 +331,9 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => K) {
   def put(sbKey: K, typeFullNames: Set[String]): Option[Set[String]] =
     table.put(sbKey, typeFullNames)
 
+  def put(sbKey: K, typeFullName: String): Option[Set[String]] =
+    put(sbKey, Set(typeFullName))
+
   def put(node: AstNode, typeFullNames: Set[String]): Option[Set[String]] =
     put(fromNode(node), typeFullNames)
 
@@ -338,11 +350,11 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => K) {
     }
   }
 
-  private def contains(sbKey: K): Boolean = table.contains(sbKey)
+  def contains(sbKey: K): Boolean = table.contains(sbKey)
 
   def contains(node: AstNode): Boolean = contains(fromNode(node))
 
-  private def get(sbKey: K): Set[String] = table.getOrElse(sbKey, Set.empty)
+  def get(sbKey: K): Set[String] = table.getOrElse(sbKey, Set.empty)
 
   def get(node: AstNode): Set[String] = get(fromNode(node))
 
