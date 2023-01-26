@@ -1,4 +1,4 @@
-package io.joern.x2cpg.passes.frontend.impl
+package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._

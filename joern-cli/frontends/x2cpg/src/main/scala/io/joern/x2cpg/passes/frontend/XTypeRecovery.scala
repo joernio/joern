@@ -7,7 +7,7 @@ import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
-import org.apache.logging.log4j.{LogManager, Logger}
+import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
@@ -97,7 +97,7 @@ abstract class ScopedXProcedure(val callingName: String, val fullName: String, v
   */
 abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
 
-  protected val logger: Logger = LogManager.getLogger(classOf[SetXProcedureDefTask])
+  protected val logger: Logger = LoggerFactory.getLogger(classOf[SetXProcedureDefTask])
 
   override def compute(): Unit =
     node match {
@@ -245,7 +245,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
                 persistType(call, callTypes)(builder)
               }
             // Case 3: 'i' is the receiver for a field access on member 'f'
-            case (Some(call: Call), List(i: Identifier, f: FieldIdentifier))
+            case (Some(call: Call), List(i: Identifier, _: FieldIdentifier))
                 if call.name.equals(Operators.fieldAccess) =>
               persistType(i, symbolTable.get(x))(builder)
             // Case 4: We are elsewhere
@@ -282,8 +282,7 @@ abstract class SBKey {
 }
 
 object SBKey {
-  protected val logger: Logger = LogManager.getLogger(getClass)
-
+  protected val logger: Logger = LoggerFactory.getLogger(getClass)
   def fromNodeToLocalKey(node: AstNode): LocalKey = {
     node match {
       case n: FieldIdentifier => FieldVar(n.canonicalName)
