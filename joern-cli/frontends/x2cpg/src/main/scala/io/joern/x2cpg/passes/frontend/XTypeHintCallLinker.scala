@@ -30,7 +30,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   private def callees(names: Seq[String]): Traversal[Method] = cpg.method.fullNameExact(names: _*)
 
-  override def run(builder: DiffGraphBuilder) = linkCalls(builder)
+  override def run(builder: DiffGraphBuilder): Unit = linkCalls(builder)
 
   private def linkCalls(builder: DiffGraphBuilder): Unit =
     calls.map(call => (call, calleeNames(call))).foreach { case (call, ms) =>

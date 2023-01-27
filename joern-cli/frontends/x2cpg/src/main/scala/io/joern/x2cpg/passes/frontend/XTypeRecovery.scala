@@ -13,32 +13,47 @@ import overflowdb.traversal.Traversal
 
 import java.util.Objects
 import java.util.concurrent.RecursiveTask
-import scala.collection.MapView
-import scala.collection.concurrent.TrieMap
 
 /** Based on a flow-insensitive symbol-table-style approach. This pass aims to be fast and deterministic and does not
-  * try to converge to some fixed point. This will help recover: <ol><li>Imported call signatures from external
-  * dependencies</li><li>Dynamic type hints for mutable variables in a computational unit.</ol>
+  * try to converge to some fixed point but rather iterates a fixed number of times. This will help recover:
+  * <ol><li>Imported call signatures from external dependencies</li><li>Dynamic type hints for mutable variables in a
+  * computational unit.</ol>
   *
   * The algorithm flows roughly as follows: <ol> <li> Scan for method signatures of methods for each compilation unit,
   * either by internally defined methods or by reading import signatures. This includes looking for aliases, e.g. import
-  * foo as bar.</li><li>TODO: While performing the above, note field/member assignments in a symbol
-  * table.</li><li>(Optionally) Prune these method signatures by checking their validity against the CPG.</li><li>Visit
-  * assignments to populate where variables are assigned a value to extrapolate its type. Store these values in a local
-  * symbol table.</li><li>Find instances of where these variables are used and update their type information.</li><li>If
-  * this variable is the receiver of a call, make sure to set the type of the call accordingly.</li></ol>
+  * foo as bar.</li><li>(Optionally) Prune these method signatures by checking their validity against the
+  * CPG.</li><li>Visit assignments to populate where variables are assigned a value to extrapolate its type. Store these
+  * values in a local symbol table. If a field is assigned a value, store this in the global table</li><li>Find
+  * instances of where these fields and variables are used and update their type information.</li><li>If this variable
+  * is the receiver of a call, make sure to set the type of the call accordingly.</li></ol>
   *
-  * The symbol tables use the [[SymbolTable]] class to track possible type information.
+  * In order to propagate types across computational units, but avoid the poor scalability of a fixed-point algorithm,
+  * the number of iterations can be configured using the [[iterations]] parameter. Note that [[iterations]] < 2 will not
+  * provide any interprocedural type recovery capabilities.
+  *
+  * The symbol tables use the [[SymbolTable]] class to track possible type information. <br> <strong>Note: Local symbols
+  * are cleared once a compilation unit is complete. This is to keep memory usage down while maximizing
+  * concurrency.</strong>
   *
   * @param cpg
   *   the CPG to recovery types for.
+  * @param iterations
+  *   the total number of iterations through which types are to be propagated. At least 2 are recommended in order to
+  *   propagate interprocedural types. Think of this as similar to the dataflowengineoss' 'maxCallDepth'.
   * @tparam ComputationalUnit
   *   the [[AstNode]] type used to represent a computational unit of the language.
   */
-abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg) extends CpgPass(cpg) {
+abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg, iterations: Int = 2) extends CpgPass(cpg) {
+
+  /** Stores type information for global structures that persist across computational units, e.g. field identifiers.
+    */
+  protected val globalTable = new SymbolTable[GlobalKey](SBKey.fromNodeToGlobalKey)
 
   override def run(builder: DiffGraphBuilder): Unit =
-    computationalUnit.map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork()).foreach(_.get())
+    for (_ <- 0 to iterations)
+      computationalUnit
+        .map(unit => generateRecoveryForCompilationUnitTask(unit, builder, globalTable).fork())
+        .foreach(_.get())
 
   /** @return
     *   the computational units as per how the language is compiled. e.g. file.
@@ -50,12 +65,15 @@ abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg) extends Cpg
     *   the compilation unit.
     * @param builder
     *   the graph builder.
+    * @param globalTable
+    *   the global table.
     * @return
     *   a forkable [[RecoverForXCompilationUnit]] task.
     */
   def generateRecoveryForCompilationUnitTask(
     unit: ComputationalUnit,
-    builder: DiffGraphBuilder
+    builder: DiffGraphBuilder,
+    globalTable: SymbolTable[GlobalKey]
   ): RecoverForXCompilationUnit[ComputationalUnit]
 
 }
@@ -133,7 +151,8 @@ abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
   */
 abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   cu: ComputationalUnit,
-  builder: DiffGraphBuilder
+  builder: DiffGraphBuilder,
+  globalTable: SymbolTable[GlobalKey]
 ) extends RecursiveTask[Unit] {
 
   /** Stores type information for local structures that live within this compilation unit, e.g. local variables.
@@ -144,7 +163,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     */
   def prepopulateSymbolTable(): Unit = {}
 
-  private def assignments: Traversal[Assignment] =
+  protected def assignments: Traversal[Assignment] =
     cu.ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_))
 
   override def compute(): Unit = try {
@@ -167,7 +186,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     * @param procedureDeclarations
     *   imports to types or functions and internally defined methods themselves.
     */
-  private def setImportsFromDeclaredProcedures(procedureDeclarations: Traversal[CfgNode]): Unit =
+  protected def setImportsFromDeclaredProcedures(procedureDeclarations: Traversal[CfgNode]): Unit =
     procedureDeclarations.map(f => generateSetProcedureDefTask(f, symbolTable).fork()).foreach(_.get())
 
   /** Generates a task to create an import task.
@@ -209,7 +228,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
 
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.
     */
-  private def setTypeInformation(): Unit = {
+  protected def setTypeInformation(): Unit = {
     cu.ast
       .foreach {
         case x: Local if symbolTable.contains(x) =>
@@ -230,12 +249,12 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
                   persistType(i, idTypes)(builder)
               }
             // Case 1: 'call' is an assignment from some other data structure
-            case (Some(call: Call), List(i: Identifier, _)) if call.name.equals(Operators.assignment) =>
+            case (Some(call: Call), ::(i: Identifier, _)) if call.name.equals(Operators.assignment) =>
               val idHints = symbolTable.get(i)
               persistType(i, idHints)(builder)
               persistType(call, idHints)(builder)
             // Case 2: 'i' is the receiver of 'call'
-            case (Some(call: Call), List(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
+            case (Some(call: Call), ::(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
               val idHints   = symbolTable.get(i)
               val callTypes = symbolTable.get(call)
               persistType(i, idHints)(builder)
@@ -248,9 +267,9 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
             case (Some(call: Call), List(i: Identifier, _: FieldIdentifier))
                 if call.name.equals(Operators.fieldAccess) =>
               persistType(i, symbolTable.get(x))(builder)
-            // Case 4: We are elsewhere
             case _ => persistType(x, symbolTable.get(x))(builder)
           }
+        // Case 5: Field access
         case x: Call if symbolTable.contains(x) =>
           builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
         case _ =>
@@ -263,107 +282,5 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
         builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, types.head)
       else
         builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types.toSeq)
-
-}
-
-/** Represents an identifier of some AST node at a specific scope.
-  */
-abstract class SBKey {
-
-  /** Convenience methods to convert a node to a [[SBKey]].
-    *
-    * @param node
-    *   the node to convert.
-    * @return
-    *   the corresponding [[SBKey]].
-    */
-  def fromNode(node: AstNode): SBKey = SBKey.fromNodeToLocalKey(node)
-
-}
-
-object SBKey {
-  protected val logger: Logger = LoggerFactory.getLogger(getClass)
-  def fromNodeToLocalKey(node: AstNode): LocalKey = {
-    node match {
-      case n: FieldIdentifier => FieldVar(n.canonicalName)
-      case n: Identifier      => LocalVar(n.name)
-      case n: Local           => LocalVar(n.name)
-      case n: Call            => CallAlias(n.name)
-      case n: Method          => CallAlias(n.name)
-      case n: MethodRef       => CallAlias(n.code)
-      case _ => throw new RuntimeException(s"Node of type ${node.label} is not supported in the type recovery pass.")
-    }
-  }
-
-}
-
-/** Represents an identifier of some AST node at an intraprocedural scope.
-  */
-sealed trait LocalKey extends SBKey
-
-/** A variable that can hold data within an interprocedural scope.
-  */
-case class FieldVar(identifier: String) extends LocalKey
-
-/** A variable that holds data within an intraprocedural scope.
-  */
-case class LocalVar(identifier: String) extends LocalKey
-
-/** A name that refers to some kind of callee.
-  */
-case class CallAlias(identifier: String) extends LocalKey
-
-/** A thread-safe symbol table that can represent multiple types per symbol. Each node in an AST gets converted to an
-  * [[SBKey]] which gives contextual information to identify an AST entity. Each value in this table represents a set of
-  * types that the key could be in a flow-insensitive manner.
-  *
-  * The [[SymbolTable]] operates like a map with a few convenient methods that are designed for this structure's
-  * purpose.
-  */
-class SymbolTable[K <: SBKey](fromNode: AstNode => K) {
-
-  private val table = TrieMap.empty[K, Set[String]]
-
-  def apply(sbKey: K): Set[String] = table(sbKey)
-
-  def apply(node: AstNode): Set[String] = table(fromNode(node))
-
-  def from(sb: IterableOnce[(K, Set[String])]): SymbolTable[K] = {
-    table.addAll(sb); this
-  }
-
-  def put(sbKey: K, typeFullNames: Set[String]): Option[Set[String]] =
-    table.put(sbKey, typeFullNames)
-
-  def put(sbKey: K, typeFullName: String): Option[Set[String]] =
-    put(sbKey, Set(typeFullName))
-
-  def put(node: AstNode, typeFullNames: Set[String]): Option[Set[String]] =
-    put(fromNode(node), typeFullNames)
-
-  def append(node: AstNode, typeFullName: String): Option[Set[String]] =
-    append(node, Set(typeFullName))
-
-  def append(node: AstNode, typeFullNames: Set[String]): Option[Set[String]] =
-    append(fromNode(node), typeFullNames)
-
-  private def append(sbKey: K, typeFullNames: Set[String]): Option[Set[String]] = {
-    table.get(sbKey) match {
-      case Some(ts) => table.put(sbKey, ts ++ typeFullNames)
-      case None     => table.put(sbKey, typeFullNames)
-    }
-  }
-
-  def contains(sbKey: K): Boolean = table.contains(sbKey)
-
-  def contains(node: AstNode): Boolean = contains(fromNode(node))
-
-  def get(sbKey: K): Set[String] = table.getOrElse(sbKey, Set.empty)
-
-  def get(node: AstNode): Set[String] = get(fromNode(node))
-
-  def view: MapView[K, Set[String]] = table.view
-
-  def clear(): Unit = table.clear()
 
 }

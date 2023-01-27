@@ -20,8 +20,10 @@ class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
   override def computationalUnit: Traversal[File] = cpg.file
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
-    builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[File] = new RecoverForPythonFile(cpg, unit, builder)
+    builder: DiffGraphBuilder,
+    globalTable: SymbolTable[GlobalKey]
+  ): RecoverForXCompilationUnit[File] = new RecoverForPythonFile(cpg, unit, builder, globalTable)
+
 }
 
 /** Defines how a procedure is available to be called in the current scope either by it being defined in this module or
@@ -137,8 +139,8 @@ class SetPythonProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey
   * @param builder
   *   the graph builder
   */
-class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder)
-    extends RecoverForXCompilationUnit[File](cu, builder) {
+class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, globalTable: SymbolTable[GlobalKey])
+    extends RecoverForXCompilationUnit[File](cu, builder, globalTable) {
 
   /** Adds built-in functions to expect.
     */
@@ -182,10 +184,10 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder)
         val importedTypes = symbolTable.get(c)
         if (!c.code.endsWith(")")) {
           // Case 1: The identifier is at the assignment to a function pointer. Lack of parenthesis should indicate this.
-          symbolTable.append(i, importedTypes)
+          setIdentifier(i, importedTypes)
         } else if (c.name.charAt(0).isUpper && c.code.endsWith(")")) {
           // Case 2: The identifier is receiving a constructor invocation, thus is now an instance of the type
-          symbolTable.append(i, importedTypes.map(_.stripSuffix(s".${Defines.ConstructorMethodName}")))
+          setIdentifier(i, importedTypes.map(_.stripSuffix(s".${Defines.ConstructorMethodName}")))
         } else {
           // TODO: This identifier should contain the type of the return value of 'c'
         }
@@ -194,8 +196,29 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder)
       case List(i: Identifier, c: Call) if c.receiver.isCall.name.exists(_.equals(Operators.fieldAccess)) =>
         val field = c.receiver.isCall.name(Operators.fieldAccess).map(new OpNodes.FieldAccess(_)).head
         visitCallFromFieldMember(i, c, field, symbolTable)
+      // In second round, use global table knowledge to extract field types
+      case List(_: Identifier, c: Call) if c.name.equals(Operators.fieldAccess) =>
+        c.inCall.argument
+          .flatMap {
+            case n: Call if n.name.equals(Operators.fieldAccess) => new OpNodes.FieldAccess(n).argumentOut
+            case n                                               => n
+          }
+          .take(3)
+          .l match {
+          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier) =>
+            val fieldTypes = symbolTable
+              .get(CallAlias(i.name))
+              .flatMap(recModule => globalTable.get(FieldVar(recModule, f.canonicalName)))
+            if (fieldTypes.nonEmpty) symbolTable.append(assigned, fieldTypes)
+          case _ =>
+        }
       case _ =>
     }
+  }
+
+  private def setIdentifier(i: Identifier, types: Set[String]): Option[Set[String]] = {
+    if (i.method.name.equals("<module>")) globalTable.put(i, types)
+    symbolTable.append(i, types)
   }
 
   private def visitCallFromFieldMember(
@@ -231,22 +254,22 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder)
   private def visitLiteralAssignment(lhs: Identifier, rhs: CfgNode, symbolTable: SymbolTable[LocalKey]): Boolean = {
     ((lhs, rhs) match {
       case (i: Identifier, l: Literal) if Try(java.lang.Integer.parseInt(l.code)).isSuccess =>
-        symbolTable.append(i, Set("int"))
+        setIdentifier(i, Set("int"))
       case (i: Identifier, l: Literal) if Try(java.lang.Double.parseDouble(l.code)).isSuccess =>
-        symbolTable.append(i, Set("float"))
+        setIdentifier(i, Set("float"))
       case (i: Identifier, l: Literal) if "True".equals(l.code) || "False".equals(l.code) =>
-        symbolTable.append(i, Set("bool"))
+        setIdentifier(i, Set("bool"))
       case (i: Identifier, l: Literal) if l.code.matches("^(\"|').*(\"|')$") =>
-        symbolTable.append(i, Set("str"))
+        setIdentifier(i, Set("str"))
       case (i: Identifier, c: Call) if c.name.equals("<operator>.listLiteral") =>
-        symbolTable.append(i, Set("list"))
+        setIdentifier(i, Set("list"))
       case (i: Identifier, c: Call) if c.name.equals("<operator>.tupleLiteral") =>
-        symbolTable.append(i, Set("tuple"))
+        setIdentifier(i, Set("tuple"))
       case (i: Identifier, b: Block)
           if b.astChildren.isCall.headOption.exists(
             _.argument.isCall.exists(_.name.equals("<operator>.dictLiteral"))
           ) =>
-        symbolTable.append(i, Set("dict"))
+        setIdentifier(i, Set("dict"))
       case _ => None
     }).hasNext
   }
