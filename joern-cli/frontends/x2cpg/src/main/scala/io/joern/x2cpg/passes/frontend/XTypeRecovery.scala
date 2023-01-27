@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
@@ -15,8 +15,9 @@ import java.util.Objects
 import java.util.concurrent.RecursiveTask
 
 /** Based on a flow-insensitive symbol-table-style approach. This pass aims to be fast and deterministic and does not
-  * try to converge to some fixed point. This will help recover: <ol><li>Imported call signatures from external
-  * dependencies</li><li>Dynamic type hints for mutable variables in a computational unit.</ol>
+  * try to converge to some fixed point but rather iterates a fixed number of times. This will help recover:
+  * <ol><li>Imported call signatures from external dependencies</li><li>Dynamic type hints for mutable variables in a
+  * computational unit.</ol>
   *
   * The algorithm flows roughly as follows: <ol> <li> Scan for method signatures of methods for each compilation unit,
   * either by internally defined methods or by reading import signatures. This includes looking for aliases, e.g. import
@@ -30,13 +31,23 @@ import java.util.concurrent.RecursiveTask
   *
   * @param cpg
   *   the CPG to recovery types for.
+  * @param iterations
+  *   the total number of iterations through which types are to be propagated. At least 2 are recommended in order to
+  *   propagate interprocedural types. Think of this as similar to the dataflowengineoss' 'maxCallDepth'.
   * @tparam ComputationalUnit
   *   the [[AstNode]] type used to represent a computational unit of the language.
   */
-abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg) extends CpgPass(cpg) {
+abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg, iterations: Int = 2) extends CpgPass(cpg) {
+
+  /** Stores type information for global structures that persist across computational units, e.g. field identifiers.
+    */
+  protected val globalTable = new SymbolTable[GlobalKey](SBKey.fromNodeToGlobalKey)
 
   override def run(builder: DiffGraphBuilder): Unit =
-    computationalUnit.map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork()).foreach(_.get())
+    for (_ <- 0 to iterations)
+      computationalUnit
+        .map(unit => generateRecoveryForCompilationUnitTask(unit, builder, globalTable).fork())
+        .foreach(_.get())
 
   /** @return
     *   the computational units as per how the language is compiled. e.g. file.
@@ -48,12 +59,15 @@ abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg) extends Cpg
     *   the compilation unit.
     * @param builder
     *   the graph builder.
+    * @param globalTable
+    *   the global table.
     * @return
     *   a forkable [[RecoverForXCompilationUnit]] task.
     */
   def generateRecoveryForCompilationUnitTask(
     unit: ComputationalUnit,
-    builder: DiffGraphBuilder
+    builder: DiffGraphBuilder,
+    globalTable: SymbolTable[GlobalKey]
   ): RecoverForXCompilationUnit[ComputationalUnit]
 
 }
@@ -131,7 +145,8 @@ abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
   */
 abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   cu: ComputationalUnit,
-  builder: DiffGraphBuilder
+  builder: DiffGraphBuilder,
+  globalTable: SymbolTable[GlobalKey]
 ) extends RecursiveTask[Unit] {
 
   /** Stores type information for local structures that live within this compilation unit, e.g. local variables.
@@ -142,7 +157,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     */
   def prepopulateSymbolTable(): Unit = {}
 
-  private def assignments: Traversal[Assignment] =
+  protected def assignments: Traversal[Assignment] =
     cu.ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_))
 
   override def compute(): Unit = try {
@@ -165,7 +180,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     * @param procedureDeclarations
     *   imports to types or functions and internally defined methods themselves.
     */
-  private def setImportsFromDeclaredProcedures(procedureDeclarations: Traversal[CfgNode]): Unit =
+  protected def setImportsFromDeclaredProcedures(procedureDeclarations: Traversal[CfgNode]): Unit =
     procedureDeclarations.map(f => generateSetProcedureDefTask(f, symbolTable).fork()).foreach(_.get())
 
   /** Generates a task to create an import task.
@@ -207,7 +222,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
 
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.
     */
-  private def setTypeInformation(): Unit = {
+  protected def setTypeInformation(): Unit = {
     cu.ast
       .foreach {
         case x: Local if symbolTable.contains(x) =>
@@ -249,6 +264,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
             // Case 4: We are elsewhere
             case _ => persistType(x, symbolTable.get(x))(builder)
           }
+        // Case 5: Field access
         case x: Call if symbolTable.contains(x) =>
           builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
         case _ =>

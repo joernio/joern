@@ -136,29 +136,85 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       columnConstructor.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column.<init>"
     }
 
-    "recover paths for built-in calls" should {
-      lazy val cpg = code("""
-          |print("Hello world")
-          |max(1, 2)
-          |
-          |from foo import abs
-          |
-          |x = abs(-1)
-          |""".stripMargin)
+  }
 
-      "resolve 'print' and 'max' calls" in {
-        val Some(printCall) = cpg.call("print").headOption
-        printCall.methodFullName shouldBe "builtins.py:<module>.print"
-        val Some(maxCall) = cpg.call("max").headOption
-        maxCall.methodFullName shouldBe "builtins.py:<module>.max"
-      }
+  "recovering paths for built-in calls" should {
+    lazy val cpg = code("""
+        |print("Hello world")
+        |max(1, 2)
+        |
+        |from foo import abs
+        |
+        |x = abs(-1)
+        |""".stripMargin)
 
-      "select the imported abs over the built-in type when call is shadowed" in {
-        val Some(absCall) = cpg.call("abs").headOption
-        absCall.dynamicTypeHintFullName shouldBe Seq("foo.py:<module>.abs")
-      }
-
+    "resolve 'print' and 'max' calls" in {
+      val Some(printCall) = cpg.call("print").headOption
+      printCall.methodFullName shouldBe "builtins.py:<module>.print"
+      val Some(maxCall) = cpg.call("max").headOption
+      maxCall.methodFullName shouldBe "builtins.py:<module>.max"
     }
+
+    "select the imported abs over the built-in type when call is shadowed" in {
+      val Some(absCall) = cpg.call("abs").headOption
+      absCall.dynamicTypeHintFullName shouldBe Seq("foo.py:<module>.abs")
+    }
+
+  }
+
+  "recovering module members across modules" should {
+    lazy val cpg = code(
+      """
+        |from flask_sqlalchemy import SQLAlchemy
+        |
+        |x = 1
+        |y = "test"
+        |db = SQLAlchemy()
+        |""".stripMargin,
+      "foo.py"
+    ).moreCode(
+      """
+        |import foo
+        |
+        |z = foo.x
+        |z = foo.y
+        |
+        |d = foo.db
+        |""".stripMargin,
+      "bar.py"
+    )
+
+    "resolve 'x' and 'y' locally under foo.py" in {
+      val Some(x) = cpg.file.name(".*foo.*").ast.isIdentifier.name("x").headOption
+      x.typeFullName shouldBe "int"
+      val Some(y) = cpg.file.name(".*foo.*").ast.isIdentifier.name("y").headOption
+      y.typeFullName shouldBe "str"
+    }
+
+    "resolve 'foo.x' and 'foo.y' field access primitive types correctly" in {
+      val List(z1, z2) = cpg.file
+        .name(".*bar.*")
+        .ast
+        .isIdentifier
+        .name("z")
+        .l
+      z1.typeFullName shouldBe "ANY"
+      z1.dynamicTypeHintFullName shouldBe Seq("int", "str")
+      z2.typeFullName shouldBe "ANY"
+      z2.dynamicTypeHintFullName shouldBe Seq("int", "str")
+    }
+
+    "resolve 'foo.d' field access object types correctly" in {
+      val List(d) = cpg.file
+        .name(".*bar.*")
+        .ast
+        .isIdentifier
+        .name("d")
+        .l
+      d.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
+      d.dynamicTypeHintFullName shouldBe Seq()
+    }
+
   }
 
 }
