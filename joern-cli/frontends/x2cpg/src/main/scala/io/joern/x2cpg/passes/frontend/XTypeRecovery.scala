@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
@@ -21,13 +21,19 @@ import java.util.concurrent.RecursiveTask
   *
   * The algorithm flows roughly as follows: <ol> <li> Scan for method signatures of methods for each compilation unit,
   * either by internally defined methods or by reading import signatures. This includes looking for aliases, e.g. import
-  * foo as bar.</li><li>TODO: While performing the above, note field/member assignments in a symbol
-  * table.</li><li>(Optionally) Prune these method signatures by checking their validity against the CPG.</li><li>Visit
-  * assignments to populate where variables are assigned a value to extrapolate its type. Store these values in a local
-  * symbol table.</li><li>Find instances of where these variables are used and update their type information.</li><li>If
-  * this variable is the receiver of a call, make sure to set the type of the call accordingly.</li></ol>
+  * foo as bar.</li><li>(Optionally) Prune these method signatures by checking their validity against the
+  * CPG.</li><li>Visit assignments to populate where variables are assigned a value to extrapolate its type. Store these
+  * values in a local symbol table. If a field is assigned a value, store this in the global table</li><li>Find
+  * instances of where these fields and variables are used and update their type information.</li><li>If this variable
+  * is the receiver of a call, make sure to set the type of the call accordingly.</li></ol>
   *
-  * The symbol tables use the [[SymbolTable]] class to track possible type information.
+  * In order to propagate types across computational units, but avoid the poor scalability of a fixed-point algorithm,
+  * the number of iterations can be configured using the [[iterations]] parameter. Note that [[iterations]] < 2 will not
+  * provide any interprocedural type recovery capabilities.
+  *
+  * The symbol tables use the [[SymbolTable]] class to track possible type information. <br> <strong>Note: Local symbols
+  * are cleared once a compilation unit is complete. This is to keep memory usage down while maximizing
+  * concurrency.</strong>
   *
   * @param cpg
   *   the CPG to recovery types for.

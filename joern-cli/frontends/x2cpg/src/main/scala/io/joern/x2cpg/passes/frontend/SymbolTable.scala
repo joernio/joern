@@ -1,21 +1,12 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNode,
-  Call,
-  FieldIdentifier,
-  Identifier,
-  Local,
-  Method,
-  MethodRef
-}
-import org.slf4j.{Logger, LoggerFactory}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.Objects
 import scala.collection.MapView
 import scala.collection.concurrent.TrieMap
-import scala.util.hashing.Hashing
 
 /** Represents an identifier of some AST node at a specific scope.
   */
@@ -36,20 +27,19 @@ object SBKey {
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
   def fromNodeToLocalKey(node: AstNode): LocalKey = {
     node match {
-      case n: FieldIdentifier => FieldVar(n.canonicalName)
-      case n: Identifier      => LocalVar(n.name)
-      case n: Local           => LocalVar(n.name)
-      case n: Call            => CallAlias(n.name)
-      case n: Method          => CallAlias(n.name)
-      case n: MethodRef       => CallAlias(n.code)
+      case n: Identifier => LocalVar(n.name)
+      case n: Local      => LocalVar(n.name)
+      case n: Call       => CallAlias(n.name)
+      case n: Method     => CallAlias(n.name)
+      case n: MethodRef  => CallAlias(n.code)
       case _ =>
         throw new RuntimeException(s"Local node of type ${node.label} is not supported in the type recovery pass.")
     }
   }
 
   def fromNodeToGlobalKey(node: AstNode): GlobalKey = node match {
-    case n: FieldIdentifier => Field(n.method.fullName, n.canonicalName)
-    case n: Identifier      => Field(n.method.fullName, n.name)
+    case n: FieldIdentifier => FieldVar(n.method.fullName, n.canonicalName)
+    case n: Identifier      => FieldVar(n.method.fullName, n.name)
     case _ =>
       throw new RuntimeException(s"Global node of type ${node.label} is not supported in the type recovery pass.")
   }
@@ -61,10 +51,6 @@ object SBKey {
 sealed class LocalKey extends SBKey {
   override def fromNode(node: AstNode): SBKey = SBKey.fromNodeToLocalKey(node)
 }
-
-/** A variable that can hold data within an interprocedural scope.
-  */
-case class FieldVar(identifier: String) extends LocalKey
 
 /** A variable that holds data within an intraprocedural scope.
   */
@@ -80,16 +66,13 @@ sealed class GlobalKey extends SBKey {
   override def fromNode(node: AstNode): SBKey = SBKey.fromNodeToGlobalKey(node)
 }
 
-case class Field(compUnitFullName: String, identifier: String) extends GlobalKey {
-  def fullName = s"$compUnitFullName.$identifier"
-
-  override def equals(obj: Any): Boolean = obj match {
-    case o: Field => o.identifier.equals(identifier) && o.compUnitFullName.equals(compUnitFullName)
-    case _        => false
-  }
-
-  override def hashCode(): Int = Objects.hash(compUnitFullName, identifier)
-}
+/** Represents a field identifier at its declared computational unit.
+  * @param compUnitFullName
+  *   the computational unit's full name.
+  * @param identifier
+  *   the canonical name.
+  */
+case class FieldVar(compUnitFullName: String, identifier: String) extends GlobalKey
 
 /** A thread-safe symbol table that can represent multiple types per symbol. Each node in an AST gets converted to an
   * [[SBKey]] which gives contextual information to identify an AST entity. Each value in this table represents a set of

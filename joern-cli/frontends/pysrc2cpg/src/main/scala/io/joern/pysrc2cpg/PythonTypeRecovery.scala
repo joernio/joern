@@ -144,12 +144,12 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
 
   /** Adds built-in functions to expect.
     */
-//  override def prepopulateSymbolTable(): Unit =
-//    PythonTypeRecovery.BUILTINS
-//      .map(t => (CallAlias(t), s"${PythonTypeRecovery.BUILTIN_PREFIX}.$t"))
-//      .foreach { case (alias, typ) =>
-//        symbolTable.put(alias, typ)
-//      }
+  override def prepopulateSymbolTable(): Unit =
+    PythonTypeRecovery.BUILTINS
+      .map(t => (CallAlias(t), s"${PythonTypeRecovery.BUILTIN_PREFIX}.$t"))
+      .foreach { case (alias, typ) =>
+        symbolTable.put(alias, typ)
+      }
 
   override def importNodes(cu: AstNode): Traversal[CfgNode] = cu.ast.isCall.nameExact("import")
 
@@ -208,7 +208,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
           case List(assigned: Identifier, i: Identifier, f: FieldIdentifier) =>
             val fieldTypes = symbolTable
               .get(CallAlias(i.name))
-              .flatMap(recModule => globalTable.get(Field(recModule, f.canonicalName)))
+              .flatMap(recModule => globalTable.get(FieldVar(recModule, f.canonicalName)))
             if (fieldTypes.nonEmpty) symbolTable.append(assigned, fieldTypes)
           case _ =>
         }
