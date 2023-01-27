@@ -99,6 +99,6 @@ package object queryengine {
   }
 
   case class TaskSummary(tableEntries: Vector[(TaskFingerprint, TableEntry)], followupTasks: Vector[ReachableByTask])
-  case class TableEntry(path: Vector[PathElement])
+  case class TableEntry(path: Vector[PathElement], uniqueHash: String)
 
 }

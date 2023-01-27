@@ -2,6 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 
+import java.security.MessageDigest
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.collection.parallel.CollectionConverters._
@@ -115,7 +116,18 @@ class HeldTaskCompletion(
           .indexOf((parentTask.sink, parentTask.callSiteStack)) + 1
         val initialPathOnlyUpToSink = initialPath.slice(0, stopIndex)
         val newPath                 = result.path ++ initialPathOnlyUpToSink
-        (parentTask, TableEntry(newPath))
+        val md = MessageDigest.getInstance("SHA-1")
+        newPath
+          .foreach(x => (md.update(x.node.id.toByte),
+            x.callSiteStack.foreach(x => {
+              md.update(x.id().toByte)
+            }),
+            md.update(x.visible.hashCode().toByte),
+            md.update(x.isOutputArg.hashCode().toByte),
+            md.update(x.outEdgeLabel.hashCode.toByte)
+          ))
+        val hash = md.digest().toString
+        (parentTask, TableEntry(newPath, hash))
       }
       .filter { case (_, tableEntry) => containsCycle(tableEntry) }
   }
@@ -151,7 +163,6 @@ class HeldTaskCompletion(
           }
       )
 
-      //val mergedGroups = newGroups ++ oldGroups
       val mergedGroups = oldGroups ++ newGroups.map { case (k, v) => k -> (v ++ oldGroups.getOrElse(k, List())) }
       val mergedList   = getListFromGroups(mergedGroups)
 
@@ -194,9 +205,7 @@ class HeldTaskCompletion(
           withMaxLength.head
         } else {
           withMaxLength.minBy { x =>
-            x.path
-              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
-              .mkString("-")
+            x.uniqueHash
           }
         }
       }
@@ -228,9 +237,7 @@ class HeldTaskCompletion(
         withMaxLength.head
       } else {
         withMaxLength.minBy { x =>
-          x.path
-            .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
-            .mkString("-")
+          x.uniqueHash
         }
       }
     }
