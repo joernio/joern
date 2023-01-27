@@ -180,6 +180,10 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |z = foo.y
         |
         |d = foo.db
+        |
+        |d.createTable()
+        |
+        |foo.db.deleteTable()
         |""".stripMargin,
       "bar.py"
     )
@@ -205,13 +209,35 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "resolve 'foo.d' field access object types correctly" in {
-      val List(d) = cpg.file
+      val Some(d) = cpg.file
         .name(".*bar.*")
         .ast
         .isIdentifier
         .name("d")
-        .l
+        .headOption
       d.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
+      d.dynamicTypeHintFullName shouldBe Seq()
+    }
+
+    "resolve a 'createTable' call indirectly from 'foo.d' field access correctly" in {
+      val List(d) = cpg.file
+        .name(".*bar.*")
+        .ast
+        .isCall
+        .name("createTable")
+        .l
+      d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.createTable"
+      d.dynamicTypeHintFullName shouldBe Seq()
+    }
+
+    "resolve a 'deleteTable' call directly from 'foo.db' field access correctly" in {
+      val List(d) = cpg.file
+        .name(".*bar.*")
+        .ast
+        .isCall
+        .name("deleteTable")
+        .l
+      d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.deleteTable"
       d.dynamicTypeHintFullName shouldBe Seq()
     }
 

@@ -249,12 +249,12 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
                   persistType(i, idTypes)(builder)
               }
             // Case 1: 'call' is an assignment from some other data structure
-            case (Some(call: Call), List(i: Identifier, _)) if call.name.equals(Operators.assignment) =>
+            case (Some(call: Call), ::(i: Identifier, _)) if call.name.equals(Operators.assignment) =>
               val idHints = symbolTable.get(i)
               persistType(i, idHints)(builder)
               persistType(call, idHints)(builder)
             // Case 2: 'i' is the receiver of 'call'
-            case (Some(call: Call), List(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
+            case (Some(call: Call), ::(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
               val idHints   = symbolTable.get(i)
               val callTypes = symbolTable.get(call)
               persistType(i, idHints)(builder)
@@ -267,7 +267,6 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
             case (Some(call: Call), List(i: Identifier, _: FieldIdentifier))
                 if call.name.equals(Operators.fieldAccess) =>
               persistType(i, symbolTable.get(x))(builder)
-            // Case 4: We are elsewhere
             case _ => persistType(x, symbolTable.get(x))(builder)
           }
         // Case 5: Field access
