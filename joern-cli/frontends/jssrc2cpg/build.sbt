@@ -1,15 +1,28 @@
+import scala.sys.process.stringToProcess
+import scala.util.Try
+import com.typesafe.config.{Config, ConfigFactory}
+
 name               := "jssrc2cpg"
 scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.2.1")
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
-val astGenVersion = "2.12.0"
+lazy val appProperties = settingKey[Config]("App Properties")
+appProperties := {
+  val path            = (Compile / resourceDirectory).value / "application.conf"
+  val applicationConf = ConfigFactory.parseFile(path).resolve()
+  applicationConf
+}
+
+lazy val astGenVersion = settingKey[String]("astgen version")
+astGenVersion := appProperties.value.getString("jssrc2cpg.astgen_version")
 
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"               %% "upickle"           % "2.0.0",
   "com.fasterxml.jackson.core" % "jackson-databind"  % "2.14.1",
+  "com.typesafe"               % "config"            % "1.4.2",
   "org.apache.logging.log4j"   % "log4j-slf4j-impl"  % Versions.log4j     % Runtime,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
 )
@@ -70,22 +83,30 @@ lazy val AstgenLinux  = "astgen-linux"
 lazy val AstgenMac    = "astgen-macos"
 lazy val AstgenMacArm = "astgen-macos-arm"
 
-lazy val astGenDlUrl = s"https://github.com/joernio/astgen/releases/download/v$astGenVersion/"
+lazy val astGenDlUrl = settingKey[String]("astgen download url")
+astGenDlUrl := s"https://github.com/joernio/astgen/releases/download/v${astGenVersion.value}/"
 
-def astGenBinaryNames = Environment.OperatingSystem match {
-  case _ if sys.props.get("ALL_PLATFORMS").contains("TRUE") =>
+lazy val astGenBinaryNames = taskKey[Seq[String]]("astgen binary names")
+astGenBinaryNames := {
+  if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
     Seq(AstgenWin, AstgenLinux, AstgenMac, AstgenMacArm)
-  case Environment.OperatingSystemType.Windows =>
-    Seq(AstgenWin)
-  case Environment.OperatingSystemType.Linux =>
-    Seq(AstgenLinux)
-  case Environment.OperatingSystemType.Mac =>
-    Environment.Architecture match {
-      case Environment.ArchitectureType.X86 => Seq(AstgenMac)
-      case Environment.ArchitectureType.ARM => Seq(AstgenMacArm)
+  } else if (Try("astgen --version".!!).toOption.exists(_.strip() == astGenVersion.value)) {
+    Seq.empty
+  } else {
+    Environment.OperatingSystem match {
+      case Environment.OperatingSystemType.Windows =>
+        Seq(AstgenWin)
+      case Environment.OperatingSystemType.Linux =>
+        Seq(AstgenLinux)
+      case Environment.OperatingSystemType.Mac =>
+        Environment.Architecture match {
+          case Environment.ArchitectureType.X86 => Seq(AstgenMac)
+          case Environment.ArchitectureType.ARM => Seq(AstgenMacArm)
+        }
+      case Environment.OperatingSystemType.Unknown =>
+        Seq(AstgenWin, AstgenLinux, AstgenMac, AstgenMacArm)
     }
-  case Environment.OperatingSystemType.Unknown =>
-    Seq(AstgenWin, AstgenLinux, AstgenMac, AstgenMacArm)
+  }
 }
 
 lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
@@ -93,10 +114,10 @@ astGenDlTask := {
   val astGenDir = baseDirectory.value / "bin" / "astgen"
   astGenDir.mkdirs()
 
-  astGenBinaryNames.foreach { fileName =>
+  astGenBinaryNames.value.foreach { fileName =>
     val dest = astGenDir / fileName
     if (!dest.exists) {
-      val url            = s"$astGenDlUrl$fileName"
+      val url            = s"${astGenDlUrl.value}$fileName"
       val downloadedFile = SimpleCache.downloadMaybe(url)
       IO.copyFile(downloadedFile, dest)
     }
@@ -127,7 +148,7 @@ stage := Def
 cleanFiles ++= Seq(
   baseDirectory.value / "bin" / "astgen",
   (Universal / stagingDirectory).value / "bin" / "astgen"
-) ++ astGenBinaryNames.map(fileName => SimpleCache.encodeFile(s"$astGenDlUrl$fileName"))
+) ++ astGenBinaryNames.value.map(fileName => SimpleCache.encodeFile(s"${astGenDlUrl.value}$fileName"))
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None

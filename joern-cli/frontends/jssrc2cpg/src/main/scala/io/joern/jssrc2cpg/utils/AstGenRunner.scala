@@ -6,6 +6,7 @@ import io.joern.jssrc2cpg.preprocessing.EjsPreprocessor
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
+import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
@@ -13,19 +14,67 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.matching.Regex
 import scala.util.Try
+import scala.sys.process.stringToProcess
 
 object AstGenRunner {
+
+  private val logger = LoggerFactory.getLogger(getClass)
+
   case class AstGenRunnerResult(
     parsedFiles: List[(String, String)] = List.empty,
     skippedFiles: List[(String, String)] = List.empty
   )
+
+  private val ExecutableName = Environment.OperatingSystem match {
+    case Environment.OperatingSystemType.Windows => "astgen-win.exe"
+    case Environment.OperatingSystemType.Linux   => "astgen-linux"
+    case Environment.OperatingSystemType.Mac =>
+      Environment.Architecture match {
+        case Environment.ArchitectureType.X86 => "astgen-macos"
+        case Environment.ArchitectureType.ARM => "astgen-macos-arm"
+      }
+    case Environment.OperatingSystemType.Unknown =>
+      logger.warn("Could not detect OS version! Defaulting to 'Linux'.")
+      "astgen-linux"
+  }
+
+  private val ExecutableDir: String = {
+    val dir        = getClass.getProtectionDomain.getCodeSource.getLocation.toString
+    val indexOfLib = dir.lastIndexOf("lib")
+    val fixedDir = if (indexOfLib != -1) {
+      new java.io.File(dir.substring("file:".length, indexOfLib)).toString
+    } else {
+      val indexOfTarget = dir.lastIndexOf("target")
+      if (indexOfTarget != -1) {
+        new java.io.File(dir.substring("file:".length, indexOfTarget)).toString
+      } else {
+        "."
+      }
+    }
+    Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
+  }
+
+  private lazy val AstgenCommand = {
+    val conf          = ConfigFactory.load
+    val astGenVersion = conf.getString("jssrc2cpg.astgen_version")
+    Try("astgen --version".!!).toOption match {
+      case Some(version) =>
+        val sVersion = version.strip()
+        if (sVersion == astGenVersion) {
+          logger.debug(s"Using local astgen v$sVersion from systems PATH")
+          "astgen"
+        } else {
+          logger.debug(s"Found local astgen v$sVersion in systems PATH but jssrc2cpg requires v$astGenVersion")
+          s"$ExecutableDir/$ExecutableName"
+        }
+      case None => s"$ExecutableDir/$ExecutableName"
+    }
+  }
 }
 
 class AstGenRunner(config: Config) {
 
-  import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
-
-  private val logger = LoggerFactory.getLogger(getClass)
+  import io.joern.jssrc2cpg.utils.AstGenRunner._
 
   private val LineLengthThreshold: Int = 10000
 
@@ -58,35 +107,6 @@ class AstGenRunner(config: Config) {
     " --no-tsTypes"
   } else {
     ""
-  }
-
-  private val ExecutableName = Environment.OperatingSystem match {
-    case Environment.OperatingSystemType.Windows => "astgen-win.exe"
-    case Environment.OperatingSystemType.Linux   => "astgen-linux"
-    case Environment.OperatingSystemType.Mac =>
-      Environment.Architecture match {
-        case Environment.ArchitectureType.X86 => "astgen-macos"
-        case Environment.ArchitectureType.ARM => "astgen-macos-arm"
-      }
-    case Environment.OperatingSystemType.Unknown =>
-      logger.warn("Could not detect OS version! Defaulting to 'Linux'.")
-      "astgen-linux"
-  }
-
-  private val ExecutableDir: String = {
-    val dir        = getClass.getProtectionDomain.getCodeSource.getLocation.toString
-    val indexOfLib = dir.lastIndexOf("lib")
-    val fixedDir = if (indexOfLib != -1) {
-      new java.io.File(dir.substring("file:".length, indexOfLib)).toString
-    } else {
-      val indexOfTarget = dir.lastIndexOf("target")
-      if (indexOfTarget != -1) {
-        new java.io.File(dir.substring("file:".length, indexOfTarget)).toString
-      } else {
-        "."
-      }
-    }
-    Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
   }
 
   private def skippedFiles(in: File, astgenOut: List[String]): List[String] = {
@@ -169,7 +189,7 @@ class AstGenRunner(config: Config) {
       jsFile
     }
 
-    val result = ExternalCommand.run(s"$ExecutableDir/$ExecutableName$ExecutableArgs -t ts -o $out", out.toString())
+    val result = ExternalCommand.run(s"$AstgenCommand$ExecutableArgs -t ts -o $out", out.toString())
 
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>
@@ -195,12 +215,12 @@ class AstGenRunner(config: Config) {
   private def vueFiles(in: File, out: File): Try[Seq[String]] = {
     val files = SourceFiles.determine(in.pathAsString, Set(".vue"))
     if (files.nonEmpty)
-      ExternalCommand.run(s"$ExecutableDir/$ExecutableName$ExecutableArgs -t vue -o $out", in.toString())
+      ExternalCommand.run(s"$AstgenCommand$ExecutableArgs -t vue -o $out", in.toString())
     else Success(Seq.empty)
   }
 
   private def jsFiles(in: File, out: File): Try[Seq[String]] =
-    ExternalCommand.run(s"$ExecutableDir/$ExecutableName$ExecutableArgs -t ts -o $out", in.toString())
+    ExternalCommand.run(s"$AstgenCommand$ExecutableArgs -t ts -o $out", in.toString())
 
   private def runAstGenNative(in: File, out: File): Try[Seq[String]] = for {
     ejsResult <- ejsFiles(in, out)
