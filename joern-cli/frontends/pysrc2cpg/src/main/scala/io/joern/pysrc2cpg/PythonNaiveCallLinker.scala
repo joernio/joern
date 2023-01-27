@@ -1,4 +1,4 @@
-package io.joern.x2cpg.passes.frontend
+package io.joern.pysrc2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
