@@ -9,7 +9,7 @@ val astGenVersion = "2.10.0"
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"               %% "upickle"           % "2.0.0",
-  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.14.1",
+  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.14.2",
   "org.apache.logging.log4j"   % "log4j-slf4j-impl"  % Versions.log4j     % Runtime,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
 )
