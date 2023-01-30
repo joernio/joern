@@ -56,6 +56,10 @@ class HeldTaskCompletion(
       : mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
         TableEntry
       ]]] = mutable.Map()
+    val mergedListMap: mutable.Map[TaskFingerprint, mutable.Map[
+      ((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)),
+      TableEntry
+    ]] = mutable.Map()
 
     while (changed.values.toList.contains(true)) {
       val taskResultsPairs = toProcess
@@ -71,7 +75,7 @@ class HeldTaskCompletion(
 
       changed = noneChanged
       taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
-        addCompletedTasksToMainTable(newResults.toList, groupMap, tableEntryHash)
+        addCompletedTasksToMainTable(newResults.toList, groupMap, tableEntryHash, mergedListMap)
         newResults.foreach { case (fingerprint, _) =>
           changed += fingerprint -> true
         }
@@ -143,7 +147,11 @@ class HeldTaskCompletion(
     groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
       TableEntry,
     ]]],
-    tableEntryHash : mutable.HashMap[TableEntry, String]
+    tableEntryHash : mutable.HashMap[TableEntry, String],
+    mergedListMap: mutable.Map[
+      TaskFingerprint,
+      mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
+    ]
   ): Unit = {
     results.groupBy(_._1).foreach { case (fingerprint, resultList) =>
       val entries = resultList.map(_._2)
@@ -165,11 +173,16 @@ class HeldTaskCompletion(
           }
       )
 
+      val groupListMap = mergedListMap.getOrElse(
+        fingerprint,
+        mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]()
+      )
       val mergedGroups = oldGroups ++ newGroups.map { case (k, v) => k -> (v ++ oldGroups.getOrElse(k, List())) }
-      val mergedList   = getListFromGroups(mergedGroups, tableEntryHash)
+      val mergedList   = getListFromGroups(mergedGroups, tableEntryHash, groupListMap)
 
       resultTable.put(fingerprint, mergedList)
       groupMap.update(fingerprint, mergedGroups)
+      mergedListMap.update(fingerprint, groupListMap)
     }
   }
 
@@ -217,19 +230,27 @@ class HeldTaskCompletion(
   }
 
   private def getListFromGroups(groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]],
-                                tableEntryHash : mutable.HashMap[TableEntry, String]): List[TableEntry] = {
-    val mapped = groups.map { case (_, list) =>
+                                tableEntryHash : mutable.HashMap[TableEntry, String],
+                                groupListMap: mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
+                               ): List[TableEntry] = {
+    val mapped = groups.map { case (key, list) =>
+      val tableEntry = groupListMap.getOrElse(key, null)
+      //TODO extra table entries yet to be accounted for
+
+      if (tableEntry != null) {
+        tableEntry
+      } else {
       val maxLenBuf = ListBuffer[(Int, TableEntry)]()
       var maxLen = 0
       var maxLenIndex = 0
 
-      list.foreach(tableEntry => {
-        if (tableEntry.path.length > maxLen) {
-          maxLen = tableEntry.path.length
-          maxLenBuf.addOne( maxLen, tableEntry)
+      list.foreach(t => {
+        if (t.path.length > maxLen) {
+          maxLen = t.path.length
+          maxLenBuf.addOne( maxLen, t)
           maxLenIndex = maxLenBuf.length - 1
-        } else if (tableEntry.path.length == maxLen) {
-          maxLenBuf.addOne(maxLen, tableEntry)
+        } else if (t.path.length == maxLen) {
+          maxLenBuf.addOne(maxLen, t)
         }
       })
 
@@ -239,9 +260,10 @@ class HeldTaskCompletion(
       }).map(_._2)
 
       if (withMaxLength.length == 1) {
+        groupListMap.update(key, withMaxLength.head)
         withMaxLength.head
       } else {
-        withMaxLength.minBy { x =>
+        val tableEntry = withMaxLength.minBy { x =>
           val strForHash = tableEntryHash.getOrElse(x, ({
             val md = MessageDigest.getInstance("SHA-1")
             val strForHash = x.path
@@ -258,6 +280,9 @@ class HeldTaskCompletion(
           tableEntryHash.update(x, strForHash)
           strForHash
         }
+        groupListMap.update(key, tableEntry)
+        tableEntry
+      }
       }
     }
     mapped.toList
