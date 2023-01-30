@@ -40,7 +40,6 @@ class HeldTaskCompletion(
     * created, `changed` is set to true for the result's table entry and `resultsProductByTask` is updated.
     */
   def completeHeldTasks(): Unit = {
-    val tableEntryHash = mutable.HashMap[TableEntry, String]()
     deduplicateResultTable()
     val toProcess =
       heldTasks.distinct.sortBy(x =>
@@ -60,6 +59,7 @@ class HeldTaskCompletion(
       ((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)),
       TableEntry
     ]] = mutable.Map()
+    val tableEntryHash = mutable.HashMap[TableEntry, String]()
 
     while (changed.values.toList.contains(true)) {
       val taskResultsPairs = toProcess
@@ -180,12 +180,17 @@ class HeldTaskCompletion(
         fingerprint,
         mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]()
       )
-      val mergedGroups = oldGroups ++ newGroups.map { case (k, v) => k -> ({
-        val old = oldGroups.getOrElse(k, List())
-        //println(s"Old list length: ${old.length} New list length: ${v.length}")
-        v ++ old
-      }) }
-      val mergedList   = getListFromGroups(mergedGroups, tableEntryHash, groupListMap)
+      val mergedGroups = oldGroups ++ newGroups.map { case (k, v) =>
+        k -> ({
+          val old = oldGroups.getOrElse(k, List())
+          val maxLen = groupListMap.get(k) match {
+            case Some(tableEntry: TableEntry) => tableEntry.path.length
+            case None                         => 0
+          }
+          old ++ v.filterNot(x => { x.path.length < maxLen })
+        })
+      }
+      val mergedList = getListFromGroups(mergedGroups, tableEntryHash, groupListMap)
 
       resultTable.put(fingerprint, mergedList)
       groupMap.update(fingerprint, mergedGroups)
