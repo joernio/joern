@@ -121,16 +121,19 @@ class HeldTaskCompletion(
           .indexOf((parentTask.sink, parentTask.callSiteStack)) + 1
         val initialPathOnlyUpToSink = initialPath.slice(0, stopIndex)
         val newPath                 = result.path ++ initialPathOnlyUpToSink
-        val md = MessageDigest.getInstance("SHA-1")
+        val md                      = MessageDigest.getInstance("SHA-1")
         newPath
-          .foreach(x => (md.update(x.node.id.toByte),
-            x.callSiteStack.foreach(x => {
-              md.update(x.id().toByte)
-            }),
-            md.update(x.visible.hashCode().toByte),
-            md.update(x.isOutputArg.hashCode().toByte),
-            md.update(x.outEdgeLabel.hashCode.toByte)
-          ))
+          .foreach(x =>
+            (
+              md.update(x.node.id.toByte),
+              x.callSiteStack.foreach(x => {
+                md.update(x.id().toByte)
+              }),
+              md.update(x.visible.hashCode().toByte),
+              md.update(x.isOutputArg.hashCode().toByte),
+              md.update(x.outEdgeLabel.hashCode.toByte)
+            )
+          )
         val hash = md.digest().toString
         (parentTask, TableEntry(newPath))
       }
@@ -147,7 +150,7 @@ class HeldTaskCompletion(
     groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
       TableEntry,
     ]]],
-    tableEntryHash : mutable.HashMap[TableEntry, String],
+    tableEntryHash: mutable.HashMap[TableEntry, String],
     mergedListMap: mutable.Map[
       TaskFingerprint,
       mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
@@ -229,64 +232,70 @@ class HeldTaskCompletion(
       .toList
   }
 
-  private def getListFromGroups(groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]],
-                                tableEntryHash : mutable.HashMap[TableEntry, String],
-                                groupListMap: mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
-                               ): List[TableEntry] = {
+  private def getListFromGroups(
+    groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]],
+    tableEntryHash: mutable.HashMap[TableEntry, String],
+    groupListMap: mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
+  ): List[TableEntry] = {
     val mapped = groups.map { case (key, list) =>
       val tableEntry = groupListMap.getOrElse(key, null)
-      //TODO extra table entries yet to be accounted for
+      // TODO extra table entries yet to be accounted for
 
       if (tableEntry != null) {
         tableEntry
       } else {
-      val maxLenBuf = ListBuffer[(Int, TableEntry)]()
-      var maxLen = 0
-      var maxLenIndex = 0
+        val maxLenBuf   = ListBuffer[(Int, TableEntry)]()
+        var maxLen      = 0
+        var maxLenIndex = 0
 
-      list.foreach(t => {
-        if (t.path.length > maxLen) {
-          maxLen = t.path.length
-          maxLenBuf.addOne( maxLen, t)
-          maxLenIndex = maxLenBuf.length - 1
-        } else if (t.path.length == maxLen) {
-          maxLenBuf.addOne(maxLen, t)
+        list.foreach(t => {
+          if (t.path.length > maxLen) {
+            maxLen = t.path.length
+            maxLenBuf.addOne(maxLen, t)
+            maxLenIndex = maxLenBuf.length - 1
+          } else if (t.path.length == maxLen) {
+            maxLenBuf.addOne(maxLen, t)
+          }
+        })
+
+        val withMaxLength = (maxLenBuf.slice(maxLenIndex, maxLenBuf.length).toList match {
+          case Nil    => Nil
+          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
+        }).map(_._2)
+
+        if (withMaxLength.length == 1) {
+          groupListMap.update(key, withMaxLength.head)
+          withMaxLength.head
+        } else {
+          val tableEntry = withMaxLength.minBy { x =>
+            val sha1Hash = tableEntryHash.getOrElse(
+              x,
+              ({
+                val md = MessageDigest.getInstance("SHA-1")
+                x.path
+                  .foreach(x =>
+                    (
+                      md.update(x.node.id.toByte),
+                      x.callSiteStack.foreach(x => {
+                        md.update(x.id().toByte)
+                      }),
+                      md.update(x.visible.toString.getBytes(StandardCharsets.UTF_8)),
+                      md.update(x.isOutputArg.toString.getBytes(StandardCharsets.UTF_8)),
+                      md.update(x.outEdgeLabel.getBytes(StandardCharsets.UTF_8))
+                    )
+                  )
+                md.digest().toString
+              })
+            )
+            tableEntryHash.update(x, sha1Hash)
+            sha1Hash
+          }
+          groupListMap.update(key, tableEntry)
+          tableEntry
         }
-      })
-
-      val withMaxLength = (maxLenBuf.slice(maxLenIndex, maxLenBuf.length).toList match {
-        case Nil => Nil
-        case h :: t => h :: t.takeWhile(y => y._1 == h._1)
-      }).map(_._2)
-
-      if (withMaxLength.length == 1) {
-        groupListMap.update(key, withMaxLength.head)
-        withMaxLength.head
-      } else {
-        val tableEntry = withMaxLength.minBy { x =>
-          val sha1Hash = tableEntryHash.getOrElse(x, ({
-            val md = MessageDigest.getInstance("SHA-1")
-            x.path
-              .foreach(x => (md.update(x.node.id.toByte),
-                x.callSiteStack.foreach(x => {
-                  md.update(x.id().toByte)
-                }),
-                md.update(x.visible.toString.getBytes(StandardCharsets.UTF_8)),
-                md.update(x.isOutputArg.toString.getBytes(StandardCharsets.UTF_8)),
-                md.update(x.outEdgeLabel.getBytes(StandardCharsets.UTF_8)))
-              )
-            md.digest().toString
-        }))
-          tableEntryHash.update(x, sha1Hash)
-          sha1Hash
-        }
-        groupListMap.update(key, tableEntry)
-        tableEntry
-      }
       }
     }
     mapped.toList
   }
-
 
 }
