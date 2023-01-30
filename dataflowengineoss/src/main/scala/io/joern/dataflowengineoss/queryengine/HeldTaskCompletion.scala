@@ -181,7 +181,7 @@ class HeldTaskCompletion(
                 newMaxLen = x.path.length
               }
             })
-            val element = gtMax.filter(x => x.path.length == newMaxLen).sortWith( compareTableEntries ).head
+            val element = gtMax.filter(x => x.path.length == newMaxLen).minBy(computePriority)
             List(element)
           } else if (gtOrEqualMax == 0) {
             // new list contains all elements with paths less than the max. retain old list elements only
@@ -190,7 +190,7 @@ class HeldTaskCompletion(
             // new list contains all elements with paths less than or equal to the max but not exceeding it.
             // append new list elements that are equal to max
             groupListMap.remove(k)
-            val element = (old ++ gtOrEqualMax.filter(x => x.path.length == maxLen)).sortWith( compareTableEntries ).head
+            val element = (old ++ gtOrEqualMax.filter(x => x.path.length == maxLen)).minBy(computePriority)
             List(element)
           }
         }
@@ -261,37 +261,17 @@ class HeldTaskCompletion(
     mapped.toList
   }
 
-  private def compareTableEntries( entry1: TableEntry, entry2: TableEntry): Boolean = {
-    if(entry1.path.length != entry2.path.length){
-      return entry1.path.length < entry2.path.length
-    }
+  private def computePriority(entry: TableEntry): BigInt = {
+    var priority : BigInt = entry.path.length
+    val multiplier: BigInt = 131072 //2^17
 
-    val paths = entry1.path zip entry2.path
-
-    paths.foreach( x =>{
-      val left = x._1
-      val right = x._2
-
-      if( left.callSiteStack.length != right.callSiteStack.length){
-        return left.callSiteStack.length < right.callSiteStack.length
-      }
-
-      if( left.node.id() != right.node.id()){
-        return left.node.id() < right.node.id()
-      }
-
-      if( left.isOutputArg != right.isOutputArg){
-        return left.isOutputArg
-      }
-
-      if(left.visible != right.visible){
-        return left.visible
-      }
+    entry.path.foreach( element => {
+      priority = priority + element.callSiteStack.length*multiplier
+      priority = priority + element.node.id()*multiplier*64
+      priority = priority + element.isOutputArg.hashCode()*multiplier*64
+      priority = priority + element.visible.hashCode()*multiplier*64
     })
-
-    //TODO remove this
-    println("Returned default false because the comparison was not god enoough")
-    false
+    priority
   }
 
 }
