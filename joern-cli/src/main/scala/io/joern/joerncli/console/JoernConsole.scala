@@ -72,9 +72,8 @@ object JoernConsole {
   def runScriptTest(scriptName: String, params: Map[String, String], cpg: Cpg): Any = {
     class TempConsole(workspaceDir: String) extends JoernConsole {
       override def context: EngineContext = EngineContext()
-      override val config = new ConsoleConfig(
-        install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir))
-      )
+      override val config =
+        new ConsoleConfig(install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir)))
     }
     val workspaceDir = File.newTemporaryDirectory("console")
     try {
