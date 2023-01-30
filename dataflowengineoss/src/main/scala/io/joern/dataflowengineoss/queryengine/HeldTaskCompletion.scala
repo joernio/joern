@@ -180,7 +180,11 @@ class HeldTaskCompletion(
         fingerprint,
         mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]()
       )
-      val mergedGroups = oldGroups ++ newGroups.map { case (k, v) => k -> (v ++ oldGroups.getOrElse(k, List())) }
+      val mergedGroups = oldGroups ++ newGroups.map { case (k, v) => k -> ({
+        val old = oldGroups.getOrElse(k, List())
+        //println(s"Old list length: ${old.length} New list length: ${v.length}")
+        v ++ old
+      }) }
       val mergedList   = getListFromGroups(mergedGroups, tableEntryHash, groupListMap)
 
       resultTable.put(fingerprint, mergedList)
