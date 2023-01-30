@@ -181,14 +181,27 @@ class HeldTaskCompletion(
         mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]()
       )
       val mergedGroups = oldGroups ++ newGroups.map { case (k, v) =>
-        k -> ({
+        k -> {
           val old = oldGroups.getOrElse(k, List())
           val maxLen = groupListMap.get(k) match {
             case Some(tableEntry: TableEntry) => tableEntry.path.length
             case None                         => 0
           }
-          old ++ v.filterNot(x => { x.path.length < maxLen })
-        })
+          val gtOrEqualMax = v.filter(x => x.path.length >= maxLen)
+          val gtMax        = gtOrEqualMax.filter(x => x.path.length > maxLen)
+
+          if (gtMax.length > 0) {
+            // new list contains elements with paths exceeding the max. retain new list elements only
+            gtMax
+          } else if (gtOrEqualMax == 0) {
+            // new list contains all elements with paths less than the max. retain old list elements only
+            old
+          } else {
+            // new list contains all elements with paths less than or equal to the max but not exeeding it.
+            // append new list elements that are equal to max
+            old ++ gtOrEqualMax.filter(x => x.path.length == maxLen)
+          }
+        }
       }
       val mergedList = getListFromGroups(mergedGroups, tableEntryHash, groupListMap)
 
