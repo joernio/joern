@@ -264,9 +264,9 @@ class HeldTaskCompletion(
         withMaxLength.head
       } else {
         val tableEntry = withMaxLength.minBy { x =>
-          val strForHash = tableEntryHash.getOrElse(x, ({
+          val sha1Hash = tableEntryHash.getOrElse(x, ({
             val md = MessageDigest.getInstance("SHA-1")
-            val strForHash = x.path
+            x.path
               .foreach(x => (md.update(x.node.id.toByte),
                 x.callSiteStack.foreach(x => {
                   md.update(x.id().toByte)
@@ -277,8 +277,8 @@ class HeldTaskCompletion(
               )
             md.digest().toString
         }))
-          tableEntryHash.update(x, strForHash)
-          strForHash
+          tableEntryHash.update(x, sha1Hash)
+          sha1Hash
         }
         groupListMap.update(key, tableEntry)
         tableEntry
