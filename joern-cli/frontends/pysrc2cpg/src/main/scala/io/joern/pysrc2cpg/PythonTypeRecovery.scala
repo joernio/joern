@@ -165,6 +165,17 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
         // This is likely external and we will ignore the init variant to be consistent
         symbolTable.put(k, symbolTable(k).filterNot(_.contains("__init__.py")))
       }
+
+      // Imports are by default used as calls, a second pass will tell us if this is not the case and we should C
+      // check against global table
+
+      def fieldVar(path: String) = FieldVar(path.stripSuffix(s".${k.identifier}"), k.identifier)
+
+      symbolTable.get(k).headOption match {
+        case Some(path) if globalTable.contains(fieldVar(path)) =>
+          symbolTable.replaceWith(k, LocalVar(k.identifier), globalTable.get(fieldVar(path)))
+        case _ =>
+      }
     }
   }
 

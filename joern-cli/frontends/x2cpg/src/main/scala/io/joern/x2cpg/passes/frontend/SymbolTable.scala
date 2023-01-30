@@ -4,13 +4,12 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.util.Objects
 import scala.collection.MapView
 import scala.collection.concurrent.TrieMap
 
 /** Represents an identifier of some AST node at a specific scope.
   */
-abstract class SBKey {
+abstract class SBKey(val identifier: String) {
 
   /** Convenience methods to convert a node to a [[SBKey]].
     *
@@ -48,21 +47,21 @@ object SBKey {
 
 /** Represents an identifier of some AST node at an intraprocedural scope.
   */
-sealed class LocalKey extends SBKey {
+sealed class LocalKey(identifier: String) extends SBKey(identifier) {
   override def fromNode(node: AstNode): SBKey = SBKey.fromNodeToLocalKey(node)
 }
 
 /** A variable that holds data within an intraprocedural scope.
   */
-case class LocalVar(identifier: String) extends LocalKey
+case class LocalVar(override val identifier: String) extends LocalKey(identifier)
 
 /** A name that refers to some kind of callee.
   */
-case class CallAlias(identifier: String) extends LocalKey
+case class CallAlias(override val identifier: String) extends LocalKey(identifier)
 
 /** Represents an identifier of some AST node at an interprocedural scope.
   */
-sealed class GlobalKey extends SBKey {
+sealed class GlobalKey(identifier: String) extends SBKey(identifier) {
   override def fromNode(node: AstNode): SBKey = SBKey.fromNodeToGlobalKey(node)
 }
 
@@ -72,7 +71,7 @@ sealed class GlobalKey extends SBKey {
   * @param identifier
   *   the canonical name.
   */
-case class FieldVar(compUnitFullName: String, identifier: String) extends GlobalKey
+case class FieldVar(compUnitFullName: String, override val identifier: String) extends GlobalKey(identifier)
 
 /** A thread-safe symbol table that can represent multiple types per symbol. Each node in an AST gets converted to an
   * [[SBKey]] which gives contextual information to identify an AST entity. Each value in this table represents a set of
@@ -91,6 +90,11 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => K) {
 
   def from(sb: IterableOnce[(K, Set[String])]): SymbolTable[K] = {
     table.addAll(sb); this
+  }
+
+  def replaceWith(oldKey: K, newKey: K, newValues: Set[String]): Option[Set[String]] = {
+    table.remove(oldKey)
+    table.put(newKey, newValues)
   }
 
   def put(sbKey: K, typeFullNames: Set[String]): Option[Set[String]] =
