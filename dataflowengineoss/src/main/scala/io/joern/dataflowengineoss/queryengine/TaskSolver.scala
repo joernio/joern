@@ -51,19 +51,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       val pathToSink = r.path.slice(0, r.path.map(_.node).indexOf(parentTask.sink))
       val newPath    = pathToSink :+ PathElement(parentTask.sink, parentTask.callSiteStack)
 
-      val md = MessageDigest.getInstance("SHA-1")
-      newPath
-        .foreach(x => (md.update(x.node.id.toByte),
-          x.callSiteStack.foreach(x => {
-            md.update(x.id().toByte)
-          }),
-          md.update(x.visible.hashCode().toByte),
-          md.update(x.isOutputArg.hashCode().toByte),
-          md.update(x.outEdgeLabel.hashCode.toByte)
-        ))
-        val hash = md.digest().toString
-
-      (parentTask, TableEntry(path = newPath, uniqueHash = hash))
+      (parentTask, TableEntry(path = newPath))
     }.toList
   }
 

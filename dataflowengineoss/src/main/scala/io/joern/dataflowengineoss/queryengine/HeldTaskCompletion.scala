@@ -2,6 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -39,7 +40,7 @@ class HeldTaskCompletion(
     * created, `changed` is set to true for the result's table entry and `resultsProductByTask` is updated.
     */
   def completeHeldTasks(): Unit = {
-
+    val tableEntryHash = mutable.HashMap[TableEntry, String]()
     deduplicateResultTable()
     val toProcess =
       heldTasks.distinct.sortBy(x =>
@@ -70,7 +71,7 @@ class HeldTaskCompletion(
 
       changed = noneChanged
       taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
-        addCompletedTasksToMainTable(newResults.toList, groupMap)
+        addCompletedTasksToMainTable(newResults.toList, groupMap, tableEntryHash)
         newResults.foreach { case (fingerprint, _) =>
           changed += fingerprint -> true
         }
@@ -127,7 +128,7 @@ class HeldTaskCompletion(
             md.update(x.outEdgeLabel.hashCode.toByte)
           ))
         val hash = md.digest().toString
-        (parentTask, TableEntry(newPath, hash))
+        (parentTask, TableEntry(newPath))
       }
       .filter { case (_, tableEntry) => containsCycle(tableEntry) }
   }
@@ -140,8 +141,9 @@ class HeldTaskCompletion(
   private def addCompletedTasksToMainTable(
     results: List[(TaskFingerprint, TableEntry)],
     groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
-      TableEntry
-    ]]]
+      TableEntry,
+    ]]],
+    tableEntryHash : mutable.HashMap[TableEntry, String]
   ): Unit = {
     results.groupBy(_._1).foreach { case (fingerprint, resultList) =>
       val entries = resultList.map(_._2)
@@ -164,7 +166,7 @@ class HeldTaskCompletion(
       )
 
       val mergedGroups = oldGroups ++ newGroups.map { case (k, v) => k -> (v ++ oldGroups.getOrElse(k, List())) }
-      val mergedList   = getListFromGroups(mergedGroups)
+      val mergedList   = getListFromGroups(mergedGroups, tableEntryHash)
 
       resultTable.put(fingerprint, mergedList)
       groupMap.update(fingerprint, mergedGroups)
@@ -205,14 +207,17 @@ class HeldTaskCompletion(
           withMaxLength.head
         } else {
           withMaxLength.minBy { x =>
-            x.uniqueHash
+            x.path
+              .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+              .mkString("-")
           }
         }
       }
       .toList
   }
 
-  private def getListFromGroups(groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]]): List[TableEntry] = {
+  private def getListFromGroups(groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]],
+                                tableEntryHash : mutable.HashMap[TableEntry, String]): List[TableEntry] = {
     val mapped = groups.map { case (_, list) =>
       val maxLenBuf = ListBuffer[(Int, TableEntry)]()
       var maxLen = 0
@@ -237,7 +242,21 @@ class HeldTaskCompletion(
         withMaxLength.head
       } else {
         withMaxLength.minBy { x =>
-          x.uniqueHash
+          val strForHash = tableEntryHash.getOrElse(x, ({
+            val md = MessageDigest.getInstance("SHA-1")
+            val strForHash = x.path
+              .foreach(x => (md.update(x.node.id.toByte),
+                x.callSiteStack.foreach(x => {
+                  md.update(x.id().toByte)
+                }),
+                md.update(x.visible.toString.getBytes(StandardCharsets.UTF_8)),
+                md.update(x.isOutputArg.toString.getBytes(StandardCharsets.UTF_8)),
+                md.update(x.outEdgeLabel.getBytes(StandardCharsets.UTF_8)))
+              )
+            md.digest().toString
+        }))
+          tableEntryHash.update(x, strForHash)
+          strForHash
         }
       }
     }
