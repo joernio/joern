@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.collection.parallel.CollectionConverters._
 import scala.language.postfixOps
 
@@ -192,13 +191,22 @@ class HeldTaskCompletion(
 
           if (gtMax.length > 0) {
             // new list contains elements with paths exceeding the max. retain new list elements only
-            gtMax
+            // that have max length
+            groupListMap.remove(k)
+            var newMaxLen = maxLen
+            gtMax.foreach(x => {
+              if (x.path.length > newMaxLen) {
+                newMaxLen = x.path.length
+              }
+            })
+            gtMax.filter(x => x.path.length == newMaxLen)
           } else if (gtOrEqualMax == 0) {
             // new list contains all elements with paths less than the max. retain old list elements only
             old
           } else {
-            // new list contains all elements with paths less than or equal to the max but not exeeding it.
+            // new list contains all elements with paths less than or equal to the max but not exceeding it.
             // append new list elements that are equal to max
+            groupListMap.remove(k)
             old ++ gtOrEqualMax.filter(x => x.path.length == maxLen)
           }
         }
@@ -261,35 +269,15 @@ class HeldTaskCompletion(
   ): List[TableEntry] = {
     val mapped = groups.map { case (key, list) =>
       val tableEntry = groupListMap.getOrElse(key, null)
-      // TODO extra table entries yet to be accounted for
-
       if (tableEntry != null) {
         tableEntry
       } else {
-        val maxLenBuf   = ListBuffer[(Int, TableEntry)]()
-        var maxLen      = 0
-        var maxLenIndex = 0
-
-        list.foreach(t => {
-          if (t.path.length > maxLen) {
-            maxLen = t.path.length
-            maxLenBuf.addOne(maxLen, t)
-            maxLenIndex = maxLenBuf.length - 1
-          } else if (t.path.length == maxLen) {
-            maxLenBuf.addOne(maxLen, t)
-          }
-        })
-
-        val withMaxLength = (maxLenBuf.slice(maxLenIndex, maxLenBuf.length).toList match {
-          case Nil    => Nil
-          case h :: t => h :: t.takeWhile(y => y._1 == h._1)
-        }).map(_._2)
-
-        if (withMaxLength.length == 1) {
-          groupListMap.update(key, withMaxLength.head)
-          withMaxLength.head
+        if (list.length == 1) {
+          groupListMap.update(key, list.head)
+          list.head
         } else {
-          val tableEntry = withMaxLength.minBy { x =>
+          // println(s"Computing hashes of ${list.length} elements")
+          val tableEntry = list.minBy { x =>
             getSHA1Hash(x, tableEntryHash)
           }
           groupListMap.update(key, tableEntry)
@@ -301,10 +289,11 @@ class HeldTaskCompletion(
   }
 
   private def getSHA1Hash(tableEntry: TableEntry, tableEntryHash: mutable.HashMap[TableEntry, String]): String = {
-    tableEntryHash.getOrElse(
-      tableEntry,
-      ({
-        val md = MessageDigest.getInstance("SHA-1")
+    val sha1Hash = tableEntryHash.get(tableEntry) match {
+      case Some(sha1Hash) =>
+        sha1Hash
+      case None =>
+        val md = MessageDigest.getInstance("MD5")
         tableEntry.path
           .foreach(x =>
             (
@@ -318,8 +307,8 @@ class HeldTaskCompletion(
             )
           )
         md.digest().toString
-      })
-    )
+    }
+    sha1Hash
   }
 
 }
