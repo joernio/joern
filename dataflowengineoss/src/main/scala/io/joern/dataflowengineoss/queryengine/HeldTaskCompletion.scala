@@ -268,27 +268,7 @@ class HeldTaskCompletion(
           withMaxLength.head
         } else {
           val tableEntry = withMaxLength.minBy { x =>
-            val sha1Hash = tableEntryHash.getOrElse(
-              x,
-              ({
-                val md = MessageDigest.getInstance("SHA-1")
-                x.path
-                  .foreach(x =>
-                    (
-                      md.update(x.node.id.toByte),
-                      x.callSiteStack.foreach(x => {
-                        md.update(x.id().toByte)
-                      }),
-                      md.update(x.visible.toString.getBytes(StandardCharsets.UTF_8)),
-                      md.update(x.isOutputArg.toString.getBytes(StandardCharsets.UTF_8)),
-                      md.update(x.outEdgeLabel.getBytes(StandardCharsets.UTF_8))
-                    )
-                  )
-                md.digest().toString
-              })
-            )
-            tableEntryHash.update(x, sha1Hash)
-            sha1Hash
+            getSHA1Hash(x, tableEntryHash)
           }
           groupListMap.update(key, tableEntry)
           tableEntry
@@ -296,6 +276,28 @@ class HeldTaskCompletion(
       }
     }
     mapped.toList
+  }
+
+  private def getSHA1Hash(tableEntry: TableEntry, tableEntryHash: mutable.HashMap[TableEntry, String]): String = {
+    tableEntryHash.getOrElse(
+      tableEntry,
+      ({
+        val md = MessageDigest.getInstance("SHA-1")
+        tableEntry.path
+          .foreach(x =>
+            (
+              md.update(x.node.id.toByte),
+              x.callSiteStack.foreach(x => {
+                md.update(x.id().toByte)
+              }),
+              md.update(x.visible.toString.getBytes(StandardCharsets.UTF_8)),
+              md.update(x.isOutputArg.toString.getBytes(StandardCharsets.UTF_8)),
+              md.update(x.outEdgeLabel.getBytes(StandardCharsets.UTF_8))
+            )
+          )
+        md.digest().toString
+      })
+    )
   }
 
 }
