@@ -7,6 +7,28 @@ import io.shiftleft.semanticcpg.language._
 
 class TSTypesTest extends AbstractPassTest {
 
+  "have correct dynamicTypeHint for this without proper surrounding type" in AstFixture(
+    "exports.isAuthorized = function() { this.publicKey }",
+    tsTypes = true
+  ) { cpg =>
+    val List(t) = cpg.identifier("this").l
+    t.typeFullName shouldBe Defines.Any
+    t.dynamicTypeHintFullName shouldBe List()
+  }
+
+  "have correct types for this with proper surrounding type" in AstFixture(
+    """
+      |class Foo {
+      |  publicKey: string = ""
+      |  isAuthorized() { return () => { return this.publicKey } }
+      |}
+      |""".stripMargin,
+    tsTypes = true
+  ) { cpg =>
+    val List(t) = cpg.identifier("this").l
+    t.dynamicTypeHintFullName shouldBe List("code.js::program:Foo")
+  }
+
   "have correct types for empty method with rest parameter" in AstFixture(
     "function method(x, ...args) {}",
     tsTypes = true
