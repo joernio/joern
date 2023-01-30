@@ -175,12 +175,15 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column)
   }
 
-  protected def createMemberNode(name: String, code: String, dynamicTypeOption: Option[String]): NewMember =
+  protected def createMemberNode(name: String, node: BabelNodeInfo, dynamicTypeOption: Option[String]): NewMember = {
+    val tpe  = typeFor(node)
+    val code = node.code
     NewMember()
       .code(code)
       .name(name)
-      .typeFullName(Defines.Any)
+      .typeFullName(tpe)
       .dynamicTypeHintFullName(dynamicTypeOption.toList)
+  }
 
   protected def createMethodNode(methodName: String, methodFullName: String, func: BabelNodeInfo): NewMethod = {
     val line      = func.lineNumber
