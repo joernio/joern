@@ -1,5 +1,6 @@
 import scala.sys.process.stringToProcess
 import scala.util.Try
+import versionsort.VersionHelper
 import com.typesafe.config.{Config, ConfigFactory}
 
 name               := "jssrc2cpg"
@@ -23,6 +24,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"               %% "upickle"           % "2.0.0",
   "com.fasterxml.jackson.core" % "jackson-databind"  % "2.14.1",
   "com.typesafe"               % "config"            % "1.4.2",
+  "com.michaelpollmeier"       % "versionsort"       % "1.0.11",
   "org.apache.logging.log4j"   % "log4j-slf4j2-impl" % Versions.log4j     % Runtime,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
 )
@@ -86,9 +88,16 @@ lazy val AstgenMacArm = "astgen-macos-arm"
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/astgen/releases/download/v${astGenVersion.value}/"
 
+def hasCompatibleAstgenVersion(astGenVersion: String): Boolean = {
+  Try("astgen --version".!!).toOption.map(_.strip()) match {
+    case Some(installedVersion) => VersionHelper.compare(installedVersion, astGenVersion) >= 0
+    case None                   => false
+  }
+}
+
 lazy val astGenBinaryNames = taskKey[Seq[String]]("astgen binary names")
 astGenBinaryNames := {
-  if (Try("astgen --version".!!).toOption.exists(_.strip() == astGenVersion.value)) {
+  if (hasCompatibleAstgenVersion(astGenVersion.value)) {
     Seq.empty
   } else if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
     Seq(AstgenWin, AstgenLinux, AstgenMac, AstgenMacArm)

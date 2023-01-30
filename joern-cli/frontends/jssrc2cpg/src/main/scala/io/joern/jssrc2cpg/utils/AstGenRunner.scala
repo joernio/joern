@@ -8,6 +8,7 @@ import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
+import versionsort.VersionHelper
 
 import java.nio.file.Paths
 import scala.util.Failure
@@ -54,20 +55,27 @@ object AstGenRunner {
     Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
   }
 
+  private def hasCompatibleAstgenVersion(astGenVersion: String): Boolean = {
+    Try("astgen --version".!!).toOption.map(_.strip()) match {
+      case Some(installedVersion) if VersionHelper.compare(installedVersion, astGenVersion) >= 0 =>
+        logger.debug(s"Using local astgen v$installedVersion from systems PATH")
+        true
+      case Some(installedVersion) =>
+        logger.debug(
+          s"Found local astgen v$installedVersion in systems PATH but jssrc2cpg requires at least v$astGenVersion"
+        )
+        false
+      case _ => false
+    }
+  }
+
   private lazy val AstgenCommand = {
     val conf          = ConfigFactory.load
     val astGenVersion = conf.getString("jssrc2cpg.astgen_version")
-    Try("astgen --version".!!).toOption match {
-      case Some(version) =>
-        val sVersion = version.strip()
-        if (sVersion == astGenVersion) {
-          logger.debug(s"Using local astgen v$sVersion from systems PATH")
-          "astgen"
-        } else {
-          logger.debug(s"Found local astgen v$sVersion in systems PATH but jssrc2cpg requires v$astGenVersion")
-          s"$ExecutableDir/$ExecutableName"
-        }
-      case None => s"$ExecutableDir/$ExecutableName"
+    if (hasCompatibleAstgenVersion(astGenVersion)) {
+      "astgen"
+    } else {
+      s"$ExecutableDir/$ExecutableName"
     }
   }
 }
