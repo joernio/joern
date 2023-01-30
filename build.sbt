@@ -40,7 +40,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
 )
 
 ThisBuild / libraryDependencies +=
-  "org.apache.logging.log4j" % "log4j-slf4j-impl" % Versions.log4j % Test
+  "org.apache.logging.log4j" % "log4j-slf4j2-impl" % Versions.log4j % Test
 
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
