@@ -2,8 +2,6 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 
-import java.nio.charset.StandardCharsets
-import java.security.MessageDigest
 import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters._
 import scala.language.postfixOps
@@ -58,7 +56,6 @@ class HeldTaskCompletion(
       ((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)),
       TableEntry
     ]] = mutable.Map()
-    val tableEntryHash = mutable.HashMap[TableEntry, String]()
 
     while (changed.values.toList.contains(true)) {
       val taskResultsPairs = toProcess
@@ -74,7 +71,7 @@ class HeldTaskCompletion(
 
       changed = noneChanged
       taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
-        addCompletedTasksToMainTable(newResults.toList, groupMap, tableEntryHash, mergedListMap)
+        addCompletedTasksToMainTable(newResults.toList, groupMap, mergedListMap)
         newResults.foreach { case (fingerprint, _) =>
           changed += fingerprint -> true
         }
@@ -120,20 +117,6 @@ class HeldTaskCompletion(
           .indexOf((parentTask.sink, parentTask.callSiteStack)) + 1
         val initialPathOnlyUpToSink = initialPath.slice(0, stopIndex)
         val newPath                 = result.path ++ initialPathOnlyUpToSink
-        val md                      = MessageDigest.getInstance("SHA-1")
-        newPath
-          .foreach(x =>
-            (
-              md.update(x.node.id.toByte),
-              x.callSiteStack.foreach(x => {
-                md.update(x.id().toByte)
-              }),
-              md.update(x.visible.hashCode().toByte),
-              md.update(x.isOutputArg.hashCode().toByte),
-              md.update(x.outEdgeLabel.hashCode.toByte)
-            )
-          )
-        val hash = md.digest().toString
         (parentTask, TableEntry(newPath))
       }
       .filter { case (_, tableEntry) => containsCycle(tableEntry) }
@@ -149,7 +132,6 @@ class HeldTaskCompletion(
     groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
       TableEntry,
     ]]],
-    tableEntryHash: mutable.HashMap[TableEntry, String],
     mergedListMap: mutable.Map[
       TaskFingerprint,
       mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
@@ -199,7 +181,8 @@ class HeldTaskCompletion(
                 newMaxLen = x.path.length
               }
             })
-            gtMax.filter(x => x.path.length == newMaxLen)
+            val element = gtMax.filter(x => x.path.length == newMaxLen).sortWith( compareTableEntries ).head
+            List(element)
           } else if (gtOrEqualMax == 0) {
             // new list contains all elements with paths less than the max. retain old list elements only
             old
@@ -207,11 +190,12 @@ class HeldTaskCompletion(
             // new list contains all elements with paths less than or equal to the max but not exceeding it.
             // append new list elements that are equal to max
             groupListMap.remove(k)
-            old ++ gtOrEqualMax.filter(x => x.path.length == maxLen)
+            val element = (old ++ gtOrEqualMax.filter(x => x.path.length == maxLen)).sortWith( compareTableEntries ).head
+            List(element)
           }
         }
       }
-      val mergedList = getListFromGroups(mergedGroups, tableEntryHash, groupListMap)
+      val mergedList = getListFromGroups(mergedGroups, groupListMap)
 
       resultTable.put(fingerprint, mergedList)
       groupMap.update(fingerprint, mergedGroups)
@@ -264,7 +248,6 @@ class HeldTaskCompletion(
 
   private def getListFromGroups(
     groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]],
-    tableEntryHash: mutable.HashMap[TableEntry, String],
     groupListMap: mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
   ): List[TableEntry] = {
     val mapped = groups.map { case (key, list) =>
@@ -272,43 +255,43 @@ class HeldTaskCompletion(
       if (tableEntry != null) {
         tableEntry
       } else {
-        if (list.length == 1) {
-          groupListMap.update(key, list.head)
-          list.head
-        } else {
-          // println(s"Computing hashes of ${list.length} elements")
-          val tableEntry = list.minBy { x =>
-            getSHA1Hash(x, tableEntryHash)
-          }
-          groupListMap.update(key, tableEntry)
-          tableEntry
-        }
+        list.head
       }
     }
     mapped.toList
   }
 
-  private def getSHA1Hash(tableEntry: TableEntry, tableEntryHash: mutable.HashMap[TableEntry, String]): String = {
-    val sha1Hash = tableEntryHash.get(tableEntry) match {
-      case Some(sha1Hash) =>
-        sha1Hash
-      case None =>
-        val md = MessageDigest.getInstance("MD5")
-        tableEntry.path
-          .foreach(x =>
-            (
-              md.update(x.node.id.toByte),
-              x.callSiteStack.foreach(x => {
-                md.update(x.id().toByte)
-              }),
-              md.update(x.visible.toString.getBytes(StandardCharsets.UTF_8)),
-              md.update(x.isOutputArg.toString.getBytes(StandardCharsets.UTF_8)),
-              md.update(x.outEdgeLabel.getBytes(StandardCharsets.UTF_8))
-            )
-          )
-        md.digest().toString
+  private def compareTableEntries( entry1: TableEntry, entry2: TableEntry): Boolean = {
+    if(entry1.path.length != entry2.path.length){
+      return entry1.path.length < entry2.path.length
     }
-    sha1Hash
+
+    val paths = entry1.path zip entry2.path
+
+    paths.foreach( x =>{
+      val left = x._1
+      val right = x._2
+
+      if( left.callSiteStack.length != right.callSiteStack.length){
+        return left.callSiteStack.length < right.callSiteStack.length
+      }
+
+      if( left.node.id() != right.node.id()){
+        return left.node.id() < right.node.id()
+      }
+
+      if( left.isOutputArg != right.isOutputArg){
+        return left.isOutputArg
+      }
+
+      if(left.visible != right.visible){
+        return left.visible
+      }
+    })
+
+    //TODO remove this
+    println("Returned default false because the comparison was not god enoough")
+    false
   }
 
 }
