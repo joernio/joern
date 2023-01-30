@@ -13,7 +13,7 @@ class MethodReturnTests extends CCodeToCpgSuite {
 
     "should have METHOD_RETURN node with correct fields" in {
       val List(x, _) = cpg.methodReturn.l
-      x.code shouldBe "int*"
+      x.code shouldBe "RET"
       x.typeFullName shouldBe "int*"
       x.lineNumber shouldBe Option(2)
       x.columnNumber shouldBe Option(2)
@@ -42,7 +42,7 @@ class MethodReturnTests extends CCodeToCpgSuite {
     "be correct for multiple returns" in {
       // synthetic method returns; these do not represent the actual return statements from C/C++!
       inside(cpg.method("main").methodReturn.l) { case List(mainMethodReturn) =>
-        mainMethodReturn.code shouldBe "int"
+        mainMethodReturn.code shouldBe "RET"
         mainMethodReturn.typeFullName shouldBe "int"
       }
       val astReturns  = cpg.method("main").ast.isReturn.l

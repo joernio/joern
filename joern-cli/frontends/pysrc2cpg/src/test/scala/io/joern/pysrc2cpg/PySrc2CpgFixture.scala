@@ -3,8 +3,6 @@ package io.joern.pysrc2cpg
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.passes.frontend.impl.{PythonTypeHintCallLinker, PythonTypeRecovery}
-import io.joern.x2cpg.passes.frontend.PythonNaiveCallLinker
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}

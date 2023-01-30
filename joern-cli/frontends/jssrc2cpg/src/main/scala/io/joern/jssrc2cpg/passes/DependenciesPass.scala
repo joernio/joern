@@ -9,6 +9,8 @@ import io.shiftleft.passes.CpgPass
 
 import java.nio.file.Paths
 
+/** Creation of DEPENDENCY nodes from "package.json" files.
+  */
 class DependenciesPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {

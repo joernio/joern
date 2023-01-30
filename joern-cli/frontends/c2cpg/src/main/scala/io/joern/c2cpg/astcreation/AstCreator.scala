@@ -93,7 +93,7 @@ class AstCreator(
       )
     }
 
-    val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName).code("RET")
+    val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName)
 
     Ast(fakeGlobalTypeDecl).withChild(
       Ast(fakeGlobalMethod)

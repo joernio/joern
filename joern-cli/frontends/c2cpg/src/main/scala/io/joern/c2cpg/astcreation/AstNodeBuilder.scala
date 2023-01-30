@@ -1,5 +1,6 @@
 package io.joern.c2cpg.astcreation
 
+import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTLabelStatement, IASTNode}
