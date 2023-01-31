@@ -138,17 +138,27 @@ class JavascriptCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   private def isArgumentFromExport(c: Call): Boolean =
-    JS_EXPORT_NAMES.contains(c.argument(1).code)
+    c.argument(1).exists(base => JS_EXPORT_NAMES.contains(base.code))
 
-  private def isArgumentFromThis(c: Call): Boolean = {
-    c.argument(1).code == "this" ||
-    // We end up here for calls like "this.x.y.foo()" that are lowered like "(_tmp = this.x.y).foo()"
-    c.argument(1).collectAll[Call].code.headOption.exists(_.contains(" this"))
+  private def isFieldAccessWithThisBase(fieldAccess: Call): Boolean = {
+    fieldAccess.argument(1).code == "this" ||
+    // nested field accesses like "this.x.y.foo()" are lowered like "(_tmp = this.x.y).foo()"
+    // and the constructor call in "new x().y()" has some intermediate block
+    fieldAccess
+      .repeat(
+        _.argument(1)
+          .union(_.isCall.nameExact(Operators.assignment).argument(2), arg => arg)
+          .union(_.isCall, _.isBlock.astChildren.isCall.nameExact("<operator>.new"))
+          .receiver
+          .isCall
+          .nameExact(Operators.fieldAccess)
+      )(_.until(_.argument(1).isIdentifier.nameExact("this")))
+      .nonEmpty
   }
 
   private def fromFieldAccess(c: Call): Option[String] = c.methodFullName match {
-    case Operators.fieldAccess if isArgumentFromExport(c) || isArgumentFromThis(c) => Option(c.argument(2).code)
-    case _                                                                         => None
+    case Operators.fieldAccess if isArgumentFromExport(c) || isFieldAccessWithThisBase(c) => Option(c.argument(2).code)
+    case _                                                                                => None
   }
 
   // Obtain method name for dynamic calls where the receiver is an identifier.
@@ -161,15 +171,7 @@ class JavascriptCallLinker(cpg: Cpg) extends CpgPass(cpg) {
           case _       => None
         }
       case call: Call =>
-        // TODO: remove this if, once we no longer care about compat with CPGs from January 2022 (comma operator is now a block)
-        if (call.methodFullName == "<operator>.commaright") {
-          call.argumentOption(2).flatMap {
-            case c: Call => fromFieldAccess(c)
-            case _       => None
-          }
-        } else {
-          fromFieldAccess(call)
-        }
+        fromFieldAccess(call)
       case _ =>
         None
     }
