@@ -55,7 +55,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           val base   = createBabelNodeInfo(callee.json("object"))
           val member = createBabelNodeInfo(callee.json("property"))
           base.node match {
-            case Identifier =>
+            case Identifier | ThisExpression =>
               val receiverAst = astForNodeWithFunctionReference(callee.json)
               val baseNode    = createIdentifierNode(base.code, base)
               scope.addVariableReference(base.code, baseNode)

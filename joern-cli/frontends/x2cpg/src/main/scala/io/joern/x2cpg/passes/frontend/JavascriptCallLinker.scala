@@ -47,11 +47,11 @@ class JavascriptCallLinker(cpg: Cpg) extends CpgPass(cpg) {
         .argument(1)
         .flatMap {
           case assignee: Identifier if isStaticSingleAssignmentLocal(assignee) && assignee.method.name == ":program" =>
-            Some(assignee.name)
+            Option(assignee.name)
           case assignee: Call
               if assignee.methodFullName == Operators.fieldAccess &&
                 (JS_EXPORT_NAMES.contains(assignee.argument(1).code) || assignee.code.startsWith("_tmp_")) =>
-            Some(assignee.argument(2).asInstanceOf[FieldIdentifier].canonicalName)
+            Option(assignee.argument(2).asInstanceOf[FieldIdentifier].canonicalName)
           case _ => None
         }
         .headOption
@@ -89,7 +89,7 @@ class JavascriptCallLinker(cpg: Cpg) extends CpgPass(cpg) {
             diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
           }
           // If there are more than one call edges then it is unsound to set METHOD_FULL_NAME to something
-          if (callees.size > 1)
+          if (callees.sizeIs > 1)
             diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, "<unknownFullName>")
         } else {
           // Case 3: We look for a definition of the function within the scope of the caller's file
@@ -137,17 +137,24 @@ class JavascriptCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       .flatten
   }
 
-  private def fromFieldAccess(c: Call): Option[String] =
-    if (c.methodFullName == Operators.fieldAccess && JS_EXPORT_NAMES.contains(c.argument(1).code)) {
-      Some(c.argument(2).code)
-    } else {
-      None
-    }
+  private def isArgumentFromExport(c: Call): Boolean =
+    JS_EXPORT_NAMES.contains(c.argument(1).code)
+
+  private def isArgumentFromThis(c: Call): Boolean = {
+    c.argument(1).code == "this" ||
+    // We end up here for calls like "this.x.y.foo()" that are lowered like "(_tmp = this.x.y).foo()"
+    c.argument(1).collectAll[Call].code.headOption.exists(_.contains(" this"))
+  }
+
+  private def fromFieldAccess(c: Call): Option[String] = c.methodFullName match {
+    case Operators.fieldAccess if isArgumentFromExport(c) || isArgumentFromThis(c) => Option(c.argument(2).code)
+    case _                                                                         => None
+  }
 
   // Obtain method name for dynamic calls where the receiver is an identifier.
   private def getReceiverIdentifierName(call: Call): Option[String] = {
     callReceiverOption(call).flatMap {
-      case identifier: Identifier => Some(identifier.name)
+      case identifier: Identifier => Option(identifier.name)
       case block: Block =>
         block.astChildren.lastOption.flatMap {
           case c: Call => fromFieldAccess(c)
