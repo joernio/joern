@@ -255,6 +255,7 @@ class HeldTaskCompletion(
       if (tableEntry != null) {
         tableEntry
       } else {
+        groupListMap.update(key, list.head)
         list.head
       }
     }
