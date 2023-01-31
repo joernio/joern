@@ -52,7 +52,7 @@ class HeldTaskCompletion(
       : mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
         TableEntry
       ]]] = mutable.Map()
-    val mergedListMap: mutable.Map[TaskFingerprint, mutable.Map[
+    val mergedListMap: mutable.Map[TaskFingerprint, mutable.HashMap[
       ((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)),
       TableEntry
     ]] = mutable.Map()
@@ -134,10 +134,10 @@ class HeldTaskCompletion(
     ]]],
     mergedListMap: mutable.Map[
       TaskFingerprint,
-      mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
+      mutable.HashMap[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
     ]
   ): Unit = {
-    results.groupBy(_._1).foreach { case (fingerprint, resultList) =>
+    results.groupBy(_._1).par.foreach { case (fingerprint, resultList) =>
       val entries = resultList.map(_._2)
       val newGroups = entries
         .groupBy { result =>
@@ -159,12 +159,13 @@ class HeldTaskCompletion(
 
       val groupListMap = mergedListMap.getOrElse(
         fingerprint,
-        mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]()
+        mutable.HashMap[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]()
       )
-      val mergedGroups = oldGroups ++ newGroups.map { case (k, v) =>
+      val mergedGroups = oldGroups ++ newGroups.par.map { case (k, v) =>
         k -> {
           val old = oldGroups.getOrElse(k, List())
-          val maxLen = groupListMap.get(k) match {
+          val value = synchronized(groupListMap.get(k))
+          val maxLen = value match {
             case Some(tableEntry: TableEntry) => tableEntry.path.length
             case None                         => 0
           }
@@ -174,14 +175,14 @@ class HeldTaskCompletion(
           if (gtMax.length > 0) {
             // new list contains elements with paths exceeding the max. retain new list elements only
             // that have max length
-            groupListMap.remove(k)
+            synchronized(groupListMap.remove(k))
             var newMaxLen = maxLen
             gtMax.foreach(x => {
               if (x.path.length > newMaxLen) {
                 newMaxLen = x.path.length
               }
             })
-            val element = gtMax.filter(x => x.path.length == newMaxLen).minBy(computePriority)
+            val element = gtMax.filter(x => x.path.length == newMaxLen).par.minBy(computePriority)
             List(element)
           } else if (gtOrEqualMax == 0) {
             // new list contains all elements with paths less than the max. retain old list elements only
@@ -189,8 +190,8 @@ class HeldTaskCompletion(
           } else {
             // new list contains all elements with paths less than or equal to the max but not exceeding it.
             // append new list elements that are equal to max
-            groupListMap.remove(k)
-            val element = (old ++ gtOrEqualMax.filter(x => x.path.length == maxLen)).minBy(computePriority)
+            synchronized(groupListMap.remove(k))
+            val element = (old ++ gtOrEqualMax.par.filter(x => x.path.length == maxLen)).par.minBy(computePriority)
             List(element)
           }
         }
@@ -248,16 +249,11 @@ class HeldTaskCompletion(
 
   private def getListFromGroups(
     groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]],
-    groupListMap: mutable.Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
+    groupListMap: mutable.HashMap[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
   ): List[TableEntry] = {
     val mapped = groups.map { case (key, list) =>
-      val tableEntry = groupListMap.getOrElse(key, null)
-      if (tableEntry != null) {
-        tableEntry
-      } else {
         groupListMap.update(key, list.head)
         list.head
-      }
     }
     mapped.toList
   }
