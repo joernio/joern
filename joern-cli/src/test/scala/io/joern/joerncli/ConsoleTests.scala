@@ -15,9 +15,8 @@ class MyImportCode[T <: Project](console: Console[T]) extends ImportCode(console
 }
 
 class TestJoernConsole(workspaceDir: String) extends JoernConsole {
-  override val config = new ConsoleConfig(
-    install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir))
-  )
+  override val config =
+    new ConsoleConfig(install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir)))
   override val importCode = new MyImportCode(this)
 }
 

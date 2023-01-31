@@ -113,7 +113,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   private def end(node: Value): Option[Int] = Try(node("end").num.toInt).toOption
 
-  protected def pos(node: Value): Option[Int] = Try(Math.max(node("start").num.toInt, 1)).toOption
+  protected def pos(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
 
   protected def line(node: Value): Option[Integer] = start(node).map(getLineOfSource)
 

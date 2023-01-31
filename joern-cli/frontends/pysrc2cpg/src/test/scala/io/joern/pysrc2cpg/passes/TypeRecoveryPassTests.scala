@@ -243,4 +243,41 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   }
 
+  "type recovery for a field imported as an individual component" should {
+    lazy val cpg = code(
+      """import app
+        |from flask import jsonify
+        |
+        |def store():
+        |    from app import db
+        |    try:
+        |        db.create_all()
+        |        db.session.add(user)
+        |        return jsonify({"success": message})
+        |    except Exception as e:
+        |        return 'There was an issue adding your task'
+        |""".stripMargin,
+      "UserController.py"
+    ).moreCode(
+      """
+        |from flask_sqlalchemy import SQLAlchemy
+        |
+        |db = SQLAlchemy()
+        |""".stripMargin,
+      "app.py"
+    )
+
+    "be determined as a variable reference and have it's type recovered correctly" in {
+      cpg.identifier("db").map(_.typeFullName).toSet shouldBe Set("flask_sqlalchemy.py:<module>.SQLAlchemy")
+
+      cpg
+        .call("add")
+        .where(_.parentBlock.ast.isIdentifier.typeFullName("flask_sqlalchemy.py:<module>.SQLAlchemy"))
+        .where(_.parentBlock.ast.isFieldIdentifier.canonicalName("session"))
+        .headOption
+        .map(_.code) shouldBe Some("tmp0.add(user)")
+    }
+
+  }
+
 }
