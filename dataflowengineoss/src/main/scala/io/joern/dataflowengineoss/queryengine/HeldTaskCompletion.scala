@@ -163,7 +163,7 @@ class HeldTaskCompletion(
       )
       val mergedGroups = oldGroups ++ newGroups.par.map { case (k, v) =>
         k -> {
-          val old = oldGroups.getOrElse(k, List())
+          val old   = oldGroups.getOrElse(k, List())
           val value = synchronized(groupListMap.get(k))
           val maxLen = value match {
             case Some(tableEntry: TableEntry) => tableEntry.path.length
@@ -198,9 +198,9 @@ class HeldTaskCompletion(
       }
       val mergedList = getListFromGroups(mergedGroups, groupListMap)
 
-      resultTable.put(fingerprint, mergedList)
-      groupMap.update(fingerprint, mergedGroups)
-      mergedListMap.update(fingerprint, groupListMap)
+      synchronized(resultTable.put(fingerprint, mergedList))
+      synchronized(groupMap.update(fingerprint, mergedGroups))
+      synchronized(mergedListMap.update(fingerprint, groupListMap))
     }
   }
 
@@ -252,21 +252,21 @@ class HeldTaskCompletion(
     groupListMap: mutable.HashMap[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
   ): List[TableEntry] = {
     val mapped = groups.map { case (key, list) =>
-        groupListMap.update(key, list.head)
-        list.head
+      synchronized(groupListMap.update(key, list.head))
+      list.head
     }
     mapped.toList
   }
 
   private def computePriority(entry: TableEntry): BigInt = {
-    var priority : BigInt = entry.path.length
-    val multiplier: BigInt = 131072 //2^17
+    var priority: BigInt   = entry.path.length
+    val multiplier: BigInt = 131072 // 2^17
 
-    entry.path.foreach( element => {
-      priority = priority + element.callSiteStack.length*multiplier
-      priority = priority + element.node.id()*multiplier*64
-      priority = priority + element.isOutputArg.hashCode()*multiplier*64
-      priority = priority + element.visible.hashCode()*multiplier*64
+    entry.path.foreach(element => {
+      priority = priority + element.callSiteStack.length * multiplier
+      priority = priority + element.node.id() * multiplier * 64
+      priority = priority + element.isOutputArg.hashCode() * multiplier * 64
+      priority = priority + element.visible.hashCode() * multiplier * 64
     })
     priority
   }
