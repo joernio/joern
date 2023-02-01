@@ -2,6 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 
+import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters._
 import scala.language.postfixOps
@@ -52,6 +53,7 @@ class HeldTaskCompletion(
       : mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
         TableEntry
       ]]] = mutable.Map()
+    val rwlock = new ReentrantReadWriteLock()
 
     while (changed.values.toList.contains(true)) {
       val taskResultsPairs = toProcess
@@ -67,7 +69,7 @@ class HeldTaskCompletion(
 
       changed = noneChanged
       taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
-        addCompletedTasksToMainTable(newResults.toList, groupMap)
+        addCompletedTasksToMainTable(newResults.toList, groupMap, rwlock)
         newResults.foreach { case (fingerprint, _) =>
           changed += fingerprint -> true
         }
@@ -127,7 +129,8 @@ class HeldTaskCompletion(
     results: List[(TaskFingerprint, TableEntry)],
     groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
       TableEntry
-    ]]]
+    ]]],
+    rwlock : ReentrantReadWriteLock
   ): Unit = {
     results.groupBy(_._1).par.foreach { case (fingerprint, resultList) =>
       val entries = resultList.map(_._2)
@@ -138,6 +141,7 @@ class HeldTaskCompletion(
           (head, last)
         }
 
+      rwlock.readLock().lock()
       val old = resultTable.getOrElse(fingerprint, Vector()).toList
       val oldGroups = groupMap.getOrElse(
         fingerprint,
@@ -148,6 +152,7 @@ class HeldTaskCompletion(
             (head, last)
           }
       )
+      rwlock.readLock().unlock()
 
       val mergedGroups = oldGroups ++ newGroups.par.map { case (k, v) =>
         k -> {
@@ -184,8 +189,11 @@ class HeldTaskCompletion(
       val mergedList = mergedGroups.map { case (_, list) =>
         list.head
       }.toList
-      synchronized(resultTable.put(fingerprint, mergedList))
-      synchronized(groupMap.update(fingerprint, mergedGroups))
+
+      rwlock.writeLock().lock()
+      resultTable.put(fingerprint, mergedList)
+      groupMap.update(fingerprint, mergedGroups)
+      rwlock.writeLock().unlock()
     }
   }
 
