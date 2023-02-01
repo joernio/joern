@@ -260,7 +260,8 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
               val callTypes = symbolTable.get(call)
               persistType(i, idHints)(builder)
               if (callTypes.isEmpty) {
-                persistType(call, idHints)(builder)
+                // For now, calls are treated as function pointers and thus the type should point to the method
+                persistType(call, idHints.map(t => s"$t.${call.name}"))(builder)
               } else {
                 persistType(call, callTypes)(builder)
               }

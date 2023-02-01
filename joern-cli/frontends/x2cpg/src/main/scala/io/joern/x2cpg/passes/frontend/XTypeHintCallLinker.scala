@@ -1,9 +1,8 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
@@ -28,11 +27,6 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     (c.dynamicTypeHintFullName ++ Seq(c.typeFullName))
       .filterNot(_.equals("ANY"))
       .distinct
-      .collect {
-        // Make sure the full name is valid and not simply the type
-        case x if x.endsWith(s".${c.name}") || x.endsWith(Defines.ConstructorMethodName) => x
-        case x                                                                           => s"$x.${c.name}"
-      }
 
   private def callees(names: Seq[String]): Traversal[Method] = cpg.method.fullNameExact(names: _*)
 

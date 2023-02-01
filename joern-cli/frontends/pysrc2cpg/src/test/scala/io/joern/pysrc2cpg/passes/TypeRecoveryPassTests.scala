@@ -37,7 +37,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       // TODO: These should have callee entries but the method stubs are not present here
       val List(zAppend) = cpg.call("append").l
       zAppend.methodFullName shouldBe Defines.DynamicCallUnknownFallName
-      zAppend.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+      zAppend.dynamicTypeHintFullName shouldBe Seq("dict.append", "list.append", "tuple.append")
     }
   }
 
@@ -279,13 +279,13 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "provide a dummy type to a member if the member type is not known" in {
-     val Some(sessionTmpVar) =  cpg.identifier("tmp0")
-        .headOption
+      val Some(sessionTmpVar) = cpg.identifier("tmp0").headOption
       sessionTmpVar.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session)"
 
       val Some(addCall) = cpg
-        .call("add").headOption
-      addCall.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session)"
+        .call("add")
+        .headOption
+      addCall.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session).add"
       addCall.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session).add"
     }
 
