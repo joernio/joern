@@ -25,7 +25,6 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.core" % "jackson-databind"  % "2.14.2",
   "com.typesafe"               % "config"            % "1.4.2",
   "com.michaelpollmeier"       % "versionsort"       % "1.0.11",
-  "org.apache.logging.log4j"   % "log4j-slf4j2-impl" % Versions.log4j     % Runtime,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
 )
 
