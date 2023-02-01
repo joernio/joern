@@ -133,7 +133,7 @@ class HeldTaskCompletion(
     rwlock: ReentrantReadWriteLock
   ): Unit = {
     results.groupBy(_._1).par.foreach { case (fingerprint, resultList) =>
-      val entries = resultList.map(_._2)
+      val entries = resultList.par.map(_._2)
       val newGroups = entries
         .groupBy { result =>
           val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
@@ -154,7 +154,7 @@ class HeldTaskCompletion(
       )
       rwlock.readLock().unlock()
 
-      val mergedGroups = oldGroups ++ newGroups.par.map { case (k, v) =>
+      val mergedGroups = oldGroups ++ newGroups.map { case (k, v) =>
         k -> {
           val old = oldGroups.getOrElse(k, List())
           val maxLen = if (old.length > 0) {
