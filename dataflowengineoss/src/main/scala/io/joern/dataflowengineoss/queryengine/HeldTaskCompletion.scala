@@ -52,10 +52,6 @@ class HeldTaskCompletion(
       : mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
         TableEntry
       ]]] = mutable.Map()
-    val mergedListMap: mutable.Map[TaskFingerprint, mutable.HashMap[
-      ((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)),
-      TableEntry
-    ]] = mutable.Map()
 
     while (changed.values.toList.contains(true)) {
       val taskResultsPairs = toProcess
@@ -71,7 +67,7 @@ class HeldTaskCompletion(
 
       changed = noneChanged
       taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
-        addCompletedTasksToMainTable(newResults.toList, groupMap, mergedListMap)
+        addCompletedTasksToMainTable(newResults.toList, groupMap)
         newResults.foreach { case (fingerprint, _) =>
           changed += fingerprint -> true
         }
@@ -130,12 +126,8 @@ class HeldTaskCompletion(
   private def addCompletedTasksToMainTable(
     results: List[(TaskFingerprint, TableEntry)],
     groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
-      TableEntry,
-    ]]],
-    mergedListMap: mutable.Map[
-      TaskFingerprint,
-      mutable.HashMap[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
-    ]
+      TableEntry
+    ]]]
   ): Unit = {
     results.groupBy(_._1).par.foreach { case (fingerprint, resultList) =>
       val entries = resultList.map(_._2)
@@ -157,25 +149,19 @@ class HeldTaskCompletion(
           }
       )
 
-      val groupListMap = mergedListMap.getOrElse(
-        fingerprint,
-        mutable.HashMap[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]()
-      )
       val mergedGroups = oldGroups ++ newGroups.par.map { case (k, v) =>
         k -> {
-          val old   = oldGroups.getOrElse(k, List())
-          val value = synchronized(groupListMap.get(k))
-          val maxLen = value match {
-            case Some(tableEntry: TableEntry) => tableEntry.path.length
-            case None                         => 0
-          }
+          val old = oldGroups.getOrElse(k, List())
+          val maxLen = if (old.length > 0) {
+            old.head.path.length
+          } else { 0 }
+
           val gtOrEqualMax = v.filter(x => x.path.length >= maxLen)
           val gtMax        = gtOrEqualMax.filter(x => x.path.length > maxLen)
 
           if (gtMax.length > 0) {
             // new list contains elements with paths exceeding the max. retain new list elements only
             // that have max length
-            synchronized(groupListMap.remove(k))
             var newMaxLen = maxLen
             gtMax.foreach(x => {
               if (x.path.length > newMaxLen) {
@@ -190,17 +176,16 @@ class HeldTaskCompletion(
           } else {
             // new list contains all elements with paths less than or equal to the max but not exceeding it.
             // append new list elements that are equal to max
-            synchronized(groupListMap.remove(k))
             val element = (old ++ gtOrEqualMax.par.filter(x => x.path.length == maxLen)).par.minBy(computePriority)
             List(element)
           }
         }
       }
-      val mergedList = getListFromGroups(mergedGroups, groupListMap)
-
+      val mergedList = mergedGroups.map { case (_, list) =>
+        list.head
+      }.toList
       synchronized(resultTable.put(fingerprint, mergedList))
       synchronized(groupMap.update(fingerprint, mergedGroups))
-      synchronized(mergedListMap.update(fingerprint, groupListMap))
     }
   }
 
@@ -248,11 +233,9 @@ class HeldTaskCompletion(
   }
 
   private def getListFromGroups(
-    groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]],
-    groupListMap: mutable.HashMap[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), TableEntry]
+    groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]]
   ): List[TableEntry] = {
-    val mapped = groups.map { case (key, list) =>
-      synchronized(groupListMap.update(key, list.head))
+    val mapped = groups.map { case (_, list) =>
       list.head
     }
     mapped.toList
