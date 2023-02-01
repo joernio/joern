@@ -9,10 +9,16 @@ libraryDependencies ++= Seq(
   "io.shiftleft"     %% "codepropertygraph"        % Versions.cpg,
   "io.shiftleft"     %% "codepropertygraph-protos" % Versions.cpg,
   "org.scalatest"    %% "scalatest"                % Versions.scalatest % Test,
-
-  // for whatever reason ghidra2cpg tests still depend on slf4j v1...
-  // "org.apache.logging.log4j" % "log4j-slf4j-impl"  % "2.19.0" % Test
 )
+
+// ghidra2cpg is a fat jar that already ships an old version of log4j, so we need
+// to exclude the ones that we normally bring in... otherwise, tests are failing:
+// java.lang.NoSuchMethodError: 'java.lang.ClassLoader[] org.apache.logging.log4j.util.LoaderUtil.getClassLoaders()'
+excludeDependencies ++= Seq(
+  ExclusionRule("org.apache.logging.log4j", "log4j-slf4j2-impl"),
+  ExclusionRule("org.apache.logging.log4j", "log4j-core")
+)
+
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
