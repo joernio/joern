@@ -8,7 +8,8 @@ import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, TestCpg}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
-class DataFlowTestCpg extends TestCpg with JsSrc2CpgFrontend {
+class DataFlowTestCpg(override val tsTypes: Boolean = false) extends TestCpg with JsSrc2CpgFrontend {
+
   override val fileSuffix: String = ".js"
 
   override def applyPasses(): Unit = {
@@ -22,7 +23,7 @@ class DataFlowTestCpg extends TestCpg with JsSrc2CpgFrontend {
 
 }
 
-class DataFlowCodeToCpgSuite extends Code2CpgFixture(() => new DataFlowTestCpg()) {
+class DataFlowCodeToCpgSuite(tsTypes: Boolean = false) extends Code2CpgFixture(() => new DataFlowTestCpg(tsTypes)) {
 
   implicit var context: EngineContext = EngineContext()
 

@@ -137,14 +137,14 @@ class JavascriptCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       .flatten
   }
 
-  private def isArgumentFromExport(c: Call): Boolean =
-    c.argument(1).exists(base => JS_EXPORT_NAMES.contains(base.code))
+  private def isArgumentFromExport(call: Call): Boolean =
+    call.argument(1).exists(base => JS_EXPORT_NAMES.contains(base.code))
 
-  private def isFieldAccessWithThisBase(fieldAccess: Call): Boolean = {
-    fieldAccess.argument(1).code == "this" ||
+  private def isFieldAccessWithThisBase(call: Call): Boolean = {
+    call.argument(1).code == "this" ||
     // nested field accesses like "this.x.y.foo()" are lowered like "(_tmp = this.x.y).foo()"
     // and the constructor call in "new x().y()" has some intermediate block
-    fieldAccess
+    call
       .repeat(
         _.argument(1)
           .union(_.isCall.nameExact(Operators.assignment).argument(2), arg => arg)
@@ -156,9 +156,19 @@ class JavascriptCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       .nonEmpty
   }
 
-  private def fromFieldAccess(c: Call): Option[String] = c.methodFullName match {
-    case Operators.fieldAccess if isArgumentFromExport(c) || isFieldAccessWithThisBase(c) => Option(c.argument(2).code)
-    case _                                                                                => None
+  private def isFieldAccessWithType(call: Call): Boolean = {
+    // if the type of argument = 1 of the field access is known and a matching type decl member can be found
+    // TODO: make this work for for access chains, e.g., "a.b.c.foo()"
+    val fieldName = call.argument(2).code
+    val typeDeclCandidates =
+      call.argument(1).collectAll[Identifier].dynamicTypeHintFullName.flatMap(cpg.typeDecl.nameExact)
+    typeDeclCandidates.exists(_.member.nameExact(fieldName).nonEmpty)
+  }
+
+  private def fromFieldAccess(call: Call): Option[String] = {
+    if (isArgumentFromExport(call) || isFieldAccessWithThisBase(call) || isFieldAccessWithType(call)) {
+      Option(call.argument(2).code)
+    } else None
   }
 
   // Obtain method name for dynamic calls where the receiver is an identifier.
@@ -167,13 +177,11 @@ class JavascriptCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       case identifier: Identifier => Option(identifier.name)
       case block: Block =>
         block.astChildren.lastOption.flatMap {
-          case c: Call => fromFieldAccess(c)
-          case _       => None
+          case call: Call if call.methodFullName == Operators.fieldAccess => fromFieldAccess(call)
+          case _                                                          => None
         }
-      case call: Call =>
-        fromFieldAccess(call)
-      case _ =>
-        None
+      case call: Call if call.methodFullName == Operators.fieldAccess => fromFieldAccess(call)
+      case _                                                          => None
     }
   }
 

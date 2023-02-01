@@ -87,15 +87,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast = {
-    val dynamicTypeOption = dynamicInstanceTypeStack.headOption match {
-      case Some(tpe) => Option(tpe)
-      case None =>
-        typeFor(thisExpr) match {
-          case t if t != Defines.Any => Option(t)
-          case _                     => None
-        }
-    }
-    val thisNode = createIdentifierNode(thisExpr.code, dynamicTypeOption, thisExpr.lineNumber, thisExpr.columnNumber)
+    val thisNode = createIdentifierNode(thisExpr.code, thisExpr)
     scope.addVariableReference(thisExpr.code, thisNode)
     Ast(thisNode)
   }

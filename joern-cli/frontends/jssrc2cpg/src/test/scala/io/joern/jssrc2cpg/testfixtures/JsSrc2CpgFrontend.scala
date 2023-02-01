@@ -8,12 +8,14 @@ import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFro
 import org.scalatest.Inside
 
 trait JsSrc2CpgFrontend extends LanguageFrontend {
+  protected val tsTypes: Boolean = false
+
   def execute(sourceCodePath: java.io.File): Cpg = {
     val cpgOutFile = File.newTemporaryFile(suffix = "cpg.bin")
     cpgOutFile.deleteOnExit()
     val jssrc2cpg = new JsSrc2Cpg()
     val config =
-      Config(inputPath = sourceCodePath.getAbsolutePath, outputPath = cpgOutFile.pathAsString, tsTypes = false)
+      Config(inputPath = sourceCodePath.getAbsolutePath, outputPath = cpgOutFile.pathAsString, tsTypes = tsTypes)
     jssrc2cpg.createCpg(config).get
   }
 }

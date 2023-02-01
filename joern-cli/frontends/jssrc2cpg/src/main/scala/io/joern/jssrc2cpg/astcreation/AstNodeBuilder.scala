@@ -373,10 +373,17 @@ trait AstNodeBuilder { this: AstCreator =>
 
   protected def createIdentifierNode(name: String, node: BabelNodeInfo): NewIdentifier = {
     val dynamicInstanceTypeOption = name match {
-      case "this"    => dynamicInstanceTypeStack.headOption
       case "console" => Option(Defines.Console)
       case "Math"    => Option(Defines.Math)
-      case _         => None
+      case _ =>
+        dynamicInstanceTypeStack.headOption match {
+          case Some(tpe) => Option(tpe)
+          case None =>
+            typeFor(node) match {
+              case t if t != Defines.Any => Option(t)
+              case _                     => None
+            }
+        }
     }
     createIdentifierNode(name, dynamicInstanceTypeOption, node.lineNumber, node.columnNumber)
   }

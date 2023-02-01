@@ -5,11 +5,33 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
 
-class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
+class CallLinkerPassTest extends DataFlowCodeToCpgSuite(tsTypes = true) {
 
   "CallLinkerPass" should {
 
     "create call edges correctly for methods from classes" in {
+      val cpg: Cpg = code("""
+          |class Foo {
+          |  a() {}
+          |}
+          |
+          |const f = new Foo();
+          |f.a();
+          |""".stripMargin)
+
+      inside(cpg.identifier("f").l) { case List(constF, fieldF, baseF) =>
+        constF.dynamicTypeHintFullName shouldBe List("Foo")
+        fieldF.dynamicTypeHintFullName shouldBe List("Foo")
+        baseF.dynamicTypeHintFullName shouldBe List("Foo")
+      }
+
+      inside(cpg.method("a").callIn(NoResolve).l) { case List(call) =>
+        call.code shouldBe "f.a()"
+        call.methodFullName should endWith(".js::program:Foo:a")
+      }
+    }
+
+    "create call edges correctly for methods in classes" in {
       val cpg: Cpg = code("""
         |class Foo {
         |  a() {
