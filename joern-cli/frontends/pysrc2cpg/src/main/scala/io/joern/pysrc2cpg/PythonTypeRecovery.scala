@@ -140,7 +140,7 @@ class SetPythonProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey
   *   the graph builder
   */
 class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, globalTable: SymbolTable[GlobalKey])
-    extends RecoverForXCompilationUnit[File](cu, builder, globalTable) {
+    extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable) {
 
   /** Adds built-in functions to expect.
     */
@@ -209,7 +209,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
       case List(i: Identifier, c: Call) if c.receiver.isCall.name.exists(_.equals(Operators.fieldAccess)) =>
         val field = c.receiver.isCall.name(Operators.fieldAccess).map(new OpNodes.FieldAccess(_)).head
         visitCallFromFieldMember(i, c, field, symbolTable)
-      // In second round, use global table knowledge to extract field types
+      // Use global table knowledge (in i >= 2 iterations) or CPG to extract field types
       case List(_: Identifier, c: Call) if c.name.equals(Operators.fieldAccess) =>
         c.inCall.argument
           .flatMap {
@@ -218,11 +218,35 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
           }
           .take(3)
           .l match {
-          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier) =>
+          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier)
+              if symbolTable.contains(CallAlias(i.name)) =>
+            // Get field from global table if referenced as function call
             val fieldTypes = symbolTable
               .get(CallAlias(i.name))
               .flatMap(recModule => globalTable.get(FieldVar(recModule, f.canonicalName)))
-            if (fieldTypes.nonEmpty) symbolTable.append(assigned, fieldTypes)
+            symbolTable.append(assigned, fieldTypes)
+          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier)
+              if symbolTable
+                .contains(LocalVar(i.name)) =>
+            // Get field from global table if referenced as a variable
+            val localTypes = symbolTable.get(LocalVar(i.name))
+            val memberTypes = localTypes
+              .flatMap { t =>
+                cpg.typeDecl.fullNameExact(t).member.nameExact(f.canonicalName).l ++
+                  cpg.typeDecl.fullNameExact(t).method.fullNameExact(t).l
+              }
+              .flatMap {
+                case m: Member => Some(m.typeFullName)
+                case m: Method => Some(m.fullName)
+                case _         => None
+              }
+            if (memberTypes.nonEmpty)
+              // First use the member type info from the CPG, if present
+              symbolTable.append(assigned, memberTypes)
+            else if (localTypes.nonEmpty) {
+              // If not available, use a dummy variable that can be useful for call matching
+              symbolTable.append(assigned, localTypes.map { t => s"$t.<member>(${f.canonicalName})" })
+            }
           case _ =>
         }
       case _ =>
@@ -239,7 +263,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
     c: Call,
     field: FieldAccess,
     symbolTable: SymbolTable[LocalKey]
-  ) = {
+  ): Unit = {
     field.astChildren.l match {
       case List(rec: Identifier, f: FieldIdentifier) if symbolTable.contains(rec) =>
         val identifierFullName = symbolTable.get(rec).map(_.concat(s".${f.canonicalName}"))

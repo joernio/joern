@@ -1,8 +1,8 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
