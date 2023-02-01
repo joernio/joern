@@ -6,24 +6,18 @@ import io.joern.jssrc2cpg.preprocessing.EjsPreprocessor
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
+import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
+import versionsort.VersionHelper
 
 import java.nio.file.Paths
 import scala.util.Failure
 import scala.util.Success
 import scala.util.matching.Regex
 import scala.util.Try
+import scala.sys.process.stringToProcess
 
 object AstGenRunner {
-  case class AstGenRunnerResult(
-    parsedFiles: List[(String, String)] = List.empty,
-    skippedFiles: List[(String, String)] = List.empty
-  )
-}
-
-class AstGenRunner(config: Config) {
-
-  import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -54,17 +48,16 @@ class AstGenRunner(config: Config) {
     ".*eslint-local-rules\\.js".r
   )
 
-  private val ExecutableArgs = if (!config.tsTypes) {
-    " --no-tsTypes"
-  } else {
-    ""
-  }
+  case class AstGenRunnerResult(
+    parsedFiles: List[(String, String)] = List.empty,
+    skippedFiles: List[(String, String)] = List.empty
+  )
 
-  private val ExecutableName = Environment.OperatingSystem match {
+  lazy private val executableName = Environment.operatingSystem match {
     case Environment.OperatingSystemType.Windows => "astgen-win.exe"
     case Environment.OperatingSystemType.Linux   => "astgen-linux"
     case Environment.OperatingSystemType.Mac =>
-      Environment.Architecture match {
+      Environment.architecture match {
         case Environment.ArchitectureType.X86 => "astgen-macos"
         case Environment.ArchitectureType.ARM => "astgen-macos-arm"
       }
@@ -73,7 +66,7 @@ class AstGenRunner(config: Config) {
       "astgen-linux"
   }
 
-  private val ExecutableDir: String = {
+  lazy private val executableDir: String = {
     val dir        = getClass.getProtectionDomain.getCodeSource.getLocation.toString
     val indexOfLib = dir.lastIndexOf("lib")
     val fixedDir = if (indexOfLib != -1) {
@@ -88,6 +81,37 @@ class AstGenRunner(config: Config) {
     }
     Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
   }
+
+  private def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
+    Try("astgen --version".!!).toOption.map(_.strip()) match {
+      case Some(installedVersion) if VersionHelper.compare(installedVersion, astGenVersion) >= 0 =>
+        logger.debug(s"Using local astgen v$installedVersion from systems PATH")
+        true
+      case Some(installedVersion) =>
+        logger.debug(
+          s"Found local astgen v$installedVersion in systems PATH but jssrc2cpg requires at least v$astGenVersion"
+        )
+        false
+      case _ => false
+    }
+  }
+
+  private lazy val astGenCommand = {
+    val conf          = ConfigFactory.load
+    val astGenVersion = conf.getString("jssrc2cpg.astgen_version")
+    if (hasCompatibleAstGenVersion(astGenVersion)) {
+      "astgen"
+    } else {
+      s"$executableDir/$executableName"
+    }
+  }
+}
+
+class AstGenRunner(config: Config) {
+
+  import io.joern.jssrc2cpg.utils.AstGenRunner._
+
+  private val executableArgs = if (!config.tsTypes) " --no-tsTypes" else ""
 
   private def skippedFiles(in: File, astgenOut: List[String]): List[String] = {
     val skipped = astgenOut.collect {
@@ -169,7 +193,7 @@ class AstGenRunner(config: Config) {
       jsFile
     }
 
-    val result = ExternalCommand.run(s"$ExecutableDir/$ExecutableName$ExecutableArgs -t ts -o $out", out.toString())
+    val result = ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -o $out", out.toString())
 
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>
@@ -195,12 +219,12 @@ class AstGenRunner(config: Config) {
   private def vueFiles(in: File, out: File): Try[Seq[String]] = {
     val files = SourceFiles.determine(in.pathAsString, Set(".vue"))
     if (files.nonEmpty)
-      ExternalCommand.run(s"$ExecutableDir/$ExecutableName$ExecutableArgs -t vue -o $out", in.toString())
+      ExternalCommand.run(s"$astGenCommand$executableArgs -t vue -o $out", in.toString())
     else Success(Seq.empty)
   }
 
   private def jsFiles(in: File, out: File): Try[Seq[String]] =
-    ExternalCommand.run(s"$ExecutableDir/$ExecutableName$ExecutableArgs -t ts -o $out", in.toString())
+    ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -o $out", in.toString())
 
   private def runAstGenNative(in: File, out: File): Try[Seq[String]] = for {
     ejsResult <- ejsFiles(in, out)
