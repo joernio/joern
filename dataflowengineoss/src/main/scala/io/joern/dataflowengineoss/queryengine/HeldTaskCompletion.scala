@@ -68,12 +68,12 @@ class HeldTaskCompletion(
         .seq
 
       changed = noneChanged
-      taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
+      taskResultsPairs.par.foreach { case (t, resultsForTask, newResults) =>
         addCompletedTasksToMainTable(newResults.toList, groupMap, rwlock)
         newResults.foreach { case (fingerprint, _) =>
           changed += fingerprint -> true
         }
-        resultsProducedByTask += (t -> resultsForTask)
+        synchronized(resultsProducedByTask += (t -> resultsForTask))
       }
     }
     deduplicateResultTable()
@@ -130,7 +130,7 @@ class HeldTaskCompletion(
     groupMap: mutable.Map[TaskFingerprint, Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[
       TableEntry
     ]]],
-    rwlock : ReentrantReadWriteLock
+    rwlock: ReentrantReadWriteLock
   ): Unit = {
     results.groupBy(_._1).par.foreach { case (fingerprint, resultList) =>
       val entries = resultList.map(_._2)
@@ -238,15 +238,6 @@ class HeldTaskCompletion(
         }
       }
       .toList
-  }
-
-  private def getListFromGroups(
-    groups: Map[((CfgNode, List[Call], Boolean), (CfgNode, List[Call], Boolean)), List[TableEntry]]
-  ): List[TableEntry] = {
-    val mapped = groups.map { case (_, list) =>
-      list.head
-    }
-    mapped.toList
   }
 
   private def computePriority(entry: TableEntry): BigInt = {
