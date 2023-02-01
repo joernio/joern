@@ -88,7 +88,7 @@ lazy val AstgenMacArm = "astgen-macos-arm"
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/astgen/releases/download/v${astGenVersion.value}/"
 
-def hasCompatibleAstgenVersion(astGenVersion: String): Boolean = {
+def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
   Try("astgen --version".!!).toOption.map(_.strip()) match {
     case Some(installedVersion) => VersionHelper.compare(installedVersion, astGenVersion) >= 0
     case None                   => false
@@ -97,18 +97,18 @@ def hasCompatibleAstgenVersion(astGenVersion: String): Boolean = {
 
 lazy val astGenBinaryNames = taskKey[Seq[String]]("astgen binary names")
 astGenBinaryNames := {
-  if (hasCompatibleAstgenVersion(astGenVersion.value)) {
+  if (hasCompatibleAstGenVersion(astGenVersion.value)) {
     Seq.empty
   } else if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
     Seq(AstgenWin, AstgenLinux, AstgenMac, AstgenMacArm)
   } else {
-    Environment.OperatingSystem match {
+    Environment.operatingSystem match {
       case Environment.OperatingSystemType.Windows =>
         Seq(AstgenWin)
       case Environment.OperatingSystemType.Linux =>
         Seq(AstgenLinux)
       case Environment.OperatingSystemType.Mac =>
-        Environment.Architecture match {
+        Environment.architecture match {
           case Environment.ArchitectureType.X86 => Seq(AstgenMac)
           case Environment.ArchitectureType.ARM => Seq(AstgenMacArm)
         }
