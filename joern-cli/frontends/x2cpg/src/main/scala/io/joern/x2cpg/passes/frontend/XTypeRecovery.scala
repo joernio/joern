@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.{Method, _}
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
@@ -150,6 +150,7 @@ abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
   *   the [[AstNode]] type used to represent a computational unit of the language.
   */
 abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
+  cpg: Cpg,
   cu: ComputationalUnit,
   builder: DiffGraphBuilder,
   globalTable: SymbolTable[GlobalKey]
@@ -269,7 +270,6 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
               persistType(i, symbolTable.get(x))(builder)
             case _ => persistType(x, symbolTable.get(x))(builder)
           }
-        // Case 5: Field access
         case x: Call if symbolTable.contains(x) =>
           builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
         case _ =>

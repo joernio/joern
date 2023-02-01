@@ -267,7 +267,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       "app.py"
     )
 
-    "be determined as a variable reference and have it's type recovered correctly" in {
+    "be determined as a variable reference and have its type recovered correctly" in {
       cpg.identifier("db").map(_.typeFullName).toSet shouldBe Set("flask_sqlalchemy.py:<module>.SQLAlchemy")
 
       cpg
@@ -276,6 +276,17 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .where(_.parentBlock.ast.isFieldIdentifier.canonicalName("session"))
         .headOption
         .map(_.code) shouldBe Some("tmp0.add(user)")
+    }
+
+    "provide a dummy type to a member if the member type is not known" in {
+     val Some(sessionTmpVar) =  cpg.identifier("tmp0")
+        .headOption
+      sessionTmpVar.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session)"
+
+      val Some(addCall) = cpg
+        .call("add").headOption
+      addCall.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session)"
+      addCall.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session).add"
     }
 
   }
