@@ -186,9 +186,7 @@ class HeldTaskCompletion(
           }
         }
       }
-      val mergedList = mergedGroups.map { case (_, list) =>
-        list.head
-      }.toList
+      val mergedList = mergedGroups.map { case (_, list) => list.head}.toList
 
       rwlock.writeLock().lock()
       resultTable.put(fingerprint, mergedList)
