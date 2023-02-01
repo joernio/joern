@@ -1,12 +1,14 @@
 package io.joern.x2cpg.passes.base
 
 import io.joern.x2cpg.Defines
+import io.joern.x2cpg.passes.base.MethodStubCreator.createMethodStub
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
 import scala.util.Try
@@ -48,9 +50,19 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
     super.finish()
   }
 
+}
+
+object MethodStubCreator {
+
   private def addLineNumberInfo(methodNode: NewMethod, fullName: String): NewMethod = {
     val s = fullName.split(":")
-    if (s.size == 5 && Try { s(1).toInt }.isSuccess && Try { s(2).toInt }.isSuccess) {
+    if (
+      s.size == 5 && Try {
+        s(1).toInt
+      }.isSuccess && Try {
+        s(2).toInt
+      }.isSuccess
+    ) {
       val filename      = s(0)
       val lineNumber    = s(1).toInt
       val lineNumberEnd = s(2).toInt
@@ -63,7 +75,7 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
-  private def createMethodStub(
+  def createMethodStub(
     name: String,
     fullName: String,
     signature: String,
@@ -124,5 +136,4 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
 
     methodNode
   }
-
 }
