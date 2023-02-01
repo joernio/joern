@@ -5,8 +5,6 @@ crossScalaVersions := Seq("2.13.8", "3.2.1")
 dependsOn(Projects.semanticcpg)
 
 libraryDependencies ++= Seq(
-  "org.slf4j"                % "slf4j-api"          % "2.0.6",
-  "org.apache.logging.log4j" % "log4j-slf4j2-impl"  % Versions.log4j         % Optional,
   "org.gradle"               % "gradle-tooling-api" % Versions.gradleTooling % Optional,
   "org.scalatest"           %% "scalatest"          % Versions.scalatest     % Test
 )

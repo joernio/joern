@@ -13,7 +13,6 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"             %% "upickle"           % "2.0.0",
   "io.shiftleft"            %% "codepropertygraph" % Versions.cpg,
   "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test,
-  "org.apache.logging.log4j" % "log4j-slf4j2-impl" % Versions.log4j     % Runtime,
   "io.circe"                %% "circe-core"        % "0.15.0-M1"
 )
 

@@ -11,7 +11,7 @@ libraryDependencies ++= Seq(
   "org.scalatest"    %% "scalatest"                % Versions.scalatest % Test,
 
   // for whatever reason ghidra2cpg tests still depend on slf4j v1...
-  "org.apache.logging.log4j" % "log4j-slf4j-impl"  % Versions.log4j % Test
+  // "org.apache.logging.log4j" % "log4j-slf4j-impl"  % "2.19.0" % Test
 )
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
