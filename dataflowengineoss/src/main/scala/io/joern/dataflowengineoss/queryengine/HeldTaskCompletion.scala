@@ -68,12 +68,12 @@ class HeldTaskCompletion(
         .seq
 
       changed = noneChanged
-      taskResultsPairs.par.foreach { case (t, resultsForTask, newResults) =>
+      taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
         addCompletedTasksToMainTable(newResults.toList, groupMap, rwlock)
         newResults.foreach { case (fingerprint, _) =>
           changed += fingerprint -> true
         }
-        synchronized(resultsProducedByTask += (t -> resultsForTask))
+        resultsProducedByTask += (t -> resultsForTask)
       }
     }
     deduplicateResultTable()
