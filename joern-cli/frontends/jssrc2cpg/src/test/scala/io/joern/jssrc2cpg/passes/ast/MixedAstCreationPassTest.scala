@@ -178,6 +178,20 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       outerLocalXViaRef shouldBe outerLocalX
     }
 
+    "have correct closure binding (destructing parameter)" in AstFixture("""
+        |const WindowOpen = ({ value }) => {
+        |  return (
+        |    <div>
+        |      <Button variant="outlined" onClick={() => windowOpenButton(value)}>
+        |        TRY ME!
+        |      </Button>
+        |    </div>
+        |  );
+        |};
+        """.stripMargin) { cpg =>
+      cpg.local.name("value").closureBindingId.l shouldBe List("code.js::program:anonymous:anonymous:value")
+    }
+
     "have correct closure binding (destructing assignment)" in AstFixture("""
         |const {closureA} = null;
         |const [closureB] = null;
