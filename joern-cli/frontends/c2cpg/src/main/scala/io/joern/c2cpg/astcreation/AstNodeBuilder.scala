@@ -1,5 +1,6 @@
 package io.joern.c2cpg.astcreation
 
+import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTLabelStatement, IASTNode}
@@ -188,10 +189,12 @@ trait AstNodeBuilder { this: AstCreator =>
   ): NewCall = {
     val lineNumber   = line(node).map(Integer.valueOf)
     val columnNumber = column(node).map(Integer.valueOf)
+    val callName     = StringUtils.normalizeSpace(name)
+    val callFullName = StringUtils.normalizeSpace(fullname)
     NewCall()
-      .name(StringUtils.normalizeSpace(name))
+      .name(callName)
       .dispatchType(dispatchType)
-      .methodFullName(StringUtils.normalizeSpace(fullname))
+      .methodFullName(callFullName)
       .code(nodeSignature(node))
       .argumentIndex(argIndex)
       .lineNumber(lineNumber)

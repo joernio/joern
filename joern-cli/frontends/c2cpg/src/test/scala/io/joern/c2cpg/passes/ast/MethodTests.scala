@@ -22,10 +22,10 @@ class MethodTests extends CCodeToCpgSuite {
         x.isExternal shouldBe false
         x.order shouldBe 1
         x.filename shouldBe "Test0.c"
-        x.lineNumber shouldBe Some(2)
-        x.lineNumberEnd shouldBe Some(3)
-        x.columnNumber shouldBe Some(3)
-        x.columnNumberEnd shouldBe Some(2)
+        x.lineNumber shouldBe Option(2)
+        x.lineNumberEnd shouldBe Option(3)
+        x.columnNumber shouldBe Option(3)
+        x.columnNumberEnd shouldBe Option(2)
       }
     }
 
@@ -129,10 +129,10 @@ class MethodTests extends CCodeToCpgSuite {
       method.isExternal shouldBe false
       method.fullName shouldBe "foo"
       method.signature shouldBe "int foo (int,int)"
-      method.lineNumber shouldBe Some(2)
-      method.columnNumber shouldBe Some(1)
-      method.lineNumberEnd shouldBe Some(4)
-      method.columnNumberEnd shouldBe Some(1)
+      method.lineNumber shouldBe Option(2)
+      method.columnNumber shouldBe Option(1)
+      method.lineNumberEnd shouldBe Option(4)
+      method.columnNumberEnd shouldBe Option(1)
       method.code shouldBe "int foo (int x,int y)"
     }
 
@@ -142,23 +142,23 @@ class MethodTests extends CCodeToCpgSuite {
       param1.code shouldBe "int x"
       param1.name shouldBe "x"
       param1.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      param1.lineNumber shouldBe Some(2)
-      param1.columnNumber shouldBe Some(9)
+      param1.lineNumber shouldBe Option(2)
+      param1.columnNumber shouldBe Option(9)
 
       param2.order shouldBe 2
       param2.code shouldBe "int y"
       param2.name shouldBe "y"
       param2.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      param2.lineNumber shouldBe Some(2)
-      param2.columnNumber shouldBe Some(16)
+      param2.lineNumber shouldBe Option(2)
+      param2.columnNumber shouldBe Option(16)
     }
 
     "have correct METHOD_RETURN node for method foo" in {
       val List(ret) = cpg.method.nameExact("foo").methodReturn.l
-      ret.code shouldBe "int"
+      ret.code shouldBe "RET"
       ret.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      ret.lineNumber shouldBe Some(2)
-      ret.columnNumber shouldBe Some(1)
+      ret.lineNumber shouldBe Option(2)
+      ret.columnNumber shouldBe Option(1)
     }
 
   }

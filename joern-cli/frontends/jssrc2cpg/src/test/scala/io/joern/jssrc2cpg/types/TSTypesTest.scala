@@ -7,6 +7,28 @@ import io.shiftleft.semanticcpg.language._
 
 class TSTypesTest extends AbstractPassTest {
 
+  "have correct dynamicTypeHint for this without proper surrounding type" in AstFixture(
+    "exports.isAuthorized = function() { this.publicKey }",
+    tsTypes = true
+  ) { cpg =>
+    val List(t) = cpg.identifier("this").l
+    t.typeFullName shouldBe Defines.Any
+    t.dynamicTypeHintFullName shouldBe List()
+  }
+
+  "have correct types for this with proper surrounding type" in AstFixture(
+    """
+      |class Foo {
+      |  publicKey: string = ""
+      |  isAuthorized() { return () => { return this.publicKey } }
+      |}
+      |""".stripMargin,
+    tsTypes = true
+  ) { cpg =>
+    val List(t) = cpg.identifier("this").l
+    t.dynamicTypeHintFullName shouldBe List("code.js::program:Foo")
+  }
+
   "have correct types for empty method with rest parameter" in AstFixture(
     "function method(x, ...args) {}",
     tsTypes = true
@@ -17,22 +39,22 @@ class TSTypesTest extends AbstractPassTest {
     val List(t, x, args) = method.parameter.l
     t.index shouldBe 0
     t.name shouldBe "this"
-    t.typeFullName shouldBe Defines.ANY
+    t.typeFullName shouldBe Defines.Any
     x.index shouldBe 1
     x.name shouldBe "x"
-    x.typeFullName shouldBe Defines.ANY
+    x.typeFullName shouldBe Defines.Any
     args.index shouldBe 2
     args.name shouldBe "args"
     args.code shouldBe "...args"
     args.isVariadic shouldBe true
-    args.typeFullName shouldBe Defines.ANY
+    args.typeFullName shouldBe Defines.Any
   }
 
   "have return types for arrow functions" in AstFixture("const foo = () => 42;", tsTypes = true) { cpg =>
     val List(foo) = cpg.identifier("foo").l
-    foo.typeFullName shouldBe s"() => ${Defines.NUMBER}"
+    foo.typeFullName shouldBe s"() => ${Defines.Number}"
     val List(ret) = cpg.method("anonymous").methodReturn.l
-    ret.typeFullName shouldBe Defines.NUMBER
+    ret.typeFullName shouldBe Defines.Number
   }
 
   "have correct types for empty method" in AstFixture("function method(x) {}", tsTypes = true) { cpg =>
@@ -48,7 +70,7 @@ class TSTypesTest extends AbstractPassTest {
     tsTypes = true
   ) { cpg =>
     val List(y) = cpg.identifier("y").l
-    y.typeFullName shouldBe Defines.STRING
+    y.typeFullName shouldBe Defines.String
   }
 
   "have types for identifiers from class" in AstFixture(
@@ -76,9 +98,9 @@ class TSTypesTest extends AbstractPassTest {
     y1.typeFullName shouldBe "Foo"
     y2.typeFullName shouldBe "Foo"
     val List(p1) = cpg.parameter("p1").l
-    p1.typeFullName shouldBe Defines.NUMBER
+    p1.typeFullName shouldBe Defines.Number
     val List(p2) = cpg.parameter("p2").l
-    p2.typeFullName shouldBe Defines.STRING
+    p2.typeFullName shouldBe Defines.String
     val List(barRet) = cpg.method("bar").methodReturn.l
     barRet.typeFullName shouldBe "Foo"
     cpg.typ.name.sorted.l shouldBe (List(
@@ -86,7 +108,7 @@ class TSTypesTest extends AbstractPassTest {
       io.joern.x2cpg.Defines.ConstructorMethodName,
       "Foo",
       "bar"
-    ) ++ Defines.JSTYPES).sorted
+    ) ++ Defines.JsTypes).sorted
   }
 
   "have correct types for variables" in TsAstFixture(
@@ -99,7 +121,7 @@ class TSTypesTest extends AbstractPassTest {
     inside(cpg.identifier.l) { case List(x, y) =>
       x.name shouldBe "x"
       x.code shouldBe "x"
-      x.typeFullName shouldBe Defines.STRING
+      x.typeFullName shouldBe Defines.String
       y.name shouldBe "y"
       y.code shouldBe "y"
       y.typeFullName shouldBe "Foo"
@@ -117,7 +139,7 @@ class TSTypesTest extends AbstractPassTest {
     inside(cpg.identifier.l) { case List(x) =>
       x.name shouldBe "x"
       x.code shouldBe "x"
-      x.typeFullName shouldBe Defines.STRING // we can actually follow type intrinsics
+      x.typeFullName shouldBe Defines.String // we can actually follow type intrinsics
     }
   }
 
@@ -130,7 +152,7 @@ class TSTypesTest extends AbstractPassTest {
     inside(cpg.method("foo").parameter.l) { case List(_, a, b) =>
       a.name shouldBe "a"
       a.code shouldBe "a: string"
-      a.typeFullName shouldBe Defines.STRING
+      a.typeFullName shouldBe Defines.String
       b.name shouldBe "b"
       b.code shouldBe "b: Foo"
       b.typeFullName shouldBe "Foo"
@@ -149,7 +171,7 @@ class TSTypesTest extends AbstractPassTest {
   ) { cpg =>
     inside(cpg.typeDecl("ObjectFoo").l) { case List(objFoo) =>
       objFoo.fullName shouldBe "code.ts::program:ObjectFoo"
-      objFoo.aliasTypeFullName shouldBe Some("code.ts::program:Alias")
+      objFoo.aliasTypeFullName shouldBe Option("code.ts::program:Alias")
       objFoo.code shouldBe "type ObjectFoo = {\n  property: string,\n  method(): number,\n}"
     }
     inside(cpg.typeDecl("Alias").l) { case List(alias) =>
@@ -168,7 +190,7 @@ class TSTypesTest extends AbstractPassTest {
   ) { cpg =>
     inside(cpg.typeDecl("Foo").l) { case List(foo) =>
       foo.fullName shouldBe "code.ts::program:Foo"
-      foo.aliasTypeFullName shouldBe Some("code.ts::program:Alias")
+      foo.aliasTypeFullName shouldBe Option("code.ts::program:Alias")
       foo.code shouldBe "class Foo"
     }
     inside(cpg.typeDecl("Alias").l) { case List(alias) =>
@@ -190,7 +212,7 @@ class TSTypesTest extends AbstractPassTest {
   ) { cpg =>
     inside(cpg.typeDecl("ObjectFoo").l) { case List(objFoo) =>
       objFoo.fullName shouldBe "code.ts::program:ObjectFoo"
-      objFoo.aliasTypeFullName shouldBe Some("code.ts::program:Alias")
+      objFoo.aliasTypeFullName shouldBe Option("code.ts::program:Alias")
       objFoo.code shouldBe "type ObjectFoo = {\n  property: string,\n  method(): number,\n}"
     }
     inside(cpg.typeDecl("Alias").l) { case List(alias) =>
@@ -209,7 +231,7 @@ class TSTypesTest extends AbstractPassTest {
   ) { cpg =>
     inside(cpg.typeDecl("Foo").l) { case List(foo) =>
       foo.fullName shouldBe "code.ts::program:Foo"
-      foo.aliasTypeFullName shouldBe Some("code.ts::program:Alias")
+      foo.aliasTypeFullName shouldBe Option("code.ts::program:Alias")
       foo.code shouldBe "class Foo"
     }
     inside(cpg.typeDecl("Alias").l) { case List(alias) =>
@@ -226,7 +248,7 @@ class TSTypesTest extends AbstractPassTest {
     tsTypes = true
   ) { cpg =>
     cpg.typeDecl("string").l shouldBe empty
-    cpg.typeDecl(Defines.STRING).size shouldBe 1
+    cpg.typeDecl(Defines.String).size shouldBe 1
     inside(cpg.typeDecl("Alias").l) { case List(alias) =>
       alias.fullName shouldBe "code.ts::program:Alias"
       alias.code shouldBe "type Alias = string"
@@ -251,12 +273,12 @@ class TSTypesTest extends AbstractPassTest {
       callZ.argument(1).code shouldBe "boolean"
       callZ.argument(2).code shouldBe "true"
     }
-    cpg.local("x").typeFullName.l shouldBe List(Defines.STRING)
-    cpg.identifier("x").typeFullName.l shouldBe List(Defines.STRING)
+    cpg.local("x").typeFullName.l shouldBe List(Defines.String)
+    cpg.identifier("x").typeFullName.l shouldBe List(Defines.String)
     cpg.local("y").typeFullName.l shouldBe List("int")
     cpg.identifier("y").typeFullName.l shouldBe List("int")
-    cpg.local("z").typeFullName.l shouldBe List(Defines.BOOLEAN)
-    cpg.identifier("z").typeFullName.l shouldBe List(Defines.BOOLEAN)
+    cpg.local("z").typeFullName.l shouldBe List(Defines.Boolean)
+    cpg.identifier("z").typeFullName.l shouldBe List(Defines.Boolean)
   }
 
   "have correct types when type is being used multiple times" in TsAstFixture(
@@ -323,7 +345,7 @@ class TSTypesTest extends AbstractPassTest {
     tsTypes = true
   ) { cpg =>
     val List(x) = cpg.identifier("x").l
-    x.typeFullName shouldBe Defines.STRING
+    x.typeFullName shouldBe Defines.String
   }
 
 }

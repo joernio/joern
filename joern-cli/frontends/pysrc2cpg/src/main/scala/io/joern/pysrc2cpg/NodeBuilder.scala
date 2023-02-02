@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.Defines
+import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, nodes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -152,14 +153,9 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
   }
 
   def methodReturnNode(dynamicTypeHintFullName: Option[String], lineAndColumn: LineAndColumn): nodes.NewMethodReturn = {
-    val methodReturnNode = nodes
-      .NewMethodReturn()
-      .code("RET")
+    val methodReturnNode = NodeBuilders
+      .methodReturnNode(Constants.ANY, dynamicTypeHintFullName, Some(lineAndColumn.line), Some(lineAndColumn.column))
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
-      .typeFullName(Constants.ANY)
-      .dynamicTypeHintFullName(dynamicTypeHintFullName.toList)
-      .lineNumber(lineAndColumn.line)
-      .columnNumber(lineAndColumn.column)
 
     addNodeToDiff(methodReturnNode)
   }

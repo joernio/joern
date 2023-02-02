@@ -39,9 +39,9 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     "have correct type for literals" in AstFixture("let x = 1; let y = 'y'; let z = false;") { cpg =>
       val List(x, y, z) = cpg.literal.l
-      x.typeFullName shouldBe Defines.NUMBER
-      y.typeFullName shouldBe Defines.STRING
-      z.typeFullName shouldBe Defines.BOOLEAN
+      x.typeFullName shouldBe Defines.Number
+      y.typeFullName shouldBe Defines.String
+      z.typeFullName shouldBe Defines.Boolean
     }
 
     "have correct structure for multiple declarators in one place" in AstFixture("let x = 1, y = 2, z = 3;") { cpg =>
@@ -108,7 +108,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(arrayCall) = xAssignment.astChildren.isCall.l
       arrayCall.name shouldBe EcmaBuiltins.arrayFactory
-      arrayCall.code shouldBe EcmaBuiltins.arrayFactory + "()"
+      arrayCall.code shouldBe s"${EcmaBuiltins.arrayFactory}()"
       arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
@@ -128,7 +128,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(arrayCall) = tmpAssignment.astChildren.isCall.l
       arrayCall.name shouldBe EcmaBuiltins.arrayFactory
-      arrayCall.code shouldBe EcmaBuiltins.arrayFactory + "()"
+      arrayCall.code shouldBe s"${EcmaBuiltins.arrayFactory}()"
       arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       checkLiterals(pushBlock, 1)
@@ -415,8 +415,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       file.name should endWith("code.js")
 
       val List(ns) = cpg.namespaceBlock.l
-      ns.name shouldBe Defines.GLOBAL_NAMESPACE
-      ns.fullName should endWith("code.js:" + Defines.GLOBAL_NAMESPACE)
+      ns.name shouldBe Defines.GlobalNamespace
+      ns.fullName should endWith(s"code.js:${Defines.GlobalNamespace}")
       ns.order shouldBe 1
       ns.filename shouldBe file.name
     }
@@ -426,10 +426,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       file.name should endWith("code.js")
 
       val List(ns) = cpg.namespaceBlock.l
-      ns.name shouldBe Defines.GLOBAL_NAMESPACE
-      ns.fullName should endWith("code.js:" + Defines.GLOBAL_NAMESPACE)
+      ns.name shouldBe Defines.GlobalNamespace
+      ns.fullName should endWith(s"code.js:${Defines.GlobalNamespace}")
       ns.order shouldBe 1
-      ns.method.head.name shouldBe ":program"
+      ns.typeDecl.nameExact(":program").method.head.name shouldBe ":program"
     }
 
     "have correct structure for empty method nested in top level method" in AstFixture("function method(x) {}") { cpg =>
@@ -540,10 +540,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     }
 
     "be correct for lambdas returning lambdas" in AstFixture("() => async () => { }") { cpg =>
-      cpg.method.fullName.l shouldBe List(
+      cpg.method.fullName.sorted.l shouldBe List(
         "code.js::program",
-        "code.js::program:anonymous:anonymous",
-        "code.js::program:anonymous"
+        "code.js::program:anonymous",
+        "code.js::program:anonymous:anonymous"
       )
       val List(ret) = cpg.method.fullNameExact("code.js::program:anonymous").block.astChildren.isReturn.l
       ret.code shouldBe "async () => { }"
@@ -728,8 +728,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct structure for empty method" in AstFixture("function method(x) {}") { cpg =>
       val List(method) = cpg.method.nameExact("method").l
       method.astChildren.isBlock.size shouldBe 1
-      method.parameter.index(0).nameExact("this").typeFullName(Defines.ANY).size shouldBe 1
-      method.parameter.index(1).nameExact("x").typeFullName(Defines.ANY).size shouldBe 1
+      method.parameter.index(0).nameExact("this").typeFullName(Defines.Any).size shouldBe 1
+      method.parameter.index(1).nameExact("x").typeFullName(Defines.Any).size shouldBe 1
     }
 
     "have correct structure for empty method with rest parameter" in AstFixture("function method(x, ...args) {}") {
@@ -738,15 +738,15 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         val List(t, x, args) = method.parameter.l
         t.index shouldBe 0
         t.name shouldBe "this"
-        t.typeFullName shouldBe Defines.ANY
+        t.typeFullName shouldBe Defines.Any
         x.index shouldBe 1
         x.name shouldBe "x"
-        x.typeFullName shouldBe Defines.ANY
+        x.typeFullName shouldBe Defines.Any
         args.index shouldBe 2
         args.name shouldBe "args"
         args.code shouldBe "...args"
         args.isVariadic shouldBe true
-        args.typeFullName shouldBe Defines.ANY
+        args.typeFullName shouldBe Defines.Any
     }
 
     "have correct structure for decl assignment" in AstFixture("function foo(x) { var local = 1; }") { cpg =>
@@ -756,10 +756,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.ANY
+      t.typeFullName shouldBe Defines.Any
       x.index shouldBe 1
       x.name shouldBe "x"
-      x.typeFullName shouldBe Defines.ANY
+      x.typeFullName shouldBe Defines.Any
 
       val List(local) = block.astChildren.isLocal.l
       local.name shouldBe "local"
@@ -778,10 +778,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.ANY
+      t.typeFullName shouldBe Defines.Any
       x.index shouldBe 1
       x.name shouldBe "x"
-      x.typeFullName shouldBe Defines.ANY
+      x.typeFullName shouldBe Defines.Any
 
       val List(local) = block.astChildren.isLocal.l
       local.name shouldBe "local"
@@ -801,13 +801,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x, y) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.ANY
+      t.typeFullName shouldBe Defines.Any
       x.index shouldBe 1
       x.name shouldBe "x"
-      x.typeFullName shouldBe Defines.ANY
+      x.typeFullName shouldBe Defines.Any
       y.index shouldBe 2
       y.name shouldBe "y"
-      y.typeFullName shouldBe Defines.ANY
+      y.typeFullName shouldBe Defines.Any
 
       val List(firstLocal, secondLocal) = block.astChildren.isLocal.l
       firstLocal.name shouldBe "local1"

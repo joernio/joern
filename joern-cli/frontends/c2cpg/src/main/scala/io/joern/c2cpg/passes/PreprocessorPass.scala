@@ -22,9 +22,9 @@ class PreprocessorPass(config: Config) {
 
   private def preprocessorStatement2String(stmt: IASTPreprocessorStatement): Option[String] = stmt match {
     case s: IASTPreprocessorIfStatement =>
-      Some(s.getCondition.mkString + { if (s.taken()) "=true" else "" })
+      Option(s"${s.getCondition.mkString}${if (s.taken()) "=true" else ""}")
     case s: IASTPreprocessorIfdefStatement =>
-      Some(s.getCondition.mkString + { if (s.taken()) "=true" else "" })
+      Option(s"${s.getCondition.mkString}${if (s.taken()) "=true" else ""}")
     case _ => None
   }
 

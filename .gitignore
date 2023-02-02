@@ -27,6 +27,7 @@ null
 .local
 **/astgen-win.exe
 **/astgen-macos
+**/astgen-macos-arm
 **/astgen-linux
 **/php2cpg/bin/vendor/
 **/php2cpg/bin/composer*

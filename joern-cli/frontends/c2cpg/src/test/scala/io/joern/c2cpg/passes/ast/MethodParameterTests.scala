@@ -15,15 +15,15 @@ class MethodParameterTests extends CCodeToCpgSuite {
     val List(x) = cpg.parameter.name("argc").l
     x.code shouldBe "int argc"
     x.typeFullName shouldBe "int"
-    x.lineNumber shouldBe Some(2)
-    x.columnNumber shouldBe Some(12)
+    x.lineNumber shouldBe Option(2)
+    x.columnNumber shouldBe Option(12)
     x.order shouldBe 1
 
     val List(y) = cpg.parameter.name("argv").l
     y.code shouldBe "char **argv"
     y.typeFullName shouldBe "char"
-    y.lineNumber shouldBe Some(2)
-    y.columnNumber shouldBe Some(22)
+    y.lineNumber shouldBe Option(2)
+    y.columnNumber shouldBe Option(22)
     y.order shouldBe 2
   }
 

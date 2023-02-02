@@ -65,7 +65,7 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         fileC.write("c")
 
         // should be ignored
-        val d = (dir / Defines.NODE_MODULES_FOLDER).createDirectory()
+        val d = (dir / Defines.NodeModulesFolder).createDirectory()
         (d / "d.json").write("d")
 
         val cpg = Cpg.emptyCpg
@@ -125,7 +125,7 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
 
     "ignore ConfigFiles correctly" in {
       File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
-        val d     = (dir / Defines.NODE_MODULES_FOLDER).createDirectory()
+        val d     = (dir / Defines.NodeModulesFolder).createDirectory()
         val fileA = d / "a.key"
         fileA.write("-----BEGIN RSA PRIVATE KEY-----\n123456789\n-----END RSA PRIVATE KEY-----")
 
