@@ -245,7 +245,7 @@ class HeldTaskCompletion(
     entry.path.foreach(element => {
       priority = priority + element.callSiteStack.length * multiplier
       priority = priority + element.node.id() * multiplier * 64
-      priority = priority + element.isOutputArg.hashCode() * multiplier * 64
+      priority = priority + element.isOutputArg.hashCode() * multiplier * multiplier *64
       priority = priority + element.visible.hashCode() * multiplier * 64
     })
     priority
