@@ -5,6 +5,7 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
@@ -34,7 +35,7 @@ trait AstNodeBuilder { this: AstCreator =>
 
   protected def createTypeDeclNode(
     name: String,
-    fullname: String,
+    fullName: String,
     filename: String,
     code: String,
     astParentType: String = "",
@@ -46,7 +47,7 @@ trait AstNodeBuilder { this: AstCreator =>
   ): NewTypeDecl =
     NewTypeDecl()
       .name(name)
-      .fullName(fullname)
+      .fullName(fullName)
       .code(code)
       .isExternal(false)
       .filename(filename)
@@ -64,16 +65,7 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(ret.columnNumber)
 
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
-    val line   = func.lineNumber
-    val column = func.columnNumber
-    val code   = "RET"
-    val tpe    = typeFor(func)
-    NewMethodReturn()
-      .code(code)
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(tpe)
-      .lineNumber(line)
-      .columnNumber(column)
+    methodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
   }
 
   protected def setOrderExplicitly(ast: Ast, order: Int): Unit = {
@@ -167,7 +159,7 @@ trait AstNodeBuilder { this: AstCreator =>
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .lineNumber(line)
       .columnNumber(column)
-      .typeFullName(tpe.getOrElse(Defines.ANY))
+      .typeFullName(tpe.getOrElse(Defines.Any))
     scope.addVariable(name, param, MethodScope)
     param
   }
@@ -183,24 +175,15 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column)
   }
 
-  protected def createImportNode(
-    impDecl: BabelNodeInfo,
-    importedEntity: Option[String],
-    importedAs: String
-  ): NewImport =
-    NewImport()
-      .code(impDecl.code.stripSuffix(";"))
-      .importedEntity(importedEntity)
-      .importedAs(importedAs)
-      .lineNumber(impDecl.lineNumber)
-      .columnNumber(impDecl.columnNumber)
-
-  protected def createMemberNode(name: String, code: String, dynamicTypeOption: Option[String]): NewMember =
+  protected def createMemberNode(name: String, node: BabelNodeInfo, dynamicTypeOption: Option[String]): NewMember = {
+    val tpe  = typeFor(node)
+    val code = node.code
     NewMember()
       .code(code)
       .name(name)
-      .typeFullName(Defines.ANY)
+      .typeFullName(tpe)
       .dynamicTypeHintFullName(dynamicTypeOption.toList)
+  }
 
   protected def createMethodNode(methodName: String, methodFullName: String, func: BabelNodeInfo): NewMethod = {
     val line      = func.lineNumber
@@ -321,7 +304,7 @@ trait AstNodeBuilder { this: AstCreator =>
     .dispatchType(dispatchType)
     .lineNumber(line)
     .columnNumber(column)
-    .typeFullName(Defines.ANY)
+    .typeFullName(Defines.Any)
 
   protected def createVoidCallNode(line: Option[Integer], column: Option[Integer]): NewCall =
     createCallNode("void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH, line, column)
@@ -346,8 +329,8 @@ trait AstNodeBuilder { this: AstCreator =>
     column: Option[Integer]
   ): NewLiteral = {
     val typeFullName = dynamicTypeOption match {
-      case Some(value) if Defines.JSTYPES.contains(value) => value
-      case _                                              => Defines.ANY
+      case Some(value) if Defines.JsTypes.contains(value) => value
+      case _                                              => Defines.Any
     }
     NewLiteral()
       .code(code)
@@ -391,8 +374,8 @@ trait AstNodeBuilder { this: AstCreator =>
   protected def createIdentifierNode(name: String, node: BabelNodeInfo): NewIdentifier = {
     val dynamicInstanceTypeOption = name match {
       case "this"    => dynamicInstanceTypeStack.headOption
-      case "console" => Option(Defines.CONSOLE)
-      case "Math"    => Option(Defines.MATH)
+      case "console" => Option(Defines.Console)
+      case "Math"    => Option(Defines.Math)
       case _         => None
     }
     createIdentifierNode(name, dynamicInstanceTypeOption, node.lineNumber, node.columnNumber)
@@ -408,7 +391,7 @@ trait AstNodeBuilder { this: AstCreator =>
     .code(name)
     .lineNumber(line)
     .columnNumber(column)
-    .typeFullName(Defines.ANY)
+    .typeFullName(Defines.Any)
     .dynamicTypeHintFullName(dynamicTypeOption.toList)
 
   protected def createStaticCallNode(
@@ -425,7 +408,7 @@ trait AstNodeBuilder { this: AstCreator =>
     .signature("")
     .lineNumber(line)
     .columnNumber(column)
-    .typeFullName(Defines.ANY)
+    .typeFullName(Defines.Any)
 
   protected def createLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal =
     NewLocal().code(name).name(name).typeFullName(typeFullName).closureBindingId(closureBindingId).order(0)
@@ -452,7 +435,7 @@ trait AstNodeBuilder { this: AstCreator =>
 
   protected def createBlockNode(node: BabelNodeInfo, customCode: Option[String] = None): NewBlock =
     NewBlock()
-      .typeFullName(Defines.ANY)
+      .typeFullName(Defines.Any)
       .code(customCode.getOrElse(node.code))
       .lineNumber(node.lineNumber)
       .columnNumber(node.columnNumber)
@@ -476,7 +459,7 @@ trait AstNodeBuilder { this: AstCreator =>
         methodName,
         astParentType = astParentType,
         astParentFullName = astParentFullName
-      ).inheritsFromTypeFullName(List(Defines.ANY))
+      ).inheritsFromTypeFullName(List(Defines.Any))
 
     // Problem for https://github.com/ShiftLeftSecurity/codescience/issues/3626 here.
     // As the type (thus, the signature) of the function node is unknown (i.e., ANY*)

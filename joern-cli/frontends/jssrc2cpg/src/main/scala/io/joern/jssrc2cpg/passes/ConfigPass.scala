@@ -27,7 +27,7 @@ class ConfigPass(cpg: Cpg, config: Config, report: Report = new Report()) extend
   protected def configFiles(config: Config, extensions: Set[String]): Seq[File] =
     SourceFiles
       .determine(config.inputPath, extensions)
-      .filterNot(_.contains(Defines.NODE_MODULES_FOLDER))
+      .filterNot(_.contains(Defines.NodeModulesFolder))
       .filter(f => selectedExtensions.exists(f.endsWith))
       .map(File(_))
 

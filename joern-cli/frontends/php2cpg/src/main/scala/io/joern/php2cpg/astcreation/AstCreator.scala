@@ -6,7 +6,13 @@ import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
-import io.joern.x2cpg.utils.NodeBuilders.{fieldIdentifierNode, identifierNode, modifierNode, operatorCallNode}
+import io.joern.x2cpg.utils.NodeBuilders.{
+  fieldIdentifierNode,
+  identifierNode,
+  methodReturnNode,
+  modifierNode,
+  operatorCallNode
+}
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -213,7 +219,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case staticStmt: PhpStaticStmt => astsForStaticStmt(staticStmt)
       case stmt                      => astForStmt(stmt) :: Nil
     }
-    val methodReturn = methodReturnNode(returnType, line = line(decl), column = None).code("RET")
+    val methodReturn = methodReturnNode(returnType, line = line(decl), column = None)
 
     val declLocals = scope.getLocalsInScope.map(Ast(_))
     val methodBody = blockAst(NewBlock(), declLocals ++ methodBodyStmts)
@@ -846,7 +852,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val methodBody = blockAst(NewBlock(), scope.getFieldInits)
 
-    val methodReturn = NewMethodReturn().typeFullName(TypeConstants.Any).code("RET")
+    val methodReturn = methodReturnNode(TypeConstants.Any, line = None, column = None)
 
     methodAstWithAnnotations(methodNode, thisParam :: Nil, methodBody, methodReturn, modifiers)
   }

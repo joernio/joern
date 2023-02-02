@@ -213,8 +213,8 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
 
     "be correct for outer program function which declares foo function object" in {
       implicit val cpg: Cpg = code("function foo(x, y) { return; }")
-      succOf(":program") shouldBe expected(("foo", 1, AlwaysEdge))
-      succOf("foo", NodeTypes.IDENTIFIER) shouldBe expected(("foo", 2, AlwaysEdge))
+      succOf(":program", NodeTypes.METHOD) shouldBe expected(("foo", 2, AlwaysEdge))
+      succOf("foo", NodeTypes.IDENTIFIER) shouldBe expected(("foo", 3, AlwaysEdge))
       succOf("foo", NodeTypes.METHOD_REF) shouldBe expected(
         ("function foo = function foo(x, y) { return; }", AlwaysEdge)
       )

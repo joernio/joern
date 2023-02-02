@@ -6,37 +6,31 @@ import io.joern.jssrc2cpg.preprocessing.EjsPreprocessor
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
+import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
+import versionsort.VersionHelper
 
 import java.nio.file.Paths
 import scala.util.Failure
 import scala.util.Success
 import scala.util.matching.Regex
 import scala.util.Try
+import scala.sys.process.stringToProcess
 
 object AstGenRunner {
-  case class AstGenRunnerResult(
-    parsedFiles: List[(String, String)] = List.empty,
-    skippedFiles: List[(String, String)] = List.empty
-  )
-}
-
-class AstGenRunner(config: Config) {
-
-  import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private val LINE_LENGTH_THRESHOLD: Int = 10000
+  private val LineLengthThreshold: Int = 10000
 
-  private val TYPE_DEFINITION_FILE_EXTENSIONS = List(".t.ts.json", ".d.ts.json")
+  private val TypeDefinitionFileExtensions = List(".t.ts.json", ".d.ts.json")
 
-  private val MINIFIED_PATH_REGEX: Regex = ".*([.-]min\\..*js|bundle\\.js)".r
+  private val MinifiedPathRegex: Regex = ".*([.-]min\\..*js|bundle\\.js)".r
 
-  private val IGNORED_TESTS_REGEX: Seq[Regex] =
+  private val IgnoredTestsRegex: Seq[Regex] =
     List(".*[.-]spec\\.js".r, ".*[.-]mock\\.js".r, ".*[.-]e2e\\.js".r, ".*[.-]test\\.js".r)
 
-  private val IGNORED_FILES_REGEX: Seq[Regex] = List(
+  private val IgnoredFilesRegex: Seq[Regex] = List(
     ".*jest\\.config.*".r,
     ".*webpack\\..*\\.js".r,
     ".*vue\\.config\\.js".r,
@@ -54,21 +48,25 @@ class AstGenRunner(config: Config) {
     ".*eslint-local-rules\\.js".r
   )
 
-  private val EXECUTABLE_ARGS = if (!config.tsTypes) {
-    " --no-tsTypes"
-  } else {
-    ""
+  case class AstGenRunnerResult(
+    parsedFiles: List[(String, String)] = List.empty,
+    skippedFiles: List[(String, String)] = List.empty
+  )
+
+  lazy private val executableName = Environment.operatingSystem match {
+    case Environment.OperatingSystemType.Windows => "astgen-win.exe"
+    case Environment.OperatingSystemType.Linux   => "astgen-linux"
+    case Environment.OperatingSystemType.Mac =>
+      Environment.architecture match {
+        case Environment.ArchitectureType.X86 => "astgen-macos"
+        case Environment.ArchitectureType.ARM => "astgen-macos-arm"
+      }
+    case Environment.OperatingSystemType.Unknown =>
+      logger.warn("Could not detect OS version! Defaulting to 'Linux'.")
+      "astgen-linux"
   }
 
-  private val EXECUTABLE_NAME = if (Environment.IS_MAC) {
-    "astgen-macos"
-  } else if (Environment.IS_LINUX) {
-    "astgen-linux"
-  } else {
-    "astgen-win.exe"
-  }
-
-  private val EXECUTABLE_DIR: String = {
+  lazy private val executableDir: String = {
     val dir        = getClass.getProtectionDomain.getCodeSource.getLocation.toString
     val indexOfLib = dir.lastIndexOf("lib")
     val fixedDir = if (indexOfLib != -1) {
@@ -83,6 +81,37 @@ class AstGenRunner(config: Config) {
     }
     Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
   }
+
+  private def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
+    Try("astgen --version".!!).toOption.map(_.strip()) match {
+      case Some(installedVersion) if VersionHelper.compare(installedVersion, astGenVersion) >= 0 =>
+        logger.debug(s"Using local astgen v$installedVersion from systems PATH")
+        true
+      case Some(installedVersion) =>
+        logger.debug(
+          s"Found local astgen v$installedVersion in systems PATH but jssrc2cpg requires at least v$astGenVersion"
+        )
+        false
+      case _ => false
+    }
+  }
+
+  private lazy val astGenCommand = {
+    val conf          = ConfigFactory.load
+    val astGenVersion = conf.getString("jssrc2cpg.astgen_version")
+    if (hasCompatibleAstGenVersion(astGenVersion)) {
+      "astgen"
+    } else {
+      s"$executableDir/$executableName"
+    }
+  }
+}
+
+class AstGenRunner(config: Config) {
+
+  import io.joern.jssrc2cpg.utils.AstGenRunner._
+
+  private val executableArgs = if (!config.tsTypes) " --no-tsTypes" else ""
 
   private def skippedFiles(in: File, astgenOut: List[String]): List[String] = {
     val skipped = astgenOut.collect {
@@ -114,12 +143,12 @@ class AstGenRunner(config: Config) {
   }
 
   private def isMinifiedFile(filePath: String): Boolean = filePath match {
-    case p if MINIFIED_PATH_REGEX.matches(p) => true
+    case p if MinifiedPathRegex.matches(p) => true
     case p if File(p).exists && p.endsWith(".js") =>
       val lines             = IOUtils.readLinesInFile(File(filePath).path)
       val linesOfCode       = lines.size
       val longestLineLength = if (lines.isEmpty) 0 else lines.map(_.length).max
-      if (longestLineLength >= LINE_LENGTH_THRESHOLD && linesOfCode <= 50) {
+      if (longestLineLength >= LineLengthThreshold && linesOfCode <= 50) {
         logger.debug(s"'$filePath' seems to be a minified file (contains a line with length $longestLineLength)")
         true
       } else false
@@ -128,8 +157,8 @@ class AstGenRunner(config: Config) {
 
   private def isIgnoredByDefault(filePath: String, config: Config, out: File): Boolean = {
     val resolvedFilePath   = filePath.stripSuffix(".json").replace(out.pathAsString, config.inputPath)
-    lazy val isIgnored     = IGNORED_FILES_REGEX.exists(_.matches(resolvedFilePath))
-    lazy val isIgnoredTest = IGNORED_TESTS_REGEX.exists(_.matches(resolvedFilePath))
+    lazy val isIgnored     = IgnoredFilesRegex.exists(_.matches(resolvedFilePath))
+    lazy val isIgnoredTest = IgnoredTestsRegex.exists(_.matches(resolvedFilePath))
     lazy val isMinified    = isMinifiedFile(resolvedFilePath)
     if (isIgnored || isIgnoredTest || isMinified) {
       logger.debug(s"'$resolvedFilePath' ignored by default")
@@ -144,10 +173,10 @@ class AstGenRunner(config: Config) {
       // We are not interested in JS / TS type definition files at this stage.
       // TODO: maybe we can enable that later on and use the type definitions there
       //  for enhancing the CPG with additional type information for functions
-      case filePath if TYPE_DEFINITION_FILE_EXTENSIONS.exists(filePath.endsWith) => false
-      case filePath if isIgnoredByUserConfig(filePath, config, out)              => false
-      case filePath if isIgnoredByDefault(filePath, config, out)                 => false
-      case _                                                                     => true
+      case filePath if TypeDefinitionFileExtensions.exists(filePath.endsWith) => false
+      case filePath if isIgnoredByUserConfig(filePath, config, out)           => false
+      case filePath if isIgnoredByDefault(filePath, config, out)              => false
+      case _                                                                  => true
     }
   }
 
@@ -164,7 +193,7 @@ class AstGenRunner(config: Config) {
       jsFile
     }
 
-    val result = ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME$EXECUTABLE_ARGS -t ts -o $out", out.toString())
+    val result = ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -o $out", out.toString())
 
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>
@@ -190,12 +219,12 @@ class AstGenRunner(config: Config) {
   private def vueFiles(in: File, out: File): Try[Seq[String]] = {
     val files = SourceFiles.determine(in.pathAsString, Set(".vue"))
     if (files.nonEmpty)
-      ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME$EXECUTABLE_ARGS -t vue -o $out", in.toString())
+      ExternalCommand.run(s"$astGenCommand$executableArgs -t vue -o $out", in.toString())
     else Success(Seq.empty)
   }
 
   private def jsFiles(in: File, out: File): Try[Seq[String]] =
-    ExternalCommand.run(s"$EXECUTABLE_DIR/$EXECUTABLE_NAME$EXECUTABLE_ARGS -t ts -o $out", in.toString())
+    ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -o $out", in.toString())
 
   private def runAstGenNative(in: File, out: File): Try[Seq[String]] = for {
     ejsResult <- ejsFiles(in, out)

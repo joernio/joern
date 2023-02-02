@@ -44,7 +44,7 @@ object IncludeAutoDiscovery {
     case Some(value) =>
       value
     case None =>
-      isGccAvailable = Some(checkForGcc())
+      isGccAvailable = Option(checkForGcc())
       isGccAvailable.get
   }
 
@@ -70,10 +70,8 @@ object IncludeAutoDiscovery {
     } else if (config.includePathsAutoDiscovery && systemIncludePathsC.isEmpty && gccAvailable()) {
       val includePathsC = discoverPaths(C_INCLUDE_COMMAND)
       if (includePathsC.nonEmpty) {
-        logger.info(
-          "Using the following C system include paths:" + includePathsC
-            .mkString(System.lineSeparator() + "- ", System.lineSeparator() + "- ", System.lineSeparator())
-        )
+        logger.info(s"Using the following C system include paths:${includePathsC
+            .mkString(s"${System.lineSeparator()}- ", s"${System.lineSeparator()}- ", System.lineSeparator())}")
       }
       systemIncludePathsC = includePathsC
       includePathsC
@@ -88,10 +86,8 @@ object IncludeAutoDiscovery {
     } else if (config.includePathsAutoDiscovery && systemIncludePathsCPP.isEmpty && gccAvailable()) {
       val includePathsCPP = discoverPaths(CPP_INCLUDE_COMMAND)
       if (includePathsCPP.nonEmpty) {
-        logger.info(
-          "Using the following CPP system include paths:" + includePathsCPP
-            .mkString(System.lineSeparator() + "- ", System.lineSeparator() + "- ", System.lineSeparator())
-        )
+        logger.info(s"Using the following CPP system include paths:${includePathsCPP
+            .mkString(s"${System.lineSeparator()}- ", s"${System.lineSeparator()}- ", System.lineSeparator())}")
       }
       systemIncludePathsCPP = includePathsCPP
       includePathsCPP

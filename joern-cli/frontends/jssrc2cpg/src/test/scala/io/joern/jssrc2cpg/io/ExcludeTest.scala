@@ -32,7 +32,7 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
   )
 
   private val projectUnderTest: File = {
-    val dir = File.newTemporaryDirectory("jssrc2cpgTestsExludeTest")
+    val dir = File.newTemporaryDirectory("jssrc2cpgTestsExcludeTest")
     testFiles.foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)

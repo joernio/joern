@@ -7,12 +7,12 @@ import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.{Stack, _}
+import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase}
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
@@ -87,6 +87,7 @@ class AstCreator(
 
     val programMethod =
       NewMethod()
+        .order(1)
         .name(name)
         .code(name)
         .fullName(fullName)
@@ -100,12 +101,11 @@ class AstCreator(
 
     val functionTypeAndTypeDeclAst =
       createFunctionTypeAndTypeDeclAst(programMethod, methodAstParentStack.head, name, fullName, path)
-    Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
     rootTypeDecl.push(functionTypeAndTypeDeclAst.nodes.head.asInstanceOf[NewTypeDecl])
 
     methodAstParentStack.push(programMethod)
 
-    val blockNode = NewBlock().typeFullName(Defines.ANY)
+    val blockNode = NewBlock().typeFullName(Defines.Any)
 
     scope.pushNewMethodScope(fullName, name, blockNode, None)
     localAstParentStack.push(blockNode)
@@ -116,16 +116,15 @@ class AstCreator(
     val methodChildren = astsForFile(astNodeInfo)
     setArgIndices(methodChildren)
 
-    val methodReturn = NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(Defines.ANY)
+    val methodReturn = methodReturnNode(Defines.Any, line = None, column = None)
 
     localAstParentStack.pop()
     scope.popScope()
     methodAstParentStack.pop()
 
-    methodAst(programMethod, List(thisParam), Ast(blockNode).withChildren(methodChildren), methodReturn)
+    functionTypeAndTypeDeclAst.withChild(
+      methodAst(programMethod, List(thisParam), Ast(blockNode).withChildren(methodChildren), methodReturn)
+    )
   }
 
   protected def astForNode(json: Value): Ast = {

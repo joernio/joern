@@ -76,7 +76,7 @@ class AstCreator(
     methodAstParentStack.push(fakeGlobalTypeDecl)
 
     val fakeGlobalMethod =
-      newMethodNode(iASTTranslationUnit, name, name, fullName, path, Some(NodeTypes.TYPE_DECL), Some(fullName))
+      newMethodNode(iASTTranslationUnit, name, name, fullName, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewScope(fakeGlobalMethod)
 
@@ -93,7 +93,7 @@ class AstCreator(
       )
     }
 
-    val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName).code("RET")
+    val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName)
 
     Ast(fakeGlobalTypeDecl).withChild(
       Ast(fakeGlobalMethod)

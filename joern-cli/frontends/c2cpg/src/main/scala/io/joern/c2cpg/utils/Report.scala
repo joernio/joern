@@ -26,7 +26,7 @@ object Report {
 
 class Report {
 
-  import Report._
+  import io.joern.c2cpg.utils.Report._
 
   private val reports: Reports = TrieMap.empty
 
@@ -39,7 +39,7 @@ class Report {
       // Format each row
       val rows = table.map(
         _.zip(colWidths)
-          .map { case (item, size) => (" %-" + (size - 1) + "s").format(item) }
+          .map { case (item, size) => s" %-${size - 1}s".format(item) }
           .mkString("|", "|", "|")
       )
       // Formatted separator row, used to separate the header and draw table borders
@@ -75,7 +75,7 @@ class Report {
       )
     )
     val table = header ++ rows ++ footer
-    logger.debug(s"Report:${System.lineSeparator()}" + formatTable(table))
+    logger.debug(s"Report:${System.lineSeparator()}${formatTable(table)}")
   }
 
   def addReportInfo(

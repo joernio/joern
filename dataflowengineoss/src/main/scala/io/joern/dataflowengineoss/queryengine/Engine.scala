@@ -34,7 +34,7 @@ class Engine(context: EngineContext) {
     */
   private val mainResultTable: mutable.Map[TaskFingerprint, List[TableEntry]] = mutable.Map()
   private var numberOfTasksRunning: Int                                       = 0
-  private val started: mutable.Buffer[ReachableByTask]                        = mutable.Buffer()
+  private val started: mutable.HashSet[TaskFingerprint]                       = mutable.HashSet[TaskFingerprint]()
   private val held: mutable.Buffer[ReachableByTask]                           = mutable.Buffer()
 
   /** Determine flows from sources to sinks by exploring the graph backwards from sinks to sources. Returns the list of
@@ -110,17 +110,32 @@ class Engine(context: EngineContext) {
     }
 
     submitTasks(tasks.toVector, sources)
+    val startTimeSec: Long = System.currentTimeMillis / 1000
     runUntilAllTasksAreSolved()
+    val taskFinishTimeSec: Long = System.currentTimeMillis / 1000
+    logger.debug(
+      "Time measurement -----> Task processing done in " +
+        (taskFinishTimeSec - startTimeSec) + " seconds"
+    )
     new HeldTaskCompletion(held.toList, mainResultTable).completeHeldTasks()
-    deduplicateFinal(extractResultsFromTable(sinks))
+    val dedupResult          = deduplicateFinal(extractResultsFromTable(sinks))
+    val allDoneTimeSec: Long = System.currentTimeMillis / 1000
+
+    logger.debug(
+      "Time measurement -----> Task processing: " +
+        (taskFinishTimeSec - startTimeSec) + " seconds" +
+        ", Deduplication: " + (allDoneTimeSec - taskFinishTimeSec) +
+        ", Deduped results size: " + dedupResult.length
+    )
+    dedupResult
   }
 
   private def submitTasks(tasks: Vector[ReachableByTask], sources: Set[CfgNode]): Unit = {
     tasks.foreach { task =>
-      if (started.exists(x => x.fingerprint == task.fingerprint)) {
+      if (started.contains(task.fingerprint)) {
         held ++= Vector(task)
       } else {
-        started ++= Vector(task)
+        started.add(task.fingerprint)
         numberOfTasksRunning += 1
         completionService.submit(new TaskSolver(task, context, sources))
       }
