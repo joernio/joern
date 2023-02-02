@@ -5,10 +5,10 @@ crossScalaVersions := Seq("2.13.8", "3.2.1")
 dependsOn(Projects.semanticcpg, Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "org.scala-lang.modules"  %% "scala-parallel-collections" % "1.0.4",
-  "com.diffplug.spotless"    % "spotless-eclipse-cdt"       % "10.5.0",
-  "org.jline"                % "jline"                      % "3.21.0",
-  "org.scalatest"           %% "scalatest"                  % Versions.scalatest % Test
+  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
+  "com.diffplug.spotless"   % "spotless-eclipse-cdt"       % "10.5.0",
+  "org.jline"               % "jline"                      % "3.22.0",
+  "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
