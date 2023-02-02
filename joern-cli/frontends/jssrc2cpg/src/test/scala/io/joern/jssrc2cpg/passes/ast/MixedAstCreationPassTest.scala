@@ -192,6 +192,21 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       cpg.local.name("value").closureBindingId.l shouldBe List("code.js::program:anonymous:anonymous:value")
     }
 
+    "have correct closure binding (argument to call)" in AstFixture(
+      """
+        |const opts: RequestInit = {
+        |  method: "GET",
+        |  headers,
+        |};
+        |
+        |const fetchCookies = () => {
+        |  fetch(`/api/echo/${inputString}`, opts)
+        |};""".stripMargin,
+      "code.ts"
+    ) { cpg =>
+      cpg.local.name("opts").closureBindingId.l shouldBe List("code.ts::program:anonymous:opts")
+    }
+
     "have correct closure binding (destructing assignment)" in AstFixture("""
         |const {closureA} = null;
         |const [closureB] = null;

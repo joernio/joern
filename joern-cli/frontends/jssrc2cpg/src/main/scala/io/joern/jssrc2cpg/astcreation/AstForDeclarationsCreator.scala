@@ -277,11 +277,14 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val declNodeInfo   = createBabelNodeInfo(declarator)
     val initNodeInfo   = Try(createBabelNodeInfo(declarator("init"))).toOption
     val declaratorCode = s"$kind ${code(declarator)}"
+    val typeFullName   = typeFor(declNodeInfo)
 
-    val typeFullName = typeFor(declNodeInfo)
-
-    val localNode = createLocalNode(idNodeInfo.code, typeFullName)
-    scope.addVariable(idNodeInfo.code, localNode, scopeType)
+    val idName = idNodeInfo.node match {
+      case Identifier => idNodeInfo.json("name").str
+      case _          => idNodeInfo.code
+    }
+    val localNode = createLocalNode(idName, typeFullName)
+    scope.addVariable(idName, localNode, scopeType)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 
     if (initNodeInfo.isEmpty) {
