@@ -115,9 +115,7 @@ import io.joern.javasrc2cpg.util.Util.{
   composeMethodFullName,
   composeMethodLikeSignature,
   composeUnresolvedSignature,
-  memberNode,
-  rootCode,
-  rootType
+  memberNode
 }
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -159,6 +157,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.TypeNodePass
+import io.joern.x2cpg.utils.AstPropertiesUtil._
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.{PropertyDefaults => ParameterDefaults}
 import io.shiftleft.passes.IntervalKeyPool
@@ -1842,7 +1841,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeFullName =
       expressionReturnTypeFullName(expr)
-        .orElse(argsAsts.headOption.flatMap(rootType))
+        .orElse(argsAsts.headOption.flatMap(_.rootType))
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
@@ -1970,8 +1969,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeFullName =
       expressionReturnTypeFullName(expr)
-        .orElse(args.headOption.flatMap(rootType))
-        .orElse(args.lastOption.flatMap(rootType))
+        .orElse(args.headOption.flatMap(_.rootType))
+        .orElse(args.lastOption.flatMap(_.rootType))
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
@@ -2037,16 +2036,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .getOrElse(expectedExprType) // resolved target type should be more accurate
     val targetAst = astsForExpression(expr.getTarget, expectedType)
     val argsAsts  = astsForExpression(expr.getValue, expectedType)
-    val valueType = argsAsts.headOption.flatMap(rootType)
+    val valueType = argsAsts.headOption.flatMap(_.rootType)
 
     val typeFullName =
       targetAst.headOption
-        .flatMap(rootType)
+        .flatMap(_.rootType)
         .orElse(valueType)
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
-    val code = s"${rootCode(targetAst)} ${expr.getOperator.asString} ${rootCode(argsAsts)}"
+    val code = s"${targetAst.rootCodeOrEmpty} ${expr.getOperator.asString} ${argsAsts.rootCodeOrEmpty}"
 
     val callNode = operatorCallNode(operatorName, code, Some(typeFullName), line(expr), column(expr))
 
@@ -2146,7 +2145,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val typeName = typeFullName
         .map(TypeNodePass.fullToShortName)
         .getOrElse(s"${Defines.UnresolvedNamespace}.${variable.getTypeAsString}")
-      val code = s"$typeName $name = ${rootCode(initializerAsts)}"
+      val code = s"$typeName $name = ${initializerAsts.rootCodeOrEmpty}"
 
       val callNode = operatorCallNode(Operators.assignment, code, typeFullName, lineNumber, columnNumber)
 
@@ -2228,8 +2227,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val typeFullName =
       expressionReturnTypeFullName(expr)
-        .orElse(thenAst.headOption.flatMap(rootType))
-        .orElse(elseAst.headOption.flatMap(rootType))
+        .orElse(thenAst.headOption.flatMap(_.rootType))
+        .orElse(elseAst.headOption.flatMap(_.rootType))
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
@@ -2801,7 +2800,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def lambdaMethodSignature(returnType: Option[String], parameters: Seq[Ast]): String = {
-    val maybeParameterTypes = toOptionList(parameters.map(rootType))
+    val maybeParameterTypes = toOptionList(parameters.map(_.rootType))
     val containsEmptyType   = maybeParameterTypes.exists(_.contains(ParameterDefaults.TypeFullName))
 
     (returnType, maybeParameterTypes) match {
@@ -3141,7 +3140,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         objectNode.map(Ast(_)).toList
     }
 
-    val receiverType = receiverTypeOption.orElse(scopeAsts.headOption.flatMap(rootType).filter(_ != TypeConstants.Any))
+    val receiverType = receiverTypeOption.orElse(scopeAsts.rootType).filter(_ != TypeConstants.Any)
 
     val argumentsCode = getArgumentCodeString(call.getArguments)
     val codePrefix    = codePrefixForMethodCall(call)
