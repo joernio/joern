@@ -191,19 +191,10 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
     *   assignment call pointer.
     */
   override def visitAssignments(assignment: Assignment): Unit = {
-    // TODO: Handle fields being imported and loaded with a new value
     assignment.argumentOut.take(2).l match {
       case List(i: Identifier, c: Call) if symbolTable.contains(c) =>
         val importedTypes = symbolTable.get(c)
-        if (!c.code.endsWith(")")) {
-          // Case 1: The identifier is at the assignment to a function pointer. Lack of parenthesis should indicate this.
-          setIdentifier(i, importedTypes)
-        } else if (c.name.charAt(0).isUpper && c.code.endsWith(")")) {
-          // Case 2: The identifier is receiving a constructor invocation, thus is now an instance of the type
-          setIdentifier(i, importedTypes.map(_.stripSuffix(s".${Defines.ConstructorMethodName}")))
-        } else {
-          // TODO: This identifier should contain the type of the return value of 'c'. See CallCpgTests L204
-        }
+        setIdentifierFromFunctionType(i, c.name, c.code, importedTypes)
       case List(i: Identifier, c: CfgNode)
           if visitLiteralAssignment(i, c, symbolTable) => // if unsuccessful, then check next
       case List(i: Identifier, c: Call) if c.receiver.isCall.name.exists(_.equals(Operators.fieldAccess)) =>
@@ -247,9 +238,34 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
               // If not available, use a dummy variable that can be useful for call matching
               symbolTable.append(assigned, localTypes.map { t => s"$t.<member>(${f.canonicalName})" })
             }
+          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier)
+              if symbolTable.contains(CallAlias(s"${i.name}.${f.canonicalName}")) =>
+            // In this case, if are the paths of an import, e.g. import foo.bar and it is referred to as foo.bar later
+            // TODO: Does this handle foo.bar.baz ?
+            val callAlias     = CallAlias(s"${i.name}.${f.canonicalName}")
+            val importedTypes = symbolTable.get(callAlias)
+            setIdentifierFromFunctionType(assigned, callAlias.identifier, callAlias.identifier, importedTypes)
           case _ =>
         }
       case _ =>
+    }
+  }
+
+  private def setIdentifierFromFunctionType(
+    i: Identifier,
+    callName: String,
+    callCode: String,
+    importedTypes: Set[String]
+  ): Unit = {
+    if (!callCode.endsWith(")")) {
+      // Case 1: The identifier is at the assignment to a function pointer. Lack of parenthesis should indicate this.
+      setIdentifier(i, importedTypes)
+    } else if (callName.charAt(0).isUpper && callCode.endsWith(")")) {
+      // Case 2: The identifier is receiving a constructor invocation, thus is now an instance of the type
+      setIdentifier(i, importedTypes.map(_.stripSuffix(s".${Defines.ConstructorMethodName}")))
+    } else {
+      // TODO: This identifier should contain the type of the return value of 'c'.
+      //  e.g. x = foo(a, b) but not x = y.foo(a, b) as foo in the latter case is interpetted as a field access
     }
   }
 

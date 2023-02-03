@@ -312,4 +312,20 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "a constructor call from a field access of an externally imported package" should {
+    lazy val cpg = code("""
+        |import urllib.error
+        |import urllib.request
+        |
+        |req = urllib.request.Request(url=apiUrl, data=dataBytes, method='POST')
+        |""".stripMargin)
+
+    "reasonably determine the constructor type" in {
+      val Some(tmp0) = cpg.identifier("tmp0").headOption
+      tmp0.typeFullName shouldBe "urllib.py:<module>.request"
+      val Some(requestCall) = cpg.call("Request").headOption
+      requestCall.methodFullName shouldBe "urllib.py:<module>.request.Request.<init>"
+    }
+  }
+
 }
