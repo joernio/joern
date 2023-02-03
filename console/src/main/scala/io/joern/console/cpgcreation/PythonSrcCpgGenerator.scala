@@ -2,7 +2,7 @@ package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
 import io.shiftleft.codepropertygraph.Cpg
-import io.joern.pysrc2cpg.{PythonTypeRecovery, PythonTypeHintCallLinker, PythonNaiveCallLinker}
+import io.joern.pysrc2cpg.{ImportsPass, PythonNaiveCallLinker, PythonTypeHintCallLinker, PythonTypeRecovery}
 
 import java.nio.file.Path
 
@@ -24,6 +24,7 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
     command.toFile.exists
 
   override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
+    new ImportsPass(cpg).createAndApply()
     new PythonTypeRecovery(cpg).createAndApply()
     new PythonTypeHintCallLinker(cpg).createAndApply()
     new PythonNaiveCallLinker(cpg).createAndApply()

@@ -64,19 +64,16 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         val importAssignLhsIdentifierNode =
           createIdentifierNode(importedAsIdentifierName, Store, lineAndCol)
 
-        val importCallNode = createCall(
-          createIdentifierNode("import", Load, lineAndCol),
-          "import",
-          lineAndCol,
-          Seq(
-            nodeBuilder.stringLiteralNode(from, lineAndCol),
-            nodeBuilder.stringLiteralNode(alias.name, lineAndCol)
-          ) ++ (alias.asName match {
-            case Some(aliasName) => Seq(nodeBuilder.stringLiteralNode(aliasName, lineAndCol))
-            case None            => Seq()
-          }),
-          Nil
-        )
+        val arguments = Seq(
+          nodeBuilder.stringLiteralNode(from, lineAndCol),
+          nodeBuilder.stringLiteralNode(alias.name, lineAndCol)
+        ) ++ (alias.asName match {
+          case Some(aliasName) => Seq(nodeBuilder.stringLiteralNode(aliasName, lineAndCol))
+          case None            => Seq()
+        })
+
+        val importCallNode =
+          createCall(createIdentifierNode("import", Load, lineAndCol), "import", lineAndCol, arguments, Nil)
 
         val assignNode = createAssignment(importAssignLhsIdentifierNode, importCallNode, lineAndCol)
         assignNode
