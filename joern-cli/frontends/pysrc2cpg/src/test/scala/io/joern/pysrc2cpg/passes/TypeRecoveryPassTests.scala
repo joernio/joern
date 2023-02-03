@@ -303,10 +303,12 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "provide a dummy type" in {
+      val Some(log) = cpg.identifier("log").headOption
+      log.typeFullName shouldBe "logging.py:<module>.getLogger.<returnValue>"
       val List(errorCall) = cpg.call("error").l
-      errorCall.methodFullName shouldBe "logging.py:<module>.getLogger.error"
+      errorCall.methodFullName shouldBe "logging.py:<module>.getLogger.<returnValue>.error"
       val List(getLoggerCall) = cpg.call("getLogger").l
-      getLoggerCall.methodFullName shouldBe "logging.py:<module>"
+      getLoggerCall.methodFullName shouldBe "logging.py:<module>.getLogger"
     }
   }
 

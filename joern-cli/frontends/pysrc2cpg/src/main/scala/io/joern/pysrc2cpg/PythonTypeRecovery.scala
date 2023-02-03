@@ -202,7 +202,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
           // Case 2: The identifier is receiving a constructor invocation, thus is now an instance of the type
           setIdentifier(i, importedTypes.map(_.stripSuffix(s".${Defines.ConstructorMethodName}")))
         } else {
-          // TODO: This identifier should contain the type of the return value of 'c'
+          // TODO: This identifier should contain the type of the return value of 'c'. See CallCpgTests L204
         }
       case List(i: Identifier, c: CfgNode)
           if visitLiteralAssignment(i, c, symbolTable) => // if unsuccessful, then check next
@@ -266,6 +266,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
   ): Unit = {
     field.astChildren.l match {
       case List(rec: Identifier, f: FieldIdentifier) if symbolTable.contains(rec) =>
+        // First we ask if the call receiver is known as a variable
         val identifierFullName = symbolTable.get(rec).map(_.concat(s".${f.canonicalName}"))
         val callMethodFullName =
           if (f.canonicalName.charAt(0).isUpper)
@@ -274,6 +275,12 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
             identifierFullName
         symbolTable.put(i, identifierFullName)
         symbolTable.put(c, callMethodFullName)
+      case List(rec: Identifier, f: FieldIdentifier) if symbolTable.contains(CallAlias(rec.name)) =>
+        // Second we ask if the call receiver is known as a function pointer (imports are interpretted as functions first)
+        val funcTypes = symbolTable.get(CallAlias(rec.name)).map(t => s"$t.${f.canonicalName}")
+        // TODO: Look in the CPG if we can resolve the method return value
+        symbolTable.put(i, funcTypes.map(t => s"$t.<returnValue>"))
+        symbolTable.put(c, funcTypes)
       case _ =>
     }
   }
