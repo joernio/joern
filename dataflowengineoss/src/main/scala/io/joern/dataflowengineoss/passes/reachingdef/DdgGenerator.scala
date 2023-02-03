@@ -114,7 +114,7 @@ class DdgGenerator(semantics: Semantics) {
           .filterNot(x => numberToNode.get(x).contains(use))
           .flatMap(numberToNode.get)
           .foreach { inElemNode =>
-            addEdge(inElemNode, ret, nodeToEdgeLabel(inElemNode))
+            addEdge(inElemNode, use, nodeToEdgeLabel(inElemNode))
           }
         if (inElements.isEmpty) {
           addEdge(method, ret)
