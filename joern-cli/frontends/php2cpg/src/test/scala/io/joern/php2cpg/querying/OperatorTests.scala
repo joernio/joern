@@ -237,7 +237,7 @@ class OperatorTests extends PhpCode2CpgFixture {
         call
       }
 
-      // Code is not exactly like the original because we loose the spacing information during parsing
+      // Code is not exactly like the original because we lose the spacing information during parsing
       call.code shouldBe "isset($a,$b,$c)"
       call.methodFullName shouldBe PhpOperators.issetFunc
       call.typeFullName shouldBe TypeConstants.Bool
