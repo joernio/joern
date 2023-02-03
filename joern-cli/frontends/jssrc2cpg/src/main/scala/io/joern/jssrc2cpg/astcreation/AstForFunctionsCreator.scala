@@ -4,6 +4,7 @@ import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.datastructures.MethodScope
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier => _, _}
@@ -135,6 +136,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
                 scope.addVariable(elemName, localNode, MethodScope)
 
                 val paramNode = createIdentifierNode(paramName, elementNodeInfo)
+                scope.addVariableReference(paramName, paramNode)
+
                 val keyNode =
                   createFieldIdentifierNode(elemName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
                 val accessAst =
@@ -178,6 +181,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
               scope.addVariable(elemName, localNode, MethodScope)
 
               val paramNode = createIdentifierNode(paramName, elementNodeInfo)
+              scope.addVariableReference(paramName, paramNode)
+
               val keyNode =
                 createFieldIdentifierNode(elemName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
               val accessAst =

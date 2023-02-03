@@ -4,6 +4,7 @@ import io.joern.jssrc2cpg.passes.AbstractPassTest
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 import io.shiftleft.semanticcpg.language._
 
 class MixedAstCreationPassTest extends AbstractPassTest {
@@ -786,6 +787,23 @@ class MixedAstCreationPassTest extends AbstractPassTest {
 
       val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l
       tmpReturnIdentifier.name shouldBe "_tmp_0"
+    }
+
+    "have correct ref edge (destructing parameter)" in AstFixture("""
+        |const WindowOpen = ({ value }) => {
+        |  return (
+        |    <div>
+        |      <Button variant="outlined" onClick={() => windowOpenButton(value)}>
+        |        TRY ME!
+        |      </Button>
+        |    </div>
+        |  );
+        |};
+        """.stripMargin) { cpg =>
+      val List(param) = cpg.identifier.name("param1_0").refsTo.collectAll[MethodParameterIn].l
+      param.name shouldBe "param1_0"
+      param.code shouldBe "{ value }"
+      param.method.fullName shouldBe "code.js::program:anonymous"
     }
 
     "have correct structure for object deconstruction in function parameter" in AstFixture(
