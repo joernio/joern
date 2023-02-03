@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.PropertyNames
 
 object AstPropertiesUtil {
 
-  implicit class RootProperties(ast: Ast) {
+  implicit class RootProperties(val ast: Ast) extends AnyVal {
 
     private def rootProperty(propertyName: String): Option[String] = {
       ast.root.flatMap(_.properties.get(propertyName).map(_.toString))
@@ -19,7 +19,7 @@ object AstPropertiesUtil {
 
   }
 
-  implicit class RootPropertiesOnSeq(asts: Seq[Ast]) {
+  implicit class RootPropertiesOnSeq(val asts: Seq[Ast]) extends AnyVal {
 
     def rootType: Option[String] = asts.headOption.flatMap(_.rootType)
 
