@@ -65,7 +65,10 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   private def createMethodStub(methodName: String, call: Call, builder: DiffGraphBuilder): NewMethod = {
-    val name = if (methodName.contains(".")) methodName.substring(methodName.lastIndexOf(".")) else methodName
+    val name =
+      if (methodName.contains(".") && methodName.length > methodName.lastIndexOf(".") + 1)
+        methodName.substring(methodName.lastIndexOf(".") + 1)
+      else methodName
     MethodStubCreator
       .createMethodStub(name, methodName, "", DispatchTypes.DYNAMIC_DISPATCH.name(), call.argumentOut.size, builder)
   }

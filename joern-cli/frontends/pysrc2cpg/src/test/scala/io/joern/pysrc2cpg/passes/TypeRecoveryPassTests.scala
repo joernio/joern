@@ -295,4 +295,37 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   }
 
+  "assignment from a call to a method inside an imported module" should {
+    lazy val cpg = code("""
+        |import logging
+        |log = logging.getLogger(__name__)
+        |log.error("foo")
+        |""".stripMargin)
+
+    "provide a dummy type" in {
+      val Some(log) = cpg.identifier("log").headOption
+      log.typeFullName shouldBe "logging.py:<module>.getLogger.<returnValue>"
+      val List(errorCall) = cpg.call("error").l
+      errorCall.methodFullName shouldBe "logging.py:<module>.getLogger.<returnValue>.error"
+      val List(getLoggerCall) = cpg.call("getLogger").l
+      getLoggerCall.methodFullName shouldBe "logging.py:<module>.getLogger"
+    }
+  }
+
+  "a constructor call from a field access of an externally imported package" should {
+    lazy val cpg = code("""
+        |import urllib.error
+        |import urllib.request
+        |
+        |req = urllib.request.Request(url=apiUrl, data=dataBytes, method='POST')
+        |""".stripMargin)
+
+    "reasonably determine the constructor type" in {
+      val Some(tmp0) = cpg.identifier("tmp0").headOption
+      tmp0.typeFullName shouldBe "urllib.py:<module>.request"
+      val Some(requestCall) = cpg.call("Request").headOption
+      requestCall.methodFullName shouldBe "urllib.py:<module>.request.Request.<init>"
+    }
+  }
+
 }
