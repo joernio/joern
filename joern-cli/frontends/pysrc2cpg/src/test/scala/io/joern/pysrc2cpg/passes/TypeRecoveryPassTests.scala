@@ -295,4 +295,19 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   }
 
+  "assignment from a call to a method inside an imported module" should {
+    lazy val cpg = code("""
+        |import logging
+        |log = logging.getLogger(__name__)
+        |log.error("foo")
+        |""".stripMargin)
+
+    "provide a dummy type" in {
+      val List(errorCall) = cpg.call("error").l
+      errorCall.methodFullName shouldBe "logging.py:<module>.getLogger.error"
+      val List(getLoggerCall) = cpg.call("getLogger").l
+      getLoggerCall.methodFullName shouldBe "logging.py:<module>"
+    }
+  }
+
 }
