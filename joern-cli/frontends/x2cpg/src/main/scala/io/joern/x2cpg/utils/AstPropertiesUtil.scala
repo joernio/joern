@@ -18,4 +18,13 @@ object AstPropertiesUtil {
     def rootCodeOrEmpty: String = rootCode.getOrElse("")
 
   }
+
+  implicit class RootPropertiesOnSeq(asts: Seq[Ast]) {
+
+    def rootType: Option[String] = asts.headOption.flatMap(_.rootType)
+
+    def rootCode: Option[String] = asts.headOption.flatMap(_.rootCode)
+
+    def rootCodeOrEmpty: String = asts.rootCode.getOrElse("")
+  }
 }

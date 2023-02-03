@@ -69,14 +69,6 @@ object Util {
     s"${Defines.UnresolvedSignature}($paramCount)"
   }
 
-  def rootCode(ast: Seq[Ast]): String = {
-    ast.headOption.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE).map(_.toString)).getOrElse("")
-  }
-
-  def rootType(ast: Ast): Option[String] = {
-    ast.root.flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
-  }
-
   private def getAllParents(typ: ResolvedReferenceType, result: mutable.ArrayBuffer[ResolvedReferenceType]): Unit = {
     if (typ.isJavaLangObject) {
       Iterable.empty
