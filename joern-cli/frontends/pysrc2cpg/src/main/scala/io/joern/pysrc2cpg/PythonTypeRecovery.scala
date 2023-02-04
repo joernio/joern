@@ -265,7 +265,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
       setIdentifier(i, importedTypes.map(_.stripSuffix(s".${Defines.ConstructorMethodName}")))
     } else {
       // TODO: This identifier should contain the type of the return value of 'c'.
-      //  e.g. x = foo(a, b) but not x = y.foo(a, b) as foo in the latter case is interpeted as a field access
+      //  e.g. x = foo(a, b) but not x = y.foo(a, b) as foo in the latter case is interpreted as a field access
     }
   }
 
