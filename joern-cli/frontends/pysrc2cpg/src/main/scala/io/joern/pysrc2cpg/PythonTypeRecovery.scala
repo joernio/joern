@@ -260,12 +260,12 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
     if (!callCode.endsWith(")")) {
       // Case 1: The identifier is at the assignment to a function pointer. Lack of parenthesis should indicate this.
       setIdentifier(i, importedTypes)
-    } else if (callName.charAt(0).isUpper && callCode.endsWith(")")) {
+    } else if (!callName.isBlank && callName.charAt(0).isUpper && callCode.endsWith(")")) {
       // Case 2: The identifier is receiving a constructor invocation, thus is now an instance of the type
       setIdentifier(i, importedTypes.map(_.stripSuffix(s".${Defines.ConstructorMethodName}")))
     } else {
       // TODO: This identifier should contain the type of the return value of 'c'.
-      //  e.g. x = foo(a, b) but not x = y.foo(a, b) as foo in the latter case is interpetted as a field access
+      //  e.g. x = foo(a, b) but not x = y.foo(a, b) as foo in the latter case is interpeted as a field access
     }
   }
 
