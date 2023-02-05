@@ -348,9 +348,11 @@ class ContextStack {
 
   def isClassContext: Boolean = {
     val stackTail = stack.tail
-    stackTail.nonEmpty &&
-    (stackTail.head.isInstanceOf[ClassContext] ||
-      stackTail.head.asInstanceOf[MethodContext].name.endsWith("<body>"))
+    stackTail.nonEmpty && (stackTail.headOption match {
+      case Some(_: ClassContext)  => true
+      case Some(x: MethodContext) => x.name.endsWith("<body>")
+      case _                      => false
+    })
   }
 
 }
