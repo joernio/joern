@@ -328,4 +328,50 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "a method call inherited from a super class should be recovered" should {
+    lazy val cpg = code(
+      """from pymongo import MongoClient
+        |from django.conf import settings
+        |
+        |
+        |class MongoConnection(object):
+        |    def __init__(self):
+        |        DATABASES = settings.DATABASES
+        |        self.client = MongoClient(
+        |            host=[DATABASES['MONGO']['HOST']],
+        |            username=DATABASES['MONGO']['USERNAME'],
+        |            password=DATABASES['MONGO']['PASSWORD'],
+        |            authSource=DATABASES['MONGO']['AUTH_DATABASE']
+        |        )
+        |        self.db = self.client[DATABASES['MONGO']['DATABASE']]
+        |        self.collection = None
+        |
+        |    def get_collection(self, name):
+        |        self.collection = self.db[name]
+        |""".stripMargin,
+      "MongoConnection.py"
+    ).moreCode(
+      """
+        |from MongoConnection import MongoConnection
+        |
+        |class InstallationsDAO(MongoConnection):
+        |    def __init__(self):
+        |        super(InstallationsDAO, self).__init__()
+        |        self.get_collection("installations")
+        |
+        |    def getCustomerId(self, installationId):
+        |        res = self.collection.find_one({'_id': installationId})
+        |        if res is None:
+        |            return None
+        |        return dict(res).get("customerId", None)
+        |""".stripMargin,
+      "InstallationDao.py"
+    )
+
+    "recover a potential type for `self.collection` using the assignment at `get_collection` as a type hint" in {
+      val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption
+      selfFindFound.methodFullName shouldBe "pymongo.py:<module>.MongoClient.<init>.<indexAccess>.<indexAccess>.find_one"
+    }
+  }
+
 }

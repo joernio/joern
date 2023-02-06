@@ -26,11 +26,12 @@ object SBKey {
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
   def fromNodeToLocalKey(node: AstNode): LocalKey = {
     node match {
-      case n: Identifier => LocalVar(n.name)
-      case n: Local      => LocalVar(n.name)
-      case n: Call       => CallAlias(n.name)
-      case n: Method     => CallAlias(n.name)
-      case n: MethodRef  => CallAlias(n.code)
+      case n: Identifier      => LocalVar(n.name)
+      case n: Local           => LocalVar(n.name)
+      case n: Call            => CallAlias(n.name)
+      case n: Method          => CallAlias(n.name)
+      case n: MethodRef       => CallAlias(n.code)
+      case n: FieldIdentifier => LocalVar(n.canonicalName)
       case _ =>
         throw new RuntimeException(s"Local node of type ${node.label} is not supported in the type recovery pass.")
     }
@@ -112,7 +113,7 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => K) {
   def append(node: AstNode, typeFullNames: Set[String]): Option[Set[String]] =
     append(fromNode(node), typeFullNames)
 
-  private def append(sbKey: K, typeFullNames: Set[String]): Option[Set[String]] = {
+  def append(sbKey: K, typeFullNames: Set[String]): Option[Set[String]] = {
     table.get(sbKey) match {
       case Some(ts) => table.put(sbKey, ts ++ typeFullNames)
       case None     => table.put(sbKey, typeFullNames)

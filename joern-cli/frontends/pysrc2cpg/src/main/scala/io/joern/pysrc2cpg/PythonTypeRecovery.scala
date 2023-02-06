@@ -18,6 +18,7 @@ import scala.util.Try
 class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
 
   override def computationalUnit: Traversal[File] = cpg.file
+
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder,
@@ -215,7 +216,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
             val fieldTypes = symbolTable
               .get(CallAlias(i.name))
               .flatMap(recModule => globalTable.get(FieldVar(recModule, f.canonicalName)))
-            symbolTable.append(assigned, fieldTypes)
+            if (fieldTypes.nonEmpty) symbolTable.append(assigned, fieldTypes)
           case List(assigned: Identifier, i: Identifier, f: FieldIdentifier)
               if symbolTable
                 .contains(LocalVar(i.name)) =>
@@ -245,9 +246,43 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
             val callAlias     = CallAlias(s"${i.name}.${f.canonicalName}")
             val importedTypes = symbolTable.get(callAlias)
             setIdentifierFromFunctionType(assigned, callAlias.identifier, callAlias.identifier, importedTypes)
+          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier) =>
+            // TODO: This is really tricky to find without proper object tracking, so we match name only
+            val fieldTypes = globalTable.view.filter(_._1.identifier.equals(f.canonicalName)).flatMap(_._2).toSet
+            if (fieldTypes.nonEmpty) symbolTable.append(assigned, fieldTypes)
+          case _ =>
+        }
+      // Field load from call
+      case List(fl: Call, c: Call) if fl.name.equals(Operators.fieldAccess) && symbolTable.contains(c) =>
+        (fl.astChildren.l, c.astChildren.l) match {
+          case (List(self: Identifier, fieldIdentifier: FieldIdentifier), args: List[_]) =>
+            symbolTable.append(fieldIdentifier, symbolTable.get(c))
+            globalTable.append(fieldVarName(fieldIdentifier), symbolTable.get(c))
+          case _ =>
+        }
+      // Field load from index access
+      case List(fl: Call, c: Call) if fl.name.equals(Operators.fieldAccess) && c.name.equals(Operators.indexAccess) =>
+        (fl.astChildren.l, c.astChildren.l) match {
+          case (List(self: Identifier, fieldIdentifier: FieldIdentifier), ::(rhsFAccess: Call, _))
+              if rhsFAccess.name.equals(Operators.fieldAccess) =>
+            val rhsField = rhsFAccess.fieldAccess.fieldIdentifier.head
+            // TODO: Check if a type for the RHS index access is recovered
+            val types = symbolTable.get(rhsField).map(t => s"$t.<indexAccess>")
+            symbolTable.append(fieldIdentifier, types)
+            globalTable.append(fieldVarName(fieldIdentifier), types)
           case _ =>
         }
       case _ =>
+    }
+  }
+
+  private def fieldVarName(f: FieldIdentifier): FieldVar = {
+    if (f.astSiblings.map(_.code).exists(_.contains("self"))) {
+      // This will match the <meta> type decl
+      FieldVar(f.method.typeDecl.fullName.head, f.canonicalName)
+    } else {
+      // This will typically match the <module>
+      FieldVar(f.file.method.fullName.head, f.canonicalName)
     }
   }
 
