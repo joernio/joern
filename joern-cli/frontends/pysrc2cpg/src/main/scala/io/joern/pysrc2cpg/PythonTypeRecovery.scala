@@ -141,7 +141,7 @@ class SetPythonProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey
   *   the graph builder
   */
 class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, globalTable: SymbolTable[GlobalKey])
-    extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable) {
+    extends RecoverForXCompilationUnit[File](cu, builder) {
 
   /** Adds built-in functions to expect.
     */

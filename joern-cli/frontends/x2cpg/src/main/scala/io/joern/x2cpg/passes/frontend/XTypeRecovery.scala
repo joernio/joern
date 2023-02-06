@@ -49,11 +49,14 @@ abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg, iterations:
     */
   protected val globalTable = new SymbolTable[GlobalKey](SBKey.fromNodeToGlobalKey)
 
-  override def run(builder: DiffGraphBuilder): Unit =
+  override def run(builder: DiffGraphBuilder): Unit = try {
     for (_ <- 0 to iterations)
       computationalUnit
         .map(unit => generateRecoveryForCompilationUnitTask(unit, builder, globalTable).fork())
         .foreach(_.get())
+  } finally {
+    globalTable.clear()
+  }
 
   /** @return
     *   the computational units as per how the language is compiled. e.g. file.
@@ -150,10 +153,8 @@ abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
   *   the [[AstNode]] type used to represent a computational unit of the language.
   */
 abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
-  cpg: Cpg,
   cu: ComputationalUnit,
   builder: DiffGraphBuilder,
-  globalTable: SymbolTable[GlobalKey]
 ) extends RecursiveTask[Unit] {
 
   /** Stores type information for local structures that live within this compilation unit, e.g. local variables.
