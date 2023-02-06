@@ -52,6 +52,31 @@ class DdgGenerator(semantics: Semantics) {
         }
     }
 
+    // This handles `foo(new Bar()) or return new Bar()`
+    def addEdgeForBlock(block: Block, towards: StoredNode): Unit = {
+      block.astChildren.lastOption match {
+        case None => // Do nothing
+        case Some(node: Identifier) =>
+          val edgesToAdd = in(node).toList
+            .flatMap(numberToNode.get)
+            .filter(inDef => usageAnalyzer.isUsing(node, inDef))
+            .collect {
+              case identifier: Identifier => identifier
+              case call: Call             => call
+            }
+          edgesToAdd.foreach { inNode =>
+            addEdge(inNode, block, nodeToEdgeLabel(inNode))
+          }
+          if (edgesToAdd.nonEmpty) {
+            addEdge(block, towards)
+          }
+        case Some(node: Call) =>
+          addEdge(node, block, nodeToEdgeLabel(node))
+          addEdge(block, towards)
+        case _ => // Do nothing
+      }
+    }
+
     /** Adds incoming edges to arguments of call sites, including edges between arguments of the same call site.
       */
     def addEdgesToCallSite(call: Call): Unit = {
@@ -78,36 +103,15 @@ class DdgGenerator(semantics: Semantics) {
         }
       }
 
-      // Handle block arguments
       // This handles `foo(new Bar())`, which is lowered to
       // `foo({Bar tmp = Bar.alloc(); tmp.init(); tmp})`
-      call.argument.isBlock.foreach { block =>
-        block.astChildren.lastOption match {
-          case None => // Do nothing
-          case Some(node: Identifier) =>
-            val edgesToAdd = in(node).toList
-              .flatMap(numberToNode.get)
-              .filter(inDef => usageAnalyzer.isUsing(node, inDef))
-              .collect {
-                case identifier: Identifier => identifier
-                case call: Call             => call
-              }
-            edgesToAdd.foreach { inNode =>
-              addEdge(inNode, block, nodeToEdgeLabel(inNode))
-            }
-            if (edgesToAdd.nonEmpty) {
-              addEdge(block, call)
-            }
-          case Some(node: Call) =>
-            addEdge(node, block, nodeToEdgeLabel(node))
-            addEdge(block, call)
-          case _ => // Do nothing
-        }
-      }
-
+      call.argument.isBlock.foreach { block => addEdgeForBlock(block, call) }
     }
 
     def addEdgesToReturn(ret: Return): Unit = {
+      // This handles `return new Bar()`, which is lowered to
+      // `return {Bar tmp = Bar.alloc(); tmp.init(); tmp}`
+      usageAnalyzer.uses(ret).collectAll[Block].foreach(block => addEdgeForBlock(block, ret))
       usageAnalyzer.usedIncomingDefs(ret).foreach { case (use: CfgNode, inElements) =>
         addEdge(use, ret, use.code)
         inElements
