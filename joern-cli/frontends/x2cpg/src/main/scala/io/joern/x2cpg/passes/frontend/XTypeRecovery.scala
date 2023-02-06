@@ -154,7 +154,7 @@ abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
   */
 abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   cu: ComputationalUnit,
-  builder: DiffGraphBuilder,
+  builder: DiffGraphBuilder
 ) extends RecursiveTask[Unit] {
 
   /** Stores type information for local structures that live within this compilation unit, e.g. local variables.
