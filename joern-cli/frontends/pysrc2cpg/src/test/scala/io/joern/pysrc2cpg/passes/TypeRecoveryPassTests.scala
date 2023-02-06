@@ -109,7 +109,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |            'age': self.age,
         |            'address': self.address
         |        }
-        |""".stripMargin)
+        |""".stripMargin).cpg
 
     "resolve 'db' identifier types from import information" in {
       val List(clientAssignment, clientElseWhere) = cpg.identifier("db").take(2).l
@@ -146,7 +146,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |from foo import abs
         |
         |x = abs(-1)
-        |""".stripMargin)
+        |""".stripMargin).cpg
 
     "resolve 'print' and 'max' calls" in {
       val Some(printCall) = cpg.call("print").headOption
@@ -186,7 +186,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |foo.db.deleteTable()
         |""".stripMargin,
       "bar.py"
-    )
+    ).cpg
 
     "resolve 'x' and 'y' locally under foo.py" in {
       val Some(x) = cpg.file.name(".*foo.*").ast.isIdentifier.name("x").headOption
@@ -268,7 +268,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |db = SQLAlchemy()
         |""".stripMargin,
       "app.py"
-    )
+    ).cpg
 
     "be determined as a variable reference and have its type recovered correctly" in {
       cpg.identifier("db").map(_.typeFullName).toSet shouldBe Set("flask_sqlalchemy.py:<module>.SQLAlchemy")
@@ -300,7 +300,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |import logging
         |log = logging.getLogger(__name__)
         |log.error("foo")
-        |""".stripMargin)
+        |""".stripMargin).cpg
 
     "provide a dummy type" in {
       val Some(log) = cpg.identifier("log").headOption
@@ -318,7 +318,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |import urllib.request
         |
         |req = urllib.request.Request(url=apiUrl, data=dataBytes, method='POST')
-        |""".stripMargin)
+        |""".stripMargin).cpg
 
     "reasonably determine the constructor type" in {
       val Some(tmp0) = cpg.identifier("tmp0").headOption
@@ -366,7 +366,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |        return dict(res).get("customerId", None)
         |""".stripMargin,
       "InstallationDao.py"
-    )
+    ).cpg
 
     "recover a potential type for `self.collection` using the assignment at `get_collection` as a type hint" in {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption
