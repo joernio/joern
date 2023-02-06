@@ -218,6 +218,7 @@ class OperatorTests extends PhpCode2CpgFixture {
         call
       }
 
+      call.code shouldBe "isset($a)"
       call.methodFullName shouldBe PhpOperators.issetFunc
       call.typeFullName shouldBe TypeConstants.Bool
       call.lineNumber shouldBe Some(2)
@@ -236,6 +237,8 @@ class OperatorTests extends PhpCode2CpgFixture {
         call
       }
 
+      // Code is not exactly like the original because we lose the spacing information during parsing
+      call.code shouldBe "isset($a,$b,$c)"
       call.methodFullName shouldBe PhpOperators.issetFunc
       call.typeFullName shouldBe TypeConstants.Bool
       call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH

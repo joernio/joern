@@ -1,8 +1,9 @@
 package io.joern.jssrc2cpg.passes
 
+import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewImport
+import io.shiftleft.codepropertygraph.generated.nodes.{CallBase, NewImport}
 import io.shiftleft.passes.CpgPass
 import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
@@ -26,11 +27,8 @@ class ImportsPass(cpg: Cpg) extends CpgPass(cpg) {
         val importedAs = assignment.target.code
         val importedEntity =
           RequirePass.stripQuotes(call.argument(1).code)
-        val importNode = NewImport()
-          .importedAs(importedAs)
-          .importedEntity(importedEntity)
-        diffGraph.addNode(importNode)
-        diffGraph.addEdge(call, importNode, EdgeTypes.IS_CALL_FOR_IMPORT)
+        createImportNodeAndLink(importedEntity, importedAs, Some(call), diffGraph)
       }
   }
+
 }

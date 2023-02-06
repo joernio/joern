@@ -1,8 +1,3 @@
-package io.joern.jssrc2cpg.utils
-
-import org.slf4j.LoggerFactory
-import java.nio.file.Paths
-
 object Environment {
 
   object OperatingSystemType extends Enumeration {
@@ -28,16 +23,5 @@ object Environment {
     // We do not distinguish between x86 and x64. E.g, a 64 bit Windows will always lie about
     // this and will report x86 anyway for backwards compatibility with 32 bit software.
     else ArchitectureType.X86
-
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  def pathExists(path: String): Boolean = {
-    if (!Paths.get(path).toFile.exists()) {
-      logger.error(s"Input path '$path' does not exist!")
-      false
-    } else {
-      true
-    }
-  }
 
 }

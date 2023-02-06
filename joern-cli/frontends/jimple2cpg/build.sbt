@@ -7,7 +7,6 @@ dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->t
 
 libraryDependencies ++= Seq(
   "io.shiftleft"            %% "codepropertygraph" % Versions.cpg,
-  "org.apache.logging.log4j" % "log4j-slf4j2-impl" % Versions.log4j     % Runtime,
   "org.soot-oss"             % "soot"              % "4.4.1",
   "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test
 )

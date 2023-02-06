@@ -96,8 +96,8 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       c.importedEntity shouldBe Option(":c")
       c.importedAs shouldBe Option("c")
       d.code shouldBe "import * as d from \"depD\""
-      d.importedEntity shouldBe Some("depD:d")
-      d.importedAs shouldBe Some("d")
+      d.importedEntity shouldBe Option("depD:d")
+      d.importedAs shouldBe Option("d")
       val List(n) = a.namespaceBlock.l
       n.fullName shouldBe "code.js:<global>"
     }
@@ -356,6 +356,17 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       cpg.method("foo").code.l shouldBe List("function foo(param) {}")
     }
 
+    "have correct structure for export with from clause with path" in AstFixture("""
+        |export { def as Header } from "./path/to/header";
+        |""".stripMargin) { cpg =>
+      val List(header) = cpg.dependency.l
+      header.name shouldBe "Header"
+      header.dependencyGroupId shouldBe Option("./path/to/header")
+      header.version shouldBe "require"
+      cpg.assignment.code.l shouldBe
+        List("var _header = require(\"./path/to/header\")", "exports.Header = _header.def")
+    }
+
     "have correct structure for export with from clause" in AstFixture("""
        |export { import1 as name1, import2 as name2, name3 } from "Foo";
        |export bar from "Bar";
@@ -380,11 +391,11 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
 
       cpg.assignment.code.l shouldBe List(
         "var _Foo = require(\"Foo\")",
-        "_Foo.name1 = import1",
-        "_Foo.name2 = import2",
-        "_Foo.name3 = name3",
+        "exports.name1 = _Foo.import1",
+        "exports.name2 = _Foo.import2",
+        "exports.name3 = _Foo.name3",
         "var _Bar = require(\"Bar\")",
-        "_Bar.bar = bar"
+        "exports.bar = _Bar.bar"
       )
     }
 

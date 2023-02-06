@@ -215,6 +215,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(6)
       callNode.methodFullName shouldBe "foo.py:<module>.foo_func"
+      callNode.callee(NoResolve).isExternal.headOption shouldBe Some(false)
     }
 
     "test call node properties for normal import from module deeper on a module path" in {
@@ -224,6 +225,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(7)
       callNode.methodFullName shouldBe Seq("foo", "bar", "__init__.py:<module>.bar_func").mkString(File.separator)
+      callNode.callee(NoResolve).isExternal.headOption shouldBe Some(false)
     }
 
     "test call node properties for aliased import from module on root path" in {
@@ -233,6 +235,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(8)
       callNode.methodFullName shouldBe "foo.py:<module>.faz"
+      callNode.callee(NoResolve).isExternal.headOption shouldBe Some(false)
     }
   }
 

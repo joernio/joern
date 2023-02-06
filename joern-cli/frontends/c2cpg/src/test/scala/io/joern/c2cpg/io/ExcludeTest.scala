@@ -1,11 +1,11 @@
-package io.joern.jssrc2cpg.io
+package io.joern.c2cpg.io
 
 import better.files.File
-import io.joern.jssrc2cpg.Config
-import io.joern.jssrc2cpg.passes.AstCreationPass
-import io.joern.jssrc2cpg.utils.AstGenRunner
-import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.c2cpg.Config
+import io.joern.c2cpg.C2Cpg
+import io.joern.x2cpg.X2Cpg
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
@@ -15,25 +15,11 @@ import java.util.regex.Pattern
 
 class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChecks with BeforeAndAfterAll {
 
-  private val testFiles: List[String] = List(
-    ".sub/e.js",
-    "folder/b.js",
-    "folder/c.js",
-    "foo.bar/d.js",
-    "tests/a.spec.js",
-    "tests/b.mock.js",
-    "tests/c.e2e.js",
-    "tests/d.test.js",
-    "a.js",
-    "b-min.js",
-    "c.spec.js",
-    "d.chunk.js",
-    "index.js"
-  )
+  private val TestFiles: List[String] = List(".sub/e.c", "folder/b.c", "folder/c.c", "foo.bar/d.c", "a.c", "index.c")
 
   private val projectUnderTest: File = {
-    val dir = File.newTemporaryDirectory("jssrc2cpgTestsExcludeTest")
-    testFiles.foreach { testFile =>
+    val dir = File.newTemporaryDirectory("c2cpgTestsExcludeTest")
+    TestFiles.foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
     }
@@ -43,15 +29,20 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
   override def afterAll(): Unit = projectUnderTest.delete(swallowIOExceptions = true)
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
-    File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
-      val cpg    = newEmptyCpg()
-      val config = Config(inputPath = projectUnderTest.toString, outputPath = tmpDir.toString, tsTypes = false)
-      val finalConfig =
-        config.copy(ignoredFiles = exclude.map(config.createPathForIgnore), ignoredFilesRegex = excludeRegex.r)
-      val astgenResult = new AstGenRunner(finalConfig).execute(tmpDir)
-      new AstCreationPass(cpg, astgenResult, finalConfig).createAndApply()
-      cpg.file.name.l should contain theSameElementsAs expectedFiles.map(_.replace("/", java.io.File.separator))
-    }
+    val cpgOutFile = File.newTemporaryFile("c2cpg.bin")
+    cpgOutFile.deleteOnExit()
+
+    val config = Config(inputPath = projectUnderTest.toString, outputPath = cpgOutFile.toString)
+    val finalConfig =
+      config.copy(ignoredFiles = exclude.map(config.createPathForIgnore), ignoredFilesRegex = excludeRegex.r)
+
+    val c2cpg = new C2Cpg()
+    val cpg   = c2cpg.createCpg(finalConfig).get
+
+    X2Cpg.applyDefaultOverlays(cpg)
+    cpg.file.nameNot(FileTraversal.UNKNOWN).name.l should contain theSameElementsAs expectedFiles.map(
+      _.replace("/", java.io.File.separator)
+    )
   }
 
   "Using different excludes via program arguments" should {
@@ -65,74 +56,69 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
         "exclude nothing if no excludes are given",
         Seq.empty[String],
         "",
-        Set("index.js", "a.js", "folder/b.js", "folder/c.js", "foo.bar/d.js")
+        Set("index.c", "a.c", "folder/b.c", "folder/c.c", "foo.bar/d.c")
       ),
       // --
       // Tests for --exclude only:
       (
         "exclude a file with --exclude with relative path",
-        Seq("index.js"),
+        Seq("index.c"),
         "",
-        Set("a.js", "folder/b.js", "folder/c.js", "foo.bar/d.js")
+        Set("a.c", "folder/b.c", "folder/c.c", "foo.bar/d.c")
       ),
       (
         "exclude files with --exclude with relative paths",
-        Seq("index.js", "folder/b.js"),
+        Seq("index.c", "folder/b.c"),
         "",
-        Set("a.js", "folder/c.js", "foo.bar/d.js")
+        Set("a.c", "folder/c.c", "foo.bar/d.c")
       ),
       (
         "exclude a file with --exclude with absolute path",
-        Seq(s"$projectUnderTest/index.js"),
+        Seq(s"$projectUnderTest/index.c"),
         "",
-        Set("a.js", "folder/b.js", "folder/c.js", "foo.bar/d.js")
+        Set("a.c", "folder/b.c", "folder/c.c", "foo.bar/d.c")
       ),
       (
         "exclude files with --exclude with absolute paths",
-        Seq(s"$projectUnderTest/index.js", s"$projectUnderTest/folder/b.js"),
+        Seq(s"$projectUnderTest/index.c", s"$projectUnderTest/folder/b.c"),
         "",
-        Set("a.js", "folder/c.js", "foo.bar/d.js")
+        Set("a.c", "folder/c.c", "foo.bar/d.c")
       ),
       (
         "exclude files with --exclude with mixed paths",
-        Seq("index.js", s"$projectUnderTest/folder/b.js"),
+        Seq("index.c", s"$projectUnderTest/folder/b.c"),
         "",
-        Set("a.js", "folder/c.js", "foo.bar/d.js")
+        Set("a.c", "folder/c.c", "foo.bar/d.c")
       ),
       (
         "exclude a folder with --exclude with absolute path",
         Seq(s"$projectUnderTest/folder/"),
         "",
-        Set("a.js", "index.js", "foo.bar/d.js")
+        Set("a.c", "index.c", "foo.bar/d.c")
       ),
-      (
-        "exclude a folder with --exclude with relative path",
-        Seq("folder/"),
-        "",
-        Set("a.js", "index.js", "foo.bar/d.js")
-      ),
+      ("exclude a folder with --exclude with relative path", Seq("folder/"), "", Set("a.c", "index.c", "foo.bar/d.c")),
       // --
       // Tests for --exclude-regex only:
       (
         "exclude a file with --exclude-regex",
         Seq.empty,
         ".*index\\..*",
-        Set("a.js", "folder/b.js", "folder/c.js", "foo.bar/d.js")
+        Set("a.c", "folder/b.c", "folder/c.c", "foo.bar/d.c")
       ),
-      ("exclude files with --exclude-regex", Seq.empty, ".*(index|b)\\..*", Set("a.js", "folder/c.js", "foo.bar/d.js")),
+      ("exclude files with --exclude-regex", Seq.empty, ".*(index|b)\\..*", Set("a.c", "folder/c.c", "foo.bar/d.c")),
       (
         "exclude a complete folder with --exclude-regex",
         Seq.empty,
         s".*${Pattern.quote(java.io.File.separator)}folder${Pattern.quote(java.io.File.separator)}.*",
-        Set("index.js", "a.js", "foo.bar/d.js")
+        Set("index.c", "a.c", "foo.bar/d.c")
       ),
       // --
       // Tests for mixed arguments
       (
         "exclude files with --exclude and --exclude-regex",
-        Seq("a.js"),
+        Seq("a.c"),
         ".*(index|b)\\..*",
-        Set("folder/c.js", "foo.bar/d.js")
+        Set("folder/c.c", "foo.bar/d.c")
       )
     )
 

@@ -37,7 +37,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       // TODO: These should have callee entries but the method stubs are not present here
       val List(zAppend) = cpg.call("append").l
       zAppend.methodFullName shouldBe Defines.DynamicCallUnknownFallName
-      zAppend.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+      zAppend.dynamicTypeHintFullName shouldBe Seq("dict.append", "list.append", "tuple.append")
     }
   }
 
@@ -228,6 +228,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .l
       d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.createTable"
       d.dynamicTypeHintFullName shouldBe Seq()
+      d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
     "resolve a 'deleteTable' call directly from 'foo.db' field access correctly" in {
@@ -237,8 +238,10 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .isCall
         .name("deleteTable")
         .l
+
       d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.deleteTable"
       d.dynamicTypeHintFullName shouldBe Seq()
+      d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
   }
@@ -267,7 +270,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       "app.py"
     )
 
-    "be determined as a variable reference and have it's type recovered correctly" in {
+    "be determined as a variable reference and have its type recovered correctly" in {
       cpg.identifier("db").map(_.typeFullName).toSet shouldBe Set("flask_sqlalchemy.py:<module>.SQLAlchemy")
 
       cpg
@@ -278,6 +281,51 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .map(_.code) shouldBe Some("tmp0.add(user)")
     }
 
+    "provide a dummy type to a member if the member type is not known" in {
+      val Some(sessionTmpVar) = cpg.identifier("tmp0").headOption
+      sessionTmpVar.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session)"
+
+      val Some(addCall) = cpg
+        .call("add")
+        .headOption
+      addCall.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session).add"
+      addCall.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session).add"
+      addCall.callee(NoResolve).isExternal.headOption shouldBe Some(true)
+    }
+
+  }
+
+  "assignment from a call to a method inside an imported module" should {
+    lazy val cpg = code("""
+        |import logging
+        |log = logging.getLogger(__name__)
+        |log.error("foo")
+        |""".stripMargin)
+
+    "provide a dummy type" in {
+      val Some(log) = cpg.identifier("log").headOption
+      log.typeFullName shouldBe "logging.py:<module>.getLogger.<returnValue>"
+      val List(errorCall) = cpg.call("error").l
+      errorCall.methodFullName shouldBe "logging.py:<module>.getLogger.<returnValue>.error"
+      val List(getLoggerCall) = cpg.call("getLogger").l
+      getLoggerCall.methodFullName shouldBe "logging.py:<module>.getLogger"
+    }
+  }
+
+  "a constructor call from a field access of an externally imported package" should {
+    lazy val cpg = code("""
+        |import urllib.error
+        |import urllib.request
+        |
+        |req = urllib.request.Request(url=apiUrl, data=dataBytes, method='POST')
+        |""".stripMargin)
+
+    "reasonably determine the constructor type" in {
+      val Some(tmp0) = cpg.identifier("tmp0").headOption
+      tmp0.typeFullName shouldBe "urllib.py:<module>.request"
+      val Some(requestCall) = cpg.call("Request").headOption
+      requestCall.methodFullName shouldBe "urllib.py:<module>.request.Request.<init>"
+    }
   }
 
 }
