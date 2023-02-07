@@ -1165,15 +1165,21 @@ trait KtPsiToAst {
   def astForWhile(expr: KtWhileExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val stmtAsts     = astsForExpression(expr.getBody, None)
-    val node         = controlStructureNode(expr.getText, ControlStructureTypes.WHILE, line(expr), column(expr))
-    controlStructureAst(node, conditionAst, stmtAsts.toList)
+    val code         = Some(expr.getText)
+    val lineNumber   = Some(Integer.valueOf(line(expr)))
+    val columnNumber = Some(Integer.valueOf(column(expr)))
+
+    whileAst(conditionAst, stmtAsts, code, lineNumber, columnNumber)
   }
 
   def astForDoWhile(expr: KtDoWhileExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val stmtAsts     = astsForExpression(expr.getBody, None)
-    val node         = controlStructureNode(expr.getText, ControlStructureTypes.DO, line(expr), column(expr))
-    controlStructureAst(node, conditionAst, stmtAsts.toList, placeConditionLast = true)
+    val code         = Some(expr.getText)
+    val lineNumber   = Some(Integer.valueOf(line(expr)))
+    val columnNumber = Some(Integer.valueOf(column(expr)))
+
+    doWhileAst(conditionAst, stmtAsts, code, lineNumber, columnNumber)
   }
 
   // e.g. lowering:

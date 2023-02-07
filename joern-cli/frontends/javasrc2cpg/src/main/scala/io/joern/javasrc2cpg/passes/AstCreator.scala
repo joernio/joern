@@ -1240,36 +1240,23 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   def astForWhile(stmt: WhileStmt): Ast = {
-    val whileNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.WHILE)
-        .lineNumber(line(stmt))
-        .columnNumber(column(stmt))
-        .code(s"while (${stmt.getCondition.toString})")
+    val conditionAst = astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption
+    val stmtAsts     = astsForStatement(stmt.getBody)
+    val code         = s"while (${stmt.getCondition.toString})"
+    val lineNumber   = line(stmt)
+    val columnNumber = column(stmt)
 
-    val conditionAst =
-      astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption.toList
-    val stmtAsts = astsForStatement(stmt.getBody)
-
-    val ast = Ast(whileNode)
-      .withChildren(conditionAst)
-      .withChildren(stmtAsts)
-
-    conditionAst.flatMap(_.root.toList) match {
-      case r :: Nil =>
-        ast.withConditionEdge(whileNode, r)
-      case _ =>
-        ast
-    }
+    whileAst(conditionAst, stmtAsts, Some(code), lineNumber, columnNumber)
   }
 
   def astForDo(stmt: DoStmt): Ast = {
-    val doNode =
-      NewControlStructure().controlStructureType(ControlStructureTypes.DO)
-    val conditionAst =
-      astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption.toList
-    val stmtAsts = astsForStatement(stmt.getBody)
-    controlStructureAst(doNode, conditionAst.headOption, stmtAsts.toList, placeConditionLast = true)
+    val conditionAst = astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption
+    val stmtAsts     = astsForStatement(stmt.getBody)
+    val code         = s"do {...} while (${stmt.getCondition.toString})"
+    val lineNumber   = line(stmt)
+    val columnNumber = column(stmt)
+
+    doWhileAst(conditionAst, stmtAsts, Some(code), lineNumber, columnNumber)
   }
 
   def astForBreakStatement(stmt: BreakStmt): Ast = {
