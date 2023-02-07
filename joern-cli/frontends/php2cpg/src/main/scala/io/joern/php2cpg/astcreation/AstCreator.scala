@@ -331,29 +331,21 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForWhileStmt(whileStmt: PhpWhileStmt): Ast = {
-    val condition = astForExpr(whileStmt.cond)
+    val condition  = astForExpr(whileStmt.cond)
+    val lineNumber = line(whileStmt)
+    val code       = s"while (${condition.rootCodeOrEmpty})"
+    val body       = stmtBlockAst(whileStmt.stmts, lineNumber)
 
-    val whileNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.WHILE)
-      .code(s"while (${condition.rootCodeOrEmpty})")
-      .lineNumber(line(whileStmt))
-
-    val body = stmtBlockAst(whileStmt.stmts, line(whileStmt))
-
-    controlStructureAst(whileNode, Some(condition), List(body))
+    whileAst(Some(condition), List(body), Some(code), lineNumber)
   }
 
   private def astForDoStmt(doStmt: PhpDoStmt): Ast = {
-    val condition = astForExpr(doStmt.cond)
+    val condition  = astForExpr(doStmt.cond)
+    val lineNumber = line(doStmt)
+    val code       = s"do {...} while (${condition.rootCodeOrEmpty})"
+    val body       = stmtBlockAst(doStmt.stmts, lineNumber)
 
-    val whileNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.DO)
-      .code(s"do {...} while (${condition.rootCodeOrEmpty})")
-      .lineNumber(line(doStmt))
-
-    val body = stmtBlockAst(doStmt.stmts, line(doStmt))
-
-    controlStructureAst(whileNode, Some(condition), List(body), placeConditionLast = true)
+    doWhileAst(Some(condition), List(body), Some(code), lineNumber)
   }
 
   private def astForForStmt(stmt: PhpForStmt): Ast = {

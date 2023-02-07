@@ -3,7 +3,7 @@ package io.joern.x2cpg
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -98,13 +98,13 @@ abstract class AstCreatorBase(filename: String) {
   def controlStructureAst(
     controlStructureNode: NewControlStructure,
     condition: Option[Ast],
-    children: List[Ast] = List(),
+    children: Seq[Ast] = Seq(),
     placeConditionLast: Boolean = false
   ): Ast = {
     condition match {
       case Some(conditionAst) =>
         Ast(controlStructureNode)
-          .withChildren(if (placeConditionLast) children ++ List(conditionAst) else conditionAst :: children)
+          .withChildren(if (placeConditionLast) children :+ conditionAst else conditionAst +: children)
           .withConditionEdges(controlStructureNode, List(conditionAst.root).flatten)
       case _ =>
         Ast(controlStructureNode)
@@ -120,6 +120,42 @@ abstract class AstCreatorBase(filename: String) {
 
       case asts => blockAst(NewBlock().lineNumber(lineNumber), asts)
     }
+  }
+
+  def whileAst(
+    condition: Option[Ast],
+    body: Seq[Ast],
+    code: Option[String] = None,
+    lineNumber: Option[Integer] = None,
+    columnNumber: Option[Integer] = None
+  ): Ast = {
+    var whileNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.WHILE)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+
+    if (code.isDefined)
+      whileNode = whileNode.code(code.get)
+
+    controlStructureAst(whileNode, condition, body)
+  }
+
+  def doWhileAst(
+    condition: Option[Ast],
+    body: Seq[Ast],
+    code: Option[String] = None,
+    lineNumber: Option[Integer] = None,
+    columnNumber: Option[Integer] = None
+  ): Ast = {
+    var doWhileNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.DO)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+
+    if (code.isDefined)
+      doWhileNode = doWhileNode.code(code.get)
+
+    controlStructureAst(doWhileNode, condition, body, placeConditionLast = true)
   }
 
   def forAst(
