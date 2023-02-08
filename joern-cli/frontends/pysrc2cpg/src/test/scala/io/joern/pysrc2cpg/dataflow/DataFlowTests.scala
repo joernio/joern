@@ -65,8 +65,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     val sink   = cpg.call(".*sink").argument.l
     source.size shouldBe 1
     sink.size shouldBe 1
-
-    cpg.assignment.code("x.*").method.typeDecl.method.fullName.foreach(println)
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
 }

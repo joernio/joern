@@ -89,8 +89,13 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   private def usages(pairs: List[(TypeDecl, Expression)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, expression) =>
-      val nonConstructorMethods = typeDecl.method
-        .whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName))
+      val nonConstructorMethods = methodsRecursively(typeDecl)
+        .and(
+          _.whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName)),
+          // handle Python
+          _.whereNot(_.name(".*<body>$"))
+        )
+        .l
 
       val usagesInSameClass =
         nonConstructorMethods.flatMap { m => usagesOfExpression(expression, m) }.headOption
@@ -117,7 +122,24 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   private def usagesOfExpression(expression: Expression, m: Method): List[Expression] = {
     expression match {
       case identifier: Identifier =>
-        m.ast.isIdentifier.nameExact(identifier.name).takeWhile(notLeftHandOfAssignment).l
+        // handle this.$identifier as well here
+        val identifiersAndFieldIdentifies = m.ast
+          .or(
+            _.isIdentifier.nameExact(identifier.name).takeWhile(notLeftHandOfAssignment),
+            _.isFieldIdentifier
+              .canonicalNameExact(identifier.name)
+              .inFieldAccess
+              .where(_.argument(1).codeExact("this", "self"))
+              .takeWhile(notLeftHandOfAssignment)
+          )
+          .cast[Expression]
+          .l
+
+        identifiersAndFieldIdentifies.flatMap {
+          case x: Identifier      => Some(x)
+          case x: FieldIdentifier => x.inFieldAccess.isCall.headOption
+        }
+
       case fieldIdentifier: FieldIdentifier =>
         m.ast.isFieldIdentifier
           .canonicalNameExact(fieldIdentifier.canonicalName)
