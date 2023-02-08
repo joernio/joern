@@ -58,28 +58,28 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'sg' identifier types from import information" in {
       val List(sgAssignment, sgElseWhere) = cpg.identifier("sg").take(2).l
-      sgAssignment.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient"
-      sgElseWhere.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient"
+      sgAssignment.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.SendGridAPIClient<body>"
+      sgElseWhere.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.SendGridAPIClient<body>"
     }
 
     "resolve 'sg' call path from import information" in {
       val List(apiClient) = cpg.call("SendGridAPIClient").l
       apiClient.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.<init>"
       val List(sendCall) = cpg.call("send").l
-      sendCall.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.send"
+      sendCall.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.SendGridAPIClient<body>.send"
     }
 
     "resolve 'client' identifier types from import information" in {
       val List(clientAssignment, clientElseWhere) = cpg.identifier("client").take(2).l
-      clientAssignment.typeFullName shouldBe "slack_sdk.py:<module>.WebClient"
-      clientElseWhere.typeFullName shouldBe "slack_sdk.py:<module>.WebClient"
+      clientAssignment.typeFullName shouldBe "slack_sdk.py:<module>.WebClient.WebClient<body>"
+      clientElseWhere.typeFullName shouldBe "slack_sdk.py:<module>.WebClient.WebClient<body>"
     }
 
     "resolve 'client' call path from identifier in child scope" in {
       val List(client) = cpg.call("WebClient").l
       client.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.<init>"
       val List(postMessage) = cpg.call("chat_postMessage").l
-      postMessage.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.chat_postMessage"
+      postMessage.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.WebClient<body>.chat_postMessage"
     }
 
   }
@@ -113,8 +113,8 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'db' identifier types from import information" in {
       val List(clientAssignment, clientElseWhere) = cpg.identifier("db").take(2).l
-      clientAssignment.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
-      clientElseWhere.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
+      clientAssignment.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>"
+      clientElseWhere.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>"
     }
 
     "resolve the 'SQLAlchemy' constructor in the module" in {
@@ -125,15 +125,15 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "resolve 'User' field types" in {
       val List(id, firstname, age, address) =
         cpg.identifier.nameExact("id", "firstname", "age", "address").takeRight(4).l
-      id.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
-      firstname.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
-      age.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
-      address.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
+      id.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
+      firstname.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
+      age.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
+      address.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
     }
 
     "resolve the 'Column' constructor for a class member" in {
       val Some(columnConstructor) = cpg.call("Column").headOption
-      columnConstructor.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column.<init>"
+      columnConstructor.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.<init>"
     }
 
   }
@@ -226,7 +226,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .isCall
         .name("createTable")
         .l
-      d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.createTable"
+      d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.createTable"
       d.dynamicTypeHintFullName shouldBe Seq()
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
@@ -239,7 +239,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .name("deleteTable")
         .l
 
-      d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.deleteTable"
+      d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.deleteTable"
       d.dynamicTypeHintFullName shouldBe Seq()
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
@@ -369,6 +369,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     ).cpg
 
     "recover a potential type for `self.collection` using the assignment at `get_collection` as a type hint" in {
+      cpg.method.isExternal(false).fullName.foreach(println)
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption
       selfFindFound.methodFullName shouldBe "pymongo.py:<module>.MongoClient.<init>.<indexAccess>.<indexAccess>.find_one"
     }
