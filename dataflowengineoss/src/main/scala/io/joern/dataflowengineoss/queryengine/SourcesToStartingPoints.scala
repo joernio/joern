@@ -3,18 +3,7 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  CfgNode,
-  Expression,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  Member,
-  MethodReturn,
-  StoredNode,
-  TypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, FieldIdentifier, Identifier, Literal, Member, Method, MethodReturn, StoredNode, TypeDecl}
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
@@ -71,24 +60,31 @@ class SourceTravsToStartingPointsTask[NodeType](sourceTravs: Traversal[NodeType]
   */
 class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode]] {
 
+  private val cpg = Cpg(src.graph())
+
+  override def compute(): List[CfgNode] =
+    src match {
+      case methodReturn: MethodReturn =>
+        methodReturn.method.callIn.l
+      case lit: Literal =>
+        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
+      case member: Member =>
+        val initializedMember = memberToInitializedMembers(member)
+        usages(targetsToClassIdentifierPair(initializedMember))
+      case x => List(x).collect { case y: CfgNode => y }
+    }
+
   private def usages(pairs: List[(TypeDecl, Expression)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, expression) =>
-      val cpg = Cpg(typeDecl.graph())
+
+      val nonConstructorMethods = typeDecl.method
+        .whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName))
+
       val usagesInSameClass =
-        typeDecl.method
-          .whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName))
-          .flatMap { m =>
-            expression match {
-              case identifier: Identifier =>
-                m.ast.isIdentifier.nameExact(identifier.name).takeWhile(notLeftHandOfAssignment)
-              case fieldIdentifier: FieldIdentifier =>
-                m.ast.isFieldIdentifier
-                  .canonicalNameExact(fieldIdentifier.canonicalName)
-                  .takeWhile(notLeftHandOfAssignment)
-              case _ => List()
-            }
-          }
+        nonConstructorMethods
+          .flatMap { m => usagesOfExpression(expression, m)}
           .headOption
+
       val usagesInOtherClasses = cpg.method.flatMap { m =>
         m.fieldAccess
           .where(_.argument(1).isIdentifier.typeFullNameExact(typeDecl.fullName))
@@ -105,6 +101,18 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
           .headOption
       }
       usagesInSameClass ++ usagesInOtherClasses
+    }
+  }
+
+  private def usagesOfExpression(expression: Expression, m : Method) = {
+    expression match {
+      case identifier: Identifier =>
+        m.ast.isIdentifier.nameExact(identifier.name).takeWhile(notLeftHandOfAssignment)
+      case fieldIdentifier: FieldIdentifier =>
+        m.ast.isFieldIdentifier
+          .canonicalNameExact(fieldIdentifier.canonicalName)
+          .takeWhile(notLeftHandOfAssignment)
+      case _ => List()
     }
   }
 
@@ -125,19 +133,24 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   private def memberToInitializedMembers(member: Member): List[Expression] = {
-    member.typeDecl.method
-      .nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName)
-      .ast
+    val nodesInConstructors = member.typeDecl.method
+      .nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName).ast
+
+    nodesInConstructors
       .flatMap { x =>
         x match {
           case identifier: Identifier if identifier.name == member.name =>
-            Traversal(identifier).argumentIndex(1).where(_.inAssignment).l
+            isTargetInAssignment(identifier)
           case fieldIdentifier: FieldIdentifier if fieldIdentifier.canonicalName == member.head.name =>
             Traversal(fieldIdentifier).where(_.inAssignment).l
           case _ => List[Expression]()
         }
       }
       .l
+  }
+
+  private def isTargetInAssignment(identifier : Identifier) : List[Identifier] = {
+    Traversal(identifier).argumentIndex(1).where(_.inAssignment).l
   }
 
   private def notLeftHandOfAssignment(x: Expression): Boolean = {
@@ -147,15 +160,5 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   private def targetsToClassIdentifierPair(targets: List[Expression]): List[(TypeDecl, Expression)] = {
     targets.flatMap(target => target.method.typeDecl.map { typeDecl => (typeDecl, target) })
   }
-  override def compute(): List[CfgNode] =
-    src match {
-      case methodReturn: MethodReturn =>
-        methodReturn.method.callIn.l
-      case lit: Literal =>
-        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
-      case member: Member =>
-        val initializedMember = memberToInitializedMembers(member)
-        usages(targetsToClassIdentifierPair(initializedMember))
-      case x => List(x).collect { case y: CfgNode => y }
-    }
+
 }
