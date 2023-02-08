@@ -6,31 +6,16 @@ import io.joern.dataflowengineoss.queryengine.{
   Engine,
   EngineContext,
   PathElement,
-  ReachableByResult,
   SourcesToStartingPoints,
   StartingPointWithSource,
   TableEntry
 }
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
-
-import java.util.concurrent.{
-  ForkJoinPool,
-  ForkJoinTask,
-  RecursiveTask,
-  RejectedExecutionException,
-  RejectedExecutionHandler
-}
 import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
 import scala.collection.parallel.CollectionConverters._
-import java.util.concurrent._
 
 /** Base class for nodes that can occur in data flows
   */
