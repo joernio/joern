@@ -1792,7 +1792,6 @@ class PythonAstVisitor(
     val member = nodeBuilder.memberNode(identifier.name, "")
     contextStack.findEnclosingTypeDecl() match {
       case Some(typeDecl: NewTypeDecl) =>
-        println("reached")
         edgeBuilder.astEdge(member, typeDecl, contextStack.order.getAndInc)
       case _ =>
     }
