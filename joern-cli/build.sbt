@@ -3,13 +3,13 @@ name := "joern-cli"
 dependsOn(Projects.console, Projects.console % "test->test", Projects.c2cpg, Projects.dataflowengineoss, Projects.x2cpg)
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"            %% "codepropertygraph" % Versions.cpg,
-  "com.lihaoyi"             %% "requests"          % "0.7.1",
-  "com.github.scopt"        %% "scopt"             % "4.1.0",
-  "com.github.pathikrit"    %% "better-files"      % "3.9.1",
-  "io.circe"                %% "circe-generic"     % "0.14.3",
-  "org.reflections"          % "reflections"       % "0.10.2",
-  "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test
+  "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
+  "com.lihaoyi"          %% "requests"          % "0.7.1",
+  "com.github.scopt"     %% "scopt"             % "4.1.0",
+  "com.github.pathikrit" %% "better-files"      % "3.9.2",
+  "io.circe"             %% "circe-generic"     % "0.14.3",
+  "org.reflections"       % "reflections"       % "0.10.2",
+  "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
 )
 
 Test / fork := false

@@ -9,7 +9,7 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
-  "com.github.pathikrit"    %% "better-files"               % "3.9.1",
+  "com.github.pathikrit"    %% "better-files"               % "3.9.2",
   "com.lihaoyi"             %% "requests"                   % "0.7.0",
   "com.lihaoyi"             %% "ujson"                      % "2.0.0",
   "com.squareup.tools.build" % "maven-archeologist"         % "0.0.10",
@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "org.jetbrains.kotlin"     % "kotlin-stdlib"              % kotlinVersion,
   "org.jetbrains.kotlin"     % "kotlin-compiler-embeddable" % kotlinVersion,
   "org.jetbrains.kotlin"     % "kotlin-allopen"             % kotlinVersion,
-  "org.scalatest"           %% "scalatest"                  % "3.2.9"        % Test
+  "org.scalatest"           %% "scalatest"                  % "3.2.9" % Test
 )
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
