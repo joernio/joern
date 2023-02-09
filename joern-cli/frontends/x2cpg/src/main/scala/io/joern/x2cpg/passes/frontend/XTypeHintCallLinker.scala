@@ -74,7 +74,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     val basePath = cpg.metaData.root.head
     val isExternal = if (matcher.matches()) {
       val fileName = matcher.group(1)
-      cpg.file(basePath + fileName).isEmpty
+      cpg.file.nameExact(basePath + fileName).isEmpty
     } else {
       true
     }
