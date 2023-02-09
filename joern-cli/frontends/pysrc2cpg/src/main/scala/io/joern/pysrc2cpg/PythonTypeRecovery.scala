@@ -303,7 +303,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
           .map(_.stripSuffix(s".${Defines.ConstructorMethodName}"))
           .map(x => (x.split("\\.").last, x))
           .map {
-            case (x, y)  => s"$y.$x<body>"
+            case (x, y) => s"$y.$x<body>"
             case (_, z) => z
           }
       )
@@ -333,8 +333,8 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
             identifierFullName.map(_.concat(s".${Defines.ConstructorMethodName}"))
           else
             identifierFullName.map(x => (x.split("\\.").takeRight(2), x)).map {
-              case (Array(x, y), z) if x.charAt(0).isUpper && !z.contains("<body>" )=> s"${z.stripSuffix(y)}$x<body>.$y"
-              case (_, y)                                  => y
+              case (Array(x, y), z) if x.charAt(0).isUpper && !z.contains("<body>") => s"${z.stripSuffix(y)}$x<body>.$y"
+              case (_, y)                                                           => y
             }
         symbolTable.put(i, identifierFullName)
         symbolTable.put(c, callMethodFullName)
