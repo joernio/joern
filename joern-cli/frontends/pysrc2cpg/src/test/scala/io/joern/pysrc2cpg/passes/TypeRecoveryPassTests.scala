@@ -126,9 +126,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val List(id, firstname, age, address) =
         cpg.identifier.nameExact("id", "firstname", "age", "address").takeRight(4).l
       id.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
-      firstname.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
-      age.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
-      address.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
+      firstname.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.Column<body>"
+      age.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.Column<body>"
+      address.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.Column<body>"
     }
 
     "resolve the 'Column' constructor for a class member" in {
@@ -215,7 +215,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .isIdentifier
         .name("d")
         .headOption
-      d.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
+      d.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>"
       d.dynamicTypeHintFullName shouldBe Seq()
     }
 
@@ -271,11 +271,13 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     ).cpg
 
     "be determined as a variable reference and have its type recovered correctly" in {
-      cpg.identifier("db").map(_.typeFullName).toSet shouldBe Set("flask_sqlalchemy.py:<module>.SQLAlchemy")
+      cpg.identifier("db").map(_.typeFullName).toSet shouldBe Set(
+        "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>"
+      )
 
       cpg
         .call("add")
-        .where(_.parentBlock.ast.isIdentifier.typeFullName("flask_sqlalchemy.py:<module>.SQLAlchemy"))
+        .where(_.parentBlock.ast.isIdentifier.typeFullName("flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>"))
         .where(_.parentBlock.ast.isFieldIdentifier.canonicalName("session"))
         .headOption
         .map(_.code) shouldBe Some("tmp0.add(user)")
@@ -283,13 +285,13 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "provide a dummy type to a member if the member type is not known" in {
       val Some(sessionTmpVar) = cpg.identifier("tmp0").headOption
-      sessionTmpVar.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session)"
+      sessionTmpVar.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.<member>(session)"
 
       val Some(addCall) = cpg
         .call("add")
         .headOption
-      addCall.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session).add"
-      addCall.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session).add"
+      addCall.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.<member>(session).add"
+      addCall.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.<member>(session).add"
       addCall.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
@@ -366,12 +368,21 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |        return dict(res).get("customerId", None)
         |""".stripMargin,
       "InstallationDao.py"
+    ).moreCode(
+      """
+        |# dummy file to trigger isExternal = false on methods that are imported from here
+        |""".stripMargin,
+      "pymongo.py"
     ).cpg
 
     "recover a potential type for `self.collection` using the assignment at `get_collection` as a type hint" in {
-      cpg.method.isExternal(false).fullName.foreach(println)
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption
       selfFindFound.methodFullName shouldBe "pymongo.py:<module>.MongoClient.<init>.<indexAccess>.<indexAccess>.find_one"
+    }
+
+    "correctly determine that, despite being unable to resolve the correct method full name, that it is an internal method" in {
+      val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption
+      selfFindFound.callee.isExternal.headOption shouldBe Some(false)
     }
   }
 

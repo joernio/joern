@@ -22,7 +22,13 @@ class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg) {
   private val edgeBuilder = new EdgeBuilder(diffGraph)
 
   def buildCpg(): Unit = {
-    nodeBuilder.metaNode(Languages.PYTHONSRC, version = "")
+    val metaData = nodeBuilder.metaNode(Languages.PYTHONSRC, version = "")
+    inputProviders.headOption match {
+      case Some(headInput: Py2Cpg.InputProvider) =>
+        val inputFile = headInput()
+        metaData.root(inputFile.absFileName.stripSuffix(inputFile.relFileName))
+      case _ =>
+    }
     val globalNamespaceBlock =
       nodeBuilder.namespaceBlockNode(Constants.GLOBAL_NAMESPACE, Constants.GLOBAL_NAMESPACE, "N/A")
     nodeBuilder.typeNode(Constants.ANY, Constants.ANY)
