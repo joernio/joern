@@ -175,7 +175,6 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // Populate local symbol table with assignments
-//    symbolTable.view.filterNot(_._2.exists(_.startsWith("built"))).foreach(println)
     assignments.foreach(visitAssignments)
     // Persist findings
     setTypeInformation()

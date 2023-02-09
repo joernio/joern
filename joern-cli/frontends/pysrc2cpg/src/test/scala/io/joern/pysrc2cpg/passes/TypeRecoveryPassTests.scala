@@ -386,4 +386,30 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "a recursive field access based call type" should {
+    lazy val cpg = code(
+      """
+        |from flask import Flask, render_template
+        |from flask_pymongo import PyMongo
+        |
+        |# Instance of Flask
+        |app = Flask(__name__)
+        |mongo = PyMongo(app)
+        |
+        |
+        |@app.route('/')
+        |@app.route("/bikes")
+        |def bike():
+        |    bikes = mongo.db.bikes.find()
+        |    return render_template("index.html", bikes=bikes)
+        |""".stripMargin,
+      "app.py"
+    )
+
+    "manage to create a correct chain of dummy field accesses before the call" in {
+      val Some(binkFind) = cpg.call.name("find").headOption
+      binkFind.methodFullName shouldBe "flask_pymongo.py:<module>.PyMongo.PyMongo<body>.<member>(db).<member>(bikes).find"
+    }
+  }
+
 }
