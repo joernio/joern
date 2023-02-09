@@ -250,6 +250,15 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
             // TODO: This is really tricky to find without proper object tracking, so we match name only
             val fieldTypes = globalTable.view.filter(_._1.identifier.equals(f.canonicalName)).flatMap(_._2).toSet
             if (fieldTypes.nonEmpty) symbolTable.append(assigned, fieldTypes)
+          case List(assigned: Identifier, c: Call, f: FieldIdentifier) if c.name.equals(Operators.fieldAccess) =>
+            // TODO: This is the step that handles foo.bar.baz, which gives the impression that there is the need to
+            //  handle this pattern recursively
+            val baseType = c.astChildren.isFieldIdentifier.canonicalName
+              .zip(c.astChildren.isIdentifier.flatMap(symbolTable.get))
+              .map { case (ff, bt) => s"$bt.<member>($ff).<member>(${f.canonicalName})" }
+              .toSet
+            if (baseType.nonEmpty) symbolTable.append(assigned, baseType)
+
           case _ =>
         }
       // Field load from call
