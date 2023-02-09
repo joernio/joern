@@ -127,6 +127,13 @@ class ContextStack {
     contextStack.find(_.isInstanceOf[MethodContext]).get.asInstanceOf[MethodContext]
   }
 
+  def findEnclosingTypeDecl(): Option[NewNode] = {
+    stack.find(_.isInstanceOf[ClassContext]) match {
+      case Some(classContext: ClassContext) => Some(classContext.astParent)
+      case _                                => None
+    }
+  }
+
   def createIdentifierLinks(
     createLocal: (String, Option[String]) => nodes.NewLocal,
     createClosureBinding: (String, String) => nodes.NewClosureBinding,
