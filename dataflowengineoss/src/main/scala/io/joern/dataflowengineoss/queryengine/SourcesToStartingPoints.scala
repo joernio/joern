@@ -130,7 +130,6 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
               .canonicalNameExact(identifier.name)
               .inFieldAccess
               .where(_.argument(1).codeExact("this", "self"))
-              .takeWhile(notLeftHandOfAssignment)
           )
           .cast[Expression]
           .l
