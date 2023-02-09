@@ -30,6 +30,9 @@ object SourcesToStartingPoints {
 
   private val log = LoggerFactory.getLogger(SourcesToStartingPoints.getClass)
 
+  /** Compute a list of starting points from the source traversals passed. Computation is performed in parallel for each
+    * source traversal. TODO this is a performance-critical operation and could do with optimization.
+    */
   def sourceTravsToStartingPoints[NodeType](sourceTravs: Traversal[NodeType]*): List[StartingPointWithSource] = {
     val fjp = ForkJoinPool.commonPool()
     try {

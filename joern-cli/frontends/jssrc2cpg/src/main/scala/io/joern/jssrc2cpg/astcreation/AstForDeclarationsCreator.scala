@@ -6,7 +6,7 @@ import io.joern.jssrc2cpg.datastructures.ScopeType
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, Imports}
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
@@ -480,23 +480,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     importedAs: String,
     call: Option[NewCall]
   ): NewImport = {
-    createImportNodeAndAttachToCall(impDecl.code.stripSuffix(";"), importedEntity, importedAs, call)
-  }
-
-  def createImportNodeAndAttachToCall(
-    code: String,
-    importedEntity: String,
-    importedAs: String,
-    call: Option[NewCall]
-  ): NewImport = {
-    val impNode = NewImport()
-      .code(code)
-      .importedEntity(importedEntity)
-      .importedAs(importedAs)
-      .lineNumber(call.flatMap(_.lineNumber))
-      .columnNumber(call.flatMap(_.lineNumber))
-    call.foreach { c => diffGraph.addEdge(c, impNode, EdgeTypes.IS_CALL_FOR_IMPORT) }
-    impNode
+    Imports.createImportNodeAndAttachToCall(impDecl.code.stripSuffix(";"), importedEntity, importedAs, call, diffGraph)
   }
 
   private def convertDestructingObjectElement(element: BabelNodeInfo, key: BabelNodeInfo, localTmpName: String): Ast = {
