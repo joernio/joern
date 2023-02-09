@@ -412,4 +412,26 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "a call from an import where the import acts as a module" should {
+    lazy val cpg = code(
+      """import os
+        |import datadog
+        |
+        |# Initialize the Datadog client
+        |options = {
+        |    'api_key': os.environ.get('DD_API_KEY'),
+        |    'app_key': os.environ.get('DD_APP_KEY')
+        |}
+        |
+        |datadog.initialize(**options)
+        |""".stripMargin,
+      "app.py"
+    )
+
+    "recover the import as an identifier and not directly as a call" in {
+      val Some(binkFind) = cpg.call.name("initialize").headOption
+      binkFind.methodFullName shouldBe "datadog.py:<module>.initialize"
+    }
+  }
+
 }
