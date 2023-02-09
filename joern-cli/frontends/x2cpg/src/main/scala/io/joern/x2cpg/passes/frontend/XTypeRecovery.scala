@@ -279,8 +279,12 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       // Case 3: 'i' is the receiver for a field access on member 'f'
       case (Some(call: Call), List(i: Identifier, f: FieldIdentifier)) if call.name.equals(Operators.fieldAccess) =>
         val iTypes = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
+        val cTypes = symbolTable.get(call)
         persistType(i, iTypes)(builder)
+        persistType(call, cTypes)(builder)
         Traversal.from(call.astParent).isCall.headOption match {
+          case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
+            persistType(callFromFieldName, symbolTable.get(callFromFieldName))(builder)
           case Some(callFromFieldName) =>
             persistType(callFromFieldName, iTypes.map(it => s"$it.${f.canonicalName}"))(builder)
           case None =>
