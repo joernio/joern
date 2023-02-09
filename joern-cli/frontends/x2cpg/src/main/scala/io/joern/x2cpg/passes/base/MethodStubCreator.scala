@@ -81,13 +81,14 @@ object MethodStubCreator {
     signature: String,
     dispatchType: String,
     parameterCount: Int,
-    dstGraph: DiffGraphBuilder
+    dstGraph: DiffGraphBuilder,
+    isExternal: Boolean = true
   ): NewMethod = {
     val methodNode = addLineNumberInfo(
       NewMethod()
         .name(name)
         .fullName(fullName)
-        .isExternal(true)
+        .isExternal(isExternal)
         .signature(signature)
         .astParentType(NodeTypes.NAMESPACE_BLOCK)
         .astParentFullName("<global>")
