@@ -285,7 +285,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
         Traversal.from(call.astParent).isCall.headOption match {
           case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
             persistType(callFromFieldName, symbolTable.get(callFromFieldName))(builder)
-          case Some(callFromFieldName) =>
+          case Some(callFromFieldName) if iTypes.nonEmpty =>
             persistType(callFromFieldName, iTypes.map(it => s"$it.${f.canonicalName}"))(builder)
           case None =>
         }
