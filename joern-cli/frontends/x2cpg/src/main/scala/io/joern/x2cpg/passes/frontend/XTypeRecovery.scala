@@ -236,47 +236,61 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
         case x: Local if symbolTable.contains(x) =>
           builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
         case x: Identifier if symbolTable.contains(x) =>
-          (x.inCall.headOption, x.inCall.argument.take(2).l) match {
-            // Case 1: 'call' is an assignment from some dynamic dispatch call
-            case (Some(call: Call), List(i: Identifier, c: Call)) if call.name.equals(Operators.assignment) =>
-              val idTypes   = symbolTable.get(i)
-              val callTypes = symbolTable.get(c)
-              persistType(call, callTypes)(builder)
-              if (idTypes.nonEmpty || callTypes.nonEmpty) {
-                if (idTypes.equals(callTypes))
-                  // Case 1.1: This is a function pointer or constructor
-                  persistType(i, callTypes)(builder)
-                else
-                  // Case 1.2: This is the return value of the function
-                  persistType(i, idTypes)(builder)
-              }
-            // Case 1: 'call' is an assignment from some other data structure
-            case (Some(call: Call), ::(i: Identifier, _)) if call.name.equals(Operators.assignment) =>
-              val idHints = symbolTable.get(i)
-              persistType(i, idHints)(builder)
-              persistType(call, idHints)(builder)
-            // Case 2: 'i' is the receiver of 'call'
-            case (Some(call: Call), ::(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
-              val idHints   = symbolTable.get(i)
-              val callTypes = symbolTable.get(call)
-              persistType(i, idHints)(builder)
-              if (callTypes.isEmpty) {
-                // For now, calls are treated as function pointers and thus the type should point to the method
-                persistType(call, idHints.map(t => s"$t.${call.name}"))(builder)
-              } else {
-                persistType(call, callTypes)(builder)
-              }
-            // Case 3: 'i' is the receiver for a field access on member 'f'
-            case (Some(call: Call), List(i: Identifier, _: FieldIdentifier))
-                if call.name.equals(Operators.fieldAccess) =>
-              persistType(i, symbolTable.get(x))(builder)
-            case _ => persistType(x, symbolTable.get(x))(builder)
-          }
+          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
         case x: Call if symbolTable.contains(x) =>
           builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
+        case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
+          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
         case _ =>
       }
   }
+
+  private def setTypeInformationForRecCall(x: AstNode, n: Option[Call], ms: List[AstNode]): Unit =
+    (n, ms) match {
+      // Case 1: 'call' is an assignment from some dynamic dispatch call
+      case (Some(call: Call), List(i: Identifier, c: Call)) if call.name.equals(Operators.assignment) =>
+        val idTypes   = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
+        val callTypes = symbolTable.get(c)
+        persistType(call, callTypes)(builder)
+        if (idTypes.nonEmpty || callTypes.nonEmpty) {
+          if (idTypes.equals(callTypes))
+            // Case 1.1: This is a function pointer or constructor
+            persistType(i, callTypes)(builder)
+          else
+            // Case 1.2: This is the return value of the function
+            persistType(i, idTypes)(builder)
+        }
+      // Case 1: 'call' is an assignment from some other data structure
+      case (Some(call: Call), ::(i: Identifier, _)) if call.name.equals(Operators.assignment) =>
+        val idHints = symbolTable.get(i)
+        persistType(i, idHints)(builder)
+        persistType(call, idHints)(builder)
+      // Case 2: 'i' is the receiver of 'call'
+      case (Some(call: Call), ::(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
+        val idHints   = symbolTable.get(i)
+        val callTypes = symbolTable.get(call)
+        persistType(i, idHints)(builder)
+        if (callTypes.isEmpty) {
+          // For now, calls are treated as function pointers and thus the type should point to the method
+          persistType(call, idHints.map(t => s"$t.${call.name}"))(builder)
+        } else {
+          persistType(call, callTypes)(builder)
+        }
+      // Case 3: 'i' is the receiver for a field access on member 'f'
+      case (Some(call: Call), List(i: Identifier, f: FieldIdentifier)) if call.name.equals(Operators.fieldAccess) =>
+        val iTypes = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
+        val cTypes = symbolTable.get(call)
+        persistType(i, iTypes)(builder)
+        persistType(call, cTypes)(builder)
+        Traversal.from(call.astParent).isCall.headOption match {
+          case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
+            persistType(callFromFieldName, symbolTable.get(callFromFieldName))(builder)
+          case Some(callFromFieldName) if iTypes.nonEmpty =>
+            persistType(callFromFieldName, iTypes.map(it => s"$it.${f.canonicalName}"))(builder)
+          case None =>
+        }
+      case _ => persistType(x, symbolTable.get(x))(builder)
+    }
 
   private def persistType(x: StoredNode, types: Set[String])(implicit builder: DiffGraphBuilder): Unit =
     if (types.nonEmpty)

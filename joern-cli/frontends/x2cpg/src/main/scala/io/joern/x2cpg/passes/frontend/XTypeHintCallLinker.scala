@@ -9,6 +9,8 @@ import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
+import java.io.File
+import java.util.regex.Pattern
 import scala.collection.mutable
 
 /** Attempts to set the <code>methodFullName</code> and link to callees using the recovered type information from
@@ -21,6 +23,7 @@ import scala.collection.mutable
 abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   implicit private val resolver: NoResolve.type = NoResolve
+  private val fileNamePattern                   = Pattern.compile("^(.*(.py|.js)).*$")
 
   def calls: Traversal[Call] = cpg.call
     .filterNot(c => c.name.startsWith("<operator>"))
@@ -65,12 +68,30 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   private def createMethodStub(methodName: String, call: Call, builder: DiffGraphBuilder): NewMethod = {
+    // In the case of Python/JS we can use name info to check if, despite the method name might be incorrect, that we
+    // label the method correctly as internal by finding that the method should belong to an internal file
+    val matcher  = fileNamePattern.matcher(methodName)
+    val basePath = cpg.metaData.root.head
+    val isExternal = if (matcher.matches()) {
+      val fileName = matcher.group(1)
+      cpg.file.nameExact(basePath + fileName).isEmpty
+    } else {
+      true
+    }
     val name =
       if (methodName.contains(".") && methodName.length > methodName.lastIndexOf(".") + 1)
         methodName.substring(methodName.lastIndexOf(".") + 1)
       else methodName
     MethodStubCreator
-      .createMethodStub(name, methodName, "", DispatchTypes.DYNAMIC_DISPATCH.name(), call.argumentOut.size, builder)
+      .createMethodStub(
+        name,
+        methodName,
+        "",
+        DispatchTypes.DYNAMIC_DISPATCH.name(),
+        call.argumentOut.size,
+        builder,
+        isExternal
+      )
   }
 
 }

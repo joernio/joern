@@ -4,7 +4,7 @@ import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
 import io.joern.pythonparser.ast
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes.{Method, NewIdentifier, NewMethod, NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -1779,7 +1779,22 @@ class PythonAstVisitor(
 
   def convert(name: ast.Name): nodes.NewNode = {
     val memoryOperation = memOpMap.get(name).get
-    createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
+    val identifier      = createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
+    contextStack.astParent match {
+      case method: NewMethod if method.name.endsWith("<body>") =>
+        attachAsClassVariable(identifier)
+      case _ =>
+    }
+    identifier
+  }
+
+  private def attachAsClassVariable(identifier: NewIdentifier): Unit = {
+    val member = nodeBuilder.memberNode(identifier.name, "")
+    contextStack.findEnclosingTypeDecl() match {
+      case Some(typeDecl: NewTypeDecl) =>
+        edgeBuilder.astEdge(member, typeDecl, contextStack.order.getAndInc)
+      case _ =>
+    }
   }
 
   // TODO test

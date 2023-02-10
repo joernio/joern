@@ -250,6 +250,15 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
             // TODO: This is really tricky to find without proper object tracking, so we match name only
             val fieldTypes = globalTable.view.filter(_._1.identifier.equals(f.canonicalName)).flatMap(_._2).toSet
             if (fieldTypes.nonEmpty) symbolTable.append(assigned, fieldTypes)
+          case List(assigned: Identifier, c: Call, f: FieldIdentifier) if c.name.equals(Operators.fieldAccess) =>
+            // TODO: This is the step that handles foo.bar.baz, which gives the impression that there is the need to
+            //  handle this pattern recursively
+            val baseType = c.astChildren.isFieldIdentifier.canonicalName
+              .zip(c.astChildren.isIdentifier.flatMap(symbolTable.get))
+              .map { case (ff, bt) => s"$bt.<member>($ff).<member>(${f.canonicalName})" }
+              .toSet
+            if (baseType.nonEmpty) symbolTable.append(assigned, baseType)
+
           case _ =>
         }
       // Field load from call
@@ -297,7 +306,16 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
       setIdentifier(i, importedTypes)
     } else if (!callName.isBlank && callName.charAt(0).isUpper && callCode.endsWith(")")) {
       // Case 2: The identifier is receiving a constructor invocation, thus is now an instance of the type
-      setIdentifier(i, importedTypes.map(_.stripSuffix(s".${Defines.ConstructorMethodName}")))
+      setIdentifier(
+        i,
+        importedTypes
+          .map(_.stripSuffix(s".${Defines.ConstructorMethodName}"))
+          .map(x => (x.split("\\.").last, x))
+          .map {
+            case (x, y) => s"$y.$x<body>"
+            case (_, z) => z
+          }
+      )
     } else {
       // TODO: This identifier should contain the type of the return value of 'c'.
       //  e.g. x = foo(a, b) but not x = y.foo(a, b) as foo in the latter case is interpreted as a field access
@@ -323,11 +341,14 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
           if (f.canonicalName.charAt(0).isUpper)
             identifierFullName.map(_.concat(s".${Defines.ConstructorMethodName}"))
           else
-            identifierFullName
+            identifierFullName.map(x => (x.split("\\.").takeRight(2), x)).map {
+              case (Array(x, y), z) if x.charAt(0).isUpper && !z.contains("<body>") => s"${z.stripSuffix(y)}$x<body>.$y"
+              case (_, y)                                                           => y
+            }
         symbolTable.put(i, identifierFullName)
         symbolTable.put(c, callMethodFullName)
       case List(rec: Identifier, f: FieldIdentifier) if symbolTable.contains(CallAlias(rec.name)) =>
-        // Second we ask if the call receiver is known as a function pointer (imports are interpretted as functions first)
+        // Second we ask if the call receiver is known as a function pointer (imports are interpreted as functions first)
         val funcTypes = symbolTable.get(CallAlias(rec.name)).map(t => s"$t.${f.canonicalName}")
         // TODO: Look in the CPG if we can resolve the method return value
         symbolTable.put(i, funcTypes.map(t => s"$t.<returnValue>"))
