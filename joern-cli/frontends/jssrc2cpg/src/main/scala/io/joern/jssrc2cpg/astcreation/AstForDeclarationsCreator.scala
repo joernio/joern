@@ -25,6 +25,10 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
   private def hasName(json: Value): Boolean = hasKey(json, "id") && !json("id").isNull
 
+  /** Create sequence of code fields from a BabelNodeInfo object. As a BabelNodeInfo object may represent declarations
+    * or properties, the sequence may have more than one element. If no code field can be generated for the
+    * BabelNodeInfo object, an empty sequence is returned.
+    */
   protected def codeForBabelNodeInfo(obj: BabelNodeInfo): Seq[String] = {
     val codes = obj.node match {
       case Identifier                               => Seq(obj.code)
@@ -207,7 +211,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val asts = fromAst +: (specifierAsts ++ declAsts.flatten)
-    setArgIndices(asts)
+    setArgumentIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }
 
@@ -221,7 +225,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val asts = declAsts.toList.flatten
-    setArgIndices(asts)
+    setArgumentIndices(asts)
     blockAst(createBlockNode(assignment), asts)
   }
 
@@ -237,7 +241,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val asts = declAsts.toList.flatten
-    setArgIndices(asts)
+    setArgumentIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }
 
@@ -254,7 +258,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration, None)
 
     val asts = List(fromCallAst, assignmentCallAst)
-    setArgIndices(asts)
+    setArgumentIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }
 
@@ -268,7 +272,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val declAsts = declaration.json("declarations").arr.toList.map(astForVariableDeclarator(_, scopeType, kind))
     declAsts match {
       case head :: tail =>
-        setArgIndices(declAsts)
+        setArgumentIndices(declAsts)
         tail.foreach { declAst =>
           declAst.root.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
           Ast.storeInDiffGraph(declAst, diffGraph)
@@ -708,7 +712,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     localAstParentStack.pop()
 
     val blockChildren = assignmentTmpCallAst +: subTreeAsts :+ Ast(returnTmpNode)
-    setArgIndices(blockChildren)
+    setArgumentIndices(blockChildren)
     Ast(blockNode).withChildren(blockChildren)
   }
 

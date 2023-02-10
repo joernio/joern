@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Modifier
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-abstract class AstCreatorBase(filename: String) {
+abstract class AstCreatorBase(filename: String) extends NodeCreators {
   val diffGraph: DiffGraphBuilder = new DiffGraphBuilder
 
   def createAst(): DiffGraphBuilder
@@ -204,7 +204,8 @@ abstract class AstCreatorBase(filename: String) {
     callNode: NewCall,
     arguments: Seq[Ast] = List(),
     receiver: Option[Ast] = None,
-    withRecvArgEdge: Boolean = false
+    withRecvArgEdge: Boolean = false,
+    base: Option[Ast] = None
   ): Ast = {
     val receiverRoot = receiver.flatMap(_.root).toList
     val rcv          = receiver.getOrElse(Ast())
@@ -225,12 +226,19 @@ abstract class AstCreatorBase(filename: String) {
       .withReceiverEdges(callNode, receiverRoot)
   }
 
-  def setArgumentIndices(arguments: Seq[Ast]): Unit = {
-    withIndex(arguments) { case (a, i) =>
-      a.root.collect { case x: ExpressionNew =>
-        x.argumentIndex = i
+  protected def setArgumentIndices(asts: Seq[Ast], base: Option[Ast] = None): Unit = {
+    var currIndex = 1
+    asts.foreach { a =>
+      a.root match {
+        case Some(x: ExpressionNew) =>
+          x.argumentIndex = currIndex
+          currIndex = currIndex + 1
+        case None => // do nothing
+        case _ =>
+          currIndex = currIndex + 1
       }
     }
+    base.flatMap(_.root).foreach { case expr: ExpressionNew => expr.argumentIndex = 0 }
   }
 
   def withIndex[T, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =

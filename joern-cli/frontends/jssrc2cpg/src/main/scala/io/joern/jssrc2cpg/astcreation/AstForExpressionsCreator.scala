@@ -137,7 +137,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     scope.popScope()
     localAstParentStack.pop()
 
-    setArgIndices(List(assignmentTmpAllocCallNode, callNode, tmpAllocReturnNode))
+    setArgumentIndices(List(assignmentTmpAllocCallNode, callNode, tmpAllocReturnNode))
     Ast(blockNode).withChild(assignmentTmpAllocCallNode).withChild(callNode).withChild(tmpAllocReturnNode)
   }
 
@@ -338,7 +338,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
     val sequenceExpressionAsts = createBlockStatementAsts(seq.json("expressions"))
-    setArgIndices(sequenceExpressionAsts)
+    setArgumentIndices(sequenceExpressionAsts)
     localAstParentStack.pop()
     scope.popScope()
     Ast(blockNode).withChildren(sequenceExpressionAsts)
@@ -437,7 +437,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       localAstParentStack.pop()
 
       val blockChildrenAsts = List(assignmentTmpArrayCallNode) ++ elementAsts :+ Ast(tmpArrayReturnNode)
-      setArgIndices(blockChildrenAsts)
+      setArgumentIndices(blockChildrenAsts)
       Ast(blockNode).withChildren(blockChildrenAsts)
     }
   }
@@ -520,7 +520,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     localAstParentStack.pop()
 
     val allBlockChildren = propertiesAsts :+ Ast(tmpNode)
-    setArgIndices(propertiesAsts)
+    setArgumentIndices(propertiesAsts)
     Ast(blockNode).withChildren(allBlockChildren)
   }
 }

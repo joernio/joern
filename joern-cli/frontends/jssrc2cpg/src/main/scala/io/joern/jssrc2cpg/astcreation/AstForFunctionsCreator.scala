@@ -4,7 +4,6 @@ import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.datastructures.MethodScope
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier => _, _}
@@ -302,7 +301,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val mAst = if (methodBlockContent.isEmpty) {
       methodStubAst(methodNode, thisNode +: paramNodes, methodReturnNode, List(virtualModifierNode))
     } else {
-      setArgIndices(methodBlockContent)
+      setArgumentIndices(methodBlockContent)
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
       methodAst(methodNode, thisNode +: paramNodes, bodyAst, methodReturnNode)
     }
@@ -375,7 +374,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         }
       case _ => createBlockStatementAsts(bodyJson("body"))
     }
-    setArgIndices(methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts)
+    setArgumentIndices(methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts)
 
     val methodReturnNode = createMethodReturnNode(func)
 

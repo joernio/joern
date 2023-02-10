@@ -20,12 +20,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .lineNumber(node.lineNumber)
       .columnNumber(node.columnNumber)
 
-  protected def createDependencyNode(name: String, groupId: String, version: String): NewDependency =
-    NewDependency()
-      .name(name)
-      .dependencyGroupId(groupId)
-      .version(version)
-
   protected def createTypeRefNode(code: String, typeFullName: String, classNode: BabelNodeInfo): NewTypeRef =
     NewTypeRef()
       .code(code)
@@ -72,29 +66,13 @@ trait AstNodeBuilder { this: AstCreator =>
     ast.root.foreach { case expr: ExpressionNew => expr.order = order }
   }
 
-  protected def setArgIndices(asts: List[Ast], base: Option[Ast] = None): Unit = {
-    var currIndex = 1
-
-    asts.foreach { a =>
-      a.root match {
-        case Some(x: ExpressionNew) =>
-          x.argumentIndex = currIndex
-          currIndex = currIndex + 1
-        case None => // do nothing
-        case _ =>
-          currIndex = currIndex + 1
-      }
-    }
-    base.flatMap(_.root).foreach { case expr: ExpressionNew => expr.argumentIndex = 0 }
-  }
-
   protected def createCallAst(
     callNode: NewCall,
     arguments: List[Ast],
     receiver: Option[Ast] = None,
     base: Option[Ast] = None
   ): Ast = {
-    setArgIndices(arguments, base = base)
+    setArgumentIndices(arguments, base = base)
 
     val receiverRoot = receiver.flatMap(_.root).toList
     val rcvAst       = receiver.getOrElse(Ast())
@@ -110,7 +88,7 @@ trait AstNodeBuilder { this: AstCreator =>
   }
 
   protected def createReturnAst(returnNode: NewReturn, arguments: List[Ast] = List()): Ast = {
-    setArgIndices(arguments)
+    setArgumentIndices(arguments)
     Ast(returnNode)
       .withChildren(arguments)
       .withArgEdges(returnNode, arguments.flatMap(_.root))
@@ -203,11 +181,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumberEnd(columnEnd)
   }
 
-  protected def codeOf(node: NewNode): String = node match {
-    case node: AstNodeNew => node.code
-    case _                => ""
-  }
-
   protected def createIndexAccessCallAst(
     baseNode: NewNode,
     partNode: NewNode,
@@ -225,12 +198,7 @@ trait AstNodeBuilder { this: AstCreator =>
     createCallAst(callNode, arguments)
   }
 
-  protected def createIndexAccessCallAst(
-    baseAst: Ast,
-    partAst: Ast,
-    line: Option[Integer],
-    column: Option[Integer]
-  ): Ast = {
+  def createIndexAccessCallAst(baseAst: Ast, partAst: Ast, line: Option[Integer], column: Option[Integer]): Ast = {
     val callNode = createCallNode(
       s"${codeOf(baseAst.nodes.head)}[${codeOf(partAst.nodes.head)}]",
       Operators.indexAccess,
@@ -380,35 +348,6 @@ trait AstNodeBuilder { this: AstCreator =>
     }
     createIdentifierNode(name, dynamicInstanceTypeOption, node.lineNumber, node.columnNumber)
   }
-
-  protected def createIdentifierNode(
-    name: String,
-    dynamicTypeOption: Option[String],
-    line: Option[Integer],
-    column: Option[Integer]
-  ): NewIdentifier = NewIdentifier()
-    .name(name)
-    .code(name)
-    .lineNumber(line)
-    .columnNumber(column)
-    .typeFullName(Defines.Any)
-    .dynamicTypeHintFullName(dynamicTypeOption.toList)
-
-  protected def createStaticCallNode(
-    code: String,
-    callName: String,
-    fullName: String,
-    line: Option[Integer],
-    column: Option[Integer]
-  ): NewCall = NewCall()
-    .code(code)
-    .name(callName)
-    .methodFullName(fullName)
-    .dispatchType(DispatchTypes.STATIC_DISPATCH)
-    .signature("")
-    .lineNumber(line)
-    .columnNumber(column)
-    .typeFullName(Defines.Any)
 
   protected def createLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal =
     NewLocal().code(name).name(name).typeFullName(typeFullName).closureBindingId(closureBindingId).order(0)
