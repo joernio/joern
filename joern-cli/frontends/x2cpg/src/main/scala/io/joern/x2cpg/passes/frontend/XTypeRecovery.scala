@@ -287,7 +287,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
             persistType(callFromFieldName, symbolTable.get(callFromFieldName))(builder)
           case Some(callFromFieldName) if iTypes.nonEmpty =>
             persistType(callFromFieldName, iTypes.map(it => s"$it.${f.canonicalName}"))(builder)
-          case None =>
+          case _ =>
         }
       case _ => persistType(x, symbolTable.get(x))(builder)
     }
