@@ -232,9 +232,15 @@ abstract class AstCreatorBase(filename: String) {
   }
 
   def setArgumentIndices(arguments: Seq[Ast]): Unit = {
-    withIndex(arguments) { case (a, i) =>
-      a.root.collect { case x: ExpressionNew =>
-        x.argumentIndex = i
+    var currIndex = 1
+    arguments.foreach { a =>
+      a.root match {
+        case Some(x: ExpressionNew) =>
+          x.argumentIndex = currIndex
+          currIndex = currIndex + 1
+        case None => // do nothing
+        case _ =>
+          currIndex = currIndex + 1
       }
     }
   }

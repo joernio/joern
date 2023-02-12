@@ -150,7 +150,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         List(astForNodeWithFunctionReference(quasi), astForNodeWithFunctionReference(expression))
       }
       val argAsts = argumentAsts :+ astForNodeWithFunctionReference(quasisTail)
-      createCallAst(templateCall, argAsts)
+      callAst(templateCall, argAsts)
     }
   }
 }

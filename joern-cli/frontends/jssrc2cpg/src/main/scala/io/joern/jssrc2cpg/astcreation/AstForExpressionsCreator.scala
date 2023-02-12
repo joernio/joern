@@ -23,7 +23,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val callNode =
       createStaticCallNode(callExpr.code, callName, fullName, callee.lineNumber, callee.columnNumber)
     val argAsts = astForNodes(callExpr.json("arguments").arr.toList)
-    createCallAst(callNode, argAsts)
+    callAst(callNode, argAsts)
   }
 
   private def handleCallNodeArgs(
@@ -41,7 +41,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         callExpr.lineNumber,
         callExpr.columnNumber
       )
-    createCallAst(callNode, args, Option(receiverAst), Option(Ast(baseNode)))
+    callAst(callNode, args, receiver = Option(receiverAst), base = Option(Ast(baseNode)))
   }
 
   protected def astForCallExpression(callExpr: BabelNodeInfo): Ast = {
@@ -137,7 +137,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     scope.popScope()
     localAstParentStack.pop()
 
-    setArgIndices(List(assignmentTmpAllocCallNode, callNode, tmpAllocReturnNode))
+    setArgumentIndices(List(assignmentTmpAllocCallNode, callNode, tmpAllocReturnNode))
     Ast(blockNode).withChild(assignmentTmpAllocCallNode).withChild(callNode).withChild(tmpAllocReturnNode)
   }
 
@@ -207,7 +207,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             assignment.columnNumber
           )
         val argAsts = List(lhsAst, rhsAst)
-        createCallAst(callNode, argAsts)
+        callAst(callNode, argAsts)
     }
   }
 
@@ -232,7 +232,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         nonNullExpr.columnNumber
       )
     val argAsts = List(astForNodeWithFunctionReference(nonNullExpr.json("expression")))
-    createCallAst(callNode, argAsts)
+    callAst(callNode, argAsts)
   }
 
   protected def astForCastExpression(castExpr: BabelNodeInfo): Ast = {
@@ -244,7 +244,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val callNode =
       createCallNode(castExpr.code, op, DispatchTypes.STATIC_DISPATCH, castExpr.lineNumber, castExpr.columnNumber)
     val argAsts = List(lhsAst, rhsAst)
-    createCallAst(callNode, argAsts)
+    callAst(callNode, argAsts)
   }
 
   protected def astForBinaryExpression(binExpr: BabelNodeInfo): Ast = {
@@ -287,7 +287,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val callNode =
       createCallNode(binExpr.code, op, DispatchTypes.STATIC_DISPATCH, binExpr.lineNumber, binExpr.columnNumber)
     val argAsts = List(lhsAst, rhsAst)
-    createCallAst(callNode, argAsts)
+    callAst(callNode, argAsts)
   }
 
   protected def astForUpdateExpression(updateExpr: BabelNodeInfo): Ast = {
@@ -307,7 +307,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val callNode =
       createCallNode(updateExpr.code, op, DispatchTypes.STATIC_DISPATCH, updateExpr.lineNumber, updateExpr.columnNumber)
     val argAsts = List(argumentAst)
-    createCallAst(callNode, argAsts)
+    callAst(callNode, argAsts)
   }
 
   protected def astForUnaryExpression(unaryExpr: BabelNodeInfo): Ast = {
@@ -330,7 +330,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val callNode =
       createCallNode(unaryExpr.code, op, DispatchTypes.STATIC_DISPATCH, unaryExpr.lineNumber, unaryExpr.columnNumber)
     val argAsts = List(argumentAst)
-    createCallAst(callNode, argAsts)
+    callAst(callNode, argAsts)
   }
 
   protected def astForSequenceExpression(seq: BabelNodeInfo): Ast = {
@@ -338,7 +338,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
     val sequenceExpressionAsts = createBlockStatementAsts(seq.json("expressions"))
-    setArgIndices(sequenceExpressionAsts)
+    setArgumentIndices(sequenceExpressionAsts)
     localAstParentStack.pop()
     scope.popScope()
     Ast(blockNode).withChildren(sequenceExpressionAsts)
@@ -353,7 +353,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       awaitExpr.columnNumber
     )
     val argAsts = List(astForNodeWithFunctionReference(awaitExpr.json("argument")))
-    createCallAst(callNode, argAsts)
+    callAst(callNode, argAsts)
   }
 
   protected def astForArrayExpression(arrExpr: BabelNodeInfo): Ast = {
@@ -421,12 +421,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           val thisPushNode = createIdentifierNode(tmpName, elementNodeInfo)
 
           Option(
-            createCallAst(
-              pushCallNode,
-              List(elementNode),
-              receiver = Option(receiverNode),
-              base = Option(Ast(thisPushNode))
-            )
+            callAst(pushCallNode, List(elementNode), receiver = Option(receiverNode), base = Option(Ast(thisPushNode)))
           )
         case _ => None // skip
       }
@@ -437,7 +432,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       localAstParentStack.pop()
 
       val blockChildrenAsts = List(assignmentTmpArrayCallNode) ++ elementAsts :+ Ast(tmpArrayReturnNode)
-      setArgIndices(blockChildrenAsts)
+      setArgumentIndices(blockChildrenAsts)
       Ast(blockNode).withChildren(blockChildrenAsts)
     }
   }
@@ -455,7 +450,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         templateExpr.columnNumber
       )
     val argAsts = List(argumentAst)
-    createCallAst(templateExprCall, argAsts)
+    callAst(templateExprCall, argAsts)
   }
 
   protected def astForObjectExpression(objExpr: BabelNodeInfo): Ast = {
@@ -520,7 +515,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     localAstParentStack.pop()
 
     val allBlockChildren = propertiesAsts :+ Ast(tmpNode)
-    setArgIndices(propertiesAsts)
+    setArgumentIndices(propertiesAsts)
     Ast(blockNode).withChildren(allBlockChildren)
   }
 }

@@ -16,7 +16,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
       safeObj(jsxElem.json, "closingElement").fold(Ast())(e => astForNodeWithFunctionReference(Obj(e)))
 
     val allChildrenAsts = openingAst +: childrenAsts :+ closingAst
-    setArgIndices(allChildrenAsts)
+    setArgumentIndices(allChildrenAsts)
 
     Ast(domNode).withChildren(allChildrenAsts)
   }
@@ -29,14 +29,14 @@ trait AstForTemplateDomCreator { this: AstCreator =>
       jsxFragment.columnNumber
     )
     val childrenAsts = astForNodes(jsxFragment.json("children").arr.toList)
-    setArgIndices(childrenAsts)
+    setArgumentIndices(childrenAsts)
     Ast(domNode).withChildren(childrenAsts)
   }
 
   protected def astForJsxAttribute(jsxAttr: BabelNodeInfo): Ast = {
     val domNode  = createTemplateDomNode(jsxAttr.node.toString, jsxAttr.code, jsxAttr.lineNumber, jsxAttr.columnNumber)
     val valueAst = safeObj(jsxAttr.json, "value").fold(Ast())(e => astForNodeWithFunctionReference(Obj(e)))
-    setArgIndices(List(valueAst))
+    setArgumentIndices(List(valueAst))
     Ast(domNode).withChild(valueAst)
   }
 
@@ -48,7 +48,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
       jsxOpeningElem.columnNumber
     )
     val childrenAsts = astForNodes(jsxOpeningElem.json("attributes").arr.toList)
-    setArgIndices(childrenAsts)
+    setArgumentIndices(childrenAsts)
     Ast(domNode).withChildren(childrenAsts)
   }
 
@@ -77,7 +77,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
       case JSXEmptyExpression => Ast()
       case _                  => astForNodeWithFunctionReference(nodeInfo.json)
     }
-    setArgIndices(List(exprAst))
+    setArgumentIndices(List(exprAst))
     Ast(domNode).withChild(exprAst)
   }
 
@@ -89,7 +89,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
       jsxSpreadAttr.columnNumber
     )
     val argAst = astForNodeWithFunctionReference(jsxSpreadAttr.json("argument"))
-    setArgIndices(List(argAst))
+    setArgumentIndices(List(argAst))
     Ast(domNode).withChild(argAst)
   }
 
