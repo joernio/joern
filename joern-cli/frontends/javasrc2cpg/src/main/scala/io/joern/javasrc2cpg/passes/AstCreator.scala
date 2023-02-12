@@ -1605,7 +1605,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
 
     val iteratorCallAst =
-      callAst(iteratorCallNode, receiver = actualIteratorAst, withRecvArgEdge = true)
+      callAst(iteratorCallNode, receiver = actualIteratorAst)
 
     callAst(iteratorAssignNode, List(Ast(iteratorAssignIdentifier), iteratorCallAst))
       .withRefEdge(iteratorAssignIdentifier, iteratorLocalNode)
@@ -1623,7 +1623,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val iteratorHasNextCallReceiver =
       identifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
 
-    callAst(iteratorHasNextCallNode, receiver = Some(Ast(iteratorHasNextCallReceiver)), withRecvArgEdge = true)
+    callAst(iteratorHasNextCallNode, receiver = Some(Ast(iteratorHasNextCallReceiver)))
       .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
   }
 
@@ -1644,7 +1644,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       )
     val iterNextCallReceiver = identifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
     val iterNextCallAst =
-      callAst(iterNextCallNode, receiver = Some(Ast(iterNextCallReceiver)), withRecvArgEdge = true)
+      callAst(iterNextCallNode, receiver = Some(Ast(iterNextCallReceiver)))
         .withRefEdge(iterNextCallReceiver, iteratorLocalNode)
 
     callAst(varLocalAssignNode, List(Ast(varLocalAssignIdentifier), iterNextCallAst))
@@ -2172,7 +2172,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case _ => // Nothing to do in this case
     }
 
-    callAst(initNode, args.toList, Some(targetAst), withRecvArgEdge = true)
+    callAst(initNode, args.toList, Some(targetAst))
   }
 
   def astsForVariableDecl(varDecl: VariableDeclarationExpr): Seq[Ast] = {
@@ -2468,7 +2468,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val identifierWithDefaultOrder = identifier.copy.order(PropertyDefaults.Order)
     val identifierForInit          = identifierWithDefaultOrder.copy
     val initWithDefaultOrder       = initNode.order(PropertyDefaults.Order)
-    val initAst = callAst(initWithDefaultOrder, args, Some(Ast(identifierForInit)), withRecvArgEdge = true)
+    val initAst                    = callAst(initWithDefaultOrder, args, Some(Ast(identifierForInit)))
 
     val returnAst = Ast(identifierWithDefaultOrder.copy)
 
@@ -2517,7 +2517,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
     val thisAst = Ast(thisNode)
 
-    callAst(callRoot, args, Some(thisAst), withRecvArgEdge = true)
+    callAst(callRoot, args, Some(thisAst))
   }
 
   private def astsForExpression(expression: Expression, expectedType: ExpectedType): Seq[Ast] = {
@@ -3147,7 +3147,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .columnNumber(column(call))
       .typeFullName(expressionTypeFullName.getOrElse(TypeConstants.Any))
 
-    callAst(callRoot, argumentAsts, scopeAsts.headOption, withRecvArgEdge = true)
+    callAst(callRoot, argumentAsts, scopeAsts.headOption)
   }
 
   def astForSuperExpr(superExpr: SuperExpr, expectedType: ExpectedType): Ast = {

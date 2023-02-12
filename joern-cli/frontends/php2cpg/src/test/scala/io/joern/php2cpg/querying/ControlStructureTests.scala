@@ -1073,7 +1073,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         currentCall.code shouldBe "$iter_tmp0->current()"
         inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"
-          iterRecv.argumentIndex shouldBe 0
+          iterRecv.argumentIndex shouldBe -1
         }
       }
     }
@@ -1092,7 +1092,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       inside(nextCall.receiver.l) { case List(iterTmp: Identifier) =>
         iterTmp.name shouldBe "iter_tmp0"
         iterTmp.code shouldBe "$iter_tmp0"
-        iterTmp.argumentIndex shouldBe 0
+        iterTmp.argumentIndex shouldBe -1
       }
 
       valAssign.name shouldBe Operators.assignment
@@ -1145,7 +1145,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           currentCall.code shouldBe "$iter_tmp0->current()"
           inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
             iterRecv.name shouldBe "iter_tmp0"
-            iterRecv.argumentIndex shouldBe 0
+            iterRecv.argumentIndex shouldBe -1
           }
         }
       }
@@ -1202,7 +1202,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         currentCall.code shouldBe "$iter_tmp0->current()"
         inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"
-          iterRecv.argumentIndex shouldBe 0
+          iterRecv.argumentIndex shouldBe -1
         }
       }
     }

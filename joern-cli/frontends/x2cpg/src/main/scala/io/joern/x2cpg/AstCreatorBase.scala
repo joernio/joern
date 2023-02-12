@@ -197,7 +197,15 @@ abstract class AstCreatorBase(filename: String) {
     Ast(blockNode).withChildren(statements)
   }
 
-  def callAst(callNode: NewCall, arguments: Seq[Ast] = List(), base: Option[Ast] = None): Ast = {
+  def callAst(
+    callNode: NewCall,
+    arguments: Seq[Ast] = List(),
+    base: Option[Ast] = None,
+    receiver: Option[Ast] = None
+  ): Ast = {
+
+    setArgumentIndices(arguments)
+
     val baseRoot = base.flatMap(_.root).toList
     val bse      = base.getOrElse(Ast())
     baseRoot match {
@@ -206,12 +214,21 @@ abstract class AstCreatorBase(filename: String) {
       case _ =>
     }
 
-    setArgumentIndices(arguments)
+    val receiverRoot = receiver.flatMap(_.root).toList
+    val rcvAst       = receiver.getOrElse(Ast())
+    receiverRoot match {
+      case List(x: ExpressionNew) =>
+        x.argumentIndex = -1
+      case _ =>
+    }
+
     Ast(callNode)
+      .withChild(rcvAst)
       .withChild(bse)
       .withChildren(arguments)
       .withArgEdges(callNode, baseRoot)
       .withArgEdges(callNode, arguments.flatMap(_.root))
+      .withReceiverEdges(callNode, receiverRoot)
   }
 
   def setArgumentIndices(arguments: Seq[Ast]): Unit = {

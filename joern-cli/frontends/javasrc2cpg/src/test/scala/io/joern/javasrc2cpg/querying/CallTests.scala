@@ -96,7 +96,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         .fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()")
         .call
         .nameExact(io.joern.x2cpg.Defines.ConstructorMethodName)
-        .receiver
+        .argument(0)
         .l match {
         case List(thisNode: Identifier) =>
           thisNode.outE.collectAll[Ref].map(_.inNode).l match {
@@ -120,7 +120,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
 			 |  public void foo(int x) {}
 			 |}""".stripMargin)
 
-      cpg.method.name("test").call.name("foo").receiver.outE.collectAll[Ref].l match {
+      cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l match {
         case List(ref) =>
           ref.inNode match {
             case param: MethodParameterIn =>
@@ -145,7 +145,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
                       |  public void foo(int x) {}
                       |}""".stripMargin)
 
-      cpg.method.name("test").call.name("foo").receiver.outE.collectAll[Ref].l match {
+      cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l match {
         case List(ref) =>
           ref.inNode match {
             case param: MethodParameterIn =>
@@ -320,7 +320,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "create a `super` receiver with fields correctly set" in {
-      val superReceiver = cpg.call.name("toString").receiver.collectAll[Identifier].head
+      val superReceiver = cpg.call.name("toString").argument(0).collectAll[Identifier].head
       superReceiver.name shouldBe "this"
       superReceiver.code shouldBe "super"
       superReceiver.typeFullName shouldBe "java.lang.Object"
@@ -400,7 +400,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
 
   "should allow traversing from call to arguments" in {
     cpg.call("add").argument.size shouldBe 3
-    val List(arg0) = cpg.call("add").receiver.l
+    val List(arg0) = cpg.call("add").argument(0).l
     arg0.isInstanceOf[nodes.Identifier] shouldBe true
     arg0.asInstanceOf[nodes.Identifier].name shouldBe "this"
     arg0.code shouldBe "this"
