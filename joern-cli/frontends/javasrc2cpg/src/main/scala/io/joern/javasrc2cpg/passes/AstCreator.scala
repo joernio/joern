@@ -1605,7 +1605,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
 
     val iteratorCallAst =
-      callAst(iteratorCallNode, receiver = actualIteratorAst)
+      callAst(iteratorCallNode, base = actualIteratorAst)
 
     callAst(iteratorAssignNode, List(Ast(iteratorAssignIdentifier), iteratorCallAst))
       .withRefEdge(iteratorAssignIdentifier, iteratorLocalNode)
@@ -1623,7 +1623,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val iteratorHasNextCallReceiver =
       identifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
 
-    callAst(iteratorHasNextCallNode, receiver = Some(Ast(iteratorHasNextCallReceiver)))
+    callAst(iteratorHasNextCallNode, base = Some(Ast(iteratorHasNextCallReceiver)))
       .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
   }
 
@@ -1644,7 +1644,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       )
     val iterNextCallReceiver = identifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
     val iterNextCallAst =
-      callAst(iterNextCallNode, receiver = Some(Ast(iterNextCallReceiver)))
+      callAst(iterNextCallNode, base = Some(Ast(iterNextCallReceiver)))
         .withRefEdge(iterNextCallReceiver, iteratorLocalNode)
 
     callAst(varLocalAssignNode, List(Ast(varLocalAssignIdentifier), iterNextCallAst))

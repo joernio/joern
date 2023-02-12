@@ -601,7 +601,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .code(s"${nextIterIdent.rootCodeOrEmpty}->next()")
       .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
       .lineNumber(line(stmt))
-    val nextCallAst = callAst(nextCallNode, receiver = Some(nextIterIdent))
+    val nextCallAst = callAst(nextCallNode, base = Some(nextIterIdent))
     val itemUpdateAst = itemInitAst.root match {
       case Some(initRoot: AstNodeNew) => itemInitAst.subTreeCopy(initRoot)
       case _ =>
@@ -636,7 +636,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .code(s"${iteratorIdentifierAst.rootCodeOrEmpty}->current()")
       .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
       .lineNumber(line(stmt))
-    val currentCallAst = callAst(currentCallNode, receiver = Some(iteratorIdentifierAst))
+    val currentCallAst = callAst(currentCallNode, base = Some(iteratorIdentifierAst))
 
     val valueAst = if (stmt.assignByRef) {
       val addressOfCode = s"&${currentCallAst.rootCodeOrEmpty}"
@@ -1046,7 +1046,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case (None, None) => None
     }
 
-    callAst(callNode, arguments, receiver = receiverAst)
+    callAst(callNode, arguments, base = receiverAst)
   }
 
   private def astForCallArg(arg: PhpArgument): Ast = {
