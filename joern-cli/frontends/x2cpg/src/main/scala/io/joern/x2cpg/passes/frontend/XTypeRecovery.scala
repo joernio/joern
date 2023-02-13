@@ -1,5 +1,6 @@
 package io.joern.x2cpg.passes.frontend
 
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
@@ -79,6 +80,11 @@ abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg, iterations:
     globalTable: SymbolTable[GlobalKey]
   ): RecoverForXCompilationUnit[ComputationalUnit]
 
+}
+
+object XTypeRecovery {
+  val DUMMY_RETURN_TYPE                     = "<returnValue>"
+  def DUMMY_MEMBER_TYPE(memberName: String) = s"<member>($memberName)"
 }
 
 /** Defines how a procedure is available to be called in the current scope either by it being defined in this module or
@@ -261,15 +267,42 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] = {
     if (c.name.startsWith("<operator>")) {
       visitIdentifierAssignedToOperator(i, c, c.name)
+    } else if (symbolTable.contains(c) && isConstructor(c)) {
+      visitIdentifierAssignedToConstructor(i, c)
+    } else if (symbolTable.contains(c)) {
+      visitIdentifierAssignedToCallRetVal(i, c)
+    } else if (c.argument(0).headOption.exists(symbolTable.contains)) {
+      val callTypes = c.argument(0).flatMap(symbolTable.get).map(_.concat(s".${c.name}")).toSet
+      symbolTable.append(c, callTypes)
+      // Repeat this method now that the call has a type
+      visitIdentifierAssignedToCall(i, c)
     } else {
       println(s"${i.name} = ${c.name} (Iden -> Call)")
       Set.empty
     }
   }
 
+  /** A heuristic method to determine if a call is a constructor or not.
+    */
+  def isConstructor(c: Call): Boolean
+
   /** Visits an identifier being assigned to an operator call.
     */
   def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String]
+
+  /** Visits an identifier being assigned to a constructor and attempts to speculate the constructor path.
+    */
+  def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
+    val constructorPaths = symbolTable.get(c).map(t => t.concat(s".${Defines.ConstructorMethodName}"))
+    symbolTable.append(i, constructorPaths)
+  }
+
+  /** Visits an identifier being assigned to a call's return value.
+    */
+  def visitIdentifierAssignedToCallRetVal(i: Identifier, c: Call): Set[String] = {
+    val callReturns = symbolTable.get(c).map(_.concat(s".${XTypeRecovery.DUMMY_RETURN_TYPE}"))
+    symbolTable.append(i, callReturns)
+  }
 
   /** Will handle literal value assignments. Override if special handling is required.
     */

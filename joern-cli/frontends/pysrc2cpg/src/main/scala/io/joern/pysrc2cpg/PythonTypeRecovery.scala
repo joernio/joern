@@ -185,6 +185,12 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
   override def generateSetProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey]): SetXProcedureDefTask =
     new SetPythonProcedureDefTask(node, symbolTable)
 
+  /** Determines if a function call is a constructor by following the heuristic that Python classes are typically
+    * camel-case and start with an upper-case character.
+    */
+  override def isConstructor(c: Call): Boolean =
+    c.name.nonEmpty && c.name.charAt(0).isUpper && c.code.endsWith(")")
+
   /** Using assignment and import information (in the global symbol table), will propagate these types in the symbol
     * table.
     *
@@ -287,11 +293,29 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
-      case "<operator>.listLiteral" =>  associateTypes(i, Set("list"))
+      case "<operator>.listLiteral"  => associateTypes(i, Set("list"))
       case "<operator>.tupleLiteral" => associateTypes(i, Set("tuple"))
-      case "<operator>.dictLiteral" => associateTypes(i, Set("dict"))
-      case x => println(s"Unhandled operation $x (${c.code})"); Set.empty
+      case "<operator>.dictLiteral"  => associateTypes(i, Set("dict"))
+      case x                         => println(s"Unhandled operation $x (${c.code})"); Set.empty
     }
+  }
+
+  override def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
+    val constructorPaths = symbolTable
+      .get(c)
+      .map(_.stripSuffix(s".${Defines.ConstructorMethodName}"))
+      .map(x => (x.split("\\.").last, x))
+      .map {
+        case (x, y) => s"$y.$x<body>"
+        case (_, z) => z
+      }
+    symbolTable.put(i, constructorPaths)
+  }
+
+  override def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] = {
+    // Ignore legacy import representation
+    if (c.name.equals("import")) Set.empty
+    else super.visitIdentifierAssignedToCall(i, c)
   }
 
   private def fieldVarName(f: FieldIdentifier): FieldVar = {
@@ -333,7 +357,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
 
   def associateTypes(i: Identifier, types: Set[String]): Set[String] = {
     if (i.method.name.equals("<module>")) globalTable.put(i, types)
-    symbolTable.append(i,types)
+    symbolTable.append(i, types)
   }
 
   private def visitCallFromFieldMember(

@@ -82,6 +82,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       postMessage.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.WebClient<body>.chat_postMessage"
     }
 
+    "resolve a dummy 'send' return value from sg.send" in {
+      val List(postMessage) = cpg.identifier("response").l
+      postMessage.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.SendGridAPIClient<body>.send.<returnValue>"
+    }
+
   }
 
   "type recovery on class members" should {
