@@ -197,6 +197,20 @@ abstract class AstCreatorBase(filename: String) {
     Ast(blockNode).withChildren(statements)
   }
 
+  /** Create an abstract syntax tree for a call, including CPG-specific edges required for arguments and the receiver.
+    *
+    * Our call representation is inspired by ECMAScript, that is, in addition to arguments, a call has a base and a
+    * receiver. For languages other than Javascript, leave `receiver` empty for now.
+    *
+    * @param callNode
+    *   the node that represents the entire call
+    * @param arguments
+    *   arguments (without the base argument (instance))
+    * @param base
+    *   the value to use as `this` in the method call.
+    * @param receiver
+    *   the object in which the property lookup is performed
+    */
   def callAst(
     callNode: NewCall,
     arguments: Seq[Ast] = List(),
