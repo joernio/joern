@@ -155,14 +155,14 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'print' and 'max' calls" in {
       val Some(printCall) = cpg.call("print").headOption
-      printCall.methodFullName shouldBe "builtins.py:<module>.print"
+      printCall.methodFullName shouldBe "__builtin.print"
       val Some(maxCall) = cpg.call("max").headOption
-      maxCall.methodFullName shouldBe "builtins.py:<module>.max"
+      maxCall.methodFullName shouldBe "__builtin.max"
     }
 
-    "select the imported abs over the built-in type when call is shadowed" in {
+    "conservatively present either option when an imported function uses the same name as a builtin" in {
       val Some(absCall) = cpg.call("abs").headOption
-      absCall.dynamicTypeHintFullName shouldBe Seq("foo.py:<module>.abs")
+      absCall.dynamicTypeHintFullName shouldBe Seq("foo.py:<module>.abs", "__builtin.abs")
     }
 
   }

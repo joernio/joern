@@ -143,15 +143,6 @@ class SetPythonProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey
 class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, globalTable: SymbolTable[GlobalKey])
     extends RecoverForXCompilationUnit[File](cu, builder, globalTable) {
 
-  /** Adds built-in functions to expect.
-    */
-  override def prepopulateSymbolTable(): Unit =
-    PythonTypeRecovery.BUILTINS
-      .map(t => (CallAlias(t), s"${PythonTypeRecovery.BUILTIN_PREFIX}.$t"))
-      .foreach { case (alias, typ) =>
-        symbolTable.put(alias, typ)
-      }
-
   override def importNodes(cu: AstNode): Traversal[CfgNode] = cu.ast.isCall.nameExact("import")
 
   override def postVisitImports(): Unit = {
