@@ -1071,9 +1071,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         currentCall.name shouldBe "current"
         currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
         currentCall.code shouldBe "$iter_tmp0->current()"
-        inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
+        inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"
-          iterRecv.argumentIndex shouldBe -1
+          iterRecv.argumentIndex shouldBe 0
         }
       }
     }
@@ -1089,10 +1089,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       nextCall.name shouldBe "next"
       nextCall.methodFullName shouldBe "Iterator.next:void()"
       nextCall.code shouldBe "$iter_tmp0->next()"
-      inside(nextCall.receiver.l) { case List(iterTmp: Identifier) =>
+      inside(nextCall.argument(0).l) { case List(iterTmp: Identifier) =>
         iterTmp.name shouldBe "iter_tmp0"
         iterTmp.code shouldBe "$iter_tmp0"
-        iterTmp.argumentIndex shouldBe -1
+        iterTmp.argumentIndex shouldBe 0
       }
 
       valAssign.name shouldBe Operators.assignment
@@ -1143,9 +1143,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           currentCall.name shouldBe "current"
           currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
           currentCall.code shouldBe "$iter_tmp0->current()"
-          inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
+          inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
             iterRecv.name shouldBe "iter_tmp0"
-            iterRecv.argumentIndex shouldBe -1
+            iterRecv.argumentIndex shouldBe 0
           }
         }
       }
@@ -1200,9 +1200,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         currentCall.name shouldBe "current"
         currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
         currentCall.code shouldBe "$iter_tmp0->current()"
-        inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
+        inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"
-          iterRecv.argumentIndex shouldBe -1
+          iterRecv.argumentIndex shouldBe 0
         }
       }
     }
