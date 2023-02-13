@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
@@ -160,7 +160,8 @@ abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
   */
 abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   cu: ComputationalUnit,
-  builder: DiffGraphBuilder
+  builder: DiffGraphBuilder,
+  globalTable: SymbolTable[GlobalKey]
 ) extends RecursiveTask[Unit] {
 
   /** Stores type information for local structures that live within this compilation unit, e.g. local variables.
@@ -174,12 +175,17 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   protected def assignments: Traversal[Assignment] =
     cu.ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_))
 
+  protected def members: Traversal[Member] =
+    cu.ast.isMember
+
   override def compute(): Unit = try {
     prepopulateSymbolTable()
     // Set known aliases that point to imports for local and external methods/modules
     setImportsFromDeclaredProcedures(importNodes(cu) ++ internalMethodNodes(cu))
     // Prune import names if the methods exist in the CPG
     postVisitImports()
+    // Populate fields
+    members.foreach(visitMembers)
     // Populate local symbol table with assignments
     assignments.foreach(visitAssignments)
     // Persist findings
@@ -206,25 +212,33 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     * @return
     *   a forkable [[SetXProcedureDefTask]] task.
     */
-  def generateSetProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey]): SetXProcedureDefTask
+  protected def generateSetProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey]): SetXProcedureDefTask
 
   /** @return
     *   the import nodes of this computational unit.
     */
-  def importNodes(cu: AstNode): Traversal[CfgNode]
+  protected def importNodes(cu: AstNode): Traversal[CfgNode]
 
   /** @param cu
     *   the current computational unit.
     * @return
     *   the methods defined within this computational unit.
     */
-  def internalMethodNodes(cu: AstNode): Traversal[Method] = cu.ast.isMethod.isExternal(false)
+  protected def internalMethodNodes(cu: AstNode): Traversal[Method] = cu.ast.isMethod.isExternal(false)
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
     * types or methods.
     */
-  def postVisitImports(): Unit = {}
+  protected def postVisitImports(): Unit = {}
+
+  /** Using member information, will propagate member information to the global and local symbol table. By default,
+    * fields in the local table will be prepended with "this".
+    */
+  protected def visitMembers(member: Member): Unit = {
+    symbolTable.put(LocalVar(member.name), Set.empty[String])
+    globalTable.put(FieldVar(member.typeDecl.fullName, member.name), Set.empty[String])
+  }
 
   /** Using assignment and import information (in the global symbol table), will propagate these types in the symbol
     * table.
@@ -232,15 +246,15 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     * @param assignment
     *   assignment call pointer.
     */
-  def visitAssignments(assignment: Assignment): Set[String] = {
+  protected def visitAssignments(assignment: Assignment): Set[String] = {
     assignment.argumentOut.l match {
       case List(i: Identifier, b: Block)     => visitIdentifierAssignedToBlock(i, b)
       case List(i: Identifier, c: Call)      => visitIdentifierAssignedToCall(i, c)
       case List(i: Identifier, l: Literal)   => visitIdentifierAssignedToLiteral(i, l)
       case List(i: Identifier, m: MethodRef) => visitIdentifierAssignedToMethodRef(i, m)
-      case List(i: Identifier, t: TypeRef)   => println(s"${i.name} = ${t.code} (iden  -> typref) "); Set.empty
+      case List(i: Identifier, t: TypeRef)   => visitIdentifierAssignedToTypeRef(i, t)
       case List(c: Call, i: Identifier)      => println(s"${c.name} = ${i.name} (call  -> iden) "); Set.empty
-      case List(x: Call, y: Call)            => println(s"${x.name} = ${y.name} (call  -> call)"); Set.empty
+      case List(x: Call, y: Call)            => visitCallAssignedToCall(x, y)
       case List(c: Call, l: Literal)         => visitCallAssignedToLiteral(c, l)
       case List(c: Call, m: MethodRef)       => println(s"${c.name} = ${m.code} (call  -> methodref)"); Set.empty
       case xs                                => println("Unhandled assignment", xs.map(_.label).l); Set.empty
@@ -249,7 +263,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
 
   /** Visits an identifier being assigned to the result of some operation.
     */
-  def visitIdentifierAssignedToBlock(i: Identifier, b: Block): Set[String] = {
+  protected def visitIdentifierAssignedToBlock(i: Identifier, b: Block): Set[String] = {
     b.astChildren
       .map {
         case x: Call if x.name.equals(Operators.assignment) =>
@@ -264,73 +278,111 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
 
   /** Visits an identifier being assigned to a call.
     */
-  def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] = {
+  protected def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] = {
     if (c.name.startsWith("<operator>")) {
       visitIdentifierAssignedToOperator(i, c, c.name)
     } else if (symbolTable.contains(c) && isConstructor(c)) {
       visitIdentifierAssignedToConstructor(i, c)
     } else if (symbolTable.contains(c)) {
       visitIdentifierAssignedToCallRetVal(i, c)
-    } else if (c.argument(0).headOption.exists(symbolTable.contains)) {
-      val callTypes = c.argument(0).flatMap(symbolTable.get).map(_.concat(s".${c.name}")).toSet
+    } else if (c.argument.headOption.exists(symbolTable.contains)) {
+      val recTypes  = c.argument.headOption.map(symbolTable.get).getOrElse(Set.empty[String])
+      val callTypes = recTypes.map(_.concat(s".${c.name}"))
       symbolTable.append(c, callTypes)
       // Repeat this method now that the call has a type
       visitIdentifierAssignedToCall(i, c)
     } else {
-      println(s"${i.name} = ${c.name} (Iden -> Call)")
+      println(s"${i.name} = ${c.name},${c.code} (Iden -> Call)")
       Set.empty
     }
   }
 
   /** A heuristic method to determine if a call is a constructor or not.
     */
-  def isConstructor(c: Call): Boolean
+  protected def isConstructor(c: Call): Boolean
 
   /** Visits an identifier being assigned to an operator call.
     */
-  def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String]
+  protected def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String]
 
   /** Visits an identifier being assigned to a constructor and attempts to speculate the constructor path.
     */
-  def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
+  protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = symbolTable.get(c).map(t => t.concat(s".${Defines.ConstructorMethodName}"))
     symbolTable.append(i, constructorPaths)
   }
 
   /** Visits an identifier being assigned to a call's return value.
     */
-  def visitIdentifierAssignedToCallRetVal(i: Identifier, c: Call): Set[String] = {
+  protected def visitIdentifierAssignedToCallRetVal(i: Identifier, c: Call): Set[String] = {
     val callReturns = symbolTable.get(c).map(_.concat(s".${XTypeRecovery.DUMMY_RETURN_TYPE}"))
     symbolTable.append(i, callReturns)
   }
 
   /** Will handle literal value assignments. Override if special handling is required.
     */
-  def visitIdentifierAssignedToLiteral(i: Identifier, l: Literal): Set[String] =
+  protected def visitIdentifierAssignedToLiteral(i: Identifier, l: Literal): Set[String] =
     symbolTable.append(i, Set(l.typeFullName))
 
   /** Will handle an identifier holding a function pointer.
     */
-  def visitIdentifierAssignedToMethodRef(i: Identifier, m: MethodRef): Set[String] =
-    symbolTable.put(CallAlias(i.name), Set(m.methodFullName))
+  protected def visitIdentifierAssignedToMethodRef(i: Identifier, m: MethodRef): Set[String] =
+    symbolTable.append(CallAlias(i.name), Set(m.methodFullName))
 
-  def visitCallAssignedToLiteral(c: Call, l: Literal): Set[String] = {
-    if (c.name.equals(Operators.indexAccess)) {
-      // For now, we will just handle this on a very basic level
-      c.argumentOut.l match {
-        case List(i: Identifier, idx: Literal) => symbolTable.put(CollectionVar(i.name, idx.code), l.typeFullName)
-        case List(i: Identifier, idx: Identifier) if symbolTable.contains(idx) =>
-          symbolTable.put(CollectionVar(i.name, idx.code), symbolTable.get(idx))
-        case _ => println("Unhandled index access point"); Set.empty
-      }
-    } else {
-      println("Unhandled index access point"); Set.empty
+  /** Will handle an identifier holding a type pointer.
+    */
+  protected def visitIdentifierAssignedToTypeRef(i: Identifier, t: TypeRef): Set[String] =
+    symbolTable.append(CallAlias(i.name), Set(t.typeFullName))
+
+  /** Visits a call assigned to the return value of a call. This is often when there are operators involved.
+    */
+  protected def visitCallAssignedToCall(x: Call, y: Call): Set[String] = {
+    val lhs = x.name match {
+      case Operators.fieldAccess => LocalVar(getFieldName(new FieldAccess(x)))
+      case Operators.indexAccess => indexAccessToCollectionVar(x).getOrElse(LocalVar(x.name))
+      case _                     => LocalVar(x.name)
+    }
+    val rhsTypes = y.name match {
+      case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(new FieldAccess(y))))
+      case _ if symbolTable.contains(y) => symbolTable.get(y)
+      case _                            => Set.empty[String]
+    }
+    symbolTable.append(lhs, rhsTypes)
+  }
+
+  protected def getFieldName(fa: FieldAccess): String = {
+    fa.astChildren.l match {
+      case List(i: Identifier, f: FieldIdentifier) if i.name.matches("(self|this)") => f.canonicalName
+      case List(i: Identifier, f: FieldIdentifier)                                  => s"${i.name}.${f.canonicalName}"
+      case xs => println(s"Unhandled field name structure ${xs.map(_.label)}"); ""
     }
   }
 
-  def visitFieldAssignment(): Unit = {}
+  protected def visitCallAssignedToLiteral(c: Call, l: Literal): Set[String] = {
+    if (c.name.equals(Operators.indexAccess)) {
+      // For now, we will just handle this on a very basic level
+      c.argumentOut.l match {
+        case List(_: Identifier, _: Literal) =>
+          indexAccessToCollectionVar(c).map(cv => symbolTable.append(cv, Set(l.typeFullName))).getOrElse(Set.empty)
+        case List(_: Identifier, idx: Identifier) if symbolTable.contains(idx) =>
+          // Imprecise but sound!
+          indexAccessToCollectionVar(c).map(cv => symbolTable.append(cv, symbolTable.get(idx))).getOrElse(Set.empty)
+        case _ => println("Unhandled index access point"); Set.empty
+      }
+    } else {
+      println("Unhandled index access point")
+      Set.empty
+    }
+  }
 
-  def visitFieldAssignedToFunctionCall(): Unit = {}
+  /** Generates an identifier for collection/index-access operations in the symbol table.
+    */
+  protected def indexAccessToCollectionVar(c: Call): Option[CollectionVar] =
+    Option(c.argumentOut.l match {
+      case List(i: Identifier, idx: Literal)    => CollectionVar(i.name, idx.code)
+      case List(i: Identifier, idx: Identifier) => CollectionVar(i.name, idx.code)
+      case _                                    => println("Unhandled index access point"); null
+    })
 
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.
     */

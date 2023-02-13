@@ -141,7 +141,7 @@ class SetPythonProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey
   *   the graph builder
   */
 class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, globalTable: SymbolTable[GlobalKey])
-    extends RecoverForXCompilationUnit[File](cu, builder) {
+    extends RecoverForXCompilationUnit[File](cu, builder, globalTable) {
 
   /** Adds built-in functions to expect.
     */
@@ -296,6 +296,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
       case "<operator>.listLiteral"  => associateTypes(i, Set("list"))
       case "<operator>.tupleLiteral" => associateTypes(i, Set("tuple"))
       case "<operator>.dictLiteral"  => associateTypes(i, Set("dict"))
+      case Operators.alloc           => visitIdentifierAssignedToConstructor(i, c)
       case x                         => println(s"Unhandled operation $x (${c.code})"); Set.empty
     }
   }
@@ -315,6 +316,8 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
   override def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] = {
     // Ignore legacy import representation
     if (c.name.equals("import")) Set.empty
+    // Stop custom annotation representation from hitting superclass
+    else if (c.name.isBlank) Set.empty
     else super.visitIdentifierAssignedToCall(i, c)
   }
 
