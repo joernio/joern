@@ -276,7 +276,7 @@ class TypeTests extends JavaSrcCode2CpgFixture {
     call.typeFullName shouldBe "void"
     call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 
-    call.receiver.collect { case identifier: Identifier => identifier }.l match {
+    call.argument(0).collect { case identifier: Identifier => identifier }.l match {
       case identifier :: Nil =>
         identifier.name shouldBe "this"
         identifier.typeFullName shouldBe "java.lang.Object"

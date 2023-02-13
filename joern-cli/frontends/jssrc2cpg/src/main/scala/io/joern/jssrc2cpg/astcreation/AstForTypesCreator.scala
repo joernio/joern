@@ -153,7 +153,7 @@ trait AstForTypesCreator { this: AstCreator =>
           tsEnumMember.columnNumber
         )
       val argAsts = List(lhsAst, rhsAst)
-      Seq(createCallAst(callNode, argAsts), Ast(memberNode))
+      Seq(callAst(callNode, argAsts), Ast(memberNode))
     } else {
       Seq(Ast(memberNode))
     }
@@ -191,7 +191,7 @@ trait AstForTypesCreator { this: AstCreator =>
           nodeInfo.columnNumber
         )
       val argAsts = List(lhsAst, rhsAst)
-      createCallAst(callNode, argAsts)
+      callAst(callNode, argAsts)
     } else {
       Ast()
     }

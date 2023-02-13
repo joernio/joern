@@ -79,13 +79,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           initCall.methodFullName shouldBe s"Foo.<init>:${Defines.UnresolvedSignature}(1)"
           initCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
           initCall.code shouldBe "Foo.<init>(42)"
-          inside(initCall.receiver.l) { case List(tmpIdentifier: Identifier) =>
+          inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
             tmpIdentifier.name shouldBe "tmp0"
             tmpIdentifier.code shouldBe "$tmp0"
             tmpIdentifier.argumentIndex shouldBe 0
             tmpIdentifier._localViaRefOut should contain(tmpLocal)
-          }
-          inside(initCall.argument.l) { case List(literal: Literal) =>
             literal.code shouldBe "42"
             literal.argumentIndex shouldBe 1
           }
@@ -104,7 +102,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       alloc.name shouldBe Operators.alloc
       alloc.methodFullName shouldBe Operators.alloc
       alloc.code shouldBe "$x.<alloc>()"
-      inside(alloc.receiver.l) { case List(xIdentifier: Identifier) =>
+      inside(alloc.argument(0).l) { case List(xIdentifier: Identifier) =>
         xIdentifier.name shouldBe "x"
         xIdentifier.code shouldBe "$x"
       }

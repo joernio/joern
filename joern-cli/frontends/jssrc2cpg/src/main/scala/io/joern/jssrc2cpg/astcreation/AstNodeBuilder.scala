@@ -72,45 +72,8 @@ trait AstNodeBuilder { this: AstCreator =>
     ast.root.foreach { case expr: ExpressionNew => expr.order = order }
   }
 
-  protected def setArgIndices(asts: List[Ast], base: Option[Ast] = None): Unit = {
-    var currIndex = 1
-
-    asts.foreach { a =>
-      a.root match {
-        case Some(x: ExpressionNew) =>
-          x.argumentIndex = currIndex
-          currIndex = currIndex + 1
-        case None => // do nothing
-        case _ =>
-          currIndex = currIndex + 1
-      }
-    }
-    base.flatMap(_.root).foreach { case expr: ExpressionNew => expr.argumentIndex = 0 }
-  }
-
-  protected def createCallAst(
-    callNode: NewCall,
-    arguments: List[Ast],
-    receiver: Option[Ast] = None,
-    base: Option[Ast] = None
-  ): Ast = {
-    setArgIndices(arguments, base = base)
-
-    val receiverRoot = receiver.flatMap(_.root).toList
-    val rcvAst       = receiver.getOrElse(Ast())
-    val baseRoot     = base.flatMap(_.root).toList
-    val baseAst      = base.getOrElse(Ast())
-    Ast(callNode)
-      .withChild(rcvAst)
-      .withChild(baseAst)
-      .withChildren(arguments)
-      .withArgEdges(callNode, arguments.flatMap(_.root))
-      .withArgEdges(callNode, baseRoot)
-      .withReceiverEdges(callNode, receiverRoot)
-  }
-
   protected def createReturnAst(returnNode: NewReturn, arguments: List[Ast] = List()): Ast = {
-    setArgIndices(arguments)
+    setArgumentIndices(arguments)
     Ast(returnNode)
       .withChildren(arguments)
       .withArgEdges(returnNode, arguments.flatMap(_.root))
@@ -222,7 +185,7 @@ trait AstNodeBuilder { this: AstCreator =>
       column
     )
     val arguments = List(Ast(baseNode), Ast(partNode))
-    createCallAst(callNode, arguments)
+    callAst(callNode, arguments)
   }
 
   protected def createIndexAccessCallAst(
@@ -239,7 +202,7 @@ trait AstNodeBuilder { this: AstCreator =>
       column
     )
     val arguments = List(baseAst, partAst)
-    createCallAst(callNode, arguments)
+    callAst(callNode, arguments)
   }
 
   protected def createFieldAccessCallAst(
@@ -256,7 +219,7 @@ trait AstNodeBuilder { this: AstCreator =>
       column
     )
     val arguments = List(Ast(baseNode), Ast(partNode))
-    createCallAst(callNode, arguments)
+    callAst(callNode, arguments)
   }
 
   protected def createFieldAccessCallAst(
@@ -273,7 +236,7 @@ trait AstNodeBuilder { this: AstCreator =>
       column
     )
     val arguments = List(baseAst, Ast(partNode))
-    createCallAst(callNode, arguments)
+    callAst(callNode, arguments)
   }
 
   protected def createTernaryCallAst(
@@ -286,7 +249,7 @@ trait AstNodeBuilder { this: AstCreator =>
     val code      = s"${codeOf(testAst.nodes.head)} ? ${codeOf(trueAst.nodes.head)} : ${codeOf(falseAst.nodes.head)}"
     val callNode  = createCallNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(testAst, trueAst, falseAst)
-    createCallAst(callNode, arguments)
+    callAst(callNode, arguments)
   }
 
   protected def createCallNode(
@@ -344,7 +307,7 @@ trait AstNodeBuilder { this: AstCreator =>
     val code      = s"${codeOf(dest.nodes.head)} === ${codeOf(source.nodes.head)}"
     val callNode  = createCallNode(code, Operators.equals, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(dest, source)
-    createCallAst(callNode, arguments)
+    callAst(callNode, arguments)
   }
 
   protected def createAssignmentCallAst(
@@ -356,7 +319,7 @@ trait AstNodeBuilder { this: AstCreator =>
   ): Ast = {
     val callNode  = createCallNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(Ast(destId), Ast(sourceId))
-    createCallAst(callNode, arguments)
+    callAst(callNode, arguments)
   }
 
   protected def createAssignmentCallAst(
@@ -368,7 +331,7 @@ trait AstNodeBuilder { this: AstCreator =>
   ): Ast = {
     val callNode  = createCallNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(dest, source)
-    createCallAst(callNode, arguments)
+    callAst(callNode, arguments)
   }
 
   protected def createIdentifierNode(name: String, node: BabelNodeInfo): NewIdentifier = {

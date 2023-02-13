@@ -320,12 +320,10 @@ class AstCreationPassTests extends AbstractPassTest {
           lit.code shouldBe "10"
         }
 
-        inside(lambda2call.argument.l) { case List(lit: Literal) =>
-          lit.code shouldBe "10"
-        }
-        inside(lambda2call.receiver.l) { case List(ref: MethodRef) =>
+        inside(lambda2call.argument.l) { case List(ref: MethodRef, lit: Literal) =>
           ref.methodFullName shouldBe lambda2Name
           ref.code shouldBe "int anonymous_lambda_1 (int n)"
+          lit.code shouldBe "10"
         }
       }
     }
@@ -1103,6 +1101,7 @@ class AstCreationPassTests extends AbstractPassTest {
         .name("Foo")
         .l
         .size shouldBe 1
+
       inside(cpg.call.code("f.method()").l) { case List(call: Call) =>
         call.methodFullName shouldBe Operators.fieldAccess
         call.argument(1).code shouldBe "f"
