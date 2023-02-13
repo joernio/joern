@@ -226,7 +226,78 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     * @param assignment
     *   assignment call pointer.
     */
-  def visitAssignments(assignment: Assignment): Unit
+  def visitAssignments(assignment: Assignment): Set[String] = {
+    assignment.argumentOut.l match {
+      case List(i: Identifier, b: Block)     => visitIdentifierAssignedToBlock(i, b)
+      case List(i: Identifier, c: Call)      => visitIdentifierAssignedToCall(i, c)
+      case List(i: Identifier, l: Literal)   => visitIdentifierAssignedToLiteral(i, l)
+      case List(i: Identifier, m: MethodRef) => visitIdentifierAssignedToMethodRef(i, m)
+      case List(i: Identifier, t: TypeRef)   => println(s"${i.name} = ${t.code} (iden  -> typref) "); Set.empty
+      case List(c: Call, i: Identifier)      => println(s"${c.name} = ${i.name} (call  -> iden) "); Set.empty
+      case List(x: Call, y: Call)            => println(s"${x.name} = ${y.name} (call  -> call)"); Set.empty
+      case List(c: Call, l: Literal)         => visitCallAssignedToLiteral(c, l)
+      case List(c: Call, m: MethodRef)       => println(s"${c.name} = ${m.code} (call  -> methodref)"); Set.empty
+      case xs                                => println("Unhandled assignment", xs.map(_.label).l); Set.empty
+    }
+  }
+
+  /** Visits an identifier being assigned to the result of some operation.
+    */
+  def visitIdentifierAssignedToBlock(i: Identifier, b: Block): Set[String] = {
+    b.astChildren
+      .map {
+        case x: Call if x.name.equals(Operators.assignment) =>
+          symbolTable.append(i, visitAssignments(new Assignment(x)))
+        case x: Identifier if x.astChildren.isEmpty && symbolTable.contains(x) =>
+          symbolTable.append(i, symbolTable.get(x))
+        case x => println(s"Unhandled block element ${x.label}"); Set.empty[String]
+      }
+      .lastOption
+      .getOrElse(Set.empty)
+  }
+
+  /** Visits an identifier being assigned to a call.
+    */
+  def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] = {
+    if (c.name.startsWith("<operator>")) {
+      visitIdentifierAssignedToOperator(i, c, c.name)
+    } else {
+      println(s"${i.name} = ${c.name} (Iden -> Call)")
+      Set.empty
+    }
+  }
+
+  /** Visits an identifier being assigned to an operator call.
+    */
+  def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String]
+
+  /** Will handle literal value assignments. Override if special handling is required.
+    */
+  def visitIdentifierAssignedToLiteral(i: Identifier, l: Literal): Set[String] =
+    symbolTable.append(i, Set(l.typeFullName))
+
+  /** Will handle an identifier holding a function pointer.
+    */
+  def visitIdentifierAssignedToMethodRef(i: Identifier, m: MethodRef): Set[String] =
+    symbolTable.put(CallAlias(i.name), Set(m.methodFullName))
+
+  def visitCallAssignedToLiteral(c: Call, l: Literal): Set[String] = {
+    if (c.name.equals(Operators.indexAccess)) {
+      // For now, we will just handle this on a very basic level
+      c.argumentOut.l match {
+        case List(i: Identifier, idx: Literal) => symbolTable.put(CollectionVar(i.name, idx.code), l.typeFullName)
+        case List(i: Identifier, idx: Identifier) if symbolTable.contains(idx) =>
+          symbolTable.put(CollectionVar(i.name, idx.code), symbolTable.get(idx))
+        case _ => println("Unhandled index access point"); Set.empty
+      }
+    } else {
+      println("Unhandled index access point"); Set.empty
+    }
+  }
+
+  def visitFieldAssignment(): Unit = {}
+
+  def visitFieldAssignedToFunctionCall(): Unit = {}
 
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.
     */

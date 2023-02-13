@@ -191,97 +191,106 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
     * @param assignment
     *   assignment call pointer.
     */
-  override def visitAssignments(assignment: Assignment): Unit = {
-    assignment.argumentOut.take(2).l match {
-      case List(i: Identifier, c: Call) if symbolTable.contains(c) =>
-        val importedTypes = symbolTable.get(c)
-        setIdentifierFromFunctionType(i, c.name, c.code, importedTypes)
-      case List(i: Identifier, c: CfgNode)
-          if visitLiteralAssignment(i, c, symbolTable) => // if unsuccessful, then check next
-      case List(i: Identifier, c: Call) if c.receiver.isCall.name.exists(_.equals(Operators.fieldAccess)) =>
-        val field = c.receiver.isCall.name(Operators.fieldAccess).map(new OpNodes.FieldAccess(_)).head
-        visitCallFromFieldMember(i, c, field, symbolTable)
-      // Use global table knowledge (in i >= 2 iterations) or CPG to extract field types
-      case List(_: Identifier, c: Call) if c.name.equals(Operators.fieldAccess) =>
-        c.inCall.argument
-          .flatMap {
-            case n: Call if n.name.equals(Operators.fieldAccess) => new OpNodes.FieldAccess(n).argumentOut
-            case n                                               => n
-          }
-          .take(3)
-          .l match {
-          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier)
-              if symbolTable.contains(CallAlias(i.name)) =>
-            // Get field from global table if referenced as function call
-            val fieldTypes = symbolTable
-              .get(CallAlias(i.name))
-              .flatMap(recModule => globalTable.get(FieldVar(recModule, f.canonicalName)))
-            if (fieldTypes.nonEmpty) symbolTable.append(assigned, fieldTypes)
-          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier)
-              if symbolTable
-                .contains(LocalVar(i.name)) =>
-            // Get field from global table if referenced as a variable
-            val localTypes = symbolTable.get(LocalVar(i.name))
-            val memberTypes = localTypes
-              .flatMap { t =>
-                cpg.typeDecl.fullNameExact(t).member.nameExact(f.canonicalName).l ++
-                  cpg.typeDecl.fullNameExact(t).method.fullNameExact(t).l
-              }
-              .flatMap {
-                case m: Member => Some(m.typeFullName)
-                case m: Method => Some(m.fullName)
-                case _         => None
-              }
-            if (memberTypes.nonEmpty)
-              // First use the member type info from the CPG, if present
-              symbolTable.append(assigned, memberTypes)
-            else if (localTypes.nonEmpty) {
-              // If not available, use a dummy variable that can be useful for call matching
-              symbolTable.append(assigned, localTypes.map { t => s"$t.<member>(${f.canonicalName})" })
-            }
-          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier)
-              if symbolTable.contains(CallAlias(s"${i.name}.${f.canonicalName}")) =>
-            // In this case, if are the paths of an import, e.g. import foo.bar and it is referred to as foo.bar later
-            // TODO: Does this handle foo.bar.baz ?
-            val callAlias     = CallAlias(s"${i.name}.${f.canonicalName}")
-            val importedTypes = symbolTable.get(callAlias)
-            setIdentifierFromFunctionType(assigned, callAlias.identifier, callAlias.identifier, importedTypes)
-          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier) =>
-            // TODO: This is really tricky to find without proper object tracking, so we match name only
-            val fieldTypes = globalTable.view.filter(_._1.identifier.equals(f.canonicalName)).flatMap(_._2).toSet
-            if (fieldTypes.nonEmpty) symbolTable.append(assigned, fieldTypes)
-          case List(assigned: Identifier, c: Call, f: FieldIdentifier) if c.name.equals(Operators.fieldAccess) =>
-            // TODO: This is the step that handles foo.bar.baz, which gives the impression that there is the need to
-            //  handle this pattern recursively
-            val baseType = c.astChildren.isFieldIdentifier.canonicalName
-              .zip(c.astChildren.isIdentifier.flatMap(symbolTable.get))
-              .map { case (ff, bt) => s"$bt.<member>($ff).<member>(${f.canonicalName})" }
-              .toSet
-            if (baseType.nonEmpty) symbolTable.append(assigned, baseType)
+//  override def visitAssignments(assignment: Assignment): Set[String] = {
+//
+//    assignment.argumentOut.take(2).l match {
+//      case List(i: Identifier, c: Call) if symbolTable.contains(c) =>
+//        val importedTypes = symbolTable.get(c)
+//        setIdentifierFromFunctionType(i, c.name, c.code, importedTypes)
+//      case List(i: Identifier, c: Call) if c.receiver.isCall.name.exists(_.equals(Operators.fieldAccess)) =>
+//        val field = c.receiver.isCall.name(Operators.fieldAccess).map(new OpNodes.FieldAccess(_)).head
+//        visitCallFromFieldMember(i, c, field, symbolTable)
+//      // Use global table knowledge (in i >= 2 iterations) or CPG to extract field types
+//      case List(_: Identifier, c: Call) if c.name.equals(Operators.fieldAccess) =>
+//        c.inCall.argument
+//          .flatMap {
+//            case n: Call if n.name.equals(Operators.fieldAccess) => new OpNodes.FieldAccess(n).argumentOut
+//            case n                                               => n
+//          }
+//          .take(3)
+//          .l match {
+//          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier)
+//              if symbolTable.contains(CallAlias(i.name)) =>
+//            // Get field from global table if referenced as function call
+//            val fieldTypes = symbolTable
+//              .get(CallAlias(i.name))
+//              .flatMap(recModule => globalTable.get(FieldVar(recModule, f.canonicalName)))
+//            if (fieldTypes.nonEmpty) symbolTable.append(assigned, fieldTypes)
+//          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier)
+//              if symbolTable
+//                .contains(LocalVar(i.name)) =>
+//            // Get field from global table if referenced as a variable
+//            val localTypes = symbolTable.get(LocalVar(i.name))
+//            val memberTypes = localTypes
+//              .flatMap { t =>
+//                cpg.typeDecl.fullNameExact(t).member.nameExact(f.canonicalName).l ++
+//                  cpg.typeDecl.fullNameExact(t).method.fullNameExact(t).l
+//              }
+//              .flatMap {
+//                case m: Member => Some(m.typeFullName)
+//                case m: Method => Some(m.fullName)
+//                case _         => None
+//              }
+//            if (memberTypes.nonEmpty)
+//              // First use the member type info from the CPG, if present
+//              symbolTable.append(assigned, memberTypes)
+//            else if (localTypes.nonEmpty) {
+//              // If not available, use a dummy variable that can be useful for call matching
+//              symbolTable.append(assigned, localTypes.map { t => s"$t.<member>(${f.canonicalName})" })
+//            }
+//          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier)
+//              if symbolTable.contains(CallAlias(s"${i.name}.${f.canonicalName}")) =>
+//            // In this case, if are the paths of an import, e.g. import foo.bar and it is referred to as foo.bar later
+//            // TODO: Does this handle foo.bar.baz ?
+//            val callAlias     = CallAlias(s"${i.name}.${f.canonicalName}")
+//            val importedTypes = symbolTable.get(callAlias)
+//            setIdentifierFromFunctionType(assigned, callAlias.identifier, callAlias.identifier, importedTypes)
+//          case List(assigned: Identifier, i: Identifier, f: FieldIdentifier) =>
+//            // TODO: This is really tricky to find without proper object tracking, so we match name only
+//            val fieldTypes = globalTable.view.filter(_._1.identifier.equals(f.canonicalName)).flatMap(_._2).toSet
+//            if (fieldTypes.nonEmpty) symbolTable.append(assigned, fieldTypes)
+//          case List(assigned: Identifier, c: Call, f: FieldIdentifier) if c.name.equals(Operators.fieldAccess) =>
+//            // TODO: This is the step that handles foo.bar.baz, which gives the impression that there is the need to
+//            //  handle this pattern recursively
+//            val baseType = c.astChildren.isFieldIdentifier.canonicalName
+//              .zip(c.astChildren.isIdentifier.flatMap(symbolTable.get))
+//              .map { case (ff, bt) => s"$bt.<member>($ff).<member>(${f.canonicalName})" }
+//              .toSet
+//            if (baseType.nonEmpty) symbolTable.append(assigned, baseType)
+//
+//          case _ =>
+//        }
+//      // Field load from call
+//      case List(fl: Call, c: Call) if fl.name.equals(Operators.fieldAccess) && symbolTable.contains(c) =>
+//        (fl.astChildren.l, c.astChildren.l) match {
+//          case (List(self: Identifier, fieldIdentifier: FieldIdentifier), args: List[_]) =>
+//            symbolTable.append(fieldIdentifier, symbolTable.get(c))
+//            globalTable.append(fieldVarName(fieldIdentifier), symbolTable.get(c))
+//          case _ =>
+//        }
+//      // Field load from index access
+//      case List(fl: Call, c: Call) if fl.name.equals(Operators.fieldAccess) && c.name.equals(Operators.indexAccess) =>
+//        (fl.astChildren.l, c.astChildren.l) match {
+//          case (List(self: Identifier, fieldIdentifier: FieldIdentifier), ::(rhsFAccess: Call, _))
+//              if rhsFAccess.name.equals(Operators.fieldAccess) =>
+//            val rhsField = rhsFAccess.fieldAccess.fieldIdentifier.head
+//            // TODO: Check if a type for the RHS index access is recovered
+//            val types = symbolTable.get(rhsField).map(t => s"$t.<indexAccess>")
+//            symbolTable.append(fieldIdentifier, types)
+//            globalTable.append(fieldVarName(fieldIdentifier), types)
+//          case _ =>
+//        }
+//      case _ =>
+//    }
+//    super.visitAssignments(assignment)
+//  }
 
-          case _ =>
-        }
-      // Field load from call
-      case List(fl: Call, c: Call) if fl.name.equals(Operators.fieldAccess) && symbolTable.contains(c) =>
-        (fl.astChildren.l, c.astChildren.l) match {
-          case (List(self: Identifier, fieldIdentifier: FieldIdentifier), args: List[_]) =>
-            symbolTable.append(fieldIdentifier, symbolTable.get(c))
-            globalTable.append(fieldVarName(fieldIdentifier), symbolTable.get(c))
-          case _ =>
-        }
-      // Field load from index access
-      case List(fl: Call, c: Call) if fl.name.equals(Operators.fieldAccess) && c.name.equals(Operators.indexAccess) =>
-        (fl.astChildren.l, c.astChildren.l) match {
-          case (List(self: Identifier, fieldIdentifier: FieldIdentifier), ::(rhsFAccess: Call, _))
-              if rhsFAccess.name.equals(Operators.fieldAccess) =>
-            val rhsField = rhsFAccess.fieldAccess.fieldIdentifier.head
-            // TODO: Check if a type for the RHS index access is recovered
-            val types = symbolTable.get(rhsField).map(t => s"$t.<indexAccess>")
-            symbolTable.append(fieldIdentifier, types)
-            globalTable.append(fieldVarName(fieldIdentifier), types)
-          case _ =>
-        }
-      case _ =>
+  override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
+    operation match {
+      case "<operator>.listLiteral" =>  associateTypes(i, Set("list"))
+      case "<operator>.tupleLiteral" => associateTypes(i, Set("tuple"))
+      case "<operator>.dictLiteral" => associateTypes(i, Set("dict"))
+      case x => println(s"Unhandled operation $x (${c.code})"); Set.empty
     }
   }
 
@@ -303,10 +312,10 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
   ): Unit = {
     if (!callCode.endsWith(")")) {
       // Case 1: The identifier is at the assignment to a function pointer. Lack of parenthesis should indicate this.
-      setIdentifier(i, importedTypes)
+      associateTypes(i, importedTypes)
     } else if (!callName.isBlank && callName.charAt(0).isUpper && callCode.endsWith(")")) {
       // Case 2: The identifier is receiving a constructor invocation, thus is now an instance of the type
-      setIdentifier(
+      associateTypes(
         i,
         importedTypes
           .map(_.stripSuffix(s".${Defines.ConstructorMethodName}"))
@@ -322,9 +331,9 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
     }
   }
 
-  private def setIdentifier(i: Identifier, types: Set[String]): Option[Set[String]] = {
+  def associateTypes(i: Identifier, types: Set[String]): Set[String] = {
     if (i.method.name.equals("<module>")) globalTable.put(i, types)
-    symbolTable.append(i, types)
+    symbolTable.append(i,types)
   }
 
   private def visitCallFromFieldMember(
@@ -367,27 +376,27 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
     * @return
     *   true if a literal assigment was successfully determined and added to the symbol table, false if otherwise.
     */
-  private def visitLiteralAssignment(lhs: Identifier, rhs: CfgNode, symbolTable: SymbolTable[LocalKey]): Boolean = {
-    ((lhs, rhs) match {
+  override def visitIdentifierAssignedToLiteral(i: Identifier, l: Literal): Set[String] = {
+    (i, l) match {
       case (i: Identifier, l: Literal) if Try(java.lang.Integer.parseInt(l.code)).isSuccess =>
-        setIdentifier(i, Set("int"))
+        associateTypes(i, Set("int"))
       case (i: Identifier, l: Literal) if Try(java.lang.Double.parseDouble(l.code)).isSuccess =>
-        setIdentifier(i, Set("float"))
+        associateTypes(i, Set("float"))
       case (i: Identifier, l: Literal) if "True".equals(l.code) || "False".equals(l.code) =>
-        setIdentifier(i, Set("bool"))
+        associateTypes(i, Set("bool"))
       case (i: Identifier, l: Literal) if l.code.matches("^(\"|').*(\"|')$") =>
-        setIdentifier(i, Set("str"))
-      case (i: Identifier, c: Call) if c.name.equals("<operator>.listLiteral") =>
-        setIdentifier(i, Set("list"))
-      case (i: Identifier, c: Call) if c.name.equals("<operator>.tupleLiteral") =>
-        setIdentifier(i, Set("tuple"))
-      case (i: Identifier, b: Block)
-          if b.astChildren.isCall.headOption.exists(
-            _.argument.isCall.exists(_.name.equals("<operator>.dictLiteral"))
-          ) =>
-        setIdentifier(i, Set("dict"))
-      case _ => None
-    }).hasNext
+        associateTypes(i, Set("str"))
+      //      case (i: Identifier, c: Call) if c.name.equals("<operator>.listLiteral") =>
+      //        associateTypes(i, Set("list"))
+      //      case (i: Identifier, c: Call) if c.name.equals("<operator>.tupleLiteral") =>
+      //        associateTypes(i, Set("tuple"))
+      //      case (i: Identifier, b: Block)
+      //          if b.astChildren.isCall.headOption.exists(
+      //            _.argument.isCall.exists(_.name.equals("<operator>.dictLiteral"))
+      //          ) =>
+      //        associateTypes(i, Set("dict"))
+      case _ => Set()
+    }
   }
 
 }
