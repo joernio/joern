@@ -61,7 +61,7 @@ class ScopedPythonProcedure(callingName: String, fullName: String, isConstructor
   */
 class SetPythonProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey]) extends SetXProcedureDefTask(node) {
 
-  /** Refers to the declared import information.
+  /** Refers to the declared import information. This will store the alias as both a call and a local variable.
     *
     * @param importCall
     *   the call that imports entities into this scope.
@@ -71,10 +71,12 @@ class SetPythonProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey
       case List(path: Literal, funcOrModule: Literal) =>
         val calleeNames = extractMethodDetailsFromImport(path.code, funcOrModule.code).possibleCalleeNames
         symbolTable.put(CallAlias(funcOrModule.code), calleeNames)
+        symbolTable.put(LocalVar(funcOrModule.code), calleeNames)
       case List(path: Literal, funcOrModule: Literal, alias: Literal) =>
         val calleeNames =
           extractMethodDetailsFromImport(path.code, funcOrModule.code, Option(alias.code)).possibleCalleeNames
         symbolTable.put(CallAlias(alias.code), calleeNames)
+        symbolTable.put(LocalVar(alias.code), calleeNames)
       case x => logger.warn(s"Unknown import pattern: ${x.map(_.label).mkString(", ")}")
     }
   }
