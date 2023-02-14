@@ -134,14 +134,9 @@ class SetPythonProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey
 }
 
 /** Performs type recovery from the root of a compilation unit level
-  *
-  * @param cu
-  *   a compilation unit, e.g. file.
-  * @param builder
-  *   the graph builder
   */
 class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, globalTable: SymbolTable[GlobalKey])
-    extends RecoverForXCompilationUnit[File](cu, builder, globalTable) {
+    extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable) {
 
   override def importNodes(cu: AstNode): Traversal[CfgNode] = cu.ast.isCall.nameExact("import")
 
@@ -181,6 +176,11 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
     */
   override def isConstructor(c: Call): Boolean =
     c.name.nonEmpty && c.name.charAt(0).isUpper && c.code.endsWith(")")
+
+  /**
+    * If the parent method is module then it can be used as a field.
+    */
+  override def isField(i: Identifier): Boolean = i.method.name.equals("<module>") || super.isField(i)
 
   /** Using assignment and import information (in the global symbol table), will propagate these types in the symbol
     * table.
@@ -287,8 +287,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
       case "<operator>.listLiteral"  => associateTypes(i, Set("list"))
       case "<operator>.tupleLiteral" => associateTypes(i, Set("tuple"))
       case "<operator>.dictLiteral"  => associateTypes(i, Set("dict"))
-      case Operators.alloc           => visitIdentifierAssignedToConstructor(i, c)
-      case x                         => println(s"Unhandled operation $x (${c.code})"); Set.empty
+      case _                         => super.visitIdentifierAssignedToOperator(i, c, operation)
     }
   }
 
@@ -301,7 +300,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
         case (x, y) => s"$y.$x<body>"
         case (_, z) => z
       }
-    symbolTable.put(i, constructorPaths)
+    associateTypes(i, constructorPaths)
   }
 
   override def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] = {
@@ -347,11 +346,6 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
       // TODO: This identifier should contain the type of the return value of 'c'.
       //  e.g. x = foo(a, b) but not x = y.foo(a, b) as foo in the latter case is interpreted as a field access
     }
-  }
-
-  def associateTypes(i: Identifier, types: Set[String]): Set[String] = {
-    if (i.method.name.equals("<module>")) globalTable.put(i, types)
-    symbolTable.append(i, types)
   }
 
   private def visitCallFromFieldMember(

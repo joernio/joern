@@ -151,14 +151,19 @@ abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
 
 /** Performs type recovery from the root of a compilation unit level
   *
+  * @param cpg
+  *   the graph.
   * @param cu
   *   a compilation unit, e.g. file, procedure, type, etc.
   * @param builder
   *   the graph builder
+  * @param globalTable
+  *   the global symbol table.
   * @tparam ComputationalUnit
   *   the [[AstNode]] type used to represent a computational unit of the language.
   */
 abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
+  cpg: Cpg,
   cu: ComputationalUnit,
   builder: DiffGraphBuilder,
   globalTable: SymbolTable[GlobalKey]
@@ -301,28 +306,47 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     */
   protected def isConstructor(c: Call): Boolean
 
+  /** A heuristic method to determine if an identifier may be a field or not. The result means that it would be stored
+    * in the global symbol table. By default this checks if the identifier name matches a member name.
+    */
+  protected def isField(i: Identifier): Boolean = i.method.typeDecl.member.exists(_.name.equals(i.name))
+
+  /** Associates the types with the identifier. This may sometimes be an identifier that should be considered a field
+    * which this method uses [[isField(i)]] to determine.
+    */
+  def associateTypes(i: Identifier, types: Set[String]): Set[String] = {
+    if (isField(i)) globalTable.put(i, types)
+    symbolTable.append(i, types)
+  }
+
   /** Visits an identifier being assigned to an operator call.
     */
-  protected def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String]
+  protected def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
+    operation match {
+      case Operators.alloc       => visitIdentifierAssignedToConstructor(i, c)
+      case Operators.fieldAccess => visitIdentifierAssignedToFieldLoad(i, new FieldAccess(c))
+      case x                     => println(s"Unhandled operation $x (${c.code})"); Set.empty
+    }
+  }
 
   /** Visits an identifier being assigned to a constructor and attempts to speculate the constructor path.
     */
   protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = symbolTable.get(c).map(t => t.concat(s".${Defines.ConstructorMethodName}"))
-    symbolTable.append(i, constructorPaths)
+    associateTypes(i, constructorPaths)
   }
 
   /** Visits an identifier being assigned to a call's return value.
     */
   protected def visitIdentifierAssignedToCallRetVal(i: Identifier, c: Call): Set[String] = {
     val callReturns = symbolTable.get(c).map(_.concat(s".${XTypeRecovery.DUMMY_RETURN_TYPE}"))
-    symbolTable.append(i, callReturns)
+    associateTypes(i, callReturns)
   }
 
   /** Will handle literal value assignments. Override if special handling is required.
     */
   protected def visitIdentifierAssignedToLiteral(i: Identifier, l: Literal): Set[String] =
-    symbolTable.append(i, Set(l.typeFullName))
+    associateTypes(i, Set(l.typeFullName))
 
   /** Will handle an identifier holding a function pointer.
     */
@@ -350,6 +374,8 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     symbolTable.append(lhs, rhsTypes)
   }
 
+  /** Extracts a string representation of the name of the field within this field access.
+    */
   protected def getFieldName(fa: FieldAccess): String = {
     fa.astChildren.l match {
       case List(i: Identifier, f: FieldIdentifier) if i.name.matches("(self|this)") => f.canonicalName
@@ -383,6 +409,29 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       case List(i: Identifier, idx: Identifier) => CollectionVar(i.name, idx.code)
       case _                                    => println("Unhandled index access point"); null
     })
+
+  /** Will handle an identifier being assigned to a field value.
+    */
+  protected def visitIdentifierAssignedToFieldLoad(i: Identifier, fa: FieldAccess): Set[String] = {
+    fa.astChildren.l match {
+      case List(base: Identifier, fi: FieldIdentifier) if symbolTable.contains(CallAlias(base.name)) =>
+        // Get field from global table if referenced as a variable
+        val localTypes = symbolTable.get(CallAlias(base.name))
+        val globalTypes = localTypes
+          .map(t => FieldVar(t, fi.canonicalName))
+          .flatMap(globalTable.get)
+        if (globalTypes.nonEmpty) {
+          // We have been able to resolve the type inter-procedurally
+          associateTypes(i, globalTypes)
+        } else if (localTypes.nonEmpty) {
+          // If not available, use a dummy variable that can be useful for call matching
+          associateTypes(i, localTypes.map { t => s"$t.<member>(${fi.canonicalName})" })
+        } else {
+          Set.empty
+        }
+      case _ => Set.empty
+    }
+  }
 
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.
     */
