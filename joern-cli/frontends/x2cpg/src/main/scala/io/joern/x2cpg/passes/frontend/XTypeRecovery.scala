@@ -255,7 +255,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       case List(i: Identifier, l: Literal)   => visitIdentifierAssignedToLiteral(i, l)
       case List(i: Identifier, m: MethodRef) => visitIdentifierAssignedToMethodRef(i, m)
       case List(i: Identifier, t: TypeRef)   => visitIdentifierAssignedToTypeRef(i, t)
-      case List(c: Call, i: Identifier)      => println(s"${c.name} = ${i.name} (call  -> iden) "); Set.empty
+      case List(c: Call, i: Identifier)      => vistiCallAssignedToIdentifier(c, i)
       case List(x: Call, y: Call)            => visitCallAssignedToCall(x, y)
       case List(c: Call, l: Literal)         => visitCallAssignedToLiteral(c, l)
       case List(c: Call, m: MethodRef)       => println(s"${c.name} = ${m.code} (call  -> methodref)"); Set.empty
@@ -363,7 +363,11 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   /** Will handle literal value assignments. Override if special handling is required.
     */
   protected def visitIdentifierAssignedToLiteral(i: Identifier, l: Literal): Set[String] =
-    associateTypes(i, Set(l.typeFullName))
+    associateTypes(i, getLiteralType(l))
+
+  /** Not all frontends populate <code>typeFullName</code> for literals so we allow this to be overriden.
+    */
+  protected def getLiteralType(l: Literal): Set[String] = Set(l.typeFullName)
 
   /** Will handle an identifier holding a function pointer.
     */
@@ -375,20 +379,32 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   protected def visitIdentifierAssignedToTypeRef(i: Identifier, t: TypeRef): Set[String] =
     symbolTable.append(CallAlias(i.name), Set(t.typeFullName))
 
+  /** Visits a call assigned to an identifier. This is often when there are operators involved.
+    */
+  protected def vistiCallAssignedToIdentifier(c: Call, i: Identifier): Set[String] = {
+    val lhs      = getSymbolFromCall(c)
+    val rhsTypes = symbolTable.get(i)
+    symbolTable.append(lhs, rhsTypes)
+  }
+
   /** Visits a call assigned to the return value of a call. This is often when there are operators involved.
     */
   protected def visitCallAssignedToCall(x: Call, y: Call): Set[String] = {
-    val lhs = x.name match {
-      case Operators.fieldAccess => LocalVar(getFieldName(new FieldAccess(x)))
-      case Operators.indexAccess => indexAccessToCollectionVar(x).getOrElse(LocalVar(x.name))
-      case _                     => LocalVar(x.name)
-    }
+    val lhs = getSymbolFromCall(x)
     val rhsTypes = y.name match {
       case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(new FieldAccess(y))))
       case _ if symbolTable.contains(y) => symbolTable.get(y)
       case _                            => Set.empty[String]
     }
     symbolTable.append(lhs, rhsTypes)
+  }
+
+  /** Tries to identify the underlying symbol from the call operation as it is used on the LHS of an assignment.
+    */
+  protected def getSymbolFromCall(c: Call): LocalKey = c.name match {
+    case Operators.fieldAccess => LocalVar(getFieldName(new FieldAccess(c)))
+    case Operators.indexAccess => indexAccessToCollectionVar(c).getOrElse(LocalVar(c.name))
+    case _                     => LocalVar(c.name)
   }
 
   /** Extracts a string representation of the name of the field within this field access.
@@ -406,7 +422,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       // For now, we will just handle this on a very basic level
       c.argumentOut.l match {
         case List(_: Identifier, _: Literal) =>
-          indexAccessToCollectionVar(c).map(cv => symbolTable.append(cv, Set(l.typeFullName))).getOrElse(Set.empty)
+          indexAccessToCollectionVar(c).map(cv => symbolTable.append(cv, getLiteralType(l))).getOrElse(Set.empty)
         case List(_: Identifier, idx: Identifier) if symbolTable.contains(idx) =>
           // Imprecise but sound!
           indexAccessToCollectionVar(c).map(cv => symbolTable.append(cv, symbolTable.get(idx))).getOrElse(Set.empty)
@@ -445,10 +461,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   }
 
   protected def getFieldBaseType(base: Identifier, fi: FieldIdentifier): Set[String] = {
-
-    val localTypes      = symbolTable.get(CallAlias(base.name))
-    val baseGlobalTypes = localTypes.map(t => FieldVar(t, base.name)).flatMap(globalTable.get)
-
+    val localTypes = symbolTable.get(CallAlias(base.name))
     val globalTypes = localTypes
       .map(t => FieldVar(t, fi.canonicalName))
       .flatMap(globalTable.get)

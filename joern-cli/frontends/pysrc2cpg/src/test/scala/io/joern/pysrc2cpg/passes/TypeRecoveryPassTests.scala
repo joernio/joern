@@ -22,22 +22,26 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'x' identifier types despite shadowing" in {
       val List(xOuterScope, xInnerScope) = cpg.identifier("x").take(2).l
-      xOuterScope.dynamicTypeHintFullName shouldBe Seq("int", "str")
-      xInnerScope.dynamicTypeHintFullName shouldBe Seq("int", "str")
+      xOuterScope.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
+      xInnerScope.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
     }
 
     "resolve 'y' and 'z' identifier collection types" in {
       val List(zDict, zList, zTuple) = cpg.identifier("z").take(3).l
-      zDict.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
-      zList.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
-      zTuple.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+      zDict.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zList.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zTuple.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
     }
 
     "resolve 'z' identifier calls conservatively" in {
       // TODO: These should have callee entries but the method stubs are not present here
       val List(zAppend) = cpg.call("append").l
       zAppend.methodFullName shouldBe Defines.DynamicCallUnknownFallName
-      zAppend.dynamicTypeHintFullName shouldBe Seq("dict.append", "list.append", "tuple.append")
+      zAppend.dynamicTypeHintFullName shouldBe Seq(
+        "__builtin.dict.append",
+        "__builtin.list.append",
+        "__builtin.tuple.append"
+      )
     }
   }
 
@@ -195,9 +199,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'x' and 'y' locally under foo.py" in {
       val Some(x) = cpg.file.name(".*foo.*").ast.isIdentifier.name("x").headOption
-      x.typeFullName shouldBe "int"
+      x.typeFullName shouldBe "__builtin.int"
       val Some(y) = cpg.file.name(".*foo.*").ast.isIdentifier.name("y").headOption
-      y.typeFullName shouldBe "str"
+      y.typeFullName shouldBe "__builtin.str"
     }
 
     "resolve 'foo.x' and 'foo.y' field access primitive types correctly" in {
@@ -208,9 +212,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .name("z")
         .l
       z1.typeFullName shouldBe "ANY"
-      z1.dynamicTypeHintFullName shouldBe Seq("int", "str")
+      z1.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
       z2.typeFullName shouldBe "ANY"
-      z2.dynamicTypeHintFullName shouldBe Seq("int", "str")
+      z2.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
     }
 
     "resolve 'foo.d' field access object types correctly" in {
@@ -261,7 +265,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |    try:
         |        db.create_all()
         |        db.session.add(user)
-        |        return jsonify({"success": message})
+        |        return jsonify({"success": True})
         |    except Exception as e:
         |        return 'There was an issue adding your task'
         |""".stripMargin,

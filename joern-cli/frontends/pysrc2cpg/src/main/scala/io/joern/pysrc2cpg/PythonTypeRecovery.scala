@@ -1,13 +1,12 @@
 package io.joern.pysrc2cpg
 
+import io.joern.pysrc2cpg.PythonTypeRecovery.BUILTIN_PREFIX
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
@@ -176,8 +175,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
   override def isConstructor(c: Call): Boolean =
     c.name.nonEmpty && c.name.charAt(0).isUpper && c.code.endsWith(")")
 
-  /**
-    * If the parent method is module then it can be used as a field.
+  /** If the parent method is module then it can be used as a field.
     */
   override def isField(i: Identifier): Boolean = i.method.name.equals("<module>") || super.isField(i)
 
@@ -283,9 +281,9 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
-      case "<operator>.listLiteral"  => associateTypes(i, Set("list"))
-      case "<operator>.tupleLiteral" => associateTypes(i, Set("tuple"))
-      case "<operator>.dictLiteral"  => associateTypes(i, Set("dict"))
+      case "<operator>.listLiteral"  => associateTypes(i, Set(s"$BUILTIN_PREFIX.list"))
+      case "<operator>.tupleLiteral" => associateTypes(i, Set(s"$BUILTIN_PREFIX.tuple"))
+      case "<operator>.dictLiteral"  => associateTypes(i, Set(s"$BUILTIN_PREFIX.dict"))
       case _                         => super.visitIdentifierAssignedToOperator(i, c, operation)
     }
   }
@@ -377,35 +375,16 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
     }
   }
 
-  /** Will handle literal value assignments.
-    * @param lhs
-    *   the identifier.
-    * @param rhs
-    *   the literal.
-    * @param symbolTable
-    *   the symbol table.
-    * @return
-    *   true if a literal assigment was successfully determined and added to the symbol table, false if otherwise.
-    */
-  override def visitIdentifierAssignedToLiteral(i: Identifier, l: Literal): Set[String] = {
-    (i, l) match {
-      case (i: Identifier, l: Literal) if Try(java.lang.Integer.parseInt(l.code)).isSuccess =>
-        associateTypes(i, Set("int"))
-      case (i: Identifier, l: Literal) if Try(java.lang.Double.parseDouble(l.code)).isSuccess =>
-        associateTypes(i, Set("float"))
-      case (i: Identifier, l: Literal) if "True".equals(l.code) || "False".equals(l.code) =>
-        associateTypes(i, Set("bool"))
-      case (i: Identifier, l: Literal) if l.code.matches("^(\"|').*(\"|')$") =>
-        associateTypes(i, Set("str"))
-      //      case (i: Identifier, c: Call) if c.name.equals("<operator>.listLiteral") =>
-      //        associateTypes(i, Set("list"))
-      //      case (i: Identifier, c: Call) if c.name.equals("<operator>.tupleLiteral") =>
-      //        associateTypes(i, Set("tuple"))
-      //      case (i: Identifier, b: Block)
-      //          if b.astChildren.isCall.headOption.exists(
-      //            _.argument.isCall.exists(_.name.equals("<operator>.dictLiteral"))
-      //          ) =>
-      //        associateTypes(i, Set("dict"))
+  override def getLiteralType(l: Literal): Set[String] = {
+    l match {
+      case _ if Try(java.lang.Integer.parseInt(l.code)).isSuccess =>
+        Set(s"$BUILTIN_PREFIX.int")
+      case _ if Try(java.lang.Double.parseDouble(l.code)).isSuccess =>
+        Set(s"$BUILTIN_PREFIX.float")
+      case _ if "True".equals(l.code) || "False".equals(l.code) =>
+        Set(s"$BUILTIN_PREFIX.bool")
+      case _ if l.code.matches("^(\"|').*(\"|')$") =>
+        Set(s"$BUILTIN_PREFIX.str")
       case _ => Set()
     }
   }
@@ -489,5 +468,5 @@ object PythonTypeRecovery {
     "zip",
     "__import__"
   )
-  def BUILTIN_PREFIX = "builtins.py:<module>"
+  def BUILTIN_PREFIX = "__builtin"
 }
