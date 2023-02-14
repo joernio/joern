@@ -51,9 +51,9 @@ abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg, iterations:
   protected val globalTable = new SymbolTable[GlobalKey](SBKey.fromNodeToGlobalKey)
 
   override def run(builder: DiffGraphBuilder): Unit = try {
-    for (_ <- 0 to iterations)
+    for (_ <- 0 until iterations)
       computationalUnit
-        .map(unit => generateRecoveryForCompilationUnitTask(unit, builder, globalTable).fork())
+        .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
         .foreach(_.get())
   } finally {
     globalTable.clear()
@@ -69,22 +69,19 @@ abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg, iterations:
     *   the compilation unit.
     * @param builder
     *   the graph builder.
-    * @param globalTable
-    *   the global table.
     * @return
     *   a forkable [[RecoverForXCompilationUnit]] task.
     */
   def generateRecoveryForCompilationUnitTask(
     unit: ComputationalUnit,
-    builder: DiffGraphBuilder,
-    globalTable: SymbolTable[GlobalKey]
+    builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[ComputationalUnit]
 
 }
 
 object XTypeRecovery {
-  val DUMMY_RETURN_TYPE                     = "<returnValue>"
-  def DUMMY_MEMBER_TYPE(memberName: String) = s"<member>($memberName)"
+  val DUMMY_RETURN_TYPE                                     = "<returnValue>"
+  def DUMMY_MEMBER_TYPE(prefix: String, memberName: String) = s"$prefix.<member>($memberName)"
 }
 
 /** Defines how a procedure is available to be called in the current scope either by it being defined in this module or
@@ -314,9 +311,29 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   /** Associates the types with the identifier. This may sometimes be an identifier that should be considered a field
     * which this method uses [[isField(i)]] to determine.
     */
-  def associateTypes(i: Identifier, types: Set[String]): Set[String] = {
+  protected def associateTypes(i: Identifier, types: Set[String]): Set[String] = {
     if (isField(i)) globalTable.put(i, types)
     symbolTable.append(i, types)
+  }
+
+  /** Similar to [[associateTypes()]] but used in the case where there is some kind of field load.
+    */
+  protected def associateInterproceduralTypes(
+    i: Identifier,
+    base: Identifier,
+    fi: FieldIdentifier,
+    baseTypes: Set[String]
+  ): Set[String] = {
+    val globalTypes = getFieldBaseType(base, fi)
+    if (globalTypes.nonEmpty) {
+      // We have been able to resolve the type inter-procedurally
+      associateTypes(i, globalTypes)
+    } else if (baseTypes.nonEmpty) {
+      // If not available, use a dummy variable that can be useful for call matching
+      associateTypes(i, baseTypes.map(t => XTypeRecovery.DUMMY_MEMBER_TYPE(t, fi.canonicalName)))
+    } else {
+      Set.empty
+    }
   }
 
   /** Visits an identifier being assigned to an operator call.
@@ -415,22 +432,27 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   protected def visitIdentifierAssignedToFieldLoad(i: Identifier, fa: FieldAccess): Set[String] = {
     fa.astChildren.l match {
       case List(base: Identifier, fi: FieldIdentifier) if symbolTable.contains(CallAlias(base.name)) =>
-        // Get field from global table if referenced as a variable
+        // Get field from global table if referenced as a call
         val localTypes = symbolTable.get(CallAlias(base.name))
-        val globalTypes = localTypes
-          .map(t => FieldVar(t, fi.canonicalName))
-          .flatMap(globalTable.get)
-        if (globalTypes.nonEmpty) {
-          // We have been able to resolve the type inter-procedurally
-          associateTypes(i, globalTypes)
-        } else if (localTypes.nonEmpty) {
-          // If not available, use a dummy variable that can be useful for call matching
-          associateTypes(i, localTypes.map { t => s"$t.<member>(${fi.canonicalName})" })
-        } else {
-          Set.empty
-        }
-      case _ => Set.empty
+        associateInterproceduralTypes(i, base, fi, localTypes)
+      case List(base: Identifier, fi: FieldIdentifier) if symbolTable.contains(LocalVar(base.name)) =>
+        // Get field from global table if referenced as a variable
+        val localTypes = symbolTable.get(LocalVar(base.name))
+        associateInterproceduralTypes(i, base, fi, localTypes)
+      case _ =>
+        Set.empty
     }
+  }
+
+  protected def getFieldBaseType(base: Identifier, fi: FieldIdentifier): Set[String] = {
+
+    val localTypes      = symbolTable.get(CallAlias(base.name))
+    val baseGlobalTypes = localTypes.map(t => FieldVar(t, base.name)).flatMap(globalTable.get)
+
+    val globalTypes = localTypes
+      .map(t => FieldVar(t, fi.canonicalName))
+      .flatMap(globalTable.get)
+    globalTypes
   }
 
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.

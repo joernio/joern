@@ -21,8 +21,7 @@ class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
-    builder: DiffGraphBuilder,
-    globalTable: SymbolTable[GlobalKey]
+    builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = new RecoverForPythonFile(cpg, unit, builder, globalTable)
 
 }
