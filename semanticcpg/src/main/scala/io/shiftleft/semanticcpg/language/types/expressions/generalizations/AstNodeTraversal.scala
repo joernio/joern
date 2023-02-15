@@ -134,6 +134,11 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
   def isIdentifier: Traversal[Identifier] =
     traversal.collectAll[Identifier]
 
+  /** Traverse only to AST nodes that are IMPORT nodes
+    */
+  def isImport: Traversal[Import] =
+    traversal.collectAll[Import]
+
   /** Traverse only to FILE AST nodes
     */
   def isFile: Traversal[File] =

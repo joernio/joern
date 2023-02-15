@@ -56,6 +56,10 @@ sealed class LocalKey(identifier: String) extends SBKey(identifier) {
   */
 case class LocalVar(override val identifier: String) extends LocalKey(identifier)
 
+/** A collection object that can be accessed with potentially dynamic keys and values.
+  */
+case class CollectionVar(override val identifier: String, idx: String) extends LocalKey(identifier)
+
 /** A name that refers to some kind of callee.
   */
 case class CallAlias(override val identifier: String) extends LocalKey(identifier)
@@ -98,25 +102,25 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => K) {
     table.put(newKey, newValues)
   }
 
-  def put(sbKey: K, typeFullNames: Set[String]): Option[Set[String]] =
-    table.put(sbKey, typeFullNames)
+  def put(sbKey: K, typeFullNames: Set[String]): Set[String] =
+    table.put(sbKey, typeFullNames).getOrElse(Set.empty)
 
-  def put(sbKey: K, typeFullName: String): Option[Set[String]] =
+  def put(sbKey: K, typeFullName: String): Set[String] =
     put(sbKey, Set(typeFullName))
 
-  def put(node: AstNode, typeFullNames: Set[String]): Option[Set[String]] =
+  def put(node: AstNode, typeFullNames: Set[String]): Set[String] =
     put(fromNode(node), typeFullNames)
 
-  def append(node: AstNode, typeFullName: String): Option[Set[String]] =
+  def append(node: AstNode, typeFullName: String): Set[String] =
     append(node, Set(typeFullName))
 
-  def append(node: AstNode, typeFullNames: Set[String]): Option[Set[String]] =
+  def append(node: AstNode, typeFullNames: Set[String]): Set[String] =
     append(fromNode(node), typeFullNames)
 
-  def append(sbKey: K, typeFullNames: Set[String]): Option[Set[String]] = {
+  def append(sbKey: K, typeFullNames: Set[String]): Set[String] = {
     table.get(sbKey) match {
-      case Some(ts) => table.put(sbKey, ts ++ typeFullNames)
-      case None     => table.put(sbKey, typeFullNames)
+      case Some(ts) => put(sbKey, ts ++ typeFullNames)
+      case None     => put(sbKey, typeFullNames)
     }
   }
 

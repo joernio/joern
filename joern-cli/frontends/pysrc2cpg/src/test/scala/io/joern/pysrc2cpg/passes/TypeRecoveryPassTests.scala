@@ -22,22 +22,26 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'x' identifier types despite shadowing" in {
       val List(xOuterScope, xInnerScope) = cpg.identifier("x").take(2).l
-      xOuterScope.dynamicTypeHintFullName shouldBe Seq("int", "str")
-      xInnerScope.dynamicTypeHintFullName shouldBe Seq("int", "str")
+      xOuterScope.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
+      xInnerScope.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
     }
 
     "resolve 'y' and 'z' identifier collection types" in {
       val List(zDict, zList, zTuple) = cpg.identifier("z").take(3).l
-      zDict.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
-      zList.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
-      zTuple.dynamicTypeHintFullName shouldBe Seq("dict", "list", "tuple")
+      zDict.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zList.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zTuple.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
     }
 
     "resolve 'z' identifier calls conservatively" in {
       // TODO: These should have callee entries but the method stubs are not present here
       val List(zAppend) = cpg.call("append").l
       zAppend.methodFullName shouldBe Defines.DynamicCallUnknownFallName
-      zAppend.dynamicTypeHintFullName shouldBe Seq("dict.append", "list.append", "tuple.append")
+      zAppend.dynamicTypeHintFullName shouldBe Seq(
+        "__builtin.dict.append",
+        "__builtin.list.append",
+        "__builtin.tuple.append"
+      )
     }
   }
 
@@ -80,6 +84,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       client.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.<init>"
       val List(postMessage) = cpg.call("chat_postMessage").l
       postMessage.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.WebClient<body>.chat_postMessage"
+    }
+
+    "resolve a dummy 'send' return value from sg.send" in {
+      val List(postMessage) = cpg.identifier("response").l
+      postMessage.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.SendGridAPIClient<body>.send.<returnValue>"
     }
 
   }
@@ -125,7 +134,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "resolve 'User' field types" in {
       val List(id, firstname, age, address) =
         cpg.identifier.nameExact("id", "firstname", "age", "address").takeRight(4).l
-      id.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
+      id.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.Column<body>"
       firstname.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.Column<body>"
       age.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.Column<body>"
       address.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.Column<body>"
@@ -150,14 +159,14 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'print' and 'max' calls" in {
       val Some(printCall) = cpg.call("print").headOption
-      printCall.methodFullName shouldBe "builtins.py:<module>.print"
+      printCall.methodFullName shouldBe "__builtin.print"
       val Some(maxCall) = cpg.call("max").headOption
-      maxCall.methodFullName shouldBe "builtins.py:<module>.max"
+      maxCall.methodFullName shouldBe "__builtin.max"
     }
 
-    "select the imported abs over the built-in type when call is shadowed" in {
+    "conservatively present either option when an imported function uses the same name as a builtin" in {
       val Some(absCall) = cpg.call("abs").headOption
-      absCall.dynamicTypeHintFullName shouldBe Seq("foo.py:<module>.abs")
+      absCall.dynamicTypeHintFullName shouldBe Seq("foo.py:<module>.abs", "__builtin.abs")
     }
 
   }
@@ -190,9 +199,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'x' and 'y' locally under foo.py" in {
       val Some(x) = cpg.file.name(".*foo.*").ast.isIdentifier.name("x").headOption
-      x.typeFullName shouldBe "int"
+      x.typeFullName shouldBe "__builtin.int"
       val Some(y) = cpg.file.name(".*foo.*").ast.isIdentifier.name("y").headOption
-      y.typeFullName shouldBe "str"
+      y.typeFullName shouldBe "__builtin.str"
     }
 
     "resolve 'foo.x' and 'foo.y' field access primitive types correctly" in {
@@ -203,9 +212,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .name("z")
         .l
       z1.typeFullName shouldBe "ANY"
-      z1.dynamicTypeHintFullName shouldBe Seq("int", "str")
+      z1.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
       z2.typeFullName shouldBe "ANY"
-      z2.dynamicTypeHintFullName shouldBe Seq("int", "str")
+      z2.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
     }
 
     "resolve 'foo.d' field access object types correctly" in {
@@ -256,7 +265,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |    try:
         |        db.create_all()
         |        db.session.add(user)
-        |        return jsonify({"success": message})
+        |        return jsonify({"success": True})
         |    except Exception as e:
         |        return 'There was an issue adding your task'
         |""".stripMargin,
@@ -377,12 +386,15 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "recover a potential type for `self.collection` using the assignment at `get_collection` as a type hint" in {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption
-      selfFindFound.methodFullName shouldBe "pymongo.py:<module>.MongoClient.<init>.<indexAccess>.<indexAccess>.find_one"
+      selfFindFound.dynamicTypeHintFullName shouldBe Seq(
+        "__builtin.None.find_one",
+        "pymongo.py:<module>.MongoClient.<init>.<indexAccess>.<indexAccess>.find_one"
+      )
     }
 
     "correctly determine that, despite being unable to resolve the correct method full name, that it is an internal method" in {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption
-      selfFindFound.callee.isExternal.headOption shouldBe Some(false)
+      selfFindFound.callee.isExternal.toSeq shouldBe Seq(true, false)
     }
   }
 
