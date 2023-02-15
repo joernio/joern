@@ -14,6 +14,8 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
 
   def isIdentifier: Boolean = node.isInstanceOf[Identifier]
 
+  def isImport: Boolean = node.isInstanceOf[Import]
+
   def isFieldIdentifier: Boolean = node.isInstanceOf[FieldIdentifier]
 
   def isFile: Boolean = node.isInstanceOf[File]
