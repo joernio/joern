@@ -33,7 +33,7 @@ object SourcesToStartingPoints {
   def sourceTravsToStartingPoints[NodeType](sourceTravs: Traversal[NodeType]*): List[StartingPointWithSource] = {
     val fjp = ForkJoinPool.commonPool()
     try {
-      fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*))
+      fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*)).distinct
     } catch {
       case e: RejectedExecutionException =>
         log.error("Unable to execute 'SourceTravsToStartingPoints` task", e); List()
@@ -75,7 +75,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   private val cpg = Cpg(src.graph())
 
-  override def compute(): List[CfgNode] =
+  override def compute(): List[CfgNode] = {
     src match {
       case methodReturn: MethodReturn =>
         methodReturn.method.callIn.l
@@ -86,6 +86,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
         usages(targetsToClassIdentifierPair(initializedMember))
       case x => List(x).collect { case y: CfgNode => y }
     }
+  }
 
   private def usages(pairs: List[(TypeDecl, Expression)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, expression) =>
@@ -98,7 +99,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
         .l
 
       val usagesInSameClass =
-        nonConstructorMethods.flatMap { m => usagesOfExpression(expression, m) }.headOption
+        nonConstructorMethods.flatMap { m => usagesOfExpression(expression, m) }
 
       val usagesInOtherClasses = cpg.method.flatMap { m =>
         m.fieldAccess
@@ -142,8 +143,9 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case fieldIdentifier: FieldIdentifier =>
         m.ast.isFieldIdentifier
           .canonicalNameExact(fieldIdentifier.canonicalName)
-          .l
           .takeWhile(notLeftHandOfAssignment)
+          .inFieldAccess
+          .l
       case _ => List()
     }
   }
