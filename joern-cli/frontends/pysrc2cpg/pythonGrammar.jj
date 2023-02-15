@@ -311,7 +311,7 @@ TOKEN: {
 
 TOKEN: {
   <NAME: <LETTER> (<LETTER> | <DIGIT>)*>
-| <LETTER: ["a" - "z", "A" - "Z", "_"] >
+| <LETTER: ["a" - "z", "A" - "Z", "_", "À" - "Ö", "Ø" - "ö", "ø" - "ÿ"] >
 }
 
 SKIP: {
