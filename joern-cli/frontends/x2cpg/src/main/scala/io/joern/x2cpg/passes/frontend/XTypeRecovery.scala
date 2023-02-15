@@ -122,13 +122,12 @@ abstract class ScopedXProcedure(val callingName: String, val fullName: String, v
   * @param node
   *   a node that references import information.
   */
-abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
+abstract class SetXProcedureDefTask(node: AstNode) extends RecursiveTask[Unit] {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[SetXProcedureDefTask])
 
   override def compute(): Unit =
     node match {
-      case x: Method => visitImport(x)
       case x: Call   => visitImport(x)
       case _         =>
     }
@@ -139,13 +138,6 @@ abstract class SetXProcedureDefTask(node: CfgNode) extends RecursiveTask[Unit] {
     *   the call that imports entities into this scope.
     */
   def visitImport(importCall: Call): Unit
-
-  /** Sets how an application method would be referred to locally.
-    *
-    * @param m
-    *   an internal method
-    */
-  def visitImport(m: Method): Unit
 
 }
 
@@ -188,7 +180,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   override def compute(): Unit = try {
     prepopulateSymbolTable()
     // Set known aliases that point to imports for local and external methods/modules
-    setImportsFromDeclaredProcedures(importNodes(cu) ++ internalMethodNodes(cu))
+    setImportsFromDeclaredProcedures(importNodes(cu))
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // Populate fields
@@ -214,7 +206,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     * @param procedureDeclarations
     *   imports to types or functions and internally defined methods themselves.
     */
-  protected def setImportsFromDeclaredProcedures(procedureDeclarations: Traversal[CfgNode]): Unit =
+  protected def setImportsFromDeclaredProcedures(procedureDeclarations: Traversal[AstNode]): Unit =
     procedureDeclarations.map(f => generateSetProcedureDefTask(f, symbolTable).fork()).foreach(_.get())
 
   /** Generates a task to create an import task.
@@ -226,12 +218,12 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     * @return
     *   a forkable [[SetXProcedureDefTask]] task.
     */
-  protected def generateSetProcedureDefTask(node: CfgNode, symbolTable: SymbolTable[LocalKey]): SetXProcedureDefTask
+  protected def generateSetProcedureDefTask(node: AstNode, symbolTable: SymbolTable[LocalKey]): SetXProcedureDefTask
 
   /** @return
     *   the import nodes of this computational unit.
     */
-  protected def importNodes(cu: AstNode): Traversal[CfgNode]
+  protected def importNodes(cu: AstNode): Traversal[AstNode] = cu.ast.isImport
 
   /** @param cu
     *   the current computational unit.
