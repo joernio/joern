@@ -33,8 +33,7 @@ class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
   * @param fullName
   *   the full name to where this method is defined where it's assumed to be defined under a named Python file.
   */
-class ScopedPythonProcedure(callingName: String, fullName: String, isConstructor: Boolean = false)
-    extends ScopedXProcedure(callingName, fullName, isConstructor) {
+case class ScopedPythonProcedure(callingName: String, fullName: String, isConstructor: Boolean = false) {
 
   /** @return
     *   the full name of the procedure where it's assumed that it is defined within an <code>__init.py__</code> of the
@@ -46,28 +45,28 @@ class ScopedPythonProcedure(callingName: String, fullName: String, isConstructor
     *   the two ways that this procedure could be resolved to in Python. This will be pruned later by comparing this to
     *   actual methods in the CPG.
     */
-  override def possibleCalleeNames: Set[String] =
+  def possibleCalleeNames: Set[String] =
     if (isConstructor)
       Set(fullName.concat(s".${Defines.ConstructorMethodName}"))
     else
       Set(fullName, fullNameAsInit)
 
+  override def toString: String = s"ProcedureCalledAs(${possibleCalleeNames.mkString(", ")})"
+
 }
 
-/** Tasks responsible for populating the symbol table with import data and method definition data.
-  *
-  * @param node
-  *   a node that references import information.
+/** Performs type recovery from the root of a compilation unit level
   */
-class SetPythonProcedureDefTask(node: AstNode, symbolTable: SymbolTable[LocalKey]) extends SetXProcedureDefTask(node) {
+class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, globalTable: SymbolTable[GlobalKey])
+    extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable) {
 
-  /** Refers to the declared import information. This will store the alias as both a call and a local variable.
-    *
-    * @param importCall
-    *   the call that imports entities into this scope.
+  /** Overriden to include legacy import calls until imports are supported.
     */
-  override def visitImport(importCall: Call): Unit = {
-    importCall.argumentOut.l match {
+  override def importNodes(cu: AstNode): Traversal[AstNode] =
+    cu.ast.isCall.nameExact("import") ++ super.importNodes(cu)
+
+  override def visitImport(i: Call): Unit = {
+    i.argumentOut.l match {
       case List(path: Literal, funcOrModule: Literal) =>
         val calleeNames = extractMethodDetailsFromImport(path.code, funcOrModule.code).possibleCalleeNames
         symbolTable.put(CallAlias(funcOrModule.code), calleeNames)
@@ -96,7 +95,7 @@ class SetPythonProcedureDefTask(node: AstNode, symbolTable: SymbolTable[LocalKey
     path: String,
     funcOrModule: String,
     maybeAlias: Option[String] = None
-  ): ScopedXProcedure = {
+  ): ScopedPythonProcedure = {
     val isConstructor = funcOrModule.split("\\.").last.charAt(0).isUpper
     if (path.isEmpty) {
       if (funcOrModule.contains(".")) {
@@ -126,15 +125,6 @@ class SetPythonProcedureDefTask(node: AstNode, symbolTable: SymbolTable[LocalKey
     }
   }
 
-}
-
-/** Performs type recovery from the root of a compilation unit level
-  */
-class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, globalTable: SymbolTable[GlobalKey])
-    extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable) {
-
-  override def importNodes(cu: AstNode): Traversal[AstNode] = cu.ast.isCall.nameExact("import")
-
   override def postVisitImports(): Unit = {
     symbolTable.view.foreach { case (k, v) =>
       val ms = cpg.method.fullNameExact(v.toSeq: _*).l
@@ -147,11 +137,9 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
         // This is likely external and we will ignore the init variant to be consistent
         symbolTable.put(k, symbolTable(k).filterNot(_.contains("__init__.py")))
       }
-
       // Imports are by default used as calls, a second pass will tell us if this is not the case and we should
       // check against global table
-      // TODO: This is a bit of a bandaid compared to potentially having alias sensitivity. Values could be an
-      //  Either[SBKey, Set[String] where Left[SBKey] could point to the aliased symbol
+      // TODO: This is a bit of a bandaid compared to potentially having alias sensitivity.
 
       def fieldVar(path: String) = FieldVar(path.stripSuffix(s".${k.identifier}"), k.identifier)
 
@@ -162,9 +150,6 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
       }
     }
   }
-
-  override def generateSetProcedureDefTask(node: AstNode, symbolTable: SymbolTable[LocalKey]): SetXProcedureDefTask =
-    new SetPythonProcedureDefTask(node, symbolTable)
 
   /** Determines if a function call is a constructor by following the heuristic that Python classes are typically
     * camel-case and start with an upper-case character.

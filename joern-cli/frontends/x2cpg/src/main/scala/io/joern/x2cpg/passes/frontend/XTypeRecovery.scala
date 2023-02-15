@@ -12,7 +12,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
-import java.util.Objects
 import java.util.concurrent.RecursiveTask
 import scala.collection.mutable
 
@@ -87,60 +86,6 @@ object XTypeRecovery {
   def DUMMY_MEMBER_TYPE(prefix: String, memberName: String) = s"$prefix.$DUMMY_MEMBER_LOAD($memberName)"
 }
 
-/** Defines how a procedure is available to be called in the current scope either by it being defined in this module or
-  * being imported.
-  *
-  * @param callingName
-  *   how this procedure is to be called, i.e., alias name, name with path, etc.
-  * @param fullName
-  *   the full name to where this method is defined.
-  */
-abstract class ScopedXProcedure(val callingName: String, val fullName: String, val isConstructor: Boolean = false) {
-
-  /** @return
-    *   there are multiple ways that this procedure could be resolved in some languages. This will be pruned later by
-    *   comparing this to actual methods in the CPG using postVisitImport.
-    */
-  def possibleCalleeNames: Set[String] = Set()
-
-  override def toString: String = s"ProcedureCalledAs(${possibleCalleeNames.mkString(", ")})"
-
-  override def equals(obj: Any): Boolean = {
-    obj match {
-      case o: ScopedXProcedure =>
-        callingName.equals(o.callingName) && fullName.equals(o.fullName) && isConstructor == o.isConstructor
-      case _ => false
-    }
-  }
-
-  override def hashCode(): Int = Objects.hash(callingName, fullName, isConstructor)
-
-}
-
-/** Tasks responsible for populating the symbol table with import data.
-  *
-  * @param node
-  *   a node that references import information.
-  */
-abstract class SetXProcedureDefTask(node: AstNode) extends RecursiveTask[Unit] {
-
-  protected val logger: Logger = LoggerFactory.getLogger(classOf[SetXProcedureDefTask])
-
-  override def compute(): Unit =
-    node match {
-      case x: Call   => visitImport(x)
-      case _         =>
-    }
-
-  /** Refers to the declared import information.
-    *
-    * @param importCall
-    *   the call that imports entities into this scope.
-    */
-  def visitImport(importCall: Call): Unit
-
-}
-
 /** Performs type recovery from the root of a compilation unit level
   *
   * @param cpg
@@ -180,7 +125,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   override def compute(): Unit = try {
     prepopulateSymbolTable()
     // Set known aliases that point to imports for local and external methods/modules
-    setImportsFromDeclaredProcedures(importNodes(cu))
+    visitImports(importNodes(cu))
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // Populate fields
@@ -206,31 +151,35 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     * @param procedureDeclarations
     *   imports to types or functions and internally defined methods themselves.
     */
-  protected def setImportsFromDeclaredProcedures(procedureDeclarations: Traversal[AstNode]): Unit =
-    procedureDeclarations.map(f => generateSetProcedureDefTask(f, symbolTable).fork()).foreach(_.get())
+  protected def visitImports(procedureDeclarations: Traversal[AstNode]): Unit = {
+    procedureDeclarations.foreach {
+      case i: Import => visitImport(i)
+      case i: Call   => visitImport(i)
+    }
+  }
 
-  /** Generates a task to create an import task.
+  /** Refers to the declared import information. This is for legacy import notation.
     *
-    * @param node
-    *   the import node or method definition node.
-    * @param symbolTable
-    *   the local table.
-    * @return
-    *   a forkable [[SetXProcedureDefTask]] task.
+    * @param i
+    *   the call that imports entities into this scope.
     */
-  protected def generateSetProcedureDefTask(node: AstNode, symbolTable: SymbolTable[LocalKey]): SetXProcedureDefTask
+  protected def visitImport(i: Call): Unit
+
+  /** Visits an import and stores references in the symbol table as both an identifier and call.
+    */
+  protected def visitImport(i: Import): Unit = {
+    val entity = i.importedEntity
+    val alias  = i.importedAs
+    if (entity.isDefined && alias.isDefined) {
+      symbolTable.append(LocalVar(alias.get), Set(entity.get))
+      symbolTable.append(CallAlias(alias.get), Set(entity.get))
+    }
+  }
 
   /** @return
     *   the import nodes of this computational unit.
     */
   protected def importNodes(cu: AstNode): Traversal[AstNode] = cu.ast.isImport
-
-  /** @param cu
-    *   the current computational unit.
-    * @return
-    *   the methods defined within this computational unit.
-    */
-  protected def internalMethodNodes(cu: AstNode): Traversal[Method] = cu.ast.isMethod.isExternal(false)
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
@@ -265,7 +214,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       case List(c: Call, m: MethodRef)       => visitCallAssignedToMethodRef(c, m)
       case List(c: Call, b: Block)           => visitCallAssignedToBlock(c, b)
       case xs =>
-        logger.warn(s"Unhandled assignment ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(a)}");
+        logger.warn(s"Unhandled assignment ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(a)}")
         Set.empty
     }
   }
@@ -450,7 +399,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   protected def visitIdentifierAssignedToLiteral(i: Identifier, l: Literal): Set[String] =
     associateTypes(i, getLiteralType(l))
 
-  /** Not all frontends populate <code>typeFullName</code> for literals so we allow this to be overriden.
+  /** Not all frontends populate <code>typeFullName</code> for literals so we allow this to be overridden.
     */
   protected def getLiteralType(l: Literal): Set[String] = Set(l.typeFullName)
 
@@ -501,10 +450,10 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     */
   protected def getIndexAccessTypes(ia: Call): Set[String] = {
     indexAccessToCollectionVar(ia) match {
-      case Some(cvar) if symbolTable.contains(cvar) =>
-        symbolTable.get(cvar)
-      case Some(cvar) if symbolTable.contains(LocalVar(cvar.identifier)) =>
-        symbolTable.get(LocalVar(cvar.identifier)).map(_.concat(s".${XTypeRecovery.DUMMY_INDEX_ACCESS}"))
+      case Some(cVar) if symbolTable.contains(cVar) =>
+        symbolTable.get(cVar)
+      case Some(cVar) if symbolTable.contains(LocalVar(cVar.identifier)) =>
+        symbolTable.get(LocalVar(cVar.identifier)).map(_.concat(s".${XTypeRecovery.DUMMY_INDEX_ACCESS}"))
       case None => Set.empty
     }
   }
@@ -666,6 +615,9 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       }
   }
 
+  /**
+    * TODO: Cleaning up using visitor patten
+    */
   private def setTypeInformationForRecCall(x: AstNode, n: Option[Call], ms: List[AstNode]): Unit =
     (n, ms) match {
       // Case 1: 'call' is an assignment from some dynamic dispatch call
