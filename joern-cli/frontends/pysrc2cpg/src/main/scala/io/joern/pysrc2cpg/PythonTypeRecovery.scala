@@ -179,7 +179,8 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
 
   /** If the parent method is module then it can be used as a field.
     */
-  override def isField(i: Identifier): Boolean = i.method.name.equals("<module>") || super.isField(i)
+  override def isField(i: Identifier): Boolean =
+    i.method.name.matches("(<module>|__init__)") || super.isField(i)
 
   /** Using assignment and import information (in the global symbol table), will propagate these types in the symbol
     * table.
@@ -310,6 +311,34 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
     else super.visitIdentifierAssignedToCall(i, c)
   }
 
+  override def visitIdentifierAssignedToFieldLoad(i: Identifier, fa: FieldAccess): Set[String] = {
+    val fieldParents = getFieldParents(fa)
+    fa.astChildren.l match {
+      case List(base: Identifier, fi: FieldIdentifier) if base.name.equals("self") && fieldParents.nonEmpty =>
+        val globalTypes = fieldParents.flatMap(fp => globalTable.get(FieldVar(fp, fi.canonicalName)))
+        associateTypes(i, globalTypes)
+      case _ => super.visitIdentifierAssignedToFieldLoad(i, fa)
+    }
+  }
+
+  override def getFieldParents(fa: FieldAccess): Set[String] = {
+    if (fa.method.name.equals("<module>")) {
+      Set(fa.method.fullName)
+    } else if (fa.method.typeDecl.nonEmpty) {
+      val parentTypes =
+        fa.method.typeDecl.fullName.map(_.stripSuffix("<meta>")).map { t => s"$t.${t.split("\\.").last}" }.toSeq
+      val baseTypes = cpg.typeDecl.fullNameExact(parentTypes: _*).inheritsFromTypeFullName.toSeq
+      // TODO: inheritsFromTypeFullName does not give full name in pysrc2cpg
+      val baseTypeFullNames = cpg.typ.nameExact(baseTypes: _*).fullName.toSeq
+      (parentTypes ++ baseTypeFullNames)
+        .map(_.concat(".<body>"))
+        .filterNot(t => t.toLowerCase.matches("(any|object)"))
+        .toSet
+    } else {
+      super.getFieldParents(fa)
+    }
+  }
+
   private def fieldVarName(f: FieldIdentifier): FieldVar = {
     if (f.astSiblings.map(_.code).exists(_.contains("self"))) {
       // This will match the <meta> type decl
@@ -379,96 +408,17 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
 
   override def getLiteralType(l: Literal): Set[String] = {
     l match {
-      case _ if Try(java.lang.Integer.parseInt(l.code)).isSuccess =>
-        Set(s"$BUILTIN_PREFIX.int")
-      case _ if Try(java.lang.Double.parseDouble(l.code)).isSuccess =>
-        Set(s"$BUILTIN_PREFIX.float")
-      case _ if "True".equals(l.code) || "False".equals(l.code) =>
-        Set(s"$BUILTIN_PREFIX.bool")
-      case _ if l.code.matches("^(\"|').*(\"|')$") =>
-        Set(s"$BUILTIN_PREFIX.str")
-      case _ => Set()
+      case _ if Try(java.lang.Integer.parseInt(l.code)).isSuccess   => Set(s"$BUILTIN_PREFIX.int")
+      case _ if Try(java.lang.Double.parseDouble(l.code)).isSuccess => Set(s"$BUILTIN_PREFIX.float")
+      case _ if "True".equals(l.code) || "False".equals(l.code)     => Set(s"$BUILTIN_PREFIX.bool")
+      case _ if l.code.matches("^(\"|').*(\"|')$")                  => Set(s"$BUILTIN_PREFIX.str")
+      case _ if l.code.equals("None")                               => Set(s"$BUILTIN_PREFIX.None")
+      case _                                                        => Set()
     }
   }
 
 }
 
 object PythonTypeRecovery {
-
-  /** @see
-    *   <a href="https://docs.python.org/3/library/functions.html#func-dict">Python Built-in Functions</a>
-    */
-  lazy val BUILTINS: Set[String] = Set(
-    "abs",
-    "aiter",
-    "all",
-    "anext",
-    "ascii",
-    "bin",
-    "bool",
-    "breakpoint",
-    "bytearray",
-    "bytes",
-    "callable",
-    "chr",
-    "classmethod",
-    "compile",
-    "complex",
-    "delattr",
-    "dict",
-    "dir",
-    "divmod",
-    "enumerate",
-    "eval",
-    "exec",
-    "filter",
-    "float",
-    "format",
-    "frozenset",
-    "getattr",
-    "globals",
-    "hasattr",
-    "hash",
-    "help",
-    "hex",
-    "id",
-    "input",
-    "int",
-    "isinstance",
-    "issubclass",
-    "iter",
-    "len",
-    "list",
-    "locals",
-    "map",
-    "max",
-    "memoryview",
-    "min",
-    "next",
-    "object",
-    "oct",
-    "open",
-    "ord",
-    "pow",
-    "print",
-    "property",
-    "range",
-    "repr",
-    "reversed",
-    "round",
-    "set",
-    "setattr",
-    "slice",
-    "sorted",
-    "staticmethod",
-    "str",
-    "sum",
-    "super",
-    "tuple",
-    "type",
-    "vars",
-    "zip",
-    "__import__"
-  )
   def BUILTIN_PREFIX = "__builtin"
 }

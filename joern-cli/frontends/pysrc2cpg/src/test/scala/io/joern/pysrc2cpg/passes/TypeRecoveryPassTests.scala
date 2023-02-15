@@ -386,12 +386,15 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "recover a potential type for `self.collection` using the assignment at `get_collection` as a type hint" in {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption
-      selfFindFound.methodFullName shouldBe "pymongo.py:<module>.MongoClient.<init>.<indexAccess>.<indexAccess>.find_one"
+      selfFindFound.dynamicTypeHintFullName shouldBe Seq(
+        "__builtin.None.find_one",
+        "pymongo.py:<module>.MongoClient.<init>.<indexAccess>.<indexAccess>.find_one"
+      )
     }
 
     "correctly determine that, despite being unable to resolve the correct method full name, that it is an internal method" in {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption
-      selfFindFound.callee.isExternal.headOption shouldBe Some(false)
+      selfFindFound.callee.isExternal.toSeq shouldBe Seq(true, false)
     }
   }
 
