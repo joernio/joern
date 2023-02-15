@@ -615,8 +615,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       }
   }
 
-  /**
-    * TODO: Cleaning up using visitor patten
+  /** TODO: Cleaning up using visitor patten
     */
   private def setTypeInformationForRecCall(x: AstNode, n: Option[Call], ms: List[AstNode]): Unit =
     (n, ms) match {
