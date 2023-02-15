@@ -14,6 +14,7 @@ import overflowdb.traversal.Traversal
 
 import java.util.Objects
 import java.util.concurrent.RecursiveTask
+import scala.collection.mutable
 
 /** Based on a flow-insensitive symbol-table-style approach. This pass aims to be fast and deterministic and does not
   * try to converge to some fixed point but rather iterates a fixed number of times. This will help recover:
@@ -168,6 +169,8 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   globalTable: SymbolTable[GlobalKey]
 ) extends RecursiveTask[Unit] {
 
+  protected val logger: Logger = LoggerFactory.getLogger(getClass)
+
   /** Stores type information for local structures that live within this compilation unit, e.g. local variables.
     */
   protected val symbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
@@ -196,6 +199,13 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     setTypeInformation()
   } finally {
     symbolTable.clear()
+  }
+
+  private def debugLocation(n: AstNode): String = {
+    val rootPath = cpg.metaData.root.headOption.getOrElse("")
+    val fileName = n.file.name.headOption.getOrElse("<unknown>").stripPrefix(rootPath)
+    val lineNo   = n.lineNumber.getOrElse("<unknown>")
+    s"$fileName#L$lineNo"
   }
 
   /** Using import information and internally defined procedures, will generate a mapping between how functions and
@@ -247,11 +257,11 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   /** Using assignment and import information (in the global symbol table), will propagate these types in the symbol
     * table.
     *
-    * @param assignment
+    * @param a
     *   assignment call pointer.
     */
-  protected def visitAssignments(assignment: Assignment): Set[String] = {
-    assignment.argumentOut.l match {
+  protected def visitAssignments(a: Assignment): Set[String] = {
+    a.argumentOut.l match {
       case List(i: Identifier, b: Block) =>
         visitIdentifierAssignedToBlock(i, b)
       case List(i: Identifier, c: Call) =>
@@ -262,9 +272,12 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       case List(c: Call, i: Identifier)      => visitCallAssignedToIdentifier(c, i)
       case List(x: Call, y: Call) =>
         visitCallAssignedToCall(x, y)
-      case List(c: Call, l: Literal)   => visitCallAssignedToLiteral(c, l)
-      case List(c: Call, m: MethodRef) => println(s"${c.name} = ${m.code} (call  -> methodref)"); Set.empty
-      case xs                          => println("Unhandled assignment", xs.map(_.label).l); Set.empty
+      case List(c: Call, l: Literal) => visitCallAssignedToLiteral(c, l)
+      case List(c: Call, m: MethodRef) =>
+        logger.debug(s"Unimplemented ${c.name} = ${m.code} (call  -> methodref)"); Set.empty
+      case xs =>
+        logger.warn(s"Unhandled assignment ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(a)}");
+        Set.empty
     }
   }
 
@@ -277,7 +290,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       case x: Identifier if x.astChildren.isEmpty && symbolTable.contains(x) => symbolTable.get(x)
       case x: Call if symbolTable.contains(x)                                => symbolTable.get(x)
       case x: Call if x.argument.headOption.exists(symbolTable.contains)     => setCallMethodFullNameFromBase(x)
-      case x => println(s"Unhandled block element ${x.label}:${x.code}"); Set.empty[String]
+      case x => logger.warn(s"Unhandled block element ${x.label}:${x.code} @ ${debugLocation(x)}"); Set.empty[String]
     }.lastOption match {
       case Some(types) => associateTypes(i, types)
       case None        => Set.empty
@@ -302,8 +315,6 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     } else {
       // We can try obtain a return type for this call
       visitIdentifierAssignedToCallRetVal(i, c)
-      println(s"${i.name} = ${c.code} (Iden -> Call)")
-      Set.empty
     }
   }
 
@@ -362,18 +373,28 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     baseTypes: Set[String]
   ): Set[String] = {
     val globalTypes = getFieldBaseType(base, fi)
+    associateInterproceduralTypes(i, fieldName, fi.canonicalName, globalTypes, baseTypes)
+  }
+
+  protected def associateInterproceduralTypes(
+    i: Identifier,
+    fieldFullName: String,
+    fieldName: String,
+    globalTypes: Set[String],
+    baseTypes: Set[String]
+  ): Set[String] = {
     if (globalTypes.nonEmpty) {
       // We have been able to resolve the type inter-procedurally
       associateTypes(i, globalTypes)
     } else if (baseTypes.nonEmpty) {
-      if (baseTypes.equals(symbolTable.get(LocalVar(fieldName)))) {
+      if (baseTypes.equals(symbolTable.get(LocalVar(fieldFullName)))) {
         associateTypes(i, baseTypes)
       } else {
         // If not available, use a dummy variable that can be useful for call matching
-        associateTypes(i, baseTypes.map(t => XTypeRecovery.DUMMY_MEMBER_TYPE(t, fi.canonicalName)))
+        associateTypes(i, baseTypes.map(t => XTypeRecovery.DUMMY_MEMBER_TYPE(t, fieldName)))
       }
     } else {
-      println("Unable to associate interprocedural type")
+      logger.warn(s"Unable to associate interprocedural type for $i = $fieldFullName @ ${debugLocation(i)}")
       Set.empty
     }
   }
@@ -384,7 +405,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     operation match {
       case Operators.alloc       => visitIdentifierAssignedToConstructor(i, c)
       case Operators.fieldAccess => visitIdentifierAssignedToFieldLoad(i, new FieldAccess(c))
-      case x                     => println(s"Unhandled operation $x (${c.code})"); Set.empty
+      case x                     => logger.warn(s"Unhandled operation $x (${c.code}) @ ${debugLocation(c)}"); Set.empty
     }
   }
 
@@ -410,7 +431,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       val callReturns = methodReturnValues(callFullNames)
       associateTypes(i, callReturns)
     } else {
-      println("Unable to assign identifier to return value")
+      logger.warn(s"Unable to assign identifier '${i.name} to return value for ${c.code} @ ${debugLocation(c)}")
       Set.empty
     }
   }
@@ -456,7 +477,9 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(new FieldAccess(y))))
       case _ if symbolTable.contains(y) => symbolTable.get(y)
       case Operators.indexAccess        => getIndexAccessTypes(y)
-      case x                            => println(s"Unknown RHS call type '$x'"); Set.empty[String]
+      case n =>
+        logger.warn(s"Unknown RHS call type '$n' @ ${debugLocation(x)}")
+        Set.empty[String]
     }
     assignTypesToCall(x, rhsTypes)
   }
@@ -494,16 +517,32 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       val fieldName = getFieldName(fa)
       (LocalVar(fieldName), getFieldParents(fa).map(fp => FieldVar(fp, fieldName)))
     case Operators.indexAccess => (indexAccessToCollectionVar(c).getOrElse(LocalVar(c.name)), Set.empty)
-    case x                     => println(s"Unknown LHS call type '$x'"); (LocalVar(c.name), Set.empty)
+    case x =>
+      logger.warn(s"Unknown LHS call type '$x' @ ${debugLocation(c)}")
+      (LocalVar(c.name), Set.empty)
   }
 
   /** Extracts a string representation of the name of the field within this field access.
     */
-  protected def getFieldName(fa: FieldAccess): String = {
+  protected def getFieldName(fa: FieldAccess, prefix: String = "", suffix: String = ""): String = {
+    def wrapName(n: String) = {
+      val sb = new mutable.StringBuilder()
+      if (prefix.nonEmpty) sb.append(s"$prefix.")
+      sb.append(n)
+      if (suffix.nonEmpty) sb.append(s".$suffix")
+      sb.toString()
+    }
+
     fa.astChildren.l match {
-      case List(i: Identifier, f: FieldIdentifier) if i.name.matches("(self|this)") => f.canonicalName
-      case List(i: Identifier, f: FieldIdentifier)                                  => s"${i.name}.${f.canonicalName}"
-      case xs => println(s"Unhandled field name structure ${xs.map(_.label)}"); ""
+      case List(i: Identifier, f: FieldIdentifier) if i.name.matches("(self|this)") => wrapName(f.canonicalName)
+      case List(i: Identifier, f: FieldIdentifier) => wrapName(s"${i.name}.${f.canonicalName}")
+      case List(c: Call, f: FieldIdentifier) if c.name.equals(Operators.fieldAccess) =>
+        wrapName(getFieldName(new FieldAccess(c), suffix = f.canonicalName))
+      case List(f: FieldIdentifier, c: Call) if c.name.equals(Operators.fieldAccess) =>
+        wrapName(getFieldName(new FieldAccess(c), prefix = f.canonicalName))
+      case xs =>
+        logger.warn(s"Unhandled field structure ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(fa)}")
+        wrapName("<unknown>")
     }
   }
 
@@ -516,14 +555,16 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
         case List(_: Identifier, idx: Identifier) if symbolTable.contains(idx) =>
           // Imprecise but sound!
           indexAccessToCollectionVar(c).map(cv => symbolTable.append(cv, symbolTable.get(idx))).getOrElse(Set.empty)
-        case xs => println(s"Unhandled index access point assigned ot literal ${xs.map(_.label)}"); Set.empty
+        case xs =>
+          logger.warn(s"Unhandled index access point assigned to literal ${xs.map(_.label)} @ ${debugLocation(c)}")
+          Set.empty
       }
     } else if (c.name.equals(Operators.fieldAccess)) {
       val fa        = new FieldAccess(c)
       val fieldName = getFieldName(fa)
       associateTypes(LocalVar(fieldName), fa, getLiteralType(l))
     } else {
-      println(s"Unhandled call assigned to literal point ${c.name}")
+      logger.warn(s"Unhandled call assigned to literal point ${c.name} @ ${debugLocation(c)}")
       Set.empty
     }
   }
@@ -547,7 +588,9 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       case List(c: Call, idx: Call)             => CollectionVar(callName(c), callName(idx))
       case List(c: Call, idx: Literal)          => CollectionVar(callName(c), idx.code)
       case List(c: Call, idx: Identifier)       => CollectionVar(callName(c), idx.code)
-      case xs                                   => println(s"Unhandled index access point ${xs.map(_.label)}"); null
+      case xs =>
+        logger.warn(s"Unhandled index access ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(c)}")
+        null
     })
   }
 
@@ -563,16 +606,39 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       case List(base: Identifier, fi: FieldIdentifier) if symbolTable.contains(LocalVar(fieldName)) =>
         val localTypes = symbolTable.get(LocalVar(fieldName))
         associateInterproceduralTypes(i, base, fi, fieldName, localTypes)
+      case List(c: Call, f: FieldIdentifier) if c.name.equals(Operators.fieldAccess) =>
+        val baseName = getFieldName(new FieldAccess(c))
+        // Build type regardless of length
+        // TODO: This is more prone to giving dummy values as it does not do global look-ups
+        //  but this is okay for now
+        val buf = mutable.ArrayBuffer.empty[String]
+        for (segment <- baseName.split("\\.") ++ Array(f.canonicalName)) {
+          val types =
+            if (buf.isEmpty) symbolTable.get(LocalVar(segment))
+            else buf.flatMap(t => symbolTable.get(LocalVar(s"$t.$segment"))).toSet
+          if (types.nonEmpty) {
+            buf.clear()
+            buf.addAll(types)
+          } else {
+            val bufCopy = Array.from(buf)
+            buf.clear()
+            bufCopy.foreach(t => buf.addOne(XTypeRecovery.DUMMY_MEMBER_TYPE(t, segment)))
+          }
+        }
+        associateTypes(i, buf.toSet)
       case _ =>
-        println(s"Unable to assign identifier '${i.name}' to field load $fieldName")
+        logger.warn(s"Unable to assign identifier '${i.name}' to field load '$fieldName' @ ${debugLocation(i)}")
         Set.empty
     }
   }
 
-  protected def getFieldBaseType(base: Identifier, fi: FieldIdentifier): Set[String] = {
-    val localTypes = symbolTable.get(CallAlias(base.name))
+  protected def getFieldBaseType(base: Identifier, fi: FieldIdentifier): Set[String] =
+    getFieldBaseType(base.name, fi.canonicalName)
+
+  protected def getFieldBaseType(baseName: String, fieldName: String): Set[String] = {
+    val localTypes = symbolTable.get(LocalVar(baseName))
     val globalTypes = localTypes
-      .map(t => FieldVar(t, fi.canonicalName))
+      .map(t => FieldVar(t, fieldName))
       .flatMap(globalTable.get)
     globalTypes
   }
