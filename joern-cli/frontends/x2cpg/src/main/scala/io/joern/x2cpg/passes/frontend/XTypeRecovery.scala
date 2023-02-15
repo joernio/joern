@@ -454,7 +454,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
         symbolTable.get(cVar)
       case Some(cVar) if symbolTable.contains(LocalVar(cVar.identifier)) =>
         symbolTable.get(LocalVar(cVar.identifier)).map(_.concat(s".${XTypeRecovery.DUMMY_INDEX_ACCESS}"))
-      case None => Set.empty
+      case _ => Set.empty
     }
   }
 
