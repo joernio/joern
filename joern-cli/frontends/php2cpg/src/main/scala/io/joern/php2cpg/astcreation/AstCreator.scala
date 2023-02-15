@@ -601,7 +601,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .code(s"${nextIterIdent.rootCodeOrEmpty}->next()")
       .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
       .lineNumber(line(stmt))
-    val nextCallAst = callAst(nextCallNode, receiver = Some(nextIterIdent))
+    val nextCallAst = callAst(nextCallNode, base = Some(nextIterIdent))
     val itemUpdateAst = itemInitAst.root match {
       case Some(initRoot: AstNodeNew) => itemInitAst.subTreeCopy(initRoot)
       case _ =>
@@ -636,7 +636,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .code(s"${iteratorIdentifierAst.rootCodeOrEmpty}->current()")
       .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
       .lineNumber(line(stmt))
-    val currentCallAst = callAst(currentCallNode, receiver = Some(iteratorIdentifierAst))
+    val currentCallAst = callAst(currentCallNode, base = Some(iteratorIdentifierAst))
 
     val valueAst = if (stmt.assignByRef) {
       val addressOfCode = s"&${currentCallAst.rootCodeOrEmpty}"
@@ -1046,7 +1046,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case (None, None) => None
     }
 
-    callAst(callNode, arguments, receiver = receiverAst)
+    callAst(callNode, arguments, base = receiverAst)
   }
 
   private def astForCallArg(arg: PhpArgument): Ast = {
@@ -1533,7 +1533,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     // Alloc assign
     val allocCode             = s"$className.<alloc>()"
     val allocNode             = operatorCallNode(Operators.alloc, allocCode, Some(className), line(expr))
-    val allocAst              = callAst(allocNode, receiver = maybeNameAst)
+    val allocAst              = callAst(allocNode, base = maybeNameAst)
     val allocAssignCode       = s"${tmpLocal.code} = ${allocAst.rootCodeOrEmpty}"
     val allocAssignNode       = operatorCallNode(Operators.assignment, allocAssignCode, Some(className), line(expr))
     val allocAssignIdentifier = identifierAstFromLocal(tmpLocal, line(expr))
@@ -1553,7 +1553,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
       .lineNumber(line(expr))
     val initReceiver = identifierAstFromLocal(tmpLocal, line(expr))
-    val initCallAst  = callAst(initCallNode, initArgs, receiver = Some(initReceiver))
+    val initCallAst  = callAst(initCallNode, initArgs, base = Some(initReceiver))
 
     // Return identifier
     val returnIdentifierAst = identifierAstFromLocal(tmpLocal, line(expr))

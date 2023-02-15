@@ -89,8 +89,9 @@ astGenDlUrl := s"https://github.com/joernio/astgen/releases/download/v${astGenVe
 
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
   Try("astgen --version".!!).toOption.map(_.strip()) match {
-    case Some(installedVersion) => VersionHelper.compare(installedVersion, astGenVersion) >= 0
-    case None                   => false
+    case Some(installedVersion) if installedVersion != "unknown" =>
+      VersionHelper.compare(installedVersion, astGenVersion) >= 0
+    case _ => false
   }
 }
 

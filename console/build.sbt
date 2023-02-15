@@ -3,9 +3,8 @@ name := "console"
 enablePlugins(JavaAppPackaging)
 
 val ScoptVersion          = "4.0.1"
-val BetterFilesVersion    = "3.9.1"
 val CaskVersion           = "0.8.3"
-val CirceVersion          = "0.14.3"
+val CirceVersion          = "0.14.4"
 val AmmoniteVersion       = "2.5.8"
 val ZeroturnaroundVersion = "1.15"
 
@@ -19,17 +18,16 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
-  "com.github.scopt"     %% "scopt"             % ScoptVersion,
-  "com.github.pathikrit" %% "better-files"      % BetterFilesVersion,
-  "org.typelevel"        %% "cats-effect"       % Versions.cats,
-  "io.circe"             %% "circe-generic"     % CirceVersion,
-  "io.circe"             %% "circe-parser"      % CirceVersion,
-  "org.zeroturnaround"    % "zt-zip"            % ZeroturnaroundVersion,
-  "com.lihaoyi"          %% "ammonite"          % AmmoniteVersion cross CrossVersion.full,
-  "com.lihaoyi"          %% "os-lib"            % "0.8.1",
-  "com.lihaoyi"          %% "cask"              % CaskVersion,
-  "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
+  "io.shiftleft"      %% "codepropertygraph" % Versions.cpg,
+  "com.github.scopt"  %% "scopt"             % ScoptVersion,
+  "org.typelevel"     %% "cats-effect"       % Versions.cats,
+  "io.circe"          %% "circe-generic"     % CirceVersion,
+  "io.circe"          %% "circe-parser"      % CirceVersion,
+  "org.zeroturnaround" % "zt-zip"            % ZeroturnaroundVersion,
+  "com.lihaoyi"       %% "ammonite"          % AmmoniteVersion cross CrossVersion.full,
+  "com.lihaoyi"       %% "os-lib"            % "0.8.1",
+  "com.lihaoyi"       %% "cask"              % CaskVersion,
+  "org.scalatest"     %% "scalatest"         % Versions.scalatest % Test
 )
 
 scalacOptions ++= Seq(

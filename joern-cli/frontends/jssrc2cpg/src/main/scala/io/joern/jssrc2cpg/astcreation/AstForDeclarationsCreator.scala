@@ -145,7 +145,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
         declaration.columnNumber
       )
       val sourceAst =
-        createCallAst(sourceCall, List(Ast(sourceCallArgNode)))
+        callAst(sourceCall, List(Ast(sourceCallArgNode)))
       val assignmentCallAst = createAssignmentCallAst(
         Ast(id),
         sourceAst,
@@ -207,7 +207,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val asts = fromAst +: (specifierAsts ++ declAsts.flatten)
-    setArgIndices(asts)
+    setArgumentIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }
 
@@ -221,7 +221,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val asts = declAsts.toList.flatten
-    setArgIndices(asts)
+    setArgumentIndices(asts)
     blockAst(createBlockNode(assignment), asts)
   }
 
@@ -237,7 +237,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val asts = declAsts.toList.flatten
-    setArgIndices(asts)
+    setArgumentIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }
 
@@ -254,7 +254,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration, None)
 
     val asts = List(fromCallAst, assignmentCallAst)
-    setArgIndices(asts)
+    setArgumentIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }
 
@@ -268,7 +268,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val declAsts = declaration.json("declarations").arr.toList.map(astForVariableDeclarator(_, scopeType, kind))
     declAsts match {
       case head :: tail =>
-        setArgIndices(declAsts)
+        setArgumentIndices(declAsts)
         tail.foreach { declAst =>
           declAst.root.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
           Ast.storeInDiffGraph(declAst, diffGraph)
@@ -398,7 +398,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val receiverNode = createIdentifierNode(RequireKeyword, nodeInfo)
     val thisNode     = createIdentifierNode("this", nodeInfo)
     scope.addVariableReference(thisNode.name, thisNode)
-    val callAst = createCallAst(
+    val cAst = callAst(
       sourceCall,
       List(Ast(sourceCallArgNode)),
       receiver = Option(Ast(receiverNode)),
@@ -406,14 +406,14 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     )
     val sourceAst = if (isImportN) {
       val fieldAccessCall = createFieldAccessCallAst(
-        callAst,
+        cAst,
         createFieldIdentifierNode(name, nodeInfo.lineNumber, nodeInfo.columnNumber),
         nodeInfo.lineNumber,
         nodeInfo.columnNumber
       )
       fieldAccessCall
     } else {
-      callAst
+      cAst
     }
     val assigmentCallAst =
       createAssignmentCallAst(
@@ -724,7 +724,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     localAstParentStack.pop()
 
     val blockChildren = assignmentTmpCallAst +: subTreeAsts :+ Ast(returnTmpNode)
-    setArgIndices(blockChildren)
+    setArgumentIndices(blockChildren)
     Ast(blockNode).withChildren(blockChildren)
   }
 

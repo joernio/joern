@@ -197,38 +197,64 @@ abstract class AstCreatorBase(filename: String) {
     Ast(blockNode).withChildren(statements)
   }
 
-  /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
-    * main purpose of this method is to automatically assign the correct argument indices.
+  /** Create an abstract syntax tree for a call, including CPG-specific edges required for arguments and the receiver.
+    *
+    * Our call representation is inspired by ECMAScript, that is, in addition to arguments, a call has a base and a
+    * receiver. For languages other than Javascript, leave `receiver` empty for now.
+    *
+    * @param callNode
+    *   the node that represents the entire call
+    * @param arguments
+    *   arguments (without the base argument (instance))
+    * @param base
+    *   the value to use as `this` in the method call.
+    * @param receiver
+    *   the object in which the property lookup is performed
     */
   def callAst(
     callNode: NewCall,
     arguments: Seq[Ast] = List(),
-    receiver: Option[Ast] = None,
-    withRecvArgEdge: Boolean = false
+    base: Option[Ast] = None,
+    receiver: Option[Ast] = None
   ): Ast = {
-    val receiverRoot = receiver.flatMap(_.root).toList
-    val rcv          = receiver.getOrElse(Ast())
-    receiverRoot match {
+
+    setArgumentIndices(arguments)
+
+    val baseRoot = base.flatMap(_.root).toList
+    val bse      = base.getOrElse(Ast())
+    baseRoot match {
       case List(x: ExpressionNew) =>
         x.argumentIndex = 0
       case _ =>
     }
 
-    val recvArgEdgeDest = if (withRecvArgEdge) receiverRoot else Nil
+    val receiverRoot = receiver.flatMap(_.root).toList
+    val rcvAst       = receiver.getOrElse(Ast())
+    receiverRoot match {
+      case List(x: ExpressionNew) =>
+        x.argumentIndex = -1
+      case _ =>
+    }
 
-    setArgumentIndices(arguments)
     Ast(callNode)
-      .withChild(rcv)
+      .withChild(rcvAst)
+      .withChild(bse)
       .withChildren(arguments)
-      .withArgEdges(callNode, recvArgEdgeDest)
+      .withArgEdges(callNode, baseRoot)
       .withArgEdges(callNode, arguments.flatMap(_.root))
       .withReceiverEdges(callNode, receiverRoot)
   }
 
   def setArgumentIndices(arguments: Seq[Ast]): Unit = {
-    withIndex(arguments) { case (a, i) =>
-      a.root.collect { case x: ExpressionNew =>
-        x.argumentIndex = i
+    var currIndex = 1
+    arguments.foreach { a =>
+      a.root match {
+        case Some(x: ExpressionNew) =>
+          x.argumentIndex = currIndex
+          currIndex = currIndex + 1
+        case None => // do nothing
+        case _ =>
+          currIndex = currIndex + 1
       }
     }
   }
