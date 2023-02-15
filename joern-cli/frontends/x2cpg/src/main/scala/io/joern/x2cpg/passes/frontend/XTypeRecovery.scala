@@ -262,19 +262,16 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     */
   protected def visitAssignments(a: Assignment): Set[String] = {
     a.argumentOut.l match {
-      case List(i: Identifier, b: Block) =>
-        visitIdentifierAssignedToBlock(i, b)
-      case List(i: Identifier, c: Call) =>
-        visitIdentifierAssignedToCall(i, c)
+      case List(i: Identifier, b: Block)     => visitIdentifierAssignedToBlock(i, b)
+      case List(i: Identifier, c: Call)      => visitIdentifierAssignedToCall(i, c)
       case List(i: Identifier, l: Literal)   => visitIdentifierAssignedToLiteral(i, l)
       case List(i: Identifier, m: MethodRef) => visitIdentifierAssignedToMethodRef(i, m)
       case List(i: Identifier, t: TypeRef)   => visitIdentifierAssignedToTypeRef(i, t)
       case List(c: Call, i: Identifier)      => visitCallAssignedToIdentifier(c, i)
-      case List(x: Call, y: Call) =>
-        visitCallAssignedToCall(x, y)
-      case List(c: Call, l: Literal) => visitCallAssignedToLiteral(c, l)
-      case List(c: Call, m: MethodRef) =>
-        logger.debug(s"Unimplemented ${c.name} = ${m.code} (call  -> methodref)"); Set.empty
+      case List(x: Call, y: Call)            => visitCallAssignedToCall(x, y)
+      case List(c: Call, l: Literal)         => visitCallAssignedToLiteral(c, l)
+      case List(c: Call, m: MethodRef)       => visitCallAssignedToMethodRef(c, m)
+      case List(c: Call, b: Block)           => visitCallAssignedToBlock(c, b)
       case xs =>
         logger.warn(s"Unhandled assignment ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(a)}");
         Set.empty
@@ -284,19 +281,31 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   /** Visits an identifier being assigned to the result of some operation.
     */
   protected def visitIdentifierAssignedToBlock(i: Identifier, b: Block): Set[String] = {
-    // Process each statement but only assign the type of the last statement to the identifier
-    b.astChildren.map {
-      case x: Call if x.name.equals(Operators.assignment)                    => visitAssignments(new Assignment(x))
-      case x: Identifier if x.astChildren.isEmpty && symbolTable.contains(x) => symbolTable.get(x)
-      case x: Call if symbolTable.contains(x)                                => symbolTable.get(x)
-      case x: Call if x.argument.headOption.exists(symbolTable.contains)     => setCallMethodFullNameFromBase(x)
-      case x => logger.warn(s"Unhandled block element ${x.label}:${x.code} @ ${debugLocation(x)}"); Set.empty[String]
-    }.lastOption match {
-      case Some(types) => associateTypes(i, types)
-      case None        => Set.empty
-    }
-
+    val blockTypes = visitStatementsInBlock(b)
+    if (blockTypes.nonEmpty) associateTypes(i, blockTypes)
+    else Set.empty
   }
+
+  /** Visits a call operation being assigned to the result of some operation.
+    */
+  protected def visitCallAssignedToBlock(c: Call, b: Block): Set[String] = {
+    val blockTypes = visitStatementsInBlock(b)
+    assignTypesToCall(c, blockTypes)
+  }
+
+  /** Process each statement but only assign the type of the last statement to the identifier
+    */
+  protected def visitStatementsInBlock(b: Block): Set[String] =
+    b.astChildren
+      .map {
+        case x: Call if x.name.equals(Operators.assignment)                    => visitAssignments(new Assignment(x))
+        case x: Identifier if x.astChildren.isEmpty && symbolTable.contains(x) => symbolTable.get(x)
+        case x: Call if symbolTable.contains(x)                                => symbolTable.get(x)
+        case x: Call if x.argument.headOption.exists(symbolTable.contains)     => setCallMethodFullNameFromBase(x)
+        case x => logger.warn(s"Unhandled block element ${x.label}:${x.code} @ ${debugLocation(x)}"); Set.empty[String]
+      }
+      .lastOption
+      .getOrElse(Set.empty[String])
 
   /** Visits an identifier being assigned to a call. This call could be an operation, function invocation, or
     * constructor invocation.
@@ -568,6 +577,11 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
       Set.empty
     }
   }
+
+  /** Handles a call operation assigned to a method/function pointer.
+    */
+  protected def visitCallAssignedToMethodRef(c: Call, m: MethodRef): Set[String] =
+    assignTypesToCall(c, Set(m.methodFullName))
 
   /** Generates an identifier for collection/index-access operations in the symbol table.
     */
