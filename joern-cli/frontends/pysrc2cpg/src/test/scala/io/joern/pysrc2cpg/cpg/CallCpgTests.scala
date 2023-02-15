@@ -204,7 +204,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "test that the identifiers are not set to the function pointers but rather the 'ANY' return value" in {
       val List(x, y, z) = cpg.identifier.name("x", "y", "z").l
       x.typeFullName shouldBe "foo.py:<module>.foo_func.<returnValue>"
-      y.typeFullName shouldBe "foo/bar/__init__.py:<module>.bar_func.<returnValue>"
+      y.typeFullName shouldBe Seq("foo", "bar", "__init__.py:<module>.bar_func.<returnValue>").mkString(File.separator)
       z.typeFullName shouldBe "foo.py:<module>.faz.<returnValue>"
     }
 
