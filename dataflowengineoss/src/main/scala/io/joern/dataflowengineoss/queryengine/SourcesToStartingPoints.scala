@@ -88,6 +88,9 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     }
   }
 
+  /** For a list of (type declaration, expression) pairs, determine usages of expression from corresponding type
+    * declaration.
+    */
   private def usages(pairs: List[(TypeDecl, Expression)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, expression) =>
       val nonConstructorMethods = methodsRecursively(typeDecl)
@@ -115,7 +118,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
           }
           .takeWhile(notLeftHandOfAssignment)
           .headOption
-      }
+      }.l
       usagesInSameClass ++ usagesInOtherClasses
     }
   }
@@ -144,7 +147,6 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
         m.ast.isFieldIdentifier
           .canonicalNameExact(fieldIdentifier.canonicalName)
           .takeWhile(notLeftHandOfAssignment)
-          .inFieldAccess
           .l
       case _ => List()
     }
