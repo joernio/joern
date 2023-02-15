@@ -595,6 +595,25 @@ class PythonAstVisitor(
     (convertedArgs, convertedKeywordArgs)
   }
 
+  /** This function strips the first positional parameter from initParameters, if present.
+    * @return
+    *   Parameters without first positional parameter and adjusted line and column number information.
+    */
+  private def stripFirstPositionalParameter(initParameters: ast.Arguments): (ast.Arguments, LineAndColumn) = {
+    if (initParameters.posonlyargs.nonEmpty) {
+      (
+        initParameters.copy(posonlyargs = initParameters.posonlyargs.tail),
+        lineAndColOf(initParameters.posonlyargs.head)
+      )
+    } else if (initParameters.args.nonEmpty) {
+      (initParameters.copy(args = initParameters.args.tail), lineAndColOf(initParameters.args.head))
+    } else if (initParameters.vararg.nonEmpty) {
+      (initParameters, lineAndColOf(initParameters.vararg.get))
+    } else {
+      (initParameters, lineAndColOf(initParameters.kw_arg.get))
+    }
+  }
+
   /** Creates the method which handles a call to the meta class object. This process is also known as creating a new
     * instance object, e.g. obj = MyClass(p1). The purpose of the generated function is to adapt between the special
     * cased instance creation call and a normal call to __new__ (for now <fakeNew>). The adaption is required to in
@@ -614,15 +633,7 @@ class PythonAstVisitor(
 
     // We need to drop the "self" parameter either from the position only or normal parameters
     // because "self" is not passed through but rather created in __new__.
-    val (parametersWithoutSelf, lineAndColumn) =
-      if (initParameters.posonlyargs.nonEmpty) {
-        (
-          initParameters.copy(posonlyargs = initParameters.posonlyargs.tail),
-          lineAndColOf(initParameters.posonlyargs.head)
-        )
-      } else {
-        (initParameters.copy(args = initParameters.args.tail), lineAndColOf(initParameters.args.head))
-      }
+    val (parametersWithoutSelf, lineAndColumn) = stripFirstPositionalParameter(initParameters)
 
     createMethod(
       methodName,
@@ -671,15 +682,7 @@ class PythonAstVisitor(
 
     // We need to drop the "self" parameter either from the position only or normal parameters
     // because "self" is not passed through but rather created in __new__.
-    val (parametersWithoutSelf, lineAndColumn) =
-      if (initParameters.posonlyargs.nonEmpty) {
-        (
-          initParameters.copy(posonlyargs = initParameters.posonlyargs.tail),
-          lineAndColOf(initParameters.posonlyargs.head)
-        )
-      } else {
-        (initParameters.copy(args = initParameters.args.tail), lineAndColOf(initParameters.args.head))
-      }
+    val (parametersWithoutSelf, lineAndColumn) = stripFirstPositionalParameter(initParameters)
 
     createMethod(
       newMethodName,
