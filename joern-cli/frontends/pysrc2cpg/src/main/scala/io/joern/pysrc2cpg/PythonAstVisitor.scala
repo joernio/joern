@@ -4,7 +4,14 @@ import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
 import io.joern.pythonparser.ast
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.{Method, NewIdentifier, NewMethod, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Method,
+  NewIdentifier,
+  NewMember,
+  NewMethod,
+  NewNode,
+  NewTypeDecl
+}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -1753,9 +1760,19 @@ class PythonAstVisitor(
     * __getattribute__ and __get__.
     */
   def convert(attribute: ast.Attribute): nodes.NewNode = {
-    val baseNode = convert(attribute.value)
+    val baseNode  = convert(attribute.value)
+    val fieldName = attribute.attr
 
-    createFieldAccess(baseNode, attribute.attr, lineAndColOf(attribute))
+    val fieldAccess = createFieldAccess(baseNode, fieldName, lineAndColOf(attribute))
+
+    attribute.value match {
+      case name: ast.Name if name.id == "self" =>
+        val member = nodeBuilder.memberNode(fieldName, "")
+        attachToEnclosingTypeDecl(member)
+      case _ =>
+    }
+
+    fieldAccess
   }
 
   def convert(subscript: ast.Subscript): NewNode = {
@@ -1782,14 +1799,18 @@ class PythonAstVisitor(
     val identifier      = createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
     contextStack.astParent match {
       case method: NewMethod if method.name.endsWith("<body>") =>
-        attachAsClassVariable(identifier)
+        attachAsMember(identifier)
       case _ =>
     }
     identifier
   }
 
-  private def attachAsClassVariable(identifier: NewIdentifier): Unit = {
+  private def attachAsMember(identifier: NewIdentifier): Unit = {
     val member = nodeBuilder.memberNode(identifier.name, "")
+    attachToEnclosingTypeDecl(member)
+  }
+
+  private def attachToEnclosingTypeDecl(member: NewMember): Unit = {
     contextStack.findEnclosingTypeDecl() match {
       case Some(typeDecl: NewTypeDecl) =>
         edgeBuilder.astEdge(member, typeDecl, contextStack.order.getAndInc)

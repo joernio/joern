@@ -82,4 +82,23 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     sink.reachableByFlows(source).size shouldBe 1
   }
 
+  "flow from instance variable in constructor (MEMBER) to sink" in {
+
+    val cpg: Cpg = code("""
+        |class Foo:
+        |    def __init__(self):
+        |        self.x = 'sensitive'
+        |
+        |    def foo(self):
+        |        a = sink(self.x)
+        |
+        |""".stripMargin)
+
+    val source = cpg.member(".*x.*").l
+    val sink   = cpg.call(".*sink").argument(1).l
+    source.size shouldBe 1
+    sink.size shouldBe 1
+    sink.reachableByFlows(source).size shouldBe 1
+  }
+
 }
