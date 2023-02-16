@@ -201,9 +201,7 @@ trait ScriptExecution {
   protected def startInteractiveShell(config: Config, slProduct: SLProduct): (Res[Any], Seq[(Watchable, Long)]) = {
     val configurePPrinterMaybe =
       if (config.nocolors) ""
-      else """val originalPPrinter = repl.pprinter()
-             |repl.pprinter.update(io.joern.console.pprinter.create(originalPPrinter))
-             |""".stripMargin
+      else "repl.pprinter.update(io.joern.console.pprinter.create())"
 
     val replConfig = List(
       "repl.prompt() = \"" + promptStr() + "\"",
