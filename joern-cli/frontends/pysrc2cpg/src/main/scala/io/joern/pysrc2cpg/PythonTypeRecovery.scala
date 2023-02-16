@@ -4,6 +4,7 @@ import io.joern.pysrc2cpg.PythonTypeRecovery.BUILTIN_PREFIX
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
@@ -60,7 +61,7 @@ case class ScopedPythonProcedure(callingName: String, fullName: String, isConstr
 class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, globalTable: SymbolTable[GlobalKey])
     extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable) {
 
-  /** Overriden to include legacy import calls until imports are supported.
+  /** Overridden to include legacy import calls until imports are supported.
     */
   override def importNodes(cu: AstNode): Traversal[AstNode] =
     cu.ast.isCall.nameExact("import") ++ super.importNodes(cu)
@@ -102,10 +103,10 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
         // Case 1: We have imported a function using a qualified path, e.g., import foo.bar => (bar.py or bar/__init.py)
         val splitFunc = funcOrModule.split("\\.")
         val name      = splitFunc.tail.mkString(".")
-        new ScopedPythonProcedure(name, s"${splitFunc(0)}.py:<module>.$name", isConstructor)
+        ScopedPythonProcedure(name, s"${splitFunc(0)}.py:<module>.$name", isConstructor)
       } else {
         // Case 2: We have imported a module, e.g., import foo => (foo.py or foo/__init.py)
-        new ScopedPythonProcedure(funcOrModule, s"$funcOrModule.py:<module>", isConstructor)
+        ScopedPythonProcedure(funcOrModule, s"$funcOrModule.py:<module>", isConstructor)
       }
     } else {
       val sep = Matcher.quoteReplacement(JFile.separator)
@@ -113,10 +114,10 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
         // TODO: This assumes importing from modules and never importing nested method
         // Case 3:  We have imported a function from a module using an alias, e.g. import bar from foo as faz
         case Some(alias) =>
-          new ScopedPythonProcedure(alias, s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule", isConstructor)
+          ScopedPythonProcedure(alias, s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule", isConstructor)
         // Case 4: We have imported a function from a module, e.g. import bar from foo
         case None =>
-          new ScopedPythonProcedure(
+          ScopedPythonProcedure(
             funcOrModule,
             s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule",
             isConstructor
@@ -167,6 +168,8 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
       case "<operator>.listLiteral"  => associateTypes(i, Set(s"$BUILTIN_PREFIX.list"))
       case "<operator>.tupleLiteral" => associateTypes(i, Set(s"$BUILTIN_PREFIX.tuple"))
       case "<operator>.dictLiteral"  => associateTypes(i, Set(s"$BUILTIN_PREFIX.dict"))
+      case "<operator>.setLiteral"   => associateTypes(i, Set(s"$BUILTIN_PREFIX.set"))
+      case Operators.conditional     => associateTypes(i, Set(s"$BUILTIN_PREFIX.bool"))
       case _                         => super.visitIdentifierAssignedToOperator(i, c, operation)
     }
   }
@@ -199,6 +202,14 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
         associateTypes(i, globalTypes)
       case _ => super.visitIdentifierAssignedToFieldLoad(i, fa)
     }
+  }
+
+  override def getTypesFromCall(c: Call): Set[String] = c.name match {
+    case "<operator>.listLiteral"  => Set(s"$BUILTIN_PREFIX.list")
+    case "<operator>.tupleLiteral" => Set(s"$BUILTIN_PREFIX.tuple")
+    case "<operator>.dictLiteral"  => Set(s"$BUILTIN_PREFIX.dict")
+    case "<operator>.setLiteral"   => Set(s"$BUILTIN_PREFIX.set")
+    case _                         => super.getTypesFromCall(c)
   }
 
   override def getFieldParents(fa: FieldAccess): Set[String] = {

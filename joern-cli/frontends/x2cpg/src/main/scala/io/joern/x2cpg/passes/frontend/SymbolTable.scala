@@ -16,40 +16,38 @@ abstract class SBKey(val identifier: String) {
     * @param node
     *   the node to convert.
     * @return
-    *   the corresponding [[SBKey]].
+    *   the corresponding [[SBKey]] if the node is supported as a key variable
     */
-  def fromNode(node: AstNode): SBKey
+  def fromNode(node: AstNode): Option[SBKey]
 
 }
 
 object SBKey {
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
-  def fromNodeToLocalKey(node: AstNode): LocalKey = {
-    node match {
+  def fromNodeToLocalKey(node: AstNode): Option[LocalKey] = {
+    Option(node match {
       case n: Identifier      => LocalVar(n.name)
       case n: Local           => LocalVar(n.name)
       case n: Call            => CallAlias(n.name)
       case n: Method          => CallAlias(n.name)
       case n: MethodRef       => CallAlias(n.code)
       case n: FieldIdentifier => LocalVar(n.canonicalName)
-      case _ =>
-        throw new RuntimeException(s"Local node of type ${node.label} is not supported in the type recovery pass.")
-    }
+      case _ => logger.debug(s"Local node of type ${node.label} is not supported in the type recovery pass."); null
+    })
   }
 
-  def fromNodeToGlobalKey(node: AstNode): GlobalKey = node match {
+  def fromNodeToGlobalKey(node: AstNode): Option[GlobalKey] = Option(node match {
     case n: FieldIdentifier => FieldVar(n.method.fullName, n.canonicalName)
     case n: Identifier      => FieldVar(n.method.fullName, n.name)
-    case _ =>
-      throw new RuntimeException(s"Global node of type ${node.label} is not supported in the type recovery pass.")
-  }
+    case _ => logger.debug(s"Global node of type ${node.label} is not supported in the type recovery pass."); null
+  })
 
 }
 
 /** Represents an identifier of some AST node at an intraprocedural scope.
   */
 sealed class LocalKey(identifier: String) extends SBKey(identifier) {
-  override def fromNode(node: AstNode): SBKey = SBKey.fromNodeToLocalKey(node)
+  override def fromNode(node: AstNode): Option[SBKey] = SBKey.fromNodeToLocalKey(node)
 }
 
 /** A variable that holds data within an intraprocedural scope.
@@ -67,7 +65,7 @@ case class CallAlias(override val identifier: String) extends LocalKey(identifie
 /** Represents an identifier of some AST node at an interprocedural scope.
   */
 sealed class GlobalKey(identifier: String) extends SBKey(identifier) {
-  override def fromNode(node: AstNode): SBKey = SBKey.fromNodeToGlobalKey(node)
+  override def fromNode(node: AstNode): Option[SBKey] = SBKey.fromNodeToGlobalKey(node)
 }
 
 /** Represents a field identifier at its declared computational unit.
@@ -85,13 +83,16 @@ case class FieldVar(compUnitFullName: String, override val identifier: String) e
   * The [[SymbolTable]] operates like a map with a few convenient methods that are designed for this structure's
   * purpose.
   */
-class SymbolTable[K <: SBKey](fromNode: AstNode => K) {
+class SymbolTable[K <: SBKey](fromNode: AstNode => Option[K]) {
 
   private val table = TrieMap.empty[K, Set[String]]
 
   def apply(sbKey: K): Set[String] = table(sbKey)
 
-  def apply(node: AstNode): Set[String] = table(fromNode(node))
+  def apply(node: AstNode): Set[String] = fromNode(node) match {
+    case Some(key) => table(key)
+    case None      => Set.empty
+  }
 
   def from(sb: IterableOnce[(K, Set[String])]): SymbolTable[K] = {
     table.addAll(sb); this
@@ -108,14 +109,18 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => K) {
   def put(sbKey: K, typeFullName: String): Set[String] =
     put(sbKey, Set(typeFullName))
 
-  def put(node: AstNode, typeFullNames: Set[String]): Set[String] =
-    put(fromNode(node), typeFullNames)
+  def put(node: AstNode, typeFullNames: Set[String]): Set[String] = fromNode(node) match {
+    case Some(key) => put(key, typeFullNames)
+    case None      => Set.empty
+  }
 
   def append(node: AstNode, typeFullName: String): Set[String] =
     append(node, Set(typeFullName))
 
-  def append(node: AstNode, typeFullNames: Set[String]): Set[String] =
-    append(fromNode(node), typeFullNames)
+  def append(node: AstNode, typeFullNames: Set[String]): Set[String] = fromNode(node) match {
+    case Some(key) => append(key, typeFullNames)
+    case None      => Set.empty
+  }
 
   def append(sbKey: K, typeFullNames: Set[String]): Set[String] = {
     table.get(sbKey) match {
@@ -126,11 +131,17 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => K) {
 
   def contains(sbKey: K): Boolean = table.contains(sbKey)
 
-  def contains(node: AstNode): Boolean = contains(fromNode(node))
+  def contains(node: AstNode): Boolean = fromNode(node) match {
+    case Some(key) => contains(key)
+    case None      => false
+  }
 
   def get(sbKey: K): Set[String] = table.getOrElse(sbKey, Set.empty)
 
-  def get(node: AstNode): Set[String] = get(fromNode(node))
+  def get(node: AstNode): Set[String] = fromNode(node) match {
+    case Some(key) => get(key)
+    case None      => Set.empty
+  }
 
   def view: MapView[K, Set[String]] = table.view
 
