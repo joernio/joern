@@ -23,6 +23,7 @@ import overflowdb.traversal.Traversal
 import java.util.concurrent.{ForkJoinPool, ForkJoinTask, RecursiveTask, RejectedExecutionException}
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 
 case class StartingPointWithSource(startingPoint: CfgNode, source: StoredNode)
 
@@ -33,7 +34,7 @@ object SourcesToStartingPoints {
   def sourceTravsToStartingPoints[NodeType](sourceTravs: Traversal[NodeType]*): List[StartingPointWithSource] = {
     val fjp = ForkJoinPool.commonPool()
     try {
-      fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*))
+      fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*)).distinct
     } catch {
       case e: RejectedExecutionException =>
         log.error("Unable to execute 'SourceTravsToStartingPoints` task", e); List()
@@ -75,7 +76,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   private val cpg = Cpg(src.graph())
 
-  override def compute(): List[CfgNode] =
+  override def compute(): List[CfgNode] = {
     src match {
       case methodReturn: MethodReturn =>
         methodReturn.method.callIn.l
@@ -86,6 +87,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
         usages(targetsToClassIdentifierPair(initializedMember))
       case x => List(x).collect { case y: CfgNode => y }
     }
+  }
 
   private def usages(pairs: List[(TypeDecl, Expression)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, expression) =>
@@ -98,7 +100,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
         .l
 
       val usagesInSameClass =
-        nonConstructorMethods.flatMap { m => usagesOfExpression(expression, m) }.headOption
+        nonConstructorMethods.flatMap { m => firstUsagesOfExpression(expression, m, typeDecl) }
 
       val usagesInOtherClasses = cpg.method.flatMap { m =>
         m.fieldAccess
@@ -114,36 +116,35 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
           }
           .takeWhile(notLeftHandOfAssignment)
           .headOption
-      }
+      }.l
       usagesInSameClass ++ usagesInOtherClasses
     }
   }
 
-  private def usagesOfExpression(expression: Expression, m: Method): List[Expression] = {
+  /** For given method, determine the first usage of the given expression.
+    */
+  private def firstUsagesOfExpression(expression: Expression, m: Method, typeDecl: TypeDecl): List[Expression] = {
     expression match {
       case identifier: Identifier =>
-        // handle this.$identifier as well here
-        val identifiersAndFieldIdentifies = m.ast
-          .or(
-            _.isIdentifier.nameExact(identifier.name).takeWhile(notLeftHandOfAssignment),
-            _.isFieldIdentifier
-              .canonicalNameExact(identifier.name)
-              .inFieldAccess
-              .where(_.argument(1).codeExact("this", "self"))
-          )
-          .cast[Expression]
-          .l
-
-        identifiersAndFieldIdentifies.flatMap {
-          case x: Identifier      => Some(x)
-          case x: FieldIdentifier => x.inFieldAccess.isCall.headOption
-        }
-
-      case fieldIdentifier: FieldIdentifier =>
-        m.ast.isFieldIdentifier
-          .canonicalNameExact(fieldIdentifier.canonicalName)
-          .l
+        val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+        val identifierUsages = identifiers.nameExact(identifier.name).takeWhile(notLeftHandOfAssignment)
+        val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+        val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
+          .canonicalNameExact(identifier.name)
+          .inFieldAccess
+          .where(_.argument(1).codeExact("this", "self"))
           .takeWhile(notLeftHandOfAssignment)
+          .l
+        (identifierUsages ++ fieldAccessUsages).headOption.toList
+      case fieldIdentifier: FieldIdentifier =>
+        val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+        fieldIdentifiers
+          .canonicalNameExact(fieldIdentifier.canonicalName)
+          .inFieldAccess
+          // TODO `isIdentifier` seems to limit us here
+          .where(_.argument(1).isIdentifier.or(_.nameExact("this", "self"), _.typeFullNameExact(typeDecl.fullName)))
+          .takeWhile(notLeftHandOfAssignment)
+          .l
       case _ => List()
     }
   }
@@ -208,7 +209,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   private def notLeftHandOfAssignment(x: Expression): Boolean = {
-    !(x.argumentIndex == 1 && x.inAssignment.nonEmpty)
+    !(x.argumentIndex == 1 && x.inCall.exists(y => allAssignmentTypes.contains(y.name)))
   }
 
   private def targetsToClassIdentifierPair(targets: List[Expression]): List[(TypeDecl, Expression)] = {

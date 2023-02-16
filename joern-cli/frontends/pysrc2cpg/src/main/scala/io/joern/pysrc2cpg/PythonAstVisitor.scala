@@ -4,7 +4,7 @@ import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
 import io.joern.pythonparser.ast
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.{Method, NewIdentifier, NewMethod, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewMember, NewMethod, NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -35,6 +35,8 @@ class PythonAstVisitor(
   protected val contextStack = new ContextStack()
 
   private var memOpMap: AstNodeToMemoryOperationMap = _
+
+  private val members = mutable.Map.empty[NewTypeDecl, List[String]]
 
   // As key only ast.FunctionDef and ast.AsyncFunctionDef are used but there
   // is no more specific type than ast.istmt.
@@ -1756,9 +1758,30 @@ class PythonAstVisitor(
     * __getattribute__ and __get__.
     */
   def convert(attribute: ast.Attribute): nodes.NewNode = {
-    val baseNode = convert(attribute.value)
+    val baseNode  = convert(attribute.value)
+    val fieldName = attribute.attr
 
-    createFieldAccess(baseNode, attribute.attr, lineAndColOf(attribute))
+    val fieldAccess = createFieldAccess(baseNode, fieldName, lineAndColOf(attribute))
+
+    attribute.value match {
+      case name: ast.Name if name.id == "self" =>
+        createAndRegisterMember(fieldName)
+      case _ =>
+    }
+
+    fieldAccess
+  }
+
+  private def createAndRegisterMember(name: String): Unit = {
+    contextStack.findEnclosingTypeDecl() match {
+      case Some(typeDecl: NewTypeDecl) =>
+        if (!members.contains(typeDecl) || !members(typeDecl).contains(name)) {
+          val member = nodeBuilder.memberNode(name, "")
+          edgeBuilder.astEdge(member, typeDecl, contextStack.order.getAndInc)
+          members(typeDecl) = members.getOrElse(typeDecl, List()) ++ List(name)
+        }
+      case _ =>
+    }
   }
 
   def convert(subscript: ast.Subscript): NewNode = {
@@ -1785,19 +1808,10 @@ class PythonAstVisitor(
     val identifier      = createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
     contextStack.astParent match {
       case method: NewMethod if method.name.endsWith("<body>") =>
-        attachAsClassVariable(identifier)
+        createAndRegisterMember(identifier.name)
       case _ =>
     }
     identifier
-  }
-
-  private def attachAsClassVariable(identifier: NewIdentifier): Unit = {
-    val member = nodeBuilder.memberNode(identifier.name, "")
-    contextStack.findEnclosingTypeDecl() match {
-      case Some(typeDecl: NewTypeDecl) =>
-        edgeBuilder.astEdge(member, typeDecl, contextStack.order.getAndInc)
-      case _ =>
-    }
   }
 
   // TODO test

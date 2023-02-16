@@ -129,8 +129,9 @@ class ContextStack {
 
   def findEnclosingTypeDecl(): Option[NewNode] = {
     stack.find(_.isInstanceOf[ClassContext]) match {
-      case Some(classContext: ClassContext) => Some(classContext.astParent)
-      case _                                => None
+      case Some(classContext: ClassContext) =>
+        Some(classContext.astParent)
+      case _ => None
     }
   }
 

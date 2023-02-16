@@ -14,8 +14,6 @@ import scala.jdk.CollectionConverters._
 
 class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends AnyVal {
 
-  import ExtendedCfgNodeMethods._
-
   /** Convert to nearest AST node
     */
   def astNode: AstNode = node
@@ -50,7 +48,7 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
   def ddgIn(path: Vector[PathElement], withInvisible: Boolean, cache: mutable.HashMap[CfgNode, Vector[PathElement]])(
     implicit semantics: Semantics
   ): Traversal[CfgNode] = {
-    ddgInPathElem(path, withInvisible, cache).map(_.node)
+    ddgInPathElem(path, withInvisible, cache).map(_.node.asInstanceOf[CfgNode])
   }
 
   /** Traverse back in the data dependence graph by one step and generate corresponding PathElement, taking into account
@@ -83,52 +81,10 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     } else {
       (elems.filter(_.visible) ++ elems
         .filterNot(_.visible)
-        .flatMap(x => x.node.ddgInPathElem(x +: path, withInvisible = false, cache))).distinct
+        .flatMap(x => x.node.asInstanceOf[CfgNode].ddgInPathElem(x +: path, withInvisible = false, cache))).distinct
     }
     cache.put(node, result)
     result
   }
 
-  def statement: CfgNode =
-    statementInternal(node, _.parentExpression.get)
-
-  @scala.annotation.tailrec
-  private def statementInternal(node: CfgNode, parentExpansion: Expression => Expression): CfgNode = {
-
-    node match {
-      case node: Identifier => parentExpansion(node)
-      case node: MethodRef  => parentExpansion(node)
-      case node: TypeRef    => parentExpansion(node)
-      case node: Literal    => parentExpansion(node)
-
-      case node: MethodParameterIn => node.method
-
-      case node: MethodParameterOut =>
-        node.method.methodReturn
-
-      case node: Call if MemberAccess.isGenericMemberAccessName(node.name) =>
-        parentExpansion(node)
-
-      case node: CallRepr     => node
-      case node: MethodReturn => node
-      case block: Block       =>
-        // Just taking the lastExpressionInBlock is not quite correct because a BLOCK could have
-        // different return expressions. So we would need to expand via CFG.
-        // But currently the frontends do not even put the BLOCK into the CFG so this is the best
-        // we can do.
-        statementInternal(lastExpressionInBlock(block).get, identity)
-      case node: Expression => node
-    }
-  }
-}
-
-object ExtendedCfgNodeMethods {
-  private def lastExpressionInBlock(block: Block): Option[Expression] =
-    block._astOut.asScala
-      .collect {
-        case node: Expression if !node.isInstanceOf[Local] && !node.isInstanceOf[Method] => node
-      }
-      .toVector
-      .sortBy(_.order)
-      .lastOption
 }

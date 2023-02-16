@@ -84,14 +84,16 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     val result = engine.backwards(sinks, startingPointsWithSources.map(_.startingPoint))
 
     engine.shutdown()
-    val sources               = startingPointsWithSources.map(_.source)
-    val startingPointToSource = startingPointsWithSources.map { x => x.startingPoint -> x.source }.toMap
+    val sources = startingPointsWithSources.map(_.source)
+    val startingPointToSource = startingPointsWithSources.map { x =>
+      x.startingPoint.asInstanceOf[AstNode] -> x.source
+    }.toMap
     val res = result.par.map { r =>
       val startingPoint = r.path.head.node
-      if (sources.contains(startingPoint) || !startingPointToSource(startingPoint).isInstanceOf[CfgNode]) {
+      if (sources.contains(startingPoint) || !startingPointToSource(startingPoint).isInstanceOf[AstNode]) {
         r
       } else {
-        r.copy(path = PathElement(startingPointToSource(startingPoint).asInstanceOf[CfgNode]) +: r.path)
+        r.copy(path = PathElement(startingPointToSource(startingPoint).asInstanceOf[AstNode]) +: r.path)
       }
     }
     res.toVector
