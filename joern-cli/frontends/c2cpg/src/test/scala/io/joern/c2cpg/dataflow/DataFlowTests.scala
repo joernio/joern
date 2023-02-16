@@ -4,7 +4,7 @@ import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.toNodeTraversal
 
@@ -436,7 +436,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       flowsPretty should include("sz = 20")
       flowsPretty should include("read(fd, buff, sz)")
 
-      val tmpSourceFile = flows.head.elements.head.method.filename
+      val tmpSourceFile = flows.head.elements.head.asInstanceOf[CfgNode].method.filename
       flowsPretty should include(tmpSourceFile)
     }
   }

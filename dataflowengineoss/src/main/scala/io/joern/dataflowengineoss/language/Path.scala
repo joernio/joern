@@ -1,11 +1,11 @@
 package io.joern.dataflowengineoss.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, MethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Member, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
 import org.apache.commons.lang.StringUtils
 import overflowdb.traversal.help.Table
 
-case class Path(elements: List[CfgNode]) {
+case class Path(elements: List[AstNode]) {
   def resultPairs(): List[(String, Option[Integer])] = {
     val pairs = elements.map {
       case point: MethodParameterIn =>
@@ -24,20 +24,28 @@ object Path {
   implicit val show: Show[Path] = { path =>
     Table(
       columnNames = Array("nodeType", "tracked", "lineNumber", "method", "file"),
-      rows = path.elements.map { cfgNode =>
-        val nodeType   = cfgNode.getClass.getSimpleName
-        val method     = cfgNode.method
-        val methodName = method.name
-        val lineNumber = cfgNode.lineNumber.getOrElse("N/A").toString
-        val fileName   = method.file.name.headOption.getOrElse("N/A")
-        val statement = cfgNode match {
-          case _: MethodParameterIn =>
-            val paramsPretty = method.parameter.toList.sortBy(_.index).map(_.code).mkString(", ")
-            s"$methodName($paramsPretty)"
-          case _ => cfgNode.statement.repr
+      rows = path.elements.map { astNode =>
+        val nodeType   = astNode.getClass.getSimpleName
+        val lineNumber = astNode.lineNumber.getOrElse("N/A").toString
+        val fileName   = astNode.file.name.headOption.getOrElse("N/A")
+
+        astNode match {
+          case member: Member =>
+            val tracked    = member.name
+            val methodName = "<not-in-method>"
+            Array(nodeType, tracked, lineNumber, methodName, fileName)
+          case cfgNode: CfgNode =>
+            val method     = cfgNode.method
+            val methodName = method.name
+            val statement = cfgNode match {
+              case _: MethodParameterIn =>
+                val paramsPretty = method.parameter.toList.sortBy(_.index).map(_.code).mkString(", ")
+                s"$methodName($paramsPretty)"
+              case _ => cfgNode.statement.repr
+            }
+            val tracked = StringUtils.normalizeSpace(StringUtils.abbreviate(statement, 20))
+            Array(nodeType, tracked, lineNumber, methodName, fileName)
         }
-        val tracked = StringUtils.normalizeSpace(StringUtils.abbreviate(statement, 20))
-        Array(nodeType, tracked, lineNumber, methodName, fileName)
       }
     ).render
   }

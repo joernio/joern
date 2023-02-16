@@ -81,7 +81,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       * table. If not, determine results recursively.
       */
     def computeResultsForParents() = {
-      deduplicateWithinTask(expandIn(curNode, path, callSiteStack).iterator.flatMap { parent =>
+      deduplicateWithinTask(expandIn(curNode.asInstanceOf[CfgNode], path, callSiteStack).iterator.flatMap { parent =>
         createResultsFromCacheOrCompute(parent, path)
       }.toVector)
     }
@@ -139,7 +139,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       remainder: Vector[PathElement],
       callDepth: Int
     ): Option[Vector[ReachableByResult]] = {
-      table.get(TaskFingerprint(first.node, callSiteStack, callDepth)).map { res =>
+      table.get(TaskFingerprint(first.node.asInstanceOf[CfgNode], callSiteStack, callDepth)).map { res =>
         res.map { r =>
           val stopIndex       = r.path.map(x => (x.node, x.callSiteStack)).indexOf((first.node, first.callSiteStack))
           val pathToFirstNode = r.path.slice(0, stopIndex)
@@ -194,7 +194,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       case _ =>
         computeResultsForParents()
     }
-    val key = TaskFingerprint(curNode, task.callSiteStack, task.callDepth)
+    val key = TaskFingerprint(curNode.asInstanceOf[CfgNode], task.callSiteStack, task.callDepth)
     table.updateWith(key) {
       case Some(existingValue) => Some(existingValue ++ res)
       case None                => Some(res)

@@ -4,6 +4,7 @@ import io.joern.dataflowengineoss.language._
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language._
 
 class DataflowTest extends DataFlowCodeToCpgSuite {
@@ -37,7 +38,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
         List(("sz = -5", 9), ("read(fd, buff, sz)", 11))
       )
 
-    val tmpSourceFile = flows.head.elements.head.method.filename
+    val tmpSourceFile = flows.head.elements.head.asInstanceOf[CfgNode].method.filename
     val flowsPretty   = flows.p.mkString
     flowsPretty should (include("sz = 20") and include("read(fd, buff, sz)"))
     flowsPretty should include(tmpSourceFile)

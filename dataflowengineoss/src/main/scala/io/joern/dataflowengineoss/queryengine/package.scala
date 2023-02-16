@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
 
 package object queryengine {
 
@@ -28,14 +28,14 @@ package object queryengine {
 
     def callDepth: Int = fingerprint.callDepth
 
-    def startingPoint: CfgNode = path.head.node
+    def startingPoint: CfgNode = path.head.node.asInstanceOf[CfgNode]
 
     /** If the result begins in an output argument, return it.
       */
     def outputArgument: Option[CfgNode] = {
       path.headOption.collect {
         case elem: PathElement if elem.isOutputArg =>
-          elem.node
+          elem.node.asInstanceOf[CfgNode]
       }
     }
   }
@@ -61,7 +61,7 @@ package object queryengine {
     *   label of the outgoing DDG edge
     */
   case class PathElement(
-    node: CfgNode,
+    node: AstNode,
     callSiteStack: List[Call] = List(),
     visible: Boolean = true,
     isOutputArg: Boolean = false,
