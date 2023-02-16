@@ -3,6 +3,7 @@ package io.joern.pysrc2cpg.dataflow
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.Member
 import io.shiftleft.semanticcpg.language._
 
 class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
@@ -80,7 +81,13 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     val sink   = cpg.call(".*sink").argument(1).l
     source.size shouldBe 1
     sink.size shouldBe 1
-    sink.reachableByFlows(source).size shouldBe 1
+    val flows = sink.reachableByFlows(source).l
+    flows.size shouldBe 1
+    flows.head.elements.head match {
+      case member: Member =>
+        member.name shouldBe "x"
+      case _ => fail
+    }
   }
 
   "flow from instance variable in constructor (MEMBER) to sink" in {
@@ -99,7 +106,13 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     val sink   = cpg.call(".*sink").argument(1).l
     source.size shouldBe 1
     sink.size shouldBe 1
-    sink.reachableByFlows(source).size shouldBe 1
+    val flows = sink.reachableByFlows(source).l
+    flows.size shouldBe 1
+    flows.head.elements.head match {
+      case member: Member =>
+        member.name shouldBe "x"
+      case _ => fail
+    }
   }
 
 }
