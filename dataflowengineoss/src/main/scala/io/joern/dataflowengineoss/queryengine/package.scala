@@ -44,7 +44,9 @@ package object queryengine {
     * label of its outgoing edge.
     *
     * @param node
-    *   The parent node
+    *   The parent node. This is actually always a CfgNode during data flow computation, however, since the source may
+    *   be an arbitrary AST node, we may add an AST node to the start of the flow right before returning flows to the
+    *   user.
     *
     * @param callSiteStack
     *   The call stack when this path element was created. Since we may enter the same function via two different call
