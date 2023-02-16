@@ -228,13 +228,19 @@ abstract class AstCreatorBase(filename: String) {
       case _ =>
     }
 
-    val receiverRoot = receiver.flatMap(_.root).toList
-    val rcvAst       = receiver.getOrElse(Ast())
-    receiverRoot match {
-      case List(x: ExpressionNew) =>
-        x.argumentIndex = -1
-      case _ =>
+    val receiverRoot = if (receiver.isEmpty && base.nonEmpty) {
+      baseRoot
+    } else {
+      val r = receiver.flatMap(_.root).toList
+      r match {
+        case List(x: ExpressionNew) =>
+          x.argumentIndex = -1
+        case _ =>
+      }
+      r
     }
+
+    val rcvAst = receiver.getOrElse(Ast())
 
     Ast(callNode)
       .withChild(rcvAst)
