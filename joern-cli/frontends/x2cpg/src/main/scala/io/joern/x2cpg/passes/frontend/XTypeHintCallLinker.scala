@@ -9,7 +9,6 @@ import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
-import java.io.File
 import java.util.regex.Pattern
 import scala.collection.mutable
 
