@@ -22,8 +22,9 @@ class PPrinterTest extends AnyWordSpec with Matchers {
         Color.Green("2"),
         Color.Reset(", "),
         Color.Green("3"),
-        Color.Reset(")"),
-      ))
+        Color.Reset(")")
+      )
+    )
   }
 
   "a case class" in {
@@ -37,8 +38,9 @@ class PPrinterTest extends AnyWordSpec with Matchers {
         Color.Green("42"),
         Color.Reset(", s = "),
         Color.Green("\"bar\""),
-        Color.Reset(")"),
-      ))
+        Color.Reset(")")
+      )
+    )
   }
 
   "a Product with productElementNames" in {
@@ -46,7 +48,7 @@ class PPrinterTest extends AnyWordSpec with Matchers {
 
     val product = new Product {
       def canEqual(that: Any): Boolean = false
-      def productArity: Int = 2
+      def productArity: Int            = 2
       def productElement(n: Int): Any = {
         n match {
           case 0 => 42
@@ -68,8 +70,9 @@ class PPrinterTest extends AnyWordSpec with Matchers {
         Color.Green("42"),
         Color.Reset(", code = "),
         Color.Green("\"println(foo)\""),
-        Color.Reset(")"),
-      ))
+        Color.Reset(")")
+      )
+    )
   }
 
   // ansi colour-encoded strings as source-highlight produces them
