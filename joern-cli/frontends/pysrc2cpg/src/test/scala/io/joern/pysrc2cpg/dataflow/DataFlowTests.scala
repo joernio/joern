@@ -86,7 +86,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flows.head.elements.head match {
       case member: Member =>
         member.name shouldBe "x"
-      case _ => fail
+      case _ => fail()
     }
   }
 
@@ -107,7 +107,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flows.head.elements.head match {
       case literal: Literal =>
         literal.code shouldBe "'sensitive'"
-      case _ => fail
+      case _ => fail()
     }
   }
 
@@ -131,7 +131,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flows.head.elements.head match {
       case member: Member =>
         member.name shouldBe "x"
-      case _ => fail
+      case _ => fail()
     }
   }
 
@@ -156,7 +156,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flows.head.elements.head match {
       case literal: Literal =>
         literal.code shouldBe "'sensitive'"
-      case _ => fail
+      case _ => fail()
     }
   }
 
