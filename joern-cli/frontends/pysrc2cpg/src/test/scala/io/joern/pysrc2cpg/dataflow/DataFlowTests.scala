@@ -3,7 +3,7 @@ package io.joern.pysrc2cpg.dataflow
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Member
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member}
 import io.shiftleft.semanticcpg.language._
 
 class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
@@ -90,8 +90,28 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     }
   }
 
-  "flow from instance variable in constructor (MEMBER) to sink" in {
+  "flow from literal to class variable to sink in assignment" in {
+    val cpg: Cpg = code("""
+                          |class Foo():
+                          |    x = 'sensitive'
+                          |    def foo(self):
+                          |        a = sink(self.x)
+                          |""".stripMargin)
 
+    val source = cpg.literal.code(".*sensitive.*").l
+    val sink   = cpg.call(".*sink").argument(1).l
+    source.size shouldBe 1
+    sink.size shouldBe 1
+    val flows = sink.reachableByFlows(source).l
+    flows.size shouldBe 1
+    flows.head.elements.head match {
+      case literal: Literal =>
+        literal.code shouldBe "'sensitive'"
+      case _ => fail
+    }
+  }
+
+  "flow from instance variable in constructor (MEMBER) to sink" in {
     val cpg: Cpg = code("""
         |class Foo:
         |    def __init__(self):
@@ -111,6 +131,31 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flows.head.elements.head match {
       case member: Member =>
         member.name shouldBe "x"
+      case _ => fail
+    }
+  }
+
+  "flow from literal to instance variable in constructor (MEMBER) to sink" in {
+    val cpg: Cpg = code("""
+                          |class Foo:
+                          |    def __init__(self):
+                          |        self.x = 'sensitive'
+                          |
+                          |    def foo(self):
+                          |        a = sink(self.x)
+                          |
+                          |""".stripMargin)
+
+    val source = cpg.literal.code(".*sensitive.*").l
+    val sink   = cpg.call(".*sink").argument(1).l
+    source.size shouldBe 1
+    sink.size shouldBe 1
+    val flows = sink.reachableByFlows(source).l
+    flows.size shouldBe 1
+
+    flows.head.elements.head match {
+      case literal: Literal =>
+        literal.code shouldBe "'sensitive'"
       case _ => fail
     }
   }
