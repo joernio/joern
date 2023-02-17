@@ -154,7 +154,10 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     */
   private def literalToInitializedMembers(lit: Literal): List[Expression] = {
     lit.inAssignment
-      .where(_.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName))
+      .or(
+        _.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"),
+        _.method.name(".*<body>.*")
+      )
       .target
       .flatMap {
         case identifier: Identifier => List(identifier)
