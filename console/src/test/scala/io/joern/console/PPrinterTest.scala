@@ -1,5 +1,6 @@
 package io.joern.console
 
+import fansi.Color
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -8,6 +9,69 @@ import org.scalatest.wordspec.AnyWordSpec
   * these standard encodings out of the box
   */
 class PPrinterTest extends AnyWordSpec with Matchers {
+
+  "a regular List" in {
+    val pp = pprinter.create()
+    pp(List(1, 2, 3)).plainText shouldBe "List(1, 2, 3)"
+    pp(List(1, 2, 3)) shouldBe fansi.Str.join(
+      Seq(
+        Color.Yellow("List"),
+        Color.Reset("("),
+        Color.Green("1"),
+        Color.Reset(", "),
+        Color.Green("2"),
+        Color.Reset(", "),
+        Color.Green("3"),
+        Color.Reset(")"),
+      ))
+  }
+
+  "a case class" in {
+    val pp = pprinter.create()
+    case class Foo(i: Int, s: String)
+    pp(Foo(42, "bar")).plainText shouldBe """Foo(i = 42, s = "bar")"""
+    pp(Foo(42, "bar")) shouldBe fansi.Str.join(
+      Seq(
+        Color.Yellow("Foo"),
+        Color.Reset("(i = "),
+        Color.Green("42"),
+        Color.Reset(", s = "),
+        Color.Green("\"bar\""),
+        Color.Reset(")"),
+      ))
+  }
+
+  "a Product with productElementNames" in {
+    val pp = pprinter.create()
+
+    val product = new Product {
+      def canEqual(that: Any): Boolean = false
+      def productArity: Int = 2
+      def productElement(n: Int): Any = {
+        n match {
+          case 0 => 42
+          case 1 => "println(foo)"
+        }
+      }
+      override def productElementName(n: Int): String = {
+        n match {
+          case 0 => "id"
+          case 1 => "code"
+        }
+      }
+    }
+
+    pp(product).plainText shouldBe """(id = 42, code = "println(foo)")"""
+    pp(product) shouldBe fansi.Str.join(
+      Seq(
+        Color.Reset("(id = "),
+        Color.Green("42"),
+        Color.Reset(", code = "),
+        Color.Green("\"println(foo)\""),
+        Color.Reset(")"),
+      ))
+  }
+
   // ansi colour-encoded strings as source-highlight produces them
   val IntGreenForeground = "\u001b[32mint\u001b[m"
   val IfBlueBold         = "\u001b[01;34mif\u001b[m"
