@@ -1,8 +1,6 @@
 package io.joern.console
 
-import io.shiftleft.codepropertygraph.generated.nodes
 import pprint.{PPrinter, Renderer, Result, Tree, Truncated}
-
 import scala.util.matching.Regex
 
 object pprinter {
@@ -25,8 +23,8 @@ object pprinter {
         "\u001b[$1;$2;$3m"
       ) // `[00;38;05;70m` is encoded as `[38;5;70m` in fansi - 8bit color encoding
 
-  def create(original: PPrinter): PPrinter =
-    new PPrinter(defaultHeight = 99999, additionalHandlers = myAdditionalHandlers(original)) {
+  def create(): PPrinter =
+    new PPrinter(defaultHeight = 99999) {
       override def tokenize(
         x: Any,
         width: Int = defaultWidth,
@@ -50,20 +48,4 @@ object pprinter {
       }
     }
 
-  private def myAdditionalHandlers(original: PPrinter): PartialFunction[Any, Tree] = { case node: nodes.StoredNode =>
-    Tree.Apply(
-      node.productPrefix,
-      Iterator.range(0, node.productArity).map { n =>
-        Tree.Infix(
-          Tree.Literal(node.productElementLabel(n)),
-          "->",
-          original.treeify(
-            node.productElement(n),
-            escapeUnicode = original.defaultEscapeUnicode,
-            showFieldNames = original.defaultShowFieldNames
-          )
-        )
-      }
-    )
-  }
 }
