@@ -4,6 +4,8 @@ import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.semanticcpg.language._
 
+import java.io.File
+
 class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "literals declared from built-in types" should {
@@ -419,8 +421,8 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     )
 
     "manage to create a correct chain of dummy field accesses before the call" in {
-      val Some(binkFind) = cpg.call.name("find").headOption
-      binkFind.methodFullName shouldBe "flask_pymongo.py:<module>.PyMongo.PyMongo<body>.<member>(db).<member>(bikes).find"
+      val Some(bikeFind) = cpg.call.name("find").headOption
+      bikeFind.methodFullName shouldBe "flask_pymongo.py:<module>.PyMongo.PyMongo<body>.<member>(db).<member>(bikes).find"
     }
   }
 
@@ -441,9 +443,43 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     )
 
     "recover the import as an identifier and not directly as a call" in {
-      val Some(binkFind) = cpg.call.name("initialize").headOption
-      binkFind.methodFullName shouldBe "datadog.py:<module>.initialize"
+      val Some(initCall) = cpg.call.name("initialize").headOption
+      initCall.methodFullName shouldBe "datadog.py:<module>.initialize"
     }
+  }
+
+  "a call made from within a call invocation" should {
+    lazy val cpg = code("""
+        |from __future__ import unicode_literals
+        |
+        |from django.db import migrations, models
+        |
+        |
+        |class Migration(migrations.Migration):
+        |
+        |    dependencies = [
+        |        ('music', '0006_auto_20160325_1236'),
+        |    ]
+        |
+        |    operations = [
+        |        migrations.AddField(
+        |            model_name='album',
+        |            name='is_favorite',
+        |            field=models.BooleanField(default=False),
+        |        ),
+        |    ]
+        |""".stripMargin)
+
+    "recover its full name successfully" in {
+      val Some(addFieldConstructor) = cpg.call.name("AddField").headOption
+      addFieldConstructor.methodFullName shouldBe Seq("django", "db.py:<module>.migrations.AddField.<init>").mkString(
+        File.separator
+      )
+      val Some(booleanFieldConstructor) = cpg.call.name("BooleanField").headOption
+      booleanFieldConstructor.methodFullName shouldBe Seq("django", "db.py:<module>.models.BooleanField.<init>")
+        .mkString(File.separator)
+    }
+
   }
 
 }

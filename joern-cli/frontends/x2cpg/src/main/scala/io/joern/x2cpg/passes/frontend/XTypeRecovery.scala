@@ -191,8 +191,8 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
     * fields in the local table will be prepended with "this".
     */
   protected def visitMembers(member: Member): Unit = {
-    symbolTable.put(LocalVar(member.name), Set.empty[String])
-    globalTable.put(FieldVar(member.typeDecl.fullName, member.name), Set.empty[String])
+    symbolTable.append(LocalVar(member.name), Set.empty[String])
+    globalTable.append(FieldVar(member.typeDecl.fullName, member.name), Set.empty[String])
   }
 
   /** Using assignment and import information (in the global symbol table), will propagate these types in the symbol
@@ -650,6 +650,8 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
         case x: Call if symbolTable.contains(x) =>
           builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
         case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
+          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+        case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
         case _ =>
       }
