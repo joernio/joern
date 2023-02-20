@@ -164,7 +164,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   private def linkDynamicCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
     // This call linker requires a method full name entry
     if (call.methodFullName.equals("<empty>") || call.methodFullName.equals(DynamicCallUnknownFallName)) return
-    // Support for overloading
+    // Support for overriding
     resolveCallInSuperClasses(call)
 
     validM.get(call.methodFullName) match {

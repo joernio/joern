@@ -40,8 +40,7 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
       (CallSummary(name, signature, fullName, dispatchType), parameterCount) <- methodToParameterCount
       if !methodFullNameToNode.contains(fullName)
     ) {
-      val stub = createMethodStub(name, fullName, signature, dispatchType, parameterCount, dstGraph)
-//      linkToTypeDecl(cpg, stub, dstGraph)
+      createMethodStub(name, fullName, signature, dispatchType, parameterCount, dstGraph)
     }
   }
 
