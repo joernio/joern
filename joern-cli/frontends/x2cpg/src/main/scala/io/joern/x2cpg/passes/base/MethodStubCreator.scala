@@ -100,7 +100,6 @@ object MethodStubCreator {
       stub.fullName.substring(0, nameIdx - 1)
     } match {
       case Success(typeFullName) if !typeFullName.isBlank && !typeFullName.startsWith("<operator>") =>
-        println("Success", typeFullName)
         cpg.typeDecl
           .fullNameExact(typeFullName)
           .map { t => dstGraph.addEdge(t, stub, EdgeTypes.AST); t }
