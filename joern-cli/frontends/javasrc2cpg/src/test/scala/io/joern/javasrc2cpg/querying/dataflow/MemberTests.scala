@@ -54,11 +54,10 @@ class MoreMemberTests extends JavaDataflowFixture {
 
   it should "find flow from member to sink" in {
     val src = cpg.member.name("trackMe").l
-    val snk = cpg.call("sink").argument.l
-
+    val snk = cpg.call("sink").argument(1).l
     src.size shouldBe 1
-    snk.size shouldBe 2
-    snk.reachableByFlows(src).size shouldBe 1
+    snk.size shouldBe 1
+    snk.reachableBy(src).size shouldBe 1
   }
 
 }
