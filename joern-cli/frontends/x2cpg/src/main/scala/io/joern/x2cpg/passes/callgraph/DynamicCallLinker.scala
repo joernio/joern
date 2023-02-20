@@ -154,7 +154,12 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
         .fullName
         .l
     if (candidateInheritedMethods.nonEmpty) {
-      validM.put(call.methodFullName, mutable.LinkedHashSet.from(candidateInheritedMethods))
+      validM.put(
+        call.methodFullName,
+        validM.getOrElse(call.methodFullName, mutable.LinkedHashSet.empty) ++ mutable.LinkedHashSet.from(
+          candidateInheritedMethods
+        )
+      )
       true
     } else {
       false
