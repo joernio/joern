@@ -9,7 +9,6 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.{NodeDb, NodeRef}
 
-import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
@@ -162,28 +161,34 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
-  @tailrec
   private def linkDynamicCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
     // This call linker requires a method full name entry
     if (call.methodFullName.equals("<empty>") || call.methodFullName.equals(DynamicCallUnknownFallName)) return
+    // Support for overloading
+    resolveCallInSuperClasses(call)
+
     validM.get(call.methodFullName) match {
       case Some(tgts) =>
         val callsOut = call.callOut.fullName.toSetImmutable
-        tgts.foreach { destMethod =>
-          val tgtM = if (cpg.graph.indexManager.isIndexed(PropertyNames.FULL_NAME)) {
-            methodFullNameToNode(destMethod)
-          } else {
-            cpg.method.fullNameExact(destMethod).headOption
+        val tgtMs = tgts
+          .flatMap(destMethod =>
+            if (cpg.graph.indexManager.isIndexed(PropertyNames.FULL_NAME)) {
+              methodFullNameToNode(destMethod)
+            } else {
+              cpg.method.fullNameExact(destMethod).headOption
+            }
+          )
+          .toSet
+        // Non-overridden methods linked as external stubs should be excluded if they are detected
+        val (externalMs, internalMs) = tgtMs.partition(_.isExternal)
+        (if (externalMs.nonEmpty && internalMs.nonEmpty) internalMs else tgtMs)
+          .foreach { tgtM =>
+            if (!callsOut.contains(tgtM.fullName)) {
+              dstGraph.addEdge(call, tgtM, EdgeTypes.CALL)
+            } else {
+              fallbackToStaticResolution(call, dstGraph)
+            }
           }
-          if (tgtM.isDefined && !callsOut.contains(tgtM.get.fullName)) {
-            dstGraph.addEdge(call, tgtM.get, EdgeTypes.CALL)
-          } else {
-            fallbackToStaticResolution(call, dstGraph)
-          }
-        }
-      case None if resolveCallInSuperClasses(call) =>
-        // Resolve "hidden" inherited method and leave an alias for the result in validM, then retry
-        linkDynamicCall(call, dstGraph)
       case None =>
         fallbackToStaticResolution(call, dstGraph)
     }

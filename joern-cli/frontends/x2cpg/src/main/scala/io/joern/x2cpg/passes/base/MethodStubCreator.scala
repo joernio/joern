@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.base
 
 import io.joern.x2cpg.Defines
-import io.joern.x2cpg.passes.base.MethodStubCreator.{createMethodStub, linkToTypeDecl}
+import io.joern.x2cpg.passes.base.MethodStubCreator.createMethodStub
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes}
@@ -41,7 +41,7 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
       if !methodFullNameToNode.contains(fullName)
     ) {
       val stub = createMethodStub(name, fullName, signature, dispatchType, parameterCount, dstGraph)
-      linkToTypeDecl(cpg, stub, dstGraph)
+//      linkToTypeDecl(cpg, stub, dstGraph)
     }
   }
 
@@ -85,25 +85,19 @@ object MethodStubCreator {
     *
     * 2: Static languages do `namespace`.`type_name`.`call_name`:`signature`
     *
-    * @param cpg
-    *   the code property graph, containing the potential type declaration.
     * @param stub
     *   the method stub.
-    * @param dstGraph
-    *   the graph builder.
     * @return
-    *   the type declaration that is linked, if found.
+    *   the type declaration string, if successfully generated.
     */
-  def linkToTypeDecl(cpg: Cpg, stub: NewMethod, dstGraph: DiffGraphBuilder): Option[TypeDecl] = {
+  private def addTypeDeclInfo(stub: NewMethod): Option[String] = {
     Try {
       val nameIdx = stub.fullName.indexOf(stub.name)
       stub.fullName.substring(0, nameIdx - 1)
     } match {
       case Success(typeFullName) if !typeFullName.isBlank && !typeFullName.startsWith("<operator>") =>
-        cpg.typeDecl
-          .fullNameExact(typeFullName)
-          .map { t => dstGraph.addEdge(t, stub, EdgeTypes.AST); t }
-          .headOption
+        stub.astParentFullName(typeFullName).astParentType(NodeTypes.TYPE_DECL)
+        Some(typeFullName)
       case _ => None
     }
   }
@@ -117,17 +111,17 @@ object MethodStubCreator {
     dstGraph: DiffGraphBuilder,
     isExternal: Boolean = true
   ): NewMethod = {
-    val methodNode = addLineNumberInfo(
-      NewMethod()
-        .name(name)
-        .fullName(fullName)
-        .isExternal(isExternal)
-        .signature(signature)
-        .astParentType(NodeTypes.NAMESPACE_BLOCK)
-        .astParentFullName("<global>")
-        .order(0),
-      fullName
-    )
+    val methodNode = NewMethod()
+      .name(name)
+      .fullName(fullName)
+      .isExternal(isExternal)
+      .signature(signature)
+      .astParentType(NodeTypes.NAMESPACE_BLOCK)
+      .astParentFullName("<global>")
+      .order(0)
+
+    addLineNumberInfo(methodNode, fullName)
+    addTypeDeclInfo(methodNode)
 
     dstGraph.addNode(methodNode)
 
