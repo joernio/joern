@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.base
 
 import io.joern.x2cpg.Defines
-import io.joern.x2cpg.passes.base.MethodStubCreator.createMethodStub
+import io.joern.x2cpg.passes.base.MethodStubCreator.{createMethodStub, linkToTypeDecl}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes}
@@ -11,7 +11,7 @@ import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
-import scala.util.Try
+import scala.util.{Success, Try}
 
 case class CallSummary(name: String, signature: String, fullName: String, dispatchType: String)
 
@@ -40,7 +40,8 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
       (CallSummary(name, signature, fullName, dispatchType), parameterCount) <- methodToParameterCount
       if !methodFullNameToNode.contains(fullName)
     ) {
-      createMethodStub(name, fullName, signature, dispatchType, parameterCount, dstGraph)
+      val stub = createMethodStub(name, fullName, signature, dispatchType, parameterCount, dstGraph)
+      linkToTypeDecl(cpg, stub, dstGraph)
     }
   }
 
@@ -72,6 +73,39 @@ object MethodStubCreator {
         .lineNumberEnd(lineNumberEnd)
     } else {
       methodNode
+    }
+  }
+
+  /** Will attempt to link the method stub to a type declaration if one exists. This uses the `name` and `fullName`
+    * properties of the stub to determine the type declaration.
+    *
+    * Method full names take 2 designs in the CPG. This approach works for both.
+    *
+    * 1: Dynamic languages do `filename`:`some_path`.`call_name`.`optional_info`
+    *
+    * 2: Static languages do `namespace`.`type_name`.`call_name`:`signature`
+    *
+    * @param cpg
+    *   the code property graph, containing the potential type declaration.
+    * @param stub
+    *   the method stub.
+    * @param dstGraph
+    *   the graph builder.
+    * @return
+    *   the type declaration that is linked, if found.
+    */
+  def linkToTypeDecl(cpg: Cpg, stub: NewMethod, dstGraph: DiffGraphBuilder): Option[TypeDecl] = {
+    Try {
+      val nameIdx = stub.fullName.indexOf(stub.name)
+      stub.fullName.substring(0, nameIdx - 1)
+    } match {
+      case Success(typeFullName) if !typeFullName.isBlank && !typeFullName.startsWith("<operator>") =>
+        println("Success", typeFullName)
+        cpg.typeDecl
+          .fullNameExact(typeFullName)
+          .map { t => dstGraph.addEdge(t, stub, EdgeTypes.AST); t }
+          .headOption
+      case _ => None
     }
   }
 
