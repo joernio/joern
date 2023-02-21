@@ -19,7 +19,6 @@ import scala.collection.mutable
 
 case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
 case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRef, refEdgeTo: NewNode)
-case class NestedDeclaration(parent: NewNode, dst: NewNode)
 
 class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvider, global: Global)
     extends AstCreatorBase(fileWithMeta.filename)

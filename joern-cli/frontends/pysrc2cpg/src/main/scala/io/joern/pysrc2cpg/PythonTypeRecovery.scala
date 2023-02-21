@@ -180,8 +180,8 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
       .map(_.stripSuffix(s".${Defines.ConstructorMethodName}"))
       .map(x => (x.split("\\.").last, x))
       .map {
-        case (x, y) => s"$y.$x<body>"
-        case (_, z) => z
+        case (x, y) if x.nonEmpty => s"$y.$x<body>"
+        case (_, z)               => z
       }
     associateTypes(i, constructorPaths)
   }

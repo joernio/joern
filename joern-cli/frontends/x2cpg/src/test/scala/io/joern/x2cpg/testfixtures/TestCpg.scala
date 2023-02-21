@@ -63,7 +63,7 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
     if (_graph.isEmpty) {
       val codeDir = codeToFileSystem()
       try {
-        _graph = Some(execute(codeDir.toFile).graph)
+        _graph = Option(execute(codeDir.toFile).graph)
         applyPasses()
       } finally {
         deleteDir(codeDir)

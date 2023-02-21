@@ -2,16 +2,14 @@ package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, PropertyNames}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.BatchedUpdate.{DiffGraphBuilder, applyDiff}
-import overflowdb.traversal.jIteratortoTraversal
 
 import scala.jdk.CollectionConverters._
 
 class NewNodeStepsTest extends AnyWordSpec with Matchers {
-  import NewNodeNodeStepsTest._
+  import io.shiftleft.semanticcpg.language.NewNodeNodeStepsTest._
 
   "stores NewNodes" in {
     implicit val diffGraphBuilder: DiffGraphBuilder = new DiffGraphBuilder
@@ -34,7 +32,6 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
       implicit val diffGraphBuilder: DiffGraphBuilder = new DiffGraphBuilder
       val cpg                                         = Cpg.emptyCpg
       val existingContainedNode                       = cpg.graph.addNode(42L, "MODIFIER").asInstanceOf[StoredNode]
-      existingContainedNode.setProperty(PropertyNames.MODIFIER_TYPE, ModifierTypes.NATIVE)
       cpg.graph.V().asScala.toSet shouldBe Set(existingContainedNode)
 
       val newContainedNode = newTestNode()
