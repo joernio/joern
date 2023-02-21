@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
-import io.joern.javasrc2cpg.testfixtures.JavaDataflowFixture
+import io.joern.javasrc2cpg.testfixtures.{JavaDataflowFixture, JavaSrcCode2CpgFixture}
 import overflowdb.traversal._
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
@@ -35,6 +35,29 @@ class MemberTests extends JavaDataflowFixture {
     sink.size shouldBe 1
     source.size shouldBe 1
     sink.reachableBy(source).size shouldBe 1
+  }
+
+}
+
+class MoreMemberTests extends JavaDataflowFixture {
+
+  behavior of "Dataflow from uninitialized members"
+
+  override val code = """
+                            |public class Foo {
+                            |  private static final String trackMe;
+                            |  public void m() {
+                            |     sink(trackMe);
+                            |  }
+                            |}
+                            |""".stripMargin
+
+  it should "find flow from member to sink" in {
+    val src = cpg.member.name("trackMe").l
+    val snk = cpg.call("sink").argument(1).l
+    src.size shouldBe 1
+    snk.size shouldBe 1
+    snk.reachableBy(src).size shouldBe 1
   }
 
 }
