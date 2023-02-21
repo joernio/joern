@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.PropertyKey
+import overflowdb.traversal.Traversal
 
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -22,11 +23,12 @@ object UsageSlicing {
     *   a set of object slices.
     */
   def calculateUsageSlice(cpg: Cpg, config: Config): ProgramSlice = {
-    def getAssignmentDecl = cpg.file(config.sourceFile).assignment.argument(1).isIdentifier.refsTo
+    def getAssignmentDecl: Traversal[Declaration] =
+      cpg.file(config.sourceFile).assignment.argument(1).isIdentifier.refsTo
 
-    def getParameterDecl = cpg.file(config.sourceFile).ast.isParameter
+    def getParameterDecl: Traversal[MethodParameterIn] = cpg.file(config.sourceFile).ast.isParameter
 
-    def getDeclIdentifiers = getAssignmentDecl ++ getParameterDecl
+    def getDeclIdentifiers: Traversal[Declaration] = getAssignmentDecl ++ getParameterDecl
 
     ProgramUsageSlice(
       getDeclIdentifiers
