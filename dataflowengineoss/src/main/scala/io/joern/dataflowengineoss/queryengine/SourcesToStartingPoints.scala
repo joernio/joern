@@ -142,7 +142,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     }
   }
 
-  private def usagesForName(name: String, m: Method) = {
+  private def usagesForName(name: String, m: Method): List[Expression] = {
     val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
     val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
