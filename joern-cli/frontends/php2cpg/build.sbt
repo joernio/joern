@@ -9,11 +9,11 @@ crossScalaVersions := Seq("2.13.8", "3.2.2")
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "com.lihaoyi"             %% "ujson"             % "2.0.0",
-  "com.lihaoyi"             %% "upickle"           % "2.0.0",
-  "io.shiftleft"            %% "codepropertygraph" % Versions.cpg,
-  "org.scalatest"           %% "scalatest"         % Versions.scalatest % Test,
-  "io.circe"                %% "circe-core"        % "0.15.0-M1"
+  "com.lihaoyi"   %% "ujson"             % "2.0.0",
+  "com.lihaoyi"   %% "upickle"           % "2.0.0",
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
+  "io.circe"      %% "circe-core"        % "0.15.0-M1"
 )
 
 scalacOptions ++= Seq(

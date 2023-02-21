@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "2.13.8"
 
-val cpgVersion = "1.3.593"
+val cpgVersion = "1.3.596"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -42,7 +42,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
 ThisBuild / libraryDependencies ++= Seq(
   "org.slf4j"                % "slf4j-api"         % "2.0.6",
   "org.apache.logging.log4j" % "log4j-slf4j2-impl" % "2.19.0" % Optional,
-  "org.apache.logging.log4j" % "log4j-core"        % "2.19.0" % Optional,
+  "org.apache.logging.log4j" % "log4j-core"        % "2.19.0" % Optional
   // `Optional` means "not transitive", but still included in "stage/lib"
 )
 

@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   "org.jetbrains.kotlin"     % "kotlin-stdlib"              % kotlinVersion,
   "org.jetbrains.kotlin"     % "kotlin-compiler-embeddable" % kotlinVersion,
   "org.jetbrains.kotlin"     % "kotlin-allopen"             % kotlinVersion,
-  "org.scalatest"           %% "scalatest"                  % "3.2.9"        % Test
+  "org.scalatest"           %% "scalatest"                  % "3.2.9" % Test
 )
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)

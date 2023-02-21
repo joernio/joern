@@ -41,8 +41,8 @@ import overflowdb.traversal.Traversal
   */
 class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
-  import Cfg._
-  import CfgCreator._
+  import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
+  import io.joern.x2cpg.passes.controlflow.cfgcreation.CfgCreator._
 
   /** Control flow graph definitions often feature a designated entry and exit node for each method. While these nodes
     * are no-ops from a computational point of view, they are useful to guarantee that a method has exactly one entry
@@ -77,7 +77,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * placing it in the fringe.
     */
   private def cfgForSingleNode(node: CfgNode): Cfg =
-    Cfg(entryNode = Some(node), fringe = List((node, AlwaysEdge)))
+    Cfg(entryNode = Option(node), fringe = List((node, AlwaysEdge)))
 
   /** The CFG for all children is obtained by translating child ASTs one by one from left to right and appending them.
     */
@@ -177,18 +177,18 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     node.astChildren.find(_.order == 1) match {
       case Some(jumpLabel: JumpLabel) =>
         val labelName = jumpLabel.name
-        Cfg(entryNode = Some(node), jumpsToLabel = List((node, labelName)))
+        Cfg(entryNode = Option(node), jumpsToLabel = List((node, labelName)))
       case Some(literal: Literal) =>
         // In case we find a literal, it is assumed to be an integer literal which
         // indicates how many loop/switch levels the break shall apply to.
         val numberOfLevels = Integer.valueOf(literal.code)
-        Cfg(entryNode = Some(node), breaks = List((node, numberOfLevels)))
+        Cfg(entryNode = Option(node), breaks = List((node, numberOfLevels)))
       case Some(_) =>
         throw new NotImplementedError(
           "Only jump labels and integer literals are currently supported for break statements."
         )
       case None =>
-        Cfg(entryNode = Some(node), breaks = List((node, 1)))
+        Cfg(entryNode = Option(node), breaks = List((node, 1)))
     }
   }
 
@@ -196,18 +196,18 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     node.astChildren.find(_.order == 1) match {
       case Some(jumpLabel: JumpLabel) =>
         val labelName = jumpLabel.name
-        Cfg(entryNode = Some(node), jumpsToLabel = List((node, labelName)))
+        Cfg(entryNode = Option(node), jumpsToLabel = List((node, labelName)))
       case Some(literal: Literal) =>
         // In case we find a literal, it is assumed to be an integer literal which
         // indicates how many loop levels the continue shall apply to.
         val numberOfLevels = Integer.valueOf(literal.code)
-        Cfg(entryNode = Some(node), continues = List((node, numberOfLevels)))
+        Cfg(entryNode = Option(node), continues = List((node, numberOfLevels)))
       case Some(_) =>
         throw new NotImplementedError(
           "Only jump labels and integer literals are currently supported for continue statements."
         )
       case None =>
-        Cfg(entryNode = Some(node), continues = List((node, 1)))
+        Cfg(entryNode = Option(node), continues = List((node, 1)))
     }
   }
 
@@ -234,7 +234,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     node.astChildren.find(_.order == 1) match {
       case Some(jumpLabel) =>
         val labelName = jumpLabel.asInstanceOf[JumpLabel].name
-        Cfg(entryNode = Some(node), jumpsToLabel = List((node, labelName)))
+        Cfg(entryNode = Option(node), jumpsToLabel = List((node, labelName)))
       case None =>
         // Support for old format where the label name is parsed from the code field.
         val target = node.code.split(" ").lastOption.map(x => x.slice(0, x.length - 1))
@@ -248,7 +248,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     */
   protected def cfgForReturn(actualRet: Return): Cfg = {
     cfgForChildren(actualRet) ++
-      Cfg(entryNode = Some(actualRet), edges = singleEdge(actualRet, exitNode), List())
+      Cfg(entryNode = Option(actualRet), edges = singleEdge(actualRet, exitNode), List())
   }
 
   /** The right hand side of a logical AND expression is only evaluated if the left hand side is true as the entire
@@ -479,10 +479,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         .where(_.astChildren) // Filter out empty `try` bodies
         .headOption
 
-    val tryBodyCfg: Cfg =
-      maybeTryBlock
-        .map(cfgFor)
-        .getOrElse(Cfg.empty)
+    val tryBodyCfg: Cfg = maybeTryBlock.map(cfgFor).getOrElse(Cfg.empty)
 
     val catchBodyCfgs: List[Cfg] =
       Traversal
@@ -547,16 +544,18 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     */
   protected def cfgsForMatchCases(body: AstNode): List[Cfg] = {
     body.astChildren
-      .foldLeft(List(Cfg.empty)) { case (currCfg :: prevCfgs, astNode) =>
-        astNode match {
-          case jumpTarget: JumpTarget =>
-            val jumpCfg = cfgForJumpTarget(jumpTarget)
-            (currCfg ++ jumpCfg) :: prevCfgs
+      .foldLeft(List(Cfg.empty)) {
+        case (currCfg :: prevCfgs, astNode) =>
+          astNode match {
+            case jumpTarget: JumpTarget =>
+              val jumpCfg = cfgForJumpTarget(jumpTarget)
+              (currCfg ++ jumpCfg) :: prevCfgs
 
-          case node: AstNode =>
-            val nodeCfg = cfgFor(node)
-            Cfg.empty :: (currCfg ++ nodeCfg) :: prevCfgs
-        }
+            case node: AstNode =>
+              val nodeCfg = cfgFor(node)
+              Cfg.empty :: (currCfg ++ nodeCfg) :: prevCfgs
+          }
+        case _ => List.empty
       }
       .reverse
   }

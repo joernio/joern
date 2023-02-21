@@ -84,13 +84,13 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
         List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
       case member: Member =>
         val initializedMember = memberToInitializedMembers(member)
-        usages(targetsToClassIdentifierPair(initializedMember))
+        usages(targetsToClassIdentifierPair(List(member)))
       case x => List(x).collect { case y: CfgNode => y }
     }
   }
 
-  private def usages(pairs: List[(TypeDecl, Expression)]): List[CfgNode] = {
-    pairs.flatMap { case (typeDecl, expression) =>
+  private def usages(pairs: List[(TypeDecl, AstNode)]): List[CfgNode] = {
+    pairs.flatMap { case (typeDecl, astNode) =>
       val nonConstructorMethods = methodsRecursively(typeDecl)
         .and(
           _.whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName)),
@@ -100,13 +100,13 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
         .l
 
       val usagesInSameClass =
-        nonConstructorMethods.flatMap { m => firstUsagesOfExpression(expression, m, typeDecl) }
+        nonConstructorMethods.flatMap { m => firstUsagesOf(astNode, m, typeDecl) }
 
       val usagesInOtherClasses = cpg.method.flatMap { m =>
         m.fieldAccess
           .where(_.argument(1).isIdentifier.typeFullNameExact(typeDecl.fullName))
           .where { x =>
-            expression match {
+            astNode match {
               case identifier: Identifier =>
                 x.argument(2).isFieldIdentifier.canonicalNameExact(identifier.name)
               case fieldIdentifier: FieldIdentifier =>
@@ -123,19 +123,12 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   /** For given method, determine the first usage of the given expression.
     */
-  private def firstUsagesOfExpression(expression: Expression, m: Method, typeDecl: TypeDecl): List[Expression] = {
-    expression match {
+  private def firstUsagesOf(astNode: AstNode, m: Method, typeDecl: TypeDecl): List[Expression] = {
+    astNode match {
+      case member: Member =>
+        usagesForName(member.name, m)
       case identifier: Identifier =>
-        val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
-        val identifierUsages = identifiers.nameExact(identifier.name).takeWhile(notLeftHandOfAssignment)
-        val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
-        val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
-          .canonicalNameExact(identifier.name)
-          .inFieldAccess
-          .where(_.argument(1).codeExact("this", "self"))
-          .takeWhile(notLeftHandOfAssignment)
-          .l
-        (identifierUsages ++ fieldAccessUsages).headOption.toList
+        usagesForName(identifier.name, m)
       case fieldIdentifier: FieldIdentifier =>
         val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
         fieldIdentifiers
@@ -147,6 +140,19 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
           .l
       case _ => List()
     }
+  }
+
+  private def usagesForName(name: String, m: Method): List[Expression] = {
+    val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+    val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
+    val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+    val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
+      .canonicalNameExact(name)
+      .inFieldAccess
+      .where(_.argument(1).codeExact("this", "self", m.typeDecl.name.head))
+      .takeWhile(notLeftHandOfAssignment)
+      .l
+    (identifierUsages ++ fieldAccessUsages).headOption.toList
   }
 
   /** For a literal, determine if it is used in the initialization of any member variables. Return list of initialized
@@ -169,7 +175,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   /** Classes have a static initialization method (cinit) and a non-static initialization method (init), and each member
-    * should we initialized in at least one of them. This method identifies the initialization assignments for a given
+    * should be initialized in at least one of them. This method identifies the initialization assignments for a given
     * member and returns the left-hand sides (targets) of these assignments.
     */
   private def memberToInitializedMembers(member: Member): List[Expression] = {
@@ -215,8 +221,13 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     !(x.argumentIndex == 1 && x.inCall.exists(y => allAssignmentTypes.contains(y.name)))
   }
 
-  private def targetsToClassIdentifierPair(targets: List[Expression]): List[(TypeDecl, Expression)] = {
-    targets.flatMap(target => target.method.typeDecl.map { typeDecl => (typeDecl, target) })
+  private def targetsToClassIdentifierPair(targets: List[AstNode]): List[(TypeDecl, AstNode)] = {
+    targets.flatMap {
+      case expr: Expression =>
+        expr.method.typeDecl.map { typeDecl => (typeDecl, expr) }
+      case member: Member =>
+        member.typeDecl.map { typeDecl => (typeDecl, member) }
+    }
   }
 
 }

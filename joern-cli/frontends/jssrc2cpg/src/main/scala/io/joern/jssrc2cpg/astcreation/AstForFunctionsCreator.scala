@@ -4,7 +4,6 @@ import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.datastructures.MethodScope
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier => _, _}

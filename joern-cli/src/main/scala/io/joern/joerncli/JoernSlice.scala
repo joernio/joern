@@ -34,7 +34,7 @@ object JoernSlice {
     minNumCalls: Int = 1
   )
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     parseConfig(args).foreach { config =>
       Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName.pathAsString)) { cpg =>
         val slice: ProgramSlice = config.sliceMode match {
