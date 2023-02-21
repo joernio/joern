@@ -93,8 +93,10 @@ object UsageSlicing {
           .l
       )
     }
-
-    cpg.typeDecl.filterNot(_.isExternal).map(generateUDT).l
+    cpg.typeDecl
+      .filterNot(t => t.isExternal || t.name.matches("(:program|<module>|<init>|<meta>|<body>)"))
+      .map(generateUDT)
+      .l
   }
 
   /** Given a node, if it is a call, will traverse the AST parent's children for a node with argument index 0.
