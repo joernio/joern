@@ -18,7 +18,7 @@ import scala.collection.mutable
 /** Based on a flow-insensitive symbol-table-style approach. This pass aims to be fast and deterministic and does not
   * try to converge to some fixed point but rather iterates a fixed number of times. This will help recover:
   * <ol><li>Imported call signatures from external dependencies</li><li>Dynamic type hints for mutable variables in a
-  * computational unit.</ol>
+  * compilation unit.</ol>
   *
   * The algorithm flows roughly as follows: <ol> <li> Scan for method signatures of methods for each compilation unit,
   * either by internally defined methods or by reading import signatures. This includes looking for aliases, e.g. import
@@ -28,8 +28,8 @@ import scala.collection.mutable
   * instances of where these fields and variables are used and update their type information.</li><li>If this variable
   * is the receiver of a call, make sure to set the type of the call accordingly.</li></ol>
   *
-  * In order to propagate types across computational units, but avoid the poor scalability of a fixed-point algorithm,
-  * the number of iterations can be configured using the [[iterations]] parameter. Note that [[iterations]] < 2 will not
+  * In order to propagate types across compilation units, but avoid the poor scalability of a fixed-point algorithm, the
+  * number of iterations can be configured using the [[iterations]] parameter. Note that [[iterations]] < 2 will not
   * provide any interprocedural type recovery capabilities.
   *
   * The symbol tables use the [[SymbolTable]] class to track possible type information. <br> <strong>Note: Local symbols
@@ -41,18 +41,18 @@ import scala.collection.mutable
   * @param iterations
   *   the total number of iterations through which types are to be propagated. At least 2 are recommended in order to
   *   propagate interprocedural types. Think of this as similar to the dataflowengineoss' 'maxCallDepth'.
-  * @tparam ComputationalUnit
-  *   the [[AstNode]] type used to represent a computational unit of the language.
+  * @tparam CompilationUnitType
+  *   the [[AstNode]] type used to represent a compilation unit of the language.
   */
-abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg, iterations: Int = 2) extends CpgPass(cpg) {
+abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, iterations: Int = 2) extends CpgPass(cpg) {
 
-  /** Stores type information for global structures that persist across computational units, e.g. field identifiers.
+  /** Stores type information for global structures that persist across compilation units, e.g. field identifiers.
     */
   protected val globalTable = new SymbolTable[GlobalKey](SBKey.fromNodeToGlobalKey)
 
   override def run(builder: DiffGraphBuilder): Unit = try {
     for (_ <- 0 until iterations)
-      computationalUnit
+      compilationUnit
         .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
         .foreach(_.get())
   } finally {
@@ -60,9 +60,9 @@ abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg, iterations:
   }
 
   /** @return
-    *   the computational units as per how the language is compiled. e.g. file.
+    *   the compilation units as per how the language is compiled. e.g. file.
     */
-  def computationalUnit: Traversal[ComputationalUnit]
+  def compilationUnit: Traversal[CompilationUnitType]
 
   /** A factory method to generate a [[RecoverForXCompilationUnit]] task with the given parameters.
     * @param unit
@@ -73,9 +73,9 @@ abstract class XTypeRecovery[ComputationalUnit <: AstNode](cpg: Cpg, iterations:
     *   a forkable [[RecoverForXCompilationUnit]] task.
     */
   def generateRecoveryForCompilationUnitTask(
-    unit: ComputationalUnit,
+    unit: CompilationUnitType,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[ComputationalUnit]
+  ): RecoverForXCompilationUnit[CompilationUnitType]
 
 }
 
@@ -96,12 +96,12 @@ object XTypeRecovery {
   *   the graph builder
   * @param globalTable
   *   the global symbol table.
-  * @tparam ComputationalUnit
-  *   the [[AstNode]] type used to represent a computational unit of the language.
+  * @tparam CompilationUnitType
+  *   the [[AstNode]] type used to represent a compilation unit of the language.
   */
-abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
+abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   cpg: Cpg,
-  cu: ComputationalUnit,
+  cu: CompilationUnitType,
   builder: DiffGraphBuilder,
   globalTable: SymbolTable[GlobalKey]
 ) extends RecursiveTask[Unit] {
@@ -177,7 +177,7 @@ abstract class RecoverForXCompilationUnit[ComputationalUnit <: AstNode](
   }
 
   /** @return
-    *   the import nodes of this computational unit.
+    *   the import nodes of this compilation unit.
     */
   protected def importNodes(cu: AstNode): Traversal[AstNode] = cu.ast.isImport
 

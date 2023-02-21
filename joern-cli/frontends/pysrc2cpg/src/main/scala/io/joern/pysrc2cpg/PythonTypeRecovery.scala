@@ -17,7 +17,7 @@ import scala.util.Try
 
 class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
 
-  override def computationalUnit: Traversal[File] = cpg.file
+  override def compilationUnit: Traversal[File] = cpg.file
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
