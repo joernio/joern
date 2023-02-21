@@ -199,7 +199,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     scope.pushNewScope(methodNode)
 
-    val returnType = decl.returnType.fold(TypeConstants.Any)(_.name)
+    val returnType = decl.returnType.map(_.name).getOrElse(TypeConstants.Any)
 
     val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap {
       case staticStmt: PhpStaticStmt => astsForStaticStmt(staticStmt)
@@ -227,7 +227,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       else
         EvaluationStrategies.BY_VALUE
 
-    val typeFullName = param.paramType.fold(TypeConstants.Any)(_.name)
+    val typeFullName = param.paramType.map(_.name).getOrElse(TypeConstants.Any)
 
     val byRefCodePrefix = if (param.byRef) "&" else ""
     val code            = s"$byRefCodePrefix$$${param.name}"
@@ -289,7 +289,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForBreakStmt(breakStmt: PhpBreakStmt): Ast = {
-    val code = breakStmt.num.fold("break")(num => s"break($num)")
+    val code = breakStmt.num.map(num => s"break($num)").getOrElse("break")
     val breakNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.BREAK)
       .code(code)
@@ -301,7 +301,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForContinueStmt(continueStmt: PhpContinueStmt): Ast = {
-    val code = continueStmt.num.fold("continue")(num => s"continue($num)")
+    val code = continueStmt.num.map(num => s"continue($num)").getOrElse("continue")
     val continueNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.CONTINUE)
       .code(code)
@@ -403,7 +403,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForReturnStmt(stmt: PhpReturnStmt): Ast = {
     val maybeExprAst = stmt.expr.map(astForExpr)
-    val code         = s"return ${maybeExprAst.fold("")(_.rootCodeOrEmpty)}"
+    val code         = s"return ${maybeExprAst.map(_.rootCodeOrEmpty).getOrElse("")}"
 
     val returnNode = NewReturn()
       .code(code)
@@ -448,7 +448,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForNamespaceStmt(stmt: PhpNamespaceStmt): Ast = {
-    val name     = stmt.name.fold(NameConstants.Unknown)(_.name)
+    val name     = stmt.name.map(_.name).getOrElse(NameConstants.Unknown)
     val fullName = s"$filename:$name"
 
     val namespaceBlock = NewNamespaceBlock()
@@ -644,7 +644,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForUseUse(stmt: PhpUseUse, namePrefix: String = ""): Ast = {
     val originalName = s"$namePrefix${stmt.originalName.name}"
-    val aliasCode    = stmt.alias.fold("")(alias => s" as ${alias.name}")
+    val aliasCode    = stmt.alias.map(alias => s" as ${alias.name}").getOrElse("")
     val typeCode = stmt.useType match {
       case PhpUseType.Function => s"function "
       case PhpUseType.Constant => s"const "
@@ -715,7 +715,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val namespacePrefix =
       scope.getEnclosingNamespaceName
         .filterNot(name => name.contains(NamespaceTraversal.globalNamespaceName))
-        .fold("")(_ + ".")
+        .map(_ + ".")
+        .getOrElse("")
     val fullName = s"$namespacePrefix${name.name}"
 
     val typeDeclNode = NewTypeDecl()
@@ -803,7 +804,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   private def getNamespacePrefixForName: String = {
     scope.getEnclosingTypeDeclType
       .filterNot(_ == NamespaceTraversal.globalNamespaceName)
-      .fold("")(typeName => s"$typeName.")
+      .map(typeName => s"$typeName.")
+      .getOrElse("")
   }
 
   private def defaultConstructorAst(): Ast = {
@@ -943,7 +945,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val className =
       call.target
         .map(astForExpr)
-        .fold(Defines.UnresolvedNamespace)(_.rootCode.getOrElse(Defines.UnresolvedNamespace))
+        .map(_.rootCode.getOrElse(Defines.UnresolvedNamespace))
+        .getOrElse(Defines.UnresolvedNamespace)
     s"$className::$name"
   }
 
@@ -956,12 +959,14 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val nameAst = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
     val name =
-      nameAst.fold(call.methodName match {
-        case nameExpr: PhpNameExpr => nameExpr.name
-        case other =>
-          logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
-          ???
-      })(_.rootCodeOrEmpty)
+      nameAst
+        .map(_.rootCodeOrEmpty)
+        .getOrElse(call.methodName match {
+          case nameExpr: PhpNameExpr => nameExpr.name
+          case other =>
+            logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
+            ???
+        })
 
     val argsCode = arguments.map(_.rootCodeOrEmpty).mkString(",")
 
@@ -1384,7 +1389,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
         s"yield ${key.rootCodeOrEmpty} => ${value.rootCodeOrEmpty}"
 
       case _ =>
-        s"yield ${maybeKey.fold("")(_.rootCodeOrEmpty)}${maybeVal.fold("")(_.rootCodeOrEmpty)}".trim
+        s"yield ${maybeKey.map(_.rootCodeOrEmpty).getOrElse("")}${maybeVal.map(_.rootCodeOrEmpty).getOrElse("")}".trim
     }
 
     val yieldNode = NewControlStructure()
@@ -1678,7 +1683,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {
     val target              = astForExpr(expr.className)
-    val fieldIdentifierName = expr.constantName.fold(NameConstants.Unknown)(_.name)
+    val fieldIdentifierName = expr.constantName.map(_.name).getOrElse(NameConstants.Unknown)
 
     val fieldIdentifier = fieldIdentifierNode(fieldIdentifierName, line(expr))
 
