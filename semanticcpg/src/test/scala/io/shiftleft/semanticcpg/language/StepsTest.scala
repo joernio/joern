@@ -9,11 +9,11 @@ import org.json4s._
 import org.json4s.native.JsonMethods.parse
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.traversal.{Traversal, jIteratortoTraversal, toElementTraversal, toNodeTraversal}
+import overflowdb.traversal.Traversal
 
 class StepsTest extends AnyWordSpec with Matchers {
 
-  val cpg = MockCpg()
+  private val cpg: Cpg = MockCpg()
     .withFile("afile.c")
     .withNamespace("anamespace")
     .withTypeDecl("AClass", inNamespace = Some("anamespace"), inFile = Some("afile.c"))
@@ -157,13 +157,8 @@ class StepsTest extends AnyWordSpec with Matchers {
     }
 
     "allows to provide custom Show instance" in {
-      def mainMethods: Steps[Method] =
-        cpg.method.name("woo")
-
-      implicit val customShowInstance = new Show[Method] {
-        override def apply(node: Method): String = "my custom pretty printer"
-      }
-
+      def mainMethods: Steps[Method]                = cpg.method.name("woo")
+      implicit val customShowInstance: Show[Method] = (_: Method) => "my custom pretty printer"
       mainMethods.p.head shouldBe "my custom pretty printer"
     }
 
@@ -175,9 +170,7 @@ class StepsTest extends AnyWordSpec with Matchers {
       }
 
       import SomePackage._
-      def mainMethods: Steps[Method] =
-        cpg.method.name("woo")
-
+      def mainMethods: Steps[Method] = cpg.method.name("woo")
       mainMethods.p.head shouldBe "package defined pretty printer"
     }
   }

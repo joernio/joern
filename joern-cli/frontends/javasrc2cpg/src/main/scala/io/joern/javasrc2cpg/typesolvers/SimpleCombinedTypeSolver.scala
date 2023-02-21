@@ -4,7 +4,7 @@ import com.github.javaparser.resolution.UnsolvedSymbolException
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
 import com.github.javaparser.symbolsolver.cache.GuavaCache
 import com.github.javaparser.symbolsolver.model.resolution.{SymbolReference, TypeSolver}
-import com.google.common.cache.{CacheBuilder, LoadingCache}
+import com.google.common.cache.CacheBuilder
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -48,7 +48,7 @@ class SimpleCombinedTypeSolver extends TypeSolver {
               case _: IllegalArgumentException =>
                 // RecordDeclarations aren't handled by JavaParser yet
                 unsolved
-              case unhandled =>
+              case unhandled: Throwable =>
                 logger.warn("Caught unhandled exception", unhandled)
                 unsolved
             }

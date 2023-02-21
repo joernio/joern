@@ -5,7 +5,6 @@ import io.shiftleft.semanticcpg.language._
 
 import scala.jdk.CollectionConverters._
 import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.joerncli.console.Joern.semantics
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
@@ -21,7 +20,7 @@ object JoernSlice {
 
   case class Slice(nodes: List[CfgNode], edges: Map[CfgNode, List[Edge]])
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     parseConfig(args).foreach { config =>
       Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
         val slice = calculateSlice(cpg, config.sourceFile, config.sourceLine)
@@ -50,10 +49,8 @@ object JoernSlice {
     }.parse(args, Config())
 
   private def calculateSlice(cpg: Cpg, sourceFile: String, sourceLine: Int): Slice = {
-    val sinks = cpg.file.nameExact(sourceFile).ast.lineNumber(sourceLine).isCall.argument.l
-
-    implicit val context: EngineContext = EngineContext()
-    val sliceNodes                      = sinks.repeat(_.ddgIn)(_.maxDepth(20).emit).dedup.l
+    val sinks      = cpg.file.nameExact(sourceFile).ast.lineNumber(sourceLine).isCall.argument.l
+    val sliceNodes = sinks.repeat(_.ddgIn)(_.maxDepth(20).emit).dedup.l
     val sliceEdges = sliceNodes
       .flatMap(_.outE)
       .filter(x => sliceNodes.contains(x.inNode()))
