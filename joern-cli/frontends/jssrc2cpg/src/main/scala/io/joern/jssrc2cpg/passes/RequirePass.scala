@@ -112,9 +112,9 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
     /** The dynamic type hints attached to this variable. This assumes all nodes have the same property value at this
       * time.
       */
-    lazy val dynamicTypeHintFullName: Seq[String] = nodes.headOption.map(
-      _.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, IndexedSeq.empty[String])
-    ).getOrElse(IndexedSeq.empty[String])
+    lazy val dynamicTypeHintFullName: Seq[String] = nodes.headOption
+      .map(_.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, IndexedSeq.empty[String]))
+      .getOrElse(IndexedSeq.empty[String])
   }
 
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {

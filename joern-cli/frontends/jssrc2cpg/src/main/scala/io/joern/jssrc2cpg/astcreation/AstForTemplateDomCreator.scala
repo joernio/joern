@@ -36,7 +36,7 @@ trait AstForTemplateDomCreator { this: AstCreator =>
   }
 
   protected def astForJsxAttribute(jsxAttr: BabelNodeInfo): Ast = {
-    val domNode  = createTemplateDomNode(jsxAttr.node.toString, jsxAttr.code, jsxAttr.lineNumber, jsxAttr.columnNumber)
+    val domNode = createTemplateDomNode(jsxAttr.node.toString, jsxAttr.code, jsxAttr.lineNumber, jsxAttr.columnNumber)
     val valueAst = safeObj(jsxAttr.json, "value")
       .map(e => astForNodeWithFunctionReference(Obj(e)))
       .getOrElse(Ast())
