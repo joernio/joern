@@ -84,11 +84,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
         List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
       case member: Member =>
         val initializedMember = memberToInitializedMembers(member)
-        if (initializedMember.nonEmpty) {
-          usages(targetsToClassIdentifierPair(initializedMember))
-        } else {
-          usages(targetsToClassIdentifierPair(List(member)))
-        }
+        usages(targetsToClassIdentifierPair(List(member)))
       case x => List(x).collect { case y: CfgNode => y }
     }
   }
