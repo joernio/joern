@@ -29,7 +29,7 @@ object JoernSlice {
     cpgFileName: File = File("cpg.bin"),
     outFile: File = File("slices"),
     sliceMode: SliceModes = DataFlow,
-    sourceFile: String = ".*",
+    sourceFile: Option[String] = None,
     sliceDepth: Int = 20,
     minNumCalls: Int = 1
   )
@@ -65,9 +65,9 @@ object JoernSlice {
         .text(s"the kind of slicing to perform - defaults to `DataFlow`. Options: [${SliceMode.values.mkString(", ")}]")
         .action((x, c) => c.copy(sliceMode = x))
       opt[String]("source-file")
-        .text("the name of the source file to generate slices from. This is interpretted as regex.")
+        .text("the name of the source file to generate slices from.")
         .optional()
-        .action((x, c) => c.copy(sourceFile = x))
+        .action((x, c) => c.copy(sourceFile = Some(x)))
       opt[Int]("slice-depth")
         .text(s"the max depth to traverse the DDG for the data-flow slice (for `DataFlow` mode) - defaults to 20.")
         .action((x, c) => c.copy(minNumCalls = x))

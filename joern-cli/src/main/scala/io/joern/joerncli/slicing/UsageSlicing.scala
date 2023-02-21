@@ -23,10 +23,15 @@ object UsageSlicing {
     *   a set of object slices.
     */
   def calculateUsageSlice(cpg: Cpg, config: Config): ProgramSlice = {
-    def getAssignmentDecl: Traversal[Declaration] =
-      cpg.file(config.sourceFile).assignment.argument(1).isIdentifier.refsTo
+    def getAssignmentDecl: Traversal[Declaration] = (config.sourceFile match {
+      case Some(fileName) => cpg.file.nameExact(fileName).assignment
+      case None           => cpg.assignment
+    }).argument(1).isIdentifier.refsTo
 
-    def getParameterDecl: Traversal[MethodParameterIn] = cpg.file(config.sourceFile).ast.isParameter
+    def getParameterDecl: Traversal[MethodParameterIn] = config.sourceFile match {
+      case Some(fileName) => cpg.file.nameExact(fileName).ast.isParameter
+      case None           => cpg.parameter
+    }
 
     def getDeclIdentifiers: Traversal[Declaration] = getAssignmentDecl ++ getParameterDecl
 
