@@ -59,10 +59,12 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   protected def astForReturnStatement(ret: BabelNodeInfo): Ast = {
     val retNode = createReturnNode(ret)
-    safeObj(ret.json, "argument").fold(Ast(retNode)) { argument =>
-      val argAst = astForNodeWithFunctionReference(Obj(argument))
-      createReturnAst(retNode, List(argAst))
-    }
+    safeObj(ret.json, "argument")
+      .map { argument =>
+        val argAst = astForNodeWithFunctionReference(Obj(argument))
+        createReturnAst(retNode, List(argAst))
+      }
+      .getOrElse(Ast(retNode))
   }
 
   private def astForCatchClause(catchClause: BabelNodeInfo): Ast =
@@ -71,12 +73,16 @@ trait AstForStatementsCreator { this: AstCreator =>
   protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
     val tryNode = createControlStructureNode(tryStmt, ControlStructureTypes.TRY)
     val bodyAst = astForNodeWithFunctionReference(tryStmt.json("block"))
-    val catchAst = safeObj(tryStmt.json, "handler").fold(Ast()) { handler =>
-      astForCatchClause(createBabelNodeInfo(Obj(handler)))
-    }
-    val finalizerAst = safeObj(tryStmt.json, "finalizer").fold(Ast()) { finalizer =>
-      astForNodeWithFunctionReference(Obj(finalizer))
-    }
+    val catchAst = safeObj(tryStmt.json, "handler")
+      .map { handler =>
+        astForCatchClause(createBabelNodeInfo(Obj(handler)))
+      }
+      .getOrElse(Ast())
+    val finalizerAst = safeObj(tryStmt.json, "finalizer")
+      .map { finalizer =>
+        astForNodeWithFunctionReference(Obj(finalizer))
+      }
+      .getOrElse(Ast())
     // The semantics of try statement children is defined by there order value.
     // Thus we set the here explicitly and do not rely on the usual consecutive
     // ordering.
@@ -90,9 +96,11 @@ trait AstForStatementsCreator { this: AstCreator =>
     val ifNode        = createControlStructureNode(ifStmt, ControlStructureTypes.IF)
     val testAst       = astForNodeWithFunctionReference(ifStmt.json("test"))
     val consequentAst = astForNodeWithFunctionReference(ifStmt.json("consequent"))
-    val alternateAst = safeObj(ifStmt.json, "alternate").fold(Ast()) { alternate =>
-      astForNodeWithFunctionReference(Obj(alternate))
-    }
+    val alternateAst = safeObj(ifStmt.json, "alternate")
+      .map { alternate =>
+        astForNodeWithFunctionReference(Obj(alternate))
+      }
+      .getOrElse(Ast())
     // The semantics of if statement children is partially defined by there order value.
     // The consequentAst must have order == 2 and alternateAst must have order == 3.
     // Only to avoid collision we set testAst to 1
@@ -133,17 +141,21 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   protected def astForForStatement(forStmt: BabelNodeInfo): Ast = {
     val forNode = createControlStructureNode(forStmt, ControlStructureTypes.FOR)
-    val initAst = safeObj(forStmt.json, "init").fold(Ast()) { init =>
-      astForNodeWithFunctionReference(Obj(init))
-    }
-    val testAst = safeObj(forStmt.json, "test").fold(
-      Ast(createLiteralNode("true", Option(Defines.Boolean), forStmt.lineNumber, forStmt.columnNumber))
-    ) { test =>
-      astForNodeWithFunctionReference(Obj(test))
-    }
-    val updateAst = safeObj(forStmt.json, "update").fold(Ast()) { update =>
-      astForNodeWithFunctionReference(Obj(update))
-    }
+    val initAst = safeObj(forStmt.json, "init")
+      .map { init =>
+        astForNodeWithFunctionReference(Obj(init))
+      }
+      .getOrElse(Ast())
+    val testAst = safeObj(forStmt.json, "test")
+      .map { test =>
+        astForNodeWithFunctionReference(Obj(test))
+      }
+      .getOrElse(Ast(createLiteralNode("true", Option(Defines.Boolean), forStmt.lineNumber, forStmt.columnNumber)))
+    val updateAst = safeObj(forStmt.json, "update")
+      .map { update =>
+        astForNodeWithFunctionReference(Obj(update))
+      }
+      .getOrElse(Ast())
     val bodyAst = astForNodeWithFunctionReference(forStmt.json("body"))
 
     // The semantics of for statement children is defined by there order value.
@@ -178,36 +190,40 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast = {
-    val labelAst = safeObj(breakStmt.json, "label").fold(Ast()) { label =>
-      val labelNode = Obj(label)
-      val labelCode = code(labelNode)
-      Ast(
-        NewJumpLabel()
-          .parserTypeName(breakStmt.node.toString)
-          .name(labelCode)
-          .code(labelCode)
-          .lineNumber(breakStmt.lineNumber)
-          .columnNumber(breakStmt.columnNumber)
-          .order(1)
-      )
-    }
+    val labelAst = safeObj(breakStmt.json, "label")
+      .map { label =>
+        val labelNode = Obj(label)
+        val labelCode = code(labelNode)
+        Ast(
+          NewJumpLabel()
+            .parserTypeName(breakStmt.node.toString)
+            .name(labelCode)
+            .code(labelCode)
+            .lineNumber(breakStmt.lineNumber)
+            .columnNumber(breakStmt.columnNumber)
+            .order(1)
+        )
+      }
+      .getOrElse(Ast())
     Ast(createControlStructureNode(breakStmt, ControlStructureTypes.BREAK)).withChild(labelAst)
   }
 
   protected def astForContinueStatement(continueStmt: BabelNodeInfo): Ast = {
-    val labelAst = safeObj(continueStmt.json, "label").fold(Ast()) { label =>
-      val labelNode = Obj(label)
-      val labelCode = code(labelNode)
-      Ast(
-        NewJumpLabel()
-          .parserTypeName(continueStmt.node.toString)
-          .name(labelCode)
-          .code(labelCode)
-          .lineNumber(continueStmt.lineNumber)
-          .columnNumber(continueStmt.columnNumber)
-          .order(1)
-      )
-    }
+    val labelAst = safeObj(continueStmt.json, "label")
+      .map { label =>
+        val labelNode = Obj(label)
+        val labelCode = code(labelNode)
+        Ast(
+          NewJumpLabel()
+            .parserTypeName(continueStmt.node.toString)
+            .name(labelCode)
+            .code(labelCode)
+            .lineNumber(continueStmt.lineNumber)
+            .columnNumber(continueStmt.columnNumber)
+            .order(1)
+        )
+      }
+      .getOrElse(Ast())
     Ast(createControlStructureNode(continueStmt, ControlStructureTypes.CONTINUE)).withChild(labelAst)
   }
 

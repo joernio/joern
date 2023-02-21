@@ -95,7 +95,9 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
         logger.info(s"Parsed '${t.getFilePath}' ($c preprocessor error(s), $p problems)")
         Option(t)
       case ParseResult(_, _, _, maybeThrowable) =>
-        logger.warn(s"Failed to parse '$file': ${maybeThrowable.fold("Unknown parse error!")(extractParseException)}")
+        logger.warn(
+          s"Failed to parse '$file': ${maybeThrowable.map(extractParseException).getOrElse("Unknown parse error!")}"
+        )
         None
     }
   }

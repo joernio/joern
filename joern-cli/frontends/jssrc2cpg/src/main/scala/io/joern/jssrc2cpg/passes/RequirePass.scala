@@ -54,7 +54,9 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
     private val symbol: String = call.astParent.fieldAccess.fieldIdentifier.canonicalName.headOption.getOrElse("")
 
     private val dirHoldingModule: String =
-      call.file.name.headOption.fold("")(x => Paths.get(codeRoot, x).getParent.toAbsolutePath.normalize.toString)
+      call.file.name.headOption
+        .map(x => Paths.get(codeRoot, x).getParent.toAbsolutePath.normalize.toString)
+        .getOrElse("")
 
     private val fileToInclude: String = call
       .argument(1)
@@ -110,9 +112,9 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
     /** The dynamic type hints attached to this variable. This assumes all nodes have the same property value at this
       * time.
       */
-    lazy val dynamicTypeHintFullName: Seq[String] = nodes.headOption.fold(IndexedSeq.empty[String])(
-      _.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, IndexedSeq.empty[String])
-    )
+    lazy val dynamicTypeHintFullName: Seq[String] = nodes.headOption
+      .map(_.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, IndexedSeq.empty[String]))
+      .getOrElse(IndexedSeq.empty[String])
   }
 
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
