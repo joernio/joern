@@ -117,7 +117,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       }
 
   private def extractExportFromNameFromExportDecl(declaration: BabelNodeInfo): String =
-    safeObj(declaration.json, "source").fold(ExportKeyword) { d => s"_${stripQuotes(code(d))}" }
+    safeObj(declaration.json, "source")
+      .map(d => s"_${stripQuotes(code(d))}")
+      .getOrElse(ExportKeyword)
 
   private def cleanImportName(name: String): String = if (name.contains("/")) {
     val stripped = name.stripSuffix("/")
@@ -662,7 +664,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     scope.addVariable(localTmpName, localNode, BlockScope)
     scope.addVariableReference(localTmpName, tmpNode)
 
-    val rhsAssignmentAst = paramName.fold(sourceAst)(createParamAst(pattern, _, sourceAst))
+    val rhsAssignmentAst = paramName.map(createParamAst(pattern, _, sourceAst)).getOrElse(sourceAst)
     val assignmentTmpCallAst =
       createAssignmentCallAst(
         Ast(tmpNode),

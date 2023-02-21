@@ -73,7 +73,7 @@ trait AstCreatorHelper { this: AstCreator =>
     Option(cdtAst.flattenLocationsToFile(node.getNodeLocations.lastOption.toArray)).map(_.asFileLocation())
 
   protected def fileName(node: IASTNode): String = {
-    val path = nullSafeFileLocation(node).fold(filename)(_.getFileName)
+    val path = nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
     IOUtils.toRelativePath(path, config)
   }
 
@@ -212,7 +212,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def nullSafeCode(node: IASTNode): String = {
-    Option(node).fold("")(nodeSignature)
+    Option(node).map(nodeSignature).getOrElse("")
   }
 
   protected def nullSafeAst(node: IASTExpression, argIndex: Int): Ast = {
@@ -226,7 +226,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def nullSafeAst(node: IASTExpression): Ast =
-    Option(node).fold(Ast())(astForNode(_))
+    Option(node).map(astForNode).getOrElse(Ast())
 
   protected def nullSafeAst(node: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
     Option(node).map(astsForStatement(_, argIndex)).getOrElse(Seq.empty)
@@ -255,7 +255,7 @@ trait AstCreatorHelper { this: AstCreator =>
           case f: CPPFunction if f.getDeclarations != null =>
             usingDeclarationMappings.getOrElse(
               fixQualifiedName(ASTStringUtil.getSimpleName(d.getName)),
-              f.getDeclarations.headOption.fold(f.getName)(n => ASTStringUtil.getSimpleName(n.getName))
+              f.getDeclarations.headOption.map(n => ASTStringUtil.getSimpleName(n.getName)).getOrElse(f.getName)
             )
           case f: CPPFunction if f.getDefinition != null =>
             usingDeclarationMappings.getOrElse(
@@ -274,9 +274,9 @@ trait AstCreatorHelper { this: AstCreator =>
       case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).isEmpty =>
         val name = cppClass.getParent match {
           case decl: IASTSimpleDeclaration =>
-            decl.getDeclarators.headOption.fold(uniqueName("composite_type", "", "")._1)(n =>
-              ASTStringUtil.getSimpleName(n.getName)
-            )
+            decl.getDeclarators.headOption
+              .map(n => ASTStringUtil.getSimpleName(n.getName))
+              .getOrElse(uniqueName("composite_type", "", "")._1)
           case _ => uniqueName("composite_type", "", "")._1
         }
         s"${fullName(cppClass.getParent)}.$name"
@@ -322,7 +322,7 @@ trait AstCreatorHelper { this: AstCreator =>
         val evaluation = d.getEvaluation.asInstanceOf[EvalBinding]
         evaluation.getBinding match {
           case f: CPPFunction if f.getDeclarations != null =>
-            f.getDeclarations.headOption.fold(f.getName)(n => ASTStringUtil.getSimpleName(n.getName))
+            f.getDeclarations.headOption.map(n => ASTStringUtil.getSimpleName(n.getName)).getOrElse(f.getName)
           case f: CPPFunction if f.getDefinition != null =>
             ASTStringUtil.getSimpleName(f.getDefinition.getName)
           case other =>

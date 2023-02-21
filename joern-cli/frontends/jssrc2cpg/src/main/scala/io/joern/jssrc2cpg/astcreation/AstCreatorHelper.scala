@@ -79,7 +79,7 @@ trait AstCreatorHelper { this: AstCreator =>
     usedVariableNames: mutable.HashMap[String, Int],
     variableName: String
   ): String = {
-    val counter             = usedVariableNames.get(variableName).fold(0)(_ + 1)
+    val counter             = usedVariableNames.get(variableName).map(_ + 1).getOrElse(0)
     val currentVariableName = s"${variableName}_$counter"
     usedVariableNames.put(variableName, counter)
     currentVariableName
