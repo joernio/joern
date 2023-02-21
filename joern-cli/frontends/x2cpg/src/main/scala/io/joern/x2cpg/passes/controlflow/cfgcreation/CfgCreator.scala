@@ -427,8 +427,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   /** CFG creation for switch statements of the form `switch { case condition: ... }`.
     */
   protected def cfgForSwitchStatement(node: ControlStructure): Cfg = {
-    val conditionCfg = Traversal.fromSingle(node).condition.headOption.fold(Cfg.empty)(cfgFor)
-    val bodyCfg      = Traversal.fromSingle(node).whenTrue.headOption.fold(Cfg.empty)(cfgFor)
+    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val bodyCfg      = Traversal.fromSingle(node).whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
 
     cfgForSwitchLike(conditionCfg, bodyCfg :: Nil)
   }
