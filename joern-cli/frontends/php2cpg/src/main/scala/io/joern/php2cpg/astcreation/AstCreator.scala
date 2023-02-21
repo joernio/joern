@@ -1252,7 +1252,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   private def astForExit(expr: PhpExitExpr): Ast = {
     val name = stripBuiltinPrefix(PhpOperators.exitFunc)
     val args = expr.expr.map(astForExpr)
-    val code = s"$name(${args.fold("")(_.rootCodeOrEmpty)})"
+    val code = s"$name(${args.map(_.rootCodeOrEmpty).getOrElse("")})"
 
     val callNode = operatorCallNode(name, code, Option(TypeConstants.Void), line(expr))
       .methodFullName(PhpOperators.exitFunc)
