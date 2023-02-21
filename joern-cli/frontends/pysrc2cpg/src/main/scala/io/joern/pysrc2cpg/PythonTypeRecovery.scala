@@ -36,38 +36,34 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
   override def importNodes(cu: AstNode): Traversal[AstNode] =
     cu.ast.isCall.nameExact("import") ++ super.importNodes(cu)
 
-  override def visitImport(i: Call): Unit = {
-    i.argumentOut.l match {
-      case List(path: Literal, funcOrModule: Literal) =>
+  override def visitImport(importCall: Call): Unit = {
+    importCall.argument.l match {
+      case (path: Literal) :: (funcOrModule: Literal) :: alias =>
         val calleeNames = extractPossibleCalleeNames(path.code, funcOrModule.code)
-        symbolTable.put(CallAlias(funcOrModule.code), calleeNames)
-        symbolTable.put(LocalVar(funcOrModule.code), calleeNames)
-      case List(path: Literal, funcOrModule: Literal, alias: Literal) =>
-        val calleeNames =
-          extractPossibleCalleeNames(path.code, funcOrModule.code, Option(alias.code))
-        symbolTable.put(CallAlias(alias.code), calleeNames)
-        symbolTable.put(LocalVar(alias.code), calleeNames)
-      case x => logger.warn(s"Unknown import pattern: ${x.map(_.label).mkString(", ")}")
+        alias match {
+          case (alias: Literal) :: Nil =>
+            symbolTable.put(CallAlias(alias.code), calleeNames)
+            symbolTable.put(LocalVar(alias.code), calleeNames)
+          case Nil =>
+            symbolTable.put(CallAlias(funcOrModule.code), calleeNames)
+            symbolTable.put(LocalVar(funcOrModule.code), calleeNames)
+          case x =>
+            logger.warn(s"Unknown import pattern: ${x.map(_.label).mkString(", ")}")
+        }
     }
   }
 
-  /** For an import - given by its module path, the name of the imported function or module, and an optional alias -
-    * determine the possible callee names.
+  /** For an import - given by its module path and the name of the imported function or module - determine the possible
+    * callee names.
     *
     * @param path
     *   the module path.
     * @param funcOrModule
     *   the name of the imported entity.
-    * @param maybeAlias
-    *   an optional alias given to the imported entity.
     * @return
     *   the possible callee names
     */
-  private def extractPossibleCalleeNames(
-    path: String,
-    funcOrModule: String,
-    maybeAlias: Option[String] = None
-  ): Set[String] = {
+  private def extractPossibleCalleeNames(path: String, funcOrModule: String): Set[String] = {
     val sep = Matcher.quoteReplacement(JFile.separator)
     val procedureName = path match {
       case "" if funcOrModule.contains(".") =>
