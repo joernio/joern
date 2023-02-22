@@ -16,7 +16,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'sbt'
       - name: Compile and run tests
         run: sbt clean +test
   formatting:
@@ -30,7 +29,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'sbt'
       - name: Check formatting
         run: sbt ++2.13.8 scalafmtCheck test:scalafmtCheck
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
@@ -46,7 +44,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'sbt'
       - run: ./testDistro.sh
       - run: |
           mkdir /tmp/foo
