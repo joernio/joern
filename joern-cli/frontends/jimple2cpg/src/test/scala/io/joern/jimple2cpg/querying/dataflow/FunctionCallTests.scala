@@ -9,8 +9,7 @@ class FunctionCallTests extends JimpleDataFlowCodeToCpgSuite {
 
   "dataflow through function calls" should {
 
-    lazy implicit val cpg: Cpg = code(
-      """
+    lazy implicit val cpg: Cpg = code("""
         |class Foo {
         |    public static void printSimpleString(String s) {
         |        System.out.println(s);

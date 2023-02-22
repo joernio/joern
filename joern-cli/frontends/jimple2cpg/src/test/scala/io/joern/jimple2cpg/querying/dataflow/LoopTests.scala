@@ -8,8 +8,7 @@ class LoopTests extends JimpleDataFlowCodeToCpgSuite {
 
   "dataflow through loop structures" should {
 
-    lazy implicit val cpg: Cpg = code(
-      """
+    lazy implicit val cpg: Cpg = code("""
         |class Foo {
         |    public void test1(boolean b) {
         |        String s = "MALICIOUS";

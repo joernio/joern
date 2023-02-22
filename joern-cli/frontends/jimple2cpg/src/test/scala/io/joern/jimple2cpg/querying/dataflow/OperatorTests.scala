@@ -1,7 +1,6 @@
 package io.joern.jimple2cpg.querying.dataflow
 
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
-import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics
 import io.joern.jimple2cpg.testfixtures.JimpleDataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
 
@@ -9,8 +8,7 @@ class OperatorTests extends JimpleDataFlowCodeToCpgSuite {
 
   "dataflow through operators" should {
 
-    lazy implicit val cpg: Cpg = code(
-      """
+    lazy implicit val cpg: Cpg = code("""
         |class Foo {
         |
         |  private String safe = "";
