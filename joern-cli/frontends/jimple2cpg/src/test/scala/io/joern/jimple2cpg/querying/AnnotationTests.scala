@@ -2,15 +2,14 @@ package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, AnnotationLiteral, ArrayInitializer}
+import io.shiftleft.semanticcpg.language._
 
 class AnnotationTests extends JimpleCode2CpgFixture {
 
   "annotation type method 1" should {
 
-    lazy val cpg: Cpg = code(
-      """import java.lang.annotation.*;
+    lazy val cpg: Cpg = code("""import java.lang.annotation.*;
         |
         |@Retention(RetentionPolicy.RUNTIME)
         |@Target(ElementType.METHOD)
@@ -59,8 +58,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
 
   "annotation type method 2" should {
 
-    lazy val cpg: Cpg = code(
-      """import java.lang.annotation.*;
+    lazy val cpg: Cpg = code("""import java.lang.annotation.*;
         |
         |@Retention(RetentionPolicy.RUNTIME)
         |@Target(ElementType.METHOD)
@@ -90,8 +88,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
 
   "annotation type constructor" should {
 
-    lazy val cpg: Cpg = code(
-      """import java.lang.annotation.*;
+    lazy val cpg: Cpg = code("""import java.lang.annotation.*;
         |
         |@Retention(RetentionPolicy.RUNTIME)
         |@Target(ElementType.CONSTRUCTOR)
@@ -121,8 +118,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
 
   "annotation type parameter" should {
 
-    lazy val cpg: Cpg = code(
-      """import java.lang.annotation.*;
+    lazy val cpg: Cpg = code("""import java.lang.annotation.*;
         |
         |@Retention(RetentionPolicy.RUNTIME)
         |@Target(ElementType.PARAMETER)
@@ -147,8 +143,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
 
   "annotation type field" should {
 
-    lazy val cpg: Cpg = code(
-      """import java.lang.annotation.*;
+    lazy val cpg: Cpg = code("""import java.lang.annotation.*;
         |
         |@Retention(RetentionPolicy.RUNTIME)
         |@Target(ElementType.FIELD)
@@ -168,11 +163,9 @@ class AnnotationTests extends JimpleCode2CpgFixture {
 
   }
 
-
   "annotation test value 1" should {
 
-    lazy val cpg: Cpg = code(
-      """import java.lang.annotation.*;
+    lazy val cpg: Cpg = code("""import java.lang.annotation.*;
         |
         |@Retention(RetentionPolicy.RUNTIME)
         |@Target(ElementType.METHOD)
@@ -229,8 +222,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
 
   "annotation test value 2" should {
 
-    lazy val cpg: Cpg = code(
-      """import java.lang.annotation.*;
+    lazy val cpg: Cpg = code("""import java.lang.annotation.*;
         |
         |@Retention(RetentionPolicy.RUNTIME)
         |@Target(ElementType.METHOD)
@@ -267,8 +259,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
 
   "annotation test value 3" should {
 
-    lazy val cpg: Cpg = code(
-      """import java.lang.annotation.*;
+    lazy val cpg: Cpg = code("""import java.lang.annotation.*;
         |
         |@Retention(RetentionPolicy.RUNTIME)
         |@Target(ElementType.METHOD)
