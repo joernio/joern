@@ -9,7 +9,7 @@ class CallTests extends JimpleCode2CpgFixture {
 
   implicit val resolver: ICallResolver = NoResolve
 
-  val cpg = code("""
+  private lazy val cpg = code("""
       | class Foo {
       |   static int add(int x, int y) {
       |     return x + y;
@@ -19,7 +19,7 @@ class CallTests extends JimpleCode2CpgFixture {
       |     return add(argc, 3);
       |   }
       | }
-      |""".stripMargin)
+      |""".stripMargin).cpg
 
   "should contain a call node for `add` with correct fields" in {
     val List(x) = cpg.call("add").l

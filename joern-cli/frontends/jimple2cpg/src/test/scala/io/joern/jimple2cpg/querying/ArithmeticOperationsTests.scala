@@ -3,11 +3,11 @@ package io.joern.jimple2cpg.querying
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve, toNodeTypeStarters, _}
+import io.shiftleft.semanticcpg.language.{toNodeTypeStarters, _}
 
 class ArithmeticOperationsTests extends JimpleCode2CpgFixture {
 
-  val cpg = code("""
+  private lazy val cpg = code("""
       | class Foo {
       |   static void main(int argc, char argv) {
       |     int a = 3;
@@ -20,9 +20,9 @@ class ArithmeticOperationsTests extends JimpleCode2CpgFixture {
       |     float h = 3.4f;
       |   }
       | }
-      |""".stripMargin)
+      |""".stripMargin).cpg
 
-  val vars = Seq(
+  private val vars = Seq(
     ("a", "byte"),
     ("b", "double"),
     ("c", "double"),

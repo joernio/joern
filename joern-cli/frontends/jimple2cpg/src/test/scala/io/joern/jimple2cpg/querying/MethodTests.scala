@@ -1,18 +1,19 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
 
 class MethodTests extends JimpleCode2CpgFixture {
 
-  val cpg = code(""" class Foo {
+  val cpg: Cpg = code(""" class Foo {
       |   int foo(int param1, int param2) {
       |     return 1;
       |   }
       | }
-      |""".stripMargin)
+      |""".stripMargin).cpg
 
   /* The equivalent Jimple code looks like
     int foo(int, int)

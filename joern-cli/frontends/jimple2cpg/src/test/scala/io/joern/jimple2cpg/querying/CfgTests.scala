@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class CfgTests extends JimpleCode2CpgFixture {
 
-  val cpg = code("""
+  private lazy val cpg = code("""
       |class Foo {
       | int foo(int x, int y) {
       |  if (y < 10)
@@ -22,7 +22,7 @@ class CfgTests extends JimpleCode2CpgFixture {
       |   return;
       | }
       |}
-    """.stripMargin)
+    """.stripMargin).cpg
 
   "should find that sink is control dependent on condition" in {
     val controllers = cpg.call("sink").controlledBy.isCall.toSetMutable

@@ -6,7 +6,7 @@ import org.scalatest.Ignore
 
 class TypeTests extends JimpleCode2CpgFixture {
 
-  val cpg = code("""
+  private lazy val cpg = code("""
       | package foo;
       |
       | class Foo {

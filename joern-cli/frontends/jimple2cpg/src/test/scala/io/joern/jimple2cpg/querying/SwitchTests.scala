@@ -1,12 +1,13 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JumpTarget
 import io.shiftleft.semanticcpg.language._
 
 class SwitchTests extends JimpleCode2CpgFixture {
 
-  val cpg = code("""
+  val cpg: Cpg = code("""
       |class Foo {
       |
       |   public static String main(String[] args) {
@@ -30,7 +31,7 @@ class SwitchTests extends JimpleCode2CpgFixture {
       |   }
       |
       |}
-      |""".stripMargin)
+      |""".stripMargin).cpg
 
   "should identify switch roots" in {
     cpg.method.name("main").switchBlock.code.toSetMutable shouldBe Set("tableswitch(l4)", "lookupswitch($stack5)")

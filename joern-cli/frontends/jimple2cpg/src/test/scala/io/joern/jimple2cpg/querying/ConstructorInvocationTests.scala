@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.language._
   */
 class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
-  val cpg = code("""
+  private lazy val cpg = code("""
       |class Foo {
       |  int x;
       |
@@ -49,7 +49,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
       |    bs[0] = new Bar(42);
       |  }
       |}
-      |""".stripMargin)
+      |""".stripMargin).cpg
 
   "it should create correct method nodes for constructors" in {
     cpg.method.name(io.joern.x2cpg.Defines.ConstructorMethodName).where(_.fullName("^Foo.*")).l match {

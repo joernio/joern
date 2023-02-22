@@ -9,7 +9,7 @@ import org.scalatest.Failed
 
 class ArrayTests extends JimpleCode2CpgFixture {
 
-  val cpg = code("""
+  private lazy val cpg = code("""
       |class Foo {
       |  public void foo() {
       |    int[] x = {0, 1, 2};
@@ -25,7 +25,7 @@ class ArrayTests extends JimpleCode2CpgFixture {
       |    x[1] = x[0] + 2;
       |  }
       |}
-      |""".stripMargin)
+      |""".stripMargin).cpg
 
   "should initialize array with three address code initialization expressions" in {
     def m = cpg.method(".*foo.*")
