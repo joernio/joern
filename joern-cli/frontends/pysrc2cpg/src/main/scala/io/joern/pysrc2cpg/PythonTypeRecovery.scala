@@ -17,42 +17,12 @@ import scala.util.Try
 
 class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
 
-  override def computationalUnit: Traversal[File] = cpg.file
+  override def compilationUnit: Traversal[File] = cpg.file
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = new RecoverForPythonFile(cpg, unit, builder, globalTable)
-
-}
-
-/** Defines how a procedure is available to be called in the current scope either by it being defined in this module or
-  * being imported.
-  *
-  * @param callingName
-  *   how this procedure is to be called, i.e., alias name, name with path, etc.
-  * @param fullName
-  *   the full name to where this method is defined where it's assumed to be defined under a named Python file.
-  */
-case class ScopedPythonProcedure(callingName: String, fullName: String, isConstructor: Boolean = false) {
-
-  /** @return
-    *   the full name of the procedure where it's assumed that it is defined within an <code>__init.py__</code> of the
-    *   module.
-    */
-  private def fullNameAsInit: String = fullName.replace(".py", s"${JFile.separator}__init__.py")
-
-  /** @return
-    *   the two ways that this procedure could be resolved to in Python. This will be pruned later by comparing this to
-    *   actual methods in the CPG.
-    */
-  def possibleCalleeNames: Set[String] =
-    if (isConstructor)
-      Set(fullName.concat(s".${Defines.ConstructorMethodName}"))
-    else
-      Set(fullName, fullNameAsInit)
-
-  override def toString: String = s"ProcedureCalledAs(${possibleCalleeNames.mkString(", ")})"
 
 }
 
@@ -66,64 +36,63 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
   override def importNodes(cu: AstNode): Traversal[AstNode] =
     cu.ast.isCall.nameExact("import") ++ super.importNodes(cu)
 
-  override def visitImport(i: Call): Unit = {
-    i.argumentOut.l match {
-      case List(path: Literal, funcOrModule: Literal) =>
-        val calleeNames = extractMethodDetailsFromImport(path.code, funcOrModule.code).possibleCalleeNames
-        symbolTable.put(CallAlias(funcOrModule.code), calleeNames)
-        symbolTable.put(LocalVar(funcOrModule.code), calleeNames)
-      case List(path: Literal, funcOrModule: Literal, alias: Literal) =>
-        val calleeNames =
-          extractMethodDetailsFromImport(path.code, funcOrModule.code, Option(alias.code)).possibleCalleeNames
-        symbolTable.put(CallAlias(alias.code), calleeNames)
-        symbolTable.put(LocalVar(alias.code), calleeNames)
-      case x => logger.warn(s"Unknown import pattern: ${x.map(_.label).mkString(", ")}")
+  override def visitImport(importCall: Call): Unit = {
+    importCall.argument.l match {
+      case (path: Literal) :: (funcOrModule: Literal) :: alias =>
+        val calleeNames = extractPossibleCalleeNames(path.code, funcOrModule.code)
+        alias match {
+          case (alias: Literal) :: Nil =>
+            symbolTable.put(CallAlias(alias.code), calleeNames)
+            symbolTable.put(LocalVar(alias.code), calleeNames)
+          case Nil =>
+            symbolTable.put(CallAlias(funcOrModule.code), calleeNames)
+            symbolTable.put(LocalVar(funcOrModule.code), calleeNames)
+          case x =>
+            logger.warn(s"Unknown import pattern: ${x.map(_.label).mkString(", ")}")
+        }
     }
   }
 
-  /** Parses all imports and identifies their full names and how they are to be called in this scope.
+  /** For an import - given by its module path and the name of the imported function or module - determine the possible
+    * callee names.
     *
     * @param path
     *   the module path.
     * @param funcOrModule
     *   the name of the imported entity.
-    * @param maybeAlias
-    *   an optional alias given to the imported entity.
     * @return
-    *   the procedure information in this scope.
+    *   the possible callee names
     */
-  private def extractMethodDetailsFromImport(
-    path: String,
-    funcOrModule: String,
-    maybeAlias: Option[String] = None
-  ): ScopedPythonProcedure = {
-    val isConstructor = funcOrModule.split("\\.").last.charAt(0).isUpper
-    if (path.isEmpty) {
-      if (funcOrModule.contains(".")) {
-        // Case 1: We have imported a function using a qualified path, e.g., import foo.bar => (bar.py or bar/__init.py)
+  private def extractPossibleCalleeNames(path: String, funcOrModule: String): Set[String] = {
+    val sep = Matcher.quoteReplacement(JFile.separator)
+    val procedureName = path match {
+      case "" if funcOrModule.contains(".") =>
+        // Case 1: Qualified path: import foo.bar => (bar.py or bar/__init.py)
         val splitFunc = funcOrModule.split("\\.")
         val name      = splitFunc.tail.mkString(".")
-        ScopedPythonProcedure(name, s"${splitFunc(0)}.py:<module>.$name", isConstructor)
-      } else {
-        // Case 2: We have imported a module, e.g., import foo => (foo.py or foo/__init.py)
-        ScopedPythonProcedure(funcOrModule, s"$funcOrModule.py:<module>", isConstructor)
-      }
-    } else {
-      val sep = Matcher.quoteReplacement(JFile.separator)
-      maybeAlias match {
+        s"${splitFunc(0)}.py:<module>.$name"
+      case "" =>
+        // Case 2: import of a module: import foo => (foo.py or foo/__init.py)
+        s"$funcOrModule.py:<module>"
+      case _ =>
         // TODO: This assumes importing from modules and never importing nested method
-        // Case 3:  We have imported a function from a module using an alias, e.g. import bar from foo as faz
-        case Some(alias) =>
-          ScopedPythonProcedure(alias, s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule", isConstructor)
-        // Case 4: We have imported a function from a module, e.g. import bar from foo
-        case None =>
-          ScopedPythonProcedure(
-            funcOrModule,
-            s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule",
-            isConstructor
-          )
-      }
+        // Case 3:  Import from module using alias, e.g. import bar from foo as faz
+        s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule"
     }
+
+    /** The two ways that this procedure could be resolved to in Python. */
+    def possibleCalleeNames(procedureName: String, isConstructor: Boolean): Set[String] =
+      if (isConstructor)
+        Set(procedureName.concat(s".${Defines.ConstructorMethodName}"))
+      else
+        Set(procedureName, fullNameAsInit)
+
+    /** the full name of the procedure where it's assumed that it is defined within an <code>__init.py__</code> of the
+      * module.
+      */
+    def fullNameAsInit: String = procedureName.replace(".py", s"${JFile.separator}__init__.py")
+
+    possibleCalleeNames(procedureName, isConstructor(funcOrModule))
   }
 
   override def postVisitImports(): Unit = {
@@ -157,6 +126,9 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
     */
   override def isConstructor(c: Call): Boolean =
     c.name.nonEmpty && c.name.charAt(0).isUpper && c.code.endsWith(")")
+
+  def isConstructor(funcOrModule: String): Boolean =
+    funcOrModule.split("\\.").lastOption.exists(_.charAt(0).isUpper)
 
   /** If the parent method is module then it can be used as a field.
     */
