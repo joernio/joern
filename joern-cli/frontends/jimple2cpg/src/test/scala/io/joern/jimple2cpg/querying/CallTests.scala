@@ -1,6 +1,7 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
@@ -9,7 +10,7 @@ class CallTests extends JimpleCode2CpgFixture {
 
   implicit val resolver: ICallResolver = NoResolve
 
-  private lazy val cpg = code("""
+  lazy val cpg: Cpg = code("""
       | class Foo {
       |   static int add(int x, int y) {
       |     return x + y;

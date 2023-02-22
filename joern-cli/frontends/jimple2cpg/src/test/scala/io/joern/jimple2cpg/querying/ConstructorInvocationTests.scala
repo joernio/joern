@@ -1,6 +1,7 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
@@ -11,7 +12,7 @@ import io.shiftleft.semanticcpg.language._
   */
 class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
-  private lazy val cpg = code("""
+  lazy val cpg: Cpg = code("""
       |class Foo {
       |  int x;
       |

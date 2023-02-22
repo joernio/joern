@@ -1,12 +1,12 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Ignore
 
 class TypeTests extends JimpleCode2CpgFixture {
 
-  private lazy val cpg = code("""
+  lazy val cpg: Cpg = code("""
       | package foo;
       |
       | class Foo {

@@ -1,13 +1,14 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.{toNodeTypeStarters, _}
 
 class ArithmeticOperationsTests extends JimpleCode2CpgFixture {
 
-  private lazy val cpg = code("""
+  lazy val cpg: Cpg = code("""
       | class Foo {
       |   static void main(int argc, char argv) {
       |     int a = 3;
