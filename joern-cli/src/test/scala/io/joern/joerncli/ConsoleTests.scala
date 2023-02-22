@@ -7,12 +7,6 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class ConsoleTests extends AnyWordSpec with Matchers {
 
-class TestJoernConsole(workspaceDir: String) extends JoernConsole {
-  override val config =
-    new ConsoleConfig(install = new InstallConfig(Map("SHIFTLEFT_CONSOLE_INSTALL_DIR" -> workspaceDir)))
-  override val importCode = new MyImportCode(this)
-}
-
   "run" should {
     "provide a human readable overview of overlay creators" in withTestCode { codeDir =>
       RunScriptTests.exec(os.RelPath("general/run.sc"), codeDir.toString)
