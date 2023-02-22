@@ -1,13 +1,14 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Local
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
 
 class LocalTests extends JimpleCode2CpgFixture {
 
-  val cpg = code("""
+  val cpg: Cpg = code("""
       | @SuppressWarnings("deprecation")
       | class Foo {
       |   Integer foo() {
@@ -18,7 +19,7 @@ class LocalTests extends JimpleCode2CpgFixture {
       |     return y;
       |   }
       | }
-      |""".stripMargin)
+      |""".stripMargin).cpg
 
   "should contain locals `x` and `y` with correct fields set" in {
     val List(x: Local) = cpg.local("\\$stack3").l

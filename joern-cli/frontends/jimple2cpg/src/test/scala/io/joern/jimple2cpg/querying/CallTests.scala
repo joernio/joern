@@ -1,15 +1,15 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.semanticcpg.language.NoResolve
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.{NoResolve, _}
 
 class CallTests extends JimpleCode2CpgFixture {
 
   implicit val resolver: ICallResolver = NoResolve
 
-  val cpg = code("""
+  lazy val cpg: Cpg = code("""
       | class Foo {
       |   static int add(int x, int y) {
       |     return x + y;
@@ -19,7 +19,7 @@ class CallTests extends JimpleCode2CpgFixture {
       |     return add(argc, 3);
       |   }
       | }
-      |""".stripMargin)
+      |""".stripMargin).cpg
 
   "should contain a call node for `add` with correct fields" in {
     val List(x) = cpg.call("add").l
