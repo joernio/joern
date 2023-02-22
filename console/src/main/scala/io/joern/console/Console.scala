@@ -406,7 +406,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
       if (projectOpt.get.appliedOverlays.contains(creator.overlayName)) {
         report(s"Overlay ${creator.overlayName} already exists - skipping")
       } else {
-        File(overlayDirName).createDirectories
+        File(overlayDirName).createDirectories()
         runCreator(creator, Some(overlayDirName))
       }
     }
