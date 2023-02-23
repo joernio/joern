@@ -2,8 +2,9 @@ package io.joern.console
 
 import better.files.*
 import os.{Path, pwd}
-import scala.jdk.CollectionConverters._
+import replpp.scripting.ScriptRunner
 
+import scala.jdk.CollectionConverters._
 import java.io.{InputStream, PrintStream, File as JFile}
 import java.net.URLClassLoader
 import java.nio.file.{Files, Path, Paths}
@@ -243,7 +244,7 @@ trait ScriptExecution { this: BridgeBase =>
     val predefCode = predefPlus(importCpgCode(config))
 
     try {
-      replpp.ScriptRunner.exec(
+      ScriptRunner.exec(
         replpp.Config(
           predefCode = Some(predefCode),
           predefFiles = config.additionalImports,
