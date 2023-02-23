@@ -243,26 +243,17 @@ trait ScriptExecution { this: BridgeBase =>
 
     val predefCode = predefPlus(importCpgCode(config))
 
-    try {
-      ForkingScriptRunner.exec(
-        replpp.Config(
-          predefCode = Some(predefCode),
-          predefFiles = config.additionalImports,
-          scriptFile = Option(decodedScriptFile),
-          command = config.command,
-          params = config.params,
-          dependencies = config.dependencies,
-          verbose = config.verbose
-        )
+    ForkingScriptRunner.exec(
+      replpp.Config(
+        predefCode = Some(predefCode),
+        predefFiles = config.additionalImports,
+        scriptFile = Option(decodedScriptFile),
+        command = config.command,
+        params = config.params,
+        dependencies = config.dependencies,
+        verbose = config.verbose
       )
-    } catch {
-      case t: Throwable =>
-        if (isEncryptedScript) {
-          /* minimizing exposure time by deleting the decrypted script straight away */
-          decodedScriptFile.toIO.delete()
-        }
-        throw t
-    }
+    )
   }
 
   /** For the given config, generate a list of commands to import the CPG
