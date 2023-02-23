@@ -94,7 +94,7 @@ object MethodStubCreator {
       val nameIdx = stub.fullName.indexOf(stub.name)
       stub.fullName.substring(0, nameIdx - 1)
     } match {
-      case Success(typeFullName) if !typeFullName.isBlank && !typeFullName.startsWith("<operator>") =>
+      case Success(typeFullName) if typeFullName != "" && !typeFullName.startsWith("<operator>") =>
         stub.astParentFullName(typeFullName).astParentType(NodeTypes.TYPE_DECL)
         Some(typeFullName)
       case _ => None
