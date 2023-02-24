@@ -950,6 +950,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .code(annotationExpr.toString)
       .name(annotationExpr.getName.getIdentifier)
       .fullName(expressionReturnTypeFullName(annotationExpr).getOrElse(fallbackType))
+      .lineNumber(line(annotationExpr))
   }
 
   private def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
