@@ -281,8 +281,8 @@ trait AstForStatementsCreator { this: AstCreator =>
     *
     * to:
     *
-    * { var _iterator = Object.keys(arr)[Symbol.iterator](); var _result; var i; while (!(_result =
-    * _iterator.next()).done) { i = _result.value; body } }
+    * { var _iterator = <operator>.iterator(arr); var _result; var i; while (!(_result = _iterator.next()).done) { i =
+    * _result.value; body } }
     */
   protected def astForInOfStatement(forInOfStmt: BabelNodeInfo): Ast = {
     // surrounding block:
@@ -300,58 +300,27 @@ trait AstForStatementsCreator { this: AstCreator =>
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
 
-    val callNode = createCallNode(
-      s"Object.keys($collectionName)[Symbol.iterator]()",
-      "",
-      DispatchTypes.DYNAMIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
-    )
-
-    val thisNode = createIdentifierNode("this", forInOfStmt)
-
-    val indexCallNode = createCallNode(
-      s"Object.keys($collectionName)[Symbol.iterator]",
-      Operators.indexAccess,
+    val iteratorCall = createCallNode(
+      s"<operator>.iterator($collectionName)",
+      "<operator>.iterator", // TODO: add to schema
       DispatchTypes.STATIC_DISPATCH,
       forInOfStmt.lineNumber,
       forInOfStmt.columnNumber
     )
 
-    val objectKeysCallNode = createStaticCallNode(
-      s"Object.keys($collectionName)",
-      "keys",
-      "Object.keys",
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
-    )
-
     val objectKeysCallArgs = List(astForNodeWithFunctionReference(collection))
-    val objectKeysCallAst  = callAst(objectKeysCallNode, objectKeysCallArgs)
-
-    val indexBaseNode = createIdentifierNode("Symbol", forInOfStmt)
-
-    val indexMemberNode = createFieldIdentifierNode("iterator", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
-
-    val indexAccessNode =
-      createFieldAccessCallAst(indexBaseNode, indexMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
-
-    val indexCallArgs = List(objectKeysCallAst, indexAccessNode)
-    val indexCallAst  = callAst(indexCallNode, indexCallArgs)
-
-    val callNodeArgs = List(Ast(thisNode))
-    val callNodeAst  = callAst(callNode, callNodeArgs, receiver = Option(indexCallAst))
+    val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
 
     val iteratorAssignmentNode =
       createCallNode(
-        s"$iteratorName = Object.keys($collectionName)[Symbol.iterator]()",
+        s"$iteratorName = <operator>.iterator($collectionName)",
         Operators.assignment,
         DispatchTypes.STATIC_DISPATCH,
         forInOfStmt.lineNumber,
         forInOfStmt.columnNumber
       )
 
-    val iteratorAssignmentArgs = List(Ast(iteratorNode), callNodeAst)
+    val iteratorAssignmentArgs = List(Ast(iteratorNode), objectKeysCallAst)
     val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
 
     // _result:
@@ -398,7 +367,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val rhsNode = createCallNode(
       s"$iteratorName.next()",
-      "",
+      "next",
       DispatchTypes.DYNAMIC_DISPATCH,
       forInOfStmt.lineNumber,
       forInOfStmt.columnNumber

@@ -1482,7 +1482,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     localI.code shouldBe "i"
 
     val List(iteratorAssignment) =
-      node.astChildren.isCall.codeExact("_iterator_0 = Object.keys(arr)[Symbol.iterator]()").l
+      node.astChildren.isCall.codeExact("_iterator_0 = <operator>.iterator(arr)").l
     iteratorAssignment.name shouldBe Operators.assignment
 
     val List(iteratorAssignmentLhs) = iteratorAssignment.astChildren.isIdentifier.l
@@ -1491,33 +1491,16 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     iteratorAssignmentLhs.argumentIndex shouldBe 1
 
     val List(iteratorAssignmentRhs) = iteratorAssignment.astChildren.isCall.l
-    iteratorAssignmentRhs.code shouldBe "Object.keys(arr)[Symbol.iterator]()"
+    iteratorAssignmentRhs.code shouldBe "<operator>.iterator(arr)"
     iteratorAssignmentRhs.order shouldBe 2
     iteratorAssignmentRhs.argumentIndex shouldBe 2
+    iteratorAssignmentRhs.name shouldBe "<operator>.iterator"
+    iteratorAssignmentRhs.methodFullName shouldBe "<operator>.iterator"
+    iteratorAssignmentRhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-    val List(indexCall) = iteratorAssignmentRhs.astChildren.isCall.l
-    indexCall.name shouldBe Operators.indexAccess
-
-    val List(objectKeysCall) = indexCall.astChildren.isCall.order(1).l
-    objectKeysCall.name shouldBe "keys"
-    objectKeysCall.methodFullName shouldBe "Object.keys"
-    objectKeysCall.code shouldBe "Object.keys(arr)"
-    objectKeysCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-
-    val objectKeysCallArg = objectKeysCall.argument(1).asInstanceOf[Identifier]
+    val objectKeysCallArg = iteratorAssignmentRhs.argument(1).asInstanceOf[Identifier]
     objectKeysCallArg.name shouldBe "arr"
     objectKeysCallArg.order shouldBe 1
-
-    val List(indexAccessCall) = indexCall.astChildren.isCall.order(2).l
-    indexAccessCall.argumentIndex shouldBe 2
-
-    val List(symbolIdentifier) = indexAccessCall.astChildren.isIdentifier.order(1).l
-    symbolIdentifier.name shouldBe "Symbol"
-    symbolIdentifier.argumentIndex shouldBe 1
-
-    val List(iteratorIdentifier) = indexAccessCall.astChildren.isFieldIdentifier.order(2).l
-    iteratorIdentifier.canonicalName shouldBe "iterator"
-    iteratorIdentifier.argumentIndex shouldBe 2
 
     val List(varResult) = node.astChildren.isIdentifier.nameExact("_result_0").l
     varResult.code shouldBe "_result_0"
