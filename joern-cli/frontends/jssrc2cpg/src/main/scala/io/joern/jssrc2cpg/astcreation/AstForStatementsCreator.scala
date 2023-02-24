@@ -281,7 +281,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     *
     * to:
     *
-    * { var _iterator = Runtime.iterator(arr); var _result; var i; while (!(_result = _iterator.next()).done) { i =
+    * { var _iterator = <operator>.iterator(arr); var _result; var i; while (!(_result = _iterator.next()).done) { i =
     * _result.value; body } }
     */
   protected def astForInOfStatement(forInOfStmt: BabelNodeInfo): Ast = {
@@ -301,7 +301,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     scope.addVariableReference(iteratorName, iteratorNode)
 
     val iteratorCall = createCallNode(
-      s"Runtime.iterator($collectionName)",
+      s"<operator>.iterator($collectionName)",
       "<operator>.iterator", // TODO: add to schema
       DispatchTypes.STATIC_DISPATCH,
       forInOfStmt.lineNumber,
@@ -313,7 +313,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val iteratorAssignmentNode =
       createCallNode(
-        s"$iteratorName = Runtime.iterator($collectionName)",
+        s"$iteratorName = <operator>.iterator($collectionName)",
         Operators.assignment,
         DispatchTypes.STATIC_DISPATCH,
         forInOfStmt.lineNumber,

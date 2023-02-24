@@ -1482,7 +1482,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     localI.code shouldBe "i"
 
     val List(iteratorAssignment) =
-      node.astChildren.isCall.codeExact("_iterator_0 = Runtime.iterator(arr)").l
+      node.astChildren.isCall.codeExact("_iterator_0 = <operator>.iterator(arr)").l
     iteratorAssignment.name shouldBe Operators.assignment
 
     val List(iteratorAssignmentLhs) = iteratorAssignment.astChildren.isIdentifier.l
@@ -1491,7 +1491,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     iteratorAssignmentLhs.argumentIndex shouldBe 1
 
     val List(iteratorAssignmentRhs) = iteratorAssignment.astChildren.isCall.l
-    iteratorAssignmentRhs.code shouldBe "Runtime.iterator(arr)"
+    iteratorAssignmentRhs.code shouldBe "<operator>.iterator(arr)"
     iteratorAssignmentRhs.order shouldBe 2
     iteratorAssignmentRhs.argumentIndex shouldBe 2
     iteratorAssignmentRhs.name shouldBe "<operator>.iterator"
