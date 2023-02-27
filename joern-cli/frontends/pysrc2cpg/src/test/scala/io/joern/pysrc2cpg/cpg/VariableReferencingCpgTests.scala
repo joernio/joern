@@ -1,8 +1,8 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.Py2CpgTestContext
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, nodes}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -22,6 +22,19 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
       localNode.referencingIdentifiers.lineNumber(2).code.head shouldBe "x"
       localNode.referencingIdentifiers.lineNumber(3).code.head shouldBe "x"
     }
+
+    "test local variable line and column numbers" in {
+      val f = cpg.local.nameExact("f").head
+      f.lineNumber shouldBe Some(1)
+      f.columnNumber shouldBe Some(1)
+      val x = cpg.method.name("f").local.nameExact("x").head
+      val y = cpg.method.name("f").local.nameExact("y").head
+      x.lineNumber shouldBe Some(2)
+      x.columnNumber shouldBe Some(3)
+      y.lineNumber shouldBe Some(3)
+      y.columnNumber shouldBe Some(3)
+    }
+
   }
 
   "parameter variable reference" - {
@@ -38,6 +51,20 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
       paramNode.referencingIdentifiers.lineNumber(2).code.head shouldBe "x"
       paramNode.referencingIdentifiers.lineNumber(3).code.head shouldBe "x"
     }
+
+    "test local variable line and column numbers" in {
+      val f = cpg.local.nameExact("f").head
+      f.lineNumber shouldBe Some(1)
+      f.columnNumber shouldBe Some(1)
+
+      val x = cpg.method.name("f").parameter.name("x").head
+      val y = cpg.method.name("f").local.name("y").head
+      x.lineNumber shouldBe Some(1)
+      x.columnNumber shouldBe Some(7)
+      y.lineNumber shouldBe Some(3)
+      y.columnNumber shouldBe Some(3)
+    }
+
   }
 
   "comprehension variable reference" - {
@@ -62,6 +89,19 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     "test identifiers in line 2 reference to comprehension block x variable" in {
       val localXNode = cpg.local("x").filter(_.definingBlock.astParent.isMethod.isEmpty).head
       cpg.identifier("x").lineNumber(2).refsTo.foreach(local => local shouldBe localXNode)
+    }
+
+    "test local variable line and column numbers" in {
+      val f = cpg.local.nameExact("f").head
+      f.lineNumber shouldBe Some(3)
+      f.columnNumber shouldBe Some(1)
+
+      val x = cpg.local("x").filterNot(_.definingBlock.astParent.isMethod.isEmpty).head
+      val y = cpg.local("y").filterNot(_.definingBlock.astParent.isMethod.isEmpty).head
+      x.lineNumber shouldBe Some(1)
+      x.columnNumber shouldBe Some(1)
+      y.lineNumber shouldBe Some(2)
+      y.columnNumber shouldBe Some(13)
     }
   }
 
