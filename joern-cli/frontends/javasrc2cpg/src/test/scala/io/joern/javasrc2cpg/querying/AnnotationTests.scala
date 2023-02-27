@@ -23,6 +23,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"
       annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter assignment child" in {
@@ -63,6 +64,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.name shouldBe "SingleAnnotation"
       annotationNode.fullName shouldBe "some.SingleAnnotation"
       annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter assignment child" in {
@@ -102,6 +104,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
       annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter assignment child" in {
@@ -127,6 +130,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
       annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter assignment child" in {
@@ -150,6 +154,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
       annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(17)
     }
   }
 
@@ -167,6 +172,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
       annotationNode.lineNumber shouldBe Some(4)
+      annotationNode.columnNumber shouldBe Some(3)
     }
   }
 
@@ -187,6 +193,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"
       annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter value" in {
@@ -214,6 +221,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"
       annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter assignment child" in {
@@ -263,6 +271,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"
       annotationNode.lineNumber shouldBe Some(6)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter value" in {
