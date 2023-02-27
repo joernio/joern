@@ -51,6 +51,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
           case x =>
             logger.warn(s"Unknown import pattern: ${x.map(_.label).mkString(", ")}")
         }
+      case _ =>
     }
   }
 
@@ -83,7 +84,7 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
         val pyFile        = absPath.map(a => Paths.get(a.toString + ".py"))
         fileOrDir match {
           case Some(f) if f.isDirectory && !pyFile.exists { p => better.files.File(p).exists } =>
-            s"${path.replaceAll("\\.", sep)}$sep$funcOrModule.py:<module>"
+            s"${path.replaceAll("\\.", sep)}/$funcOrModule.py:<module>"
           case _ =>
             s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule"
         }
