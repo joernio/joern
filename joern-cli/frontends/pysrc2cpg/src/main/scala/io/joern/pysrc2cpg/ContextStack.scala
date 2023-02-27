@@ -1,14 +1,25 @@
 package io.joern.pysrc2cpg
 
-import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewIdentifier, NewLocal, NewMethod, NewNode}
+import io.joern.pysrc2cpg.ContextStack.transferLineColInfo
 import io.joern.pysrc2cpg.memop._
+import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.nodes._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
 object ContextStack {
   private val logger = LoggerFactory.getLogger(getClass)
+
+  def transferLineColInfo(src: NewIdentifier, tgt: NewLocal): Unit = {
+    src.lineNumber match {
+      // If there are multiple occurrences and the local is already set, ignore later updates
+      case Some(srcLineNo) if tgt.lineNumber.isEmpty || !tgt.lineNumber.exists(_ < srcLineNo) =>
+        tgt.lineNumber(src.lineNumber)
+        tgt.columnNumber(src.columnNumber)
+      case _ =>
+    }
+  }
 }
 
 class ContextStack {
@@ -156,6 +167,7 @@ class ContextStack {
         !moduleMethodContext.get.variables.contains(name)
       ) {
         val localNode = createLocal(name, None)
+        transferLineColInfo(identifier, localNode)
         createAstEdge(localNode, moduleMethodContext.get.methodBlockNode.get, moduleMethodContext.get.order.getAndInc)
         moduleMethodContext.get.variables.put(name, localNode)
       }
@@ -202,7 +214,8 @@ class ContextStack {
         } else if (memOp == Store) {
           var variableNode = lookupVariableInMethod(name, contextStack)
           if (variableNode.isEmpty) {
-            val localNode              = createLocal(name, None)
+            val localNode = createLocal(name, None)
+            transferLineColInfo(identifier, localNode)
             val enclosingMethodContext = findEnclosingMethodContext(contextStack)
             createAstEdge(localNode, enclosingMethodContext.methodBlockNode.get, enclosingMethodContext.order.getAndInc)
             enclosingMethodContext.variables.put(name, localNode)
@@ -253,6 +266,7 @@ class ContextStack {
             if (!contextHasVariable) {
               if (context != moduleMethodContext.get) {
                 val localNode = createLocal(name, Some(closureBindingId))
+                transferLineColInfo(identifier, localNode)
                 createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
                 methodContext.variables.put(name, localNode)
               } else {
@@ -262,6 +276,7 @@ class ContextStack {
                 // For example this happens when there are wildcard imports directly into the
                 // modules namespace.
                 val localNode = createLocal(name, None)
+                transferLineColInfo(identifier, localNode)
                 createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
                 methodContext.variables.put(name, localNode)
               }
