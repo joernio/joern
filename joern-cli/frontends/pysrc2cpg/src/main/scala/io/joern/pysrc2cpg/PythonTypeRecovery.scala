@@ -12,6 +12,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
+import java.nio.file.{Path, Paths}
 import java.util.regex.Matcher
 import scala.util.Try
 
@@ -75,9 +76,17 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
         // Case 2: import of a module: import foo => (foo.py or foo/__init.py)
         s"$funcOrModule.py:<module>"
       case _ =>
-        // TODO: This assumes importing from modules and never importing nested method
         // Case 3:  Import from module using alias, e.g. import bar from foo as faz
-        s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule"
+        val rootDirectory = cpg.metaData.root.headOption
+        val absPath       = rootDirectory.map(r => Paths.get(r, path))
+        val fileOrDir     = absPath.map(a => better.files.File(a))
+        val pyFile        = absPath.map(a => Paths.get(a.toString + ".py"))
+        fileOrDir match {
+          case Some(f) if f.isDirectory && !pyFile.exists { p => better.files.File(p).exists } =>
+            s"${path.replaceAll("\\.", sep)}$sep$funcOrModule.py:<module>"
+          case _ =>
+            s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule"
+        }
     }
 
     /** The two ways that this procedure could be resolved to in Python. */
