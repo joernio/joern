@@ -951,6 +951,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .name(annotationExpr.getName.getIdentifier)
       .fullName(expressionReturnTypeFullName(annotationExpr).getOrElse(fallbackType))
       .lineNumber(line(annotationExpr))
+      .columnNumber(column(annotationExpr))
   }
 
   private def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
@@ -2698,6 +2699,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           .evaluationStrategy(evalStrat)
           .typeFullName(typeFullName)
           .lineNumber(line(expr))
+          .columnNumber(column(expr))
         typeInfoCalc.registerType(typeFullName)
         paramNode
       }
