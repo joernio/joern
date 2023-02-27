@@ -479,7 +479,31 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       booleanFieldConstructor.methodFullName shouldBe Seq("django", "db.py:<module>.models.BooleanField.<init>")
         .mkString(File.separator)
     }
+  }
 
+  "a call made via an import from a directory" should {
+    lazy val cpg = code("""
+        |from data import db_session
+        |
+        |def foo():
+        |   db_sess = db_session.create_session()
+        |   x = db_sess.query(foo, bar)
+        |""".stripMargin)
+      .moreCode(
+        """
+          |from sqlalchemy.orm import Session
+          |
+          |def create_session() -> Session:
+          |   global __factory
+          |   return __factory()
+          |""".stripMargin,
+        "data/db_session.py"
+      )
+
+    "recover its full name successfully" in {
+      val List(methodFullName) = cpg.call("query").methodFullName.l
+      methodFullName shouldBe "data/db_session.py:<module>.create_session.<returnValue>.query"
+    }
   }
 
 }
