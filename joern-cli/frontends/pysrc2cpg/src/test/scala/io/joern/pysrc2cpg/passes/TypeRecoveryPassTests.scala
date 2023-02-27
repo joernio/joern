@@ -502,7 +502,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "recover its full name successfully" in {
       val List(methodFullName) = cpg.call("query").methodFullName.l
-      methodFullName shouldBe "sqlalchemy.orm.py<module>:Session.createSession.<returnValue>.query"
+      methodFullName shouldBe "data/db_session.py:<module>.create_session.<returnValue>.query"
     }
   }
 
