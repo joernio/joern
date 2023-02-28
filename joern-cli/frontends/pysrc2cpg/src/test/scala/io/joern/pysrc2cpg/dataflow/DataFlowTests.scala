@@ -160,4 +160,36 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     }
   }
 
+  "flow from global variable to sink" in {
+    val cpg: Cpg = code("""
+        |import requests
+        |url = "https://app.commissionly.io/api/public/opportunity"
+        |
+        |class CommissionlyClient:
+        |    def post_data(self, data, accountId):
+        |        r = requests.post(
+        |            url,
+        |            json={"isloop": True, "data": accountId},
+        |            auth=data.password,
+        |        )
+        |
+        |client = CommissionlyClient()
+        |data = {"key1": "value1"}
+        |accountId="sometext"
+        |response = client.post_data(data, accountId)
+        |""".stripMargin)
+    val source = cpg.identifier(".*url.*").l
+    val sink   = cpg.call("post").l
+    source.size shouldBe 2
+    sink.size shouldBe 1
+    val flows = sink.reachableByFlows(source).l
+    flows.size shouldBe 1
+
+    val sourcel = cpg.literal(".*app.commissionly.io.*").l
+    sourcel.size shouldBe 1
+
+    val flowsl = sink.reachableByFlows(source).l
+    flowsl.size shouldBe 1
+  }
+
 }
