@@ -14,6 +14,7 @@ import soot.{G, PhaseOptions, Scene}
 
 import java.io.{File => JFile}
 import java.nio.file.Paths
+import org.apache.commons.io.FileUtils
 import scala.jdk.CollectionConverters.{EnumerationHasAsScala, SeqHasAsJava}
 import scala.language.postfixOps
 import scala.util.Try
@@ -68,15 +69,18 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     Options.v().set_src_prec(Options.src_prec_class)
   }
 
-  def sootLoadJimple(inputDir: String): Unit = {
-    Options.v().set_process_dir(List(inputDir).asJava)
-    Options.v().set_src_prec(Options.src_prec_jimple)
-  }
-
-  def sootLoadJava(inputDir: String): Unit = {
+  def sootLoadSource(input: String, ext: String): Unit = {
+    // Soot does not support loading single class/jimple file using path, so we move it to temp dir first
     // NOTE: Soot’s frontend for Java source files is outdated (only partially supports Java version up to 7) and not very robust.
-    Options.v().set_process_dir(List(inputDir).asJava)
-    Options.v().set_src_prec(Options.src_prec_java)
+    val src = new JFile(input)
+    val dst = new JFile(ProgramHandlingUtil.getUnpackingDir.toString, src.getName)
+    val prec = ext match {
+      case "jimple" => Options.src_prec_jimple
+      case _        => Options.src_prec_class
+    }
+    FileUtils.copyFile(src, dst)
+    Options.v().set_process_dir(List(ProgramHandlingUtil.getUnpackingDir.toString).asJava)
+    Options.v().set_src_prec(prec)
   }
 
   def createCpg(config: Config): Try[Cpg] = {
@@ -102,15 +106,15 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
         new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
           .createAndApply()
       } else {
-        val ext = config.inputPath.split("\\.").last
+        val ext = config.inputPath.split("\\.").lastOption.getOrElse("")
         ext match {
-          case "jar" | "zip" => sootLoadClass(config.inputPath)
-          case "apk" | "dex" => sootLoadApk(config.inputPath)
-          case "jimple" => sootLoadJimple(config.inputPath)
+          case "jar" | "zip"      => sootLoadClass(config.inputPath)
+          case "apk" | "dex"      => sootLoadApk(config.inputPath)
+          case "jimple" | "class" => sootLoadSource(config.inputPath, ext)
           // case "war" => sootLoadClass(unpackPath/WEB-INF/classes)
           case _ => {
-            logger.warn(s"Don't knonw how to handle input: $inputPath")
-            throw new RuntimeException(config.inputPath)
+            logger.warn(s"Don't know how to handle input: $inputPath")
+            throw new RuntimeException(s"Unsupported input at ${config.inputPath}")
           }
         }
         logger.info("Loading classes to soot")

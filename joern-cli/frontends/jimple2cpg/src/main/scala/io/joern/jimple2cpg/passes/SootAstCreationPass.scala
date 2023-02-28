@@ -11,7 +11,7 @@ import soot.SourceLocator
 
 /** Creates the AST layer from the given class file and stores all types in the given global parameter.
   */
-class SootAstCreationPass (cpg: Cpg) extends ConcurrentWriterCpgPass[SootClass](cpg) {
+class SootAstCreationPass(cpg: Cpg) extends ConcurrentWriterCpgPass[SootClass](cpg) {
 
   val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
@@ -27,7 +27,6 @@ class SootAstCreationPass (cpg: Cpg) extends ConcurrentWriterCpgPass[SootClass](
     } catch {
       case e: Exception =>
         logger.warn(s"Cannot parse: $part", e)
-        Iterator()
     }
   }
 
