@@ -4,7 +4,7 @@ import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
 import io.joern.pythonparser.ast
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewMember, NewMethod, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -353,6 +353,7 @@ class PythonAstVisitor(
     }
 
     val methodReturnNode = nodeBuilder.methodReturnNode(returnTypeHint, lineAndColumn)
+    methodReturnNode.dynamicTypeHintFullName(nodeBuilder.extractTypesFromHint(returns))
     edgeBuilder.astEdge(methodReturnNode, methodNode, 2)
 
     val bodyOrder = new AutoIncIndex(1)
@@ -553,7 +554,7 @@ class PythonAstVisitor(
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", 0, isVariadic = false, lineAndColumn) :: Nil ++
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, Option(0)) :: Nil ++
             convert(parameters, 1)
         )
       },
@@ -692,7 +693,7 @@ class PythonAstVisitor(
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", 0, isVariadic = false, lineAndColumn) :: Nil ++
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, Some(0)) :: Nil ++
             convert(parametersWithoutSelf, 1)
         )
       },
@@ -1905,15 +1906,27 @@ class PythonAstVisitor(
   // will all be slightly different in the future when we can represent the
   // different types in the cpg.
   def convertPosOnlyArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, index.getAndInc, isVariadic = false, lineAndColOf(arg))
+    nodeBuilder.methodParameterNode(
+      arg.arg,
+      isVariadic = false,
+      lineAndColOf(arg),
+      Option(index.getAndInc),
+      arg.annotation
+    )
   }
 
   def convertNormalArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, index.getAndInc, isVariadic = false, lineAndColOf(arg))
+    nodeBuilder.methodParameterNode(
+      arg.arg,
+      isVariadic = false,
+      lineAndColOf(arg),
+      Option(index.getAndInc),
+      arg.annotation
+    )
   }
 
   def convertVarArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, index.getAndInc, isVariadic = true, lineAndColOf(arg))
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = true, lineAndColOf(arg), Option(index.getAndInc))
   }
 
   def convertKeywordOnlyArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
@@ -1942,6 +1955,7 @@ class PythonAstVisitor(
 
 object PythonAstVisitor {
   val builtinPrefix   = "__builtin."
+  val typingPrefix    = "typing."
   val metaClassSuffix = "<meta>"
 
   // This list contains all functions from https://docs.python.org/3/library/functions.html#built-in-funcs
@@ -2106,5 +2120,87 @@ object PythonAstVisitor {
     "type",
     "unicode",
     "xrange"
+  )
+
+  lazy val allBuiltinClasses: Set[String] = (builtinClassesV2 ++ builtinClassesV3).toSet
+
+  lazy val typingClassesV3: Set[String] = Set(
+    "Annotated",
+    "Any",
+    "Callable",
+    "ClassVar",
+    "Final",
+    "ForwardRef",
+    "Generic",
+    "Literal",
+    "Optional",
+    "Protocol",
+    "Tuple",
+    "Type",
+    "TypeVar",
+    "Union",
+    "AbstractSet",
+    "ByteString",
+    "Container",
+    "ContextManager",
+    "Hashable",
+    "ItemsView",
+    "Iterable",
+    "Iterator",
+    "KeysView",
+    "Mapping",
+    "MappingView",
+    "MutableMapping",
+    "MutableSequence",
+    "MutableSet",
+    "Sequence",
+    "Sized",
+    "ValuesView",
+    "Awaitable",
+    "AsyncIterator",
+    "AsyncIterable",
+    "Coroutine",
+    "Collection",
+    "AsyncGenerator",
+    "AsyncContextManager",
+    "Reversible",
+    "SupportsAbs",
+    "SupportsBytes",
+    "SupportsComplex",
+    "SupportsFloat",
+    "SupportsIndex",
+    "SupportsInt",
+    "SupportsRound",
+    "ChainMap",
+    "Counter",
+    "Deque",
+    "Dict",
+    "DefaultDict",
+    "List",
+    "OrderedDict",
+    "Set",
+    "FrozenSet",
+    "NamedTuple",
+    "TypedDict",
+    "Generator",
+    "BinaryIO",
+    "IO",
+    "Match",
+    "Pattern",
+    "TextIO",
+    "AnyStr",
+    "cast",
+    "final",
+    "get_args",
+    "get_origin",
+    "get_type_hints",
+    "NewType",
+    "no_type_check",
+    "no_type_check_decorator",
+    "NoReturn",
+    "overload",
+    "runtime_checkable",
+    "Text",
+    "TYPE_CHECKING"
   )
 }
