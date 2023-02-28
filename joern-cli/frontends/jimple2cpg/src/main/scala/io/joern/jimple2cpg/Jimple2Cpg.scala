@@ -1,5 +1,6 @@
 package io.joern.jimple2cpg
 
+import io.joern.jimple2cpg.passes.SootAstCreationPass
 import io.joern.jimple2cpg.passes.AstCreationPass
 import io.joern.jimple2cpg.util.ProgramHandlingUtil
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.{extractSourceFilesFromArchive, moveClassFiles}
@@ -13,7 +14,8 @@ import soot.{G, PhaseOptions, Scene}
 
 import java.io.{File => JFile}
 import java.nio.file.Paths
-import scala.jdk.CollectionConverters.EnumerationHasAsScala
+import org.apache.commons.io.FileUtils
+import scala.jdk.CollectionConverters.{EnumerationHasAsScala, SeqHasAsJava}
 import scala.language.postfixOps
 import scala.util.Try
 
@@ -51,46 +53,80 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
 
   private val logger = LoggerFactory.getLogger(classOf[Jimple2Cpg])
 
+  def sootLoadApk(input: String, framework: String = null): Unit = {
+    Options.v().set_process_dir(List(input).asJava)
+    if (framework != null) {
+      Options.v().set_src_prec(Options.src_prec_apk)
+      Options.v().set_force_android_jar(framework)
+    } else {
+      Options.v().set_src_prec(Options.src_prec_apk_c_j)
+    }
+    Options.v().set_process_multiple_dex(true)
+  }
+
+  def sootLoadClass(inputDir: String): Unit = {
+    Options.v().set_process_dir(List(inputDir).asJava)
+    Options.v().set_src_prec(Options.src_prec_class)
+  }
+
+  def sootLoadSource(input: String, ext: String): Unit = {
+    // Soot does not support loading single class/jimple file using path, so we move it to temp dir first
+    // NOTE: Soot’s frontend for Java source files is outdated (only partially supports Java version up to 7) and not very robust.
+    val src = new JFile(input)
+    val dst = new JFile(ProgramHandlingUtil.getUnpackingDir.toString, src.getName)
+    val prec = ext match {
+      case "jimple" => Options.src_prec_jimple
+      case _        => Options.src_prec_class
+    }
+    FileUtils.copyFile(src, dst)
+    Options.v().set_process_dir(List(ProgramHandlingUtil.getUnpackingDir.toString).asJava)
+    Options.v().set_src_prec(prec)
+  }
+
   def createCpg(config: Config): Try[Cpg] = {
     val ret = withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
-      val rawSourceCodeFile = new JFile(config.inputPath)
-      val sourceTarget      = rawSourceCodeFile.toPath.toAbsolutePath.normalize.toString
-      val sourceCodeDir = if (rawSourceCodeFile.isDirectory) {
-        sourceTarget
-      } else {
-        Paths
-          .get(new JFile(sourceTarget).getParentFile.getAbsolutePath)
-          .normalize
-          .toString
-      }
+      val inputPath = new JFile(config.inputPath)
 
       configureSoot()
       new MetaDataPass(cpg, language, config.inputPath).createAndApply()
 
-      val sourceFileExtensions  = Set(".class", ".jimple")
-      val archiveFileExtensions = Set(".jar", ".war")
-      // Load source files and unpack archives if necessary
-      val sourceFileNames = if (sourceTarget == sourceCodeDir) {
-        // Load all source files in a directory
-        loadSourceFiles(sourceCodeDir, sourceFileExtensions, archiveFileExtensions)
+      if (inputPath.isDirectory()) {
+        // make sure classpath is configured correctly
+        Options.v().set_soot_classpath(ProgramHandlingUtil.getUnpackingDir.toString)
+        Options.v().set_prepend_classpath(true)
+        val sourceFileExtensions  = Set(".class", ".jimple")
+        val archiveFileExtensions = Set(".jar", ".war")
+        // Load source files and unpack archives if necessary
+        val sourceFileNames = loadSourceFiles(config.inputPath, sourceFileExtensions, archiveFileExtensions)
+        logger.info(s"Loading ${sourceFileNames.size} program files")
+        logger.debug(s"Source files are: $sourceFileNames")
+        loadClassesIntoSoot(sourceFileNames)
+        val astCreator = new AstCreationPass(sourceFileNames, cpg)
+        astCreator.createAndApply()
+        new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
+          .createAndApply()
       } else {
-        // Load single file that was specified
-        loadSourceFiles(sourceTarget, sourceFileExtensions, archiveFileExtensions)
+        val ext = config.inputPath.split("\\.").lastOption.getOrElse("")
+        ext match {
+          case "jar" | "zip"      => sootLoadClass(config.inputPath)
+          case "apk" | "dex"      => sootLoadApk(config.inputPath)
+          case "jimple" | "class" => sootLoadSource(config.inputPath, ext)
+          // case "war" => sootLoadClass(unpackPath/WEB-INF/classes)
+          case _ => {
+            logger.warn(s"Don't know how to handle input: $inputPath")
+            throw new RuntimeException(s"Unsupported input at ${config.inputPath}")
+          }
+        }
+        logger.info("Loading classes to soot")
+        Scene.v().loadNecessaryClasses()
+        logger.info(s"Loaded ${Scene.v().getApplicationClasses().size()} classes")
+        val astCreator = new SootAstCreationPass(cpg)
+        astCreator.createAndApply()
+        new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
+          .createAndApply()
       }
-
-      logger.info(s"Loading ${sourceFileNames.size} program files")
-      logger.debug(s"Source files are: $sourceFileNames")
-
-      // Load classes into Soot
-      loadClassesIntoSoot(sourceFileNames)
-      // Project Soot classes
-      val astCreator = new AstCreationPass(sourceFileNames, cpg)
-      astCreator.createAndApply()
       // Clear classes from Soot
       G.reset()
-
-      new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
-        .createAndApply()
     }
     clean()
     ret
@@ -123,9 +159,6 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     // set application mode
     Options.v().set_app(false)
     Options.v().set_whole_program(false)
-    // make sure classpath is configured correctly
-    Options.v().set_soot_classpath(ProgramHandlingUtil.getUnpackingDir.toString)
-    Options.v().set_prepend_classpath(true)
     // keep debugging info
     Options.v().set_keep_line_number(true)
     Options.v().set_keep_offset(true)
@@ -135,6 +168,9 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     // keep variable names
     Options.v.setPhaseOption("jb.sils", "enabled:false")
     PhaseOptions.v().setPhaseOption("jb", "use-original-names:true")
+    // output jimple
+    Options.v().set_output_format(Options.output_format_jimple)
+    Options.v().set_output_dir(ProgramHandlingUtil.getUnpackingDir.toString)
   }
 
   private def clean(): Unit = {
