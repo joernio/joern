@@ -3,6 +3,7 @@ package io.joern.joerncli
 import better.files.File
 import io.circe.generic.auto._
 import io.circe.syntax.EncoderOps
+import io.joern.joerncli.JoernParse.ParserConfig
 import io.joern.joerncli.slicing._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
@@ -26,7 +27,7 @@ object JoernSlice {
     scopt.Read.reads(SliceMode withName)
 
   case class Config(
-    cpgFileName: File = File("cpg.bin"),
+    inputPath: File = File("cpg.bin"),
     outFile: File = File("slices"),
     sliceMode: SliceModes = DataFlow,
     sourceFile: Option[String] = None,
@@ -36,13 +37,30 @@ object JoernSlice {
 
   def main(args: Array[String]): Unit = {
     parseConfig(args).foreach { config =>
-      Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName.pathAsString)) { cpg =>
+      val inputCpgPath =
+        if (config.inputPath.isDirectory) generateTempCpg(config)
+        else config.inputPath.pathAsString
+      Using.resource(CpgBasedTool.loadFromOdb(inputCpgPath)) { cpg =>
         val slice: ProgramSlice = config.sliceMode match {
           case DataFlow => DataFlowSlicing.calculateDataFlowSlice(cpg, config)
           case Usages   => UsageSlicing.calculateUsageSlice(cpg, config)
         }
         storeSliceInNewCpg(config.outFile, slice)
       }
+    }
+  }
+
+  private def generateTempCpg(config: Config): String = {
+    val tmpFile = File.newTemporaryFile("joern-slice", ".bin")
+    println(s"Generating CPG from code at ${config.inputPath.pathAsString}")
+    (JoernParse.run(ParserConfig(config.inputPath.pathAsString, outputCpgFile = tmpFile.pathAsString)) match {
+      case Right(_) =>
+        println(s"Temporary CPG has been successfully generated at ${tmpFile.pathAsString}")
+        Right(tmpFile.deleteOnExit(swallowIOExceptions = true).pathAsString)
+      case x => x
+    }) match {
+      case Left(err)   => throw new RuntimeException(err)
+      case Right(path) => path
     }
   }
 
@@ -56,7 +74,7 @@ object JoernSlice {
         .action { (x, c) =>
           val path = File(x)
           if (!path.isRegularFile) failure(s"File at '$x' not found or not regular, e.g. a directory.")
-          c.copy(cpgFileName = path)
+          c.copy(inputPath = path)
         }
       opt[String]('o', "out")
         .text("the output file to write slices to - defaults to `slices`. The file is suffixed based on the mode.")
@@ -99,16 +117,23 @@ object JoernSlice {
       }
     }
 
-    programSlice match {
+    def normalizePath(path: String, ext: String): String =
+      if (path.endsWith(ext)) path
+      else path + ext
+
+    val finalOutputPath = programSlice match {
       case ProgramDataFlowSlice(dataFlowSlices) =>
-        val sliceCpg = File(outFile.pathAsString + ".cpg").createFileIfNotExists()
+        val sliceCpg = File(normalizePath(outFile.pathAsString, ".cpg")).createFileIfNotExists()
         Using.resource(Cpg.withStorage(sliceCpg.pathAsString)) { newCpg =>
           storeDataFlowSlices(newCpg, dataFlowSlices.flatMap(_._2).toSet)
         }
+        sliceCpg.pathAsString
       case programUsageSlice: ProgramUsageSlice =>
-        val sliceCpg = File(outFile.pathAsString + ".json").createFileIfNotExists()
+        val sliceCpg = File(normalizePath(outFile.pathAsString, ".json")).createFileIfNotExists()
         sliceCpg.write(programUsageSlice.asJson.spaces2)
+        sliceCpg.pathAsString
     }
+    println(s"Slices have been successfully generated and written to $finalOutputPath")
   }
 
 }
