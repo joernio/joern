@@ -153,6 +153,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
   }
 
+
   override def compute(): Unit = try {
     prepopulateSymbolTable()
     // Set known aliases that point to imports for local and external methods/modules

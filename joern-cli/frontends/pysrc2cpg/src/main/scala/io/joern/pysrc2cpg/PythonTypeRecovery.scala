@@ -52,6 +52,7 @@ class RecoverForPythonFile(
             symbolTable.put(CallAlias(alias.code), calleeNames)
             symbolTable.put(LocalVar(alias.code), calleeNames)
           case Nil =>
+            println("writing in: " + CallAlias(funcOrModule.code), calleeNames)
             symbolTable.put(CallAlias(funcOrModule.code), calleeNames)
             symbolTable.put(LocalVar(funcOrModule.code), calleeNames)
           case x =>
