@@ -1,7 +1,7 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.console.cpgcreation.{cpgGeneratorForLanguage, guessLanguage, CpgGenerator}
+import io.joern.console.cpgcreation.{CpgGenerator, cpgGeneratorForLanguage, guessLanguage}
 import io.joern.console.{FrontendConfig, InstallConfig}
 import io.joern.joerncli.CpgBasedTool.newCpgCreatedString
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -71,19 +71,24 @@ object JoernParse {
 
     parseConfig(parserArgs) match {
       case Right(config) =>
-        if (config.listLanguages) {
-          Right(buildLanguageList())
-        } else
-          for {
-            _        <- checkInputPath(config)
-            language <- getLanguage(config)
-            _        <- generateCpg(installConfig, frontendArgs, config, language)
-            _        <- applyDefaultOverlays(config)
-          } yield newCpgCreatedString(config.outputCpgFile)
+        if (config.listLanguages) Right(buildLanguageList())
+        else run(config, frontendArgs, installConfig)
 
       case Left(err) => Left(err)
     }
   }
+
+  def run(
+    config: ParserConfig,
+    frontendArgs: List[String] = List.empty,
+    installConfig: InstallConfig = InstallConfig()
+  ): Either[String, String] =
+    for {
+      _        <- checkInputPath(config)
+      language <- getLanguage(config)
+      _        <- generateCpg(installConfig, frontendArgs, config, language)
+      _        <- applyDefaultOverlays(config)
+    } yield newCpgCreatedString(config.outputCpgFile)
 
   private def checkInputPath(config: ParserConfig): Either[String, Unit] = {
 
