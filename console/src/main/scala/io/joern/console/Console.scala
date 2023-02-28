@@ -360,7 +360,10 @@ class Console[T <: Project](
 
     cpgOpt
       .filter(_.metaData.hasNext)
-      .foreach(applyDefaultOverlays)
+      .foreach{ cpg =>
+        applyDefaultOverlays(cpg)
+        applyPostProcessingPasses(cpg)
+      }
 
     cpgOpt
   }
@@ -384,6 +387,13 @@ class Console[T <: Project](
     */
   def reload(name: String): Option[Project] = {
     close(name).flatMap(p => open(p.name))
+  }
+
+  def applyPostProcessingPasses(cpg: Cpg): Cpg = {
+    new io.joern.console.cpgcreation.CpgGeneratorFactory(_config).forLanguage(cpg.metaData.language.l.head) match {
+      case Some(frontend) => frontend.applyPostProcessingPasses(cpg)
+      case None => cpg
+    }
   }
 
   def applyDefaultOverlays(cpg: Cpg): Cpg = {
