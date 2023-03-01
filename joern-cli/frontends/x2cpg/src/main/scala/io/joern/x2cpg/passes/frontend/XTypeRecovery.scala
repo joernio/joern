@@ -60,6 +60,7 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, iteration
       compilationUnit
         .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
         .foreach(_.get())
+
   } finally {
     globalTable.clear()
     addedNodes.clear()
@@ -131,6 +132,26 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def members: Traversal[Member] =
     cu.ast.isMember
 
+  protected def visitCall(call: Call): Unit = {
+    symbolTable.get(call).foreach { methodFullName =>
+      val index = methodFullName.indexOf("<returnValue>")
+      if (index != -1) {
+        val methodToLookup = methodFullName.substring(0, index - 1)
+        val remainder      = methodFullName.substring(index + "<returnValue>".length)
+        val methods        = cpg.method.fullNameExact(methodToLookup).l
+        methods match {
+          case List(method) =>
+            val dynamicTypeHints = method.methodReturn.dynamicTypeHintFullName.toSet
+            val newTypes         = dynamicTypeHints.map(x => x + remainder)
+            symbolTable.put(call, newTypes)
+          case List() =>
+          case _ =>
+            logger.warn(s"More than a single function matches method full name: $methodToLookup")
+        }
+      }
+    }
+  }
+
   override def compute(): Unit = try {
     prepopulateSymbolTable()
     // Set known aliases that point to imports for local and external methods/modules
@@ -141,6 +162,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     members.foreach(visitMembers)
     // Populate local symbol table with assignments
     assignments.foreach(visitAssignments)
+    // Propagate return values
+    cpg.method.ast.isCall.foreach(visitCall)
+
     // Persist findings
     setTypeInformation()
   } finally {
