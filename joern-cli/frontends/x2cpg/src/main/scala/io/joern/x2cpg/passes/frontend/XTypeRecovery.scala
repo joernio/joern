@@ -138,7 +138,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       if (index != -1) {
         val methodToLookup = methodFullName.substring(0, index - 1)
         val remainder      = methodFullName.substring(index + "<returnValue>".length)
-        println(remainder)
         val methods = cpg.method.fullNameExact(methodToLookup).l
         methods match {
           case List(method) =>
