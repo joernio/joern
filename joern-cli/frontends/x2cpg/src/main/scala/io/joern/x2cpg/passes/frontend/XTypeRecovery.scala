@@ -57,9 +57,9 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, iteration
 
   override def run(builder: DiffGraphBuilder): Unit = try {
     for (_ <- 0 until iterations)
-        compilationUnit
-          .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
-          .foreach(_.get())
+      compilationUnit
+        .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
+        .foreach(_.get())
 
   } finally {
     globalTable.clear()
@@ -132,18 +132,18 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def members: Traversal[Member] =
     cu.ast.isMember
 
-  protected def visitCall(call: Call) : Unit = {
-    symbolTable.get(call).foreach{ methodFullName =>
+  protected def visitCall(call: Call): Unit = {
+    symbolTable.get(call).foreach { methodFullName =>
       val index = methodFullName.indexOf("<returnValue>")
       if (index != -1) {
         val methodToLookup = methodFullName.substring(0, index - 1)
-        val remainder = methodFullName.substring(index + "<returnValue>".length)
+        val remainder      = methodFullName.substring(index + "<returnValue>".length)
         println(remainder)
         val methods = cpg.method.fullNameExact(methodToLookup).l
         methods match {
           case List(method) =>
             val dynamicTypeHints = method.methodReturn.dynamicTypeHintFullName.toSet
-            val newTypes = dynamicTypeHints.map(x => x + remainder)
+            val newTypes         = dynamicTypeHints.map(x => x + remainder)
             symbolTable.put(call, newTypes)
           case List() =>
           case _ =>
@@ -152,7 +152,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       }
     }
   }
-
 
   override def compute(): Unit = try {
     prepopulateSymbolTable()
