@@ -12,7 +12,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
-import java.nio.file.{Path, Paths}
+import java.nio.file.Paths
 import java.util.regex.Matcher
 import scala.util.Try
 
