@@ -90,7 +90,7 @@ class RecoverForPythonFile(
         val pyFile        = absPath.map(a => Paths.get(a.toString + ".py"))
         fileOrDir match {
           case Some(f) if f.isDirectory && !pyFile.exists { p => better.files.File(p).exists } =>
-            s"${path.replaceAll("\\.", sep)}/$funcOrModule.py:<module>"
+            s"${path.replaceAll("\\.", sep)}${java.io.File.separator}$funcOrModule.py:<module>"
           case Some(f) if f.isDirectory && (f / s"$funcOrModule.py").exists =>
             s"${(f / s"$funcOrModule.py").pathAsString}:<module>"
           case _ =>
