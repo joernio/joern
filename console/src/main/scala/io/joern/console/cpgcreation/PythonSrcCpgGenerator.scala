@@ -2,7 +2,13 @@ package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
 import io.shiftleft.codepropertygraph.Cpg
-import io.joern.pysrc2cpg.{DynamicTypeHintFullNamePass, ImportsPass, PythonNaiveCallLinker, PythonTypeHintCallLinker, PythonTypeRecovery}
+import io.joern.pysrc2cpg.{
+  DynamicTypeHintFullNamePass,
+  ImportsPass,
+  PythonNaiveCallLinker,
+  PythonTypeHintCallLinker,
+  PythonTypeRecovery
+}
 
 import java.nio.file.Path
 
