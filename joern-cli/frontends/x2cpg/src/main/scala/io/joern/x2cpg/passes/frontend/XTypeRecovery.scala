@@ -138,7 +138,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       if (index != -1) {
         val methodToLookup = methodFullName.substring(0, index - 1)
         val remainder      = methodFullName.substring(index + "<returnValue>".length)
-        val methods = cpg.method.fullNameExact(methodToLookup).l
+        val methods        = cpg.method.fullNameExact(methodToLookup).l
         methods match {
           case List(method) =>
             val dynamicTypeHints = method.methodReturn.dynamicTypeHintFullName.toSet
