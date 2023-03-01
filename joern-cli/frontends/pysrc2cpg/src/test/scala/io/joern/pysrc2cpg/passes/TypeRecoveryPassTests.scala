@@ -506,4 +506,31 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "recover a method ref from a field identifier" should {
+    lazy val cpg = code(
+      """
+        |from django.conf.urls import url
+        |
+        |from student import views
+        |
+        |urlpatterns = [
+        |    url(r'^addStudent/$', views.add_student)
+        |]
+        |""".stripMargin,
+      "urls.py"
+    ).moreCode(
+      """
+        |def add_student():
+        | pass
+        |""".stripMargin,
+      s"student${File.separator}views.py"
+    )
+
+    "recover the method full name related" in {
+      val Some(methodRef) = cpg.methodRef.code("views.add_student").headOption
+      methodRef.methodFullName shouldBe Seq("student", "views.py:<module>.add_student").mkString(File.separator)
+      methodRef.typeFullName shouldBe "<empty>"
+    }
+  }
+
 }
