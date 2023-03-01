@@ -12,8 +12,9 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
-import java.nio.file.{Path, Paths}
+import java.nio.file.Paths
 import java.util.regex.Matcher
+import scala.collection.mutable
 import scala.util.Try
 
 class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
@@ -23,14 +24,19 @@ class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[File] = new RecoverForPythonFile(cpg, unit, builder, globalTable)
+  ): RecoverForXCompilationUnit[File] = new RecoverForPythonFile(cpg, unit, builder, globalTable, addedNodes)
 
 }
 
 /** Performs type recovery from the root of a compilation unit level
   */
-class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, globalTable: SymbolTable[GlobalKey])
-    extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable) {
+class RecoverForPythonFile(
+  cpg: Cpg,
+  cu: File,
+  builder: DiffGraphBuilder,
+  globalTable: SymbolTable[GlobalKey],
+  addedNodes: mutable.Set[(Long, String)]
+) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes) {
 
   /** Overridden to include legacy import calls until imports are supported.
     */
@@ -84,7 +90,9 @@ class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, global
         val pyFile        = absPath.map(a => Paths.get(a.toString + ".py"))
         fileOrDir match {
           case Some(f) if f.isDirectory && !pyFile.exists { p => better.files.File(p).exists } =>
-            s"${path.replaceAll("\\.", sep)}/$funcOrModule.py:<module>"
+            s"${path.replaceAll("\\.", sep)}${java.io.File.separator}$funcOrModule.py:<module>"
+          case Some(f) if f.isDirectory && (f / s"$funcOrModule.py").exists =>
+            s"${(f / s"$funcOrModule.py").pathAsString}:<module>"
           case _ =>
             s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule"
         }

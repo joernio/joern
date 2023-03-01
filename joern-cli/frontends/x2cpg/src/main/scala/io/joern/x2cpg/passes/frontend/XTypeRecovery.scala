@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
@@ -50,6 +50,11 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, iteration
     */
   protected val globalTable = new SymbolTable[GlobalKey](SBKey.fromNodeToGlobalKey)
 
+  /** In the case of new nodes being added, will make sure these aren't duplicated because of future iterations. This
+    * comes in pairs of parent ID -> string identifier.
+    */
+  protected val addedNodes = mutable.HashSet.empty[(Long, String)]
+
   override def run(builder: DiffGraphBuilder): Unit = try {
     for (_ <- 0 until iterations)
       compilationUnit
@@ -57,6 +62,7 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, iteration
         .foreach(_.get())
   } finally {
     globalTable.clear()
+    addedNodes.clear()
   }
 
   /** @return
@@ -96,6 +102,8 @@ object XTypeRecovery {
   *   the graph builder
   * @param globalTable
   *   the global symbol table.
+  * @param addedNodes
+  *   new node tracking set.
   * @tparam CompilationUnitType
   *   the [[AstNode]] type used to represent a compilation unit of the language.
   */
@@ -103,7 +111,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   cpg: Cpg,
   cu: CompilationUnitType,
   builder: DiffGraphBuilder,
-  globalTable: SymbolTable[GlobalKey]
+  globalTable: SymbolTable[GlobalKey],
+  addedNodes: mutable.Set[(Long, String)]
 ) extends RecursiveTask[Unit] {
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -691,20 +700,62 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           persistType(call, callTypes)(builder)
         }
       // Case 3: 'i' is the receiver for a field access on member 'f'
-      case (Some(call: Call), List(i: Identifier, f: FieldIdentifier)) if call.name.equals(Operators.fieldAccess) =>
+      case (Some(fieldAccess: Call), List(i: Identifier, f: FieldIdentifier))
+          if fieldAccess.name.equals(Operators.fieldAccess) =>
         val iTypes = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
-        val cTypes = symbolTable.get(call)
+        val cTypes = symbolTable.get(fieldAccess)
         persistType(i, iTypes)(builder)
-        persistType(call, cTypes)(builder)
-        Traversal.from(call.astParent).isCall.headOption match {
+        persistType(fieldAccess, cTypes)(builder)
+        Traversal.from(fieldAccess.astParent).isCall.headOption match {
           case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
             persistType(callFromFieldName, symbolTable.get(callFromFieldName))(builder)
           case Some(callFromFieldName) if iTypes.nonEmpty =>
             persistType(callFromFieldName, iTypes.map(it => s"$it.${f.canonicalName}"))(builder)
           case _ =>
         }
+        // This field may be a function pointer
+        handlePotentialFunctionPointer(fieldAccess, i.name, iTypes, f)
       case _ => persistType(x, symbolTable.get(x))(builder)
     }
+
+  /** In the case this field access is a function pointer, we would want to make sure this has a method ref.
+    */
+  private def handlePotentialFunctionPointer(
+    fieldAccess: Call,
+    baseName: String,
+    baseTypes: Set[String],
+    f: FieldIdentifier
+  ): Unit = {
+    baseTypes
+      .map(t => s"$t.${f.canonicalName}")
+      .flatMap(p => cpg.method.fullNameExact(p))
+      .map { m =>
+        (
+          m,
+          NewMethodRef()
+            .code(s"$baseName.${f.canonicalName}")
+            .methodFullName(m.fullName)
+            .argumentIndex(f.argumentIndex + 1)
+            .lineNumber(fieldAccess.lineNumber)
+            .columnNumber(fieldAccess.columnNumber)
+        )
+      }
+      .filterNot { case (_, mRef) =>
+        addedNodes.contains((fieldAccess.id(), s"${mRef.label()}.${mRef.methodFullName}"))
+      }
+      .foreach { case (m, mRef) =>
+        fieldAccess.astParent
+          .filterNot(_.astChildren.isMethodRef.methodFullName(mRef.methodFullName).nonEmpty)
+          .foreach { inCall =>
+            builder.addNode(mRef)
+            builder.addEdge(mRef, m, EdgeTypes.REF)
+            builder.addEdge(inCall, mRef, EdgeTypes.AST)
+            builder.addEdge(inCall, mRef, EdgeTypes.ARGUMENT)
+            mRef.argumentIndex(inCall.astChildren.size)
+          }
+        addedNodes.add((fieldAccess.id(), s"${mRef.label()}.${mRef.methodFullName}"))
+      }
+  }
 
   private def persistType(x: StoredNode, types: Set[String])(implicit builder: DiffGraphBuilder): Unit =
     if (types.nonEmpty)
