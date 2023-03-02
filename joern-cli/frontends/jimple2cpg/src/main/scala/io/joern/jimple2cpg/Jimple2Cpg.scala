@@ -53,13 +53,16 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
 
   private val logger = LoggerFactory.getLogger(classOf[Jimple2Cpg])
 
-  def sootLoadApk(input: String, framework: String = null): Unit = {
+  def sootLoadApk(input: String, framework: Option[String] = None): Unit = {
     Options.v().set_process_dir(List(input).asJava)
-    if (framework != null && framework.nonEmpty) {
-      Options.v().set_src_prec(Options.src_prec_apk)
-      Options.v().set_force_android_jar(framework)
-    } else {
-      Options.v().set_src_prec(Options.src_prec_apk_c_j)
+    framework match {
+      case Some(value) => {
+        Options.v().set_src_prec(Options.src_prec_apk)
+        Options.v().set_force_android_jar(value)
+      }
+      case None => {
+        Options.v().set_src_prec(Options.src_prec_apk_c_j)
+      }
     }
     Options.v().set_process_multiple_dex(true)
     // workaround for Soot's bug while parsing large apk.

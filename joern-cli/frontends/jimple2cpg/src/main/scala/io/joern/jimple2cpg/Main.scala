@@ -9,7 +9,7 @@ import scopt.OParser
 final case class Config(
   inputPath: String = "",
   outputPath: String = X2CpgConfig.defaultOutputPath,
-  android: String = null
+  android: Option[String] = None
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
@@ -28,7 +28,7 @@ private object Frontend {
       programName("jimple2cpg"),
       opt[String]("android")
         .text("Optional path to android.jar while processing apk file.")
-        .action((android, config) => config.copy(android = android))
+        .action((android, config) => config.copy(android = Some(android)))
     )
   }
 }
