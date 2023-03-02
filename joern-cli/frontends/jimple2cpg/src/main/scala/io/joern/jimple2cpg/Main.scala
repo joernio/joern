@@ -28,7 +28,7 @@ private object Frontend {
       programName("jimple2cpg"),
       opt[String]("android")
         .text("Optional path to android.jar while processing apk file.")
-        .action((android, config) => config.copy(android = Some(android)))
+        .action((android, config) => config.copy(android = Option(android)))
     )
   }
 }

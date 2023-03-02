@@ -56,11 +56,11 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
   def sootLoadApk(input: String, framework: Option[String] = None): Unit = {
     Options.v().set_process_dir(List(input).asJava)
     framework match {
-      case Some(value) => {
+      case Some(value) if value.nonEmpty => {
         Options.v().set_src_prec(Options.src_prec_apk)
         Options.v().set_force_android_jar(value)
       }
-      case None => {
+      case _ => {
         Options.v().set_src_prec(Options.src_prec_apk_c_j)
       }
     }
