@@ -10,7 +10,7 @@ import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory
 import soot.options.Options
-import soot.{G, PhaseOptions, Scene}
+import soot.{G, PackManager, Scene}
 
 import java.io.{File => JFile}
 import java.nio.file.Paths
@@ -53,15 +53,21 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
 
   private val logger = LoggerFactory.getLogger(classOf[Jimple2Cpg])
 
-  def sootLoadApk(input: String, framework: String = null): Unit = {
+  def sootLoadApk(input: String, framework: Option[String] = None): Unit = {
     Options.v().set_process_dir(List(input).asJava)
-    if (framework != null) {
-      Options.v().set_src_prec(Options.src_prec_apk)
-      Options.v().set_force_android_jar(framework)
-    } else {
-      Options.v().set_src_prec(Options.src_prec_apk_c_j)
+    framework match {
+      case Some(value) if value.nonEmpty => {
+        Options.v().set_src_prec(Options.src_prec_apk)
+        Options.v().set_force_android_jar(value)
+      }
+      case _ => {
+        Options.v().set_src_prec(Options.src_prec_apk_c_j)
+      }
     }
     Options.v().set_process_multiple_dex(true)
+    // workaround for Soot's bug while parsing large apk.
+    // see: https://github.com/soot-oss/soot/issues/1256
+    Options.v().setPhaseOption("jb", "use-original-names:false")
   }
 
   def sootLoadClass(inputDir: String): Unit = {
@@ -109,7 +115,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
         val ext = config.inputPath.split("\\.").lastOption.getOrElse("")
         ext match {
           case "jar" | "zip"      => sootLoadClass(config.inputPath)
-          case "apk" | "dex"      => sootLoadApk(config.inputPath)
+          case "apk" | "dex"      => sootLoadApk(config.inputPath, config.android)
           case "jimple" | "class" => sootLoadSource(config.inputPath, ext)
           // case "war" => sootLoadClass(unpackPath/WEB-INF/classes)
           case _ => {
@@ -125,6 +131,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
         new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
           .createAndApply()
       }
+
       // Clear classes from Soot
       G.reset()
     }
@@ -166,8 +173,8 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     Options.v().set_no_bodies_for_excluded(true)
     Options.v().set_allow_phantom_refs(true)
     // keep variable names
-    Options.v.setPhaseOption("jb.sils", "enabled:false")
-    PhaseOptions.v().setPhaseOption("jb", "use-original-names:true")
+    Options.v().setPhaseOption("jb.sils", "enabled:false")
+    Options.v().setPhaseOption("jb", "use-original-names:true")
     // output jimple
     Options.v().set_output_format(Options.output_format_jimple)
     Options.v().set_output_dir(ProgramHandlingUtil.getUnpackingDir.toString)
