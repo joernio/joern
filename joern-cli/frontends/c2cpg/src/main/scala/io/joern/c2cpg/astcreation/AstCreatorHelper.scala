@@ -413,12 +413,9 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def astForNode(node: IASTNode): Ast = {
     node match {
-      case id: IASTIdExpression if id.getName.isInstanceOf[CPPASTQualifiedName] =>
-        astForQualifiedName(id.getName.asInstanceOf[CPPASTQualifiedName])
-      case id: IASTIdExpression             => astForIdentifier(id)
+      case expr: IASTExpression             => astForExpression(expr)
       case name: IASTName                   => astForIdentifier(name)
       case decl: IASTDeclSpecifier          => astForIdentifier(decl)
-      case expr: IASTExpression             => astForExpression(expr)
       case l: IASTInitializerList           => astForInitializerList(l)
       case c: ICPPASTConstructorInitializer => astForCPPASTConstructorInitializer(c)
       case d: ICASTDesignatedInitializer    => astForCASTDesignatedInitializer(d)
