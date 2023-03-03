@@ -192,4 +192,34 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flowsl.size shouldBe 1
   }
 
+  "flow from function param to sink" in {
+  val cpg: Cpg = code(
+    """
+      |import requests
+      |
+      |class TestClient:
+      |    def get_event_data(self, accountId):
+      |        payload = { "accountId": accountId }
+      |
+      |        r1 = requests.get("https://www.eventbriteapi.com/v3/users/me",
+      |               params = payload
+      |        )
+      |
+      |        r = requests.post("https://app.commissionly.io/api/public/opportunity",
+      |                        json={"isloop": True, "data": chunk},
+      |                        auth=(self.user, self.password)
+      |        )
+      |""".stripMargin)
+    val sourceMember = cpg.member(".*password.*").l
+    val sinkPost = cpg.call.methodFullName(".*requests.*post.*").l
+    val flowsPost = sinkPost.reachableByFlows(sourceMember).l
+    flowsPost.size shouldBe 1
+
+    val sourceParam = cpg.identifier("accountId").l
+    val sinkGet = cpg.call.methodFullName(".*requests.*get.*").l
+    
+    val flowsGet = sinkGet.reachableByFlows(sourceParam).l
+    flowsGet.size shouldBe 2
+  }
+
 }
