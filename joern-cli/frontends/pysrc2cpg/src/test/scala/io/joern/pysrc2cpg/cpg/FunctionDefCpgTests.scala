@@ -145,8 +145,8 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
         |def func2(a: Optional[str] = None) -> List[Union[str | None]]:
         |    return [a]
         |
-        |def func3(a : abc.def) -> float:
-        |  return 1.0
+        |def func3(x : abc.Def):
+        |   return 1.0
         |
         |""".stripMargin)
 
@@ -192,7 +192,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
         .parameter
         .dynamicTypeHintFullName
         .dedup
-        .l shouldBe Seq("abc.def")
+        .l shouldBe Seq("abc.Def")
     }
   }
 
