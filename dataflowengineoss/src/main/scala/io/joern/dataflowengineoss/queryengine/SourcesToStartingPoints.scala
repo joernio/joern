@@ -83,7 +83,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case x: Declaration =>
         List(x).collectAll[CfgNode].toList ++ identifiersFromCapturedScopes(x)
       case x: Identifier =>
-        List(x).collectAll[CfgNode].toList ++ x.refsTo.flatMap(sourceToStartingPoints)
+        List(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
       case x => List(x).collect { case y: CfgNode => y }
     }
   }
