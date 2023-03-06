@@ -193,8 +193,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
   }
 
   "flow from function param to sink" in {
-  val cpg: Cpg = code(
-    """
+    val cpg: Cpg = code("""
       |import requests
       |
       |class TestClient:
@@ -211,12 +210,12 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
       |        )
       |""".stripMargin)
     val sourceMember = cpg.member(".*password.*").l
-    val sinkPost = cpg.call.methodFullName(".*requests.*post.*").l
-    val flowsPost = sinkPost.reachableByFlows(sourceMember).l
+    val sinkPost     = cpg.call.methodFullName(".*requests.*post.*").l
+    val flowsPost    = sinkPost.reachableByFlows(sourceMember).l
     flowsPost.size shouldBe 1
 
     val sourceParam = cpg.identifier("accountId").l
-    val sinkGet = cpg.call.methodFullName(".*requests.*get.*").l
+    val sinkGet     = cpg.call.methodFullName(".*requests.*get.*").l
 
     val flowsGet = sinkGet.reachableByFlows(sourceParam).l
     flowsGet.size shouldBe 2
