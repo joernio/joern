@@ -73,7 +73,9 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
         // difficult to check the control flow of when the method ref might use the value
         val firstUsagesOfLHSIdentifiers =
           lit.inAssignment.argument(1).isIdentifier.flatMap(identifiersFromChildScopes).l.distinctBy(_.method)
-        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit))) ++ firstUsagesOfLHSIdentifiers
+        List(lit) ++ usages(
+          targetsToClassIdentifierPair(literalToInitializedMembers(lit))
+        ) ++ firstUsagesOfLHSIdentifiers
       case member: Member =>
         usages(targetsToClassIdentifierPair(List(member)))
       case x @ (_: Identifier | _: MethodParameterIn) =>
