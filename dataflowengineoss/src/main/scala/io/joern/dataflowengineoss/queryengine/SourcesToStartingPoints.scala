@@ -2,28 +2,15 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNode,
-  Call,
-  CfgNode,
-  Expression,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  Member,
-  Method,
-  MethodReturn,
-  StoredNode,
-  TypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import java.util.concurrent.{ForkJoinPool, ForkJoinTask, RecursiveTask, RejectedExecutionException}
 import scala.util.{Failure, Success, Try}
-import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 
 case class StartingPointWithSource(startingPoint: CfgNode, source: StoredNode)
 
@@ -83,10 +70,21 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case lit: Literal =>
         List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
       case member: Member =>
-        val initializedMember = memberToInitializedMembers(member)
         usages(targetsToClassIdentifierPair(List(member)))
+      case i: Identifier =>
+        List(i) ++ identifiersFromChildScopes(i)
+      case p: MethodParameterIn =>
+        List(p) ++ identifiersFromChildScopes(p)
       case x => List(x).collect { case y: CfgNode => y }
     }
+  }
+
+  private def identifiersFromChildScopes(i: CfgNode): List[Identifier] = {
+    val name = i.property(PropertyNames.NAME, i.code)
+    i.method.ast.isMethodRef.referencedMethod.ast.isIdentifier
+      .nameExact(name)
+      .sortBy(x => (x.lineNumber, x.columnNumber))
+      .l
   }
 
   private def usages(pairs: List[(TypeDecl, AstNode)]): List[CfgNode] = {
@@ -172,24 +170,6 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
         case _ => List[Expression]()
       }
       .l
-  }
-
-  /** Classes have a static initialization method (cinit) and a non-static initialization method (init), and each member
-    * should be initialized in at least one of them. This method identifies the initialization assignments for a given
-    * member and returns the left-hand sides (targets) of these assignments.
-    */
-  private def memberToInitializedMembers(member: Member): List[Expression] = {
-    val nodesInConstructors = astNodesInConstructors(member)
-
-    nodesInConstructors.flatMap { x =>
-      x match {
-        case identifier: Identifier if identifier.name == member.name =>
-          isTargetInAssignment(identifier)
-        case fieldIdentifier: FieldIdentifier if fieldIdentifier.canonicalName == member.head.name =>
-          Traversal(fieldIdentifier).where(_.inAssignment).l
-        case _ => List[Expression]()
-      }
-    }.l
   }
 
   private def astNodesInConstructors(member: Member) = {

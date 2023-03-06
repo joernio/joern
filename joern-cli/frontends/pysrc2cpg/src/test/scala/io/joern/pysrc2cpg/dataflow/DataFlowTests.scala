@@ -192,4 +192,35 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flowsl.size shouldBe 1
   }
 
+  "Flow correctly from parent scope to child function scope" in {
+    val cpg: Cpg = code(
+      """
+        |def foo(u):
+        |
+        |  x = 1
+        |
+        |  def bar():
+        |     y = x
+        |     print(y)
+        |     v = u
+        |     debug(v)
+        |
+        |""".stripMargin)
+
+    val sink1 = cpg.call("print").l
+    val sink2 = cpg.call("debug").l
+    sink1.size shouldBe 1
+    sink2.size shouldBe 1
+
+    val iSrc = cpg.method("foo").ast.isIdentifier.name("x").lineNumber(4).l
+
+    iSrc.size shouldBe 1
+    sink1.reachableBy(iSrc).size shouldBe 1
+
+    val pSrc = cpg.method("foo").parameter.nameExact("u").l
+
+    pSrc.size shouldBe 1
+    sink2.reachableBy(pSrc).size shouldBe 1
+  }
+
 }
