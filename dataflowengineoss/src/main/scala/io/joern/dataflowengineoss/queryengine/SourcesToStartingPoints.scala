@@ -86,7 +86,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   private def identifiersFromChildScopes(i: CfgNode): List[Identifier] = {
     val name = i.property(PropertyNames.NAME, i.code)
-    i.method.ast.isMethodRef.referencedMethod.ast.isIdentifier
+    i.method.ast.isIdentifier
       .nameExact(name)
       .sortBy(x => (x.lineNumber, x.columnNumber))
       .l
