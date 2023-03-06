@@ -35,12 +35,14 @@ object UsageSlicing {
 
     def getDeclIdentifiers: Traversal[Declaration] = getAssignmentDecl ++ getParameterDecl
 
+    def typeMap = cpg.typeDecl.map(f => (f.name, f.fullName)).toMap
+
     ProgramUsageSlice(
       getDeclIdentifiers
         .to(LazyList)
         .par
-        .filter(a => atLeastNCalls(a, config.minNumCalls))
-        .flatMap(trackUsage)
+        .filter(a => atLeastNCalls(a, config.minNumCalls) && !a.name.startsWith("_tmp_"))
+        .flatMap(a => trackUsage(a, typeMap))
         .groupBy { case (scope, _) => scope }
         .mapValues(_.l.map { case (_, slice) => slice }.toSet)
         .toMap
@@ -117,11 +119,13 @@ object UsageSlicing {
         x.parentBlock.inAssignment.argument.isIdentifier.find(_.argumentIndex == 0)
       case x: Call if Operators.alloc.equals(x.name) =>
         x.inCall.argument.isIdentifier.find(_.argumentIndex == 0)
+      case x: Call if Operators.assignment.equals(x.name) && x.ast.isCall.name.exists(_.equals(Operators.alloc)) =>
+        x.argument.isIdentifier.find(_.argumentIndex == 1)
       case x: Call => x.argument.isIdentifier.find(_.argumentIndex == 0)
       case _       => None
     }
 
-  private def trackUsage(tgt: Declaration): Option[(String, ObjectUsageSlice)] = {
+  private def trackUsage(tgt: Declaration, typeMap: Map[String, String]): Option[(String, ObjectUsageSlice)] = {
 
     /** Will attempt to get the API call from the expression if this is a procedure call.
       *
@@ -153,7 +157,14 @@ object UsageSlicing {
 
       val receiverName = getCallReceiver(baseCall).map(_.name)
 
-      val params = (if (isMemberInvocation) baseCall.inCall.argument else baseCall.argument)
+      val params = (if (isMemberInvocation) baseCall.inCall.argument
+                    else if (isConstructor)
+                      baseCall.ast.isCall
+                        .nameExact("<operator>.new")
+                        .lastOption
+                        .map(_.argument)
+                        .getOrElse(Traversal.empty)
+                    else baseCall.argument)
         .collect { case n: Expression if n.argumentIndex > 0 => n }
         .flatMap {
           case _: MethodRef => Option("LAMBDA")
@@ -196,8 +207,20 @@ object UsageSlicing {
         local.referencingIdentifiers.inCall.astParent.assignment
           .where(_.argument(1).code(tgt.name))
           .argument(2)
-          .headOption
+          .headOption match {
+          // In the case of a constructor, we should get the "new" call
+          case Some(block: Block) =>
+            block.ast.isCall.nameExact("<operator>.new").lastOption
+          case x => x
+        }
       case x => Some(x)
+    }
+
+    /** Creates a def component with the workaround of correcting the type full name if it is only a type name.
+      */
+    def createDefComponent(node: StoredNode) = {
+      val df = DefComponent.fromNode(node)
+      df.copy(typeFullName = typeMap.getOrElse(df.typeFullName, df.typeFullName))
     }
 
     (tgt, defNode, partitionInvolvementInCalls) match {
@@ -208,8 +231,8 @@ object UsageSlicing {
           (
             local.method.fullName.head,
             ObjectUsageSlice(
-              targetObj = DefComponent.fromNode(local),
-              definedBy = Option(DefComponent.fromNode(genCall)),
+              targetObj = createDefComponent(local),
+              definedBy = Option(createDefComponent(genCall)),
               invokedCalls = invokedCalls,
               argToCalls = argToCalls
             )
@@ -221,8 +244,8 @@ object UsageSlicing {
           (
             param.method.fullName,
             ObjectUsageSlice(
-              targetObj = DefComponent.fromNode(param),
-              definedBy = Option(DefComponent.fromNode(param)),
+              targetObj = createDefComponent(param),
+              definedBy = Option(createDefComponent(param)),
               invokedCalls = invokedCalls,
               argToCalls = argToCalls
             )

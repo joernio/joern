@@ -52,11 +52,21 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
     }
 
     "extract 'Car' object instantiation" in {
-      val Some(carUdt) = programSlice.userDefinedTypes.headOption
-      carUdt.name shouldBe "main.js::program:Car"
-      val Some(carInit) = carUdt.procedures.headOption
-      carInit.callName shouldBe "<init>"
-      carInit.returnType shouldBe "Car"
+      val Some(slice) = programSlice.objectSlices.get("main.js::program:carTest").flatMap(_.headOption)
+      slice.definedBy shouldBe Some(DefComponent("new Car(\"Noodle\", 2012)", "ANY"))
+      slice.targetObj shouldBe DefComponent("c", "main.js::program:Car")
+
+      val List(inv1) = slice.invokedCalls
+      inv1.callName shouldBe "rev"
+      inv1.paramTypes shouldBe List.empty
+      inv1.returnType shouldBe "ANY"
+
+      val List((arg1, pos1)) = slice.argToCalls
+
+      pos1 shouldBe 1
+      arg1.callName shouldBe "Car"
+      arg1.paramTypes shouldBe List("__ecma.String", "__ecma.Number")
+      arg1.returnType shouldBe "ANY"
     }
   }
 

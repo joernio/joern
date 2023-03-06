@@ -114,7 +114,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     scope.addVariableReference(tmpAllocName, tmpAllocNode1)
 
     val allocCallNode =
-      createCallNode(newExpr.code, Operators.alloc, DispatchTypes.STATIC_DISPATCH, newExpr.lineNumber, newExpr.columnNumber)
+      createCallNode(".alloc", Operators.alloc, DispatchTypes.STATIC_DISPATCH, newExpr.lineNumber, newExpr.columnNumber)
 
     val assignmentTmpAllocCallNode =
       createAssignmentCallAst(

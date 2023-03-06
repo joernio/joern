@@ -20,6 +20,13 @@ class Car {
         this.year = year;
     }
 
+    rev() {
+        return "vroom";
+    }
+
 }
 
-const c = new Car("Noodle", 2012)
+function carTest() {
+    const c = new Car("Noodle", 2012);
+    c.rev();
+}
