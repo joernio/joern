@@ -618,4 +618,37 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     sink.reachableBy(src2).size shouldBe 1
   }
 
+  "Flow correctly from parent scope to child function scope" in {
+    val cpg: Cpg = code("""
+        |function foo(u) {
+        |
+        |  const x = 1;
+        |
+        |  function bar() {
+        |     y = x;
+        |     console.log(y);
+        |     v = u;
+        |     console.debug(v);
+        |  }
+        |
+        |}""".stripMargin)
+
+    val sink1 = cpg.call("log").l
+    val sink2 = cpg.call("debug").l
+    sink1.size shouldBe 1
+    sink2.size shouldBe 1
+
+    val iSrc = cpg.method("foo").ast.isIdentifier.name("x").lineNumber(4).l
+    iSrc.size shouldBe 1
+    sink1.reachableBy(iSrc).size shouldBe 1
+
+    val lSrc = cpg.method("foo").ast.isLiteral.code("1").lineNumber(4).l
+    lSrc.size shouldBe 1
+    sink1.reachableBy(lSrc).size shouldBe 1
+
+    val pSrc = cpg.method("foo").parameter.nameExact("u").l
+    pSrc.size shouldBe 1
+    sink2.reachableBy(pSrc).size shouldBe 1
+  }
+
 }

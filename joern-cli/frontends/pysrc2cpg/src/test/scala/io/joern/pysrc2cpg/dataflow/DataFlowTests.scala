@@ -178,18 +178,47 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |accountId="sometext"
         |response = client.post_data(data, accountId)
         |""".stripMargin)
-    val source = cpg.identifier(".*url.*").l
-    val sink   = cpg.call("post").l
-    source.size shouldBe 2
+    val sourceUrlIdentifier = cpg.identifier(".*url.*").l
+    val sink                = cpg.call("post").l
+    sourceUrlIdentifier.size shouldBe 2
     sink.size shouldBe 1
-    val flows = sink.reachableByFlows(source).l
-    flows.size shouldBe 1
+    sink.reachableByFlows(sourceUrlIdentifier).size shouldBe 1
 
-    val sourcel = cpg.literal(".*app.commissionly.io.*").l
-    sourcel.size shouldBe 1
+    val sourceUrlLiteral = cpg.literal(".*app.commissionly.io.*").l
+    sourceUrlLiteral.size shouldBe 1
+    sink.reachableByFlows(sourceUrlLiteral).size shouldBe 1
+  }
 
-    val flowsl = sink.reachableByFlows(source).l
-    flowsl.size shouldBe 1
+  "Flow correctly from parent scope to child function scope" in {
+    val cpg: Cpg = code("""
+        |def foo(u):
+        |
+        |  x = 1
+        |
+        |  def bar():
+        |     y = x
+        |     print(y)
+        |     v = u
+        |     debug(v)
+        |
+        |""".stripMargin)
+
+    val sink1 = cpg.call("print").l
+    val sink2 = cpg.call("debug").l
+    sink1.size shouldBe 1
+    sink2.size shouldBe 1
+
+    val iSrc = cpg.method("foo").ast.isIdentifier.name("x").lineNumber(4).l
+    iSrc.size shouldBe 1
+    sink1.reachableBy(iSrc).size shouldBe 1
+
+    val lSrc = cpg.method("foo").ast.isLiteral.code("1").lineNumber(4).l
+    lSrc.size shouldBe 1
+    sink1.reachableBy(lSrc).size shouldBe 1
+
+    val pSrc = cpg.method("foo").parameter.nameExact("u").l
+    pSrc.size shouldBe 1
+    sink2.reachableBy(pSrc).size shouldBe 1
   }
 
 }
