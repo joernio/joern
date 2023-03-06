@@ -68,13 +68,16 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case methodReturn: MethodReturn =>
         methodReturn.method.callIn.l
       case lit: Literal =>
-        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
+        // `firstUsagesOfLHSIdentifiers` is required to handle children methods referencing the identifier this literal
+        // is being passed to. Perhaps not the most sound as this doesn't handle re-assignment super well but it's
+        // difficult to check the control flow of when the method ref might use the value
+        val firstUsagesOfLHSIdentifiers =
+          lit.inAssignment.argument(1).isIdentifier.flatMap(identifiersFromChildScopes).l.distinctBy(_.method)
+        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit))) ++ firstUsagesOfLHSIdentifiers
       case member: Member =>
         usages(targetsToClassIdentifierPair(List(member)))
-      case i: Identifier =>
-        List(i) ++ identifiersFromChildScopes(i)
-      case p: MethodParameterIn =>
-        List(p) ++ identifiersFromChildScopes(p)
+      case x @ (_: Identifier | _: MethodParameterIn) =>
+        List(x).collectAll[CfgNode].toList ++ identifiersFromChildScopes(x.asInstanceOf[CfgNode])
       case x => List(x).collect { case y: CfgNode => y }
     }
   }
@@ -169,17 +172,6 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
           call.ast.isFieldIdentifier.l
         case _ => List[Expression]()
       }
-      .l
-  }
-
-  private def astNodesInConstructors(member: Member) = {
-    methodsRecursively(member.typeDecl)
-      .or(
-        _.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName),
-        // this is for python
-        _.name(".*<body>$")
-      )
-      .ast
       .l
   }
 

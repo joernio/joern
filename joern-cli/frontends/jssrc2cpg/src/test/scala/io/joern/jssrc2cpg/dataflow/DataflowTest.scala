@@ -639,12 +639,14 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     sink2.size shouldBe 1
 
     val iSrc = cpg.method("foo").ast.isIdentifier.name("x").lineNumber(4).l
-
     iSrc.size shouldBe 1
     sink1.reachableBy(iSrc).size shouldBe 1
 
-    val pSrc = cpg.method("foo").parameter.nameExact("u").l
+    val lSrc = cpg.method("foo").ast.isLiteral.code("1").lineNumber(4).l
+    lSrc.size shouldBe 1
+    sink1.reachableBy(lSrc).size shouldBe 1
 
+    val pSrc = cpg.method("foo").parameter.nameExact("u").l
     pSrc.size shouldBe 1
     sink2.reachableBy(pSrc).size shouldBe 1
   }
