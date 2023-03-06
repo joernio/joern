@@ -217,7 +217,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
     val sourceParam = cpg.identifier("accountId").l
     val sinkGet = cpg.call.methodFullName(".*requests.*get.*").l
-    
+
     val flowsGet = sinkGet.reachableByFlows(sourceParam).l
     flowsGet.size shouldBe 2
   }
