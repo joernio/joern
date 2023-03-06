@@ -193,7 +193,7 @@ class AstGenRunner(config: Config) {
       jsFile
     }
 
-    val result = ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -o $out", out.toString())
+    val result = ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -i . -o $out", out.toString())
 
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>
@@ -219,12 +219,12 @@ class AstGenRunner(config: Config) {
   private def vueFiles(in: File, out: File): Try[Seq[String]] = {
     val files = SourceFiles.determine(in.pathAsString, Set(".vue"))
     if (files.nonEmpty)
-      ExternalCommand.run(s"$astGenCommand$executableArgs -t vue -i ${in.toString()} -o $out", in.toString())
+      ExternalCommand.run(s"$astGenCommand$executableArgs -t vue -i . -o $out", in.toString())
     else Success(Seq.empty)
   }
 
   private def jsFiles(in: File, out: File): Try[Seq[String]] =
-    ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -i ${in.toString()} -o $out", in.toString())
+    ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -i . -o $out", in.toString())
 
   private def runAstGenNative(in: File, out: File): Try[Seq[String]] = for {
     ejsResult <- ejsFiles(in, out)
