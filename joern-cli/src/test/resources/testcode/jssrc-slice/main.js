@@ -12,7 +12,9 @@ app.listen(port, () => {
 
 console.log(app)
 
-console.debug(app)
+function notHiddenByClosure() {
+    console.debug(app)
+}
 
 class Car {
     constructor(name, year) {
