@@ -132,6 +132,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def members: Traversal[Member] =
     cu.ast.isMember
 
+  /** For each call that contains the returnValue directive, attempt to replace the return value by the dynamic
+    */
   protected def visitCall(call: Call): Unit = {
     symbolTable.get(call).foreach { methodFullName =>
       val index = methodFullName.indexOf("<returnValue>")
@@ -152,6 +154,16 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
   }
 
+  protected def visitParameter(param: MethodParameterIn): Unit = {
+    if (param.dynamicTypeHintFullName.isEmpty) return
+    val matchingIdentifiers = param.method._identifierViaContainsOut
+      .nameExact(param.name)
+      .l
+    matchingIdentifiers.foreach { identifier =>
+      symbolTable.append(LocalVar(identifier.name), param.dynamicTypeHintFullName.toSet)
+    }
+  }
+
   override def compute(): Unit = try {
     prepopulateSymbolTable()
     // Set known aliases that point to imports for local and external methods/modules
@@ -162,9 +174,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     members.foreach(visitMembers)
     // Populate local symbol table with assignments
     assignments.foreach(visitAssignments)
-    // Propagate return values
+    // Propagate return types
     cpg.method.ast.isCall.foreach(visitCall)
-
+    // Propagate parameter types
+    cpg.parameter.foreach(visitParameter)
     // Persist findings
     setTypeInformation()
   } finally {
