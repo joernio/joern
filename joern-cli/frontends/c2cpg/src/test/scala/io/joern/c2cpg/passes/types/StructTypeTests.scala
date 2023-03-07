@@ -34,7 +34,7 @@ class StructTypeTests extends CCodeToCpgSuite {
       val List(argBInit) = bInitCall.argument.l
       argBInit.code shouldBe "SIZE - 1"
       val List(subtractionCall) = bInitCall.ast.isCall.nameExact(Operators.subtraction).l
-      subtractionCall.code shouldBe "5 - 1"
+      subtractionCall.code shouldBe "SIZE - 1"
 
       cInitCall.code shouldBe "c[10]"
       val List(argCInit) = cInitCall.argument.l
