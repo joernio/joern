@@ -81,7 +81,7 @@ package object slicing {
       */
     def fromNode(node: StoredNode): DefComponent = {
       DefComponent(
-        node.property(PropertyNames.NAME, node.property(PropertyNames.CODE, "UNKNOWN")),
+        node.property(PropertyNames.CODE, node.property(PropertyNames.NAME, "UNKNOWN")),
         node.property(PropertyNames.TYPE_FULL_NAME) match {
           case "ANY" =>
             val typeHints = node.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty[String])

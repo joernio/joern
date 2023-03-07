@@ -13,6 +13,7 @@ import io.shiftleft.semanticcpg.language.nodemethods._
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.{
   AstNodeTraversal,
   CfgNodeTraversal,
+  DeclarationTraversal,
   ExpressionTraversal
 }
 import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => OriginalCall, _}
@@ -271,4 +272,9 @@ trait LowPrioImplicits extends overflowdb.traversal.Implicits {
     new AstNodeTraversal[A](Traversal.fromSingle(a))
   implicit def iterOnceToAstNodeTraversal[A <: AstNode](a: IterableOnce[A]): AstNodeTraversal[A] =
     new AstNodeTraversal[A](iterableToTraversal(a))
+
+  implicit def singleToDeclarationNodeTraversal[A <: Declaration](a: A): DeclarationTraversal[A] =
+    new DeclarationTraversal[A](Traversal.fromSingle(a))
+  implicit def iterOnceToDeclarationNodeTraversal[A <: Declaration](a: IterableOnce[A]): DeclarationTraversal[A] =
+    new DeclarationTraversal[A](iterableToTraversal(a))
 }

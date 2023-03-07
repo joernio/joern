@@ -3,27 +3,14 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNode,
-  Call,
-  CfgNode,
-  Expression,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  Member,
-  Method,
-  MethodReturn,
-  StoredNode,
-  TypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import java.util.concurrent.{ForkJoinPool, ForkJoinTask, RecursiveTask, RejectedExecutionException}
 import scala.util.{Failure, Success, Try}
-import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 
 case class StartingPointWithSource(startingPoint: CfgNode, source: StoredNode)
 
@@ -76,18 +63,36 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   private val cpg = Cpg(src.graph())
 
-  override def compute(): List[CfgNode] = {
+  override def compute(): List[CfgNode] = sourceToStartingPoints(src)
+
+  private def sourceToStartingPoints(src: StoredNode): List[CfgNode] = {
     src match {
       case methodReturn: MethodReturn =>
         methodReturn.method.callIn.l
       case lit: Literal =>
-        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
+        // `firstUsagesOfLHSIdentifiers` is required to handle children methods referencing the identifier this literal
+        // is being passed to. Perhaps not the most sound as this doesn't handle re-assignment super well but it's
+        // difficult to check the control flow of when the method ref might use the value
+        val firstUsagesOfLHSIdentifiers =
+          lit.inAssignment.argument(1).isIdentifier.refsTo.flatMap(identifiersFromCapturedScopes).l.distinctBy(_.method)
+        List(lit) ++ usages(
+          targetsToClassIdentifierPair(literalToInitializedMembers(lit))
+        ) ++ firstUsagesOfLHSIdentifiers
       case member: Member =>
-        val initializedMember = memberToInitializedMembers(member)
         usages(targetsToClassIdentifierPair(List(member)))
+      case x: Declaration =>
+        List(x).collectAll[CfgNode].toList ++ identifiersFromCapturedScopes(x)
+      case x: Identifier =>
+        List(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
       case x => List(x).collect { case y: CfgNode => y }
     }
   }
+
+  private def identifiersFromCapturedScopes(i: Declaration): List[Identifier] =
+    i.capturedByMethodRef.referencedMethod.ast.isIdentifier
+      .nameExact(i.name)
+      .sortBy(x => (x.lineNumber, x.columnNumber))
+      .l
 
   private def usages(pairs: List[(TypeDecl, AstNode)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, astNode) =>
@@ -171,35 +176,6 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
           call.ast.isFieldIdentifier.l
         case _ => List[Expression]()
       }
-      .l
-  }
-
-  /** Classes have a static initialization method (cinit) and a non-static initialization method (init), and each member
-    * should be initialized in at least one of them. This method identifies the initialization assignments for a given
-    * member and returns the left-hand sides (targets) of these assignments.
-    */
-  private def memberToInitializedMembers(member: Member): List[Expression] = {
-    val nodesInConstructors = astNodesInConstructors(member)
-
-    nodesInConstructors.flatMap { x =>
-      x match {
-        case identifier: Identifier if identifier.name == member.name =>
-          isTargetInAssignment(identifier)
-        case fieldIdentifier: FieldIdentifier if fieldIdentifier.canonicalName == member.head.name =>
-          Traversal(fieldIdentifier).where(_.inAssignment).l
-        case _ => List[Expression]()
-      }
-    }.l
-  }
-
-  private def astNodesInConstructors(member: Member) = {
-    methodsRecursively(member.typeDecl)
-      .or(
-        _.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName),
-        // this is for python
-        _.name(".*<body>$")
-      )
-      .ast
       .l
   }
 
