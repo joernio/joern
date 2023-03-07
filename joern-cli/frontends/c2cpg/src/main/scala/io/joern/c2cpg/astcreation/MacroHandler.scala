@@ -5,6 +5,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew
 import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
+import org.eclipse.cdt.core.dom.ast.IASTBinaryExpression
+import org.eclipse.cdt.core.dom.ast.IASTFileLocation
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import org.eclipse.cdt.internal.core.parser.scanner.MacroArgumentExtractor
 
@@ -149,11 +151,17 @@ trait MacroHandler { this: AstCreator =>
   private def isExpandedFromMacro(node: IASTNode): Boolean = expandedFromMacro(node).nonEmpty
 
   private def expandedFromMacro(node: IASTNode): Option[IASTMacroExpansionLocation] = {
-    val locations = node.getNodeLocations
-    if (locations.nonEmpty) {
-      node.getNodeLocations.headOption.collect { case x: IASTMacroExpansionLocation => x }
-    } else {
-      None
+    val locations = node.getNodeLocations.toList
+    val locationsSorted = node match {
+      // For binary expressions the expansion locations may occur in any order.
+      // We manually sort them here to ignore this.
+      // TODO: This may also happen with other expressions that allow for multiple sub elements.
+      case _: IASTBinaryExpression => locations.sortBy(_.isInstanceOf[IASTMacroExpansionLocation])
+      case _                       => locations
+    }
+    locationsSorted match {
+      case (head: IASTMacroExpansionLocation) :: _ => Option(head)
+      case _                                       => None
     }
   }
 
