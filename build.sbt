@@ -48,6 +48,12 @@ ThisBuild / libraryDependencies ++= Seq(
   // `Optional` means "not transitive", but still included in "stage/lib"
 )
 
+ThisBuild / excludeDependencies += 
+  // comes in transitively from c2cpg and break log4j with random
+  // `Cannot invoke "org.osgi.framework.BundleContext.getBundles()" because "context" is null` errors
+  // best option would be to invoke c2cpg via system.exec, but that wasn't as straightforward as I was hoping
+  ExclusionRule("org.eclipse.platform", "org.eclipse.osgi")
+
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
   "-Xlint",
