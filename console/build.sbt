@@ -13,7 +13,6 @@ dependsOn(
   Projects.macros,
   Projects.jssrc2cpg,
   Projects.pysrc2cpg,
-  Projects.c2cpg % Test,
   Projects.x2cpg % "compile->compile;test->test"
 )
 

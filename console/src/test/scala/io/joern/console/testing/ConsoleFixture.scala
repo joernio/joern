@@ -2,11 +2,11 @@ package io.joern.console.testing
 
 import better.files.Dsl.mkdir
 import better.files.File
-import io.joern.c2cpg.{C2Cpg, Config}
-import io.joern.console.cpgcreation.{CpgGenerator, CpgGeneratorFactory, ImportCode}
+import io.joern.console.cpgcreation.{CCpgGenerator, CpgGenerator, CpgGeneratorFactory, ImportCode}
 import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, DefaultAmmoniteExecutor, FrontendConfig, InstallConfig}
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.utils.ProjectRoot
 
 import java.nio.file.Path
 import scala.util.Try
@@ -59,35 +59,17 @@ class TestConsole(workspaceDir: String)
 }
 
 class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory(config) {
+  private def newCCpgGenerator() = {
+    CCpgGenerator(config.frontend, ProjectRoot.find.path)
+  }
+
   override def forCodeAt(inputPath: String): Option[CpgGenerator] = {
-    Some(new CTestingFrontend)
+    Some(newCCpgGenerator)
   }
 
   override def forLanguage(language: String): Option[CpgGenerator] = language match {
-    case Languages.C | Languages.NEWC => Some(new CTestingFrontend)
+    case Languages.C | Languages.NEWC => Some(newCCpgGenerator)
     case _                            => None // no other languages are tested here
-  }
-
-  private class CTestingFrontend extends CpgGenerator {
-
-    override def generate(inputPath: String, outputPath: String, namespaces: List[String]): Try[String] = {
-      val c2cpg = new C2Cpg()
-      val defines = config.frontend.cmdLineParams.toList
-        .sliding(2)
-        .toList
-        .collect {
-          case List(h, t) if h == "--define" => t
-        }
-      Try {
-        c2cpg.run(Config(inputPath, outputPath, defines = defines.toSet))
-        outputPath
-      }
-    }
-
-    def isAvailable: Boolean = true
-
-    override def isJvmBased = true
-
   }
 
 }
