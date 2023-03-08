@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 if [ "$(uname -s)" = "Darwin" ]; then
-    SCRIPT_ABS_PATH=$(greadlink -f "$0")
+    SCRIPT_ABS_PATH="$0"
 else
     SCRIPT_ABS_PATH=$(readlink -f "$0")
 fi
