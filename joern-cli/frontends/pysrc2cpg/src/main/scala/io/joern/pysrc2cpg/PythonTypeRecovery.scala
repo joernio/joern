@@ -115,7 +115,7 @@ class RecoverForPythonFile(
         Set(procedureName.concat(s".${Defines.ConstructorMethodName}"))
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
-        cpg.method.fullNameExact(m).ast.isIdentifier.nameExact(v).headOption match {
+        cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
           case Some(i) => (Seq(i.typeFullName) ++ i.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet
           case None    => Set.empty
         }
