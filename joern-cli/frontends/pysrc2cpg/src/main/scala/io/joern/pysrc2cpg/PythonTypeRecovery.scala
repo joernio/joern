@@ -74,11 +74,13 @@ class RecoverForPythonFile(
   private def extractPossibleCalleeNames(path: String, expEntity: String): Set[String] = {
     val sep = Matcher.quoteReplacement(JFile.separator)
 
-    lazy val methodsWithExportEntityAsIdentifier: List[Method] = cpg
-      .identifier(expEntity)
-      .where(_.inCall.nameExact("<operator>.assignment").and(_.codeNot(".*import.*")))
-      .method
-      .where(_.file.name(s".*${Matcher.quoteReplacement(path)}.*"))
+    lazy val methodsWithExportEntityAsIdentifier: List[String] = cpg.typeDecl
+      .fullName(s".*$path.*")
+      .where(
+        _.member
+          .nameExact(expEntity)
+      )
+      .fullName
       .toList
 
     val procedureName = path match {
@@ -92,7 +94,7 @@ class RecoverForPythonFile(
         s"$expEntity.py:<module>"
       case _ if methodsWithExportEntityAsIdentifier.nonEmpty =>
         // Case 3: import of a variable: from api import db => (api.py or foo.__init__.py) @ identifier(db)
-        methodsWithExportEntityAsIdentifier.map(f => s"${f.fullName}<var>$expEntity").head
+        methodsWithExportEntityAsIdentifier.map(f => s"$f<var>$expEntity").head
       case _ =>
         // Case 4:  Import from module using alias, e.g. import bar from foo as faz
         val rootDirectory = cpg.metaData.root.headOption
