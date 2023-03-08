@@ -60,15 +60,15 @@ class TestConsole(workspaceDir: String)
 
 class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory(config) {
   private def newCCpgGenerator() = {
-    CCpgGenerator(config.frontend, ProjectRoot.find.path)
+    CCpgGenerator(config.frontend, Path.of(ProjectRoot.relativise("joern-cli/frontends/c2cpg")))
   }
 
   override def forCodeAt(inputPath: String): Option[CpgGenerator] = {
-    Some(newCCpgGenerator)
+    Some(newCCpgGenerator())
   }
 
   override def forLanguage(language: String): Option[CpgGenerator] = language match {
-    case Languages.C | Languages.NEWC => Some(newCCpgGenerator)
+    case Languages.C | Languages.NEWC => Some(newCCpgGenerator())
     case _                            => None // no other languages are tested here
   }
 

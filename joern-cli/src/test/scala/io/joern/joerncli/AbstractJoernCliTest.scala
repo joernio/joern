@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.ProjectRoot
 
+import java.nio.file.Path
 import scala.util.{Failure, Success}
 
 trait AbstractJoernCliTest {
@@ -21,8 +22,8 @@ trait AbstractJoernCliTest {
     tmpFile.delete()
 
     val cpgGenerator = language match {
-      case Languages.C | Languages.CSHARP         => CCpgGenerator(new FrontendConfig(), ProjectRoot.find.path)
-      case Languages.JSSRC | Languages.JAVASCRIPT => JsSrcCpgGenerator(new FrontendConfig(), ProjectRoot.find.path)
+      case Languages.C | Languages.CSHARP         => CCpgGenerator(new FrontendConfig(), relativePath("c2cpg"))
+      case Languages.JSSRC | Languages.JAVASCRIPT => JsSrcCpgGenerator(new FrontendConfig(), relativePath("jssrc2cpg"))
     }
     cpgGenerator.generate(inputPath = file.pathAsString, outputPath = cpgOutFileName) match {
       case Failure(exception) => throw new AssertionError("error while invoking cpgGenerator", exception)
@@ -33,5 +34,8 @@ trait AbstractJoernCliTest {
     val cpg = DefaultOverlays.create(cpgOutFileName)
     (cpg, cpgOutFileName)
   }
+
+  private def relativePath(frontendName: String): Path =
+    Path.of(ProjectRoot.relativise(s"joern-cli/frontends/$frontendName"))
 
 }
