@@ -139,20 +139,27 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     addNodeToDiff(methodParameterNode)
   }
 
-  def extractTypesFromHint(typeHint: Option[ast.iexpr] = None): Seq[String] =
-    typeHint
-      .collect {
-        case n: ast.Name => n.id
-        // TODO: Definitely a place for follow up handling of generics - currently only take the polymorphic type
-        //  without type args. To see the type arguments, see ast.Subscript.slice
-        case n: ast.Subscript if n.value.isInstanceOf[ast.Name] => n.value.asInstanceOf[ast.Name].id
-      }
-      .map { typeName =>
-        if (allBuiltinClasses.contains(typeName)) s"$builtinPrefix$typeName"
-        else if (typingClassesV3.contains(typeName)) s"$typingPrefix$typeName"
-        else typeName
-      }
-      .toSeq
+  def extractTypesFromHint(typeHint: Option[ast.iexpr] = None): Seq[String] = {
+    typeHint match {
+      case Some(hint) =>
+        val nameSequence = hint match {
+          case n: ast.Name => Seq(n.id)
+          // TODO: Definitely a place for follow up handling of generics - currently only take the polymorphic type
+          //  without type args. To see the type arguments, see ast.Subscript.slice
+          case attr: ast.Attribute =>
+            extractTypesFromHint(Some(attr.value)).map { x => x + "." + attr.attr }
+          case n: ast.Subscript if n.value.isInstanceOf[ast.Name] => Seq(n.value.asInstanceOf[ast.Name].id)
+          case _                                                  => Seq[String]()
+        }
+        nameSequence.map { typeName =>
+          if (allBuiltinClasses.contains(typeName)) s"$builtinPrefix$typeName"
+          else if (typingClassesV3.contains(typeName)) s"$typingPrefix$typeName"
+          else typeName
+        }
+      case _ =>
+        Seq()
+    }
+  }
 
   def methodReturnNode(dynamicTypeHintFullName: Option[String], lineAndColumn: LineAndColumn): nodes.NewMethodReturn = {
     val methodReturnNode = NodeBuilders
