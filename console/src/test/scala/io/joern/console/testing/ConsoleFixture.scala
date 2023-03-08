@@ -60,7 +60,11 @@ class TestConsole(workspaceDir: String)
 
 class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory(config) {
   private def newCCpgGenerator() = {
-    CCpgGenerator(config.frontend, Path.of(ProjectRoot.relativise("joern-cli/frontends/c2cpg")))
+    CCpgGenerator(
+      config.frontend,
+      Path.of(ProjectRoot.relativise("joern-cli/frontends/c2cpg/target/universal/stage/bin"))
+    )
+
   }
 
   override def forCodeAt(inputPath: String): Option[CpgGenerator] = {

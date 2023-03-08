@@ -36,6 +36,6 @@ trait AbstractJoernCliTest {
   }
 
   private def relativePath(frontendName: String): Path =
-    Path.of(ProjectRoot.relativise(s"joern-cli/frontends/$frontendName"))
+    Path.of(ProjectRoot.relativise(s"joern-cli/frontends/$frontendName/target/universal/stage/bin"))
 
 }
