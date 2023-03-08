@@ -236,6 +236,42 @@ class ContextStack {
     }
   }
 
+  /** Assignments to variables on the module-level may be exported to other modules and behave as inter-procedurally
+    * global variables.
+    * @param lhs
+    *   the LHS node of an assignment
+    */
+  def considerAsGlobalVariable(lhs: NewNode): Unit = {
+    lhs match {
+      case n: NewIdentifier if findEnclosingMethodContext(stack).name == "<module>" =>
+        addGlobalVariable(n.name)
+      case _ =>
+    }
+  }
+
+  /** For module-methods, the variables of this method can be imported into other modules which resembles behaviour much
+    * like fields/members. This inter-procedural accessibility should be marked via the module's type decl node.
+    */
+  def createMemberLinks(moduleTypeDecl: NewTypeDecl, astEdgeLinker: (NewNode, NewNode, Int) => Unit): Unit = {
+    val globalVarsForEnclMethod = findEnclosingMethodContext(stack).globalVariables
+    variableReferences
+      .map(_.identifier)
+      .filter(i => globalVarsForEnclMethod.contains(i.name))
+      .sortBy(i => (i.lineNumber, i.columnNumber))
+      .distinctBy(_.name)
+      .map(i =>
+        NewMember()
+          .name(i.name)
+          .typeFullName(Constants.ANY)
+          .dynamicTypeHintFullName(i.dynamicTypeHintFullName)
+          .lineNumber(i.lineNumber)
+          .columnNumber(i.columnNumber)
+          .code(i.name)
+      )
+      .zipWithIndex
+      .foreach { case (m, idx) => astEdgeLinker(m, moduleTypeDecl, idx + 1) }
+  }
+
   private def linkLocalOrCapturing(
     createLocal: (String, Option[String]) => NewLocal,
     createClosureBinding: (String, String) => NewClosureBinding,

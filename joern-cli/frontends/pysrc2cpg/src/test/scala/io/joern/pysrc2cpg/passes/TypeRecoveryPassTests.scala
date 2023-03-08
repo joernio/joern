@@ -540,9 +540,41 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |async def get_user_by_email(email: str, db: orm.Session):
         |   return db.query(user_models.User).filter(user_models.User.email == email).first()
         |""".stripMargin)
+
     "be sufficient to resolve method full names at calls" in {
       val List(call) = cpg.call("query").l
       call.methodFullName.startsWith("sqlalchemy.orm") shouldBe true
+    }
+  }
+
+  "recover a member call from a reference to an imported global variable" should {
+    lazy val cpg = code(
+      """from api import db
+        |
+        |class UserModel(db.Model):
+        |
+        |   def save(self):
+        |        try:
+        |            db.session.add(self)
+        |            db.session.commit()
+        |        except IntegrityError:
+        |            print(f"User with username={self.username} already exist")
+        |            db.session.rollback()
+        |""".stripMargin,
+      Seq("api", "models", "user.py").mkString(File.separator)
+    ).moreCode(
+      """from flask_sqlalchemy import SQLAlchemy
+        |
+        |app = Flask(__name__, static_folder=Config.UPLOAD_FOLDER)
+        |
+        |db = SQLAlchemy(app)
+        |""".stripMargin,
+      Seq("api", "__init__.py").mkString(File.separator)
+    )
+
+    "recover a call to `add`" in {
+      val Some(addCall) = cpg.call("add").headOption
+      addCall.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.<member>(session).add"
     }
   }
 

@@ -83,13 +83,13 @@ case class FieldVar(compUnitFullName: String, override val identifier: String) e
   * The [[SymbolTable]] operates like a map with a few convenient methods that are designed for this structure's
   * purpose.
   */
-class SymbolTable[K <: SBKey](fromNode: AstNode => Option[K]) {
+class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   private val table = TrieMap.empty[K, Set[String]]
 
   def apply(sbKey: K): Set[String] = table(sbKey)
 
-  def apply(node: AstNode): Set[String] = fromNode(node) match {
+  def apply(node: AstNode): Set[String] = keyFromNode(node) match {
     case Some(key) => table(key)
     case None      => Set.empty
   }
@@ -103,13 +103,17 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => Option[K]) {
     table.put(newKey, newValues)
   }
 
-  def put(sbKey: K, typeFullNames: Set[String]): Set[String] =
-    table.put(sbKey, typeFullNames).getOrElse(Set.empty)
+  def put(sbKey: K, typeFullNames: Set[String]): Set[String] = {
+    if (typeFullNames.nonEmpty)
+      table.put(sbKey, typeFullNames).getOrElse(Set.empty)
+    else
+      Set.empty
+  }
 
   def put(sbKey: K, typeFullName: String): Set[String] =
     put(sbKey, Set(typeFullName))
 
-  def put(node: AstNode, typeFullNames: Set[String]): Set[String] = fromNode(node) match {
+  def put(node: AstNode, typeFullNames: Set[String]): Set[String] = keyFromNode(node) match {
     case Some(key) => put(key, typeFullNames)
     case None      => Set.empty
   }
@@ -117,28 +121,29 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => Option[K]) {
   def append(node: AstNode, typeFullName: String): Set[String] =
     append(node, Set(typeFullName))
 
-  def append(node: AstNode, typeFullNames: Set[String]): Set[String] = fromNode(node) match {
+  def append(node: AstNode, typeFullNames: Set[String]): Set[String] = keyFromNode(node) match {
     case Some(key) => append(key, typeFullNames)
     case None      => Set.empty
   }
 
   def append(sbKey: K, typeFullNames: Set[String]): Set[String] = {
     table.get(sbKey) match {
-      case Some(ts) => put(sbKey, ts ++ typeFullNames)
-      case None     => put(sbKey, typeFullNames)
+      case Some(ts) if typeFullNames.nonEmpty => put(sbKey, ts ++ typeFullNames)
+      case None if typeFullNames.nonEmpty     => put(sbKey, typeFullNames)
+      case _                                  => Set.empty
     }
   }
 
   def contains(sbKey: K): Boolean = table.contains(sbKey)
 
-  def contains(node: AstNode): Boolean = fromNode(node) match {
+  def contains(node: AstNode): Boolean = keyFromNode(node) match {
     case Some(key) => contains(key)
     case None      => false
   }
 
   def get(sbKey: K): Set[String] = table.getOrElse(sbKey, Set.empty)
 
-  def get(node: AstNode): Set[String] = fromNode(node) match {
+  def get(node: AstNode): Set[String] = keyFromNode(node) match {
     case Some(key) => get(key)
     case None      => Set.empty
   }
