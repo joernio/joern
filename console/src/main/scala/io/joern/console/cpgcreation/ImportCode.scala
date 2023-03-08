@@ -146,6 +146,13 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
       }
     }
 
-    cpgMaybe.getOrElse(throw new ConsoleException(s"Error creating project for input path: `$inputPath`"))
+    cpgMaybe
+      .map { cpg =>
+        report("""|Code successfully imported. You can now query it using `cpg`.
+          |For an overview of all imported code, type `workspace`.""".stripMargin)
+        console.applyDefaultOverlays(cpg)
+        generator.applyPostProcessingPasses(cpg)
+      }
+      .getOrElse(throw new ConsoleException(s"Error creating project for input path: `$inputPath`"))
   }
 }
