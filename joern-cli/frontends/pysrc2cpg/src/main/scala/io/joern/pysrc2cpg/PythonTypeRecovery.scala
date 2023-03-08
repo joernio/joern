@@ -66,51 +66,69 @@ class RecoverForPythonFile(
     *
     * @param path
     *   the module path.
-    * @param funcOrModule
-    *   the name of the imported entity.
+    * @param expEntity
+    *   the name of the imported entity. This could be a function, module, or variable/field.
     * @return
     *   the possible callee names
     */
-  private def extractPossibleCalleeNames(path: String, funcOrModule: String): Set[String] = {
+  private def extractPossibleCalleeNames(path: String, expEntity: String): Set[String] = {
     val sep = Matcher.quoteReplacement(JFile.separator)
+
+    lazy val methodsWithExportEntityAsIdentifier: List[Method] = cpg
+      .identifier(expEntity)
+      .where(_.inCall.nameExact("<operator>.assignment").and(_.codeNot(".*import.*")))
+      .method
+      .where(_.file.name(s".*${Matcher.quoteReplacement(path)}.*"))
+      .toList
+
     val procedureName = path match {
-      case "" if funcOrModule.contains(".") =>
-        // Case 1: Qualified path: import foo.bar => (bar.py or bar/__init.py)
-        val splitFunc = funcOrModule.split("\\.")
+      case "" if expEntity.contains(".") =>
+        // Case 1: Qualified path: import foo.bar => (bar.py or bar/__init__.py)
+        val splitFunc = expEntity.split("\\.")
         val name      = splitFunc.tail.mkString(".")
         s"${splitFunc(0)}.py:<module>.$name"
       case "" =>
-        // Case 2: import of a module: import foo => (foo.py or foo/__init.py)
-        s"$funcOrModule.py:<module>"
+        // Case 2: import of a module: import foo => (foo.py or foo/__init__.py)
+        s"$expEntity.py:<module>"
+      case _ if methodsWithExportEntityAsIdentifier.nonEmpty =>
+        // Case 3: import of a variable: from api import db => (api.py or foo.__init__.py) @ identifier(db)
+        methodsWithExportEntityAsIdentifier.map(f => s"${f.fullName}<var>$expEntity").head
       case _ =>
-        // Case 3:  Import from module using alias, e.g. import bar from foo as faz
+        // Case 4:  Import from module using alias, e.g. import bar from foo as faz
         val rootDirectory = cpg.metaData.root.headOption
         val absPath       = rootDirectory.map(r => Paths.get(r, path))
         val fileOrDir     = absPath.map(a => better.files.File(a))
         val pyFile        = absPath.map(a => Paths.get(a.toString + ".py"))
         fileOrDir match {
           case Some(f) if f.isDirectory && !pyFile.exists { p => better.files.File(p).exists } =>
-            s"${path.replaceAll("\\.", sep)}${java.io.File.separator}$funcOrModule.py:<module>"
-          case Some(f) if f.isDirectory && (f / s"$funcOrModule.py").exists =>
-            s"${(f / s"$funcOrModule.py").pathAsString}:<module>"
+            s"${path.replaceAll("\\.", sep)}${java.io.File.separator}$expEntity.py:<module>"
+          case Some(f) if f.isDirectory && (f / s"$expEntity.py").exists =>
+            s"${(f / s"$expEntity.py").pathAsString}:<module>"
           case _ =>
-            s"${path.replaceAll("\\.", sep)}.py:<module>.$funcOrModule"
+            s"${path.replaceAll("\\.", sep)}.py:<module>.$expEntity"
         }
     }
 
     /** The two ways that this procedure could be resolved to in Python. */
-    def possibleCalleeNames(procedureName: String, isConstructor: Boolean): Set[String] =
+    def possibleCalleeNames(procedureName: String, isConstructor: Boolean, isFieldOrVar: Boolean): Set[String] =
       if (isConstructor)
         Set(procedureName.concat(s".${Defines.ConstructorMethodName}"))
-      else
+      else if (isFieldOrVar) {
+        val Array(m, v) = procedureName.split("<var>")
+        cpg.method.fullNameExact(m).ast.isIdentifier.nameExact(v).headOption match {
+          case Some(i) => (Seq(i.typeFullName) ++ i.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet
+          case None    => Set.empty
+        }
+      } else
         Set(procedureName, fullNameAsInit)
 
     /** the full name of the procedure where it's assumed that it is defined within an <code>__init.py__</code> of the
       * module.
       */
-    def fullNameAsInit: String = procedureName.replace(".py", s"${JFile.separator}__init__.py")
+    def fullNameAsInit: String = if (procedureName.contains("__init__.py")) procedureName
+    else procedureName.replace(".py", s"${JFile.separator}__init__.py")
 
-    possibleCalleeNames(procedureName, isConstructor(funcOrModule))
+    possibleCalleeNames(procedureName, isConstructor(expEntity), procedureName.contains("<var>"))
   }
 
   override def postVisitImports(): Unit = {
