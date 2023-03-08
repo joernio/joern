@@ -1,0 +1,1 @@
+./joern-cli/frontends/jssrc2cpg/jssrc2cpg.sh
