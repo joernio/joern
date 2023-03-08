@@ -1,8 +1,10 @@
 package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
+
 import java.nio.file.Path
 import scala.sys.process._
+import scala.util.{Failure, Try}
 
 /** Language frontend for Java archives (JAR files). Translates Java archives into code property graphs.
   */
@@ -14,19 +16,18 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
     inputPath: String,
     outputPath: String = "cpg.bin.zip",
     namespaces: List[String] = List()
-  ): Option[String] = {
+  ): Try[String] = {
 
     if (commercialAvailable) {
       generateCommercial(inputPath, outputPath, namespaces)
     } else if (ossAvailable) {
       generateOss(inputPath, outputPath)
     } else {
-      println("No Java language frontend present")
-      None
+      Failure(new AssertionError("No Java language frontend present"))
     }
   }
 
-  private def generateCommercial(inputPath: String, outputPath: String, namespaces: List[String]): Option[String] = {
+  private def generateCommercial(inputPath: String, outputPath: String, namespaces: List[String]): Try[String] = {
     if (inputPath.endsWith(".apk")) {
       println("found .apk ending - will first transform it to a jar using dex2jar.sh")
 
@@ -42,14 +43,14 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
         command = "powershell"
         arguments = Seq(rootPath.resolve("java2cpg.ps1").toString) ++ arguments
       }
-      runShellCommand(command, arguments).toOption.map(_ => outputPath)
+      runShellCommand(command, arguments).map(_ => outputPath)
     }
   }
 
-  private def generateOss(inputPath: String, outputPath: String): Option[String] = {
+  private def generateOss(inputPath: String, outputPath: String): Try[String] = {
     val command   = if (isWin) rootPath.resolve("jimple2cpg.bat") else rootPath.resolve("jimple2cpg")
     val arguments = config.cmdLineParams.toSeq ++ Seq(inputPath, "--output", outputPath)
-    runShellCommand(command.toString, arguments).toOption.map(_ => outputPath)
+    runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
 
   private def jvmLanguages: List[String] = {

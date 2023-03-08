@@ -136,16 +136,14 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
     val name = Option(projectName).filter(_.nonEmpty).getOrElse(deriveNameFromInputPath(inputPath, workspace))
     report(s"Creating project `$name` for code at `$inputPath`")
 
-    val cpgMaybe = for {
-      pathToProject <- workspace.createProject(inputPath, name)
-      frontendCpgOutFile = pathToProject.resolve(nameOfLegacyCpgInProject)
-      _   <- generatorFactory.runGenerator(generator, inputPath, frontendCpgOutFile.toString, namespaces)
-      cpg <- console.open(name).flatMap(_.cpg)
-    } yield {
-      report("""|Code successfully imported. You can now query it using `cpg`.
-                |For an overview of all imported code, type `workspace`.""".stripMargin)
-      console.applyDefaultOverlays(cpg)
-      generator.applyPostProcessingPasses(cpg)
+    val cpgMaybe = workspace.createProject(inputPath, name).flatMap { pathToProject =>
+      val frontendCpgOutFile = pathToProject.resolve(nameOfLegacyCpgInProject)
+      generatorFactory.runGenerator(generator, inputPath, frontendCpgOutFile.toString, namespaces) match {
+        case Success(_) =>
+          console.open(name).flatMap(_.cpg)
+        case Failure(exception) =>
+          throw new ConsoleException(s"Error creating project for input path: `$inputPath`", exception)
+      }
     }
 
     cpgMaybe.getOrElse(throw new ConsoleException(s"Error creating project for input path: `$inputPath`"))

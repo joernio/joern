@@ -70,7 +70,7 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
 
   private class CTestingFrontend extends CpgGenerator {
 
-    override def generate(inputPath: String, outputPath: String, namespaces: List[String]): Option[String] = {
+    override def generate(inputPath: String, outputPath: String, namespaces: List[String]): Try[String] = {
       val c2cpg = new C2Cpg()
       val defines = config.frontend.cmdLineParams.toList
         .sliding(2)
@@ -78,8 +78,10 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
         .collect {
           case List(h, t) if h == "--define" => t
         }
-      c2cpg.run(Config(inputPath, outputPath, defines = defines.toSet))
-      Some(outputPath)
+      Try {
+        c2cpg.run(Config(inputPath, outputPath, defines = defines.toSet))
+        outputPath
+      }
     }
 
     def isAvailable: Boolean = true
