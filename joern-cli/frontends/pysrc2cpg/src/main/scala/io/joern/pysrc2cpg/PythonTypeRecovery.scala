@@ -115,10 +115,23 @@ class RecoverForPythonFile(
         Set(procedureName.concat(s".${Defines.ConstructorMethodName}"))
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
+        // TODO: When the workaround below is replaced, the following type->member check will kick in
         cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
           case Some(i) => (Seq(i.typeFullName) ++ i.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet
           case None    => Set.empty
         }
+        // TODO: Workaround until we write-to-CPG each iteration, use this for now as long as we have global table
+        cpg.method
+          .fullNameExact(m)
+          .ast
+          .isIdentifier
+          .nameExact(v)
+          .dedupBy(_.name)
+          .filter(globalTable.contains)
+          .flatMap { i =>
+            globalTable.get(i)
+          }
+          .toSet
       } else
         Set(procedureName, fullNameAsInit)
 

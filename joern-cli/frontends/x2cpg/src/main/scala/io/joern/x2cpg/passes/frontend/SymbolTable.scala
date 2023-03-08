@@ -83,13 +83,13 @@ case class FieldVar(compUnitFullName: String, override val identifier: String) e
   * The [[SymbolTable]] operates like a map with a few convenient methods that are designed for this structure's
   * purpose.
   */
-class SymbolTable[K <: SBKey](fromNode: AstNode => Option[K]) {
+class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   private val table = TrieMap.empty[K, Set[String]]
 
   def apply(sbKey: K): Set[String] = table(sbKey)
 
-  def apply(node: AstNode): Set[String] = fromNode(node) match {
+  def apply(node: AstNode): Set[String] = keyFromNode(node) match {
     case Some(key) => table(key)
     case None      => Set.empty
   }
@@ -113,7 +113,7 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => Option[K]) {
   def put(sbKey: K, typeFullName: String): Set[String] =
     put(sbKey, Set(typeFullName))
 
-  def put(node: AstNode, typeFullNames: Set[String]): Set[String] = fromNode(node) match {
+  def put(node: AstNode, typeFullNames: Set[String]): Set[String] = keyFromNode(node) match {
     case Some(key) => put(key, typeFullNames)
     case None      => Set.empty
   }
@@ -121,7 +121,7 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => Option[K]) {
   def append(node: AstNode, typeFullName: String): Set[String] =
     append(node, Set(typeFullName))
 
-  def append(node: AstNode, typeFullNames: Set[String]): Set[String] = fromNode(node) match {
+  def append(node: AstNode, typeFullNames: Set[String]): Set[String] = keyFromNode(node) match {
     case Some(key) => append(key, typeFullNames)
     case None      => Set.empty
   }
@@ -136,14 +136,14 @@ class SymbolTable[K <: SBKey](fromNode: AstNode => Option[K]) {
 
   def contains(sbKey: K): Boolean = table.contains(sbKey)
 
-  def contains(node: AstNode): Boolean = fromNode(node) match {
+  def contains(node: AstNode): Boolean = keyFromNode(node) match {
     case Some(key) => contains(key)
     case None      => false
   }
 
   def get(sbKey: K): Set[String] = table.getOrElse(sbKey, Set.empty)
 
-  def get(node: AstNode): Set[String] = fromNode(node) match {
+  def get(node: AstNode): Set[String] = keyFromNode(node) match {
     case Some(key) => get(key)
     case None      => Set.empty
   }
