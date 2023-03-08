@@ -1,11 +1,13 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.c2cpg.C2Cpg
+import io.joern.console.cpgcreation.CCpgGenerator
+import io.joern.console.FrontendConfig
 import io.joern.jssrc2cpg.JsSrc2Cpg
-import io.joern.{c2cpg, jssrc2cpg}
+import io.joern.jssrc2cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.utils.ProjectRoot
 
 trait AbstractJoernCliTest {
 
@@ -29,9 +31,8 @@ trait AbstractJoernCliTest {
   }
 
   private def withC2Cpg(inputFile: File, outputPath: String): Unit = {
-    val frontend = new C2Cpg()
-    val config   = c2cpg.Config(inputPath = inputFile.pathAsString, outputPath = outputPath)
-    frontend.run(config)
+    CCpgGenerator(new FrontendConfig(), ProjectRoot.find.path)
+      .generate(inputPath = inputFile.pathAsString, outputPath = outputPath)
   }
 
   private def withJsSrc2Cpg(inputFile: File, outputPath: String): Unit = {
