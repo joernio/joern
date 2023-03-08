@@ -437,6 +437,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     val callNode = nodeBuilder.callNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
+    if (!codeOf(rhsNode).startsWith("import(")) contextStack.considerAsGlobalVariable(lhsNode)
 
     callNode
   }

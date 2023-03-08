@@ -361,14 +361,17 @@ class PythonAstVisitor(
       edgeBuilder.astEdge(bodyStmt, blockNode, bodyOrder.getAndInc)
     }
 
-    contextStack.pop()
-
     // For every method we create a corresponding TYPE and TYPE_DECL and
     // a binding for the method into TYPE_DECL.
     val typeNode     = nodeBuilder.typeNode(name, fullName)
     val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, absFileName, Seq(Constants.ANY), lineAndColumn)
     edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
     createBinding(methodNode, typeDeclNode)
+    // For every method that is a module, the local variables can be imported by other modules. This behaviour is
+    // much like fields so they are to be linked as fields to this method type
+    if (name == "<module>") contextStack.createMemberLinks(typeDeclNode, edgeBuilder.astEdge)
+
+    contextStack.pop()
 
     methodNode
   }
