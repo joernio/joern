@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
+import scala.util.{Failure, Success}
 
 object JoernParse {
   // Special string used to separate joern-parse opts from frontend-specific opts
@@ -139,8 +140,11 @@ object JoernParse {
       generator =
         cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
       generator.generate(config.inputPath, outputPath = config.outputCpgFile, namespaces = config.namespaces) match {
-        case Some(cmd) => Right(cmd)
-        case None      => Left(s"Could not generate CPG with language = $language and input = ${config.inputPath}")
+        case Success(cmd) => Right(cmd)
+        case Failure(exception) =>
+          Left(
+            s"Could not generate CPG with language = $language and input = ${config.inputPath}: ${exception.getMessage}"
+          )
       }
     }
   }

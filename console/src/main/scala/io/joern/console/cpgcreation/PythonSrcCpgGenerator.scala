@@ -11,6 +11,7 @@ import io.joern.pysrc2cpg.{
 }
 
 import java.nio.file.Path
+import scala.util.Try
 
 case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
   private lazy val command: Path = if (isWin) rootPath.resolve("pysrc2cpg.bat") else rootPath.resolve("pysrc2cpg")
@@ -21,9 +22,9 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
     inputPath: String,
     outputPath: String = "cpg.bin.zip",
     namespaces: List[String] = List()
-  ): Option[String] = {
+  ): Try[String] = {
     val arguments = Seq(inputPath, "-o", outputPath) ++ config.cmdLineParams
-    runShellCommand(command.toString, arguments).toOption.map(_ => outputPath)
+    runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
 
   override def isAvailable: Boolean =

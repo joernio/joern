@@ -144,6 +144,10 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
         |
         |def func2(a: Optional[str] = None) -> List[Union[str | None]]:
         |    return [a]
+        |
+        |def func3(x : abc.Def):
+        |   return 1.0
+        |
         |""".stripMargin)
 
     "test parameter hint of method definition using built-in types" in {
@@ -182,6 +186,14 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
         .l shouldBe Seq("typing.List")
     }
 
+    "test parameter hint of the form abc.def" in {
+      cpg.method
+        .name("func3")
+        .parameter
+        .dynamicTypeHintFullName
+        .dedup
+        .l shouldBe Seq("abc.Def")
+    }
   }
 
 }

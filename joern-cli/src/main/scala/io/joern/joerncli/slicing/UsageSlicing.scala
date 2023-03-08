@@ -52,20 +52,24 @@ object UsageSlicing {
     )
   }
 
-  private def getInCallsForReferencedIdentifiers(decl: Declaration): List[Call] = decl
-    .flatMap {
-      case local: Local             => local.referencingIdentifiers
-      case param: MethodParameterIn => param.referencingIdentifiers
-      case _                        => Seq()
-    }
-    .inCall
-    .flatMap {
-      case c if c.name.equals(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
-      case c if !c.name.startsWith("<operator>")                                                   => Some(c)
-      case _                                                                                       => None
-    }
-    .dedup
-    .toList
+  private def getInCallsForReferencedIdentifiers(decl: Declaration): List[Call] = {
+    // Cross closure boundaries
+    val capturedVars = decl.capturedByMethodRef.referencedMethod.ast.isIdentifier.nameExact(decl.name)
+    decl
+      .flatMap {
+        case local: Local             => local.referencingIdentifiers ++ capturedVars
+        case param: MethodParameterIn => param.referencingIdentifiers ++ capturedVars
+        case _                        => Seq()
+      }
+      .inCall
+      .flatMap {
+        case c if c.name.equals(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
+        case c if !c.name.startsWith("<operator>")                                                   => Some(c)
+        case _                                                                                       => None
+      }
+      .dedup
+      .toList
+  }
 
   /** Returns true if the given declaration is found to have at least n non-operator calls within its referenced
     * identifiers' scope.
@@ -192,13 +196,14 @@ object UsageSlicing {
 
     def partitionInvolvementInCalls: (List[ObservedCall], List[(ObservedCall, Int)]) = {
       val (invokedCalls, argToCalls) = getInCallsForReferencedIdentifiers(tgt)
+        .sortBy(f => (f.lineNumber, f.columnNumber))
         .flatMap(c => c.argument.find(p => p.code.equals(tgt.name)).map(x => (c, x.argumentIndex)))
         .partition { case (_, argIdx) => argIdx == 0 }
       (
-        invokedCalls.map(_._1).isCall.flatMap(exprToObservedCall).toList.reverse,
+        invokedCalls.map(_._1).isCall.flatMap(exprToObservedCall).toList,
         argToCalls.flatMap { case (c: Call, argAt: Int) =>
           exprToObservedCall(c).map(oc => (oc, argAt))
-        }.reverse
+        }
       )
     }
 

@@ -19,11 +19,11 @@ abstract class CpgGenerator() {
   /** is this a JVM based frontend? if so, we'll invoke it with -Xmx for max heap settings */
   def isJvmBased: Boolean
 
-  /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
+  /** Generate a CPG for the given input path. Returns the output path, or a Failure, if no CPG was generated.
     *
     * This method appends command line options in config.frontend.cmdLineParams to the shell command.
     */
-  def generate(inputPath: String, outputPath: String = "cpg.bin.zip", namespaces: List[String] = List()): Option[String]
+  def generate(inputPath: String, outputPath: String = "cpg.bin.zip", namespaces: List[String] = List()): Try[String]
 
   protected def runShellCommand(program: String, arguments: Seq[String]): Try[Unit] =
     Try {
