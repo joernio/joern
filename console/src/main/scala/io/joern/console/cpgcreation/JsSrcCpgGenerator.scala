@@ -5,6 +5,7 @@ import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.shiftleft.codepropertygraph.Cpg
 
 import java.nio.file.Path
+import scala.util.Try
 
 case class JsSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
   private lazy val command: Path = if (isWin) rootPath.resolve("jssrc2cpg.bat") else rootPath.resolve("jssrc2cpg.sh")
@@ -15,9 +16,9 @@ case class JsSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cpg
     inputPath: String,
     outputPath: String = "cpg.bin.zip",
     namespaces: List[String] = List()
-  ): Option[String] = {
+  ): Try[String] = {
     val arguments = Seq(inputPath, "--output", outputPath) ++ config.cmdLineParams
-    runShellCommand(command.toString, arguments).toOption.map(_ => outputPath)
+    runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
 
   override def isAvailable: Boolean =

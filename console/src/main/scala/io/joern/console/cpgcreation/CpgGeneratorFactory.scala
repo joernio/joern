@@ -59,8 +59,8 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
     inputPath: String,
     outputPath: String,
     namespaces: List[String] = List()
-  ): Option[Path] = {
-    val outputFileOpt: Option[File] =
+  ): Try[Path] = {
+    val outputFileOpt: Try[File] =
       generator.generate(inputPath, outputPath, namespaces).map(File(_))
     outputFileOpt.map { outFile =>
       val parentPath = outFile.parent.path.toAbsolutePath
