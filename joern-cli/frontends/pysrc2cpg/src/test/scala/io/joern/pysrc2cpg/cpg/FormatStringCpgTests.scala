@@ -55,4 +55,12 @@ class FormatStringCpgTests extends AnyFreeSpec with Matchers {
     innerCall.code shouldBe """f'{a}'"""
   }
 
+  "test format string with multiple replacement fields" in {
+    val cpg = Py2CpgTestContext.buildCpg("""
+                                           |f"{a} {b}"
+                                           |""".stripMargin)
+    val callNode = cpg.call.methodFullName("<operator>.formatString").head
+    callNode.code shouldBe """f"{a} {b}""""
+  }
+
 }

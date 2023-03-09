@@ -165,9 +165,12 @@ TOKEN_MGR_DECLS:
     return result;
   }
 
-  // Stores the format string lexing state we were in before switch to the DEFAULT state
+  // Stores the format string lexing state we were in before switching to the DEFAULT state
   // in order to parse a replacement field. Naturally needs to be a stack since replacement
   // fields can be nested.
+  // Note that during format string lexing of strings containing multiple replacement fields,
+  // we switch back and forth multiple times between the lexer DEFAULT state and the stacks
+  // top state.
   Stack<Integer> formatStringLexStateStack = new Stack<Integer>();
 
   // Number of opened curly brackets while parsing a format string in FORMAT_SPEC_LEX.
@@ -271,7 +274,7 @@ TOKEN: {
   countCloseParen();
   if (!formatStringLexStateStack.isEmpty() && openParenCounter() == 0) {
     popParenScope();
-    SwitchTo(formatStringLexStateStack.pop());
+    SwitchTo(formatStringLexStateStack.peek());
   }
 }
 | <DOT: ".">
@@ -592,7 +595,7 @@ TOKEN: {
    pushParenScope();
    countOpenParen();
   }: DEFAULT
-| <FSDQ_END: "\""> { matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+| <FSDQ_END: "\""> { formatStringLexStateStack.pop(); matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 
 <FSSQ_LEX> TOKEN: {
@@ -613,7 +616,7 @@ TOKEN: {
    pushParenScope();
    countOpenParen();
   }: DEFAULT
-| <FSSQ_END: "'"> { matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+| <FSSQ_END: "'"> { formatStringLexStateStack.pop(); matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 
 <FTDQ_LEX> TOKEN: {
@@ -634,7 +637,7 @@ TOKEN: {
    pushParenScope();
    countOpenParen();
   }: DEFAULT
-| <FTDQ_END: "\"\"\""> { matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+| <FTDQ_END: "\"\"\""> { formatStringLexStateStack.pop(); matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 
 <FTSQ_LEX> TOKEN: {
@@ -655,7 +658,7 @@ TOKEN: {
    pushParenScope();
    countOpenParen();
   }: DEFAULT
-| <FTSQ_END: "'''"> { matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+| <FTSQ_END: "'''"> { formatStringLexStateStack.pop(); matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 
 ///////////////////////////////////////////////////////////////////////////////
