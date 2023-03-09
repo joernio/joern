@@ -84,7 +84,8 @@ object AstGenRunner {
 
   private def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
     Try("astgen --version".!!).toOption.map(_.strip()) match {
-      case Some(installedVersion) if VersionHelper.compare(installedVersion, astGenVersion) >= 0 =>
+      case Some(installedVersion)
+          if installedVersion != "unknown" && VersionHelper.compare(installedVersion, astGenVersion) >= 0 =>
         logger.debug(s"Using local astgen v$installedVersion from systems PATH")
         true
       case Some(installedVersion) =>
