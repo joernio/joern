@@ -65,15 +65,19 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       if (methodNames.size == 1) {
         builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
         println(s"linkCalls() ${call.name}. Link created. Method fullname: ${call.methodFullName}")
-      } else{
-        val builtInMethodName = methodNames.filter( s => s.contains("__builtin"))
-        if(builtInMethodName.size > 0){
+      } else if (methodNames.size > 1) {
+        val builtInMethodName = methodNames.filter(s => s.contains("__builtin"))
+        if (builtInMethodName.size > 0) {
           builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, builtInMethodName.sortBy(_.length).head)
           //TODO cleanup needed
           println(s"linkCalls() ${call.name}. Link created. Method fullname for builtin: ${call.methodFullName}")
         } else {
-          println(s"linkCalls() ${call.name}. Link NOT created. Method names size: ${methodNames.size}")
+          builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.sortBy(_.length).head)
+          //TODO cleanup needed
+          println(s"linkCalls() ${call.name}. Link created. Method fullname for non-builtin: ${call.methodFullName}")
         }
+      } else {
+        println(s"linkCalls() ${call.name}. Link NOT created. Method names is blank")
       }
     }
   }
