@@ -165,11 +165,10 @@ TOKEN_MGR_DECLS:
     return result;
   }
 
-  // If we are currently lexing the content of a format string this is set to
-  // the format lex state. Otherwise it is -1.
-  // Note that during format string lexing we switch back and forth between
-  // the lexer DEFAULT state and the format string lex state.
-  int formatStringLexState = -1;
+  // Stores the format string lexing state we were in before switch to the DEFAULT state
+  // in order to parse a replacement field. Naturally needs to be a stack since replacement
+  // fields can be nested.
+  Stack<Integer> formatStringLexStateStack = new Stack<Integer>();
 
   // Number of opened curly brackets while parsing a format string in FORMAT_SPEC_LEX.
   int formatSpecOpenCurly = 0;
@@ -221,7 +220,7 @@ TOKEN: {
   // Only on top level of the replacement field lexing we can
   // switch into the format spec lexing. At top level
   // openParenCounter() is 1 because of the opening curly bracket.
-  if (formatStringLexState != -1 && openParenCounter() == 1) {
+  if (!formatStringLexStateStack.isEmpty() && openParenCounter() == 1) {
     // We reached a ":" of a format spec of a replacement field of a format string.
     SwitchTo(FORMAT_SPEC_LEX);
   }
@@ -270,9 +269,9 @@ TOKEN: {
 | <CURLY_OPEN: "{"> { countOpenParen(); }
 | <CURLY_CLOSE: "}"> {
   countCloseParen();
-  if (formatStringLexState != -1 && openParenCounter() == 0) {
+  if (!formatStringLexStateStack.isEmpty() && openParenCounter() == 0) {
     popParenScope();
-    SwitchTo(formatStringLexState);
+    SwitchTo(formatStringLexStateStack.pop());
   }
 }
 | <DOT: ".">
@@ -569,10 +568,10 @@ TOKEN: {
 // FTDQ stands for: formatted triple double quote
 // FTSQ stands for: formatted triple single quote
 <FORMAT_STRING_LEX> TOKEN: {
-  <FSDQ_QUOTE_OPEN: "\""> { formatStringLexState = FSDQ_LEX; matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FSDQ_LEX
-| <FSSQ_QUOTE_OPEN: "'"> { formatStringLexState = FSSQ_LEX; matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FSSQ_LEX
-| <FTDQ_QUOTE_OPEN: "\"\"\""> { formatStringLexState = FTDQ_LEX; matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FTDQ_LEX
-| <FTSQ_QUOTE_OPEN: "'''"> { formatStringLexState = FTSQ_LEX; matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FTSQ_LEX
+  <FSDQ_QUOTE_OPEN: "\""> { formatStringLexStateStack.push(FSDQ_LEX); matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FSDQ_LEX
+| <FSSQ_QUOTE_OPEN: "'"> { formatStringLexStateStack.push(FSSQ_LEX); matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FSSQ_LEX
+| <FTDQ_QUOTE_OPEN: "\"\"\""> { formatStringLexStateStack.push(FTDQ_LEX); matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FTDQ_LEX
+| <FTSQ_QUOTE_OPEN: "'''"> { formatStringLexStateStack.push(FTSQ_LEX); matchedToken.kind = FORMAT_STRING_QUOTE_OPEN; }: FTSQ_LEX
 }
 
 <FSDQ_LEX> TOKEN: {
@@ -593,7 +592,7 @@ TOKEN: {
    pushParenScope();
    countOpenParen();
   }: DEFAULT
-| <FSDQ_END: "\""> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+| <FSDQ_END: "\""> { matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 
 <FSSQ_LEX> TOKEN: {
@@ -614,7 +613,7 @@ TOKEN: {
    pushParenScope();
    countOpenParen();
   }: DEFAULT
-| <FSSQ_END: "'"> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+| <FSSQ_END: "'"> { matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 
 <FTDQ_LEX> TOKEN: {
@@ -635,7 +634,7 @@ TOKEN: {
    pushParenScope();
    countOpenParen();
   }: DEFAULT
-| <FTDQ_END: "\"\"\""> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+| <FTDQ_END: "\"\"\""> { matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 
 <FTSQ_LEX> TOKEN: {
@@ -656,7 +655,7 @@ TOKEN: {
    pushParenScope();
    countOpenParen();
   }: DEFAULT
-| <FTSQ_END: "'''"> { formatStringLexState = -1; matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
+| <FTSQ_END: "'''"> { matchedToken.kind = FORMAT_STRING_QUOTE_CLOSE; }: DEFAULT
 }
 
 ///////////////////////////////////////////////////////////////////////////////

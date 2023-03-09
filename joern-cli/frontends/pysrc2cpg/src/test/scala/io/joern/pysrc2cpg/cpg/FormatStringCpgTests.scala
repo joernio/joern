@@ -44,4 +44,15 @@ class FormatStringCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "test nested format string" in {
+    val cpg = Py2CpgTestContext.buildCpg("""
+        |f"{f'{a}'} "
+        |""".stripMargin)
+    val outerCall = cpg.call.methodFullName("<operator>.formatString").columnNumber(1).head
+    outerCall.code shouldBe """f"{f'{a}'} """"
+
+    val innerCall = cpg.call.methodFullName("<operator>.formatString").columnNumber(4).head
+    innerCall.code shouldBe """f'{a}'"""
+  }
+
 }
