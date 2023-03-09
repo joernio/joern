@@ -12,11 +12,7 @@ case class JavaSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends C
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
-  override def generate(
-    inputPath: String,
-    outputPath: String = "cpg.bin",
-    namespaces: List[String] = List()
-  ): Try[String] = {
+  override def generate(inputPath: String, outputPath: String = "cpg.bin"): Try[String] = {
     val arguments = config.cmdLineParams.toSeq ++ Seq(inputPath, "--output", outputPath)
     runShellCommand(command.toString, arguments).map(_ => outputPath)
   }

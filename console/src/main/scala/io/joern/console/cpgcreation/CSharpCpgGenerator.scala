@@ -11,11 +11,7 @@ case class CSharpCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cp
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
-  override def generate(
-    inputPath: String,
-    outputPath: String = "cpg.bin.zip",
-    namespaces: List[String] = List()
-  ): Try[String] = {
+  override def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String] = {
     var arguments = Seq("-i", inputPath, "-o", outputPath) ++ config.cmdLineParams
     var command   = rootPath.resolve("csharp2cpg.sh").toString
 

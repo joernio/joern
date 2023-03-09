@@ -12,14 +12,10 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
-  override def generate(
-    inputPath: String,
-    outputPath: String = "cpg.bin.zip",
-    namespaces: List[String] = List()
-  ): Try[String] = {
+  override def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String] = {
 
     if (commercialAvailable) {
-      generateCommercial(inputPath, outputPath, namespaces)
+      generateCommercial(inputPath, outputPath)
     } else if (ossAvailable) {
       generateOss(inputPath, outputPath)
     } else {
@@ -27,18 +23,18 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
     }
   }
 
-  private def generateCommercial(inputPath: String, outputPath: String, namespaces: List[String]): Try[String] = {
+  private def generateCommercial(inputPath: String, outputPath: String): Try[String] = {
     if (inputPath.endsWith(".apk")) {
       println("found .apk ending - will first transform it to a jar using dex2jar.sh")
 
       val dex2jar = rootPath.resolve("dex2jar.sh").toString
       s"$dex2jar $inputPath".run().exitValue()
       val jarPath = s"$inputPath.jar"
-      generateCommercial(jarPath, outputPath, namespaces)
+      generateCommercial(jarPath, outputPath)
     } else {
       var command = rootPath.resolve("java2cpg.sh").toString
       var arguments =
-        Seq(inputPath, "-o", outputPath) ++ jvmLanguages ++ namespaceArgs(namespaces) ++ config.cmdLineParams
+        Seq(inputPath, "-o", outputPath) ++ jvmLanguages ++ config.cmdLineParams
       if (System.getProperty("os.name").startsWith("Windows")) {
         command = "powershell"
         arguments = Seq(rootPath.resolve("java2cpg.ps1").toString) ++ arguments

@@ -139,7 +139,7 @@ object JoernParse {
       println("[+] Running language frontend")
       generator =
         cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
-      generator.generate(config.inputPath, outputPath = config.outputCpgFile, namespaces = config.namespaces) match {
+      generator.generate(config.inputPath, outputPath = config.outputCpgFile) match {
         case Success(cmd) => Right(cmd)
         case Failure(exception) =>
           Left(
