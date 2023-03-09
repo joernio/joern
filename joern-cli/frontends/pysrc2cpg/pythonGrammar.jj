@@ -34,10 +34,19 @@ public class PythonParser {
   }
 
   ErrorStatement recoverAndCreateErrorStmt(Token lastCorrectToken, Exception exception) {
-    getNextToken();
-    while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
+    try {
       getNextToken();
+      while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
+        getNextToken();
+      }
+    } catch (Exception e) {
+      // We are already in error handling/recovery mode and try to advance the token stream
+      // to a point where we have hope to parse something meaningful again. If we get an
+      // exception during this advancing we end up here.
+      // We just stop advancing, store the previous error which brought us here in the first
+      // place and hope the parse can recover from the current state.
     }
+
     Token errorStartToken = lastCorrectToken.next;
     ErrorStatement errorStmt = new ErrorStatement(exception, attributes(errorStartToken, token));
     errors.add(errorStmt);
