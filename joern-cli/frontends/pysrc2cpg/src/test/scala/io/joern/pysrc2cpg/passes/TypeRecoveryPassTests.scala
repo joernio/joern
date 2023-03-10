@@ -578,4 +578,33 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "handle a wrapper function with the same name as an imported function" should {
+    lazy val cpg = code(
+      """
+        |import requests
+        |
+        |class Client:
+        |    access_token: str = None
+        |    def post(self, uuid: str, account_id: str, endpoint: str = "results"):
+        |        if not self.access_token:
+        |            self.authenticate()
+        |
+        |        response = requests.post(
+        |          url=f"https://{account_id}.rest.marketingcloudapis.com/data/v1/async/{uuid}/{endpoint}",
+        |            headers={
+        |                "Authorization": self.auth_header(),
+        |                "Content-Type": "application/json",
+        |            },
+        |        )
+        |        return response
+        |""".stripMargin)
+
+    "recover the child function `post` path correctly via receiver" in {
+      val Some(postCallReceiver) = cpg.identifier("requests").headOption
+      postCallReceiver.typeFullName shouldBe "requests.py:<module>"
+      val Some(postCall) = cpg.call("post").headOption
+      postCall.methodFullName shouldBe "requests.py:<module>.post"
+    }
+  }
+
 }

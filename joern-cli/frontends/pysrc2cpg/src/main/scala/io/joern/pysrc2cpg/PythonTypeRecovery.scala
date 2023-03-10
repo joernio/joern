@@ -38,6 +38,17 @@ class RecoverForPythonFile(
   addedNodes: mutable.Set[(Long, String)]
 ) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes) {
 
+  /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
+    * compilation unit.
+    */
+  private def fromNodeToLocalPythonKey(node: AstNode): Option[LocalKey] =
+    node match {
+      case n: Method => Option(CallAlias(n.name, Option("self")))
+      case _         => SBKey.fromNodeToLocalKey(node)
+    }
+
+  override val symbolTable: SymbolTable[LocalKey] = new SymbolTable[LocalKey](fromNodeToLocalPythonKey)
+
   /** Overridden to include legacy import calls until imports are supported.
     */
   override def importNodes(cu: AstNode): Traversal[AstNode] =

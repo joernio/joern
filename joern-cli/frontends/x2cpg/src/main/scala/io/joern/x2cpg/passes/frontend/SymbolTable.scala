@@ -26,10 +26,11 @@ object SBKey {
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
   def fromNodeToLocalKey(node: AstNode): Option[LocalKey] = {
     Option(node match {
-      case n: Identifier      => LocalVar(n.name)
-      case n: Local           => LocalVar(n.name)
-      case n: Call            => CallAlias(n.name)
-      case n: Method          => CallAlias(n.name)
+      case n: Identifier => LocalVar(n.name)
+      case n: Local      => LocalVar(n.name)
+      case n: Call =>
+        CallAlias(n.name, n.argument.where(_.argumentIndex(0)).isIdentifier.map(_.name).headOption)
+      case n: Method          => CallAlias(n.name, Option("this"))
       case n: MethodRef       => CallAlias(n.code)
       case n: FieldIdentifier => LocalVar(n.canonicalName)
       case _ => logger.debug(s"Local node of type ${node.label} is not supported in the type recovery pass."); null
@@ -60,7 +61,7 @@ case class CollectionVar(override val identifier: String, idx: String) extends L
 
 /** A name that refers to some kind of callee.
   */
-case class CallAlias(override val identifier: String) extends LocalKey(identifier)
+case class CallAlias(override val identifier: String, receiverName: Option[String] = None) extends LocalKey(identifier)
 
 /** Represents an identifier of some AST node at an interprocedural scope.
   */
