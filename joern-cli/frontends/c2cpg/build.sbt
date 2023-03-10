@@ -7,7 +7,7 @@ dependsOn(Projects.semanticcpg, Projects.dataflowengineoss % Test, Projects.x2cp
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
   "com.diffplug.spotless"   % "spotless-eclipse-cdt"       % "10.5.0",
-  "org.jline"               % "jline"                      % "3.22.0",
+  "org.jline"               % "jline"                      % "3.23.0",
   "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
 )
 
@@ -28,8 +28,8 @@ dependencyOverrides ++= Seq(
    *     at com.diffplug.spotless.extra.eclipse.base.osgi.FrameworkBundleRegistry.getBundle(FrameworkBundleRegistry.java:47)
    *     at org.osgi.framework.FrameworkUtil.lambda$5(FrameworkUtil.java:234)
    */
-  "org.apache.logging.log4j" % "log4j-core" % "2.19.0" % Optional,
-  "org.apache.logging.log4j" % "log4j-slf4j2-impl" % "2.19.0" % Optional,
+  "org.apache.logging.log4j" % "log4j-core"        % "2.19.0" % Optional,
+  "org.apache.logging.log4j" % "log4j-slf4j2-impl" % "2.19.0" % Optional
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
