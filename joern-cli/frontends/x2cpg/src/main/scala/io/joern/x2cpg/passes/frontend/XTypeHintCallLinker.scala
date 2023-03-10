@@ -25,44 +25,38 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   private val fileNamePattern                   = Pattern.compile("^(.*(.py|.js)).*$")
 
   def calls: Traversal[Call] = cpg.call
-    .filterNot(c => c.name.startsWith("<operator>"))
-    .filter(c => calleeNames(c).nonEmpty)
-    .filter(_.callee.isEmpty)
+    .nameNot("<operator>.*", "<operators>.*")
+    .filter(c => calleeNames(c).nonEmpty && c.callee.isEmpty)
 
   def calleeNames(c: Call): Seq[String] =
-    (c.dynamicTypeHintFullName ++ Seq(c.typeFullName))
-      .filterNot(_.equals("ANY"))
-      .distinct
+    (c.dynamicTypeHintFullName :+ c.typeFullName).filterNot(_.equals("ANY")).distinct
 
-  private def callees(names: Seq[String]): Traversal[Method] = cpg.method.fullNameExact(names: _*)
+  private def callees(names: Seq[String]): List[Method] = cpg.method.fullNameExact(names: _*).toList
 
   override def run(builder: DiffGraphBuilder): Unit = linkCalls(builder)
 
   private def linkCalls(builder: DiffGraphBuilder): Unit = {
-    val methodMap = mutable.HashMap.empty[String, MethodBase]
-    val callerAndCallees = calls
-      .map(call => (call, calleeNames(call)))
-      .toList
+    val methodMap        = mutable.HashMap.empty[String, MethodBase]
+    val callerAndCallees = calls.map(call => (call, calleeNames(call))).toList
     // Gather all method nodes and/or stubs
-    callerAndCallees
-      .foreach { case (call, methodNames) =>
-        val ms = callees(methodNames).l
-        if (ms.nonEmpty) {
-          ms.foreach { m => methodMap.put(m.fullName, m) }
-        } else {
-          val mNames = ms.map(_.fullName).toSet
-          methodNames
-            .filterNot(mNames.contains)
-            .map(fullName => createMethodStub(fullName, call, builder))
-            .foreach { m => methodMap.put(m.fullName, m) }
-        }
+    callerAndCallees.foreach { case (call, methodNames) =>
+      val ms = callees(methodNames)
+      if (ms.nonEmpty) {
+        ms.foreach { m => methodMap.put(m.fullName, m) }
+      } else {
+        val mNames = ms.map(_.fullName).toSet
+        methodNames
+          .filterNot(mNames.contains)
+          .map(fullName => createMethodStub(fullName, call, builder))
+          .foreach { m => methodMap.put(m.fullName, m) }
       }
+    }
     // Link edges to method nodes
     callerAndCallees.foreach { case (call, methodNames) =>
       methodNames
         .flatMap(methodMap.get)
         .foreach { m => builder.addEdge(call, m, EdgeTypes.CALL) }
-      if (methodNames.size == 1) builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
+      if (methodNames.sizeIs == 1) builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
     }
   }
 
@@ -73,7 +67,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     val basePath = cpg.metaData.root.head
     val isExternal = if (matcher.matches()) {
       val fileName = matcher.group(1)
-      cpg.file.nameExact(basePath + fileName).isEmpty
+      cpg.file.nameExact(s"$basePath$fileName").isEmpty
     } else {
       true
     }
