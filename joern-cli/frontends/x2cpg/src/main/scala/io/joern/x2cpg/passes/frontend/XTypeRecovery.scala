@@ -352,11 +352,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * which this method uses [[isField(i)]] to determine.
     */
   protected def associateTypes(symbol: LocalVar, fa: FieldAccess, types: Set[String]): Set[String] = {
-    val fieldParents = getFieldParents(fa)
-    fa.astChildren.l match {
-      case (i: Identifier) :: _ if isField(i) && fieldParents.nonEmpty =>
-        fieldParents.foreach(fp => globalTable.put(FieldVar(fp, symbol.identifier), types))
-      case _ =>
+    fa.astChildren.headOption.collect {
+      case i: Identifier if isField(i) =>
+        getFieldParents(fa).foreach(fp => globalTable.put(FieldVar(fp, symbol.identifier), types))
     }
     symbolTable.append(symbol, types)
   }
