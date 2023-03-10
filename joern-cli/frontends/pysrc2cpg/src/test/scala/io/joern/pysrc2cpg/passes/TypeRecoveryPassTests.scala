@@ -579,8 +579,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
   }
 
   "handle a wrapper function with the same name as an imported function" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |import requests
         |
         |class Client:
