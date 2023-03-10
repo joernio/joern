@@ -55,16 +55,17 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, iteration
     */
   protected val addedNodes = mutable.HashSet.empty[(Long, String)]
 
-  override def run(builder: DiffGraphBuilder): Unit = try {
-    for (_ <- 0 until iterations)
-      compilationUnit
-        .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
-        .foreach(_.get())
-
-  } finally {
-    globalTable.clear()
-    addedNodes.clear()
-  }
+  override def run(builder: DiffGraphBuilder): Unit =
+    try {
+      for (_ <- 0 until iterations) {
+        compilationUnit
+          .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
+          .foreach(_.get())
+      }
+    } finally {
+      globalTable.clear()
+      addedNodes.clear()
+    }
 
   /** @return
     *   the compilation units as per how the language is compiled. e.g. file.
@@ -87,10 +88,13 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, iteration
 }
 
 object XTypeRecovery {
-  val DUMMY_RETURN_TYPE                                     = "<returnValue>"
-  val DUMMY_MEMBER_LOAD                                     = "<member>"
-  val DUMMY_INDEX_ACCESS                                    = "<indexAccess>"
-  def DUMMY_MEMBER_TYPE(prefix: String, memberName: String) = s"$prefix.$DUMMY_MEMBER_LOAD($memberName)"
+
+  val DummyReturnType  = "<returnValue>"
+  val DummyMemberLoad  = "<member>"
+  val DummyIndexAccess = "<indexAccess>"
+
+  def dummyMemberType(prefix: String, memberName: String): String = s"$prefix.$DummyMemberLoad($memberName)"
+
 }
 
 /** Performs type recovery from the root of a compilation unit level
@@ -124,7 +128,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Provides an entrypoint to add known symbols and their possible types.
     */
-  def prepopulateSymbolTable(): Unit = {}
+  protected def prepopulateSymbolTable(): Unit = {}
 
   protected def assignments: Traversal[Assignment] =
     cu.ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_))
@@ -142,11 +146,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val remainder      = methodFullName.substring(index + "<returnValue>".length)
         val methods        = cpg.method.fullNameExact(methodToLookup).l
         methods match {
-          case List(method) =>
+          case method :: Nil =>
             val dynamicTypeHints = method.methodReturn.dynamicTypeHintFullName.toSet
-            val newTypes         = dynamicTypeHints.map(x => x + remainder)
+            val newTypes         = dynamicTypeHints.map(x => s"$x$remainder")
             symbolTable.put(call, newTypes)
-          case List() =>
+          case Nil =>
           case _ =>
             logger.warn(s"More than a single function matches method full name: $methodToLookup")
         }
@@ -155,12 +159,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   protected def visitParameter(param: MethodParameterIn): Unit = {
-    if (param.dynamicTypeHintFullName.isEmpty) return
-    val matchingIdentifiers = param.method._identifierViaContainsOut
-      .nameExact(param.name)
-      .l
-    matchingIdentifiers.foreach { identifier =>
-      symbolTable.append(LocalVar(identifier.name), param.dynamicTypeHintFullName.toSet)
+    if (param.dynamicTypeHintFullName.nonEmpty) {
+      val matchingIdentifiers = param.method._identifierViaContainsOut.nameExact(param.name).l
+      matchingIdentifiers.foreach { identifier =>
+        symbolTable.append(LocalVar(identifier.name), param.dynamicTypeHintFullName.toSet)
+      }
     }
   }
 
@@ -211,13 +214,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
-  protected def visitImport(i: Import): Unit = {
-    val entity = i.importedEntity
-    val alias  = i.importedAs
-    if (entity.isDefined && alias.isDefined) {
-      symbolTable.append(LocalVar(alias.get), Set(entity.get))
-      symbolTable.append(CallAlias(alias.get), Set(entity.get))
-    }
+  protected def visitImport(i: Import): Unit = for {
+    entity <- i.importedEntity
+    alias  <- i.importedAs
+  } {
+    symbolTable.append(LocalVar(alias), Set(entity))
+    symbolTable.append(CallAlias(alias), Set(entity))
   }
 
   /** @return
@@ -350,11 +352,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * which this method uses [[isField(i)]] to determine.
     */
   protected def associateTypes(symbol: LocalVar, fa: FieldAccess, types: Set[String]): Set[String] = {
-    val fieldParents = getFieldParents(fa)
-    fa.astChildren.l match {
-      case ::(i: Identifier, _) if isField(i) && fieldParents.nonEmpty =>
-        fieldParents.foreach(fp => globalTable.put(FieldVar(fp, symbol.identifier), types))
-      case _ =>
+    fa.astChildren.headOption.collect {
+      case i: Identifier if isField(i) =>
+        getFieldParents(fa).foreach(fp => globalTable.put(FieldVar(fp, symbol.identifier), types))
     }
     symbolTable.append(symbol, types)
   }
@@ -387,11 +387,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         associateTypes(i, baseTypes)
       } else {
         // If not available, use a dummy variable that can be useful for call matching
-        associateTypes(i, baseTypes.map(t => XTypeRecovery.DUMMY_MEMBER_TYPE(t, fieldName)))
+        associateTypes(i, baseTypes.map(t => XTypeRecovery.dummyMemberType(t, fieldName)))
       }
     } else {
       // Assign dummy
-      val dummyTypes = Set(XTypeRecovery.DUMMY_MEMBER_TYPE(fieldFullName.stripSuffix(s".$fieldName"), fieldName))
+      val dummyTypes = Set(XTypeRecovery.dummyMemberType(fieldFullName.stripSuffix(s".$fieldName"), fieldName))
       associateTypes(i, dummyTypes)
     }
   }
@@ -430,7 +430,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       associateTypes(i, callReturns)
     } else {
       // Assign dummy value
-      associateTypes(i, Set(s"${c.name}.${XTypeRecovery.DUMMY_RETURN_TYPE}"))
+      associateTypes(i, Set(s"${c.name}.${XTypeRecovery.DummyReturnType}"))
     }
   }
 
@@ -438,7 +438,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def methodReturnValues(methodFullNames: Seq[String]): Set[String] = {
     val rs = cpg.method.fullNameExact(methodFullNames: _*).methodReturn.typeFullName.filterNot(_.equals("ANY")).toSet
-    if (rs.isEmpty) methodFullNames.map(_.concat(s".${XTypeRecovery.DUMMY_RETURN_TYPE}")).toSet
+    if (rs.isEmpty) methodFullNames.map(_.concat(s".${XTypeRecovery.DummyReturnType}")).toSet
     else rs
   }
 
@@ -487,25 +487,24 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Given a LHS call, will retrieve its symbol to the given types.
     */
   protected def assignTypesToCall(x: Call, types: Set[String]): Set[String] = {
-    if (types.isEmpty) return Set.empty
-    getSymbolFromCall(x) match {
-      case (lhs, globalKeys) if globalKeys.nonEmpty =>
-        globalKeys.foreach(gt => globalTable.append(gt, types))
-        symbolTable.append(lhs, types)
-      case (lhs, _) => symbolTable.append(lhs, types)
-    }
+    if (types.nonEmpty) {
+      getSymbolFromCall(x) match {
+        case (lhs, globalKeys) if globalKeys.nonEmpty =>
+          globalKeys.foreach(gt => globalTable.append(gt, types))
+          symbolTable.append(lhs, types)
+        case (lhs, _) => symbolTable.append(lhs, types)
+      }
+    } else Set.empty
   }
 
   /** Will attempt to retrieve index access types otherwise will return dummy value.
     */
-  protected def getIndexAccessTypes(ia: Call): Set[String] = {
-    indexAccessToCollectionVar(ia) match {
-      case Some(cVar) if symbolTable.contains(cVar) =>
-        symbolTable.get(cVar)
-      case Some(cVar) if symbolTable.contains(LocalVar(cVar.identifier)) =>
-        symbolTable.get(LocalVar(cVar.identifier)).map(_.concat(s".${XTypeRecovery.DUMMY_INDEX_ACCESS}"))
-      case _ => Set.empty
-    }
+  protected def getIndexAccessTypes(ia: Call): Set[String] = indexAccessToCollectionVar(ia) match {
+    case Some(cVar) if symbolTable.contains(cVar) =>
+      symbolTable.get(cVar)
+    case Some(cVar) if symbolTable.contains(LocalVar(cVar.identifier)) =>
+      symbolTable.get(LocalVar(cVar.identifier)).map(_.concat(s".${XTypeRecovery.DummyIndexAccess}"))
+    case _ => Set.empty
   }
 
   /** Tries to identify the underlying symbol from the call operation as it is used on the LHS of an assignment. The
@@ -546,7 +545,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case List(c: Call, f: FieldIdentifier) =>
         // TODO: Handle this case better
         val callCode = if (c.code.contains("(")) c.code.substring(c.code.indexOf("(")) else c.code
-        XTypeRecovery.DUMMY_MEMBER_TYPE(callCode, f.canonicalName)
+        XTypeRecovery.dummyMemberType(callCode, f.canonicalName)
       case xs =>
         logger.warn(s"Unhandled field structure ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(fa)}")
         wrapName("<unknown>")
@@ -590,14 +589,13 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Generates an identifier for collection/index-access operations in the symbol table.
     */
   protected def indexAccessToCollectionVar(c: Call): Option[CollectionVar] = {
-
     def callName(x: Call) =
       if (x.name.equals(Operators.fieldAccess))
         getFieldName(new FieldAccess(x))
       else if (x.name.equals(Operators.indexAccess))
         indexAccessToCollectionVar(x)
           .map(cv => s"${cv.identifier}[${cv.idx}]")
-          .getOrElse(XTypeRecovery.DUMMY_INDEX_ACCESS)
+          .getOrElse(XTypeRecovery.DummyIndexAccess)
       else x.name
 
     Option(c.argumentOut.l match {
@@ -625,7 +623,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val localTypes = symbolTable.get(LocalVar(fieldName))
         associateInterproceduralTypes(i, base, fi, fieldName, localTypes)
       case List(base: Identifier, fi: FieldIdentifier) =>
-        val dummyTypes = Set(s"$fieldName.${XTypeRecovery.DUMMY_RETURN_TYPE}")
+        val dummyTypes = Set(s"$fieldName.${XTypeRecovery.DummyReturnType}")
         associateInterproceduralTypes(i, base, fi, fieldName, dummyTypes)
       case List(c: Call, f: FieldIdentifier) if c.name.equals(Operators.fieldAccess) =>
         val baseName = getFieldName(new FieldAccess(c))
@@ -643,12 +641,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           } else {
             val bufCopy = Array.from(buf)
             buf.clear()
-            bufCopy.foreach(t => buf.addOne(XTypeRecovery.DUMMY_MEMBER_TYPE(t, segment)))
+            bufCopy.foreach(t => buf.addOne(XTypeRecovery.dummyMemberType(t, segment)))
           }
         }
         associateTypes(i, buf.toSet)
       case List(call: Call, f: FieldIdentifier) =>
-        assignTypesToCall(call, Set(fieldName.stripSuffix(s"${XTypeRecovery.DUMMY_MEMBER_LOAD}.${f.canonicalName}")))
+        assignTypesToCall(call, Set(fieldName.stripSuffix(s"${XTypeRecovery.DummyMemberLoad}.${f.canonicalName}")))
       case _ =>
         logger.warn(s"Unable to assign identifier '${i.name}' to field load '$fieldName' @ ${debugLocation(i)}")
         Set.empty
@@ -677,20 +675,19 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.
     */
   protected def setTypeInformation(): Unit = {
-    cu.ast
-      .foreach {
-        case x: Local if symbolTable.contains(x) =>
-          builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
-        case x: Identifier if symbolTable.contains(x) =>
-          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
-        case x: Call if symbolTable.contains(x) =>
-          builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
-        case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
-          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
-        case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
-          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
-        case _ =>
-      }
+    cu.ast.foreach {
+      case x: Local if symbolTable.contains(x) =>
+        builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
+      case x: Identifier if symbolTable.contains(x) =>
+        setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+      case x: Call if symbolTable.contains(x) =>
+        builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
+      case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
+        setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+      case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
+        setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+      case _ =>
+    }
   }
 
   /** TODO: Cleaning up using visitor patten
@@ -785,11 +782,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   private def persistType(x: StoredNode, types: Set[String])(implicit builder: DiffGraphBuilder): Unit = {
-    if (types.nonEmpty)
-      if (types.size == 1)
-        builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, types.head)
-      else
-        builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types.toSeq)
+    if (types.nonEmpty) {
+      if (types.size == 1) builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, types.head)
+      else builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types.toSeq)
+    }
     x match {
       case i: Identifier if globalTable.contains(i) => persistGlobalIdentifierType(i)
       case _                                        =>
@@ -801,12 +797,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     globalTable.keyFromNode(i).collectAll[FieldVar].foreach { fk =>
       cpg.typeDecl.fullNameExact(fk.compUnitFullName).member.nameExact(fk.identifier).foreach { member =>
         val updatedTypes =
-          (Seq(member.typeFullName) ++ member.dynamicTypeHintFullName ++ ts).distinct.filterNot(_ == "ANY")
+          (member.typeFullName +: (member.dynamicTypeHintFullName ++ ts)).distinct.filterNot(_ == "ANY")
         if (updatedTypes.nonEmpty) {
-          if (updatedTypes.size == 1)
-            builder.setNodeProperty(member, PropertyNames.TYPE_FULL_NAME, updatedTypes.head)
-          else
-            builder.setNodeProperty(member, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, updatedTypes)
+          if (updatedTypes.sizeIs == 1) builder.setNodeProperty(member, PropertyNames.TYPE_FULL_NAME, updatedTypes.head)
+          else builder.setNodeProperty(member, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, updatedTypes)
         }
       }
     }
