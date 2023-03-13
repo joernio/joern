@@ -606,4 +606,21 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "handle a call from parameter with a type hint" should {
+    lazy val cpg = code("""
+        |import models.user as user_models
+        |import sqlalchemy.orm as orm
+        |
+        |async def get_user_by_email(email: str, db: orm.Session):
+        |    return db.query(user_models.User).filter(user_models.User.email == email).first()
+        |""".stripMargin)
+
+    "with the correct identifier and call types" in {
+      val Some(postCallReceiver) = cpg.identifier("db").headOption
+      postCallReceiver.typeFullName shouldBe "sqlalchemy.orm.Session"
+      val Some(postCall) = cpg.call("query").headOption
+      postCall.methodFullName shouldBe "sqlalchemy.orm.Session.query"
+    }
+  }
+
 }
