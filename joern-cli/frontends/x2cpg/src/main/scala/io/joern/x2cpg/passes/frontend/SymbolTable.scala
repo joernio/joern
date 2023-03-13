@@ -30,9 +30,10 @@ object SBKey {
       case n: Local      => LocalVar(n.name)
       case n: Call =>
         CallAlias(n.name, n.argument.where(_.argumentIndex(0)).isIdentifier.map(_.name).headOption)
-      case n: Method          => CallAlias(n.name, Option("this"))
-      case n: MethodRef       => CallAlias(n.code)
-      case n: FieldIdentifier => LocalVar(n.canonicalName)
+      case n: Method            => CallAlias(n.name, Option("this"))
+      case n: MethodRef         => CallAlias(n.code)
+      case n: FieldIdentifier   => LocalVar(n.canonicalName)
+      case n: MethodParameterIn => LocalVar(n.name)
       case _ => logger.debug(s"Local node of type ${node.label} is not supported in the type recovery pass."); null
     })
   }

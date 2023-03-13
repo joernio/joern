@@ -3,8 +3,8 @@ package io.joern.pysrc2cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.passes.CpgPass
-import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate
 
 import java.util.regex.Pattern
 
@@ -39,12 +39,17 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
       typeHint <- param.dynamicTypeHintFullName
       file     <- param.file
       imports  <- fileToImports.get(file.name)
-      importedEntity <- imports.filter { x =>
-        x.importedAs.exists { imported => typeHint.matches(imported + "(\\..+)*") }
-      }.importedEntity
+      importDetails <- imports
+        .filter(_.importedAs.exists { imported => typeHint.matches(imported + "(\\..+)*") })
+        .map(i => (i.importedEntity, i.importedAs))
     } {
-      val typeFullName = typeHint.replaceFirst(Pattern.quote(typeHint), importedEntity)
-      diffGraph.setNodeProperty(param, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typeFullName)
+      importDetails match {
+        case (Some(importedEntity), Some(importedAs)) =>
+          val typeFullName = typeHint.replaceFirst(Pattern.quote(importedAs), importedEntity)
+          diffGraph.setNodeProperty(param, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typeFullName)
+        case _ =>
+      }
+
     }
 
   }

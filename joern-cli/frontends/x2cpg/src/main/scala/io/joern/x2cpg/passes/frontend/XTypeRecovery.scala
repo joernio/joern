@@ -128,7 +128,34 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Provides an entrypoint to add known symbols and their possible types.
     */
-  protected def prepopulateSymbolTable(): Unit = {}
+  protected def prepopulateSymbolTable(): Unit = {
+    def getTypes(node: AstNode): Set[String] =
+      (node.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) :+ node.property(
+        PropertyNames.TYPE_FULL_NAME,
+        "ANY"
+      )).filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
+
+    (cu.ast.isIdentifier ++ cu.ast.isCall ++ cu.ast.isLocal ++ cu.ast.isParameter)
+      .filter(hasTypes)
+      .foreach {
+        case x: Identifier        => symbolTable.put(x, getTypes(x))
+        case x: Call              => symbolTable.put(x, Set(x.methodFullName))
+        case x: Local             => symbolTable.put(x, getTypes(x))
+        case x: MethodParameterIn => symbolTable.put(x, getTypes(x))
+        case _                    =>
+      }
+  }
+
+  private def hasTypes(node: AstNode): Boolean = node match {
+    case x: Identifier =>
+      x.dynamicTypeHintFullName.nonEmpty || !x.typeFullName.toUpperCase.matches("(UNKNOWN|ANY)")
+    case x: Call if !x.methodFullName.startsWith("<operator>") =>
+      !x.methodFullName.toLowerCase().matches("(<unknownfullname>|any)")
+    case x: Local => x.dynamicTypeHintFullName.nonEmpty || !x.typeFullName.toUpperCase.matches("(UNKNOWN|ANY)")
+    case x: MethodParameterIn =>
+      x.dynamicTypeHintFullName.nonEmpty || !x.typeFullName.toUpperCase.matches("(UNKNOWN|ANY)")
+    case _ => false
+  }
 
   protected def assignments: Traversal[Assignment] =
     cu.ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_))
