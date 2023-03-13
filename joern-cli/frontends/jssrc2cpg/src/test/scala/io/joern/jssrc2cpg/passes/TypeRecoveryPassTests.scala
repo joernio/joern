@@ -51,7 +51,9 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |}
         |
         |let response = sg.send(message);
-        |""".stripMargin, "Test1.ts").cpg
+        |""".stripMargin,
+      "Test1.ts"
+    ).cpg
 
     "resolve 'sg' identifier types from import information" in {
       val List(sgAssignment, sgElseWhere) = cpg.identifier("sg").take(2).l
@@ -83,8 +85,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
   }
 
   "recovering paths for built-in calls" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |console.log("Hello world");
         |let x = Math.abs(-1);
         |""".stripMargin).cpg
