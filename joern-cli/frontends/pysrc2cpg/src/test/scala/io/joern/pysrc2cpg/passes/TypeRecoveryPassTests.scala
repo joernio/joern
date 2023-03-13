@@ -606,10 +606,8 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
-
   "handle a call from parameter with a type hint" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |import models.user as user_models
         |import sqlalchemy.orm as orm
         |
