@@ -138,11 +138,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     (cu.ast.isIdentifier ++ cu.ast.isCall ++ cu.ast.isLocal ++ cu.ast.isParameter)
       .filter(hasTypes)
       .foreach {
-        case x: Identifier => symbolTable.put(x, getTypes(x))
-        case x: Call => symbolTable.put(x, Set(x.methodFullName))
-        case x: Local => symbolTable.put(x, getTypes(x))
+        case x: Identifier        => symbolTable.put(x, getTypes(x))
+        case x: Call              => symbolTable.put(x, Set(x.methodFullName))
+        case x: Local             => symbolTable.put(x, getTypes(x))
         case x: MethodParameterIn => symbolTable.put(x, getTypes(x))
-        case _ =>
+        case _                    =>
       }
   }
 

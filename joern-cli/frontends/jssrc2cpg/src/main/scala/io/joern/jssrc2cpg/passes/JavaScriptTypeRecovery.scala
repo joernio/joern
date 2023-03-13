@@ -1,8 +1,8 @@
 package io.joern.jssrc2cpg.passes
 
-import io.joern.x2cpg.passes.frontend.{GlobalKey, RecoverForXCompilationUnit, SymbolTable, XTypeRecovery}
+import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, File, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
@@ -32,6 +32,51 @@ class RecoverForJavaScriptFile(
   override protected def isConstructor(c: Call): Boolean = {
     c.name.endsWith("factory") && c.inCall.astParent.headOption.isInstanceOf[Some[Block]]
   }
+
+  override protected def visitImport(i: Import): Unit = for {
+    entity <- i.importedEntity
+    alias  <- i.importedAs
+  } {
+    val (entityPath, entityName) = (entity.split(":").head, entity.split(":").tail.mkString(":"))
+    val sep                      = java.io.File.separator
+    val matchingExports = cpg
+      .file(s"${entityPath.stripPrefix(s".$sep")}\\..*")
+      .method
+      .nameExact(":program")
+      .ast
+      .assignment
+      .code("exports.*")
+      .where(_.argument.code(s"exports\\.$entityName.*"))
+      .dedup
+      .l
+
+    val typs = if (matchingExports.nonEmpty) {
+      matchingExports.flatMap { exp =>
+        exp.argument.take(2).l match {
+          case List(_, b: Identifier) =>
+            globalTable.get(b)
+          case List(_, b: MethodRef) =>
+            globalTable.get(b)
+          case _ =>
+            Set.empty[String]
+        }
+      }.toSet
+    } else {
+      Set(entity)
+    }
+
+    symbolTable.append(LocalVar(alias), typs)
+    symbolTable.append(CallAlias(alias), typs)
+  }
+
+  override protected def isField(i: Identifier): Boolean =
+    cu.method
+      .nameExact(":program")
+      .ast
+      .assignment
+      .code("exports.*")
+      .where(_.argument.code(s".*${i.name}.*"))
+      .nonEmpty || super.isField(i)
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.contains(".alloc")) {
