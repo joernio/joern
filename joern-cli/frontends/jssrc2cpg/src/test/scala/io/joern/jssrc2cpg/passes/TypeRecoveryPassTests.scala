@@ -144,9 +144,9 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .name("z")
         .l
       z1.typeFullName shouldBe "ANY"
-      z1.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
+      z1.dynamicTypeHintFullName shouldBe Seq("__ecma.Number", "__ecma.String")
       z2.typeFullName shouldBe "ANY"
-      z2.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
+      z2.dynamicTypeHintFullName shouldBe Seq("__ecma.Number", "__ecma.String")
     }
 
     "resolve 'foo.d' field access object types correctly" in {
@@ -156,7 +156,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .isIdentifier
         .name("d")
         .headOption
-      d.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>"
+      d.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
       d.dynamicTypeHintFullName shouldBe Seq()
     }
 
@@ -167,7 +167,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .isCall
         .name("createTable")
         .l
-      d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.createTable"
+      d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy.createTable"
       d.dynamicTypeHintFullName shouldBe Seq()
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
@@ -180,7 +180,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .name("deleteTable")
         .l
 
-      d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.deleteTable"
+      d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy.deleteTable"
       d.dynamicTypeHintFullName shouldBe Seq()
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
