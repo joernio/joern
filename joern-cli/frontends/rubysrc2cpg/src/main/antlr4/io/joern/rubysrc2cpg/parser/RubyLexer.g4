@@ -1,6 +1,14 @@
 lexer grammar RubyLexer;
 
 // --------------------------------------------------------
+// Auxiliary tokens
+// --------------------------------------------------------
+
+tokens {
+    STRING_INTERPOLATION_END
+}
+
+// --------------------------------------------------------
 // Keywords
 // --------------------------------------------------------
 
@@ -99,7 +107,14 @@ RBRACK: ']';
 LPAREN: '(';
 RPAREN: ')';
 LCURLY: '{';
-RCURLY: '}';
+RCURLY: '}'
+    {
+        if (_modeStack.size() > 1 && _modeStack.peek() == DOUBLE_QUOTED_STRING_MODE) {
+            popMode();
+            setType(STRING_INTERPOLATION_END);
+        }
+    }
+;
 COLON: ':';
 COLON2: '::';
 COMMA: ',';
@@ -208,6 +223,56 @@ fragment OPERATOR_METHOD_NAME
     |   MINUSAT
     |   LBRACKRBRACK
     |   LBRACKRBRACKEQ
+    ;
+
+// --------------------------------------------------------
+// String literals
+// --------------------------------------------------------
+
+SINGLE_QUOTED_STRING_LITERAL
+    :   '\'' SINGLE_QUOTED_STRING_CHARACTER* '\''
+    ;
+
+fragment SINGLE_QUOTED_STRING_CHARACTER
+    :   SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER
+    |   SINGLE_QUOTED_ESCAPE_SEQUENCE
+    ;
+
+fragment SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER
+    :   ~[\\]
+    |   ~[']
+    ;
+
+fragment SINGLE_QUOTED_ESCAPE_SEQUENCE
+    :   SINGLE_ESCAPE_CHARACTER_SEQUENCE
+    |   SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER_SEQUENCE
+    ;
+
+fragment SINGLE_ESCAPE_CHARACTER_SEQUENCE
+    :   '\'' SINGLE_QUOTED_STRING_META_CHARACTER
+    ;
+
+fragment SINGLE_QUOTED_STRING_META_CHARACTER
+    :   '\''
+    |   '\\'
+    ;
+
+fragment SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER_SEQUENCE
+    :   '\'' SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER
+    ;
+
+DOUBLE_QUOTED_STRING_START
+    :   '"'
+        -> pushMode(DOUBLE_QUOTED_STRING_MODE)
+    ;
+
+// --------------------------------------------------------
+// Data section
+// --------------------------------------------------------
+
+END_OF_PROGRAM_MARKER
+    :   '__END__' {getCharPositionInLine() == 7}? '\r'? '\n'
+        -> pushMode(DATA_SECTION_MODE), skip
     ;
 
 // --------------------------------------------------------
@@ -417,13 +482,85 @@ fragment REST_OF_BEGIN_END_LINE
     ;
 
 // --------------------------------------------------------
-// Data section
+// Double quoted string mode
 // --------------------------------------------------------
 
-END_OF_PROGRAM_MARKER
-    :   '__END__' {getCharPositionInLine() == 7}? '\r'? '\n'
-        -> pushMode(DATA_SECTION_MODE), skip
+mode DOUBLE_QUOTED_STRING_MODE;
+
+DOUBLE_QUOTED_STRING_END
+    :   '"'
+        -> popMode
     ;
+
+DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE
+    :   DOUBLE_QUOTED_STRING_CHARACTER+
+    ;
+
+INTERPOLATED_CHARACTER_SEQUENCE
+    :   '#' GLOBAL_VARIABLE_IDENTIFIER
+    |   '#' CLASS_VARIABLE_IDENTIFIER
+    |   '#' INSTANCE_VARIABLE_IDENTIFIER
+    ;
+
+STRING_INTERPOLATION_BEGIN
+    :   '#{' {pushMode(DEFAULT_MODE);}
+    ;
+
+fragment DOUBLE_QUOTED_STRING_CHARACTER
+    :   ~["#\\]
+    |   '#' {_input.LA(1) != '$' && _input.LA(1) != '@' && _input.LA(1) != '{'}?
+    |   DOUBLE_ESCAPE_SEQUENCE
+    ;
+
+fragment DOUBLE_ESCAPE_SEQUENCE
+    :   SIMPLE_ESCAPE_SEQUENCE
+    |   NON_ESCAPED_SEQUENCE
+    |   LINE_TERMINATOR_ESCAPE_SEQUENCE
+    |   OCTAL_ESCAPE_SEQUENCE
+    |   HEXADECIMAL_ESCAPE_SEQUENCE
+    |   CONTROL_ESCAPE_SEQUENCE
+    ;
+
+fragment CONTROL_ESCAPE_SEQUENCE
+    :   '\\' ('C-' | 'c') CONTROL_ESCAPED_CHARACTER
+    ;
+
+fragment CONTROL_ESCAPED_CHARACTER
+    :   DOUBLE_ESCAPE_SEQUENCE
+    |   '?'
+    |   ~[\\?]
+    ;
+
+fragment OCTAL_ESCAPE_SEQUENCE
+    :   '\\' OCTAL_DIGIT OCTAL_DIGIT? OCTAL_DIGIT?
+    ;
+
+fragment HEXADECIMAL_ESCAPE_SEQUENCE
+    :   '\\x' HEXADECIMAL_DIGIT HEXADECIMAL_DIGIT?
+    ;
+
+fragment NON_ESCAPED_SEQUENCE
+    :   '\\' NON_ESCAPED_DOUBLE_QUOTED_STRING_CHARACTER
+    ;
+
+fragment NON_ESCAPED_DOUBLE_QUOTED_STRING_CHARACTER
+    :   ~[\r\n]
+    |   ~[A-Z]
+    |   ~[a-z]
+    |   ~[0-9]
+    ;
+
+fragment SIMPLE_ESCAPE_SEQUENCE
+    :   '\\' DOUBLE_ESCAPED_CHARACTER
+    ;
+
+fragment DOUBLE_ESCAPED_CHARACTER
+    :   [ntrfvaebs]
+    ;
+
+// --------------------------------------------------------
+// Data section mode
+// --------------------------------------------------------
 
 mode DATA_SECTION_MODE;
 

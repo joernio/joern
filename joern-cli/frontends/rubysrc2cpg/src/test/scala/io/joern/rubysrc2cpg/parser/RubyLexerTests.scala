@@ -103,29 +103,103 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     all(eg.map(tokenize)) shouldBe Seq(SYMBOL_LITERAL, EOF)
   }
 
-  "local variable identifiers" should "be recognized as such" in {
+  "Local variable identifiers" should "be recognized as such" in {
     val eg = Seq("i", "x1", "old_value", "_internal", "_while")
     all(eg.map(tokenize)) shouldBe Seq(LOCAL_VARIABLE_IDENTIFIER, EOF)
   }
 
-  "constant identifiers" should "be recognized as such" in {
+  "Constant identifiers" should "be recognized as such" in {
     val eg = Seq("PI", "Const")
     all(eg.map(tokenize)) shouldBe Seq(CONSTANT_IDENTIFIER, EOF)
   }
 
-  "global variable identifiers" should "be recognized as such" in {
+  "Global variable identifiers" should "be recognized as such" in {
     val eg = Seq("$foo", "$Foo", "$_", "$__foo")
     all(eg.map(tokenize)) shouldBe Seq(GLOBAL_VARIABLE_IDENTIFIER, EOF)
   }
 
-  "instance variable identifiers" should "be recognized as such" in {
+  "Instance variable identifiers" should "be recognized as such" in {
     val eg = Seq("@x", "@_int", "@if", "@_", "@X0")
     all(eg.map(tokenize)) shouldBe Seq(INSTANCE_VARIABLE_IDENTIFIER, EOF)
   }
 
-  "class variable identifiers" should "be recognized as such" in {
+  "Class variable identifiers" should "be recognized as such" in {
     val eg = Seq("@@counter", "@@if", "@@While_0")
     all(eg.map(tokenize)) shouldBe Seq(CLASS_VARIABLE_IDENTIFIER, EOF)
   }
+
+  "Single-quoted string literals" should "be recognized as such" in {
+    val eg = Seq("''", "'\nx'", "'\\''", "'\\'\n\\\''")
+    all(eg.map(tokenize)) shouldBe Seq(SINGLE_QUOTED_STRING_LITERAL, EOF)
+  }
+
+  "Non-interpolated, non-escaped double-quoted string literals" should "be recognized as such" in {
+    val eg = Seq("\"something\"", "\"x\n\"")
+    all(eg.map(tokenize)) shouldBe Seq(DOUBLE_QUOTED_STRING_START, DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE, DOUBLE_QUOTED_STRING_END, EOF)
+  }
+
+  "Double-quoted string literals containing identifier interpolations" should "be recognized as such" in {
+    val eg = Seq("\"$x = #$x\"", "\"@xyz = #@xyz\"", "\"@@counter = #@@counter\"")
+    all(eg.map(tokenize)) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      INTERPOLATED_CHARACTER_SEQUENCE,
+      DOUBLE_QUOTED_STRING_END,
+      EOF)
+  }
+
+  "Double-quoted string literals containing escaped `#` characters" should "not be mistaken for interpolations" in {
+    val code = "\"x = \\#$x\""
+    tokenize(code) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      DOUBLE_QUOTED_STRING_END,
+      EOF
+    )
+  }
+
+  "Double-quoted string literals containing `#`" should "not be mistaken for interpolations" in {
+    val code = "\"x = #\""
+    tokenize(code) shouldBe Seq(DOUBLE_QUOTED_STRING_START, DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE, DOUBLE_QUOTED_STRING_END, EOF)
+  }
+
+  "Interpolated double-quoted string literal" should "be recognized as such" in {
+    val code = "\"x is #{1+1}\""
+    tokenize(code) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      STRING_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      PLUS,
+      DECIMAL_INTEGER_LITERAL,
+      STRING_INTERPOLATION_END,
+      DOUBLE_QUOTED_STRING_END,
+      EOF)
+  }
+
+  "Recursively interpolated double-quoted string literal" should "be recognized as such" in {
+    val code = "\"x is #{\"#{1+1}\"}!\""
+    tokenize(code) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      STRING_INTERPOLATION_BEGIN,
+      DOUBLE_QUOTED_STRING_START,
+      STRING_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      PLUS,
+      DECIMAL_INTEGER_LITERAL,
+      STRING_INTERPOLATION_END,
+      DOUBLE_QUOTED_STRING_END,
+      STRING_INTERPOLATION_END,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      DOUBLE_QUOTED_STRING_END,
+      EOF)
+  }
+
+  "Escaped `\"` in double-quoted string literal" should "not be mistaken for end of string" in {
+    val code = "\"x is \\\"4\\\"\""
+    tokenize(code) shouldBe Seq(DOUBLE_QUOTED_STRING_START, DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE, DOUBLE_QUOTED_STRING_END, EOF)
+  }
+
 
 }
