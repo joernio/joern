@@ -85,15 +85,20 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
 
     val target: String = call.inAssignment.target.code.head
 
-    val callsToPatch: List[Call] = call.file.method.ast.isCall.nameExact(target).dedup.l
+    val callsToPatch: List[Call] = call.file.nameExact(fileToInclude).method.ast.isCall.nameExact(target).dedup.l
 
-    val variableToPatch: VariableInformation = VariableInformation(
-      call.file.method.ast.isIdentifier
-        .nameExact(target)
-        .flatMap(i => Seq(i) ++ i.refsTo.collectAll[Local].toSeq)
-        .dedup
-        .toList
-    )
+    val variableToPatch: VariableInformation =
+      VariableInformation(
+        call.file
+          .nameExact(fileToInclude)
+          .method
+          .ast
+          .isIdentifier
+          .nameExact(target)
+          .flatMap(i => Seq(i) ++ i.refsTo.collectAll[Local].toSeq)
+          .dedup
+          .toList
+      )
 
     def relativeExport: String = fileToInclude.stripPrefix(s"$dirHoldingModule${File.separator}")
 

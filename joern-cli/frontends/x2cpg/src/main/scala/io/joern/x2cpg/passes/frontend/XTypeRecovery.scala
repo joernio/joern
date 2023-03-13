@@ -129,12 +129,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Provides an entrypoint to add known symbols and their possible types.
     */
   protected def prepopulateSymbolTable(): Unit = {
-    def getTypes(x: CfgNode) =
-      (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: x.property(
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-        Seq.empty
-      )).filterNot(x => x.matches("(ANY|UNKNOWN)")).toSet
-
     (cpg.identifier ++ cpg.call)
       .filter {
         case x: Identifier =>
@@ -250,7 +244,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** @return
     *   the import nodes of this compilation unit.
     */
-  protected def importNodes(cu: AstNode): Traversal[AstNode] = cu.ast.isImport
+  protected def importNodes(cu: AstNode): Traversal[AstNode] = cu.ast.isCall.referencedImports
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external

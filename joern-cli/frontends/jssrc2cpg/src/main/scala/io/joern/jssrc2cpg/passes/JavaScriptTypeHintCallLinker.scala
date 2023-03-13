@@ -1,4 +1,4 @@
-package io.joern.jssrc2cpg
+package io.joern.jssrc2cpg.passes
 
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
 import io.shiftleft.codepropertygraph.Cpg

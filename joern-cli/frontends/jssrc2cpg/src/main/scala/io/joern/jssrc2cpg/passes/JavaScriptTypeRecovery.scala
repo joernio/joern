@@ -36,12 +36,8 @@ class RecoverForJavaScriptFile(
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.contains(".alloc")) {
       c.inAssignment.astSiblings.isCall.nameExact("<operator>.new").astChildren.isIdentifier.headOption match {
-        case Some(i) =>
-          symbolTable.get(i).map {
-            case t if t.contains("::program") => s"$t:${i.name}"
-            case t                            => s"$t::program:${i.name}"
-          }
-        case None => Set.empty[String]
+        case Some(i) => symbolTable.get(i)
+        case None    => Set.empty[String]
       }
     } else (symbolTable.get(c) + c.methodFullName).map(t => t.stripSuffix(".factory"))
     associateTypes(i, constructorPaths)

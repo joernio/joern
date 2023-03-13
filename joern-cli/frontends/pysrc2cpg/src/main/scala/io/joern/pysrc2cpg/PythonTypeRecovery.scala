@@ -51,7 +51,7 @@ class RecoverForPythonFile(
   /** Overridden to include legacy import calls until imports are supported.
     */
   override def importNodes(cu: AstNode): Traversal[AstNode] =
-    cu.ast.isCall.nameExact("import") ++ super.importNodes(cu)
+    cu.ast.isCall.nameExact("import") // TODO: Remove and use IMPORT nodes
 
   override def visitImport(importCall: Call): Unit = {
     importCall.argument.l match {
