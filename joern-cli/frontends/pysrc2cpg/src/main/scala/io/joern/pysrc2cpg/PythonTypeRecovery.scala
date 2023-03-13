@@ -15,7 +15,6 @@ import java.io.{File => JFile}
 import java.nio.file.Paths
 import java.util.regex.Matcher
 import scala.collection.mutable
-import scala.util.Try
 
 class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
 

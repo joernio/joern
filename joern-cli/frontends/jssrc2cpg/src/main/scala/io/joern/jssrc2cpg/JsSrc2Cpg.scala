@@ -4,13 +4,12 @@ import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.jssrc2cpg.JsSrc2Cpg.postProcessingPasses
 import io.joern.jssrc2cpg.passes._
-import io.joern.jssrc2cpg.utils.AstGenRunner
-import io.joern.jssrc2cpg.utils.Report
-import io.shiftleft.codepropertygraph.Cpg
+import io.joern.jssrc2cpg.utils.{AstGenRunner, Report}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
-import io.joern.x2cpg.utils.HashUtil
 import io.joern.x2cpg.passes.frontend.JavascriptCallLinker
+import io.joern.x2cpg.utils.HashUtil
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -57,6 +56,12 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
 object JsSrc2Cpg {
 
   def postProcessingPasses(cpg: Cpg): List[CpgPassBase] =
-    List(new RequirePass(cpg), new ConstClosurePass(cpg), new JavascriptCallLinker(cpg))
+    List(
+      new RequirePass(cpg),
+      new ConstClosurePass(cpg),
+      new JavaScriptTypeRecovery(cpg),
+      new JavaScriptTypeHintCallLinker(cpg),
+      new JavascriptCallLinker(cpg)
+    )
 
 }

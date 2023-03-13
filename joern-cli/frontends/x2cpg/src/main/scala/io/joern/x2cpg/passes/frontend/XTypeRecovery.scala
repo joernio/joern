@@ -128,7 +128,31 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Provides an entrypoint to add known symbols and their possible types.
     */
-  protected def prepopulateSymbolTable(): Unit = {}
+  protected def prepopulateSymbolTable(): Unit = {
+    def getTypes(x: CfgNode) =
+      (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: x.property(
+        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+        Seq.empty
+      )).filterNot(x => x.matches("(ANY|UNKNOWN)")).toSet
+
+    (cpg.identifier ++ cpg.call)
+      .filter {
+        case x: Identifier =>
+          x.dynamicTypeHintFullName.nonEmpty || !x.typeFullName.toUpperCase.matches("(UNKNOWN|ANY)")
+        case x: Call if !x.methodFullName.startsWith("<operator>") =>
+          !x.methodFullName.toLowerCase().matches("(<unknownfullname>|any)")
+        case _ => false
+      }
+      .foreach {
+        case x: Identifier =>
+          symbolTable.put(
+            x,
+            (x.dynamicTypeHintFullName :+ x.typeFullName).filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
+          )
+        case x: Call => symbolTable.put(x, Set(x.methodFullName))
+        case _       =>
+      }
+  }
 
   protected def assignments: Traversal[Assignment] =
     cu.ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_))
@@ -210,7 +234,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * @param i
     *   the call that imports entities into this scope.
     */
-  protected def visitImport(i: Call): Unit
+  protected def visitImport(i: Call): Unit = {}
 
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
