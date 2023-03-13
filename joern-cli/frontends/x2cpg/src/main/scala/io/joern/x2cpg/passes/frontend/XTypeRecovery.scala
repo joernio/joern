@@ -149,8 +149,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             x,
             (x.dynamicTypeHintFullName :+ x.typeFullName).filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
           )
-        case x: Call => symbolTable.put(x, Set(x.methodFullName))
-        case _       =>
+        case x: Call =>
+          symbolTable.put(x, Set(x.methodFullName))
+        case _ =>
       }
   }
 
