@@ -52,12 +52,8 @@ class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
         val builtInMethodName = methodNames.filter(s => s.contains("__builtin"))
         if (builtInMethodName.size > 0) {
           builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, builtInMethodName.sortBy(_.length).head)
-          // TODO cleanup needed
-          println(s"linkCalls() ${call.name}. Link created. Method fullname for builtin: ${call.methodFullName}")
         } else {
           builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.sortBy(_.length).head)
-          // TODO cleanup needed
-          println(s"linkCalls() ${call.name}. Link created. Method fullname for non-builtin: ${call.methodFullName}")
         }
       } else {
         println(s"linkCalls() ${call.name}. Link NOT created. Method names is blank")
