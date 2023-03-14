@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
+import ujson.Value
 
 trait AstNodeBuilder { this: AstCreator =>
 
@@ -19,6 +20,18 @@ trait AstNodeBuilder { this: AstCreator =>
       .code(node.code)
       .lineNumber(node.lineNumber)
       .columnNumber(node.columnNumber)
+
+  protected def createAnnotationNode(annotation: BabelNodeInfo, name: String, fullName: String): NewAnnotation = {
+    val code         = annotation.code
+    val lineNumber   = annotation.lineNumber
+    val columnNumber = annotation.columnNumber
+    NewAnnotation()
+      .code(code)
+      .name(name)
+      .fullName(fullName)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+  }
 
   protected def createDependencyNode(name: String, groupId: String, version: String): NewDependency =
     NewDependency()

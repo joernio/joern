@@ -11,6 +11,8 @@ import io.joern.x2cpg.datastructures.Stack._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationParameter
+import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationParameterAssign
 import ujson.Value
 import io.shiftleft.semanticcpg.language._
 
@@ -156,6 +158,63 @@ trait AstForDeclarationsCreator { this: AstCreator =>
         declaration.columnNumber
       )
       assignmentCallAst
+    }
+  }
+
+  protected def astsForDecorators(elem: BabelNodeInfo): Seq[Ast] = {
+    if (hasKey(elem.json, "decorators") && !elem.json("decorators").isNull) {
+      elem.json("decorators").arr.toList.map(d => astForDecorator(createBabelNodeInfo(d)))
+    } else Seq.empty
+  }
+
+  private def createAnnotationAssignmentAst(name: String, value: Value, code: String): Ast = {
+    val parameter      = NewAnnotationParameter().code(name)
+    val rhs            = astForNodeWithFunctionReference(value)
+    val assign         = NewAnnotationParameterAssign().code(code)
+    val assignChildren = List(Ast(parameter), rhs)
+    setArgumentIndices(assignChildren)
+    Ast(assign)
+      .withChild(Ast(parameter))
+      .withChild(rhs)
+  }
+
+  private def namesForDecoratorExpression(code: String): (String, String) = {
+    val dotLastIndex = code.lastIndexOf(".")
+    if (dotLastIndex != -1) {
+      (code.substring(dotLastIndex + 1), code)
+    } else {
+      (code, code)
+    }
+  }
+
+  private def astForDecorator(decorator: BabelNodeInfo): Ast = {
+    val exprNode = createBabelNodeInfo(decorator.json("expression"))
+    exprNode.node match {
+      case Identifier =>
+        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json))
+        Ast(createAnnotationNode(decorator, name, fullName))
+      case MemberExpression =>
+        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json))
+        Ast(createAnnotationNode(decorator, name, fullName))
+      case CallExpression =>
+        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json("callee")))
+        val annotationAst    = Ast(createAnnotationNode(decorator, name, fullName))
+        val assignmentAsts = exprNode.node match {
+          case CallExpression =>
+            exprNode.json("arguments").arr.toList.map { arg =>
+              createBabelNodeInfo(arg).node match {
+                case AssignmentExpression =>
+                  createAnnotationAssignmentAst(code(arg("left")), arg("right"), code(arg))
+                case _ =>
+                  createAnnotationAssignmentAst("value", arg, code(arg))
+              }
+            }
+          case _ => Seq.empty
+        }
+        assignmentAsts.foldLeft(annotationAst) { case (ast, assignmentAst) =>
+          ast.withChild(assignmentAst)
+        }
+      case _ => Ast()
     }
   }
 
