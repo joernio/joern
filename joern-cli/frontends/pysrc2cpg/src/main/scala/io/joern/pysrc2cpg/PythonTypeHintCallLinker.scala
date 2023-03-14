@@ -47,7 +47,6 @@ class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
         .foreach { m => builder.addEdge(call, m, EdgeTypes.CALL) }
       if (methodNames.size == 1) {
         builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
-        println(s"linkCalls() ${call.name}. Link created. Method fullname: ${call.methodFullName}")
       } else if (methodNames.size > 1) {
         val builtInMethodName = methodNames.filter(s => s.contains("__builtin"))
         if (builtInMethodName.size > 0) {
@@ -55,8 +54,6 @@ class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
         } else {
           builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.sortBy(_.length).head)
         }
-      } else {
-        println(s"linkCalls() ${call.name}. Link NOT created. Method names is blank")
       }
     }
   }
