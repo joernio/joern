@@ -34,11 +34,11 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       .filterNot(_.equals("ANY"))
       .distinct
 
-  private def callees(names: Seq[String]): Traversal[Method] = cpg.method.fullNameExact(names: _*)
+  def callees(names: Seq[String]): Traversal[Method] = cpg.method.fullNameExact(names: _*)
 
   override def run(builder: DiffGraphBuilder): Unit = linkCalls(builder)
 
-  private def linkCalls(builder: DiffGraphBuilder): Unit = {
+  def linkCalls(builder: DiffGraphBuilder): Unit = {
     val methodMap = mutable.HashMap.empty[String, MethodBase]
     val callerAndCallees = calls
       .map(call => (call, calleeNames(call)))
@@ -62,27 +62,11 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       methodNames
         .flatMap(methodMap.get)
         .foreach { m => builder.addEdge(call, m, EdgeTypes.CALL) }
-      if (methodNames.size == 1) {
-        builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
-        println(s"linkCalls() ${call.name}. Link created. Method fullname: ${call.methodFullName}")
-      } else if (methodNames.size > 1) {
-        val builtInMethodName = methodNames.filter(s => s.contains("__builtin"))
-        if (builtInMethodName.size > 0) {
-          builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, builtInMethodName.sortBy(_.length).head)
-          //TODO cleanup needed
-          println(s"linkCalls() ${call.name}. Link created. Method fullname for builtin: ${call.methodFullName}")
-        } else {
-          builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.sortBy(_.length).head)
-          //TODO cleanup needed
-          println(s"linkCalls() ${call.name}. Link created. Method fullname for non-builtin: ${call.methodFullName}")
-        }
-      } else {
-        println(s"linkCalls() ${call.name}. Link NOT created. Method names is blank")
-      }
+      if (methodNames.size == 1) builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
     }
   }
 
-  private def createMethodStub(methodName: String, call: Call, builder: DiffGraphBuilder): NewMethod = {
+  def createMethodStub(methodName: String, call: Call, builder: DiffGraphBuilder): NewMethod = {
     // In the case of Python/JS we can use name info to check if, despite the method name might be incorrect, that we
     // label the method correctly as internal by finding that the method should belong to an internal file
     val matcher  = fileNamePattern.matcher(methodName)
