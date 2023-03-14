@@ -796,7 +796,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       }
       .foreach { case (m, mRef) =>
         fieldAccess.astParent
-          .filterNot(_.astChildren.isMethodRef.methodFullName(mRef.methodFullName).nonEmpty)
+          .filterNot(_.astChildren.isMethodRef.methodFullNameExact(mRef.methodFullName).nonEmpty)
           .foreach { inCall =>
             builder.addNode(mRef)
             builder.addEdge(mRef, m, EdgeTypes.REF)
