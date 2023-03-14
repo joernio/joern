@@ -4,9 +4,291 @@ import io.joern.jssrc2cpg.passes.AbstractPassTest
 import io.joern.jssrc2cpg.passes.Defines
 import io.shiftleft.semanticcpg.language._
 
-class TsAstCreationPassTest extends AbstractPassTest {
+class TsDecoratorAstCreationPassTest extends AbstractPassTest {
 
-  "AST generation for simple TS constructs" should {
+  "AST generation for TS decorator" should {
+
+    "create annotations correctly for methods" in TsAstFixture("""
+        |class Greeter {
+        |  @a(false)
+        |  @b(foo)
+        |  @c(foo=false)
+        |  @d()
+        |  greet() {
+        |    return "Hello";
+        |  }
+        |}""".stripMargin) { cpg =>
+      inside(cpg.typeDecl.name("Greeter").method.name("greet").annotation.l) { case List(a, b, c, d) =>
+        a.code shouldBe "@a(false)"
+        a.name shouldBe "a"
+        a.fullName shouldBe "a"
+        val List(paramAssignA) = a.parameterAssign.l
+        paramAssignA.code shouldBe "false"
+        paramAssignA.order shouldBe 1
+        val List(paramA) = paramAssignA.parameter.l
+        paramA.code shouldBe "value"
+        paramA.order shouldBe 1
+        val List(paramValueA) = paramAssignA.value.l
+        paramValueA.code shouldBe "false"
+        paramValueA.order shouldBe 2
+        paramValueA.argumentIndex shouldBe 2
+
+        b.code shouldBe "@b(foo)"
+        b.name shouldBe "b"
+        b.fullName shouldBe "b"
+        val List(paramAssignB) = b.parameterAssign.l
+        paramAssignB.code shouldBe "foo"
+        paramAssignB.order shouldBe 1
+        val List(paramB) = paramAssignB.parameter.l
+        paramB.code shouldBe "value"
+        paramB.order shouldBe 1
+        val List(paramValueB) = paramAssignB.value.l
+        paramValueB.code shouldBe "foo"
+        paramValueB.order shouldBe 2
+        paramValueB.argumentIndex shouldBe 2
+
+        c.code shouldBe "@c(foo=false)"
+        c.name shouldBe "c"
+        c.fullName shouldBe "c"
+        val List(paramAssignC) = c.parameterAssign.l
+        paramAssignC.code shouldBe "foo=false"
+        paramAssignC.order shouldBe 1
+        val List(paramC) = paramAssignC.parameter.l
+        paramC.code shouldBe "foo"
+        paramC.order shouldBe 1
+        val List(paramValueC) = paramAssignC.value.l
+        paramValueC.code shouldBe "false"
+        paramValueC.order shouldBe 2
+        paramValueC.argumentIndex shouldBe 2
+
+        d.code shouldBe "@d()"
+        d.name shouldBe "d"
+        d.fullName shouldBe "d"
+        d.parameterAssign.l shouldBe empty
+      }
+    }
+
+    "create annotations correctly for method parameter" in TsAstFixture("""
+        |class Greeter {
+        |  greet(@c(foo=false) x: number) {
+        |    return "Hello";
+        |  }
+        |}""".stripMargin) { cpg =>
+      inside(cpg.typeDecl.name("Greeter").method.name("greet").parameter.name("x").annotation.l) { case List(c) =>
+        c.code shouldBe "@c(foo=false)"
+        c.name shouldBe "c"
+        c.fullName shouldBe "c"
+        val List(paramAssignC) = c.parameterAssign.l
+        paramAssignC.code shouldBe "foo=false"
+        paramAssignC.order shouldBe 1
+        val List(paramC) = paramAssignC.parameter.l
+        paramC.code shouldBe "foo"
+        paramC.order shouldBe 1
+        val List(paramValueC) = paramAssignC.value.l
+        paramValueC.code shouldBe "false"
+        paramValueC.order shouldBe 2
+        paramValueC.argumentIndex shouldBe 2
+      }
+    }
+
+    "create annotations with full names correctly" in TsAstFixture("""
+        |class Foo {
+        |  foo(@a.b.c(foo=false) x: number) {
+        |    return "Hello";
+        |  }
+        |  bar(@a.b.c x: number) {
+        |    return "Hello";
+        |  }
+        |}""".stripMargin) { cpg =>
+      inside(cpg.typeDecl.name("Foo").method.name("foo").parameter.name("x").annotation.l) { case List(c) =>
+        c.code shouldBe "@a.b.c(foo=false)"
+        c.name shouldBe "c"
+        c.fullName shouldBe "a.b.c"
+      }
+      inside(cpg.typeDecl.name("Foo").method.name("bar").parameter.name("x").annotation.l) { case List(c) =>
+        c.code shouldBe "@a.b.c"
+        c.name shouldBe "c"
+        c.fullName shouldBe "a.b.c"
+      }
+    }
+
+    "create annotations correctly for classes" in TsAstFixture("""
+        |@a(false)
+        |@b(foo)
+        |@c(foo=false)
+        |@d()
+        |class Greeter {}
+        |""".stripMargin) { cpg =>
+      inside(cpg.typeDecl.name("Greeter").annotation.l) { case List(a, b, c, d) =>
+        a.code shouldBe "@a(false)"
+        a.name shouldBe "a"
+        a.fullName shouldBe "a"
+        val List(paramAssignA) = a.parameterAssign.l
+        paramAssignA.code shouldBe "false"
+        paramAssignA.order shouldBe 1
+        val List(paramA) = paramAssignA.parameter.l
+        paramA.code shouldBe "value"
+        paramA.order shouldBe 1
+        val List(paramValueA) = paramAssignA.value.l
+        paramValueA.code shouldBe "false"
+        paramValueA.order shouldBe 2
+        paramValueA.argumentIndex shouldBe 2
+
+        b.code shouldBe "@b(foo)"
+        b.name shouldBe "b"
+        b.fullName shouldBe "b"
+        val List(paramAssignB) = b.parameterAssign.l
+        paramAssignB.code shouldBe "foo"
+        paramAssignB.order shouldBe 1
+        val List(paramB) = paramAssignB.parameter.l
+        paramB.code shouldBe "value"
+        paramB.order shouldBe 1
+        val List(paramValueB) = paramAssignB.value.l
+        paramValueB.code shouldBe "foo"
+        paramValueB.order shouldBe 2
+        paramValueB.argumentIndex shouldBe 2
+
+        c.code shouldBe "@c(foo=false)"
+        c.name shouldBe "c"
+        c.fullName shouldBe "c"
+        val List(paramAssignC) = c.parameterAssign.l
+        paramAssignC.code shouldBe "foo=false"
+        paramAssignC.order shouldBe 1
+        val List(paramC) = paramAssignC.parameter.l
+        paramC.code shouldBe "foo"
+        paramC.order shouldBe 1
+        val List(paramValueC) = paramAssignC.value.l
+        paramValueC.code shouldBe "false"
+        paramValueC.order shouldBe 2
+        paramValueC.argumentIndex shouldBe 2
+
+        d.code shouldBe "@d()"
+        d.name shouldBe "d"
+        d.fullName shouldBe "d"
+        d.parameterAssign.l shouldBe empty
+      }
+    }
+
+    "create annotations correctly for class members" in TsAstFixture("""
+        |class Greeter {
+        |  @a(false)
+        |  @b(foo)
+        |  @c(foo=false)
+        |  @d()
+        |  greeting: string;
+        |}
+        |""".stripMargin) { cpg =>
+      inside(cpg.typeDecl.name("Greeter").member.name("greeting").annotation.l) { case List(a, b, c, d) =>
+        a.code shouldBe "@a(false)"
+        a.name shouldBe "a"
+        a.fullName shouldBe "a"
+        val List(paramAssignA) = a.parameterAssign.l
+        paramAssignA.code shouldBe "false"
+        paramAssignA.order shouldBe 1
+        val List(paramA) = paramAssignA.parameter.l
+        paramA.code shouldBe "value"
+        paramA.order shouldBe 1
+        val List(paramValueA) = paramAssignA.value.l
+        paramValueA.code shouldBe "false"
+        paramValueA.order shouldBe 2
+        paramValueA.argumentIndex shouldBe 2
+
+        b.code shouldBe "@b(foo)"
+        b.name shouldBe "b"
+        b.fullName shouldBe "b"
+        val List(paramAssignB) = b.parameterAssign.l
+        paramAssignB.code shouldBe "foo"
+        paramAssignB.order shouldBe 1
+        val List(paramB) = paramAssignB.parameter.l
+        paramB.code shouldBe "value"
+        paramB.order shouldBe 1
+        val List(paramValueB) = paramAssignB.value.l
+        paramValueB.code shouldBe "foo"
+        paramValueB.order shouldBe 2
+        paramValueB.argumentIndex shouldBe 2
+
+        c.code shouldBe "@c(foo=false)"
+        c.name shouldBe "c"
+        c.fullName shouldBe "c"
+        val List(paramAssignC) = c.parameterAssign.l
+        paramAssignC.code shouldBe "foo=false"
+        paramAssignC.order shouldBe 1
+        val List(paramC) = paramAssignC.parameter.l
+        paramC.code shouldBe "foo"
+        paramC.order shouldBe 1
+        val List(paramValueC) = paramAssignC.value.l
+        paramValueC.code shouldBe "false"
+        paramValueC.order shouldBe 2
+        paramValueC.argumentIndex shouldBe 2
+
+        d.code shouldBe "@d()"
+        d.name shouldBe "d"
+        d.fullName shouldBe "d"
+        d.parameterAssign.l shouldBe empty
+      }
+    }
+
+    "create annotations correctly for class accessors" in TsAstFixture("""
+        |class Foo {
+        |  private _x: number;
+        |
+        |  @a(false)
+        |  @b(foo)
+        |  @c(foo=false)
+        |  @d()
+        |  get x() {
+        |    return this._x;
+        |  }
+        |}""".stripMargin) { cpg =>
+      inside(cpg.typeDecl.name("Foo").method.name("x").annotation.l) { case List(a, b, c, d) =>
+        a.code shouldBe "@a(false)"
+        a.name shouldBe "a"
+        a.fullName shouldBe "a"
+        val List(paramAssignA) = a.parameterAssign.l
+        paramAssignA.code shouldBe "false"
+        paramAssignA.order shouldBe 1
+        val List(paramA) = paramAssignA.parameter.l
+        paramA.code shouldBe "value"
+        paramA.order shouldBe 1
+        val List(paramValueA) = paramAssignA.value.l
+        paramValueA.code shouldBe "false"
+        paramValueA.order shouldBe 2
+        paramValueA.argumentIndex shouldBe 2
+
+        b.code shouldBe "@b(foo)"
+        b.name shouldBe "b"
+        b.fullName shouldBe "b"
+        val List(paramAssignB) = b.parameterAssign.l
+        paramAssignB.code shouldBe "foo"
+        paramAssignB.order shouldBe 1
+        val List(paramB) = paramAssignB.parameter.l
+        paramB.code shouldBe "value"
+        paramB.order shouldBe 1
+        val List(paramValueB) = paramAssignB.value.l
+        paramValueB.code shouldBe "foo"
+        paramValueB.order shouldBe 2
+        paramValueB.argumentIndex shouldBe 2
+
+        c.code shouldBe "@c(foo=false)"
+        c.name shouldBe "c"
+        c.fullName shouldBe "c"
+        val List(paramAssignC) = c.parameterAssign.l
+        paramAssignC.code shouldBe "foo=false"
+        paramAssignC.order shouldBe 1
+        val List(paramC) = paramAssignC.parameter.l
+        paramC.code shouldBe "foo"
+        paramC.order shouldBe 1
+        val List(paramValueC) = paramAssignC.value.l
+        paramValueC.code shouldBe "false"
+        paramValueC.order shouldBe 2
+        paramValueC.argumentIndex shouldBe 2
+
+        d.code shouldBe "@d()"
+        d.name shouldBe "d"
+        d.fullName shouldBe "d"
+        d.parameterAssign.l shouldBe empty
+      }
+    }
 
     "create methods for const exports" in TsAstFixture(
       "export const getApiA = (req: Request) => { const user = req.user as UserDocument; }"

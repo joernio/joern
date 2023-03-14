@@ -21,14 +21,14 @@ trait AstNodeBuilder { this: AstCreator =>
       .lineNumber(node.lineNumber)
       .columnNumber(node.columnNumber)
 
-  protected def createAnnotationNode(annotation: BabelNodeInfo, name: String): NewAnnotation = {
+  protected def createAnnotationNode(annotation: BabelNodeInfo, name: String, fullName: String): NewAnnotation = {
     val code         = annotation.code
     val lineNumber   = annotation.lineNumber
     val columnNumber = annotation.columnNumber
     NewAnnotation()
       .code(code)
       .name(name)
-      .fullName(name)
+      .fullName(fullName)
       .lineNumber(lineNumber)
       .columnNumber(columnNumber)
   }

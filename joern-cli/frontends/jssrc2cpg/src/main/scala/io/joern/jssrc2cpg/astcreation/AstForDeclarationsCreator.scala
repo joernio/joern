@@ -178,27 +178,40 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       .withChild(rhs)
   }
 
+  private def namesForDecoratorExpression(code: String): (String, String) = {
+    val dotLastIndex = code.lastIndexOf(".")
+    if (dotLastIndex != -1) {
+      (code.substring(dotLastIndex + 1), code)
+    } else {
+      (code, code)
+    }
+  }
+
   private def astForDecorator(decorator: BabelNodeInfo): Ast = {
     val exprNode = createBabelNodeInfo(decorator.json("expression"))
-    val name = exprNode.node match {
-      case CallExpression => code(exprNode.json("callee"))
-      case _              => exprNode.code
-    }
-    val annotationAst = Ast(createAnnotationNode(decorator, name))
-    val assignmentAsts = exprNode.node match {
+    exprNode.node match {
+      case MemberExpression =>
+        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json))
+        Ast(createAnnotationNode(decorator, name, fullName))
       case CallExpression =>
-        exprNode.json("arguments").arr.toList.map { arg =>
-          createBabelNodeInfo(arg).node match {
-            case AssignmentExpression =>
-              createAnnotationAssignmentAst(code(arg("left")), arg("right"), code(arg))
-            case other =>
-              createAnnotationAssignmentAst("value", arg, code(arg))
-          }
+        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json("callee")))
+        val annotationAst    = Ast(createAnnotationNode(decorator, name, fullName))
+        val assignmentAsts = exprNode.node match {
+          case CallExpression =>
+            exprNode.json("arguments").arr.toList.map { arg =>
+              createBabelNodeInfo(arg).node match {
+                case AssignmentExpression =>
+                  createAnnotationAssignmentAst(code(arg("left")), arg("right"), code(arg))
+                case _ =>
+                  createAnnotationAssignmentAst("value", arg, code(arg))
+              }
+            }
+          case _ => Seq.empty
         }
-      case _ => Seq.empty
-    }
-    assignmentAsts.foldLeft(annotationAst) { case (ast, assignmentAst) =>
-      ast.withChild(assignmentAst)
+        assignmentAsts.foldLeft(annotationAst) { case (ast, assignmentAst) =>
+          ast.withChild(assignmentAst)
+        }
+      case _ => Ast()
     }
   }
 
