@@ -179,6 +179,11 @@ trait AstForTypesCreator { this: AstCreator =>
     addModifier(memberNode, classElement)
     diffGraph.addEdge(typeDeclNode, memberNode, EdgeTypes.AST)
 
+    astsForDecorators(nodeInfo).foreach { decoratorAst =>
+      Ast.storeInDiffGraph(decoratorAst, diffGraph)
+      diffGraph.addEdge(memberNode, decoratorAst.nodes.head, EdgeTypes.AST)
+    }
+
     if (hasKey(nodeInfo.json, "value") && !nodeInfo.json("value").isNull) {
       val lhsAst = astForNode(nodeInfo.json("key"))
       val rhsAst = astForNodeWithFunctionReference(nodeInfo.json("value"))
@@ -282,6 +287,10 @@ trait AstForTypesCreator { this: AstCreator =>
     seenAliasTypes.add(typeDeclNode)
 
     addModifier(typeDeclNode, clazz.json)
+    astsForDecorators(clazz).foreach { decoratorAst =>
+      Ast.storeInDiffGraph(decoratorAst, diffGraph)
+      diffGraph.addEdge(typeDeclNode, decoratorAst.nodes.head, EdgeTypes.AST)
+    }
 
     diffGraph.addEdge(methodAstParentStack.head, typeDeclNode, EdgeTypes.AST)
 

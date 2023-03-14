@@ -167,10 +167,17 @@ trait AstCreatorHelper { this: AstCreator =>
       .collect { case methodScopeElement: MethodScopeElement => methodScopeElement.name }
       .mkString(":")
 
+  private def isMethodOrGetSet(func: BabelNodeInfo): Boolean = {
+    if (hasKey(func.json, "kind") && !func.json("kind").isNull) {
+      val t = func.json("kind").str
+      t == "method" || t == "get" || t == "set"
+    } else false
+  }
+
   private def calcMethodName(func: BabelNodeInfo): String = func.node match {
     case TSCallSignatureDeclaration      => "anonymous"
     case TSConstructSignatureDeclaration => io.joern.x2cpg.Defines.ConstructorMethodName
-    case _ if safeStr(func.json, "kind").contains("method") =>
+    case _ if isMethodOrGetSet(func) =>
       if (hasKey(func.json("key"), "name")) func.json("key")("name").str
       else code(func.json("key"))
     case _ if safeStr(func.json, "kind").contains("constructor") => io.joern.x2cpg.Defines.ConstructorMethodName
