@@ -190,6 +190,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   private def astForDecorator(decorator: BabelNodeInfo): Ast = {
     val exprNode = createBabelNodeInfo(decorator.json("expression"))
     exprNode.node match {
+      case Identifier =>
+        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json))
+        Ast(createAnnotationNode(decorator, name, fullName))
       case MemberExpression =>
         val (name, fullName) = namesForDecoratorExpression(code(exprNode.json))
         Ast(createAnnotationNode(decorator, name, fullName))
