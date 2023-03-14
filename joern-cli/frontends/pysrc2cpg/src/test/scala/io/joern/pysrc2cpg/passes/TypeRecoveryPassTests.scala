@@ -578,4 +578,49 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "handle a wrapper function with the same name as an imported function" should {
+    lazy val cpg = code("""
+        |import requests
+        |
+        |class Client:
+        |    access_token: str = None
+        |    def post(self, uuid: str, account_id: str, endpoint: str = "results"):
+        |        if not self.access_token:
+        |            self.authenticate()
+        |
+        |        response = requests.post(
+        |          url=f"https://{account_id}.rest.marketingcloudapis.com/data/v1/async/{uuid}/{endpoint}",
+        |            headers={
+        |                "Authorization": self.auth_header(),
+        |                "Content-Type": "application/json",
+        |            },
+        |        )
+        |        return response
+        |""".stripMargin)
+
+    "recover the child function `post` path correctly via receiver" in {
+      val Some(postCallReceiver) = cpg.identifier("requests").headOption
+      postCallReceiver.typeFullName shouldBe "requests.py:<module>"
+      val Some(postCall) = cpg.call("post").headOption
+      postCall.methodFullName shouldBe "requests.py:<module>.post"
+    }
+  }
+
+  "handle a call from parameter with a type hint" should {
+    lazy val cpg = code("""
+        |import models.user as user_models
+        |import sqlalchemy.orm as orm
+        |
+        |async def get_user_by_email(email: str, db: orm.Session):
+        |    return db.query(user_models.User).filter(user_models.User.email == email).first()
+        |""".stripMargin)
+
+    "with the correct identifier and call types" in {
+      val Some(postCallReceiver) = cpg.identifier("db").headOption
+      postCallReceiver.typeFullName shouldBe "sqlalchemy.orm.Session"
+      val Some(postCall) = cpg.call("query").headOption
+      postCall.methodFullName shouldBe "sqlalchemy.orm.Session.query"
+    }
+  }
+
 }

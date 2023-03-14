@@ -130,6 +130,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .toList
 
     Ast(typeDecl)
+      .withChildren(astsForHostTags(clz))
       .withChildren(memberAsts)
       .withChildren(methodAsts)
       .withChildren(modifiers)
@@ -167,7 +168,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       if (!methodDeclaration.isConcrete) {
         Ast(methodNode)
           .withChildren(astsForModifiers(methodDeclaration))
-          .withChildren(astsForMethodTags(methodDeclaration))
+          .withChildren(astsForHostTags(methodDeclaration))
           .withChild(astForMethodReturn(methodDeclaration))
       } else {
         val methodBody = Try(methodDeclaration.getActiveBody) match {
@@ -181,7 +182,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         Ast(methodNode.lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length))
           .withChildren(astsForModifiers(methodDeclaration))
           .withChildren(parameterAsts)
-          .withChildren(astsForMethodTags(methodDeclaration))
+          .withChildren(astsForHostTags(methodDeclaration))
           .withChild(astForMethodBody(methodBody, lastOrder))
           .withChild(astForMethodReturn(methodDeclaration))
       }
@@ -205,7 +206,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         }
         Ast(methodNode)
           .withChildren(astsForModifiers(methodDeclaration))
-          .withChildren(astsForMethodTags(methodDeclaration))
+          .withChildren(astsForHostTags(methodDeclaration))
           .withChild(astForMethodReturn(methodDeclaration))
     } finally {
       // Join all targets with CFG edges - this seems to work from what is seen on DotFiles
@@ -260,20 +261,20 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     }
   }
 
-  private def astsForMethodTags(methodDeclaration: SootMethod): Seq[Ast] = {
-    methodDeclaration.getTags.asScala
+  private def astsForHostTags(host: AbstractHost): Seq[Ast] = {
+    host.getTags.asScala
       .collect { case x: VisibilityAnnotationTag => x }
       .flatMap { x =>
-        withOrder(x.getAnnotations.asScala) { (a, order) => astsForAnnotations(a, order, methodDeclaration) }
+        withOrder(x.getAnnotations.asScala) { (a, order) => astsForAnnotations(a, order, host) }
       }
       .toSeq
   }
 
-  private def astsForAnnotations(annotation: AnnotationTag, order: Int, methodDeclaration: AbstractHost): Ast = {
+  private def astsForAnnotations(annotation: AnnotationTag, order: Int, host: AbstractHost): Ast = {
     val annoType = registerType(parseAsmType(annotation.getType))
     val name     = annoType.split('.').last
     val elementNodes = withOrder(annotation.getElems.asScala) { case (a, order) =>
-      astForAnnotationElement(a, order, methodDeclaration)
+      astForAnnotationElement(a, order, host)
     }
     val annotationNode = NewAnnotation()
       .name(name)

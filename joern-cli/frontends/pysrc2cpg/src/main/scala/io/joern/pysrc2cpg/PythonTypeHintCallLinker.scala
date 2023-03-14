@@ -5,24 +5,21 @@ import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodBase}
+import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 
 class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
 
-  override def calls: Traversal[Call] = super.calls.filterNot(c => c.name.matches("^(import).*"))
+  override def calls: Traversal[Call] = super.calls.nameNot("^(import).*")
 
-  override def calleeNames(c: Call): Seq[String] =
-    super
-      .calleeNames(c)
-      .map {
-        // Python call from  a type
-        case typ if typ.split("\\.").lastOption.exists(_.charAt(0).isUpper) =>
-          s"$typ.${Defines.ConstructorMethodName}"
-        // Python call from a function pointer
-        case typ => typ
-      }
+  override def calleeNames(c: Call): Seq[String] = super.calleeNames(c).map {
+    // Python call from  a type
+    case typ if typ.split("\\.").lastOption.exists(_.charAt(0).isUpper) => s"$typ.${Defines.ConstructorMethodName}"
+    // Python call from a function pointer
+    case typ => typ
+  }
 
   override def linkCalls(builder: DiffGraphBuilder): Unit = {
     val methodMap = mutable.HashMap.empty[String, MethodBase]

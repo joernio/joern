@@ -11,11 +11,7 @@ case class LlvmCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
-  override def generate(
-    inputPath: String,
-    outputPath: String = "cpg.bin.zip",
-    namespaces: List[String] = List()
-  ): Try[String] = {
+  override def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String] = {
     val command   = rootPath.resolve("llvm2cpg.sh").toString
     val arguments = Seq("--output", outputPath) ++ config.cmdLineParams ++ List(inputPath)
     runShellCommand(command, arguments).map(_ => outputPath)

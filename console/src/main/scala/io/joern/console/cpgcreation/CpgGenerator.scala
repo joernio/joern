@@ -23,7 +23,7 @@ abstract class CpgGenerator() {
     *
     * This method appends command line options in config.frontend.cmdLineParams to the shell command.
     */
-  def generate(inputPath: String, outputPath: String = "cpg.bin.zip", namespaces: List[String] = List()): Try[String]
+  def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String]
 
   protected def runShellCommand(program: String, arguments: Seq[String]): Try[Unit] =
     Try {

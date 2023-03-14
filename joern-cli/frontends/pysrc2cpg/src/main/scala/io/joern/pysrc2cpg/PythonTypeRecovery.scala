@@ -38,6 +38,17 @@ class RecoverForPythonFile(
   addedNodes: mutable.Set[(Long, String)]
 ) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes) {
 
+  /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
+    * compilation unit.
+    */
+  private def fromNodeToLocalPythonKey(node: AstNode): Option[LocalKey] =
+    node match {
+      case n: Method => Option(CallAlias(n.name, Option("self")))
+      case _         => SBKey.fromNodeToLocalKey(node)
+    }
+
+  override val symbolTable: SymbolTable[LocalKey] = new SymbolTable[LocalKey](fromNodeToLocalPythonKey)
+
   /** Overridden to include legacy import calls until imports are supported.
     */
   override def importNodes(cu: AstNode): Traversal[AstNode] =
@@ -76,10 +87,7 @@ class RecoverForPythonFile(
 
     lazy val methodsWithExportEntityAsIdentifier: List[String] = cpg.typeDecl
       .fullName(s".*$path.*")
-      .where(
-        _.member
-          .nameExact(expEntity)
-      )
+      .where(_.member.nameExact(expEntity))
       .fullName
       .toList
 
@@ -119,7 +127,7 @@ class RecoverForPythonFile(
         val Array(m, v) = procedureName.split("<var>")
         // TODO: When the workaround below is replaced, the following type->member check will kick in
         cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
-          case Some(i) => (Seq(i.typeFullName) ++ i.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet
+          case Some(i) => (i.typeFullName +: i.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet
           case None    => Set.empty
         }
         // TODO: Workaround until we write-to-CPG each iteration, use this for now as long as we have global table
@@ -130,9 +138,7 @@ class RecoverForPythonFile(
           .nameExact(v)
           .dedupBy(_.name)
           .filter(globalTable.contains)
-          .flatMap { i =>
-            globalTable.get(i)
-          }
+          .flatMap(globalTable.get)
           .toSet
       } else
         Set(procedureName, fullNameAsInit)
@@ -140,8 +146,9 @@ class RecoverForPythonFile(
     /** the full name of the procedure where it's assumed that it is defined within an <code>__init.py__</code> of the
       * module.
       */
-    def fullNameAsInit: String = if (procedureName.contains("__init__.py")) procedureName
-    else procedureName.replace(".py", s"${JFile.separator}__init__.py")
+    def fullNameAsInit: String =
+      if (procedureName.contains("__init__.py")) procedureName
+      else procedureName.replace(".py", s"${JFile.separator}__init__.py")
 
     possibleCalleeNames(procedureName, isConstructor(expEntity), procedureName.contains("<var>"))
   }
@@ -253,15 +260,18 @@ class RecoverForPythonFile(
     }
   }
 
+  private def isPyString(s: String): Boolean =
+    (s.startsWith("\"") || s.startsWith("'")) && (s.endsWith("\"") || s.endsWith("'"))
+
   override def getLiteralType(l: Literal): Set[String] = {
-    l match {
-      case _ if Try(java.lang.Integer.parseInt(l.code)).isSuccess   => Set(s"$BUILTIN_PREFIX.int")
-      case _ if Try(java.lang.Double.parseDouble(l.code)).isSuccess => Set(s"$BUILTIN_PREFIX.float")
-      case _ if "True".equals(l.code) || "False".equals(l.code)     => Set(s"$BUILTIN_PREFIX.bool")
-      case _ if l.code.matches("^(\"|').*(\"|')$")                  => Set(s"$BUILTIN_PREFIX.str")
-      case _ if l.code.equals("None")                               => Set(s"$BUILTIN_PREFIX.None")
-      case _                                                        => Set()
-    }
+    (l.code match {
+      case code if code.toIntOption.isDefined                  => Some(s"$BUILTIN_PREFIX.int")
+      case code if code.toDoubleOption.isDefined               => Some(s"$BUILTIN_PREFIX.float")
+      case code if "True".equals(code) || "False".equals(code) => Some(s"$BUILTIN_PREFIX.bool")
+      case code if code.equals("None")                         => Some(s"$BUILTIN_PREFIX.None")
+      case code if isPyString(code)                            => Some(s"$BUILTIN_PREFIX.str")
+      case _                                                   => None
+    }).toSet
   }
 
 }
