@@ -230,7 +230,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       val decoratorAsts = astsForDecorators(nodeInfo)
       decoratorAsts.foreach { decoratorAst =>
         Ast.storeInDiffGraph(decoratorAst, diffGraph)
-        diffGraph.addEdge(paramNode, decoratorAst.nodes.head, EdgeTypes.AST)
+        decoratorAst.root.foreach(diffGraph.addEdge(paramNode, _, EdgeTypes.AST))
       }
       paramNode
     }

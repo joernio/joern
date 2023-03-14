@@ -181,7 +181,7 @@ trait AstForTypesCreator { this: AstCreator =>
 
     astsForDecorators(nodeInfo).foreach { decoratorAst =>
       Ast.storeInDiffGraph(decoratorAst, diffGraph)
-      diffGraph.addEdge(memberNode, decoratorAst.nodes.head, EdgeTypes.AST)
+      decoratorAst.root.foreach(diffGraph.addEdge(memberNode, _, EdgeTypes.AST))
     }
 
     if (hasKey(nodeInfo.json, "value") && !nodeInfo.json("value").isNull) {
@@ -289,7 +289,7 @@ trait AstForTypesCreator { this: AstCreator =>
     addModifier(typeDeclNode, clazz.json)
     astsForDecorators(clazz).foreach { decoratorAst =>
       Ast.storeInDiffGraph(decoratorAst, diffGraph)
-      diffGraph.addEdge(typeDeclNode, decoratorAst.nodes.head, EdgeTypes.AST)
+      decoratorAst.root.foreach(diffGraph.addEdge(typeDeclNode, _, EdgeTypes.AST))
     }
 
     diffGraph.addEdge(methodAstParentStack.head, typeDeclNode, EdgeTypes.AST)
