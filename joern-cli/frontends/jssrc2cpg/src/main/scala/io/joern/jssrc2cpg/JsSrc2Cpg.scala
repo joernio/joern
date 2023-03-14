@@ -59,9 +59,9 @@ object JsSrc2Cpg {
     List(
       new RequirePass(cpg),
       new ConstClosurePass(cpg),
+      new JavascriptCallLinker(cpg),
       new JavaScriptTypeRecovery(cpg),
-      new JavaScriptTypeHintCallLinker(cpg),
-      new JavascriptCallLinker(cpg)
+      new JavaScriptTypeHintCallLinker(cpg)
     )
 
 }

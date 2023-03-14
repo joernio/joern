@@ -59,20 +59,21 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
         .getOrElse("")
 
     private val fileToInclude: String = call
-      .argument(1)
-      .start
-      .isLiteral
-      .code
-      .map(stripQuotes)
-      .map { x =>
-        val path = Paths.get(dirHoldingModule, x).toAbsolutePath.normalize.toString
-        if (path.endsWith(".mjs") || path.endsWith(".js")) {
-          path
-        } else {
-          s"$path.js"
-        }
-      }
-      .headOption
+      .argumentOption(1)
+      .map(
+        _.start.isLiteral.code
+          .map(stripQuotes)
+          .map { x =>
+            val path = Paths.get(dirHoldingModule, x).toAbsolutePath.normalize.toString
+            if (path.endsWith(".mjs") || path.endsWith(".js")) {
+              path
+            } else {
+              s"$path.js"
+            }
+          }
+          .headOption
+          .getOrElse("")
+      )
       .getOrElse("")
 
     val methodFullName: Option[String] = {
@@ -85,7 +86,7 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
 
     val target: String = call.inAssignment.target.code.head
 
-    val callsToPatch: List[Call] = call.file.nameExact(fileToInclude).method.ast.isCall.nameExact(target).dedup.l
+    val callsToPatch: List[Call] = call.file.method.ast.isCall.nameExact(target).dedup.l
 
     val variableToPatch: VariableInformation =
       VariableInformation(

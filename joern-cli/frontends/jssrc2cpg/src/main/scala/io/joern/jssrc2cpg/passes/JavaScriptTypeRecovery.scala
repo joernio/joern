@@ -37,36 +37,49 @@ class RecoverForJavaScriptFile(
     entity <- i.importedEntity
     alias  <- i.importedAs
   } {
-    val (entityPath, entityName) = (entity.split(":").head, entity.split(":").tail.mkString(":"))
-    val sep                      = java.io.File.separator
-    val matchingExports = cpg
-      .file(s"${entityPath.stripPrefix(s".$sep")}\\..*")
+    val entityPath        = entity.split(":").head
+    val isImportingModule = !entity.contains(":")
+
+    def targetAssignments = cpg
+      .file(s"${entityPath.stripPrefix(s".${java.io.File.separator}")}\\..*")
       .method
       .nameExact(":program")
       .ast
       .assignment
-      .code("exports.*")
-      .where(_.argument.code(s"exports\\.$entityName.*"))
-      .dedup
-      .l
 
-    val typs = if (matchingExports.nonEmpty) {
+    val matchingExports = if (isImportingModule) {
+      // If we are importing the whole module, we need to load all entities
+      targetAssignments
+        .code(s"\\_tmp\\_\\d+\\.\\w+ =.*")
+        .dedup
+        .l
+    } else {
+      // If we are importing a specific entity, then we look for it here
+      targetAssignments
+        .code("exports.*")
+        .where(_.argument.code(s"exports\\.$alias.*"))
+        .dedup
+        .l
+    }
+
+    if (matchingExports.nonEmpty) {
       matchingExports.flatMap { exp =>
-        exp.argument.take(2).l match {
+        exp.argument.l match {
           case List(_, b: Identifier) =>
-            globalTable.get(b)
-          case List(_, b: MethodRef) =>
-            globalTable.get(b)
+            val typs = globalTable.get(b)
+            symbolTable.append(LocalVar(alias), typs)
+          case List(x: Call, b: MethodRef) =>
+            val methodName = x.argumentOption(2).map(_.code).getOrElse(b.referencedMethod.name)
+            symbolTable.append(CallAlias(methodName, Option(alias)), Set(b.methodFullName))
+            symbolTable.append(LocalVar(alias), b.referencedMethod.astParent.collectAll[Method].fullName.toSet)
           case _ =>
             Set.empty[String]
         }
       }.toSet
     } else {
-      Set(entity)
+      symbolTable.append(LocalVar(alias), Set(entity))
+      symbolTable.append(CallAlias(alias), Set(entity))
     }
-
-    symbolTable.append(LocalVar(alias), typs)
-    symbolTable.append(CallAlias(alias), typs)
   }
 
   override protected def isField(i: Identifier): Boolean =
