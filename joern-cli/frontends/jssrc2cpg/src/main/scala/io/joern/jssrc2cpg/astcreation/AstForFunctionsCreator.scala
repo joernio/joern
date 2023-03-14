@@ -404,14 +404,14 @@ trait AstForFunctionsCreator { this: AstCreator =>
       )
 
     val mAst =
-      methodAst(
+      methodAstWithAnnotations(
         methodNode,
-        thisNode +: paramNodes,
+        (thisNode +: paramNodes).map(Ast(_)),
         blockAst.withChildren(methodBlockContent ++ additionalBlockStatements ++ bodyStmtAsts),
         methodReturnNode,
-        List(virtualModifierNode)
-      ).withChildren(astsForDecorators(func))
-
+        List(virtualModifierNode),
+        astsForDecorators(func)
+      )
     Ast.storeInDiffGraph(mAst, diffGraph)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, methodNode, EdgeTypes.AST)

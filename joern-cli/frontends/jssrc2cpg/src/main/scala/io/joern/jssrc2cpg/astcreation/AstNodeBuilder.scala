@@ -10,7 +10,6 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
-import ujson.Value
 
 trait AstNodeBuilder { this: AstCreator =>
 
