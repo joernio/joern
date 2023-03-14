@@ -232,7 +232,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |from student import views
         |
         |urlpatterns = [
-        |    url(r'^allPage/$', views.all_page)
+        |    url(r'allPage', views.all_page)
         |]
         |""".stripMargin
     val views =
@@ -257,7 +257,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |from .import views
         |
         |urlpatterns = [
-        |    url(r'^allPage/$', views.all_page)
+        |    url(r'allPage', views.all_page)
         |]
         |""".stripMargin
     val views =
@@ -282,7 +282,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |from .import views
         |
         |urlpatterns = [
-        |    url(r'^allPage/$', views.all_page)
+        |    url(r'allPage', views.all_page)
         |]
         |""".stripMargin
     val views =
