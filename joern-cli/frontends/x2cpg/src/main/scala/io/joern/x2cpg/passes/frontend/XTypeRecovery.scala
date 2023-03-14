@@ -237,7 +237,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * @param i
     *   the call that imports entities into this scope.
     */
-  protected def visitImport(i: Call): Unit
+  protected def visitImport(i: Call): Unit = {}
 
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
@@ -252,7 +252,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** @return
     *   the import nodes of this compilation unit.
     */
-  protected def importNodes(cu: AstNode): Traversal[AstNode] = cu.ast.isImport
+  protected def importNodes(cu: AstNode): Traversal[AstNode] = cu.ast.isCall.referencedImports
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
