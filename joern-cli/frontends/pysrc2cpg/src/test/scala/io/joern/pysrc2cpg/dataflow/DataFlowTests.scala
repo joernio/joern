@@ -6,6 +6,8 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member}
 import io.shiftleft.semanticcpg.language._
 
+import java.io.File
+
 class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
   "intra-procedural" in {
@@ -239,8 +241,8 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |	print("All pages")
         |""".stripMargin
     val cpg = code("print('Hello, world!')")
-      .moreCode(controller, "controller/urls.py")
-      .moreCode(views, "student/views.py")
+      .moreCode(controller, Seq("controller", "urls.py").mkString(File.separator))
+      .moreCode(views, Seq("student", "views.py").mkString(File.separator))
 
     val args = cpg.call.methodFullName("django.*[.](path|url)").l.head.argument.l
     args.size shouldBe 3
@@ -289,8 +291,8 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |	print("All pages")
         |""".stripMargin
     val cpg = code("print('Hello, world!')")
-      .moreCode(controller, "controller/urls.py")
-      .moreCode(views, "controller/views.py")
+      .moreCode(controller, Seq("controller", "urls.py").mkString(File.separator))
+      .moreCode(views, Seq("controller", "views.py").mkString(File.separator))
 
     val args = cpg.call.methodFullName("django.*[.](path|url)").l.head.argument.l
     args.size shouldBe 3

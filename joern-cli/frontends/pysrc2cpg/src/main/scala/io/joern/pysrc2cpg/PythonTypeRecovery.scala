@@ -57,16 +57,16 @@ class RecoverForPythonFile(
   override def visitImport(importCall: Call): Unit = {
     importCall.argument.l match {
       case (path: Literal) :: (funcOrModule: Literal) :: alias =>
-        val tpath = if (path.code == ".") {
+        val namespace = if (path.code == ".") {
           // TODO: pysrc2cpg does not link files to the correct namespace nodes
           val root     = cpg.metaData.root.headOption.getOrElse("")
-          val fileName = path.file.name.head.stripPrefix(root)
+          val fileName = path.file.name.headOption.getOrElse("").stripPrefix(root)
           val sep      = java.io.File.separator
           // The below gives us the full path of the relative "."
           (if (fileName.contains(sep)) fileName.substring(0, fileName.lastIndexOf(sep))
            else "").replaceAll(sep, ".")
         } else path.code
-        val calleeNames = extractPossibleCalleeNames(tpath, funcOrModule.code)
+        val calleeNames = extractPossibleCalleeNames(namespace, funcOrModule.code)
         alias match {
           case (alias: Literal) :: Nil =>
             symbolTable.put(CallAlias(alias.code), calleeNames)
