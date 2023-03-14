@@ -38,10 +38,11 @@ class RecoverForJavaScriptFile(
     alias  <- i.importedAs
   } {
     val entityPath        = entity.split(":").head
+    val sep               = java.io.File.separator
     val isImportingModule = !entity.contains(":")
 
     def targetAssignments = cpg
-      .file(s"${entityPath.stripPrefix(s".${java.io.File.separator}")}\\..*")
+      .file(s"${entityPath.stripPrefix(s".$sep")}.*")
       .method
       .nameExact(":program")
       .ast
