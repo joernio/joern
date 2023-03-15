@@ -60,7 +60,7 @@ object JsSrc2Cpg {
       new RequirePass(cpg),
       new ConstClosurePass(cpg),
       new JavascriptCallLinker(cpg),
-      new JavaScriptTypeRecovery(cpg, enabledDummyTypes = !config.forall(_.disableDummyTypes)),
+      new JavaScriptTypeRecovery(cpg, enabledDummyTypes = !config.exists(_.disableDummyTypes)),
       new JavaScriptTypeHintCallLinker(cpg)
     )
 
