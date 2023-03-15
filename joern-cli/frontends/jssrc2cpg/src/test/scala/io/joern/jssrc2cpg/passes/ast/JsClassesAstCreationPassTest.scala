@@ -5,11 +5,12 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 
 class JsClassesAstCreationPassTest extends AbstractPassTest {
 
-  "AST generation for classes" should {
+  "AST generation for JS classes" should {
 
     "have ast parent blocks for class locals" in AstFixture("""
         |var x = source();
@@ -61,27 +62,18 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       funcLocalA.closureBindingId shouldBe Option("code.js::program:b:A")
     }
 
-    "have member for static method in TYPE_DECL for ClassA" in AstFixture("""
+    "have a member function for static method in TYPE_DECL for ClassA" in AstFixture("""
        |var x = class ClassA {
        |  static staticFoo() {}
        |}""".stripMargin) { cpg =>
-      val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(memberFoo)      = classATypeDecl.member.l
-      memberFoo.dynamicTypeHintFullName shouldBe Seq("code.js::program:ClassA:staticFoo")
-      memberFoo.code shouldBe "static staticFoo() {}"
-      classATypeDecl.member.isStatic.l shouldBe List(memberFoo)
-    }
-
-    "have method for static method in ClassA AST" in AstFixture("""
-        |var x = class ClassA {
-        |  static staticFoo() {}
-        |}""".stripMargin) { cpg =>
-      val List(classATypeDecl) =
-        cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-
-      val List(methodFoo) = classATypeDecl.method.nameExact("staticFoo").l
-      methodFoo.fullName shouldBe "code.js::program:ClassA:staticFoo"
-      methodFoo.code shouldBe "static staticFoo() {}"
+      val List(classATypeDecl)         = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
+      val List(constructor, staticFoo) = classATypeDecl.method.l
+      constructor.fullName shouldBe s"code.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      constructor.code shouldBe "constructor() {}"
+      constructor.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.CONSTRUCTOR)
+      staticFoo.fullName shouldBe "code.js::program:ClassA:staticFoo"
+      staticFoo.code shouldBe "static staticFoo() {}"
+      staticFoo.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.STATIC)
     }
 
     "have member for non-static method in TYPE_DECL for ClassA" in AstFixture("""
@@ -89,12 +81,17 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
         |  foo() {}
         |  [Symbol.iterator]() {}
         |}""".stripMargin) { cpg =>
-      val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(memberFoo, it)  = classATypeDecl.member.l
-      memberFoo.dynamicTypeHintFullName shouldBe Seq("code.js::program:ClassA:foo")
-      memberFoo.code shouldBe "foo() {}"
-      it.dynamicTypeHintFullName shouldBe Seq("code.js::program:ClassA:Symbol.iterator")
+      val List(classATypeDecl)       = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
+      val List(constructor, foo, it) = classATypeDecl.method.l
+      constructor.fullName shouldBe s"code.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      constructor.code shouldBe "constructor() {}"
+      constructor.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.CONSTRUCTOR)
+      foo.fullName shouldBe "code.js::program:ClassA:foo"
+      foo.code shouldBe "foo() {}"
+      foo.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
+      it.fullName shouldBe "code.js::program:ClassA:Symbol.iterator"
       it.code shouldBe "[Symbol.iterator]() {}"
+      it.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
     }
 
     "have member with initialization in TYPE_DECL for ClassA" in AstFixture("""

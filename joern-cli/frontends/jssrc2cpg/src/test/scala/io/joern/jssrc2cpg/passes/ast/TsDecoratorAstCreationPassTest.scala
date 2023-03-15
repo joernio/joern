@@ -396,13 +396,9 @@ class TsDecoratorAstCreationPassTest extends AbstractPassTest {
         val constructor = greeter.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).head
         greeter.method.isConstructor.head shouldBe constructor
         constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
-        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, greet) =>
+        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting) =>
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
-          greet.name shouldBe "greet"
-          greet.code should (
-            startWith("greet() {") and endWith("}")
-          )
         }
       }
     }
@@ -474,7 +470,7 @@ class TsDecoratorAstCreationPassTest extends AbstractPassTest {
         greeter.fullName shouldBe "code.ts::program:Greeter"
         greeter.filename shouldBe "code.ts"
         greeter.file.name.head shouldBe "code.ts"
-        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo, func) =>
+        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo) =>
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
           name.name shouldBe "name"
@@ -483,9 +479,6 @@ class TsDecoratorAstCreationPassTest extends AbstractPassTest {
           propName.code shouldBe "[propName: string]: any;"
           foo.name shouldBe "foo"
           foo.code shouldBe "\"foo\": string;"
-          func.name shouldBe "anonymous"
-          func.code shouldBe "(source: string, subString: string): boolean;"
-          func.dynamicTypeHintFullName.head shouldBe "code.ts::program:Greeter:anonymous"
         }
         inside(cpg.typeDecl("Greeter").method.l) { case List(constructor, anon) =>
           constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
