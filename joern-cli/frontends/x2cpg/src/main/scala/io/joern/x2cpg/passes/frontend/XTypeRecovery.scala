@@ -779,7 +779,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   ): Unit = {
     baseTypes
       .map(t => s"$t.${f.canonicalName}")
-      .flatMap(p => cpg.method.fullNameExact(p))
+      .flatMap(p => {
+        cpg.method.fullNameExact(p)
+      })
       .map { m =>
         (
           m,
