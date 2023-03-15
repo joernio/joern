@@ -9,13 +9,14 @@ import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 
-class JavaScriptTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
+class JavaScriptTypeRecovery(cpg: Cpg, enabledDummyTypes: Boolean = true) extends XTypeRecovery[File](cpg) {
   override def compilationUnit: Traversal[File] = cpg.file
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[File] = new RecoverForJavaScriptFile(cpg, unit, builder, globalTable, addedNodes)
+  ): RecoverForXCompilationUnit[File] =
+    new RecoverForJavaScriptFile(cpg, unit, builder, globalTable, addedNodes, enabledDummyTypes)
 
 }
 
@@ -24,8 +25,9 @@ class RecoverForJavaScriptFile(
   cu: File,
   builder: DiffGraphBuilder,
   globalTable: SymbolTable[GlobalKey],
-  addedNodes: mutable.Set[(Long, String)]
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes) {
+  addedNodes: mutable.Set[(Long, String)],
+  enabledDummyTypes: Boolean
+) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes, enabledDummyTypes) {
 
   /** A heuristic method to determine if a call is a constructor or not.
     */

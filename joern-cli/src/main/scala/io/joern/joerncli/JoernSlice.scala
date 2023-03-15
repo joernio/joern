@@ -10,7 +10,7 @@ import io.shiftleft.semanticcpg.language._
 
 import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.language.postfixOps
-import scala.util.Using
+import scala.util.{Try, Using}
 
 /** The kind of mode to use for slicing.
   */
@@ -32,7 +32,8 @@ object JoernSlice {
     sliceMode: SliceModes = DataFlow,
     sourceFile: Option[String] = None,
     sliceDepth: Int = 20,
-    minNumCalls: Int = 1
+    minNumCalls: Int = 1,
+    typeRecoveryDummyTypes: Boolean = false
   )
 
   def main(args: Array[String]): Unit = {
@@ -53,7 +54,10 @@ object JoernSlice {
   private def generateTempCpg(config: Config): String = {
     val tmpFile = File.newTemporaryFile("joern-slice", ".bin")
     println(s"Generating CPG from code at ${config.inputPath.pathAsString}")
-    (JoernParse.run(ParserConfig(config.inputPath.pathAsString, outputCpgFile = tmpFile.pathAsString)) match {
+    (JoernParse.run(
+      ParserConfig(config.inputPath.pathAsString, outputCpgFile = tmpFile.pathAsString),
+      if (config.typeRecoveryDummyTypes) List.empty else List("--no-dummyTypes")
+    ) match {
       case Right(_) =>
         println(s"Temporary CPG has been successfully generated at ${tmpFile.pathAsString}")
         Right(tmpFile.deleteOnExit(swallowIOExceptions = true).pathAsString)
@@ -92,6 +96,9 @@ object JoernSlice {
       opt[Int]("min-num-calls")
         .text(s"the minimum number of calls required for a usage slice (for `Usage` mode) - defaults to 1.")
         .action((x, c) => c.copy(minNumCalls = x))
+      opt[Boolean]("dummy-types")
+        .text(s"for generating CPGs that use type recovery, enables the use of dummy types - defaults to false.")
+        .action((x, c) => c.copy(typeRecoveryDummyTypes = x))
 
     }.parse(args, Config())
 
@@ -110,7 +117,7 @@ object JoernSlice {
             edges.foreach { edge =>
               val inNode = graph.node(edge.inNode().id())
               if (!outNode.out(edge.label()).exists(_.id().equals(inNode.id())))
-                outNode.addEdge(edge.label, inNode)
+                Try(outNode.addEdge(edge.label, inNode))
             }
           }
         }
