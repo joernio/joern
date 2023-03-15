@@ -315,7 +315,13 @@ trait AstForFunctionsCreator { this: AstCreator =>
     } else {
       setArgumentIndices(methodBlockContent)
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
-      methodAst(methodNode, thisNode +: paramNodes, bodyAst, methodReturnNode)
+      methodAstWithAnnotations(
+        methodNode,
+        (thisNode +: paramNodes).map(Ast(_)),
+        bodyAst,
+        methodReturnNode,
+        annotations = astsForDecorators(func)
+      )
     }
 
     Ast.storeInDiffGraph(mAst, diffGraph)
