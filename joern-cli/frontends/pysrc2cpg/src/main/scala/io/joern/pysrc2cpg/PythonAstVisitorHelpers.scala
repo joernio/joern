@@ -278,7 +278,8 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     name: String,
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
-    keywordArguments: Iterable[(String, NewNode)]
+    keywordArguments: Iterable[(String, NewNode)],
+    methodFullName: String
   ): NewCall = {
     val code = codeOf(receiverNode) +
       "(" +
@@ -288,7 +289,8 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
         .mkString(", ") +
       ")"
-    val callNode = nodeBuilder.callNode(code, name, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
+    val passedMethodFullName = if(methodFullName == "") name else methodFullName + name
+    val callNode = nodeBuilder.callNode(code, passedMethodFullName, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
 
     edgeBuilder.astEdge(receiverNode, callNode, 0)
     edgeBuilder.receiverEdge(receiverNode, callNode)
@@ -328,7 +330,8 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     xMayHaveSideEffects: Boolean,
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
-    keywordArguments: Iterable[(String, NewNode)]
+    keywordArguments: Iterable[(String, NewNode)],
+    methodFullName: String
   ): NewNode = {
     if (xMayHaveSideEffects) {
       val tmpVarName    = getUnusedName()
@@ -337,11 +340,11 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         createFieldAccess(createIdentifierNode(tmpVarName, Load, lineAndColumn), y, lineAndColumn)
       val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
       val instanceCallNode =
-        createInstanceCall(receiverNode, instanceNode, y, lineAndColumn, argumentNodes, keywordArguments)
+        createInstanceCall(receiverNode, instanceNode, y, lineAndColumn, argumentNodes, keywordArguments, methodFullName)
       createBlock(tmpAssignCall :: instanceCallNode :: Nil, lineAndColumn)
     } else {
       val receiverNode = createFieldAccess(x(), y, lineAndColumn)
-      createInstanceCall(receiverNode, x(), y, lineAndColumn, argumentNodes, keywordArguments)
+      createInstanceCall(receiverNode, x(), y, lineAndColumn, argumentNodes, keywordArguments, methodFullName)
     }
   }
 
