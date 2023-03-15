@@ -14,12 +14,14 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     node
   }
 
-  def   callNode(code: String, name: String, dispatchType: String, lineAndColumn: LineAndColumn): nodes.NewCall = {
+  def callNode(code: String, name: String, dispatchType: String, lineAndColumn: LineAndColumn): nodes.NewCall = {
     val callNode = nodes
       .NewCall()
       .code(code)
       .name(name)
-      .methodFullName(if (dispatchType == DispatchTypes.STATIC_DISPATCH || name != "") name else Defines.DynamicCallUnknownFallName)
+      .methodFullName(
+        if (dispatchType == DispatchTypes.STATIC_DISPATCH || name != "") name else Defines.DynamicCallUnknownFallName
+      )
       .dispatchType(dispatchType)
       .typeFullName(Constants.ANY)
       .lineNumber(lineAndColumn.line)
