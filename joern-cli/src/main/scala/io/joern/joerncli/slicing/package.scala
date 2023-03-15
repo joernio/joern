@@ -1,7 +1,7 @@
 package io.joern.joerncli
 
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Literal, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import overflowdb.Edge
 
 package object slicing {
@@ -44,13 +44,10 @@ package object slicing {
     argToCalls: List[(ObservedCall, Int)]
   ) {
     override def toString: String =
-      s"""# definition
-         |$targetObj${definedBy.map(p => s" = $p").getOrElse("")}
-         |# invoked calls
-         |${invokedCalls.mkString("\n")}
-         |# argument in the following calls
-         |${argToCalls.map { case (callArg: ObservedCall, idx: Int) => s"$callArg at param $idx" }.mkString("\n")}
-         |""".stripMargin
+      s"{tgt: $targetObj${definedBy.map(p => s" = $p").getOrElse("")}, " +
+        s"inv: [${invokedCalls.mkString(",")}], " +
+        s"argsTo: [${argToCalls.map { case (callArg: ObservedCall, idx: Int) => s"$callArg@$idx" }.mkString(",")}]" +
+        s"}"
   }
 
   /** Represents a component that carries data. This could be an identifier of a variable or method and supplementary
@@ -80,16 +77,22 @@ package object slicing {
       *   extracted.
       */
     def fromNode(node: StoredNode): DefComponent = {
+      val name = node match {
+        case x: TypeDecl          => x.name
+        case x: MethodParameterIn => x.name
+        case x: Call              => x.code.takeWhile(_ != '(')
+        case x: Identifier        => x.name
+        case x: Member            => x.name
+        case x: AstNode           => x.code
+        case _                    => "UNKNOWN"
+      }
+      val typs = node.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: node.property(
+        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+        Seq.empty[String]
+      )
       DefComponent(
-        node.property(PropertyNames.CODE, node.property(PropertyNames.NAME, "UNKNOWN")),
-        node.property(PropertyNames.TYPE_FULL_NAME) match {
-          case "ANY" =>
-            val typeHints = node.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty[String])
-            if (typeHints.size == 1) typeHints.head
-            else "ANY"
-          case other: String => other
-          case _             => "ANY"
-        },
+        name,
+        typs.filterNot(_.matches("(ANY|UNKNOWN)")).headOption.getOrElse("ANY"),
         node.label.equals(Literal.Label)
       )
     }
@@ -97,8 +100,6 @@ package object slicing {
 
   /** Details related to an observed call.
     *
-    * @param receiver
-    *   the name of the receiver, if available.
     * @param callName
     *   the name of the call.
     * @param paramTypes
@@ -106,14 +107,9 @@ package object slicing {
     * @param returnType
     *   the observed return type.
     */
-  case class ObservedCall(
-    receiver: Option[String] = None,
-    callName: String,
-    paramTypes: List[String],
-    returnType: String
-  ) {
+  case class ObservedCall(callName: String, paramTypes: List[String], returnType: String) {
     override def toString: String =
-      s"${receiver.map(f => f + ".").getOrElse("")}$callName(${paramTypes.mkString(",")}):$returnType"
+      s"$callName(${paramTypes.mkString(",")}):$returnType"
   }
 
   /** Describes types defined within the application.
