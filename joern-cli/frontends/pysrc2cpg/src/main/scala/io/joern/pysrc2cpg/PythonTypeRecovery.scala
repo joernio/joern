@@ -15,7 +15,6 @@ import java.io.{File => JFile}
 import java.nio.file.Paths
 import java.util.regex.Matcher
 import scala.collection.mutable
-import scala.util.Try
 
 class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
 
@@ -52,7 +51,7 @@ class RecoverForPythonFile(
   /** Overridden to include legacy import calls until imports are supported.
     */
   override def importNodes(cu: AstNode): Traversal[AstNode] =
-    cu.ast.isCall.nameExact("import") ++ super.importNodes(cu)
+    cu.ast.isCall.nameExact("import") // TODO: Remove and use IMPORT nodes
 
   override def visitImport(importCall: Call): Unit = {
     importCall.argument.l match {
@@ -257,7 +256,7 @@ class RecoverForPythonFile(
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
       val parentTypes =
-        fa.method.typeDecl.fullName.map(_.stripSuffix("<meta>")).map { t => s"$t.${t.split("\\.").last}" }.toSeq
+        fa.method.typeDecl.fullName.map(_.stripSuffix("<meta>")).toSeq
       val baseTypes = cpg.typeDecl.fullNameExact(parentTypes: _*).inheritsFromTypeFullName.toSeq
       // TODO: inheritsFromTypeFullName does not give full name in pysrc2cpg
       val baseTypeFullNames = cpg.typ.nameExact(baseTypes: _*).fullName.toSeq
