@@ -50,7 +50,12 @@ ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
   "-Xlint",
   "--release=11",
-)
+) ++ {
+  // fail early if users with JDK8 try to run this
+  val javaVersion = sys.props("java.specification.version").toFloat
+  assert(javaVersion.toInt >= 11, s"this build requires JDK11+ - you're using $javaVersion")
+  Nil
+}
 
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
