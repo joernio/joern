@@ -62,8 +62,8 @@ class RecoverForPythonFile(
           val fileName = path.file.name.headOption.getOrElse("").stripPrefix(root)
           val sep      = Matcher.quoteReplacement(JFile.separator)
           // The below gives us the full path of the relative "."
-          if (fileName.contains(java.io.File.separator))
-            fileName.substring(0, fileName.lastIndexOf(java.io.File.separator)).replaceAll(sep, ".")
+          if (fileName.contains(JFile.separator))
+            fileName.substring(0, fileName.lastIndexOf(JFile.separator)).replaceAll(sep, ".")
           else ""
         } else path.code
         val calleeNames = extractPossibleCalleeNames(namespace, funcOrModule.code)
