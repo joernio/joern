@@ -793,6 +793,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     argIdx: Int,
     baseName: Option[String] = None
   ): Unit = {
+    // Sometimes the function identifier is an argument to the call itself as a "base". In this case we don't need
+    // a method ref. This happens in jssrc2cpg
+    if (funcPtr.astParent.collectAll[Call].exists(_.name == funcName)) return
+
     baseTypes
       .map(t => if (t.endsWith(funcName)) t else s"$t.$funcName")
       .flatMap(p => cpg.method.fullNameExact(p))
