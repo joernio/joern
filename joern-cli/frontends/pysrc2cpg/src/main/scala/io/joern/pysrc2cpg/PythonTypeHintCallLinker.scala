@@ -2,6 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
+import io.joern.x2cpg.passes.frontend.XTypeRecovery.{DummyIndexAccess, DummyMemberLoad, DummyReturnType}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodBase}
@@ -45,14 +46,20 @@ class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
       methodNames
         .flatMap(methodMap.get)
         .foreach { m => builder.addEdge(call, m, EdgeTypes.CALL) }
-      if (methodNames.size == 1) {
-        builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
-      } else if (methodNames.size > 1) {
-        val builtInMethodName = methodNames.filter(s => s.contains("__builtin"))
+      val methodNamesFiltered = methodNames.filter( m => !(m.contains(DummyReturnType) &&
+      m.contains(DummyMemberLoad) &&
+      m.contains(DummyIndexAccess)
+        )
+      )
+
+      if (methodNamesFiltered.size == 1) {
+        builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNamesFiltered.head)
+      } else if (methodNamesFiltered.size > 1) {
+        val builtInMethodName = methodNamesFiltered.filter(s => s.contains("__builtin"))
         if (builtInMethodName.size > 0) {
           builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, builtInMethodName.sortBy(_.length).head)
         } else {
-          builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.sortBy(_.length).head)
+          builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNamesFiltered.sortBy(_.length).head)
         }
       }
     }
