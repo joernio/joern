@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
-import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, Declaration, MethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, Declaration, MethodRef, TypeRef}
 import overflowdb.traversal.{Traversal, help, jIteratortoTraversal}
 
 /** A declaration, such as a local or parameter.
@@ -18,6 +18,6 @@ class DeclarationTraversal[NodeType <: Declaration](val traversal: Traversal[Nod
 
   /** Types that capture this declaration
     */
-  def capturedByTypeRef: Traversal[MethodRef] = closureBinding.flatMap(_._captureIn).collectAll[MethodRef]
+  def capturedByTypeRef: Traversal[TypeRef] = closureBinding.flatMap(_._captureIn).collectAll[TypeRef]
 
 }
