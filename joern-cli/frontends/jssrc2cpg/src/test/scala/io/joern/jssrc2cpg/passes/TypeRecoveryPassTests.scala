@@ -20,7 +20,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "resolve 'x' identifier types despite shadowing" in {
-      val List(xOuterScope, xInnerScope) = cpg.identifier("x").take(2).l
+      val List(xOuterScope, xInnerScope) = cpg.identifier.nameExact("x").l
       xOuterScope.dynamicTypeHintFullName shouldBe Seq("__ecma.String", "__ecma.Number")
       xInnerScope.dynamicTypeHintFullName shouldBe Seq("__ecma.String", "__ecma.Number")
     }
@@ -56,9 +56,10 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     ).cpg
 
     "resolve 'sg' identifier types from import information" in {
-      val List(sgAssignment, sgElseWhere) = cpg.identifier("sg").take(2).l
-      sgAssignment.typeFullName shouldBe "sendgrid:SendGridAPIClient"
-      sgElseWhere.typeFullName shouldBe "sendgrid:SendGridAPIClient"
+      val List(sg1, sg2, sg3) = cpg.identifier.nameExact("sg").l
+      sg1.typeFullName shouldBe "sendgrid:SendGridAPIClient"
+      sg2.typeFullName shouldBe "sendgrid:SendGridAPIClient"
+      sg3.typeFullName shouldBe "sendgrid:SendGridAPIClient"
     }
 
     "resolve 'sg' call path from import information" in {
@@ -67,9 +68,10 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
 
     "resolve 'client' identifier types from import information" in {
-      val List(clientAssignment, clientElseWhere) = cpg.identifier("client").take(2).l
-      clientAssignment.typeFullName shouldBe "slack_sdk:WebClient"
-      clientElseWhere.typeFullName shouldBe "slack_sdk:WebClient"
+      val List(client1, client2, client3) = cpg.identifier.nameExact("client").l
+      client1.typeFullName shouldBe "slack_sdk:WebClient"
+      client2.typeFullName shouldBe "slack_sdk:WebClient"
+      client3.typeFullName shouldBe "slack_sdk:WebClient"
     }
 
     "resolve 'client' call path from identifier in child scope" in {
@@ -129,11 +131,11 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     ).cpg
 
     "resolve 'x' and 'y' locally under foo.py" in {
-      val Some(x) = cpg.file.name(".*Foo.*").ast.isIdentifier.name("x").headOption
+      val Some(x) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("x").headOption
       x.typeFullName shouldBe "__ecma.Number"
-      val Some(y) = cpg.file.name(".*Foo.*").ast.isIdentifier.name("y").headOption
+      val Some(y) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("y").headOption
       y.typeFullName shouldBe "__ecma.String"
-      val Some(db) = cpg.file.name(".*Foo.*").ast.isIdentifier.name("db").headOption
+      val Some(db) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("db").headOption
       db.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
     }
 
@@ -142,7 +144,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .name(".*Bar.*")
         .ast
         .isIdentifier
-        .name("z")
+        .nameExact("z")
         .l
       z1.typeFullName shouldBe "ANY"
       z1.dynamicTypeHintFullName shouldBe Seq("__ecma.Number", "__ecma.String")
@@ -155,7 +157,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .name(".*Bar.*")
         .ast
         .isIdentifier
-        .name("d")
+        .nameExact("d")
         .headOption
       d.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
       d.dynamicTypeHintFullName shouldBe Seq()
@@ -180,9 +182,8 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .isCall
         .name("deleteTable")
         .l
-
       d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy.deleteTable"
-      d.dynamicTypeHintFullName shouldBe Seq()
+      d.dynamicTypeHintFullName shouldBe empty
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
