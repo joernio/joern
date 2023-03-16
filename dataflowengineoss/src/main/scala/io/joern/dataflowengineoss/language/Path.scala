@@ -45,7 +45,7 @@ object Path {
                 s"$methodName($paramsPretty)"
               case _ => cfgNode.statement.repr
             }
-            val tracked = StringUtils.normalizeSpace(StringUtils.abbreviate(statement, MAX_TRACKED_WIDTH))
+            val tracked = StringUtils.normalizeSpace(StringUtils.abbreviate(statement, MaxTrackedWidth))
             Array(nodeType, tracked, lineNumber, methodName, fileName)
         }
       }
