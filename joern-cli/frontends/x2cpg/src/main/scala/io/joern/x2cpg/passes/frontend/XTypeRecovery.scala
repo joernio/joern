@@ -780,37 +780,42 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           case _ =>
         }
         // This field may be a function pointer
-        handlePotentialFunctionPointer(fieldAccess, i.name, iTypes, f)
+        handlePotentialFunctionPointer(fieldAccess, iTypes, f.canonicalName, f.argumentIndex, Option(i.name))
       case _ => persistType(x, symbolTable.get(x))(builder)
     }
 
   /** In the case this field access is a function pointer, we would want to make sure this has a method ref.
     */
   private def handlePotentialFunctionPointer(
-    fieldAccess: Call,
-    baseName: String,
+    funcPtr: Expression,
     baseTypes: Set[String],
-    f: FieldIdentifier
+    funcName: String,
+    argIdx: Int,
+    baseName: Option[String] = None
   ): Unit = {
+    // Sometimes the function identifier is an argument to the call itself as a "base". In this case we don't need
+    // a method ref. This happens in jssrc2cpg
+    if (funcPtr.astParent.collectAll[Call].exists(_.name == funcName)) return
+
     baseTypes
-      .map(t => s"$t.${f.canonicalName}")
+      .map(t => if (t.endsWith(funcName)) t else s"$t.$funcName")
       .flatMap(p => cpg.method.fullNameExact(p))
       .map { m =>
         (
           m,
           NewMethodRef()
-            .code(s"$baseName.${f.canonicalName}")
+            .code(s"${baseName.map(_.appended('.')).getOrElse("")}$funcName")
             .methodFullName(m.fullName)
-            .argumentIndex(f.argumentIndex + 1)
-            .lineNumber(fieldAccess.lineNumber)
-            .columnNumber(fieldAccess.columnNumber)
+            .argumentIndex(argIdx + 1)
+            .lineNumber(funcPtr.lineNumber)
+            .columnNumber(funcPtr.columnNumber)
         )
       }
       .filterNot { case (_, mRef) =>
-        addedNodes.contains((fieldAccess.id(), s"${mRef.label()}.${mRef.methodFullName}"))
+        addedNodes.contains((funcPtr.id(), s"${mRef.label()}.${mRef.methodFullName}"))
       }
       .foreach { case (m, mRef) =>
-        fieldAccess.astParent
+        funcPtr.astParent
           .filterNot(_.astChildren.isMethodRef.methodFullNameExact(mRef.methodFullName).nonEmpty)
           .foreach { inCall =>
             builder.addNode(mRef)
@@ -819,7 +824,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             builder.addEdge(inCall, mRef, EdgeTypes.ARGUMENT)
             mRef.argumentIndex(inCall.astChildren.size)
           }
-        addedNodes.add((fieldAccess.id(), s"${mRef.label()}.${mRef.methodFullName}"))
+        addedNodes.add((funcPtr.id(), s"${mRef.label()}.${mRef.methodFullName}"))
       }
   }
 
@@ -829,9 +834,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       if (filteredTypes.size == 1) builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, filteredTypes.head)
       else builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, filteredTypes.toSeq)
     }
-    x match {
-      case i: Identifier if globalTable.contains(i) => persistGlobalIdentifierType(i)
-      case _                                        =>
+    if (x.isInstanceOf[Identifier]) {
+      val i = x.asInstanceOf[Identifier]
+      if (globalTable.contains(i)) persistGlobalIdentifierType(i)
+      if (symbolTable.contains(i))
+        handlePotentialFunctionPointer(i, symbolTable.get(i), i.name, i.argumentIndex)
     }
   }
 
