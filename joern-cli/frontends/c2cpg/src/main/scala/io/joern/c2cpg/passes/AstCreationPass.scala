@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
+import scala.util.matching.Regex
 
 object AstCreationPass {
 
@@ -32,6 +33,8 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
 
   private val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] = new ConcurrentHashMap()
   private val parser: CdtParser                                       = new CdtParser(config)
+  private val DefaultIgnoredFolders: List[Regex] =
+    List("\\..*".r, "(.*[/\\\\])?tests?[/\\\\].*".r)
 
   private def sourceFiles: Set[String] =
     SourceFiles.determine(config.inputPath, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
@@ -57,8 +60,8 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
   }
 
   private def isIgnoredByDefault(filePath: String): Boolean = {
-    val relPath = File(config.inputPath).relativize(File(filePath))
-    if (relPath.toString.startsWith(".")) {
+    val relPath = File(config.inputPath).relativize(File(filePath)).toString
+    if (DefaultIgnoredFolders.exists(_.matches(relPath))) {
       logger.debug(s"'$filePath' ignored by default")
       true
     } else {
