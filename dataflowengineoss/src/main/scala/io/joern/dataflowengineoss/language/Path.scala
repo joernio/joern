@@ -21,7 +21,7 @@ case class Path(elements: List[AstNode]) {
 
 object Path {
 
-  val MAX_TRACKED_WIDTH = 256
+  val MaxTrackedWidth = 30
 
   implicit val show: Show[Path] = { path =>
     Table(
