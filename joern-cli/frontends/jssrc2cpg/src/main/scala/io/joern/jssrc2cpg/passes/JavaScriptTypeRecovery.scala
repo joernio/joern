@@ -30,7 +30,7 @@ class RecoverForJavaScriptFile(
   /** A heuristic method to determine if a call is a constructor or not.
     */
   override protected def isConstructor(c: Call): Boolean = {
-    c.name.endsWith("factory") && c.inCall.astParent.headOption.isInstanceOf[Some[Block]]
+    c.name.endsWith("factory") && c.inCall.astParent.headOption.exists(_.isInstanceOf[Block])
   }
 
   override protected def visitImport(i: Import): Unit = for {
@@ -94,8 +94,8 @@ class RecoverForJavaScriptFile(
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.contains(".alloc")) {
       c.inAssignment.astSiblings.isCall.nameExact("<operator>.new").astChildren.isIdentifier.headOption match {
-        case Some(i) => symbolTable.get(i)
-        case None    => Set.empty[String]
+        case Some(ident) => symbolTable.get(ident)
+        case None        => Set.empty[String]
       }
     } else (symbolTable.get(c) + c.methodFullName).map(t => t.stripSuffix(".factory"))
     associateTypes(i, constructorPaths)
