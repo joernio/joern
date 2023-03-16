@@ -185,25 +185,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
       param -> mutable.BitSet(Definition.fromNode(param.asInstanceOf[StoredNode], nodeToNumber))
     }
 
-    // We filter out field accesses to ensure that they propagate
-    // taint unharmed.
-
-    def isFieldAccess(name: String): Boolean = {
-      (name == Operators.memberAccess) ||
-      (name == Operators.indirectComputedMemberAccess) ||
-      (name == Operators.indirectMemberAccess) ||
-      (name == Operators.computedMemberAccess) ||
-      (name == Operators.indirection) ||
-      (name == Operators.fieldAccess) ||
-      (name == Operators.indirectFieldAccess) ||
-      (name == Operators.indexAccess) ||
-      (name == Operators.indirectIndexAccess) ||
-      (name == Operators.getElementPtr)
-    }
-
-    val defsForCalls = method.call
-      .filterNot(x => isFieldAccess(x.name))
-      .l
+    val defsForCalls = method.call.l
       .map { call =>
         call -> {
           val retVal = List(call)
