@@ -265,8 +265,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |def all_page(request):
         |	print("All pages")
         |""".stripMargin
-    val cpg = code("print('Hello, world!')")
-      .moreCode(controller, "urls.py")
+    val cpg = code(controller, "urls.py")
       .moreCode(views, "views.py")
 
     val Some(allPageRef) = cpg.call.methodFullName("django.*[.](path|url)").argument.isMethodRef.headOption
@@ -291,12 +290,11 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |def all_page(request):
         |	print("All pages")
         |""".stripMargin
-    val cpg = code("print('Hello, world!')")
-      .moreCode(controller, Seq("controller", "urls.py").mkString(File.separator))
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
       .moreCode(views, Seq("controller", "views.py").mkString(File.separator))
 
     val Some(allPageRef) = cpg.call.methodFullName("django.*[.](path|url)").argument.isMethodRef.headOption
-    allPageRef.methodFullName shouldBe "controller/views.py:<module>.all_page"
+    allPageRef.methodFullName shouldBe Seq("controller", "views.py:<module>.all_page").mkString(File.separator)
     allPageRef.code shouldBe "views.all_page"
   }
 
@@ -317,12 +315,11 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |def all_page(request):
         |	print("All pages")
         |""".stripMargin
-    val cpg = code("print('Hello, world!')")
-      .moreCode(controller, Seq("controller", "urls.py").mkString(File.separator))
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
       .moreCode(views, Seq("controller", "views.py").mkString(File.separator))
 
     val Some(allPageRef) = cpg.call.methodFullName("django.*[.](path|url)").argument.isMethodRef.headOption
-    allPageRef.methodFullName shouldBe "controller/views.py:<module>.all_page"
+    allPageRef.methodFullName shouldBe Seq("controller", "views.py:<module>.all_page").mkString(File.separator)
     allPageRef.code shouldBe "all_page"
   }
 
@@ -343,12 +340,11 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |def all_page(request):
         |	print("All pages")
         |""".stripMargin
-    val cpg = code("print('Hello, world!')")
-      .moreCode(controller, Seq("controller", "urls.py").mkString(File.separator))
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
       .moreCode(views, Seq("student", "views.py").mkString(File.separator))
 
     val Some(allPageRef) = cpg.call.methodFullName("django.*[.](path|url)").argument.isMethodRef.headOption
-    allPageRef.methodFullName shouldBe "student/views.py:<module>.all_page"
+    allPageRef.methodFullName shouldBe Seq("student", "views.py:<module>.all_page").mkString(File.separator)
     allPageRef.code shouldBe "all_page"
   }
 
