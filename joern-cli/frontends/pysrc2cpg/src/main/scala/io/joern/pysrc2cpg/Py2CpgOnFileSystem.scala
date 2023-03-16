@@ -13,7 +13,8 @@ case class Py2CpgOnFileSystemConfig(
   outputFile: Path = Paths.get(X2CpgConfig.defaultOutputPath),
   inputDir: Path = null,
   venvDir: Path = Paths.get(".venv"),
-  ignoreVenvDir: Boolean = true
+  ignoreVenvDir: Boolean = true,
+  disableDummyTypes: Boolean = false
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig] {
   override def withInputPath(inputPath: String): Py2CpgOnFileSystemConfig = {
     copy(inputDir = Paths.get(inputPath))
@@ -87,5 +88,6 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
     logger.info(s"Input directory: ${config.inputDir}")
     logger.info(s"Venv directory: ${config.venvDir}")
     logger.info(s"IgnoreVenvDir: ${config.ignoreVenvDir}")
+    logger.info(s"No dummy types: ${config.disableDummyTypes}")
   }
 }

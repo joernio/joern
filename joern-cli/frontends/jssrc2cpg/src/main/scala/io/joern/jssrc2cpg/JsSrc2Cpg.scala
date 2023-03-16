@@ -46,7 +46,7 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
     val maybeCpg = createCpgWithOverlays(config)
     maybeCpg.map { cpg =>
       new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
-      postProcessingPasses(cpg).foreach(_.createAndApply())
+      postProcessingPasses(cpg, Option(config)).foreach(_.createAndApply())
       cpg
     }
   }
@@ -55,12 +55,12 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
 
 object JsSrc2Cpg {
 
-  def postProcessingPasses(cpg: Cpg): List[CpgPassBase] =
+  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
     List(
       new RequirePass(cpg),
       new ConstClosurePass(cpg),
       new JavascriptCallLinker(cpg),
-      new JavaScriptTypeRecovery(cpg),
+      new JavaScriptTypeRecovery(cpg, enabledDummyTypes = !config.exists(_.disableDummyTypes)),
       new JavaScriptTypeHintCallLinker(cpg)
     )
 
