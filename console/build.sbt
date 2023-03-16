@@ -3,7 +3,7 @@ name := "console"
 enablePlugins(JavaAppPackaging)
 
 val ScoptVersion          = "4.0.1"
-val CaskVersion           = "0.8.3"
+val CaskVersion           = "0.9.0"
 val CirceVersion          = "0.14.5"
 val AmmoniteVersion       = "2.5.8"
 val ZeroturnaroundVersion = "1.15"
@@ -29,7 +29,7 @@ libraryDependencies ++= Seq(
   "org.scalatest"     %% "scalatest"         % Versions.scalatest % Test
 )
 
-Test/compile := (Test/compile).dependsOn((Projects.c2cpg/stage)).value
+Test / compile := (Test / compile).dependsOn((Projects.c2cpg / stage)).value
 
 scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
