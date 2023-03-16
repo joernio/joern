@@ -376,4 +376,29 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     val flowsGet = sinkGet.reachableByFlows(sourceParam).l
     flowsGet.size shouldBe 2
   }
+
+  "flow from index access to index access" in {
+    val cpg: Cpg = code(
+      """
+        |from datadog import statsd
+        |
+        |def generate_vehicle_row(row, vehicle_type):
+        |    row_vehicle = dict()
+        |    row_vehicle['VEHICLE_REGISTRATION_NUMBER'] = vehicle_type["VEHICLE_REGISTRATION_NUMBER"]
+        |
+        |    statsd.increment(row_vehicle)
+        |""".stripMargin)
+
+    val sources = cpg.identifier("vehicle_type").l
+    val sinks = cpg.call.methodFullName("datadog.*").l
+    val flows = sinks.reachableByFlows(sources)
+    println("Sources:")
+    sources.map(_.code).foreach(println)
+    println("Sink:")
+    sinks.map(_.code).foreach(println)
+    println("Flows:")
+    flows.p.foreach(println)
+    flows.size shouldBe 1
+  }
+
 }
