@@ -48,13 +48,19 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |}
         |""".stripMargin) { cpg =>
       cpg.typeDecl.nameExact("Foo").modifier.modifierType.l shouldBe List(ModifierTypes.ABSTRACT)
-      inside(cpg.typeDecl.nameExact("Foo").member.l) { case List(x, y) =>
+      inside(cpg.typeDecl.nameExact("Foo").member.l) { case List(x, y, foo, bar) =>
         x.name shouldBe "x"
         x.code shouldBe "x: number;"
         x.typeFullName shouldBe Defines.Number
         y.name shouldBe "y"
         y.code shouldBe "y: number;"
         y.typeFullName shouldBe Defines.Number
+        foo.name shouldBe "foo"
+        foo.code shouldBe "public abstract foo(): void;"
+        foo.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Foo:foo")
+        bar.name shouldBe "bar"
+        bar.code shouldBe "public abstract bar(): void;"
+        bar.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Foo:bar")
       }
       inside(cpg.typeDecl.nameExact("Foo").method.l) { case List(constructor, foo, bar) =>
         constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
@@ -86,9 +92,11 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         val constructor = greeter.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).head
         greeter.method.isConstructor.head shouldBe constructor
         constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
-        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting) =>
+        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, greet) =>
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
+          greet.name shouldBe "greet"
+          greet.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Greeter:greet")
         }
       }
     }
@@ -160,7 +168,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         greeter.fullName shouldBe "code.ts::program:Greeter"
         greeter.filename shouldBe "code.ts"
         greeter.file.name.head shouldBe "code.ts"
-        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo) =>
+        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo, anon) =>
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
           name.name shouldBe "name"
@@ -169,6 +177,9 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
           propName.code shouldBe "[propName: string]: any;"
           foo.name shouldBe "foo"
           foo.code shouldBe "\"foo\": string;"
+          anon.name shouldBe "anonymous"
+          anon.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Greeter:anonymous")
+          anon.code shouldBe "(source: string, subString: string): boolean;"
         }
         inside(cpg.typeDecl("Greeter").method.l) { case List(constructor, anon) =>
           constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
