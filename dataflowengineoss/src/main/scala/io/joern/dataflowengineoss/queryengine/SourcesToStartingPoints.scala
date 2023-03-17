@@ -97,16 +97,18 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       .sortBy(x => (x.lineNumber, x.columnNumber))
       .l
 
-  private def withFieldAndIndexAccesses(nodes: List[CfgNode]) : List[CfgNode] =
-    nodes.flatMap{
-      case identifier : Identifier =>
+  private def withFieldAndIndexAccesses(nodes: List[CfgNode]): List[CfgNode] =
+    nodes.flatMap {
+      case identifier: Identifier =>
         List(identifier) ++ fieldAndIndexAccesses(identifier)
       case x => List(x)
     }
 
-  private def fieldAndIndexAccesses(identifier: Identifier) : List[CfgNode] =
-    identifier.method._identifierViaContainsOut.nameExact(identifier.name)
-      .inCall.collect{ case c if isFieldAccess(c.name) => c }
+  private def fieldAndIndexAccesses(identifier: Identifier): List[CfgNode] =
+    identifier.method._identifierViaContainsOut
+      .nameExact(identifier.name)
+      .inCall
+      .collect { case c if isFieldAccess(c.name) => c }
       .l
 
   private def usages(pairs: List[(TypeDecl, AstNode)]): List[CfgNode] = {

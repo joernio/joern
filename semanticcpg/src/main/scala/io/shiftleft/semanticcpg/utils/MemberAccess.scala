@@ -24,15 +24,15 @@ object MemberAccess {
 
   def isFieldAccess(name: String): Boolean = {
     (name == Operators.memberAccess) ||
-      (name == Operators.indirectComputedMemberAccess) ||
-      (name == Operators.indirectMemberAccess) ||
-      (name == Operators.computedMemberAccess) ||
-      (name == Operators.indirection) ||
-      (name == Operators.fieldAccess) ||
-      (name == Operators.indirectFieldAccess) ||
-      (name == Operators.indexAccess) ||
-      (name == Operators.indirectIndexAccess) ||
-      (name == Operators.getElementPtr)
+    (name == Operators.indirectComputedMemberAccess) ||
+    (name == Operators.indirectMemberAccess) ||
+    (name == Operators.computedMemberAccess) ||
+    (name == Operators.indirection) ||
+    (name == Operators.fieldAccess) ||
+    (name == Operators.indirectFieldAccess) ||
+    (name == Operators.indexAccess) ||
+    (name == Operators.indirectIndexAccess) ||
+    (name == Operators.getElementPtr)
   }
 
 }
