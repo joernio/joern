@@ -279,7 +279,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
     keywordArguments: Iterable[(String, NewNode)],
-    methodFullName: String
+    methodFullName: Option[String] = None
   ): NewCall = {
     val code = codeOf(receiverNode) +
       "(" +
