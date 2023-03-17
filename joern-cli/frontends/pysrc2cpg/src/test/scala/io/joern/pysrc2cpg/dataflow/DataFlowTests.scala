@@ -376,4 +376,20 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     val flowsGet = sinkGet.reachableByFlows(sourceParam).l
     flowsGet.size shouldBe 2
   }
+
+  "flow from index access to index access" in {
+    val cpg: Cpg = code("""
+        |
+        |def foo():
+        |    y = dict()
+        |    y['B'] = x['A']
+        |    sink(y)
+        |""".stripMargin)
+
+    val sources = cpg.identifier("x").l
+    val sinks   = cpg.call("sink").argument.l
+    val flows   = sinks.reachableByFlows(sources)
+    flows.size shouldBe 1
+  }
+
 }
