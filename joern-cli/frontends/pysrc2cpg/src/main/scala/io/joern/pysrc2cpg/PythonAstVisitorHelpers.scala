@@ -289,7 +289,12 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
         .mkString(", ") +
       ")"
-    val passedMethodFullName = if (methodFullName == "") name else methodFullName + name
+
+    val passedMethodFullName = methodFullName match {
+      case Some(fullName) => fullName + name
+      case None => name
+    }
+
     val callNode = nodeBuilder.callNode(code, passedMethodFullName, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
 
     edgeBuilder.astEdge(receiverNode, callNode, 0)
@@ -331,7 +336,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
     keywordArguments: Iterable[(String, NewNode)],
-    methodFullName: String
+    methodFullName: Option[String] = None
   ): NewNode = {
     if (xMayHaveSideEffects) {
       val tmpVarName    = getUnusedName()

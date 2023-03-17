@@ -661,7 +661,7 @@ class PythonAstVisitor(
           lineAndColumn,
           arguments,
           keywordArguments,
-          ""
+          None
         )
 
         val returnNode = createReturn(Some(fakeNewCall), None, lineAndColumn)
@@ -719,7 +719,7 @@ class PythonAstVisitor(
           lineAndColumn,
           argumentWithInstance,
           keywordArguments,
-          ""
+          None
         )
 
         val returnNode =
@@ -870,7 +870,7 @@ class PythonAstVisitor(
         lineAndColumn,
         Nil,
         Nil,
-        ""
+        None
       )
     val iterAssignNode =
       createAssignmentToIdentifier(iterVariableName, iterExprIterCallNode, lineAndColumn)
@@ -889,7 +889,7 @@ class PythonAstVisitor(
         lineAndColumn,
         Nil,
         Nil,
-        ""
+        None
       )
 
     val loweredAssignNodes =
@@ -1060,7 +1060,7 @@ class PythonAstVisitor(
         lineAndCol,
         Nil,
         Nil,
-        ""
+        None
       ),
       lineAndCol
     )
@@ -1095,7 +1095,7 @@ class PythonAstVisitor(
         lineAndCol,
         Nil,
         Nil,
-        ""
+        None
       ) :: Nil
 
     val tryBlock = createTry(tryBody, Nil, finalBlockStmts, Nil, lineAndCol)
@@ -1384,7 +1384,7 @@ class PythonAstVisitor(
             lineAndColOf(dict),
             convert(value) :: Nil,
             Nil,
-            ""
+            None
           )
       }
     }
@@ -1432,7 +1432,7 @@ class PythonAstVisitor(
       lineAndColOf(listComp),
       convert(listComp.elt) :: Nil,
       Nil,
-      ""
+      None
     )
 
     val comprehensionBlockNode = createComprehensionLowering(
@@ -1468,7 +1468,7 @@ class PythonAstVisitor(
       lineAndColOf(setComp),
       convert(setComp.elt) :: Nil,
       Nil,
-      ""
+      None
     )
 
     val comprehensionBlockNode = createComprehensionLowering(
@@ -1549,7 +1549,7 @@ class PythonAstVisitor(
       lineAndColOf(generatorExp),
       convert(generatorExp.elt) :: Nil,
       Nil,
-      ""
+      None
     )
 
     val comprehensionBlockNode = createComprehensionLowering(
@@ -1687,7 +1687,7 @@ class PythonAstVisitor(
           lineAndColOf(call),
           argumentNodes,
           keywordArgNodes,
-          relFileName + ":<module>."
+          Some(relFileName + ":<module>.")
         )
       case _ =>
         val receiverNode = convert(call.func)
