@@ -101,7 +101,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
         call.methodFullName shouldBe "bar.js::program:anonymous"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
           receiver.name shouldBe "bar"
-          receiver.typeFullName shouldBe "<export>::bar.js"
+          receiver.typeFullName shouldBe "bar.js::program"
         }
       }
 
@@ -115,7 +115,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
         call.methodFullName shouldBe "baz.js::program:anonymous"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
           receiver.name shouldBe "baz"
-          receiver.typeFullName shouldBe "<export>::baz.js"
+          receiver.typeFullName shouldBe "baz.js::program"
         }
       }
     }

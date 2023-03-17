@@ -162,8 +162,19 @@ trait AstForTypesCreator { this: AstCreator =>
   private def astForClassMember(classElement: Value, typeDeclNode: NewTypeDecl): Ast = {
     val nodeInfo = createBabelNodeInfo(classElement)
     val memberNode = nodeInfo.node match {
+      case TSDeclareMethod | TSDeclareFunction =>
+        val function    = createMethodDefinitionNode(nodeInfo)
+        val bindingNode = createBindingNode()
+        diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
+        diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
+        addModifier(function, nodeInfo.json)
+        val dynamicTypeHintFullName = Option(function.fullName)
+        createMemberNode(function.name, nodeInfo, dynamicTypeHintFullName)
       case ClassMethod | ClassPrivateMethod =>
-        val function = createMethodAstAndNode(nodeInfo).methodNode
+        val function    = createMethodAstAndNode(nodeInfo).methodNode
+        val bindingNode = createBindingNode()
+        diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
+        diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
         addModifier(function, nodeInfo.json)
         val dynamicTypeHintFullName = Option(function.fullName)
         createMemberNode(function.name, nodeInfo, dynamicTypeHintFullName)
@@ -176,8 +187,13 @@ trait AstForTypesCreator { this: AstCreator =>
         }
         createMemberNode(name, nodeInfo, dynamicTypeOption = None)
     }
+
     addModifier(memberNode, classElement)
     diffGraph.addEdge(typeDeclNode, memberNode, EdgeTypes.AST)
+    astsForDecorators(nodeInfo).foreach { decoratorAst =>
+      Ast.storeInDiffGraph(decoratorAst, diffGraph)
+      decoratorAst.root.foreach(diffGraph.addEdge(memberNode, _, EdgeTypes.AST))
+    }
 
     if (hasKey(nodeInfo.json, "value") && !nodeInfo.json("value").isNull) {
       val lhsAst = astForNode(nodeInfo.json("key"))
@@ -282,6 +298,10 @@ trait AstForTypesCreator { this: AstCreator =>
     seenAliasTypes.add(typeDeclNode)
 
     addModifier(typeDeclNode, clazz.json)
+    astsForDecorators(clazz).foreach { decoratorAst =>
+      Ast.storeInDiffGraph(decoratorAst, diffGraph)
+      decoratorAst.root.foreach(diffGraph.addEdge(typeDeclNode, _, EdgeTypes.AST))
+    }
 
     diffGraph.addEdge(methodAstParentStack.head, typeDeclNode, EdgeTypes.AST)
 
@@ -447,12 +467,12 @@ trait AstForTypesCreator { this: AstCreator =>
       val nodeInfo = createBabelNodeInfo(classElement)
       val memberNodes = nodeInfo.node match {
         case TSCallSignatureDeclaration =>
-          val functionNode            = createMethodDefinitionNode(nodeInfo)
-          val dynamicTypeHintFullName = Option(functionNode.fullName)
-          val bindingNode             = createBindingNode()
+          val functionNode = createMethodDefinitionNode(nodeInfo)
+          val bindingNode  = createBindingNode()
           diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
           diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
           addModifier(functionNode, nodeInfo.json)
+          val dynamicTypeHintFullName = Option(functionNode.fullName)
           Seq(createMemberNode(functionNode.name, nodeInfo, dynamicTypeHintFullName))
         case _ =>
           val names = nodeInfo.node match {

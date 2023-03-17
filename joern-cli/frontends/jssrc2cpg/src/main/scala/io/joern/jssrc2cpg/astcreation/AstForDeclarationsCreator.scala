@@ -159,6 +159,43 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
   }
 
+  protected def astsForDecorators(elem: BabelNodeInfo): Seq[Ast] = {
+    if (hasKey(elem.json, "decorators") && !elem.json("decorators").isNull) {
+      elem.json("decorators").arr.toList.map(d => astForDecorator(createBabelNodeInfo(d)))
+    } else Seq.empty
+  }
+
+  private def namesForDecoratorExpression(code: String): (String, String) = {
+    val dotLastIndex = code.lastIndexOf(".")
+    if (dotLastIndex != -1) {
+      (code.substring(dotLastIndex + 1), code)
+    } else {
+      (code, code)
+    }
+  }
+
+  private def astForDecorator(decorator: BabelNodeInfo): Ast = {
+    val exprNode = createBabelNodeInfo(decorator.json("expression"))
+    exprNode.node match {
+      case Identifier | MemberExpression =>
+        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json))
+        annotationAst(createAnnotationNode(decorator, name, fullName), List.empty)
+      case CallExpression =>
+        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json("callee")))
+        val annotationNode   = createAnnotationNode(decorator, name, fullName)
+        val assignmentAsts = exprNode.json("arguments").arr.toList.map { arg =>
+          createBabelNodeInfo(arg).node match {
+            case AssignmentExpression =>
+              annotationAssignmentAst(code(arg("left")), code(arg), astForNodeWithFunctionReference(arg("right")))
+            case _ =>
+              annotationAssignmentAst("value", code(arg), astForNodeWithFunctionReference(arg))
+          }
+        }
+        annotationAst(annotationNode, assignmentAsts)
+      case _ => Ast()
+    }
+  }
+
   protected def astForExportNamedDeclaration(declaration: BabelNodeInfo): Ast = {
     val specifiers = declaration
       .json("specifiers")

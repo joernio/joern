@@ -365,13 +365,15 @@ class PythonAstVisitor(
     // a binding for the method into TYPE_DECL.
     val typeNode     = nodeBuilder.typeNode(name, fullName)
     val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, absFileName, Seq(Constants.ANY), lineAndColumn)
-    edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
-    createBinding(methodNode, typeDeclNode)
+
     // For every method that is a module, the local variables can be imported by other modules. This behaviour is
     // much like fields so they are to be linked as fields to this method type
     if (name == "<module>") contextStack.createMemberLinks(typeDeclNode, edgeBuilder.astEdge)
 
     contextStack.pop()
+
+    edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
+    createBinding(methodNode, typeDeclNode)
 
     methodNode
   }
@@ -399,18 +401,6 @@ class PythonAstVisitor(
       )
     edgeBuilder.astEdge(metaTypeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
 
-    // Create <body> function which contains the code defining the class
-    contextStack.pushClass(classDef.name, metaTypeDeclNode)
-    val classBodyFunctionName = classDef.name + "<body>"
-    val (_, methodRefNode) = createMethodAndMethodRef(
-      classBodyFunctionName,
-      parameterProvider = () => MethodParameters.empty(),
-      bodyProvider = () => classDef.body.map(convert),
-      None,
-      isAsync = false,
-      lineAndColOf(classDef)
-    )
-
     // Create type for class instances
     val instanceTypeDeclName     = classDef.name
     val instanceTypeDeclFullName = calculateFullNameFromContext(instanceTypeDeclName)
@@ -428,6 +418,18 @@ class PythonAstVisitor(
         lineAndColOf(classDef)
       )
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
+
+    // Create <body> function which contains the code defining the class
+    contextStack.pushClass(classDef.name, metaTypeDeclNode)
+    val classBodyFunctionName = classDef.name + "<body>"
+    val (_, methodRefNode) = createMethodAndMethodRef(
+      classBodyFunctionName,
+      parameterProvider = () => MethodParameters.empty(),
+      bodyProvider = () => classDef.body.map(convert),
+      None,
+      isAsync = false,
+      lineAndColOf(classDef)
+    )
 
     // Create meta class call handling method and bind it to meta class type.
     val functions = classDef.body.collect { case func: ast.FunctionDef => func }

@@ -175,8 +175,6 @@ PERCENT: '%';
 TILDE: '~';
 PLUSAT: '+@';
 MINUSAT: '-@';
-LBRACKRBRACK: '[]';
-LBRACKRBRACKEQ: '[]=';
 
 ASSIGNMENT_OPERATOR
     :   ASSIGNMENT_OPERATOR_NAME '='
@@ -221,8 +219,8 @@ fragment OPERATOR_METHOD_NAME
     |   TILDE
     |   PLUSAT
     |   MINUSAT
-    |   LBRACKRBRACK
-    |   LBRACKRBRACKEQ
+    |   '[]'
+    |   '[]='
     ;
 
 // --------------------------------------------------------
@@ -230,7 +228,7 @@ fragment OPERATOR_METHOD_NAME
 // --------------------------------------------------------
 
 SINGLE_QUOTED_STRING_LITERAL
-    :   '\'' SINGLE_QUOTED_STRING_CHARACTER* '\''
+    :   '\'' SINGLE_QUOTED_STRING_CHARACTER*? '\''
     ;
 
 fragment SINGLE_QUOTED_STRING_CHARACTER
@@ -239,8 +237,7 @@ fragment SINGLE_QUOTED_STRING_CHARACTER
     ;
 
 fragment SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER
-    :   ~[\\]
-    |   ~[']
+    :   ~['\\]
     ;
 
 fragment SINGLE_QUOTED_ESCAPE_SEQUENCE
@@ -544,10 +541,7 @@ fragment NON_ESCAPED_SEQUENCE
     ;
 
 fragment NON_ESCAPED_DOUBLE_QUOTED_STRING_CHARACTER
-    :   ~[\r\n]
-    |   ~[A-Z]
-    |   ~[a-z]
-    |   ~[0-9]
+    :   ~[\r\nA-Za-z0-9]
     ;
 
 fragment SIMPLE_ESCAPE_SEQUENCE

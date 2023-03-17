@@ -15,7 +15,20 @@ import java.util.regex.Pattern
 
 class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChecks with BeforeAndAfterAll {
 
-  private val TestFiles: List[String] = List(".sub/e.c", "folder/b.c", "folder/c.c", "foo.bar/d.c", "a.c", "index.c")
+  private val TestFiles: List[String] =
+    List(
+      ".sub/e.c",
+      "test/file.c",
+      "tests/file.c",
+      "sub/test/file.c",
+      "subA/subB/test/file.c",
+      "subA/subB/tests/file.c",
+      "folder/b.c",
+      "folder/c.c",
+      "foo.bar/d.c",
+      "a.c",
+      "index.c"
+    )
 
   private val projectUnderTest: File = {
     val dir = File.newTemporaryDirectory("c2cpgTestsExcludeTest")
