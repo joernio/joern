@@ -1,6 +1,6 @@
 package io.joern.php2cpg.querying
 
-import io.joern.php2cpg.parser.Domain.PhpBuiltins
+import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}

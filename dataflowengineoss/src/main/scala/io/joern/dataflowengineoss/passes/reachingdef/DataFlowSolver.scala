@@ -18,6 +18,7 @@ class DataFlowSolver {
       val newEntries = workList.flatMap { n =>
         val inSet = problem.flowGraph
           .pred(n)
+          .iterator
           .map(out)
           .reduceOption((x, y) => problem.meet(x, y))
           .getOrElse(problem.empty)
@@ -51,6 +52,7 @@ class DataFlowSolver {
       val newEntries = workList.flatMap { n =>
         val outSet = problem.flowGraph
           .succ(n)
+          .iterator
           .map(in)
           .reduceOption((x, y) => problem.meet(x, y))
           .getOrElse(problem.empty)

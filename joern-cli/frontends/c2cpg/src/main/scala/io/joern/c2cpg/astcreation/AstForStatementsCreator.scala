@@ -1,7 +1,6 @@
 package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewReturn}
 import io.joern.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.cpp._
@@ -13,15 +12,13 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstForStatementsCreator { this: AstCreator =>
 
-  import AstCreatorHelper.OptionSafeAst
+  import io.joern.c2cpg.astcreation.AstCreatorHelper.OptionSafeAst
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, order: Int = -1): Ast = {
-    val cpgBlock = NewBlock()
-      .order(order)
-      .argumentIndex(order)
-      .typeFullName(registerType(Defines.voidTypeName))
-      .lineNumber(line(blockStmt))
-      .columnNumber(column(blockStmt))
+    val cpgBlock =
+      newBlockNode(blockStmt, registerType(Defines.voidTypeName))
+        .order(order)
+        .argumentIndex(order)
 
     scope.pushNewScope(cpgBlock)
     var currOrder = 1
@@ -60,11 +57,8 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
 
   private def astForReturnStatement(ret: IASTReturnStatement): Ast = {
-    val cpgReturn = NewReturn()
-      .code(nodeSignature(ret))
-      .lineNumber(line(ret))
-      .columnNumber(column(ret))
-    val expr = nullSafeAst(ret.getReturnValue)
+    val cpgReturn = newReturnNode(ret, nodeSignature(ret))
+    val expr      = nullSafeAst(ret.getReturnValue)
     Ast(cpgReturn).withChild(expr).withArgEdge(cpgReturn, expr.root)
   }
 
@@ -93,7 +87,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astsForLabelStatement(label: IASTLabelStatement): Seq[Ast] = {
-    val cpgLabel    = newJumpTarget(label)
+    val cpgLabel    = newJumpTargetNode(label)
     val nestedStmts = nullSafeAst(label.getNestedStatement)
     Ast(cpgLabel) +: nestedStmts
   }
@@ -127,13 +121,13 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
-    val labelNode = newJumpTarget(caseStmt)
+    val labelNode = newJumpTargetNode(caseStmt)
     val stmt      = nullSafeAst(caseStmt.getExpression)
     Seq(Ast(labelNode), stmt)
   }
 
   private def astForDefaultStatement(caseStmt: IASTDefaultStatement): Ast = {
-    Ast(newJumpTarget(caseStmt))
+    Ast(newJumpTargetNode(caseStmt))
   }
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {
@@ -181,10 +175,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val code    = s"for ($codeInit$codeCond;$codeIter)"
     val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code)
 
-    val initAstBlock = NewBlock()
-      .typeFullName(registerType(Defines.voidTypeName))
-      .lineNumber(line(forStmt))
-      .columnNumber(column(forStmt))
+    val initAstBlock = newBlockNode(forStmt, registerType(Defines.voidTypeName))
     scope.pushNewScope(initAstBlock)
     val initAst = Ast(initAstBlock).withChildren(nullSafeAst(forStmt.getInitializerStatement, 1))
     scope.popScope()
@@ -243,11 +234,8 @@ trait AstForStatementsCreator { this: AstCreator =>
         val a = nullSafeAst(ifStmt.getConditionExpression)
         (c, a)
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
-        val c = s"if (${nullSafeCode(s.getConditionDeclaration)})"
-        val exprBlock = NewBlock()
-          .typeFullName(registerType(Defines.voidTypeName))
-          .lineNumber(line(s.getConditionDeclaration))
-          .columnNumber(column(s.getConditionDeclaration))
+        val c         = s"if (${nullSafeCode(s.getConditionDeclaration)})"
+        val exprBlock = newBlockNode(s.getConditionDeclaration, Defines.voidTypeName)
         scope.pushNewScope(exprBlock)
         val a        = astsForDeclaration(s.getConditionDeclaration)
         val blockAst = Ast(exprBlock).withChildren(a)
@@ -260,10 +248,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val thenAst = ifStmt.getThenClause match {
       case block: IASTCompoundStatement => astForBlockStatement(block)
       case other if other != null =>
-        val thenBlock = NewBlock()
-          .typeFullName(registerType(Defines.voidTypeName))
-          .lineNumber(line(other))
-          .columnNumber(column(other))
+        val thenBlock = newBlockNode(other, Defines.voidTypeName)
         scope.pushNewScope(thenBlock)
         val a        = astsForStatement(other)
         val blockAst = Ast(thenBlock).withChildren(a)
@@ -278,11 +263,8 @@ trait AstForStatementsCreator { this: AstCreator =>
         val elseAst  = astForBlockStatement(block)
         Ast(elseNode).withChild(elseAst)
       case other if other != null =>
-        val elseNode = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
-        val elseBlock = NewBlock()
-          .typeFullName(registerType(Defines.voidTypeName))
-          .lineNumber(line(other))
-          .columnNumber(column(other))
+        val elseNode  = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
+        val elseBlock = newBlockNode(other, Defines.voidTypeName)
         scope.pushNewScope(elseBlock)
         val a        = astsForStatement(other)
         val blockAst = Ast(elseBlock).withChildren(a)

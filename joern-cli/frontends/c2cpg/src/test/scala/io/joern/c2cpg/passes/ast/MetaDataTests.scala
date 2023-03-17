@@ -7,7 +7,6 @@ import io.joern.x2cpg.layers.ControlFlow
 import io.joern.x2cpg.layers.TypeRelations
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 
 class MetaDataTests extends CCodeToCpgSuite {
 

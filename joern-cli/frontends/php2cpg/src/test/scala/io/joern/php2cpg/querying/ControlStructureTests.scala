@@ -1,7 +1,7 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
-import io.joern.php2cpg.parser.Domain.PhpBuiltins
+import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
@@ -871,16 +871,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
                 cTarget: JumpTarget,
                 otherValue: Literal
               ) =>
-            aTarget.code shouldBe "$a"
+            aTarget.code shouldBe "case $a"
             aTarget.lineNumber shouldBe Some(3)
 
             aValue.code shouldBe "\"A\""
             aValue.lineNumber shouldBe Some(3)
 
-            bTarget.code shouldBe "$b"
+            bTarget.code shouldBe "case $b"
             bTarget.lineNumber shouldBe Some(4)
 
-            cTarget.code shouldBe "$c"
+            cTarget.code shouldBe "case $c"
             cTarget.lineNumber shouldBe Some(4)
 
             otherValue.code shouldBe "\"NOT A\""
@@ -920,16 +920,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
               defaultTarget: JumpTarget,
               defaultValue: Literal
             ) =>
-          aTarget.code shouldBe "$a"
+          aTarget.code shouldBe "case $a"
           aTarget.lineNumber shouldBe Some(3)
 
           aValue.code shouldBe "\"A\""
           aValue.lineNumber shouldBe Some(3)
 
-          bTarget.code shouldBe "$b"
+          bTarget.code shouldBe "case $b"
           bTarget.lineNumber shouldBe Some(4)
 
-          cTarget.code shouldBe "$c"
+          cTarget.code shouldBe "case $c"
           cTarget.lineNumber shouldBe Some(4)
 
           otherValue.code shouldBe "\"NOT A\""
@@ -1071,7 +1071,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         currentCall.name shouldBe "current"
         currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
         currentCall.code shouldBe "$iter_tmp0->current()"
-        inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
+        inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"
           iterRecv.argumentIndex shouldBe 0
         }
@@ -1089,7 +1089,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       nextCall.name shouldBe "next"
       nextCall.methodFullName shouldBe "Iterator.next:void()"
       nextCall.code shouldBe "$iter_tmp0->next()"
-      inside(nextCall.receiver.l) { case List(iterTmp: Identifier) =>
+      inside(nextCall.argument(0).l) { case List(iterTmp: Identifier) =>
         iterTmp.name shouldBe "iter_tmp0"
         iterTmp.code shouldBe "$iter_tmp0"
         iterTmp.argumentIndex shouldBe 0
@@ -1143,7 +1143,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           currentCall.name shouldBe "current"
           currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
           currentCall.code shouldBe "$iter_tmp0->current()"
-          inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
+          inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
             iterRecv.name shouldBe "iter_tmp0"
             iterRecv.argumentIndex shouldBe 0
           }
@@ -1190,7 +1190,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       valInit.name shouldBe Operators.assignment
       valInit.code shouldBe "$key => $val = $iter_tmp0->current()"
       inside(valInit.argument.l) { case List(valPair: Call, currentCall: Call) =>
-        valPair.name shouldBe PhpBuiltins.doubleArrow
+        valPair.name shouldBe PhpOperators.doubleArrow
         valPair.code shouldBe "$key => $val"
         inside(valPair.argument.l) { case List(keyId: Identifier, valId: Identifier) =>
           keyId.name shouldBe "key"
@@ -1200,7 +1200,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         currentCall.name shouldBe "current"
         currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
         currentCall.code shouldBe "$iter_tmp0->current()"
-        inside(currentCall.receiver.l) { case List(iterRecv: Identifier) =>
+        inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"
           iterRecv.argumentIndex shouldBe 0
         }

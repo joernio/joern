@@ -23,15 +23,15 @@ class Scope {
     scopeNode: NewNode,
     capturingRefId: Option[NewNode]
   ): Unit =
-    stack = Some(new MethodScopeElement(methodFullName, capturingRefId, name, scopeNode, surroundingScope = stack))
+    stack = Option(new MethodScopeElement(methodFullName, capturingRefId, name, scopeNode, surroundingScope = stack))
 
   def pushNewBlockScope(scopeNode: NewNode): Unit = {
     peek match {
       case Some(stackTop) =>
-        stack = Some(new BlockScopeElement(stackTop.subScopeCounter.toString, scopeNode, surroundingScope = stack))
+        stack = Option(new BlockScopeElement(stackTop.subScopeCounter.toString, scopeNode, surroundingScope = stack))
         stackTop.subScopeCounter += 1
       case None =>
-        stack = Some(new BlockScopeElement("0", scopeNode, surroundingScope = stack))
+        stack = Option(new BlockScopeElement("0", scopeNode, surroundingScope = stack))
     }
   }
 
@@ -82,7 +82,7 @@ class Scope {
 }
 
 object Scope {
-  def getEnclosingMethodScopeNode(scopeHead: Option[ScopeElement]): NewNode =
+  private def getEnclosingMethodScopeNode(scopeHead: Option[ScopeElement]): NewNode =
     getEnclosingMethodScopeElement(scopeHead).scopeNode
 
   def getEnclosingMethodScopeElement(scopeHead: Option[ScopeElement]): MethodScopeElement = {

@@ -1,9 +1,9 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -23,6 +23,26 @@ abstract class AstCreatorBase(filename: String) {
       .fullName(fullName)
       .filename(absPath)
       .order(1)
+  }
+
+  /** Creates an AST that represents an annotation, including its content (annotation parameter assignments).
+    */
+  def annotationAst(annotation: NewAnnotation, children: Seq[Ast]): Ast = {
+    val annotationAst = Ast(annotation)
+    annotationAst.withChildren(children)
+  }
+
+  /** Creates an AST that represents an annotation assignment with a name for the assigned value, its overall code, and
+    * the respective assignment AST.
+    */
+  def annotationAssignmentAst(assignmentValueName: String, code: String, assignmentAst: Ast): Ast = {
+    val parameter      = NewAnnotationParameter().code(assignmentValueName)
+    val assign         = NewAnnotationParameterAssign().code(code)
+    val assignChildren = List(Ast(parameter), assignmentAst)
+    setArgumentIndices(assignChildren)
+    Ast(assign)
+      .withChild(Ast(parameter))
+      .withChild(assignmentAst)
   }
 
   /** Creates an AST that represents an entire method, including its content.
@@ -65,24 +85,9 @@ abstract class AstCreatorBase(filename: String) {
   ): Ast =
     Ast(method)
       .withChildren(parameters.map(Ast(_)))
+      .withChild(Ast(NewBlock()))
       .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))
-
-  /** Create a method return node
-    */
-  def methodReturnNode(
-    tfn: String,
-    dtfn: Option[String] = None,
-    line: Option[Integer],
-    column: Option[Integer]
-  ): NewMethodReturn =
-    NewMethodReturn()
-      .typeFullName(tfn)
-      .dynamicTypeHintFullName(dtfn)
-      .code(tfn)
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .lineNumber(line)
-      .columnNumber(column)
 
   def staticInitMethodAst(initAsts: List[Ast], fullName: String, signature: Option[String], returnType: String): Ast = {
     val methodNode = NewMethod()
@@ -113,13 +118,13 @@ abstract class AstCreatorBase(filename: String) {
   def controlStructureAst(
     controlStructureNode: NewControlStructure,
     condition: Option[Ast],
-    children: List[Ast] = List(),
+    children: Seq[Ast] = Seq(),
     placeConditionLast: Boolean = false
   ): Ast = {
     condition match {
       case Some(conditionAst) =>
         Ast(controlStructureNode)
-          .withChildren(if (placeConditionLast) children ++ List(conditionAst) else conditionAst :: children)
+          .withChildren(if (placeConditionLast) children :+ conditionAst else conditionAst +: children)
           .withConditionEdges(controlStructureNode, List(conditionAst.root).flatten)
       case _ =>
         Ast(controlStructureNode)
@@ -129,12 +134,44 @@ abstract class AstCreatorBase(filename: String) {
 
   def wrapMultipleInBlock(asts: Seq[Ast], lineNumber: Option[Integer]): Ast = {
     asts.toList match {
-      case Nil => blockAst(NewBlock().lineNumber(lineNumber))
-
+      case Nil        => blockAst(NewBlock().lineNumber(lineNumber))
       case ast :: Nil => ast
-
-      case asts => blockAst(NewBlock().lineNumber(lineNumber), asts)
+      case astList    => blockAst(NewBlock().lineNumber(lineNumber), astList)
     }
+  }
+
+  def whileAst(
+    condition: Option[Ast],
+    body: Seq[Ast],
+    code: Option[String] = None,
+    lineNumber: Option[Integer] = None,
+    columnNumber: Option[Integer] = None
+  ): Ast = {
+    var whileNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.WHILE)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+    if (code.isDefined) {
+      whileNode = whileNode.code(code.get)
+    }
+    controlStructureAst(whileNode, condition, body)
+  }
+
+  def doWhileAst(
+    condition: Option[Ast],
+    body: Seq[Ast],
+    code: Option[String] = None,
+    lineNumber: Option[Integer] = None,
+    columnNumber: Option[Integer] = None
+  ): Ast = {
+    var doWhileNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.DO)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+    if (code.isDefined) {
+      doWhileNode = doWhileNode.code(code.get)
+    }
+    controlStructureAst(doWhileNode, condition, body, placeConditionLast = true)
   }
 
   def forAst(
@@ -162,7 +199,6 @@ abstract class AstCreatorBase(filename: String) {
     tryBodyAst.root.collect { case x: ExpressionNew => x }.foreach(_.order = 1)
     catchAsts.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 2)
     finallyAst.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 3)
-
     Ast(tryNode)
       .withChild(tryBodyAst)
       .withChildren(catchAsts)
@@ -176,38 +212,70 @@ abstract class AstCreatorBase(filename: String) {
     Ast(blockNode).withChildren(statements)
   }
 
-  /** For a given call node, arguments, and optionally, a receiver, create an AST that represents the call site. The
-    * main purpose of this method is to automatically assign the correct argument indices.
+  /** Create an abstract syntax tree for a call, including CPG-specific edges required for arguments and the receiver.
+    *
+    * Our call representation is inspired by ECMAScript, that is, in addition to arguments, a call has a base and a
+    * receiver. For languages other than Javascript, leave `receiver` empty for now.
+    *
+    * @param callNode
+    *   the node that represents the entire call
+    * @param arguments
+    *   arguments (without the base argument (instance))
+    * @param base
+    *   the value to use as `this` in the method call.
+    * @param receiver
+    *   the object in which the property lookup is performed
     */
   def callAst(
     callNode: NewCall,
     arguments: Seq[Ast] = List(),
-    receiver: Option[Ast] = None,
-    withRecvArgEdge: Boolean = false
+    base: Option[Ast] = None,
+    receiver: Option[Ast] = None
   ): Ast = {
-    val receiverRoot = receiver.flatMap(_.root).toList
-    val rcv          = receiver.getOrElse(Ast())
-    receiverRoot match {
+
+    setArgumentIndices(arguments)
+
+    val baseRoot = base.flatMap(_.root).toList
+    val bse      = base.getOrElse(Ast())
+    baseRoot match {
       case List(x: ExpressionNew) =>
         x.argumentIndex = 0
       case _ =>
     }
 
-    val recvArgEdgeDest = if (withRecvArgEdge) receiverRoot else Nil
+    val receiverRoot = if (receiver.isEmpty && base.nonEmpty) {
+      baseRoot
+    } else {
+      val r = receiver.flatMap(_.root).toList
+      r match {
+        case List(x: ExpressionNew) =>
+          x.argumentIndex = -1
+        case _ =>
+      }
+      r
+    }
 
-    setArgumentIndices(arguments)
+    val rcvAst = receiver.getOrElse(Ast())
+
     Ast(callNode)
-      .withChild(rcv)
+      .withChild(rcvAst)
+      .withChild(bse)
       .withChildren(arguments)
-      .withArgEdges(callNode, recvArgEdgeDest)
+      .withArgEdges(callNode, baseRoot)
       .withArgEdges(callNode, arguments.flatMap(_.root))
       .withReceiverEdges(callNode, receiverRoot)
   }
 
   def setArgumentIndices(arguments: Seq[Ast]): Unit = {
-    withIndex(arguments) { case (a, i) =>
-      a.root.collect { case x: ExpressionNew =>
-        x.argumentIndex = i
+    var currIndex = 1
+    arguments.foreach { a =>
+      a.root match {
+        case Some(x: ExpressionNew) =>
+          x.argumentIndex = currIndex
+          currIndex = currIndex + 1
+        case None => // do nothing
+        case _ =>
+          currIndex = currIndex + 1
       }
     }
   }

@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.frontend
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.{NodeOps, jIteratortoTraversal}
 
@@ -12,7 +12,7 @@ import scala.collection.mutable
 /** The Javascript specific call linker links static call sites (by full name) and call sites to methods in the same
   * file (by name).
   */
-class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class JavascriptCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   private type MethodsByNameAndFileType = mutable.HashMap[(String, String), Method]
   private type MethodsByFullNameType    = mutable.HashMap[String, Method]
@@ -47,11 +47,11 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
         .argument(1)
         .flatMap {
           case assignee: Identifier if isStaticSingleAssignmentLocal(assignee) && assignee.method.name == ":program" =>
-            Some(assignee.name)
+            Option(assignee.name)
           case assignee: Call
               if assignee.methodFullName == Operators.fieldAccess &&
                 (JS_EXPORT_NAMES.contains(assignee.argument(1).code) || assignee.code.startsWith("_tmp_")) =>
-            Some(assignee.argument(2).asInstanceOf[FieldIdentifier].canonicalName)
+            Option(assignee.argument(2).asInstanceOf[FieldIdentifier].canonicalName)
           case _ => None
         }
         .headOption
@@ -89,7 +89,7 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
             diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
           }
           // If there are more than one call edges then it is unsound to set METHOD_FULL_NAME to something
-          if (callees.size > 1)
+          if (callees.sizeIs > 1)
             diffGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, "<unknownFullName>")
         } else {
           // Case 3: We look for a definition of the function within the scope of the caller's file
@@ -137,32 +137,41 @@ class JavascriptCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
       .flatten
   }
 
-  private def fromFieldAccess(c: Call): Option[String] =
-    if (c.methodFullName == Operators.fieldAccess && JS_EXPORT_NAMES.contains(c.argument(1).code)) {
-      Some(c.argument(2).code)
-    } else {
-      None
-    }
+  private def isArgumentFromExport(c: Call): Boolean =
+    c.argument(1).exists(base => JS_EXPORT_NAMES.contains(base.code))
+
+  private def isFieldAccessWithThisBase(fieldAccess: Call): Boolean = {
+    fieldAccess.argument(1).code == "this" ||
+    // nested field accesses like "this.x.y.foo()" are lowered like "(_tmp = this.x.y).foo()"
+    // and the constructor call in "new x().y()" has some intermediate block
+    fieldAccess
+      .repeat(
+        _.argument(1)
+          .union(_.isCall.nameExact(Operators.assignment).argument(2), arg => arg)
+          .union(_.isCall, _.isBlock.astChildren.isCall.nameExact("<operator>.new"))
+          .receiver
+          .isCall
+          .nameExact(Operators.fieldAccess)
+      )(_.until(_.argument(1).isIdentifier.nameExact("this")))
+      .nonEmpty
+  }
+
+  private def fromFieldAccess(c: Call): Option[String] = c.methodFullName match {
+    case Operators.fieldAccess if isArgumentFromExport(c) || isFieldAccessWithThisBase(c) => Option(c.argument(2).code)
+    case _                                                                                => None
+  }
 
   // Obtain method name for dynamic calls where the receiver is an identifier.
   private def getReceiverIdentifierName(call: Call): Option[String] = {
     callReceiverOption(call).flatMap {
-      case identifier: Identifier => Some(identifier.name)
+      case identifier: Identifier => Option(identifier.name)
       case block: Block =>
         block.astChildren.lastOption.flatMap {
           case c: Call => fromFieldAccess(c)
           case _       => None
         }
       case call: Call =>
-        // TODO: remove this if, once we no longer care about compat with CPGs from January 2022 (comma operator is now a block)
-        if (call.methodFullName == "<operator>.commaright") {
-          call.argumentOption(2).flatMap {
-            case c: Call => fromFieldAccess(c)
-            case _       => None
-          }
-        } else {
-          fromFieldAccess(call)
-        }
+        fromFieldAccess(call)
       case _ =>
         None
     }

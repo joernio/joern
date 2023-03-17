@@ -7,12 +7,12 @@ import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.{Stack, _}
+import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase}
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
@@ -83,10 +83,11 @@ class AstCreator(
     val lineNumberEnd   = astNodeInfo.lineNumberEnd
     val columnNumberEnd = astNodeInfo.columnNumberEnd
     val name            = ":program"
-    val fullName        = path + ":" + name
+    val fullName        = s"$path:$name"
 
     val programMethod =
       NewMethod()
+        .order(1)
         .name(name)
         .code(name)
         .fullName(fullName)
@@ -100,12 +101,11 @@ class AstCreator(
 
     val functionTypeAndTypeDeclAst =
       createFunctionTypeAndTypeDeclAst(programMethod, methodAstParentStack.head, name, fullName, path)
-    Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
     rootTypeDecl.push(functionTypeAndTypeDeclAst.nodes.head.asInstanceOf[NewTypeDecl])
 
     methodAstParentStack.push(programMethod)
 
-    val blockNode = NewBlock().typeFullName(Defines.ANY)
+    val blockNode = NewBlock().typeFullName(Defines.Any)
 
     scope.pushNewMethodScope(fullName, name, blockNode, None)
     localAstParentStack.push(blockNode)
@@ -114,25 +114,24 @@ class AstCreator(
       createParameterInNode("this", "this", 0, isVariadic = false, line = lineNumber, column = columnNumber)
 
     val methodChildren = astsForFile(astNodeInfo)
-    setIndices(methodChildren)
+    setArgumentIndices(methodChildren)
 
-    val methodReturn = NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(Defines.ANY)
+    val methodReturn = methodReturnNode(Defines.Any, line = None, column = None)
 
     localAstParentStack.pop()
     scope.popScope()
     methodAstParentStack.pop()
 
-    methodAst(programMethod, List(thisParam), Ast(blockNode).withChildren(methodChildren), methodReturn)
+    functionTypeAndTypeDeclAst.withChild(
+      methodAst(programMethod, List(thisParam), Ast(blockNode).withChildren(methodChildren), methodReturn)
+    )
   }
 
   protected def astForNode(json: Value): Ast = {
     val nodeInfo = createBabelNodeInfo(json)
     nodeInfo.node match {
-      case ClassDeclaration          => astForClass(nodeInfo)
-      case DeclareClass              => astForClass(nodeInfo)
+      case ClassDeclaration          => astForClass(nodeInfo, shouldCreateAssignmentCall = true)
+      case DeclareClass              => astForClass(nodeInfo, shouldCreateAssignmentCall = true)
       case ClassExpression           => astForClass(nodeInfo)
       case TSInterfaceDeclaration    => astForInterface(nodeInfo)
       case TSModuleDeclaration       => astForModule(nodeInfo)
@@ -154,10 +153,12 @@ class AstCreator(
       case ThisExpression            => astForThisExpression(nodeInfo)
       case MemberExpression          => astForMemberExpression(nodeInfo)
       case OptionalMemberExpression  => astForMemberExpression(nodeInfo)
+      case MetaProperty              => astForMetaProperty(nodeInfo)
       case CallExpression            => astForCallExpression(nodeInfo)
       case OptionalCallExpression    => astForCallExpression(nodeInfo)
       case SequenceExpression        => astForSequenceExpression(nodeInfo)
       case AssignmentExpression      => astForAssignmentExpression(nodeInfo)
+      case AssignmentPattern         => astForAssignmentExpression(nodeInfo)
       case BinaryExpression          => astForBinaryExpression(nodeInfo)
       case LogicalExpression         => astForLogicalExpression(nodeInfo)
       case TSAsExpression            => astForCastExpression(nodeInfo)
@@ -168,6 +169,7 @@ class AstCreator(
       case ConditionalExpression     => astForConditionalExpression(nodeInfo)
       case TaggedTemplateExpression  => astForTemplateExpression(nodeInfo)
       case ObjectExpression          => astForObjectExpression(nodeInfo)
+      case TSNonNullExpression       => astForTSNonNullExpression(nodeInfo)
       case YieldExpression           => astForReturnStatement(nodeInfo)
       case ExpressionStatement       => astForExpressionStatement(nodeInfo)
       case IfStatement               => astForIfStatement(nodeInfo)
@@ -187,6 +189,7 @@ class AstCreator(
       case ObjectPattern             => astForObjectExpression(nodeInfo)
       case ArrayPattern              => astForArrayExpression(nodeInfo)
       case Identifier                => astForIdentifier(nodeInfo)
+      case PrivateName               => astForPrivateName(nodeInfo)
       case Super                     => astForSuperKeyword(nodeInfo)
       case Import                    => astForImportKeyword(nodeInfo)
       case TSImportEqualsDeclaration => astForTSImportEqualsDeclaration(nodeInfo)
@@ -201,7 +204,7 @@ class AstCreator(
       case BigIntLiteral             => astForBigIntLiteral(nodeInfo)
       case TemplateLiteral           => astForTemplateLiteral(nodeInfo)
       case TemplateElement           => astForTemplateElement(nodeInfo)
-      case SpreadElement             => astForSpreadElement(nodeInfo)
+      case SpreadElement             => astForSpreadOrRestElement(nodeInfo)
       case JSXElement                => astForJsxElement(nodeInfo)
       case JSXOpeningElement         => astForJsxOpeningElement(nodeInfo)
       case JSXClosingElement         => astForJsxClosingElement(nodeInfo)

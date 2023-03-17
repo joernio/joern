@@ -9,6 +9,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple fragments" should {
 
+    "have correct structure for non null expression" in AstFixture("const foo = bar!") { cpg =>
+      val List(nonNullCall) = cpg.call(Operators.notNullAssert).l
+      val List(arg)         = nonNullCall.argument.isIdentifier.l
+      arg.name shouldBe "bar"
+      arg.code shouldBe "bar"
+    }
+
     "have return node for arrow functions" in AstFixture("const foo = () => 42;") { cpg =>
       // Return node is necessary data flow
       val methodBlock = cpg.method("anonymous").astChildren.isBlock
@@ -32,9 +39,9 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     "have correct type for literals" in AstFixture("let x = 1; let y = 'y'; let z = false;") { cpg =>
       val List(x, y, z) = cpg.literal.l
-      x.typeFullName shouldBe Defines.NUMBER
-      y.typeFullName shouldBe Defines.STRING
-      z.typeFullName shouldBe Defines.BOOLEAN
+      x.typeFullName shouldBe Defines.Number
+      y.typeFullName shouldBe Defines.String
+      z.typeFullName shouldBe Defines.Boolean
     }
 
     "have correct structure for multiple declarators in one place" in AstFixture("let x = 1, y = 2, z = 3;") { cpg =>
@@ -85,7 +92,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct structure for index access" in AstFixture("if(d = decorators[i]) foo();") { cpg =>
       val List(indexAccessCall) = cpg.call(Operators.indexAccess).l
       indexAccessCall.code shouldBe "decorators[i]"
-      val List(baseArg: Identifier, indexArg: Identifier) = indexAccessCall.argument.l
+      val List(baseArg, indexArg) = indexAccessCall.argument.isIdentifier.l
       baseArg.name shouldBe "decorators"
       baseArg.argumentIndex shouldBe 1
       indexArg.name shouldBe "i"
@@ -101,7 +108,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(arrayCall) = xAssignment.astChildren.isCall.l
       arrayCall.name shouldBe EcmaBuiltins.arrayFactory
-      arrayCall.code shouldBe EcmaBuiltins.arrayFactory + "()"
+      arrayCall.code shouldBe s"${EcmaBuiltins.arrayFactory}()"
       arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
@@ -121,7 +128,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(arrayCall) = tmpAssignment.astChildren.isCall.l
       arrayCall.name shouldBe EcmaBuiltins.arrayFactory
-      arrayCall.code shouldBe EcmaBuiltins.arrayFactory + "()"
+      arrayCall.code shouldBe s"${EcmaBuiltins.arrayFactory}()"
       arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       checkLiterals(pushBlock, 1)
@@ -272,7 +279,16 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(block) = assignment.astChildren.isBlock.l
       checkObjectInitialization(block, ("key1", "\"value\""))
       checkObjectInitialization(block, ("key2", "2"))
-      checkObjectInitialization(block, ("rest", "rest"))
+
+      val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.spread").l
+      spreadObjectCall.code shouldBe "...rest"
+      val List(tmpArg: Identifier, restArg) = spreadObjectCall.argument.isIdentifier.l
+      tmpArg.code shouldBe "_tmp_0"
+      tmpArg.name shouldBe "_tmp_0"
+      tmpArg.argumentIndex shouldBe 1
+      restArg.code shouldBe "rest"
+      restArg.name shouldBe "rest"
+      restArg.argumentIndex shouldBe 2
     }
 
     "have correct structure for 1 object with complex rest" in AstFixture("""
@@ -293,7 +309,16 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(block) = assignment.astChildren.isBlock.l
       checkObjectInitialization(block, ("key1", "\"value\""))
       checkObjectInitialization(block, ("key2", "2"))
-      checkObjectInitialization(block, ("_tmp_1", "x.foo()"))
+
+      val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.spread").l
+      spreadObjectCall.code shouldBe "...x.foo()"
+      val List(tmpArg) = spreadObjectCall.argument.isIdentifier.l
+      tmpArg.code shouldBe "_tmp_0"
+      tmpArg.name shouldBe "_tmp_0"
+      tmpArg.argumentIndex shouldBe 1
+      val List(restArg) = spreadObjectCall.argument.isCall.l
+      restArg.code shouldBe "x.foo()"
+      restArg.argumentIndex shouldBe 2
     }
 
     "have correct structure for 1 object with computed values" in AstFixture("""
@@ -334,11 +359,38 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       checkObjectInitialization(block, ("foo", "foo")) // ref to foo
     }
 
-    "have correct structure for object with computed property name" ignore AstFixture("""
+    "have correct structure for object with computed property name" in AstFixture("""
       |var x = {
       | [ 1 + 1 ]: value()
-      |}
-      |""".stripMargin) { _ => }
+      |}""".stripMargin) { cpg =>
+      val List(methodBlock) = cpg.method.nameExact(":program").astChildren.isBlock.l
+      val List(localX)      = methodBlock.local.nameExact("x").l
+      val List(assignment)  = methodBlock.astChildren.isCall.l
+      val List(identifierX) = assignment.astChildren.isIdentifier.l
+
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+
+      val List(block) = assignment.astChildren.isBlock.l
+      checkObjectInitialization(block, ("_computed_object_property_0", "value()"))
+    }
+
+    "have correct structure for object with property names with quotes" in AstFixture("""var x = {
+        | "a": 1,
+        | 'b': 2
+        |}""".stripMargin) { cpg =>
+      val List(methodBlock) = cpg.method.nameExact(":program").astChildren.isBlock.l
+      val List(localX)      = methodBlock.local.nameExact("x").l
+      val List(assignment)  = methodBlock.astChildren.isCall.l
+      val List(identifierX) = assignment.astChildren.isIdentifier.l
+
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
+
+      val List(block) = assignment.astChildren.isBlock.l
+      checkObjectInitialization(block, ("a", "1"))
+      checkObjectInitialization(block, ("b", "2"))
+    }
 
     "have correct structure for conditional expression" in AstFixture("x ? y : z;") { cpg =>
       val List(program) = cpg.method.nameExact(":program").l
@@ -363,8 +415,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       file.name should endWith("code.js")
 
       val List(ns) = cpg.namespaceBlock.l
-      ns.name shouldBe Defines.GLOBAL_NAMESPACE
-      ns.fullName should endWith("code.js:" + Defines.GLOBAL_NAMESPACE)
+      ns.name shouldBe Defines.GlobalNamespace
+      ns.fullName should endWith(s"code.js:${Defines.GlobalNamespace}")
       ns.order shouldBe 1
       ns.filename shouldBe file.name
     }
@@ -374,10 +426,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       file.name should endWith("code.js")
 
       val List(ns) = cpg.namespaceBlock.l
-      ns.name shouldBe Defines.GLOBAL_NAMESPACE
-      ns.fullName should endWith("code.js:" + Defines.GLOBAL_NAMESPACE)
+      ns.name shouldBe Defines.GlobalNamespace
+      ns.fullName should endWith(s"code.js:${Defines.GlobalNamespace}")
       ns.order shouldBe 1
-      ns.method.head.name shouldBe ":program"
+      ns.typeDecl.nameExact(":program").method.head.name shouldBe ":program"
     }
 
     "have correct structure for empty method nested in top level method" in AstFixture("function method(x) {}") { cpg =>
@@ -463,9 +515,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     }
 
     "have two lambda functions in same scope level with different full names" in AstFixture("""
-          | var x = (a) => a
-          | var y = (b) => b
-        """.stripMargin) { cpg =>
+        |var x = (a) => a;
+        |var y = (b) => b;""".stripMargin) { cpg =>
       val lambda1FullName = "code.js::program:anonymous"
       val lambda2FullName = "code.js::program:anonymous1"
 
@@ -488,6 +539,32 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       lambda2MethodRef.methodFullName shouldBe lambda2FullName
     }
 
+    "be correct for lambdas returning lambdas" in AstFixture("() => async () => { }") { cpg =>
+      cpg.method.fullName.sorted.l shouldBe List(
+        "code.js::program",
+        "code.js::program:anonymous",
+        "code.js::program:anonymous:anonymous"
+      )
+      val List(ret) = cpg.method.fullNameExact("code.js::program:anonymous").block.astChildren.isReturn.l
+      ret.code shouldBe "async () => { }"
+      val List(ref) = ret.astChildren.isMethodRef.l
+      ref.methodFullName shouldBe "code.js::program:anonymous:anonymous"
+    }
+
+    "be correct for ThisExpression" in AstFixture("function foo() { this.bar = 1 }") { cpg =>
+      val List(thisIdentifier) = cpg.fieldAccess.argument.isIdentifier.l
+      thisIdentifier.name shouldBe "this"
+      thisIdentifier.code shouldBe "this"
+      thisIdentifier.argumentIndex shouldBe 1
+
+      val List(thisParameter) = cpg.method.name("foo").parameter.l
+      thisParameter.name shouldBe "this"
+      thisParameter.code shouldBe "this"
+
+      val referencingIdentifiers = cpg.method.name("foo").parameter.name("this").referencingIdentifiers.l
+      referencingIdentifiers shouldBe List(thisIdentifier)
+    }
+
     "be correct for call expression" in AstFixture("""
          |function method(x) {
          |  foo(x);
@@ -503,14 +580,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(receiver) = fooCall.receiver.isIdentifier.l
       receiver.name shouldBe "foo"
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(argumentThis) = fooCall.astChildren.isIdentifier.nameExact("this").l
-      argumentThis.order shouldBe 1
       argumentThis.argumentIndex shouldBe 0
 
       val List(argument1) = fooCall.astChildren.isIdentifier.nameExact("x").l
-      argument1.order shouldBe 2
       argument1.argumentIndex shouldBe 1
     }
 
@@ -528,7 +603,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       receiver shouldBe receiverViaAst
       receiver.code shouldBe "(_tmp_0 = x.foo(y)).bar"
       receiver.name shouldBe Operators.fieldAccess
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(barIdentifier) = receiver.astChildren.isFieldIdentifier.l
       barIdentifier.canonicalName shouldBe "bar"
@@ -537,7 +612,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(tmpAssignment) = receiver.astChildren.isCall.l
       tmpAssignment.code shouldBe "(_tmp_0 = x.foo(y))"
       tmpAssignment.name shouldBe "<operator>.assignment"
-      tmpAssignment.order shouldBe 1
 
       val List(tmpIdentifier) = tmpAssignment.astChildren.isIdentifier.l
       tmpIdentifier.name shouldBe "_tmp_0"
@@ -552,11 +626,9 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(thisArg) = barCall.astChildren.isIdentifier.argumentIndex(0).l
       thisArg.name shouldBe "_tmp_0"
-      thisArg.order shouldBe 1
 
       val List(zArg) = barCall.astChildren.isIdentifier.argumentIndex(1).l
       zArg.name shouldBe "z"
-      zArg.order shouldBe 2
     }
 
     "be correct for call on object" in AstFixture("""
@@ -609,10 +681,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(baseArg, arg) = call.argument.l.sortBy(_.order)
       baseArg.code shouldBe "a"
       baseArg.argumentIndex shouldBe 0
-      baseArg.order shouldBe 1
       arg.code shouldBe "x"
       arg.argumentIndex shouldBe 1
-      arg.order shouldBe 2
     }
 
     "have block for while body for while statement with brackets" in AstFixture("while (x < 0) {}") { cpg =>
@@ -658,28 +728,25 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct structure for empty method" in AstFixture("function method(x) {}") { cpg =>
       val List(method) = cpg.method.nameExact("method").l
       method.astChildren.isBlock.size shouldBe 1
-      method.methodReturn.typeFullName shouldBe Defines.ANY
-      method.parameter.index(0).nameExact("this").typeFullName(Defines.ANY).size shouldBe 1
-      method.parameter.index(1).nameExact("x").typeFullName(Defines.ANY).size shouldBe 1
+      method.parameter.index(0).nameExact("this").typeFullName(Defines.Any).size shouldBe 1
+      method.parameter.index(1).nameExact("x").typeFullName(Defines.Any).size shouldBe 1
     }
 
     "have correct structure for empty method with rest parameter" in AstFixture("function method(x, ...args) {}") {
       cpg =>
-        val List(method) = cpg.method.nameExact("method").l
-        method.methodReturn.typeFullName shouldBe Defines.ANY
-
+        val List(method)     = cpg.method.nameExact("method").l
         val List(t, x, args) = method.parameter.l
         t.index shouldBe 0
         t.name shouldBe "this"
-        t.typeFullName shouldBe Defines.ANY
+        t.typeFullName shouldBe Defines.Any
         x.index shouldBe 1
         x.name shouldBe "x"
-        x.typeFullName shouldBe Defines.ANY
+        x.typeFullName shouldBe Defines.Any
         args.index shouldBe 2
         args.name shouldBe "args"
         args.code shouldBe "...args"
         args.isVariadic shouldBe true
-        args.typeFullName shouldBe Defines.ANY
+        args.typeFullName shouldBe Defines.Any
     }
 
     "have correct structure for decl assignment" in AstFixture("function foo(x) { var local = 1; }") { cpg =>
@@ -689,10 +756,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.ANY
+      t.typeFullName shouldBe Defines.Any
       x.index shouldBe 1
       x.name shouldBe "x"
-      x.typeFullName shouldBe Defines.ANY
+      x.typeFullName shouldBe Defines.Any
 
       val List(local) = block.astChildren.isLocal.l
       local.name shouldBe "local"
@@ -711,10 +778,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.ANY
+      t.typeFullName shouldBe Defines.Any
       x.index shouldBe 1
       x.name shouldBe "x"
-      x.typeFullName shouldBe Defines.ANY
+      x.typeFullName shouldBe Defines.Any
 
       val List(local) = block.astChildren.isLocal.l
       local.name shouldBe "local"
@@ -734,13 +801,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x, y) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.ANY
+      t.typeFullName shouldBe Defines.Any
       x.index shouldBe 1
       x.name shouldBe "x"
-      x.typeFullName shouldBe Defines.ANY
+      x.typeFullName shouldBe Defines.Any
       y.index shouldBe 2
       y.name shouldBe "y"
-      y.typeFullName shouldBe Defines.ANY
+      y.typeFullName shouldBe Defines.Any
 
       val List(firstLocal, secondLocal) = block.astChildren.isLocal.l
       firstLocal.name shouldBe "local1"
@@ -1175,6 +1242,20 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
           val List(identifierZ) = nestedSwitchBlock.astChildren.isIdentifier.nameExact("z").l
           identifierZ.order shouldBe 2
       }
+
+      "be correct for switch with lambda" in AstFixture("""
+          |switch ((x) => "") { }
+          |""".stripMargin) { cpg =>
+        val List(program)      = cpg.method.nameExact(":program").l
+        val List(programBlock) = program.astChildren.isBlock.l
+
+        val List(switch) = programBlock.astChildren.isControlStructure.l
+        switch.controlStructureType shouldBe ControlStructureTypes.SWITCH
+
+        val List(switchExpr) = switch.astChildren.isMethodRef.l
+        switchExpr.order shouldBe 1
+        switchExpr.code shouldBe "anonymous"
+      }
     }
 
     "be correct for logical expression '++'" in AstFixture("""
@@ -1310,10 +1391,9 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     }
 
     "be correct for member access used as return" in AstFixture("""
-          |function method(x) {
-          |  return x.a;
-          |}
-        """.stripMargin) { cpg =>
+      |function method(x) {
+      |  return x.a;
+      |}""".stripMargin) { cpg =>
       val List(method)          = cpg.method.nameExact("method").l
       val List(methodBlock)     = method.astChildren.isBlock.l
       val List(returnStatement) = methodBlock.astChildren.isReturn.l
@@ -1361,7 +1441,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       program.astChildren.isBlock.size shouldBe 1
       val blockMethodReturn = program.methodReturn
       blockMethodReturn.code shouldBe "RET"
-      blockMethodReturn.typeFullName shouldBe Defines.ANY
     }
 
   }
@@ -1378,12 +1457,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     val List(call) = node.astChildren.isCall.codeExact(s"_tmp_0.$keyName = $assignedValue").l
     call.methodFullName shouldBe Operators.assignment
 
-    val List(tmpAccess: Call, value) = call.astChildren.l
+    val List(tmpAccess) = call.argument(1).l.isCall.l
     tmpAccess.code shouldBe s"_tmp_0.$keyName"
     tmpAccess.methodFullName shouldBe Operators.fieldAccess
     tmpAccess.argumentIndex shouldBe 1
+    val List(value) = call.argument(2).l
     value.code shouldBe assignedValue
-    value.property(Properties.ARGUMENT_INDEX) shouldBe 2
 
     val List(leftHandSideTmpId) = tmpAccess.astChildren.isIdentifier.nameExact("_tmp_0").l
     leftHandSideTmpId.code shouldBe "_tmp_0"
@@ -1403,7 +1482,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     localI.code shouldBe "i"
 
     val List(iteratorAssignment) =
-      node.astChildren.isCall.codeExact("_iterator_0 = Object.keys(arr)[Symbol.iterator]()").l
+      node.astChildren.isCall.codeExact("_iterator_0 = <operator>.iterator(arr)").l
     iteratorAssignment.name shouldBe Operators.assignment
 
     val List(iteratorAssignmentLhs) = iteratorAssignment.astChildren.isIdentifier.l
@@ -1412,33 +1491,16 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     iteratorAssignmentLhs.argumentIndex shouldBe 1
 
     val List(iteratorAssignmentRhs) = iteratorAssignment.astChildren.isCall.l
-    iteratorAssignmentRhs.code shouldBe "Object.keys(arr)[Symbol.iterator]()"
+    iteratorAssignmentRhs.code shouldBe "<operator>.iterator(arr)"
     iteratorAssignmentRhs.order shouldBe 2
     iteratorAssignmentRhs.argumentIndex shouldBe 2
+    iteratorAssignmentRhs.name shouldBe "<operator>.iterator"
+    iteratorAssignmentRhs.methodFullName shouldBe "<operator>.iterator"
+    iteratorAssignmentRhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-    val List(indexCall) = iteratorAssignmentRhs.astChildren.isCall.l
-    indexCall.name shouldBe Operators.indexAccess
-
-    val List(objectKeysCall) = indexCall.astChildren.isCall.order(1).l
-    objectKeysCall.name shouldBe "keys"
-    objectKeysCall.methodFullName shouldBe "Object.keys"
-    objectKeysCall.code shouldBe "Object.keys(arr)"
-    objectKeysCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-
-    val objectKeysCallArg = objectKeysCall.argument(1).asInstanceOf[Identifier]
+    val objectKeysCallArg = iteratorAssignmentRhs.argument(1).asInstanceOf[Identifier]
     objectKeysCallArg.name shouldBe "arr"
     objectKeysCallArg.order shouldBe 1
-
-    val List(indexAccessCall) = indexCall.astChildren.isCall.order(2).l
-    indexAccessCall.argumentIndex shouldBe 2
-
-    val List(symbolIdentifier) = indexAccessCall.astChildren.isIdentifier.order(1).l
-    symbolIdentifier.name shouldBe "Symbol"
-    symbolIdentifier.argumentIndex shouldBe 1
-
-    val List(iteratorIdentifier) = indexAccessCall.astChildren.isFieldIdentifier.order(2).l
-    iteratorIdentifier.canonicalName shouldBe "iterator"
-    iteratorIdentifier.argumentIndex shouldBe 2
 
     val List(varResult) = node.astChildren.isIdentifier.nameExact("_result_0").l
     varResult.code shouldBe "_result_0"
@@ -1489,23 +1551,19 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     val List(pushCallReceiver) = pushCall.receiver.isCall.l
     pushCallReceiver.name shouldBe Operators.fieldAccess
-    pushCallReceiver.argumentIndex shouldBe 0
+    pushCallReceiver.argumentIndex shouldBe -1
 
     val pushCallReceiverBase = pushCallReceiver.argument(1).asInstanceOf[Identifier]
     pushCallReceiverBase.name shouldBe "_tmp_0"
-    pushCallReceiverBase.order shouldBe 1
 
     val pushCallReceiverMember = pushCallReceiver.argument(2).asInstanceOf[FieldIdentifier]
     pushCallReceiverMember.canonicalName shouldBe "push"
-    pushCallReceiverMember.order shouldBe 2
 
-    val pushCallThis = pushCall.argument(1).asInstanceOf[Identifier]
+    val pushCallThis = pushCall.argument(0).asInstanceOf[Identifier]
     pushCallThis.name shouldBe "_tmp_0"
-    pushCallThis.order shouldBe 1
 
-    val pushCallArg = pushCall.argument(2).asInstanceOf[Literal]
+    val pushCallArg = pushCall.argument(1).asInstanceOf[Literal]
     pushCallArg.code shouldBe element.toString
-    pushCallArg.order shouldBe 2
   }
 
 }

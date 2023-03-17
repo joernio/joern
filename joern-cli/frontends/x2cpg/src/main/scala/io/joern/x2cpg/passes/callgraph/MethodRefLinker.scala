@@ -3,11 +3,12 @@ package io.joern.x2cpg.passes.callgraph
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.joern.x2cpg.passes.callgraph.MethodRefLinker._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb._
 import overflowdb.traversal._
+import overflowdb.traversal.ChainedImplicitsTemp._
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -15,7 +16,7 @@ import scala.jdk.CollectionConverters._
 /** This pass has MethodStubCreator and TypeDeclStubCreator as prerequisite for language frontends which do not provide
   * method stubs and type decl stubs.
   */
-class MethodRefLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class MethodRefLinker(cpg: Cpg) extends CpgPass(cpg) {
   import MethodRefLinker.linkToSingle
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {

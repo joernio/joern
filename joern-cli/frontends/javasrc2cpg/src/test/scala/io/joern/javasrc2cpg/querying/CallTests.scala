@@ -11,6 +11,56 @@ import overflowdb.traversal.jIteratortoTraversal
 import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
+
+  "constructor init method call" should {
+    lazy val cpg = code("""
+        |class Foo {
+        |  Foo(long aaa) {
+        |  }
+        |  static void method() {
+        |    Foo foo = new Foo(1);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct methodFullName and signature" in {
+      val initCall = cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).head
+      initCall.signature shouldBe "void(long)"
+      initCall.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(long)"
+    }
+
+    "contain a call to `<init>` with one of the arguments containing a REF edge to the newly-defined local" in {
+      cpg.call.nameExact("<init>").argument(0).isIdentifier.outE.collectAll[Ref].l should not be List()
+    }
+  }
+
+  "calls to static methods in different files should be resolved correctly" in {
+    val cpg = code(
+      """
+        |public class Foo {
+        |  public static Foo foo(String arg) {
+        |    return new Foo();
+        |  }
+        |
+        |  public static Foo foo(int x) {
+        |    return new Foo();
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "Foo.java"
+    ).moreCode("""
+        |class Bar {
+        |  public static void bar(String barArg) {
+        |    Foo.foo(barArg);
+        |  }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("bar").call.l) { case List(fooCall) =>
+      fooCall.methodFullName shouldBe "Foo.foo:Foo(java.lang.String)"
+    }
+  }
+
   "calls to unresolved lambda parameters" should {
     val cpg = code("""
 		 |class Foo {
@@ -46,7 +96,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         .fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()")
         .call
         .nameExact(io.joern.x2cpg.Defines.ConstructorMethodName)
-        .receiver
+        .argument(0)
         .l match {
         case List(thisNode: Identifier) =>
           thisNode.outE.collectAll[Ref].map(_.inNode).l match {
@@ -70,7 +120,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
 			 |  public void foo(int x) {}
 			 |}""".stripMargin)
 
-      cpg.method.name("test").call.name("foo").receiver.outE.collectAll[Ref].l match {
+      cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l match {
         case List(ref) =>
           ref.inNode match {
             case param: MethodParameterIn =>
@@ -95,7 +145,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
                       |  public void foo(int x) {}
                       |}""".stripMargin)
 
-      cpg.method.name("test").call.name("foo").receiver.outE.collectAll[Ref].l match {
+      cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l match {
         case List(ref) =>
           ref.inNode match {
             case param: MethodParameterIn =>
@@ -270,7 +320,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "create a `super` receiver with fields correctly set" in {
-      val superReceiver = cpg.call.name("toString").receiver.collectAll[Identifier].head
+      val superReceiver = cpg.call.name("toString").argument(0).collectAll[Identifier].head
       superReceiver.name shouldBe "this"
       superReceiver.code shouldBe "super"
       superReceiver.typeFullName shouldBe "java.lang.Object"
@@ -350,7 +400,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
 
   "should allow traversing from call to arguments" in {
     cpg.call("add").argument.size shouldBe 3
-    val List(arg0) = cpg.call("add").receiver.l
+    val List(arg0) = cpg.call("add").argument(0).l
     arg0.isInstanceOf[nodes.Identifier] shouldBe true
     arg0.asInstanceOf[nodes.Identifier].name shouldBe "this"
     arg0.code shouldBe "this"

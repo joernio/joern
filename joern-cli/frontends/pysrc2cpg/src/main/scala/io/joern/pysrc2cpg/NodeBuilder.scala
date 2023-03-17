@@ -1,6 +1,9 @@
 package io.joern.pysrc2cpg
 
+import io.joern.pysrc2cpg.PythonAstVisitor.{allBuiltinClasses, builtinPrefix, typingClassesV3, typingPrefix}
+import io.joern.pythonparser.ast
 import io.joern.x2cpg.Defines
+import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, nodes}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -117,49 +120,51 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
 
   def methodParameterNode(
     name: String,
-    index: Int,
     isVariadic: Boolean,
-    lineAndColumn: LineAndColumn
+    lineAndColumn: LineAndColumn,
+    index: Option[Int] = None,
+    typeHint: Option[ast.iexpr] = None
   ): nodes.NewMethodParameterIn = {
     val methodParameterNode = nodes
       .NewMethodParameterIn()
       .name(name)
       .code(name)
-      .index(index)
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
       .typeFullName(Constants.ANY)
       .isVariadic(isVariadic)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+    index.foreach(idx => methodParameterNode.index(idx))
+    methodParameterNode.dynamicTypeHintFullName(extractTypesFromHint(typeHint))
     addNodeToDiff(methodParameterNode)
   }
 
-  def methodParameterNode(
-    name: String,
-    isVariadic: Boolean,
-    lineAndColumn: LineAndColumn
-  ): nodes.NewMethodParameterIn = {
-    val methodParameterNode = nodes
-      .NewMethodParameterIn()
-      .name(name)
-      .code(name)
-      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
-      .typeFullName(Constants.ANY)
-      .isVariadic(isVariadic)
-      .lineNumber(lineAndColumn.line)
-      .columnNumber(lineAndColumn.column)
-    addNodeToDiff(methodParameterNode)
+  def extractTypesFromHint(typeHint: Option[ast.iexpr] = None): Seq[String] = {
+    typeHint match {
+      case Some(hint) =>
+        val nameSequence = hint match {
+          case n: ast.Name => Seq(n.id)
+          // TODO: Definitely a place for follow up handling of generics - currently only take the polymorphic type
+          //  without type args. To see the type arguments, see ast.Subscript.slice
+          case attr: ast.Attribute =>
+            extractTypesFromHint(Some(attr.value)).map { x => x + "." + attr.attr }
+          case n: ast.Subscript if n.value.isInstanceOf[ast.Name] => Seq(n.value.asInstanceOf[ast.Name].id)
+          case _                                                  => Seq[String]()
+        }
+        nameSequence.map { typeName =>
+          if (allBuiltinClasses.contains(typeName)) s"$builtinPrefix$typeName"
+          else if (typingClassesV3.contains(typeName)) s"$typingPrefix$typeName"
+          else typeName
+        }
+      case _ =>
+        Seq()
+    }
   }
 
   def methodReturnNode(dynamicTypeHintFullName: Option[String], lineAndColumn: LineAndColumn): nodes.NewMethodReturn = {
-    val methodReturnNode = nodes
-      .NewMethodReturn()
-      .code("RET")
+    val methodReturnNode = NodeBuilders
+      .methodReturnNode(Constants.ANY, dynamicTypeHintFullName, Some(lineAndColumn.line), Some(lineAndColumn.column))
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
-      .typeFullName(Constants.ANY)
-      .dynamicTypeHintFullName(dynamicTypeHintFullName.toList)
-      .lineNumber(lineAndColumn.line)
-      .columnNumber(lineAndColumn.column)
 
     addNodeToDiff(methodReturnNode)
   }

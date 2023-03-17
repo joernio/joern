@@ -1,6 +1,6 @@
 package io.joern.php2cpg.querying
 
-import io.joern.php2cpg.parser.Domain.PhpBuiltins
+import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local}
@@ -50,7 +50,7 @@ class ArrayTests extends PhpCode2CpgFixture {
     val cpg = code("<?php\n$array[]")
 
     inside(cpg.call.l) { case List(access) =>
-      access.name shouldBe PhpBuiltins.emptyArrayIdx
+      access.name shouldBe PhpOperators.emptyArrayIdx
       access.code shouldBe "$array[]"
       access.lineNumber shouldBe Some(2)
 

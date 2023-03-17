@@ -30,7 +30,7 @@ object CdtParser {
 
 class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorStatementsLogger {
 
-  import CdtParser._
+  import io.joern.c2cpg.parser.CdtParser._
 
   private val headerFileFinder = new HeaderFileFinder(config.inputPath)
   private val parserConfig     = ParserConfig.fromConfig(config)
@@ -65,13 +65,13 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
       val scannerInfo         = createScannerInfo(realPath.path)
       Try(lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)) match {
         case Failure(e) =>
-          ParseResult(None, failure = Some(e))
+          ParseResult(None, failure = Option(e))
         case Success(translationUnit) =>
           val problems = CPPVisitor.getProblems(translationUnit)
           if (parserConfig.logProblems) logProblems(problems.toList)
           if (parserConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
           ParseResult(
-            Some(translationUnit),
+            Option(translationUnit),
             preprocessorErrorCount = translationUnit.getPreprocessorProblemsCount,
             problems = problems.length
           )
@@ -79,7 +79,7 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
     } else {
       ParseResult(
         None,
-        failure = Some(new NoSuchFileException(s"File '$realPath' does not exist. Check for broken symlinks!"))
+        failure = Option(new NoSuchFileException(s"File '$realPath' does not exist. Check for broken symlinks!"))
       )
     }
   }
@@ -93,7 +93,7 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
     parseResult match {
       case ParseResult(Some(t), c, p, _) =>
         logger.info(s"Parsed '${t.getFilePath}' ($c preprocessor error(s), $p problems)")
-        Some(t)
+        Option(t)
       case ParseResult(_, _, _, maybeThrowable) =>
         logger.warn(
           s"Failed to parse '$file': ${maybeThrowable.map(extractParseException).getOrElse("Unknown parse error!")}"

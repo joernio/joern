@@ -2,10 +2,10 @@ package io.joern.x2cpg.passes.base
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.joern.x2cpg.passes.callgraph.MethodRefLinker.{linkToSingle, typeDeclFullNameToNode, typeFullNameToNode}
 
-class TypeUsagePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class TypeUsagePass(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     // Create REF edges from TYPE nodes to TYPE_DECL

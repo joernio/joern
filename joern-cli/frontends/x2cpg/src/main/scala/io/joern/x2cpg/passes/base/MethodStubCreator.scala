@@ -1,26 +1,28 @@
 package io.joern.x2cpg.passes.base
 
 import io.joern.x2cpg.Defines
+import io.joern.x2cpg.passes.base.MethodStubCreator.createMethodStub
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes}
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
-import scala.util.Try
+import scala.util.{Success, Try}
 
-case class NameAndSignature(name: String, signature: String, fullName: String)
+case class CallSummary(name: String, signature: String, fullName: String, dispatchType: String)
 
 /** This pass has no other pass as prerequisite.
   */
-class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
 
   // Since the method fullNames for fuzzyc are not unique, we do not have
   // a 1to1 relation and may overwrite some values. This is ok for now.
   private val methodFullNameToNode   = mutable.LinkedHashMap[String, Method]()
-  private val methodToParameterCount = mutable.LinkedHashMap[NameAndSignature, Int]()
+  private val methodToParameterCount = mutable.LinkedHashMap[CallSummary, Int]()
 
   override def run(dstGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
     for (method <- cpg.method) {
@@ -28,14 +30,17 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
 
     for (call <- cpg.call if call.methodFullName != Defines.DynamicCallUnknownFallName) {
-      methodToParameterCount.put(NameAndSignature(call.name, call.signature, call.methodFullName), call.argument.size)
+      methodToParameterCount.put(
+        CallSummary(call.name, call.signature, call.methodFullName, call.dispatchType),
+        call.argument.size
+      )
     }
 
     for (
-      (NameAndSignature(name, signature, fullName), parameterCount) <- methodToParameterCount
+      (CallSummary(name, signature, fullName, dispatchType), parameterCount) <- methodToParameterCount
       if !methodFullNameToNode.contains(fullName)
     ) {
-      createMethodStub(name, fullName, signature, parameterCount, dstGraph)
+      createMethodStub(name, fullName, signature, dispatchType, parameterCount, dstGraph)
     }
   }
 
@@ -45,9 +50,19 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
     super.finish()
   }
 
+}
+
+object MethodStubCreator {
+
   private def addLineNumberInfo(methodNode: NewMethod, fullName: String): NewMethod = {
     val s = fullName.split(":")
-    if (s.size == 5 && Try { s(1).toInt }.isSuccess && Try { s(2).toInt }.isSuccess) {
+    if (
+      s.size == 5 && Try {
+        s(1).toInt
+      }.isSuccess && Try {
+        s(2).toInt
+      }.isSuccess
+    ) {
       val filename      = s(0)
       val lineNumber    = s(1).toInt
       val lineNumberEnd = s(2).toInt
@@ -60,28 +75,63 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
   }
 
-  private def createMethodStub(
+  /** Will attempt to link the method stub to a type declaration if one exists. This uses the `name` and `fullName`
+    * properties of the stub to determine the type declaration.
+    *
+    * Method full names take 2 designs in the CPG. This approach works for both.
+    *
+    * 1: Dynamic languages do `filename`:`some_path`.`call_name`.`optional_info`
+    *
+    * 2: Static languages do `namespace`.`type_name`.`call_name`:`signature`
+    *
+    * @param stub
+    *   the method stub.
+    * @return
+    *   the type declaration string, if successfully generated.
+    */
+  private def addTypeDeclInfo(stub: NewMethod): Option[String] = {
+    Try {
+      val nameIdx = stub.fullName.indexOf(stub.name)
+      stub.fullName.substring(0, nameIdx - 1)
+    } match {
+      case Success(typeFullName) if typeFullName != "" && !typeFullName.startsWith("<operator>") =>
+        stub.astParentFullName(typeFullName).astParentType(NodeTypes.TYPE_DECL)
+        Some(typeFullName)
+      case _ => None
+    }
+  }
+
+  def createMethodStub(
     name: String,
     fullName: String,
     signature: String,
+    dispatchType: String,
     parameterCount: Int,
-    dstGraph: DiffGraphBuilder
+    dstGraph: DiffGraphBuilder,
+    isExternal: Boolean = true
   ): NewMethod = {
-    val methodNode = addLineNumberInfo(
-      NewMethod()
-        .name(name)
-        .fullName(fullName)
-        .isExternal(true)
-        .signature(signature)
-        .astParentType(NodeTypes.NAMESPACE_BLOCK)
-        .astParentFullName("<global>")
-        .order(0),
-      fullName
-    )
+    val methodNode = NewMethod()
+      .name(name)
+      .fullName(fullName)
+      .isExternal(isExternal)
+      .signature(signature)
+      .astParentType(NodeTypes.NAMESPACE_BLOCK)
+      .astParentFullName("<global>")
+      .order(0)
+
+    addLineNumberInfo(methodNode, fullName)
+    addTypeDeclInfo(methodNode)
 
     dstGraph.addNode(methodNode)
 
-    (1 to parameterCount).foreach { parameterOrder =>
+    val firstParameterIndex = dispatchType match {
+      case DispatchTypes.DYNAMIC_DISPATCH =>
+        0
+      case _ =>
+        1
+    }
+
+    (firstParameterIndex to parameterCount).foreach { parameterOrder =>
       val nameAndCode = s"p$parameterOrder"
       val param = NewMethodParameterIn()
         .code(nameAndCode)
@@ -113,5 +163,4 @@ class MethodStubCreator(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
     methodNode
   }
-
 }

@@ -3,7 +3,7 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.datastructures.CGlobal
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.{Ast, AstCreatorBase}
@@ -43,6 +43,8 @@ class AstCreator(
   // To achieve this we need this extra stack.
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
+  override def absolutePath(filename: String): String = filename
+
   def createAst(): DiffGraphBuilder = {
     val ast = astForTranslationUnit(cdtAst)
     Ast.storeInDiffGraph(ast, diffGraph)
@@ -53,7 +55,7 @@ class AstCreator(
     val namespaceBlock = globalNamespaceBlock()
     methodAstParentStack.push(namespaceBlock)
     val ast = Ast(namespaceBlock).withChild(
-      astInFakeMethod(namespaceBlock.fullName, absolutePath(filename), iASTTranslationUnit)
+      astInFakeMethod(namespaceBlock.fullName, fileName(iASTTranslationUnit), iASTTranslationUnit)
     )
     if (config.includeComments) {
       val commentsAsts = cdtAst.getComments.map(comment => astForComment(comment)).toIndexedSeq
@@ -66,58 +68,32 @@ class AstCreator(
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
     */
   private def astInFakeMethod(fullName: String, path: String, iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val allDecls      = iASTTranslationUnit.getDeclarations
-    val lineNumber    = allDecls.headOption.flatMap(line)
-    val lineNumberEnd = allDecls.lastOption.flatMap(lineEnd)
+    val allDecls = iASTTranslationUnit.getDeclarations.toSeq
+    val name     = NamespaceTraversal.globalNamespaceName
 
-    val name = NamespaceTraversal.globalNamespaceName
-    val fakeGlobalTypeDecl = newTypeDecl(
-      name,
-      fullName,
-      filename,
-      name,
-      NodeTypes.NAMESPACE_BLOCK,
-      fullName,
-      line = lineNumber,
-      column = lineNumberEnd
-    )
-
+    val fakeGlobalTypeDecl =
+      newTypeDeclNode(iASTTranslationUnit, name, fullName, filename, name, NodeTypes.NAMESPACE_BLOCK, fullName)
     methodAstParentStack.push(fakeGlobalTypeDecl)
 
     val fakeGlobalMethod =
-      NewMethod()
-        .name(name)
-        .code(name)
-        .fullName(fullName)
-        .filename(path)
-        .lineNumber(lineNumber)
-        .lineNumberEnd(lineNumberEnd)
-        .astParentType(NodeTypes.TYPE_DECL)
-        .astParentFullName(fullName)
-
+      newMethodNode(iASTTranslationUnit, name, name, fullName, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewScope(fakeGlobalMethod)
 
-    val blockNode = NewBlock()
-      .typeFullName("ANY")
+    val blockNode = newBlockNode(iASTTranslationUnit, registerType(Defines.anyTypeName))
 
     val declsAsts = allDecls.flatMap { stmt =>
-      val r =
-        CGlobal.getAstsFromAstCache(
-          diffGraph,
-          fileName(stmt),
-          filename,
-          line(stmt),
-          column(stmt),
-          astsForDeclaration(stmt)
-        )
-      r
-    }.toIndexedSeq
+      CGlobal.getAstsFromAstCache(
+        diffGraph,
+        fileName(stmt),
+        filename,
+        line(stmt),
+        column(stmt),
+        astsForDeclaration(stmt)
+      )
+    }
 
-    val methodReturn = NewMethodReturn()
-      .code("RET")
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName("ANY")
+    val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName)
 
     Ast(fakeGlobalTypeDecl).withChild(
       Ast(fakeGlobalMethod)

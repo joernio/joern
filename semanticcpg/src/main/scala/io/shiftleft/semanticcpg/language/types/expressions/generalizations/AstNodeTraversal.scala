@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.help.Doc
-import overflowdb.traversal.{Traversal, help, iterableToTraversal, toElementTraversal, toNodeTraversal}
+import overflowdb.traversal.{Traversal, help, toElementTraversal, toNodeTraversal}
 
 @help.Traversal(elementType = classOf[AstNode])
 class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal {
@@ -43,12 +43,17 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
   /** Direct children of node in the AST. Siblings are ordered by their `order` fields
     */
   def astChildren: Traversal[AstNode] =
-    traversal.out(EdgeTypes.AST).cast[AstNode].sortBy(_.order)
+    traversal.flatMap(_.astChildren).sortBy(_.order)
 
   /** Parent AST node
     */
   def astParent: Traversal[AstNode] =
     traversal.in(EdgeTypes.AST).cast[AstNode]
+
+  /** Siblings of this node in the AST, ordered by their `order` fields
+    */
+  def astSiblings: Traversal[AstNode] =
+    traversal.flatMap(_.astSiblings)
 
   /** Traverses up the AST and returns the first block node.
     */
@@ -129,6 +134,11 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
   def isIdentifier: Traversal[Identifier] =
     traversal.collectAll[Identifier]
 
+  /** Traverse only to AST nodes that are IMPORT nodes
+    */
+  def isImport: Traversal[Import] =
+    traversal.collectAll[Import]
+
   /** Traverse only to FILE AST nodes
     */
   def isFile: Traversal[File] =
@@ -178,6 +188,11 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
     */
   def isParameter: Traversal[MethodParameterIn] =
     traversal.collectAll[MethodParameterIn]
+
+  /** Traverse only to AST nodes that are TemplateDom nodes
+    */
+  def isTemplateDom: Traversal[TemplateDom] =
+    traversal.collectAll[TemplateDom]
 
   /** Traverse only to AST nodes that are TYPE_DECL
     */

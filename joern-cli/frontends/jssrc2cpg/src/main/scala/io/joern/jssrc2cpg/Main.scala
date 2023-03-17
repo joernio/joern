@@ -2,8 +2,7 @@ package io.joern.jssrc2cpg
 
 import io.joern.jssrc2cpg.Frontend._
 import io.joern.jssrc2cpg.utils.Environment
-import io.joern.x2cpg.X2CpgConfig
-import io.joern.x2cpg.X2CpgMain
+import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 import java.nio.file.Paths
@@ -13,7 +12,9 @@ final case class Config(
   inputPath: String = "",
   outputPath: String = X2CpgConfig.defaultOutputPath,
   ignoredFilesRegex: Regex = "".r,
-  ignoredFiles: Seq[String] = Seq.empty
+  ignoredFiles: Seq[String] = Seq.empty,
+  tsTypes: Boolean = true,
+  disableDummyTypes: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   def createPathForIgnore(ignore: String): String = {
@@ -25,8 +26,9 @@ final case class Config(
     }
   }
 
-  override def withInputPath(inputPath: String): Config = copy(inputPath = inputPath)
-  override def withOutputPath(x: String): Config        = copy(outputPath = x)
+  override def withInputPath(inputPath: String): Config =
+    copy(inputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString)
+  override def withOutputPath(x: String): Config = copy(outputPath = x)
 }
 
 private object Frontend {
@@ -43,7 +45,15 @@ private object Frontend {
         .text("files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)"),
       opt[String]("exclude-regex")
         .action((x, c) => c.copy(ignoredFilesRegex = x.r))
-        .text("a regex specifying files to exclude during CPG generation (the absolute file path is matched)")
+        .text("a regex specifying files to exclude during CPG generation (the absolute file path is matched)"),
+      opt[Unit]("no-tsTypes")
+        .hidden()
+        .action((_, c) => c.copy(tsTypes = false))
+        .text("disable generation of types via Typescript"),
+      opt[Unit]("no-dummyTypes")
+        .hidden()
+        .action((_, c) => c.copy(disableDummyTypes = true))
+        .text("disable generation of dummy types during type recovery")
     )
   }
 

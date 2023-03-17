@@ -2,16 +2,16 @@ package io.joern.jimple2cpg.testfixtures
 
 import io.joern.jimple2cpg.{Config, Jimple2Cpg}
 import io.joern.x2cpg.X2Cpg
-import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
+import io.shiftleft.codepropertygraph.Cpg
 
-import java.io.{File, PrintWriter}
-import java.nio.file.{Files, Path}
+import java.io.File
+import java.nio.file.Path
 import java.util.Collections
 import javax.tools.{JavaCompiler, JavaFileObject, StandardLocation, ToolProvider}
-import scala.jdk.CollectionConverters
+import scala.jdk.CollectionConverters.IterableHasAsJava
 
-trait JimpleFrontend extends LanguageFrontend {
+trait Jimple2CpgFrontend extends LanguageFrontend {
 
   override val fileSuffix: String = ".java"
 
@@ -23,7 +23,7 @@ trait JimpleFrontend extends LanguageFrontend {
 
 class JimpleCode2CpgFixture() extends Code2CpgFixture(() => new JimpleTestCpg()) {}
 
-class JimpleTestCpg() extends TestCpg with JimpleFrontend {
+class JimpleTestCpg() extends TestCpg with Jimple2CpgFrontend {
   override protected def codeFilePreProcessing(codeFile: Path): Unit = {
     JimpleCodeToCpgFixture.compileJava(codeFile.toFile)
   }
@@ -45,9 +45,9 @@ object JimpleCodeToCpgFixture {
         null,
         fileManager,
         null,
-        CollectionConverters.SeqHasAsJava(Seq("-g", "-d", sourceCodeFile.getParent)).asJava,
+        Seq("-g", "-d", sourceCodeFile.getParent).asJava,
         null,
-        fileManager.getJavaFileObjectsFromFiles(CollectionConverters.SeqHasAsJava(Seq(sourceCodeFile)).asJava)
+        fileManager.getJavaFileObjectsFromFiles(Seq(sourceCodeFile).asJava)
       )
       .call()
 

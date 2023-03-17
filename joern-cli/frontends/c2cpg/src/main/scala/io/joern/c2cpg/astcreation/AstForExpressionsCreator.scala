@@ -1,6 +1,6 @@
 package io.joern.c2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewIdentifier, NewMethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewMethodRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
 import org.eclipse.cdt.core.dom.ast._
@@ -56,11 +56,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   private def astForExpressionList(exprList: IASTExpressionList): Ast = {
-    val b = NewBlock()
-      .typeFullName(registerType(Defines.voidTypeName))
-      .lineNumber(line(exprList))
-      .columnNumber(column(exprList))
-    Ast(b).withChildren(exprList.getExpressions.toIndexedSeq.map(astForExpression))
+    val callNode =
+      newCallNode(exprList, "<operator>.expressionList", "<operator>.expressionList", DispatchTypes.STATIC_DISPATCH)
+    val childAsts = exprList.getExpressions.map(nullSafeAst)
+    callAst(callNode, childAsts.toIndexedSeq)
   }
 
   private def astForCallExpression(call: IASTFunctionCallExpression): Ast = {
@@ -86,6 +85,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
         (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewMethodRef].methodFullName)
       case _ if rec.root.exists(_.isInstanceOf[NewIdentifier]) =>
         (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewIdentifier].name)
+      case _
+          if rec.root.exists(_.isInstanceOf[NewCall]) && call.getFunctionNameExpression
+            .isInstanceOf[IASTFieldReference] =>
+        (
+          DispatchTypes.STATIC_DISPATCH,
+          nodeSignature(call.getFunctionNameExpression.asInstanceOf[IASTFieldReference].getFieldName)
+        )
       case _ if rec.root.exists(_.isInstanceOf[NewCall]) =>
         (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewCall].code)
       case reference: IASTIdExpression =>
@@ -94,7 +100,11 @@ trait AstForExpressionsCreator { this: AstCreator =>
         (DispatchTypes.STATIC_DISPATCH, "")
     }
 
-    val cpgCall = newCallNode(call, name, name, dd)
+    val fullName = typeFor(call.getFunctionNameExpression) match {
+      case t if t != Defines.anyTypeName => s"$t.$name"
+      case _                             => name
+    }
+    val cpgCall = newCallNode(call, name, fullName, dd)
     val args    = call.getArguments.toList.map(a => astForNode(a))
     rec.root match {
       // Optimization: do not include the receiver if the receiver is just the function name,
@@ -105,7 +115,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       case Some(r: NewIdentifier) if r.name == name =>
         callAst(cpgCall, args)
       case Some(_) =>
-        callAst(cpgCall, args, Some(rec))
+        callAst(cpgCall, args, Option(rec))
       case None =>
         callAst(cpgCall, args)
     }
@@ -113,33 +123,31 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   private def astForUnaryExpression(unary: IASTUnaryExpression): Ast = {
     val operatorMethod = unary.getOperator match {
-      case IASTUnaryExpression.op_prefixIncr  => Operators.preIncrement
-      case IASTUnaryExpression.op_prefixDecr  => Operators.preDecrement
-      case IASTUnaryExpression.op_plus        => Operators.plus
-      case IASTUnaryExpression.op_minus       => Operators.minus
-      case IASTUnaryExpression.op_star        => Operators.indirection
-      case IASTUnaryExpression.op_amper       => Operators.addressOf
-      case IASTUnaryExpression.op_tilde       => Operators.not
-      case IASTUnaryExpression.op_not         => Operators.logicalNot
-      case IASTUnaryExpression.op_sizeof      => Operators.sizeOf
-      case IASTUnaryExpression.op_postFixIncr => Operators.postIncrement
-      case IASTUnaryExpression.op_postFixDecr => Operators.postDecrement
-      case IASTUnaryExpression.op_throw       => "<operator>.throw"
-      case IASTUnaryExpression.op_typeid      => "<operator>.typeOf"
-      case _                                  => "<operator>.unknown"
+      case IASTUnaryExpression.op_prefixIncr       => Operators.preIncrement
+      case IASTUnaryExpression.op_prefixDecr       => Operators.preDecrement
+      case IASTUnaryExpression.op_plus             => Operators.plus
+      case IASTUnaryExpression.op_minus            => Operators.minus
+      case IASTUnaryExpression.op_star             => Operators.indirection
+      case IASTUnaryExpression.op_amper            => Operators.addressOf
+      case IASTUnaryExpression.op_tilde            => Operators.not
+      case IASTUnaryExpression.op_not              => Operators.logicalNot
+      case IASTUnaryExpression.op_sizeof           => Operators.sizeOf
+      case IASTUnaryExpression.op_postFixIncr      => Operators.postIncrement
+      case IASTUnaryExpression.op_postFixDecr      => Operators.postDecrement
+      case IASTUnaryExpression.op_throw            => "<operator>.throw"
+      case IASTUnaryExpression.op_typeid           => "<operator>.typeOf"
+      case IASTUnaryExpression.op_bracketedPrimary => "<operator>.bracketedPrimary"
+      case _                                       => "<operator>.unknown"
     }
 
-    if (unary.getOperator == IASTUnaryExpression.op_bracketedPrimary) {
-      astForExpression(unary.getOperand)
+    if (
+      unary.getOperator == IASTUnaryExpression.op_bracketedPrimary &&
+      !unary.getOperand.isInstanceOf[IASTExpressionList]
+    ) {
+      nullSafeAst(unary.getOperand)
     } else {
       val cpgUnary = newCallNode(unary, operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
-      val operandExpr = unary.getOperand match {
-        // special handling for operand expression in brackets - we simply ignore the brackets
-        case opExpr: IASTUnaryExpression if opExpr.getOperator == IASTUnaryExpression.op_bracketedPrimary =>
-          opExpr.getOperand
-        case opExpr => opExpr
-      }
-      val operand = nullSafeAst(operandExpr)
+      val operand  = nullSafeAst(unary.getOperand)
       callAst(cpgUnary, List(operand))
     }
   }
@@ -190,7 +198,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     val expr    = astForExpression(castExpression.getOperand)
     val argNode = castExpression.getTypeId
-    val arg     = newUnknown(argNode)
+    val arg     = newUnknownNode(argNode)
 
     callAst(cpgCastExpression, List(Ast(arg), expr))
   }
@@ -231,7 +239,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val cpgCastExpression =
       newCallNode(typeIdInit, Operators.cast, Operators.cast, DispatchTypes.STATIC_DISPATCH)
 
-    val typeAst = newUnknown(typeIdInit.getTypeId)
+    val typeAst = newUnknownNode(typeIdInit.getTypeId)
     val expr    = astForNode(typeIdInit.getInitializer)
     callAst(cpgCastExpression, List(Ast(typeAst), expr))
   }

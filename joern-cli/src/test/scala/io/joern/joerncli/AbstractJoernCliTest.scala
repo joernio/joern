@@ -1,27 +1,41 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.c2cpg.{C2Cpg, Config}
+import io.joern.console.cpgcreation.{CCpgGenerator, JsSrcCpgGenerator}
+import io.joern.console.FrontendConfig
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.utils.ProjectRoot
+
+import java.nio.file.Path
+import scala.util.{Failure, Success}
 
 trait AbstractJoernCliTest {
 
-  protected def withTestCpg[T](file: File)(f: ((Cpg, String)) => T): T = {
-    f(loadTestCpg(file))
+  protected def withTestCpg[T](file: File, language: String = Languages.C)(f: ((Cpg, String)) => T): T = {
+    f(loadTestCpg(file, language))
   }
 
-  private def loadTestCpg(file: File): (Cpg, String) = {
-    val tmpFile          = File.newTemporaryFile("cpg", "bin")
-    val c2cpgOutFilename = tmpFile.pathAsString
+  private def loadTestCpg(file: File, language: String = Languages.C): (Cpg, String) = {
+    val tmpFile        = File.newTemporaryFile("cpg", "bin")
+    val cpgOutFileName = tmpFile.pathAsString
     tmpFile.delete()
 
-    // Create a CPG using the C/C++ parser
-    val c2cpg  = new C2Cpg()
-    val config = Config(inputPath = file.pathAsString, outputPath = c2cpgOutFilename)
-    c2cpg.run(config)
+    val cpgGenerator = language match {
+      case Languages.C | Languages.CSHARP         => CCpgGenerator(new FrontendConfig(), relativePath("c2cpg"))
+      case Languages.JSSRC | Languages.JAVASCRIPT => JsSrcCpgGenerator(new FrontendConfig(), relativePath("jssrc2cpg"))
+    }
+    cpgGenerator.generate(inputPath = file.pathAsString, outputPath = cpgOutFileName) match {
+      case Failure(exception) => throw new AssertionError("error while invoking cpgGenerator", exception)
+      case _                  =>
+    }
+
     // Link CPG fragments and enhance to create semantic CPG
-    val cpg = DefaultOverlays.create(c2cpgOutFilename)
-    (cpg, c2cpgOutFilename)
+    val cpg = DefaultOverlays.create(cpgOutFileName)
+    (cpg, cpgOutFileName)
   }
+
+  private def relativePath(frontendName: String): Path =
+    Path.of(ProjectRoot.relativise(s"joern-cli/frontends/$frontendName/target/universal/stage/bin"))
 
 }

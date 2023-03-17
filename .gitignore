@@ -20,12 +20,17 @@ pdg-for-funcs.json
 joern-cli/workspace
 /workspace
 .bloop
+null
 /.bsp
 /gnupg-*
 /joern-cli/${sys:LOG_DIR}/
 .local
 **/astgen-win.exe
 **/astgen-macos
+**/astgen-macos-arm
 **/astgen-linux
 **/php2cpg/bin/vendor/
 **/php2cpg/bin/composer*
+/foo.c
+/woo.c
+/cpg_*.bin.zip

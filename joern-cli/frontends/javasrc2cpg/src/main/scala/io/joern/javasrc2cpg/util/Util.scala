@@ -2,7 +2,7 @@ package io.joern.javasrc2cpg.util
 
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
 import com.github.javaparser.resolution.types.ResolvedReferenceType
-import io.joern.javasrc2cpg.util.TypeInfoCalculator.TypeConstants
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewMember}
@@ -33,7 +33,7 @@ object Util {
     val result = mutable.ArrayBuffer.empty[ResolvedReferenceType]
 
     if (!typeDecl.isJavaLangObject) {
-      safeGetAncestors(typeDecl).foreach { ancestor =>
+      safeGetAncestors(typeDecl).filter(_.getQualifiedName != typeDecl.getQualifiedName).foreach { ancestor =>
         result.append(ancestor)
         getAllParents(ancestor, result)
       }
@@ -67,14 +67,6 @@ object Util {
 
   def composeUnresolvedSignature(paramCount: Int): String = {
     s"${Defines.UnresolvedSignature}($paramCount)"
-  }
-
-  def rootCode(ast: Seq[Ast]): String = {
-    ast.headOption.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE).map(_.toString)).getOrElse("")
-  }
-
-  def rootType(ast: Ast): Option[String] = {
-    ast.root.flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
   }
 
   private def getAllParents(typ: ResolvedReferenceType, result: mutable.ArrayBuffer[ResolvedReferenceType]): Unit = {

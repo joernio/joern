@@ -3,10 +3,7 @@ package io.joern.c2cpg.passes.types
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-
-import java.io.File
+import io.shiftleft.semanticcpg.language.types.structure.{FileTraversal, NamespaceTraversal}
 
 class ClassTypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
 
@@ -23,28 +20,24 @@ class ClassTypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
 
     "create TYPE node with correct fields for class member" in {
       val List(x) = cpg.typ.name("member_type").l
-      x.name shouldBe "member_type"
       x.fullName shouldBe "member_type"
       x.typeDeclFullName shouldBe "member_type"
     }
 
     "create TYPE node with correct fields for return type" in {
       val List(x) = cpg.typ.name("ret_type").l
-      x.name shouldBe "ret_type"
       x.fullName shouldBe "ret_type"
       x.typeDeclFullName shouldBe "ret_type"
     }
 
     "create TYPE node with correct fields for parameter type" in {
       val List(x) = cpg.typ.name("param_type").l
-      x.name shouldBe "param_type"
       x.fullName shouldBe "param_type"
       x.typeDeclFullName shouldBe "param_type"
     }
 
     "create TYPE node with correct fields for local type" in {
       val List(x) = cpg.typ.name("local_type").l
-      x.name shouldBe "local_type"
       x.fullName shouldBe "local_type"
       x.typeDeclFullName shouldBe "local_type"
     }
@@ -82,38 +75,29 @@ class ClassTypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
 
     "should contain a type decl for `foo` with correct fields" in {
       val List(x) = cpg.typeDecl("foo").l
-      x.name shouldBe "foo"
       x.fullName shouldBe "foo"
       x.isExternal shouldBe false
       x.inheritsFromTypeFullName shouldBe List("bar")
       x.aliasTypeFullName shouldBe None
       x.order shouldBe 1
-      x.filename should (
-        startWith(File.separator) or // Unix
-          startWith regex "[A-Z]:"   // Windows
-      )
+      x.filename shouldBe "Test0.cpp"
       x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
     }
 
     "should contain type decl for alias `mytype` of `int`" in {
       val List(x) = cpg.typeDecl("mytype").l
-      x.name shouldBe "mytype"
       x.fullName shouldBe "mytype"
       x.isExternal shouldBe false
       x.inheritsFromTypeFullName shouldBe List()
       x.aliasTypeFullName shouldBe Some("int")
       x.code shouldBe "typedef int mytype;"
       x.order shouldBe 2
-      x.filename should (
-        startWith(File.separator) or // Unix
-          startWith regex "[A-Z]:"   // Windows
-      )
+      x.filename shouldBe "Test0.cpp"
       x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
     }
 
     "should contain type decl for external type `int`" in {
       val List(x) = cpg.typeDecl("int").l
-      x.name shouldBe "int"
       x.fullName shouldBe "int"
       x.isExternal shouldBe true
       x.inheritsFromTypeFullName shouldBe List()

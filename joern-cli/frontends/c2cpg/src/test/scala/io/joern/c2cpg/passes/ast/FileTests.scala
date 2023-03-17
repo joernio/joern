@@ -5,8 +5,6 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-import java.io.File
-
 class FileTests extends CCodeToCpgSuite {
 
   private val cpg = code("""
@@ -24,17 +22,6 @@ class FileTests extends CCodeToCpgSuite {
   "should contain exactly one placeholder file node with `name=\"<unknown>\"/order=0`" in {
     cpg.file(FileTraversal.UNKNOWN).order.l shouldBe List(0)
     cpg.file(FileTraversal.UNKNOWN).hash.l shouldBe List()
-  }
-
-  "should contain exactly one non-placeholder file with absolute path in `name`" in {
-    val List(x) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
-    x.name should (
-      startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:"   // Windows
-    )
-    // C-frontend currently does not set hash but should do so
-    // in the future
-    x.hash shouldBe None
   }
 
   "should allow traversing from file to its namespace blocks" in {

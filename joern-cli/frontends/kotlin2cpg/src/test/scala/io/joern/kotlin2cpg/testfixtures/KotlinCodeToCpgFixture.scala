@@ -22,7 +22,10 @@ trait KotlinFrontend extends LanguageFrontend {
     val defaultContentRoot =
       BFile(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/jars/"))
     implicit val defaultConfig: Config =
-      Config(classpath = if (withTestResourcePaths) Set(defaultContentRoot.path.toAbsolutePath.toString) else Set())
+      Config(
+        classpath = if (withTestResourcePaths) Set(defaultContentRoot.path.toAbsolutePath.toString) else Set(),
+        includeJavaSourceFiles = true
+      )
     new Kotlin2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 }

@@ -175,12 +175,6 @@ trait BridgeBase extends ScriptExecution with PluginHandling with ServerHandling
       readScript(file.toScala)
     }
 
-  /** Override this method to implement script decryption
-    */
-  protected def decryptedScript(scriptFile: Path): Path = {
-    scriptFile
-  }
-
   private def readScript(scriptFile: File): List[String] = {
     val code = scriptFile.lines.toList
     println(s"importing $scriptFile (${code.size} lines)")
@@ -201,9 +195,7 @@ trait ScriptExecution {
   protected def startInteractiveShell(config: Config, slProduct: SLProduct): (Res[Any], Seq[(Watchable, Long)]) = {
     val configurePPrinterMaybe =
       if (config.nocolors) ""
-      else """val originalPPrinter = repl.pprinter()
-             |repl.pprinter.update(io.joern.console.pprinter.create(originalPPrinter))
-             |""".stripMargin
+      else "repl.pprinter.update(io.joern.console.pprinter.create())"
 
     val replConfig = List(
       "repl.prompt() = \"" + promptStr() + "\"",
@@ -229,22 +221,17 @@ trait ScriptExecution {
   }
 
   protected def runScript(scriptFile: Path, config: Config): AnyVal = {
-    val isEncryptedScript = scriptFile.ext == "enc"
     System.err.println(s"executing $scriptFile with params=${config.params}")
     val scriptArgs: Seq[String] = {
       val commandArgs   = config.command.toList
       val parameterArgs = config.params.flatMap { case (key, value) => Seq(s"--$key", value) }
       commandArgs ++ parameterArgs
     }
-    val actualScriptFile =
-      if (isEncryptedScript) decryptedScript(scriptFile)
-      else scriptFile
-
     val predefCode = predefPlus(additionalImportCode(config) ++ importCpgCode(config) ++ shutdownHooks)
 
     ammonite
       .Main(predefCode = predefCode, remoteLogging = false, colors = ammoniteColors(config))
-      .runScript(actualScriptFile, scriptArgs)
+      .runScript(scriptFile, scriptArgs)
       ._1 match {
       case Res.Success(r) =>
         System.err.println(s"script finished successfully")
@@ -255,8 +242,6 @@ trait ScriptExecution {
         throw new AssertionError(s"script errored: $msg", e)
       case _ => ???
     }
-    /* minimizing exposure time by deleting the decrypted script straight away */
-    if (isEncryptedScript) actualScriptFile.toIO.delete
   }
 
   /** For the given config, generate a list of commands to import the CPG

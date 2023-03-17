@@ -15,7 +15,8 @@ final case class Config(
   downloadDependencies: Boolean = false,
   gradleProjectName: Option[String] = None,
   gradleConfigurationName: Option[String] = None,
-  jar4importServiceUrl: Option[String] = None
+  jar4importServiceUrl: Option[String] = None,
+  includeJavaSourceFiles: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
@@ -55,7 +56,10 @@ private object Frontend {
         .action((value, c) => c.copy(gradleProjectName = Some(value))),
       opt[String]("gradle-configuration-name")
         .text("Name of the Gradle configuration used to download dependencies")
-        .action((value, c) => c.copy(gradleConfigurationName = Some(value)))
+        .action((value, c) => c.copy(gradleConfigurationName = Some(value))),
+      opt[Unit]("include-java-sources")
+        .text("Include Java sources in the resulting CPG")
+        .action((_, c) => c.copy(includeJavaSourceFiles = true))
     )
   }
 }

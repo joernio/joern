@@ -82,7 +82,7 @@ class C2CpgMacroExpansionTracker(stepToTrack: Int) extends MacroExpansionTracker
     var tok: IToken = tokenList.first()
     var arg         = ""
     while (tok != null) {
-      arg += tok.toString + " "
+      arg += s"${tok.toString} "
       tok = tok.getNext
     }
     arg.trim

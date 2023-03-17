@@ -21,8 +21,8 @@ class MinifiedFileDetectionTest extends AnyWordSpec with Matchers {
         (sourceDir / "b-min.23472420.js").createFile()
         (sourceDir / "c.bundle.js").createFile()
         val cpg          = newEmptyCpg()
-        val config       = Config(inputPath = sourceDir.toString, outputPath = sourceDir.toString)
-        val astgenResult = AstGenRunner.execute(config, sourceDir)
+        val config       = Config(inputPath = sourceDir.toString, outputPath = sourceDir.toString, tsTypes = false)
+        val astgenResult = new AstGenRunner(config).execute(sourceDir)
         new AstCreationPass(cpg, astgenResult, config).createAndApply()
         cpg.file.name.l shouldBe empty
       }
@@ -33,8 +33,8 @@ class MinifiedFileDetectionTest extends AnyWordSpec with Matchers {
         val minFile = (sourceDir / "something.js").createFile()
         minFile.write(s"console.log('${"x" * 10000}');")
         val cpg          = newEmptyCpg()
-        val config       = Config(inputPath = sourceDir.toString, outputPath = sourceDir.toString)
-        val astgenResult = AstGenRunner.execute(config, sourceDir)
+        val config       = Config(inputPath = sourceDir.toString, outputPath = sourceDir.toString, tsTypes = false)
+        val astgenResult = new AstGenRunner(config).execute(sourceDir)
         new AstCreationPass(cpg, astgenResult, config).createAndApply()
         cpg.file.name.l shouldBe empty
       }

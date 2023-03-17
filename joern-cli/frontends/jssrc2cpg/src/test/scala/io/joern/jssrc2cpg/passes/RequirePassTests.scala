@@ -9,22 +9,21 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
   "methods imported via `require` should be resolved correctly" in {
     val cpg = code(
       """
-         | const externalfunc = require('./sampleone')
-         | function testone() {
-         | var name = "foo";
-         | console.log(name);
-         | externalfunc(name);
-         | }
-         | testone();
+         |const externalfunc = require('./sampleone');
+         |function testone() {
+         |  var name = "foo";
+         |  console.log(name);
+         |  externalfunc(name);
+         |}
+         |
+         |testone();
       """.stripMargin,
       "sample.js"
-    )
-
-    cpg.moreCode(
+    ).moreCode(
       """
-        | module.exports = function (nameparam){
-        | console.log( "external func" + nameparam);
-        | }
+        |module.exports = function (nameparam) {
+        |  console.log( "external func" + nameparam);
+        |}
         |""".stripMargin,
       "sampleone.js"
     )
@@ -41,23 +40,20 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
   "methods imported via `import` should be resolved correctly" in {
     val cpg = code(
       """
-         | import {foo, bar} from './sampleone.mjs';
-         | var x = "literal";
-         | foo(x);
-         | bar(x);
-         |
+         |import {foo, bar} from './sampleone.mjs';
+         |var x = "literal";
+         |foo(x);
+         |bar(x);
       """.stripMargin,
       "sample.js"
-    )
-
-    cpg.moreCode(
+    ).moreCode(
       """
         |export function foo(x) {
-        |console.log(x);
+        |  console.log(x);
         |}
         |
         |export function bar(x) {
-        |console.log(x);
+        |  console.log(x);
         |}
         |""".stripMargin,
       "sampleone.mjs"
@@ -71,7 +67,7 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
 
     val sink   = cpg.call("log").argument(1)
     val source = cpg.literal.codeExact("\"literal\"")
-    sink.reachableByFlows(source).size shouldBe 1
+    sink.reachableByFlows(source).size shouldBe 2
   }
 
 }

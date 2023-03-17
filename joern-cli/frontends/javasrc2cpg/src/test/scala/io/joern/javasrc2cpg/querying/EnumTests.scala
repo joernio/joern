@@ -25,30 +25,32 @@ class EnumTests extends JavaSrcCode2CpgFixture {
       |""".stripMargin)
 
   "it should parse a basic enum without values" in {
-    cpg.typeDecl.name(".*FuzzyBool.*").nonEmpty shouldBe true
-    cpg.typeDecl.name(".*FuzzyBool.*").member.size shouldBe 3
-    val List(t, f, m) = cpg.typeDecl.name(".*FuzzyBool.*").member.l
+    inside(cpg.typeDecl.name(".*FuzzyBool.*").l) { case List(typeDecl) =>
+      typeDecl.code shouldBe "public enum FuzzyBool"
 
-    t.order shouldBe 1
-    t.lineNumber shouldBe Some(3)
-    t.columnNumber shouldBe Some(3)
-    t.typeFullName shouldBe "FuzzyBool"
-    t.name shouldBe "TRUE"
-    t.code shouldBe "TRUE"
+      inside(typeDecl.member.l) { case List(trueMember, falseMember, maybeMember) =>
+        trueMember.order shouldBe 1
+        trueMember.lineNumber shouldBe Some(3)
+        trueMember.columnNumber shouldBe Some(3)
+        trueMember.typeFullName shouldBe "FuzzyBool"
+        trueMember.name shouldBe "TRUE"
+        trueMember.code shouldBe "TRUE"
 
-    f.order shouldBe 2
-    f.lineNumber shouldBe Some(4)
-    f.columnNumber shouldBe Some(3)
-    f.typeFullName shouldBe "FuzzyBool"
-    f.name shouldBe "FALSE"
-    f.code shouldBe "FALSE"
+        falseMember.order shouldBe 2
+        falseMember.lineNumber shouldBe Some(4)
+        falseMember.columnNumber shouldBe Some(3)
+        falseMember.typeFullName shouldBe "FuzzyBool"
+        falseMember.name shouldBe "FALSE"
+        falseMember.code shouldBe "FALSE"
 
-    m.order shouldBe 3
-    m.lineNumber shouldBe Some(5)
-    m.columnNumber shouldBe Some(3)
-    m.typeFullName shouldBe "FuzzyBool"
-    m.name shouldBe "MAYBE"
-    m.code shouldBe "MAYBE"
+        maybeMember.order shouldBe 3
+        maybeMember.lineNumber shouldBe Some(5)
+        maybeMember.columnNumber shouldBe Some(3)
+        maybeMember.typeFullName shouldBe "FuzzyBool"
+        maybeMember.name shouldBe "MAYBE"
+        maybeMember.code shouldBe "MAYBE"
+      }
+    }
   }
 
   "it should correctly parse an enum with values" in {

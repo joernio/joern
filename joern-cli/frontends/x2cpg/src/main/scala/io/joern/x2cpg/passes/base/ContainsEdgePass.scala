@@ -39,7 +39,7 @@ object ContainsEdgePass {
 
   def isDestinationType(node: StoredNode): Boolean = node match {
     case _: Block | _: Identifier | _: FieldIdentifier | _: Return | _: Method | _: TypeDecl | _: Call | _: Literal |
-        _: MethodRef | _: TypeRef | _: ControlStructure | _: JumpTarget | _: Unknown =>
+        _: MethodRef | _: TypeRef | _: ControlStructure | _: JumpTarget | _: Unknown | _: TemplateDom =>
       true
     case _ => false
   }

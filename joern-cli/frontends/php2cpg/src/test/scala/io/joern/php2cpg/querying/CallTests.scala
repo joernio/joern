@@ -1,7 +1,7 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
-import io.joern.php2cpg.parser.Domain.PhpBuiltins
+import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -76,13 +76,10 @@ class CallTests extends PhpCode2CpgFixture {
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$f->foo($x)"
 
-      inside(fooCall.receiver.l) { case List(fRecv: Identifier) =>
+      inside(fooCall.argument.l) { case List(fRecv: Identifier, xArg: Identifier) =>
         fRecv.name shouldBe "f"
         fRecv.code shouldBe "$f"
         fRecv.lineNumber shouldBe Some(2)
-      }
-
-      inside(fooCall.argument.l) { case List(xArg: Identifier) =>
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
       }
@@ -99,7 +96,7 @@ class CallTests extends PhpCode2CpgFixture {
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$$f->$foo($x)"
 
-      inside(fooCall.receiver.l) { case List(fRecv: Call) =>
+      inside(fooCall.argument.l) { case List(fRecv: Call, xArg: Identifier) =>
         fRecv.name shouldBe Operators.fieldAccess
         fRecv.code shouldBe "$$f->$foo"
         fRecv.lineNumber shouldBe Some(2)
@@ -111,9 +108,7 @@ class CallTests extends PhpCode2CpgFixture {
           fooVar.name shouldBe "foo"
           fooVar.code shouldBe "$foo"
         }
-      }
 
-      inside(fooCall.argument.l) { case List(xArg: Identifier) =>
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
       }

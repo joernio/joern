@@ -2,10 +2,10 @@ package io.joern.jssrc2cpg.parser
 
 object BabelAst {
 
-  private val QUALIFIED_CLASS_NAME: String = BabelAst.getClass.getName
+  private val QualifiedClassName: String = BabelAst.getClass.getName
 
   def fromString(nodeName: String): BabelNode = {
-    val clazz = Class.forName(s"$QUALIFIED_CLASS_NAME$nodeName$$")
+    val clazz = Class.forName(s"$QualifiedClassName$nodeName$$")
     clazz.getField("MODULE$").get(clazz).asInstanceOf[BabelNode]
   }
 

@@ -9,6 +9,76 @@ import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import java.io.File
 
 class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
+  "constructors with access modifiers" should {
+    "have correct public modifier" in {
+      val cpg = code("""
+          |class Foo {
+          |  public Foo() {}
+          |}
+          |""".stripMargin)
+
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact("<init>").l) { case List(constructor) =>
+        constructor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.PUBLIC, ModifierTypes.CONSTRUCTOR)
+      }
+    }
+
+    "have correct private modifier" in {
+      val cpg = code("""
+          |class Foo {
+          |  private Foo() {}
+          |}
+          |""".stripMargin)
+
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact("<init>").l) { case List(constructor) =>
+        constructor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.PRIVATE, ModifierTypes.CONSTRUCTOR)
+      }
+    }
+
+    "have correct protected modifier" in {
+      val cpg = code("""
+          |class Foo {
+          |  protected Foo() {}
+          |}
+          |""".stripMargin)
+
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact("<init>").l) { case List(constructor) =>
+        constructor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.PROTECTED, ModifierTypes.CONSTRUCTOR)
+      }
+    }
+
+    "have correct empty access modifier" in {
+      val cpg = code("""
+          |class Foo {
+          |  Foo() {}
+          |}
+          |""".stripMargin)
+
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact("<init>").l) { case List(constructor) =>
+        constructor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.CONSTRUCTOR)
+      }
+    }
+  }
+
+  "typedecls extending unresolved types available in imports should have inheritsFrom set" in {
+    val cpg = code("""package io.vrooom.vulnerableapp;
+        |
+        |import android.content.BroadcastReceiver;
+        |import android.content.Context;
+        |import android.content.Intent;
+        |import android.util.Log;
+        |
+        |public class CustomReceiver extends BroadcastReceiver {
+        |    public WriteFileBroadcastReceiver() {}
+        |    @Override
+        |    public void onReceive(Context context, Intent intent) {
+        |    }
+        |}
+        |""".stripMargin)
+    inside(cpg.typeDecl.name("CustomReceiver").inheritsFromTypeFullName.l) { case List(name) =>
+      name shouldBe "android.content.BroadcastReceiver"
+    }
+  }
+
   "the AST for an interface declaration" should {
     "not have a default constructor defined" in {
       val cpg = code("""
@@ -147,7 +217,6 @@ class TypeDeclTests extends JavaSrcCode2CpgFixture {
         }
 
       case res =>
-        res.foreach(typ => println(typ.fullName))
         fail(s"Expected typeDecl for interface but got $res")
     }
   }

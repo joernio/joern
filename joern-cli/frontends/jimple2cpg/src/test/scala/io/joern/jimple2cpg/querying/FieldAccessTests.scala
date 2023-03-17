@@ -1,6 +1,7 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
 import io.shiftleft.semanticcpg.language._
 
@@ -8,7 +9,7 @@ class FieldAccessTests extends JimpleCode2CpgFixture {
 
   implicit val resolver: ICallResolver = NoResolve
 
-  val cpg = code("""
+  val cpg: Cpg = code("""
       |class Foo {
       |  public static int MAX_VALUE = 12;
       |  public int value;
@@ -43,7 +44,7 @@ class FieldAccessTests extends JimpleCode2CpgFixture {
       |  g.value = 66;
       |}
       |}
-      |""".stripMargin)
+      |""".stripMargin).cpg
 
   "should handle static member accesses" in {
     val List(assign: Call) = cpg.method(".*foo.*").call(".*assignment").l

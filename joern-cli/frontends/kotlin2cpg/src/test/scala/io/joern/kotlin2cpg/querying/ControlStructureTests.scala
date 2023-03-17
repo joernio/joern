@@ -268,7 +268,6 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       controlStructureFirstChild.order shouldBe 1
       controlStructureFirstChild.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       controlStructureFirstChild.methodFullName shouldBe "kotlin.collections.Iterator.hasNext:boolean()"
-      controlStructureFirstChild.receiver.size shouldBe 1
       controlStructureFirstChild.name shouldBe "hasNext"
       controlStructureFirstChild.signature shouldBe "boolean()"
       controlStructureSecondChild.order shouldBe 2
@@ -294,7 +293,6 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       getNextSecondArg.name shouldBe "next"
       getNextSecondArg.signature shouldBe "java.lang.Object()"
       getNextSecondArg.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      getNextSecondArg.receiver.size shouldBe 1
 
       val List(getNextSecondArgFirstArg: Identifier) = getNextSecondArg.argument.l
       getNextSecondArgFirstArg.order shouldBe 1
@@ -383,7 +381,6 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       controlStructureFirstChild.order shouldBe 1
       controlStructureFirstChild.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       controlStructureFirstChild.methodFullName shouldBe "kotlin.collections.Iterator.hasNext:boolean()"
-      controlStructureFirstChild.receiver.size shouldBe 1
       controlStructureFirstChild.name shouldBe "hasNext"
       controlStructureFirstChild.signature shouldBe "boolean()"
       controlStructureSecondChild.order shouldBe 2
@@ -436,7 +433,6 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       getNextSecondArg.name shouldBe "next"
       getNextSecondArg.signature shouldBe "java.lang.Object()"
       getNextSecondArg.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      getNextSecondArg.receiver.size shouldBe 1
 
       val List(getNextSecondArgFirstArg: Identifier) = getNextSecondArg.argument.l
       getNextSecondArgFirstArg.order shouldBe 1
@@ -458,7 +454,6 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       component1SecondArg.name shouldBe "component1"
       component1SecondArg.signature shouldBe "java.lang.String()"
       component1SecondArg.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      component1SecondArg.receiver.size shouldBe 1
 
       val List(tmpInComponent1Call: Identifier) = component1SecondArg.argument.l
       tmp.referencingIdentifiers.id.l.contains(tmpInComponent1Call.id) shouldBe true
@@ -476,7 +471,6 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       component2SecondArg.name shouldBe "component2"
       component2SecondArg.signature shouldBe "int()"
       component2SecondArg.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      component2SecondArg.receiver.size shouldBe 1
 
       val List(tmpInComponent2Call: Identifier) = component2SecondArg.argument.l
       tmp.referencingIdentifiers.id.l.contains(tmpInComponent2Call.id) shouldBe true

@@ -1,6 +1,7 @@
 package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.AbstractPassTest
+import io.joern.x2cpg.layers.Base
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
@@ -59,11 +60,22 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
 
       depA.name shouldBe "a"
       depA.version shouldBe "import"
-      depA.dependencyGroupId shouldBe Some("depA")
+      depA.dependencyGroupId shouldBe Option("depA")
 
       depB.name shouldBe "b"
       depB.version shouldBe "import"
-      depB.dependencyGroupId shouldBe Some("depB")
+      depB.dependencyGroupId shouldBe Option("depB")
+    }
+
+    "have correct locals and require calls for imports" in AstFixture("import path = require('path')") { cpg =>
+      val List(localPath) = cpg.local.l
+      localPath.name shouldBe "path"
+      localPath.referencingIdentifiers.head.name shouldBe "path"
+
+      val List(reqCall) = cpg.call.codeExact("require(\"path\")").l
+      reqCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      reqCall.receiver.head.code shouldBe "require"
+      reqCall.argument.argumentIndex(1).head.code shouldBe "\"path\""
     }
 
     "have correct import nodes" in AstFixture("""
@@ -72,19 +84,20 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
         |import {c} from "";
         |import * as d from "depD";
         |""".stripMargin) { cpg =>
+      Base.passes(cpg).foreach(_.createAndApply())
       val List(a, b, c, d) = cpg.imports.l
       a.code shouldBe "import {a} from \"depA\""
-      a.importedEntity shouldBe Some("depA")
-      a.importedAs shouldBe Some("a")
+      a.importedEntity shouldBe Option("depA:a")
+      a.importedAs shouldBe Option("a")
       b.code shouldBe "import {b} from \"depB\""
-      b.importedEntity shouldBe Some("depB")
-      b.importedAs shouldBe Some("b")
+      b.importedEntity shouldBe Option("depB:b")
+      b.importedAs shouldBe Option("b")
       c.code shouldBe "import {c} from \"\""
-      c.importedEntity should not be defined
-      c.importedAs shouldBe Some("c")
+      c.importedEntity shouldBe Option(":c")
+      c.importedAs shouldBe Option("c")
       d.code shouldBe "import * as d from \"depD\""
-      d.importedEntity shouldBe Some("depD")
-      d.importedAs shouldBe Some("d")
+      d.importedEntity shouldBe Option("depD:d")
+      d.importedAs shouldBe Option("d")
       val List(n) = a.namespaceBlock.l
       n.fullName shouldBe "code.js:<global>"
     }
@@ -96,10 +109,10 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       val List(depA, depB) = cpg.dependency.l
 
       depA.name shouldBe "a"
-      depA.dependencyGroupId shouldBe Some("depA")
+      depA.dependencyGroupId shouldBe Option("depA")
       depA.version shouldBe "require"
       depB.name shouldBe "b"
-      depB.dependencyGroupId shouldBe Some("depB")
+      depB.dependencyGroupId shouldBe Option("depB")
       depB.version shouldBe "require"
     }
 
@@ -113,31 +126,31 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       val List(depA, depB, depC, depD, depE, depF, depG) = cpg.dependency.l
 
       depA.name shouldBe "_"
-      depA.dependencyGroupId shouldBe Some("depA")
+      depA.dependencyGroupId shouldBe Option("depA")
       depA.version shouldBe "require"
 
       depB.name shouldBe "b"
-      depB.dependencyGroupId shouldBe Some("depB")
+      depB.dependencyGroupId shouldBe Option("depB")
       depB.version shouldBe "require"
 
       depC.name shouldBe "c"
-      depC.dependencyGroupId shouldBe Some("depC")
+      depC.dependencyGroupId shouldBe Option("depC")
       depC.version shouldBe "require"
 
       depD.name shouldBe "d"
-      depD.dependencyGroupId shouldBe Some("depD")
+      depD.dependencyGroupId shouldBe Option("depD")
       depD.version shouldBe "require"
 
       depE.name shouldBe "e"
-      depE.dependencyGroupId shouldBe Some("depD")
+      depE.dependencyGroupId shouldBe Option("depD")
       depE.version shouldBe "require"
 
       depF.name shouldBe "f"
-      depF.dependencyGroupId shouldBe Some("depE")
+      depF.dependencyGroupId shouldBe Option("depE")
       depF.version shouldBe "require"
 
       depG.name shouldBe "g"
-      depG.dependencyGroupId shouldBe Some("depE")
+      depG.dependencyGroupId shouldBe Option("depE")
       depG.version shouldBe "require"
     }
 
@@ -148,11 +161,11 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       val List(depA, depB) = cpg.dependency.l
 
       depA.name shouldBe "a"
-      depA.dependencyGroupId shouldBe Some("depA")
+      depA.dependencyGroupId shouldBe Option("depA")
       depA.version shouldBe "import"
 
       depB.name shouldBe "b"
-      depB.dependencyGroupId shouldBe Some("depB")
+      depB.dependencyGroupId shouldBe Option("depB")
       depB.version shouldBe "require"
     }
 
@@ -212,51 +225,51 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       ) = cpg.dependency.l
 
       name.name shouldBe "name"
-      name.dependencyGroupId shouldBe Some("module-name")
+      name.dependencyGroupId shouldBe Option("module-name")
       name.version shouldBe "import"
 
       otherName.name shouldBe "otherName"
-      otherName.dependencyGroupId shouldBe Some("module-name")
+      otherName.dependencyGroupId shouldBe Option("module-name")
       otherName.version shouldBe "import"
 
       member1.name shouldBe "member1"
-      member1.dependencyGroupId shouldBe Some("module-name")
+      member1.dependencyGroupId shouldBe Option("module-name")
       member1.version shouldBe "import"
 
       alias1.name shouldBe "alias1"
-      alias1.dependencyGroupId shouldBe Some("module-name")
+      alias1.dependencyGroupId shouldBe Option("module-name")
       alias1.version shouldBe "import"
 
       member3.name shouldBe "member3"
-      member3.dependencyGroupId shouldBe Some("module-name")
+      member3.dependencyGroupId shouldBe Option("module-name")
       member3.version shouldBe "import"
 
       member4.name shouldBe "member4"
-      member4.dependencyGroupId shouldBe Some("module-name")
+      member4.dependencyGroupId shouldBe Option("module-name")
       member4.version shouldBe "import"
 
       member5.name shouldBe "member5"
-      member5.dependencyGroupId shouldBe Some("module-name")
+      member5.dependencyGroupId shouldBe Option("module-name")
       member5.version shouldBe "import"
 
       alias2.name shouldBe "alias2"
-      alias2.dependencyGroupId shouldBe Some("module-name")
+      alias2.dependencyGroupId shouldBe Option("module-name")
       alias2.version shouldBe "import"
 
       defaultMember1.name shouldBe "defaultMember1"
-      defaultMember1.dependencyGroupId shouldBe Some("module-name")
+      defaultMember1.dependencyGroupId shouldBe Option("module-name")
       defaultMember1.version shouldBe "import"
 
       alias3.name shouldBe "alias3"
-      alias3.dependencyGroupId shouldBe Some("module-name")
+      alias3.dependencyGroupId shouldBe Option("module-name")
       alias3.version shouldBe "import"
 
       defaultMember2.name shouldBe "defaultMember2"
-      defaultMember2.dependencyGroupId shouldBe Some("module-name")
+      defaultMember2.dependencyGroupId shouldBe Option("module-name")
       defaultMember2.version shouldBe "import"
 
       moduleName.name shouldBe "module-name"
-      moduleName.dependencyGroupId shouldBe Some("module-name")
+      moduleName.dependencyGroupId shouldBe Option("module-name")
       moduleName.version shouldBe "import"
     }
   }
@@ -343,6 +356,17 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       cpg.method("foo").code.l shouldBe List("function foo(param) {}")
     }
 
+    "have correct structure for export with from clause with path" in AstFixture("""
+        |export { def as Header } from "./path/to/header";
+        |""".stripMargin) { cpg =>
+      val List(header) = cpg.dependency.l
+      header.name shouldBe "Header"
+      header.dependencyGroupId shouldBe Option("./path/to/header")
+      header.version shouldBe "require"
+      cpg.assignment.code.l shouldBe
+        List("var _header = require(\"./path/to/header\")", "exports.Header = _header.def")
+    }
+
     "have correct structure for export with from clause" in AstFixture("""
        |export { import1 as name1, import2 as name2, name3 } from "Foo";
        |export bar from "Bar";
@@ -350,28 +374,28 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       val List(name1, name2, name3, bar) = cpg.dependency.l
 
       name1.name shouldBe "name1"
-      name1.dependencyGroupId shouldBe Some("Foo")
+      name1.dependencyGroupId shouldBe Option("Foo")
       name1.version shouldBe "require"
 
       name2.name shouldBe "name2"
-      name2.dependencyGroupId shouldBe Some("Foo")
+      name2.dependencyGroupId shouldBe Option("Foo")
       name2.version shouldBe "require"
 
       name3.name shouldBe "name3"
-      name3.dependencyGroupId shouldBe Some("Foo")
+      name3.dependencyGroupId shouldBe Option("Foo")
       name3.version shouldBe "require"
 
       bar.name shouldBe "bar"
-      bar.dependencyGroupId shouldBe Some("Bar")
+      bar.dependencyGroupId shouldBe Option("Bar")
       bar.version shouldBe "require"
 
       cpg.assignment.code.l shouldBe List(
         "var _Foo = require(\"Foo\")",
-        "_Foo.name1 = import1",
-        "_Foo.name2 = import2",
-        "_Foo.name3 = name3",
+        "exports.name1 = _Foo.import1",
+        "exports.name2 = _Foo.import2",
+        "exports.name3 = _Foo.name3",
         "var _Bar = require(\"Bar\")",
-        "_Bar.bar = bar"
+        "exports.bar = _Bar.bar"
       )
     }
 
@@ -384,19 +408,19 @@ class DependencyAstCreationPassTest extends AbstractPassTest {
       val List(dep1, dep2, dep3, dep4) = cpg.dependency.l
 
       dep1.name shouldBe "Foo"
-      dep1.dependencyGroupId shouldBe Some("Foo")
+      dep1.dependencyGroupId shouldBe Option("Foo")
       dep1.version shouldBe "require"
 
       dep2.name shouldBe "B"
-      dep2.dependencyGroupId shouldBe Some("Bar")
+      dep2.dependencyGroupId shouldBe Option("Bar")
       dep2.version shouldBe "require"
 
       dep3.name shouldBe "ModuleA"
-      dep3.dependencyGroupId shouldBe Some("./some/ModuleA")
+      dep3.dependencyGroupId shouldBe Option("./some/ModuleA")
       dep3.version shouldBe "require"
 
       dep4.name shouldBe "ModuleB"
-      dep4.dependencyGroupId shouldBe Some("./some/ModuleB")
+      dep4.dependencyGroupId shouldBe Option("./some/ModuleB")
       dep4.version shouldBe "require"
 
       cpg.assignment.code.l shouldBe List(

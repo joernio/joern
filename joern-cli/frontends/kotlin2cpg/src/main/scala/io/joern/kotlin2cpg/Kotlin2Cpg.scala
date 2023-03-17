@@ -19,8 +19,8 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
-
 import com.squareup.tools.maven.resolution.ArtifactResolver
+import io.joern.kotlin2cpg.interop.JavasrcInterop
 import java.net.{MalformedURLException, URL}
 import java.nio.file.{Files, Paths}
 import scala.util.Try
@@ -73,9 +73,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
 
       val filesWithJavaExtension = SourceFiles.determine(sourceDir, Set(".java"))
       if (filesWithJavaExtension.nonEmpty) {
-        logger.info(
-          s"Found ${filesWithJavaExtension.size} files with the `.java` extension which will not be included in the result."
-        )
+        logger.info(s"Found ${filesWithJavaExtension.size} files with the `.java` extension.")
       }
 
       val dependenciesPaths = if (jar4ImportServiceOpt.isDefined) {
@@ -112,7 +110,13 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       }
       val plugins = Seq()
       val environment =
-        CompilerAPI.makeEnvironment(dirsForSourcesToCompile, defaultContentRootJars, plugins, messageCollector)
+        CompilerAPI.makeEnvironment(
+          dirsForSourcesToCompile,
+          filesWithJavaExtension,
+          defaultContentRootJars,
+          plugins,
+          messageCollector
+        )
 
       val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
       val sources = sourceEntries.filterNot { entry =>
@@ -128,7 +132,15 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
       val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
       astCreator.createAndApply()
-      new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
+      val kotlinAstCreatorTypes = astCreator.global.usedTypes.keys().asScala.toList
+      new TypeNodePass(kotlinAstCreatorTypes, cpg).createAndApply()
+
+      if (config.includeJavaSourceFiles && filesWithJavaExtension.nonEmpty) {
+        val javaAstCreator = JavasrcInterop.astCreationPass(filesWithJavaExtension, cpg)
+        javaAstCreator.createAndApply()
+        val javaAstCreatorTypes = javaAstCreator.global.usedTypes.keys().asScala.toList
+        new TypeNodePass((javaAstCreatorTypes.toSet -- kotlinAstCreatorTypes.toSet).toList, cpg).createAndApply()
+      }
 
       val configCreator = new ConfigPass(configFiles, cpg)
       configCreator.createAndApply()

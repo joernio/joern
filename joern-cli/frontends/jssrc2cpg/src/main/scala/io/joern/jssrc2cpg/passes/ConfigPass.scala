@@ -15,8 +15,8 @@ class ConfigPass(cpg: Cpg, config: Config, report: Report = new Report()) extend
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  protected val allExtensions: Set[String]      = Set(".json", ".js", ".vue", ".html")
-  protected val selectedExtensions: Set[String] = Set(".json", ".config.js", ".conf.js", ".vue", ".html")
+  protected val allExtensions: Set[String]      = Set(".json", ".js", ".vue", ".html", ".pug")
+  protected val selectedExtensions: Set[String] = Set(".json", ".config.js", ".conf.js", ".vue", ".html", ".pug")
 
   override def generateParts(): Array[File] =
     configFiles(config, allExtensions).toArray
@@ -27,7 +27,7 @@ class ConfigPass(cpg: Cpg, config: Config, report: Report = new Report()) extend
   protected def configFiles(config: Config, extensions: Set[String]): Seq[File] =
     SourceFiles
       .determine(config.inputPath, extensions)
-      .filterNot(_.contains(Defines.NODE_MODULES_FOLDER))
+      .filterNot(_.contains(Defines.NodeModulesFolder))
       .filter(f => selectedExtensions.exists(f.endsWith))
       .map(File(_))
 

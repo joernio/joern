@@ -6,8 +6,6 @@ import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-import java.io.File
-
 class MethodTests extends CCodeToCpgSuite {
 
   "MethodTest1" should {
@@ -23,14 +21,11 @@ class MethodTests extends CCodeToCpgSuite {
         x.signature shouldBe "int main (int,char**)"
         x.isExternal shouldBe false
         x.order shouldBe 1
-        x.filename should (
-          startWith(File.separator) or // Unix
-            startWith regex "[A-Z]:"   // Windows
-        )
-        x.lineNumber shouldBe Some(2)
-        x.lineNumberEnd shouldBe Some(3)
-        x.columnNumber shouldBe Some(3)
-        x.columnNumberEnd shouldBe Some(2)
+        x.filename shouldBe "Test0.c"
+        x.lineNumber shouldBe Option(2)
+        x.lineNumberEnd shouldBe Option(3)
+        x.columnNumber shouldBe Option(3)
+        x.columnNumberEnd shouldBe Option(2)
       }
     }
 
@@ -134,10 +129,10 @@ class MethodTests extends CCodeToCpgSuite {
       method.isExternal shouldBe false
       method.fullName shouldBe "foo"
       method.signature shouldBe "int foo (int,int)"
-      method.lineNumber shouldBe Some(2)
-      method.columnNumber shouldBe Some(1)
-      method.lineNumberEnd shouldBe Some(4)
-      method.columnNumberEnd shouldBe Some(1)
+      method.lineNumber shouldBe Option(2)
+      method.columnNumber shouldBe Option(1)
+      method.lineNumberEnd shouldBe Option(4)
+      method.columnNumberEnd shouldBe Option(1)
       method.code shouldBe "int foo (int x,int y)"
     }
 
@@ -147,23 +142,23 @@ class MethodTests extends CCodeToCpgSuite {
       param1.code shouldBe "int x"
       param1.name shouldBe "x"
       param1.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      param1.lineNumber shouldBe Some(2)
-      param1.columnNumber shouldBe Some(9)
+      param1.lineNumber shouldBe Option(2)
+      param1.columnNumber shouldBe Option(9)
 
       param2.order shouldBe 2
       param2.code shouldBe "int y"
       param2.name shouldBe "y"
       param2.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      param2.lineNumber shouldBe Some(2)
-      param2.columnNumber shouldBe Some(16)
+      param2.lineNumber shouldBe Option(2)
+      param2.columnNumber shouldBe Option(16)
     }
 
     "have correct METHOD_RETURN node for method foo" in {
       val List(ret) = cpg.method.nameExact("foo").methodReturn.l
-      ret.code shouldBe "int"
+      ret.code shouldBe "RET"
       ret.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      ret.lineNumber shouldBe Some(2)
-      ret.columnNumber shouldBe Some(1)
+      ret.lineNumber shouldBe Option(2)
+      ret.columnNumber shouldBe Option(1)
     }
 
   }
@@ -199,7 +194,7 @@ class MethodTests extends CCodeToCpgSuite {
       val List(indentifierX) = method.block.ast.isIdentifier.l
       indentifierX.name shouldBe "x"
 
-      val Some(localX) = indentifierX._localViaRefOut
+      val localX = indentifierX._localViaRefOut.get
       localX.name shouldBe "x"
     }
 
@@ -208,7 +203,7 @@ class MethodTests extends CCodeToCpgSuite {
       val List(indentifierX) = method.block.ast.isIdentifier.l
       indentifierX.name shouldBe "x"
 
-      val Some(parameterX) = indentifierX._methodParameterInViaRefOut
+      val parameterX = indentifierX._methodParameterInViaRefOut.get
       parameterX.name shouldBe "x"
     }
 
@@ -216,7 +211,7 @@ class MethodTests extends CCodeToCpgSuite {
       val List(method)           = cpg.method.nameExact("method3").l
       val List(outerIdentifierX) = method.block.astChildren.astChildren.isIdentifier.nameExact("x").l
 
-      val Some(parameterX) = outerIdentifierX._methodParameterInViaRefOut
+      val parameterX = outerIdentifierX._methodParameterInViaRefOut.get
       parameterX.name shouldBe "x"
 
       val List(expectedParameterX) = method.parameter.l
@@ -225,7 +220,7 @@ class MethodTests extends CCodeToCpgSuite {
 
       val List(outerIdentifierY) = method.block.astChildren.astChildren.isIdentifier.nameExact("y").l
 
-      val Some(outerLocalY) = outerIdentifierY._localViaRefOut
+      val outerLocalY = outerIdentifierY._localViaRefOut.get
       outerLocalY.name shouldBe "y"
 
       val List(expectedOuterLocalY) = method.block.astChildren.isLocal.l
@@ -237,7 +232,7 @@ class MethodTests extends CCodeToCpgSuite {
       val List(nestedIdentifierX) = nestedBlock.ast.isIdentifier.nameExact("x").l
       nestedIdentifierX.name shouldBe "x"
 
-      val Some(nestedLocalX) = nestedIdentifierX._localViaRefOut
+      val nestedLocalX = nestedIdentifierX._localViaRefOut.get
       nestedLocalX.name shouldBe "x"
 
       val List(expectedNestedLocalX) = nestedBlock.ast.isLocal.nameExact("x").l
@@ -246,7 +241,7 @@ class MethodTests extends CCodeToCpgSuite {
       val List(nestedIdentifierY) = nestedBlock.ast.isIdentifier.nameExact("y").l
       nestedIdentifierY.name shouldBe "y"
 
-      val Some(nestedLocalY) = nestedIdentifierY._localViaRefOut
+      val nestedLocalY = nestedIdentifierY._localViaRefOut.get
       nestedLocalY.name shouldBe "y"
 
       val List(expectedNestedLocalY) = nestedBlock.ast.isLocal.nameExact("y").l

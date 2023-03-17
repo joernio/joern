@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.base
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -11,7 +11,7 @@ import org.slf4j.{Logger, LoggerFactory}
   *
   * This pass has MethodStubCreator as prerequisite for language frontends which do not provide method stubs.
   */
-class MethodDecoratorPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class MethodDecoratorPass(cpg: Cpg) extends CpgPass(cpg) {
   import MethodDecoratorPass.logger
 
   private[this] var loggedDeprecatedWarning   = false

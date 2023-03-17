@@ -32,7 +32,7 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
   )
 
   private val projectUnderTest: File = {
-    val dir = File.newTemporaryDirectory("jssrc2cpgTestsExludeTest")
+    val dir = File.newTemporaryDirectory("jssrc2cpgTestsExcludeTest")
     testFiles.foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
@@ -45,10 +45,10 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
     File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
       val cpg    = newEmptyCpg()
-      val config = Config(inputPath = projectUnderTest.toString, outputPath = tmpDir.toString)
+      val config = Config(inputPath = projectUnderTest.toString, outputPath = tmpDir.toString, tsTypes = false)
       val finalConfig =
         config.copy(ignoredFiles = exclude.map(config.createPathForIgnore), ignoredFilesRegex = excludeRegex.r)
-      val astgenResult = AstGenRunner.execute(finalConfig, tmpDir)
+      val astgenResult = new AstGenRunner(finalConfig).execute(tmpDir)
       new AstCreationPass(cpg, astgenResult, finalConfig).createAndApply()
       cpg.file.name.l should contain theSameElementsAs expectedFiles.map(_.replace("/", java.io.File.separator))
     }

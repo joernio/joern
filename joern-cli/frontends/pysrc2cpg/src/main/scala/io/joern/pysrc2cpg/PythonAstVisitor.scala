@@ -4,7 +4,7 @@ import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
 import io.joern.pythonparser.ast
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -35,6 +35,8 @@ class PythonAstVisitor(
   protected val contextStack = new ContextStack()
 
   private var memOpMap: AstNodeToMemoryOperationMap = _
+
+  private val members = mutable.Map.empty[NewTypeDecl, List[String]]
 
   // As key only ast.FunctionDef and ast.AsyncFunctionDef are used but there
   // is no more specific type than ast.istmt.
@@ -351,6 +353,7 @@ class PythonAstVisitor(
     }
 
     val methodReturnNode = nodeBuilder.methodReturnNode(returnTypeHint, lineAndColumn)
+    methodReturnNode.dynamicTypeHintFullName(nodeBuilder.extractTypesFromHint(returns))
     edgeBuilder.astEdge(methodReturnNode, methodNode, 2)
 
     val bodyOrder = new AutoIncIndex(1)
@@ -358,12 +361,17 @@ class PythonAstVisitor(
       edgeBuilder.astEdge(bodyStmt, blockNode, bodyOrder.getAndInc)
     }
 
-    contextStack.pop()
-
     // For every method we create a corresponding TYPE and TYPE_DECL and
     // a binding for the method into TYPE_DECL.
     val typeNode     = nodeBuilder.typeNode(name, fullName)
     val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, absFileName, Seq(Constants.ANY), lineAndColumn)
+
+    // For every method that is a module, the local variables can be imported by other modules. This behaviour is
+    // much like fields so they are to be linked as fields to this method type
+    if (name == "<module>") contextStack.createMemberLinks(typeDeclNode, edgeBuilder.astEdge)
+
+    contextStack.pop()
+
     edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
     createBinding(methodNode, typeDeclNode)
 
@@ -393,18 +401,6 @@ class PythonAstVisitor(
       )
     edgeBuilder.astEdge(metaTypeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
 
-    // Create <body> function which contains the code defining the class
-    contextStack.pushClass(classDef.name, metaTypeDeclNode)
-    val classBodyFunctionName = classDef.name + "<body>"
-    val (_, methodRefNode) = createMethodAndMethodRef(
-      classBodyFunctionName,
-      parameterProvider = () => MethodParameters.empty(),
-      bodyProvider = () => classDef.body.map(convert),
-      None,
-      isAsync = false,
-      lineAndColOf(classDef)
-    )
-
     // Create type for class instances
     val instanceTypeDeclName     = classDef.name
     val instanceTypeDeclFullName = calculateFullNameFromContext(instanceTypeDeclName)
@@ -422,6 +418,18 @@ class PythonAstVisitor(
         lineAndColOf(classDef)
       )
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
+
+    // Create <body> function which contains the code defining the class
+    contextStack.pushClass(classDef.name, metaTypeDeclNode)
+    val classBodyFunctionName = classDef.name + "<body>"
+    val (_, methodRefNode) = createMethodAndMethodRef(
+      classBodyFunctionName,
+      parameterProvider = () => MethodParameters.empty(),
+      bodyProvider = () => classDef.body.map(convert),
+      None,
+      isAsync = false,
+      lineAndColOf(classDef)
+    )
 
     // Create meta class call handling method and bind it to meta class type.
     val functions = classDef.body.collect { case func: ast.FunctionDef => func }
@@ -551,7 +559,7 @@ class PythonAstVisitor(
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", 0, isVariadic = false, lineAndColumn) :: Nil ++
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, Option(0)) :: Nil ++
             convert(parameters, 1)
         )
       },
@@ -595,6 +603,25 @@ class PythonAstVisitor(
     (convertedArgs, convertedKeywordArgs)
   }
 
+  /** This function strips the first positional parameter from initParameters, if present.
+    * @return
+    *   Parameters without first positional parameter and adjusted line and column number information.
+    */
+  private def stripFirstPositionalParameter(initParameters: ast.Arguments): (ast.Arguments, LineAndColumn) = {
+    if (initParameters.posonlyargs.nonEmpty) {
+      (
+        initParameters.copy(posonlyargs = initParameters.posonlyargs.tail),
+        lineAndColOf(initParameters.posonlyargs.head)
+      )
+    } else if (initParameters.args.nonEmpty) {
+      (initParameters.copy(args = initParameters.args.tail), lineAndColOf(initParameters.args.head))
+    } else if (initParameters.vararg.nonEmpty) {
+      (initParameters, lineAndColOf(initParameters.vararg.get))
+    } else {
+      (initParameters, lineAndColOf(initParameters.kw_arg.get))
+    }
+  }
+
   /** Creates the method which handles a call to the meta class object. This process is also known as creating a new
     * instance object, e.g. obj = MyClass(p1). The purpose of the generated function is to adapt between the special
     * cased instance creation call and a normal call to __new__ (for now <fakeNew>). The adaption is required to in
@@ -614,15 +641,7 @@ class PythonAstVisitor(
 
     // We need to drop the "self" parameter either from the position only or normal parameters
     // because "self" is not passed through but rather created in __new__.
-    val (parametersWithoutSelf, lineAndColumn) =
-      if (initParameters.posonlyargs.nonEmpty) {
-        (
-          initParameters.copy(posonlyargs = initParameters.posonlyargs.tail),
-          lineAndColOf(initParameters.posonlyargs.head)
-        )
-      } else {
-        (initParameters.copy(args = initParameters.args.tail), lineAndColOf(initParameters.args.head))
-      }
+    val (parametersWithoutSelf, lineAndColumn) = stripFirstPositionalParameter(initParameters)
 
     createMethod(
       methodName,
@@ -671,15 +690,7 @@ class PythonAstVisitor(
 
     // We need to drop the "self" parameter either from the position only or normal parameters
     // because "self" is not passed through but rather created in __new__.
-    val (parametersWithoutSelf, lineAndColumn) =
-      if (initParameters.posonlyargs.nonEmpty) {
-        (
-          initParameters.copy(posonlyargs = initParameters.posonlyargs.tail),
-          lineAndColOf(initParameters.posonlyargs.head)
-        )
-      } else {
-        (initParameters.copy(args = initParameters.args.tail), lineAndColOf(initParameters.args.head))
-      }
+    val (parametersWithoutSelf, lineAndColumn) = stripFirstPositionalParameter(initParameters)
 
     createMethod(
       newMethodName,
@@ -687,7 +698,7 @@ class PythonAstVisitor(
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", 0, isVariadic = false, lineAndColumn) :: Nil ++
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, Some(0)) :: Nil ++
             convert(parametersWithoutSelf, 1)
         )
       },
@@ -1753,9 +1764,30 @@ class PythonAstVisitor(
     * __getattribute__ and __get__.
     */
   def convert(attribute: ast.Attribute): nodes.NewNode = {
-    val baseNode = convert(attribute.value)
+    val baseNode  = convert(attribute.value)
+    val fieldName = attribute.attr
 
-    createFieldAccess(baseNode, attribute.attr, lineAndColOf(attribute))
+    val fieldAccess = createFieldAccess(baseNode, fieldName, lineAndColOf(attribute))
+
+    attribute.value match {
+      case name: ast.Name if name.id == "self" =>
+        createAndRegisterMember(fieldName)
+      case _ =>
+    }
+
+    fieldAccess
+  }
+
+  private def createAndRegisterMember(name: String): Unit = {
+    contextStack.findEnclosingTypeDecl() match {
+      case Some(typeDecl: NewTypeDecl) =>
+        if (!members.contains(typeDecl) || !members(typeDecl).contains(name)) {
+          val member = nodeBuilder.memberNode(name, "")
+          edgeBuilder.astEdge(member, typeDecl, contextStack.order.getAndInc)
+          members(typeDecl) = members.getOrElse(typeDecl, List()) ++ List(name)
+        }
+      case _ =>
+    }
   }
 
   def convert(subscript: ast.Subscript): NewNode = {
@@ -1779,7 +1811,13 @@ class PythonAstVisitor(
 
   def convert(name: ast.Name): nodes.NewNode = {
     val memoryOperation = memOpMap.get(name).get
-    createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
+    val identifier      = createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
+    contextStack.astParent match {
+      case method: NewMethod if method.name.endsWith("<body>") =>
+        createAndRegisterMember(identifier.name)
+      case _ =>
+    }
+    identifier
   }
 
   // TODO test
@@ -1873,15 +1911,27 @@ class PythonAstVisitor(
   // will all be slightly different in the future when we can represent the
   // different types in the cpg.
   def convertPosOnlyArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, index.getAndInc, isVariadic = false, lineAndColOf(arg))
+    nodeBuilder.methodParameterNode(
+      arg.arg,
+      isVariadic = false,
+      lineAndColOf(arg),
+      Option(index.getAndInc),
+      arg.annotation
+    )
   }
 
   def convertNormalArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, index.getAndInc, isVariadic = false, lineAndColOf(arg))
+    nodeBuilder.methodParameterNode(
+      arg.arg,
+      isVariadic = false,
+      lineAndColOf(arg),
+      Option(index.getAndInc),
+      arg.annotation
+    )
   }
 
   def convertVarArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, index.getAndInc, isVariadic = true, lineAndColOf(arg))
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = true, lineAndColOf(arg), Option(index.getAndInc))
   }
 
   def convertKeywordOnlyArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
@@ -1910,6 +1960,7 @@ class PythonAstVisitor(
 
 object PythonAstVisitor {
   val builtinPrefix   = "__builtin."
+  val typingPrefix    = "typing."
   val metaClassSuffix = "<meta>"
 
   // This list contains all functions from https://docs.python.org/3/library/functions.html#built-in-funcs
@@ -2074,5 +2125,87 @@ object PythonAstVisitor {
     "type",
     "unicode",
     "xrange"
+  )
+
+  lazy val allBuiltinClasses: Set[String] = (builtinClassesV2 ++ builtinClassesV3).toSet
+
+  lazy val typingClassesV3: Set[String] = Set(
+    "Annotated",
+    "Any",
+    "Callable",
+    "ClassVar",
+    "Final",
+    "ForwardRef",
+    "Generic",
+    "Literal",
+    "Optional",
+    "Protocol",
+    "Tuple",
+    "Type",
+    "TypeVar",
+    "Union",
+    "AbstractSet",
+    "ByteString",
+    "Container",
+    "ContextManager",
+    "Hashable",
+    "ItemsView",
+    "Iterable",
+    "Iterator",
+    "KeysView",
+    "Mapping",
+    "MappingView",
+    "MutableMapping",
+    "MutableSequence",
+    "MutableSet",
+    "Sequence",
+    "Sized",
+    "ValuesView",
+    "Awaitable",
+    "AsyncIterator",
+    "AsyncIterable",
+    "Coroutine",
+    "Collection",
+    "AsyncGenerator",
+    "AsyncContextManager",
+    "Reversible",
+    "SupportsAbs",
+    "SupportsBytes",
+    "SupportsComplex",
+    "SupportsFloat",
+    "SupportsIndex",
+    "SupportsInt",
+    "SupportsRound",
+    "ChainMap",
+    "Counter",
+    "Deque",
+    "Dict",
+    "DefaultDict",
+    "List",
+    "OrderedDict",
+    "Set",
+    "FrozenSet",
+    "NamedTuple",
+    "TypedDict",
+    "Generator",
+    "BinaryIO",
+    "IO",
+    "Match",
+    "Pattern",
+    "TextIO",
+    "AnyStr",
+    "cast",
+    "final",
+    "get_args",
+    "get_origin",
+    "get_type_hints",
+    "NewType",
+    "no_type_check",
+    "no_type_check_decorator",
+    "NoReturn",
+    "overload",
+    "runtime_checkable",
+    "Text",
+    "TYPE_CHECKING"
   )
 }

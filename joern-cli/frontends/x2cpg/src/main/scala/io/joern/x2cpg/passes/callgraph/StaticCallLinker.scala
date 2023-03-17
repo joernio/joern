@@ -3,13 +3,13 @@ package io.joern.x2cpg.passes.callgraph
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-class StaticCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class StaticCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   import StaticCallLinker._
   private val methodFullNameToNode = mutable.Map.empty[String, List[Method]]

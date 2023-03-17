@@ -180,10 +180,16 @@ else
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/c2cpg.sh "$JOERN_LINK_DIR" || true
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/ghidra2cpg "$JOERN_LINK_DIR" || true
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/jssrc2cpg.sh "$JOERN_LINK_DIR" || true
+	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/javasrc2cpg "$JOERN_LINK_DIR" || true
+	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/jimple2cpg "$JOERN_LINK_DIR" || true
+	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/kotlin2cpg "$JOERN_LINK_DIR" || true
+	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/php2cpg "$JOERN_LINK_DIR" || true
+	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/pysrc2cpg "$JOERN_LINK_DIR" || true
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-export "$JOERN_LINK_DIR" || true
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-flow "$JOERN_LINK_DIR" || true
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-scan "$JOERN_LINK_DIR" || true
 	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-stats "$JOERN_LINK_DIR" || true
+	    sudo ln -sf "$JOERN_INSTALL_DIR"/joern-cli/joern-slice "$JOERN_LINK_DIR" || true
     fi
 fi
 

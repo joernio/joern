@@ -3,12 +3,12 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.passes.frontend.TypeNodePass.fullToShortName
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewType
-import io.shiftleft.passes.{KeyPool, SimpleCpgPass}
+import io.shiftleft.passes.{KeyPool, CpgPass}
 
 /** Creates a `TYPE` node for each type in `usedTypes`
   */
 class TypeNodePass(usedTypes: List[String], cpg: Cpg, keyPool: Option[KeyPool] = None)
-    extends SimpleCpgPass(cpg, "types", keyPool) {
+    extends CpgPass(cpg, "types", keyPool) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
 

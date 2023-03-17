@@ -1,17 +1,11 @@
 package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNodeNew,
-  ExpressionNew,
-  NewBlock,
-  NewCall,
-  NewFieldIdentifier,
-  NewNode
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew, NewBlock, NewFieldIdentifier, NewNode}
 import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
+import org.eclipse.cdt.core.dom.ast.IASTBinaryExpression
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import org.eclipse.cdt.internal.core.parser.scanner.MacroArgumentExtractor
 
@@ -20,25 +14,36 @@ import scala.collection.mutable
 
 trait MacroHandler { this: AstCreator =>
 
+  private val nodeOffsetMacroPairs: mutable.Stack[(Int, IASTPreprocessorMacroDefinition)] = {
+    mutable.Stack.from(
+      cdtAst.getNodeLocations.toList
+        .collect { case exp: IASTMacroExpansionLocation =>
+          (exp.asFileLocation().getNodeOffset, exp.getExpansion.getMacroDefinition)
+        }
+        .sortBy(_._1)
+    )
+  }
+
   /** For the given node, determine if it is expanded from a macro, and if so, create a Call node to represent the macro
     * invocation and attach `ast` as its child.
     */
   def asChildOfMacroCall(node: IASTNode, ast: Ast): Ast = {
-    val macroCallAst = extractMatchingMacro(node).map { case (mac, args) =>
-      createMacroCallAst(ast, node, mac, args)
-    }
-    if (macroCallAst.isDefined) {
-      val newAst = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], argIndex = 1)
-      // We need to wrap the copied AST as it may contain CPG nodes not being allowed
-      // to be connected via AST edges under a CALL. E.g., LOCALs.
-      val b = Ast(
-        NewBlock()
-          .argumentIndex(1)
-          .typeFullName(registerType(Defines.voidTypeName))
-      )
-      macroCallAst.get.withChild(b.withChild(newAst))
-    } else {
-      ast
+    val matchingMacro = extractMatchingMacro(node)
+    val macroCallAst  = matchingMacro.map { case (mac, args) => createMacroCallAst(ast, node, mac, args) }
+    macroCallAst match {
+      case Some(callAst) =>
+        val newAst = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], argIndex = 1)
+        // We need to wrap the copied AST as it may contain CPG nodes not being allowed
+        // to be connected via AST edges under a CALL. E.g., LOCALs but only if its not already a BLOCK.
+        val childAst = newAst.root match {
+          case Some(_: NewBlock) =>
+            newAst
+          case _ =>
+            val b = NewBlock().argumentIndex(1).typeFullName(registerType(Defines.voidTypeName))
+            blockAst(b, List(newAst))
+        }
+        callAst.withChild(childAst)
+      case None => ast
     }
   }
 
@@ -47,40 +52,34 @@ trait MacroHandler { this: AstCreator =>
     * (Some(macroDefinition, arguments)) if a macro definition matches and None otherwise.
     */
   private def extractMatchingMacro(node: IASTNode): Option[(IASTPreprocessorMacroDefinition, List[String])] = {
-    expandedFromMacro(node)
-      .filterNot { m =>
-        isExpandedFrom(node.getParent, m)
-      }
-      .foreach { m =>
-        val nodeOffset = node.getFileLocation.getNodeOffset
-        val macroName  = ASTStringUtil.getSimpleName(m.getExpansion.getMacroDefinition.getName)
-        while (nodeOffsetMacroPairs.headOption.exists(x => x._1 <= nodeOffset)) {
-          val (_, macroDefinition) = nodeOffsetMacroPairs.head
-          nodeOffsetMacroPairs.remove(0)
-          val name = ASTStringUtil.getSimpleName(macroDefinition.getName)
-          if (macroName == name) {
-            val arguments = new MacroArgumentExtractor(cdtAst, node.getFileLocation).getArguments
-            return Some((macroDefinition, arguments))
-          }
+    val expansionLocations = expandedFromMacro(node).filterNot(isExpandedFrom(node.getParent, _))
+    val nodeOffset         = node.getFileLocation.getNodeOffset
+    var matchingMacro      = Option.empty[(IASTPreprocessorMacroDefinition, List[String])]
+
+    expansionLocations.foreach { macroLocation =>
+      while (matchingMacro.isEmpty && nodeOffsetMacroPairs.headOption.exists(_._1 <= nodeOffset)) {
+        val (_, macroDefinition) = nodeOffsetMacroPairs.pop()
+        val macroExpansionName   = ASTStringUtil.getSimpleName(macroLocation.getExpansion.getMacroDefinition.getName)
+        val macroDefinitionName  = ASTStringUtil.getSimpleName(macroDefinition.getName)
+        if (macroExpansionName == macroDefinitionName) {
+          val arguments = new MacroArgumentExtractor(cdtAst, node.getFileLocation).getArguments
+          matchingMacro = Option((macroDefinition, arguments))
         }
       }
-    None
+    }
+
+    matchingMacro
   }
 
   /** Determine whether `node` is expanded from the macro expansion at `loc`.
     */
-  private def isExpandedFrom(node: IASTNode, loc: IASTMacroExpansionLocation) = {
-    expandedFromMacro(node)
-      .map(_.getExpansion.getMacroDefinition)
-      .contains(loc.getExpansion.getMacroDefinition)
-  }
+  private def isExpandedFrom(node: IASTNode, loc: IASTMacroExpansionLocation): Boolean =
+    expandedFromMacro(node).map(_.getExpansion.getMacroDefinition).contains(loc.getExpansion.getMacroDefinition)
 
   private def argumentTrees(arguments: List[String], ast: Ast): List[Option[Ast]] = {
     arguments.zipWithIndex.map { case (arg, i) =>
       val rootNode = argForCode(arg, ast)
-      rootNode.map { x =>
-        ast.subTreeCopy(x.asInstanceOf[AstNodeNew], i + 1)
-      }
+      rootNode.map(x => ast.subTreeCopy(x.asInstanceOf[AstNodeNew], i + 1))
     }
   }
 
@@ -89,11 +88,9 @@ trait MacroHandler { this: AstCreator =>
     if (normalizedCode == "") {
       None
     } else {
-      ast.nodes
-        .collect { case x: AstNodeNew => x }
-        .find { x =>
-          x.isInstanceOf[ExpressionNew] && !x.isInstanceOf[NewFieldIdentifier] && x.code == normalizedCode
-        }
+      ast.nodes.collectFirst {
+        case x: ExpressionNew if !x.isInstanceOf[NewFieldIdentifier] && x.code == normalizedCode => x
+      }
     }
   }
 
@@ -108,45 +105,28 @@ trait MacroHandler { this: AstCreator =>
     arguments: List[String]
   ): Ast = {
     val name    = ASTStringUtil.getSimpleName(macroDef.getName)
-    val code    = node.getRawSignature.replaceAll(";$", "")
+    val code    = node.getRawSignature.stripSuffix(";")
     val argAsts = argumentTrees(arguments, ast).map(_.getOrElse(Ast()))
 
-    val callNode = NewCall()
-      .name(StringUtils.normalizeSpace(name))
-      .methodFullName(StringUtils.normalizeSpace(fullName(macroDef, argAsts)))
-      .code(code)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .typeFullName(typeFor(node))
-      .dispatchType(DispatchTypes.INLINED)
+    val callNode = newCallNode(
+      node,
+      StringUtils.normalizeSpace(name),
+      StringUtils.normalizeSpace(fullName(macroDef, argAsts)),
+      DispatchTypes.INLINED
+    ).code(code).typeFullName(typeFor(node))
 
     callAst(callNode, argAsts)
-  }
-
-  private val nodeOffsetMacroPairs: mutable.Buffer[(Int, IASTPreprocessorMacroDefinition)] = {
-    cdtAst.getNodeLocations.toList
-      .collect { case exp: IASTMacroExpansionLocation =>
-        (exp.asFileLocation().getNodeOffset, exp.getExpansion.getMacroDefinition)
-      }
-      .sortBy(_._1)
-      .toBuffer
   }
 
   /** Create a full name field that encodes line information that can be picked up by the MethodStubCreator in order to
     * create a METHOD node with the correct location information.
     */
   private def fullName(macroDef: IASTPreprocessorMacroDefinition, argAsts: List[Ast]) = {
-    val name         = ASTStringUtil.getSimpleName(macroDef.getName)
-    val fileLocation = macroDef.getFileLocation
-
-    if (fileLocation != null) {
-      val lineNo    = fileLocation.getStartingLineNumber
-      val lineNoEnd = lineEnd(macroDef).getOrElse("-1")
-      val fileName  = fileLocation.getFileName.replace(":", "")
-      fileName + ":" + lineNo + ":" + lineNoEnd + ":" + name + ":" + argAsts.size
-    } else {
-      "<empty>:-1:-1:" + name + ":" + argAsts.size
-    }
+    val name      = ASTStringUtil.getSimpleName(macroDef.getName)
+    val filename  = fileName(macroDef)
+    val lineNo    = line(macroDef).getOrElse(-1)
+    val lineNoEnd = lineEnd(macroDef).getOrElse(-1)
+    s"$filename:$lineNo:$lineNoEnd:$name:${argAsts.size}"
   }
 
   /** The CDT utility method is unfortunately in a class that is marked as deprecated, however, this is because the CDT
@@ -167,16 +147,20 @@ trait MacroHandler { this: AstCreator =>
     }
   }
 
-  def isExpandedFromMacro(node: IASTNode): Boolean =
-    expandedFromMacro(node).nonEmpty
+  private def isExpandedFromMacro(node: IASTNode): Boolean = expandedFromMacro(node).nonEmpty
 
-  def expandedFromMacro(node: IASTNode): Option[IASTMacroExpansionLocation] = {
-    val locations = node.getNodeLocations
-    if (locations.nonEmpty) {
-      node.getNodeLocations.headOption
-        .collect { case x: IASTMacroExpansionLocation => x }
-    } else {
-      None
+  private def expandedFromMacro(node: IASTNode): Option[IASTMacroExpansionLocation] = {
+    val locations = node.getNodeLocations.toList
+    val locationsSorted = node match {
+      // For binary expressions the expansion locations may occur in any order.
+      // We manually sort them here to ignore this.
+      // TODO: This may also happen with other expressions that allow for multiple sub elements.
+      case _: IASTBinaryExpression => locations.sortBy(_.isInstanceOf[IASTMacroExpansionLocation])
+      case _                       => locations
+    }
+    locationsSorted match {
+      case (head: IASTMacroExpansionLocation) :: _ => Option(head)
+      case _                                       => None
     }
   }
 

@@ -1,49 +1,58 @@
 package io.joern.pysrc2cpg
 
-import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.{X2Cpg, X2CpgConfig, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
-import overflowdb.Graph
-
-import java.nio.charset.StandardCharsets
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
 import scala.collection.mutable
+import scala.util.Try
 
-case class Py2CpgOnFileSystemConfig(outputFile: Path, inputDir: Path, ignoreVenvDir: Option[Path])
+case class Py2CpgOnFileSystemConfig(
+  outputFile: Path = Paths.get(X2CpgConfig.defaultOutputPath),
+  inputDir: Path = null,
+  venvDir: Path = Paths.get(".venv"),
+  ignoreVenvDir: Boolean = true,
+  disableDummyTypes: Boolean = false
+) extends X2CpgConfig[Py2CpgOnFileSystemConfig] {
+  override def withInputPath(inputPath: String): Py2CpgOnFileSystemConfig = {
+    copy(inputDir = Paths.get(inputPath))
+  }
 
-object Py2CpgOnFileSystem {
+  override def withOutputPath(x: String): Py2CpgOnFileSystemConfig = {
+    copy(outputFile = Paths.get(x))
+  }
+}
+
+class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
   private val logger = LoggerFactory.getLogger(getClass)
 
   /** Entry point for files system based cpg generation from python code.
     * @param config
     *   Configuration for cpg generation.
     */
-  def buildCpg(config: Py2CpgOnFileSystemConfig): Cpg = {
+  override def createCpg(config: Py2CpgOnFileSystemConfig): Try[Cpg] = {
     logConfiguration(config)
 
-    val cpg = initCpg(config.outputFile)
-
-    val inputFiles = collectInputFiles(config.inputDir, config.ignoreVenvDir.to(Iterable))
-    val inputProviders = inputFiles.map { inputFile => () =>
-      {
-        val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
-        Py2Cpg.InputPair(content, inputFile.toString, config.inputDir.relativize(inputFile).toString)
+    X2Cpg.withNewEmptyCpg(config.outputFile.toString, config) { (cpg, _) =>
+      val ignorePrefixes =
+        if (config.ignoreVenvDir) {
+          config.venvDir :: Nil
+        } else {
+          Nil
+        }
+      val inputFiles = collectInputFiles(config.inputDir, ignorePrefixes)
+      val inputProviders = inputFiles.map { inputFile => () =>
+        {
+          val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
+          Py2Cpg.InputPair(content, inputFile.toString, config.inputDir.relativize(inputFile).toString)
+        }
       }
+
+      val py2Cpg = new Py2Cpg(inputProviders, cpg)
+      py2Cpg.buildCpg()
     }
-
-    val py2Cpg = new Py2Cpg(inputProviders, cpg)
-    py2Cpg.buildCpg()
-    cpg
-  }
-
-  private def initCpg(outputFile: Path): Cpg = {
-    if (Files.exists(outputFile)) {
-      Files.delete(outputFile)
-    }
-
-    X2Cpg.newEmptyCpg(Some(outputFile.toString))
   }
 
   private def collectInputFiles(inputDir: Path, ignorePrefixes: Iterable[Path]): Iterable[Path] = {
@@ -77,6 +86,8 @@ object Py2CpgOnFileSystem {
   private def logConfiguration(config: Py2CpgOnFileSystemConfig): Unit = {
     logger.info(s"Output file: ${config.outputFile}")
     logger.info(s"Input directory: ${config.inputDir}")
-    config.ignoreVenvDir.foreach(dir => logger.info(s"Ignored virtual environment directory: $dir"))
+    logger.info(s"Venv directory: ${config.venvDir}")
+    logger.info(s"IgnoreVenvDir: ${config.ignoreVenvDir}")
+    logger.info(s"No dummy types: ${config.disableDummyTypes}")
   }
 }

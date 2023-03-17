@@ -10,16 +10,6 @@ import scala.jdk.CollectionConverters._
 
 class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
 
-  /** Textual representation of CFG node
-    */
-  def repr: String =
-    node match {
-      case method: Method                             => method.name
-      case methodReturn: MethodReturn                 => methodReturn.code
-      case expr: Expression                           => expr.code
-      case call: CallRepr if !call.isInstanceOf[Call] => call.code
-    }
-
   /** Successors in the CFG
     */
   def cfgNext: Traversal[CfgNode] = {

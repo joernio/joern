@@ -17,26 +17,40 @@ import scala.collection.mutable
   *   the data flow problem to solve
   * @param context
   *   state of the data flow engine
+  * @param sources
+  *   the set of sources that we are looking to reach.
   */
-class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable[Vector[ReachableByResult]] {
+class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[CfgNode]) extends Callable[TaskSummary] {
 
   import Engine._
 
   /** Entry point of callable. First checks if the maximum call depth has been exceeded, in which case an empty result
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
-  override def call(): Vector[ReachableByResult] = {
-    if (context.config.maxCallDepth != -1 && task.callDepth > context.config.maxCallDepth) {
-      Vector()
-    } else {
-      implicit val sem: Semantics = context.semantics
-      val path                    = PathElement(task.sink, task.callSiteStack.clone()) +: task.initialPath
-      results(path, task.sources, task.table, task.callSiteStack)
-      // TODO why do we update the call depth here?
-      task.table.get(task.sink).get.map { r =>
-        r.copy(callDepth = task.callDepth)
-      }
+  override def call(): TaskSummary = {
+    implicit val sem: Semantics = context.semantics
+    val path                    = Vector(PathElement(task.sink, task.callSiteStack))
+    val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()
+    results(task.sink, path, table, task.callSiteStack)
+    // TODO why do we update the call depth here?
+    val finalResults = table.get(task.fingerprint).get.map { r =>
+      r.copy(
+        taskStack = r.taskStack.dropRight(1) :+ r.fingerprint.copy(callDepth = task.callDepth),
+        path = r.path ++ task.initialPath
+      )
     }
+    val (partial, complete) = finalResults.partition(_.partial)
+    val newTasks            = new TaskCreator(context).createFromResults(partial)
+    TaskSummary(complete.flatMap(r => resultToTableEntries(r)), newTasks)
+  }
+
+  private def resultToTableEntries(r: ReachableByResult): List[(TaskFingerprint, TableEntry)] = {
+    r.taskStack.indices.map { i =>
+      val parentTask = r.taskStack(i)
+      val pathToSink = r.path.slice(0, r.path.map(_.node).indexOf(parentTask.sink))
+      val newPath    = pathToSink :+ PathElement(parentTask.sink, parentTask.callSiteStack)
+      (parentTask, TableEntry(path = newPath))
+    }.toList
   }
 
   /** Recursively expand the DDG backwards and return a list of all results, given by at least a source node in
@@ -48,9 +62,6 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     * @param path
     *   This is a path from a node to the sink. The first node of the path is expanded by this method
     *
-    * @param sources
-    *   This is the set of sources, i.e., nodes where traversal should end.
-    *
     * @param table
     *   The result table is a cache of known results that we can re-use
     *
@@ -58,10 +69,10 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     *   This stack holds all call sites we expanded to arrive at the generation of the current task
     */
   private def results[NodeType <: CfgNode](
+    sink: CfgNode,
     path: Vector[PathElement],
-    sources: Set[NodeType],
-    table: ResultTable,
-    callSiteStack: mutable.Stack[Call]
+    table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]],
+    callSiteStack: List[Call]
   )(implicit semantics: Semantics): Vector[ReachableByResult] = {
 
     val curNode = path.head.node
@@ -70,29 +81,79 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
       * table. If not, determine results recursively.
       */
     def computeResultsForParents() = {
-      expandIn(curNode, path, callSiteStack).iterator.flatMap { parent =>
+      deduplicateWithinTask(expandIn(curNode.asInstanceOf[CfgNode], path, callSiteStack).iterator.flatMap { parent =>
         createResultsFromCacheOrCompute(parent, path)
-      }.toVector
+      }.toVector)
+    }
+
+    def deduplicateWithinTask(vec: Vector[ReachableByResult]): Vector[ReachableByResult] = {
+      vec
+        .groupBy { result =>
+          val head = result.path.headOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+          val last = result.path.lastOption.map(x => (x.node, x.callSiteStack, x.isOutputArg)).get
+          (head, last, result.partial, result.callDepth)
+        }
+        .map { case (_, list) =>
+          val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
+          val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+            case Nil    => Nil
+            case h :: t => h :: t.takeWhile(y => y._1 == h._1)
+          }).map(_._2)
+
+          if (withMaxLength.length == 1) {
+            withMaxLength.head
+          } else {
+            withMaxLength.minBy { x =>
+              x.callDepth.toString + " " +
+                x.taskStack
+                  .map(x => x.sink.id.toString + ":" + x.callSiteStack.map(_.id).mkString("|"))
+                  .toString + " " + x.path
+                  .map(x => (x.node.id, x.callSiteStack.map(_.id), x.visible, x.isOutputArg, x.outEdgeLabel).toString)
+                  .mkString("-")
+            }
+          }
+        }
+        .toVector
     }
 
     def createResultsFromCacheOrCompute(elemToPrepend: PathElement, path: Vector[PathElement]) = {
-      val cachedResult = table.createFromTable(elemToPrepend, path)
+      val cachedResult = createFromTable(table, elemToPrepend, task.callSiteStack, path, task.callDepth)
       if (cachedResult.isDefined) {
         QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
         cachedResult.get
       } else {
         QueryEngineStatistics.incrementBy(PATH_CACHE_MISSES, 1L)
         val newPath = elemToPrepend +: path
-        results(newPath, sources, table, callSiteStack)
+        results(sink, newPath, table, callSiteStack)
+      }
+    }
+
+    /** For a given path, determine whether results for the first element (`first`) are stored in the table, and if so,
+      * for each result, determine the path up to `first` and prepend it to `path`, giving us new results via table
+      * lookup.
+      */
+    def createFromTable(
+      table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]],
+      first: PathElement,
+      callSiteStack: List[Call],
+      remainder: Vector[PathElement],
+      callDepth: Int
+    ): Option[Vector[ReachableByResult]] = {
+      table.get(TaskFingerprint(first.node.asInstanceOf[CfgNode], callSiteStack, callDepth)).map { res =>
+        res.map { r =>
+          val stopIndex       = r.path.map(x => (x.node, x.callSiteStack)).indexOf((first.node, first.callSiteStack))
+          val pathToFirstNode = r.path.slice(0, stopIndex)
+          val completePath    = pathToFirstNode ++ (first +: remainder)
+          r.copy(path = Vector(completePath.head) ++ completePath.tail)
+        }
       }
     }
 
     def createPartialResultForOutputArgOrRet() = {
       Vector(
         ReachableByResult(
-          PathElement(path.head.node, callSiteStack.clone(), isOutputArg = true) +: path.tail,
-          table,
-          callSiteStack,
+          task.taskStack,
+          PathElement(path.head.node, callSiteStack, isOutputArg = true) +: path.tail,
           partial = true
         )
       )
@@ -103,20 +164,17 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
       case x if sources.contains(x.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(path, table, callSiteStack)) ++ deduplicate(computeResultsForParents())
-      // Case 1.5: the second node on the path is a METHOD_RETURN and its a source. This clumsy check is necessary because
-      // for method returns, the derived tasks we create in TaskCreator jump immediately to the RETURN statements in
-      // order to only pick up values that actually propagate via a RETURN and don't just flow to METHOD_RETURN because
-      // it is the exit node.
-      case _
-          if path.size > 1
-            && path(1).node.isInstanceOf[MethodReturn]
-            && sources.contains(path(1).node.asInstanceOf[NodeType]) =>
-        Vector(ReachableByResult(path.drop(1), table, callSiteStack)) ++ deduplicate(computeResultsForParents())
-
+        if (x.isInstanceOf[MethodParameterIn]) {
+          Vector(
+            ReachableByResult(task.taskStack, path),
+            ReachableByResult(task.taskStack, path, partial = true)
+          ) ++ computeResultsForParents()
+        } else {
+          Vector(ReachableByResult(task.taskStack, path)) ++ computeResultsForParents()
+        }
       // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
       case _: MethodParameterIn =>
-        Vector(ReachableByResult(path, table, callSiteStack, partial = true))
+        Vector(ReachableByResult(task.taskStack, path, partial = true))
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
       case call: Call
@@ -134,9 +192,13 @@ class TaskSolver(task: ReachableByTask, context: EngineContext) extends Callable
 
       // All other cases: expand into parents
       case _ =>
-        deduplicate(computeResultsForParents())
+        computeResultsForParents()
     }
-    table.add(curNode, res)
+    val key = TaskFingerprint(curNode.asInstanceOf[CfgNode], task.callSiteStack, task.callDepth)
+    table.updateWith(key) {
+      case Some(existingValue) => Some(existingValue ++ res)
+      case None                => Some(res)
+    }
     res
   }
 

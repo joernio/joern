@@ -22,6 +22,8 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.code shouldBe "@NormalAnnotation(value = \"classAnnotation\")"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"
+      annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter assignment child" in {
@@ -61,6 +63,8 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.code shouldBe "@SingleAnnotation(\"classAnnotation\")"
       annotationNode.name shouldBe "SingleAnnotation"
       annotationNode.fullName shouldBe "some.SingleAnnotation"
+      annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter assignment child" in {
@@ -99,6 +103,8 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.code shouldBe "@MarkerAnnotation()"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
+      annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter assignment child" in {
@@ -119,11 +125,12 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "test annotation node properties" in {
-      import scala.jdk.CollectionConverters._
       val annotationNode = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).annotation.head
       annotationNode.code shouldBe "@MarkerAnnotation()"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
+      annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter assignment child" in {
@@ -146,6 +153,8 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.code shouldBe "@MarkerAnnotation"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
+      annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(17)
     }
   }
 
@@ -162,6 +171,8 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.code shouldBe "@MarkerAnnotation"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
+      annotationNode.lineNumber shouldBe Some(4)
+      annotationNode.columnNumber shouldBe Some(3)
     }
   }
 
@@ -181,6 +192,8 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.code shouldBe "@NormalAnnotation(value = 2)"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"
+      annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter value" in {
@@ -207,6 +220,8 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.code shouldBe "@NormalAnnotation(value = { \"aaa\", \"bbb\" })"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"
+      annotationNode.lineNumber shouldBe Some(5)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter assignment child" in {
@@ -255,6 +270,8 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.code shouldBe "@NormalAnnotation(value = @OtherAnnotation)"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"
+      annotationNode.lineNumber shouldBe Some(6)
+      annotationNode.columnNumber shouldBe Some(3)
     }
 
     "test annotation node parameter value" in {
@@ -286,10 +303,12 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
           wildcard1.name shouldBe "Wildcard1"
           wildcard1.fullName shouldBe "b.Wildcard1"
           wildcard1.code shouldBe "@Wildcard1"
+          wildcard1.lineNumber shouldBe Some(6)
 
           wildcard2.name shouldBe "Wildcard2"
           wildcard2.fullName shouldBe "b.Wildcard2"
           wildcard2.code shouldBe "@Wildcard2"
+          wildcard2.lineNumber shouldBe Some(7)
 
         case result => fail(s"Expected 3 annotations for Foo but got $result")
       }

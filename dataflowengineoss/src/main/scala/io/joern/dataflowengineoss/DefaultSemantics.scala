@@ -3,6 +3,8 @@ package io.joern.dataflowengineoss
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.Operators
 
+import scala.annotation.unused
+
 object DefaultSemantics {
 
   /** @return
@@ -18,19 +20,19 @@ object DefaultSemantics {
   def operatorFlows: List[FlowSemantic] = List(
     F(Operators.addition, List((1, -1), (2, -1))),
     F(Operators.addressOf, List((1, -1))),
-    F(Operators.assignment, List((2, 1))),
-    F(Operators.assignmentAnd, List((2, 1), (1, 1))),
-    F(Operators.assignmentArithmeticShiftRight, List((2, 1), (1, 1))),
-    F(Operators.assignmentDivision, List((2, 1), (1, 1))),
-    F(Operators.assignmentExponentiation, List((2, 1), (1, 1))),
-    F(Operators.assignmentLogicalShiftRight, List((2, 1), (1, 1))),
-    F(Operators.assignmentMinus, List((2, 1), (1, 1))),
-    F(Operators.assignmentModulo, List((2, 1), (1, 1))),
-    F(Operators.assignmentMultiplication, List((2, 1), (1, 1))),
-    F(Operators.assignmentOr, List((2, 1), (1, 1))),
-    F(Operators.assignmentPlus, List((2, 1), (1, 1))),
-    F(Operators.assignmentShiftLeft, List((2, 1), (1, 1))),
-    F(Operators.assignmentXor, List((2, 1), (1, 1))),
+    F(Operators.assignment, List((2, 1), (2, -1))),
+    F(Operators.assignmentAnd, List((2, 1), (1, 1), (2, -1))),
+    F(Operators.assignmentArithmeticShiftRight, List((2, 1), (1, 1), (2, -1))),
+    F(Operators.assignmentDivision, List((2, 1), (1, 1), (2, -1))),
+    F(Operators.assignmentExponentiation, List((2, 1), (1, 1), (2, -1))),
+    F(Operators.assignmentLogicalShiftRight, List((2, 1), (1, 1), (2, -1))),
+    F(Operators.assignmentMinus, List((2, 1), (1, 1), (2, -1))),
+    F(Operators.assignmentModulo, List((2, 1), (1, 1), (2, -1))),
+    F(Operators.assignmentMultiplication, List((2, 1), (1, 1), (2, -1))),
+    F(Operators.assignmentOr, List((2, 1), (1, 1), (2, -1))),
+    F(Operators.assignmentPlus, List((2, 1), (1, 1), (2, -1))),
+    F(Operators.assignmentShiftLeft, List((2, 1), (1, 1), (2, -1))),
+    F(Operators.assignmentXor, List((2, 1), (1, 1), (2, -1))),
     F(Operators.cast, List((1, -1), (2, -1))),
     F(Operators.computedMemberAccess, List((1, -1))),
     F(Operators.conditional, List((2, -1), (3, -1))),
@@ -49,10 +51,10 @@ object DefaultSemantics {
     F(Operators.indirection, List((1, -1))),
     F(Operators.memberAccess, List((1, -1))),
     F(Operators.pointerShift, List((1, -1))),
-    F(Operators.postDecrement, List((1, 1))),
-    F(Operators.postIncrement, List((1, 1))),
-    F(Operators.preDecrement, List((1, 1))),
-    F(Operators.preIncrement, List((1, 1))),
+    F(Operators.postDecrement, List((1, 1), (1, -1))),
+    F(Operators.postIncrement, List((1, 1), (1, -1))),
+    F(Operators.preDecrement, List((1, 1), (1, -1))),
+    F(Operators.preIncrement, List((1, 1), (1, -1))),
     F(Operators.sizeOf, List()),
 
     //  some of those operators have duplicate mappings due to a typo
@@ -114,14 +116,17 @@ object DefaultSemantics {
   /** Semantic summaries for common external Java calls.
     */
   def javaFlows: List[FlowSemantic] = List(
-    F("java.lang.String.split:java.lang.String[](java.lang.String)", List((1, 1), (1, -1))),
-    F("java.lang.String.split:java.lang.String[](java.lang.String,int)", List((1, 1), (1, -1), (2, -1))),
-    F("java.lang.String.compareTo:int(java.lang.String)", List((0, -1), (1, -1))),
-    F("java.io.PrintWriter.print:void(java.lang.String)", List((1, 1))),
-    F("java.io.PrintWriter.println:void(java.lang.String)", List((1, 1))),
-    F("java.io.PrintStream.println:void(java.lang.String)", List((1, 1))),
-    F("java.io.PrintStream.print:void(java.lang.String)", List((1, 1))),
-    F("android.text.TextUtils.isEmpty:boolean(java.lang.String)", List((1, -1))),
+    F("java.lang.String.split:java.lang.String[](java.lang.String)", List((0, 0), (0, -1), (1, 1), (1, -1))),
+    F(
+      "java.lang.String.split:java.lang.String[](java.lang.String,int)",
+      List((0, 0), (0, -1), (1, 1), (1, -1), (2, -1))
+    ),
+    F("java.lang.String.compareTo:int(java.lang.String)", List((0, 0), (0, -1), (0, -1), (1, -1))),
+    F("java.io.PrintWriter.print:void(java.lang.String)", List((0, 0), (1, 1))),
+    F("java.io.PrintWriter.println:void(java.lang.String)", List((0, 0), (1, 1))),
+    F("java.io.PrintStream.println:void(java.lang.String)", List((0, 0), (1, 1))),
+    F("java.io.PrintStream.print:void(java.lang.String)", List((0, 0), (0, -1), (1, 1))),
+    F("android.text.TextUtils.isEmpty:boolean(java.lang.String)", List((0, -1), (1, -1))),
     F("java.sql.PreparedStatement.prepareStatement:java.sql.PreparedStatement(java.lang.String)", List((1, -1))),
     F("java.sql.PreparedStatement.prepareStatement:setDouble(int,double)", List((1, 1), (2, 2))),
     F("java.sql.PreparedStatement.prepareStatement:setFloat(int,float)", List((1, 1), (2, 2))),
@@ -136,15 +141,16 @@ object DefaultSemantics {
       List((1, 1), (1, 0), (2, 2), (2, 0), (3, 3), (3, 0))
     ),
     F("org.apache.http.HttpResponse.getStatusLine:org.apache.http.StatusLine()", List((0, -1))),
-    F("org.apache.http.HttpResponse.setStatusLine:void(org.apache.http.StatusLine)", List((1, 1), (0, -1))),
-    F("org.apache.http.HttpResponse.setReasonPhrase:void(java.lang.String)", List((1, 1), (0, -1))),
+    F("org.apache.http.HttpResponse.setStatusLine:void(org.apache.http.StatusLine)", List((1, 0), (1, 1), (0, -1))),
+    F("org.apache.http.HttpResponse.setReasonPhrase:void(java.lang.String)", List((1, 0), (1, 1), (0, -1))),
     F("org.apache.http.HttpResponse.getEntity:org.apache.http.HttpEntity()", List((0, -1))),
-    F("org.apache.http.HttpResponse.setEntity:void(org.apache.http.HttpEntity)", List((1, 1), (1, 0)))
+    F("org.apache.http.HttpResponse.setEntity:void(org.apache.http.HttpEntity)", List((1, 0), (1, 1), (1, 0)))
   )
 
   /** @return
     *   procedure semantics for operators and common external Java calls only.
     */
+  @unused
   def javaSemantics(): Semantics = Semantics.fromList(operatorFlows ++ javaFlows)
 
 }

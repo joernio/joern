@@ -15,10 +15,32 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with class declaration using unresolved types which are available in imports" should {
+    val cpg = code("""
+      |package no.such.pkg
+      |
+      |import android.content.BroadcastReceiver
+      |import android.content.Context
+      |import android.content.Intent
+      |
+      |class CustomReceiver : BroadcastReceiver() {
+      |    override fun onReceive(context: Context?, intent: Intent?) {}
+      |}
+      | """.stripMargin)
+
+    "should contain a TYPE_DECL node with the correct TYPE_FULL_NAME property set" in {
+      cpg.typeDecl.name("CustomReceiver").inheritsFromTypeFullName.l shouldBe List("android.content.BroadcastReceiver")
+    }
+
+    "should contain a TYPE_DECL node with a METHOD node with the correct TYPE_FULL_NAME properties set" in {
+      cpg.typeDecl.name("CustomReceiver").method.nameExact("onReceive").parameter.typeFullName.l shouldBe
+        List("no.such.pkg.CustomReceiver", "android.content.Context", "android.content.Intent")
+    }
+  }
 
   "CPG for code with class declaration with two init blocks" should {
     val cpg = code("""
-       |package no.such.package
+       |package no.such.pkg
        |class YourNewMostFavoriteNewsletter {
        |    init { println("            𝖘𝖚𝖇𝖘𝖈𝖗𝖎𝖇𝖊 𝖓𝖔𝖜         ") }
        |    init { println("   https://grugq.substack.com/   ") }
@@ -338,6 +360,18 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(td) = cpg.typeDecl.nameExact("AClass").l
       td.isExternal shouldBe false
       td.fullName shouldBe "mypkg.doSomething.AClass"
+    }
+  }
+
+  "CPG for code with nested class definition" should {
+    val cpg = code("""package no.such.pkg
+        |import another.made.up.pkg.SomeClass
+        |class AClass { class AnotherClass : SomeClass() }
+        |""".stripMargin)
+
+    "should contain a TYPE_DECL node for the nested class" in {
+      val List(td) = cpg.typeDecl.nameExact("AnotherClass").l
+      td.inheritsFromTypeFullName shouldBe List("another.made.up.pkg.SomeClass")
     }
   }
 }

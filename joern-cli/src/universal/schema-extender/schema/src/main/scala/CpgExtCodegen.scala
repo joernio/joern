@@ -6,12 +6,12 @@ import overflowdb.schema.Property.ValueType
 import java.io.File
 
 object CpgExtCodegen {
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     val outputDir = args.headOption
       .map(new File(_))
       .getOrElse(throw new AssertionError("please pass outputDir as first parameter"))
 
-    val builder = new SchemaBuilder(domainShortName = "Cpg", basePackage = "io.shiftleft.codepropertygraph.generated")
+    val builder   = new SchemaBuilder(domainShortName = "Cpg", basePackage = "io.shiftleft.codepropertygraph.generated")
     val cpgSchema = new CpgSchema(builder)
 
     // START extensions for this build - add your's here and remove the example properties

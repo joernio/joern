@@ -1,10 +1,11 @@
 package io.joern.kotlin2cpg.types
 
 import io.joern.x2cpg.Defines
-import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, SimpleFunctionDescriptor}
+import org.jetbrains.kotlin.descriptors.{ClassDescriptor, DeclarationDescriptor, SimpleFunctionDescriptor}
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, TypeUtils, UnresolvedType}
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
 import org.jetbrains.kotlin.types.typeUtil.TypeUtilsKt
 import org.jetbrains.kotlin.resolve.jvm.JvmPrimitiveType
@@ -38,77 +39,88 @@ object TypeRenderer {
     new DescriptorRendererImpl(opts)
   }
 
-  def renderFqName(desc: DeclarationDescriptor): String = {
+  def renderFqNameForDesc(desc: DeclarationDescriptor): String = {
+    val renderer     = descriptorRenderer()
+    val fqName       = DescriptorUtils.getFqName(desc)
+    val simpleRender = stripped(renderer.renderFqName(fqName))
+    def maybeReplacedOrTake(c: ClassDescriptor, or: String): String = {
+      if (DescriptorUtils.isCompanionObject(c) || c.isInner) {
+        val rendered = stripped(renderer.renderFqName(fqName))
+        rendered.replaceFirst("\\." + c.getName, "\\$" + c.getName)
+      } else or
+    }
+    val strippedOfContainingDeclarationIfNeeded =
+      Option(desc.getContainingDeclaration)
+        .map { containingDeclaration =>
+          containingDeclaration match {
+            case c: ClassDescriptor => maybeReplacedOrTake(c, simpleRender)
+            case _                  => simpleRender
+          }
+        }
+        .getOrElse(simpleRender)
+    desc match {
+      case c: ClassDescriptor => maybeReplacedOrTake(c, strippedOfContainingDeclarationIfNeeded)
+      case _                  => strippedOfContainingDeclarationIfNeeded
+    }
+  }
+
+  private def maybeUnwrappedRender(render: String, unwrapPrimitives: Boolean, fqName: FqName) = {
+    val isWrapperOfPrimitiveType = JvmPrimitiveType.isWrapperClassName(fqName)
+    if (unwrapPrimitives && isWrapperOfPrimitiveType) {
+      JvmPrimitiveType
+        .values()
+        .toList
+        .filter(_.getWrapperFqName.toString == fqName.toString)
+        .map(_.getJavaKeywordName)
+        .head
+    } else render
+  }
+
+  private def renderForDescriptor(descriptor: ClassDescriptor, unwrapPrimitives: Boolean, t: KotlinType): String = {
     val renderer = descriptorRenderer()
-    val fqName   = DescriptorUtils.getFqName(desc)
-    stripped(renderer.renderFqName(fqName))
+    val fqName   = DescriptorUtils.getFqName(descriptor)
+    Option(JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(fqName))
+      .map { mappedType =>
+        val fqName = mappedType.asSingleFqName()
+        val render = stripped(renderer.renderFqName(fqName.toUnsafe))
+        maybeUnwrappedRender(render, unwrapPrimitives, fqName)
+      }
+      .getOrElse {
+        if (DescriptorUtils.isCompanionObject(descriptor) || descriptor.isInner) {
+          val rendered            = stripped(renderer.renderFqName(fqName))
+          val companionObjectName = descriptor.getName
+          // replaces `apkg.ContainingClass.CompanionObjectName` with `apkg.ContainingClass$CompanionObjectName`
+          rendered.replaceFirst("\\." + companionObjectName, "\\$" + companionObjectName)
+        } else {
+          descriptor.getContainingDeclaration match {
+            case fn: SimpleFunctionDescriptor =>
+              val renderedFqName     = stripped(renderer.renderFqName(DescriptorUtils.getFqName(descriptor)))
+              val containingDescName = fn.getName
+              // replaces `apkg.containingMethodName.className` with `apkg.className$containingMethodName`
+              renderedFqName.replaceFirst("\\." + containingDescName + "\\.([^.]+)", ".$1" + "\\$" + containingDescName)
+            case _ => stripped(renderer.renderType(t))
+          }
+        }
+      }
   }
 
   def render(t: KotlinType, shouldMapPrimitiveArrayTypes: Boolean = true, unwrapPrimitives: Boolean = true): String = {
-    val renderer = descriptorRenderer()
-    val rendered = {
-      if (TypeUtilsKt.isTypeParameter(t)) {
-        TypeConstants.javaLangObject
-      } else if (isFunctionXType(t)) {
-        TypeConstants.kotlinFunctionXPrefix + (t.getArguments.size() - 1).toString
-      } else {
-        val descriptor = TypeUtils.getClassDescriptor(t)
-        if (descriptor != null) {
-          val fqName     = DescriptorUtils.getFqName(descriptor)
-          val mappedType = JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(fqName)
-          if (mappedType != null) {
-            val fqName                   = mappedType.asSingleFqName()
-            val nonUnwrappedRender       = stripped(renderer.renderFqName(fqName.toUnsafe))
-            val isWrapperOfPrimitiveType = JvmPrimitiveType.isWrapperClassName(fqName)
-
-            if (unwrapPrimitives && isWrapperOfPrimitiveType) {
-              JvmPrimitiveType
-                .values()
-                .toList
-                .filter(_.getWrapperFqName.toString == fqName.toString)
-                .map(_.getJavaKeywordName)
-                .head
-            } else {
-              nonUnwrappedRender
-            }
-          } else {
-            val descriptor = TypeUtils.getClassDescriptor(t)
-            if (DescriptorUtils.isCompanionObject(descriptor)) {
-              val rendered            = stripped(renderer.renderFqName(fqName))
-              val companionObjectName = descriptor.getName
-              // replaces `apkg.ContaininClass.CompanionObjectName` with `apkg.ContainingClass$CompanionObjectName`
-              rendered.replaceFirst("\\." + companionObjectName, "\\$" + companionObjectName)
-            } else {
-              descriptor.getContainingDeclaration match {
-                case fn: SimpleFunctionDescriptor =>
-                  val renderedFqName     = stripped(renderer.renderFqName(DescriptorUtils.getFqName(descriptor)))
-                  val containingDescName = fn.getName
-                  // replaces `apkg.containingMethodName.className` with `apkg.className$containingMethodName`
-                  renderedFqName.replaceFirst(
-                    "\\." + containingDescName + "\\.([^.]+)",
-                    ".$1" + "\\$" + containingDescName
-                  )
-                case _ => stripped(renderer.renderType(t))
-              }
-            }
+    val rendered =
+      if (TypeUtilsKt.isTypeParameter(t)) TypeConstants.javaLangObject
+      else if (isFunctionXType(t)) TypeConstants.kotlinFunctionXPrefix + (t.getArguments.size() - 1).toString
+      else
+        Option(TypeUtils.getClassDescriptor(t))
+          .map { descriptor =>
+            renderForDescriptor(descriptor, unwrapPrimitives, t)
           }
-        } else {
-          val relevantT =
-            Option(TypeUtilsKt.getImmediateSuperclassNotAny(t))
-              .getOrElse(t)
-          val rendered = renderer.renderType(relevantT)
-          stripped(rendered)
-        }
-      }
-    }
-
-    if (shouldMapPrimitiveArrayTypes && primitiveArrayMappings.contains(rendered)) {
-      primitiveArrayMappings(rendered)
-    } else if (rendered == TypeConstants.kotlinUnit) {
-      TypeConstants.void
-    } else {
-      rendered
-    }
+          .getOrElse {
+            val renderer  = descriptorRenderer()
+            val relevantT = Option(TypeUtilsKt.getImmediateSuperclassNotAny(t)).getOrElse(t)
+            stripped(renderer.renderType(relevantT))
+          }
+    if (shouldMapPrimitiveArrayTypes && primitiveArrayMappings.contains(rendered)) primitiveArrayMappings(rendered)
+    else if (rendered == TypeConstants.kotlinUnit) TypeConstants.void
+    else rendered
   }
 
   private def isFunctionXType(t: KotlinType): Boolean = {

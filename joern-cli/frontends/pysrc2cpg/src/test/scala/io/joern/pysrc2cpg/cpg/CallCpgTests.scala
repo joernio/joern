@@ -201,6 +201,13 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       Seq("foo", "bar", "__init__.py").mkString(File.separator)
     )
 
+    "test that the identifiers are not set to the function pointers but rather the 'ANY' return value" in {
+      val List(x, y, z) = cpg.identifier.name("x", "y", "z").l
+      x.typeFullName shouldBe "foo.py:<module>.foo_func.<returnValue>"
+      y.typeFullName shouldBe Seq("foo", "bar", "__init__.py:<module>.bar_func.<returnValue>").mkString(File.separator)
+      z.typeFullName shouldBe "foo.py:<module>.faz.<returnValue>"
+    }
+
     "test call node properties for normal import from module on root path" in {
       val callNode = cpg.call.codeExact("foo_func(a, b)").head
       callNode.name shouldBe "foo_func"
@@ -208,6 +215,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(6)
       callNode.methodFullName shouldBe "foo.py:<module>.foo_func"
+      callNode.callee(NoResolve).isExternal.headOption shouldBe Some(false)
     }
 
     "test call node properties for normal import from module deeper on a module path" in {
@@ -217,6 +225,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(7)
       callNode.methodFullName shouldBe Seq("foo", "bar", "__init__.py:<module>.bar_func").mkString(File.separator)
+      callNode.callee(NoResolve).isExternal.headOption shouldBe Some(false)
     }
 
     "test call node properties for aliased import from module on root path" in {
@@ -226,6 +235,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(8)
       callNode.methodFullName shouldBe "foo.py:<module>.faz"
+      callNode.callee(NoResolve).isExternal.headOption shouldBe Some(false)
     }
   }
 

@@ -1,6 +1,7 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.datastructures.BlockScope
+import io.joern.jssrc2cpg.datastructures.MethodScope
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
@@ -25,32 +26,25 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val restName    = nameForBabelNodeInfo(paramNodeInfo, defaultName)
     ast.root match {
       case Some(_: NewIdentifier) =>
-        val keyNode = Ast(createFieldIdentifierNode(restName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber))
+        val keyNode = createFieldIdentifierNode(restName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
         val tpe     = typeFor(elementNodeInfo)
         val localParamNode = createIdentifierNode(restName, elementNodeInfo)
         localParamNode.typeFullName = tpe
         val paramNode = createIdentifierNode(paramName, elementNodeInfo)
         val accessAst =
-          createFieldAccessCallAst(
-            paramNode,
-            keyNode.nodes.head,
-            elementNodeInfo.lineNumber,
-            elementNodeInfo.columnNumber
-          )
-        Ast.storeInDiffGraph(accessAst, diffGraph)
+          createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
         createAssignmentCallAst(
-          localParamNode,
-          accessAst.nodes.head,
+          Ast(localParamNode),
+          accessAst,
           s"$restName = ${codeOf(accessAst.nodes.head)}",
           elementNodeInfo.lineNumber,
           elementNodeInfo.columnNumber
         )
       case _ =>
-        Ast.storeInDiffGraph(ast, diffGraph)
         val localParamNode = createIdentifierNode(restName, elementNodeInfo)
         createAssignmentCallAst(
-          localParamNode,
-          ast.nodes.head,
+          Ast(localParamNode),
+          ast,
           s"$restName = ${codeOf(ast.nodes.head)}",
           elementNodeInfo.lineNumber,
           elementNodeInfo.columnNumber
@@ -62,169 +56,192 @@ trait AstForFunctionsCreator { this: AstCreator =>
     parameters: Seq[Value],
     additionalBlockStatements: mutable.ArrayBuffer[Ast],
     createLocals: Boolean = true
-  ): Seq[NewMethodParameterIn] = withIndex(parameters) { case (param, index) =>
-    val nodeInfo = createBabelNodeInfo(param)
-    nodeInfo.node match {
-      case RestElement =>
-        val paramName = nodeInfo.code.replace("...", "")
-        val tpe       = typeFor(nodeInfo)
-        if (createLocals) {
-          val localNode = createLocalNode(paramName, tpe)
-          diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
-        }
-        createParameterInNode(
-          paramName,
-          nodeInfo.code,
-          index,
-          isVariadic = true,
-          nodeInfo.lineNumber,
-          nodeInfo.columnNumber,
-          Some(tpe)
-        )
-      case AssignmentPattern =>
-        val lhsElement  = nodeInfo.json("left")
-        val rhsElement  = nodeInfo.json("right")
-        val lhsNodeInfo = createBabelNodeInfo(lhsElement)
-        lhsNodeInfo.node match {
-          case ObjectPattern | ArrayPattern =>
-            val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
-            val param = createParameterInNode(
-              paramName,
-              nodeInfo.code,
-              index,
-              isVariadic = false,
-              nodeInfo.lineNumber,
-              nodeInfo.columnNumber
-            )
-            val rhsAst = astForNodeWithFunctionReference(rhsElement)
-            Ast.storeInDiffGraph(rhsAst, diffGraph)
-            additionalBlockStatements.addOne(astForDeconstruction(lhsNodeInfo, rhsAst, Some(paramName)))
-            param
-          case _ =>
-            additionalBlockStatements.addOne(convertParamWithDefault(nodeInfo))
-            val tpe = typeFor(lhsNodeInfo)
-            createParameterInNode(
-              lhsNodeInfo.code,
-              lhsNodeInfo.code,
-              index,
-              isVariadic = false,
-              lhsNodeInfo.lineNumber,
-              lhsNodeInfo.columnNumber,
-              Some(tpe)
-            )
-        }
-      case ArrayPattern =>
-        val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
-        val tpe       = typeFor(nodeInfo)
-        val param = createParameterInNode(
-          paramName,
-          nodeInfo.code,
-          index,
-          isVariadic = false,
-          nodeInfo.lineNumber,
-          nodeInfo.columnNumber,
-          Some(tpe)
-        )
-        additionalBlockStatements.addAll(nodeInfo.json("elements").arr.toList.map {
-          case element if !element.isNull =>
+  ): Seq[NewMethodParameterIn] =
+    withIndex(parameters) { case (param, index) =>
+      val nodeInfo = createBabelNodeInfo(param)
+      val paramNode = nodeInfo.node match {
+        case RestElement =>
+          val paramName = nodeInfo.code.replace("...", "")
+          val tpe       = typeFor(nodeInfo)
+          if (createLocals) {
+            val localNode = createLocalNode(paramName, tpe)
+            diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+          }
+          createParameterInNode(
+            paramName,
+            nodeInfo.code,
+            index,
+            isVariadic = true,
+            nodeInfo.lineNumber,
+            nodeInfo.columnNumber,
+            Option(tpe)
+          )
+        case AssignmentPattern =>
+          val lhsElement  = nodeInfo.json("left")
+          val rhsElement  = nodeInfo.json("right")
+          val lhsNodeInfo = createBabelNodeInfo(lhsElement)
+          lhsNodeInfo.node match {
+            case ObjectPattern | ArrayPattern =>
+              val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
+              val param = createParameterInNode(
+                paramName,
+                nodeInfo.code,
+                index,
+                isVariadic = false,
+                nodeInfo.lineNumber,
+                nodeInfo.columnNumber
+              )
+              val rhsAst = astForNodeWithFunctionReference(rhsElement)
+              additionalBlockStatements.addOne(
+                astForDeconstruction(lhsNodeInfo, rhsAst, nodeInfo.code, Option(paramName))
+              )
+              param
+            case _ =>
+              additionalBlockStatements.addOne(convertParamWithDefault(nodeInfo))
+              val tpe = typeFor(lhsNodeInfo)
+              createParameterInNode(
+                lhsNodeInfo.code,
+                lhsNodeInfo.code,
+                index,
+                isVariadic = false,
+                lhsNodeInfo.lineNumber,
+                lhsNodeInfo.columnNumber,
+                Option(tpe)
+              )
+          }
+        case ArrayPattern =>
+          val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
+          val tpe       = typeFor(nodeInfo)
+          val param = createParameterInNode(
+            paramName,
+            nodeInfo.code,
+            index,
+            isVariadic = false,
+            nodeInfo.lineNumber,
+            nodeInfo.columnNumber,
+            Option(tpe)
+          )
+          additionalBlockStatements.addAll(nodeInfo.json("elements").arr.toList.map {
+            case element if !element.isNull =>
+              val elementNodeInfo = createBabelNodeInfo(element)
+              elementNodeInfo.node match {
+                case Identifier =>
+                  val elemName       = code(elementNodeInfo.json)
+                  val tpe            = typeFor(elementNodeInfo)
+                  val localParamNode = createIdentifierNode(elemName, elementNodeInfo)
+                  localParamNode.typeFullName = tpe
+
+                  val localNode = createLocalNode(elemName, tpe)
+                  diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+                  scope.addVariable(elemName, localNode, MethodScope)
+
+                  val paramNode = createIdentifierNode(paramName, elementNodeInfo)
+                  scope.addVariableReference(paramName, paramNode)
+
+                  val keyNode =
+                    createFieldIdentifierNode(elemName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
+                  val accessAst =
+                    createFieldAccessCallAst(
+                      paramNode,
+                      keyNode,
+                      elementNodeInfo.lineNumber,
+                      elementNodeInfo.columnNumber
+                    )
+                  createAssignmentCallAst(
+                    Ast(localParamNode),
+                    accessAst,
+                    s"$elemName = ${codeOf(accessAst.nodes.head)}",
+                    elementNodeInfo.lineNumber,
+                    elementNodeInfo.columnNumber
+                  )
+                case RestElement => handleRestInParameters(elementNodeInfo, nodeInfo, paramName)
+                case _           => astForNodeWithFunctionReference(elementNodeInfo.json)
+              }
+            case _ => Ast()
+          })
+          param
+        case ObjectPattern =>
+          val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
+          val tpe       = typeFor(nodeInfo)
+          val param = createParameterInNode(
+            paramName,
+            nodeInfo.code,
+            index,
+            isVariadic = false,
+            nodeInfo.lineNumber,
+            nodeInfo.columnNumber,
+            Option(tpe)
+          )
+          additionalBlockStatements.addAll(nodeInfo.json("properties").arr.toList.map { element =>
             val elementNodeInfo = createBabelNodeInfo(element)
             elementNodeInfo.node match {
-              case Identifier =>
-                val elemName       = code(elementNodeInfo.json)
+              case ObjectProperty =>
+                val elemName       = code(elementNodeInfo.json("key"))
                 val tpe            = typeFor(elementNodeInfo)
                 val localParamNode = createIdentifierNode(elemName, elementNodeInfo)
                 localParamNode.typeFullName = tpe
+
+                val localNode = createLocalNode(elemName, tpe)
+                diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+                scope.addVariable(elemName, localNode, MethodScope)
+
                 val paramNode = createIdentifierNode(paramName, elementNodeInfo)
+                scope.addVariableReference(paramName, paramNode)
+
                 val keyNode =
                   createFieldIdentifierNode(elemName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
                 val accessAst =
                   createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
-                Ast.storeInDiffGraph(accessAst, diffGraph)
                 createAssignmentCallAst(
-                  localParamNode,
-                  accessAst.nodes.head,
+                  Ast(localParamNode),
+                  accessAst,
                   s"$elemName = ${codeOf(accessAst.nodes.head)}",
                   elementNodeInfo.lineNumber,
                   elementNodeInfo.columnNumber
                 )
               case RestElement => handleRestInParameters(elementNodeInfo, nodeInfo, paramName)
-              case _           => astForNode(elementNodeInfo.json)
+              case _           => astForNodeWithFunctionReference(elementNodeInfo.json)
             }
-          case _ => Ast()
-        })
-        param
-      case ObjectPattern =>
-        val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
-        val tpe       = typeFor(nodeInfo)
-        val param = createParameterInNode(
-          paramName,
-          nodeInfo.code,
-          index,
-          isVariadic = false,
-          nodeInfo.lineNumber,
-          nodeInfo.columnNumber,
-          Some(tpe)
-        )
-        additionalBlockStatements.addAll(nodeInfo.json("properties").arr.toList.map { element =>
-          val elementNodeInfo = createBabelNodeInfo(element)
-          elementNodeInfo.node match {
-            case ObjectProperty =>
-              val elemName       = code(elementNodeInfo.json("key"))
-              val tpe            = typeFor(elementNodeInfo)
-              val localParamNode = createIdentifierNode(elemName, elementNodeInfo)
-              localParamNode.typeFullName = tpe
-              val paramNode = createIdentifierNode(paramName, elementNodeInfo)
-              val keyNode =
-                createFieldIdentifierNode(elemName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
-              val accessAst =
-                createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
-              Ast.storeInDiffGraph(accessAst, diffGraph)
-              createAssignmentCallAst(
-                localParamNode,
-                accessAst.nodes.head,
-                s"$elemName = ${codeOf(accessAst.nodes.head)}",
-                elementNodeInfo.lineNumber,
-                elementNodeInfo.columnNumber
-              )
-            case RestElement => handleRestInParameters(elementNodeInfo, nodeInfo, paramName)
-            case _           => astForNode(elementNodeInfo.json)
-          }
-        })
-        param
-      case Identifier =>
-        val tpe = typeFor(nodeInfo)
-        createParameterInNode(
-          nodeInfo.json("name").str,
-          nodeInfo.code,
-          index,
-          isVariadic = false,
-          nodeInfo.lineNumber,
-          nodeInfo.columnNumber,
-          Some(tpe)
-        )
-      case _ =>
-        val tpe = typeFor(nodeInfo)
-        createParameterInNode(
-          nodeInfo.code,
-          nodeInfo.code,
-          index,
-          isVariadic = false,
-          nodeInfo.lineNumber,
-          nodeInfo.columnNumber,
-          Some(tpe)
-        )
+          })
+          param
+        case Identifier =>
+          val tpe = typeFor(nodeInfo)
+          createParameterInNode(
+            nodeInfo.json("name").str,
+            nodeInfo.code,
+            index,
+            isVariadic = false,
+            nodeInfo.lineNumber,
+            nodeInfo.columnNumber,
+            Option(tpe)
+          )
+        case _ =>
+          val tpe = typeFor(nodeInfo)
+          createParameterInNode(
+            nodeInfo.code,
+            nodeInfo.code,
+            index,
+            isVariadic = false,
+            nodeInfo.lineNumber,
+            nodeInfo.columnNumber,
+            Option(tpe)
+          )
+      }
+      val decoratorAsts = astsForDecorators(nodeInfo)
+      decoratorAsts.foreach { decoratorAst =>
+        Ast.storeInDiffGraph(decoratorAst, diffGraph)
+        decoratorAst.root.foreach(diffGraph.addEdge(paramNode, _, EdgeTypes.AST))
+      }
+      paramNode
     }
-  }
 
   private def convertParamWithDefault(element: BabelNodeInfo): Ast = {
     val lhsElement = element.json("left")
     val rhsElement = element.json("right")
 
     val rhsAst = astForNodeWithFunctionReference(rhsElement)
-    Ast.storeInDiffGraph(rhsAst, diffGraph)
 
     val lhsAst = astForNode(lhsElement)
-    Ast.storeInDiffGraph(lhsAst, diffGraph)
 
     val testAst = {
       val keyNode = createIdentifierNode(codeOf(lhsAst.nodes.head), element)
@@ -235,17 +252,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
         element.lineNumber,
         element.columnNumber
       )
-      val equalsCallAst = createEqualsCallAst(keyNode, voidCallNode, element.lineNumber, element.columnNumber)
+      val equalsCallAst = createEqualsCallAst(Ast(keyNode), Ast(voidCallNode), element.lineNumber, element.columnNumber)
       equalsCallAst
     }
-    Ast.storeInDiffGraph(testAst, diffGraph)
     val falseNode = createIdentifierNode(codeOf(lhsAst.nodes.head), element)
     val ternaryNodeAst =
-      createTernaryCallAst(testAst.nodes.head, rhsAst.nodes.head, falseNode, element.lineNumber, element.columnNumber)
-    Ast.storeInDiffGraph(ternaryNodeAst, diffGraph)
+      createTernaryCallAst(testAst, rhsAst, Ast(falseNode), element.lineNumber, element.columnNumber)
     createAssignmentCallAst(
-      lhsAst.nodes.head,
-      ternaryNodeAst.nodes.head,
+      lhsAst,
+      ternaryNodeAst,
       s"${codeOf(lhsAst.nodes.head)} = ${codeOf(ternaryNodeAst.nodes.head)}",
       element.lineNumber,
       element.columnNumber
@@ -298,9 +313,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val mAst = if (methodBlockContent.isEmpty) {
       methodStubAst(methodNode, thisNode +: paramNodes, methodReturnNode, List(virtualModifierNode))
     } else {
-      setIndices(methodBlockContent)
+      setArgumentIndices(methodBlockContent)
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
-      methodAst(methodNode, thisNode +: paramNodes, bodyAst, methodReturnNode)
+      methodAstWithAnnotations(
+        methodNode,
+        (thisNode +: paramNodes).map(Ast(_)),
+        bodyAst,
+        methodReturnNode,
+        annotations = astsForDecorators(func)
+      )
     }
 
     Ast.storeInDiffGraph(mAst, diffGraph)
@@ -319,7 +340,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodRefNode = if (!shouldCreateFunctionReference) {
       None
-    } else { Some(createMethodRefNode(methodName, methodFullName, func)) }
+    } else { Option(createMethodRefNode(methodName, methodFullName, func)) }
 
     val callAst = if (shouldCreateAssignmentCall && shouldCreateFunctionReference) {
       val idNode  = createIdentifierNode(methodName, func)
@@ -367,11 +388,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
             createBlockStatementAsts(bodyJson("body"))
           case _ =>
             // when body is just one expression like const foo = () => 42, generate a Return node
-            createReturnAst(createReturnNode(bodyNodeInfo), List(astForNode(bodyJson))) :: Nil
+            createReturnAst(createReturnNode(bodyNodeInfo), List(astForNodeWithFunctionReference(bodyJson))) :: Nil
         }
       case _ => createBlockStatementAsts(bodyJson("body"))
     }
-    setIndices(methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts)
+    setArgumentIndices(methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts)
 
     val methodReturnNode = createMethodReturnNode(func)
 
@@ -389,14 +410,14 @@ trait AstForFunctionsCreator { this: AstCreator =>
       )
 
     val mAst =
-      methodAst(
+      methodAstWithAnnotations(
         methodNode,
-        thisNode +: paramNodes,
+        (thisNode +: paramNodes).map(Ast(_)),
         blockAst.withChildren(methodBlockContent ++ additionalBlockStatements ++ bodyStmtAsts),
         methodReturnNode,
-        List(virtualModifierNode)
+        List(virtualModifierNode),
+        astsForDecorators(func)
       )
-
     Ast.storeInDiffGraph(mAst, diffGraph)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, methodNode, EdgeTypes.AST)

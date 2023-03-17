@@ -24,50 +24,25 @@ object JavaScriptInterface extends QueryBundle {
       score = 9,
       withStrRep({ cpg =>
         import overflowdb.traversal.Traversal
-        import io.joern.querydb.language.android.ManifestXmlTraversal
+        import io.shiftleft.semanticcpg.language.android._
         import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
-        def webViews =
-          cpg.local.typeFullNameExact("android.webkit.WebView")
-        def webViewsWithJSEnabled =
-          webViews
-            .where(
-              _.referencingIdentifiers.inCall
-                .nameExact("getSettings")
-                .where(
-                  _.inCall
-                    .nameExact("setJavaScriptEnabled")
-                    .argument
-                    .isLiteral
-                    .codeExact("true")
-                )
-            )
+
         def webViewsWithInsecureLoadUrlCalls =
-          webViewsWithJSEnabled.where(
-            _.referencingIdentifiers.inCall
-              .nameExact("loadUrl")
-              .filter { callNode =>
-                def httpLiterals =
-                  callNode.method.literal.filter(_.code.stripPrefix("\"").stripSuffix("\"").startsWith("http:"))
-                callNode.argument.reachableBy(httpLiterals).nonEmpty
-              }
-          )
-        val appUsesCleartextTraffic =
-          new ManifestXmlTraversal(cpg.configFile).usesCleartextTraffic.nonEmpty
+          cpg.webView.callsEnableJS.where(_.loadUrlCalls.filter { callNode =>
+            def httpLiterals =
+              callNode.method.literal.filter(_.code.stripPrefix("\"").stripSuffix("\"").startsWith("http:"))
+            callNode.argument.reachableBy(httpLiterals).nonEmpty
+          })
+        val appUsesCleartextTraffic = cpg.appManifest.usesCleartextTraffic.nonEmpty
         def exposedJavaScriptInterfaceObjects =
-          if (appUsesCleartextTraffic)
-            webViewsWithInsecureLoadUrlCalls.referencingIdentifiers.inCall
-              .nameExact("addJavascriptInterface")
-              .argument(1)
+          if (appUsesCleartextTraffic) webViewsWithInsecureLoadUrlCalls.addJavascriptInterfaceCalls.argument(1)
           else Traversal.empty
-        val exposedJavaScriptInterfaceObjectNames =
-          exposedJavaScriptInterfaceObjects.collect {
-            case ident: Identifier => ident.typeFullName
-            case call: Call        => call.typeFullName
-          }.l
+        val exposedJavaScriptInterfaceObjectNames = exposedJavaScriptInterfaceObjects.collect {
+          case ident: Identifier => ident.typeFullName
+          case call: Call        => call.typeFullName
+        }.l
         def exposedJavaScriptInterfaceMethods =
-          cpg.annotation
-            .fullNameExact("android.webkit.JavascriptInterface")
-            .method
+          cpg.method.exposedToJS
             .where(_.typeDecl.filter { node => exposedJavaScriptInterfaceObjectNames.exists(_ == node.fullName) })
         def runtimeExecCalls =
           cpg.call.name("exec").typeFullName("java.lang.Process")
@@ -361,7 +336,7 @@ object JavaScriptInterface extends QueryBundle {
                  |        webView.getSettings().setJavaScriptEnabled(true);
                  |        webView.addJavascriptInterface(jsBridge, "jsBridge");
                  |
-                 |        String url = "https://lwn.net/"; // no insecure url here
+                 |        String url = "http://phrack.net/";
                  |        webView.loadUrl(url);
                  |        finish();
                  |    }
@@ -470,7 +445,7 @@ object JavaScriptInterface extends QueryBundle {
                  |        webView.getSettings().setJavaScriptEnabled(true);
                  |        webView.addJavascriptInterface(jsBridge, "jsBridge");
                  |
-                 |        String url = "https://lwn.net/"; // no insecure url here
+                 |        String url = "http://phrack.net/";
                  |        webView.loadUrl(url);
                  |        finish();
                  |    }

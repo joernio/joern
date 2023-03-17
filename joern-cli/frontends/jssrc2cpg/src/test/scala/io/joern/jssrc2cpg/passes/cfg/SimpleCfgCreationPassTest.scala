@@ -9,8 +9,6 @@ import io.joern.x2cpg.testfixtures.CfgTestFixture
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.Cpg
 
-import scala.annotation.unused
-
 class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) {
 
   "CFG generation for simple fragments" should {
@@ -215,8 +213,8 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
 
     "be correct for outer program function which declares foo function object" in {
       implicit val cpg: Cpg = code("function foo(x, y) { return; }")
-      succOf(":program") shouldBe expected(("foo", 1, AlwaysEdge))
-      succOf("foo", NodeTypes.IDENTIFIER) shouldBe expected(("foo", 2, AlwaysEdge))
+      succOf(":program", NodeTypes.METHOD) shouldBe expected(("foo", 2, AlwaysEdge))
+      succOf("foo", NodeTypes.IDENTIFIER) shouldBe expected(("foo", 3, AlwaysEdge))
       succOf("foo", NodeTypes.METHOD_REF) shouldBe expected(
         ("function foo = function foo(x, y) { return; }", AlwaysEdge)
       )
@@ -241,10 +239,22 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
       succOf("foo(a + 1, b)") shouldBe expected(("RET", AlwaysEdge))
     }
 
-    "be correct for chained calls" ignore {
-      @unused
+    "be correct for chained calls" in {
       implicit val cpg: Cpg = code("x.foo(y).bar(z)")
-      // TODO the current style of writing this tests in unmaintainable.
+      succOf(":program") shouldBe expected(("_tmp_0", AlwaysEdge))
+      succOf("_tmp_0") shouldBe expected(("x", AlwaysEdge))
+      succOf("x") shouldBe expected(("foo", AlwaysEdge))
+      succOf("foo") shouldBe expected(("x.foo", AlwaysEdge))
+      succOf("x.foo") shouldBe expected(("x", 1, AlwaysEdge))
+      succOf("x", 1) shouldBe expected(("y", AlwaysEdge))
+      succOf("y") shouldBe expected(("x.foo(y)", AlwaysEdge))
+      succOf("x.foo(y)") shouldBe expected(("(_tmp_0 = x.foo(y))", AlwaysEdge))
+      succOf("(_tmp_0 = x.foo(y))") shouldBe expected(("bar", AlwaysEdge))
+      succOf("bar") shouldBe expected(("(_tmp_0 = x.foo(y)).bar", AlwaysEdge))
+      succOf("(_tmp_0 = x.foo(y)).bar") shouldBe expected(("_tmp_0", 1, AlwaysEdge))
+      succOf("_tmp_0", 1) shouldBe expected(("z", AlwaysEdge))
+      succOf("z") shouldBe expected(("x.foo(y).bar(z)", AlwaysEdge))
+      succOf("x.foo(y).bar(z)") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for unary expression '++'" in {
@@ -512,20 +522,12 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
     }
 
     "be correct for for-loop with for-in" in {
-      implicit val cpg: Cpg = code("""
-                                     |for (var i in arr) {
-                                     |   foo(i)
-                                     |}
-                                     |""".stripMargin)
+      implicit val cpg: Cpg = code("for (var i in arr) { foo(i) }")
       testForInOrOf()
     }
 
     "be correct for for-loop with for-of" in {
-      implicit val cpg: Cpg = code("""
-                                     |for (var i of arr) {
-                                     |   foo(i)
-                                     |}
-                                     |""".stripMargin)
+      implicit val cpg: Cpg = code("for (var i of arr) { foo(i) }")
       testForInOrOf()
     }
 
@@ -687,21 +689,10 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
   private def testForInOrOf()(implicit cpg: Cpg): Unit = {
     succOf(":program") shouldBe expected(("_iterator_0", AlwaysEdge))
     succOf("_iterator_0") shouldBe expected(("arr", AlwaysEdge))
-    succOf("arr") shouldBe expected(("Object.keys(arr)", AlwaysEdge))
-    succOf("Object.keys(arr)") shouldBe expected(("Symbol", AlwaysEdge))
-    succOf("Symbol") shouldBe expected(("iterator", AlwaysEdge))
-    succOf("iterator") shouldBe expected(("Symbol.iterator", AlwaysEdge))
-    succOf("Symbol.iterator") shouldBe expected(("Object.keys(arr)[Symbol.iterator]", AlwaysEdge))
-    succOf("Object.keys(arr)[Symbol.iterator]") shouldBe expected(("this", AlwaysEdge))
-    succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("Object.keys(arr)[Symbol.iterator]()", AlwaysEdge))
-    succOf("Object.keys(arr)[Symbol.iterator]()") shouldBe expected(
-      ("_iterator_0 = Object.keys(arr)[Symbol.iterator]()", AlwaysEdge)
-    )
-
-    succOf("_iterator_0 = Object.keys(arr)[Symbol.iterator]()") shouldBe expected(("_result_0", AlwaysEdge))
-
+    succOf("arr") shouldBe expected(("<operator>.iterator(arr)", AlwaysEdge))
+    succOf("<operator>.iterator(arr)") shouldBe expected(("_iterator_0 = <operator>.iterator(arr)", AlwaysEdge))
+    succOf("_iterator_0 = <operator>.iterator(arr)") shouldBe expected(("_result_0", AlwaysEdge))
     succOf("_result_0") shouldBe expected(("i", AlwaysEdge))
-
     succOf("i") shouldBe expected(("_result_0", 1, AlwaysEdge))
     succOf("_result_0", 1) shouldBe expected(("_iterator_0", 1, AlwaysEdge))
     succOf("_iterator_0", 1) shouldBe expected(("next", AlwaysEdge))
@@ -726,9 +717,9 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
     succOf("_result_0.value") shouldBe expected(("i = _result_0.value", AlwaysEdge))
     succOf("i = _result_0.value") shouldBe expected(("foo", AlwaysEdge))
     succOf("foo") shouldBe expected(("this", 1, AlwaysEdge))
-    succOf("this", 2) shouldBe expected(("i", 2, AlwaysEdge))
+    succOf("this", 1) shouldBe expected(("i", 2, AlwaysEdge))
     succOf("i", 2) shouldBe expected(("foo(i)", AlwaysEdge))
-    val code2 = "{" + "\n" + "   foo(i)" + "\n" + "}"
+    val code2 = "{ foo(i) }"
     succOf("foo(i)") shouldBe expected((code2, AlwaysEdge))
     succOf(code2) shouldBe expected(("_result_0", 1, AlwaysEdge))
   }

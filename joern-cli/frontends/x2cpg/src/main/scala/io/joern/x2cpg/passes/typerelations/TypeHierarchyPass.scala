@@ -3,12 +3,12 @@ package io.joern.x2cpg.passes.typerelations
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.joern.x2cpg.passes.callgraph.MethodRefLinker.{linkToMultiple, typeFullNameToNode}
 
 /** Create INHERITS_FROM edges from `TYPE_DECL` nodes to `TYPE` nodes.
   */
-class TypeHierarchyPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class TypeHierarchyPass(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     linkToMultiple(

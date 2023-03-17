@@ -12,7 +12,7 @@ import scala.jdk.CollectionConverters._
 
 object CGlobal extends Global {
 
-  private val headerAstCache: mutable.HashMap[String, mutable.HashSet[(Integer, Integer)]] =
+  private val headerAstCache: mutable.HashMap[String, mutable.HashSet[(Int, Int)]] =
     mutable.HashMap.empty
 
   def headerFiles: Set[String] = headerAstCache.keySet.toSet
@@ -36,8 +36,8 @@ object CGlobal extends Global {
     diffGraph: DiffGraphBuilder,
     filename: String,
     fromFilename: String,
-    linenumber: Option[Integer],
-    columnnumber: Option[Integer],
+    linenumber: Option[Int],
+    columnnumber: Option[Int],
     astCreatorFunction: => Seq[Ast]
   ): Seq[Ast] = {
     val (callCreatorFunc, addDirectlyToDiff) =

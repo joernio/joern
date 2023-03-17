@@ -4,6 +4,8 @@ import io.shiftleft.Implicits.JavaIteratorDeco
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.nodemethods.AstNodeMethods.lastExpressionInBlock
+import io.shiftleft.semanticcpg.utils.MemberAccess
 import overflowdb.traversal.Traversal
 
 class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
@@ -13,6 +15,8 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
   def isControlStructure: Boolean = node.isInstanceOf[ControlStructure]
 
   def isIdentifier: Boolean = node.isInstanceOf[Identifier]
+
+  def isImport: Boolean = node.isInstanceOf[Import]
 
   def isFieldIdentifier: Boolean = node.isInstanceOf[FieldIdentifier]
 
@@ -64,9 +68,77 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
   def astParent: AstNode =
     node._astIn.onlyChecked.asInstanceOf[AstNode]
 
+  /** Direct children of node in the AST. Siblings are ordered by their `order` fields
+    */
+  def astChildren: Traversal[AstNode] =
+    node._astOut.cast[AstNode].sortBy(_.order)
+
+  /** Siblings of this node in the AST, ordered by their `order` fields
+    */
+  def astSiblings: Traversal[AstNode] =
+    astParent.astChildren.filter(_ != node)
+
   /** Nodes of the AST rooted in this node, including the node itself.
     */
   def ast: Traversal[AstNode] =
     Traversal.fromSingle(node).ast
+
+  /** Textual representation of AST node
+    */
+  def repr: String =
+    node match {
+      case method: Method                             => method.name
+      case member: Member                             => member.name
+      case methodReturn: MethodReturn                 => methodReturn.code
+      case expr: Expression                           => expr.code
+      case call: CallRepr if !call.isInstanceOf[Call] => call.code
+    }
+
+  def statement: AstNode =
+    statementInternal(node, _.parentExpression.get)
+
+  @scala.annotation.tailrec
+  private def statementInternal(node: AstNode, parentExpansion: Expression => Expression): AstNode = {
+
+    node match {
+      case node: Identifier => parentExpansion(node)
+      case node: MethodRef  => parentExpansion(node)
+      case node: TypeRef    => parentExpansion(node)
+      case node: Literal    => parentExpansion(node)
+
+      case member: Member          => member
+      case node: MethodParameterIn => node.method
+
+      case node: MethodParameterOut =>
+        node.method.methodReturn
+
+      case node: Call if MemberAccess.isGenericMemberAccessName(node.name) =>
+        parentExpansion(node)
+
+      case node: CallRepr     => node
+      case node: MethodReturn => node
+      case block: Block       =>
+        // Just taking the lastExpressionInBlock is not quite correct because a BLOCK could have
+        // different return expressions. So we would need to expand via CFG.
+        // But currently the frontends do not even put the BLOCK into the CFG so this is the best
+        // we can do.
+        statementInternal(lastExpressionInBlock(block).get, identity)
+      case node: Expression => node
+    }
+  }
+
+}
+
+object AstNodeMethods {
+
+  import scala.jdk.CollectionConverters._
+  private def lastExpressionInBlock(block: Block): Option[Expression] =
+    block._astOut.asScala
+      .collect {
+        case node: Expression if !node.isInstanceOf[Local] && !node.isInstanceOf[Method] => node
+      }
+      .toVector
+      .sortBy(_.order)
+      .lastOption
 
 }

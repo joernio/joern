@@ -1,13 +1,14 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.console.cpgcreation.{cpgGeneratorForLanguage, guessLanguage, CpgGenerator}
+import io.joern.console.cpgcreation.{CpgGenerator, cpgGeneratorForLanguage, guessLanguage}
 import io.joern.console.{FrontendConfig, InstallConfig}
 import io.joern.joerncli.CpgBasedTool.newCpgCreatedString
 import io.shiftleft.codepropertygraph.generated.Languages
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
+import scala.util.{Failure, Success}
 
 object JoernParse {
   // Special string used to separate joern-parse opts from frontend-specific opts
@@ -71,19 +72,24 @@ object JoernParse {
 
     parseConfig(parserArgs) match {
       case Right(config) =>
-        if (config.listLanguages) {
-          Right(buildLanguageList())
-        } else
-          for {
-            _        <- checkInputPath(config)
-            language <- getLanguage(config)
-            _        <- generateCpg(installConfig, frontendArgs, config, language)
-            _        <- applyDefaultOverlays(config)
-          } yield newCpgCreatedString(config.outputCpgFile)
+        if (config.listLanguages) Right(buildLanguageList())
+        else run(config, frontendArgs, installConfig)
 
       case Left(err) => Left(err)
     }
   }
+
+  def run(
+    config: ParserConfig,
+    frontendArgs: List[String] = List.empty,
+    installConfig: InstallConfig = InstallConfig()
+  ): Either[String, String] =
+    for {
+      _        <- checkInputPath(config)
+      language <- getLanguage(config)
+      _        <- generateCpg(installConfig, frontendArgs, config, language)
+      _        <- applyDefaultOverlays(config)
+    } yield newCpgCreatedString(config.outputCpgFile)
 
   private def checkInputPath(config: ParserConfig): Either[String, Unit] = {
 
@@ -133,9 +139,12 @@ object JoernParse {
       println("[+] Running language frontend")
       generator =
         cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
-      generator.generate(config.inputPath, outputPath = config.outputCpgFile, namespaces = config.namespaces) match {
-        case Some(cmd) => Right(cmd)
-        case None      => Left(s"Could not generate CPG with language = $language and input = ${config.inputPath}")
+      generator.generate(config.inputPath, outputPath = config.outputCpgFile) match {
+        case Success(cmd) => Right(cmd)
+        case Failure(exception) =>
+          Left(
+            s"Could not generate CPG with language = $language and input = ${config.inputPath}: ${exception.getMessage}"
+          )
       }
     }
   }

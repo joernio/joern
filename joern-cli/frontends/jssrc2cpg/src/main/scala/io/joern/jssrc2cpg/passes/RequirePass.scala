@@ -1,10 +1,10 @@
 package io.joern.jssrc2cpg.passes
 
-import io.joern.jssrc2cpg.passes.RequirePass.JS_EXPORT_PREFIX
+import io.joern.jssrc2cpg.passes.RequirePass.{JsExportPrefix, stripQuotes}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Identifier, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Local}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 import overflowdb.traversal.{NodeOps, Traversal}
@@ -14,13 +14,13 @@ import java.nio.file.Paths
 
 /** This pass enhances the call graph and call nodes by interpreting assignments of the form `foo = require("module")`.
   */
-class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
 
   private val codeRoot = cpg.metaData.root.headOption.getOrElse("")
 
   /** A map from file names to method full names based on assignments to `module.exports`.
     */
-  val fileNameToMethodFullName: Map[String, String] = {
+  private val fileNameToMethodFullName: Map[String, String] = {
     val moduleExportAssignments = cpg.assignment.where(_.target.codeExact("module.exports")).l
     Traversal(moduleExportAssignments).source.isMethodRef.flatMap { ref =>
       ref.file.name.headOption.map { x =>
@@ -32,7 +32,7 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   /** A map from (filename, symbol) pairs to method full names based on `export` statements.
     */
-  val exportTable: Map[(String, String), String] = {
+  private val exportTable: Map[(String, String), String] = {
     val assignments = cpg.methodRef
       .where(_.method.fullName(".*::program"))
       .inAssignment
@@ -51,27 +51,29 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
   case class Require(call: Call) {
 
-    val symbol: String = call.astParent.fieldAccess.fieldIdentifier.canonicalName.headOption.getOrElse("")
+    private val symbol: String = call.astParent.fieldAccess.fieldIdentifier.canonicalName.headOption.getOrElse("")
 
-    val dirHoldingModule: String = call.file.name.headOption
-      .map(x => Paths.get(codeRoot, x).getParent.toAbsolutePath.normalize.toString)
-      .getOrElse("")
+    private val dirHoldingModule: String =
+      call.file.name.headOption
+        .map(x => Paths.get(codeRoot, x).getParent.toAbsolutePath.normalize.toString)
+        .getOrElse("")
 
-    val fileToInclude: String = call
-      .argument(1)
-      .start
-      .isLiteral
-      .code
-      .map(stripQuotes)
-      .map { x =>
-        val path = Paths.get(dirHoldingModule, x).toAbsolutePath.normalize.toString
-        if (path.endsWith(".mjs") || path.endsWith(".js")) {
-          path
-        } else {
-          path + ".js"
-        }
-      }
-      .headOption
+    private val fileToInclude: String = call
+      .argumentOption(1)
+      .map(
+        _.start.isLiteral.code
+          .map(stripQuotes)
+          .map { x =>
+            val path = Paths.get(dirHoldingModule, x).toAbsolutePath.normalize.toString
+            if (path.endsWith(".mjs") || path.endsWith(".js")) {
+              path
+            } else {
+              s"$path.js"
+            }
+          }
+          .headOption
+          .getOrElse("")
+      )
       .getOrElse("")
 
     val methodFullName: Option[String] = {
@@ -86,17 +88,20 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
     val callsToPatch: List[Call] = call.file.method.ast.isCall.nameExact(target).dedup.l
 
-    val variableToPatch: VariableInformation = VariableInformation(
-      call.file.method.ast.isIdentifier
-        .nameExact(target)
-        .collect { case i: Identifier => Seq(i) ++ i.refsTo.collectAll[Local].toSeq }
-        .flatten
-        .collect { case i: AstNode => i }
-        .dedup
-        .toList
-    )
+    val variableToPatch: VariableInformation =
+      VariableInformation(
+        call.file
+          .nameExact(fileToInclude)
+          .method
+          .ast
+          .isIdentifier
+          .nameExact(target)
+          .flatMap(i => Seq(i) ++ i.refsTo.collectAll[Local].toSeq)
+          .dedup
+          .toList
+      )
 
-    def relativeExport: String = fileToInclude.stripPrefix(dirHoldingModule + File.separator)
+    def relativeExport: String = fileToInclude.stripPrefix(s"$dirHoldingModule${File.separator}")
 
   }
 
@@ -119,8 +124,7 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   }
 
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val requires = cpg
-      .call("require")
+    val requires = cpg.imports.call.dedup
       .where(_.inAssignment.target)
       .map(Require.apply(_))
       .toSeq
@@ -132,8 +136,8 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
           diffGraph.setNodeProperty(
             n.node,
             if (varInfo.isImmutable) PropertyNames.TYPE_FULL_NAME else PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-            if (varInfo.isImmutable) rs.map(x => s"$JS_EXPORT_PREFIX${x.relativeExport}").headOption.getOrElse("ANY")
-            else varInfo.dynamicTypeHintFullName ++ rs.map(x => s"$JS_EXPORT_PREFIX${x.relativeExport}")
+            if (varInfo.isImmutable) rs.map(x => s"$JsExportPrefix${x.relativeExport}").headOption.getOrElse("ANY")
+            else varInfo.dynamicTypeHintFullName ++ rs.map(x => s"$JsExportPrefix${x.relativeExport}")
           )
         }
       }
@@ -150,7 +154,12 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
   }
 
-  private def stripQuotes(str: String): String = {
+}
+
+object RequirePass {
+  val JsExportPrefix: String = "<export>::"
+
+  def stripQuotes(str: String): String = {
     if (str.length >= 2 && str.startsWith("\"") && str.endsWith("\"")) {
       str.substring(1, str.length - 1)
     } else if (str.length >= 2 && str.startsWith("'") && str.endsWith("'")) {
@@ -160,8 +169,4 @@ class RequirePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
   }
 
-}
-
-object RequirePass {
-  val JS_EXPORT_PREFIX: String = "<export>::"
 }

@@ -1,12 +1,16 @@
 package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.AbstractPassTest
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 
 class JsClassesAstCreationPassTest extends AbstractPassTest {
 
-  "AST generation for classes" should {
+  "AST generation for JS classes" should {
 
     "have ast parent blocks for class locals" in AstFixture("""
         |var x = source();
@@ -34,50 +38,60 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").size shouldBe 1
     }
 
-    "have constructor binding in TYPE_DECL for ClassA" in AstFixture("""
-        |var x = class ClassA {
-        |  constructor() {}
-        |}""".stripMargin) { cpg =>
-      val List(classATypeDecl)     = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(constructorBinding) = classATypeDecl.bindsOut.l
-      constructorBinding.name shouldBe ""
-      constructorBinding.signature shouldBe ""
-      val List(boundMethod) = constructorBinding.refOut.l
-      boundMethod.fullName shouldBe s"code.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
-      boundMethod.code shouldBe "constructor() {}"
+    "have a synthetic assignment for ClassA" in AstFixture("class ClassA {}") { cpg =>
+      cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").size shouldBe 1
+      inside(cpg.assignment.argument.l) { case List(id: Identifier, constructorRef: MethodRef) =>
+        id.name shouldBe "ClassA"
+        id.dynamicTypeHintFullName shouldBe List(s"code.js::program:ClassA:${Defines.ConstructorMethodName}")
+        constructorRef.code shouldBe "constructor() {}"
+        constructorRef.typeFullName shouldBe s"code.js::program:ClassA:${Defines.ConstructorMethodName}"
+        constructorRef.methodFullName shouldBe s"code.js::program:ClassA:${Defines.ConstructorMethodName}"
+      }
     }
 
-    "have member for static method in TYPE_DECL for ClassA" in AstFixture("""
+    "have locals / closure bindings for implicit variables from class definitions" in AstFixture("""
+        |class A {}
+        |function b() {
+        |  new A();
+        |}""".stripMargin) { cpg =>
+      cpg.typeDecl.nameExact("A").fullNameExact("code.js::program:A").size shouldBe 1
+      val List(localA) = cpg.method.name(":program").local.name("A").l
+      localA.code shouldBe "A"
+      val List(funcLocalA) = cpg.method.name("b").local.name("A").l
+      funcLocalA.code shouldBe "A"
+      funcLocalA.closureBindingId shouldBe Option("code.js::program:b:A")
+    }
+
+    "have a member function for static method in TYPE_DECL for ClassA" in AstFixture("""
        |var x = class ClassA {
        |  static staticFoo() {}
        |}""".stripMargin) { cpg =>
-      val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(memberFoo)      = classATypeDecl.member.l
-      memberFoo.dynamicTypeHintFullName shouldBe Seq("code.js::program:ClassA:staticFoo")
-      memberFoo.code shouldBe "static staticFoo() {}"
-      classATypeDecl.member.isStatic.l shouldBe List(memberFoo)
-    }
-
-    "have method for static method in ClassA AST" in AstFixture("""
-        |var x = class ClassA {
-        |  static staticFoo() {}
-        |}""".stripMargin) { cpg =>
-      val List(classATypeDecl) =
-        cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-
-      val List(methodFoo) = classATypeDecl.method.nameExact("staticFoo").l
-      methodFoo.fullName shouldBe "code.js::program:ClassA:staticFoo"
-      methodFoo.code shouldBe "static staticFoo() {}"
+      val List(classATypeDecl)         = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
+      val List(constructor, staticFoo) = classATypeDecl.method.l
+      constructor.fullName shouldBe s"code.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      constructor.code shouldBe "constructor() {}"
+      constructor.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.CONSTRUCTOR)
+      staticFoo.fullName shouldBe "code.js::program:ClassA:staticFoo"
+      staticFoo.code shouldBe "static staticFoo() {}"
+      staticFoo.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.STATIC)
     }
 
     "have member for non-static method in TYPE_DECL for ClassA" in AstFixture("""
-        |var x = class ClassA {
+        |class ClassA {
         |  foo() {}
+        |  [Symbol.iterator]() {}
         |}""".stripMargin) { cpg =>
-      val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(memberFoo)      = classATypeDecl.member.l
-      memberFoo.dynamicTypeHintFullName shouldBe Seq("code.js::program:ClassA:foo")
-      memberFoo.code shouldBe "foo() {}"
+      val List(classATypeDecl)       = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
+      val List(constructor, foo, it) = classATypeDecl.method.l
+      constructor.fullName shouldBe s"code.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      constructor.code shouldBe "constructor() {}"
+      constructor.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.CONSTRUCTOR)
+      foo.fullName shouldBe "code.js::program:ClassA:foo"
+      foo.code shouldBe "foo() {}"
+      foo.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
+      it.fullName shouldBe "code.js::program:ClassA:Symbol.iterator"
+      it.code shouldBe "[Symbol.iterator]() {}"
+      it.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
     }
 
     "have member with initialization in TYPE_DECL for ClassA" in AstFixture("""
@@ -142,7 +156,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
   }
 
   "AST generation for constructor" should {
-    "have correct structure for simple new" in AstFixture("new MyClass()") { cpg =>
+    "have correct structure for simple new" in AstFixture("new MyClass();") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
       val List(newCallBlock) = programBlock.astChildren.isBlock.codeExact("new MyClass()").l
@@ -166,21 +180,19 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       constructorCall.astChildren.isIdentifier.nameExact("MyClass").size shouldBe 1
 
       val List(receiver) = constructorCall.receiver.isIdentifier.nameExact("MyClass").l
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(tmpArg0) = constructorCall.astChildren.isIdentifier.nameExact(tmpName).l
-      tmpArg0.order shouldBe 1
       tmpArg0.argumentIndex shouldBe 0
 
       val List(tmpArg0Argument) = constructorCall.argument.isIdentifier.nameExact(tmpName).l
-      tmpArg0Argument.order shouldBe 1
       tmpArg0Argument.argumentIndex shouldBe 0
 
       val List(returnTmp) = newCallBlock.astChildren.isIdentifier.l
       returnTmp.name shouldBe tmpName
     }
 
-    "have correct structure for simple new with arguments" in AstFixture("new MyClass(arg1, arg2)") { cpg =>
+    "have correct structure for simple new with arguments" in AstFixture("new MyClass(arg1, arg2);") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
       val List(newCallBlock) = programBlock.astChildren.isBlock.codeExact("new MyClass(arg1, arg2)").l
@@ -204,14 +216,12 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       constructorCall.astChildren.isIdentifier.nameExact("MyClass").size shouldBe 1
 
       val List(receiver) = constructorCall.receiver.isIdentifier.nameExact("MyClass").l
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(tmpArg0) = constructorCall.astChildren.isIdentifier.nameExact(tmpName).l
-      tmpArg0.order shouldBe 1
       tmpArg0.argumentIndex shouldBe 0
 
       val List(tmpArg0Argument) = constructorCall.argument.isIdentifier.nameExact(tmpName).l
-      tmpArg0Argument.order shouldBe 1
       tmpArg0Argument.argumentIndex shouldBe 0
 
       val List(arg1) = constructorCall.astChildren.isIdentifier.nameExact("arg1").l
@@ -230,7 +240,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       returnTmp.name shouldBe tmpName
     }
 
-    "have correct structure for new with access path" in AstFixture("new foo.bar.MyClass()") { cpg =>
+    "have correct structure for new with access path" in AstFixture("new foo.bar.MyClass();") { cpg =>
       val List(program)      = cpg.method.nameExact(":program").l
       val List(programBlock) = program.astChildren.isBlock.l
       val List(newCallBlock) = programBlock.astChildren.isBlock.codeExact("new foo.bar.MyClass()").l
@@ -258,23 +268,21 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
 
       val List(receiver) = constructorCall.receiver.isCall.codeExact("foo.bar.MyClass").l
       receiver.name shouldBe Operators.fieldAccess
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(tmpArg0) = constructorCall.astChildren.isIdentifier.nameExact(tmpName).l
-      tmpArg0.order shouldBe 1
       tmpArg0.argumentIndex shouldBe 0
 
       val List(tmpArg0Argument) = constructorCall.argument.isIdentifier.nameExact(tmpName).l
-      tmpArg0Argument.order shouldBe 1
       tmpArg0Argument.argumentIndex shouldBe 0
 
       val List(returnTmp) = newCallBlock.astChildren.isIdentifier.l
       returnTmp.name shouldBe tmpName
     }
 
-    "have correct structure for throw new exceptions" in AstFixture("function foo() { throw new Foo() }") { cpg =>
+    "have correct structure for throw new exceptions" in AstFixture("function foo() { throw new Foo(); }") { cpg =>
       val List(fooBlock)  = cpg.method.nameExact("foo").astChildren.isBlock.l
-      val List(throwCall) = fooBlock.astChildren.isCall.codeExact("throw new Foo()").l
+      val List(throwCall) = fooBlock.astChildren.isCall.codeExact("throw new Foo();").l
       throwCall.name shouldBe "<operator>.throw"
 
       val List(newCallBlock) = throwCall.astChildren.isBlock.codeExact("new Foo()").l
@@ -299,14 +307,12 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       constructorCall.astChildren.isIdentifier.nameExact("Foo").size shouldBe 1
 
       val List(receiver) = constructorCall.receiver.isIdentifier.nameExact("Foo").l
-      receiver.order shouldBe 0
+      receiver.argumentIndex shouldBe -1
 
       val List(tmpArg0) = constructorCall.astChildren.isIdentifier.nameExact(tmpName).l
-      tmpArg0.order shouldBe 1
       tmpArg0.argumentIndex shouldBe 0
 
       val List(tmpArg0Argument) = constructorCall.argument.isIdentifier.nameExact(tmpName).l
-      tmpArg0Argument.order shouldBe 1
       tmpArg0Argument.argumentIndex shouldBe 0
 
       val List(returnTmp) = newCallBlock.astChildren.isIdentifier.l

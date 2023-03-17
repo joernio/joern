@@ -2,11 +2,11 @@ package io.joern.ghidra2cpg.passes.x86
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-class ReturnEdgesPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class ReturnEdgesPass(cpg: Cpg) extends CpgPass(cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {

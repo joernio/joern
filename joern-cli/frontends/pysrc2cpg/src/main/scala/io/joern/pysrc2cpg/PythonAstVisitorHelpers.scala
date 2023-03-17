@@ -25,9 +25,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   protected def getUnusedName(prefix: String = null): String = {
     // TODO check that result name does not collide with existing variables.
     val result = if (prefix != null) {
-      prefix + "_tmp" + tmpCounter
+      s"${prefix}_tmp$tmpCounter"
     } else {
-      "tmp" + tmpCounter
+      s"tmp$tmpCounter"
     }
     tmpCounter += 1
     result
@@ -64,19 +64,16 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         val importAssignLhsIdentifierNode =
           createIdentifierNode(importedAsIdentifierName, Store, lineAndCol)
 
-        val importCallNode = createCall(
-          createIdentifierNode("import", Load, lineAndCol),
-          "import",
-          lineAndCol,
-          Seq(
-            nodeBuilder.stringLiteralNode(from, lineAndCol),
-            nodeBuilder.stringLiteralNode(alias.name, lineAndCol)
-          ) ++ (alias.asName match {
-            case Some(aliasName) => Seq(nodeBuilder.stringLiteralNode(aliasName, lineAndCol))
-            case None            => Seq()
-          }),
-          Nil
-        )
+        val arguments = Seq(
+          nodeBuilder.stringLiteralNode(from, lineAndCol),
+          nodeBuilder.stringLiteralNode(alias.name, lineAndCol)
+        ) ++ (alias.asName match {
+          case Some(aliasName) => Seq(nodeBuilder.stringLiteralNode(aliasName, lineAndCol))
+          case None            => Seq()
+        })
+
+        val importCallNode =
+          createCall(createIdentifierNode("import", Load, lineAndCol), "import", lineAndCol, arguments, Nil)
 
         val assignNode = createAssignment(importAssignLhsIdentifierNode, importCallNode, lineAndCol)
         assignNode
@@ -132,8 +129,8 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
       targets.foreach { target =>
         val targetWithAccessChains = getTargetsWithAccessChains(target)
-        targetWithAccessChains.foreach { case (target, accessChain) =>
-          val targetNode = convert(target)
+        targetWithAccessChains.foreach { case (trgt, accessChain) =>
+          val targetNode = convert(trgt)
           val tmpIdentifierNode =
             createIdentifierNode(tmpVariableName, Load, lineAndColumn)
           val indexTmpIdentifierNode = createIndexAccessChain(tmpIdentifierNode, accessChain, lineAndColumn)
@@ -440,6 +437,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     val callNode = nodeBuilder.callNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
+    // Do not include imports or function pointers
+    if (!codeOf(rhsNode).startsWith("import(") && codeOf(rhsNode) != s"def ${codeOf(lhsNode)}(...)")
+      contextStack.considerAsGlobalVariable(lhsNode)
 
     callNode
   }

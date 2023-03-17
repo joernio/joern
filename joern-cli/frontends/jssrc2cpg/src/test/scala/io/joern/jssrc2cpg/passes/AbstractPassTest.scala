@@ -14,13 +14,13 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
   protected abstract class Fixture
 
   protected object AstFixture extends Fixture {
-    def apply(code: String, filename: String = "code.js")(f: Cpg => Unit): Unit = {
+    def apply(code: String, filename: String = "code.js", tsTypes: Boolean = false)(f: Cpg => Unit): Unit = {
       File.usingTemporaryDirectory("jssrc2cpgTests") { dir =>
         val cpg  = newEmptyCpg()
         val file = dir / filename
         file.write(code)
-        val config       = Config(inputPath = dir.toString(), outputPath = dir.toString())
-        val astgenResult = AstGenRunner.execute(config, dir)
+        val config       = Config(inputPath = dir.toString(), outputPath = dir.toString(), tsTypes = tsTypes)
+        val astgenResult = new AstGenRunner(config).execute(dir)
         new AstCreationPass(cpg, astgenResult, config).createAndApply()
         f(cpg)
         file.delete()
@@ -29,19 +29,40 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
   }
 
   protected object TsAstFixture extends Fixture {
-    def apply(code: String, filename: String = "code.ts")(f: Cpg => Unit): Unit = {
+    def apply(code: String, filename: String = "code.ts", tsTypes: Boolean = false)(f: Cpg => Unit): Unit = {
       File.usingTemporaryDirectory("jssrc2cpgTests") { dir =>
         val cpg  = newEmptyCpg()
         val file = dir / filename
         file.write(code)
-        val config          = Config(inputPath = dir.toString(), outputPath = dir.toString())
-        val astgenResult    = AstGenRunner.execute(config, dir)
+        val config          = Config(inputPath = dir.toString(), outputPath = dir.toString(), tsTypes = tsTypes)
+        val astgenResult    = new AstGenRunner(config).execute(dir)
         val astCreationPass = new AstCreationPass(cpg, astgenResult, config)
         astCreationPass.createAndApply()
         new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
         new BuiltinTypesPass(cpg).createAndApply()
         f(cpg)
         file.delete()
+      }
+    }
+
+    def files(code1: String, filename1: String, code2: String, filename2: String, tsTypes: Boolean = false)(
+      f: Cpg => Unit
+    ): Unit = {
+      File.usingTemporaryDirectory("jssrc2cpgTests") { dir =>
+        val cpg   = newEmptyCpg()
+        val file1 = dir / filename1
+        file1.write(code1)
+        val file2 = dir / filename2
+        file2.write(code2)
+        val config          = Config(inputPath = dir.toString(), outputPath = dir.toString(), tsTypes = tsTypes)
+        val astgenResult    = new AstGenRunner(config).execute(dir)
+        val astCreationPass = new AstCreationPass(cpg, astgenResult, config)
+        astCreationPass.createAndApply()
+        new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
+        new BuiltinTypesPass(cpg).createAndApply()
+        f(cpg)
+        file1.delete()
+        file2.delete()
       }
     }
   }

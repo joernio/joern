@@ -1,7 +1,6 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.Constants
-import io.joern.pysrc2cpg.Py2CpgTestContext
+import io.joern.pysrc2cpg.{Constants, Py2CpgTestContext}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -134,6 +133,67 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
         "func = abc(arg)(staticmethod(def func(...)))"
     }
 
+  }
+
+  "type hinted function" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg("""
+        |from typing import List, Optional
+        |
+        |def func1(a: int, b: int) -> float:
+        |  return a / b
+        |
+        |def func2(a: Optional[str] = None) -> List[Union[str | None]]:
+        |    return [a]
+        |
+        |def func3(x : abc.Def):
+        |   return 1.0
+        |
+        |""".stripMargin)
+
+    "test parameter hint of method definition using built-in types" in {
+      cpg.method
+        .name("func1")
+        .parameter
+        .dynamicTypeHintFullName
+        .dedup
+        .l shouldBe Seq("__builtin.int")
+    }
+
+    "test parameter hint of method definition using types from 'typing'" in {
+      cpg.method
+        .name("func2")
+        .parameter
+        .dynamicTypeHintFullName
+        .dedup
+        .l shouldBe Seq("typing.Optional")
+    }
+
+    "test return hint of method definition using built-in types" in {
+      cpg.method
+        .name("func1")
+        .methodReturn
+        .dynamicTypeHintFullName
+        .dedup
+        .l shouldBe Seq("__builtin.float")
+    }
+
+    "test a return hint of method definition using types from 'typing'" in {
+      cpg.method
+        .name("func2")
+        .methodReturn
+        .dynamicTypeHintFullName
+        .dedup
+        .l shouldBe Seq("typing.List")
+    }
+
+    "test parameter hint of the form abc.def" in {
+      cpg.method
+        .name("func3")
+        .parameter
+        .dynamicTypeHintFullName
+        .dedup
+        .l shouldBe Seq("abc.Def")
+    }
   }
 
 }

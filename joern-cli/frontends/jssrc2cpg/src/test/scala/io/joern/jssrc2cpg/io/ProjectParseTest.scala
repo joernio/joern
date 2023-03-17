@@ -33,6 +33,17 @@ class ProjectParseTest extends JsSrc2CpgSuite with BeforeAndAfterAll {
     dir
   }
 
+  private val projectWithUtf8: File = {
+    val dir  = File.newTemporaryDirectory("jssrc2cpgTestsUtf8")
+    val file = dir / "utf8.js"
+    file.createIfNotExists(createParents = true)
+    file.write("""
+        |// 😼
+        |logger.error()
+        |""".stripMargin)
+    dir
+  }
+
   override def afterAll(): Unit = {
     projectWithSubfolders.delete(swallowIOExceptions = true)
     projectWithBrokenFile.delete(swallowIOExceptions = true)
@@ -42,8 +53,8 @@ class ProjectParseTest extends JsSrc2CpgSuite with BeforeAndAfterAll {
     def apply(projectDir: File)(f: Cpg => Unit): Unit = {
       File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
         val cpg          = newEmptyCpg()
-        val config       = Config(inputPath = projectDir.toString, outputPath = tmpDir.toString)
-        val astgenResult = AstGenRunner.execute(config, tmpDir)
+        val config       = Config(inputPath = projectDir.toString, outputPath = tmpDir.toString, tsTypes = false)
+        val astgenResult = new AstGenRunner(config).execute(tmpDir)
         new AstCreationPass(cpg, astgenResult, config).createAndApply()
         f(cpg)
       }
@@ -63,6 +74,10 @@ class ProjectParseTest extends JsSrc2CpgSuite with BeforeAndAfterAll {
 
     "recover from broken input file" in ProjectParseTestsFixture(projectWithBrokenFile) { cpg =>
       cpg.file.name.l should (contain("good.js") and not contain "broken.js")
+    }
+
+    "handle utf8 correctly" in ProjectParseTestsFixture(projectWithUtf8) { cpg =>
+      cpg.fieldAccess.argument(2).code.l shouldBe List("error")
     }
 
   }

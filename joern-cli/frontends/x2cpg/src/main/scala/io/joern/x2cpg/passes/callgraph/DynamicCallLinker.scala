@@ -1,9 +1,10 @@
 package io.joern.x2cpg.passes.callgraph
 
+import io.joern.x2cpg.Defines.DynamicCallUnknownFallName
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, PropertyNames}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.{NodeDb, NodeRef}
@@ -21,7 +22,7 @@ import scala.jdk.CollectionConverters._
   * Based on the algorithm by Jang, Dongseok & Tatlock, Zachary & Lerner, Sorin. (2014). SAFEDISPATCH: Securing C++
   * Virtual Calls from Memory Corruption Attacks. 10.14722/ndss.2014.23287.
   */
-class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   import DynamicCallLinker._
   // Used to track potential method candidates for a given method fullname. Since our method full names contain the type
@@ -29,7 +30,8 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
   // the best interest of reproducibility during debugging.
   private val validM = mutable.Map.empty[String, mutable.LinkedHashSet[String]]
   // Used for dynamic programming as subtree's don't need to be recalculated later
-  private val subclassCache = mutable.Map.empty[String, mutable.LinkedHashSet[String]]
+  private val subclassCache   = mutable.Map.empty[String, mutable.LinkedHashSet[String]]
+  private val superclassCache = mutable.Map.empty[String, mutable.LinkedHashSet[String]]
   // Used for O(1) lookups on methods that will work without indexManager
   private val typeMap = mutable.Map.empty[String, TypeDecl]
   // For linking loose method stubs that cannot be resolved by crawling parent types
@@ -75,28 +77,51 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
   }
 
-  /** Recursively returns all the sub-types of the given type declaration. Does not account for circular hierarchies.
+  /** Recursively returns all the sub-types of the given type declaration. Does account for circular hierarchies.
     */
-  def allSubclasses(typDeclFullName: String): mutable.LinkedHashSet[String] = {
-    subclassCache.get(typDeclFullName) match {
-      case Some(value) => value
+  private def allSubclasses(typDeclFullName: String): mutable.LinkedHashSet[String] =
+    inheritanceTraversal(typDeclFullName, subclassCache, inSuperDirection = false)
+
+  /** Recursively returns all the super-types of the given type declaration. Does account for circular hierarchies.
+    */
+  private def allSuperClasses(typDeclFullName: String): mutable.LinkedHashSet[String] =
+    inheritanceTraversal(typDeclFullName, superclassCache, inSuperDirection = true)
+
+  private def inheritanceTraversal(
+    typDeclFullName: String,
+    cache: mutable.Map[String, mutable.LinkedHashSet[String]],
+    inSuperDirection: Boolean
+  ): mutable.LinkedHashSet[String] = {
+    cache.get(typDeclFullName) match {
+      case Some(superClasses) => superClasses
       case None =>
-        val directSubclasses =
-          cpg.typ
-            .nameExact(typDeclFullName)
-            .flatMap(_.in(EdgeTypes.INHERITS_FROM).asScala)
-            .collect { case x: TypeDecl =>
-              x.fullName
-            }
-            .to(mutable.LinkedHashSet)
-        // The second check makes sure that set is changing which wouldn't be the case in circular hierarchies
-        val totalSubclasses: mutable.LinkedHashSet[String] = if (directSubclasses.isEmpty) {
-          directSubclasses ++ mutable.LinkedHashSet(typDeclFullName)
-        } else {
-          directSubclasses.flatMap(t => allSubclasses(t)) ++ mutable.LinkedHashSet(typDeclFullName)
-        }
-        subclassCache.put(typDeclFullName, totalSubclasses)
-        totalSubclasses
+        val totalSuperclasses = (cpg.typeDecl
+          .fullNameExact(typDeclFullName)
+          .headOption match {
+          case Some(curr) => inheritTraversal(curr, inSuperDirection)
+          case None       => mutable.LinkedHashSet.empty
+        }).map(_.fullName)
+        cache.put(typDeclFullName, totalSuperclasses)
+        totalSuperclasses
+    }
+  }
+
+  private def inheritTraversal(
+    cur: TypeDecl,
+    inSuperDirection: Boolean,
+    visitedNodes: mutable.LinkedHashSet[TypeDecl] = mutable.LinkedHashSet.empty
+  ): mutable.LinkedHashSet[TypeDecl] = {
+    if (visitedNodes.contains(cur)) return visitedNodes
+    visitedNodes.addOne(cur)
+
+    (if (inSuperDirection) cpg.typeDecl.fullNameExact(cur.fullName).flatMap(_.inheritsFromOut.referencedTypeDecl)
+     else cpg.typ.fullNameExact(cur.fullName).flatMap(_.inheritsFromIn))
+      .collectAll[TypeDecl]
+      .to(mutable.LinkedHashSet) match {
+      case classesToEval if classesToEval.isEmpty => visitedNodes
+      case classesToEval =>
+        classesToEval.flatMap(t => inheritTraversal(t, inSuperDirection, visitedNodes))
+        visitedNodes
     }
   }
 
@@ -114,23 +139,63 @@ class DynamicCallLinker(cpg: Cpg) extends SimpleCpgPass(cpg) {
     }
   }
 
+  private def resolveCallInSuperClasses(call: Call): Boolean = {
+    if (!call.methodFullName.contains(":")) return false
+    def split(str: String, n: Int) = (str.take(n), str.drop(n + 1))
+    val (fullName, signature)      = split(call.methodFullName, call.methodFullName.lastIndexOf(":"))
+    val typeDeclFullName           = fullName.replace(s".${call.name}", "")
+    val candidateInheritedMethods =
+      cpg.typeDecl
+        .fullNameExact(allSuperClasses(typeDeclFullName).toIndexedSeq: _*)
+        .astChildren
+        .isMethod
+        .name(call.name)
+        .and(_.signatureExact(signature))
+        .fullName
+        .l
+    if (candidateInheritedMethods.nonEmpty) {
+      validM.put(
+        call.methodFullName,
+        validM.getOrElse(call.methodFullName, mutable.LinkedHashSet.empty) ++ mutable.LinkedHashSet.from(
+          candidateInheritedMethods
+        )
+      )
+      true
+    } else {
+      false
+    }
+  }
+
   private def linkDynamicCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
+    // This call linker requires a method full name entry
+    if (call.methodFullName.equals("<empty>") || call.methodFullName.equals(DynamicCallUnknownFallName)) return
+    // Support for overriding
+    resolveCallInSuperClasses(call)
+
     validM.get(call.methodFullName) match {
       case Some(tgts) =>
         val callsOut = call.callOut.fullName.toSetImmutable
-        tgts.foreach { destMethod =>
-          val tgtM = if (cpg.graph.indexManager.isIndexed(PropertyNames.FULL_NAME)) {
-            methodFullNameToNode(destMethod)
-          } else {
-            cpg.method.fullNameExact(destMethod).headOption
+        val tgtMs = tgts
+          .flatMap(destMethod =>
+            if (cpg.graph.indexManager.isIndexed(PropertyNames.FULL_NAME)) {
+              methodFullNameToNode(destMethod)
+            } else {
+              cpg.method.fullNameExact(destMethod).headOption
+            }
+          )
+          .toSet
+        // Non-overridden methods linked as external stubs should be excluded if they are detected
+        val (externalMs, internalMs) = tgtMs.partition(_.isExternal)
+        (if (externalMs.nonEmpty && internalMs.nonEmpty) internalMs else tgtMs)
+          .foreach { tgtM =>
+            if (!callsOut.contains(tgtM.fullName)) {
+              dstGraph.addEdge(call, tgtM, EdgeTypes.CALL)
+            } else {
+              fallbackToStaticResolution(call, dstGraph)
+            }
           }
-          if (tgtM.isDefined && !callsOut.contains(tgtM.get.fullName)) {
-            dstGraph.addEdge(call, tgtM.get, EdgeTypes.CALL)
-          } else {
-            fallbackToStaticResolution(call, dstGraph)
-          }
-        }
-      case None => fallbackToStaticResolution(call, dstGraph)
+      case None =>
+        fallbackToStaticResolution(call, dstGraph)
     }
   }
 

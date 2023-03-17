@@ -9,12 +9,41 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
 
   "CallLinkerPass" should {
 
+    "create call edges correctly for methods from classes" in {
+      val cpg: Cpg = code("""
+        |class Foo {
+        |  a() {
+        |    this.b();
+        |  }
+        |
+        |  b() {
+        |    console.log("b");
+        |    new this.bar().c();
+        |  }
+        |
+        |  bar = class Bar {
+        |    c() {
+        |      console.log("c");
+        |    }
+        |  }
+        |}""".stripMargin)
+
+      inside(cpg.method("b").callIn(NoResolve).l) { case List(call) =>
+        call.code shouldBe "this.b()"
+        call.methodFullName should endWith(".js::program:Foo:b")
+      }
+
+      inside(cpg.method("c").callIn(NoResolve).l) { case List(call) =>
+        call.code shouldBe "new this.bar().c()"
+        call.methodFullName should endWith(".js::program:Foo:Bar:c")
+      }
+    }
+
     "create call edges correctly" in {
       val cpg: Cpg = code("""
         |function sayhi() {
         |  console.log("Hello World!");
         |}
-        |
         |sayhi();
         |""".stripMargin)
 
@@ -42,10 +71,10 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() {            // this will be called anonymous
+          |  sayhi: function() { // this will be called anonymous
           |    console.log("Hello World!");
           |  },
-          |  saybye: function() {           // this will be called anonymous1
+          |  saybye: function() { // this will be called anonymous1
           |    console.log("Good-bye!");
           |  }
           |}
@@ -54,7 +83,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhowdy: function() {       // this will be called anonymous
+          |  sayhowdy: function() { // this will be called anonymous
           |    console.log("Howdy World!");
           |  }
           |}
@@ -72,7 +101,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
         call.methodFullName shouldBe "bar.js::program:anonymous"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
           receiver.name shouldBe "bar"
-          receiver.typeFullName shouldBe "<export>::bar.js"
+          receiver.typeFullName shouldBe "bar.js::program"
         }
       }
 
@@ -86,7 +115,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
         call.methodFullName shouldBe "baz.js::program:anonymous"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
           receiver.name shouldBe "baz"
-          receiver.typeFullName shouldBe "<export>::baz.js"
+          receiver.typeFullName shouldBe "baz.js::program"
         }
       }
     }
@@ -103,7 +132,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() {            // this will be called anonymous
+          |  sayhi: function() { // this will be called anonymous
           |    console.log("Hello World, love BAR");
           |  }
           |}
@@ -112,7 +141,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() {            // this will be called anonymous
+          |  sayhi: function() { // this will be called anonymous
           |    console.log("Howdy World, love BAZ");
           |  }
           |}

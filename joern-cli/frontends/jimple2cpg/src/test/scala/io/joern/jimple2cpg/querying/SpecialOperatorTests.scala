@@ -1,13 +1,14 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, TypeRef}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
 class SpecialOperatorTests extends JimpleCode2CpgFixture {
 
-  val cpg = code("""
+  val cpg: Cpg = code("""
       |class Foo {
       |  public void foo(Object o) {
       |    if (o instanceof String) {
@@ -20,7 +21,7 @@ class SpecialOperatorTests extends JimpleCode2CpgFixture {
       |    System.out.println(s);
       |  }
       |}
-      |""".stripMargin)
+      |""".stripMargin).cpg
 
   "it should create a call to `<operator>.instanceOf` with the correct arguments" in {
     val call = cpg.call.nameExact("<operator>.instanceOf").head
