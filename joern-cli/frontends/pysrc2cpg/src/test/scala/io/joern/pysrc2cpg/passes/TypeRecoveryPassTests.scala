@@ -623,4 +623,154 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "Import statement with method ref sample one" in {
+    val controller =
+      """
+        |from django.contrib import admin
+        |from django.urls import path
+        |from django.conf.urls import url
+        |from student import views
+        |
+        |urlpatterns = [
+        |    url(r'allPage', views.all_page)
+        |]
+        |""".stripMargin
+    val views =
+      """
+        |def all_page(request):
+        |	print("All pages")
+        |""".stripMargin
+    val cpg = code("print('Hello, world!')")
+      .moreCode(controller, Seq("controller", "urls.py").mkString(File.separator))
+      .moreCode(views, Seq("student", "views.py").mkString(File.separator))
+
+    val Some(allPageRef) = cpg.call.methodFullName("django.*[.](path|url)").argument.isMethodRef.headOption
+    allPageRef.methodFullName shouldBe Seq("student", "views.py:<module>.all_page").mkString(File.separator)
+    allPageRef.code shouldBe "views.all_page"
+  }
+
+  "Import statement with method ref sample two" in {
+    val controller =
+      """
+        |from django.contrib import admin
+        |from django.urls import path
+        |from django.conf.urls import url
+        |from .import views
+        |
+        |urlpatterns = [
+        |    url(r'allPage', views.all_page)
+        |]
+        |""".stripMargin
+    val views =
+      """
+        |def all_page(request):
+        |	print("All pages")
+        |""".stripMargin
+    val cpg = code(controller, "urls.py")
+      .moreCode(views, "views.py")
+
+    val Some(allPageRef) = cpg.call.methodFullName("django.*[.](path|url)").argument.isMethodRef.headOption
+    allPageRef.methodFullName shouldBe "views.py:<module>.all_page"
+    allPageRef.code shouldBe "views.all_page"
+  }
+
+  "Import statement with method ref sample three" in {
+    val controller =
+      """
+        |from django.contrib import admin
+        |from django.urls import path
+        |from django.conf.urls import url
+        |from .import views
+        |
+        |urlpatterns = [
+        |    url(r'allPage', views.all_page)
+        |]
+        |""".stripMargin
+    val views =
+      """
+        |def all_page(request):
+        |	print("All pages")
+        |""".stripMargin
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
+      .moreCode(views, Seq("controller", "views.py").mkString(File.separator))
+
+    val Some(allPageRef) = cpg.call.methodFullName("django.*[.](path|url)").argument.isMethodRef.headOption
+    allPageRef.methodFullName shouldBe Seq("controller", "views.py:<module>.all_page").mkString(File.separator)
+    allPageRef.code shouldBe "views.all_page"
+  }
+
+  "Import statement with method ref sample four" in {
+    val controller =
+      """
+        |from django.contrib import admin
+        |from django.urls import path
+        |from django.conf.urls import url
+        |from .views import all_page
+        |
+        |urlpatterns = [
+        |    url(r'allPage', all_page)
+        |]
+        |""".stripMargin
+    val views =
+      """
+        |def all_page(request):
+        |	print("All pages")
+        |""".stripMargin
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
+      .moreCode(views, Seq("controller", "views.py").mkString(File.separator))
+
+    val Some(allPageRef) = cpg.call.methodFullName("django.*[.](path|url)").argument.isMethodRef.headOption
+    allPageRef.methodFullName shouldBe Seq("controller", "views.py:<module>.all_page").mkString(File.separator)
+    allPageRef.code shouldBe "all_page"
+  }
+
+  "Import statement with method ref sample five" in {
+    val controller =
+      """
+        |from django.contrib import admin
+        |from django.urls import path
+        |from django.conf.urls import url
+        |from student.views import all_page
+        |
+        |urlpatterns = [
+        |    url(r'allPage', all_page)
+        |]
+        |""".stripMargin
+    val views =
+      """
+        |def all_page(request):
+        |	print("All pages")
+        |""".stripMargin
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
+      .moreCode(views, Seq("student", "views.py").mkString(File.separator))
+
+    val Some(allPageRef) = cpg.call.methodFullName("django.*[.](path|url)").argument.isMethodRef.headOption
+    allPageRef.methodFullName shouldBe Seq("student", "views.py:<module>.all_page").mkString(File.separator)
+    allPageRef.code shouldBe "all_page"
+  }
+
+  "Import statement with method ref sample six" in {
+    val controller =
+      """
+        |from django.urls import path
+        |from authy.views import PasswordChange
+        |
+        |urlpatterns = [
+        |   path('changepassword/', PasswordChange, name='change_password')
+        |]
+        |""".stripMargin
+    val views =
+      """
+        |def PasswordChange(request):
+        |    print("All pages")
+        |
+        |""".stripMargin
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
+      .moreCode(views, Seq("authy", "views.py").mkString(File.separator))
+
+    val Some(allPageRef) = cpg.call.methodFullName("django.*[.](path|url)").argument.isMethodRef.headOption
+    allPageRef.methodFullName shouldBe Seq("authy", "views.py:<module>.PasswordChange").mkString(File.separator)
+    allPageRef.code shouldBe "PasswordChange"
+  }
+
 }
