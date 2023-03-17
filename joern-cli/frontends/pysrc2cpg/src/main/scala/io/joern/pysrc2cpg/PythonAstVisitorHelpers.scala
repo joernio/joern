@@ -292,7 +292,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
     val passedMethodFullName = methodFullName match {
       case Some(fullName) => fullName + name
-      case None => name
+      case None           => name
     }
 
     val callNode = nodeBuilder.callNode(code, passedMethodFullName, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
