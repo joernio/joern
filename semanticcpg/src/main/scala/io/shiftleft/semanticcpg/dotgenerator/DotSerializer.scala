@@ -79,8 +79,7 @@ object DotSerializer {
       case typ: Type                => List(typ.label, typ.name)
       case dec: DeclarationBase     => List(dec.label, dec.name)
       case others: AstNode          => List(others.label, others.code)
-    }).map(StringUtils.abbreviate(_, 50))
-      .map(StringUtils.normalizeSpace)
+    }).map(StringUtils.normalizeSpace)
       .map(escape)
     (lineOpt match {
       case Some(line) => s"${list.head}, $line" :: list.tail
