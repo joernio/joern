@@ -10,11 +10,17 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
     "have correct structure vor simple vue.js template" in AstFixture(
       """
         |<template>
-        |<img v-for="image in images" :src="image.url" :alt="image.description" />
+        |<img v-for="image in images" :src="image.url" :attr="image.name" v-bind:alt="image.description" />
         |</template>""".stripMargin,
       "test.vue"
     ) { cpg =>
       cpg.file.name.l shouldBe List("test.vue")
+      cpg.templateDom.nameExact("JSXAttribute").code.l shouldBe List(
+        "v-for=\"image in images\"",
+        "src=\"image.url\"",
+        "attr=\"image.name\"",
+        "v-bind:alt=\"image.description\""
+      )
       templateDomName(cpg) shouldBe Set(
         "JSXElement",
         "JSXOpeningElement",
