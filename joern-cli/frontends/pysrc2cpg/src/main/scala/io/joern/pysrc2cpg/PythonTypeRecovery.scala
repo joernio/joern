@@ -164,7 +164,7 @@ class RecoverForPythonFile(
       if (procedureName.contains("__init__.py")) procedureName
       else procedureName.replace(".py", s"${JFile.separator}__init__.py")
 
-    val isMaybeConstructor = expEntity.split("\\.").lastOption.exists(_.charAt(0).isUpper)
+    val isMaybeConstructor = expEntity.split("\\.").lastOption.exists(s => s.nonEmpty && s.charAt(0).isUpper)
     possibleCalleeNames(procedureName, isMaybeConstructor, procedureName.contains("<var>"))
   }
 
