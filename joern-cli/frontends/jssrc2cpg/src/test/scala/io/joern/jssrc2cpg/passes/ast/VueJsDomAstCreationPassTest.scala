@@ -17,8 +17,8 @@ class VueJsDomAstCreationPassTest extends AbstractDomPassTest {
       cpg.file.name.l shouldBe List("test.vue")
       cpg.templateDom.nameExact("JSXAttribute").code.l shouldBe List(
         "v-for=\"image in images\"",
-        "src=\"image.url\"",
-        "attr=\"image.name\"",
+        ":src=\"image.url\"",
+        ":attr=\"image.name\"",
         "v-bind:alt=\"image.description\""
       )
       templateDomName(cpg) shouldBe Set(
