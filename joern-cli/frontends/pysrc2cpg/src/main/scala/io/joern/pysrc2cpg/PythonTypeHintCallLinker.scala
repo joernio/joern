@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
-import io.joern.x2cpg.passes.frontend.XTypeRecovery.{DummyIndexAccess, DummyMemberLoad, DummyReturnType}
+import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodBase}
@@ -46,11 +46,7 @@ class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
       methodNames
         .flatMap(methodMap.get)
         .foreach { m => builder.addEdge(call, m, EdgeTypes.CALL) }
-      val methodNamesFiltered = methodNames.filter( m => !(m.contains(DummyReturnType) &&
-      m.contains(DummyMemberLoad) &&
-      m.contains(DummyIndexAccess)
-        )
-      )
+      val methodNamesFiltered = methodNames.filter(!isDummyType(_))
 
       if (methodNamesFiltered.size == 1) {
         builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNamesFiltered.head)
