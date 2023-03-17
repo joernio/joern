@@ -295,7 +295,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
       case None           => name
     }
 
-    val callNode = nodeBuilder.callNode(code, passedMethodFullName, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
+    val callNode = nodeBuilder.callNode(code, name, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
 
     edgeBuilder.astEdge(receiverNode, callNode, 0)
     edgeBuilder.receiverEdge(receiverNode, callNode)
