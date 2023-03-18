@@ -40,7 +40,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
 )
 
 ThisBuild / libraryDependencies ++= Seq(
-  "org.slf4j"                % "slf4j-api"         % "2.0.6",
+  "org.slf4j"                % "slf4j-api"         % "2.0.7",
   "org.apache.logging.log4j" % "log4j-slf4j2-impl" % "2.20.0" % Optional,
   "org.apache.logging.log4j" % "log4j-core"        % "2.20.0" % Optional
   // `Optional` means "not transitive", but still included in "stage/lib"
@@ -49,7 +49,7 @@ ThisBuild / libraryDependencies ++= Seq(
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
   "-Xlint",
-  "--release=11",
+  "--release=11"
 ) ++ {
   // fail early if users with JDK8 try to run this
   val javaVersion = sys.props("java.specification.version").toFloat
@@ -59,8 +59,9 @@ ThisBuild / compile / javacOptions ++= Seq(
 
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
-  "-target:11", 
-  "--release", "11",
+  "-target:11",
+  "--release",
+  "11"
 )
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
