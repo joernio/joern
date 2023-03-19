@@ -24,18 +24,18 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   implicit private val resolver: NoResolve.type = NoResolve
   private val fileNamePattern                   = Pattern.compile("^(.*(.py|.js)).*$")
 
-  def calls: Traversal[Call] = cpg.call
+  protected def calls: Traversal[Call] = cpg.call
     .nameNot("<operator>.*", "<operators>.*")
     .filter(c => calleeNames(c).nonEmpty && c.callee.isEmpty)
 
-  def calleeNames(c: Call): Seq[String] =
+  protected def calleeNames(c: Call): Seq[String] =
     (c.dynamicTypeHintFullName :+ c.typeFullName).filterNot(_.equals("ANY")).distinct
 
-  def callees(names: Seq[String]): List[Method] = cpg.method.fullNameExact(names: _*).toList
+  protected def callees(names: Seq[String]): List[Method] = cpg.method.fullNameExact(names: _*).toList
 
   override def run(builder: DiffGraphBuilder): Unit = linkCalls(builder)
 
-  def linkCalls(builder: DiffGraphBuilder): Unit = {
+  protected def linkCalls(builder: DiffGraphBuilder): Unit = {
     val methodMap        = mutable.HashMap.empty[String, MethodBase]
     val callerAndCallees = calls.map(call => (call, calleeNames(call))).toList
     // Gather all method nodes and/or stubs
@@ -61,7 +61,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
-  def createMethodStub(methodName: String, call: Call, builder: DiffGraphBuilder): NewMethod = {
+  protected def createMethodStub(methodName: String, call: Call, builder: DiffGraphBuilder): NewMethod = {
     // In the case of Python/JS we can use name info to check if, despite the method name might be incorrect, that we
     // label the method correctly as internal by finding that the method should belong to an internal file
     val matcher  = fileNamePattern.matcher(methodName)
