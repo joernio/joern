@@ -98,7 +98,7 @@ object UsageSlicing {
         typeDecl.fullName,
         typeDecl.member.map(DefComponent.fromNode).l,
         typeDecl.method
-          .map(m => ObservedCall(None, m.name, m.parameter.map(_.typeFullName).toList, m.methodReturn.typeFullName))
+          .map(m => ObservedCall(m.name, m.parameter.map(_.typeFullName).toList, m.methodReturn.typeFullName))
           .l
       )
     }
@@ -108,26 +108,6 @@ object UsageSlicing {
       .filter(udt => udt.fields.nonEmpty || udt.procedures.nonEmpty)
       .l
   }
-
-  /** Given a node, if it is a call, will traverse the AST parent's children for a node with argument index 0.
-    *
-    * @param node
-    *   the node, which should be a call
-    * @return
-    *   the call receiver, if found.
-    */
-  private def getCallReceiver(node: Call): Option[Identifier] =
-    node match {
-      case x: Call if Operators.fieldAccess.equals(x.name) => x.inCall.argument.isIdentifier.find(_.argumentIndex == 0)
-      case x: Call if Operators.alloc.equals(x.name) && x.inCall.ast.isIdentifier.name(".*tmp.*").nonEmpty =>
-        x.parentBlock.inAssignment.argument.isIdentifier.find(_.argumentIndex == 0)
-      case x: Call if Operators.alloc.equals(x.name) =>
-        x.inCall.argument.isIdentifier.find(_.argumentIndex == 0)
-      case x: Call if Operators.assignment.equals(x.name) && x.ast.isCall.name.exists(_.equals(Operators.alloc)) =>
-        x.argument.isIdentifier.find(_.argumentIndex == 1)
-      case x: Call => x.argument.isIdentifier.find(_.argumentIndex == 0)
-      case _       => None
-    }
 
   private def trackUsage(tgt: Declaration, typeMap: Map[String, String]): Option[(String, ObjectUsageSlice)] = {
 
@@ -159,8 +139,6 @@ object UsageSlicing {
 
       if (callName.isEmpty) return None
 
-      val receiverName = getCallReceiver(baseCall).map(_.name)
-
       val params = (if (isMemberInvocation) baseCall.inCall.argument
                     else if (isConstructor)
                       baseCall.ast.isCall
@@ -191,7 +169,7 @@ object UsageSlicing {
         .headOption
         .getOrElse("ANY")
 
-      Option(ObservedCall(receiverName, callName.get, params, returnType))
+      Option(ObservedCall(callName.get, params, returnType))
     }
 
     def partitionInvolvementInCalls: (List[ObservedCall], List[(ObservedCall, Int)]) = {

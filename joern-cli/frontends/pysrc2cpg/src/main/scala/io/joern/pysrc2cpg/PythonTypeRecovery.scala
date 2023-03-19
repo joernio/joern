@@ -15,16 +15,16 @@ import java.io.{File => JFile}
 import java.nio.file.Paths
 import java.util.regex.Matcher
 import scala.collection.mutable
-import scala.util.Try
 
-class PythonTypeRecovery(cpg: Cpg) extends XTypeRecovery[File](cpg) {
+class PythonTypeRecovery(cpg: Cpg, enabledDummyTypes: Boolean = true) extends XTypeRecovery[File](cpg) {
 
   override def compilationUnit: Traversal[File] = cpg.file
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[File] = new RecoverForPythonFile(cpg, unit, builder, globalTable, addedNodes)
+  ): RecoverForXCompilationUnit[File] =
+    new RecoverForPythonFile(cpg, unit, builder, globalTable, addedNodes, enabledDummyTypes)
 
 }
 
@@ -35,8 +35,9 @@ class RecoverForPythonFile(
   cu: File,
   builder: DiffGraphBuilder,
   globalTable: SymbolTable[GlobalKey],
-  addedNodes: mutable.Set[(Long, String)]
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes) {
+  addedNodes: mutable.Set[(Long, String)],
+  enabledDummyTypes: Boolean
+) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes, enabledDummyTypes) {
 
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
@@ -52,12 +53,25 @@ class RecoverForPythonFile(
   /** Overridden to include legacy import calls until imports are supported.
     */
   override def importNodes(cu: AstNode): Traversal[AstNode] =
-    cu.ast.isCall.nameExact("import") ++ super.importNodes(cu)
+    cu.ast.isCall.nameExact("import") // TODO: Remove and use IMPORT nodes
 
   override def visitImport(importCall: Call): Unit = {
     importCall.argument.l match {
       case (path: Literal) :: (funcOrModule: Literal) :: alias =>
-        val calleeNames = extractPossibleCalleeNames(path.code, funcOrModule.code)
+        val namespace = if (path.code.startsWith(".")) {
+          // TODO: pysrc2cpg does not link files to the correct namespace nodes
+          val root     = cpg.metaData.root.headOption.getOrElse("")
+          val fileName = path.file.name.headOption.getOrElse("").stripPrefix(root)
+          val sep      = Matcher.quoteReplacement(JFile.separator)
+          // The below gives us the full path of the relative "."
+          val relativeNamespace =
+            if (fileName.contains(JFile.separator))
+              fileName.substring(0, fileName.lastIndexOf(JFile.separator)).replaceAll(sep, ".")
+            else ""
+          if (path.code.length > 1) relativeNamespace + path.code.replaceAll(sep, ".")
+          else relativeNamespace
+        } else path.code
+        val calleeNames = extractPossibleCalleeNames(namespace, funcOrModule.code)
         alias match {
           case (alias: Literal) :: Nil =>
             symbolTable.put(CallAlias(alias.code), calleeNames)
@@ -247,7 +261,7 @@ class RecoverForPythonFile(
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
       val parentTypes =
-        fa.method.typeDecl.fullName.map(_.stripSuffix("<meta>")).map { t => s"$t.${t.split("\\.").last}" }.toSeq
+        fa.method.typeDecl.fullName.map(_.stripSuffix("<meta>")).toSeq
       val baseTypes = cpg.typeDecl.fullNameExact(parentTypes: _*).inheritsFromTypeFullName.toSeq
       // TODO: inheritsFromTypeFullName does not give full name in pysrc2cpg
       val baseTypeFullNames = cpg.typ.nameExact(baseTypes: _*).fullName.toSeq

@@ -21,6 +21,8 @@ case class Path(elements: List[AstNode]) {
 
 object Path {
 
+  val MaxTrackedWidth = 30
+
   implicit val show: Show[Path] = { path =>
     Table(
       columnNames = Array("nodeType", "tracked", "lineNumber", "method", "file"),
@@ -43,7 +45,7 @@ object Path {
                 s"$methodName($paramsPretty)"
               case _ => cfgNode.statement.repr
             }
-            val tracked = StringUtils.normalizeSpace(StringUtils.abbreviate(statement, 20))
+            val tracked = StringUtils.normalizeSpace(StringUtils.abbreviate(statement, MaxTrackedWidth))
             Array(nodeType, tracked, lineNumber, methodName, fileName)
         }
       }

@@ -25,6 +25,26 @@ abstract class AstCreatorBase(filename: String) {
       .order(1)
   }
 
+  /** Creates an AST that represents an annotation, including its content (annotation parameter assignments).
+    */
+  def annotationAst(annotation: NewAnnotation, children: Seq[Ast]): Ast = {
+    val annotationAst = Ast(annotation)
+    annotationAst.withChildren(children)
+  }
+
+  /** Creates an AST that represents an annotation assignment with a name for the assigned value, its overall code, and
+    * the respective assignment AST.
+    */
+  def annotationAssignmentAst(assignmentValueName: String, code: String, assignmentAst: Ast): Ast = {
+    val parameter      = NewAnnotationParameter().code(assignmentValueName)
+    val assign         = NewAnnotationParameterAssign().code(code)
+    val assignChildren = List(Ast(parameter), assignmentAst)
+    setArgumentIndices(assignChildren)
+    Ast(assign)
+      .withChild(Ast(parameter))
+      .withChild(assignmentAst)
+  }
+
   /** Creates an AST that represents an entire method, including its content.
     */
   def methodAst(
@@ -114,11 +134,9 @@ abstract class AstCreatorBase(filename: String) {
 
   def wrapMultipleInBlock(asts: Seq[Ast], lineNumber: Option[Integer]): Ast = {
     asts.toList match {
-      case Nil => blockAst(NewBlock().lineNumber(lineNumber))
-
+      case Nil        => blockAst(NewBlock().lineNumber(lineNumber))
       case ast :: Nil => ast
-
-      case asts => blockAst(NewBlock().lineNumber(lineNumber), asts)
+      case astList    => blockAst(NewBlock().lineNumber(lineNumber), astList)
     }
   }
 
@@ -133,10 +151,9 @@ abstract class AstCreatorBase(filename: String) {
       .controlStructureType(ControlStructureTypes.WHILE)
       .lineNumber(lineNumber)
       .columnNumber(columnNumber)
-
-    if (code.isDefined)
+    if (code.isDefined) {
       whileNode = whileNode.code(code.get)
-
+    }
     controlStructureAst(whileNode, condition, body)
   }
 
@@ -151,10 +168,9 @@ abstract class AstCreatorBase(filename: String) {
       .controlStructureType(ControlStructureTypes.DO)
       .lineNumber(lineNumber)
       .columnNumber(columnNumber)
-
-    if (code.isDefined)
+    if (code.isDefined) {
       doWhileNode = doWhileNode.code(code.get)
-
+    }
     controlStructureAst(doWhileNode, condition, body, placeConditionLast = true)
   }
 
@@ -183,7 +199,6 @@ abstract class AstCreatorBase(filename: String) {
     tryBodyAst.root.collect { case x: ExpressionNew => x }.foreach(_.order = 1)
     catchAsts.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 2)
     finallyAst.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 3)
-
     Ast(tryNode)
       .withChild(tryBodyAst)
       .withChildren(catchAsts)

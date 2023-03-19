@@ -89,11 +89,16 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, iteration
 
 object XTypeRecovery {
 
-  val DummyReturnType  = "<returnValue>"
-  val DummyMemberLoad  = "<member>"
-  val DummyIndexAccess = "<indexAccess>"
+  val DummyReturnType                       = "<returnValue>"
+  val DummyMemberLoad                       = "<member>"
+  val DummyIndexAccess                      = "<indexAccess>"
+  private lazy val DummyTokens: Set[String] = Set(DummyReturnType, DummyMemberLoad, DummyIndexAccess)
 
   def dummyMemberType(prefix: String, memberName: String): String = s"$prefix.$DummyMemberLoad($memberName)"
+
+  /** Scans the type for placeholder/dummy types.
+    */
+  def isDummyType(typ: String): Boolean = DummyTokens.exists(typ.contains)
 
 }
 
@@ -109,6 +114,9 @@ object XTypeRecovery {
   *   the global symbol table.
   * @param addedNodes
   *   new node tracking set.
+  * @param enabledDummyTypes
+  *   enables placeholder/dummy types that show where a type comes from. Useful for pattern matching return values or
+  *   field members where types are unknown.
   * @tparam CompilationUnitType
   *   the [[AstNode]] type used to represent a compilation unit of the language.
   */
@@ -117,7 +125,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   cu: CompilationUnitType,
   builder: DiffGraphBuilder,
   globalTable: SymbolTable[GlobalKey],
-  addedNodes: mutable.Set[(Long, String)]
+  addedNodes: mutable.Set[(Long, String)],
+  enabledDummyTypes: Boolean = true
 ) extends RecursiveTask[Unit] {
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -237,7 +246,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * @param i
     *   the call that imports entities into this scope.
     */
-  protected def visitImport(i: Call): Unit
+  protected def visitImport(i: Call): Unit = {}
 
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
@@ -252,7 +261,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** @return
     *   the import nodes of this compilation unit.
     */
-  protected def importNodes(cu: AstNode): Traversal[AstNode] = cu.ast.isImport
+  protected def importNodes(cu: AstNode): Traversal[AstNode] = cu.ast.isCall.referencedImports
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
@@ -704,11 +713,17 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def setTypeInformation(): Unit = {
     cu.ast.foreach {
       case x: Local if symbolTable.contains(x) =>
-        builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
+        val typs =
+          if (enabledDummyTypes) symbolTable.get(x).toSeq
+          else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
+        builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typs)
       case x: Identifier if symbolTable.contains(x) =>
         setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
       case x: Call if symbolTable.contains(x) =>
-        builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, symbolTable.get(x).toSeq)
+        val typs =
+          if (enabledDummyTypes) symbolTable.get(x).toSeq
+          else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
+        builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typs)
       case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
         setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
       case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
@@ -765,38 +780,43 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           case _ =>
         }
         // This field may be a function pointer
-        handlePotentialFunctionPointer(fieldAccess, i.name, iTypes, f)
+        handlePotentialFunctionPointer(fieldAccess, iTypes, f.canonicalName, f.argumentIndex, Option(i.name))
       case _ => persistType(x, symbolTable.get(x))(builder)
     }
 
   /** In the case this field access is a function pointer, we would want to make sure this has a method ref.
     */
   private def handlePotentialFunctionPointer(
-    fieldAccess: Call,
-    baseName: String,
+    funcPtr: Expression,
     baseTypes: Set[String],
-    f: FieldIdentifier
+    funcName: String,
+    argIdx: Int,
+    baseName: Option[String] = None
   ): Unit = {
+    // Sometimes the function identifier is an argument to the call itself as a "base". In this case we don't need
+    // a method ref. This happens in jssrc2cpg
+    if (funcPtr.astParent.collectAll[Call].exists(_.name == funcName)) return
+
     baseTypes
-      .map(t => s"$t.${f.canonicalName}")
+      .map(t => if (t.endsWith(funcName)) t else s"$t.$funcName")
       .flatMap(p => cpg.method.fullNameExact(p))
       .map { m =>
         (
           m,
           NewMethodRef()
-            .code(s"$baseName.${f.canonicalName}")
+            .code(s"${baseName.map(_.appended('.')).getOrElse("")}$funcName")
             .methodFullName(m.fullName)
-            .argumentIndex(f.argumentIndex + 1)
-            .lineNumber(fieldAccess.lineNumber)
-            .columnNumber(fieldAccess.columnNumber)
+            .argumentIndex(argIdx + 1)
+            .lineNumber(funcPtr.lineNumber)
+            .columnNumber(funcPtr.columnNumber)
         )
       }
       .filterNot { case (_, mRef) =>
-        addedNodes.contains((fieldAccess.id(), s"${mRef.label()}.${mRef.methodFullName}"))
+        addedNodes.contains((funcPtr.id(), s"${mRef.label()}.${mRef.methodFullName}"))
       }
       .foreach { case (m, mRef) =>
-        fieldAccess.astParent
-          .filterNot(_.astChildren.isMethodRef.methodFullName(mRef.methodFullName).nonEmpty)
+        funcPtr.astParent
+          .filterNot(_.astChildren.isMethodRef.methodFullNameExact(mRef.methodFullName).nonEmpty)
           .foreach { inCall =>
             builder.addNode(mRef)
             builder.addEdge(mRef, m, EdgeTypes.REF)
@@ -804,27 +824,30 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             builder.addEdge(inCall, mRef, EdgeTypes.ARGUMENT)
             mRef.argumentIndex(inCall.astChildren.size)
           }
-        addedNodes.add((fieldAccess.id(), s"${mRef.label()}.${mRef.methodFullName}"))
+        addedNodes.add((funcPtr.id(), s"${mRef.label()}.${mRef.methodFullName}"))
       }
   }
 
   private def persistType(x: StoredNode, types: Set[String])(implicit builder: DiffGraphBuilder): Unit = {
-    if (types.nonEmpty) {
-      if (types.size == 1) builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, types.head)
-      else builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types.toSeq)
+    val filteredTypes = if (enabledDummyTypes) types else types.filterNot(XTypeRecovery.isDummyType)
+    if (filteredTypes.nonEmpty) {
+      if (filteredTypes.size == 1) builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, filteredTypes.head)
+      else builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, filteredTypes.toSeq)
     }
-    x match {
-      case i: Identifier if globalTable.contains(i) => persistGlobalIdentifierType(i)
-      case _                                        =>
+    if (x.isInstanceOf[Identifier]) {
+      val i = x.asInstanceOf[Identifier]
+      if (globalTable.contains(i)) persistGlobalIdentifierType(i)
+      if (symbolTable.contains(i))
+        handlePotentialFunctionPointer(i, symbolTable.get(i), i.name, i.argumentIndex)
     }
   }
 
   private def persistGlobalIdentifierType(i: Identifier): Unit = {
-    val ts = globalTable.get(i)
+    val types = if (enabledDummyTypes) globalTable.get(i) else globalTable.get(i).filterNot(XTypeRecovery.isDummyType)
     globalTable.keyFromNode(i).collectAll[FieldVar].foreach { fk =>
       cpg.typeDecl.fullNameExact(fk.compUnitFullName).member.nameExact(fk.identifier).foreach { member =>
         val updatedTypes =
-          (member.typeFullName +: (member.dynamicTypeHintFullName ++ ts)).distinct.filterNot(_ == "ANY")
+          (member.typeFullName +: (member.dynamicTypeHintFullName ++ types)).distinct.filterNot(_ == "ANY")
         if (updatedTypes.nonEmpty) {
           if (updatedTypes.sizeIs == 1) builder.setNodeProperty(member, PropertyNames.TYPE_FULL_NAME, updatedTypes.head)
           else builder.setNodeProperty(member, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, updatedTypes)

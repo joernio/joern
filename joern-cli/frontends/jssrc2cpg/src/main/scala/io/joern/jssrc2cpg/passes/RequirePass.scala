@@ -59,20 +59,21 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
         .getOrElse("")
 
     private val fileToInclude: String = call
-      .argument(1)
-      .start
-      .isLiteral
-      .code
-      .map(stripQuotes)
-      .map { x =>
-        val path = Paths.get(dirHoldingModule, x).toAbsolutePath.normalize.toString
-        if (path.endsWith(".mjs") || path.endsWith(".js")) {
-          path
-        } else {
-          s"$path.js"
-        }
-      }
-      .headOption
+      .argumentOption(1)
+      .map(
+        _.start.isLiteral.code
+          .map(stripQuotes)
+          .map { x =>
+            val path = Paths.get(dirHoldingModule, x).toAbsolutePath.normalize.toString
+            if (path.endsWith(".mjs") || path.endsWith(".js")) {
+              path
+            } else {
+              s"$path.js"
+            }
+          }
+          .headOption
+          .getOrElse("")
+      )
       .getOrElse("")
 
     val methodFullName: Option[String] = {
@@ -87,13 +88,18 @@ class RequirePass(cpg: Cpg) extends CpgPass(cpg) {
 
     val callsToPatch: List[Call] = call.file.method.ast.isCall.nameExact(target).dedup.l
 
-    val variableToPatch: VariableInformation = VariableInformation(
-      call.file.method.ast.isIdentifier
-        .nameExact(target)
-        .flatMap(i => Seq(i) ++ i.refsTo.collectAll[Local].toSeq)
-        .dedup
-        .toList
-    )
+    val variableToPatch: VariableInformation =
+      VariableInformation(
+        call.file
+          .nameExact(fileToInclude)
+          .method
+          .ast
+          .isIdentifier
+          .nameExact(target)
+          .flatMap(i => Seq(i) ++ i.refsTo.collectAll[Local].toSeq)
+          .dedup
+          .toList
+      )
 
     def relativeExport: String = fileToInclude.stripPrefix(s"$dirHoldingModule${File.separator}")
 
