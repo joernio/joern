@@ -46,16 +46,15 @@ class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
       methodNames
         .flatMap(methodMap.get)
         .foreach { m => builder.addEdge(call, m, EdgeTypes.CALL) }
-      val methodNamesFiltered = methodNames.filter(!isDummyType(_))
-
-      if (methodNamesFiltered.size == 1) {
-        builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNamesFiltered.head)
-      } else if (methodNamesFiltered.size > 1) {
+      if (methodNames.size == 1) {
+        builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
+      } else if (methodNames.size > 1) {
+        val methodNamesFiltered = methodNames.filter(!isDummyType(_))
         val builtInMethodName = methodNamesFiltered.filter(s => s.contains("__builtin"))
         if (builtInMethodName.size > 0) {
           builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, builtInMethodName.sortBy(_.length).head)
         } else {
-          builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNamesFiltered.sortBy(_.length).head)
+          builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.sortBy(_.length).head)
         }
       }
     }
