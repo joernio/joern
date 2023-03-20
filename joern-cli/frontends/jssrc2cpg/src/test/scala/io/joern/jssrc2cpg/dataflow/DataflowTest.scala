@@ -651,4 +651,14 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     sink2.reachableBy(pSrc).size shouldBe 1
   }
 
+  "Flow of multiple assignment" in {
+    val cpg: Cpg = code("""
+        |const middle = source()
+        |const number = 1, sink = middle.fn()
+        |""".stripMargin)
+
+    def src = cpg.call("source")
+    def snk = cpg.identifier("sink")
+    snk.reachableByFlows(src) should have size 1
+  }
 }

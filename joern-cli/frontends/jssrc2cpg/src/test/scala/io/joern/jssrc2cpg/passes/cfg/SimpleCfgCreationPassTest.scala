@@ -1,13 +1,10 @@
 package io.joern.jssrc2cpg.passes.cfg
 
 import io.joern.jssrc2cpg.testfixtures.JsCfgTestCpg
-import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.AlwaysEdge
-import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CaseEdge
-import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.FalseEdge
-import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.TrueEdge
+import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.{AlwaysEdge, CaseEdge, FalseEdge, TrueEdge}
 import io.joern.x2cpg.testfixtures.CfgTestFixture
-import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 
 class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) {
 
@@ -285,7 +282,7 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
                                      |   }
                                      |}
                                      |""".stripMargin)
-      succOf(":program") shouldBe expected(("loop1:", AlwaysEdge))
+      succOf(":program") shouldBe expected(("var i, j;", AlwaysEdge))
       succOf("loop1:") shouldBe expected(("i", AlwaysEdge))
       succOf("i") shouldBe expected(("0", AlwaysEdge))
       succOf("0") shouldBe expected(("i = 0", AlwaysEdge))

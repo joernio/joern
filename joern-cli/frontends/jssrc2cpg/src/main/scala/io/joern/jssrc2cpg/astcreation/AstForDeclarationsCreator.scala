@@ -1,18 +1,15 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.BlockScope
-import io.joern.jssrc2cpg.datastructures.MethodScope
-import io.joern.jssrc2cpg.datastructures.ScopeType
+import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope, ScopeType}
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import ujson.Value
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
 import io.shiftleft.semanticcpg.language._
+import ujson.Value
 
 import scala.util.Try
 
@@ -306,14 +303,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
     val declAsts = declaration.json("declarations").arr.toList.map(astForVariableDeclarator(_, scopeType, kind))
     declAsts match {
-      case head :: tail =>
-        setArgumentIndices(declAsts)
-        tail.foreach { declAst =>
-          declAst.root.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
-          Ast.storeInDiffGraph(declAst, diffGraph)
-        }
-        head
-      case Nil => Ast()
+      case Nil         => Ast()
+      case head :: Nil => head
+      case _           => blockAst(createBlockNode(declaration), declAsts)
     }
   }
 
