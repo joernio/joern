@@ -1,6 +1,16 @@
 package io.joern.javasrc2cpg.jartypereader
 
-import io.joern.javasrc2cpg.jartypereader.model.{BoundWildcard, ClassSignature, ClassTypeSignature, NameWithTypeArgs, ResolvedTypeDecl, SimpleTypeArgument, TypeParameter, TypeVariableSignature, UnboundWildcard}
+import io.joern.javasrc2cpg.jartypereader.model.{
+  BoundWildcard,
+  ClassSignature,
+  ClassTypeSignature,
+  NameWithTypeArgs,
+  ResolvedTypeDecl,
+  SimpleTypeArgument,
+  TypeParameter,
+  TypeVariableSignature,
+  UnboundWildcard
+}
 import io.joern.javasrc2cpg.jartypereader.JarTypeReader.ObjectTypeSignature
 import io.joern.javasrc2cpg.jartypereader.model.Bound.{BoundAbove, BoundBelow}
 import io.shiftleft.utils.ProjectRoot
@@ -179,8 +189,8 @@ class JarTypeReaderTests extends AnyFreeSpec with Matchers {
 
   "fields with wildcard types should have the correct signatures" in {
     val packageName = "wildcards"
-    val types = getTypes(packageName)
-    val fields = types.flatMap(_.fields).sortBy(_.name)
+    val types       = getTypes(packageName)
+    val fields      = types.flatMap(_.fields).sortBy(_.name)
 
     fields.foreach { field =>
       val qualifiedName = field.signature.qualifiedName
@@ -189,9 +199,12 @@ class JarTypeReaderTests extends AnyFreeSpec with Matchers {
       }
     }
 
-    val signatureMap = fields.map(field => field.name -> field.signature).collect {
-      case (name, signature: ClassTypeSignature) => name -> signature
-    }.toMap
+    val signatureMap = fields
+      .map(field => field.name -> field.signature)
+      .collect { case (name, signature: ClassTypeSignature) =>
+        name -> signature
+      }
+      .toMap
 
     inside(signatureMap.get("boundAbove")) { case Some(signature) =>
       inside(signature.typedName.typeArguments) { case List(boundWildcard: BoundWildcard) =>

@@ -125,8 +125,7 @@ case class ResolvedMethod(
   override val qualifiedName: String = s"${parentTypeDecl.qualifiedName}.$name"
 }
 
-case class ResolvedVariableType(name: String, signature: ReferenceTypeSignature)
-    extends ResolvedType {
+case class ResolvedVariableType(name: String, signature: ReferenceTypeSignature) extends ResolvedType {
   override val qualifiedName: String = name
 }
 

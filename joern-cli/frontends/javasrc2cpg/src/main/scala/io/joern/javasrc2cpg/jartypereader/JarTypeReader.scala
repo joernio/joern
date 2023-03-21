@@ -1,7 +1,14 @@
 package io.joern.javasrc2cpg.jartypereader
 
 import io.joern.javasrc2cpg.jartypereader.descriptorparser.DescriptorParser
-import io.joern.javasrc2cpg.jartypereader.model.{ClassSignature, ClassTypeSignature, NameWithTypeArgs, ResolvedVariableType, ResolvedMethod, ResolvedTypeDecl}
+import io.joern.javasrc2cpg.jartypereader.model.{
+  ClassSignature,
+  ClassTypeSignature,
+  NameWithTypeArgs,
+  ResolvedVariableType,
+  ResolvedMethod,
+  ResolvedTypeDecl
+}
 import io.shiftleft.utils.ProjectRoot
 import javassist.{ClassPool, CtClass, CtField, CtMethod, NotFoundException}
 import org.slf4j.LoggerFactory
@@ -79,13 +86,12 @@ object JarTypeReader {
   }
 
   private def getResolvedField(ctField: CtField): ResolvedVariableType = {
-    val name = ctField.getName
+    val name                = ctField.getName
     val signatureDescriptor = Option(ctField.getGenericSignature).getOrElse(ctField.getSignature)
-    val signature = DescriptorParser.parseFieldSignature(signatureDescriptor)
+    val signature           = DescriptorParser.parseFieldSignature(signatureDescriptor)
 
     ResolvedVariableType(name, signature)
   }
-
 
   def getTypeDeclForEntry(cp: ClassPool, name: String): Option[ResolvedTypeDecl] = {
     Try(cp.get(name)) match {
@@ -97,7 +103,7 @@ object JarTypeReader {
           .getOrElse(getCtClassSignature(ctClass))
         val isInterface = ctClass.isInterface
         val isAbstract  = !isInterface && ctClass.getClassFile2.isAbstract
-        val fields = ctClass.getFields.map(getResolvedField).toList
+        val fields      = ctClass.getFields.map(getResolvedField).toList
         val typeDecl    = ResolvedTypeDecl(name, Some(packageSpecifier), signature, isInterface, isAbstract, fields)
         val methods     = ctClass.getMethods.map(getTypeEntryForMethod(_, typeDecl)).toList
         typeDecl.addMethods(methods)
