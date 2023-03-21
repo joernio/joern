@@ -24,11 +24,10 @@ trait TypeParser extends TokenParser {
   }
 
   def typeArgument: Parser[TypeArgument] = {
-    // TODO Check bound directions
     val maybeBoundTypeArgument = (opt(wildcardIndicator) ~ referenceTypeSignature) ^^ {
-      case Some("+") ~ typeSignature => BoundWildcard(BoundBelow, typeSignature)
+      case Some("-") ~ typeSignature => BoundWildcard(BoundBelow, typeSignature)
 
-      case Some("-") ~ typeSignature => BoundWildcard(BoundAbove, typeSignature)
+      case Some("+") ~ typeSignature => BoundWildcard(BoundAbove, typeSignature)
 
       case None ~ typeSignature => SimpleTypeArgument(typeSignature)
     }

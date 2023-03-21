@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.jartypereader.descriptorparser
 
-import io.joern.javasrc2cpg.jartypereader.model.{ClassSignature, MethodSignature}
+import io.joern.javasrc2cpg.jartypereader.model.{ClassSignature, MethodSignature, ReferenceTypeSignature}
 import org.slf4j.LoggerFactory
 
 import scala.util.Try
@@ -10,49 +10,29 @@ object DescriptorParser extends TypeParser {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  def main(args: Array[String]): Unit = {
-    val classSignatureDescriptors = List(
-      "<T:Ljava/lang/Object;>La/Test$Inner<TT;>;",
-      "<T:Ljava/lang/Object;>Ljava/lang/Object;",
-      "<S:Ljava/lang/Object;>Ljava/lang/Object;",
-      "<S:La/Example;:Ljava/util/List;:Ljava/lang/Comparable;T::Ljava/util/List;:Ljava/lang/Comparable;>Ljava/lang/Object;"
-    )
-
-    val methodDescriptor = "<U:La/Example;:Ljava/util/List;>(Ljava/util/List<-Ljava/util/List;>;TU;)V"
-
-    classSignatureDescriptors.foreach { signature =>
-      println(parse(classSignature, signature).get)
-    }
-
-    println(parse(methodSignature, methodDescriptor).get)
-  }
-
   def parseMethodSignature(descriptor: String): MethodSignature = {
-    parse(methodSignature, descriptor) match {
-      case Success(signature, _) => signature
-
-      case Failure(err, _) =>
-        logger.error(s"parseMethodSignature failed with $err")
-        throw new IllegalArgumentException(s"FAILURE: Parsing invalid method signature descriptor $descriptor")
-
-      case Error(err, _) =>
-        logger.error(s"parseMethodSignature raised error $err")
-        throw new IllegalArgumentException(s"ERROR: Parsing invalid method signature descriptor $descriptor")
-    }
+    parseSignature(methodSignature, descriptor)
   }
 
-  // TODO Re-use code
   def parseClassSignature(descriptor: String): ClassSignature = {
-    parse(classSignature, descriptor) match {
+    parseSignature(classSignature, descriptor)
+  }
+
+  def parseFieldSignature(descriptor: String): ReferenceTypeSignature = {
+    parseSignature(fieldSignature, descriptor)
+  }
+
+  private def parseSignature[T](parser: Parser[T], descriptor: String): T = {
+    parse(parser, descriptor) match {
       case Success(signature, _) => signature
 
       case Failure(err, _) =>
         logger.error(s"parseClassSignature failed with $err")
-        throw new IllegalArgumentException(s"FAILURE: Parsing invalid class signature descriptor $descriptor")
+        throw new IllegalArgumentException(s"FAILURE: Parsing invalid signature descriptor $descriptor")
 
       case Error(err, _) =>
         logger.error(s"parseClassSignature raised error $err")
-        throw new IllegalArgumentException(s"ERROR: Parsing invalid class signature descriptor $descriptor")
+        throw new IllegalArgumentException(s"ERROR: Parsing invalid signature descriptor $descriptor")
     }
   }
 }

@@ -89,6 +89,7 @@ class ResolvedTypeDecl(
   val signature: ClassSignature,
   val isInterface: Boolean,
   val isAbstract: Boolean,
+  val fields: List[ResolvedVariableType],
   initDeclaredMethods: List[ResolvedMethod]
 ) extends ResolvedType {
   override val qualifiedName: String = buildQualifiedClassName(name, packageSpecifier)
@@ -108,9 +109,10 @@ object ResolvedTypeDecl {
     signature: ClassSignature,
     isInterface: Boolean,
     isAbstract: Boolean,
+    fields: List[ResolvedVariableType],
     methods: List[ResolvedMethod] = Nil
   ): ResolvedTypeDecl = {
-    new ResolvedTypeDecl(name, packageSpecifier, signature, isInterface, isAbstract, methods)
+    new ResolvedTypeDecl(name, packageSpecifier, signature, isInterface, isAbstract, fields, methods)
   }
 }
 
@@ -123,9 +125,9 @@ case class ResolvedMethod(
   override val qualifiedName: String = s"${parentTypeDecl.qualifiedName}.$name"
 }
 
-case class ResolvedClassType(name: String, packageSpecifier: Option[String], signature: ReferenceTypeSignature)
+case class ResolvedVariableType(name: String, signature: ReferenceTypeSignature)
     extends ResolvedType {
-  override val qualifiedName: String = buildQualifiedClassName(name, packageSpecifier)
+  override val qualifiedName: String = name
 }
 
 object Model {

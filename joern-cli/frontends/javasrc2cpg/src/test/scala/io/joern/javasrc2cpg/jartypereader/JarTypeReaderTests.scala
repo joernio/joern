@@ -1,23 +1,14 @@
 package io.joern.javasrc2cpg.jartypereader
 
-import io.joern.javasrc2cpg.jartypereader.model.{
-  ClassSignature,
-  ClassTypeSignature,
-  JavaTypeSignature,
-  NameWithTypeArgs,
-  ResolvedTypeDecl,
-  SimpleTypeArgument,
-  TypeParameter,
-  TypeVariableSignature
-}
+import io.joern.javasrc2cpg.jartypereader.model.{BoundWildcard, ClassSignature, ClassTypeSignature, NameWithTypeArgs, ResolvedTypeDecl, SimpleTypeArgument, TypeParameter, TypeVariableSignature, UnboundWildcard}
 import io.joern.javasrc2cpg.jartypereader.JarTypeReader.ObjectTypeSignature
+import io.joern.javasrc2cpg.jartypereader.model.Bound.{BoundAbove, BoundBelow}
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.Inside.inside
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.nio.file.Paths
-import javax.management.openmbean.SimpleType
 
 class JarTypeReaderTests extends AnyFreeSpec with Matchers {
   private val packagePrefix = "io.joern.javasrc2cpg.jartypereader.testcode"
@@ -183,6 +174,45 @@ class JarTypeReaderTests extends AnyFreeSpec with Matchers {
           ClassTypeSignature(Some("java.lang"), NameWithTypeArgs("Comparable", Nil), Nil)
         )
       }
+    }
+  }
+
+  "fields with wildcard types should have the correct signatures" in {
+    val packageName = "wildcards"
+    val types = getTypes(packageName)
+    val fields = types.flatMap(_.fields).sortBy(_.name)
+
+    fields.foreach { field =>
+      val qualifiedName = field.signature.qualifiedName
+      if (qualifiedName != "java.util.List") {
+        fail(s"Expected type `java.util.List` for ${field.name} but got $qualifiedName")
+      }
+    }
+
+    val signatureMap = fields.map(field => field.name -> field.signature).collect {
+      case (name, signature: ClassTypeSignature) => name -> signature
+    }.toMap
+
+    inside(signatureMap.get("boundAbove")) { case Some(signature) =>
+      inside(signature.typedName.typeArguments) { case List(boundWildcard: BoundWildcard) =>
+        boundWildcard.bound shouldBe BoundAbove
+        boundWildcard.typeSignature.qualifiedName shouldBe "java.lang.String"
+      }
+    }
+
+    inside(signatureMap.get("boundBelow")) { case Some(signature) =>
+      inside(signature.typedName.typeArguments) { case List(boundWildcard: BoundWildcard) =>
+        boundWildcard.bound shouldBe BoundBelow
+        boundWildcard.typeSignature.qualifiedName shouldBe "java.lang.String"
+      }
+    }
+
+    inside(signatureMap.get("unboundWildcard")) { case Some(signature) =>
+      signature.typedName.typeArguments shouldBe List(UnboundWildcard)
+    }
+
+    inside(signatureMap.get("noType")) { case Some(signature) =>
+      signature.typedName.typeArguments shouldBe Nil
     }
   }
 
