@@ -1,7 +1,7 @@
-package io.joern.javasrc2cpg.typesolver.descriptorparser
+package io.joern.javasrc2cpg.jartypereader.descriptorparser
 
-import io.joern.javasrc2cpg.typesolver.model.Bound.{BoundAbove, BoundBelow}
-import io.joern.javasrc2cpg.typesolver.model._
+import io.joern.javasrc2cpg.jartypereader.model.Bound.{BoundAbove, BoundBelow}
+import io.joern.javasrc2cpg.jartypereader.model._
 
 trait TypeParser extends TokenParser {
 

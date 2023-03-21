@@ -1,7 +1,7 @@
-package io.joern.javasrc2cpg.typesolver.descriptorparser
+package io.joern.javasrc2cpg.jartypereader.descriptorparser
 
-import io.joern.javasrc2cpg.typesolver.model.PrimitiveType
-import io.joern.javasrc2cpg.typesolver.model.Model.TypeConstants._
+import io.joern.javasrc2cpg.jartypereader.model.PrimitiveType
+import io.joern.javasrc2cpg.jartypereader.model.Model.TypeConstants._
 import org.slf4j.LoggerFactory
 
 import scala.util.parsing.combinator.RegexParsers

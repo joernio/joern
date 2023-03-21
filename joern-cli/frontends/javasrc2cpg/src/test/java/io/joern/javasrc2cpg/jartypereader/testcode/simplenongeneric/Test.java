@@ -1,4 +1,4 @@
-package io.joern.javasrc2cpg.typesolver.testcode.simplenongeneric;
+package io.joern.javasrc2cpg.jartypereader.testcode.simplenongeneric;
 
 public class Test {
     public int add(int x, int y) {

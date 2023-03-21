@@ -1,4 +1,4 @@
-package io.joern.javasrc2cpg.typesolver.model
+package io.joern.javasrc2cpg.jartypereader.model
 
 import Bound.Bound
 
@@ -97,7 +97,7 @@ class ResolvedTypeDecl(
 
   def getDeclaredMethods: List[ResolvedMethod] = declaredMethods
 
-  private[typesolver] def addMethods(newMethods: List[ResolvedMethod]): Unit = {
+  private[jartypereader] def addMethods(newMethods: List[ResolvedMethod]): Unit = {
     declaredMethods ++= newMethods
   }
 }

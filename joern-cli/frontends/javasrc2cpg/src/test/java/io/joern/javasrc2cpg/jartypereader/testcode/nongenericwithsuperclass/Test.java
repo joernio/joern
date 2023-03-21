@@ -1,4 +1,4 @@
-package io.joern.javasrc2cpg.typesolver.testcode.nongenericwithsuperclass;
+package io.joern.javasrc2cpg.jartypereader.testcode.nongenericwithsuperclass;
 
 class Foo {}
 

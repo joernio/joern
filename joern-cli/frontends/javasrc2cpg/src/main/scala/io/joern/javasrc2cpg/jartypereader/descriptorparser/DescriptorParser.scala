@@ -1,6 +1,6 @@
-package io.joern.javasrc2cpg.typesolver.descriptorparser
+package io.joern.javasrc2cpg.jartypereader.descriptorparser
 
-import io.joern.javasrc2cpg.typesolver.model.{ClassSignature, MethodSignature}
+import io.joern.javasrc2cpg.jartypereader.model.{ClassSignature, MethodSignature}
 import org.slf4j.LoggerFactory
 
 import scala.util.Try

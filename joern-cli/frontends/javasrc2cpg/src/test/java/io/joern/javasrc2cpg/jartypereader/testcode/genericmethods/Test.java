@@ -1,4 +1,4 @@
-package io.joern.javasrc2cpg.typesolver.testcode.genericmethods;
+package io.joern.javasrc2cpg.jartypereader.testcode.genericmethods;
 
 public class Test<S> {
 

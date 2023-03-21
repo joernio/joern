@@ -1,6 +1,6 @@
-package io.joern.javasrc2cpg.typesolver
+package io.joern.javasrc2cpg.jartypereader
 
-import io.joern.javasrc2cpg.typesolver.model.{
+import io.joern.javasrc2cpg.jartypereader.model.{
   ClassSignature,
   ClassTypeSignature,
   JavaTypeSignature,
@@ -10,7 +10,7 @@ import io.joern.javasrc2cpg.typesolver.model.{
   TypeParameter,
   TypeVariableSignature
 }
-import io.joern.javasrc2cpg.typesolver.JarTypeReader.ObjectTypeSignature
+import io.joern.javasrc2cpg.jartypereader.JarTypeReader.ObjectTypeSignature
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.Inside.inside
 import org.scalatest.freespec.AnyFreeSpec
@@ -20,7 +20,7 @@ import java.nio.file.Paths
 import javax.management.openmbean.SimpleType
 
 class JarTypeReaderTests extends AnyFreeSpec with Matchers {
-  private val packagePrefix = "io.joern.javasrc2cpg.typesolver.testcode"
+  private val packagePrefix = "io.joern.javasrc2cpg.jartypereader.testcode"
 
   "java.lang.Object fully qualified name should be correct" in {
     ObjectTypeSignature.qualifiedName shouldBe "java.lang.Object"

@@ -1,7 +1,7 @@
-package io.joern.javasrc2cpg.typesolver
+package io.joern.javasrc2cpg.jartypereader
 
-import io.joern.javasrc2cpg.typesolver.descriptorparser.DescriptorParser
-import io.joern.javasrc2cpg.typesolver.model.{
+import io.joern.javasrc2cpg.jartypereader.descriptorparser.DescriptorParser
+import io.joern.javasrc2cpg.jartypereader.model.{
   ClassSignature,
   ClassTypeSignature,
   NameWithTypeArgs,

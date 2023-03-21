@@ -1,4 +1,4 @@
-package io.joern.javasrc2cpg.typesolver.testcode.overloadedmethods;
+package io.joern.javasrc2cpg.jartypereader.testcode.overloadedmethods;
 
 public class Test {
     public <S> void foo(S s) {

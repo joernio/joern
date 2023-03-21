@@ -1,4 +1,4 @@
-package io.joern.javasrc2cpg.typesolver.testcode.genericclasses;
+package io.joern.javasrc2cpg.jartypereader.testcode.genericclasses;
 
 class Foo<T, S> {}
 

@@ -34,7 +34,7 @@ packTestCode := {
 
   val pkgRoot = "io"
   val testClassOutputPath = Paths.get("joern-cli", "frontends", "javasrc2cpg", "target", "scala-2.13", "test-classes")
-  val relativeTestCodePath = Paths.get(pkgRoot, "joern", "javasrc2cpg", "typesolver", "testcode")
+  val relativeTestCodePath = Paths.get(pkgRoot, "joern", "javasrc2cpg", "jartypereader", "testcode")
 
   println("foo")
   File(testClassOutputPath.resolve(relativeTestCodePath)).list.filter(_.exists).foreach { testDir =>
