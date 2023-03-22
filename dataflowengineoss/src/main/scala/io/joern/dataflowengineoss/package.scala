@@ -7,7 +7,7 @@ import overflowdb.traversal.Traversal
 package object dataflowengineoss {
 
   def globalFromLiteral(lit: Literal): Traversal[Expression] = lit
-    .where(_.inAssignment.method.name("<module>"))
+    .where(_.inAssignment.method.nameExact("<module>", ":package"))
     .inAssignment
     .argument(1)
 

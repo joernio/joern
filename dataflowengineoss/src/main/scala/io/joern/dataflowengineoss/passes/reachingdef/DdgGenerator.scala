@@ -169,9 +169,8 @@ class DdgGenerator(semantics: Semantics) {
     }
 
     def addEdgesToCapturedIdentifiersAndParameters(): Unit = {
-      val identifiersInMethod = method._identifierViaContainsOut.l
       val identifierDestPairs =
-        identifiersInMethod
+        method._identifierViaContainsOut
           .flatMap { identifier =>
             identifierToFirstUsages(identifier).map(usage => (identifier, usage))
           }
@@ -189,7 +188,7 @@ class DdgGenerator(semantics: Semantics) {
       }
 
       val globalIdentifiers =
-        method.ast.isLiteral.flatMap(lit => globalFromLiteral(lit)).collect { case x: Identifier => x }.l
+        method.ast.isLiteral.flatMap(globalFromLiteral).collectAll[Identifier].l
       globalIdentifiers
         .foreach { global =>
           identifierToFirstUsages(global).map { identifier =>
@@ -207,7 +206,6 @@ class DdgGenerator(semantics: Semantics) {
     }
 
     addEdgesToCapturedIdentifiersAndParameters()
-
     addEdgesToExitNode(method.methodReturn)
     addEdgesFromLoneIdentifiersToExit(method)
   }
