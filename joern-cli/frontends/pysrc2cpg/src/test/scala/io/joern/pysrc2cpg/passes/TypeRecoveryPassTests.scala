@@ -760,7 +760,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |]
         |""".stripMargin
     val views =
-      """
+      """from django.contrib.auth.decorators import login_required
+        |
+        |@login_required
         |def PasswordChange(request):
         |    print("All pages")
         |
