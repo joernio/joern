@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 package object dataflowengineoss {
 
-  def identifierToFirstUsages(identifier : Identifier): List[Identifier] = identifier
+  def identifierToFirstUsages(node : Identifier): List[Identifier] = node
     .refsTo.flatMap(identifiersFromCapturedScopes).l
 
   def identifiersFromCapturedScopes(i: Declaration): List[Identifier] =

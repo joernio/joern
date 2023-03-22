@@ -168,7 +168,7 @@ class DdgGenerator(semantics: Semantics) {
       }
     }
 
-    def addEdgesToCapturedIdentifiers(): Unit = {
+    def addEdgesToCapturedIdentifiersAndParameters(): Unit = {
       val identifiersInMethod = method._identifierViaContainsOut.l
       val identifierDestPairs =
         identifiersInMethod.flatMap{ identifier =>
@@ -176,6 +176,11 @@ class DdgGenerator(semantics: Semantics) {
         }.l.distinctBy(_._2.method)
       identifierDestPairs.foreach{ case (src, dst) =>
         addEdge(src, dst, nodeToEdgeLabel(src))
+      }
+      method.parameter.foreach{ param =>
+        param.capturedByMethodRef.referencedMethod.ast.isIdentifier.foreach{ identifier =>
+          addEdge(param, identifier, nodeToEdgeLabel(param))
+        }
       }
     }
 
@@ -187,7 +192,7 @@ class DdgGenerator(semantics: Semantics) {
       case _                            =>
     }
 
-    addEdgesToCapturedIdentifiers()
+    addEdgesToCapturedIdentifiersAndParameters()
 
     addEdgesToExitNode(method.methodReturn)
     addEdgesFromLoneIdentifiersToExit(method)
