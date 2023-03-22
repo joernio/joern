@@ -59,7 +59,6 @@ ThisBuild / compile / javacOptions ++= Seq(
 
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
-  "-target:11",
   "--release",
   "11"
 )

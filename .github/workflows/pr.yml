@@ -11,11 +11,11 @@ jobs:
         with:
           fetch-depth: 1
       - uses: coursier/cache-action@v6
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '19'
       - name: Compile and run tests
         run: sbt clean +test
   formatting:
@@ -24,11 +24,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 1
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '19'
       - name: Check formatting
         run: sbt ++2.13.8 scalafmtCheck test:scalafmtCheck
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
@@ -39,11 +39,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 1
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '19'
       - run: ./testDistro.sh
       - run: |
           mkdir /tmp/foo
