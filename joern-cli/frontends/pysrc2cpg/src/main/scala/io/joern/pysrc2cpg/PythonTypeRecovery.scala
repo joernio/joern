@@ -134,8 +134,8 @@ class RecoverForPythonFile(
     }
 
     /** The two ways that this procedure could be resolved to in Python. */
-    def possibleCalleeNames(procedureName: String, isConstructor: Boolean, isFieldOrVar: Boolean): Set[String] =
-      if (isConstructor)
+    def possibleCalleeNames(procedureName: String, isMaybeConstructor: Boolean, isFieldOrVar: Boolean): Set[String] =
+      if (isMaybeConstructor)
         Set(procedureName.concat(s".${Defines.ConstructorMethodName}"))
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
@@ -164,17 +164,23 @@ class RecoverForPythonFile(
       if (procedureName.contains("__init__.py")) procedureName
       else procedureName.replace(".py", s"${JFile.separator}__init__.py")
 
-    possibleCalleeNames(procedureName, isConstructor(expEntity), procedureName.contains("<var>"))
+    val isMaybeConstructor = expEntity.split("\\.").lastOption.exists(s => s.nonEmpty && s.charAt(0).isUpper)
+    possibleCalleeNames(procedureName, isMaybeConstructor, procedureName.contains("<var>"))
   }
 
   override def postVisitImports(): Unit = {
     symbolTable.view.foreach { case (k, v) =>
       val ms = cpg.method.fullNameExact(v.toSeq: _*).l
       val ts = cpg.typeDecl.fullNameExact(v.toSeq: _*).l
+      // In case a method has been incorrectly determined to be a constructor based on the heuristic
+      val tsNonConstructor =
+        cpg.method.fullNameExact(v.toSeq.map(_.stripSuffix(s".${Defines.ConstructorMethodName}")): _*).l
       if (ts.nonEmpty)
         symbolTable.put(k, ts.fullName.toSet)
       else if (ms.nonEmpty)
         symbolTable.put(k, ms.fullName.toSet)
+      else if (tsNonConstructor.nonEmpty)
+        symbolTable.put(k, tsNonConstructor.fullName.toSet)
       else {
         // This is likely external and we will ignore the init variant to be consistent
         symbolTable.put(k, symbolTable(k).filterNot(_.contains("__init__.py")))
@@ -200,7 +206,7 @@ class RecoverForPythonFile(
     c.name.nonEmpty && c.name.charAt(0).isUpper && c.code.endsWith(")")
 
   def isConstructor(funcOrModule: String): Boolean =
-    funcOrModule.split("\\.").lastOption.exists(_.charAt(0).isUpper)
+    !cpg.method.fullNameExact(funcOrModule).exists(_.name == Defines.ConstructorMethodName)
 
   /** If the parent method is module then it can be used as a field.
     */

@@ -834,11 +834,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       if (filteredTypes.size == 1) builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, filteredTypes.head)
       else builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, filteredTypes.toSeq)
     }
-    if (x.isInstanceOf[Identifier]) {
-      val i = x.asInstanceOf[Identifier]
-      if (globalTable.contains(i)) persistGlobalIdentifierType(i)
-      if (symbolTable.contains(i))
-        handlePotentialFunctionPointer(i, symbolTable.get(i), i.name, i.argumentIndex)
+    x match {
+      case i: Identifier =>
+        if (globalTable.contains(i)) persistGlobalIdentifierType(i)
+        if (symbolTable.contains(i))
+          handlePotentialFunctionPointer(i, symbolTable.get(i), i.name, i.argumentIndex)
+      case _ =>
     }
   }
 

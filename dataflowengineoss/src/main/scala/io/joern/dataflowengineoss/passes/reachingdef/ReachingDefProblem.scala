@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.passes.reachingdef
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.utils.MemberAccess.isGenericMemberAccessName
+import io.shiftleft.semanticcpg.utils.MemberAccess.{isFieldAccess, isGenericMemberAccessName}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.{Set, mutable}
@@ -187,19 +187,6 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
 
     // We filter out field accesses to ensure that they propagate
     // taint unharmed.
-
-    def isFieldAccess(name: String): Boolean = {
-      (name == Operators.memberAccess) ||
-      (name == Operators.indirectComputedMemberAccess) ||
-      (name == Operators.indirectMemberAccess) ||
-      (name == Operators.computedMemberAccess) ||
-      (name == Operators.indirection) ||
-      (name == Operators.fieldAccess) ||
-      (name == Operators.indirectFieldAccess) ||
-      (name == Operators.indexAccess) ||
-      (name == Operators.indirectIndexAccess) ||
-      (name == Operators.getElementPtr)
-    }
 
     val defsForCalls = method.call
       .filterNot(x => isFieldAccess(x.name))

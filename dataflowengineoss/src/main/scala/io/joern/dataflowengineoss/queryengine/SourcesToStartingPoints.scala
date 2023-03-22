@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
+import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
@@ -83,7 +84,9 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case x: Declaration =>
         List(x).collectAll[CfgNode].toList ++ identifiersFromCapturedScopes(x)
       case x: Identifier =>
-        List(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
+        withFieldAndIndexAccesses(
+          List(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
+        )
       case x => List(x).collect { case y: CfgNode => y }
     }
   }
@@ -92,6 +95,20 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     i.capturedByMethodRef.referencedMethod.ast.isIdentifier
       .nameExact(i.name)
       .sortBy(x => (x.lineNumber, x.columnNumber))
+      .l
+
+  private def withFieldAndIndexAccesses(nodes: List[CfgNode]): List[CfgNode] =
+    nodes.flatMap {
+      case identifier: Identifier =>
+        List(identifier) ++ fieldAndIndexAccesses(identifier)
+      case x => List(x)
+    }
+
+  private def fieldAndIndexAccesses(identifier: Identifier): List[CfgNode] =
+    identifier.method._identifierViaContainsOut
+      .nameExact(identifier.name)
+      .inCall
+      .collect { case c if isFieldAccess(c.name) => c }
       .l
 
   private def usages(pairs: List[(TypeDecl, AstNode)]): List[CfgNode] = {
