@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
-import io.joern.dataflowengineoss.identifierToFirstUsages
+import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -171,17 +171,31 @@ class DdgGenerator(semantics: Semantics) {
     def addEdgesToCapturedIdentifiersAndParameters(): Unit = {
       val identifiersInMethod = method._identifierViaContainsOut.l
       val identifierDestPairs =
-        identifiersInMethod.flatMap{ identifier =>
-          identifierToFirstUsages(identifier).map(usage => (identifier, usage))
-        }.l.distinctBy(_._2.method)
-      identifierDestPairs.foreach{ case (src, dst) =>
-        addEdge(src, dst, nodeToEdgeLabel(src))
-      }
-      method.parameter.foreach{ param =>
-        param.capturedByMethodRef.referencedMethod.ast.isIdentifier.foreach{ identifier =>
+        identifiersInMethod
+          .flatMap { identifier =>
+            identifierToFirstUsages(identifier).map(usage => (identifier, usage))
+          }
+          .l
+          .distinctBy(_._2.method)
+
+      identifierDestPairs
+        .foreach { case (src, dst) =>
+          addEdge(src, dst, nodeToEdgeLabel(src))
+        }
+      method.parameter.foreach { param =>
+        param.capturedByMethodRef.referencedMethod.ast.isIdentifier.foreach { identifier =>
           addEdge(param, identifier, nodeToEdgeLabel(param))
         }
       }
+
+      val globalIdentifiers =
+        method.ast.isLiteral.flatMap(lit => globalFromLiteral(lit)).collect { case x: Identifier => x }.l
+      globalIdentifiers
+        .foreach { global =>
+          identifierToFirstUsages(global).map { identifier =>
+            addEdge(global, identifier, nodeToEdgeLabel(global))
+          }
+        }
     }
 
     addEdgesFromEntryNode()

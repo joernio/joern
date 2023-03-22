@@ -1,12 +1,17 @@
 package io.joern
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Declaration, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{Declaration, Expression, Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.Traversal
 
 package object dataflowengineoss {
 
-  def identifierToFirstUsages(node : Identifier): List[Identifier] = node
-    .refsTo.flatMap(identifiersFromCapturedScopes).l
+  def globalFromLiteral(lit: Literal): Traversal[Expression] = lit
+    .where(_.inAssignment.method.name("<module>"))
+    .inAssignment
+    .argument(1)
+
+  def identifierToFirstUsages(node: Identifier): List[Identifier] = node.refsTo.flatMap(identifiersFromCapturedScopes).l
 
   def identifiersFromCapturedScopes(i: Declaration): List[Identifier] =
     i.capturedByMethodRef.referencedMethod.ast.isIdentifier

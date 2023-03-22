@@ -182,7 +182,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     val sink                = cpg.call("post").l
     sourceUrlIdentifier.size shouldBe 2
     sink.size shouldBe 1
-    sink.reachableByFlows(sourceUrlIdentifier).size shouldBe 1
+    sink.reachableByFlows(sourceUrlIdentifier).size shouldBe 2
 
     val sourceUrlLiteral = cpg.literal(".*app.commissionly.io.*").l
     sourceUrlLiteral.size shouldBe 1
@@ -266,8 +266,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
   }
 
   "flow from expression that taints global variable to sink" in {
-    val cpg : Cpg = code(
-      """
+    val cpg: Cpg = code("""
         |d = {
         |   'x': F.sum('x'),
         |   'y': F.sum('y'),
@@ -280,7 +279,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |""".stripMargin)
 
     val sources = cpg.call("<operator>.indexAccess").argument.isIdentifier.l
-    val sinks = cpg.call("sink").l
+    val sinks   = cpg.call("sink").l
     sinks.reachableByFlows(sources).size should not be 0
   }
 

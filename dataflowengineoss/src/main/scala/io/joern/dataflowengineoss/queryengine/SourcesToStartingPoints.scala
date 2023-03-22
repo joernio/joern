@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.joern.dataflowengineoss.{identifierToFirstUsages, identifiersFromCapturedScopes}
+import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages, identifiersFromCapturedScopes}
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -72,13 +72,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case methodReturn: MethodReturn =>
         methodReturn.method.callIn.l
       case lit: Literal =>
-        // `firstUsagesOfLHSIdentifiers` is required to handle children methods referencing the identifier this literal
-        // is being passed to. Perhaps not the most sound as this doesn't handle re-assignment super well but it's
-        // difficult to check the control flow of when the method ref might use the value
-        val firstUsagesOfLHSIdentifiers = lit.inAssignment.argument(1).isIdentifier.l
-        List(lit) ++ usages(
-          targetsToClassIdentifierPair(literalToInitializedMembers(lit))
-        ) ++ firstUsagesOfLHSIdentifiers.flatMap(identifierToFirstUsages)
+        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit))) ++ globalFromLiteral(lit)
       case member: Member =>
         usages(targetsToClassIdentifierPair(List(member)))
       case x: Declaration =>
