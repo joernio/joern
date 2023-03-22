@@ -21,7 +21,9 @@ case class Path(elements: List[AstNode]) {
 
 object Path {
 
-  val MaxTrackedWidth = 30
+  val DefaultMaxTrackedWidth = 30
+  // TODO replace with dynamic rendering based on the terminal's width, e.g. in scala-repl-pp
+  lazy val maxTrackedWidth = sys.env.get("JOERN_DATAFLOW_TRACKED_WIDTH").map(_.toInt).getOrElse(DefaultMaxTrackedWidth)
 
   implicit val show: Show[Path] = { path =>
     Table(
@@ -45,7 +47,7 @@ object Path {
                 s"$methodName($paramsPretty)"
               case _ => cfgNode.statement.repr
             }
-            val tracked = StringUtils.normalizeSpace(StringUtils.abbreviate(statement, MaxTrackedWidth))
+            val tracked = StringUtils.normalizeSpace(StringUtils.abbreviate(statement, maxTrackedWidth))
             Array(nodeType, tracked, lineNumber, methodName, fileName)
         }
       }
