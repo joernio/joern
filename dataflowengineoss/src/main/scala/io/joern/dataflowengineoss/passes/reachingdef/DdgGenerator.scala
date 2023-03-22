@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
+import io.joern.dataflowengineoss.identifierToFirstUsages
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -7,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyN
 import io.shiftleft.semanticcpg.accesspath.MatchResult
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import overflowdb.traversal.Traversal
 
 import scala.collection.{Set, mutable}
 
@@ -166,6 +168,17 @@ class DdgGenerator(semantics: Semantics) {
       }
     }
 
+    def addEdgesToCapturedIdentifiers(): Unit = {
+      val identifiersInMethod = method._identifierViaContainsOut.l
+      val identifierDestPairs =
+        identifiersInMethod.flatMap{ identifier =>
+          identifierToFirstUsages(identifier).map(usage => (identifier, usage))
+        }.l.distinctBy(_._2.method)
+      identifierDestPairs.foreach{ case (src, dst) =>
+        addEdge(src, dst, nodeToEdgeLabel(src))
+      }
+    }
+
     addEdgesFromEntryNode()
     allNodes.foreach {
       case call: Call                   => addEdgesToCallSite(call)
@@ -173,6 +186,9 @@ class DdgGenerator(semantics: Semantics) {
       case paramOut: MethodParameterOut => addEdgesToMethodParameterOut(paramOut)
       case _                            =>
     }
+
+    addEdgesToCapturedIdentifiers()
+
     addEdgesToExitNode(method.methodReturn)
     addEdgesFromLoneIdentifiersToExit(method)
   }

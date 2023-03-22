@@ -5,8 +5,11 @@ import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 
 import java.io.File
+import scala.sys.process.Process
+import scala.util.Try
 
 class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
@@ -265,6 +268,25 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     val sinks   = cpg.call("sink").argument.l
     val flows   = sinks.reachableByFlows(sources)
     flows.size shouldBe 1
+  }
+
+  "flow from expression that taints global variable to sink" in {
+    val cpg : Cpg = code(
+      """
+        |d = {
+        |   'x': F.sum('x'),
+        |   'y': F.sum('y'),
+        |   'z': F.sum('z'),
+        |}
+        |
+        |class Foo():
+        |   def foo(self):
+        |       return sink(d)
+        |""".stripMargin)
+
+    val sources = cpg.call("<operator>.indexAccess").argument.isIdentifier.l
+    val sinks = cpg.call("sink").l
+    sinks.reachableByFlows(sources).size should not be 0
   }
 
 }
