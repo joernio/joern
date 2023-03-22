@@ -278,8 +278,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     name: String,
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
-    keywordArguments: Iterable[(String, NewNode)],
-    methodFullName: Option[String] = None
+    keywordArguments: Iterable[(String, NewNode)]
   ): NewCall = {
     val code = codeOf(receiverNode) +
       "(" +
@@ -289,12 +288,6 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
         .mkString(", ") +
       ")"
-
-    val passedMethodFullName = methodFullName match {
-      case Some(fullName) => fullName + name
-      case None           => name
-    }
-
     val callNode = nodeBuilder.callNode(code, name, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
 
     edgeBuilder.astEdge(receiverNode, callNode, 0)
@@ -335,8 +328,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     xMayHaveSideEffects: Boolean,
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
-    keywordArguments: Iterable[(String, NewNode)],
-    methodFullName: Option[String] = None
+    keywordArguments: Iterable[(String, NewNode)]
   ): NewNode = {
     if (xMayHaveSideEffects) {
       val tmpVarName    = getUnusedName()
@@ -345,19 +337,11 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         createFieldAccess(createIdentifierNode(tmpVarName, Load, lineAndColumn), y, lineAndColumn)
       val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
       val instanceCallNode =
-        createInstanceCall(
-          receiverNode,
-          instanceNode,
-          y,
-          lineAndColumn,
-          argumentNodes,
-          keywordArguments,
-          methodFullName
-        )
+        createInstanceCall(receiverNode, instanceNode, y, lineAndColumn, argumentNodes, keywordArguments)
       createBlock(tmpAssignCall :: instanceCallNode :: Nil, lineAndColumn)
     } else {
       val receiverNode = createFieldAccess(x(), y, lineAndColumn)
-      createInstanceCall(receiverNode, x(), y, lineAndColumn, argumentNodes, keywordArguments, methodFullName)
+      createInstanceCall(receiverNode, x(), y, lineAndColumn, argumentNodes, keywordArguments)
     }
   }
 
