@@ -147,9 +147,15 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
   private def walkUpContains(node: StoredNode): Method =
     node._containsIn.onlyChecked match {
       case method: Method => method
-      case _: TypeDecl    =>
-        // TODO - there are csharp CPGs that have typedecls here, which is invalid.
-        null
+      case typeDecl: TypeDecl =>
+        typeDecl.astParent match {
+          case method: Method =>
+            // For a language such as javascript, types may be dynamically declared under procedures
+            method
+          case _ =>
+            // there are csharp CPGs that have typedecls here, which is invalid.
+            null
+        }
     }
 
 }
