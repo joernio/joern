@@ -5,7 +5,7 @@ dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->t
 libraryDependencies ++= Seq(
   "com.github.scopt" %% "scopt"                    % "4.1.0",
   "commons-io"        % "commons-io"               % "2.11.0",
-  "io.shiftleft"      % "ghidra"                   % "10.1_PUBLIC_20211210a",
+  "io.joern"          % "ghidra"                   % "10.2.3_PUBLIC_20230208",
   "io.shiftleft"     %% "codepropertygraph"        % Versions.cpg,
   "io.shiftleft"     %% "codepropertygraph-protos" % Versions.cpg,
   "org.scalatest"    %% "scalatest"                % Versions.scalatest % Test

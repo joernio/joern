@@ -248,8 +248,9 @@ class MipsFunctionPass(
     val opCodes: Seq[PcodeOp] = instruction.getPcode.toList
     opCodes.last.getOpcode match {
       case CALLIND | CALL =>
-        val highFunction = getHighFunction(function)
-        addCallArguments(diffGraphBuilder, instruction, callNode, highFunction)
+        getHighFunction(function).foreach { highFunction =>
+          addCallArguments(diffGraphBuilder, instruction, callNode, highFunction)
+        }
       case _ =>
         // regular instructions, eg. add/sub
         addInstructionArguments(diffGraphBuilder, instruction, callNode)

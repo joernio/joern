@@ -34,7 +34,9 @@ abstract class FunctionPass(
     }
   }
 
-  def getHighFunction(function: Function): HighFunction = decompiler.toHighFunction(function).orNull
+  def getHighFunction(function: Function): Option[HighFunction] =
+    decompiler.toHighFunction(function)
+
   protected def getInstructions(function: Function): Seq[Instruction] =
     currentProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
 
@@ -78,25 +80,28 @@ abstract class FunctionPass(
           diffGraphBuilder.addNode(node)
           diffGraphBuilder.addEdge(methodNode, node, EdgeTypes.AST)
         }
-    else
-      getHighFunction(function).getLocalSymbolMap.getSymbols.asScala.toSeq
-        .filter(_.isParameter)
-        .foreach { parameter =>
-          val checkedParameter = Option(parameter.getStorage)
-            .flatMap(x => Option(x.getRegister))
-            .flatMap(x => Option(x.getName))
-            .getOrElse(parameter.getName)
-          val node =
-            createParameterNode(
-              checkedParameter,
-              checkedParameter,
-              parameter.getCategoryIndex + 1,
-              parameter.getDataType.getName,
-              function.getEntryPoint.getOffsetAsBigInteger.intValue()
-            )
-          diffGraphBuilder.addNode(node)
-          diffGraphBuilder.addEdge(methodNode, node, EdgeTypes.AST)
-        }
+    else {
+      getHighFunction(function).foreach { highFunction =>
+        highFunction.getLocalSymbolMap.getSymbols.asScala.toSeq
+          .filter(_.isParameter)
+          .foreach { parameter =>
+            val checkedParameter = Option(parameter.getStorage)
+              .flatMap(x => Option(x.getRegister))
+              .flatMap(x => Option(x.getName))
+              .getOrElse(parameter.getName)
+            val node =
+              createParameterNode(
+                checkedParameter,
+                checkedParameter,
+                parameter.getCategoryIndex + 1,
+                parameter.getDataType.getName,
+                function.getEntryPoint.getOffsetAsBigInteger.intValue()
+              )
+            diffGraphBuilder.addNode(node)
+            diffGraphBuilder.addEdge(methodNode, node, EdgeTypes.AST)
+          }
+      }
+    }
   }
 
   def handleLocals(diffGraphBuilder: DiffGraphBuilder, function: Function, blockNode: NewBlock): Unit = {
@@ -149,16 +154,14 @@ abstract class FunctionPass(
   ): Unit = {
     val mnemonicString = processor.getInstructions.getOrElse(instruction.getMnemonicString, "UNKNOWN")
     if (mnemonicString.equals("CALL")) {
-      val calledFunction =
-        codeUnitFormat.getOperandRepresentationString(instruction, 0)
-      val callee = functionByName.get(calledFunction)
-      if (callee.nonEmpty) {
+      val calledFunction = codeUnitFormat.getOperandRepresentationString(instruction, 0)
+      functionByName.get(calledFunction).map { callee =>
         // Array of tuples containing (checked parameter name, parameter index, parameter data type)
         var checkedParameters = Array.empty[(String, Int, String)]
 
-        if (callee.head.isThunk) {
+        if (callee.isThunk) {
           // thunk functions contain parameters already
-          val parameters = callee.head.getParameters
+          val parameters = callee.getParameters
           // TODO:
           checkedParameters = parameters.map { parameter =>
             val checkedParameter =
@@ -174,14 +177,12 @@ abstract class FunctionPass(
           // decompilation for a function is cached so subsequent calls to decompile should be free
           // TODO: replace this later on
           val parameters = decompiler
-            .toHighFunction(callee.head)
-            .get
-            .getLocalSymbolMap
-            .getSymbols
-            .asScala
-            .toSeq
-            .filter(_.isParameter)
-            .toArray
+            .toHighFunction(callee)
+            .map { highFunction =>
+              highFunction.getLocalSymbolMap.getSymbols.asScala.toSeq.filter(_.isParameter).toArray
+            }
+            .getOrElse(Array.empty)
+
           checkedParameters = parameters.map { parameter =>
             val checkedParameter =
               if (parameter.getStorage.getRegister == null) parameter.getName
