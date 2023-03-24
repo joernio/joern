@@ -7,7 +7,6 @@ import io.joern.jssrc2cpg.passes._
 import io.joern.jssrc2cpg.utils.{AstGenRunner, Report}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
-import io.joern.x2cpg.passes.frontend.JavascriptCallLinker
 import io.joern.x2cpg.utils.HashUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
@@ -57,11 +56,19 @@ object JsSrc2Cpg {
 
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
     List(
-      new RequirePass(cpg),
       new ConstClosurePass(cpg),
-      new JavascriptCallLinker(cpg),
       new JavaScriptTypeRecovery(cpg, enabledDummyTypes = !config.exists(_.disableDummyTypes)),
       new JavaScriptTypeHintCallLinker(cpg)
     )
+
+  def stripQuotes(str: String): String = {
+    if (str.length >= 2 && str.startsWith("\"") && str.endsWith("\"")) {
+      str.substring(1, str.length - 1)
+    } else if (str.length >= 2 && str.startsWith("'") && str.endsWith("'")) {
+      str.substring(1, str.length - 1)
+    } else {
+      str
+    }
+  }
 
 }

@@ -32,7 +32,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve 'z' identifier call correctly" in {
       val List(zAppend) = cpg.call("push").l
-      zAppend.methodFullName shouldBe "__ecma.Array.push"
+      zAppend.methodFullName shouldBe "__ecma.Array:push"
     }
   }
 
@@ -64,7 +64,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve 'sg' call path from import information" in {
       val List(sendCall) = cpg.call("send").l
-      sendCall.methodFullName shouldBe "sendgrid:SendGridAPIClient.send"
+      sendCall.methodFullName shouldBe "sendgrid:SendGridAPIClient:send"
     }
 
     "resolve 'client' identifier types from import information" in {
@@ -76,12 +76,12 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve 'client' call path from identifier in child scope" in {
       val List(postMessage) = cpg.call("chatPostMessage").l
-      postMessage.methodFullName shouldBe "slack_sdk:WebClient.chatPostMessage"
+      postMessage.methodFullName shouldBe "slack_sdk:WebClient:chatPostMessage"
     }
 
     "resolve a dummy 'send' return value from sg.send" in {
       val List(postMessage) = cpg.identifier("response").l
-      postMessage.typeFullName shouldBe "sendgrid:SendGridAPIClient.send.<returnValue>"
+      postMessage.typeFullName shouldBe "sendgrid:SendGridAPIClient:send:<returnValue>"
     }
 
   }
@@ -94,12 +94,12 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve 'print' and 'max' calls" in {
       val Some(printCall) = cpg.call("log").headOption
-      printCall.methodFullName shouldBe "__whatwg.console.log"
+      printCall.methodFullName shouldBe "__whatwg.console:log"
       val Some(maxCall) = cpg.call("abs").headOption
-      maxCall.methodFullName shouldBe "__ecma.Math.abs"
+      maxCall.methodFullName shouldBe "__ecma.Math:abs"
       val Some(x) = cpg.identifier("x").headOption
       // TODO: Ideally we would know the result of `abs` but this can be a future task
-      x.typeFullName shouldBe "__ecma.Math.abs.<returnValue>"
+      x.typeFullName shouldBe "__ecma.Math:abs:<returnValue>"
     }
 
   }
@@ -170,7 +170,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .isCall
         .name("createTable")
         .l
-      d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy.createTable"
+      d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy:createTable"
       d.dynamicTypeHintFullName shouldBe Seq()
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
@@ -182,7 +182,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .isCall
         .name("deleteTable")
         .l
-      d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy.deleteTable"
+      d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy:deleteTable"
       d.dynamicTypeHintFullName shouldBe empty
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }

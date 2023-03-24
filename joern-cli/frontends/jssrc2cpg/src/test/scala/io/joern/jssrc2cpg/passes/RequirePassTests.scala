@@ -1,8 +1,8 @@
 package io.joern.jssrc2cpg.passes
 
+import io.joern.dataflowengineoss.language._
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
-import io.joern.dataflowengineoss.language._
 
 class RequirePassTests extends DataFlowCodeToCpgSuite {
 
@@ -68,6 +68,33 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
     val sink   = cpg.call("log").argument(1)
     val source = cpg.literal.codeExact("\"literal\"")
     sink.reachableByFlows(source).size shouldBe 2
+  }
+
+  "methods imported in TypeScript via relative importing" in {
+    lazy val cpg = code(
+      """
+        |export function foo() {}
+        |""".stripMargin,
+      "foo.ts"
+    ).moreCode(
+      """
+        |import { foo } from "../../foo.ts";
+        |
+        |foo();
+        |export function bar() {}
+        |""".stripMargin,
+      "d1/d2/bar.ts"
+    ).moreCode(
+      """
+        |import { bar } from "./d2/bar.ts";
+        |
+        |bar();
+        |""".stripMargin,
+      "d1/baz.ts"
+    )
+
+    cpg.call("bar").methodFullName.headOption shouldBe Some("d1/d2/bar.ts::program:bar")
+    cpg.call("foo").methodFullName.headOption shouldBe Some("foo.ts::program:foo")
   }
 
 }
