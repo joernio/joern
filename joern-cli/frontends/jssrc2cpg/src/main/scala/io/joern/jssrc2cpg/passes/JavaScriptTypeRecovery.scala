@@ -43,14 +43,20 @@ class RecoverForJavaScriptFile(
     entity <- i.importedEntity
     alias  <- i.importedAs
   } {
+    println("DEBUG " + (codeRoot + (cu match {
+      case x: File => x.name
+      case _ => cu.file.name.headOption.getOrElse("")
+    })))
     val currentFile = (codeRoot + (cu match {
       case x: File => x.name
       case _       => cu.file.name.headOption.getOrElse("")
     })).replaceAll(Matcher.quoteReplacement(JFile.separator), "/")
+    println(s"DEBUG currentFile $currentFile")
     val resolvedPath = better.files
       .File(currentFile.stripSuffix(currentFile.split("/").last), entity.split(":").head)
       .pathAsString
       .stripPrefix(codeRoot)
+    println(s"DEBUG resolvedPath $resolvedPath")
 
     val isImportingModule = !entity.contains(":")
 
