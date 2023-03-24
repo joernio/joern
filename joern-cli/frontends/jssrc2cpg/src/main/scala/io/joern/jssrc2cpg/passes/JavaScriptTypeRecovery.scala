@@ -43,15 +43,12 @@ class RecoverForJavaScriptFile(
     entity <- i.importedEntity
     alias  <- i.importedAs
   } {
-    val currentFile = codeRoot + (cu match {
+    val currentFile = (codeRoot + (cu match {
       case x: File => x.name
       case _       => cu.file.name.headOption.getOrElse("")
-    })
+    })).replaceAll(Matcher.quoteReplacement(JFile.separator), "/")
     val resolvedPath = better.files
-      .File(
-        currentFile.stripSuffix(currentFile.split(Matcher.quoteReplacement(JFile.separator)).last),
-        entity.split(":").head
-      )
+      .File(currentFile.stripSuffix(currentFile.split("/").last), entity.split(":").head)
       .pathAsString
       .stripPrefix(codeRoot)
 

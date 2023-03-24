@@ -238,4 +238,12 @@ object X2Cpg {
     tmpDir
   }
 
+  /** Strips surrounding quotation characters from a string.
+    * @param s
+    *   the target string.
+    * @return
+    *   the stripped string.
+    */
+  def stripQuotes(str: String): String = str.replaceAll("^(\"|')|(\"|')$", "")
+
 }

@@ -61,14 +61,4 @@ object JsSrc2Cpg {
       new JavaScriptTypeHintCallLinker(cpg)
     )
 
-  def stripQuotes(str: String): String = {
-    if (str.length >= 2 && str.startsWith("\"") && str.endsWith("\"")) {
-      str.substring(1, str.length - 1)
-    } else if (str.length >= 2 && str.startsWith("'") && str.endsWith("'")) {
-      str.substring(1, str.length - 1)
-    } else {
-      str
-    }
-  }
-
 }
