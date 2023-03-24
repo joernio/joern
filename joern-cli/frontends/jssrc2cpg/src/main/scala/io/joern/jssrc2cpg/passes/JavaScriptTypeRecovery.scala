@@ -40,7 +40,7 @@ class RecoverForJavaScriptFile(
   }
 
   override protected def visitImport(i: Import): Unit = for {
-    entity <- i.importedEntity
+    entity <- i.importedEntity.map(_.stripPrefix("./"))
     alias  <- i.importedAs
   } {
     val sep = Matcher.quoteReplacement(JFile.separator)
