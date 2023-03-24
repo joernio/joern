@@ -395,12 +395,11 @@ trait KtPsiToAst {
     val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
     val _methodReturnNode = methodReturnNode(typeFullName, None, Option(line(ktFn)), Option(column(ktFn)))
 
-    val modifierAsts =
-      if (withVirtualModifier) Seq(Ast(modifierNode(ModifierTypes.VIRTUAL)))
+    val modifierNodes =
+      if (withVirtualModifier) Seq(modifierNode(ModifierTypes.VIRTUAL))
       else Seq()
     Seq(
-      methodAst(_methodNode, parameters, bodyAst, _methodReturnNode)
-        .withChildren(modifierAsts)
+      methodAst(_methodNode, parameters, bodyAst, _methodReturnNode, modifierNodes)
         .withChildren(otherBodyAsts)
     )
   }
