@@ -3,17 +3,15 @@ package io.joern.ghidra2cpg.utils
 import ghidra.program.model.listing.{Function, Instruction, Program}
 import io.joern.ghidra2cpg.Types
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.jdk.CollectionConverters._
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.implicitConversions
 
 object Utils {
   def createCallNode(code: String, name: String, lineNumber: Integer, index: Int = -1): NewCall = {
-    nodes
-      .NewCall()
+    NewCall()
       .name(name)
       .code(code)
       .order(0)
@@ -30,8 +28,7 @@ object Utils {
     typ: String,
     lineNumber: Int
   ): NewMethodParameterIn = {
-    nodes
-      .NewMethodParameterIn()
+    NewMethodParameterIn()
       .code(code)
       .name(name)
       .order(order)
@@ -40,8 +37,7 @@ object Utils {
   }
 
   def createIdentifier(code: String, name: String, index: Int, typ: String, lineNumber: Int): NewIdentifier = {
-    nodes
-      .NewIdentifier()
+    NewIdentifier()
       .code(code)
       .name(name)
       .order(index)
@@ -51,16 +47,14 @@ object Utils {
   }
 
   def createReturnNode(code: String, lineNumber: Integer): NewReturn = {
-    nodes
-      .NewReturn()
+    NewReturn()
       .code(code)
       .order(0)
       .argumentIndex(0)
       .lineNumber(lineNumber)
   }
   def createLiteral(code: String, order: Int, argumentIndex: Int, typeFullName: String, lineNumber: Int): NewLiteral = {
-    nodes
-      .NewLiteral()
+    NewLiteral()
       .code(code)
       .order(order)
       .argumentIndex(argumentIndex)
@@ -68,8 +62,7 @@ object Utils {
     // .lineNumber(lineNumber)
   }
   def createReturnNode(): NewMethodReturn = {
-    nodes.NewMethodReturn().order(1)
-
+    NewMethodReturn().order(1)
   }
   def createMethodNode(decompiler: Decompiler, function: Function, fileName: String, isExternal: Boolean): NewMethod = {
     val code = decompiler.toDecompiledFunction(function).get.getC
@@ -79,8 +72,7 @@ object Utils {
       .flatMap(x => Option(x.intValue()))
       .getOrElse(-1)
 
-    nodes
-      .NewMethod()
+    NewMethod()
       .code(code)
       .name(function.getName)
       .fullName(function.getName)
