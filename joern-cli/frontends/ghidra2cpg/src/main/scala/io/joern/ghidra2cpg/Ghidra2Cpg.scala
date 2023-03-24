@@ -116,7 +116,9 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
       .toMap
 
     new MetaDataPass(cpg, Languages.GHIDRA, fileAbsolutePath).createAndApply()
-    new NamespacePass(cpg, flatProgramAPI.getProgramFile).createAndApply()
+    Option(flatProgramAPI.getProgramFile).foreach { programFile =>
+      new NamespacePass(cpg, programFile).createAndApply()
+    }
 
     program.getLanguage.getLanguageDescription.getProcessor.toString match {
       case "MIPS" =>
