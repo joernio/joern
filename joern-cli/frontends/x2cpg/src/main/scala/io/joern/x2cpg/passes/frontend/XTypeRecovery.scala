@@ -219,7 +219,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // TODO: Remove
-    println(symbolTable)
+    println(s"--SymbolTable---\n${symbolTable.view.mkString("\n")}\n--END--")
     // Populate local symbol table with assignments
     assignments.foreach(visitAssignments)
     // Propagate return types

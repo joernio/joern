@@ -48,14 +48,10 @@ class RecoverForJavaScriptFile(
       case x: File => x.name
       case _       => cu.file.name.headOption.getOrElse("")
     })
-    // TODO: REmove
-    println(s"DEBUG currentFile $currentFile")
     val resolvedPath = better.files
       .File(currentFile.stripSuffix(currentFile.split(sep).last), entity.split(":").head)
       .pathAsString
       .stripPrefix(codeRoot)
-    println(s"DEBUG resolvedPath $resolvedPath")
-    println(s"Files in CPG ${cpg.file.name.mkString("\n")}")
 
     val isImportingModule = !entity.contains(":")
 
