@@ -149,16 +149,14 @@ abstract class FunctionPass(
   ): Unit = {
     val mnemonicString = processor.getInstructions.getOrElse(instruction.getMnemonicString, "UNKNOWN")
     if (mnemonicString.equals("CALL")) {
-      val calledFunction =
-        codeUnitFormat.getOperandRepresentationString(instruction, 0)
-      val callee = functionByName.get(calledFunction)
-      if (callee.nonEmpty) {
+      val calledFunction = codeUnitFormat.getOperandRepresentationString(instruction, 0)
+      functionByName.get(calledFunction).map { callee =>
         // Array of tuples containing (checked parameter name, parameter index, parameter data type)
         var checkedParameters = Array.empty[(String, Int, String)]
 
-        if (callee.head.isThunk) {
+        if (callee.isThunk) {
           // thunk functions contain parameters already
-          val parameters = callee.head.getParameters
+          val parameters = callee.getParameters
           // TODO:
           checkedParameters = parameters.map { parameter =>
             val checkedParameter =
@@ -174,7 +172,7 @@ abstract class FunctionPass(
           // decompilation for a function is cached so subsequent calls to decompile should be free
           // TODO: replace this later on
           val parameters = decompiler
-            .toHighFunction(callee.head)
+            .toHighFunction(callee)
             .get
             .getLocalSymbolMap
             .getSymbols
