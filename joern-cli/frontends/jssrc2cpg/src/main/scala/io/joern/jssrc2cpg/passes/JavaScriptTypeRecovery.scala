@@ -143,16 +143,14 @@ class RecoverForJavaScriptFile(
     i: Identifier,
     m: MethodRef,
     rec: Option[String] = None
-  ): Set[String] = {
-    super.visitIdentifierAssignedToMethodRef(i, m, Option("this"))
-  }
+  ): Set[String] =
+    symbolTable.append(CallAlias(i.name, Some("this")), Set(m.referencedMethod.fullName))
 
   override protected def visitIdentifierAssignedToTypeRef(
     i: Identifier,
     t: TypeRef,
     rec: Option[String] = None
-  ): Set[String] = {
+  ): Set[String] =
     super.visitIdentifierAssignedToTypeRef(i, t, Option("this"))
-  }
 
 }
