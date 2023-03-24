@@ -176,10 +176,12 @@ abstract class FunctionPass(
           // need to decompile function to get parameter information
           // decompilation for a function is cached so subsequent calls to decompile should be free
           // TODO: replace this later on
-          val parameters = decompiler.toHighFunction(callee).map { highFunction =>
-            highFunction.getLocalSymbolMap.getSymbols
-              .asScala.toSeq.filter(_.isParameter).toArray
-          }.getOrElse(Array.empty)
+          val parameters = decompiler
+            .toHighFunction(callee)
+            .map { highFunction =>
+              highFunction.getLocalSymbolMap.getSymbols.asScala.toSeq.filter(_.isParameter).toArray
+            }
+            .getOrElse(Array.empty)
 
           checkedParameters = parameters.map { parameter =>
             val checkedParameter =
