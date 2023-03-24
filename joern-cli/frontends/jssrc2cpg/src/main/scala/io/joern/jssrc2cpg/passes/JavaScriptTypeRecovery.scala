@@ -106,8 +106,8 @@ class RecoverForJavaScriptFile(
       }.toSet
     } else {
       val default = Set(entity).map(_.replaceAll(sep, "/"))
-      symbolTable.append(LocalVar(alias), Set(entity))
-      symbolTable.append(CallAlias(alias), Set(entity))
+      symbolTable.append(LocalVar(alias), default)
+      symbolTable.append(CallAlias(alias, Option("this")), default)
     }
   }
 
