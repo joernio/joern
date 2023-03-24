@@ -8,6 +8,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
+import java.util.regex.Matcher
 import scala.collection.mutable
 
 class JavaScriptTypeRecovery(cpg: Cpg, enabledDummyTypes: Boolean = true) extends XTypeRecovery[File](cpg) {
@@ -47,7 +48,10 @@ class RecoverForJavaScriptFile(
       case _       => cu.file.name.headOption.getOrElse("")
     })
     val resolvedPath = better.files
-      .File(currentFile.stripSuffix(currentFile.split(JFile.separator).last), entity.split(":").head)
+      .File(
+        currentFile.stripSuffix(currentFile.split(Matcher.quoteReplacement(JFile.separator)).last),
+        entity.split(":").head
+      )
       .pathAsString
       .stripPrefix(codeRoot)
 
