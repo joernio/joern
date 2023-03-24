@@ -34,7 +34,9 @@ abstract class FunctionPass(
     }
   }
 
-  def getHighFunction(function: Function): HighFunction = decompiler.toHighFunction(function).orNull
+  def getHighFunction(function: Function): Option[HighFunction] =
+    decompiler.toHighFunction(function)
+
   protected def getInstructions(function: Function): Seq[Instruction] =
     currentProgram.getListing.getInstructions(function.getBody, true).iterator().asScala.toList
 
@@ -78,25 +80,28 @@ abstract class FunctionPass(
           diffGraphBuilder.addNode(node)
           diffGraphBuilder.addEdge(methodNode, node, EdgeTypes.AST)
         }
-    else
-      getHighFunction(function).getLocalSymbolMap.getSymbols.asScala.toSeq
-        .filter(_.isParameter)
-        .foreach { parameter =>
-          val checkedParameter = Option(parameter.getStorage)
-            .flatMap(x => Option(x.getRegister))
-            .flatMap(x => Option(x.getName))
-            .getOrElse(parameter.getName)
-          val node =
-            createParameterNode(
-              checkedParameter,
-              checkedParameter,
-              parameter.getCategoryIndex + 1,
-              parameter.getDataType.getName,
-              function.getEntryPoint.getOffsetAsBigInteger.intValue()
-            )
-          diffGraphBuilder.addNode(node)
-          diffGraphBuilder.addEdge(methodNode, node, EdgeTypes.AST)
-        }
+    else {
+      getHighFunction(function).foreach { highFunction =>
+        highFunction.getLocalSymbolMap.getSymbols.asScala.toSeq
+          .filter(_.isParameter)
+          .foreach { parameter =>
+            val checkedParameter = Option(parameter.getStorage)
+              .flatMap(x => Option(x.getRegister))
+              .flatMap(x => Option(x.getName))
+              .getOrElse(parameter.getName)
+            val node =
+              createParameterNode(
+                checkedParameter,
+                checkedParameter,
+                parameter.getCategoryIndex + 1,
+                parameter.getDataType.getName,
+                function.getEntryPoint.getOffsetAsBigInteger.intValue()
+              )
+            diffGraphBuilder.addNode(node)
+            diffGraphBuilder.addEdge(methodNode, node, EdgeTypes.AST)
+          }
+      }
+    }
   }
 
   def handleLocals(diffGraphBuilder: DiffGraphBuilder, function: Function, blockNode: NewBlock): Unit = {
