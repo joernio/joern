@@ -79,6 +79,8 @@ class RecoverForJavaScriptFile(
         .l
     }
 
+    println(s"---Method names---\n${cpg.method.fullName.mkString("\n")}\n--END---")
+
     if (matchingExports.nonEmpty) {
       matchingExports.flatMap { exp =>
         exp.argument.l match {
