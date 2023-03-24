@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
-import io.joern.pythonparser.ast
+import io.joern.pythonparser.{AstPrinter, ast}
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -193,6 +193,7 @@ class PythonAstVisitor(
       case node: ast.If               => convert(node)
       case node: ast.With             => convert(node)
       case node: ast.AsyncWith        => convert(node)
+      case node: ast.Match            => convert(node)
       case node: ast.Raise            => convert(node)
       case node: ast.Try              => convert(node)
       case node: ast.Assert           => convert(node)
@@ -1104,6 +1105,12 @@ class PythonAstVisitor(
     blockStmts.append(tryBlock)
 
     createBlock(blockStmts, lineAndCol)
+  }
+
+  // TODO for now we bring in the match statement as an unknown node.
+  def convert(matchStmt: ast.Match): NewNode = {
+    val printer = new AstPrinter("  ")
+    nodeBuilder.unknownNode(printer.print(matchStmt), matchStmt.getClass.getName, lineAndColOf(matchStmt))
   }
 
   def convert(raise: ast.Raise): NewNode = {
