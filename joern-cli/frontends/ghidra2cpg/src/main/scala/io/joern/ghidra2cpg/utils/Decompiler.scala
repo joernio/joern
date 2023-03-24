@@ -40,12 +40,12 @@ class Decompiler(val decompInterface: DecompInterface) {
   /** Retrieve HighFunction for given function, using the cache.
     */
   def toHighFunction(function: Function): Option[HighFunction] =
-    decompile(function).map(_.getHighFunction)
+    decompile(function).flatMap(decompiled => Option(decompiled.getHighFunction))
 
   /** Retrieve DecompiledFunction for given function, using the cache.
     */
   def toDecompiledFunction(function: Function): Option[DecompiledFunction] =
-    decompile(function).map(_.getDecompiledFunction)
+    decompile(function).flatMap(decompiled => Option(decompiled.getDecompiledFunction))
 
   /** Decompile the given function, retrieving it from a cache if possible. Returns Some(highFunction) on success and
     * None on error.
