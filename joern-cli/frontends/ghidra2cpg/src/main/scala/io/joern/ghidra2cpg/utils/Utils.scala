@@ -65,7 +65,7 @@ object Utils {
     NewMethodReturn().order(1)
   }
   def createMethodNode(decompiler: Decompiler, function: Function, fileName: String, isExternal: Boolean): NewMethod = {
-    val code = decompiler.toDecompiledFunction(function).get.getC
+    val code = decompiler.toDecompiledFunction(function).map(_.getC).getOrElse("")
     val lineNumberEnd = Option(function.getReturn)
       .flatMap(x => Option(x.getMinAddress))
       .flatMap(x => Option(x.getOffsetAsBigInteger))
