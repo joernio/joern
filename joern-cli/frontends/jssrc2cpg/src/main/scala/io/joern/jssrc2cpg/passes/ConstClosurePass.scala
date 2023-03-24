@@ -1,9 +1,10 @@
 package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.passes.CpgPass
-import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate
 import overflowdb.traversal._
 
 /** A pass that identifies assignments of closures to constants and updates `METHOD` nodes accordingly.
@@ -13,11 +14,13 @@ class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
     for {
       assignment      <- cpg.assignment
       name            <- assignment.filter(_.code.startsWith("const ")).target.isIdentifier.name
-      method          <- assignment.start.source.isMethodRef.referencedMethod
+      methodRef       <- assignment.start.source.isMethodRef
+      method          <- methodRef.referencedMethod
       enclosingMethod <- assignment.start.method.fullName
     } {
-      diffGraph.setNodeProperty(method, "NAME", name)
-      diffGraph.setNodeProperty(method, "FULL_NAME", s"$enclosingMethod:$name")
+      diffGraph.setNodeProperty(methodRef, PropertyNames.METHOD_FULL_NAME, s"$enclosingMethod:$name")
+      diffGraph.setNodeProperty(method, PropertyNames.NAME, name)
+      diffGraph.setNodeProperty(method, PropertyNames.FULL_NAME, s"$enclosingMethod:$name")
     }
 
   }
