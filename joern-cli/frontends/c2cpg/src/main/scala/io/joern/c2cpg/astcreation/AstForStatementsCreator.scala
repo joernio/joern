@@ -93,31 +93,19 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
-    val code = nodeSignature(doStmt)
-
-    val doNode = newControlStructureNode(doStmt, ControlStructureTypes.DO, code)
-
+    val code         = nodeSignature(doStmt)
+    val doNode       = newControlStructureNode(doStmt, ControlStructureTypes.DO, code)
     val conditionAst = nullSafeAst(doStmt.getCondition)
-    val stmtAsts     = nullSafeAst(doStmt.getBody)
-
-    Ast(doNode)
-      .withChildren(stmtAsts)
-      .withChild(conditionAst)
-      .withConditionEdge(doNode, conditionAst.root)
+    val bodyAst      = nullSafeAst(doStmt.getBody)
+    controlStructureAst(doNode, Some(conditionAst), bodyAst, placeConditionLast = true)
   }
 
   private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Ast = {
-    val code = s"switch(${nullSafeCode(switchStmt.getControllerExpression)})"
-
-    val switchNode = newControlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code)
-
+    val code         = s"switch(${nullSafeCode(switchStmt.getControllerExpression)})"
+    val switchNode   = newControlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code)
     val conditionAst = nullSafeAst(switchStmt.getControllerExpression)
     val stmtAsts     = nullSafeAst(switchStmt.getBody)
-
-    Ast(switchNode)
-      .withChild(conditionAst)
-      .withChildren(stmtAsts)
-      .withConditionEdge(switchNode, conditionAst.root)
+    controlStructureAst(switchNode, Some(conditionAst), stmtAsts)
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
@@ -182,14 +170,8 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val compareAst = nullSafeAst(forStmt.getConditionExpression, 2)
     val updateAst  = nullSafeAst(forStmt.getIterationExpression, 3)
-    val stmtAst    = nullSafeAst(forStmt.getBody, 4)
-
-    Ast(forNode)
-      .withChild(initAst)
-      .withChild(compareAst)
-      .withChild(updateAst)
-      .withChildren(stmtAst)
-      .withConditionEdge(forNode, compareAst.root)
+    val bodyAsts   = nullSafeAst(forStmt.getBody, 4)
+    forAst(forNode, Seq(), Seq(initAst), Seq(compareAst), Seq(updateAst), bodyAsts)
   }
 
   private def astForRangedFor(forStmt: ICPPASTRangeBasedForStatement): Ast = {
@@ -202,25 +184,14 @@ trait AstForStatementsCreator { this: AstCreator =>
     val initAst = astForNode(forStmt.getInitializerClause)
     val declAst = astsForDeclaration(forStmt.getDeclaration)
     val stmtAst = nullSafeAst(forStmt.getBody)
-
-    Ast(forNode)
-      .withChild(initAst)
-      .withChildren(declAst)
-      .withChildren(stmtAst)
+    controlStructureAst(forNode, None, Seq(initAst) ++ declAst ++ stmtAst)
   }
 
   private def astForWhile(whileStmt: IASTWhileStatement): Ast = {
-    val code = s"while (${nullSafeCode(whileStmt.getCondition)})"
-
-    val whileNode = newControlStructureNode(whileStmt, ControlStructureTypes.WHILE, code)
-
+    val code         = s"while (${nullSafeCode(whileStmt.getCondition)})"
     val conditionAst = nullSafeAst(whileStmt.getCondition)
-    val stmtAsts     = nullSafeAst(whileStmt.getBody)
-
-    Ast(whileNode)
-      .withChild(conditionAst)
-      .withChildren(stmtAsts)
-      .withConditionEdge(whileNode, conditionAst.root)
+    val bodyAst      = nullSafeAst(whileStmt.getBody)
+    whileAst(Some(conditionAst), bodyAst, Some(code))
   }
 
   private def astForIf(ifStmt: IASTIfStatement): Ast = {
@@ -272,12 +243,6 @@ trait AstForStatementsCreator { this: AstCreator =>
         Ast(elseNode).withChild(blockAst)
       case _ => Ast()
     }
-
-    Ast(ifNode)
-      .withChild(conditionAst)
-      .withChild(thenAst)
-      .withChild(elseAst)
-      .withConditionEdge(ifNode, conditionAst.root)
+    controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))
   }
-
 }

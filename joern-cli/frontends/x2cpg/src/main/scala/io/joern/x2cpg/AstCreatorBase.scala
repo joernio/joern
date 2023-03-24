@@ -181,6 +181,16 @@ abstract class AstCreatorBase(filename: String) {
     conditionAsts: Seq[Ast],
     updateAsts: Seq[Ast],
     bodyAst: Ast
+  ): Ast =
+    forAst(forNode, locals, initAsts, conditionAsts, updateAsts, Seq(bodyAst))
+
+  def forAst(
+    forNode: NewControlStructure,
+    locals: Seq[Ast],
+    initAsts: Seq[Ast],
+    conditionAsts: Seq[Ast],
+    updateAsts: Seq[Ast],
+    bodyAsts: Seq[Ast]
   ): Ast = {
     val lineNumber = forNode.lineNumber
     Ast(forNode)
@@ -188,7 +198,7 @@ abstract class AstCreatorBase(filename: String) {
       .withChild(wrapMultipleInBlock(initAsts, lineNumber))
       .withChild(wrapMultipleInBlock(conditionAsts, lineNumber))
       .withChild(wrapMultipleInBlock(updateAsts, lineNumber))
-      .withChild(bodyAst)
+      .withChildren(bodyAsts)
       .withConditionEdges(forNode, conditionAsts.flatMap(_.root).toList)
   }
 
