@@ -4,6 +4,8 @@ import io.joern.dataflowengineoss.language._
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 
+import java.io.File
+
 class RequirePassTests extends DataFlowCodeToCpgSuite {
 
   "methods imported via `require` should be resolved correctly" in {
@@ -83,17 +85,19 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
         |foo();
         |export function bar() {}
         |""".stripMargin,
-      "d1/d2/bar.ts"
+      Seq("d1", "d2", "bar.ts").mkString(File.separator)
     ).moreCode(
       """
         |import { bar } from "./d2/bar.ts";
         |
         |bar();
         |""".stripMargin,
-      "d1/baz.ts"
+      Seq("d1", "baz.ts").mkString(File.separator)
     )
 
-    cpg.call("bar").methodFullName.headOption shouldBe Some("d1/d2/bar.ts::program:bar")
+    cpg.call("bar").methodFullName.headOption shouldBe Some(
+      Seq("d1", "d2", "bar.ts::program:bar").mkString(File.separator)
+    )
     cpg.call("foo").methodFullName.headOption shouldBe Some("foo.ts::program:foo")
   }
 

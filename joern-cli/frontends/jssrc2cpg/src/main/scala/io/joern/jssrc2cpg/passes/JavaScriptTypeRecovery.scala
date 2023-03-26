@@ -56,7 +56,7 @@ class RecoverForJavaScriptFile(
     val isImportingModule = !entity.contains(":")
 
     def targetModule = cpg
-      .file(s"$resolvedPath\\.?.*")
+      .file(s"${Matcher.quoteReplacement(resolvedPath)}\\.?.*")
       .method
 
     def targetAssignments = targetModule
@@ -78,8 +78,6 @@ class RecoverForJavaScriptFile(
         .dedup
         .l
     }
-
-    println(s"---Method names---\n${cpg.method.fullName.mkString("\n")}\n--END---")
 
     if (matchingExports.nonEmpty) {
       matchingExports.flatMap { exp =>

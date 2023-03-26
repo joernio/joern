@@ -5,8 +5,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-#        os: [ubuntu-22.04, windows-2022, macos-12]
-        os: [windows-2022]
+        os: [ubuntu-22.04, windows-2022, macos-12]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -18,8 +17,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Compile and run tests
-#        run: sbt clean +test
-        run: sbt "test:testOnly *jssrc2cpg*"
+        run: sbt clean +test
   formatting:
     runs-on: ubuntu-22.04
     steps:
