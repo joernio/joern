@@ -23,6 +23,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   implicit private val resolver: NoResolve.type = NoResolve
   private val fileNamePattern                   = Pattern.compile("^(.*(.py|.js)).*$")
+  protected val pathSep: Char                   = '.'
 
   protected def calls: Traversal[Call] = cpg.call
     .nameNot("<operator>.*", "<operators>.*")
@@ -73,8 +74,8 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       true
     }
     val name =
-      if (methodName.contains(".") && methodName.length > methodName.lastIndexOf(".") + 1)
-        methodName.substring(methodName.lastIndexOf(".") + 1)
+      if (methodName.contains(pathSep) && methodName.length > methodName.lastIndexOf(pathSep) + 1)
+        methodName.substring(methodName.lastIndexOf(pathSep) + 1)
       else methodName
     MethodStubCreator
       .createMethodStub(

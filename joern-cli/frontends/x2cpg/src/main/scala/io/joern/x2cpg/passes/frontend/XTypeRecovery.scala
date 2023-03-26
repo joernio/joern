@@ -94,7 +94,8 @@ object XTypeRecovery {
   val DummyIndexAccess                      = "<indexAccess>"
   private lazy val DummyTokens: Set[String] = Set(DummyReturnType, DummyMemberLoad, DummyIndexAccess)
 
-  def dummyMemberType(prefix: String, memberName: String): String = s"$prefix.$DummyMemberLoad($memberName)"
+  def dummyMemberType(prefix: String, memberName: String, sep: Char = '.'): String =
+    s"$prefix$sep$DummyMemberLoad($memberName)"
 
   /** Scans the type for placeholder/dummy types.
     */
@@ -134,6 +135,14 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Stores type information for local structures that live within this compilation unit, e.g. local variables.
     */
   protected val symbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
+
+  /** The root of the target codebase.
+    */
+  protected val codeRoot: String = cpg.metaData.root.headOption.getOrElse("") + java.io.File.separator
+
+  /** The delimiter used to separate methods/functions in qualified names.
+    */
+  protected val pathSep = '.'
 
   /** Provides an entrypoint to add known symbols and their possible types.
     */
@@ -356,7 +365,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def setCallMethodFullNameFromBase(c: Call): Set[String] = {
     val recTypes  = c.argument.headOption.map(symbolTable.get).getOrElse(Set.empty[String])
-    val callTypes = recTypes.map(_.concat(s".${c.name}"))
+    val callTypes = recTypes.map(_.concat(s"$pathSep${c.name}"))
     symbolTable.append(c, callTypes)
   }
 
@@ -380,7 +389,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Returns the appropriate field parent scope.
     */
   protected def getFieldParents(fa: FieldAccess): Set[String] = {
-    val fieldName = getFieldName(fa).split("\\.").last
+    val fieldName = getFieldName(fa).split(pathSep).last
     cpg.typeDecl.filter(_.member.exists(_.name.equals(fieldName))).fullName.filterNot(_.contains("ANY")).toSet
   }
 
@@ -423,11 +432,13 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         associateTypes(i, baseTypes)
       } else {
         // If not available, use a dummy variable that can be useful for call matching
-        associateTypes(i, baseTypes.map(t => XTypeRecovery.dummyMemberType(t, fieldName)))
+        associateTypes(i, baseTypes.map(t => XTypeRecovery.dummyMemberType(t, fieldName, pathSep)))
       }
     } else {
       // Assign dummy
-      val dummyTypes = Set(XTypeRecovery.dummyMemberType(fieldFullName.stripSuffix(s".$fieldName"), fieldName))
+      val dummyTypes = Set(
+        XTypeRecovery.dummyMemberType(fieldFullName.stripSuffix(s"$pathSep$fieldName"), fieldName, pathSep)
+      )
       associateTypes(i, dummyTypes)
     }
   }
@@ -446,7 +457,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Visits an identifier being assigned to a constructor and attempts to speculate the constructor path.
     */
   protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
-    val constructorPaths = symbolTable.get(c).map(t => t.concat(s".${Defines.ConstructorMethodName}"))
+    val constructorPaths = symbolTable.get(c).map(t => t.concat(s"$pathSep${Defines.ConstructorMethodName}"))
     associateTypes(i, constructorPaths)
   }
 
@@ -461,12 +472,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case i: Identifier if symbolTable.contains(LocalVar(i.name))  => symbolTable.get(LocalVar(i.name))
         case i: Identifier if symbolTable.contains(CallAlias(i.name)) => symbolTable.get(CallAlias(i.name))
         case _                                                        => Set.empty
-      }).map(_.concat(s".${c.name}")).toSeq
+      }).map(_.concat(s"$pathSep${c.name}")).toSeq
       val callReturns = methodReturnValues(callFullNames)
       associateTypes(i, callReturns)
     } else {
       // Assign dummy value
-      associateTypes(i, Set(s"${c.name}.${XTypeRecovery.DummyReturnType}"))
+      associateTypes(i, Set(s"${c.name}$pathSep${XTypeRecovery.DummyReturnType}"))
     }
   }
 
@@ -474,7 +485,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def methodReturnValues(methodFullNames: Seq[String]): Set[String] = {
     val rs = cpg.method.fullNameExact(methodFullNames: _*).methodReturn.typeFullName.filterNot(_.equals("ANY")).toSet
-    if (rs.isEmpty) methodFullNames.map(_.concat(s".${XTypeRecovery.DummyReturnType}")).toSet
+    if (rs.isEmpty) methodFullNames.map(_.concat(s"$pathSep${XTypeRecovery.DummyReturnType}")).toSet
     else rs
   }
 
@@ -489,13 +500,17 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Will handle an identifier holding a function pointer.
     */
-  protected def visitIdentifierAssignedToMethodRef(i: Identifier, m: MethodRef): Set[String] =
-    symbolTable.append(CallAlias(i.name), Set(m.methodFullName))
+  protected def visitIdentifierAssignedToMethodRef(
+    i: Identifier,
+    m: MethodRef,
+    rec: Option[String] = None
+  ): Set[String] =
+    symbolTable.append(CallAlias(i.name, rec), Set(m.methodFullName))
 
   /** Will handle an identifier holding a type pointer.
     */
-  protected def visitIdentifierAssignedToTypeRef(i: Identifier, t: TypeRef): Set[String] =
-    symbolTable.append(CallAlias(i.name), Set(t.typeFullName))
+  protected def visitIdentifierAssignedToTypeRef(i: Identifier, t: TypeRef, rec: Option[String] = None): Set[String] =
+    symbolTable.append(CallAlias(i.name, rec), Set(t.typeFullName))
 
   /** Visits a call assigned to an identifier. This is often when there are operators involved.
     */
@@ -539,7 +554,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     case Some(cVar) if symbolTable.contains(cVar) =>
       symbolTable.get(cVar)
     case Some(cVar) if symbolTable.contains(LocalVar(cVar.identifier)) =>
-      symbolTable.get(LocalVar(cVar.identifier)).map(_.concat(s".${XTypeRecovery.DummyIndexAccess}"))
+      symbolTable.get(LocalVar(cVar.identifier)).map(_.concat(s"$pathSep${XTypeRecovery.DummyIndexAccess}"))
     case _ => Set.empty
   }
 
@@ -562,26 +577,26 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def getFieldName(fa: FieldAccess, prefix: String = "", suffix: String = ""): String = {
     def wrapName(n: String) = {
       val sb = new mutable.StringBuilder()
-      if (prefix.nonEmpty) sb.append(s"$prefix.")
+      if (prefix.nonEmpty) sb.append(s"$prefix$pathSep")
       sb.append(n)
-      if (suffix.nonEmpty) sb.append(s".$suffix")
+      if (suffix.nonEmpty) sb.append(s"$pathSep$suffix")
       sb.toString()
     }
 
     fa.astChildren.l match {
       case List(i: Identifier, f: FieldIdentifier) if i.name.matches("(self|this)") => wrapName(f.canonicalName)
-      case List(i: Identifier, f: FieldIdentifier) => wrapName(s"${i.name}.${f.canonicalName}")
+      case List(i: Identifier, f: FieldIdentifier) => wrapName(s"${i.name}$pathSep${f.canonicalName}")
       case List(c: Call, f: FieldIdentifier) if c.name.equals(Operators.fieldAccess) =>
         wrapName(getFieldName(new FieldAccess(c), suffix = f.canonicalName))
       case List(c: Call, f: FieldIdentifier) if getTypesFromCall(c).nonEmpty =>
         // TODO: Handle this case better
-        wrapName(s"${getTypesFromCall(c).head}.${f.canonicalName}")
+        wrapName(s"${getTypesFromCall(c).head}$pathSep${f.canonicalName}")
       case List(f: FieldIdentifier, c: Call) if c.name.equals(Operators.fieldAccess) =>
         wrapName(getFieldName(new FieldAccess(c), prefix = f.canonicalName))
       case List(c: Call, f: FieldIdentifier) =>
         // TODO: Handle this case better
         val callCode = if (c.code.contains("(")) c.code.substring(c.code.indexOf("(")) else c.code
-        XTypeRecovery.dummyMemberType(callCode, f.canonicalName)
+        XTypeRecovery.dummyMemberType(callCode, f.canonicalName, pathSep)
       case xs =>
         logger.warn(s"Unhandled field structure ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(fa)}")
         wrapName("<unknown>")
@@ -659,7 +674,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val localTypes = symbolTable.get(LocalVar(fieldName))
         associateInterproceduralTypes(i, base, fi, fieldName, localTypes)
       case List(base: Identifier, fi: FieldIdentifier) =>
-        val dummyTypes = Set(s"$fieldName.${XTypeRecovery.DummyReturnType}")
+        val dummyTypes = Set(s"$fieldName$pathSep${XTypeRecovery.DummyReturnType}")
         associateInterproceduralTypes(i, base, fi, fieldName, dummyTypes)
       case List(c: Call, f: FieldIdentifier) if c.name.equals(Operators.fieldAccess) =>
         val baseName = getFieldName(new FieldAccess(c))
@@ -667,22 +682,25 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         // TODO: This is more prone to giving dummy values as it does not do global look-ups
         //  but this is okay for now
         val buf = mutable.ArrayBuffer.empty[String]
-        for (segment <- baseName.split("\\.") ++ Array(f.canonicalName)) {
+        for (segment <- baseName.split(pathSep) ++ Array(f.canonicalName)) {
           val types =
             if (buf.isEmpty) symbolTable.get(LocalVar(segment))
-            else buf.flatMap(t => symbolTable.get(LocalVar(s"$t.$segment"))).toSet
+            else buf.flatMap(t => symbolTable.get(LocalVar(s"$t$pathSep$segment"))).toSet
           if (types.nonEmpty) {
             buf.clear()
             buf.addAll(types)
           } else {
             val bufCopy = Array.from(buf)
             buf.clear()
-            bufCopy.foreach(t => buf.addOne(XTypeRecovery.dummyMemberType(t, segment)))
+            bufCopy.foreach(t => buf.addOne(XTypeRecovery.dummyMemberType(t, segment, pathSep)))
           }
         }
         associateTypes(i, buf.toSet)
       case List(call: Call, f: FieldIdentifier) =>
-        assignTypesToCall(call, Set(fieldName.stripSuffix(s"${XTypeRecovery.DummyMemberLoad}.${f.canonicalName}")))
+        assignTypesToCall(
+          call,
+          Set(fieldName.stripSuffix(s"${XTypeRecovery.DummyMemberLoad}$pathSep${f.canonicalName}"))
+        )
       case _ =>
         logger.warn(s"Unable to assign identifier '${i.name}' to field load '$fieldName' @ ${debugLocation(i)}")
         Set.empty
@@ -761,7 +779,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         persistType(i, idHints)(builder)
         if (callTypes.isEmpty) {
           // For now, calls are treated as function pointers and thus the type should point to the method
-          persistType(call, idHints.map(t => s"$t.${call.name}"))(builder)
+          persistType(call, idHints.map(t => s"$t$pathSep${call.name}"))(builder)
         } else {
           persistType(call, callTypes)(builder)
         }
@@ -776,7 +794,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
             persistType(callFromFieldName, symbolTable.get(callFromFieldName))(builder)
           case Some(callFromFieldName) if iTypes.nonEmpty =>
-            persistType(callFromFieldName, iTypes.map(it => s"$it.${f.canonicalName}"))(builder)
+            persistType(callFromFieldName, iTypes.map(it => s"$it$pathSep${f.canonicalName}"))(builder)
           case _ =>
         }
         // This field may be a function pointer
@@ -798,13 +816,13 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     if (funcPtr.astParent.collectAll[Call].exists(_.name == funcName)) return
 
     baseTypes
-      .map(t => if (t.endsWith(funcName)) t else s"$t.$funcName")
+      .map(t => if (t.endsWith(funcName)) t else s"$t$pathSep$funcName")
       .flatMap(p => cpg.method.fullNameExact(p))
       .map { m =>
         (
           m,
           NewMethodRef()
-            .code(s"${baseName.map(_.appended('.')).getOrElse("")}$funcName")
+            .code(s"${baseName.map(_.appended(pathSep)).getOrElse("")}$funcName")
             .methodFullName(m.fullName)
             .argumentIndex(argIdx + 1)
             .lineNumber(funcPtr.lineNumber)
@@ -812,7 +830,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         )
       }
       .filterNot { case (_, mRef) =>
-        addedNodes.contains((funcPtr.id(), s"${mRef.label()}.${mRef.methodFullName}"))
+        addedNodes.contains((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
       }
       .foreach { case (m, mRef) =>
         funcPtr.astParent
@@ -824,7 +842,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             builder.addEdge(inCall, mRef, EdgeTypes.ARGUMENT)
             mRef.argumentIndex(inCall.astChildren.size)
           }
-        addedNodes.add((funcPtr.id(), s"${mRef.label()}.${mRef.methodFullName}"))
+        addedNodes.add((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
       }
   }
 

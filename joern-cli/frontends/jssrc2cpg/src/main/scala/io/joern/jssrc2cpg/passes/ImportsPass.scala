@@ -1,6 +1,7 @@
 package io.joern.jssrc2cpg.passes
 
 import io.joern.x2cpg.Imports.createImportNodeAndLink
+import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPass
 import overflowdb.BatchedUpdate
@@ -22,7 +23,7 @@ class ImportsPass(cpg: Cpg) extends CpgPass(cpg) {
       .flatMap { x => x.inAssignment.codeNot("var .*").map(y => (x, y)) }
       .foreach { case (call, assignment) =>
         val importedAs     = assignment.target.code
-        val importedEntity = RequirePass.stripQuotes(call.argument(1).code)
+        val importedEntity = X2Cpg.stripQuotes(call.argument(1).code)
         createImportNodeAndLink(importedEntity, importedAs, Option(call), diffGraph)
       }
   }
