@@ -37,9 +37,17 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   override def run(builder: DiffGraphBuilder): Unit = linkCalls(builder)
 
   protected def linkCalls(builder: DiffGraphBuilder): Unit = {
-    val methodMap        = mutable.HashMap.empty[String, MethodBase]
     val callerAndCallees = calls.map(call => (call, calleeNames(call))).toList
-    // Gather all method nodes and/or stubs
+    val methodMap        = mapMethods(callerAndCallees, builder)
+    linkCallsToCallees(callerAndCallees, methodMap, builder)
+  }
+
+  protected def mapMethods(
+    callerAndCallees: List[(Call, Seq[String])],
+    builder: DiffGraphBuilder
+  ): Map[String, MethodBase] = {
+    val methodMap  = mutable.HashMap.empty[String, MethodBase]
+    val newMethods = mutable.HashMap.empty[String, NewMethod]
     callerAndCallees.foreach { case (call, methodNames) =>
       val ms = callees(methodNames)
       if (ms.nonEmpty) {
@@ -48,10 +56,18 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
         val mNames = ms.map(_.fullName).toSet
         methodNames
           .filterNot(mNames.contains)
-          .map(fullName => createMethodStub(fullName, call, builder))
+          .map(fullName => newMethods.getOrElseUpdate(fullName, createMethodStub(fullName, call, builder)))
           .foreach { m => methodMap.put(m.fullName, m) }
       }
     }
+    methodMap.toMap
+  }
+
+  protected def linkCallsToCallees(
+    callerAndCallees: List[(Call, Seq[String])],
+    methodMap: Map[String, MethodBase],
+    builder: DiffGraphBuilder
+  ): Unit = {
     // Link edges to method nodes
     callerAndCallees.foreach { case (call, methodNames) =>
       methodNames
