@@ -38,12 +38,6 @@ object SBKey {
     })
   }
 
-  def fromNodeToGlobalKey(node: AstNode): Option[GlobalKey] = Option(node match {
-    case n: FieldIdentifier => FieldVar(n.method.fullName, n.canonicalName)
-    case n: Identifier      => FieldVar(n.method.fullName, n.name)
-    case _ => logger.debug(s"Global node of type ${node.label} is not supported in the type recovery pass."); null
-  })
-
 }
 
 /** Represents an identifier of some AST node at an intraprocedural scope.
@@ -63,20 +57,6 @@ case class CollectionVar(override val identifier: String, idx: String) extends L
 /** A name that refers to some kind of callee.
   */
 case class CallAlias(override val identifier: String, receiverName: Option[String] = None) extends LocalKey(identifier)
-
-/** Represents an identifier of some AST node at an interprocedural scope.
-  */
-sealed class GlobalKey(identifier: String) extends SBKey(identifier) {
-  override def fromNode(node: AstNode): Option[SBKey] = SBKey.fromNodeToGlobalKey(node)
-}
-
-/** Represents a field identifier at its declared computational unit.
-  * @param compUnitFullName
-  *   the computational unit's full name.
-  * @param identifier
-  *   the canonical name.
-  */
-case class FieldVar(compUnitFullName: String, override val identifier: String) extends GlobalKey(identifier)
 
 /** A thread-safe symbol table that can represent multiple types per symbol. Each node in an AST gets converted to an
   * [[SBKey]] which gives contextual information to identify an AST entity. Each value in this table represents a set of

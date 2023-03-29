@@ -25,7 +25,7 @@ private class JavaScriptTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, 
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] =
-    new RecoverForJavaScriptFile(cpg, unit, builder, globalTable, addedNodes, finalIteration, enabledDummyTypes)
+    new RecoverForJavaScriptFile(cpg, unit, builder, addedNodes, finalIteration, enabledDummyTypes)
 
 }
 
@@ -33,18 +33,10 @@ private class RecoverForJavaScriptFile(
   cpg: Cpg,
   cu: File,
   builder: DiffGraphBuilder,
-  globalTable: SymbolTable[GlobalKey],
   addedNodes: mutable.Set[(Long, String)],
   finalIteration: Boolean,
   enabledDummyTypes: Boolean
-) extends RecoverForXCompilationUnit[File](
-      cpg,
-      cu,
-      builder,
-      globalTable,
-      addedNodes,
-      finalIteration && enabledDummyTypes
-    ) {
+) extends RecoverForXCompilationUnit[File](cpg, cu, builder, addedNodes, finalIteration && enabledDummyTypes) {
 
   override protected val pathSep = ':'
 

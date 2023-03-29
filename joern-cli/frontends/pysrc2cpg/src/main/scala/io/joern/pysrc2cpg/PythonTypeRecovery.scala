@@ -31,7 +31,7 @@ private class PythonTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enab
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] =
-    new RecoverForPythonFile(cpg, unit, builder, globalTable, addedNodes, finalIteration, enabledDummyTypes)
+    new RecoverForPythonFile(cpg, unit, builder, addedNodes, finalIteration, enabledDummyTypes)
 
 }
 
@@ -41,18 +41,10 @@ private class RecoverForPythonFile(
   cpg: Cpg,
   cu: File,
   builder: DiffGraphBuilder,
-  globalTable: SymbolTable[GlobalKey],
   addedNodes: mutable.Set[(Long, String)],
   finalIteration: Boolean,
   enabledDummyTypes: Boolean
-) extends RecoverForXCompilationUnit[File](
-      cpg,
-      cu,
-      builder,
-      globalTable,
-      addedNodes,
-      finalIteration && enabledDummyTypes
-    ) {
+) extends RecoverForXCompilationUnit[File](cpg, cu, builder, addedNodes, finalIteration && enabledDummyTypes) {
 
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
@@ -206,18 +198,6 @@ private class RecoverForPythonFile(
         // This is likely external and we will ignore the init variant to be consistent
         symbolTable.put(k, symbolTable(k).filterNot(_.contains("__init__.py")))
       }
-      // Imports are by default used as calls, a second pass will tell us if this is not the case and we should
-      // check against global table
-      // TODO: This is a bit of a bandaid compared to potentially having alias sensitivity.
-
-      def fieldVar(path: String) = FieldVar(path.stripSuffix(s"$pathSep${k.identifier}"), k.identifier)
-
-      // TODO: What is this?
-      symbolTable.get(k).headOption match {
-        case Some(path) if globalTable.contains(fieldVar(path)) =>
-          symbolTable.replaceWith(k, LocalVar(k.identifier), globalTable.get(fieldVar(path)))
-        case _ =>
-      }
     }
   }
 
@@ -226,9 +206,6 @@ private class RecoverForPythonFile(
     */
   override def isConstructor(c: Call): Boolean =
     c.name.nonEmpty && c.name.charAt(0).isUpper && c.code.endsWith(")")
-
-  def isConstructor(funcOrModule: String): Boolean =
-    !cpg.method.fullNameExact(funcOrModule).exists(_.name == Defines.ConstructorMethodName)
 
   /** If the parent method is module then it can be used as a field.
     */
