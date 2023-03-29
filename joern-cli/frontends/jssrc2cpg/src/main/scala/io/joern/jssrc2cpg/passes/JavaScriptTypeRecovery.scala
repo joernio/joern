@@ -11,14 +11,15 @@ import java.io.{File => JFile}
 import java.util.regex.Matcher
 import scala.collection.mutable
 
-class JavaScriptTypeRecovery(cpg: Cpg, enabledDummyTypes: Boolean = true) extends XTypeRecovery[File](cpg) {
+class JavaScriptTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledDummyTypes: Boolean = true)
+    extends XTypeRecovery[File](cpg) {
   override def compilationUnit: Traversal[File] = cpg.file
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] =
-    new RecoverForJavaScriptFile(cpg, unit, builder, globalTable, addedNodes, enabledDummyTypes)
+    new RecoverForJavaScriptFile(cpg, unit, builder, globalTable, addedNodes, finalIteration, enabledDummyTypes)
 
 }
 
@@ -28,8 +29,16 @@ class RecoverForJavaScriptFile(
   builder: DiffGraphBuilder,
   globalTable: SymbolTable[GlobalKey],
   addedNodes: mutable.Set[(Long, String)],
+  finalIteration: Boolean,
   enabledDummyTypes: Boolean
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes, enabledDummyTypes) {
+) extends RecoverForXCompilationUnit[File](
+      cpg,
+      cu,
+      builder,
+      globalTable,
+      addedNodes,
+      finalIteration && enabledDummyTypes
+    ) {
 
   override protected val pathSep = ':'
 

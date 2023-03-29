@@ -1,6 +1,7 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.Defines
+import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
@@ -38,13 +39,10 @@ import scala.collection.mutable
   *
   * @param cpg
   *   the CPG to recovery types for.
-  * @param iterations
-  *   the total number of iterations through which types are to be propagated. At least 2 are recommended in order to
-  *   propagate interprocedural types. Think of this as similar to the dataflowengineoss' 'maxCallDepth'.
   * @tparam CompilationUnitType
   *   the [[AstNode]] type used to represent a compilation unit of the language.
   */
-abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, iterations: Int = 2) extends CpgPass(cpg) {
+abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg) extends CpgPass(cpg) {
 
   /** Stores type information for global structures that persist across compilation units, e.g. field identifiers.
     */
@@ -57,11 +55,9 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, iteration
 
   override def run(builder: DiffGraphBuilder): Unit =
     try {
-      for (_ <- 0 until iterations) {
-        compilationUnit
-          .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
-          .foreach(_.get())
-      }
+      compilationUnit
+        .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
+        .foreach(_.get())
     } finally {
       globalTable.clear()
       addedNodes.clear()
@@ -381,10 +377,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Associates the types with the identifier. This may sometimes be an identifier that should be considered a field
     * which this method uses [[isField(i)]] to determine.
     */
-  protected def associateTypes(i: Identifier, types: Set[String]): Set[String] = {
-    if (isField(i)) globalTable.put(i, types)
+  protected def associateTypes(i: Identifier, types: Set[String]): Set[String] =
     symbolTable.append(i, types)
-  }
 
   /** Returns the appropriate field parent scope.
     */
@@ -541,7 +535,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     if (types.nonEmpty) {
       getSymbolFromCall(x) match {
         case (lhs, globalKeys) if globalKeys.nonEmpty =>
-          globalKeys.foreach(gt => globalTable.append(gt, types))
+//          globalKeys.foreach(gt => globalTable.append(gt, types))
           symbolTable.append(lhs, types)
         case (lhs, _) => symbolTable.append(lhs, types)
       }
@@ -721,8 +715,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def getFieldBaseType(baseName: String, fieldName: String): Set[String] = {
     val localTypes = symbolTable.get(LocalVar(baseName))
     val globalTypes = localTypes
-      .map(t => FieldVar(t, fieldName))
-      .flatMap(globalTable.get)
+      .flatMap(t => cpg.typeDecl.fullNameExact(t).member.nameExact(fieldName))
+      .typeFullNameNot("ANY")
+      .map(_.typeFullName)
+      .toSet
     globalTypes
   }
 
@@ -847,19 +843,34 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   private def persistType(x: StoredNode, types: Set[String])(implicit builder: DiffGraphBuilder): Unit = {
+    // TODO: We should track changes for early stopping
     val filteredTypes = if (enabledDummyTypes) types else types.filterNot(XTypeRecovery.isDummyType)
     if (filteredTypes.nonEmpty) {
       if (filteredTypes.size == 1) builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, filteredTypes.head)
       else builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, filteredTypes.toSeq)
-    }
-    x match {
-      case i: Identifier =>
-        if (globalTable.contains(i)) persistGlobalIdentifierType(i)
-        if (symbolTable.contains(i))
-          handlePotentialFunctionPointer(i, symbolTable.get(i), i.name, i.argumentIndex)
-      case _ =>
+      x match {
+        case i: Identifier =>
+          if (symbolTable.contains(i)) {
+            if (isField(i)) persistMemberType(i, filteredTypes, builder)
+            handlePotentialFunctionPointer(i, filteredTypes, i.name, i.argumentIndex)
+          }
+        case _ =>
+      }
     }
   }
+
+  private def persistMemberType(i: Identifier, types: Set[String], builder: DiffGraphBuilder): Unit = {
+    getMember(i) match {
+      case Some(m) =>
+        if (types.size == 1) builder.setNodeProperty(m, PropertyNames.TYPE_FULL_NAME, types.head)
+        else builder.setNodeProperty(m, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types.toSeq)
+      case None =>
+    }
+  }
+
+  // TODO: This is done very Python-CPG-like
+  protected def getMember(i: Identifier): Option[Member] =
+    cpg.typeDecl.fullNameExact(i.method.fullName).member.name(i.name).headOption
 
   private def persistGlobalIdentifierType(i: Identifier): Unit = {
     val types = if (enabledDummyTypes) globalTable.get(i) else globalTable.get(i).filterNot(XTypeRecovery.isDummyType)

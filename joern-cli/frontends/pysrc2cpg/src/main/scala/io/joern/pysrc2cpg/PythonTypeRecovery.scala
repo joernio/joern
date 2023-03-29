@@ -17,7 +17,8 @@ import java.nio.file.Paths
 import java.util.regex.Matcher
 import scala.collection.mutable
 
-class PythonTypeRecovery(cpg: Cpg, enabledDummyTypes: Boolean = true) extends XTypeRecovery[File](cpg) {
+class PythonTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledDummyTypes: Boolean = true)
+    extends XTypeRecovery[File](cpg) {
 
   override def compilationUnit: Traversal[File] = cpg.file
 
@@ -25,7 +26,7 @@ class PythonTypeRecovery(cpg: Cpg, enabledDummyTypes: Boolean = true) extends XT
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] =
-    new RecoverForPythonFile(cpg, unit, builder, globalTable, addedNodes, enabledDummyTypes)
+    new RecoverForPythonFile(cpg, unit, builder, globalTable, addedNodes, finalIteration, enabledDummyTypes)
 
 }
 
@@ -37,8 +38,16 @@ class RecoverForPythonFile(
   builder: DiffGraphBuilder,
   globalTable: SymbolTable[GlobalKey],
   addedNodes: mutable.Set[(Long, String)],
+  finalIteration: Boolean,
   enabledDummyTypes: Boolean
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes, enabledDummyTypes) {
+) extends RecoverForXCompilationUnit[File](
+      cpg,
+      cu,
+      builder,
+      globalTable,
+      addedNodes,
+      finalIteration && enabledDummyTypes
+    ) {
 
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
@@ -152,21 +161,10 @@ class RecoverForPythonFile(
         Set(procedureName.concat(s".${Defines.ConstructorMethodName}"))
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
-        // TODO: When the workaround below is replaced, the following type->member check will kick in
         cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
           case Some(i) => (i.typeFullName +: i.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet
           case None    => Set.empty
         }
-        // TODO: Workaround until we write-to-CPG each iteration, use this for now as long as we have global table
-        cpg.method
-          .fullNameExact(m)
-          .ast
-          .isIdentifier
-          .nameExact(v)
-          .dedupBy(_.name)
-          .filter(globalTable.contains)
-          .flatMap(globalTable.get)
-          .toSet
       } else
         Set(procedureName, fullNameAsInit)
 
@@ -179,6 +177,7 @@ class RecoverForPythonFile(
 
     val isMaybeConstructor = expEntity.split("\\.").lastOption.exists(s => s.nonEmpty && s.charAt(0).isUpper)
     possibleCalleeNames(procedureName, isMaybeConstructor, procedureName.contains("<var>"))
+      .map(_.replaceAll("<var>", ""))
   }
 
   override def postVisitImports(): Unit = {
@@ -206,6 +205,7 @@ class RecoverForPythonFile(
 
       def fieldVar(path: String) = FieldVar(path.stripSuffix(s".${k.identifier}"), k.identifier)
 
+      // TODO: What is this?
       symbolTable.get(k).headOption match {
         case Some(path) if globalTable.contains(fieldVar(path)) =>
           symbolTable.replaceWith(k, LocalVar(k.identifier), globalTable.get(fieldVar(path)))
@@ -287,8 +287,8 @@ class RecoverForPythonFile(
       // TODO: inheritsFromTypeFullName does not give full name in pysrc2cpg
       val baseTypeFullNames = cpg.typ.nameExact(baseTypes: _*).fullName.toSeq
       (parentTypes ++ baseTypeFullNames)
-        .map(_.concat(".<body>"))
-        .filterNot(t => t.toLowerCase.matches("(any|object)"))
+        .map(f => f + "." + f.split("\\.").last + "<body>")
+        .filterNot(_.toLowerCase.matches("(any|object)"))
         .toSet
     } else {
       super.getFieldParents(fa)
