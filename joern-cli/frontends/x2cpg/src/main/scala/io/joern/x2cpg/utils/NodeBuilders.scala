@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewCall,
   NewFieldIdentifier,
   NewIdentifier,
+  NewMethodParameterIn,
   NewMethodReturn,
   NewModifier
 }
@@ -98,6 +99,24 @@ object NodeBuilders {
       .typeFullName(typeFullName.getOrElse(PropertyDefaults.TypeFullName))
       .lineNumber(line)
       .columnNumber(column)
+  }
+
+  def thisParameterNode(
+    typeFullName: String,
+    dynamicTypeHintFullName: Seq[String] = Seq.empty,
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
+  ): NewMethodParameterIn = {
+    NewMethodParameterIn()
+      .name("this")
+      .code("this")
+      .lineNumber(line)
+      .columnNumber(column)
+      .dynamicTypeHintFullName(dynamicTypeHintFullName)
+      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      .typeFullName(typeFullName)
+      .index(0)
+      .order(0)
   }
 
   /** Create a method return node

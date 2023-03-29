@@ -712,13 +712,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
             .argumentIndex(0)
             .dynamicTypeHintFullName(Seq(parentType))
         case x: NewMethodParameterIn =>
-          x.name("this")
-            .code("this")
-            .lineNumber(line(method.tryResolve()))
-            .typeFullName(parentType)
-            .order(0)
-            .evaluationStrategy(EvaluationStrategies.BY_SHARING)
-            .dynamicTypeHintFullName(Seq(parentType))
+          NodeBuilders.thisParameterNode(parentType, Seq(parentType), line(method.tryResolve()))
         case x => x
       })
     } else {

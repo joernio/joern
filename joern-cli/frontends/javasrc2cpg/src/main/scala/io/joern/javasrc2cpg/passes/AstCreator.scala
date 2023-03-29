@@ -156,6 +156,7 @@ import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.joern.x2cpg.utils.AstPropertiesUtil._
+import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.{PropertyDefaults => ParameterDefaults}
 import io.shiftleft.passes.IntervalKeyPool
@@ -824,17 +825,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     lineNumber: Option[Integer]
   ): NewMethodParameterIn = {
     val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(TypeConstants.Any))
-    val param = NewMethodParameterIn()
-      .name(NameConstants.This)
-      .lineNumber(lineNumber)
-      .code(NameConstants.This)
-      .dynamicTypeHintFullName(maybeTypeFullName.toSeq)
-      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
-      .index(0)
-      .order(0)
-      .typeFullName(typeFullName)
-
-    param
+    NodeBuilders.thisParameterNode(typeFullName, maybeTypeFullName.toSeq, lineNumber)
   }
 
   private def convertAnnotationValueExpr(expr: Expression): Option[Ast] = {
