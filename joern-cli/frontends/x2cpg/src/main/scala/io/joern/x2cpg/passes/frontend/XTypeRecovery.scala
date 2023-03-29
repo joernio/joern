@@ -157,6 +157,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected val pathSep = '.'
 
+  /** For tracking dynamically created members.
+    */
+  protected val dynamicMembers = mutable.HashMap.empty[String, NewMember]
+
   /** Provides an entrypoint to add known symbols and their possible types.
     */
   protected def prepopulateSymbolTable(): Unit = {
@@ -409,9 +413,15 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * which this method uses [[isField(i)]] to determine.
     */
   protected def associateTypes(symbol: LocalVar, fa: FieldAccess, types: Set[String]): Set[String] = {
-    fa.astChildren.headOption.collect {
+    fa.astChildren.filterNot(_.code.matches("(this|self)")).headOption.collect {
+      case fi: FieldIdentifier =>
+        getFieldParents(fa).foreach { t =>
+          persistMemberWithTypeDecl(t, fi.canonicalName, types)
+        }
       case i: Identifier if isField(i) =>
-        getFieldParents(fa).foreach(fp => globalTable.put(FieldVar(fp, symbol.identifier), types))
+        getFieldParents(fa).foreach { t =>
+          persistMemberWithTypeDecl(t, i.name, types)
+        }
     }
     symbolTable.append(symbol, types)
   }
@@ -553,7 +563,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     if (types.nonEmpty) {
       getSymbolFromCall(x) match {
         case (lhs, globalKeys) if globalKeys.nonEmpty =>
-//          globalKeys.foreach(gt => globalTable.append(gt, types))
+          globalKeys.foreach { case fieldVar: FieldVar =>
+            persistMemberWithTypeDecl(fieldVar.compUnitFullName, fieldVar.identifier, types)
+          }
+          // TODO: Needs more investigation
           symbolTable.append(lhs, types)
         case (lhs, _) => symbolTable.append(lhs, types)
       }
@@ -864,12 +877,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     // TODO: We should track changes for early stopping
     val filteredTypes = if (enabledDummyTypes) types else types.filterNot(XTypeRecovery.isDummyType)
     if (filteredTypes.nonEmpty) {
-      if (filteredTypes.size == 1) builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, filteredTypes.head)
-      else builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, filteredTypes.toSeq)
+      storeNodeTypeInfo(x, filteredTypes.toSeq)
       x match {
         case i: Identifier =>
           if (symbolTable.contains(i)) {
-            if (isField(i)) persistMemberType(i, filteredTypes, builder)
+            if (isField(i)) persistMemberType(i, filteredTypes)
             handlePotentialFunctionPointer(i, filteredTypes, i.name, i.argumentIndex)
           }
         case _ =>
@@ -877,12 +889,36 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
   }
 
-  private def persistMemberType(i: Identifier, types: Set[String], builder: DiffGraphBuilder): Unit = {
+  private def persistMemberType(i: Identifier, types: Set[String]): Unit = {
     getMember(i) match {
-      case Some(m) =>
-        if (types.size == 1) builder.setNodeProperty(m, PropertyNames.TYPE_FULL_NAME, types.head)
-        else builder.setNodeProperty(m, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types.toSeq)
-      case None =>
+      case Some(m) => storeNodeTypeInfo(m, types.toSeq)
+      case None    =>
+    }
+  }
+
+  private def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit = {
+    def combineTypes(m: MemberBase) =
+      ((m.typeFullName +: m.dynamicTypeHintFullName) ++ types).filterNot(_ == "ANY").toSet
+    cpg.typeDecl.fullNameExact(typeFullName).map(t => (t, t.member.nameExact(memberName).headOption)).headOption match {
+      case Some((_, Some(m))) => storeNodeTypeInfo(m, types.toSeq)
+      case Some((td, None)) if dynamicMembers.contains(s"${td.fullName}$pathSep$memberName") =>
+        val m    = dynamicMembers(s"${td.fullName}$pathSep$memberName")
+        val tSet = combineTypes(m)
+        if (tSet.size == 1) m.typeFullName(tSet.head)
+        else m.dynamicTypeHintFullName(tSet)
+      case Some((td, None)) =>
+        val m = NewMember()
+          .code(memberName)
+          .name(memberName)
+          .typeFullName("ANY")
+          .order(td.member.size + 1)
+        val tSet = combineTypes(m)
+        if (tSet.size == 1) m.typeFullName(tSet.head)
+        else m.dynamicTypeHintFullName(tSet)
+        builder.addNode(m)
+        builder.addEdge(td, m, EdgeTypes.AST)
+        dynamicMembers.put(s"${td.fullName}$pathSep$memberName", m)
+      case None => // TODO: No matching TypeDecl, should we create one?
     }
   }
 
@@ -890,17 +926,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def getMember(i: Identifier): Option[Member] =
     cpg.typeDecl.fullNameExact(i.method.fullName).member.name(i.name).headOption
 
-  private def persistGlobalIdentifierType(i: Identifier): Unit = {
-    val types = if (enabledDummyTypes) globalTable.get(i) else globalTable.get(i).filterNot(XTypeRecovery.isDummyType)
-    globalTable.keyFromNode(i).collectAll[FieldVar].foreach { fk =>
-      cpg.typeDecl.fullNameExact(fk.compUnitFullName).member.nameExact(fk.identifier).foreach { member =>
-        val updatedTypes =
-          (member.typeFullName +: (member.dynamicTypeHintFullName ++ types)).distinct.filterNot(_ == "ANY")
-        if (updatedTypes.nonEmpty) {
-          if (updatedTypes.sizeIs == 1) builder.setNodeProperty(member, PropertyNames.TYPE_FULL_NAME, updatedTypes.head)
-          else builder.setNodeProperty(member, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, updatedTypes)
-        }
-      }
+  private def storeNodeTypeInfo(storedNode: StoredNode, ts: Seq[String]): Unit = {
+    val types = if (enabledDummyTypes) ts else ts.filterNot(XTypeRecovery.isDummyType)
+    if (types.nonEmpty) {
+      if (types.size == 1) builder.setNodeProperty(storedNode, PropertyNames.TYPE_FULL_NAME, types.head)
+      else builder.setNodeProperty(storedNode, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
     }
   }
 

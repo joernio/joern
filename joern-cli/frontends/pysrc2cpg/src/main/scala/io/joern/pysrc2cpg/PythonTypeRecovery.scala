@@ -268,7 +268,9 @@ private class RecoverForPythonFile(
     val fieldParents = getFieldParents(fa)
     fa.astChildren.l match {
       case List(base: Identifier, fi: FieldIdentifier) if base.name.equals("self") && fieldParents.nonEmpty =>
-        val globalTypes = fieldParents.flatMap(fp => globalTable.get(FieldVar(fp, fi.canonicalName)))
+        val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq: _*).member.nameExact(fi.canonicalName)
+        val globalTypes =
+          referencedFields.flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet
         associateTypes(i, globalTypes)
       case _ => super.visitIdentifierAssignedToFieldLoad(i, fa)
     }
@@ -283,7 +285,7 @@ private class RecoverForPythonFile(
   }
 
   override def getFieldParents(fa: FieldAccess): Set[String] = {
-    if (fa.method.name.equals("<module>")) {
+    if (fa.method.name == "<module>") {
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
       val parentTypes =
