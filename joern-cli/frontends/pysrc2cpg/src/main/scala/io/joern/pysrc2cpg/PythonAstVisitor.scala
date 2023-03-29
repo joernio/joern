@@ -1107,10 +1107,23 @@ class PythonAstVisitor(
     createBlock(blockStmts, lineAndCol)
   }
 
-  // TODO for now we bring in the match statement as an unknown node.
+  // TODO add case pattern and guard statements to cpg
   def convert(matchStmt: ast.Match): NewNode = {
-    val printer = new AstPrinter("  ")
-    nodeBuilder.unknownNode(printer.print(matchStmt), matchStmt.getClass.getName, lineAndColOf(matchStmt))
+    val controlStructureNode =
+      nodeBuilder.controlStructureNode("match ... : ...", ControlStructureTypes.SWITCH, lineAndColOf(matchStmt))
+
+    val matchSubject = convert(matchStmt.subject)
+
+    val caseBlocks = matchStmt.cases.map { caseStmt =>
+      val bodyNodes = caseStmt.body.map(convert)
+      createBlock(bodyNodes, lineAndColOf(caseStmt.pattern))
+    }
+
+    edgeBuilder.conditionEdge(matchSubject, controlStructureNode)
+    addAstChildNodes(controlStructureNode, 1, matchSubject)
+    addAstChildNodes(controlStructureNode, 2, caseBlocks)
+
+    controlStructureNode
   }
 
   def convert(raise: ast.Raise): NewNode = {
