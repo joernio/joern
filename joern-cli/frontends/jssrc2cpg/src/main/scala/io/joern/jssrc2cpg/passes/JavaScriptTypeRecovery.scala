@@ -104,8 +104,16 @@ private class RecoverForJavaScriptFile(
             symbolTable.append(CallAlias(alias, Option("this")), methodPaths)
             symbolTable.append(LocalVar(alias), methodPaths)
           case List(_, b: Identifier) =>
-            // Exported variable
-            val typs = globalTable.get(b)
+            // Exported variable that we should find
+            val typs = cpg
+              .file(s"${Matcher.quoteReplacement(resolvedPath)}\\.?.*")
+              .method
+              .ast
+              .isIdentifier
+              .name(b.name)
+              .flatMap(i => i.typeFullName +: i.dynamicTypeHintFullName)
+              .filterNot(_ == "ANY")
+              .toSet
             symbolTable.append(LocalVar(alias), typs)
           case List(x: Call, b: MethodRef) =>
             // Exported function with a method ref of the function

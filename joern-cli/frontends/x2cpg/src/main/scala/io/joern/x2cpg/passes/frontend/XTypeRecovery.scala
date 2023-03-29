@@ -315,6 +315,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case List(c: Call, l: Literal)          => visitCallAssignedToLiteral(c, l)
       case List(c: Call, m: MethodRef)        => visitCallAssignedToMethodRef(c, m)
       case List(c: Call, b: Block)            => visitCallAssignedToBlock(c, b)
+      case List(_: Identifier, c: Call, _: MethodRef) if c.name.matches("(import|require)") =>
+        // In a previous iteration, this is some call that has imported a method that is now resolved
+        Set.empty
       case xs =>
         logger.warn(s"Unhandled assignment ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(a)}")
         Set.empty

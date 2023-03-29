@@ -137,7 +137,7 @@ private class RecoverForPythonFile(
         // Case 1: Qualified path: import foo.bar => (bar.py or bar/__init__.py)
         val splitFunc = expEntity.split("\\.")
         val name      = splitFunc.tail.mkString(".")
-        s"${splitFunc(0)}.py:<module>.$name"
+        s"${splitFunc(0)}.py:<module>$pathSep$name"
       case "" =>
         // Case 2: import of a module: import foo => (foo.py or foo/__init__.py)
         s"$expEntity.py:<module>"
@@ -156,14 +156,13 @@ private class RecoverForPythonFile(
           case Some(f) if f.isDirectory && (f / s"$expEntity.py").exists =>
             s"${(f / s"$expEntity.py").pathAsString}:<module>"
           case _ =>
-            s"${path.replaceAll("\\.", sep)}.py:<module>.$expEntity"
+            s"${path.replaceAll("\\.", sep)}.py:<module>$pathSep$expEntity"
         }
     }
 
     /** The two ways that this procedure could be resolved to in Python. */
     def possibleCalleeNames(procedureName: String, isMaybeConstructor: Boolean, isFieldOrVar: Boolean): Set[String] =
-      if (isMaybeConstructor)
-        Set(procedureName.concat(s".${Defines.ConstructorMethodName}"))
+      if (isMaybeConstructor) Set(procedureName.concat(s"$pathSep${Defines.ConstructorMethodName}"))
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
         cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
@@ -182,7 +181,7 @@ private class RecoverForPythonFile(
 
     val isMaybeConstructor = expEntity.split("\\.").lastOption.exists(s => s.nonEmpty && s.charAt(0).isUpper)
     possibleCalleeNames(procedureName, isMaybeConstructor, procedureName.contains("<var>"))
-      .map(_.replaceAll("<var>", ""))
+      .map(_.replaceAll("<var>", pathSep.toString))
   }
 
   override def postVisitImports(): Unit = {
@@ -192,7 +191,10 @@ private class RecoverForPythonFile(
       // In case a method has been incorrectly determined to be a constructor based on the heuristic
       val tsNonConstructor =
         cpg.method
-          .fullNameExact(v.toSeq.map(_.replaceAll("<var>", ".").stripSuffix(s".${Defines.ConstructorMethodName}")): _*)
+          .fullNameExact(
+            v.toSeq
+              .map(_.replaceAll("<var>", pathSep.toString).stripSuffix(s"$pathSep${Defines.ConstructorMethodName}")): _*
+          )
           .l
       if (ts.nonEmpty)
         symbolTable.put(k, ts.fullName.toSet)
@@ -208,7 +210,7 @@ private class RecoverForPythonFile(
       // check against global table
       // TODO: This is a bit of a bandaid compared to potentially having alias sensitivity.
 
-      def fieldVar(path: String) = FieldVar(path.stripSuffix(s".${k.identifier}"), k.identifier)
+      def fieldVar(path: String) = FieldVar(path.stripSuffix(s"$pathSep${k.identifier}"), k.identifier)
 
       // TODO: What is this?
       symbolTable.get(k).headOption match {
