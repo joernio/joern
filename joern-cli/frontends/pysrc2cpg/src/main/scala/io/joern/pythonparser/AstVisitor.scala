@@ -23,6 +23,7 @@ trait AstVisitor[T] {
   def visit(ifStmt: If): T
   def visit(withStmt: With): T
   def visit(withStmt: AsyncWith): T
+  def visit(matchStmt: Match): T
   def visit(raise: Raise): T
   def visit(tryStmt: Try): T
   def visit(assert: Assert): T
@@ -127,6 +128,24 @@ trait AstVisitor[T] {
   def visit(alias: Alias): T
 
   def visit(withItem: Withitem): T
+
+  def visit(matchCase: MatchCase): T
+
+  def visit(matchValue: MatchValue): T
+
+  def visit(matchSingleton: MatchSingleton): T
+
+  def visit(matchSequence: MatchSequence): T
+
+  def visit(matchMapping: MatchMapping): T
+
+  def visit(matchClass: MatchClass): T
+
+  def visit(matchStar: MatchStar): T
+
+  def visit(matchAs: MatchAs): T
+
+  def visit(matchOr: MatchOr): T
 
   def visit(typeIgnore: TypeIgnore): T
 }

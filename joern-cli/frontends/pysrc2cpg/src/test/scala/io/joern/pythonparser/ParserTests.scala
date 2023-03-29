@@ -778,5 +778,320 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("exec x;\npass", s"exec(x)\npass")
   }
 
-  "extra" in {}
+  "pattern matching subject tests" in {
+    testS("""match x:
+        |  case _:
+        |    pass""".stripMargin)
+    testS(
+      """match x,:
+        |  case _:
+        |    pass""".stripMargin,
+      """match (x,):
+        |  case _:
+        |    pass""".stripMargin
+    )
+    testS(
+      """match x,y,z:
+        |  case _:
+        |    pass""".stripMargin,
+      """match (x,y,z):
+        |  case _:
+        |    pass""".stripMargin
+    )
+    testS(
+      """match x,y,z,:
+        |  case _:
+        |    pass""".stripMargin,
+      """match (x,y,z):
+        |  case _:
+        |    pass""".stripMargin
+    )
+    testS(
+      """match *x,:
+        |  case _:
+        |    pass""".stripMargin,
+      """match (*x,):
+        |  case _:
+        |    pass""".stripMargin
+    )
+    testS(
+      """match *x,y:
+        |  case _:
+        |    pass""".stripMargin,
+      """match (*x,y):
+        |  case _:
+        |    pass""".stripMargin
+    )
+    testS(
+      """match x,*y:
+        |  case _:
+        |    pass""".stripMargin,
+      """match (x,*y):
+        |  case _:
+        |    pass""".stripMargin
+    )
+    testS("""match a := b:
+        |  case _:
+        |    pass""".stripMargin)
+  }
+
+  "pattern matching case tests - literal" in {
+    testS("""match x:
+        |  case 1:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case -1:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case 1.0 + 1j:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case 1.0 - 1j:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case 'abc':
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case 'abc' 'def':
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case None:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case True:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case False:
+        |    pass""".stripMargin)
+  }
+
+  "pattern matching case tests - capture" in {
+    testS("""match x:
+        |  case y:
+        |    pass""".stripMargin)
+  }
+
+  "pattern matching case tests - wildcard" in {
+    testS("""match x:
+        |  case _:
+        |    pass""".stripMargin)
+  }
+
+  "pattern matching case tests - value" in {
+    testS("""match x:
+        |  case a.b:
+        |    pass""".stripMargin)
+  }
+
+  "pattern matching case tests - group" in {
+    testS(
+      """match x:
+        |  case (a):
+        |    pass""".stripMargin,
+      """match x:
+        |  case a:
+        |    pass""".stripMargin
+    )
+  }
+
+  "pattern matching case tests - sequence" in {
+    testS(
+      """match x:
+        |  case a,:
+        |    pass""".stripMargin,
+      """match x:
+        |  case [a]:
+        |    pass""".stripMargin
+    )
+    testS(
+      """match x:
+        |  case a, b:
+        |    pass""".stripMargin,
+      """match x:
+        |  case [a, b]:
+        |    pass""".stripMargin
+    )
+    testS("""match x:
+        |  case []:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case [a]:
+        |    pass""".stripMargin)
+    testS(
+      """match x:
+        |  case [a,]:
+        |    pass""".stripMargin,
+      """match x:
+        |  case [a]:
+        |    pass""".stripMargin
+    )
+    testS("""match x:
+        |  case [a, b, c]:
+        |    pass""".stripMargin)
+    testS(
+      """match x:
+        |  case [a, b, c,]:
+        |    pass""".stripMargin,
+      """match x:
+        |  case [a, b, c]:
+        |    pass""".stripMargin
+    )
+    testS(
+      """match x:
+        |  case ():
+        |    pass""".stripMargin,
+      """match x:
+        |  case []:
+        |    pass""".stripMargin
+    )
+    testS(
+      """match x:
+        |  case (a,):
+        |    pass""".stripMargin,
+      """match x:
+        |  case [a]:
+        |    pass""".stripMargin
+    )
+    testS(
+      """match x:
+        |  case (a, b, c):
+        |    pass""".stripMargin,
+      """match x:
+        |  case [a, b, c]:
+        |    pass""".stripMargin
+    )
+    testS(
+      """match x:
+        |  case (a, b, c,):
+        |    pass""".stripMargin,
+      """match x:
+        |  case [a, b, c]:
+        |    pass""".stripMargin
+    )
+  }
+
+  "pattern matching case tests - mapping" in {
+    testS("""match x:
+        |  case {}:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case {**y}:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case {1: a}:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case {n.m: a}:
+        |    pass""".stripMargin)
+    testS(
+      """match x:
+        |  case {1: a, 2: b, **r,}:
+        |    pass""".stripMargin,
+      """match x:
+        |  case {1: a, 2: b, **r}:
+        |    pass""".stripMargin
+    )
+    testS(
+      """match x:
+        |  case {1: a, **r, 2: b}:
+        |    pass""".stripMargin,
+      """match x:
+        |  case {1: a, 2: b, **r}:
+        |    pass""".stripMargin
+    )
+  }
+
+  "pattern matching case tests - class" in {
+    testS("""match x:
+        |  case Foo():
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case lib.Foo():
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case Foo(1, 2):
+        |    pass""".stripMargin)
+    testS(
+      """match x:
+        |  case Foo(1, 2,):
+        |    pass""".stripMargin,
+      """match x:
+        |  case Foo(1, 2):
+        |    pass""".stripMargin
+    )
+    testS("""match x:
+        |  case Foo(a = 1, b = 2):
+        |    pass""".stripMargin)
+    testS(
+      """match x:
+        |  case Foo(a = 1, b = 2,):
+        |    pass""".stripMargin,
+      """match x:
+        |  case Foo(a = 1, b = 2):
+        |    pass""".stripMargin
+    )
+    testS("""match x:
+        |  case Foo(1, 2, a = 3, b = 4):
+        |    pass""".stripMargin)
+  }
+
+  "pattern matching case tests - guard" in {
+    testS("""match x:
+        |  case y if y == x:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case y if a := 1:
+        |    pass""".stripMargin)
+  }
+
+  "pattern matching case tests - as" in {
+    testS("""match x:
+        |  case _ as z:
+        |    pass""".stripMargin)
+  }
+
+  "pattern matching case tests - general" in {
+    testS("""match x:
+        |  case 1 | 2 | 3:
+        |    pass""".stripMargin)
+    testS(
+      """match x:
+        |  case (1 | 2 | 3) as x:
+        |    pass""".stripMargin,
+      """match x:
+        |  case 1 | 2 | 3 as x:
+        |    pass""".stripMargin
+    )
+    testS("""match x:
+        |  case 1 | 2 | 3 as x:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case [a, b, Foo(1, n = 2)] as x:
+        |    pass""".stripMargin)
+    testS("""match x:
+        |  case 1:
+        |    pass
+        |  case 2:
+        |    print()""".stripMargin)
+    testS("""match x:
+        |  case 1:
+        |    while y != 2:
+        |      pas
+        |  case 2:
+        |    print()""".stripMargin)
+    testS("""match x:
+        |  case 1:
+        |    match y:
+        |      case 1:
+        |        pass""".stripMargin)
+    testS("""match x:
+        |  case 1:
+        |    pass
+        |pass""".stripMargin)
+  }
+
+  "test non keyword 'match' usages" in {
+    testT("match[1] = 0")
+    testT("match * 2")
+  }
 }

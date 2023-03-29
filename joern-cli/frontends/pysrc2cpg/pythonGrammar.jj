@@ -94,6 +94,11 @@ public class PythonParser {
     }
     return stmt;
   }
+
+  void setCurrentToken(Token setTo) {
+    token = setTo;
+    jj_ntk = -1;
+  }
 }
 PARSER_END(PythonParser)
 
@@ -331,7 +336,7 @@ SKIP: {
   // it is not necessary to separately match the combined
   // versions like "\n\r". This is ok because interpreting
   // the second character as a separate newline is always
-  // fine because bland lines are ignored.
+  // fine because blank lines are ignored.
 | <SKIPPED_NEWLINE: "\n" | "\r"> {
     if (openParenCounter() == 0) {
       SwitchTo(NEWLINE_EMIT);
@@ -421,7 +426,7 @@ SPECIAL_TOKEN: {
 
 <NEWLINE_EMIT> TOKEN: {
   // Defining this as ""|"" causes javaCC to produce better readable debug output
-  // in the form a proper tokenImage string <MISSDENT> instead of "". This has no
+  // in the form a proper tokenImage string <NEWLINE> instead of "". This has no
   // impact on the generated matching code in the state.
   <NEWLINE: "" | ""> {
     SwitchTo(INDENT_CHECK);
@@ -666,6 +671,78 @@ TOKEN: {
 // Parser rules start:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Notes for PythonParser variables:
+// token:
+//  - The current token. Contains chain of all already obtained tokens via .next field.
+// jj_nt:
+//  - Likely full name: next token
+//  - Initialised to null
+//  - Written by jj_ntk_f
+//  - Only used in jj_ntk_f itself to set next jj_ntk.
+//  -> Is redundant as it is defined by token.next at the start of jj_ntk_f
+// jj_ntk:
+//  - Likely full name: next token kind
+//  - Initialised to -1
+//  - Written by jj_ntk_f
+//  - jj_consume_token and getNextToken set it to -1
+//  -> We set this to -1 when we set token
+// jj_scanpos:
+//  - Likely full name: scan position
+//  - Same as jj_lastpos
+// jj_lastpos:
+//  - Likely full name: last position
+//  - Is set to token at entry for each lookahead function jj_2_<X> and by jj_scan_token
+//    which is called below the call tree of the jj_2_<X> functions.
+//  -> Used for lookahead functionality only. Since it at entry of lookahed function we
+//     dont need to handle it.
+// jj_la:
+//  - Likely full name: lookahead
+//  - Used in call tree below generateParseException and jj_scan_token
+//  - Is set at entry for each lookahead function jj_2_<X>.
+//  - Ends up in the gen filed of JJCalls chains.
+//  -> Used for lookahead functionality only. Since it at entry of lookahed function we
+//     dont need to handle it.
+// jj_gen:
+//  - Initialised to zero
+//  - Incremented in jj_consume_token and getNextToken for each token.
+//  - Used/read in call tree below generateParseException and jj_save
+//  -> Unclear if this needs to be touched
+// jj_la1:
+//  - Array size of the number of token switch blocks generated. A token switch block is "switch ((jj_ntk==-1)..."
+//  - In each switch block the default case writes jj_gen to its slot in jj_la1.
+//  - Only realy used/read from in generateParseException
+//  -> Unclear if this needs to be touched
+// jj_la1_<X>:
+//  - Static effective final data arrays. Used in generateParseException
+//  -> Unclear if this needs to be touched
+// jj_2_rtns:
+//  - rtn likely means Recursive Transition Network
+//  - Initialized in PythonParser constructors to an array the size of the amount jj_2_<X> methods.
+//    Each entry at start contains and "empty" JJCalls class/chain.
+//  - Somehow garbage collected in jj_consume_token. GC is controlled by jj_gc
+//  - New elements to the JJCalls chains are added in jj_save
+//  -> Unclear if this needs to be touched
+// jj_rescan:
+//  - Is only true in call tree below jj_rescan_token which is only called from generateParseException
+//  - Used to guard call to jj_add_error_token in jj_scan_token
+// jj_gc:
+//  - Likely full name: GarbageCollectCounter
+//  - Used to trigger some kind of cleanup of JJCalls chains in jj_2_rtns
+// jj_ls:
+//  - Static final variable for jj_scan_token
+// jj_expentries:
+//  - Likely full name: ExpectedEntries
+//  - Used to calculated expected tokens in call tree below generateParseException
+// jj_expentry:
+//  - Likely full name: ExpectedEntry
+//  - Used to calculated expected tokens in call tree below generateParseException
+// jj_kind:
+//  - Used to communicate the token kind of jj_consume_token to generateParseException
+// jj_lasttokens:
+//  - Internal state for jj_add_error_token
+// jj_endpos:
+//  - Used in call tree below generateParseException as index into jj_lasttokens and
+//    as limit to iterate over jj_expentry
 
 Module module(): {
   ArrayList<istmt> allStmts = new ArrayList<istmt>();
@@ -727,54 +804,79 @@ ArrayList<istmt> statementsAndDedentOrEof(): {
 ArrayList<istmt> simpleStatement(): {
   istmt pendingStmt = null;
   ArrayList<istmt> stmts = new ArrayList<istmt>();
+  Token reparseStartToken = null;
 } {
   try {
+    { reparseStartToken = token; }
     (pendingStmt = smallStatement())
     (LOOKAHEAD(2)
-      <SEMICOLON> { if (pendingStmt != null) stmts.add(pendingStmt); pendingStmt = null; }
+      <SEMICOLON>
+      { reparseStartToken = token;
+        if (pendingStmt != null) stmts.add(pendingStmt);
+        pendingStmt = null;
+      }
       pendingStmt = smallStatement()
     )*
-    (<SEMICOLON> { if (pendingStmt != null) stmts.add(pendingStmt); pendingStmt = null; })?
+    (
+      <SEMICOLON>
+      {
+        if (pendingStmt != null) stmts.add(pendingStmt);
+        pendingStmt = null;
+      }
+    )?
     (<NEWLINE>|<EOF>)
     {
-      if (pendingStmt != null) {
-        stmts.add(pendingStmt);
-      }
+      if (pendingStmt != null) stmts.add(pendingStmt);
       return stmts;
     }
   } catch (ParseException exception) {
     Token lastCorrectToken = token;
-    if (pendingStmt != null && pendingStmt instanceof Expr) {
-      Expr expr = (Expr)pendingStmt;
-      if (expr.value() instanceof Name) {
-        Name name = (Name)expr.value();
-        try {
-          if (name.id().equals("print")) {
-            // We got a parsing failure after a "print" Name expression.
-            // Try to interpret as python2 print statement.
-            istmt printStmt = printStatementPython2(name);
-            stmts.add(printStmt);
-            return stmts;
-          } else if (name.id().equals("exec")) {
-            // We got a parsing failure after a "exec" Name expression.
-            // Try to interpret as python2 exec statement.
-            istmt execStmt = execStatementPython2(name);
-            stmts.add(execStmt);
-            return stmts;
-          }
-        } catch (ParseException printException) {
-          // If something goes wrong trying to parse as python2
-          // statement, we can rely on the error recovery already for
-          // the initial parse error.
-        }
+    try {
+      token = reparseStartToken;
+      setCurrentToken(reparseStartToken);
+      Name name = name();
+
+      // We now test for parse alternatives which would either require a hugh
+      // "factor out" effort or are not expressible at all with an LL(k) parser.
+      // This means we need to reparse some of the input and thus give up on
+      // strict linear time parsing but in practice the observed performance is
+      // quite good since this only affects a usually small part of the input.
+      if (name.id().equals("print")) {
+        // We got a parsing failure after a "print" Name expression.
+        // Try to interpret as python2 print statement.
+        istmt printStmt = printStatementPython2(name);
+        stmts.add(printStmt);
+        return stmts;
+      } else if (name.id().equals("exec")) {
+        // We got a parsing failure after a "exec" Name expression.
+        // Try to interpret as python2 exec statement.
+        istmt execStmt = execStatementPython2(name);
+        stmts.add(execStmt);
+        return stmts;
+      } else if (name.id().equals("match")) {
+        Match matchStmt = matchStmt(name);
+        stmts.add(matchStmt);
+        return stmts;
       }
+    } catch (ParseException printException) {
+      // If something goes wrong trying to parse as python2 or match
+      // statement, we can rely on the error recovery already for
+      // the initial parse error.
     }
+
+    setCurrentToken(lastCorrectToken);
     ErrorStatement errorStmt = recoverAndCreateErrorStmt(lastCorrectToken, exception);
     stmts.add(errorStmt);
     // We do not need to recursively invoke simpleStatement() here because the surrounding
     // rule does that already.
     return stmts;
   }
+}
+
+Name name(): {
+
+} {
+  <NAME> { return new Name(token.image, attributes(token, token)); }
 }
 
 // printName is the already parsed "print" Name expression.
@@ -839,6 +941,411 @@ istmt execStatementPython2(Name execName): {
     return new Expr(
       new Call(execName, arguments, new ArrayList<Keyword>(), attributes(execName, token)));
   }
+}
+
+iexpr starNamedExpression(): {
+  iexpr expr;
+} {
+  (expr = namedExpression() | expr = starredBitwiseOr())
+  { return expr; }
+}
+
+// "match" is a so called "soft" keyword introduced in Python 3.10.
+// Only in the specific pattern match statment constellation it is
+// considered a keyword and otherwise it is a regular NAME token
+// which means we cannot have something like a MATCH token.
+Match matchStmt(Name matchName): {
+  ArrayList<iexpr> expressions = new ArrayList<>();
+  iexpr subjectExpr;
+  boolean isTuple = false;
+  MatchCase matchCase;
+  ArrayList<MatchCase> cases = new ArrayList<>();
+} {
+  subjectExpr = starNamedExpression() { expressions.add(subjectExpr); }
+  (LOOKAHEAD(2)
+    <COMMA> { isTuple = true; }
+    subjectExpr = starNamedExpression() { expressions.add(subjectExpr); }
+  )*
+  (
+    <COMMA> { isTuple = true; }
+  | {
+      if (expressions == null && subjectExpr instanceof Starred) {
+        throw new ParseException("Single starred subject requires trailing comma.");
+      }
+    }
+  )
+  {
+    if (isTuple) {
+      subjectExpr = new Tuple(expressions, attributes(expressions.get(0), token));
+    }
+  }
+  <COLON>
+  <NEWLINE>
+  <INDENT>
+  (
+    matchCase = caseBlock() { cases.add(matchCase); }
+  )+
+  (<DEDENT> | <EOF>)
+  {
+    return new Match(subjectExpr, cases, attributes(matchName, token));
+  }
+}
+
+MatchCase caseBlock(): {
+  ArrayList<ipattern> patterns = new ArrayList<>();
+  boolean isSequence;
+  Token patternEndToken;
+  iexpr guard = null;
+  ArrayList<istmt> blockStmts;
+} {
+  <NAME> { if (!token.image.equals("case")) throw new ParseException("case keyword expected"); }
+  isSequence = groupOrSequenceCore(patterns) { patternEndToken = token; }
+  (guard = guard())?
+  <COLON>
+  blockStmts = block()
+  {
+    ipattern pattern;
+    if (isSequence) {
+      pattern = new MatchSequence(patterns, attributes(patterns.get(0), patternEndToken));
+    } else {
+      pattern = patterns.get(0);
+    }
+    return new MatchCase(pattern, guard, blockStmts);
+  }
+}
+
+iexpr guard(): {
+  iexpr expr;
+} {
+  <IF> expr = namedExpression() { return expr; }
+}
+
+ipattern pattern(): {
+  ipattern pattern;
+} {
+  pattern = asPattern()
+  { return pattern; }
+}
+
+ipattern asPattern(): {
+  ipattern pattern;
+  String target;
+} {
+  pattern = orPattern()
+  (
+    <AS> target = patternCaptureTarget()
+    {
+      pattern = new MatchAs(pattern, target, attributes(pattern, token));
+    }
+  )?
+  { return pattern; }
+}
+
+ipattern orPattern(): {
+  ipattern pattern;
+  ArrayList<ipattern> patterns = null;
+} {
+  pattern = closedPattern()
+  (
+    <BIT_OR>
+    {
+      if (patterns == null) {
+        patterns = new ArrayList<>();
+        patterns.add(pattern);
+      }
+    }
+    pattern = closedPattern() { patterns.add(pattern); }
+  )*
+  {
+    if (patterns != null) {
+      return new MatchOr(patterns, attributes(patterns.get(0), token));
+    } else {
+      return pattern;
+    }
+  }
+}
+
+ipattern closedPattern(): {
+  ipattern pattern;
+} {
+  (
+    pattern = literalPattern()
+  | pattern = captureOrWildcardOrValueOrClassPattern()
+  | pattern = groupOrSequencePattern()
+  | pattern = mappingPattern()
+  )
+  { return pattern; }
+}
+
+ipattern literalPattern(): {
+  iexpr expr;
+} {
+  expr = literalExpr()
+  {
+    if (expr instanceof Constant) {
+      Constant constant = (Constant)expr;
+      if (constant.value() instanceof BoolConstant || constant.value() instanceof NoneConstant$) {
+        return new MatchSingleton(constant.value(), attributes(token, token));
+      }
+    }
+    return new MatchValue(expr, attributes(expr, token));
+  }
+}
+
+iexpr literalExpr(): {
+  iexpr expr = null;
+  Constant leftNumber;
+  Constant rightNumber;
+  Token leftMinusToken = null;
+  ioperator binOp;
+} {
+  (
+    (
+      (<MINUS> { leftMinusToken = token; })?
+      leftNumber = number() {
+        if (leftMinusToken != null) {
+          expr = new UnaryOp(USub$.MODULE$, leftNumber, attributes(leftMinusToken, token));
+        } else {
+          expr = leftNumber;
+        }
+      }
+      (
+        (
+          <PLUS> { binOp = Add$.MODULE$; }
+        | <MINUS> { binOp = Sub$.MODULE$; }
+        )
+        rightNumber = number() {
+          expr = new BinOp(expr, binOp, rightNumber, attributes(expr, token));
+        }
+      )?
+    ) {
+      return expr;
+    }
+  | expr = strings() { return expr; }
+  | <NONE> { return new Constant(NoneConstant$.MODULE$, attributes(token, token)); }
+  | <TRUE> { return new Constant(new BoolConstant(true), attributes(token, token)); }
+  | <FALSE> { return new Constant(new BoolConstant(false), attributes(token, token)); }
+  )
+}
+
+// The python grammar has separate capture, wildcard, value and class pattern rules.
+// We need to merge them in order to factor out the leading nameOrAttr expression which they
+// all share.
+ipattern captureOrWildcardOrValueOrClassPattern(): {
+  iexpr expr;
+} {
+  expr = nameOrAttr()
+  (
+    {
+      ArrayList<ipattern> patterns = new ArrayList<>();
+      ArrayList<String> kwd_attrs = new ArrayList<>();
+      ArrayList<ipattern> kwd_patterns = new ArrayList<>();
+    }
+    <PAREN_OPEN>
+      patternArguments(patterns, kwd_attrs, kwd_patterns)
+    <PAREN_CLOSE>
+    {
+      return new MatchClass(expr, patterns, kwd_attrs, kwd_patterns, attributes(expr, token));
+    }
+  )?
+  {
+    // We only get here if it is not a class pattern.
+    if (expr instanceof Name) {
+      // A plain name is interpreted as pattern not as value.
+      String target = token.image;
+      if (!target.equals("_")) {
+        // Capture pattern
+        return new MatchAs(null, target, attributes(token, token));
+      } else {
+        // Wildcard pattern
+        return new MatchAs((ipattern)null, null, attributes(token, token));
+      }
+    } else {
+      // Value pattern
+      return new MatchValue(expr, attributes(expr, token));
+    }
+  }
+}
+
+iexpr nameOrAttr(): {
+  iexpr expr;
+} {
+  <NAME> { expr = new Name(token.image, attributes(token, token)); }
+  (
+    <DOT> <NAME> { expr = new Attribute(expr, token.image, attributes(expr, token)); }
+  )*
+  { return expr; }
+}
+
+void patternArguments(ArrayList<ipattern> patterns, ArrayList<String> kwd_attrs, ArrayList<ipattern> kwd_patterns): {
+  String keyword = null;
+} {
+  (
+    keyword = patternArgument(keyword, patterns, kwd_attrs, kwd_patterns)
+
+    (LOOKAHEAD(2)
+      <COMMA>
+      keyword = patternArgument(keyword, patterns, kwd_attrs, kwd_patterns)
+    )*
+    (<COMMA>)?
+  )?
+}
+
+String patternArgument(String lastKeyword, ArrayList<ipattern> patterns, ArrayList<String> kwd_attrs, ArrayList<ipattern> kwd_patterns): {
+  ipattern pattern;
+  String keyword = lastKeyword;
+} {
+  (LOOKAHEAD(2)
+    (<NAME> { keyword = token.image; } <ASSIGN>)
+    | ({ if (keyword != null) throw new ParseException("No non keyword pattern allowed after keyword pattern.");})
+  )
+  pattern = pattern()
+  {
+    if (keyword != null) {
+      kwd_attrs.add(keyword);
+      kwd_patterns.add(pattern);
+    } else {
+      patterns.add(pattern);
+    }
+    return keyword;
+  }
+}
+
+ipattern groupOrSequencePattern(): {
+  Token startToken;
+  ArrayList<ipattern> patterns = new ArrayList<>();
+} {
+  (
+    (
+      <SQUARE_OPEN> { startToken = token; }
+      (
+        groupOrSequenceCore(patterns)
+      )?
+      <SQUARE_CLOSE>
+      { return new MatchSequence(patterns, attributes(startToken, token)); }
+    )
+  | (
+      { boolean isSequence = true; }
+      <PAREN_OPEN> { startToken = token; }
+      (
+        isSequence = groupOrSequenceCore(patterns)
+      )?
+      <PAREN_CLOSE>
+      {
+        if (isSequence) {
+          return new MatchSequence(patterns, attributes(startToken, token));
+        } else {
+          // Group pattern
+          return patterns.get(0);
+        }
+      }
+    )
+  )
+}
+
+boolean groupOrSequenceCore(ArrayList<ipattern> patterns): {
+  ipattern pattern;
+  boolean starPatternExists = false;
+  boolean isSequence = false;
+} {
+  pattern = maybeStarPattern()
+  {
+    if (pattern instanceof MatchStar) starPatternExists = true;
+    patterns.add(pattern);
+  }
+  (LOOKAHEAD(2)
+    <COMMA>
+    pattern = maybeStarPattern()
+    {
+      if (starPatternExists) {
+        throw new ParseException("Only one star pattern allowed per sequence");
+      }
+      isSequence = true;
+      if (pattern instanceof MatchStar) starPatternExists = true;
+      patterns.add(pattern);
+    }
+  )*
+  (<COMMA> { isSequence = true; })?
+  { return isSequence; }
+}
+
+ipattern maybeStarPattern(): {
+  ipattern pattern;
+} {
+  (
+    pattern = starPattern()
+  | pattern = pattern()
+  )
+  { return pattern; }
+}
+
+MatchStar starPattern(): {
+
+} {
+  <STAR> <NAME> {
+    String target = token.image;
+    if (!target.equals("_")) {
+      // Capture pattern
+      return new MatchStar(target, attributes(token, token));
+    } else {
+      // Wildcard pattern
+      return new MatchStar((String)null, attributes(token, token));
+    }
+  }
+}
+
+String patternCaptureTarget(): {
+
+} {
+  <NAME>
+  {
+    if (token.image.equals("_")) throw new ParseException("Invalid capture pattern.");
+    return token.image;
+  }
+}
+
+MatchMapping mappingPattern(): {
+  Token startToken;
+  ArrayList<iexpr> keys = new ArrayList<>();
+  ArrayList<ipattern> patterns = new ArrayList<>();
+  String rest = null;
+} {
+  <CURLY_OPEN> { startToken = token; }
+  (
+    rest = keyValuePattern(rest, keys, patterns)
+    (LOOKAHEAD(2)
+      <COMMA>
+      rest = keyValuePattern(rest, keys, patterns)
+    )*
+    (<COMMA>)?
+  )?
+  <CURLY_CLOSE>
+  { return new MatchMapping(keys, patterns, rest, attributes(startToken, token)); }
+}
+
+String keyValuePattern(String lastRest, ArrayList<iexpr> keys, ArrayList<ipattern> patterns): {
+  iexpr key;
+  ipattern pattern;
+  String target;
+} {
+  (
+    (
+      (key = literalExpr() | key = nameOrAttr()) <COLON> pattern = pattern()
+      {
+        if (key instanceof Name) throw new ParseException("Pure name not allowed.");
+        keys.add(key);
+        patterns.add(pattern);
+        return lastRest;
+      }
+    )
+  | (
+      <DOUBLE_STAR> target = patternCaptureTarget()
+      {
+        if (lastRest != null) throw new ParseException("Only one double star pattern allowed.");
+        return target;
+      }
+    )
+  )
 }
 
 
