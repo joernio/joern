@@ -1,6 +1,5 @@
 package io.joern.pysrc2cpg
 
-import io.joern.pysrc2cpg.PythonTypeRecovery.BUILTIN_PREFIX
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
@@ -17,7 +16,13 @@ import java.nio.file.Paths
 import java.util.regex.Matcher
 import scala.collection.mutable
 
-class PythonTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledDummyTypes: Boolean = true)
+class PythonTypeRecoveryPass(cpg: Cpg, iterations: Int = 2, enabledDummyTypes: Boolean = true)
+    extends XTypeRecoveryPass[File](cpg, iterations) {
+  override protected def generateRecoveryPass(finalIterations: Boolean): XTypeRecovery[File] =
+    new PythonTypeRecovery(cpg, finalIterations, enabledDummyTypes)
+}
+
+private class PythonTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledDummyTypes: Boolean = true)
     extends XTypeRecovery[File](cpg) {
 
   override def compilationUnit: Traversal[File] = cpg.file
@@ -32,7 +37,7 @@ class PythonTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledDummy
 
 /** Performs type recovery from the root of a compilation unit level
   */
-class RecoverForPythonFile(
+private class RecoverForPythonFile(
   cpg: Cpg,
   cu: File,
   builder: DiffGraphBuilder,
@@ -230,11 +235,11 @@ class RecoverForPythonFile(
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
-      case "<operator>.listLiteral"  => associateTypes(i, Set(s"$BUILTIN_PREFIX.list"))
-      case "<operator>.tupleLiteral" => associateTypes(i, Set(s"$BUILTIN_PREFIX.tuple"))
-      case "<operator>.dictLiteral"  => associateTypes(i, Set(s"$BUILTIN_PREFIX.dict"))
-      case "<operator>.setLiteral"   => associateTypes(i, Set(s"$BUILTIN_PREFIX.set"))
-      case Operators.conditional     => associateTypes(i, Set(s"$BUILTIN_PREFIX.bool"))
+      case "<operator>.listLiteral"  => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}list"))
+      case "<operator>.tupleLiteral" => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}tuple"))
+      case "<operator>.dictLiteral"  => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}dict"))
+      case "<operator>.setLiteral"   => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}set"))
+      case Operators.conditional     => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}bool"))
       case _                         => super.visitIdentifierAssignedToOperator(i, c, operation)
     }
   }
@@ -270,10 +275,10 @@ class RecoverForPythonFile(
   }
 
   override def getTypesFromCall(c: Call): Set[String] = c.name match {
-    case "<operator>.listLiteral"  => Set(s"$BUILTIN_PREFIX.list")
-    case "<operator>.tupleLiteral" => Set(s"$BUILTIN_PREFIX.tuple")
-    case "<operator>.dictLiteral"  => Set(s"$BUILTIN_PREFIX.dict")
-    case "<operator>.setLiteral"   => Set(s"$BUILTIN_PREFIX.set")
+    case "<operator>.listLiteral"  => Set(s"${PythonAstVisitor.builtinPrefix}list")
+    case "<operator>.tupleLiteral" => Set(s"${PythonAstVisitor.builtinPrefix}tuple")
+    case "<operator>.dictLiteral"  => Set(s"${PythonAstVisitor.builtinPrefix}dict")
+    case "<operator>.setLiteral"   => Set(s"${PythonAstVisitor.builtinPrefix}set")
     case _                         => super.getTypesFromCall(c)
   }
 
@@ -300,17 +305,13 @@ class RecoverForPythonFile(
 
   override def getLiteralType(l: Literal): Set[String] = {
     (l.code match {
-      case code if code.toIntOption.isDefined                  => Some(s"$BUILTIN_PREFIX.int")
-      case code if code.toDoubleOption.isDefined               => Some(s"$BUILTIN_PREFIX.float")
-      case code if "True".equals(code) || "False".equals(code) => Some(s"$BUILTIN_PREFIX.bool")
-      case code if code.equals("None")                         => Some(s"$BUILTIN_PREFIX.None")
-      case code if isPyString(code)                            => Some(s"$BUILTIN_PREFIX.str")
+      case code if code.toIntOption.isDefined                  => Some(s"${PythonAstVisitor.builtinPrefix}int")
+      case code if code.toDoubleOption.isDefined               => Some(s"${PythonAstVisitor.builtinPrefix}float")
+      case code if "True".equals(code) || "False".equals(code) => Some(s"${PythonAstVisitor.builtinPrefix}bool")
+      case code if code.equals("None")                         => Some(s"${PythonAstVisitor.builtinPrefix}None")
+      case code if isPyString(code)                            => Some(s"${PythonAstVisitor.builtinPrefix}str")
       case _                                                   => None
     }).toSet
   }
 
-}
-
-object PythonTypeRecovery {
-  def BUILTIN_PREFIX = "__builtin"
 }

@@ -57,8 +57,7 @@ object JsSrc2Cpg {
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
     List(
       new ConstClosurePass(cpg),
-      new JavaScriptTypeRecovery(cpg, finalIteration = false, enabledDummyTypes = !config.exists(_.disableDummyTypes)),
-      new JavaScriptTypeRecovery(cpg, finalIteration = true, enabledDummyTypes = !config.exists(_.disableDummyTypes)),
+      new JavaScriptTypeRecoveryPass(cpg, enabledDummyTypes = !config.exists(_.disableDummyTypes)),
       new JavaScriptTypeHintCallLinker(cpg)
     )
   }

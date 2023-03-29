@@ -1,7 +1,6 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.Defines
-import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
@@ -10,16 +9,38 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.slf4j.{Logger, LoggerFactory}
+import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
 import java.util.concurrent.RecursiveTask
 import scala.collection.mutable
 
-/** Based on a flow-insensitive symbol-table-style approach. This pass aims to be fast and deterministic and does not
-  * try to converge to some fixed point but rather iterates a fixed number of times. This will help recover:
-  * <ol><li>Imported call signatures from external dependencies</li><li>Dynamic type hints for mutable variables in a
-  * compilation unit.</ol>
+/** In order to propagate types across compilation units, but avoid the poor scalability of a fixed-point algorithm, the
+  * number of iterations can be configured using the [[iterations]] parameter. Note that [[iterations]] < 2 will not
+  * provide any interprocedural type recovery capabilities.
+  * @param cpg
+  *   the CPG to recovery types for.
+  * @param iterations
+  *   the number of iterations to run.
+  * @tparam CompilationUnitType
+  *   the [[AstNode]] type used to represent a compilation unit of the language.
+  */
+abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](cpg: Cpg, iterations: Int = 2) extends CpgPass(cpg) {
+
+  // TODO: Determine if any changes are being made for early stopping. Min iterations will be 2.
+  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
+    for (i <- 0 until iterations)
+      generateRecoveryPass(i == iterations - 1).createAndApply()
+
+  protected def generateRecoveryPass(finalIterations: Boolean): XTypeRecovery[CompilationUnitType]
+
+}
+
+/** Based on a flow-insensitive static single-assignment symbol-table-style approach. This pass aims to be fast and
+  * deterministic and does not try to converge to some fixed point but rather iterates a fixed number of times. This
+  * will help recover: <ol><li>Imported call signatures from external dependencies</li><li>Dynamic type hints for
+  * mutable variables in a compilation unit.</ol>
   *
   * The algorithm flows roughly as follows: <ol> <li> Scan for method signatures of methods for each compilation unit,
   * either by internally defined methods or by reading import signatures. This includes looking for aliases, e.g. import
@@ -28,10 +49,6 @@ import scala.collection.mutable
   * values in a local symbol table. If a field is assigned a value, store this in the global table</li><li>Find
   * instances of where these fields and variables are used and update their type information.</li><li>If this variable
   * is the receiver of a call, make sure to set the type of the call accordingly.</li></ol>
-  *
-  * In order to propagate types across compilation units, but avoid the poor scalability of a fixed-point algorithm, the
-  * number of iterations can be configured using the [[iterations]] parameter. Note that [[iterations]] < 2 will not
-  * provide any interprocedural type recovery capabilities.
   *
   * The symbol tables use the [[SymbolTable]] class to track possible type information. <br> <strong>Note: Local symbols
   * are cleared once a compilation unit is complete. This is to keep memory usage down while maximizing
@@ -215,6 +232,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // Populate local symbol table with assignments
+    // TODO: On iteration > 1 we probably don't need to visit simple declarations as these are already saved
     assignments.foreach(visitAssignments)
     // Propagate return types
     cpg.method.ast.isCall.foreach(visitCall)

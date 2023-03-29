@@ -11,7 +11,13 @@ import java.io.{File => JFile}
 import java.util.regex.Matcher
 import scala.collection.mutable
 
-class JavaScriptTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledDummyTypes: Boolean = true)
+class JavaScriptTypeRecoveryPass(cpg: Cpg, iterations: Int = 2, enabledDummyTypes: Boolean = true)
+    extends XTypeRecoveryPass[File](cpg, iterations) {
+  override protected def generateRecoveryPass(finalIterations: Boolean): XTypeRecovery[File] =
+    new JavaScriptTypeRecovery(cpg, finalIterations, enabledDummyTypes)
+}
+
+private class JavaScriptTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledDummyTypes: Boolean = true)
     extends XTypeRecovery[File](cpg) {
   override def compilationUnit: Traversal[File] = cpg.file
 
@@ -23,7 +29,7 @@ class JavaScriptTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledD
 
 }
 
-class RecoverForJavaScriptFile(
+private class RecoverForJavaScriptFile(
   cpg: Cpg,
   cu: File,
   builder: DiffGraphBuilder,
