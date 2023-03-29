@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 
 import java.util.UUID.randomUUID
@@ -122,7 +123,7 @@ trait KtPsiToAst {
     parameters.zipWithIndex.map { case (valueParam, idx) =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(valueParam, TypeConstants.any))
 
-      val thisParam = methodParameterNode(Constants.this_, typeDecl.fullName).order(0)
+      val thisParam = NodeBuilders.thisParameterNode(typeDecl.fullName, Seq())
       val thisIdentifier =
         identifierNode(Constants.this_, typeDecl.fullName).dynamicTypeHintFullName(Seq(typeDecl.fullName))
       val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParam)
@@ -161,9 +162,7 @@ trait KtPsiToAst {
         methodNode(Constants.init, fullName, signature, relativizedPath, line(ctor), column(ctor))
       scope.pushNewScope(secondaryCtorMethodNode)
 
-      val ctorThisParam = methodParameterNode(Constants.this_, classFullName)
-        .dynamicTypeHintFullName(Seq(classFullName))
-        .order(0)
+      val ctorThisParam = NodeBuilders.thisParameterNode(classFullName, Seq(classFullName))
       scope.addToScope(Constants.this_, ctorThisParam)
 
       val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++
@@ -240,10 +239,7 @@ trait KtPsiToAst {
       line(ktClass.getPrimaryConstructor),
       column(ktClass.getPrimaryConstructor)
     )
-    val ctorThisParam =
-      methodParameterNode(Constants.this_, classFullName)
-        .dynamicTypeHintFullName(Seq(classFullName))
-        .order(0)
+    val ctorThisParam = NodeBuilders.thisParameterNode(classFullName, Seq(classFullName))
     scope.addToScope(Constants.this_, ctorThisParam)
 
     val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++ withIndex(constructorParams) { (p, idx) =>
@@ -367,10 +363,7 @@ trait KtPsiToAst {
 
     val thisParameterMaybe = if (needsThisParameter) {
       val typeDeclFullName = registerType(typeInfoProvider.containingTypeDeclFullName(ktFn, TypeConstants.any))
-      val node =
-        methodParameterNode(Constants.this_, typeDeclFullName, line(ktFn), column(ktFn))
-          .dynamicTypeHintFullName(Seq(typeDeclFullName))
-          .order(0)
+      val node             = NodeBuilders.thisParameterNode(typeDeclFullName, Seq(typeDeclFullName))
       scope.addToScope(Constants.this_, node)
       Option(node)
     } else None

@@ -134,17 +134,6 @@ object Nodes {
       .columnNumber(column)
   }
 
-  def thisParameterNode(typeFullName: String, line: Int = -1, column: Int = -1): NewMethodParameterIn = {
-    NewMethodParameterIn()
-      .name("this")
-      .code("this")
-      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
-      .dynamicTypeHintFullName(Seq(typeFullName))
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   def methodParameterNode(
     name: String,
     typeFullName: String,
