@@ -461,7 +461,7 @@ class PythonAstVisitor(
     // and we cant yet handle super().
     val fakeNewMethod = createFakeNewMethod(initParameters)
 
-    val fakeNewMember = nodeBuilder.memberNode("<fakeNew>", fakeNewMethod.fullName)
+    val fakeNewMember = nodeBuilder.memberNode("<fakeNew>", Option(fakeNewMethod.fullName))
     edgeBuilder.astEdge(fakeNewMember, metaTypeDeclNode, contextStack.order.getAndInc)
 
     // Create binding into class instance type for each method.
@@ -516,7 +516,7 @@ class PythonAstVisitor(
     metaTypeDecl: nodes.NewNode
   ): Unit = {
     val memberForInstance =
-      nodeBuilder.memberNode(functionName, functionDefToMethod.apply(function).fullName)
+      nodeBuilder.memberNode(functionName, Option(functionDefToMethod.apply(function).fullName))
     edgeBuilder.astEdge(memberForInstance, instanceTypeDecl, contextStack.order.getAndInc)
 
     val methodForMetaClass =
@@ -531,7 +531,7 @@ class PythonAstVisitor(
         )
       }
 
-    val memberForMeta = nodeBuilder.memberNode(functionName, methodForMetaClass.fullName)
+    val memberForMeta = nodeBuilder.memberNode(functionName, Option(methodForMetaClass.fullName))
     edgeBuilder.astEdge(memberForMeta, metaTypeDecl, contextStack.order.getAndInc)
   }
 
@@ -1782,7 +1782,7 @@ class PythonAstVisitor(
     contextStack.findEnclosingTypeDecl() match {
       case Some(typeDecl: NewTypeDecl) =>
         if (!members.contains(typeDecl) || !members(typeDecl).contains(name)) {
-          val member = nodeBuilder.memberNode(name, "")
+          val member = nodeBuilder.memberNode(name)
           edgeBuilder.astEdge(member, typeDecl, contextStack.order.getAndInc)
           members(typeDecl) = members.getOrElse(typeDecl, List()) ++ List(name)
         }
