@@ -1698,7 +1698,8 @@ class PythonAstVisitor(
           xMayHaveSideEffects = !attribute.value.isInstanceOf[ast.Name],
           lineAndColOf(call),
           argumentNodes,
-          keywordArgNodes
+          keywordArgNodes,
+          Some(relFileName + ":<inserted>.<module>.")
         )
       case _ =>
         val receiverNode = convert(call.func)

@@ -168,7 +168,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     case x: Identifier =>
       x.dynamicTypeHintFullName.nonEmpty || !x.typeFullName.toUpperCase.matches("(UNKNOWN|ANY)")
     case x: Call if !x.methodFullName.startsWith("<operator>") =>
-      !x.methodFullName.toLowerCase().matches("(<unknownfullname>|any)")
+      val ret = (x.methodFullName.toLowerCase().matches("(<unknownfullname>|any)") || x.methodFullName
+        .toLowerCase()
+        .contains("<inserted>"))
+      !ret
     case x: Local => x.dynamicTypeHintFullName.nonEmpty || !x.typeFullName.toUpperCase.matches("(UNKNOWN|ANY)")
     case x: MethodParameterIn =>
       x.dynamicTypeHintFullName.nonEmpty || !x.typeFullName.toUpperCase.matches("(UNKNOWN|ANY)")
@@ -741,7 +744,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val typs =
           if (enabledDummyTypes) symbolTable.get(x).toSeq
           else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
-        builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typs)
+        builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typs.filterNot(_.contains("<inserted>")))
       case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
         setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
       case x: Call if x.argument.headOption.exists(symbolTable.contains) =>

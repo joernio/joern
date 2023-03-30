@@ -278,7 +278,8 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     name: String,
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
-    keywordArguments: Iterable[(String, NewNode)]
+    keywordArguments: Iterable[(String, NewNode)],
+    methodFullName: Option[String] = None
   ): NewCall = {
     val code = codeOf(receiverNode) +
       "(" +
@@ -288,7 +289,13 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
         .mkString(", ") +
       ")"
-    val callNode = nodeBuilder.callNode(code, name, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
+
+    val passedMethodFullName = methodFullName match {
+      case Some(fullName) => fullName + name
+      case None           => ""
+    }
+
+    val callNode = nodeBuilder.callNode(code, name, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn, passedMethodFullName)
 
     edgeBuilder.astEdge(receiverNode, callNode, 0)
     edgeBuilder.receiverEdge(receiverNode, callNode)
@@ -328,7 +335,8 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     xMayHaveSideEffects: Boolean,
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
-    keywordArguments: Iterable[(String, NewNode)]
+    keywordArguments: Iterable[(String, NewNode)],
+    methodFullName: Option[String] = None
   ): NewNode = {
     if (xMayHaveSideEffects) {
       val tmpVarName    = getUnusedName()
@@ -341,7 +349,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
       createBlock(tmpAssignCall :: instanceCallNode :: Nil, lineAndColumn)
     } else {
       val receiverNode = createFieldAccess(x(), y, lineAndColumn)
-      createInstanceCall(receiverNode, x(), y, lineAndColumn, argumentNodes, keywordArguments)
+      createInstanceCall(receiverNode, x(), y, lineAndColumn, argumentNodes, keywordArguments, methodFullName)
     }
   }
 

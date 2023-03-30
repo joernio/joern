@@ -37,7 +37,14 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   override def run(builder: DiffGraphBuilder): Unit = linkCalls(builder)
 
   protected def linkCalls(builder: DiffGraphBuilder): Unit = {
-    val callerAndCallees = calls.map(call => (call, calleeNames(call))).toList
+    val mycalls = cpg.call.nameNot("<operator>.*", "<operators>.*").l
+    val mycalls1 = mycalls.filter(c => {
+    val c1 = calleeNames(c).nonEmpty
+    val c2 = c.callee.isEmpty
+    val c3 = !c.methodFullName.contains("<inserted>")
+    c1 && c2 && c3
+    })
+    val callerAndCallees = mycalls.map(call => (call, calleeNames(call))).toList
     val methodMap        = mapMethods(callerAndCallees, builder)
     linkCallsToCallees(callerAndCallees, methodMap, builder)
   }
