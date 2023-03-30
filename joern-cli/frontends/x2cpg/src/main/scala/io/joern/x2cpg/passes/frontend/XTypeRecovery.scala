@@ -561,7 +561,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     if (types.nonEmpty) {
       getSymbolFromCall(x) match {
         case (lhs, globalKeys) if globalKeys.nonEmpty =>
-          globalKeys.foreach { fieldVar: FieldPath =>
+          globalKeys.foreach { (fieldVar: FieldPath) =>
             persistMemberWithTypeDecl(fieldVar.compUnitFullName, fieldVar.identifier, types)
           }
           symbolTable.append(lhs, types)
