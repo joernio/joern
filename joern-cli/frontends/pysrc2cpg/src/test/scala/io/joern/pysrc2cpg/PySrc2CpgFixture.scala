@@ -28,9 +28,7 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
     X2Cpg.applyDefaultOverlays(this)
     new ImportsPass(this).createAndApply()
     new DynamicTypeHintFullNamePass(this).createAndApply()
-    val maxInt = 2
-    for (i <- 0 until maxInt)
-      new PythonTypeRecovery(this, i == maxInt - 1).createAndApply()
+    new PythonTypeRecoveryPass(this).createAndApply()
     new PythonTypeHintCallLinker(this).createAndApply()
     new PythonNaiveCallLinker(this).createAndApply()
 

@@ -17,14 +17,14 @@ import java.util.concurrent.RecursiveTask
 import scala.collection.mutable
 
 /** In order to propagate types across compilation units, but avoid the poor scalability of a fixed-point algorithm, the
-  * number of iterations can be configured using the [[iterations]] parameter. Note that [[iterations]] < 2 will not
-  * provide any interprocedural type recovery capabilities.
+  * number of iterations can be configured using the iterations parameter. Note that iterations < 2 will not provide any
+  * interprocedural type recovery capabilities.
   * @param cpg
   *   the CPG to recovery types for.
   * @param iterations
   *   the number of iterations to run.
   * @tparam CompilationUnitType
-  *   the [[AstNode]] type used to represent a compilation unit of the language.
+  *   the AstNode type used to represent a compilation unit of the language.
   */
 abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](cpg: Cpg, iterations: Int = 2) extends CpgPass(cpg) {
 
@@ -57,7 +57,7 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](cpg: Cpg, itera
   * @param cpg
   *   the CPG to recovery types for.
   * @tparam CompilationUnitType
-  *   the [[AstNode]] type used to represent a compilation unit of the language.
+  *   the AstNode type used to represent a compilation unit of the language.
   */
 abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg) extends CpgPass(cpg) {
 
@@ -119,15 +119,13 @@ object XTypeRecovery {
   *   a compilation unit, e.g. file, procedure, type, etc.
   * @param builder
   *   the graph builder
-  * @param globalTable
-  *   the global symbol table.
   * @param addedNodes
   *   new node tracking set.
   * @param enabledDummyTypes
   *   enables placeholder/dummy types that show where a type comes from. Useful for pattern matching return values or
   *   field members where types are unknown.
   * @tparam CompilationUnitType
-  *   the [[AstNode]] type used to represent a compilation unit of the language.
+  *   the AstNode type used to represent a compilation unit of the language.
   */
 abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   cpg: Cpg,
@@ -151,9 +149,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected val pathSep = '.'
 
-  /** For tracking dynamically created members.
+  /** For tracking members and the type operations that need to be performed. Since these are mostly out of scope
+    * locally it helps to track these separately.
+    *
+    * // TODO: Potentially a new use for a global table or modification to the symbol table?
     */
-  protected val dynamicMembers = mutable.HashMap.empty[String, NewMember]
+  protected val newTypesForMembers = mutable.HashMap.empty[Member, Set[String]]
 
   /** Provides an entrypoint to add known symbols and their possible types.
     */
@@ -298,18 +299,18 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def visitAssignments(a: Assignment): Set[String] = {
     a.argumentOut.l match {
-      case List(i: Identifier, b: Block)      => visitIdentifierAssignedToBlock(i, b)
-      case List(i: Identifier, c: Call)       => visitIdentifierAssignedToCall(i, c)
-      case List(x: Identifier, y: Identifier) => visitIdentifierAssignedToIdentifier(x, y)
-      case List(i: Identifier, l: Literal)    => visitIdentifierAssignedToLiteral(i, l)
-      case List(i: Identifier, m: MethodRef)  => visitIdentifierAssignedToMethodRef(i, m)
-      case List(i: Identifier, t: TypeRef)    => visitIdentifierAssignedToTypeRef(i, t)
-      case List(c: Call, i: Identifier)       => visitCallAssignedToIdentifier(c, i)
-      case List(x: Call, y: Call)             => visitCallAssignedToCall(x, y)
-      case List(c: Call, l: Literal)          => visitCallAssignedToLiteral(c, l)
-      case List(c: Call, m: MethodRef)        => visitCallAssignedToMethodRef(c, m)
-      case List(c: Call, b: Block)            => visitCallAssignedToBlock(c, b)
-      case List(_: Identifier, c: Call, _: MethodRef) if c.name.matches("(import|require)") =>
+      case List(i: Identifier, b: Block)              => visitIdentifierAssignedToBlock(i, b)
+      case List(i: Identifier, c: Call)               => visitIdentifierAssignedToCall(i, c)
+      case List(x: Identifier, y: Identifier)         => visitIdentifierAssignedToIdentifier(x, y)
+      case List(i: Identifier, l: Literal)            => visitIdentifierAssignedToLiteral(i, l)
+      case List(i: Identifier, m: MethodRef)          => visitIdentifierAssignedToMethodRef(i, m)
+      case List(i: Identifier, t: TypeRef)            => visitIdentifierAssignedToTypeRef(i, t)
+      case List(c: Call, i: Identifier)               => visitCallAssignedToIdentifier(c, i)
+      case List(x: Call, y: Call)                     => visitCallAssignedToCall(x, y)
+      case List(c: Call, l: Literal)                  => visitCallAssignedToLiteral(c, l)
+      case List(c: Call, m: MethodRef)                => visitCallAssignedToMethodRef(c, m)
+      case List(c: Call, b: Block)                    => visitCallAssignedToBlock(c, b)
+      case List(_: CfgNode, _: CfgNode, _: MethodRef) =>
         // In a previous iteration, this is some call that has imported a method that is now resolved
         Set.empty
       case xs =>
@@ -394,7 +395,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def isField(i: Identifier): Boolean = i.method.typeDecl.member.exists(_.name.equals(i.name))
 
   /** Associates the types with the identifier. This may sometimes be an identifier that should be considered a field
-    * which this method uses [[isField(i)]] to determine.
+    * which this method uses [[isField]] to determine.
     */
   protected def associateTypes(i: Identifier, types: Set[String]): Set[String] =
     symbolTable.append(i, types)
@@ -407,7 +408,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   /** Associates the types with the identifier. This may sometimes be an identifier that should be considered a field
-    * which this method uses [[isField(i)]] to determine.
+    * which this method uses [[isField]] to determine.
     */
   protected def associateTypes(symbol: LocalVar, fa: FieldAccess, types: Set[String]): Set[String] = {
     fa.astChildren.filterNot(_.code.matches("(this|self)")).headOption.collect {
@@ -423,7 +424,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     symbolTable.append(symbol, types)
   }
 
-  /** Similar to [[associateTypes]] but used in the case where there is some kind of field load.
+  /** Similar to associateTypes but used in the case where there is some kind of field load.
     */
   protected def associateInterproceduralTypes(
     i: Identifier,
@@ -747,15 +748,13 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def getFieldBaseType(base: Identifier, fi: FieldIdentifier): Set[String] =
     getFieldBaseType(base.name, fi.canonicalName)
 
-  protected def getFieldBaseType(baseName: String, fieldName: String): Set[String] = {
-    val localTypes = symbolTable.get(LocalVar(baseName))
-    val globalTypes = localTypes
-      .flatMap(t => cpg.typeDecl.fullNameExact(t).member.nameExact(fieldName))
+  protected def getFieldBaseType(baseName: String, fieldName: String): Set[String] =
+    symbolTable
+      .get(LocalVar(baseName))
+      .flatMap(t => typeDeclTraversal(t).member.nameExact(fieldName))
       .typeFullNameNot("ANY")
-      .map(_.typeFullName)
+      .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
       .toSet
-    globalTypes
-  }
 
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.
     */
@@ -778,6 +777,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
         setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
       case _ =>
+    }
+    // Set types in an atomic way
+    newTypesForMembers.foreach { case (m, ts) =>
+      if (ts.size == 1) builder.setNodeProperty(m, PropertyNames.TYPE_FULL_NAME, ts.head)
+      else builder.setNodeProperty(m, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, ts)
     }
   }
 
@@ -900,31 +904,27 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
   }
 
-  private def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit = {
-    def combineTypes(m: MemberBase) =
-      ((m.typeFullName +: m.dynamicTypeHintFullName) ++ types).filterNot(_ == "ANY").toSet
-    cpg.typeDecl.fullNameExact(typeFullName).map(t => (t, t.member.nameExact(memberName).headOption)).headOption match {
-      case Some((_, Some(m))) => storeNodeTypeInfo(m, types.toSeq)
-      case Some((td, None)) if dynamicMembers.contains(s"${td.fullName}$pathSep$memberName") =>
-        val m    = dynamicMembers(s"${td.fullName}$pathSep$memberName")
-        val tSet = combineTypes(m)
-        if (tSet.size == 1) m.typeFullName(tSet.head)
-        else m.dynamicTypeHintFullName(tSet)
-      case Some((td, None)) =>
-        val m = NewMember()
-          .code(memberName)
-          .name(memberName)
-          .typeFullName("ANY")
-          .order(td.member.size + 1)
-        val tSet = combineTypes(m)
-        if (tSet.size == 1) m.typeFullName(tSet.head)
-        else m.dynamicTypeHintFullName(tSet)
-        builder.addNode(m)
-        builder.addEdge(td, m, EdgeTypes.AST)
-        dynamicMembers.put(s"${td.fullName}$pathSep$memberName", m)
-      case None =>
+  /** Type decls where member access are required need to point to the correct type decl that holds said members. This
+    * allows implementations to use the type names to find the correct type holding members.
+    * @param typeFullName
+    *   the type full name.
+    * @return
+    *   the type full name that has member children.
+    */
+  protected def typeDeclTraversal(typeFullName: String): Traversal[TypeDecl] = cpg.typeDecl.fullNameExact(typeFullName)
+
+  /** Given a type full name and member name, will persist the given types to the member.
+    * @param typeFullName
+    *   the type full name.
+    * @param memberName
+    *   the member name.
+    * @param types
+    *   the types to associate.
+    */
+  protected def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit =
+    typeDeclTraversal(typeFullName).member.nameExact(memberName).headOption.foreach { m =>
+      storeNodeTypeInfo(m, types.toSeq)
     }
-  }
 
   /** Given an identifier that has been determined to be a field, an attempt is made to get the corresponding member.
     * This implementation follows more the way dynamic languages define method/type relations.
@@ -934,13 +934,21 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     *   the corresponding member, if found
     */
   protected def getLocalMember(i: Identifier): Option[Member] =
-    cpg.typeDecl.fullNameExact(i.method.fullName).member.name(i.name).headOption
+    typeDeclTraversal(i.method.typeDecl.fullName.headOption.getOrElse(i.method.fullName)).member.name(i.name).headOption
 
-  private def storeNodeTypeInfo(storedNode: StoredNode, ts: Seq[String]): Unit = {
-    val types = if (enabledDummyTypes) ts else ts.filterNot(XTypeRecovery.isDummyType)
+  private def storeNodeTypeInfo(storedNode: StoredNode, types: Seq[String]): Unit = {
     if (types.nonEmpty) {
-      if (types.size == 1) builder.setNodeProperty(storedNode, PropertyNames.TYPE_FULL_NAME, types.head)
-      else builder.setNodeProperty(storedNode, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+      storedNode match {
+        case m: Member =>
+          // To avoid overwriting member updates, we store them elsewhere until the end
+          newTypesForMembers.updateWith(m) {
+            case Some(ts) => Some(ts ++ types)
+            case None     => Some(types.toSet)
+          }
+        case n =>
+          if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
+          else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+      }
     }
   }
 

@@ -158,7 +158,7 @@ private class RecoverForPythonFile(
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
         cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
-          case Some(i) => (i.typeFullName +: i.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet
+          case Some(i) => (i.typeFullName +: i.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
           case None    => Set.empty
         }
       } else
@@ -249,7 +249,7 @@ private class RecoverForPythonFile(
       case List(base: Identifier, fi: FieldIdentifier) if base.name.equals("self") && fieldParents.nonEmpty =>
         val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq: _*).member.nameExact(fi.canonicalName)
         val globalTypes =
-          referencedFields.flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet
+          referencedFields.flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
         associateTypes(i, globalTypes)
       case _ => super.visitIdentifierAssignedToFieldLoad(i, fa)
     }
@@ -273,7 +273,7 @@ private class RecoverForPythonFile(
       // TODO: inheritsFromTypeFullName does not give full name in pysrc2cpg
       val baseTypeFullNames = cpg.typ.nameExact(baseTypes: _*).fullName.toSeq
       (parentTypes ++ baseTypeFullNames)
-        .map(f => f + "." + f.split("\\.").last + "<body>")
+        .map(_.concat("<meta>"))
         .filterNot(_.toLowerCase.matches("(any|object)"))
         .toSet
     } else {
@@ -293,6 +293,22 @@ private class RecoverForPythonFile(
       case code if isPyString(code)                            => Some(s"${PythonAstVisitor.builtinPrefix}str")
       case _                                                   => None
     }).toSet
+  }
+
+  override def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit = {
+    val pythonName = convertTypeFullNameToPythonMeta(typeFullName)
+    super.persistMemberWithTypeDecl(pythonName, memberName, types)
+  }
+
+  override def typeDeclTraversal(typeFullName: String): Traversal[TypeDecl] =
+    cpg.typeDecl.fullNameExact(convertTypeFullNameToPythonMeta(typeFullName))
+
+  private def convertTypeFullNameToPythonMeta(typeFullName: String): String = {
+    if (typeFullName.endsWith("<module>") || typeFullName.endsWith("<meta>")) typeFullName
+    else
+      (if (typeFullName.contains(pathSep))
+         typeFullName.substring(0, typeFullName.lastIndexOf(pathSep))
+       else typeFullName).concat("<meta>")
   }
 
 }
