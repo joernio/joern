@@ -61,19 +61,10 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](cpg: Cpg, itera
   */
 abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg) extends CpgPass(cpg) {
 
-  /** In the case of new nodes being added, will make sure these aren't duplicated because of future iterations. This
-    * comes in pairs of parent ID -> string identifier.
-    */
-  protected val addedNodes = mutable.HashSet.empty[(Long, String)]
-
   override def run(builder: DiffGraphBuilder): Unit =
-    try {
-      compilationUnit
-        .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
-        .foreach(_.get())
-    } finally {
-      addedNodes.clear()
-    }
+    compilationUnit
+      .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
+      .foreach(_.get())
 
   /** @return
     *   the compilation units as per how the language is compiled. e.g. file.
@@ -119,8 +110,6 @@ object XTypeRecovery {
   *   a compilation unit, e.g. file, procedure, type, etc.
   * @param builder
   *   the graph builder
-  * @param addedNodes
-  *   new node tracking set.
   * @param enabledDummyTypes
   *   enables placeholder/dummy types that show where a type comes from. Useful for pattern matching return values or
   *   field members where types are unknown.
@@ -131,7 +120,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   cpg: Cpg,
   cu: CompilationUnitType,
   builder: DiffGraphBuilder,
-  addedNodes: mutable.Set[(Long, String)],
   enabledDummyTypes: Boolean = true
 ) extends RecursiveTask[Unit] {
 
@@ -148,6 +136,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** The delimiter used to separate methods/functions in qualified names.
     */
   protected val pathSep = '.'
+
+  /** New node tracking set.
+    */
+  protected val addedNodes = mutable.HashSet.empty[(Long, String)]
 
   /** For tracking members and the type operations that need to be performed. Since these are mostly out of scope
     * locally it helps to track these separately.
@@ -188,7 +180,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   protected def assignments: Traversal[Assignment] =
-    cu.ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_))
+    cu.ast.isCall.nameExact(Operators.assignment).map(new OpNodes.Assignment(_))
 
   protected def members: Traversal[Member] =
     cu.ast.isMember
@@ -934,7 +926,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     *   the corresponding member, if found
     */
   protected def getLocalMember(i: Identifier): Option[Member] =
-    typeDeclTraversal(i.method.typeDecl.fullName.headOption.getOrElse(i.method.fullName)).member.name(i.name).headOption
+    typeDeclTraversal(i.method.typeDecl.fullName.headOption.getOrElse(i.method.fullName)).member
+      .nameExact(i.name)
+      .headOption
 
   private def storeNodeTypeInfo(storedNode: StoredNode, types: Seq[String]): Unit = {
     if (types.nonEmpty) {

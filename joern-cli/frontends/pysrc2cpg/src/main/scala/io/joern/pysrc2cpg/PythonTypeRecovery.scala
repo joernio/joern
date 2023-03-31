@@ -14,7 +14,6 @@ import overflowdb.traversal.Traversal
 import java.io.{File => JFile}
 import java.nio.file.Paths
 import java.util.regex.Matcher
-import scala.collection.mutable
 
 class PythonTypeRecoveryPass(cpg: Cpg, iterations: Int = 2, enabledDummyTypes: Boolean = true)
     extends XTypeRecoveryPass[File](cpg, iterations) {
@@ -31,7 +30,7 @@ private class PythonTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enab
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] =
-    new RecoverForPythonFile(cpg, unit, builder, addedNodes, finalIteration, enabledDummyTypes)
+    new RecoverForPythonFile(cpg, unit, builder, finalIteration, enabledDummyTypes)
 
 }
 
@@ -41,10 +40,9 @@ private class RecoverForPythonFile(
   cpg: Cpg,
   cu: File,
   builder: DiffGraphBuilder,
-  addedNodes: mutable.Set[(Long, String)],
   finalIteration: Boolean,
   enabledDummyTypes: Boolean
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, addedNodes, finalIteration && enabledDummyTypes) {
+) extends RecoverForXCompilationUnit[File](cpg, cu, builder, finalIteration && enabledDummyTypes) {
 
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
@@ -119,7 +117,7 @@ private class RecoverForPythonFile(
     val sep = Matcher.quoteReplacement(JFile.separator)
 
     lazy val methodsWithExportEntityAsIdentifier: List[String] = cpg.typeDecl
-      .fullName(s".*$path.*")
+      .fullName(s".*${Matcher.quoteReplacement(path)}.*")
       .where(_.member.nameExact(expEntity))
       .fullName
       .toList
