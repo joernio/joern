@@ -54,11 +54,12 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
 
 object JsSrc2Cpg {
 
-  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
+  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
     List(
       new ConstClosurePass(cpg),
-      new JavaScriptTypeRecovery(cpg, enabledDummyTypes = !config.exists(_.disableDummyTypes)),
+      new JavaScriptTypeRecoveryPass(cpg, enabledDummyTypes = !config.exists(_.disableDummyTypes)),
       new JavaScriptTypeHintCallLinker(cpg)
     )
+  }
 
 }

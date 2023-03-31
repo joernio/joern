@@ -26,7 +26,7 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
   override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
     new ImportsPass(cpg).createAndApply()
     new DynamicTypeHintFullNamePass(cpg).createAndApply()
-    new PythonTypeRecovery(cpg, enabledDummyTypes = !pyConfig.forall(_.disableDummyTypes)).createAndApply()
+    new PythonTypeRecoveryPass(cpg, enabledDummyTypes = !pyConfig.forall(_.disableDummyTypes)).createAndApply()
     new PythonTypeHintCallLinker(cpg).createAndApply()
     new PythonNaiveCallLinker(cpg).createAndApply()
     cpg

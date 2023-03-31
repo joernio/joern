@@ -9,27 +9,32 @@ import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
 import java.util.regex.Matcher
-import scala.collection.mutable
 
-class JavaScriptTypeRecovery(cpg: Cpg, enabledDummyTypes: Boolean = true) extends XTypeRecovery[File](cpg) {
+class JavaScriptTypeRecoveryPass(cpg: Cpg, iterations: Int = 2, enabledDummyTypes: Boolean = true)
+    extends XTypeRecoveryPass[File](cpg, iterations) {
+  override protected def generateRecoveryPass(finalIterations: Boolean): XTypeRecovery[File] =
+    new JavaScriptTypeRecovery(cpg, finalIterations, enabledDummyTypes)
+}
+
+private class JavaScriptTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledDummyTypes: Boolean = true)
+    extends XTypeRecovery[File](cpg) {
   override def compilationUnit: Traversal[File] = cpg.file
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] =
-    new RecoverForJavaScriptFile(cpg, unit, builder, globalTable, addedNodes, enabledDummyTypes)
+    new RecoverForJavaScriptFile(cpg, unit, builder, finalIteration, enabledDummyTypes)
 
 }
 
-class RecoverForJavaScriptFile(
+private class RecoverForJavaScriptFile(
   cpg: Cpg,
   cu: File,
   builder: DiffGraphBuilder,
-  globalTable: SymbolTable[GlobalKey],
-  addedNodes: mutable.Set[(Long, String)],
+  finalIteration: Boolean,
   enabledDummyTypes: Boolean
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes, enabledDummyTypes) {
+) extends RecoverForXCompilationUnit[File](cpg, cu, builder, finalIteration && enabledDummyTypes) {
 
   override protected val pathSep = ':'
 
@@ -89,8 +94,16 @@ class RecoverForJavaScriptFile(
             symbolTable.append(CallAlias(alias, Option("this")), methodPaths)
             symbolTable.append(LocalVar(alias), methodPaths)
           case List(_, b: Identifier) =>
-            // Exported variable
-            val typs = globalTable.get(b)
+            // Exported variable that we should find
+            val typs = cpg
+              .file(s"${Matcher.quoteReplacement(resolvedPath)}\\.?.*")
+              .method
+              .ast
+              .isIdentifier
+              .name(b.name)
+              .flatMap(i => i.typeFullName +: i.dynamicTypeHintFullName)
+              .filterNot(_ == "ANY")
+              .toSet
             symbolTable.append(LocalVar(alias), typs)
           case List(x: Call, b: MethodRef) =>
             // Exported function with a method ref of the function

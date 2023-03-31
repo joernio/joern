@@ -1802,7 +1802,7 @@ class PythonAstVisitor(
     contextStack.findEnclosingTypeDecl() match {
       case Some(typeDecl: NewTypeDecl) =>
         if (!members.contains(typeDecl) || !members(typeDecl).contains(name)) {
-          val member = nodeBuilder.memberNode(name, "")
+          val member = nodeBuilder.memberNode(name)
           edgeBuilder.astEdge(member, typeDecl, contextStack.order.getAndInc)
           members(typeDecl) = members.getOrElse(typeDecl, List()) ++ List(name)
         }

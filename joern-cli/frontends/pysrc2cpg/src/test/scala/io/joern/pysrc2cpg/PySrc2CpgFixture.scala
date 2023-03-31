@@ -28,7 +28,7 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
     X2Cpg.applyDefaultOverlays(this)
     new ImportsPass(this).createAndApply()
     new DynamicTypeHintFullNamePass(this).createAndApply()
-    new PythonTypeRecovery(this).createAndApply()
+    new PythonTypeRecoveryPass(this).createAndApply()
     new PythonTypeHintCallLinker(this).createAndApply()
     new PythonNaiveCallLinker(this).createAndApply()
 

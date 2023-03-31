@@ -1,7 +1,6 @@
 package io.joern.pysrc2cpg.passes
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
-import io.joern.x2cpg.Defines
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File

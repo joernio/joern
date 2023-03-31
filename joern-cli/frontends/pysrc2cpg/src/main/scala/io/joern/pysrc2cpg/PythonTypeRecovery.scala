@@ -1,6 +1,5 @@
 package io.joern.pysrc2cpg
 
-import io.joern.pysrc2cpg.PythonTypeRecovery.BUILTIN_PREFIX
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
@@ -15,9 +14,15 @@ import overflowdb.traversal.Traversal
 import java.io.{File => JFile}
 import java.nio.file.Paths
 import java.util.regex.Matcher
-import scala.collection.mutable
 
-class PythonTypeRecovery(cpg: Cpg, enabledDummyTypes: Boolean = true) extends XTypeRecovery[File](cpg) {
+class PythonTypeRecoveryPass(cpg: Cpg, iterations: Int = 2, enabledDummyTypes: Boolean = true)
+    extends XTypeRecoveryPass[File](cpg, iterations) {
+  override protected def generateRecoveryPass(finalIterations: Boolean): XTypeRecovery[File] =
+    new PythonTypeRecovery(cpg, finalIterations, enabledDummyTypes)
+}
+
+private class PythonTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledDummyTypes: Boolean = true)
+    extends XTypeRecovery[File](cpg) {
 
   override def compilationUnit: Traversal[File] = cpg.file
 
@@ -25,20 +30,19 @@ class PythonTypeRecovery(cpg: Cpg, enabledDummyTypes: Boolean = true) extends XT
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] =
-    new RecoverForPythonFile(cpg, unit, builder, globalTable, addedNodes, enabledDummyTypes)
+    new RecoverForPythonFile(cpg, unit, builder, finalIteration, enabledDummyTypes)
 
 }
 
 /** Performs type recovery from the root of a compilation unit level
   */
-class RecoverForPythonFile(
+private class RecoverForPythonFile(
   cpg: Cpg,
   cu: File,
   builder: DiffGraphBuilder,
-  globalTable: SymbolTable[GlobalKey],
-  addedNodes: mutable.Set[(Long, String)],
+  finalIteration: Boolean,
   enabledDummyTypes: Boolean
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes, enabledDummyTypes) {
+) extends RecoverForXCompilationUnit[File](cpg, cu, builder, finalIteration && enabledDummyTypes) {
 
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
@@ -113,7 +117,7 @@ class RecoverForPythonFile(
     val sep = Matcher.quoteReplacement(JFile.separator)
 
     lazy val methodsWithExportEntityAsIdentifier: List[String] = cpg.typeDecl
-      .fullName(s".*$path.*")
+      .fullName(s".*${Matcher.quoteReplacement(path)}.*")
       .where(_.member.nameExact(expEntity))
       .fullName
       .toList
@@ -123,7 +127,7 @@ class RecoverForPythonFile(
         // Case 1: Qualified path: import foo.bar => (bar.py or bar/__init__.py)
         val splitFunc = expEntity.split("\\.")
         val name      = splitFunc.tail.mkString(".")
-        s"${splitFunc(0)}.py:<module>.$name"
+        s"${splitFunc(0)}.py:<module>$pathSep$name"
       case "" =>
         // Case 2: import of a module: import foo => (foo.py or foo/__init__.py)
         s"$expEntity.py:<module>"
@@ -142,31 +146,19 @@ class RecoverForPythonFile(
           case Some(f) if f.isDirectory && (f / s"$expEntity.py").exists =>
             s"${(f / s"$expEntity.py").pathAsString}:<module>"
           case _ =>
-            s"${path.replaceAll("\\.", sep)}.py:<module>.$expEntity"
+            s"${path.replaceAll("\\.", sep)}.py:<module>$pathSep$expEntity"
         }
     }
 
     /** The two ways that this procedure could be resolved to in Python. */
     def possibleCalleeNames(procedureName: String, isMaybeConstructor: Boolean, isFieldOrVar: Boolean): Set[String] =
-      if (isMaybeConstructor)
-        Set(procedureName.concat(s".${Defines.ConstructorMethodName}"))
+      if (isMaybeConstructor) Set(procedureName.concat(s"$pathSep${Defines.ConstructorMethodName}"))
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
-        // TODO: When the workaround below is replaced, the following type->member check will kick in
         cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
-          case Some(i) => (i.typeFullName +: i.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet
+          case Some(i) => (i.typeFullName +: i.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
           case None    => Set.empty
         }
-        // TODO: Workaround until we write-to-CPG each iteration, use this for now as long as we have global table
-        cpg.method
-          .fullNameExact(m)
-          .ast
-          .isIdentifier
-          .nameExact(v)
-          .dedupBy(_.name)
-          .filter(globalTable.contains)
-          .flatMap(globalTable.get)
-          .toSet
       } else
         Set(procedureName, fullNameAsInit)
 
@@ -179,6 +171,7 @@ class RecoverForPythonFile(
 
     val isMaybeConstructor = expEntity.split("\\.").lastOption.exists(s => s.nonEmpty && s.charAt(0).isUpper)
     possibleCalleeNames(procedureName, isMaybeConstructor, procedureName.contains("<var>"))
+      .map(_.replaceAll("<var>", pathSep.toString))
   }
 
   override def postVisitImports(): Unit = {
@@ -188,7 +181,10 @@ class RecoverForPythonFile(
       // In case a method has been incorrectly determined to be a constructor based on the heuristic
       val tsNonConstructor =
         cpg.method
-          .fullNameExact(v.toSeq.map(_.replaceAll("<var>", ".").stripSuffix(s".${Defines.ConstructorMethodName}")): _*)
+          .fullNameExact(
+            v.toSeq
+              .map(_.replaceAll("<var>", pathSep.toString).stripSuffix(s"$pathSep${Defines.ConstructorMethodName}")): _*
+          )
           .l
       if (ts.nonEmpty)
         symbolTable.put(k, ts.fullName.toSet)
@@ -200,17 +196,6 @@ class RecoverForPythonFile(
         // This is likely external and we will ignore the init variant to be consistent
         symbolTable.put(k, symbolTable(k).filterNot(_.contains("__init__.py")))
       }
-      // Imports are by default used as calls, a second pass will tell us if this is not the case and we should
-      // check against global table
-      // TODO: This is a bit of a bandaid compared to potentially having alias sensitivity.
-
-      def fieldVar(path: String) = FieldVar(path.stripSuffix(s".${k.identifier}"), k.identifier)
-
-      symbolTable.get(k).headOption match {
-        case Some(path) if globalTable.contains(fieldVar(path)) =>
-          symbolTable.replaceWith(k, LocalVar(k.identifier), globalTable.get(fieldVar(path)))
-        case _ =>
-      }
     }
   }
 
@@ -220,9 +205,6 @@ class RecoverForPythonFile(
   override def isConstructor(c: Call): Boolean =
     c.name.nonEmpty && c.name.charAt(0).isUpper && c.code.endsWith(")")
 
-  def isConstructor(funcOrModule: String): Boolean =
-    !cpg.method.fullNameExact(funcOrModule).exists(_.name == Defines.ConstructorMethodName)
-
   /** If the parent method is module then it can be used as a field.
     */
   override def isField(i: Identifier): Boolean =
@@ -230,11 +212,11 @@ class RecoverForPythonFile(
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
-      case "<operator>.listLiteral"  => associateTypes(i, Set(s"$BUILTIN_PREFIX.list"))
-      case "<operator>.tupleLiteral" => associateTypes(i, Set(s"$BUILTIN_PREFIX.tuple"))
-      case "<operator>.dictLiteral"  => associateTypes(i, Set(s"$BUILTIN_PREFIX.dict"))
-      case "<operator>.setLiteral"   => associateTypes(i, Set(s"$BUILTIN_PREFIX.set"))
-      case Operators.conditional     => associateTypes(i, Set(s"$BUILTIN_PREFIX.bool"))
+      case "<operator>.listLiteral"  => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}list"))
+      case "<operator>.tupleLiteral" => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}tuple"))
+      case "<operator>.dictLiteral"  => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}dict"))
+      case "<operator>.setLiteral"   => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}set"))
+      case Operators.conditional     => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}bool"))
       case _                         => super.visitIdentifierAssignedToOperator(i, c, operation)
     }
   }
@@ -263,22 +245,24 @@ class RecoverForPythonFile(
     val fieldParents = getFieldParents(fa)
     fa.astChildren.l match {
       case List(base: Identifier, fi: FieldIdentifier) if base.name.equals("self") && fieldParents.nonEmpty =>
-        val globalTypes = fieldParents.flatMap(fp => globalTable.get(FieldVar(fp, fi.canonicalName)))
+        val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq: _*).member.nameExact(fi.canonicalName)
+        val globalTypes =
+          referencedFields.flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
         associateTypes(i, globalTypes)
       case _ => super.visitIdentifierAssignedToFieldLoad(i, fa)
     }
   }
 
   override def getTypesFromCall(c: Call): Set[String] = c.name match {
-    case "<operator>.listLiteral"  => Set(s"$BUILTIN_PREFIX.list")
-    case "<operator>.tupleLiteral" => Set(s"$BUILTIN_PREFIX.tuple")
-    case "<operator>.dictLiteral"  => Set(s"$BUILTIN_PREFIX.dict")
-    case "<operator>.setLiteral"   => Set(s"$BUILTIN_PREFIX.set")
+    case "<operator>.listLiteral"  => Set(s"${PythonAstVisitor.builtinPrefix}list")
+    case "<operator>.tupleLiteral" => Set(s"${PythonAstVisitor.builtinPrefix}tuple")
+    case "<operator>.dictLiteral"  => Set(s"${PythonAstVisitor.builtinPrefix}dict")
+    case "<operator>.setLiteral"   => Set(s"${PythonAstVisitor.builtinPrefix}set")
     case _                         => super.getTypesFromCall(c)
   }
 
   override def getFieldParents(fa: FieldAccess): Set[String] = {
-    if (fa.method.name.equals("<module>")) {
+    if (fa.method.name == "<module>") {
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
       val parentTypes =
@@ -287,8 +271,8 @@ class RecoverForPythonFile(
       // TODO: inheritsFromTypeFullName does not give full name in pysrc2cpg
       val baseTypeFullNames = cpg.typ.nameExact(baseTypes: _*).fullName.toSeq
       (parentTypes ++ baseTypeFullNames)
-        .map(_.concat(".<body>"))
-        .filterNot(t => t.toLowerCase.matches("(any|object)"))
+        .map(_.concat("<meta>"))
+        .filterNot(_.toLowerCase.matches("(any|object)"))
         .toSet
     } else {
       super.getFieldParents(fa)
@@ -300,17 +284,29 @@ class RecoverForPythonFile(
 
   override def getLiteralType(l: Literal): Set[String] = {
     (l.code match {
-      case code if code.toIntOption.isDefined                  => Some(s"$BUILTIN_PREFIX.int")
-      case code if code.toDoubleOption.isDefined               => Some(s"$BUILTIN_PREFIX.float")
-      case code if "True".equals(code) || "False".equals(code) => Some(s"$BUILTIN_PREFIX.bool")
-      case code if code.equals("None")                         => Some(s"$BUILTIN_PREFIX.None")
-      case code if isPyString(code)                            => Some(s"$BUILTIN_PREFIX.str")
+      case code if code.toIntOption.isDefined                  => Some(s"${PythonAstVisitor.builtinPrefix}int")
+      case code if code.toDoubleOption.isDefined               => Some(s"${PythonAstVisitor.builtinPrefix}float")
+      case code if "True".equals(code) || "False".equals(code) => Some(s"${PythonAstVisitor.builtinPrefix}bool")
+      case code if code.equals("None")                         => Some(s"${PythonAstVisitor.builtinPrefix}None")
+      case code if isPyString(code)                            => Some(s"${PythonAstVisitor.builtinPrefix}str")
       case _                                                   => None
     }).toSet
   }
 
-}
+  override def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit = {
+    val pythonName = convertTypeFullNameToPythonMeta(typeFullName)
+    super.persistMemberWithTypeDecl(pythonName, memberName, types)
+  }
 
-object PythonTypeRecovery {
-  def BUILTIN_PREFIX = "__builtin"
+  override def typeDeclTraversal(typeFullName: String): Traversal[TypeDecl] =
+    cpg.typeDecl.fullNameExact(convertTypeFullNameToPythonMeta(typeFullName))
+
+  private def convertTypeFullNameToPythonMeta(typeFullName: String): String = {
+    if (typeFullName.endsWith("<module>") || typeFullName.endsWith("<meta>")) typeFullName
+    else
+      (if (typeFullName.contains(pathSep))
+         typeFullName.substring(0, typeFullName.lastIndexOf(pathSep))
+       else typeFullName).concat("<meta>")
+  }
+
 }
