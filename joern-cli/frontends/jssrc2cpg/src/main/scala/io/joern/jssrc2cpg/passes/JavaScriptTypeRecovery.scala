@@ -9,7 +9,6 @@ import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
 import java.util.regex.Matcher
-import scala.collection.mutable
 
 class JavaScriptTypeRecoveryPass(cpg: Cpg, iterations: Int = 2, enabledDummyTypes: Boolean = true)
     extends XTypeRecoveryPass[File](cpg, iterations) {
@@ -25,7 +24,7 @@ private class JavaScriptTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, 
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] =
-    new RecoverForJavaScriptFile(cpg, unit, builder, addedNodes, finalIteration, enabledDummyTypes)
+    new RecoverForJavaScriptFile(cpg, unit, builder, finalIteration, enabledDummyTypes)
 
 }
 
@@ -33,10 +32,9 @@ private class RecoverForJavaScriptFile(
   cpg: Cpg,
   cu: File,
   builder: DiffGraphBuilder,
-  addedNodes: mutable.Set[(Long, String)],
   finalIteration: Boolean,
   enabledDummyTypes: Boolean
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, addedNodes, finalIteration && enabledDummyTypes) {
+) extends RecoverForXCompilationUnit[File](cpg, cu, builder, finalIteration && enabledDummyTypes) {
 
   override protected val pathSep = ':'
 
