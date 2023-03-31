@@ -85,7 +85,7 @@ trait TypeInfoProvider {
 
   def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind
 
-  def isConstructorCall(expr: KtCallExpression): Option[Boolean]
+  def isConstructorCall(expr: KtExpression): Option[Boolean]
 
   def typeFullName(expr: KtTypeReference, defaultValue: String): String
 
