@@ -768,19 +768,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case method: PhpMethodDecl if method.name.name == Defines.ConstructorMethodName => None // Handled above
 
-      case method: PhpMethodDecl =>
-        Option(astForMethodDecl(method))
-
-      case classLikeStmt: PhpClassLikeStmt =>
-        Option(astForClassLikeStmt(classLikeStmt))
-
-      case enumCase: PhpEnumCaseStmt => Option(astForEnumCase(enumCase))
-
-      case expr: PhpExpr => Option(astForExpr(expr))
-
-      case other =>
-        logger.warn(s"Found unhandled class body stmt $other")
-        Option(astForStmt(other))
+      // Not all statements are supported in class bodies, but since this is re-used for namespaces
+      // we allow that here.
+      case stmt => Some(astForStmt(stmt))
     }
 
     val clinitAst           = astForStaticAndConstInits
