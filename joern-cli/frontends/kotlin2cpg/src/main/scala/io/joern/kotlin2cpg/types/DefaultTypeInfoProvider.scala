@@ -322,12 +322,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     descMaybe.collect { case desc: FunctionDescriptor => desc }
   }
 
-  def isConstructorCall(expr: KtCallExpression): Option[Boolean] = {
-    resolvedCallDescriptor(expr).collect {
-      case _: ClassConstructorDescriptorImpl     => Some(true)
-      case _: TypeAliasConstructorDescriptorImpl => Some(true)
-      case _                                     => Some(false)
-    }.flatten
+  def isConstructorCall(expr: KtExpression): Option[Boolean] = {
+    expr match {
+      case call =>
+        resolvedCallDescriptor(call).collect {
+          case _: ClassConstructorDescriptorImpl     => Some(true)
+          case _: TypeAliasConstructorDescriptorImpl => Some(true)
+          case _                                     => Some(false)
+        }.flatten
+      case _ => Some(false)
+    }
   }
 
   def fullNameWithSignature(expr: KtCallExpression, defaultValue: (String, String)): (String, String) = {

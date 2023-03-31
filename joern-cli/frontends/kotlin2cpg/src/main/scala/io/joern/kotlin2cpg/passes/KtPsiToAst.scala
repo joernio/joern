@@ -653,68 +653,21 @@ trait KtPsiToAst {
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args)
   }
 
-  /*
-   _______ example lowering _________
-  | -> val (one, two) = makeA("AMESSAGE")
-  | -> LOCAL one
-  | -> LOCAL two
-  | -> LOCAL tmp
-  | -> tmp = makeA("AMESSAGE")
-  | -> CALL one = tmp.component1()
-  | -> CALL two = tmp.component2()
-  |__________________________________
-   */
-  private def astsForDestructuringDeclarationWithNonCtorCallRHS(
+  private def astsForDestructuringDeclarationWithRHS(
     expr: KtDestructuringDeclaration
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
-    val initExpr             = expr.getInitializer
-    val destructuringEntries = nonUnderscoreDestructuringEntries(expr)
-    val localsForEntries = destructuringEntries.map { entry =>
-      val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      Ast(localNode(entry.getName, typeFullName, None, line(entry), column(entry)))
+    val typedInit = Option(expr.getInitializer).collect {
+      case c: KtCallExpression           => c
+      case dqe: KtDotQualifiedExpression => dqe
     }
-
-    val callRhsTypeFullName = registerType(typeInfoProvider.expressionType(initExpr, Defines.UnresolvedNamespace))
-    val tmpName             = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
-    val localForTmpNode     = localNode(tmpName, callRhsTypeFullName)
-    scope.addToScope(localForTmpNode.name, localForTmpNode)
-
-    val assignmentLhsNode = identifierNode(tmpName, localForTmpNode.typeFullName, line(expr), column(expr))
-    val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
-
-    val assignmentNode   = operatorCallNode(Operators.assignment, s"$tmpName = ${initExpr.getText}", None)
-    val assignmentRhsAst = astsForExpression(initExpr, None).head
-    val assignmentAst    = callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
-    registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-
-    val assignmentsForEntries = destructuringEntries.zipWithIndex.map { case (entry, idx) =>
-      assignmentAstForDestructuringEntry(entry, localForTmpNode.name, localForTmpNode.typeFullName, idx + 1)
-    }
-    localsForEntries ++ Seq(Ast(localForTmpNode)) ++
-      Seq(assignmentAst) ++ assignmentsForEntries
-  }
-
-  /*
-   _______ example lowering _________
-  | -> val (one, two) = Person("a", "b")
-  | -> LOCAL one
-  | -> LOCAL two
-  | -> LOCAL tmp
-  | -> tmp = alloc
-  | -> tmp.<init>
-  | -> CALL one = tmp.component1()
-  | -> CALL two = tmp.component2()
-  |__________________________________
-   */
-  private def astsForDestructuringDeclarationWithCtorRHS(
-    expr: KtDestructuringDeclaration
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
-    val typedInit = Option(expr.getInitializer).collect { case e: KtCallExpression => e }
     if (typedInit.isEmpty) {
-      logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}`.")
+      logger.warn(
+        s"Unhandled case for destructuring declaration: `${expr.getText}`; type: `${expr.getInitializer.getClass}`."
+      )
       return Seq()
     }
-    val ctorCall = typedInit.get
+    val rhsCall             = typedInit.get
+    val callRhsTypeFullName = registerType(typeInfoProvider.expressionType(rhsCall, TypeConstants.any))
 
     val destructuringEntries = nonUnderscoreDestructuringEntries(expr)
     val localsForEntries = destructuringEntries.map { entry =>
@@ -724,50 +677,67 @@ trait KtPsiToAst {
       Ast(node)
     }
 
-    val ctorTypeFullName = registerType(typeInfoProvider.expressionType(ctorCall, Defines.UnresolvedNamespace))
-    val tmpName          = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
-    val localForTmpNode  = localNode(tmpName, ctorTypeFullName)
+    val isCtor = expr.getInitializer match {
+      case _: KtCallExpression => typeInfoProvider.isConstructorCall(rhsCall).getOrElse(false)
+      case _                   => false
+    }
+
+    val tmpName         = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
+    val localForTmpNode = localNode(tmpName, callRhsTypeFullName)
     scope.addToScope(localForTmpNode.name, localForTmpNode)
     val localForTmpAst = Ast(localForTmpNode)
 
-    val assignmentRhsNode =
-      operatorCallNode(Operators.alloc, Constants.alloc, Option(localForTmpNode.typeFullName), line(expr), column(expr))
     val assignmentLhsNode = identifierNode(tmpName, localForTmpNode.typeFullName, line(expr), column(expr))
     val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
+    val tmpAssignmentAst =
+      if (isCtor) {
+        val assignmentRhsNode =
+          operatorCallNode(
+            Operators.alloc,
+            Constants.alloc,
+            Option(localForTmpNode.typeFullName),
+            line(expr),
+            column(expr)
+          )
+        val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName  = ${Constants.alloc}", None)
+        callAst(assignmentNode, List(assignmentLhsAst, Ast(assignmentRhsNode)))
+      } else {
+        val assignmentNode   = operatorCallNode(Operators.assignment, s"$tmpName = ${rhsCall.getText}", None)
+        val assignmentRhsAst = astsForExpression(rhsCall, None).head
+        callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
+      }
+    val tmpAssignmentPrologue = rhsCall match {
+      case call: KtCallExpression if isCtor =>
+        val initReceiverNode =
+          identifierNode(tmpName, localForTmpNode.typeFullName, line(expr), column(expr)).argumentIndex(0)
+        val initReceiverAst = Ast(initReceiverNode).withRefEdge(initReceiverNode, localForTmpNode)
 
-    val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName  = ${Constants.alloc}", None)
-    val assignmentAst  = callAst(assignmentNode, List(assignmentLhsAst, Ast(assignmentRhsNode)))
+        val argAsts = withIndex(call.getValueArguments.asScala.toSeq) { case (arg, idx) =>
+          astsForExpression(arg.getArgumentExpression, Some(idx))
+        }.flatten
 
-    val initReceiverNode = identifierNode(tmpName, localForTmpNode.typeFullName, line(expr), column(expr))
-      .argumentIndex(0)
-    val initReceiverAst = Ast(initReceiverNode).withRefEdge(initReceiverNode, localForTmpNode)
-
-    val argAsts = withIndex(ctorCall.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-      astsForExpression(arg.getArgumentExpression, Some(idx))
-    }.flatten
-
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ctorCall, (TypeConstants.any, TypeConstants.any))
-    registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val initCallNode = callNode(
-      Constants.init,
-      Constants.init,
-      fullName,
-      signature,
-      TypeConstants.void,
-      DispatchTypes.STATIC_DISPATCH,
-      line(expr),
-      column(expr)
-    )
-    val initCallAst = Ast(initCallNode)
-      .withChildren(List(initReceiverAst) ++ argAsts)
-      .withArgEdges(initCallNode, Seq(initReceiverNode) ++ argAsts.flatMap(_.root))
+        val (fullName, signature) = typeInfoProvider.fullNameWithSignature(call, (TypeConstants.any, TypeConstants.any))
+        registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+        val initCallNode = callNode(
+          Constants.init,
+          Constants.init,
+          fullName,
+          signature,
+          TypeConstants.void,
+          DispatchTypes.STATIC_DISPATCH,
+          line(expr),
+          column(expr)
+        )
+        Seq(callAst(initCallNode, argAsts, Some(initReceiverAst), None))
+      case _ => Seq()
+    }
 
     val assignmentsForEntries = destructuringEntries.zipWithIndex.map { case (entry, idx) =>
       assignmentAstForDestructuringEntry(entry, localForTmpNode.name, localForTmpNode.typeFullName, idx + 1)
     }
-
     localsForEntries ++ Seq(localForTmpAst) ++
-      Seq(assignmentAst) ++ Seq(initCallAst) ++ assignmentsForEntries
+      Seq(tmpAssignmentAst) ++ tmpAssignmentPrologue ++ assignmentsForEntries
+
   }
 
   private def assignmentAstForDestructuringEntry(
@@ -861,12 +831,7 @@ trait KtPsiToAst {
       case _: KtExpression              => true
       case null                         => false
     }
-    val isCtor = expr.getInitializer match {
-      case typedExpr: KtCallExpression => typeInfoProvider.isConstructorCall(typedExpr).getOrElse(false)
-      case _                           => false
-    }
-    if (isCtor) astsForDestructuringDeclarationWithCtorRHS(expr)
-    else if (hasNonRefExprRHS) astsForDestructuringDeclarationWithNonCtorCallRHS(expr)
+    if (hasNonRefExprRHS) astsForDestructuringDeclarationWithRHS(expr)
     else astsForDestructuringDeclarationWithVarRHS(expr)
   }
 
