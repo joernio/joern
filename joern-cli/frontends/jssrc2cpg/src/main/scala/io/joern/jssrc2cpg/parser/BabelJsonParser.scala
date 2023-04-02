@@ -28,7 +28,7 @@ object BabelJsonParser {
     }
 
     val jsonContent       = IOUtils.readLinesInFile(file).mkString
-    val json              = ujson.read(jsonContent)
+    val json              = ujson.transform(jsonContent, JsValueVisitor)
     val filename          = json("relativeName").str
     val fullPath          = Paths.get(rootPath.toString, filename)
     val ls                = SourceFiles.retrieveLineSeparator(fullPath.toString)
