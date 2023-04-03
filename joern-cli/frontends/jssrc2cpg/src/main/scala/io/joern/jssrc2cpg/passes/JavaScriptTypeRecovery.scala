@@ -8,7 +8,8 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
-import java.util.regex.Matcher
+import java.util.regex.{Matcher, Pattern}
+import scala.util.{Failure, Success, Try}
 
 class JavaScriptTypeRecoveryPass(cpg: Cpg, iterations: Int = 2, enabledDummyTypes: Boolean = true)
     extends XTypeRecoveryPass[File](cpg, iterations) {
@@ -45,14 +46,19 @@ private class RecoverForJavaScriptFile(
   }
 
   override protected def visitImport(i: Import): Unit = for {
-    entity <- i.importedEntity.map(_.stripPrefix("./"))
-    alias  <- i.importedAs
+    rawEntity <- i.importedEntity.map(_.stripPrefix("./"))
+    alias     <- i.importedAs
   } {
-    val sep = Matcher.quoteReplacement(JFile.separator)
+    val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
+    val matcher     = pathPattern.matcher(rawEntity)
+    val sep         = Matcher.quoteReplacement(JFile.separator)
     val currentFile = codeRoot + (cu match {
       case x: File => x.name
       case _       => cu.file.name.headOption.getOrElse("")
     })
+    // TODO: At times there is an operation inside of a require, e.g. path.resolve(__dirname + "/../config/env/all.js")
+    //  this tries to recover the string but does not perform string constant propagation
+    val entity = if (matcher.find()) matcher.group(1) else rawEntity
     val resolvedPath = better.files
       .File(currentFile.stripSuffix(currentFile.split(sep).last), entity.split(":").head)
       .pathAsString
@@ -60,9 +66,16 @@ private class RecoverForJavaScriptFile(
 
     val isImportingModule = !entity.contains(":")
 
-    def targetModule = cpg
-      .file(s"${Matcher.quoteReplacement(resolvedPath)}\\.?.*")
-      .method
+    def targetModule = Try(
+      cpg
+        .file(s"${Matcher.quoteReplacement(resolvedPath)}\\.?.*")
+        .method
+    ) match {
+      case Failure(_) =>
+        logger.warn(s"Unable to resolve import due to irregular regex at '${i.importedEntity.getOrElse("")}'")
+        Traversal.empty
+      case Success(modules) => modules
+    }
 
     def targetAssignments = targetModule
       .nameExact(":program")
