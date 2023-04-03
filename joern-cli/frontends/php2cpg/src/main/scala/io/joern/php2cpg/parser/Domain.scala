@@ -63,8 +63,10 @@ object Domain {
   }
 
   private val logger                      = LoggerFactory.getLogger(Domain.getClass)
-  private val NamespaceDelimiter          = "\\"
   private val FullyQualifiedNameDelimiter = "\\"
+  val NamespaceDelimiter                  = "\\"
+  val StaticMethodDelimiter               = "::"
+  val InstanceMethodDelimiter             = "->"
 
   final case class PhpAttributes(lineNumber: Option[Integer], kind: Option[Int])
   object PhpAttributes {

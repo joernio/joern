@@ -165,21 +165,38 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     asts
   }
 
+  private def composeMethodFullName(
+    namespacePrefix: Option[String],
+    className: Option[String],
+    methodName: String,
+    isStatic: Boolean
+  ): String = {
+    val methodDelimiter = if (isStatic) StaticMethodDelimiter else InstanceMethodDelimiter
+
+    val nameWithClass = List(className, Some(methodName)).flatten.mkString(methodDelimiter)
+
+    List(namespacePrefix, Some(nameWithClass)).flatten.mkString(NamespaceDelimiter)
+  }
+
   private def astForMethodDecl(
     decl: PhpMethodDecl,
     bodyPrefixAsts: List[Ast] = Nil,
     fullNameOverride: Option[String] = None
   ): Ast = {
-    val namespacePrefix = getNamespacePrefixForName
-    val signature       = s"${Defines.UnresolvedSignature}(${decl.params.size})"
-    val fullName        = fullNameOverride.getOrElse(s"$namespacePrefix${decl.name.name}:$signature")
-
     val modifiers = decl.modifiers.map(modifierNode)
-    val thisParam = if (decl.isClassMethod && !modifiers.exists(_.modifierType == ModifierTypes.STATIC)) {
+    val isStatic  = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
+    val thisParam = if (decl.isClassMethod && !isStatic) {
       Option(thisParamAstForMethod(line(decl)))
     } else {
       None
     }
+
+    val methodName      = decl.name.name
+    val namespacePrefix = getNamespacePrefixForName
+    val className       = scope.getEnclosingTypeDeclType
+    val fullName = fullNameOverride.getOrElse(composeMethodFullName(namespacePrefix, className, methodName, isStatic))
+
+    val signature = s"${Defines.UnresolvedSignature}(${decl.params.size})"
 
     val parameters = thisParam.toList ++ setParamIndices(decl.params.map(astForParam))
 
@@ -187,11 +204,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case Nil  => ""
       case mods => s"${mods.mkString(" ")} "
     }
-    val methodCode = s"${modifierString}function ${decl.name.name}(${parameters.map(_.rootCodeOrEmpty).mkString(",")})"
+    val methodCode = s"${modifierString}function $methodName(${parameters.map(_.rootCodeOrEmpty).mkString(",")})"
 
     val methodNode =
       NewMethod()
-        .name(decl.name.name)
+        .name(methodName)
         .fullName(fullName)
         .signature(signature)
         .code(methodCode)
@@ -792,18 +809,18 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     }
   }
 
-  private def getNamespacePrefixForName: String = {
-    scope.getEnclosingTypeDeclType
+  private def getNamespacePrefixForName: Option[String] = {
+    scope.getEnclosingNamespaceName
       .filterNot(_ == NamespaceTraversal.globalNamespaceName)
-      .map(typeName => s"$typeName.")
-      .getOrElse("")
+      .map(typeName => s"$typeName$NamespaceDelimiter")
   }
 
   private def defaultConstructorAst(): Ast = {
     val namespacePrefix = getNamespacePrefixForName
+    val className       = scope.getEnclosingTypeDeclType
+    val fullName        = composeMethodFullName(namespacePrefix, className, Defines.ConstructorMethodName)
 
     val signature = s"${Defines.UnresolvedSignature}(0)"
-    val fullName  = s"$namespacePrefix${Defines.ConstructorMethodName}:$signature"
 
     val modifiers = List(ModifierTypes.VIRTUAL, ModifierTypes.PUBLIC, ModifierTypes.CONSTRUCTOR).map(modifierNode)
 
@@ -1394,10 +1411,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForClosureExpr(expr: PhpClosureExpr): Ast = {
-    val methodName     = getNewTmpName("__closure")
-    val typePrefix     = getNamespacePrefixForName
-    val methodFullName = s"$typePrefix$methodName:${Defines.UnresolvedSignature}(${expr.params.size})"
-    val methodRef      = NewMethodRef().methodFullName(methodFullName).code(methodFullName).lineNumber(line(expr))
+    val methodName      = getNewTmpName("__closure")
+    val namespacePrefix = getNamespacePrefixForName
+    val classPrefix     = scope.getEnclosingTypeDeclType
+    val methodFullName  = composeMethodFullName(namespacePrefix, classPrefix, methodName, isStatic = false)
+    val methodRef       = NewMethodRef().methodFullName(methodFullName).code(methodFullName).lineNumber(line(expr))
 
     val localsForUses = expr.uses.flatMap { closureUse =>
       val variableAst = astForExpr(closureUse.variable)
@@ -1439,7 +1457,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     }
 
     // Create method for closure
-    val name      = PhpNameExpr(methodName, expr.attributes)
+    val name = PhpNameExpr(methodName, expr.attributes)
+    // TODO Check for static modifier
     val modifiers = Nil
     val methodDecl = PhpMethodDecl(
       name,

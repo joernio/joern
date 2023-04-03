@@ -15,4 +15,22 @@ class NamespaceTests extends PhpCode2CpgFixture {
       ns.astChildren.code.l shouldBe List("echo 0")
     }
   }
+
+  "methods defined in non-namespaced code should not include a namespace prefix" in {
+    val cpg = code("""<?php
+        |function foo() {}
+        |""".stripMargin)
+
+    cpg.method.name("foo").fullName.l shouldBe List("foo")
+  }
+
+  "methods defined in a namespace without sub-namespace should have the correct name" in {
+    val cpg = code("""<?php
+        |namespace ns;
+        |function foo() {}
+        |""".stripMargin)
+
+    cpg.namespace.isEmpty shouldBe false
+    cpg.method.name("foo").fullName.l shouldBe List("ns\\foo")
+  }
 }
