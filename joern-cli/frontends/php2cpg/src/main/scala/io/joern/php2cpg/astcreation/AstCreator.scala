@@ -115,6 +115,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt)
       case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt)
       case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt)
+      case enumCase: PhpEnumCaseStmt       => astForEnumCase(enumCase)
       // TODO Figure out if this is breaking any assumptions that will cause issues later.
       case staticStmt: PhpStaticStmt => Ast().withChildren(astsForStaticStmt(staticStmt))
       case unhandled =>
@@ -768,19 +769,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case method: PhpMethodDecl if method.name.name == Defines.ConstructorMethodName => None // Handled above
 
-      case method: PhpMethodDecl =>
-        Option(astForMethodDecl(method))
-
-      case classLikeStmt: PhpClassLikeStmt =>
-        Option(astForClassLikeStmt(classLikeStmt))
-
-      case enumCase: PhpEnumCaseStmt => Option(astForEnumCase(enumCase))
-
-      case expr: PhpExpr => Option(astForExpr(expr))
-
-      case other =>
-        logger.warn(s"Found unhandled class body stmt $other")
-        Option(astForStmt(other))
+      // Not all statements are supported in class bodies, but since this is re-used for namespaces
+      // we allow that here.
+      case stmt => Some(astForStmt(stmt))
     }
 
     val clinitAst           = astForStaticAndConstInits
