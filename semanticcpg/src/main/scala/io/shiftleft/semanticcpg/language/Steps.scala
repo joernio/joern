@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
+import io.shiftleft.codepropertygraph.generated.nodes.{AbstractNode, NewNode, StoredNode}
 import org.json4s.native.Serialization.{write, writePretty}
 import org.json4s.{CustomSerializer, Extraction}
 import org.json4s.Formats
@@ -72,10 +72,10 @@ class Steps[A](val traversal: Traversal[A]) extends AnyVal {
 }
 
 object Steps {
-  private lazy val nodeSerializer = new CustomSerializer[StoredNode](implicit format =>
+  private lazy val nodeSerializer = new CustomSerializer[AbstractNode](implicit format =>
     (
       { case _ => ??? },
-      { case node: StoredNode =>
+      { case node: AbstractNode with Product =>
         val elementMap = (0 until node.productArity).map { i =>
           val label   = node.productElementName(i)
           val element = node.productElement(i)
