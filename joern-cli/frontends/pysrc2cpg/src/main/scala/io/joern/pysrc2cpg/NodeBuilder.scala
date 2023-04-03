@@ -64,7 +64,7 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .columnNumber(lineAndColumn.column)
     addNodeToDiff(typeRefNode)
   }
-  
+
   def memberNode(name: String): nodes.NewMember = {
     val memberNode = nodes
       .NewMember()

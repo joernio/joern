@@ -1784,8 +1784,8 @@ class PythonAstVisitor(
     * __getattribute__ and __get__.
     */
   def convert(attribute: ast.Attribute): nodes.NewNode = {
-    val baseNode  = convert(attribute.value)
-    val fieldName = attribute.attr
+    val baseNode   = convert(attribute.value)
+    val fieldName  = attribute.attr
     val lineAndCol = lineAndColOf(attribute)
 
     val fieldAccess = createFieldAccess(baseNode, fieldName, lineAndCol)
