@@ -11,31 +11,30 @@ import java.io.{File => JFile}
 import java.util.regex.{Matcher, Pattern}
 import scala.util.{Failure, Success, Try}
 
-class JavaScriptTypeRecoveryPass(cpg: Cpg, iterations: Int = 2, enabledDummyTypes: Boolean = true)
-    extends XTypeRecoveryPass[File](cpg, iterations) {
-  override protected def generateRecoveryPass(finalIterations: Boolean): XTypeRecovery[File] =
-    new JavaScriptTypeRecovery(cpg, finalIterations, enabledDummyTypes)
+class JavaScriptTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
+    extends XTypeRecoveryPass[File](cpg, config) {
+  override protected def generateRecoveryPass(config: XTypeRecoveryConfig): XTypeRecovery[File] =
+    new JavaScriptTypeRecovery(cpg, config)
 }
 
-private class JavaScriptTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledDummyTypes: Boolean = true)
-    extends XTypeRecovery[File](cpg) {
+private class JavaScriptTypeRecovery(cpg: Cpg, config: XTypeRecoveryConfig) extends XTypeRecovery[File](cpg) {
   override def compilationUnit: Traversal[File] = cpg.file
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] =
-    new RecoverForJavaScriptFile(cpg, unit, builder, finalIteration, enabledDummyTypes)
+    new RecoverForJavaScriptFile(
+      cpg,
+      unit,
+      builder,
+      config.copy(enabledDummyTypes = config.isFinalIteration && config.enabledDummyTypes)
+    )
 
 }
 
-private class RecoverForJavaScriptFile(
-  cpg: Cpg,
-  cu: File,
-  builder: DiffGraphBuilder,
-  finalIteration: Boolean,
-  enabledDummyTypes: Boolean
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, finalIteration && enabledDummyTypes) {
+private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, config: XTypeRecoveryConfig)
+    extends RecoverForXCompilationUnit[File](cpg, cu, builder, config) {
 
   override protected val pathSep = ':'
 
@@ -136,13 +135,16 @@ private class RecoverForJavaScriptFile(
   }
 
   override protected def isField(i: Identifier): Boolean =
-    cu.method
-      .nameExact(":program")
-      .ast
-      .assignment
-      .code("exports.*")
-      .where(_.argument.code(s".*${i.name}.*"))
-      .nonEmpty || super.isField(i)
+    config.isFieldMemoization.getOrElseUpdate(
+      i,
+      cu.method
+        .nameExact(":program")
+        .ast
+        .assignment
+        .code("exports.*")
+        .where(_.argument.code(s".*${i.name}.*"))
+        .nonEmpty || super.isField(i)
+    )
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.contains(".alloc")) {

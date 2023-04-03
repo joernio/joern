@@ -15,13 +15,13 @@ import java.io.{File => JFile}
 import java.nio.file.Paths
 import java.util.regex.Matcher
 
-class PythonTypeRecoveryPass(cpg: Cpg, iterations: Int = 2, enabledDummyTypes: Boolean = true)
-    extends XTypeRecoveryPass[File](cpg, iterations) {
-  override protected def generateRecoveryPass(finalIterations: Boolean): XTypeRecovery[File] =
-    new PythonTypeRecovery(cpg, finalIterations, enabledDummyTypes)
+class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
+    extends XTypeRecoveryPass[File](cpg, config) {
+  override protected def generateRecoveryPass(config: XTypeRecoveryConfig): XTypeRecovery[File] =
+    new PythonTypeRecovery(cpg, config)
 }
 
-private class PythonTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enabledDummyTypes: Boolean = true)
+private class PythonTypeRecovery(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecovery[File](cpg) {
 
   override def compilationUnit: Traversal[File] = cpg.file
@@ -30,19 +30,19 @@ private class PythonTypeRecovery(cpg: Cpg, finalIteration: Boolean = false, enab
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] =
-    new RecoverForPythonFile(cpg, unit, builder, finalIteration, enabledDummyTypes)
+    new RecoverForPythonFile(
+      cpg,
+      unit,
+      builder,
+      config.copy(enabledDummyTypes = config.isFinalIteration && config.enabledDummyTypes)
+    )
 
 }
 
 /** Performs type recovery from the root of a compilation unit level
   */
-private class RecoverForPythonFile(
-  cpg: Cpg,
-  cu: File,
-  builder: DiffGraphBuilder,
-  finalIteration: Boolean,
-  enabledDummyTypes: Boolean
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, finalIteration && enabledDummyTypes) {
+private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, config: XTypeRecoveryConfig)
+    extends RecoverForXCompilationUnit[File](cpg, cu, builder, config) {
 
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
@@ -208,7 +208,7 @@ private class RecoverForPythonFile(
   /** If the parent method is module then it can be used as a field.
     */
   override def isField(i: Identifier): Boolean =
-    i.method.name.matches("(<module>|__init__)") || super.isField(i)
+    config.isFieldMemoization.getOrElseUpdate(i, i.method.name.matches("(<module>|__init__)") || super.isField(i))
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
