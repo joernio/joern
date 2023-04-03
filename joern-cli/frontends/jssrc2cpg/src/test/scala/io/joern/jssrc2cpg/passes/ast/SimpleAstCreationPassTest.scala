@@ -9,6 +9,11 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple fragments" should {
 
+    "have correct structure for long numeric literal" in AstFixture("console.log(1e20)") { cpg =>
+      val List(lit) = cpg.literal.l
+      lit.code shouldBe "1e20"
+    }
+
     "have correct structure for non null expression" in AstFixture("const foo = bar!") { cpg =>
       val List(nonNullCall) = cpg.call(Operators.notNullAssert).l
       val List(arg)         = nonNullCall.argument.isIdentifier.l
