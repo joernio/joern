@@ -142,8 +142,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         .ast
         .assignment
         .code("exports.*")
-        .where(_.argument.code(s".*${i.name}.*"))
-        .nonEmpty || super.isField(i)
+        .exists(_.argument.code.exists(_.contains(i.name))) || super.isField(i)
     )
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
