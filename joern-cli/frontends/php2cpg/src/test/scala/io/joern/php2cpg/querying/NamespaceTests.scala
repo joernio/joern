@@ -12,7 +12,7 @@ class NamespaceTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.namespaceBlock.name("foo").l) { case List(ns) =>
-      ns.astChildren.l.map(_.code) shouldBe List("echo 0")
+      ns.astChildren.code.l shouldBe List("echo 0")
     }
   }
 }
