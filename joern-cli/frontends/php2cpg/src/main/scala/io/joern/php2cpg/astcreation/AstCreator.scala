@@ -115,6 +115,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt)
       case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt)
       case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt)
+      case enumCase: PhpEnumCaseStmt       => astForEnumCase(enumCase)
       // TODO Figure out if this is breaking any assumptions that will cause issues later.
       case staticStmt: PhpStaticStmt => Ast().withChildren(astsForStaticStmt(staticStmt))
       case unhandled =>
