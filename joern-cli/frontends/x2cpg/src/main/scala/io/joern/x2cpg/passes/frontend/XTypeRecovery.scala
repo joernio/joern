@@ -15,6 +15,7 @@ import overflowdb.traversal.Traversal
 
 import java.util.concurrent.RecursiveTask
 import scala.collection.mutable
+import scala.annotation.nowarn
 
 /** In order to propagate types across compilation units, but avoid the poor scalability of a fixed-point algorithm, the
   * number of iterations can be configured using the iterations parameter. Note that iterations < 2 will not provide any
@@ -260,7 +261,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * @param i
     *   the call that imports entities into this scope.
     */
-  protected def visitImport(i: Call): Unit = {}
+  @nowarn("cat=unused")
+  protected def visitImport(c: Call): Unit = {}
 
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
