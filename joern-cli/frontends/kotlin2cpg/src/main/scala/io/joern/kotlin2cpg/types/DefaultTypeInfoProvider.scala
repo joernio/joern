@@ -324,7 +324,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def isConstructorCall(expr: KtExpression): Option[Boolean] = {
     expr match {
-      case call =>
+      case call: KtCallExpression =>
         resolvedCallDescriptor(call).collect {
           case _: ClassConstructorDescriptorImpl     => Some(true)
           case _: TypeAliasConstructorDescriptorImpl => Some(true)

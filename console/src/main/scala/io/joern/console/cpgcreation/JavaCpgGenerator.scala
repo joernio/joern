@@ -55,16 +55,6 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
     } else Nil
   }
 
-  private def namespaceArgs(namespaces: List[String]): List[String] = {
-    val csvString = namespaces.mkString(",")
-    // if no namespaces are specified, use smart unpacking
-    if (csvString.isEmpty) {
-      List("-su")
-    } else {
-      List("-nb", "-w", csvString)
-    }
-  }
-
   override def isAvailable: Boolean = {
     commercialAvailable || ossAvailable
   }
