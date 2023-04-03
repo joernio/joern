@@ -49,8 +49,7 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
 
   "An instance variable with additional MEMBER fn" - {
 
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Py2CpgTestContext.buildCpg("""
         |class Foo():
         |   self.x = 'foo'
         |   def replace(self, x):
