@@ -27,7 +27,8 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
       file         <- methodReturn.file
       imports      <- fileToImports.get(file.name)
       importedEntity <- imports.filter { x =>
-        x.importedAs.exists { imported => typeHint.matches(imported + "(\\..+)*") }
+        // TODO: Handle * imports correctly
+        x.importedAs.exists { imported => typeHint.matches(Pattern.quote(imported) + "(\\..+)*") }
       }.importedEntity
     } {
       val typeFullName = typeHint.replaceFirst(Pattern.quote(typeHint), importedEntity)
@@ -40,7 +41,8 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
       file     <- param.file
       imports  <- fileToImports.get(file.name)
       importDetails <- imports
-        .filter(_.importedAs.exists { imported => typeHint.matches(imported + "(\\..+)*") })
+        // TODO: Handle * imports correctly
+        .filter(_.importedAs.exists { imported => typeHint.matches(Pattern.quote(imported) + "(\\..+)*") })
         .map(i => (i.importedEntity, i.importedAs))
     } {
       importDetails match {

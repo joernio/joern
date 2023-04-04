@@ -13,11 +13,11 @@ import scala.util.{Failure, Success, Try}
 
 class JavaScriptTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[File](cpg, config) {
-  override protected def generateRecoveryPass(config: XTypeRecoveryConfig): XTypeRecovery[File] =
-    new JavaScriptTypeRecovery(cpg, config)
+  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
+    new JavaScriptTypeRecovery(cpg, state)
 }
 
-private class JavaScriptTypeRecovery(cpg: Cpg, config: XTypeRecoveryConfig) extends XTypeRecovery[File](cpg) {
+private class JavaScriptTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
   override def compilationUnit: Traversal[File] = cpg.file
 
   override def generateRecoveryForCompilationUnitTask(
@@ -28,13 +28,15 @@ private class JavaScriptTypeRecovery(cpg: Cpg, config: XTypeRecoveryConfig) exte
       cpg,
       unit,
       builder,
-      config.copy(enabledDummyTypes = config.isFinalIteration && config.enabledDummyTypes)
+      state.copy(config =
+        state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
+      )
     )
 
 }
 
-private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, config: XTypeRecoveryConfig)
-    extends RecoverForXCompilationUnit[File](cpg, cu, builder, config) {
+private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
+    extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
 
   override protected val pathSep = ':'
 
@@ -67,7 +69,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
     def targetModule = Try(
       cpg
-        .file(s"${Matcher.quoteReplacement(resolvedPath)}\\.?.*")
+        .file(s"${Pattern.quote(resolvedPath)}\\.?.*")
         .method
     ) match {
       case Failure(_) =>
@@ -108,7 +110,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
           case List(_, b: Identifier) =>
             // Exported variable that we should find
             val typs = cpg
-              .file(s"${Matcher.quoteReplacement(resolvedPath)}\\.?.*")
+              .file(s"${Pattern.quote(resolvedPath)}\\.?.*")
               .method
               .ast
               .isIdentifier
@@ -135,8 +137,8 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   }
 
   override protected def isField(i: Identifier): Boolean =
-    config.isFieldMemoization.getOrElseUpdate(
-      i,
+    state.isFieldCache.getOrElseUpdate(
+      i.id(),
       cu.method
         .nameExact(":program")
         .ast

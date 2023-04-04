@@ -29,7 +29,7 @@ object SBKey {
       case n: Identifier => LocalVar(n.name)
       case n: Local      => LocalVar(n.name)
       case n: Call =>
-        CallAlias(n.name, n.argument.where(_.argumentIndex(0)).isIdentifier.map(_.name).headOption)
+        CallAlias(n.name, n.argument.collectFirst { case x: Identifier if x.argumentIndex == 0 => x.name })
       case n: Method            => CallAlias(n.name, Option("this"))
       case n: MethodRef         => CallAlias(n.code)
       case n: FieldIdentifier   => LocalVar(n.canonicalName)
@@ -71,18 +71,14 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   def apply(sbKey: K): Set[String] = table(sbKey)
 
-  def apply(node: AstNode): Set[String] = keyFromNode(node) match {
-    case Some(key) => table(key)
-    case None      => Set.empty
-  }
+  def apply(node: AstNode): Set[String] =
+    keyFromNode(node) match {
+      case Some(key) => table(key)
+      case None      => Set.empty
+    }
 
   def from(sb: IterableOnce[(K, Set[String])]): SymbolTable[K] = {
     table.addAll(sb); this
-  }
-
-  def replaceWith(oldKey: K, newKey: K, newValues: Set[String]): Option[Set[String]] = {
-    table.remove(oldKey)
-    table.put(newKey, newValues)
   }
 
   def put(sbKey: K, typeFullNames: Set[String]): Set[String] = {
@@ -110,6 +106,7 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   def append(sbKey: K, typeFullNames: Set[String]): Set[String] = {
     table.get(sbKey) match {
+      case Some(ts) if ts == typeFullNames    => ts
       case Some(ts) if typeFullNames.nonEmpty => put(sbKey, ts ++ typeFullNames)
       case None if typeFullNames.nonEmpty     => put(sbKey, typeFullNames)
       case _                                  => Set.empty
