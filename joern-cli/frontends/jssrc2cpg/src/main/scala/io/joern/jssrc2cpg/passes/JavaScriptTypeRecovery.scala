@@ -69,7 +69,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
     def targetModule = Try(
       cpg
-        .file(s"${Matcher.quoteReplacement(resolvedPath)}\\.?.*")
+        .file(s"${Pattern.quote(resolvedPath)}\\.?.*")
         .method
     ) match {
       case Failure(_) =>
@@ -110,7 +110,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
           case List(_, b: Identifier) =>
             // Exported variable that we should find
             val typs = cpg
-              .file(s"${Matcher.quoteReplacement(resolvedPath)}\\.?.*")
+              .file(s"${Pattern.quote(resolvedPath)}\\.?.*")
               .method
               .ast
               .isIdentifier

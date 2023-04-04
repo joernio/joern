@@ -7,7 +7,6 @@ import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
 import java.util.regex.Pattern
-import scala.util.Try
 
 /** The type hints we pick up via the parser are not full names. This pass fixes that by retrieving the import for each
   * dynamic type hint and adjusting the dynamic type hint full name field accordingly.
@@ -28,8 +27,8 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
       file         <- methodReturn.file
       imports      <- fileToImports.get(file.name)
       importedEntity <- imports.filter { x =>
-        // TODO: Handle * imports correctly. This causes a regex exception otherwise.
-        x.importedAs.exists { imported => Try(typeHint.matches(imported + "(\\..+)*")).getOrElse(false) }
+        // TODO: Handle * imports correctly
+        x.importedAs.exists { imported => typeHint.matches(Pattern.quote(imported) + "(\\..+)*") }
       }.importedEntity
     } {
       val typeFullName = typeHint.replaceFirst(Pattern.quote(typeHint), importedEntity)
@@ -42,8 +41,8 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
       file     <- param.file
       imports  <- fileToImports.get(file.name)
       importDetails <- imports
-        // TODO: Handle * imports correctly. This causes a regex exception otherwise.
-        .filter(_.importedAs.exists { imported => Try(typeHint.matches(imported + "(\\..+)*")).getOrElse(false) })
+        // TODO: Handle * imports correctly
+        .filter(_.importedAs.exists { imported => typeHint.matches(Pattern.quote(imported) + "(\\..+)*") })
         .map(i => (i.importedEntity, i.importedAs))
     } {
       importDetails match {

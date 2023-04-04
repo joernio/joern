@@ -13,7 +13,7 @@ import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
 import java.nio.file.Paths
-import java.util.regex.Matcher
+import java.util.regex.{Matcher, Pattern}
 
 class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[File](cpg, config) {
@@ -118,7 +118,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     val sep = Matcher.quoteReplacement(JFile.separator)
 
     lazy val methodsWithExportEntityAsIdentifier: List[String] = cpg.typeDecl
-      .fullName(s".*${Matcher.quoteReplacement(path)}.*")
+      .fullName(s".*${Pattern.quote(path)}.*")
       .where(_.member.nameExact(expEntity))
       .fullName
       .toList
