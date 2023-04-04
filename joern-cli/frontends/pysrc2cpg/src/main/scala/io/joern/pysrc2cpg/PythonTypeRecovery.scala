@@ -17,12 +17,11 @@ import java.util.regex.Matcher
 
 class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[File](cpg, config) {
-  override protected def generateRecoveryPass(config: XTypeRecoveryConfig): XTypeRecovery[File] =
-    new PythonTypeRecovery(cpg, config)
+  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
+    new PythonTypeRecovery(cpg, state)
 }
 
-private class PythonTypeRecovery(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-    extends XTypeRecovery[File](cpg) {
+private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
 
   override def compilationUnit: Traversal[File] = cpg.file
 
@@ -34,15 +33,17 @@ private class PythonTypeRecovery(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRe
       cpg,
       unit,
       builder,
-      config.copy(enabledDummyTypes = config.isFinalIteration && config.enabledDummyTypes)
+      state.copy(config =
+        state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
+      )
     )
 
 }
 
 /** Performs type recovery from the root of a compilation unit level
   */
-private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, config: XTypeRecoveryConfig)
-    extends RecoverForXCompilationUnit[File](cpg, cu, builder, config) {
+private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
+    extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
 
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
@@ -208,7 +209,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   /** If the parent method is module then it can be used as a field.
     */
   override def isField(i: Identifier): Boolean =
-    config.isFieldMemoization.getOrElseUpdate(i, i.method.name.matches("(<module>|__init__)") || super.isField(i))
+    state.isFieldMemoization.getOrElseUpdate(i, i.method.name.matches("(<module>|__init__)") || super.isField(i))
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {

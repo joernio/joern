@@ -29,7 +29,7 @@ object SBKey {
       case n: Identifier => LocalVar(n.name)
       case n: Local      => LocalVar(n.name)
       case n: Call =>
-        CallAlias(n.name, n.argument.where(_.argumentIndex(0)).isIdentifier.map(_.name).headOption)
+        CallAlias(n.name, n.argument.collectFirst { case x: Identifier if x.argumentIndex == 0 => x.name })
       case n: Method            => CallAlias(n.name, Option("this"))
       case n: MethodRef         => CallAlias(n.code)
       case n: FieldIdentifier   => LocalVar(n.canonicalName)
@@ -68,21 +68,29 @@ case class CallAlias(override val identifier: String, receiverName: Option[Strin
 class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   private val table = TrieMap.empty[K, Set[String]]
+  // Key creation can be expensive, but we need a way to balance performance and utility
+  private val keyCache = TrieMap.empty[Long, K]
 
   def apply(sbKey: K): Set[String] = table(sbKey)
 
-  def apply(node: AstNode): Set[String] = keyFromNode(node) match {
-    case Some(key) => table(key)
-    case None      => Set.empty
-  }
+  def apply(node: AstNode): Set[String] =
+    cacheKeyFromNode(node) match {
+      case Some(key) => table(key)
+      case None      => Set.empty
+    }
+
+  private def cacheKeyFromNode(node: AstNode): Option[K] =
+    keyCache.get(node.id()) match {
+      case Some(key) => Some(key)
+      case None =>
+        keyFromNode(node) match {
+          case Some(key) => keyCache.put(node.id(), key); Option(key)
+          case None      => None
+        }
+    }
 
   def from(sb: IterableOnce[(K, Set[String])]): SymbolTable[K] = {
     table.addAll(sb); this
-  }
-
-  def replaceWith(oldKey: K, newKey: K, newValues: Set[String]): Option[Set[String]] = {
-    table.remove(oldKey)
-    table.put(newKey, newValues)
   }
 
   def put(sbKey: K, typeFullNames: Set[String]): Set[String] = {
@@ -95,7 +103,7 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
   def put(sbKey: K, typeFullName: String): Set[String] =
     put(sbKey, Set(typeFullName))
 
-  def put(node: AstNode, typeFullNames: Set[String]): Set[String] = keyFromNode(node) match {
+  def put(node: AstNode, typeFullNames: Set[String]): Set[String] = cacheKeyFromNode(node) match {
     case Some(key) => put(key, typeFullNames)
     case None      => Set.empty
   }
@@ -103,7 +111,7 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
   def append(node: AstNode, typeFullName: String): Set[String] =
     append(node, Set(typeFullName))
 
-  def append(node: AstNode, typeFullNames: Set[String]): Set[String] = keyFromNode(node) match {
+  def append(node: AstNode, typeFullNames: Set[String]): Set[String] = cacheKeyFromNode(node) match {
     case Some(key) => append(key, typeFullNames)
     case None      => Set.empty
   }
@@ -118,20 +126,20 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   def contains(sbKey: K): Boolean = table.contains(sbKey)
 
-  def contains(node: AstNode): Boolean = keyFromNode(node) match {
+  def contains(node: AstNode): Boolean = cacheKeyFromNode(node) match {
     case Some(key) => contains(key)
     case None      => false
   }
 
   def get(sbKey: K): Set[String] = table.getOrElse(sbKey, Set.empty)
 
-  def get(node: AstNode): Set[String] = keyFromNode(node) match {
+  def get(node: AstNode): Set[String] = cacheKeyFromNode(node) match {
     case Some(key) => get(key)
     case None      => Set.empty
   }
 
   def view: MapView[K, Set[String]] = table.view
 
-  def clear(): Unit = table.clear()
+  def clear(): Unit = { table.clear(); keyCache.clear() }
 
 }
