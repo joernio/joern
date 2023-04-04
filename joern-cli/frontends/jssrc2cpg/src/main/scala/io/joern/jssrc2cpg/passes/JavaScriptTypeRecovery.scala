@@ -137,8 +137,8 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   }
 
   override protected def isField(i: Identifier): Boolean =
-    state.isFieldMemoization.getOrElseUpdate(
-      i,
+    state.isFieldCache.getOrElseUpdate(
+      i.id(),
       cu.method
         .nameExact(":program")
         .ast

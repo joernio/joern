@@ -209,7 +209,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   /** If the parent method is module then it can be used as a field.
     */
   override def isField(i: Identifier): Boolean =
-    state.isFieldMemoization.getOrElseUpdate(i, i.method.name.matches("(<module>|__init__)") || super.isField(i))
+    state.isFieldCache.getOrElseUpdate(i.id(), i.method.name.matches("(<module>|__init__)") || super.isField(i))
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {

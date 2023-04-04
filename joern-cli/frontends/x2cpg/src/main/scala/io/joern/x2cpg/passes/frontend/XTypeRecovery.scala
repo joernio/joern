@@ -23,34 +23,33 @@ import scala.collection.mutable
   *   the number of iterations to run.
   * @param enabledDummyTypes
   *   whether to enable placeholder dummy values for partially resolved types.
-  * @param isFieldMemoization
-  *   a cache for answering if a node represents a field or member.
   */
-case class XTypeRecoveryConfig(
-  currentIteration: Int = 0,
-  iterations: Int = 2,
-  enabledDummyTypes: Boolean = true,
-  isFieldMemoization: TrieMap[AstNode, Boolean] = TrieMap.empty[AstNode, Boolean]
-) {
+case class XTypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true)
 
-  lazy val isFinalIteration: Boolean = currentIteration == iterations - 1
-
-  lazy val isFirstIteration: Boolean = currentIteration == 0
-}
-
-/** @param currentIteration
+/** @param config
+  *   the user defined config.
+  * @param currentIteration
   *   the current iteration.
+  * @param isFieldCache
+  *   a cache for answering if a node represents a field or member.
+  * @param changesWereMade
+  *   a flag to indicate that changes were made in the last iteration.
+  * @param stopEarly
+  *   indicates that we may stop type propagation earlier than the specified number of iterations.
   */
 case class XTypeRecoveryState(
   config: XTypeRecoveryConfig = XTypeRecoveryConfig(),
   currentIteration: Int = 0,
-  isFieldMemoization: TrieMap[AstNode, Boolean] = TrieMap.empty[AstNode, Boolean],
+  isFieldCache: TrieMap[Long, Boolean] = TrieMap.empty[Long, Boolean],
   changesWereMade: AtomicBoolean = new AtomicBoolean(false),
   stopEarly: AtomicBoolean
 ) {
   lazy val isFinalIteration: Boolean = currentIteration == config.iterations - 1
 
   lazy val isFirstIteration: Boolean = currentIteration == 0
+
+  def clear(): Unit = isFieldCache.clear()
+
 }
 
 /** In order to propagate types across compilation units, but avoid the poor scalability of a fixed-point algorithm, the
@@ -69,16 +68,20 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val stopEarly = new AtomicBoolean(false)
-    for (
-      i <- 0 until config.iterations
-      if !stopEarly.get()
-    ) {
-      generateRecoveryPass(XTypeRecoveryState(config, currentIteration = i, stopEarly = stopEarly)).createAndApply()
+    val state     = XTypeRecoveryState(config, stopEarly = stopEarly)
+    try {
+      for (
+        i <- 0 until config.iterations
+        if !stopEarly.get()
+      ) {
+        generateRecoveryPass(state.copy(currentIteration = i)).createAndApply()
+      }
+      // If dummy values are enabled and we are stopping early, we need one more round to propagate these dummy values
+      if (stopEarly.get() && config.enabledDummyTypes)
+        generateRecoveryPass(state.copy(currentIteration = config.iterations - 1)).createAndApply()
+    } finally {
+      state.clear()
     }
-    // If dummy values are enabled and we are stopping early, we need one more round to propagate these dummy values
-    if (stopEarly.get() && config.enabledDummyTypes)
-      generateRecoveryPass(XTypeRecoveryState(config, currentIteration = config.iterations - 1, stopEarly = stopEarly))
-        .createAndApply()
   }
 
   protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[CompilationUnitType]
@@ -230,8 +233,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def assignments: Traversal[Assignment] =
     cu.ast.isCall.nameExact(Operators.assignment).map(new OpNodes.Assignment(_))
 
-  protected def members: Traversal[Member] =
-    cu.ast.isMember
+  protected def members: Traversal[Member] = cu.ast.isMember
+
+  protected def calls: Traversal[Call] = cu.ast.isCall
+
+  protected def parameters: Traversal[MethodParameterIn] = cu.ast.isParameter
 
   /** For each call that contains the returnValue directive, attempt to replace the return value by the dynamic
     */
@@ -271,12 +277,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // Populate local symbol table with assignments
-    // TODO: On iteration > 1 we probably don't need to visit simple declarations as these are already saved
     assignments.foreach(visitAssignments)
     // Propagate return types
-    cpg.method.ast.isCall.filter(symbolTable.contains).foreach(visitCall)
+    calls.filter(symbolTable.contains).foreach(visitCall)
     // Propagate parameter types
-    cpg.parameter.foreach(visitParameter)
+    parameters.foreach(visitParameter)
     // Persist findings
     setTypeInformation()
     // Return number of changes
@@ -433,7 +438,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * This has found to be an expensive operation accessed often so we have memoized this step.
     */
   protected def isField(i: Identifier): Boolean =
-    state.isFieldMemoization.getOrElseUpdate(i, i.method.typeDecl.member.nameExact(i.name).nonEmpty)
+    state.isFieldCache.getOrElseUpdate(i.id(), i.method.typeDecl.member.nameExact(i.name).nonEmpty)
 
   /** Associates the types with the identifier. This may sometimes be an identifier that should be considered a field
     * which this method uses [[isField]] to determine.
@@ -454,13 +459,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def associateTypes(symbol: LocalVar, fa: FieldAccess, types: Set[String]): Set[String] = {
     fa.astChildren.filterNot(_.code.matches("(this|self)")).headOption.collect {
       case fi: FieldIdentifier =>
-        getFieldParents(fa).foreach { t =>
-          persistMemberWithTypeDecl(t, fi.canonicalName, types)
-        }
+        getFieldParents(fa).foreach(t => persistMemberWithTypeDecl(t, fi.canonicalName, types))
       case i: Identifier if isField(i) =>
-        getFieldParents(fa).foreach { t =>
-          persistMemberWithTypeDecl(t, i.name, types)
-        }
+        getFieldParents(fa).foreach(t => persistMemberWithTypeDecl(t, i.name, types))
     }
     symbolTable.append(symbol, types)
   }
@@ -800,31 +801,36 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.
     */
   protected def setTypeInformation(): Unit = {
-    cu.ast.foreach {
-      case x: Local if symbolTable.contains(x) =>
-        val typs =
-          if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
-          else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
-        if (typs != nodeExistingTypes(x)) {
-          state.changesWereMade.compareAndSet(false, true)
-          builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typs)
-        }
-      case x: Identifier if symbolTable.contains(x) =>
-        setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
-      case x: Call if symbolTable.contains(x) =>
-        val typs =
-          if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
-          else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
-        if (typs != nodeExistingTypes(x)) {
-          state.changesWereMade.compareAndSet(false, true)
-          builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typs)
-        }
-      case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
-        setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
-      case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
-        setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
-      case _ =>
-    }
+    cu.ast
+      .collect {
+        case n: Local      => n
+        case n: Expression => n
+      }
+      .foreach {
+        case x: Local if symbolTable.contains(x) =>
+          val typs =
+            if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
+            else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
+          if (typs != nodeExistingTypes(x)) {
+            state.changesWereMade.compareAndSet(false, true)
+            builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typs)
+          }
+        case x: Identifier if symbolTable.contains(x) =>
+          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+        case x: Call if symbolTable.contains(x) =>
+          val typs =
+            if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
+            else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
+          if (typs != nodeExistingTypes(x)) {
+            state.changesWereMade.compareAndSet(false, true)
+            builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typs)
+          }
+        case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
+          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+        case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
+          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+        case _ =>
+      }
     // Set types in an atomic way
     newTypesForMembers.foreach { case (m, ts) =>
       if (ts.toSeq != nodeExistingTypes(m)) {
