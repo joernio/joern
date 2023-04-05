@@ -28,4 +28,13 @@ class LocalTests extends JavaSrcCode2CpgFixture {
     y.typeFullName shouldBe "java.lang.Integer"
     y.order shouldBe 2
   }
+
+  "locals should contain line number and column number information" in {
+    val List(x: Local) = cpg.local("x").l
+    val List(y: Local) = cpg.local("y").l
+    x.lineNumber.getOrElse(0) shouldBe 4
+    y.lineNumber.getOrElse(0) shouldBe 5
+    x.columnNumber.getOrElse(0) shouldBe 6
+    y.columnNumber.getOrElse(0) shouldBe 6
+  }
 }
