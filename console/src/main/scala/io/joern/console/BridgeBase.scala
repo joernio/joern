@@ -4,11 +4,12 @@ import better.files.*
 import os.{Path, pwd}
 import replpp.scripting.ScriptRunner
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import java.io.{InputStream, PrintStream, File as JFile}
 import java.net.URLClassLoader
 import java.nio.file.{Files, Path, Paths}
 import java.util.stream.Collectors
+import scala.util.Try
 
 case class Config(
   scriptFile: Option[os.Path] = None,
@@ -229,26 +230,25 @@ trait InteractiveShell { this: BridgeBase =>
 
 trait ScriptExecution { this: BridgeBase =>
 
-  def runScript(config: Config): Unit = {
+  def runScript(config: Config): Try[Unit] = {
     val scriptFile = config.scriptFile.getOrElse(throw new AssertionError("no script file configured"))
     if (!os.exists(scriptFile)) {
-      System.err.println(s"given script file $scriptFile does not exist")
-      System.exit(1)
-    }
+      Try(throw new AssertionError(s"given script file $scriptFile does not exist"))
+    } else {
+      val predefCode = predefPlus(importCpgCode(config))
 
-    val predefCode = predefPlus(importCpgCode(config))
-
-    ScriptRunner.exec(
-      replpp.Config(
-        predefCode = Some(predefCode),
-        predefFiles = config.additionalImports,
-        scriptFile = Option(scriptFile),
-        command = config.command,
-        params = config.params,
-        dependencies = config.dependencies,
-        verbose = config.verbose
+      ScriptRunner.exec(
+        replpp.Config(
+          predefCode = Some(predefCode),
+          predefFiles = config.additionalImports,
+          scriptFile = Option(scriptFile),
+          command = config.command,
+          params = config.params,
+          dependencies = config.dependencies,
+          verbose = config.verbose
+        )
       )
-    )
+    }
   }
 
   /** For the given config, generate a list of commands to import the CPG

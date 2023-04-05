@@ -22,6 +22,17 @@ class RunScriptTests extends AnyWordSpec with Matchers {
     }
   }
 
+  "should return Failure if" when {
+    "script doesn't exist" in {
+      val result = ReplBridge.runScript(Config(scriptFile = Some(scriptsRoot / "does-not-exist.sc")))
+      result.failed.get.getMessage should include("does not exist")
+    }
+
+    "script runs ins an exception" in {
+      val result = ReplBridge.runScript(Config(scriptFile = Some(scriptsRoot / "trigger-error.sc")))
+      result.failed.get.getMessage should include("exit code was 1")
+    }
+  }
 }
 
 object RunScriptTests {
@@ -36,6 +47,6 @@ object RunScriptTests {
         params = Map("inputPath" -> codePathAbsolute),
         additionalImports = List(scriptsRoot / "assertions.sc")
       )
-    )
+    ).get
   }
 }
