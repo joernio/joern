@@ -62,11 +62,10 @@ object Domain {
     val unset  = "unset"
   }
 
-  private val logger                      = LoggerFactory.getLogger(Domain.getClass)
-  private val FullyQualifiedNameDelimiter = "\\"
-  val NamespaceDelimiter                  = "\\"
-  val StaticMethodDelimiter               = "::"
-  val InstanceMethodDelimiter             = "->"
+  private val logger          = LoggerFactory.getLogger(Domain.getClass)
+  val NamespaceDelimiter      = "\\"
+  val StaticMethodDelimiter   = "::"
+  val InstanceMethodDelimiter = "->"
 
   final case class PhpAttributes(lineNumber: Option[Integer], kind: Option[Int])
   object PhpAttributes {
@@ -1344,12 +1343,12 @@ object Domain {
       case Str(name) => PhpNameExpr(correctConstructor(name), PhpAttributes.Empty)
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name_FullyQualified") =>
-        val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
+        val name = value("parts").arr.map(_.str).mkString(NamespaceDelimiter)
         PhpNameExpr(correctConstructor(name), PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name") =>
         // TODO Can this case just be merged with Name_FullyQualified?
-        val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
+        val name = value("parts").arr.map(_.str).mkString(NamespaceDelimiter)
         PhpNameExpr(correctConstructor(name), PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Identifier") =>

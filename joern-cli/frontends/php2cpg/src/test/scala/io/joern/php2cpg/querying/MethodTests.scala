@@ -14,7 +14,8 @@ class MethodTests extends PhpCode2CpgFixture {
      |""".stripMargin)
 
     inside(cpg.method.name("foo").l) { case List(fooMethod) =>
-      fooMethod.fullName shouldBe s"foo:${Defines.UnresolvedSignature}(0)"
+      fooMethod.fullName shouldBe s"foo"
+      fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       fooMethod.lineNumber shouldBe Some(2)
       fooMethod.code shouldBe "function foo()"
 

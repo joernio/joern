@@ -1013,9 +1013,12 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case _ => PropertyDefaults.MethodFullName
     }
 
+    // Use method signature for methods that can be linked to avoid varargs issue.
+    val signature = s"${Defines.UnresolvedSignature}(${call.args.size})"
     val callNode = NewCall()
       .name(name)
       .methodFullName(fullName)
+      .signature(signature)
       .code(code)
       .dispatchType(dispatchType)
       .lineNumber(line(call))
