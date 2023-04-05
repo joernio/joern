@@ -34,8 +34,7 @@ class NamespaceTests extends PhpCode2CpgFixture {
   }
 
   "methods defined in a namespace with brace syntax without sub-namespace should have the correct name" in {
-    val cpg = code(
-      """<?php
+    val cpg = code("""<?php
         |namespace ns {
         |  function foo() {}
         |}
@@ -45,8 +44,7 @@ class NamespaceTests extends PhpCode2CpgFixture {
   }
 
   "methods defined in sub-namespace should have the correct name" in {
-    val cpg = code(
-      """<?php
+    val cpg = code("""<?php
         |namespace ns {
         |  function foo() {}
         |}
@@ -61,8 +59,7 @@ class NamespaceTests extends PhpCode2CpgFixture {
   }
 
   "methods in different namespaces in the same file should have the correct names" in {
-    val cpg = code(
-      """<?php
+    val cpg = code("""<?php
         |namespace first;
         |function foo() {}
         |
@@ -75,8 +72,7 @@ class NamespaceTests extends PhpCode2CpgFixture {
   }
 
   "methods in different namespaces using brace syntax in the same file should have the correct names" in {
-    val cpg = code(
-      """<?php
+    val cpg = code("""<?php
         |namespace first {
         |  function foo() {}
         |}
@@ -91,8 +87,7 @@ class NamespaceTests extends PhpCode2CpgFixture {
   }
 
   "methods in different namespaces mixing global and named namespaces should have the correct names" in {
-    val cpg = code(
-      """<?php
+    val cpg = code("""<?php
         |namespace first {
         |  function foo() {}
         |}
@@ -112,8 +107,7 @@ class NamespaceTests extends PhpCode2CpgFixture {
   }
 
   "static and instance methods in non-namespaced code should be correct" in {
-    val cpg = code(
-      """<?php
+    val cpg = code("""<?php
         |class A {
         |  function foo() {}
         |
@@ -123,5 +117,19 @@ class NamespaceTests extends PhpCode2CpgFixture {
 
     cpg.method.name("foo").fullName.l shouldBe List("A->foo")
     cpg.method.name("bar").fullName.l shouldBe List("A::bar")
+  }
+
+  "static and instance methods in namespaced code should be correct" in {
+    val cpg = code("""<?php
+        |namespace ns;
+        |class A {
+        |  function foo() {}
+        |
+        |  static function bar() {}
+        |}
+        |""".stripMargin)
+
+    cpg.method.name("foo").fullName.l shouldBe List("ns\\A->foo")
+    cpg.method.name("bar").fullName.l shouldBe List("ns\\A::bar")
   }
 }
