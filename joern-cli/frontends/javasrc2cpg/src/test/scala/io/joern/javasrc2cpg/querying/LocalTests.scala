@@ -32,9 +32,9 @@ class LocalTests extends JavaSrcCode2CpgFixture {
   "locals should contain line number and column number information" in {
     val List(x: Local) = cpg.local("x").l
     val List(y: Local) = cpg.local("y").l
-    x.lineNumber.getOrElse(0) shouldBe 4
-    y.lineNumber.getOrElse(0) shouldBe 5
-    x.columnNumber.getOrElse(0) shouldBe 6
-    y.columnNumber.getOrElse(0) shouldBe 6
+    x.lineNumber shouldBe Some(4)
+    y.lineNumber shouldBe Some(5)
+    x.columnNumber shouldBe Some(6)
+    y.columnNumber shouldBe Some(6)
   }
 }

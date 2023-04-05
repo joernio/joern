@@ -2048,13 +2048,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(scopeStack.lookupVariable(variable.getTypeAsString).flatMap(_.typeFullName))
         .getOrElse(TypeConstants.Any)
       val code = s"${variable.getType} $name"
-      val localNode = NewLocal()
+      NewLocal()
         .name(name)
         .code(code)
         .typeFullName(typeFullName)
         .lineNumber(line(varDecl))
         .columnNumber(column(varDecl))
-      localNode
     }.toList
   }
 
