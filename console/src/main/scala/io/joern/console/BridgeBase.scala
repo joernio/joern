@@ -236,18 +236,13 @@ trait ScriptExecution { this: BridgeBase =>
       System.exit(1)
     }
 
-    val isEncryptedScript = scriptFile.ext == "enc"
-    val decodedScriptFile =
-      if (isEncryptedScript) decryptedScript(scriptFile)
-      else scriptFile
-
     val predefCode = predefPlus(importCpgCode(config))
 
     ScriptRunner.exec(
       replpp.Config(
         predefCode = Some(predefCode),
         predefFiles = config.additionalImports,
-        scriptFile = Option(decodedScriptFile),
+        scriptFile = Option(scriptFile),
         command = config.command,
         params = config.params,
         dependencies = config.dependencies,
