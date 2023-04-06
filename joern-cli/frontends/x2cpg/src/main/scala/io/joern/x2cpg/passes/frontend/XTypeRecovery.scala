@@ -235,8 +235,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def members: Traversal[Member] = cu.ast.isMember
 
-  protected def parameters: Traversal[MethodParameterIn] = cu.ast.isParameter
-
   /** For each call that contains the returnValue directive, attempt to replace the return value by the dynamic
     */
   protected def visitCall(call: Call): Unit = {
