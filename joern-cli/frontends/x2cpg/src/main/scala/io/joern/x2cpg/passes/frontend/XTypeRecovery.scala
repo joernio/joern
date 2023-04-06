@@ -235,10 +235,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def members: Traversal[Member] = cu.ast.isMember
 
-  protected def calls: Traversal[Call] = cu.ast.isCall
-
-  protected def parameters: Traversal[MethodParameterIn] = cu.ast.isParameter
-
   /** For each call that contains the returnValue directive, attempt to replace the return value by the dynamic
     */
   protected def visitCall(call: Call): Unit = {
@@ -278,10 +274,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     postVisitImports()
     // Populate local symbol table with assignments
     assignments.foreach(visitAssignments)
-    // Propagate return types
-    calls.filter(symbolTable.contains).foreach(visitCall)
-    // Propagate parameter types
-    parameters.foreach(visitParameter)
     // Persist findings
     setTypeInformation()
     // Return number of changes
@@ -546,7 +538,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Will attempt to find the return values of a method if in the CPG, otherwise will give a dummy value.
     */
   protected def methodReturnValues(methodFullNames: Seq[String]): Set[String] = {
-    val rs = cpg.method.fullNameExact(methodFullNames: _*).methodReturn.typeFullName.filterNot(_.equals("ANY")).toSet
+    val rs = cpg.method
+      .fullNameExact(methodFullNames: _*)
+      .methodReturn
+      .flatMap(mr => mr.typeFullName +: mr.dynamicTypeHintFullName)
+      .filterNot(_.equals("ANY"))
+      .toSet
     if (rs.isEmpty) methodFullNames.map(_.concat(s"$pathSep${XTypeRecovery.DummyReturnType}")).toSet
     else rs
   }

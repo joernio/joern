@@ -542,8 +542,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "be sufficient to resolve method full names at calls" in {
       val List(call) = cpg.call("query").l
-      call.methodFullName.startsWith("sqlalchemy.orm") shouldBe true
+      call.methodFullName shouldBe "sqlalchemy.orm.Session.query"
     }
+
   }
 
   "recover a member call from a reference to an imported global variable" should {
