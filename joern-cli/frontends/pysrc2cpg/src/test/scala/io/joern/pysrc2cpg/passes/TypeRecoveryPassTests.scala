@@ -538,12 +538,13 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |
         |async def get_user_by_email(email: str, db: orm.Session):
         |   return db.query(user_models.User).filter(user_models.User.email == email).first()
-        |""".stripMargin)
+        |""".stripMargin, "foo.py")
 
     "be sufficient to resolve method full names at calls" in {
       val List(call) = cpg.call("query").l
-      call.methodFullName.startsWith("sqlalchemy.orm") shouldBe true
+      call.methodFullName shouldBe "sqlalchemy.orm.Session.query"
     }
+
   }
 
   "recover a member call from a reference to an imported global variable" should {
