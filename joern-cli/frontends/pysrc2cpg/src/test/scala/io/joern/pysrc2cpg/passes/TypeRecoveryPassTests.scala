@@ -538,7 +538,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |
         |async def get_user_by_email(email: str, db: orm.Session):
         |   return db.query(user_models.User).filter(user_models.User.email == email).first()
-        |""".stripMargin, "foo.py")
+        |""".stripMargin)
 
     "be sufficient to resolve method full names at calls" in {
       val List(call) = cpg.call("query").l
