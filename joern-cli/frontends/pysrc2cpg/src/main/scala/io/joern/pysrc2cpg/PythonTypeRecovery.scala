@@ -199,6 +199,17 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     }
   }
 
+  override def persistType(x: StoredNode, types: Set[String]): Unit = {
+    super.persistType(x, types.map(pyBodyTypeToTypeDecl))
+  }
+
+  /** Converts `Foo.Foo<body>` that holds method declarations to `Foo` which is the "main" type declaration.
+    */
+  private def pyBodyTypeToTypeDecl(typeFullName: String): String =
+    if (typeFullName.endsWith("<body>"))
+      typeFullName.split(pathSep).lastOption.map(x => typeFullName.stripSuffix(s"$pathSep$x")).getOrElse(typeFullName)
+    else typeFullName
+
   /** Determines if a function call is a constructor by following the heuristic that Python classes are typically
     * camel-case and start with an upper-case character.
     */

@@ -935,7 +935,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       }
   }
 
-  private def persistType(x: StoredNode, types: Set[String]): Unit = {
+  protected def persistType(x: StoredNode, types: Set[String]): Unit = {
     val filteredTypes = if (state.config.enabledDummyTypes) types else types.filterNot(XTypeRecovery.isDummyType)
     if (filteredTypes.nonEmpty) {
       storeNodeTypeInfo(x, filteredTypes.toSeq)
