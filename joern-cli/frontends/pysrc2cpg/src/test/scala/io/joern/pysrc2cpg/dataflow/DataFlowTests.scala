@@ -283,9 +283,8 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     sinks.reachableByFlows(sources).size should not be 0
   }
 
-  "foo" in {
-    val cpg = code(
-      """
+  "lookup of __init__ call" in {
+    val cpg = code("""
         |from models import Foo
         |foo = Foo(x,y,z)
         |""".stripMargin)
@@ -295,15 +294,30 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
           |   def __init__(self, a, b, c):
           |      println("foo")
           |      pass
-          |""".stripMargin, "models.py")
+          |""".stripMargin,
+        "models.py"
+      )
 
+    val List(typeDeclFullName) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.typeDecl.fullName.l
+    typeDeclFullName shouldBe "models.py:<module>.Foo<meta>"
+  }
 
-    val parameters = cpg.identifier.name("foo")
-      .inAssignment
-      .source.isCall.callee
-      .parameter.name.l
+  "lookup of __init__ call even when hidden in base class" in {
+    val cpg = code("""
+        |from models import Foo
+        |foo = Foo(x,y,z)
+        |""".stripMargin)
+      .moreCode(
+        """
+          |class Foo(SomeType):
+          |   pass
+          |""".stripMargin,
+        "models.py"
+      )
 
-    parameters shouldBe List("self", "a", "b", "c")
+    val List(typeDeclFullName) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.typeDecl.fullName.l
+
+    typeDeclFullName shouldBe "models.py:<module>.Foo<meta>"
   }
 
 }
