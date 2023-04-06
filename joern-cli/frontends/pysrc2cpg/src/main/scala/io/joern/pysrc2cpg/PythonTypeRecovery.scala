@@ -214,7 +214,10 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     * camel-case and start with an upper-case character.
     */
   override def isConstructor(c: Call): Boolean =
-    c.name.nonEmpty && c.name.charAt(0).isUpper && c.code.endsWith(")")
+    isConstructor(c.name) && c.code.endsWith(")")
+
+  private def isConstructor(callName: String): Boolean =
+    callName.nonEmpty && callName.charAt(0).isUpper
 
   /** If the parent method is module then it can be used as a field.
     */
@@ -306,6 +309,21 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   override def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit = {
     val pythonName = convertTypeFullNameToPythonMeta(typeFullName)
     super.persistMemberWithTypeDecl(pythonName, memberName, types)
+  }
+
+  override def createCallFromIdentifierTypeFullName(typeFullName: String, callName: String): String = {
+    lazy val tName = typeFullName.split("\\.").lastOption.getOrElse(typeFullName)
+    typeFullName match {
+      case t if t.matches(".*(<\\w+>)$") => super.createCallFromIdentifierTypeFullName(typeFullName, callName)
+      case t if t.matches(".*\\.<(member|returnValue|indexAccess)>(\\(.*\\))?") =>
+        super.createCallFromIdentifierTypeFullName(typeFullName, callName)
+      case t if isConstructor(tName) =>
+        t.split("\\.").lastOption match {
+          case Some(tName) => Seq(t, s"$tName<body>", callName).mkString(pathSep.toString)
+          case None        => Seq(t, callName).mkString(pathSep.toString)
+        }
+      case _ => super.createCallFromIdentifierTypeFullName(typeFullName, callName)
+    }
   }
 
   override def typeDeclTraversal(typeFullName: String): Traversal[TypeDecl] =

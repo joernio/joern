@@ -308,7 +308,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     *   the call that imports entities into this scope.
     */
   @nowarn("cat=unused")
-  protected def visitImport(c: Call): Unit = {}
+  protected def visitImport(i: Call): Unit = {}
 
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
@@ -804,14 +804,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case n: Expression => n
       }
       .foreach {
-        case x: Local if symbolTable.contains(x) =>
-          val typs =
-            if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
-            else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
-          if (typs != nodeExistingTypes(x)) {
-            state.changesWereMade.compareAndSet(false, true)
-            builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typs)
-          }
+        case x: Local if symbolTable.contains(x) => storeNodeTypeInfo(x, symbolTable.get(x).toSeq)
         case x: Identifier if symbolTable.contains(x) =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
         case x: Call if symbolTable.contains(x) =>
@@ -837,6 +830,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       }
     }
   }
+
+  protected def createCallFromIdentifierTypeFullName(typeFullName: String, callName: String): String =
+    s"$typeFullName$pathSep$callName"
 
   /** TODO: Cleaning up using visitor patten
     */
@@ -867,26 +863,26 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         persistType(i, idHints)
         if (callTypes.isEmpty) {
           // For now, calls are treated as function pointers and thus the type should point to the method
-          persistType(call, idHints.map(t => s"$t$pathSep${call.name}"))
+          persistType(call, idHints.map(t => createCallFromIdentifierTypeFullName(t, call.name)))
         } else {
           persistType(call, callTypes)
         }
       // Case 3: 'i' is the receiver for a field access on member 'f'
       case (Some(fieldAccess: Call), List(i: Identifier, f: FieldIdentifier))
           if fieldAccess.name.equals(Operators.fieldAccess) =>
-        val iTypes = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
-        val cTypes = symbolTable.get(fieldAccess)
-        persistType(i, iTypes)
-        persistType(fieldAccess, cTypes)
+        val idHints   = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
+        val callTypes = symbolTable.get(fieldAccess)
+        persistType(i, idHints)
+        persistType(fieldAccess, callTypes)
         Traversal.from(fieldAccess.astParent).isCall.headOption match {
           case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
             persistType(callFromFieldName, symbolTable.get(callFromFieldName))
-          case Some(callFromFieldName) if iTypes.nonEmpty =>
-            persistType(callFromFieldName, iTypes.map(it => s"$it$pathSep${f.canonicalName}"))
+          case Some(callFromFieldName) if idHints.nonEmpty =>
+            persistType(callFromFieldName, idHints.map(it => createCallFromIdentifierTypeFullName(it, f.canonicalName)))
           case _ =>
         }
         // This field may be a function pointer
-        handlePotentialFunctionPointer(fieldAccess, iTypes, f.canonicalName, f.argumentIndex, Option(i.name))
+        handlePotentialFunctionPointer(fieldAccess, idHints, f.canonicalName, f.argumentIndex, Option(i.name))
       case _ => persistType(x, symbolTable.get(x))
     }
 
@@ -1000,6 +996,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             case Some(ts) => Some(ts ++ types)
             case None     => Some(types.toSet)
           }
+        case i: Identifier => storeIdentifierTypeInfo(i, types)
+        case l: Local      => storeLocalTypeInfo(l, types)
         case n =>
           state.changesWereMade.compareAndSet(false, true)
           if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
@@ -1012,5 +1010,35 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     PropertyNames.TYPE_FULL_NAME,
     "ANY"
   ) +: storedNode.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)).filterNot(_ == "ANY")
+
+  /** Allows one to modify the types assigned to fields.
+    */
+  protected def storeMemberTypeInfo(m: Member, types: Seq[String]): Unit = {
+    // To avoid overwriting member updates, we store them elsewhere until the end
+    newTypesForMembers.updateWith(m) {
+      case Some(ts) => Some(ts ++ types)
+      case None     => Some(types.toSet)
+    }
+  }
+
+  /** Allows one to modify the types assigned to identifiers.
+    */
+  protected def storeIdentifierTypeInfo(i: Identifier, types: Seq[String]): Unit =
+    storeDefaultTypeInfo(i, types)
+
+  /** Allows one to modify the types assigned to nodes otherwise.
+    */
+  protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
+    if (types != nodeExistingTypes(n)) {
+      state.changesWereMade.compareAndSet(false, true)
+      if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
+      else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+    }
+
+  /** Allows one to modify the types assigned to locals.
+    */
+  protected def storeLocalTypeInfo(l: Local, types: Seq[String]): Unit = {
+    storeDefaultTypeInfo(l, if (state.config.enabledDummyTypes) types else types.filterNot(XTypeRecovery.isDummyType))
+  }
 
 }
