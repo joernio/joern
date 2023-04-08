@@ -169,7 +169,7 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
     } else if (config.rmPlugin.isDefined) {
       new PluginManager(InstallConfig().rootPath).rm(config.rmPlugin.get)
     } else if (config.scriptFile.isDefined) {
-      runScript(config)
+      runScript(config).get
     } else if (config.server) {
       GlobalReporting.enable()
       startHttpServer(config)
@@ -275,7 +275,7 @@ trait PluginHandling { this: BridgeBase =>
     println("Available layer creators")
     println()
     withTemporaryScript(codeToListPlugins(), slProduct.name) { file =>
-      runScript(config.copy(scriptFile = Some(os.Path(file.path))))
+      runScript(config.copy(scriptFile = Some(os.Path(file.path)))).get
     }
   }
 
@@ -294,7 +294,7 @@ trait PluginHandling { this: BridgeBase =>
     }
     val code = loadOrCreateCpg(config, productName)
     withTemporaryScript(code, productName) { file =>
-      runScript(config.copy(scriptFile = Some(os.Path(file.path))))
+      runScript(config.copy(scriptFile = Some(os.Path(file.path)))).get
     }
   }
 
