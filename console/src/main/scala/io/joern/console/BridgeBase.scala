@@ -9,7 +9,7 @@ import java.io.{InputStream, PrintStream, File as JFile}
 import java.net.URLClassLoader
 import java.nio.file.{Files, Path, Paths}
 import java.util.stream.Collectors
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 case class Config(
   scriptFile: Option[os.Path] = None,
@@ -169,7 +169,8 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
     } else if (config.rmPlugin.isDefined) {
       new PluginManager(InstallConfig().rootPath).rm(config.rmPlugin.get)
     } else if (config.scriptFile.isDefined) {
-      runScript(config).get
+      val scriptReturn = runScript(config)
+      if (scriptReturn.isFailure) System.exit(1)
     } else if (config.server) {
       GlobalReporting.enable()
       startHttpServer(config)
@@ -237,7 +238,7 @@ trait ScriptExecution { this: BridgeBase =>
     } else {
       val predefCode = predefPlus(importCpgCode(config))
 
-      ScriptRunner.exec(
+      val scriptReturn = ScriptRunner.exec(
         replpp.Config(
           predefCode = Some(predefCode),
           predefFiles = config.additionalImports,
@@ -248,6 +249,10 @@ trait ScriptExecution { this: BridgeBase =>
           verbose = config.verbose
         )
       )
+      if (config.verbose && scriptReturn.isFailure) {
+        println(scriptReturn.failed.get.getMessage)
+      }
+      scriptReturn
     }
   }
 
