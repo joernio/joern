@@ -1,5 +1,7 @@
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 
+//> using file assertions.sc
+
 @main def main(inputPath: String) = {
   importCode(inputPath)
   val calls = cpg

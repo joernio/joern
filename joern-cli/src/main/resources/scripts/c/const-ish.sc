@@ -1,3 +1,5 @@
+//> using file assertions.sc
+
 @main def main(inputPath: String) = {
   importCode(inputPath)
   val methods = cpg.method.internal.filter { method =>

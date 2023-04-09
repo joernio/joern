@@ -44,8 +44,7 @@ object RunScriptTests {
     ReplBridge.runScript(
       Config(
         scriptFile = Some(scriptsRoot / scriptPath),
-        params = Map("inputPath" -> codePathAbsolute),
-        additionalImports = List(scriptsRoot / "assertions.sc")
+        params = Map("inputPath" -> codePathAbsolute)
       )
     ).get
   }

@@ -5,6 +5,8 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension._
 import overflowdb.traversal._
 
+//> using file assertions.sc
+
 private def expressionIsPointer(argument: Expression, isSubExpression: Boolean = false): Boolean = {
   argument match {
     case identifier: Identifier =>
