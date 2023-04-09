@@ -67,5 +67,5 @@ object JoernConsole {
     s"""Type `help` to begin""".stripMargin
 
   def defaultConfig: ConsoleConfig = new ConsoleConfig()
-  
+
 }

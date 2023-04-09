@@ -41,11 +41,8 @@ object RunScriptTests {
   val testCodeRoot = s"${projectRoot.toNIO}/joern-cli/src/test/resources/testcode"
 
   def exec(scriptPath: os.RelPath, codePathAbsolute: String): Unit = {
-    ReplBridge.runScript(
-      Config(
-        scriptFile = Some(scriptsRoot / scriptPath),
-        params = Map("inputPath" -> codePathAbsolute)
-      )
-    ).get
+    ReplBridge
+      .runScript(Config(scriptFile = Some(scriptsRoot / scriptPath), params = Map("inputPath" -> codePathAbsolute)))
+      .get
   }
 }

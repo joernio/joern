@@ -5,6 +5,7 @@ import os.{Path, pwd}
 import replpp.scripting.ScriptRunner
 
 import scala.jdk.CollectionConverters.*
+import io.shiftleft.codepropertygraph.generated.Languages
 import java.io.{InputStream, PrintStream, File as JFile}
 import java.net.URLClassLoader
 import java.nio.file.{Files, Path, Paths}
