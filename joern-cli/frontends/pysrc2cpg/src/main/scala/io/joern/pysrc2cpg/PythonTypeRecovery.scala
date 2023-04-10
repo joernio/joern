@@ -1,6 +1,5 @@
 package io.joern.pysrc2cpg
 
-import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -153,7 +152,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
     /** The two ways that this procedure could be resolved to in Python. */
     def possibleCalleeNames(procedureName: String, isMaybeConstructor: Boolean, isFieldOrVar: Boolean): Set[String] =
-      if (isMaybeConstructor) Set(procedureName.concat(s"$pathSep${Defines.ConstructorMethodName}"))
+      if (isMaybeConstructor) Set(Seq(procedureName, s"$expEntity<body>", "__init__").mkString(pathSep.toString))
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
         cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
@@ -180,13 +179,12 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       val ms = cpg.method.fullNameExact(v.toSeq: _*).l
       val ts = cpg.typeDecl.fullNameExact(v.toSeq: _*).l
       // In case a method has been incorrectly determined to be a constructor based on the heuristic
-      val tsNonConstructor =
-        cpg.method
-          .fullNameExact(
-            v.toSeq
-              .map(_.replaceAll("<var>", pathSep.toString).stripSuffix(s"$pathSep${Defines.ConstructorMethodName}")): _*
-          )
-          .l
+
+      val nonConstructorV = v.toSeq
+        .map(_.replaceAll("<var>", pathSep.toString).stripSuffix(s"${pathSep}__init__"))
+        .map(f => f.split(pathSep).lastOption.map(t => f.stripSuffix(s"$pathSep$t")).getOrElse(f))
+      val tsNonConstructor = cpg.method.fullNameExact(nonConstructorV: _*).l
+
       if (ts.nonEmpty)
         symbolTable.put(k, ts.fullName.toSet)
       else if (ms.nonEmpty)
@@ -200,11 +198,25 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     }
   }
 
+  override def persistType(x: StoredNode, types: Set[String]): Unit = {
+    super.persistType(x, types.map(pyBodyTypeToTypeDecl))
+  }
+
+  /** Converts `Foo.Foo<body>` that holds method declarations to `Foo` which is the "main" type declaration.
+    */
+  private def pyBodyTypeToTypeDecl(typeFullName: String): String =
+    if (typeFullName.endsWith("<body>"))
+      typeFullName.split(pathSep).lastOption.map(x => typeFullName.stripSuffix(s"$pathSep$x")).getOrElse(typeFullName)
+    else typeFullName
+
   /** Determines if a function call is a constructor by following the heuristic that Python classes are typically
     * camel-case and start with an upper-case character.
     */
   override def isConstructor(c: Call): Boolean =
-    c.name.nonEmpty && c.name.charAt(0).isUpper && c.code.endsWith(")")
+    isConstructor(c.name) && c.code.endsWith(")")
+
+  private def isConstructor(callName: String): Boolean =
+    callName.nonEmpty && callName.charAt(0).isUpper
 
   /** If the parent method is module then it can be used as a field.
     */
@@ -225,11 +237,10 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   override def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = symbolTable
       .get(c)
-      .map(_.stripSuffix(s".${Defines.ConstructorMethodName}"))
-      .map(x => (x.split("\\.").last, x))
+      .map(_.stripSuffix(s"${pathSep}__init__"))
       .map {
-        case (x, y) if x.nonEmpty => s"$y.$x<body>"
-        case (_, z)               => z
+        case t if t.endsWith("<body>") => t
+        case t                         => t.split(pathSep).lastOption.map(x => s"$t$pathSep$x<body>").getOrElse(t)
       }
     associateTypes(i, constructorPaths)
   }
@@ -297,6 +308,21 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   override def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit = {
     val pythonName = convertTypeFullNameToPythonMeta(typeFullName)
     super.persistMemberWithTypeDecl(pythonName, memberName, types)
+  }
+
+  override def createCallFromIdentifierTypeFullName(typeFullName: String, callName: String): String = {
+    lazy val tName = typeFullName.split("\\.").lastOption.getOrElse(typeFullName)
+    typeFullName match {
+      case t if t.matches(".*(<\\w+>)$") => super.createCallFromIdentifierTypeFullName(typeFullName, callName)
+      case t if t.matches(".*\\.<(member|returnValue|indexAccess)>(\\(.*\\))?") =>
+        super.createCallFromIdentifierTypeFullName(typeFullName, callName)
+      case t if isConstructor(tName) =>
+        t.split("\\.").lastOption match {
+          case Some(tName) => Seq(t, s"$tName<body>", callName).mkString(pathSep.toString)
+          case None        => Seq(t, callName).mkString(pathSep.toString)
+        }
+      case _ => super.createCallFromIdentifierTypeFullName(typeFullName, callName)
+    }
   }
 
   override def typeDeclTraversal(typeFullName: String): Traversal[TypeDecl] =
