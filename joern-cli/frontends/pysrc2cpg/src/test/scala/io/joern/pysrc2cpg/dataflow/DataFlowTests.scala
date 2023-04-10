@@ -3,7 +3,7 @@ package io.joern.pysrc2cpg.dataflow
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member}
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
 import io.shiftleft.semanticcpg.language._
 
 class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
@@ -298,7 +298,9 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(typeDeclFullName) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.typeDecl.fullName.l
+    val List(method : Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
+    method.fullName shouldBe "models.py:<module>.Foo.Foo<body>.__init__"
+    val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo<meta>"
   }
 
@@ -315,8 +317,9 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(typeDeclFullName) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.typeDecl.fullName.l
-
+    val List(method : Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
+    method.fullName shouldBe "models.py:<module>.Foo.Foo<body>.__init__"
+    val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo<meta>"
   }
 
