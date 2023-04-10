@@ -3,6 +3,7 @@ package io.joern.pysrc2cpg
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
@@ -31,6 +32,10 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
     new PythonTypeRecoveryPass(this).createAndApply()
     new PythonTypeHintCallLinker(this).createAndApply()
     new PythonNaiveCallLinker(this).createAndApply()
+
+    // Some of passes above create new methods, so, we
+    // need to run the ASTLinkerPass one more time
+    new AstLinkerPass(this).createAndApply()
 
     if (_withOssDataflow) {
       val context = new LayerCreatorContext(this)
