@@ -43,7 +43,7 @@ class InheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
         s".*${Pattern.quote(splitName.head)}.*${Pattern.quote(splitName.last)}"
       case x => s".*${Pattern.quote(x)}"
     }.distinct
-    val validTypeDecls = cpg.typeDecl.fullNameExact(matchersInScope: _*).l
+    val validTypeDecls = cpg.typeDecl.fullName(matchersInScope: _*).l
     validTypeDecls.filter(vt => td.inheritsFromTypeFullName.contains(vt.name))
   }
 
