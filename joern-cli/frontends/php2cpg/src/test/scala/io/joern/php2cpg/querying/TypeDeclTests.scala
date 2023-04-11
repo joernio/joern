@@ -30,7 +30,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 		 |""".stripMargin)
 
     inside(cpg.method.name("foo").l) { case List(fooMethod) =>
-      fooMethod.fullName shouldBe s"Foo.foo:${Defines.UnresolvedSignature}(1)"
+      fooMethod.fullName shouldBe s"Foo->foo"
       fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
       fooMethod.modifier.map(_.modifierType).toSet shouldBe Set(ModifierTypes.FINAL, ModifierTypes.PUBLIC)
       fooMethod.methodReturn.typeFullName shouldBe "int"
@@ -123,7 +123,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
       inside(fooDecl.astChildren.l) { case List(fooMethod: Method) =>
         fooMethod.name shouldBe "foo"
-        fooMethod.fullName shouldBe s"Foo.foo:${Defines.UnresolvedSignature}(0)"
+        fooMethod.fullName shouldBe s"Foo->foo"
+        fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
   }
@@ -157,7 +158,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
       inside(fooDecl.astChildren.l) { case List(fooMethod: Method) =>
         fooMethod.name shouldBe "foo"
-        fooMethod.fullName shouldBe s"Foo.foo:${Defines.UnresolvedSignature}(0)"
+        fooMethod.fullName shouldBe s"Foo->foo"
+        fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
   }
@@ -210,7 +212,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
       inside(fooDecl.method.l) { case List(clinitMethod: Method) =>
         clinitMethod.name shouldBe Defines.StaticInitMethodName
-        clinitMethod.fullName shouldBe s"Foo.${Defines.StaticInitMethodName}:void()"
+        clinitMethod.fullName shouldBe s"Foo::${Defines.StaticInitMethodName}"
         clinitMethod.signature shouldBe "void()"
 
         inside(clinitMethod.body.astChildren.l) { case List(aAssign: Call, bAssign: Call) =>

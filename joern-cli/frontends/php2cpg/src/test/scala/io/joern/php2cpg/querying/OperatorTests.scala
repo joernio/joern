@@ -1,8 +1,9 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
-import io.joern.php2cpg.parser.Domain.{PhpOperators, PhpDomainTypeConstants}
+import io.joern.php2cpg.parser.Domain.{PhpDomainTypeConstants, PhpOperators}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
@@ -663,7 +664,7 @@ class OperatorTests extends PhpCode2CpgFixture {
       absCall.name shouldBe "abs"
       absCall.methodFullName shouldBe "__builtin.abs"
       absCall.code shouldBe "abs($a)"
-      absCall.signature.isEmpty shouldBe true
+      absCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
     }
   }
 }
