@@ -64,13 +64,13 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
     importedEntity: String
   ) = {
     val typeFullName = typeHint.replaceFirst(Pattern.quote(alias), importedEntity)
-    val typeFilePath = typeFullName.replaceAll("\\.", File.separator)
+    val typeFilePath = typeFullName.replaceAll("\\.", Matcher.quoteReplacement(File.separator))
     val pythonicTypeFullName = typeFullName.split("\\.").lastOption match {
       case Some(typeName) =>
         typeFilePath.stripSuffix(s"${File.separator}$typeName").concat(s".py:<module>.$typeName")
       case None => typeFullName
     }
-    cpg.typeDecl.fullName(s".*${Matcher.quoteReplacement(pythonicTypeFullName)}").l match {
+    cpg.typeDecl.fullName(s".*${Pattern.quote(pythonicTypeFullName)}").l match {
       case xs if xs.nonEmpty =>
         diffGraph.setNodeProperty(node, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, xs.fullName.toSeq)
       case _ => diffGraph.setNodeProperty(node, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq(pythonicTypeFullName))
