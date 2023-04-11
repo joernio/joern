@@ -39,17 +39,17 @@ object Domain {
     val global      = "global"
 
     // These are handled as special cases for builtins since they have separate AST nodes in the PHP-parser output.
-    val issetFunc = s"${PhpBuiltins.Prefix}.isset"
-    val printFunc = s"${PhpBuiltins.Prefix}.print"
-    val cloneFunc = s"${PhpBuiltins.Prefix}.clone"
-    val emptyFunc = s"${PhpBuiltins.Prefix}.empty"
-    val evalFunc  = s"${PhpBuiltins.Prefix}.eval"
-    val exitFunc  = s"${PhpBuiltins.Prefix}.exit"
+    val issetFunc = s"isset"
+    val printFunc = s"print"
+    val cloneFunc = s"clone"
+    val emptyFunc = s"empty"
+    val evalFunc  = s"eval"
+    val exitFunc  = s"exit"
     // Used for multiple assignments for example `list($a, $b) = $someArray`
-    val listFunc  = s"${PhpBuiltins.Prefix}.list"
-    val isNull    = s"${PhpBuiltins.Prefix}.is_null"
-    val unset     = s"${PhpBuiltins.Prefix}.unset"
-    val shellExec = s"${PhpBuiltins.Prefix}.shell_exec"
+    val listFunc  = s"list"
+    val isNull    = s"is_null"
+    val unset     = s"unset"
+    val shellExec = s"shell_exec"
   }
 
   object PhpDomainTypeConstants {
@@ -66,6 +66,8 @@ object Domain {
   val NamespaceDelimiter      = "\\"
   val StaticMethodDelimiter   = "::"
   val InstanceMethodDelimiter = "->"
+  // Used for creating the default constructor.
+  val ConstructorMethodName = "__construct"
 
   final case class PhpAttributes(lineNumber: Option[Integer], kind: Option[Int])
   object PhpAttributes {
@@ -1334,30 +1336,26 @@ object Domain {
     )
   }
 
-  private def correctConstructor(originalName: String): String = {
-    originalName.replaceAll("__construct", Defines.ConstructorMethodName)
-  }
-
   private def readName(json: Value): PhpNameExpr = {
     json match {
-      case Str(name) => PhpNameExpr(correctConstructor(name), PhpAttributes.Empty)
+      case Str(name) => PhpNameExpr(name, PhpAttributes.Empty)
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name_FullyQualified") =>
         val name = value("parts").arr.map(_.str).mkString(NamespaceDelimiter)
-        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+        PhpNameExpr(name, PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name") =>
         // TODO Can this case just be merged with Name_FullyQualified?
         val name = value("parts").arr.map(_.str).mkString(NamespaceDelimiter)
-        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+        PhpNameExpr(name, PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Identifier") =>
         val name = value("name").str
-        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+        PhpNameExpr(name, PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("VarLikeIdentifier") =>
         val name = value("name").str
-        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+        PhpNameExpr(name, PhpAttributes(json))
 
       case unhandled =>
         logger.error(s"Found unhandled name type $unhandled: $json")

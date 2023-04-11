@@ -73,4 +73,14 @@ class MethodTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "methods should be accessible from the file node" in {
+    val cpg = code("""<?php
+        |function foo() {
+        |  static $x = 42, $y;
+        |}
+        |""".stripMargin)
+
+    cpg.file.method.name.l shouldBe List("foo")
+  }
 }

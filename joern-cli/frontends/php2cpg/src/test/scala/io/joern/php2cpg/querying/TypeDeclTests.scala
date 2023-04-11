@@ -75,10 +75,10 @@ class TypeDeclTests extends PhpCode2CpgFixture {
             allocCall.code shouldBe "Foo.<alloc>()"
           }
 
-          initCall.name shouldBe "<init>"
-          initCall.methodFullName shouldBe s"Foo.<init>:${Defines.UnresolvedSignature}(1)"
+          initCall.name shouldBe "__construct"
+          initCall.methodFullName shouldBe s"Foo.__construct:${Defines.UnresolvedSignature}(1)"
           initCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
-          initCall.code shouldBe "Foo.<init>(42)"
+          initCall.code shouldBe "Foo.__construct(42)"
           inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
             tmpIdentifier.name shouldBe "tmp0"
             tmpIdentifier.code shouldBe "$tmp0"
