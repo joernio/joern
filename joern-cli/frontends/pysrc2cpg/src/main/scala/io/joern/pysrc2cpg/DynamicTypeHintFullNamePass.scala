@@ -2,10 +2,12 @@ package io.joern.pysrc2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
+import java.io.File
 import java.util.regex.Pattern
 
 /** The type hints we pick up via the parser are not full names. This pass fixes that by retrieving the import for each
@@ -31,8 +33,7 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
         x.importedAs.exists { imported => typeHint.matches(Pattern.quote(imported) + "(\\..+)*") }
       }.importedEntity
     } {
-      val typeFullName = typeHint.replaceFirst(Pattern.quote(typeHint), importedEntity)
-      diffGraph.setNodeProperty(methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typeFullName)
+      setTypeHints(diffGraph, methodReturn, typeHint, typeHint, importedEntity)
     }
 
     for {
@@ -47,12 +48,32 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
     } {
       importDetails match {
         case (Some(importedEntity), Some(importedAs)) =>
-          val typeFullName = typeHint.replaceFirst(Pattern.quote(importedAs), importedEntity)
-          diffGraph.setNodeProperty(param, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typeFullName)
+          setTypeHints(diffGraph, param, typeHint, importedAs, importedEntity)
         case _ =>
       }
 
     }
 
+  }
+
+  private def setTypeHints(
+    diffGraph: BatchedUpdate.DiffGraphBuilder,
+    node: StoredNode,
+    typeHint: String,
+    alias: String,
+    importedEntity: String
+  ) = {
+    val typeFullName = typeHint.replaceFirst(Pattern.quote(alias), importedEntity)
+    val typeFilePath = typeFullName.replaceAll("\\.", File.separator)
+    val pythonicTypeFullName = typeFullName.split("\\.").lastOption match {
+      case Some(typeName) =>
+        typeFilePath.stripSuffix(s"${File.separator}$typeName").concat(s".py:<module>.$typeName")
+      case None => typeFullName
+    }
+    cpg.typeDecl.fullName(s".*$pythonicTypeFullName").l match {
+      case xs if xs.nonEmpty =>
+        diffGraph.setNodeProperty(node, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, xs.fullName.toSeq)
+      case _ => diffGraph.setNodeProperty(node, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq(pythonicTypeFullName))
+    }
   }
 }

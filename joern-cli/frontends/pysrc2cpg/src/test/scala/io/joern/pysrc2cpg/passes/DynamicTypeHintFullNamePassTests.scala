@@ -15,7 +15,7 @@ class DynamicTypeHintFullNamePassTests extends PySrc2CpgFixture(withOssDataflow 
         |""".stripMargin)
 
     "take into accounts imports" in {
-      cpg.method("m").methodReturn.dynamicTypeHintFullName.l shouldBe List("foo.bar.Woo")
+      cpg.method("m").methodReturn.dynamicTypeHintFullName.l shouldBe List("foo/bar.py:<module>.Woo")
     }
   }
 
