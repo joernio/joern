@@ -13,22 +13,15 @@ import overflowdb.traversal.Traversal
 import java.io.{File => JFile}
 import java.nio.file.Paths
 import java.util.regex.{Matcher, Pattern}
-import scala.collection.concurrent.TrieMap
 
 class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[File](cpg, config) {
 
-  /** Mapping between import notation to the type names in the CPG is fairly expensive as it requires graph reads, this
-    * will negate that slowdown slightly.
-    */
-  private val importCache = TrieMap.empty[String, Set[String]]
-
   override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
-    new PythonTypeRecovery(cpg, state, importCache)
+    new PythonTypeRecovery(cpg, state)
 }
 
-private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, importCache: TrieMap[String, Set[String]])
-    extends XTypeRecovery[File](cpg, state) {
+private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
 
   override def compilationUnit: Traversal[File] = cpg.file
 
@@ -42,21 +35,15 @@ private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, importCach
       builder,
       state.copy(config =
         state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-      ),
-      importCache
+      )
     )
 
 }
 
 /** Performs type recovery from the root of a compilation unit level
   */
-private class RecoverForPythonFile(
-  cpg: Cpg,
-  cu: File,
-  builder: DiffGraphBuilder,
-  state: XTypeRecoveryState,
-  importCache: TrieMap[String, Set[String]]
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
+private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
+    extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
 
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
@@ -91,9 +78,7 @@ private class RecoverForPythonFile(
           else relativeNamespace
         } else path.code
 
-        val importKey = s"$path?$funcOrModule"
-        val calleeNames =
-          importCache.getOrElseUpdate(importKey, extractPossibleCalleeNames(namespace, funcOrModule.code))
+        val calleeNames = extractPossibleCalleeNames(namespace, funcOrModule.code)
         alias match {
           case (alias: Literal) :: Nil =>
             symbolTable.put(CallAlias(alias.code), calleeNames)
