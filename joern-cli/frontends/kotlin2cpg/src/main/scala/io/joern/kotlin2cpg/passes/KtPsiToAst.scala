@@ -1235,12 +1235,11 @@ trait KtPsiToAst {
     val controlStructureBodyAst =
       blockAst(controlStructureBody, List(loopParameterAst, loopParameterNextAssignmentAst) ++ stmtAsts)
 
-    val controlStructureAst = Ast(controlStructure)
-      .withChildren(List(controlStructureConditionAst, controlStructureBodyAst))
-      .withConditionEdge(controlStructure, controlStructureCondition)
+    val _controlStructureAst =
+      controlStructureAst(controlStructure, Some(controlStructureConditionAst), Seq(controlStructureBodyAst))
     blockAst(
       blockNode(Constants.codeForLoweredForBlock, ""),
-      List(iteratorLocalAst, iteratorAssignmentAst, controlStructureAst)
+      List(iteratorLocalAst, iteratorAssignmentAst, _controlStructureAst)
     )
   }
 
@@ -1351,12 +1350,11 @@ trait KtPsiToAst {
         stmtAsts
     )
 
-    val controlStructureAst = Ast(controlStructure)
-      .withChildren(List(controlStructureConditionAst, controlStructureBodyAst))
-      .withConditionEdge(controlStructure, controlStructureCondition)
+    val _controlStructureAst =
+      controlStructureAst(controlStructure, Some(controlStructureConditionAst), Seq(controlStructureBodyAst))
     blockAst(
       blockNode(Constants.codeForLoweredForBlock, ""),
-      List(iteratorLocalAst, iteratorAssignmentAst, controlStructureAst)
+      List(iteratorLocalAst, iteratorAssignmentAst, _controlStructureAst)
     )
   }
 
