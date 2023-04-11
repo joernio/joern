@@ -228,8 +228,7 @@ class TsDecoratorAstCreationPassTest extends AbstractPassTest {
       }
     }
 
-    "create annotations with literals correctly for class members" in TsAstFixture(
-      """
+    "create annotations with literals correctly for class members" in TsAstFixture("""
         |class Foo {
         |  @a('lit')
         |  public x: number;
