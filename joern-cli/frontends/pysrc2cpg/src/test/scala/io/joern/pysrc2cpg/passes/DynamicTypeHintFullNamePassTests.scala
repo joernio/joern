@@ -3,6 +3,8 @@ package io.joern.pysrc2cpg.passes
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
+import java.io.File
+
 class DynamicTypeHintFullNamePassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "dynamic type hints" should {
@@ -15,7 +17,9 @@ class DynamicTypeHintFullNamePassTests extends PySrc2CpgFixture(withOssDataflow 
         |""".stripMargin)
 
     "take into accounts imports" in {
-      cpg.method("m").methodReturn.dynamicTypeHintFullName.l shouldBe List("foo.bar.Woo")
+      cpg.method("m").methodReturn.dynamicTypeHintFullName.l shouldBe List(
+        Seq("foo", "bar.py:<module>.Woo").mkString(File.separator)
+      )
     }
   }
 

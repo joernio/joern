@@ -16,6 +16,7 @@ import java.util.regex.{Matcher, Pattern}
 
 class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[File](cpg, config) {
+
   override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
     new PythonTypeRecovery(cpg, state)
 }
@@ -76,6 +77,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
           if (path.code.length > 1) relativeNamespace + path.code.replaceAll(sep, ".")
           else relativeNamespace
         } else path.code
+
         val calleeNames = extractPossibleCalleeNames(namespace, funcOrModule.code)
         alias match {
           case (alias: Literal) :: Nil =>
@@ -151,8 +153,14 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     }
 
     /** The two ways that this procedure could be resolved to in Python. */
-    def possibleCalleeNames(procedureName: String, isMaybeConstructor: Boolean, isFieldOrVar: Boolean): Set[String] =
-      if (isMaybeConstructor) Set(Seq(procedureName, s"$expEntity<body>", "__init__").mkString(pathSep.toString))
+    def possibleCalleeNames(procedureName: String, isMaybeConstructor: Boolean, isFieldOrVar: Boolean): Set[String] = {
+      val pythonicFormGuesses =
+        cpg.typeDecl.fullName(s".*${Pattern.quote(procedureName)}").fullName.toSet match {
+          case xs if xs.nonEmpty => xs
+          case _                 => Seq(procedureName)
+        }
+      if (isMaybeConstructor)
+        pythonicFormGuesses.map(p => Seq(p, s"$expEntity<body>", "__init__").mkString(pathSep.toString)).toSet
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
         cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
@@ -160,7 +168,8 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
           case None    => Set.empty
         }
       } else
-        Set(procedureName, fullNameAsInit)
+        Set(procedureName, fullNameAsInit) ++ pythonicFormGuesses
+    }
 
     /** the full name of the procedure where it's assumed that it is defined within an <code>__init.py__</code> of the
       * module.
