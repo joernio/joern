@@ -154,7 +154,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
     /** The two ways that this procedure could be resolved to in Python. */
     def possibleCalleeNames(procedureName: String, isMaybeConstructor: Boolean, isFieldOrVar: Boolean): Set[String] = {
-      val pythonicFormGuesses = cpg.typeDecl.fullName(s".*$procedureName").fullName.toSet match {
+      val pythonicFormGuesses = cpg.typeDecl.fullName(s".*${Pattern.quote(procedureName)}").fullName.toSet match {
         case xs if xs.nonEmpty => xs
         case _                 => Seq(procedureName)
       }
