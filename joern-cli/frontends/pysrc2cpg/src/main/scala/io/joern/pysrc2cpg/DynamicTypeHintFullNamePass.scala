@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
 import java.io.File
-import java.util.regex.Pattern
+import java.util.regex.{Matcher, Pattern}
 
 /** The type hints we pick up via the parser are not full names. This pass fixes that by retrieving the import for each
   * dynamic type hint and adjusting the dynamic type hint full name field accordingly.
@@ -70,7 +70,7 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
         typeFilePath.stripSuffix(s"${File.separator}$typeName").concat(s".py:<module>.$typeName")
       case None => typeFullName
     }
-    cpg.typeDecl.fullName(s".*${Pattern.quote(pythonicTypeFullName)}").l match {
+    cpg.typeDecl.fullName(s".*${Matcher.quoteReplacement(pythonicTypeFullName)}").l match {
       case xs if xs.nonEmpty =>
         diffGraph.setNodeProperty(node, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, xs.fullName.toSeq)
       case _ => diffGraph.setNodeProperty(node, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq(pythonicTypeFullName))
