@@ -1,4 +1,4 @@
-package io.joern.php2cpg.querying
+package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
@@ -31,7 +31,7 @@ class PocTest extends RubyCode2CpgFixture {
         |puts Box::BOX_COMPANY
         |puts "Box weight is: #{Box::BOXWEIGHT}"
         |""".stripMargin,
-      fileName = "printhello.php"
+      fileName = "printhello.rb"
     )
 
 
