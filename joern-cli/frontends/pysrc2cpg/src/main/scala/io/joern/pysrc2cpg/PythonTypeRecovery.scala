@@ -74,7 +74,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
             if (fileName.contains(JFile.separator))
               fileName.substring(0, fileName.lastIndexOf(JFile.separator)).replaceAll(sep, ".")
             else ""
-          if (path.code.length > 1) relativeNamespace + path.code.replaceAll(sep, ".")
+          if (path.code.length > 1) relativeNamespace + path.code.stripPrefix(".").replaceAll(sep, ".")
           else relativeNamespace
         } else path.code
 
