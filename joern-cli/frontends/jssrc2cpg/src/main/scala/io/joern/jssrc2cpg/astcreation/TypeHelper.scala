@@ -9,6 +9,13 @@ trait TypeHelper { this: AstCreator =>
   private val TypeAnnotationKey = "typeAnnotation"
   private val ReturnTypeKey     = "returnType"
 
+  private val ArrayReplacements = Map(
+    "any[]"     -> s"${Defines.Any}[]",
+    "number[]"  -> s"${Defines.Number}[]",
+    "string[]"  -> s"${Defines.String}[]",
+    "boolean[]" -> s"${Defines.Boolean}[]"
+  )
+
   private val TypeReplacements = Map(
     " any"     -> s" ${Defines.Any}",
     " number"  -> s" ${Defines.Number}",
@@ -85,7 +92,7 @@ trait TypeHelper { this: AstCreator =>
       case Some(value) if value == "boolean"  => Defines.Boolean
       case Some(value) if value == "any"      => Defines.Any
       case Some(other) =>
-        TypeReplacements.foldLeft(other) { case (typeStr, (m, r)) =>
+        (TypeReplacements ++ ArrayReplacements).foldLeft(other) { case (typeStr, (m, r)) =>
           typeStr.replace(m, r)
         }
       case None => Defines.Any
