@@ -70,7 +70,7 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
         typeFilePath.stripSuffix(s"${File.separator}$typeName").concat(s".py:<module>.$typeName")
       case None => typeFullName
     }
-    cpg.typeDecl.fullName(s".*$pythonicTypeFullName").l match {
+    cpg.typeDecl.fullName(s".*${Pattern.quote(pythonicTypeFullName)}").l match {
       case xs if xs.nonEmpty =>
         diffGraph.setNodeProperty(node, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, xs.fullName.toSeq)
       case _ => diffGraph.setNodeProperty(node, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq(pythonicTypeFullName))
