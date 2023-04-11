@@ -1,6 +1,6 @@
 package io.joern.php2cpg.querying
 
-import io.joern.php2cpg.parser.Domain.PhpOperators
+import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
@@ -77,7 +77,7 @@ class MemberTests extends PhpCode2CpgFixture {
     }
 
     "have assignments added to the default constructor" in {
-      inside(cpg.method.nameExact(Defines.ConstructorMethodName).l) { case List(initMethod) =>
+      inside(cpg.method.nameExact(Domain.ConstructorMethodName).l) { case List(initMethod) =>
         inside(initMethod.body.astChildren.l) { case List(aAssign: Call, bAssign: Call, cAssign: Call) =>
           checkFieldAssign(aAssign, "a")
           checkFieldAssign(bAssign, "b")
@@ -117,7 +117,7 @@ class MemberTests extends PhpCode2CpgFixture {
     }
 
     "have assignments added to the default constructor" in {
-      inside(cpg.method.nameExact(Defines.ConstructorMethodName).l) { case List(initMethod) =>
+      inside(cpg.method.nameExact(Domain.ConstructorMethodName).l) { case List(initMethod) =>
         inside(initMethod.body.astChildren.l) { case List(aAssign: Call, bAssign: Call, cAssign: Call) =>
           checkFieldAssign(aAssign, "a")
           checkFieldAssign(bAssign, "b")

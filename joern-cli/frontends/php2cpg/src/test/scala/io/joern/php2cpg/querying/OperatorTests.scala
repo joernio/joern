@@ -1,8 +1,9 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
-import io.joern.php2cpg.parser.Domain.{PhpOperators, PhpDomainTypeConstants}
+import io.joern.php2cpg.parser.Domain.{PhpDomainTypeConstants, PhpOperators}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
@@ -264,7 +265,7 @@ class OperatorTests extends PhpCode2CpgFixture {
     val cpg = code("<?php\nprint(\"Hello, world\");")
 
     inside(cpg.call.nameExact("print").l) { case List(printCall) =>
-      printCall.methodFullName shouldBe "__builtin.print"
+      printCall.methodFullName shouldBe "print"
       printCall.typeFullName shouldBe TypeConstants.Int
       printCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       printCall.lineNumber shouldBe Some(2)
@@ -607,7 +608,7 @@ class OperatorTests extends PhpCode2CpgFixture {
     val cpg = code("<?php\n`ls -la`")
 
     inside(cpg.call.name("shell_exec").l) { case List(shellCall) =>
-      shellCall.methodFullName shouldBe "__builtin.shell_exec"
+      shellCall.methodFullName shouldBe "shell_exec"
       shellCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       shellCall.code shouldBe "`ls -la`"
       shellCall.lineNumber shouldBe Some(2)
@@ -623,7 +624,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.l) { case List(unsetCall) =>
       unsetCall.name shouldBe "unset"
-      unsetCall.methodFullName shouldBe "__builtin.unset"
+      unsetCall.methodFullName shouldBe "unset"
       unsetCall.code shouldBe "unset($a, $b)"
       unsetCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       unsetCall.lineNumber shouldBe Some(2)
@@ -661,9 +662,9 @@ class OperatorTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.l) { case List(absCall) =>
       absCall.name shouldBe "abs"
-      absCall.methodFullName shouldBe "__builtin.abs"
+      absCall.methodFullName shouldBe "abs"
       absCall.code shouldBe "abs($a)"
-      absCall.signature.isEmpty shouldBe true
+      absCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
     }
   }
 }
