@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.passes.base.TypeDeclStubCreator
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, TypeDecl, TypeDeclBase}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, TypeBase, TypeDecl, TypeDeclBase}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
@@ -18,6 +18,8 @@ class InheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
 
   private val typeDeclMap =
     mutable.HashMap.from[String, TypeDeclBase](cpg.typeDecl.where(_.nameNot(".*<.*>$")).map(t => t.fullName -> t))
+  private val typeMap =
+    mutable.HashMap.from[String, TypeBase](cpg.typ.where(_.nameNot(".*<.*>$")).map(t => t.fullName -> t))
 
   override def run(builder: DiffGraphBuilder): Unit = {
     cpg.typeDecl
@@ -31,8 +33,9 @@ class InheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
         if (resolvedTypeDecls.nonEmpty) {
           val fullNames = resolvedTypeDecls.map(_.fullName)
           builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, fullNames)
-          cpg.typ
-            .fullNameExact(fullNames: _*)
+          typeMap
+            .filter { case (name, _) => fullNames.contains(name) }
+            .values
             .foreach(tgt => builder.addEdge(t, tgt, EdgeTypes.INHERITS_FROM))
         }
       }
