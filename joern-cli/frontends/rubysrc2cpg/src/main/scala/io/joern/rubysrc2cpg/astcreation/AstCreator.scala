@@ -997,7 +997,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       * @return
       *   the visitor result
       */
-    override def visitMethodName(ctx: RubyParser.MethodNameContext): Any = { println(ctx.toString()) }
+    override def visitMethodName(ctx: RubyParser.MethodNameContext): Any = {
+      println(s"Method name: $ctx.toString()")
+    }
 
     /** Visit a parse tree produced by {@link RubyParser# methodIdentifier}.
       *
@@ -1360,7 +1362,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       * @return
       *   the visitor result
       */
-    override def visitSymbol(ctx: RubyParser.SymbolContext): Any = { println(ctx.toString()) }
+    override def visitSymbol(ctx: RubyParser.SymbolContext): Any = {
+      println(ctx.toString())
+    }
 
     /** Visit a parse tree produced by {@link RubyParser# numericLiteral}.
       *
@@ -1434,9 +1438,21 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val tokenStream = new CommonTokenStream(lexer)
     val parser      = new RubyParser(tokenStream)
     val visitor     = new RubyVisitor()
+    /*
     val tree        = parser.program() // see other contexts
     visitor.visit(tree)
-    // storeInDiffGraph(ast, diffGraph)
+    val symbols = parser.symbol()
+    visitor.visitSymbol(symbols)
+
+    val numericLiterals = parser.numericLiteral()
+    visitor.visitNumericLiteral(numericLiterals)
+    */
+
+    val methods = parser.methodName()
+    visitor.visitMethodName(methods)
+
+
+      // storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
 
