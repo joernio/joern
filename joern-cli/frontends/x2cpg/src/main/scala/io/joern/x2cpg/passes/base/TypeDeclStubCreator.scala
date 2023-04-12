@@ -27,13 +27,17 @@ class TypeDeclStubCreator(cpg: Cpg) extends CpgPass(cpg) {
     cpg.typ
       .filterNot(typ => typeDeclFullNameToNode.isDefinedAt(typ.fullName))
       .foreach { typ =>
-        val newTypeDecl = createTypeDeclStub(typ.name, typ.fullName)
+        val newTypeDecl = TypeDeclStubCreator.createTypeDeclStub(typ.name, typ.fullName)
         typeDeclFullNameToNode += typ.fullName -> newTypeDecl
         dstGraph.addNode(newTypeDecl)
       }
   }
 
-  private def createTypeDeclStub(name: String, fullName: String): NewTypeDecl = {
+}
+
+object TypeDeclStubCreator {
+
+  def createTypeDeclStub(name: String, fullName: String): NewTypeDecl = {
     NewTypeDecl()
       .name(name)
       .fullName(fullName)
