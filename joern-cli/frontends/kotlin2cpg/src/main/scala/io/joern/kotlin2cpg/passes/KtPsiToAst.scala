@@ -748,11 +748,7 @@ trait KtPsiToAst {
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
     val assignmentLHSNode = identifierNode(entry.getText, entryTypeFullName, line(entry), column(entry))
-    val assignmentLHSAst =
-      scope.lookupVariable(entry.getText) match {
-        case Some(refTo) => Ast(assignmentLHSNode).withRefEdge(assignmentLHSNode, refTo)
-        case None        => Ast(assignmentLHSNode)
-      }
+    val assignmentLHSAst  = astWithRefEdgeMaybe(assignmentLHSNode.name, assignmentLHSNode)
 
     val componentNIdentifierNode =
       identifierNode(componentNReceiverName, componentNTypeFullName, line(entry), column(entry))
@@ -1437,14 +1433,19 @@ trait KtPsiToAst {
     val tmpBlockNode = blockNode("", typeFullName)
     val tmpName      = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
     val tmpLocalNode = localNode(tmpName, typeFullName)
+    scope.addToScope(tmpName, tmpLocalNode)
+    val tmpLocalAst = Ast(tmpLocalNode)
+
     val assignmentRhsNode =
       operatorCallNode(Operators.alloc, Constants.alloc, Option(typeFullName), line(expr), column(expr))
     val assignmentLhsNode = identifierNode(tmpName, typeFullName, line(expr), column(expr))
-    val assignmentNode    = operatorCallNode(Operators.assignment, Operators.assignment)
-    val assignmentAst     = callAst(assignmentNode, List(assignmentLhsNode, assignmentRhsNode).map(Ast(_)))
+    val assignmentLhsAst  = astWithRefEdgeMaybe(tmpName, assignmentLhsNode)
+
+    val assignmentNode = operatorCallNode(Operators.assignment, Operators.assignment)
+    val assignmentAst  = callAst(assignmentNode, List(assignmentLhsAst, Ast(assignmentRhsNode)))
     val initReceiverNode = identifierNode(tmpName, typeFullName, line(expr), column(expr))
       .argumentIndex(0)
-    val initReceiverAst = Ast(initReceiverNode)
+    val initReceiverAst = astWithRefEdgeMaybe(tmpName, initReceiverNode)
 
     val argAsts = withIndex(expr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
       val argNameOpt = if (arg.isNamed) Option(arg.getArgumentName.getAsName.toString) else None
@@ -1466,12 +1467,8 @@ trait KtPsiToAst {
     )
     val initCallAst       = callAst(initCallNode, argAsts, Option(initReceiverAst))
     val lastIdentifier    = identifierNode(tmpName, typeFullName, line(expr), column(expr))
-    val lastIdentifierAst = Ast(lastIdentifier)
+    val lastIdentifierAst = astWithRefEdgeMaybe(tmpName, lastIdentifier)
 
-    val tmpLocalAst = Ast(tmpLocalNode)
-      .withRefEdge(assignmentLhsNode, tmpLocalNode)
-      .withRefEdge(initReceiverNode, tmpLocalNode)
-      .withRefEdge(lastIdentifier, tmpLocalNode)
     blockAst(withArgumentIndex(tmpBlockNode, argIdx), List(tmpLocalAst, assignmentAst, initCallAst, lastIdentifierAst))
   }
 
@@ -1481,6 +1478,7 @@ trait KtPsiToAst {
     val typeFullName     = registerType(typeInfoProvider.propertyType(expr, explicitTypeName))
     val node             = localNode(expr.getName, typeFullName, None, line(expr), column(expr))
     scope.addToScope(expr.getName, node)
+    val localAst = Ast(node)
 
     val hasRHSCtorCall = expr.getDelegateExpressionOrInitializer match {
       case typed: KtCallExpression => typeInfoProvider.isConstructorCall(typed).getOrElse(false)
@@ -1494,11 +1492,11 @@ trait KtPsiToAst {
       )
       val rhsAst = Ast(operatorCallNode(Operators.alloc, Operators.alloc, Option(typeFullName)))
 
-      val identifier = identifierNode(elem.getText, typeFullName, line(elem), column(elem))
-      val localAst   = Ast(node).withRefEdge(identifier, node) // TODO: use the scope here maybe?
+      val identifier    = identifierNode(elem.getText, typeFullName, line(elem), column(elem))
+      val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
 
       val assignmentNode    = operatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
-      val assignmentCallAst = callAst(assignmentNode, List(Ast(identifier)) ++ List(rhsAst))
+      val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
 
       val (fullName, signature) =
         typeInfoProvider.fullNameWithSignature(typedCall, (TypeConstants.any, TypeConstants.any))
@@ -1525,10 +1523,10 @@ trait KtPsiToAst {
     } else {
       val rhsAsts        = astsForExpression(expr.getDelegateExpressionOrInitializer, Some(2))
       val identifier     = identifierNode(elem.getText, typeFullName, line(elem), column(elem))
+      val identifierAst  = astWithRefEdgeMaybe(identifier.name, identifier)
       val assignmentNode = operatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
-      val call           = callAst(assignmentNode, List(Ast(identifier)) ++ rhsAsts)
+      val call           = callAst(assignmentNode, List(identifierAst) ++ rhsAsts)
 
-      val localAst = Ast(node).withRefEdge(identifier, node)
       Seq(localAst, call)
     }
   }
