@@ -33,10 +33,7 @@ class InheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
         if (resolvedTypeDecls.nonEmpty) {
           val fullNames = resolvedTypeDecls.map(_.fullName)
           builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, fullNames)
-          typeMap
-            .filter { case (name, _) => fullNames.contains(name) }
-            .values
-            .foreach(tgt => builder.addEdge(t, tgt, EdgeTypes.INHERITS_FROM))
+          fullNames.flatMap(typeMap.get).foreach(tgt => builder.addEdge(t, tgt, EdgeTypes.INHERITS_FROM))
         }
       }
   }
