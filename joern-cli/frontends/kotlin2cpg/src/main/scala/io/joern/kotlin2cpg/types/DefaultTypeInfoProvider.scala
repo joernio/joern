@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.load.java.sources.JavaSourceElement
 import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
 import org.jetbrains.kotlin.psi.{
+  KtAnnotationEntry,
   KtArrayAccessExpression,
   KtBinaryExpression,
   KtCallExpression,
@@ -387,6 +388,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     resolvedCallDescriptor(expr)
       .map(_.getOriginal)
       .map { desc => TypeRenderer.render(desc.getReturnType) }
+      .getOrElse(defaultValue)
+  }
+
+  def typeFullName(expr: KtAnnotationEntry, defaultValue: String): String = {
+    Option(bindingsForEntity(bindingContext, expr))
+      .map(_ => bindingContext.get(BindingContext.ANNOTATION, expr))
+      .map { desc => TypeRenderer.render(desc.getType) }
       .getOrElse(defaultValue)
   }
 

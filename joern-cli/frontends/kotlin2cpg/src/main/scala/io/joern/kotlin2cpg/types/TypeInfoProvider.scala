@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg.types
 
 import io.shiftleft.passes.KeyPool
 import org.jetbrains.kotlin.psi.{
+  KtAnnotationEntry,
   KtBinaryExpression,
   KtCallExpression,
   KtClassLiteralExpression,
@@ -54,6 +55,8 @@ trait TypeInfoProvider {
   def referenceTargetTypeFullName(expr: KtNameReferenceExpression, defaultValue: String): String
 
   def typeFullName(expr: KtBinaryExpression, defaultValue: String): String
+
+  def typeFullName(expr: KtAnnotationEntry, defaultValue: String): String
 
   def isReferenceToClass(expr: KtNameReferenceExpression): Boolean
 

@@ -320,8 +320,10 @@ trait KtPsiToAst {
       BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, _methodNode, EdgeTypes.REF)))
     }
 
+    val annotationAsts = ktClass.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
+
     val children = methodAsts ++ List(constructorAst) ++ membersFromPrimaryCtorAsts ++ secondaryConstructorAsts ++
-      _componentNMethodAsts.toList ++ memberAsts
+      _componentNMethodAsts.toList ++ memberAsts ++ annotationAsts
     val ast = Ast(typeDecl).withChildren(children)
 
     (List(ctorBindingInfo) ++ bindingsInfo ++ componentNBindingsInfo).foreach(bindingInfoQueue.prepend)
@@ -342,6 +344,18 @@ trait KtPsiToAst {
     scope.popScope()
 
     Seq(finalAst) ++ companionObjectAsts ++ innerTypeDeclAsts
+  }
+
+  def astForAnnotationEntry(entry: KtAnnotationEntry)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+    val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+    val node =
+      NewAnnotation()
+        .code(entry.getText)
+        .name(entry.getShortName.toString)
+        .lineNumber(line(entry))
+        .columnNumber(column(entry))
+        .fullName(typeFullName)
+    annotationAst(node, List())
   }
 
   def astsForMethod(ktFn: KtNamedFunction, needsThisParameter: Boolean = false, withVirtualModifier: Boolean = false)(
@@ -391,9 +405,12 @@ trait KtPsiToAst {
     val modifierNodes =
       if (withVirtualModifier) Seq(modifierNode(ModifierTypes.VIRTUAL))
       else Seq()
+
+    val annotationEntries = ktFn.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
     Seq(
       methodAst(_methodNode, parameters, bodyAst, _methodReturnNode, modifierNodes)
         .withChildren(otherBodyAsts)
+        .withChildren(annotationEntries)
     )
   }
 
