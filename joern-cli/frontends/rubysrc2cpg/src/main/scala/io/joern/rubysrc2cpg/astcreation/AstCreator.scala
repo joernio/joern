@@ -44,14 +44,27 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     ctx
       .statement()
       .forEach(st => {
-        println(s"Statement: ${st.getText}. Rule: ${st.getRuleContext().getText}")
+        println(s"Statement: ${st.getText}. Rule: ${st.getRuleContext().getText}. Alt: ${st.getRuleContext().getAltNumber()}")
 
-        /*
-        for (i <- 0 to st.getChildCount()) {
-          val child = st.getChild(i)
-          println(s"Child text: ${child.getText}")
+        if( st.isInstanceOf[RubyParser.AliasStatementContext] ){
+          val ctx = st.asInstanceOf[RubyParser.AliasStatementContext]
+          println(s"RubyParser.AliasStatementContext ${ctx.getText}")
+        } else if( st.isInstanceOf[RubyParser.UndefStatementContext] ) {
+          val ctx = st.asInstanceOf[RubyParser.UndefStatementContext]
+          println(s"RubyParser.UndefStatementContext ${ctx.getText}")
+        } else if (st.isInstanceOf[RubyParser.BeginStatementContext]) {
+          val ctx = st.asInstanceOf[RubyParser.BeginStatementContext]
+          println(s"RubyParser.BeginStatementContext ${ctx.getText}")
+        } else if (st.isInstanceOf[RubyParser.EndStatementContext]) {
+          val ctx = st.asInstanceOf[RubyParser.EndStatementContext]
+          println(s"RubyParser.EndStatementContext ${ctx.getText}")
+        } else if (st.isInstanceOf[RubyParser.ModifierStatementContext]) {
+          val ctx = st.asInstanceOf[RubyParser.ModifierStatementContext]
+          println(s"RubyParser.ModifierStatementContext ${ctx.getText}")
+        } else if (st.isInstanceOf[RubyParser.ExpressionOrCommandStatementContext]) {
+          val ctx = st.asInstanceOf[RubyParser.ExpressionOrCommandStatementContext]
+          println(s"RubyParser.ExpressionOrCommandStatementContext ${ctx.getText}")
         }
-        */
       })
   }
 }
