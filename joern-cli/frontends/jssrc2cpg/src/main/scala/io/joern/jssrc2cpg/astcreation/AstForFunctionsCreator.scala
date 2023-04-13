@@ -27,14 +27,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
     ast.root match {
       case Some(_: NewIdentifier) =>
         val keyNode = createFieldIdentifierNode(restName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
-        val tpe     = typeFor(elementNodeInfo)
-        val localParamNode = createIdentifierNode(restName, elementNodeInfo)
-        localParamNode.typeFullName = tpe
         val paramNode = createIdentifierNode(paramName, elementNodeInfo)
         val accessAst =
           createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
         createAssignmentCallAst(
-          Ast(localParamNode),
+          ast,
           accessAst,
           s"$restName = ${codeOf(accessAst.nodes.head)}",
           elementNodeInfo.lineNumber,
