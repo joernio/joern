@@ -9,6 +9,7 @@ import overflowdb.traversal.Traversal
 
 import java.util.regex.Pattern
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
+import scala.util.{Failure, Success, Try}
 
 object UsageSlicing {
 
@@ -163,8 +164,9 @@ object UsageSlicing {
       // Not sure how we can get the return type unless it's typescript or we can resolve the callee?
       val returnType = baseCall.argumentOut
         .flatMap {
-          case x: Call => x.callee(resolver).methodReturn.typeFullName.headOption
-          case _       => None
+          case x: Call =>
+            Try(x.callee(resolver).methodReturn.typeFullName.head).toOption
+          case _ => None
         }
         .headOption
         .getOrElse("ANY")
