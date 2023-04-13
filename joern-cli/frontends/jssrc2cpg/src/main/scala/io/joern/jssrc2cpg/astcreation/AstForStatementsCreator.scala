@@ -794,7 +794,10 @@ trait AstForStatementsCreator { this: AstCreator =>
             }
           case _ => notHandledYet(forInOfStmt)
         }
-      case _ => notHandledYet(forInOfStmt)
+      case ObjectPattern => astForInOfStatementWithObject(forInOfStmt, loopVariableNodeInfo)
+      case ArrayPattern  => astForInOfStatementWithArray(forInOfStmt, loopVariableNodeInfo)
+      case Identifier    => astForInOfStatementWithIdentifier(forInOfStmt, loopVariableNodeInfo)
+      case _             => notHandledYet(forInOfStmt)
     }
   }
 
