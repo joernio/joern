@@ -165,10 +165,7 @@ object UsageSlicing {
       val returnType = baseCall.argumentOut
         .flatMap {
           case x: Call =>
-            Try(x.callee(resolver).methodReturn.typeFullName.head) match {
-              case Failure(_) => None
-              case Success(t) => Option(t)
-            }
+            Try(x.callee(resolver).methodReturn.typeFullName.head).toOption
           case _ => None
         }
         .headOption
