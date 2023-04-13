@@ -15,7 +15,7 @@ object PhpParser {
   private val ExecutablePath: String = {
     val dir = Paths.get(PhpParser.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
     val fixedDir = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
-    Paths.get(fixedDir, "php2cpg", "bin", "vendor", "bin", "php-parse").toAbsolutePath.toString
+    Paths.get(fixedDir, "php2cpg", "bin", "PHP-Parser", "bin", "php-parse").toAbsolutePath.toString
   }
 
   private def phpParseCommand(filename: String): String = {

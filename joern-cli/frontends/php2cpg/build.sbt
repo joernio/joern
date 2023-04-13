@@ -35,13 +35,19 @@ phpParseInstallTask := {
     val downloadedFile = SimpleCache.downloadMaybe(phpParserDlUrl.value)
     IO.withTemporaryDirectory { tempDir =>
       IO.unzip(downloadedFile, tempDir)
-      IO.copyDirectory(tempDir / s"PHP-Parser-${phpParserVersion}", phpParseDir)
+
+      val srcDir = tempDir / s"PHP-Parser-${phpParserVersion.value}"
+      IO.copyDirectory(srcDir, phpParseDir)
     }
   }
 
   val distDir = (Universal / stagingDirectory).value / "bin"
   distDir.mkdirs()
   IO.copyDirectory(phpBinDir, distDir)
+
+  // permissions are lost during the download; need to set them manually
+  (phpParseDir / "bin").listFiles().foreach(_.setExecutable(true, false))
+  (distDir / "PHP-Parser" / "bin").listFiles().foreach(_.setExecutable(true, false))
 }
 
 cleanFiles ++= Seq(
