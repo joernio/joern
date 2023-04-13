@@ -30,12 +30,18 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |
         |annotation class Controller
         |annotation class Route(val path: String)
+        |annotation class RequestParam(val name: String)
         |
         |@Controller
         |class HealthController {
         |    @Route("/health")
         |    fun health(): String {
         |        return "ok"
+        |    }
+        |
+        |    @GetMapping("/greet")
+        |    fun greet(@RequestParam("username") username: String): String {
+        |      return "Greetings ${username}!"
         |    }
         |}
         |""".stripMargin)
@@ -58,6 +64,16 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       annotation.code shouldBe "@Route(\"/health\")"
       annotation.name shouldBe "Route"
       annotation.fullName shouldBe "mypkg.Route"
+    }
+
+    "should contain an ANNOTATION node for the annotated parameter" in {
+      val List(p)     = cpg.method.parameter.nameExact("username").l
+      def annotations = p.astChildren.collect { case c: Annotation => c }
+      annotations.size shouldBe 1
+      val List(annotation) = annotations.l
+      annotation.code shouldBe "@RequestParam(\"username\")"
+      annotation.name shouldBe "RequestParam"
+      annotation.fullName shouldBe "mypkg.RequestParam"
     }
   }
 }
