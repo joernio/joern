@@ -267,12 +267,11 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "test capturing to global x exists" in {
+      cpg.method.fullName.foreach(println)
       val localNode = cpg.method.name("<module>").local.name("x").head
-      localNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some(
-        "test.py:<module>.MyClass.MyClass<body>.f:x"
-      )
+      localNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("test.py:<module>.MyClass.f:x")
 
-      val localInMyClassNode = cpg.method.name("MyClass<body>").local.name("x").head
+      val localInMyClassNode = cpg.method.name("MyClass").local.name("x").head
       localInMyClassNode.referencingIdentifiers.lineNumber(5).hasNext shouldBe false
     }
   }
@@ -288,7 +287,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
       val localNode = cpg.method.name("<module>").local.name("x").head
       localNode._closureBindingViaRefIn.hasNext shouldBe false
 
-      val localInMyClassNode = cpg.method.name("MyClass<body>").local.name("x").head
+      val localInMyClassNode = cpg.method.name("MyClass").local.name("x").head
       localInMyClassNode.referencingIdentifiers.lineNumber(4).code.head shouldBe "x"
     }
   }

@@ -144,7 +144,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "resolve the 'Column' constructor for a class member" in {
       val Some(columnConstructor) = cpg.call("Column").headOption
       // TODO: The type below is strange, seems to be autopopulated as the recovery should give __init__
-      columnConstructor.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.<init>"
+      columnConstructor.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.__init__"
     }
 
   }
@@ -335,7 +335,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val Some(tmp0) = cpg.identifier("tmp0").headOption
       tmp0.typeFullName shouldBe "urllib.py:<module>.request"
       val Some(requestCall) = cpg.call("Request").headOption
-      requestCall.methodFullName shouldBe "urllib.py:<module>.request.Request.<init>"
+      requestCall.methodFullName shouldBe "urllib.py:<module>.request.Request.__init__"
     }
   }
 
@@ -470,11 +470,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "recover its full name successfully" in {
       val Some(addFieldConstructor) = cpg.call.name("AddField").headOption
-      addFieldConstructor.methodFullName shouldBe Seq("django", "db.py:<module>.migrations.AddField.<init>").mkString(
+      addFieldConstructor.methodFullName shouldBe Seq("django", "db.py:<module>.migrations.AddField.__init__").mkString(
         File.separator
       )
       val Some(booleanFieldConstructor) = cpg.call.name("BooleanField").headOption
-      booleanFieldConstructor.methodFullName shouldBe Seq("django", "db.py:<module>.models.BooleanField.<init>")
+      booleanFieldConstructor.methodFullName shouldBe Seq("django", "db.py:<module>.models.BooleanField.__init__")
         .mkString(File.separator)
     }
   }

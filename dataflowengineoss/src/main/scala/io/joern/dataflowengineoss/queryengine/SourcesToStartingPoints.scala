@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages, identifiersFromCapturedScopes}
+import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -102,11 +102,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   private def usages(pairs: List[(TypeDecl, AstNode)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, astNode) =>
       val nonConstructorMethods = methodsRecursively(typeDecl)
-        .and(
-          _.whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName)),
-          // handle Python
-          _.whereNot(_.name(".*<body>$"))
-        )
+        .whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"))
         .l
 
       val usagesInSameClass =
@@ -172,7 +168,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     lit.inAssignment
       .or(
         _.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"),
-        _.method.name(".*<body>.*")
+        _.method.typeDecl.name(".*<meta>")
       )
       .target
       .flatMap {
