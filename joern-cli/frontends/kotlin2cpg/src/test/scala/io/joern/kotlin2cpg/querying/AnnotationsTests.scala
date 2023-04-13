@@ -4,7 +4,7 @@ import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Annotation
 import io.shiftleft.semanticcpg.language._
 
-class AnnotatedExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with two identical calls, one annotated and one not" should {
     val cpg = code("""
         |package mypkg
