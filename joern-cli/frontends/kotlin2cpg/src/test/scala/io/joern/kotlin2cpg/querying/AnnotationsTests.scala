@@ -51,7 +51,7 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should contain an ANNOTATION node attached to the annotated method" in {
-      val List(m) = cpg.method.nameExact("health").l
+      val List(m)     = cpg.method.nameExact("health").l
       def annotations = m.astChildren.collect { case c: Annotation => c }
       annotations.size shouldBe 1
       val List(annotation) = annotations.l
