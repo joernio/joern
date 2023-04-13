@@ -83,4 +83,16 @@ class MethodTests extends PhpCode2CpgFixture {
 
     cpg.file.method.name.l shouldBe List("foo")
   }
+
+  "methods with non-unicode-legal characters should be created with escaped char codes" in {
+    val cpg = code("""<?php
+        |function foo() {
+        |  $x = "\xFF";
+        |}
+        |""".stripMargin)
+
+    cpg.file.method.name.l shouldBe List("foo")
+    cpg.assignment.code.l shouldBe List("$x = \"\\\\xFF\"")
+
+  }
 }
