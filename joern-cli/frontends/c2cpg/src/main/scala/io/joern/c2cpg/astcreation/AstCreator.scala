@@ -57,12 +57,8 @@ class AstCreator(
     val ast = Ast(namespaceBlock).withChild(
       astInFakeMethod(namespaceBlock.fullName, fileName(iASTTranslationUnit), iASTTranslationUnit)
     )
-    if (config.includeComments) {
-      val commentsAsts = cdtAst.getComments.map(comment => astForComment(comment)).toIndexedSeq
-      ast.withChildren(commentsAsts)
-    } else {
-      ast
-    }
+    attachDependenciesAndImports(iASTTranslationUnit)
+    ast.withChildren(astsForComments(iASTTranslationUnit))
   }
 
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.

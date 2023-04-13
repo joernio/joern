@@ -4,6 +4,7 @@ import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTLabelStatement, IASTNode}
+import org.eclipse.cdt.core.dom.ast.IASTPreprocessorIncludeStatement
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstNodeBuilder { this: AstCreator =>
@@ -54,6 +55,24 @@ trait AstNodeBuilder { this: AstCreator =>
     val columnNumber = column(node).map(Integer.valueOf)
     NewComment().code(code).filename(filename).lineNumber(lineNumber).columnNumber(columnNumber)
   }
+
+  protected def newImportNode(
+    code: String,
+    importedEntity: String,
+    include: IASTPreprocessorIncludeStatement
+  ): NewImport = {
+    val lineNumber   = line(include).map(Integer.valueOf)
+    val columnNumber = column(include).map(Integer.valueOf)
+    NewImport()
+      .code(code)
+      .importedEntity(importedEntity)
+      .importedAs(importedEntity)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+  }
+
+  protected def newDependencyNode(name: String, version: String): NewDependency =
+    NewDependency().name(name).version(version).dependencyGroupId(name)
 
   protected def newLocalNode(node: IASTNode, name: String, code: String, typeFullName: String): NewLocal = {
     val lineNumber   = line(node).map(Integer.valueOf)

@@ -5,6 +5,7 @@ import io.joern.c2cpg.utils.IOUtils
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
@@ -350,7 +351,28 @@ trait AstCreatorHelper { this: AstCreator =>
     }
   }
 
-  private def astforDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
+  protected def attachDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Unit = {
+    val allIncludes = iASTTranslationUnit.getIncludeDirectives.toIndexedSeq
+    allIncludes.foreach { include =>
+      val name           = include.getName.toString
+      val dependencyNode = newDependencyNode(name, "include")
+      val importNode     = newImportNode(nodeSignature(include), name, include)
+      diffGraph.addNode(dependencyNode)
+      diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
+    }
+  }
+
+  protected def astsForComments(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
+    if (config.includeComments) {
+      val commentsAsts = iASTTranslationUnit.getComments.map(comment => astForComment(comment)).toIndexedSeq
+      setArgumentIndices(commentsAsts)
+      commentsAsts
+    } else {
+      Seq.empty
+    }
+  }
+
+  private def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op       = "<operator>.typeOf"
     val cpgUnary = newCallNode(decl, op, op, DispatchTypes.STATIC_DISPATCH)
     val operand  = nullSafeAst(decl.getDecltypeExpression)
@@ -426,7 +448,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case d: ICPPASTArrayDesignator        => nullSafeAst(d.getSubscriptExpression)
       case d: ICPPASTFieldDesignator        => astForNode(d.getName)
       case d: ICASTFieldDesignator          => astForNode(d.getName)
-      case decl: ICPPASTDecltypeSpecifier   => astforDecltypeSpecifier(decl)
+      case decl: ICPPASTDecltypeSpecifier   => astForDecltypeSpecifier(decl)
       case arrMod: IASTArrayModifier        => astForArrayModifier(arrMod)
       case _                                => notHandledYet(node)
     }
