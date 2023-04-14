@@ -88,16 +88,16 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
       val parseResult = parser.parse(path)
       parseResult match {
         case Some(translationUnit) =>
-          report.addReportInfo(filename, fileLOC, parsed = true)
+          report.addReportInfo(relPath, fileLOC, parsed = true)
           val localDiff = new AstCreator(relPath, config, translationUnit, file2OffsetTable).createAst()
           diffGraph.absorb(localDiff)
           true
         case None =>
-          report.addReportInfo(filename, fileLOC)
+          report.addReportInfo(relPath, fileLOC)
           false
       }
     }
-    report.updateReport(filename, gotCpg, duration)
+    report.updateReport(relPath, gotCpg, duration)
   }
 
 }
