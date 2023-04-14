@@ -228,6 +228,30 @@ class TsDecoratorAstCreationPassTest extends AbstractPassTest {
       }
     }
 
+    "create annotations with literals correctly for class members" in TsAstFixture("""
+        |class Foo {
+        |  @a('lit')
+        |  public x: number;
+        |}
+        |""".stripMargin) { cpg =>
+      inside(cpg.typeDecl.name("Foo").member.name("x").annotation.l) { case List(a) =>
+        a.code shouldBe "@a('lit')"
+        a.name shouldBe "a"
+        a.fullName shouldBe "a"
+        val List(assign) = a.parameterAssign.l
+        assign.code shouldBe "'lit'"
+        assign.order shouldBe 1
+        val List(paramA) = assign.parameter.l
+        paramA.code shouldBe "value"
+        paramA.order shouldBe 1
+        val List(lit) = assign.value.isLiteral.l
+        lit.code shouldBe "\"lit\""
+        lit.order shouldBe 2
+        lit.argumentIndex shouldBe 2
+        lit.parentExpression.code.head shouldBe "@a('lit')"
+      }
+    }
+
     "create annotations correctly for class accessors" in TsAstFixture("""
         |class Foo {
         |  private _x: number;

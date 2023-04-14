@@ -70,7 +70,7 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
         if (systemIncludePaths.exists(p => srcNode.filename.startsWith(p.toString))) {
           dstGraph.setNodeProperty(srcNode, PropertyNames.IS_EXTERNAL, true)
         }
-      case _ @(_: MetaData | _: Binding | _: Type) => // do nothing
+      case _ @(_: MetaData | _: Binding | _: Type | _: Dependency | _: Import) => // do nothing
       case srcNode =>
         dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
     }

@@ -123,7 +123,7 @@ class AstCreator(
     methodAstParentStack.pop()
 
     functionTypeAndTypeDeclAst.withChild(
-      methodAst(programMethod, List(thisParam), Ast(blockNode).withChildren(methodChildren), methodReturn)
+      methodAst(programMethod, List(Ast(thisParam)), Ast(blockNode).withChildren(methodChildren), methodReturn)
     )
   }
 

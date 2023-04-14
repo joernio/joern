@@ -953,8 +953,30 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       checkForInOrOfObject(loopBlock)
     }
 
+    "be correct for for-loop with for-of with object destruction without declaration" in AstFixture("""
+        |for({a, b, c} of obj) {
+        |   foo(a, b, c)
+        |}
+        """.stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOfObject(loopBlock)
+    }
+
     "be correct for for-loop with for-of with array destruction" in AstFixture("""
         |for(var [a, b, c] of arr) {
+        |   foo(a, b, c)
+        |}
+        """.stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOfArray(loopBlock)
+    }
+
+    "be correct for for-loop with for-of with array destruction without declaration" in AstFixture("""
+        |for([a, b, c] of arr) {
         |   foo(a, b, c)
         |}
         """.stripMargin) { cpg =>
@@ -975,8 +997,30 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       checkForInOrOf(loopBlock)
     }
 
+    "be correct for for-loop with for-in  without declaration" in AstFixture("""
+        |for (i in arr) {
+        |   foo(i)
+        |}
+        """.stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOf(loopBlock)
+    }
+
     "be correct for for-loop with for-of" in AstFixture("""
         |for (var i of arr) {
+        |   foo(i)
+        |}
+        """.stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOf(loopBlock)
+    }
+
+    "be correct for for-loop with for-of without declaration" in AstFixture("""
+        |for (i of arr) {
         |   foo(i)
         |}
         """.stripMargin) { cpg =>

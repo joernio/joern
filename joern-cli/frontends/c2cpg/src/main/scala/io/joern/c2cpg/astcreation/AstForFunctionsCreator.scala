@@ -181,7 +181,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val stubAst = methodAst(
       methodNode,
-      parameterNodes,
+      parameterNodes.map(Ast(_)),
       astForMethodBody(Option(funcDef.getBody)),
       newMethodReturnNode(funcDef, registerType(typeForDeclSpecifier(funcDef.getDeclSpecifier)))
     )
