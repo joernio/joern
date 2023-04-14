@@ -6,8 +6,8 @@ name := "php2cpg"
 scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.2.2")
 
-lazy val phpParserVersion = settingKey[String]("php-parser version")
-phpParserVersion    := "4.15.4-charfix"
+val phpParserVersion = "4.15.4-charfix.1"
+val phpParserDlUrl  = s"https://github.com/joernio/PHP-Parser/archive/refs/tags/$phpParserVersion.zip"
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
@@ -23,8 +23,6 @@ scalacOptions ++= Seq(
   "-deprecation" // Emit warning and location for usages of deprecated APIs.
 )
 
-lazy val phpParserDlUrl = settingKey[String]("php-parser download url")
-phpParserDlUrl := s"https://github.com/joernio/PHP-Parser/archive/refs/tags/${phpParserVersion.value}.zip"
 
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
 phpParseInstallTask := {
@@ -32,11 +30,11 @@ phpParseInstallTask := {
   val phpParseDir = phpBinDir / "PHP-Parser"
   if (!(phpParseDir / "bin").exists) {
     IO.createDirectory(phpParseDir)
-    val downloadedFile = SimpleCache.downloadMaybe(phpParserDlUrl.value)
+    val downloadedFile = SimpleCache.downloadMaybe(phpParserDlUrl)
     IO.withTemporaryDirectory { tempDir =>
       IO.unzip(downloadedFile, tempDir)
 
-      val srcDir = tempDir / s"PHP-Parser-${phpParserVersion.value}"
+      val srcDir = tempDir / s"PHP-Parser-$phpParserVersion"
       IO.copyDirectory(srcDir, phpParseDir)
     }
   }
