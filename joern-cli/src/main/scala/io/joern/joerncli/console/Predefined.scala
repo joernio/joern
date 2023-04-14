@@ -26,19 +26,8 @@ object Predefined {
   val forInteractiveShell: String =
     shared +
       """import _root_.io.joern.joerncli.console.Joern._""" +
-      dynamicPredef()
-
-  val forScripts: String =
-    shared +
-      """
-        |import _root_.io.joern.joerncli.console.Joern.{cpg =>_, _}
-      """.stripMargin +
-      dynamicPredef()
-
-  def dynamicPredef(): String = {
-    Run.codeForRunCommand() +
+      Run.codeForRunCommand() +
       Help.codeForHelpCommand(classOf[io.joern.joerncli.console.JoernConsole]) +
       "ossDataFlowOptions = opts.ossdataflow"
-  }
 
 }
