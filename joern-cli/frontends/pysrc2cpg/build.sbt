@@ -27,3 +27,4 @@ javaCCTask := {
 }
 
 Compile / sourceGenerators += javaCCTask
+
