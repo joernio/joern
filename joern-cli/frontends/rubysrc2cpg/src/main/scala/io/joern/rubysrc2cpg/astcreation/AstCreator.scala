@@ -38,7 +38,17 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForVariable(variableCtx: RubyParser.VariableIdentifierContext): Unit = {
-    val varText = variableCtx.CLASS_VARIABLE_IDENTIFIER().getSymbol.getText
+    val varText = if (variableCtx.LOCAL_VARIABLE_IDENTIFIER() != null) {
+      variableCtx.LOCAL_VARIABLE_IDENTIFIER().getSymbol.getText
+    } else if (variableCtx.GLOBAL_VARIABLE_IDENTIFIER() != null) {
+      variableCtx.GLOBAL_VARIABLE_IDENTIFIER().getSymbol.getText
+    } else if (variableCtx.INSTANCE_VARIABLE_IDENTIFIER() != null) {
+      variableCtx.INSTANCE_VARIABLE_IDENTIFIER().getSymbol.getText
+    } else if (variableCtx.CLASS_VARIABLE_IDENTIFIER() != null) {
+      variableCtx.CLASS_VARIABLE_IDENTIFIER().getSymbol.getText
+    } else if (variableCtx.CONSTANT_IDENTIFIER() != null) {
+      variableCtx.CONSTANT_IDENTIFIER().getSymbol.getText
+    }
     println(s"Variable text: $varText")
   }
 
@@ -56,6 +66,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForSplattingArgument(ctx: RubyParser.SplattingArgumentContext): Unit = {
+    if (ctx == null) {
+      return
+    }
     astForExpressionOrCommand(ctx.expressionOrCommand())
   }
 
