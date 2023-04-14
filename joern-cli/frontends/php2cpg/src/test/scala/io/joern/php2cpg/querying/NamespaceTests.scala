@@ -132,4 +132,16 @@ class NamespaceTests extends PhpCode2CpgFixture {
     cpg.method.name("foo").fullName.l shouldBe List("ns\\A->foo")
     cpg.method.name("bar").fullName.l shouldBe List("ns\\A::bar")
   }
+
+  "global namespace block should have the relative filename prepended to fullName" in {
+    val cpg = code("<?php", fileName = "foo.php").moreCode("<?php", fileName = "bar.php")
+
+    cpg.namespaceBlock.nameExact("<global>").fullName.sorted.l shouldBe List(
+      // The <global> namespace added by the MetaDataPass
+      "<global>",
+      // The per-file <global> namespaces actually used
+      "bar.php:<global>",
+      "foo.php:<global>"
+    )
+  }
 }

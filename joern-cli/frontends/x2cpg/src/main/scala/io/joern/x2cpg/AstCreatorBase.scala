@@ -14,14 +14,14 @@ abstract class AstCreatorBase(filename: String) {
 
   /** Create a global namespace block for the given `filename`
     */
-  def globalNamespaceBlock(): NewNamespaceBlock = {
-    val absPath  = absolutePath(filename)
+  def globalNamespaceBlock(useAbsolutePath: Boolean = true): NewNamespaceBlock = {
+    val path     = if (useAbsolutePath) absolutePath(filename) else filename
     val name     = NamespaceTraversal.globalNamespaceName
-    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absPath))
+    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(path))
     NewNamespaceBlock()
       .name(name)
       .fullName(fullName)
-      .filename(absPath)
+      .filename(path)
       .order(1)
   }
 
