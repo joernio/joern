@@ -502,6 +502,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val List(methodFullName) = cpg.call("query").methodFullName.l
       methodFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.query").mkString(File.separator)
     }
+
+    "reflect these types as under the type full name" in {
+      val Some(ret) = cpg.method("create_session").methodReturn.headOption
+      ret.typeFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session").mkString(File.separator)
+    }
   }
 
   "recover a method ref from a field identifier" should {
@@ -619,6 +624,12 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       postCallReceiver.typeFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session").mkString(File.separator)
       val Some(postCall) = cpg.call("query").headOption
       postCall.methodFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.query").mkString(File.separator)
+    }
+
+    "reflect these types as under the type full name" in {
+      val List(p1, p2) = cpg.method("get_user_by_email").parameter.l
+      p1.typeFullName shouldBe "__builtin.str"
+      p2.typeFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session").mkString(File.separator)
     }
   }
 

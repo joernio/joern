@@ -800,11 +800,15 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def setTypeInformation(): Unit = {
     cu.ast
       .collect {
-        case n: Local      => n
-        case n: Expression => n
+        case n: Local                                       => n
+        case n: Expression                                  => n
+        case n: MethodParameterIn if state.isFinalIteration => n
+        case n: MethodReturn if state.isFinalIteration      => n
       }
       .foreach {
         case x: Local if symbolTable.contains(x) => storeNodeTypeInfo(x, symbolTable.get(x).toSeq)
+        case x: MethodParameterIn                => setTypeFromTypeHints(x)
+        case x: MethodReturn                     => setTypeFromTypeHints(x)
         case x: Identifier if symbolTable.contains(x) =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
         case x: Call if symbolTable.contains(x) =>
@@ -885,6 +889,16 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         handlePotentialFunctionPointer(fieldAccess, idHints, f.canonicalName, f.argumentIndex, Option(i.name))
       case _ => persistType(x, symbolTable.get(x))
     }
+
+  protected def setTypeFromTypeHints(n: MethodParameterIn): Unit = {
+    val types = (n.typeFullName +: n.dynamicTypeHintFullName).filterNot(x => x == "ANY" || XTypeRecovery.isDummyType(x))
+    if (n.dynamicTypeHintFullName.nonEmpty) setTypes(n, types)
+  }
+
+  protected def setTypeFromTypeHints(n: MethodReturn): Unit = {
+    val types = (n.typeFullName +: n.dynamicTypeHintFullName).filterNot(x => x == "ANY" || XTypeRecovery.isDummyType(x))
+    if (n.dynamicTypeHintFullName.nonEmpty) setTypes(n, types)
+  }
 
   /** In the case this field access is a function pointer, we would want to make sure this has a method ref.
     */
@@ -1000,8 +1014,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case l: Local      => storeLocalTypeInfo(l, types)
         case n =>
           state.changesWereMade.compareAndSet(false, true)
-          if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
-          else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+          setTypes(n, types)
       }
     }
   }
@@ -1031,9 +1044,18 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
     if (types != nodeExistingTypes(n)) {
       state.changesWereMade.compareAndSet(false, true)
-      if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
-      else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+      setTypes(n, types)
     }
+
+  /** If there is only 1 type hint then this is set to the `typeFullName` property and `dynamicTypeHintFullName` is
+    * cleared. If not then `dynamicTypeHintFullName` is set to the types.
+    */
+  protected def setTypes(n: StoredNode, types: Seq[String]): Unit =
+    if (types.size == 1) {
+      builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
+      if (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty).nonEmpty)
+        builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
+    } else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
 
   /** Allows one to modify the types assigned to locals.
     */
