@@ -32,8 +32,6 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
     val statementCtx = programCtx.compoundStatement().statements()
     astForStatement(statementCtx)
-
-    // storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
 
@@ -50,6 +48,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       variableCtx.CONSTANT_IDENTIFIER().getSymbol.getText
     }
     println(s"Variable text: $varText")
+    val node = NewLocal()
+    node.name(varText.toString)
+    diffGraph.addNode(node)
   }
 
   def astForSingleLHS(ctx: RubyParser.SingleLeftHandSideContext): Unit = {
