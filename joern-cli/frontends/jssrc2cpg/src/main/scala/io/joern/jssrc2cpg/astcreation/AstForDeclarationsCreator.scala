@@ -33,14 +33,18 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case TSInterfaceDeclaration                   => Seq(code(obj.json("id")))
       case TSEnumDeclaration                        => Seq(code(obj.json("id")))
       case TSModuleDeclaration                      => Seq(code(obj.json("id")))
-      case TSDeclareFunction if hasName(obj.json)   => Seq(code(obj.json("id")))
-      case FunctionDeclaration if hasName(obj.json) => Seq(code(obj.json("id")))
-      case FunctionExpression if hasName(obj.json)  => Seq(code(obj.json("id")))
-      case ClassExpression if hasName(obj.json)     => Seq(code(obj.json("id")))
-      case VariableDeclaration                      => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
-      case ObjectExpression                         => obj.json("properties").arr.toSeq.map(code)
+      case TSDeclareFunction if hasName(obj.json)   => Seq(obj.json("id")("name").str)
+      case FunctionDeclaration if hasName(obj.json) => Seq(obj.json("id")("name").str)
+      case FunctionExpression if hasName(obj.json)  => Seq(obj.json("id")("name").str)
+      case ClassExpression if hasName(obj.json)     => Seq(obj.json("id")("name").str)
+      case VariableDeclarator if hasName(obj.json)  => Seq(obj.json("id")("name").str)
+      case VariableDeclarator                       => Seq(code(obj.json("id")))
       case MemberExpression                         => Seq(code(obj.json("property")))
-      case _                                        => Seq.empty
+      case ObjectExpression =>
+        obj.json("properties").arr.toSeq.flatMap(d => codeForBabelNodeInfo(createBabelNodeInfo(d)))
+      case VariableDeclaration =>
+        obj.json("declarations").arr.toSeq.flatMap(d => codeForBabelNodeInfo(createBabelNodeInfo(d)))
+      case _ => Seq.empty
     }
     codes.map(_.replace("...", ""))
   }
