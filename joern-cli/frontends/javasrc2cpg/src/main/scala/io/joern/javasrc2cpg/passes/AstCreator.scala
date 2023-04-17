@@ -136,6 +136,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewControlStructure,
   NewFieldIdentifier,
   NewIdentifier,
+  NewImport,
   NewJumpTarget,
   NewLiteral,
   NewLocal,
@@ -234,25 +235,32 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     Ast.storeInDiffGraph(ast, diffGraph)
   }
 
-  private def addImportsToScope(compilationUnit: CompilationUnit): Unit = {
+  private def addImportsToScope(compilationUnit: CompilationUnit): Seq[NewImport] = {
     val (asteriskImports, specificImports) = compilationUnit.getImports.asScala.toList.partition(_.isAsterisk)
-    specificImports.foreach { importStmt =>
+    val specificImportNodes = specificImports.map { importStmt =>
       val name         = importStmt.getName.getIdentifier
       val typeFullName = importStmt.getNameAsString // fully qualified name
       typeInfoCalc.registerType(typeFullName)
-      val importNode = identifierNode(name, Some(typeFullName))
+      val importNode = NewImport()
+        .importedAs(name)
+        .importedEntity(typeFullName)
       scopeStack.addToScope(importNode, name, Some(typeFullName))
+      importNode
     }
 
-    asteriskImports match {
+    val asteriskImportNodes = asteriskImports match {
       case imp :: Nil =>
         val name         = WildcardImportName
         val typeFullName = Some(imp.getNameAsString)
-        val importNode   = identifierNode(name, typeFullName)
+        val importNode = NewImport()
+          .importedAs(name)
+          .importedEntity(typeFullName)
         scopeStack.addToScope(importNode, name, typeFullName)
-
+        Seq(importNode)
       case _ => // Only try to guess a wildcard import if exactly one is defined
+        Seq.empty
     }
+    specificImportNodes ++ asteriskImportNodes
   }
 
   /** Translate compilation unit into AST
@@ -268,7 +276,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         ast.root.collect { case x: NewNamespaceBlock => x.fullName }.getOrElse("none")
       }
 
-      addImportsToScope(compilationUnit)
+      val importNodes = addImportsToScope(compilationUnit).map(Ast(_))
 
       val typeDeclAsts = compilationUnit.getTypes.asScala.map { typ =>
         astForTypeDecl(typ, astParentType = NodeTypes.NAMESPACE_BLOCK, astParentFullName = namespaceBlockFullName)
@@ -277,7 +285,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val lambdaTypeDeclAsts = scopeStack.getLambdaDeclsInScope.toSeq
 
       scopeStack.popScope()
-      ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts)
+      ast.withChildren(typeDeclAsts).withChildren(lambdaTypeDeclAsts).withChildren(importNodes)
     } catch {
       case t: UnsolvedSymbolException =>
         logger.error(s"Unsolved symbol exception caught in $filename")
