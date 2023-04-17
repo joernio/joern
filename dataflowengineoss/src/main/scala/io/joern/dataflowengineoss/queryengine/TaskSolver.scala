@@ -186,6 +186,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       // this isn't the start node nor is it the argument for the parameter we just expanded => return partial result and stop traversing
       case arg: Expression
           if path.size > 1
+            && callSiteStack.isEmpty
             && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c))
             && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
         createPartialResultForOutputArgOrRet()
