@@ -3,7 +3,7 @@ package io.joern.javasrc2cpg.querying
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-class ImportTests  extends JavaSrcCode2CpgFixture {
+class ImportTests extends JavaSrcCode2CpgFixture {
 
   "fully defined imports" should {
     lazy val cpg = code(
