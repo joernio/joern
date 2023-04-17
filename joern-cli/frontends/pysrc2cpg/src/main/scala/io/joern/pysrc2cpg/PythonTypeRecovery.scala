@@ -56,40 +56,38 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
   override val symbolTable: SymbolTable[LocalKey] = new SymbolTable[LocalKey](fromNodeToLocalPythonKey)
 
-  /** Overridden to include legacy import calls until imports are supported.
-    */
-  override def importNodes(cu: AstNode): Traversal[AstNode] =
-    cu.ast.isCall.nameExact("import") // TODO: Remove and use IMPORT nodes
+  override def visitImport(i: Import): Unit = {
 
-  override def visitImport(importCall: Call): Unit = {
-    importCall.argument.l match {
-      case (path: Literal) :: (funcOrModule: Literal) :: alias =>
-        val namespace = if (path.code.startsWith(".")) {
-          // TODO: pysrc2cpg does not link files to the correct namespace nodes
-          val root     = cpg.metaData.root.headOption.getOrElse("")
-          val fileName = path.file.name.headOption.getOrElse("").stripPrefix(root)
-          val sep      = Matcher.quoteReplacement(JFile.separator)
-          // The below gives us the full path of the relative "."
-          val relativeNamespace =
-            if (fileName.contains(JFile.separator))
-              fileName.substring(0, fileName.lastIndexOf(JFile.separator)).replaceAll(sep, ".")
-            else ""
-          (if (path.code.length > 1) relativeNamespace + path.code.replaceAll(sep, ".")
-           else relativeNamespace).stripPrefix(".")
-        } else path.code
+    def relativizeNamespace(path: String) = if (path.startsWith(".")) {
+      // TODO: pysrc2cpg does not link files to the correct namespace nodes
+      val root     = cpg.metaData.root.headOption.getOrElse("")
+      val fileName = i.file.name.headOption.getOrElse("").stripPrefix(root)
+      val sep      = Matcher.quoteReplacement(JFile.separator)
+      // The below gives us the full path of the relative "."
+      val relativeNamespace =
+        if (fileName.contains(JFile.separator))
+          fileName.substring(0, fileName.lastIndexOf(JFile.separator)).replaceAll(sep, ".")
+        else ""
+      (if (path.length > 1) relativeNamespace + path.replaceAll(sep, ".")
+       else relativeNamespace).stripPrefix(".")
+    } else path
 
-        val calleeNames = extractPossibleCalleeNames(namespace, funcOrModule.code)
-        alias match {
-          case (alias: Literal) :: Nil =>
-            symbolTable.put(CallAlias(alias.code), calleeNames)
-            symbolTable.put(LocalVar(alias.code), calleeNames)
-          case Nil =>
-            symbolTable.put(CallAlias(funcOrModule.code), calleeNames)
-            symbolTable.put(LocalVar(funcOrModule.code), calleeNames)
-          case x =>
-            logger.warn(s"Unknown import pattern: ${x.map(_.label).mkString(", ")}")
-        }
-      case _ =>
+    val importedEntity = i.importedEntity.getOrElse("")
+    val (namespace, entityName) = if (importedEntity.contains(".")) {
+      val splitName = importedEntity.split('.').toSeq
+      val namespace = importedEntity.stripSuffix(s".${splitName.last}")
+      (relativizeNamespace(namespace), splitName.last)
+    } else {
+      ("", importedEntity)
+    }
+    val calleeNames = extractPossibleCalleeNames(namespace, entityName)
+    i.importedAs match {
+      case Some(alias) =>
+        symbolTable.put(CallAlias(alias), calleeNames)
+        symbolTable.put(LocalVar(alias), calleeNames)
+      case None =>
+        symbolTable.put(CallAlias(entityName), calleeNames)
+        symbolTable.put(LocalVar(entityName), calleeNames)
     }
   }
 

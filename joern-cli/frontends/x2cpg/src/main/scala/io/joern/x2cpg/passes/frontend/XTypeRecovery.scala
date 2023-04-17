@@ -235,41 +235,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def members: Traversal[Member] = cu.ast.isMember
 
-  /** For each call that contains the returnValue directive, attempt to replace the return value by the dynamic
-    */
-  protected def visitCall(call: Call): Unit = {
-    symbolTable.get(call).foreach { methodFullName =>
-      val index = methodFullName.indexOf(XTypeRecovery.DummyReturnType)
-      if (index != -1) {
-        val methodToLookup = methodFullName.substring(0, index - 1)
-        val remainder      = methodFullName.substring(index + XTypeRecovery.DummyReturnType.length)
-        val methods        = cpg.method.fullNameExact(methodToLookup).l
-        methods match {
-          case method :: Nil =>
-            val dynamicTypeHints = method.methodReturn.dynamicTypeHintFullName.toSet
-            val newTypes         = dynamicTypeHints.map(x => s"$x$remainder")
-            symbolTable.put(call, newTypes)
-          case Nil =>
-          case _ =>
-            logger.warn(s"More than a single function matches method full name: $methodToLookup")
-        }
-      }
-    }
-  }
-
-  protected def visitParameter(param: MethodParameterIn): Unit = {
-    if (param.dynamicTypeHintFullName.nonEmpty) {
-      val matchingIdentifiers = param.method._identifierViaContainsOut.nameExact(param.name).l
-      matchingIdentifiers.foreach { identifier =>
-        symbolTable.append(LocalVar(identifier.name), param.dynamicTypeHintFullName.toSet)
-      }
-    }
-  }
+  protected def importNodes: Traversal[Import] = cu.ast.isCall.referencedImports
 
   override def compute(): Boolean = try {
     prepopulateSymbolTable()
     // Set known aliases that point to imports for local and external methods/modules
-    visitImports(importNodes(cu))
+    importNodes.foreach(visitImport)
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // Populate local symbol table with assignments
@@ -289,27 +260,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     s"$fileName#L$lineNo"
   }
 
-  /** Using import information and internally defined procedures, will generate a mapping between how functions and
-    * types are aliased and called and themselves.
-    *
-    * @param procedureDeclarations
-    *   imports to types or functions and internally defined methods themselves.
-    */
-  protected def visitImports(procedureDeclarations: Traversal[AstNode]): Unit = {
-    procedureDeclarations.foreach {
-      case i: Import => visitImport(i)
-      case i: Call   => visitImport(i)
-    }
-  }
-
-  /** Refers to the declared import information. This is for legacy import notation.
-    *
-    * @param i
-    *   the call that imports entities into this scope.
-    */
-  @nowarn("cat=unused")
-  protected def visitImport(i: Call): Unit = {}
-
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
   protected def visitImport(i: Import): Unit = for {
@@ -319,11 +269,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     symbolTable.append(LocalVar(alias), Set(entity))
     symbolTable.append(CallAlias(alias), Set(entity))
   }
-
-  /** @return
-    *   the import nodes of this compilation unit.
-    */
-  protected def importNodes(cu: AstNode): Traversal[AstNode] = cu.ast.isCall.referencedImports
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
