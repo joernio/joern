@@ -28,7 +28,7 @@ class ParameterOutTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
 
     def src = cpg.parameter("str")
     def snk = cpg.ret.lineNumber(4)
-    snk.reachableByFlows(src).p.foreach(println)
+    snk.reachableByFlows(src) should have size 1
   }
 
 }
