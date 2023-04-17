@@ -50,9 +50,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     println(s"Variable text: $varText")
     val node = NewLocal()
     node.name(varText.toString)
-    val ast = Ast(node)
-    storeInDiffGraph(ast, diffGraph)
-    // diffGraph.addNode(node)
+    diffGraph.addNode(node)
   }
 
   def astForSingleLHS(ctx: RubyParser.SingleLeftHandSideContext): Unit = {
