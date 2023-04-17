@@ -123,11 +123,7 @@ class TaskCreator(context: EngineContext) {
 
     val forArgs = outArgsAndCalls.flatMap { case (result, args, path, callDepth) =>
       args.toList.flatMap { case arg: Expression =>
-        val outParams = if (result.callSiteStack.nonEmpty) {
-          List[MethodParameterOut]()
-        } else {
-          argToOutputParams(arg).l
-        }
+        val outParams = argToOutputParams(arg).l
         outParams
           .filterNot(_.method.isExternal)
           .map { p =>
