@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import io.joern.rubysrc2cpg.parser.RubyParser.ModifierStatementContext
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser, RubyParserVisitor}
 import org.antlr.v4.runtime.tree.{ErrorNode, ParseTree, ParseTreeListener, ParseTreeWalker, RuleNode, TerminalNode}
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext}
@@ -19,8 +20,11 @@ import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import org.apache.commons.lang.mutable.Mutable
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
+
+import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 
 class AstCreator(filename: String, global: Global) extends AstCreatorBase(filename) {
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
@@ -31,11 +35,12 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val programCtx  = parser.program()
 
     val statementCtx = programCtx.compoundStatement().statements()
-    astForStatement(statementCtx)
+    val ast          = astForStatement(statementCtx)
+    storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
 
-  def astForVariable(variableCtx: RubyParser.VariableIdentifierContext): Unit = {
+  def astForVariableIdentifierContext(variableCtx: RubyParser.VariableIdentifierContext): Ast = {
     val varText = if (variableCtx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       variableCtx.LOCAL_VARIABLE_IDENTIFIER().getSymbol.getText
     } else if (variableCtx.GLOBAL_VARIABLE_IDENTIFIER() != null) {
@@ -47,239 +52,438 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     } else if (variableCtx.CONSTANT_IDENTIFIER() != null) {
       variableCtx.CONSTANT_IDENTIFIER().getSymbol.getText
     }
-    println(s"Variable text: $varText")
+    println(s"Variable name: $varText")
     val node = NewLocal()
     node.name(varText.toString)
-    diffGraph.addNode(node)
+    val ast = Ast(node)
+    ast
   }
 
-  def astForSingleLHS(ctx: RubyParser.SingleLeftHandSideContext): Unit = {
+  def astForSingleLeftHandSide(ctx: RubyParser.SingleLeftHandSideContext): Ast = {
     val variableCtx = ctx.variableIdentifier()
-    astForVariable(variableCtx)
+    astForVariableIdentifierContext(variableCtx)
   }
 
-  def astForExpressionOrCommands(ctx: RubyParser.ExpressionOrCommandsContext): Unit = {
-    ctx
-      .expressionOrCommand()
-      .forEach(ec => {
-        astForExpressionOrCommand(ec)
-      })
+  def astForExpressionOrCommandsContext(ctx: RubyParser.ExpressionOrCommandsContext): Ast = {
+    val seqAst = {
+      ctx
+        .expressionOrCommand()
+        .map(ec => {
+          val ast = astForExpressionOrCommandContext(ec)
+          ast
+        })
+    }.toSeq
+    Ast().withChildren(seqAst)
   }
 
-  def astForSplattingArgument(ctx: RubyParser.SplattingArgumentContext): Unit = {
+  def astForSplattingArgument(ctx: RubyParser.SplattingArgumentContext): Ast = {
     if (ctx == null) {
-      return
+      return Ast()
     }
-    astForExpressionOrCommand(ctx.expressionOrCommand())
+    astForExpressionOrCommandContext(ctx.expressionOrCommand())
   }
 
-  def astForMultipleRHS(ctx: RubyParser.MultipleRightHandSideContext): Unit = {
-    astForExpressionOrCommands(ctx.expressionOrCommands())
-    astForSplattingArgument(ctx.splattingArgument())
+  def astForMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): Ast = {
+    val exprAst      = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
+    val splattingAst = astForSplattingArgument(ctx.splattingArgument())
+    val seqAsts      = Seq[Ast](exprAst, splattingAst)
+    Ast().withChildren(seqAsts)
   }
 
-  def astForSingleAssignmentExpression(ctxSubclass: RubyParser.SingleAssignmentExpressionContext): Unit = {
-    astForSingleLHS(ctxSubclass.singleLeftHandSide())
-    astForMultipleRHS(ctxSubclass.multipleRightHandSide())
+  def astForSingleAssignmentExpression(ctxSubclass: RubyParser.SingleAssignmentExpressionContext): Ast = {
+    val leftAst  = astForSingleLeftHandSide(ctxSubclass.singleLeftHandSide())
+    val rightAst = astForMultipleRightHandSide(ctxSubclass.multipleRightHandSide())
+    val seqAsts  = Seq[Ast](leftAst, rightAst)
+    val ast      = Ast().withChildren(seqAsts)
+    ast
   }
 
-  def astForPrimaryExpressionContext(ctx: RubyParser.PrimaryContext): Unit = {
+  def astForPrimaryExpressionContext(ctx: RubyParser.PrimaryContext): Ast = {
     if (ctx.isInstanceOf[RubyParser.ClassDefinitionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.ClassDefinitionPrimaryContext]
-      println(s"RubyParser.ClassDefinitionPrimaryContext ${ctxSubclass.getText}")
+      astForClassDefinitionPrimaryContext(ctx.asInstanceOf[RubyParser.ClassDefinitionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.ModuleDefinitionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.ModuleDefinitionPrimaryContext]
-      println(s"RubyParser.ModuleDefinitionPrimaryContext ${ctxSubclass.getText}")
+      astForModuleDefinitionPrimaryContext(ctx.asInstanceOf[RubyParser.ModuleDefinitionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.MethodDefinitionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.MethodDefinitionPrimaryContext]
-      println(s"RubyParser.MethodDefinitionPrimaryContext ${ctxSubclass.getText}")
+      astForMethodDefinitionPrimaryContext(ctx.asInstanceOf[RubyParser.MethodDefinitionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.YieldWithOptionalArgumentPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.YieldWithOptionalArgumentPrimaryContext]
-      println(s"RubyParser.YieldWithOptionalArgumentPrimaryContext ${ctxSubclass.getText}")
+      astForYieldWithOptionalArgumentPrimaryContext(
+        ctx.asInstanceOf[RubyParser.YieldWithOptionalArgumentPrimaryContext]
+      )
     } else if (ctx.isInstanceOf[RubyParser.IfExpressionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.IfExpressionPrimaryContext]
-      println(s"RubyParser.IfExpressionPrimaryContext ${ctxSubclass.getText}")
+      astForIfExpressionPrimaryContext(ctx.asInstanceOf[RubyParser.IfExpressionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.UnlessExpressionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.UnlessExpressionPrimaryContext]
-      println(s"RubyParser.UnlessExpressionPrimaryContext ${ctxSubclass.getText}")
+      astForUnlessExpressionPrimaryContext(ctx.asInstanceOf[RubyParser.UnlessExpressionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.CaseExpressionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.CaseExpressionPrimaryContext]
-      println(s"RubyParser.CaseExpressionPrimaryContext ${ctxSubclass.getText}")
+      astForCaseExpressionPrimaryContext(ctx.asInstanceOf[RubyParser.CaseExpressionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.WhileExpressionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.WhileExpressionPrimaryContext]
-      println(s"RubyParser.WhileExpressionPrimaryContext ${ctxSubclass.getText}")
+      astForWhileExpressionPrimaryContext(ctx.asInstanceOf[RubyParser.WhileExpressionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.UntilExpressionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.UntilExpressionPrimaryContext]
-      println(s"RubyParser.UntilExpressionPrimaryContext ${ctxSubclass.getText}")
+      astForUntilExpressionPrimaryContext(ctx.asInstanceOf[RubyParser.UntilExpressionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.ForExpressionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.ForExpressionPrimaryContext]
-      println(s"RubyParser.ForExpressionPrimaryContext ${ctxSubclass.getText}")
+      astForForExpressionPrimaryContext(ctx.asInstanceOf[RubyParser.ForExpressionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.JumpExpressionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.JumpExpressionPrimaryContext]
-      println(s"RubyParser.JumpExpressionPrimaryContext ${ctxSubclass.getText}")
+      astForJumpExpressionPrimaryContext(ctx.asInstanceOf[RubyParser.JumpExpressionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.BeginExpressionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.BeginExpressionPrimaryContext]
-      println(s"RubyParser.BeginExpressionPrimaryContext ${ctxSubclass.getText}")
+      astForBeginExpressionPrimaryContext(ctx.asInstanceOf[RubyParser.BeginExpressionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.GroupingExpressionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.GroupingExpressionPrimaryContext]
-      println(s"RubyParser.GroupingExpressionPrimaryContext ${ctxSubclass.getText}")
+      astForGroupingExpressionPrimaryContext(ctx.asInstanceOf[RubyParser.GroupingExpressionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.VariableReferencePrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.VariableReferencePrimaryContext]
-      println(s"RubyParser.VariableReferencePrimaryContext ${ctxSubclass.getText}")
+      astForVariableReferencePrimaryContext(ctx.asInstanceOf[RubyParser.VariableReferencePrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.SimpleScopedConstantReferencePrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.SimpleScopedConstantReferencePrimaryContext]
-      println(s"RubyParser.SimpleScopedConstantReferencePrimaryContext ${ctxSubclass.getText}")
+      astForSimpleScopedConstantReferencePrimaryContext(
+        ctx.asInstanceOf[RubyParser.SimpleScopedConstantReferencePrimaryContext]
+      )
     } else if (ctx.isInstanceOf[RubyParser.ChainedScopedConstantReferencePrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.ChainedScopedConstantReferencePrimaryContext]
-      println(s"RubyParser.ChainedScopedConstantReferencePrimaryContext ${ctxSubclass.getText}")
+      astForChainedScopedConstantReferencePrimaryContext(
+        ctx.asInstanceOf[RubyParser.ChainedScopedConstantReferencePrimaryContext]
+      )
     } else if (ctx.isInstanceOf[RubyParser.ArrayConstructorPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.ArrayConstructorPrimaryContext]
-      println(s"RubyParser.ArrayConstructorPrimaryContext ${ctxSubclass.getText}")
+      astForArrayConstructorPrimaryContext(ctx.asInstanceOf[RubyParser.ArrayConstructorPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.HashConstructorPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.HashConstructorPrimaryContext]
-      println(s"RubyParser.HashConstructorPrimaryContext ${ctxSubclass.getText}")
+      astForHashConstructorPrimaryContext(ctx.asInstanceOf[RubyParser.HashConstructorPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.LiteralPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.LiteralPrimaryContext]
-      println(s"RubyParser.LiteralPrimaryContext ${ctxSubclass.getText}")
+      astForLiteralPrimaryContext(ctx.asInstanceOf[RubyParser.LiteralPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.IsDefinedPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.IsDefinedPrimaryContext]
-      println(s"RubyParser.IsDefinedPrimaryContext ${ctxSubclass.getText}")
+      astForIsDefinedPrimaryContext(ctx.asInstanceOf[RubyParser.IsDefinedPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.SuperExpressionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.SuperExpressionPrimaryContext]
-      println(s"RubyParser.SuperExpressionPrimaryContext ${ctxSubclass.getText}")
+      astForSuperExpressionPrimaryContext(ctx.asInstanceOf[RubyParser.SuperExpressionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.IndexingExpressionPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.IndexingExpressionPrimaryContext]
-      println(s"RubyParser.IndexingExpressionPrimaryContext ${ctxSubclass.getText}")
+      astForIndexingExpressionPrimaryContext(ctx.asInstanceOf[RubyParser.IndexingExpressionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.MethodOnlyIdentifierPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.MethodOnlyIdentifierPrimaryContext]
-      println(s"RubyParser.MethodOnlyIdentifierPrimaryContext ${ctxSubclass.getText}")
+      astForMethodOnlyIdentifierPrimaryContext(ctx.asInstanceOf[RubyParser.MethodOnlyIdentifierPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.InvocationWithBlockOnlyPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.InvocationWithBlockOnlyPrimaryContext]
-      println(s"RubyParser.InvocationWithBlockOnlyPrimaryContext ${ctxSubclass.getText}")
+      astForInvocationWithBlockOnlyPrimaryContext(ctx.asInstanceOf[RubyParser.InvocationWithBlockOnlyPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.InvocationWithParenthesesPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.InvocationWithParenthesesPrimaryContext]
-      println(s"RubyParser.InvocationWithParenthesesPrimaryContext ${ctxSubclass.getText}")
+      astForInvocationWithParenthesesPrimaryContext(
+        ctx.asInstanceOf[RubyParser.InvocationWithParenthesesPrimaryContext]
+      )
     } else if (ctx.isInstanceOf[RubyParser.ChainedInvocationPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.ChainedInvocationPrimaryContext]
-      println(s"RubyParser.ChainedInvocationPrimaryContext ${ctxSubclass.getText}")
+      astForChainedInvocationPrimaryContext(ctx.asInstanceOf[RubyParser.ChainedInvocationPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.ChainedInvocationWithoutArgumentsPrimaryContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.ChainedInvocationWithoutArgumentsPrimaryContext]
-      println(s"RubyParser.ChainedInvocationWithoutArgumentsPrimaryContext ${ctxSubclass.getText}")
+      astForChainedInvocationWithoutArgumentsPrimaryContext(
+        ctx.asInstanceOf[RubyParser.ChainedInvocationWithoutArgumentsPrimaryContext]
+      )
     } else {
-      println(s"RubyParser.astForPrimaryExpressionContext(). No subclass found")
+      println("astForPrimaryExpressionContext(): Unknown context")
+      Ast()
     }
   }
 
-  def astForExpression(ctx: RubyParser.ExpressionContext): Unit = {
-    if (ctx.isInstanceOf[RubyParser.PrimaryExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.PrimaryExpressionContext]
-      println(s"RubyParser.PrimaryExpressionContext ${ctxSubclass.getText}")
-      astForPrimaryExpressionContext(ctxSubclass.primary())
-    } else if (ctx.isInstanceOf[RubyParser.UnaryExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.UnaryExpressionContext]
-      println(s"RubyParser.UnaryExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.PowerExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.PowerExpressionContext]
-      println(s"RubyParser.PowerExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.UnaryMinusExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.UnaryMinusExpressionContext]
-      println(s"RubyParser.UnaryMinusExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.MultiplicativeExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.MultiplicativeExpressionContext]
-      println(s"RubyParser.MultiplicativeExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.AdditiveExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.AdditiveExpressionContext]
-      println(s"RubyParser.AdditiveExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.BitwiseShiftExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.BitwiseShiftExpressionContext]
-      println(s"RubyParser.BitwiseShiftExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.BitwiseAndExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.BitwiseAndExpressionContext]
-      println(s"RubyParser.BitwiseAndExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.BitwiseOrExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.BitwiseOrExpressionContext]
-      println(s"RubyParser.BitwiseOrExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.RelationalExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.RelationalExpressionContext]
-      println(s"RubyParser.RelationalExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.EqualityExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.EqualityExpressionContext]
-      println(s"RubyParser.EqualityExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.OperatorAndExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.OperatorAndExpressionContext]
-      println(s"RubyParser.OperatorAndExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.OperatorOrExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.OperatorOrExpressionContext]
-      println(s"RubyParser.OperatorOrExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.RangeExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.RangeExpressionContext]
-      println(s"RubyParser.RangeExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.ConditionalOperatorExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.ConditionalOperatorExpressionContext]
-      println(s"RubyParser.ConditionalOperatorExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.SingleAssignmentExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.SingleAssignmentExpressionContext]
-      println(s"RubyParser.SingleAssignmentExpressionContext ${ctxSubclass.getText}")
-      astForSingleAssignmentExpression(ctxSubclass)
-    } else if (ctx.isInstanceOf[RubyParser.MultipleAssignmentExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.MultipleAssignmentExpressionContext]
-      println(s"RubyParser.MultipleAssignmentExpressionContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.IsDefinedExpressionContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.IsDefinedExpressionContext]
-      println(s"RubyParser.IsDefinedExpressionContext ${ctxSubclass.getText}")
-    } else {
-      println(s"Unhandled context type: Text: ${ctx.getText}")
+  def astForExpressionContext(ctx: RubyParser.ExpressionContext): Ast = {
+    val ast = {
+      if (ctx.isInstanceOf[RubyParser.PrimaryExpressionContext]) {
+        astForPrimaryExpressionContext(ctx.asInstanceOf[RubyParser.PrimaryExpressionContext].primary())
+      } else if (ctx.isInstanceOf[RubyParser.UnaryExpressionContext]) {
+        astForUnaryExpressionContext(ctx.asInstanceOf[RubyParser.UnaryExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.PowerExpressionContext]) {
+        astForPowerExpressionContext(ctx.asInstanceOf[RubyParser.PowerExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.UnaryMinusExpressionContext]) {
+        astForUnaryMinusExpressionContext(ctx.asInstanceOf[RubyParser.UnaryMinusExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.MultiplicativeExpressionContext]) {
+        astForMultiplicativeExpressionContext(ctx.asInstanceOf[RubyParser.MultiplicativeExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.AdditiveExpressionContext]) {
+        astForAdditiveExpressionContext(ctx.asInstanceOf[RubyParser.AdditiveExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.BitwiseShiftExpressionContext]) {
+        astForBitwiseShiftExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseShiftExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.BitwiseAndExpressionContext]) {
+        astForBitwiseAndExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseAndExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.BitwiseOrExpressionContext]) {
+        astForBitwiseOrExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseOrExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.RelationalExpressionContext]) {
+        astForRelationalExpressionContext(ctx.asInstanceOf[RubyParser.RelationalExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.EqualityExpressionContext]) {
+        astForEqualityExpressionContext(ctx.asInstanceOf[RubyParser.EqualityExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.OperatorAndExpressionContext]) {
+        astForOperatorAndExpressionContext(ctx.asInstanceOf[RubyParser.OperatorAndExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.OperatorOrExpressionContext]) {
+        astForOperatorOrExpressionContext(ctx.asInstanceOf[RubyParser.OperatorOrExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.RangeExpressionContext]) {
+        astForRangeExpressionContext(ctx.asInstanceOf[RubyParser.RangeExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.ConditionalOperatorExpressionContext]) {
+        astForConditionalOperatorExpressionContext(ctx.asInstanceOf[RubyParser.ConditionalOperatorExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.SingleAssignmentExpressionContext]) {
+        astForSingleAssignmentExpression(ctx.asInstanceOf[RubyParser.SingleAssignmentExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.MultipleAssignmentExpressionContext]) {
+        astForMultipleAssignmentExpressionContext(ctx.asInstanceOf[RubyParser.MultipleAssignmentExpressionContext])
+      } else if (ctx.isInstanceOf[RubyParser.IsDefinedExpressionContext]) {
+        astForIsDefinedExpressionContext(ctx.asInstanceOf[RubyParser.IsDefinedExpressionContext])
+      } else {
+        println("astForExpressionContext(): Unknown context")
+        Ast()
+      }
     }
+    ast
   }
 
-  def astForExpressionOrCommand(ctx: RubyParser.ExpressionOrCommandContext) = {
-    if (ctx.isInstanceOf[RubyParser.InvocationExpressionOrCommandContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.InvocationExpressionOrCommandContext]
-      println(s"RubyParser.InvocationExpressionOrCommandContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.NotExpressionOrCommandContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.NotExpressionOrCommandContext]
-      println(s"RubyParser.NotExpressionOrCommandContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.OrAndExpressionOrCommandContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.OrAndExpressionOrCommandContext]
-      println(s"RubyParser.OrAndExpressionOrCommandContext ${ctxSubclass.getText}")
-    } else if (ctx.isInstanceOf[RubyParser.ExpressionExpressionOrCommandContext]) {
-      val ctxSubclass = ctx.asInstanceOf[RubyParser.ExpressionExpressionOrCommandContext]
-      println(s"RubyParser.ExpressionExpressionOrCommandContext ${ctxSubclass.getText}")
-      astForExpression(ctxSubclass.expression())
-    } else {
-      println(s"Unhandled context type: Text: ${ctx.getText}")
+  def astForExpressionOrCommandContext(ctx: RubyParser.ExpressionOrCommandContext): Ast = {
+    val ast = {
+      if (ctx.isInstanceOf[RubyParser.InvocationExpressionOrCommandContext]) {
+        astForInvocationExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.InvocationExpressionOrCommandContext])
+      } else if (ctx.isInstanceOf[RubyParser.NotExpressionOrCommandContext]) {
+        astForNotExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.NotExpressionOrCommandContext])
+      } else if (ctx.isInstanceOf[RubyParser.OrAndExpressionOrCommandContext]) {
+        astForOrAndExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.OrAndExpressionOrCommandContext])
+      } else if (ctx.isInstanceOf[RubyParser.ExpressionExpressionOrCommandContext]) {
+        astForExpressionContext(ctx.asInstanceOf[RubyParser.ExpressionExpressionOrCommandContext].expression())
+      } else {
+        println("astForExpressionOrCommandContext(): Unknown context")
+        Ast()
+      }
     }
+    ast
   }
 
-  def astForStatement(ctx: RubyParser.StatementsContext): Unit = {
-    ctx
-      .statement()
-      .forEach(st => {
-        println(
-          s"Statement: ${st.getText}. Rule: ${st.getRuleContext().getText}. Alt: ${st.getRuleContext().getAltNumber()}"
-        )
-
-        if (st.isInstanceOf[RubyParser.AliasStatementContext]) {
-          val ctx = st.asInstanceOf[RubyParser.AliasStatementContext]
-          println(s"RubyParser.AliasStatementContext ${ctx.getText}")
-        } else if (st.isInstanceOf[RubyParser.UndefStatementContext]) {
-          val ctx = st.asInstanceOf[RubyParser.UndefStatementContext]
-          println(s"RubyParser.UndefStatementContext ${ctx.getText}")
-        } else if (st.isInstanceOf[RubyParser.BeginStatementContext]) {
-          val ctx = st.asInstanceOf[RubyParser.BeginStatementContext]
-          println(s"RubyParser.BeginStatementContext ${ctx.getText}")
-        } else if (st.isInstanceOf[RubyParser.EndStatementContext]) {
-          val ctx = st.asInstanceOf[RubyParser.EndStatementContext]
-          println(s"RubyParser.EndStatementContext ${ctx.getText}")
-        } else if (st.isInstanceOf[RubyParser.ModifierStatementContext]) {
-          val ctx = st.asInstanceOf[RubyParser.ModifierStatementContext]
-          println(s"RubyParser.ModifierStatementContext ${ctx.getText}")
-        } else if (st.isInstanceOf[RubyParser.ExpressionOrCommandStatementContext]) {
-          val ctx1 = st.asInstanceOf[RubyParser.ExpressionOrCommandStatementContext]
-          println(s"RubyParser.ExpressionOrCommandStatementContext ${ctx1.getText}")
-          astForExpressionOrCommand(ctx1.expressionOrCommand())
-        }
-      })
+  def astForAliasStatementContext(ctx: RubyParser.AliasStatementContext): Ast = {
+    Ast()
   }
 
+  def astForUndefStatementContext(ctx: RubyParser.UndefStatementContext): Ast = {
+    Ast()
+  }
+
+  def astForBeginStatementContext(ctx: RubyParser.BeginStatementContext): Ast = {
+    Ast()
+  }
+
+  def astForEndStatementContext(ctx: RubyParser.EndStatementContext): Ast = {
+    Ast()
+  }
+
+  def astForModifierStatementContext(ctx: ModifierStatementContext): Ast = {
+    Ast()
+  }
+
+  def astForStatement(ctx: RubyParser.StatementsContext): Ast = {
+
+    val seqAst = {
+      ctx
+        .statement()
+        .map(st => {
+          val ast =
+            if (st.isInstanceOf[RubyParser.AliasStatementContext]) {
+              astForAliasStatementContext(st.asInstanceOf[RubyParser.AliasStatementContext])
+            } else if (st.isInstanceOf[RubyParser.UndefStatementContext]) {
+              astForUndefStatementContext(st.asInstanceOf[RubyParser.UndefStatementContext])
+            } else if (st.isInstanceOf[RubyParser.BeginStatementContext]) {
+              astForBeginStatementContext(st.asInstanceOf[RubyParser.BeginStatementContext])
+            } else if (st.isInstanceOf[RubyParser.EndStatementContext]) {
+              astForEndStatementContext(st.asInstanceOf[RubyParser.EndStatementContext])
+            } else if (st.isInstanceOf[RubyParser.ModifierStatementContext]) {
+              astForModifierStatementContext(st.asInstanceOf[RubyParser.ModifierStatementContext])
+            } else if (st.isInstanceOf[RubyParser.ExpressionOrCommandStatementContext]) {
+              astForExpressionOrCommandContext(
+                st.asInstanceOf[RubyParser.ExpressionOrCommandStatementContext].expressionOrCommand()
+              )
+            } else {
+              println("astForExpressionContext(): Unknown context")
+              Ast()
+            }
+          ast
+        })
+        .toSeq
+    }
+    Ast().withChildren(seqAst)
+  }
+
+  def astForAdditiveExpressionContext(ctx: RubyParser.AdditiveExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForArrayConstructorPrimaryContext(ctx: RubyParser.ArrayConstructorPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForBeginExpressionPrimaryContext(ctx: RubyParser.BeginExpressionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForBitwiseAndExpressionContext(ctx: RubyParser.BitwiseAndExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForBitwiseOrExpressionContext(ctx: RubyParser.BitwiseOrExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForBitwiseShiftExpressionContext(ctx: RubyParser.BitwiseShiftExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForCaseExpressionPrimaryContext(ctx: RubyParser.CaseExpressionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForChainedInvocationPrimaryContext(ctx: RubyParser.ChainedInvocationPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForChainedInvocationWithoutArgumentsPrimaryContext(
+    ctx: RubyParser.ChainedInvocationWithoutArgumentsPrimaryContext
+  ): Ast = {
+    Ast()
+  }
+
+  def astForChainedScopedConstantReferencePrimaryContext(
+    ctx: RubyParser.ChainedScopedConstantReferencePrimaryContext
+  ): Ast = {
+    Ast()
+  }
+
+  def astForClassDefinitionPrimaryContext(ctx: RubyParser.ClassDefinitionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForConditionalOperatorExpressionContext(ctx: RubyParser.ConditionalOperatorExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForEqualityExpressionContext(ctx: RubyParser.EqualityExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForExpressionExpressionOrCommandContext(ctx: RubyParser.ExpressionExpressionOrCommandContext): Ast = {
+    Ast()
+  }
+
+  def astForForExpressionPrimaryContext(ctx: RubyParser.ForExpressionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForGroupingExpressionPrimaryContext(ctx: RubyParser.GroupingExpressionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForHashConstructorPrimaryContext(ctx: RubyParser.HashConstructorPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForIfExpressionPrimaryContext(ctx: RubyParser.IfExpressionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForIndexingExpressionPrimaryContext(ctx: RubyParser.IndexingExpressionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForInvocationExpressionOrCommandContext(ctx: RubyParser.InvocationExpressionOrCommandContext): Ast = {
+    Ast()
+  }
+
+  def astForInvocationWithBlockOnlyPrimaryContext(ctx: RubyParser.InvocationWithBlockOnlyPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForInvocationWithParenthesesPrimaryContext(ctx: RubyParser.InvocationWithParenthesesPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForIsDefinedExpressionContext(ctx: RubyParser.IsDefinedExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForIsDefinedPrimaryContext(ctx: RubyParser.IsDefinedPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForJumpExpressionPrimaryContext(ctx: RubyParser.JumpExpressionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForLiteralPrimaryContext(ctx: RubyParser.LiteralPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForMethodDefinitionPrimaryContext(ctx: RubyParser.MethodDefinitionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForMethodOnlyIdentifierPrimaryContext(ctx: RubyParser.MethodOnlyIdentifierPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForModuleDefinitionPrimaryContext(ctx: RubyParser.ModuleDefinitionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForMultipleAssignmentExpressionContext(ctx: RubyParser.MultipleAssignmentExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForMultiplicativeExpressionContext(ctx: RubyParser.MultiplicativeExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForNotExpressionOrCommandContext(ctx: RubyParser.NotExpressionOrCommandContext): Ast = {
+    Ast()
+  }
+
+  def astForOperatorAndExpressionContext(ctx: RubyParser.OperatorAndExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForOperatorOrExpressionContext(ctx: RubyParser.OperatorOrExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForOrAndExpressionOrCommandContext(ctx: RubyParser.OrAndExpressionOrCommandContext): Ast = {
+    Ast()
+  }
+
+  def astForPowerExpressionContext(ctx: RubyParser.PowerExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForPrimaryExpressionContext(ctx: RubyParser.PrimaryExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForRangeExpressionContext(ctx: RubyParser.RangeExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForRelationalExpressionContext(ctx: RubyParser.RelationalExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForSimpleScopedConstantReferencePrimaryContext(
+    ctx: RubyParser.SimpleScopedConstantReferencePrimaryContext
+  ): Ast = {
+    Ast()
+  }
+
+  def astForSingleAssignmentExpressionContext(ctx: RubyParser.SingleAssignmentExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForSuperExpressionPrimaryContext(ctx: RubyParser.SuperExpressionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForUnaryExpressionContext(ctx: RubyParser.UnaryExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForUnaryMinusExpressionContext(ctx: RubyParser.UnaryMinusExpressionContext): Ast = {
+    Ast()
+  }
+
+  def astForUnlessExpressionPrimaryContext(ctx: RubyParser.UnlessExpressionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForUntilExpressionPrimaryContext(ctx: RubyParser.UntilExpressionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForVariableReferencePrimaryContext(ctx: RubyParser.VariableReferencePrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForWhileExpressionPrimaryContext(ctx: RubyParser.WhileExpressionPrimaryContext): Ast = {
+    Ast()
+  }
+
+  def astForYieldWithOptionalArgumentPrimaryContext(ctx: RubyParser.YieldWithOptionalArgumentPrimaryContext): Ast = {
+    Ast()
+  }
 }
