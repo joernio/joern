@@ -9,17 +9,14 @@ trait AstForTemplateDomCreator { this: AstCreator =>
 
   protected def astForJsxElement(jsxElem: BabelNodeInfo): Ast = {
     val domNode = createTemplateDomNode(jsxElem.node.toString, jsxElem.code, jsxElem.lineNumber, jsxElem.columnNumber)
-
     val openingAst   = astForNodeWithFunctionReference(jsxElem.json("openingElement"))
     val childrenAsts = astForNodes(jsxElem.json("children").arr.toList)
     val closingAst =
       safeObj(jsxElem.json, "closingElement")
         .map(e => astForNodeWithFunctionReference(Obj(e)))
         .getOrElse(Ast())
-
     val allChildrenAsts = openingAst +: childrenAsts :+ closingAst
     setArgumentIndices(allChildrenAsts)
-
     Ast(domNode).withChildren(allChildrenAsts)
   }
 

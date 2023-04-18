@@ -220,7 +220,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val exportName      = extractExportFromNameFromExportDecl(declaration)
     val fromAst         = createAstForFrom(exportName, declaration)
     val declAstAndNames = extractDeclarationsFromExportDecl(declaration, "declaration")
-    val declAsts = declAstAndNames.toList.map { case (ast, names) =>
+    val declAsts = declAstAndNames.toList.flatMap { case (ast, names) =>
       ast +: names.map { name =>
         if (exportName != ExportKeyword)
           diffGraph.addNode(createDependencyNode(name, exportName.stripPrefix("_"), RequireKeyword))
@@ -246,39 +246,35 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case _ => Ast()
     }
 
-    val asts = fromAst +: (specifierAsts ++ declAsts.flatten)
+    val asts = fromAst +: (specifierAsts ++ declAsts)
     setArgumentIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }
 
   protected def astForExportAssignment(assignment: BabelNodeInfo): Ast = {
     val expressionAstWithNames = extractDeclarationsFromExportDecl(assignment, "expression")
-    val declAsts = expressionAstWithNames.map { case (ast, names) =>
+    val declAsts = expressionAstWithNames.toList.flatMap { case (ast, names) =>
       ast +: names.map { name =>
         val exportCallAst = createExportCallAst(name, ExportKeyword, assignment)
         createExportAssignmentCallAst(name, exportCallAst, assignment, None)
       }
     }
 
-    val asts = declAsts.toList.flatten
-    setArgumentIndices(asts)
-    blockAst(createBlockNode(assignment), asts)
+    setArgumentIndices(declAsts)
+    blockAst(createBlockNode(assignment), declAsts)
   }
 
   protected def astForExportDefaultDeclaration(declaration: BabelNodeInfo): Ast = {
     val exportName      = extractExportFromNameFromExportDecl(declaration)
     val declAstAndNames = extractDeclarationsFromExportDecl(declaration, "declaration")
-
-    val declAsts = declAstAndNames.map { case (ast, names) =>
+    val declAsts = declAstAndNames.toList.flatMap { case (ast, names) =>
       ast +: names.map { name =>
         val exportCallAst = createExportCallAst(DefaultsKey, exportName, declaration)
         createExportAssignmentCallAst(name, exportCallAst, declaration, None)
       }
     }
-
-    val asts = declAsts.toList.flatten
-    setArgumentIndices(asts)
-    blockAst(createBlockNode(declaration), asts)
+    setArgumentIndices(declAsts)
+    blockAst(createBlockNode(declaration), declAsts)
   }
 
   protected def astForExportAllDeclaration(declaration: BabelNodeInfo): Ast = {
@@ -293,9 +289,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val exportCallAst     = createExportCallAst(name, ExportKeyword, declaration)
     val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration, None)
 
-    val asts = List(fromCallAst, assignmentCallAst)
-    setArgumentIndices(asts)
-    blockAst(createBlockNode(declaration), asts)
+    val childrenAsts = List(fromCallAst, assignmentCallAst)
+    setArgumentIndices(childrenAsts)
+    blockAst(createBlockNode(declaration), childrenAsts)
   }
 
   protected def astForVariableDeclaration(declaration: BabelNodeInfo): Ast = {
@@ -760,7 +756,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
     val blockChildren = assignmentTmpCallAst +: subTreeAsts :+ Ast(returnTmpNode)
     setArgumentIndices(blockChildren)
-    Ast(blockNode).withChildren(blockChildren)
+    blockAst(blockNode, blockChildren)
   }
 
 }

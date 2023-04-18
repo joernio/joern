@@ -145,14 +145,14 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(newUnknownNode(asm))
 
   private def astForStructuredBindingDeclaration(decl: ICPPASTStructuredBindingDeclaration): Ast = {
-    val cpgBlock = newBlockNode(decl, Defines.voidTypeName)
-    scope.pushNewScope(cpgBlock)
+    val blockNode = newBlockNode(decl, Defines.voidTypeName)
+    scope.pushNewScope(blockNode)
     val childAsts = decl.getNames.toList.map { name =>
       astForNode(name)
     }
-    val blockAst = Ast(cpgBlock).withChildren(childAsts)
     scope.popScope()
-    blockAst
+    setArgumentIndices(childAsts)
+    blockAst(blockNode, childAsts)
   }
 
   protected def astsForDeclaration(decl: IASTDeclaration): Seq[Ast] = {
