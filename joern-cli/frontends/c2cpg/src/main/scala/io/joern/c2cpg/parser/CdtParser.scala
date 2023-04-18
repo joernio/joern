@@ -1,13 +1,14 @@
 package io.joern.c2cpg.parser
 
 import better.files.File
-import io.joern.c2cpg.utils.IOUtils
 import io.joern.c2cpg.Config
+import io.shiftleft.utils.IOUtils
 import org.eclipse.cdt.core.dom.ast.gnu.c.GCCLanguage
 import org.eclipse.cdt.core.dom.ast.gnu.cpp.GPPLanguage
 import org.eclipse.cdt.core.dom.ast.{IASTPreprocessorStatement, IASTTranslationUnit}
 import org.eclipse.cdt.core.model.ILanguage
 import org.eclipse.cdt.core.parser.{DefaultLogService, ScannerInfo}
+import org.eclipse.cdt.core.parser.FileContent
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.slf4j.LoggerFactory
 
@@ -19,12 +20,17 @@ object CdtParser {
 
   private val logger = LoggerFactory.getLogger(classOf[CdtParser])
 
-  case class ParseResult(
+  private case class ParseResult(
     translationUnit: Option[IASTTranslationUnit],
     preprocessorErrorCount: Int = 0,
     problems: Int = 0,
     failure: Option[Throwable] = None
   )
+
+  def readFileAsFileContent(path: Path): FileContent = {
+    val lines = IOUtils.readLinesInFile(path).mkString("\n").toArray
+    FileContent.create(path.toString, true, lines)
+  }
 
 }
 
@@ -59,7 +65,7 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
   private def parseInternal(file: Path): ParseResult = {
     val realPath = File(file)
     if (realPath.isRegularFile) { // handling potentially broken symlinks
-      val fileContent         = IOUtils.readFileAsFileContent(realPath.path)
+      val fileContent         = readFileAsFileContent(realPath.path)
       val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
       val lang                = createParseLanguage(realPath.path)
       val scannerInfo         = createScannerInfo(realPath.path)

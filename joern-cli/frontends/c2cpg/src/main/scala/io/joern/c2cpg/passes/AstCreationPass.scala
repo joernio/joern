@@ -6,7 +6,7 @@ import io.joern.c2cpg.astcreation.AstCreator
 import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.joern.c2cpg.passes.AstCreationPass.InputFiles
-import io.joern.c2cpg.utils.{IOUtils, Report, TimeUtils}
+import io.joern.c2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.joern.x2cpg.SourceFiles
@@ -41,7 +41,7 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
 
   private def headerFiles: Set[String] = {
     val allHeaderFiles         = SourceFiles.determine(config.inputPath, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
-    val alreadySeenHeaderFiles = CGlobal.headerFiles.map(IOUtils.toAbsolutePath(_, config))
+    val alreadySeenHeaderFiles = CGlobal.headerFiles.map(SourceFiles.toAbsolutePath(_, config.inputPath))
     allHeaderFiles -- alreadySeenHeaderFiles
   }
 
@@ -82,7 +82,7 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val path    = Paths.get(filename).toAbsolutePath
-    val relPath = IOUtils.toRelativePath(path.toString, config)
+    val relPath = SourceFiles.toRelativePath(path.toString, config.inputPath)
     val fileLOC = io.shiftleft.utils.IOUtils.readLinesInFile(path).size
     val (gotCpg, duration) = TimeUtils.time {
       val parseResult = parser.parse(path)
