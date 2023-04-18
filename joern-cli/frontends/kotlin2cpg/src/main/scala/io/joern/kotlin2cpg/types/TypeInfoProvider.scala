@@ -23,6 +23,8 @@ import org.jetbrains.kotlin.psi.{
   KtTypeReference
 }
 
+case class AnonymousObjectContext(declaration: KtNamedFunction)
+
 trait TypeInfoProvider {
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String
 
@@ -42,7 +44,7 @@ trait TypeInfoProvider {
 
   def propertyType(expr: KtProperty, defaultValue: String): String
 
-  def fullName(expr: KtClassOrObject, defaultValue: String): String
+  def fullName(expr: KtClassOrObject, defaultValue: String, ctx: Option[AnonymousObjectContext] = None): String
 
   def fullName(expr: KtTypeAlias, defaultValue: String): String
 
