@@ -35,7 +35,10 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val programCtx  = parser.program()
 
     val statementCtx = programCtx.compoundStatement().statements()
-    val ast          = astForStatement(statementCtx)
+    val statementAst          = astForStatement(statementCtx)
+    val fileNode       = NewFile().name(filename).order(1)
+    val namespaceBlock = globalNamespaceBlock()
+    val ast = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(statementAst))
     storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
@@ -282,7 +285,8 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         })
         .toSeq
     }
-    Ast().withChildren(seqAst)
+    val ast = Ast().withChildren(seqAst)
+    ast
   }
 
   def astForAdditiveExpressionContext(ctx: RubyParser.AdditiveExpressionContext): Ast = {
