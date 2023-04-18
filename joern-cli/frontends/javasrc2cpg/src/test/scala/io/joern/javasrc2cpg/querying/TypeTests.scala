@@ -270,7 +270,7 @@ class TypeTests extends JavaSrcCode2CpgFixture {
     }
   }
 
-  "should use correct type for super calls" in {
+  "should use correct type for super calls in the constructor of foo.Foo" in {
     val List(call) = cpg.call.name(io.joern.x2cpg.Defines.ConstructorMethodName).l
     call.methodFullName shouldBe s"java.lang.Object.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
     call.typeFullName shouldBe "void"

@@ -35,7 +35,7 @@ class JavaSrcTestCpg(override protected val delombokMode: String) extends TestCp
 
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
-
+    JavaSrc2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
     if (_withOssDataflow) {
       val context = new LayerCreatorContext(this)
       val options = new OssDataFlowOptions()

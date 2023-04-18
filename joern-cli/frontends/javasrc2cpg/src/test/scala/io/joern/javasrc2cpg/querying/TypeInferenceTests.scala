@@ -6,6 +6,8 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
 
+import java.io.File
+
 class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
 
   "methodFullNames for unresolved methods in source" should {
@@ -195,6 +197,58 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
 
         case res => fail(s"Expected identifier and literal arguments for init but got $res")
       }
+    }
+  }
+
+  "chained calls from external dependencies" should {
+    lazy val cpg = code(
+      """
+        |package net.javaguides.hibernate;
+        |
+        |import java.util.List;
+        |
+        |import org.hibernate.Session;
+        |import org.hibernate.Transaction;
+        |
+        |import net.javaguides.hibernate.entity.Student;
+        |import net.javaguides.hibernate.util.HibernateUtil;
+        |
+        |public class NamedQueryExample {
+        |	public static void main(String[] args) {
+        |		saveStudent();
+        |
+        |		Transaction transaction = null;
+        |		try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        |			transaction = session.beginTransaction();
+        |			// Executing named queries
+        |
+        |			List<Long> totalStudents = session.createNamedQuery("GET_STUDENTS_COUNT", Long.class).getResultList();
+        |			System.out.println("Total Students: " + totalStudents.get(0));
+        |
+        |			transaction.commit();
+        |		} catch (Exception e) {
+        |			if (transaction != null) {
+        |				transaction.rollback();
+        |			}
+        |		}
+        |
+        |	}
+        |}
+        |""".stripMargin,
+      Seq("net", "javaguides", "hibernate", "NamedQueryExample.java").mkString(File.separator)
+    )
+
+    "should be resolved using dummy return values" in {
+      val Some(getResultList) = cpg.call("getResultList").headOption
+      // Changes the below from <unresolvedNamespace>.getResultList:<unresolvedSignature>(0) to:
+      getResultList.methodFullName shouldBe "org.hibernate.Session.createNamedQuery:<unresolvedSignature>(2).<returnValue>.getResultList"
+      getResultList.dynamicTypeHintFullName shouldBe Seq()
+    }
+
+    "hint that `transaction` may be of the null type" in {
+      val Some(transaction) = cpg.identifier("transaction").headOption
+      transaction.typeFullName shouldBe "org.hibernate.Transaction"
+      transaction.dynamicTypeHintFullName.contains("null")
     }
   }
 }

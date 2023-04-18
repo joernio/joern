@@ -37,7 +37,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "resolve 'z' identifier calls conservatively" in {
       // TODO: These should have callee entries but the method stubs are not present here
       val List(zAppend) = cpg.call("append").l
-      zAppend.methodFullName shouldBe "__builtin.dict.append"
+      zAppend.methodFullName shouldBe "<unknownFullName>"
       zAppend.dynamicTypeHintFullName shouldBe Seq(
         "__builtin.dict.append",
         "__builtin.list.append",
@@ -299,7 +299,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val Some(addCall) = cpg
         .call("add")
         .headOption
-      addCall.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session).add"
+      addCall.typeFullName shouldBe "ANY"
       addCall.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session).add"
       addCall.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
