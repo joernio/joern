@@ -1,5 +1,6 @@
 package io.joern.php2cpg.passes
 
+import better.files.File
 import io.joern.php2cpg.astcreation.AstCreator
 import io.joern.php2cpg.parser.PhpParser
 import io.joern.x2cpg.SourceFiles
@@ -20,9 +21,10 @@ class AstCreationPass(inputPath: String, cpg: Cpg) extends ConcurrentWriterCpgPa
   override def generateParts(): Array[String] = SourceFiles.determine(inputPath, PhpSourceFileExtensions).toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
+    val relativeFilename = File(inputPath).relativize(File(filename)).toString
     PhpParser.parseFile(filename) match {
       case Some(parseResult) =>
-        diffGraph.absorb(new AstCreator(filename, parseResult, global).createAst())
+        diffGraph.absorb(new AstCreator(relativeFilename, parseResult, global).createAst())
 
       case None =>
         logger.warn(s"Could not parse file $filename. Results will be missing!")
