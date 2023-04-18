@@ -63,7 +63,7 @@ object SourceFiles {
   }
 
   /** Constructs an absolute path against rootPath. If the given path is already absolute this path is returned
-    * unaltered. Otherwise, "rooPath / path" is returned.
+    * unaltered. Otherwise, "rootPath / path" is returned.
     */
   def toAbsolutePath(path: String, rootPath: String): String = {
     val absolutePath = Paths.get(path) match {
