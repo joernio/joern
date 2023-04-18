@@ -15,22 +15,16 @@ trait AstForStatementsCreator { this: AstCreator =>
   import io.joern.c2cpg.astcreation.AstCreatorHelper.OptionSafeAst
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, order: Int = -1): Ast = {
-    val cpgBlock =
-      newBlockNode(blockStmt, registerType(Defines.voidTypeName))
-        .order(order)
-        .argumentIndex(order)
-
-    scope.pushNewScope(cpgBlock)
+    val blockNode = newBlockNode(blockStmt, registerType(Defines.voidTypeName)).order(order).argumentIndex(order)
+    scope.pushNewScope(blockNode)
     var currOrder = 1
     val childAsts = blockStmt.getStatements.flatMap { stmt =>
       val r = astsForStatement(stmt, currOrder)
       currOrder = currOrder + r.length
       r
     }
-
-    val blockAst = Ast(cpgBlock).withChildren(childAsts.toIndexedSeq)
     scope.popScope()
-    blockAst
+    blockAst(blockNode, childAsts.toList)
   }
 
   private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
@@ -165,7 +159,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val initAstBlock = newBlockNode(forStmt, registerType(Defines.voidTypeName))
     scope.pushNewScope(initAstBlock)
-    val initAst = Ast(initAstBlock).withChildren(nullSafeAst(forStmt.getInitializerStatement, 1))
+    val initAst = blockAst(initAstBlock, nullSafeAst(forStmt.getInitializerStatement, 1).toList)
     scope.popScope()
 
     val compareAst = nullSafeAst(forStmt.getConditionExpression, 2)
@@ -208,10 +202,10 @@ trait AstForStatementsCreator { this: AstCreator =>
         val c         = s"if (${nullSafeCode(s.getConditionDeclaration)})"
         val exprBlock = newBlockNode(s.getConditionDeclaration, Defines.voidTypeName)
         scope.pushNewScope(exprBlock)
-        val a        = astsForDeclaration(s.getConditionDeclaration)
-        val blockAst = Ast(exprBlock).withChildren(a)
+        val a = astsForDeclaration(s.getConditionDeclaration)
+        setArgumentIndices(a)
         scope.popScope()
-        (c, blockAst)
+        (c, blockAst(exprBlock, a.toList))
     }
 
     val ifNode = newControlStructureNode(ifStmt, ControlStructureTypes.IF, code)
@@ -221,10 +215,10 @@ trait AstForStatementsCreator { this: AstCreator =>
       case other if other != null =>
         val thenBlock = newBlockNode(other, Defines.voidTypeName)
         scope.pushNewScope(thenBlock)
-        val a        = astsForStatement(other)
-        val blockAst = Ast(thenBlock).withChildren(a)
+        val a = astsForStatement(other)
+        setArgumentIndices(a)
         scope.popScope()
-        blockAst
+        blockAst(thenBlock, a.toList)
       case _ => Ast()
     }
 
@@ -237,10 +231,10 @@ trait AstForStatementsCreator { this: AstCreator =>
         val elseNode  = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
         val elseBlock = newBlockNode(other, Defines.voidTypeName)
         scope.pushNewScope(elseBlock)
-        val a        = astsForStatement(other)
-        val blockAst = Ast(elseBlock).withChildren(a)
+        val a = astsForStatement(other)
+        setArgumentIndices(a)
         scope.popScope()
-        Ast(elseNode).withChild(blockAst)
+        Ast(elseNode).withChild(blockAst(elseBlock, a.toList))
       case _ => Ast()
     }
     controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))

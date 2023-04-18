@@ -313,9 +313,4 @@ abstract class AstCreatorBase(filename: String) {
     node
   }
 
-  /** Absolute path for the given file name
-    */
-  def absolutePath(filename: String): String =
-    better.files.File(filename).path.toAbsolutePath.normalize().toString
-
 }

@@ -43,8 +43,6 @@ class AstCreator(
   // To achieve this we need this extra stack.
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
-  override def absolutePath(filename: String): String = filename
-
   def createAst(): DiffGraphBuilder = {
     val ast = astForTranslationUnit(cdtAst)
     Ast.storeInDiffGraph(ast, diffGraph)
@@ -64,7 +62,7 @@ class AstCreator(
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
     */
   private def astInFakeMethod(fullName: String, path: String, iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val allDecls = iASTTranslationUnit.getDeclarations.toSeq
+    val allDecls = iASTTranslationUnit.getDeclarations.toList
     val name     = NamespaceTraversal.globalNamespaceName
 
     val fakeGlobalTypeDecl =
@@ -88,13 +86,11 @@ class AstCreator(
         astsForDeclaration(stmt)
       )
     }
+    setArgumentIndices(declsAsts)
 
     val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName)
-
     Ast(fakeGlobalTypeDecl).withChild(
-      Ast(fakeGlobalMethod)
-        .withChild(Ast(blockNode).withChildren(declsAsts))
-        .withChild(Ast(methodReturn))
+      methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode, declsAsts), methodReturn)
     )
   }
 
