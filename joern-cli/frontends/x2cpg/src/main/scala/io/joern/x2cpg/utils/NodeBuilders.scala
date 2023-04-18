@@ -107,7 +107,7 @@ object NodeBuilders {
       .code(code)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(typeFullName.getOrElse(PropertyDefaults.TypeFullName))
+      .typeFullName(typeFullName.getOrElse("ANY"))
       .lineNumber(line)
       .columnNumber(column)
   }
