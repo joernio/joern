@@ -3,6 +3,7 @@ package io.joern.x2cpg
 import better.files.File.VisitOptions
 import better.files._
 
+import java.nio.file.Paths
 import scala.util.Using
 
 object SourceFiles {
@@ -60,4 +61,29 @@ object SourceFiles {
       if (lineSeparator.isEmpty) "\n" else lineSeparator
     }.getOrElse("\n")
   }
+
+  /** Constructs an absolute path against rootPath. If the given path is already absolute this path is returned
+    * unaltered. Otherwise, "rooPath / path" is returned.
+    */
+  def toAbsolutePath(path: String, rootPath: String): String = {
+    val absolutePath = Paths.get(path) match {
+      case p if p.isAbsolute => p
+      case f                 => Paths.get(rootPath, f.toString)
+    }
+    absolutePath.normalize().toString
+  }
+
+  /** Constructs a relative path against rootPath. If the given path is not inside rootPath, path is returned unaltered.
+    * Otherwise, the path relative to rootPath is returned.
+    */
+  def toRelativePath(path: String, rootPath: String): String = {
+    if (path.startsWith(rootPath)) {
+      val absolutePath = Paths.get(path).toAbsolutePath
+      val projectPath  = Paths.get(rootPath).toAbsolutePath
+      projectPath.relativize(absolutePath).toString
+    } else {
+      path
+    }
+  }
+
 }

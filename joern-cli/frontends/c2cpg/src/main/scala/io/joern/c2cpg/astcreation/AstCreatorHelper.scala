@@ -1,11 +1,12 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.datastructures.CGlobal
-import io.joern.c2cpg.utils.IOUtils
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
@@ -27,11 +28,6 @@ object AstCreatorHelper {
       case Some(value) => ast.withArgEdge(src, value)
       case None        => ast
     }
-
-    def withConditionEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
-      case Some(value) => ast.withConditionEdge(src, value)
-      case None        => ast
-    }
   }
 }
 
@@ -51,12 +47,12 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def fileOffsetTable(node: IASTNode): Array[Int] = {
-    val path = IOUtils.toAbsolutePath(fileName(node), config)
+    val path = SourceFiles.toAbsolutePath(fileName(node), config.inputPath)
     file2OffsetTable.computeIfAbsent(path, _ => genFileOffsetTable(Paths.get(path)))
   }
 
   private def genFileOffsetTable(absolutePath: Path): Array[Int] = {
-    val asCharArray = io.shiftleft.utils.IOUtils.readLinesInFile(absolutePath).mkString("\n").toCharArray
+    val asCharArray = IOUtils.readLinesInFile(absolutePath).mkString("\n").toCharArray
     val offsets     = mutable.ArrayBuffer.empty[Int]
 
     for (i <- Range(0, asCharArray.length)) {
@@ -75,7 +71,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def fileName(node: IASTNode): String = {
     val path = nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
-    IOUtils.toRelativePath(path, config)
+    SourceFiles.toRelativePath(path, config.inputPath)
   }
 
   protected def line(node: IASTNode): Option[Int] = {
@@ -108,7 +104,6 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def columnEnd(node: IASTNode): Option[Int] = {
     val loc = nullSafeFileLocation(node)
-
     loc.map { x =>
       offsetToColumn(node, x.getNodeOffset + x.getNodeLength - 1)
     }
