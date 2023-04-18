@@ -1544,11 +1544,13 @@ trait KtPsiToAst {
       Seq(localAst, assignmentCallAst, initAst)
     } else if (hasRHSObjectLiteral) {
       val typedExpr = expr.getDelegateExpressionOrInitializer.asInstanceOf[KtObjectLiteralExpression]
+      val ctx =
+        Option(expr.getParent)
+          .map(_.getParent)
+          .collect { case namedFn: KtNamedFunction => namedFn }
+          .map(AnonymousObjectContext(_))
 
-      val containingDeclaration = expr.getParent.getParent.asInstanceOf[KtNamedFunction] // TODO: fix!!!
-
-      val ctx              = AnonymousObjectContext(containingDeclaration)
-      val typeDeclAsts     = astsForClassOrObject(typedExpr.getObjectDeclaration, Some(ctx))
+      val typeDeclAsts     = astsForClassOrObject(typedExpr.getObjectDeclaration, ctx)
       val typeDeclAst      = typeDeclAsts.head
       val typeDeclFullName = typeDeclAst.root.get.asInstanceOf[NewTypeDecl].fullName
 
