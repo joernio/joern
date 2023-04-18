@@ -6,6 +6,7 @@ import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
+import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 object PhpParser {
@@ -18,16 +19,45 @@ object PhpParser {
     Paths.get(fixedDir, "php2cpg", "bin", "PHP-Parser", "bin", "php-parse").toAbsolutePath.toString
   }
 
-  private def phpParseCommand(filename: String): String = {
-    s"$ExecutablePath --with-recovery --resolve-names --json-dump $filename"
+  private lazy val DefaultPhpIni: String = {
+    val iniContents = Source.fromResource("php.ini").getLines.mkString(System.lineSeparator())
+
+    val tmpIni = File.newTemporaryFile(suffix = "-php.ini").deleteOnExit()
+    tmpIni.writeText(iniContents)
+    tmpIni.canonicalPath
   }
 
-  def parseFile(inputPath: String): Option[PhpFile] = {
+  private def phpParseCommand(filename: String, phpIniPath: String): String = {
+    s"php --php-ini $phpIniPath $ExecutablePath --with-recovery --resolve-names --json-dump $filename"
+  }
+
+  private def getPhpIniPath(phpIniOverride: Option[String]): String = {
+    phpIniOverride match {
+      case None =>
+        logger.info(s"No php.ini override path provided. Using default instead.")
+        DefaultPhpIni
+
+      case Some(path) =>
+        val overrideFile = File(path)
+        val overridePath = overrideFile.path.toAbsolutePath.toString
+
+        if (overrideFile.exists && overrideFile.isRegularFile) {
+          logger.info(s"Found custom php.ini to be used at $overridePath")
+          overridePath
+        } else {
+          logger.warn(s"Could not find php.ini file at $overridePath. Using default instead.")
+          DefaultPhpIni
+        }
+    }
+  }
+
+  def parseFile(inputPath: String, phpIniOverride: Option[String]): Option[PhpFile] = {
     val inputFile      = File(inputPath)
     val inputDirectory = inputFile.parent.canonicalPath
     val filename       = inputFile.name
+    val phpIniPath     = getPhpIniPath(phpIniOverride)
 
-    ExternalCommand.run(phpParseCommand(filename), inputDirectory, separateStdErr = true) match {
+    ExternalCommand.run(phpParseCommand(filename, phpIniPath), inputDirectory, separateStdErr = true) match {
       case Success(outputLines) => processParserOutput(outputLines, inputFile.canonicalPath)
 
       case Failure(exception) =>
