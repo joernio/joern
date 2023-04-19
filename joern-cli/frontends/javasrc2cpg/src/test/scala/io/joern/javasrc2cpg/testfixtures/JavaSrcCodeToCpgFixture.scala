@@ -25,7 +25,9 @@ trait JavaSrcFrontend extends LanguageFrontend {
   }
 }
 
-class JavaSrcTestCpg(override protected val delombokMode: String) extends TestCpg with JavaSrcFrontend {
+class JavaSrcTestCpg(override protected val delombokMode: String, enableTypeRecovery: Boolean = false)
+    extends TestCpg
+    with JavaSrcFrontend {
   private var _withOssDataflow = false
 
   def withOssDataflow(value: Boolean = true): this.type = {
@@ -35,7 +37,7 @@ class JavaSrcTestCpg(override protected val delombokMode: String) extends TestCp
 
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
-    JavaSrc2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
+    if (enableTypeRecovery) JavaSrc2Cpg.typeRecoveryPasses(this).foreach(_.createAndApply())
     if (_withOssDataflow) {
       val context = new LayerCreatorContext(this)
       val options = new OssDataFlowOptions()
@@ -45,8 +47,11 @@ class JavaSrcTestCpg(override protected val delombokMode: String) extends TestCp
 
 }
 
-class JavaSrcCode2CpgFixture(withOssDataflow: Boolean = false, delombokMode: String = "default")
-    extends Code2CpgFixture(() => new JavaSrcTestCpg(delombokMode).withOssDataflow(withOssDataflow)) {
+class JavaSrcCode2CpgFixture(
+  withOssDataflow: Boolean = false,
+  delombokMode: String = "default",
+  enableTypeRecovery: Boolean = false
+) extends Code2CpgFixture(() => new JavaSrcTestCpg(delombokMode, enableTypeRecovery).withOssDataflow(withOssDataflow)) {
 
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()

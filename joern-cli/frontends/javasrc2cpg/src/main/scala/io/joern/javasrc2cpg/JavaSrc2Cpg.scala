@@ -60,7 +60,7 @@ object JavaSrc2Cpg {
     }
   }
 
-  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
+  def typeRecoveryPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
     List(
       new JavaTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes))),
       new JavaTypeHintCallLinker(cpg)

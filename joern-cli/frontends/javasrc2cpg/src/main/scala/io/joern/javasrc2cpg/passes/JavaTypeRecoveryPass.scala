@@ -3,6 +3,7 @@ package io.joern.javasrc2cpg.passes
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -16,7 +17,7 @@ class JavaTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecovery
 
 private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[Method](cpg, state) {
 
-  override def compilationUnit: Traversal[Method] = cpg.method.whereNot(_.nameExact("ANY"))
+  override def compilationUnit: Traversal[Method] = cpg.method.isExternal(false)
 
   override def generateRecoveryForCompilationUnitTask(
     unit: Method,
@@ -58,5 +59,15 @@ private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder
   override protected def storeIdentifierTypeInfo(i: Identifier, types: Seq[String]): Unit = if (i.name != "this") {
     super.storeIdentifierTypeInfo(i, types)
   }
+
+  override protected def storeCallTypeInfo(c: Call, types: Seq[String]) =
+    if (types.nonEmpty) {
+      state.changesWereMade.compareAndSet(false, true)
+      val signedTypes = types.map {
+        case t if t.endsWith(c.signature) => t
+        case t                            => s"$t:${c.signature}"
+      }
+      builder.setNodeProperty(c, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, signedTypes)
+    }
 
 }

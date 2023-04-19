@@ -773,10 +773,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           val typs =
             if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
             else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
-          if (typs != nodeExistingTypes(x)) {
-            state.changesWereMade.compareAndSet(false, true)
-            builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typs)
-          }
+          storeCallTypeInfo(x, typs)
         case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
         case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
@@ -784,13 +781,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case _ =>
       }
     // Set types in an atomic way
-    newTypesForMembers.foreach { case (m, ts) =>
-      if (ts.toSeq != nodeExistingTypes(m)) {
-        state.changesWereMade.compareAndSet(false, true)
-        if (ts.size == 1) builder.setNodeProperty(m, PropertyNames.TYPE_FULL_NAME, ts.head)
-        else builder.setNodeProperty(m, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, ts)
-      }
-    }
+    newTypesForMembers.foreach { case (m, ts) => storeDefaultTypeInfo(m, ts.toSeq) }
   }
 
   protected def createCallFromIdentifierTypeFullName(typeFullName: String, callName: String): String =
@@ -979,12 +970,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
   }
 
-  protected def storeCallTypeInfo(c: Call, types: Seq[String]) = {
+  protected def storeCallTypeInfo(c: Call, types: Seq[String]) =
     if (types.nonEmpty) {
       state.changesWereMade.compareAndSet(false, true)
       builder.setNodeProperty(c, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
     }
-  }
 
   protected def nodeExistingTypes(storedNode: StoredNode): Seq[String] = (storedNode.property(
     PropertyNames.TYPE_FULL_NAME,

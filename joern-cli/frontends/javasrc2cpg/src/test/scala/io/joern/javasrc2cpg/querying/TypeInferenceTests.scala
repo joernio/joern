@@ -200,6 +200,10 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+}
+
+class JavaTypeRecoveryPassTests extends JavaSrcCode2CpgFixture(enableTypeRecovery = true) {
+
   "chained calls from external dependencies" should {
     lazy val cpg = code(
       """
@@ -241,7 +245,7 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
     "should be resolved using dummy return values" in {
       val Some(getResultList) = cpg.call("getResultList").headOption
       // Changes the below from <unresolvedNamespace>.getResultList:<unresolvedSignature>(0) to:
-      getResultList.methodFullName shouldBe "org.hibernate.Session.createNamedQuery:<unresolvedSignature>(2).<returnValue>.getResultList"
+      getResultList.methodFullName shouldBe "org.hibernate.Session.createNamedQuery:<unresolvedSignature>(2).<returnValue>.getResultList:<unresolvedSignature>(0)"
       getResultList.dynamicTypeHintFullName shouldBe Seq()
     }
 
@@ -251,6 +255,7 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
       transaction.dynamicTypeHintFullName.contains("null")
     }
   }
+
 }
 
 class TypeInferenceTests extends JavaSrcCode2CpgFixture {
