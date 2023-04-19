@@ -24,22 +24,18 @@ import org.apache.commons.lang.mutable.Mutable
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import scala.collection.mutable
 
 class AstCreator(filename: String, global: Global) extends AstCreatorBase(filename) {
 
   object Defines {
-    val Any: String               = "ANY"
-    val Number: String            = "__ecma.Number"
-    val String: String            = "__ecma.String"
-    val Boolean: String           = "__ecma.Boolean"
-    val Null: String              = "__ecma.Null"
-    val Math: String              = "__ecma.Math"
-    val Symbol: String            = "__ecma.Symbol"
-    val Console: String           = "__whatwg.console"
-    val Object: String            = "object"
-    val NodeModulesFolder: String = "node_modules"
-    val GlobalNamespace: String   = NamespaceTraversal.globalNamespaceName
+    val Any: String     = "ANY"
+    val Number: String  = "number"
+    val String: String  = "string"
+    val Boolean: String = "boolean"
+    val Hash: String    = "hash"
+    val Array: String   = "array"
+    val Symbol: String  = "symbol"
   }
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val charStream  = CharStreams.fromFileName(filename)
@@ -57,39 +53,46 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     diffGraph
   }
 
-  def astForVariableIdentifierContext(variableCtx: RubyParser.VariableIdentifierContext): Ast = {
-    val varText =
+  def astForVariableIdentifierContext(variableCtx: RubyParser.VariableIdentifierContext, varType: String): Ast = {
+    val varSymbol =
       if (variableCtx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-        variableCtx.LOCAL_VARIABLE_IDENTIFIER().getSymbol.getText()
+        variableCtx.LOCAL_VARIABLE_IDENTIFIER().getSymbol()
       } else if (variableCtx.GLOBAL_VARIABLE_IDENTIFIER() != null) {
-        variableCtx.GLOBAL_VARIABLE_IDENTIFIER().getSymbol.getText()
+        variableCtx.GLOBAL_VARIABLE_IDENTIFIER().getSymbol()
       } else if (variableCtx.INSTANCE_VARIABLE_IDENTIFIER() != null) {
-        variableCtx.INSTANCE_VARIABLE_IDENTIFIER().getSymbol.getText()
+        variableCtx.INSTANCE_VARIABLE_IDENTIFIER().getSymbol()
       } else if (variableCtx.CLASS_VARIABLE_IDENTIFIER() != null) {
-        variableCtx.CLASS_VARIABLE_IDENTIFIER().getSymbol.getText()
+        variableCtx.CLASS_VARIABLE_IDENTIFIER().getSymbol()
       } else if (variableCtx.CONSTANT_IDENTIFIER() != null) {
-        variableCtx.CONSTANT_IDENTIFIER().getSymbol.getText()
+        variableCtx.CONSTANT_IDENTIFIER().getSymbol()
+      } else {
+        return Ast()
       }
 
-    val node = identifierNode(varText.toString, None, None, None)
+    val node = identifierNode(
+      varSymbol.getText,
+      None,
+      Some(varSymbol.getLine()),
+      Some(varSymbol.getCharPositionInLine()),
+      List(varType)
+    ).typeFullName(varType)
     Ast(node)
   }
 
-  def astForSingleLeftHandSide(ctx: RubyParser.SingleLeftHandSideContext): Ast = {
+  def astForSingleLeftHandSide(ctx: RubyParser.SingleLeftHandSideContext, rhsRetType: String): Ast = {
     val variableCtx = ctx.variableIdentifier()
-    astForVariableIdentifierContext(variableCtx)
+    astForVariableIdentifierContext(variableCtx, rhsRetType)
   }
 
   def astForExpressionOrCommandsContext(ctx: RubyParser.ExpressionOrCommandsContext): Ast = {
-    val seqAst = {
-      ctx
-        .expressionOrCommand()
-        .map(ec => {
-          val ast = astForExpressionOrCommandContext(ec)
-          ast
-        })
-    }.toSeq
-    Ast().withChildren(seqAst)
+    val asts = mutable.ArrayBuffer.empty[Ast]
+    ctx
+      .expressionOrCommand()
+      .forEach(ec => {
+        val ast = astForExpressionOrCommandContext(ec)
+        asts.addOne(ast)
+      })
+    Ast().withChildren(asts.toSeq)
   }
 
   def astForSplattingArgument(ctx: RubyParser.SplattingArgumentContext): Ast = {
@@ -99,17 +102,17 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     astForExpressionOrCommandContext(ctx.expressionOrCommand())
   }
 
-  def astForMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): Ast = {
+  def astForMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): (Ast, String) = {
     val exprAst      = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
     val splattingAst = astForSplattingArgument(ctx.splattingArgument())
     val seqAsts      = Seq[Ast](exprAst, splattingAst)
-    Ast().withChildren(seqAsts)
+    (Ast().withChildren(seqAsts), Defines.Number)
   }
 
   def astForSingleAssignmentExpression(ctxSubclass: RubyParser.SingleAssignmentExpressionContext): Ast = {
-    val leftAst  = astForSingleLeftHandSide(ctxSubclass.singleLeftHandSide())
-    val rightAst = astForMultipleRightHandSide(ctxSubclass.multipleRightHandSide())
-    val seqAsts  = Seq[Ast](leftAst, rightAst)
+    val (rightAst, rhsRetType) = astForMultipleRightHandSide(ctxSubclass.multipleRightHandSide())
+    val leftAst                = astForSingleLeftHandSide(ctxSubclass.singleLeftHandSide(), rhsRetType)
+    val seqAsts                = Seq[Ast](leftAst, rightAst)
     Ast().withChildren(seqAsts)
   }
 
@@ -265,35 +268,33 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   def astForStatement(ctx: RubyParser.StatementsContext): Ast = {
 
     val blockNode = NewBlock().typeFullName(Defines.Any)
-    val seqAst = {
-      ctx
-        .statement()
-        .map(st => {
-          val ast =
-            if (st.isInstanceOf[RubyParser.AliasStatementContext]) {
-              astForAliasStatementContext(st.asInstanceOf[RubyParser.AliasStatementContext])
-            } else if (st.isInstanceOf[RubyParser.UndefStatementContext]) {
-              astForUndefStatementContext(st.asInstanceOf[RubyParser.UndefStatementContext])
-            } else if (st.isInstanceOf[RubyParser.BeginStatementContext]) {
-              astForBeginStatementContext(st.asInstanceOf[RubyParser.BeginStatementContext])
-            } else if (st.isInstanceOf[RubyParser.EndStatementContext]) {
-              astForEndStatementContext(st.asInstanceOf[RubyParser.EndStatementContext])
-            } else if (st.isInstanceOf[RubyParser.ModifierStatementContext]) {
-              astForModifierStatementContext(st.asInstanceOf[RubyParser.ModifierStatementContext])
-            } else if (st.isInstanceOf[RubyParser.ExpressionOrCommandStatementContext]) {
-              astForExpressionOrCommandContext(
-                st.asInstanceOf[RubyParser.ExpressionOrCommandStatementContext].expressionOrCommand()
-              )
-            } else {
-              println("astForExpressionContext(): Unknown context")
-              Ast()
-            }
-          ast
-        })
-        .toSeq
-    }
+    val asts      = mutable.ArrayBuffer.empty[Ast]
+    ctx
+      .statement()
+      .forEach(st => {
+        val ast =
+          if (st.isInstanceOf[RubyParser.AliasStatementContext]) {
+            astForAliasStatementContext(st.asInstanceOf[RubyParser.AliasStatementContext])
+          } else if (st.isInstanceOf[RubyParser.UndefStatementContext]) {
+            astForUndefStatementContext(st.asInstanceOf[RubyParser.UndefStatementContext])
+          } else if (st.isInstanceOf[RubyParser.BeginStatementContext]) {
+            astForBeginStatementContext(st.asInstanceOf[RubyParser.BeginStatementContext])
+          } else if (st.isInstanceOf[RubyParser.EndStatementContext]) {
+            astForEndStatementContext(st.asInstanceOf[RubyParser.EndStatementContext])
+          } else if (st.isInstanceOf[RubyParser.ModifierStatementContext]) {
+            astForModifierStatementContext(st.asInstanceOf[RubyParser.ModifierStatementContext])
+          } else if (st.isInstanceOf[RubyParser.ExpressionOrCommandStatementContext]) {
+            astForExpressionOrCommandContext(
+              st.asInstanceOf[RubyParser.ExpressionOrCommandStatementContext].expressionOrCommand()
+            )
+          } else {
+            println("astForExpressionContext(): Unknown context")
+            Ast()
+          }
+        asts.addOne(ast)
+      })
 
-    Ast(blockNode).withChildren(seqAst)
+    Ast(blockNode).withChildren(asts.toSeq)
   }
 
   def astForAdditiveExpressionContext(ctx: RubyParser.AdditiveExpressionContext): Ast = {
