@@ -94,6 +94,7 @@ primary
     |   arrayConstructor                                                                                            # arrayConstructorPrimary
     |   hashConstructor                                                                                             # hashConstructorPrimary
     |   literal                                                                                                     # literalPrimary
+    |   stringInterpolation                                                                                         # stringInterpolationPrimary
     |   IS_DEFINED LPAREN expressionOrCommand RPAREN                                                                # isDefinedPrimary
     |   SUPER argumentsWithParentheses? block?                                                                      # superExpressionPrimary
     |   primary LBRACK WS* indexingArguments? WS* RBRACK                                                            # indexingExpressionPrimary
@@ -513,12 +514,28 @@ literal
     :   numericLiteral
     |   symbol
     |   SINGLE_QUOTED_STRING_LITERAL
+    |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END
     ;
 
 symbol
     :   SYMBOL_LITERAL
     |   COLON SINGLE_QUOTED_STRING_LITERAL
     ;
+
+// --------------------------------------------------------
+// String interpolation
+// --------------------------------------------------------
+
+stringInterpolation
+    :   DOUBLE_QUOTED_STRING_START
+        (DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE | interpolation)+
+        DOUBLE_QUOTED_STRING_END
+    ;
+
+interpolation
+    :   STRING_INTERPOLATION_BEGIN compoundStatement STRING_INTERPOLATION_END
+    ;
+
 
 // --------------------------------------------------------
 // Numerics

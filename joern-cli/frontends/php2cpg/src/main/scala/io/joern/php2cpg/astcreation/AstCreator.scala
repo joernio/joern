@@ -43,13 +43,13 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForPhpFile(file: PhpFile): Ast = {
-    val namespaceBlock = globalNamespaceBlock().filename(absolutePath(filename))
+    val namespaceBlock = globalNamespaceBlock()
 
     scope.pushNewScope(namespaceBlock)
 
     val globalTypeDecl = NewTypeDecl()
       .name(namespaceBlock.name)
-      .fullName(namespaceBlock.name)
+      .fullName(namespaceBlock.fullName)
       .astParentFullName(namespaceBlock.fullName)
       .code(namespaceBlock.code)
       .filename(filename)

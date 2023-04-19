@@ -127,6 +127,13 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
     case None      => Set.empty
   }
 
+  def remove(sbKey: K): Set[String] = table.remove(sbKey).getOrElse(Set.empty)
+
+  def remove(node: AstNode): Set[String] = keyFromNode(node) match {
+    case Some(key) => remove(key)
+    case None      => Set.empty
+  }
+
   def view: MapView[K, Set[String]] = table.view
 
   def clear(): Unit = table.clear()

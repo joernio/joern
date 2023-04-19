@@ -1,5 +1,7 @@
 package io.joern.php2cpg.passes
 
+import better.files.File
+import io.joern.php2cpg.Config
 import io.joern.php2cpg.astcreation.AstCreator
 import io.joern.php2cpg.parser.PhpParser
 import io.joern.x2cpg.SourceFiles
@@ -10,19 +12,20 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
 
-class AstCreationPass(inputPath: String, cpg: Cpg) extends ConcurrentWriterCpgPass[String](cpg) {
+class AstCreationPass(config: Config, cpg: Cpg) extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
   val global         = new Global()
 
   val PhpSourceFileExtensions: Set[String] = Set(".php")
 
-  override def generateParts(): Array[String] = SourceFiles.determine(inputPath, PhpSourceFileExtensions).toArray
+  override def generateParts(): Array[String] = SourceFiles.determine(config.inputPath, PhpSourceFileExtensions).toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
-    PhpParser.parseFile(filename) match {
+    val relativeFilename = File(config.inputPath).relativize(File(filename)).toString
+    PhpParser.parseFile(filename, config.phpIni) match {
       case Some(parseResult) =>
-        diffGraph.absorb(new AstCreator(filename, parseResult, global).createAst())
+        diffGraph.absorb(new AstCreator(relativeFilename, parseResult, global).createAst())
 
       case None =>
         logger.warn(s"Could not parse file $filename. Results will be missing!")

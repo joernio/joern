@@ -149,8 +149,11 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
       case method: Method => method
       case typeDecl: TypeDecl =>
         typeDecl.astParent match {
+          case namespaceBlock: NamespaceBlock =>
+            // For Typescript, types may be declared in namespaces which we represent as NamespaceBlocks
+            namespaceBlock.inAst.collectAll[Method].headOption.orNull
           case method: Method =>
-            // For a language such as javascript, types may be dynamically declared under procedures
+            // For a language such as Javascript, types may be dynamically declared under procedures
             method
           case _ =>
             // there are csharp CPGs that have typedecls here, which is invalid.

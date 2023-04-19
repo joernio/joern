@@ -29,12 +29,13 @@ package object cpgcreation {
         val jssrc = JsSrcCpgGenerator(conf, rootPath)
         if (jssrc.isAvailable) Some(jssrc)
         else Some(JsCpgGenerator(conf, rootPath))
-      case Languages.PYTHONSRC | Languages.PYTHON => Some(PythonSrcCpgGenerator(conf, rootPath))
-      case Languages.PHP                          => Some(PhpCpgGenerator(conf, rootPath))
-      case Languages.GHIDRA                       => Some(GhidraCpgGenerator(conf, rootPath))
-      case Languages.KOTLIN                       => Some(KotlinCpgGenerator(conf, rootPath))
+      case Languages.PYTHONSRC => Some(PythonSrcCpgGenerator(conf, rootPath))
+      case Languages.PYTHON    => Some(PyCpgGenerator(conf, rootPath))
+      case Languages.PHP       => Some(PhpCpgGenerator(conf, rootPath))
+      case Languages.GHIDRA    => Some(GhidraCpgGenerator(conf, rootPath))
+      case Languages.KOTLIN    => Some(KotlinCpgGenerator(conf, rootPath))
       case Languages.RUBYSRC                      => Some(RubyCpgGenerator(conf, rootPath))
-      case _                                      => None
+      case _                   => None
     }
   }
 

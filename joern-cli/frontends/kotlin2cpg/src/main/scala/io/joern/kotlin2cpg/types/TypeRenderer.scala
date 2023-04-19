@@ -1,12 +1,16 @@
 package io.joern.kotlin2cpg.types
 
+import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.x2cpg.Defines
+import kotlin.reflect.jvm.internal.impl.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.{ClassDescriptor, DeclarationDescriptor, SimpleFunctionDescriptor}
-import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.resolve.{DescriptorToSourceUtils, DescriptorUtils}
 import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, TypeUtils, UnresolvedType}
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.{KtClassOrObject, KtElement, KtNamedFunction, KtObjectLiteralExpression, KtProperty}
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
+import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.types.typeUtil.TypeUtilsKt
 import org.jetbrains.kotlin.resolve.jvm.JvmPrimitiveType
 
@@ -43,11 +47,40 @@ object TypeRenderer {
     val renderer     = descriptorRenderer()
     val fqName       = DescriptorUtils.getFqName(desc)
     val simpleRender = stripped(renderer.renderFqName(fqName))
-    def maybeReplacedOrTake(c: ClassDescriptor, or: String): String = {
-      if (DescriptorUtils.isCompanionObject(c) || c.isInner) {
-        val rendered = stripped(renderer.renderFqName(fqName))
-        rendered.replaceFirst("\\." + c.getName, "\\$" + c.getName)
-      } else or
+    def maybeReplacedOrTake(c: DeclarationDescriptor, or: String): String = {
+      c match {
+        case tc: ClassDescriptor if DescriptorUtils.isCompanionObject(tc) || tc.isInner =>
+          val rendered = stripped(renderer.renderFqName(fqName))
+          rendered.replaceFirst("\\." + c.getName, "\\$" + c.getName)
+        case tc: ClassDescriptor if DescriptorUtils.isAnonymousObject(tc) =>
+          val rendered = stripped(renderer.renderFqName(fqName))
+
+          val psiElement        = DescriptorToSourceUtils.getSourceFromDescriptor(tc)
+          val psiContainingDecl = DescriptorToSourceUtils.getSourceFromDescriptor(tc.getContainingDeclaration)
+
+          val objectIdxMaybe =
+            psiContainingDecl match {
+              case t: KtNamedFunction =>
+                val anonymousObjects = {
+                  t.getBodyBlockExpression.getStatements.asScala.toSeq.collect { case pt: KtProperty =>
+                    pt.getDelegateExpressionOrInitializer match {
+                      case ol: KtObjectLiteralExpression => ol.getObjectDeclaration
+                      case _                             => None
+                    }
+                  }
+                }
+                var outIdx: Option[Int] = None
+                anonymousObjects.zip(1 to anonymousObjects.size).foreach { case (elem: KtElement, idx) =>
+                  if (elem == psiElement) outIdx = Some(idx)
+                }
+                outIdx
+              case _ => None
+            }
+          val objectIdx = objectIdxMaybe.getOrElse("nan")
+          val out       = rendered.replaceFirst("\\.$", "\\$object\\$" + s"$objectIdx")
+          out
+        case _ => or
+      }
     }
     val strippedOfContainingDeclarationIfNeeded =
       Option(desc.getContainingDeclaration)
