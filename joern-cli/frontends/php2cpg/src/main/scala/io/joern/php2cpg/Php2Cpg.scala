@@ -22,7 +22,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
     if (isPhpInstalled) {
       withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
         new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
-        val astCreationPass = new AstCreationPass(config.inputPath, cpg)
+        val astCreationPass = new AstCreationPass(config, cpg)
         astCreationPass.createAndApply()
         new TypeNodePass(astCreationPass.allUsedTypes, cpg).createAndApply()
       }

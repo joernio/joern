@@ -65,15 +65,25 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     addNodeToDiff(typeRefNode)
   }
 
-  def memberNode(name: String, dynamicTypeHintFullName: String): nodes.NewMember = {
+  def memberNode(name: String): nodes.NewMember = {
     val memberNode = nodes
       .NewMember()
       .code(name)
       .name(name)
       .typeFullName(Constants.ANY)
-      .dynamicTypeHintFullName(dynamicTypeHintFullName :: Nil)
     addNodeToDiff(memberNode)
   }
+
+  def memberNode(name: String, lineAndColumn: LineAndColumn): nodes.NewMember = {
+    memberNode(name)
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
+  }
+
+  def memberNode(name: String, dynamicTypeHintFullName: String): nodes.NewMember =
+    memberNode(name).dynamicTypeHintFullName(dynamicTypeHintFullName :: Nil)
+  def memberNode(name: String, dynamicTypeHintFullName: String, lineAndColumn: LineAndColumn): nodes.NewMember =
+    memberNode(name, lineAndColumn).dynamicTypeHintFullName(dynamicTypeHintFullName :: Nil)
 
   def bindingNode(): nodes.NewBinding = {
     val bindingNode = nodes

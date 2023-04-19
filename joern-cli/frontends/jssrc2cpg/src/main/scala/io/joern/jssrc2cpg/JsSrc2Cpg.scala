@@ -7,6 +7,7 @@ import io.joern.jssrc2cpg.passes._
 import io.joern.jssrc2cpg.utils.{AstGenRunner, Report}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
+import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.HashUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
@@ -54,11 +55,12 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
 
 object JsSrc2Cpg {
 
-  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
+  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
     List(
       new ConstClosurePass(cpg),
-      new JavaScriptTypeRecovery(cpg, enabledDummyTypes = !config.exists(_.disableDummyTypes)),
+      new JavaScriptTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes))),
       new JavaScriptTypeHintCallLinker(cpg)
     )
+  }
 
 }

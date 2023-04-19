@@ -56,7 +56,8 @@ class ClosureTests extends PhpCode2CpgFixture {
       }
 
       closureMethod.name shouldBe "__closure0"
-      closureMethod.fullName shouldBe s"__closure0:${Defines.UnresolvedSignature}(1)"
+      closureMethod.fullName shouldBe s"__closure0"
+      closureMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
       closureMethod.code shouldBe "function __closure0($value) use($use1, &$use2)"
       closureMethod.parameter.size shouldBe 1
 
@@ -82,8 +83,8 @@ class ClosureTests extends PhpCode2CpgFixture {
 
     "have a correct MethodRef added to the AST where the closure is defined" in {
       inside(cpg.assignment.code(".*closure.*").argument.l) { case List(_: Identifier, methodRef: MethodRef) =>
-        methodRef.methodFullName shouldBe s"__closure0:${Defines.UnresolvedSignature}(1)"
-        methodRef.code shouldBe s"__closure0:${Defines.UnresolvedSignature}(1)"
+        methodRef.methodFullName shouldBe s"__closure0"
+        methodRef.code shouldBe s"__closure0"
         methodRef.lineNumber shouldBe Some(3)
       }
     }
@@ -100,7 +101,8 @@ class ClosureTests extends PhpCode2CpgFixture {
       }
 
       closureMethod.name shouldBe "__closure0"
-      closureMethod.fullName shouldBe s"__closure0:${Defines.UnresolvedSignature}(1)"
+      closureMethod.fullName shouldBe s"__closure0"
+      closureMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
       closureMethod.code shouldBe "function __closure0($value)"
       closureMethod.parameter.size shouldBe 1
 
@@ -115,8 +117,8 @@ class ClosureTests extends PhpCode2CpgFixture {
 
     "have a correct MethodRef added to the AST where the closure is defined" in {
       inside(cpg.assignment.argument.l) { case List(_: Identifier, methodRef: MethodRef) =>
-        methodRef.methodFullName shouldBe s"__closure0:${Defines.UnresolvedSignature}(1)"
-        methodRef.code shouldBe s"__closure0:${Defines.UnresolvedSignature}(1)"
+        methodRef.methodFullName shouldBe s"__closure0"
+        methodRef.code shouldBe s"__closure0"
         methodRef.lineNumber shouldBe Some(2)
       }
     }

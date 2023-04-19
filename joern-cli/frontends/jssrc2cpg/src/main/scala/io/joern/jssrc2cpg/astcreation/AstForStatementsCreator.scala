@@ -54,7 +54,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     setArgumentIndices(blockStatementAsts)
     localAstParentStack.pop()
     scope.popScope()
-    Ast(blockNode).withChildren(blockStatementAsts)
+    blockAst(blockNode, blockStatementAsts)
   }
 
   protected def astForReturnStatement(ret: BabelNodeInfo): Ast = {
@@ -186,7 +186,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val labelAsts = List(Ast(labeledNode), bodyAst)
     setArgumentIndices(labelAsts)
-    Ast(blockNode).withChildren(labelAsts)
+    blockAst(blockNode, labelAsts)
   }
 
   protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast = {
@@ -251,10 +251,13 @@ trait AstForStatementsCreator { this: AstCreator =>
   protected def astForSwitchStatement(switchStmt: BabelNodeInfo): Ast = {
     val switchNode = createControlStructureNode(switchStmt, ControlStructureTypes.SWITCH)
 
+    // The semantics of switch statement children is partially defined by there order value.
+    // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
+    // because the semantics of it is already indicated via the condition edge.
     val switchExpressionAst = astForNodeWithFunctionReference(switchStmt.json("discriminant"))
+    setOrderExplicitly(switchExpressionAst, 1)
 
-    val blockNode = createBlockNode(switchStmt)
-    val blockAst  = Ast(blockNode)
+    val blockNode = createBlockNode(switchStmt).order(2)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
@@ -264,15 +267,10 @@ trait AstForStatementsCreator { this: AstCreator =>
     scope.popScope()
     localAstParentStack.pop()
 
-    // The semantics of switch statement children is partially defined by there order value.
-    // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
-    // because the semantics of it is already indicated via the condition edge.
-    setOrderExplicitly(switchExpressionAst, 1)
-    setOrderExplicitly(blockAst, 2)
     Ast(switchNode)
       .withChild(switchExpressionAst)
       .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
-      .withChild(blockAst.withChildren(casesAsts))
+      .withChild(blockAst(blockNode, casesAsts.toList))
   }
 
   /** De-sugaring from:
@@ -284,7 +282,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     * { var _iterator = <operator>.iterator(arr); var _result; var i; while (!(_result = _iterator.next()).done) { i =
     * _result.value; body } }
     */
-  protected def astForInOfStatement(forInOfStmt: BabelNodeInfo): Ast = {
+  private def astForInOfStatementWithIdentifier(forInOfStmt: BabelNodeInfo, idNodeInfo: BabelNodeInfo): Ast = {
     // surrounding block:
     val blockNode = createBlockNode(forInOfStmt)
     scope.pushNewBlockScope(blockNode)
@@ -331,11 +329,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     scope.addVariableReference(resultName, resultNode)
 
     // loop variable:
-    val nodeInfo = createBabelNodeInfo(forInOfStmt.json("left"))
-    val loopVariableName = nodeInfo.node match {
-      case VariableDeclaration => code(nodeInfo.json("declarations").arr.head)
-      case _                   => code(nodeInfo.json)
-    }
+    val loopVariableName = idNodeInfo.code
 
     val loopVariableLocalNode = createLocalNode(loopVariableName, Defines.Any)
     val loopVariableNode      = createIdentifierNode(loopVariableName, forInOfStmt)
@@ -343,8 +337,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     scope.addVariableReference(loopVariableName, loopVariableNode)
 
     // while loop:
-    val whileLoopNode =
-      createControlStructureNode(forInOfStmt, ControlStructureTypes.WHILE)
+    val whileLoopNode = createControlStructureNode(forInOfStmt, ControlStructureTypes.WHILE)
 
     // while loop test:
     val testCallNode = createCallNode(
@@ -426,7 +419,9 @@ trait AstForStatementsCreator { this: AstCreator =>
     // while loop block:
     val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
 
-    val whileLoopBlockAst = Ast(whileLoopBlockNode).withChild(loopVariableAssignmentAst).withChild(bodyAst)
+    val whileLoopBlockChildren = List(loopVariableAssignmentAst, bodyAst)
+    setArgumentIndices(whileLoopBlockChildren)
+    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
 
     scope.popScope()
     localAstParentStack.pop()
@@ -435,11 +430,374 @@ trait AstForStatementsCreator { this: AstCreator =>
     scope.popScope()
     localAstParentStack.pop()
 
-    Ast(blockNode)
-      .withChild(iteratorAssignmentAst)
-      .withChild(Ast(resultNode))
-      .withChild(Ast(loopVariableNode))
-      .withChild(whileLoopAst.withChild(whileLoopBlockAst))
+    val blockChildren =
+      List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
+    setArgumentIndices(blockChildren)
+    blockAst(blockNode, blockChildren)
+  }
+
+  /** De-sugaring from:
+    *
+    * for(var {a, b, c} of obj) { body }
+    *
+    * to:
+    *
+    * { var _iterator = <operator>.iterator(obj); var _result; var a; var b; var c; while (!(_result =
+    * _iterator.next()).done) { a = _result.value.a; b = _result.value.b; c = _result.value.c; body } }
+    */
+  private def astForInOfStatementWithObject(forInOfStmt: BabelNodeInfo, idNodeInfo: BabelNodeInfo): Ast = {
+    // surrounding block:
+    val blockNode = createBlockNode(forInOfStmt)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+
+    val collection     = forInOfStmt.json("right")
+    val collectionName = code(collection)
+
+    // _iterator assignment:
+    val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
+    val iteratorLocalNode = createLocalNode(iteratorName, Defines.Any)
+    val iteratorNode      = createIdentifierNode(iteratorName, forInOfStmt)
+    diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
+    scope.addVariableReference(iteratorName, iteratorNode)
+
+    val iteratorCall = createCallNode(
+      s"<operator>.iterator($collectionName)",
+      "<operator>.iterator", // TODO: add to schema
+      DispatchTypes.STATIC_DISPATCH,
+      forInOfStmt.lineNumber,
+      forInOfStmt.columnNumber
+    )
+
+    val objectKeysCallArgs = List(astForNodeWithFunctionReference(collection))
+    val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
+
+    val iteratorAssignmentNode =
+      createCallNode(
+        s"$iteratorName = <operator>.iterator($collectionName)",
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH,
+        forInOfStmt.lineNumber,
+        forInOfStmt.columnNumber
+      )
+
+    val iteratorAssignmentArgs = List(Ast(iteratorNode), objectKeysCallAst)
+    val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
+
+    // _result:
+    val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
+    val resultLocalNode = createLocalNode(resultName, Defines.Any)
+    val resultNode      = createIdentifierNode(resultName, forInOfStmt)
+    diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
+    scope.addVariableReference(resultName, resultNode)
+
+    // loop variable:
+    val loopVariableNames = idNodeInfo.json("properties").arr.toList.map(code)
+
+    val loopVariableLocalNodes = loopVariableNames.map(createLocalNode(_, Defines.Any))
+    val loopVariableNodes      = loopVariableNames.map(createIdentifierNode(_, forInOfStmt))
+    loopVariableLocalNodes.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
+    loopVariableNames.zip(loopVariableNodes).foreach { case (loopVariableName, loopVariableNode) =>
+      scope.addVariableReference(loopVariableName, loopVariableNode)
+    }
+
+    // while loop:
+    val whileLoopNode = createControlStructureNode(forInOfStmt, ControlStructureTypes.WHILE)
+
+    // while loop test:
+    val testCallNode = createCallNode(
+      s"!($resultName = $iteratorName.next()).done",
+      Operators.not,
+      DispatchTypes.STATIC_DISPATCH,
+      forInOfStmt.lineNumber,
+      forInOfStmt.columnNumber
+    )
+
+    val doneBaseNode = createCallNode(
+      s"($resultName = $iteratorName.next())",
+      Operators.assignment,
+      DispatchTypes.STATIC_DISPATCH,
+      forInOfStmt.lineNumber,
+      forInOfStmt.columnNumber
+    )
+
+    val lhsNode = createIdentifierNode(resultName, forInOfStmt)
+
+    val rhsNode = createCallNode(
+      s"$iteratorName.next()",
+      "next",
+      DispatchTypes.DYNAMIC_DISPATCH,
+      forInOfStmt.lineNumber,
+      forInOfStmt.columnNumber
+    )
+
+    val nextBaseNode = createIdentifierNode(iteratorName, forInOfStmt)
+
+    val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+
+    val nextReceiverNode =
+      createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+
+    val thisNextNode = createIdentifierNode(iteratorName, forInOfStmt)
+
+    val rhsArgs = List(Ast(thisNextNode))
+    val rhsAst  = callAst(rhsNode, rhsArgs, receiver = Option(nextReceiverNode))
+
+    val doneBaseArgs = List(Ast(lhsNode), rhsAst)
+    val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
+    Ast.storeInDiffGraph(doneBaseAst, diffGraph)
+
+    val doneMemberNode = createFieldIdentifierNode("done", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+
+    val testNode =
+      createFieldAccessCallAst(doneBaseNode, doneMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+
+    val testCallArgs = List(testNode)
+    val testCallAst  = callAst(testCallNode, testCallArgs)
+
+    val whileLoopAst = Ast(whileLoopNode).withChild(testCallAst).withConditionEdge(whileLoopNode, testCallNode)
+
+    // while loop variable assignment:
+    val loopVariableAssignmentAsts = loopVariableNames.map { loopVariableName =>
+      val whileLoopVariableNode = createIdentifierNode(loopVariableName, forInOfStmt)
+      val baseNode              = createIdentifierNode(resultName, forInOfStmt)
+      val memberNode            = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+      val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+      val variableMemberNode =
+        createFieldIdentifierNode(loopVariableName, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+      val variableAccessAst =
+        createFieldAccessCallAst(accessAst, variableMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+      val loopVariableAssignmentNode = createCallNode(
+        s"$loopVariableName = $resultName.value.$loopVariableName",
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH,
+        forInOfStmt.lineNumber,
+        forInOfStmt.columnNumber
+      )
+      val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), variableAccessAst)
+      callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
+    }
+
+    val whileLoopBlockNode = createBlockNode(forInOfStmt)
+    scope.pushNewBlockScope(whileLoopBlockNode)
+    localAstParentStack.push(whileLoopBlockNode)
+
+    // while loop block:
+    val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
+
+    val whileLoopBlockChildren = loopVariableAssignmentAsts :+ bodyAst
+    setArgumentIndices(whileLoopBlockChildren)
+    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
+
+    scope.popScope()
+    localAstParentStack.pop()
+
+    // end surrounding block:
+    scope.popScope()
+    localAstParentStack.pop()
+
+    val blockNodeChildren =
+      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst.withChild(
+        whileLoopBlockAst
+      )
+    setArgumentIndices(blockNodeChildren)
+    blockAst(blockNode, blockNodeChildren)
+  }
+
+  /** De-sugaring from:
+    *
+    * for(var [a, b, c] of arr) { body }
+    *
+    * to:
+    *
+    * { var _iterator = <operator>.iterator(arr); var _result; var a; var b; var c; while (!(_result =
+    * _iterator.next()).done) { a = _result.value[0]; b = _result.value[1]; c = _result.value[2]; body } }
+    */
+  private def astForInOfStatementWithArray(forInOfStmt: BabelNodeInfo, idNodeInfo: BabelNodeInfo): Ast = {
+    // surrounding block:
+    val blockNode = createBlockNode(forInOfStmt)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+
+    val collection     = forInOfStmt.json("right")
+    val collectionName = code(collection)
+
+    // _iterator assignment:
+    val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
+    val iteratorLocalNode = createLocalNode(iteratorName, Defines.Any)
+    val iteratorNode      = createIdentifierNode(iteratorName, forInOfStmt)
+    diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
+    scope.addVariableReference(iteratorName, iteratorNode)
+
+    val iteratorCall = createCallNode(
+      s"<operator>.iterator($collectionName)",
+      "<operator>.iterator", // TODO: add to schema
+      DispatchTypes.STATIC_DISPATCH,
+      forInOfStmt.lineNumber,
+      forInOfStmt.columnNumber
+    )
+
+    val objectKeysCallArgs = List(astForNodeWithFunctionReference(collection))
+    val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
+
+    val iteratorAssignmentNode =
+      createCallNode(
+        s"$iteratorName = <operator>.iterator($collectionName)",
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH,
+        forInOfStmt.lineNumber,
+        forInOfStmt.columnNumber
+      )
+
+    val iteratorAssignmentArgs = List(Ast(iteratorNode), objectKeysCallAst)
+    val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
+
+    // _result:
+    val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
+    val resultLocalNode = createLocalNode(resultName, Defines.Any)
+    val resultNode      = createIdentifierNode(resultName, forInOfStmt)
+    diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
+    scope.addVariableReference(resultName, resultNode)
+
+    // loop variable:
+    val loopVariableNames = idNodeInfo.json("elements").arr.toList.map(code)
+
+    val loopVariableLocalNodes = loopVariableNames.map(createLocalNode(_, Defines.Any))
+    val loopVariableNodes      = loopVariableNames.map(createIdentifierNode(_, forInOfStmt))
+    loopVariableLocalNodes.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
+    loopVariableNames.zip(loopVariableNodes).foreach { case (loopVariableName, loopVariableNode) =>
+      scope.addVariableReference(loopVariableName, loopVariableNode)
+    }
+
+    // while loop:
+    val whileLoopNode = createControlStructureNode(forInOfStmt, ControlStructureTypes.WHILE)
+
+    // while loop test:
+    val testCallNode = createCallNode(
+      s"!($resultName = $iteratorName.next()).done",
+      Operators.not,
+      DispatchTypes.STATIC_DISPATCH,
+      forInOfStmt.lineNumber,
+      forInOfStmt.columnNumber
+    )
+
+    val doneBaseNode = createCallNode(
+      s"($resultName = $iteratorName.next())",
+      Operators.assignment,
+      DispatchTypes.STATIC_DISPATCH,
+      forInOfStmt.lineNumber,
+      forInOfStmt.columnNumber
+    )
+
+    val lhsNode = createIdentifierNode(resultName, forInOfStmt)
+
+    val rhsNode = createCallNode(
+      s"$iteratorName.next()",
+      "next",
+      DispatchTypes.DYNAMIC_DISPATCH,
+      forInOfStmt.lineNumber,
+      forInOfStmt.columnNumber
+    )
+
+    val nextBaseNode = createIdentifierNode(iteratorName, forInOfStmt)
+
+    val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+
+    val nextReceiverNode =
+      createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+
+    val thisNextNode = createIdentifierNode(iteratorName, forInOfStmt)
+
+    val rhsArgs = List(Ast(thisNextNode))
+    val rhsAst  = callAst(rhsNode, rhsArgs, receiver = Option(nextReceiverNode))
+
+    val doneBaseArgs = List(Ast(lhsNode), rhsAst)
+    val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
+    Ast.storeInDiffGraph(doneBaseAst, diffGraph)
+
+    val doneMemberNode = createFieldIdentifierNode("done", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+
+    val testNode =
+      createFieldAccessCallAst(doneBaseNode, doneMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+
+    val testCallArgs = List(testNode)
+    val testCallAst  = callAst(testCallNode, testCallArgs)
+
+    val whileLoopAst = Ast(whileLoopNode).withChild(testCallAst).withConditionEdge(whileLoopNode, testCallNode)
+
+    // while loop variable assignment:
+    val loopVariableAssignmentAsts = loopVariableNames.zipWithIndex.map { case (loopVariableName, index) =>
+      val whileLoopVariableNode = createIdentifierNode(loopVariableName, forInOfStmt)
+      val baseNode              = createIdentifierNode(resultName, forInOfStmt)
+      val memberNode            = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+      val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+      val variableMemberNode = createLiteralNode(
+        index.toString,
+        dynamicTypeOption = Some(Defines.Number),
+        forInOfStmt.lineNumber,
+        forInOfStmt.columnNumber
+      )
+      val variableAccessAst =
+        createIndexAccessCallAst(accessAst, Ast(variableMemberNode), forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+      val loopVariableAssignmentNode = createCallNode(
+        s"$loopVariableName = $resultName.value[$index]",
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH,
+        forInOfStmt.lineNumber,
+        forInOfStmt.columnNumber
+      )
+      val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), variableAccessAst)
+      callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
+    }
+
+    val whileLoopBlockNode = createBlockNode(forInOfStmt)
+    scope.pushNewBlockScope(whileLoopBlockNode)
+    localAstParentStack.push(whileLoopBlockNode)
+
+    // while loop block:
+    val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
+
+    val whileLoopBlockChildren = loopVariableAssignmentAsts :+ bodyAst
+    setArgumentIndices(whileLoopBlockChildren)
+    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
+
+    scope.popScope()
+    localAstParentStack.pop()
+
+    // end surrounding block:
+    scope.popScope()
+    localAstParentStack.pop()
+
+    val blockNodeChildren =
+      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst.withChild(
+        whileLoopBlockAst
+      )
+    setArgumentIndices(blockNodeChildren)
+    blockAst(blockNode, blockNodeChildren)
+  }
+
+  protected def astForInOfStatement(forInOfStmt: BabelNodeInfo): Ast = {
+    val loopVariableNodeInfo = createBabelNodeInfo(forInOfStmt.json("left"))
+    // check iteration loop variable type:
+    loopVariableNodeInfo.node match {
+      case VariableDeclaration =>
+        val varDeclNodeInfo = createBabelNodeInfo(loopVariableNodeInfo.json("declarations").arr.head)
+        varDeclNodeInfo.node match {
+          case VariableDeclarator =>
+            val idNodeInfo = createBabelNodeInfo(varDeclNodeInfo.json("id"))
+            idNodeInfo.node match {
+              case ObjectPattern => astForInOfStatementWithObject(forInOfStmt, idNodeInfo)
+              case ArrayPattern  => astForInOfStatementWithArray(forInOfStmt, idNodeInfo)
+              case Identifier    => astForInOfStatementWithIdentifier(forInOfStmt, idNodeInfo)
+              case _             => notHandledYet(forInOfStmt)
+            }
+          case _ => notHandledYet(forInOfStmt)
+        }
+      case ObjectPattern => astForInOfStatementWithObject(forInOfStmt, loopVariableNodeInfo)
+      case ArrayPattern  => astForInOfStatementWithArray(forInOfStmt, loopVariableNodeInfo)
+      case Identifier    => astForInOfStatementWithIdentifier(forInOfStmt, loopVariableNodeInfo)
+      case _             => notHandledYet(forInOfStmt)
+    }
   }
 
 }

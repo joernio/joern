@@ -29,6 +29,8 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
         _parentExpression(call)
       case expression: Expression =>
         Some(expression)
+      case annotationParameterAssign: AnnotationParameterAssign =>
+        _parentExpression(annotationParameterAssign)
       case _ =>
         None
     }

@@ -1,7 +1,5 @@
 package io.joern.pysrc2cpg
 
-import io.joern.pysrc2cpg.PythonTypeRecovery.BUILTIN_PREFIX
-import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -14,10 +12,16 @@ import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
 import java.nio.file.Paths
-import java.util.regex.Matcher
-import scala.collection.mutable
+import java.util.regex.{Matcher, Pattern}
 
-class PythonTypeRecovery(cpg: Cpg, enabledDummyTypes: Boolean = true) extends XTypeRecovery[File](cpg) {
+class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
+    extends XTypeRecoveryPass[File](cpg, config) {
+
+  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
+    new PythonTypeRecovery(cpg, state)
+}
+
+private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
 
   override def compilationUnit: Traversal[File] = cpg.file
 
@@ -25,20 +29,21 @@ class PythonTypeRecovery(cpg: Cpg, enabledDummyTypes: Boolean = true) extends XT
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] =
-    new RecoverForPythonFile(cpg, unit, builder, globalTable, addedNodes, enabledDummyTypes)
+    new RecoverForPythonFile(
+      cpg,
+      unit,
+      builder,
+      state.copy(config =
+        state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
+      )
+    )
 
 }
 
 /** Performs type recovery from the root of a compilation unit level
   */
-class RecoverForPythonFile(
-  cpg: Cpg,
-  cu: File,
-  builder: DiffGraphBuilder,
-  globalTable: SymbolTable[GlobalKey],
-  addedNodes: mutable.Set[(Long, String)],
-  enabledDummyTypes: Boolean
-) extends RecoverForXCompilationUnit[File](cpg, cu, builder, globalTable, addedNodes, enabledDummyTypes) {
+private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
+    extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
 
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
@@ -51,39 +56,38 @@ class RecoverForPythonFile(
 
   override val symbolTable: SymbolTable[LocalKey] = new SymbolTable[LocalKey](fromNodeToLocalPythonKey)
 
-  /** Overridden to include legacy import calls until imports are supported.
-    */
-  override def importNodes(cu: AstNode): Traversal[AstNode] =
-    cu.ast.isCall.nameExact("import") // TODO: Remove and use IMPORT nodes
+  override def visitImport(i: Import): Unit = {
 
-  override def visitImport(importCall: Call): Unit = {
-    importCall.argument.l match {
-      case (path: Literal) :: (funcOrModule: Literal) :: alias =>
-        val namespace = if (path.code.startsWith(".")) {
-          // TODO: pysrc2cpg does not link files to the correct namespace nodes
-          val root     = cpg.metaData.root.headOption.getOrElse("")
-          val fileName = path.file.name.headOption.getOrElse("").stripPrefix(root)
-          val sep      = Matcher.quoteReplacement(JFile.separator)
-          // The below gives us the full path of the relative "."
-          val relativeNamespace =
-            if (fileName.contains(JFile.separator))
-              fileName.substring(0, fileName.lastIndexOf(JFile.separator)).replaceAll(sep, ".")
-            else ""
-          if (path.code.length > 1) relativeNamespace + path.code.replaceAll(sep, ".")
-          else relativeNamespace
-        } else path.code
-        val calleeNames = extractPossibleCalleeNames(namespace, funcOrModule.code)
-        alias match {
-          case (alias: Literal) :: Nil =>
-            symbolTable.put(CallAlias(alias.code), calleeNames)
-            symbolTable.put(LocalVar(alias.code), calleeNames)
-          case Nil =>
-            symbolTable.put(CallAlias(funcOrModule.code), calleeNames)
-            symbolTable.put(LocalVar(funcOrModule.code), calleeNames)
-          case x =>
-            logger.warn(s"Unknown import pattern: ${x.map(_.label).mkString(", ")}")
-        }
-      case _ =>
+    def relativizeNamespace(path: String) = if (path.startsWith(".")) {
+      // TODO: pysrc2cpg does not link files to the correct namespace nodes
+      val root     = cpg.metaData.root.headOption.getOrElse("")
+      val fileName = i.file.name.headOption.getOrElse("").stripPrefix(root)
+      val sep      = Matcher.quoteReplacement(JFile.separator)
+      // The below gives us the full path of the relative "."
+      val relativeNamespace =
+        if (fileName.contains(JFile.separator))
+          fileName.substring(0, fileName.lastIndexOf(JFile.separator)).replaceAll(sep, ".")
+        else ""
+      (if (path.length > 1) relativeNamespace + path.replaceAll(sep, ".")
+       else relativeNamespace).stripPrefix(".")
+    } else path
+
+    val importedEntity = i.importedEntity.getOrElse("")
+    val (namespace, entityName) = if (importedEntity.contains(".")) {
+      val splitName = importedEntity.split('.').toSeq
+      val namespace = importedEntity.stripSuffix(s".${splitName.last}")
+      (relativizeNamespace(namespace), splitName.last)
+    } else {
+      ("", importedEntity)
+    }
+    val calleeNames = extractPossibleCalleeNames(namespace, entityName)
+    i.importedAs match {
+      case Some(alias) =>
+        symbolTable.put(CallAlias(alias), calleeNames)
+        symbolTable.put(LocalVar(alias), calleeNames)
+      case None =>
+        symbolTable.put(CallAlias(entityName), calleeNames)
+        symbolTable.put(LocalVar(entityName), calleeNames)
     }
   }
 
@@ -113,7 +117,7 @@ class RecoverForPythonFile(
     val sep = Matcher.quoteReplacement(JFile.separator)
 
     lazy val methodsWithExportEntityAsIdentifier: List[String] = cpg.typeDecl
-      .fullName(s".*$path.*")
+      .fullName(s".*${Pattern.quote(path)}.*")
       .where(_.member.nameExact(expEntity))
       .fullName
       .toList
@@ -123,7 +127,7 @@ class RecoverForPythonFile(
         // Case 1: Qualified path: import foo.bar => (bar.py or bar/__init__.py)
         val splitFunc = expEntity.split("\\.")
         val name      = splitFunc.tail.mkString(".")
-        s"${splitFunc(0)}.py:<module>.$name"
+        s"${splitFunc(0)}.py:<module>$pathSep$name"
       case "" =>
         // Case 2: import of a module: import foo => (foo.py or foo/__init__.py)
         s"$expEntity.py:<module>"
@@ -142,33 +146,28 @@ class RecoverForPythonFile(
           case Some(f) if f.isDirectory && (f / s"$expEntity.py").exists =>
             s"${(f / s"$expEntity.py").pathAsString}:<module>"
           case _ =>
-            s"${path.replaceAll("\\.", sep)}.py:<module>.$expEntity"
+            s"${path.replaceAll("\\.", sep)}.py:<module>$pathSep$expEntity"
         }
     }
 
     /** The two ways that this procedure could be resolved to in Python. */
-    def possibleCalleeNames(procedureName: String, isMaybeConstructor: Boolean, isFieldOrVar: Boolean): Set[String] =
+    def possibleCalleeNames(procedureName: String, isMaybeConstructor: Boolean, isFieldOrVar: Boolean): Set[String] = {
+      val pythonicFormGuesses =
+        cpg.typeDecl.fullName(s".*${Pattern.quote(procedureName)}").fullName.toSet match {
+          case xs if xs.nonEmpty => xs
+          case _                 => Seq(procedureName)
+        }
       if (isMaybeConstructor)
-        Set(procedureName.concat(s".${Defines.ConstructorMethodName}"))
+        pythonicFormGuesses.map(p => Seq(p, s"$expEntity<body>", "__init__").mkString(pathSep.toString)).toSet
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
-        // TODO: When the workaround below is replaced, the following type->member check will kick in
         cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
-          case Some(i) => (i.typeFullName +: i.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet
+          case Some(i) => (i.typeFullName +: i.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
           case None    => Set.empty
         }
-        // TODO: Workaround until we write-to-CPG each iteration, use this for now as long as we have global table
-        cpg.method
-          .fullNameExact(m)
-          .ast
-          .isIdentifier
-          .nameExact(v)
-          .dedupBy(_.name)
-          .filter(globalTable.contains)
-          .flatMap(globalTable.get)
-          .toSet
       } else
-        Set(procedureName, fullNameAsInit)
+        Set(procedureName, fullNameAsInit) ++ pythonicFormGuesses
+    }
 
     /** the full name of the procedure where it's assumed that it is defined within an <code>__init.py__</code> of the
       * module.
@@ -179,6 +178,7 @@ class RecoverForPythonFile(
 
     val isMaybeConstructor = expEntity.split("\\.").lastOption.exists(s => s.nonEmpty && s.charAt(0).isUpper)
     possibleCalleeNames(procedureName, isMaybeConstructor, procedureName.contains("<var>"))
+      .map(_.replaceAll("<var>", pathSep.toString))
   }
 
   override def postVisitImports(): Unit = {
@@ -186,10 +186,12 @@ class RecoverForPythonFile(
       val ms = cpg.method.fullNameExact(v.toSeq: _*).l
       val ts = cpg.typeDecl.fullNameExact(v.toSeq: _*).l
       // In case a method has been incorrectly determined to be a constructor based on the heuristic
-      val tsNonConstructor =
-        cpg.method
-          .fullNameExact(v.toSeq.map(_.replaceAll("<var>", ".").stripSuffix(s".${Defines.ConstructorMethodName}")): _*)
-          .l
+
+      val nonConstructorV = v.toSeq
+        .map(_.replaceAll("<var>", pathSep.toString).stripSuffix(s"${pathSep}__init__"))
+        .map(f => f.split(pathSep).lastOption.map(t => f.stripSuffix(s"$pathSep$t")).getOrElse(f))
+      val tsNonConstructor = cpg.method.fullNameExact(nonConstructorV: _*).l
+
       if (ts.nonEmpty)
         symbolTable.put(k, ts.fullName.toSet)
       else if (ms.nonEmpty)
@@ -200,41 +202,41 @@ class RecoverForPythonFile(
         // This is likely external and we will ignore the init variant to be consistent
         symbolTable.put(k, symbolTable(k).filterNot(_.contains("__init__.py")))
       }
-      // Imports are by default used as calls, a second pass will tell us if this is not the case and we should
-      // check against global table
-      // TODO: This is a bit of a bandaid compared to potentially having alias sensitivity.
-
-      def fieldVar(path: String) = FieldVar(path.stripSuffix(s".${k.identifier}"), k.identifier)
-
-      symbolTable.get(k).headOption match {
-        case Some(path) if globalTable.contains(fieldVar(path)) =>
-          symbolTable.replaceWith(k, LocalVar(k.identifier), globalTable.get(fieldVar(path)))
-        case _ =>
-      }
     }
   }
+
+  override def persistType(x: StoredNode, types: Set[String]): Unit = {
+    super.persistType(x, types.map(pyBodyTypeToTypeDecl))
+  }
+
+  /** Converts `Foo.Foo<body>` that holds method declarations to `Foo` which is the "main" type declaration.
+    */
+  private def pyBodyTypeToTypeDecl(typeFullName: String): String =
+    if (typeFullName.endsWith("<body>"))
+      typeFullName.split(pathSep).lastOption.map(x => typeFullName.stripSuffix(s"$pathSep$x")).getOrElse(typeFullName)
+    else typeFullName
 
   /** Determines if a function call is a constructor by following the heuristic that Python classes are typically
     * camel-case and start with an upper-case character.
     */
   override def isConstructor(c: Call): Boolean =
-    c.name.nonEmpty && c.name.charAt(0).isUpper && c.code.endsWith(")")
+    isConstructor(c.name) && c.code.endsWith(")")
 
-  def isConstructor(funcOrModule: String): Boolean =
-    !cpg.method.fullNameExact(funcOrModule).exists(_.name == Defines.ConstructorMethodName)
+  private def isConstructor(callName: String): Boolean =
+    callName.nonEmpty && callName.charAt(0).isUpper
 
   /** If the parent method is module then it can be used as a field.
     */
   override def isField(i: Identifier): Boolean =
-    i.method.name.matches("(<module>|__init__)") || super.isField(i)
+    state.isFieldCache.getOrElseUpdate(i.id(), i.method.name.matches("(<module>|__init__)") || super.isField(i))
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
-      case "<operator>.listLiteral"  => associateTypes(i, Set(s"$BUILTIN_PREFIX.list"))
-      case "<operator>.tupleLiteral" => associateTypes(i, Set(s"$BUILTIN_PREFIX.tuple"))
-      case "<operator>.dictLiteral"  => associateTypes(i, Set(s"$BUILTIN_PREFIX.dict"))
-      case "<operator>.setLiteral"   => associateTypes(i, Set(s"$BUILTIN_PREFIX.set"))
-      case Operators.conditional     => associateTypes(i, Set(s"$BUILTIN_PREFIX.bool"))
+      case "<operator>.listLiteral"  => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}list"))
+      case "<operator>.tupleLiteral" => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}tuple"))
+      case "<operator>.dictLiteral"  => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}dict"))
+      case "<operator>.setLiteral"   => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}set"))
+      case Operators.conditional     => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}bool"))
       case _                         => super.visitIdentifierAssignedToOperator(i, c, operation)
     }
   }
@@ -242,11 +244,10 @@ class RecoverForPythonFile(
   override def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = symbolTable
       .get(c)
-      .map(_.stripSuffix(s".${Defines.ConstructorMethodName}"))
-      .map(x => (x.split("\\.").last, x))
+      .map(_.stripSuffix(s"${pathSep}__init__"))
       .map {
-        case (x, y) if x.nonEmpty => s"$y.$x<body>"
-        case (_, z)               => z
+        case t if t.endsWith("<body>") => t
+        case t                         => t.split(pathSep).lastOption.map(x => s"$t$pathSep$x<body>").getOrElse(t)
       }
     associateTypes(i, constructorPaths)
   }
@@ -263,32 +264,32 @@ class RecoverForPythonFile(
     val fieldParents = getFieldParents(fa)
     fa.astChildren.l match {
       case List(base: Identifier, fi: FieldIdentifier) if base.name.equals("self") && fieldParents.nonEmpty =>
-        val globalTypes = fieldParents.flatMap(fp => globalTable.get(FieldVar(fp, fi.canonicalName)))
+        val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq: _*).member.nameExact(fi.canonicalName)
+        val globalTypes =
+          referencedFields.flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
         associateTypes(i, globalTypes)
       case _ => super.visitIdentifierAssignedToFieldLoad(i, fa)
     }
   }
 
   override def getTypesFromCall(c: Call): Set[String] = c.name match {
-    case "<operator>.listLiteral"  => Set(s"$BUILTIN_PREFIX.list")
-    case "<operator>.tupleLiteral" => Set(s"$BUILTIN_PREFIX.tuple")
-    case "<operator>.dictLiteral"  => Set(s"$BUILTIN_PREFIX.dict")
-    case "<operator>.setLiteral"   => Set(s"$BUILTIN_PREFIX.set")
+    case "<operator>.listLiteral"  => Set(s"${PythonAstVisitor.builtinPrefix}list")
+    case "<operator>.tupleLiteral" => Set(s"${PythonAstVisitor.builtinPrefix}tuple")
+    case "<operator>.dictLiteral"  => Set(s"${PythonAstVisitor.builtinPrefix}dict")
+    case "<operator>.setLiteral"   => Set(s"${PythonAstVisitor.builtinPrefix}set")
     case _                         => super.getTypesFromCall(c)
   }
 
   override def getFieldParents(fa: FieldAccess): Set[String] = {
-    if (fa.method.name.equals("<module>")) {
+    if (fa.method.name == "<module>") {
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
       val parentTypes =
         fa.method.typeDecl.fullName.map(_.stripSuffix("<meta>")).toSeq
-      val baseTypes = cpg.typeDecl.fullNameExact(parentTypes: _*).inheritsFromTypeFullName.toSeq
-      // TODO: inheritsFromTypeFullName does not give full name in pysrc2cpg
-      val baseTypeFullNames = cpg.typ.nameExact(baseTypes: _*).fullName.toSeq
+      val baseTypeFullNames = cpg.typeDecl.fullNameExact(parentTypes: _*).inheritsFromTypeFullName.toSeq
       (parentTypes ++ baseTypeFullNames)
-        .map(_.concat(".<body>"))
-        .filterNot(t => t.toLowerCase.matches("(any|object)"))
+        .map(_.concat("<meta>"))
+        .filterNot(_.toLowerCase.matches("(any|object)"))
         .toSet
     } else {
       super.getFieldParents(fa)
@@ -300,17 +301,44 @@ class RecoverForPythonFile(
 
   override def getLiteralType(l: Literal): Set[String] = {
     (l.code match {
-      case code if code.toIntOption.isDefined                  => Some(s"$BUILTIN_PREFIX.int")
-      case code if code.toDoubleOption.isDefined               => Some(s"$BUILTIN_PREFIX.float")
-      case code if "True".equals(code) || "False".equals(code) => Some(s"$BUILTIN_PREFIX.bool")
-      case code if code.equals("None")                         => Some(s"$BUILTIN_PREFIX.None")
-      case code if isPyString(code)                            => Some(s"$BUILTIN_PREFIX.str")
+      case code if code.toIntOption.isDefined                  => Some(s"${PythonAstVisitor.builtinPrefix}int")
+      case code if code.toDoubleOption.isDefined               => Some(s"${PythonAstVisitor.builtinPrefix}float")
+      case code if "True".equals(code) || "False".equals(code) => Some(s"${PythonAstVisitor.builtinPrefix}bool")
+      case code if code.equals("None")                         => Some(s"${PythonAstVisitor.builtinPrefix}None")
+      case code if isPyString(code)                            => Some(s"${PythonAstVisitor.builtinPrefix}str")
       case _                                                   => None
     }).toSet
   }
 
-}
+  override def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit = {
+    val pythonName = convertTypeFullNameToPythonMeta(typeFullName)
+    super.persistMemberWithTypeDecl(pythonName, memberName, types)
+  }
 
-object PythonTypeRecovery {
-  def BUILTIN_PREFIX = "__builtin"
+  override def createCallFromIdentifierTypeFullName(typeFullName: String, callName: String): String = {
+    lazy val tName = typeFullName.split("\\.").lastOption.getOrElse(typeFullName)
+    typeFullName match {
+      case t if t.matches(".*(<\\w+>)$") => super.createCallFromIdentifierTypeFullName(typeFullName, callName)
+      case t if t.matches(".*\\.<(member|returnValue|indexAccess)>(\\(.*\\))?") =>
+        super.createCallFromIdentifierTypeFullName(typeFullName, callName)
+      case t if isConstructor(tName) =>
+        t.split("\\.").lastOption match {
+          case Some(tName) => Seq(t, s"$tName<body>", callName).mkString(pathSep.toString)
+          case None        => Seq(t, callName).mkString(pathSep.toString)
+        }
+      case _ => super.createCallFromIdentifierTypeFullName(typeFullName, callName)
+    }
+  }
+
+  override def typeDeclTraversal(typeFullName: String): Traversal[TypeDecl] =
+    cpg.typeDecl.fullNameExact(convertTypeFullNameToPythonMeta(typeFullName))
+
+  private def convertTypeFullNameToPythonMeta(typeFullName: String): String = {
+    if (typeFullName.endsWith("<module>") || typeFullName.endsWith("<meta>")) typeFullName
+    else
+      (if (typeFullName.contains(pathSep))
+         typeFullName.substring(0, typeFullName.lastIndexOf(pathSep))
+       else typeFullName).concat("<meta>")
+  }
+
 }

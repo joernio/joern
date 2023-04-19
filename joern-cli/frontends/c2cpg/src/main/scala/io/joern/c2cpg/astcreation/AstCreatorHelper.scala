@@ -1,10 +1,12 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.datastructures.CGlobal
-import io.joern.c2cpg.utils.IOUtils
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.SourceFiles
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast._
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
@@ -26,11 +28,6 @@ object AstCreatorHelper {
       case Some(value) => ast.withArgEdge(src, value)
       case None        => ast
     }
-
-    def withConditionEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
-      case Some(value) => ast.withConditionEdge(src, value)
-      case None        => ast
-    }
   }
 }
 
@@ -50,12 +47,12 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def fileOffsetTable(node: IASTNode): Array[Int] = {
-    val path = IOUtils.toAbsolutePath(fileName(node), config)
+    val path = SourceFiles.toAbsolutePath(fileName(node), config.inputPath)
     file2OffsetTable.computeIfAbsent(path, _ => genFileOffsetTable(Paths.get(path)))
   }
 
   private def genFileOffsetTable(absolutePath: Path): Array[Int] = {
-    val asCharArray = io.shiftleft.utils.IOUtils.readLinesInFile(absolutePath).mkString("\n").toCharArray
+    val asCharArray = IOUtils.readLinesInFile(absolutePath).mkString("\n").toCharArray
     val offsets     = mutable.ArrayBuffer.empty[Int]
 
     for (i <- Range(0, asCharArray.length)) {
@@ -74,7 +71,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def fileName(node: IASTNode): String = {
     val path = nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
-    IOUtils.toRelativePath(path, config)
+    SourceFiles.toRelativePath(path, config.inputPath)
   }
 
   protected def line(node: IASTNode): Option[Int] = {
@@ -107,7 +104,6 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def columnEnd(node: IASTNode): Option[Int] = {
     val loc = nullSafeFileLocation(node)
-
     loc.map { x =>
       offsetToColumn(node, x.getNodeOffset + x.getNodeLength - 1)
     }
@@ -350,7 +346,28 @@ trait AstCreatorHelper { this: AstCreator =>
     }
   }
 
-  private def astforDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
+  protected def attachDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Unit = {
+    val allIncludes = iASTTranslationUnit.getIncludeDirectives.toIndexedSeq
+    allIncludes.foreach { include =>
+      val name           = include.getName.toString
+      val dependencyNode = newDependencyNode(name, "include")
+      val importNode     = newImportNode(nodeSignature(include), name, include)
+      diffGraph.addNode(dependencyNode)
+      diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
+    }
+  }
+
+  protected def astsForComments(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
+    if (config.includeComments) {
+      val commentsAsts = iASTTranslationUnit.getComments.map(comment => astForComment(comment)).toIndexedSeq
+      setArgumentIndices(commentsAsts)
+      commentsAsts
+    } else {
+      Seq.empty
+    }
+  }
+
+  private def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op       = "<operator>.typeOf"
     val cpgUnary = newCallNode(decl, op, op, DispatchTypes.STATIC_DISPATCH)
     val operand  = nullSafeAst(decl.getDecltypeExpression)
@@ -358,26 +375,23 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer): Ast = {
-    val b = newBlockNode(d, Defines.voidTypeName)
-    scope.pushNewScope(b)
+    val blockNode = newBlockNode(d, Defines.voidTypeName)
+    scope.pushNewScope(blockNode)
     val op = Operators.assignment
-
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
       val left     = astForNode(des)
       val right    = astForNode(d.getOperand)
       callAst(callNode, List(left, right))
     }
-
     scope.popScope()
-    Ast(b).withChildren(calls)
+    blockAst(blockNode, calls.toList)
   }
 
   private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer): Ast = {
-    val b = newBlockNode(d, Defines.voidTypeName)
-    scope.pushNewScope(b)
+    val blockNode = newBlockNode(d, Defines.voidTypeName)
+    scope.pushNewScope(blockNode)
     val op = Operators.assignment
-
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
       val left     = astForNode(des)
@@ -385,7 +399,7 @@ trait AstCreatorHelper { this: AstCreator =>
       callAst(callNode, List(left, right))
     }
     scope.popScope()
-    Ast(b).withChildren(calls)
+    blockAst(blockNode, calls.toList)
   }
 
   private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer): Ast = {
@@ -426,7 +440,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case d: ICPPASTArrayDesignator        => nullSafeAst(d.getSubscriptExpression)
       case d: ICPPASTFieldDesignator        => astForNode(d.getName)
       case d: ICASTFieldDesignator          => astForNode(d.getName)
-      case decl: ICPPASTDecltypeSpecifier   => astforDecltypeSpecifier(decl)
+      case decl: ICPPASTDecltypeSpecifier   => astForDecltypeSpecifier(decl)
       case arrMod: IASTArrayModifier        => astForArrayModifier(arrMod)
       case _                                => notHandledYet(node)
     }

@@ -14,7 +14,8 @@ class MethodTests extends PhpCode2CpgFixture {
      |""".stripMargin)
 
     inside(cpg.method.name("foo").l) { case List(fooMethod) =>
-      fooMethod.fullName shouldBe s"foo:${Defines.UnresolvedSignature}(0)"
+      fooMethod.fullName shouldBe s"foo"
+      fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       fooMethod.lineNumber shouldBe Some(2)
       fooMethod.code shouldBe "function foo()"
 
@@ -71,5 +72,35 @@ class MethodTests extends PhpCode2CpgFixture {
         literal.lineNumber shouldBe Some(3)
       }
     }
+  }
+
+  "methods should be accessible from the file node" in {
+    val cpg = code(
+      """<?php
+        |function foo() {
+        |  static $x = 42, $y;
+        |}
+        |""".stripMargin,
+      fileName = "test.php"
+    )
+
+    cpg.file.method.name.l shouldBe List("foo")
+    cpg.method.name("foo").filename.l shouldBe List("test.php")
+  }
+
+  "global method full name should include the file for uniqueness" in {
+    val cpg = code("<?php", fileName = "test.php")
+    cpg.method.nameExact("<global>").fullName.l shouldBe List("test.php:<global>")
+  }
+
+  "methods with non-unicode-legal characters should be created with escaped char codes" in {
+    val cpg = code("""<?php
+        |function foo() {
+        |  $x = "\xFF";
+        |}
+        |""".stripMargin)
+
+    cpg.file.method.name.l shouldBe List("foo")
+    cpg.assignment.code.l shouldBe List("$x = \"\\\\xFF\"")
   }
 }

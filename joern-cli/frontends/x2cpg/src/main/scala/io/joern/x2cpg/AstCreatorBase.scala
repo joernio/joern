@@ -15,13 +15,12 @@ abstract class AstCreatorBase(filename: String) {
   /** Create a global namespace block for the given `filename`
     */
   def globalNamespaceBlock(): NewNamespaceBlock = {
-    val absPath  = absolutePath(filename)
     val name     = NamespaceTraversal.globalNamespaceName
-    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absPath))
+    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
     NewNamespaceBlock()
       .name(name)
       .fullName(fullName)
-      .filename(absPath)
+      .filename(filename)
       .order(1)
   }
 
@@ -49,12 +48,12 @@ abstract class AstCreatorBase(filename: String) {
     */
   def methodAst(
     method: NewMethod,
-    parameters: Seq[NewMethodParameterIn],
+    parameters: Seq[Ast],
     body: Ast,
     methodReturn: NewMethodReturn,
     modifiers: Seq[NewModifier] = Nil
   ): Ast =
-    methodAstWithAnnotations(method, parameters.map(Ast(_)), body, methodReturn, modifiers, annotations = Nil)
+    methodAstWithAnnotations(method, parameters, body, methodReturn, modifiers, annotations = Nil)
 
   /** Creates an AST that represents an entire method, including its content and with support for both method and
     * parameter annotations.

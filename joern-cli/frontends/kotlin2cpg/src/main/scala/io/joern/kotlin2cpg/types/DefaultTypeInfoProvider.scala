@@ -3,6 +3,7 @@ package io.joern.kotlin2cpg.types
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.passes.KeyPool
+import kotlin.reflect.jvm.internal.impl.descriptors.impl.LazyClassReceiverParameterDescriptor
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
   KotlinToJVMBytecodeCompiler,
@@ -21,6 +22,7 @@ import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.load.java.sources.JavaSourceElement
 import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
 import org.jetbrains.kotlin.psi.{
+  KtAnnotationEntry,
   KtArrayAccessExpression,
   KtBinaryExpression,
   KtCallExpression,
@@ -35,6 +37,7 @@ import org.jetbrains.kotlin.psi.{
   KtLambdaExpression,
   KtNameReferenceExpression,
   KtNamedFunction,
+  KtObjectLiteralExpression,
   KtParameter,
   KtPrimaryConstructor,
   KtProperty,
@@ -45,7 +48,7 @@ import org.jetbrains.kotlin.psi.{
   KtTypeAlias,
   KtTypeReference
 }
-import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorUtils}
+import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorToSourceUtils, DescriptorUtils}
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
@@ -235,15 +238,60 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(defaultValue)
   }
 
-  def fullName(expr: KtClassOrObject, defaultValue: String): String = {
+  def anonymousObjectIdx(obj: KtElement): Option[Int] = {
+    val mapForEntity = bindingsForEntity(bindingContext, obj)
+    Option(mapForEntity.get(BindingContext.CLASS.getKey))
+      .map { objectDesc =>
+        val parentDesc = objectDesc.getContainingDeclaration
+        val parentPsi  = DescriptorToSourceUtils.getSourceFromDescriptor(parentDesc)
+        parentPsi match {
+          case t: KtNamedFunction =>
+            val anonymousObjects = {
+              t.getBodyBlockExpression.getStatements.asScala.toSeq.collect { case pt: KtProperty =>
+                pt.getDelegateExpressionOrInitializer match {
+                  case ol: KtObjectLiteralExpression => ol.getObjectDeclaration
+                  case _                             => None
+                }
+              }
+            }
+            var outIdx: Option[Int] = None
+            anonymousObjects.zip(1 to anonymousObjects.size).foreach { case (elem: KtElement, idx) =>
+              if (elem == obj) outIdx = Some(idx)
+            }
+            outIdx
+          case _ => None
+        }
+      }
+      .getOrElse(None)
+  }
+
+  def fullName(
+    expr: KtClassOrObject,
+    defaultValue: String,
+    anonymousCtxMaybe: Option[AnonymousObjectContext] = None
+  ): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     val nonLocalFullName = Option(mapForEntity.get(BindingContext.CLASS.getKey))
       .map(_.getDefaultType)
       .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
-    if (expr.isLocal) {
 
+    if (anonymousCtxMaybe.nonEmpty) {
+      anonymousCtxMaybe
+        .map { _ =>
+          val fnDescMaybe = Option(mapForEntity.get(BindingContext.CLASS.getKey))
+          fnDescMaybe
+            .map(_.getContainingDeclaration)
+            .map { containingDecl =>
+              val idxMaybe = anonymousObjectIdx(expr)
+              val idx      = idxMaybe.map(_.toString).getOrElse("nan")
+              s"${TypeRenderer.renderFqNameForDesc(containingDecl.getOriginal)}" + "$object$" + s"$idx"
+            }
+            .getOrElse(nonLocalFullName)
+        }
+        .getOrElse(nonLocalFullName)
+    } else if (expr.isLocal) {
       val fnDescMaybe = Option(mapForEntity.get(BindingContext.CLASS.getKey))
       fnDescMaybe
         .map(_.getContainingDeclaration)
@@ -322,12 +370,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     descMaybe.collect { case desc: FunctionDescriptor => desc }
   }
 
-  def isConstructorCall(expr: KtCallExpression): Option[Boolean] = {
-    resolvedCallDescriptor(expr).collect {
-      case _: ClassConstructorDescriptorImpl     => Some(true)
-      case _: TypeAliasConstructorDescriptorImpl => Some(true)
-      case _                                     => Some(false)
-    }.flatten
+  def isConstructorCall(expr: KtExpression): Option[Boolean] = {
+    expr match {
+      case call: KtCallExpression =>
+        resolvedCallDescriptor(call).collect {
+          case _: ClassConstructorDescriptorImpl     => Some(true)
+          case _: TypeAliasConstructorDescriptorImpl => Some(true)
+          case _                                     => Some(false)
+        }.flatten
+      case _ => Some(false)
+    }
   }
 
   def fullNameWithSignature(expr: KtCallExpression, defaultValue: (String, String)): (String, String) = {
@@ -383,6 +435,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     resolvedCallDescriptor(expr)
       .map(_.getOriginal)
       .map { desc => TypeRenderer.render(desc.getReturnType) }
+      .getOrElse(defaultValue)
+  }
+
+  def typeFullName(expr: KtAnnotationEntry, defaultValue: String): String = {
+    Option(bindingsForEntity(bindingContext, expr))
+      .map(_ => bindingContext.get(BindingContext.ANNOTATION, expr))
+      .map { desc => TypeRenderer.render(desc.getType) }
       .getOrElse(defaultValue)
   }
 
@@ -469,7 +528,17 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
             s"$rendered.${originalDesc.getName}"
           }
         }
-        val renderedFqName = renderedFqNameMaybe.getOrElse(renderedFqNameForDesc)
+
+        val renderedFqName =
+          Option(originalDesc.getDispatchReceiverParameter)
+            .map(_.getOriginal)
+            .map(_.getContainingDeclaration)
+            .map { objDesc =>
+              if (DescriptorUtils.isAnonymousObject(objDesc)) {
+                s"${TypeRenderer.renderFqNameForDesc(objDesc)}.${originalDesc.getName}"
+              } else renderedFqNameMaybe.getOrElse(renderedFqNameForDesc)
+            }
+            .getOrElse(renderedFqNameMaybe.getOrElse(renderedFqNameForDesc))
 
         val renderedParameterTypes = originalDesc.getValueParameters.asScala.toSeq
           .map { valueParam => TypeRenderer.render(valueParam.getType) }

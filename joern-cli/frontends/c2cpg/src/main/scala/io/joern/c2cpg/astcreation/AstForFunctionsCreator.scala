@@ -181,7 +181,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val stubAst = methodAst(
       methodNode,
-      parameterNodes,
+      parameterNodes.map(Ast(_)),
       astForMethodBody(Option(funcDef.getBody)),
       newMethodReturnNode(funcDef, registerType(typeForDeclSpecifier(funcDef.getDeclSpecifier)))
     )
@@ -230,8 +230,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   private def astForMethodBody(body: Option[IASTStatement]): Ast = body match {
     case Some(b: IASTCompoundStatement) => astForBlockStatement(b)
-    case None                           => Ast(NewBlock())
     case Some(b)                        => astForNode(b)
+    case None                           => blockAst(NewBlock())
   }
 
 }

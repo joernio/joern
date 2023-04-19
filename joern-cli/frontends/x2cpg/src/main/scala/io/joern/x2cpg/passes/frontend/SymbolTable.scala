@@ -29,7 +29,7 @@ object SBKey {
       case n: Identifier => LocalVar(n.name)
       case n: Local      => LocalVar(n.name)
       case n: Call =>
-        CallAlias(n.name, n.argument.where(_.argumentIndex(0)).isIdentifier.map(_.name).headOption)
+        CallAlias(n.name, n.argument.collectFirst { case x: Identifier if x.argumentIndex == 0 => x.name })
       case n: Method            => CallAlias(n.name, Option("this"))
       case n: MethodRef         => CallAlias(n.code)
       case n: FieldIdentifier   => LocalVar(n.canonicalName)
@@ -37,12 +37,6 @@ object SBKey {
       case _ => logger.debug(s"Local node of type ${node.label} is not supported in the type recovery pass."); null
     })
   }
-
-  def fromNodeToGlobalKey(node: AstNode): Option[GlobalKey] = Option(node match {
-    case n: FieldIdentifier => FieldVar(n.method.fullName, n.canonicalName)
-    case n: Identifier      => FieldVar(n.method.fullName, n.name)
-    case _ => logger.debug(s"Global node of type ${node.label} is not supported in the type recovery pass."); null
-  })
 
 }
 
@@ -64,20 +58,6 @@ case class CollectionVar(override val identifier: String, idx: String) extends L
   */
 case class CallAlias(override val identifier: String, receiverName: Option[String] = None) extends LocalKey(identifier)
 
-/** Represents an identifier of some AST node at an interprocedural scope.
-  */
-sealed class GlobalKey(identifier: String) extends SBKey(identifier) {
-  override def fromNode(node: AstNode): Option[SBKey] = SBKey.fromNodeToGlobalKey(node)
-}
-
-/** Represents a field identifier at its declared computational unit.
-  * @param compUnitFullName
-  *   the computational unit's full name.
-  * @param identifier
-  *   the canonical name.
-  */
-case class FieldVar(compUnitFullName: String, override val identifier: String) extends GlobalKey(identifier)
-
 /** A thread-safe symbol table that can represent multiple types per symbol. Each node in an AST gets converted to an
   * [[SBKey]] which gives contextual information to identify an AST entity. Each value in this table represents a set of
   * types that the key could be in a flow-insensitive manner.
@@ -91,18 +71,14 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   def apply(sbKey: K): Set[String] = table(sbKey)
 
-  def apply(node: AstNode): Set[String] = keyFromNode(node) match {
-    case Some(key) => table(key)
-    case None      => Set.empty
-  }
+  def apply(node: AstNode): Set[String] =
+    keyFromNode(node) match {
+      case Some(key) => table(key)
+      case None      => Set.empty
+    }
 
   def from(sb: IterableOnce[(K, Set[String])]): SymbolTable[K] = {
     table.addAll(sb); this
-  }
-
-  def replaceWith(oldKey: K, newKey: K, newValues: Set[String]): Option[Set[String]] = {
-    table.remove(oldKey)
-    table.put(newKey, newValues)
   }
 
   def put(sbKey: K, typeFullNames: Set[String]): Set[String] = {
@@ -130,6 +106,7 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   def append(sbKey: K, typeFullNames: Set[String]): Set[String] = {
     table.get(sbKey) match {
+      case Some(ts) if ts == typeFullNames    => ts
       case Some(ts) if typeFullNames.nonEmpty => put(sbKey, ts ++ typeFullNames)
       case None if typeFullNames.nonEmpty     => put(sbKey, typeFullNames)
       case _                                  => Set.empty
@@ -147,6 +124,13 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   def get(node: AstNode): Set[String] = keyFromNode(node) match {
     case Some(key) => get(key)
+    case None      => Set.empty
+  }
+
+  def remove(sbKey: K): Set[String] = table.remove(sbKey).getOrElse(Set.empty)
+
+  def remove(node: AstNode): Set[String] = keyFromNode(node) match {
+    case Some(key) => remove(key)
     case None      => Set.empty
   }
 

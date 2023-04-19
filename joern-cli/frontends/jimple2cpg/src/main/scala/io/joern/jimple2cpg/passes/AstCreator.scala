@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import soot.jimple._
+import soot.jimple.internal.JimpleLocal
 import soot.tagkit._
 import soot.{Local => _, _}
 
@@ -157,20 +158,28 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
 
   private def astForMethod(methodDeclaration: SootMethod, typeDecl: RefType, childNum: Int): Ast = {
     val methodNode = createMethodNode(methodDeclaration, typeDecl, childNum)
-    val lastOrder  = 2 + methodDeclaration.getParameterCount
-    // Map params to their annotations
-    val mTags = methodDeclaration.getTags.asScala
-    val paramAnnos =
-      mTags.collect { case x: VisibilityParameterAnnotationTag => x }.flatMap(_.getVisibilityAnnotations.asScala)
-    val paramNames           = mTags.collect { case x: ParamNamesTag => x }.flatMap(_.getNames.asScala)
-    val parameterAnnotations = paramNames.zip(paramAnnos).filter(_._2 != null).toMap
     try {
       if (!methodDeclaration.isConcrete) {
+        // Soot is not able to parse origin parameter names of abstract methods
+        // https://github.com/soot-oss/soot/issues/1517
+        val locals = methodDeclaration.getParameterTypes.asScala.zipWithIndex
+          .map { case (typ, index) => new JimpleLocal(s"param${index + 1}", typ) }
+        val parameterAsts =
+          Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++
+            withOrder(locals) { (p, order) => astForParameter(p, order, methodDeclaration, Map()) }
         Ast(methodNode)
           .withChildren(astsForModifiers(methodDeclaration))
+          .withChildren(parameterAsts)
           .withChildren(astsForHostTags(methodDeclaration))
           .withChild(astForMethodReturn(methodDeclaration))
       } else {
+        val lastOrder = 2 + methodDeclaration.getParameterCount
+        // Map params to their annotations
+        val mTags = methodDeclaration.getTags.asScala
+        val paramAnnos =
+          mTags.collect { case x: VisibilityParameterAnnotationTag => x }.flatMap(_.getVisibilityAnnotations.asScala)
+        val paramNames           = mTags.collect { case x: ParamNamesTag => x }.flatMap(_.getNames.asScala)
+        val parameterAnnotations = paramNames.zip(paramAnnos).filter(_._2 != null).toMap
         val methodBody = Try(methodDeclaration.getActiveBody) match {
           case Failure(_)    => methodDeclaration.retrieveActiveBody()
           case Success(body) => body

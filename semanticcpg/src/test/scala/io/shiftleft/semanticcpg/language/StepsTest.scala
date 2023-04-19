@@ -124,8 +124,11 @@ class StepsTest extends AnyWordSpec with Matchers {
 
     "operating on NewNode" in {
       implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
-      val json                                 = cpg.method.name("foo").location.toJson
-      val parsed                               = parse(json).children.head // exactly one result for the above query
+      def location                             = cpg.method.name("foo").location
+
+      location.size shouldBe 1
+      val parsedChildren = parse(location.toJson).children
+      val parsed         = parsedChildren.head // exactly one result for the above query
       (parsed \ "symbol") shouldBe JString("foo")
       (parsed \ "className") shouldBe JString("AClass")
       (parsed \ "filename") shouldBe JString("N/A")

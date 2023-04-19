@@ -4,8 +4,8 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodBase}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
@@ -30,13 +30,12 @@ class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
       methodNames
         .flatMap(methodMap.get)
         .foreach { m => builder.addEdge(call, m, EdgeTypes.CALL) }
-      if (methodNames.size == 1) {
-        builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
-      } else if (methodNames.size > 1) {
-        val nonDummyMethodNames = methodNames.filterNot(isDummyType)
-        if (nonDummyMethodNames.nonEmpty) {
-          builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, nonDummyMethodNames.minBy(_.length))
-        }
+      if (methodNames.sizeIs == 1) {
+        setCallees(call, methodNames, builder)
+      } else if (methodNames.sizeIs > 1) {
+        val nonDummyMethodNames =
+          methodNames.filterNot(x => isDummyType(x) || x.startsWith(PythonAstVisitor.builtinPrefix + "None"))
+        setCallees(call, nonDummyMethodNames, builder)
       }
     }
   }

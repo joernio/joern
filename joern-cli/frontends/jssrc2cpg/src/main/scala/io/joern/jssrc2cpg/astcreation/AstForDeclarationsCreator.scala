@@ -33,14 +33,18 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case TSInterfaceDeclaration                   => Seq(code(obj.json("id")))
       case TSEnumDeclaration                        => Seq(code(obj.json("id")))
       case TSModuleDeclaration                      => Seq(code(obj.json("id")))
-      case TSDeclareFunction if hasName(obj.json)   => Seq(code(obj.json("id")))
-      case FunctionDeclaration if hasName(obj.json) => Seq(code(obj.json("id")))
-      case FunctionExpression if hasName(obj.json)  => Seq(code(obj.json("id")))
-      case ClassExpression if hasName(obj.json)     => Seq(code(obj.json("id")))
-      case VariableDeclaration                      => obj.json("declarations").arr.toSeq.map(d => code(d("id")))
-      case ObjectExpression                         => obj.json("properties").arr.toSeq.map(code)
+      case TSDeclareFunction if hasName(obj.json)   => Seq(obj.json("id")("name").str)
+      case FunctionDeclaration if hasName(obj.json) => Seq(obj.json("id")("name").str)
+      case FunctionExpression if hasName(obj.json)  => Seq(obj.json("id")("name").str)
+      case ClassExpression if hasName(obj.json)     => Seq(obj.json("id")("name").str)
+      case VariableDeclarator if hasName(obj.json)  => Seq(obj.json("id")("name").str)
+      case VariableDeclarator                       => Seq(code(obj.json("id")))
       case MemberExpression                         => Seq(code(obj.json("property")))
-      case _                                        => Seq.empty
+      case ObjectExpression =>
+        obj.json("properties").arr.toSeq.flatMap(d => codeForBabelNodeInfo(createBabelNodeInfo(d)))
+      case VariableDeclaration =>
+        obj.json("declarations").arr.toSeq.flatMap(d => codeForBabelNodeInfo(createBabelNodeInfo(d)))
+      case _ => Seq.empty
     }
     codes.map(_.replace("...", ""))
   }
@@ -216,7 +220,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val exportName      = extractExportFromNameFromExportDecl(declaration)
     val fromAst         = createAstForFrom(exportName, declaration)
     val declAstAndNames = extractDeclarationsFromExportDecl(declaration, "declaration")
-    val declAsts = declAstAndNames.toList.map { case (ast, names) =>
+    val declAsts = declAstAndNames.toList.flatMap { case (ast, names) =>
       ast +: names.map { name =>
         if (exportName != ExportKeyword)
           diffGraph.addNode(createDependencyNode(name, exportName.stripPrefix("_"), RequireKeyword))
@@ -242,39 +246,35 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case _ => Ast()
     }
 
-    val asts = fromAst +: (specifierAsts ++ declAsts.flatten)
+    val asts = fromAst +: (specifierAsts ++ declAsts)
     setArgumentIndices(asts)
     blockAst(createBlockNode(declaration), asts)
   }
 
   protected def astForExportAssignment(assignment: BabelNodeInfo): Ast = {
     val expressionAstWithNames = extractDeclarationsFromExportDecl(assignment, "expression")
-    val declAsts = expressionAstWithNames.map { case (ast, names) =>
+    val declAsts = expressionAstWithNames.toList.flatMap { case (ast, names) =>
       ast +: names.map { name =>
         val exportCallAst = createExportCallAst(name, ExportKeyword, assignment)
         createExportAssignmentCallAst(name, exportCallAst, assignment, None)
       }
     }
 
-    val asts = declAsts.toList.flatten
-    setArgumentIndices(asts)
-    blockAst(createBlockNode(assignment), asts)
+    setArgumentIndices(declAsts)
+    blockAst(createBlockNode(assignment), declAsts)
   }
 
   protected def astForExportDefaultDeclaration(declaration: BabelNodeInfo): Ast = {
     val exportName      = extractExportFromNameFromExportDecl(declaration)
     val declAstAndNames = extractDeclarationsFromExportDecl(declaration, "declaration")
-
-    val declAsts = declAstAndNames.map { case (ast, names) =>
+    val declAsts = declAstAndNames.toList.flatMap { case (ast, names) =>
       ast +: names.map { name =>
         val exportCallAst = createExportCallAst(DefaultsKey, exportName, declaration)
         createExportAssignmentCallAst(name, exportCallAst, declaration, None)
       }
     }
-
-    val asts = declAsts.toList.flatten
-    setArgumentIndices(asts)
-    blockAst(createBlockNode(declaration), asts)
+    setArgumentIndices(declAsts)
+    blockAst(createBlockNode(declaration), declAsts)
   }
 
   protected def astForExportAllDeclaration(declaration: BabelNodeInfo): Ast = {
@@ -289,9 +289,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val exportCallAst     = createExportCallAst(name, ExportKeyword, declaration)
     val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration, None)
 
-    val asts = List(fromCallAst, assignmentCallAst)
-    setArgumentIndices(asts)
-    blockAst(createBlockNode(declaration), asts)
+    val childrenAsts = List(fromCallAst, assignmentCallAst)
+    setArgumentIndices(childrenAsts)
+    blockAst(createBlockNode(declaration), childrenAsts)
   }
 
   protected def astForVariableDeclaration(declaration: BabelNodeInfo): Ast = {
@@ -756,7 +756,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
     val blockChildren = assignmentTmpCallAst +: subTreeAsts :+ Ast(returnTmpNode)
     setArgumentIndices(blockChildren)
-    Ast(blockNode).withChildren(blockChildren)
+    blockAst(blockNode, blockChildren)
   }
 
 }

@@ -1,7 +1,6 @@
 package io.joern.pysrc2cpg.passes
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
-import io.joern.x2cpg.Defines
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
@@ -38,7 +37,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "resolve 'z' identifier calls conservatively" in {
       // TODO: These should have callee entries but the method stubs are not present here
       val List(zAppend) = cpg.call("append").l
-      zAppend.methodFullName shouldBe "__builtin.dict.append"
+      zAppend.methodFullName shouldBe "<unknownFullName>"
       zAppend.dynamicTypeHintFullName shouldBe Seq(
         "__builtin.dict.append",
         "__builtin.list.append",
@@ -64,26 +63,26 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'sg' identifier types from import information" in {
       val List(sgAssignment, sgElseWhere) = cpg.identifier("sg").take(2).l
-      sgAssignment.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.SendGridAPIClient<body>"
-      sgElseWhere.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.SendGridAPIClient<body>"
+      sgAssignment.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient"
+      sgElseWhere.typeFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient"
     }
 
     "resolve 'sg' call path from import information" in {
       val List(apiClient) = cpg.call("SendGridAPIClient").l
-      apiClient.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.<init>"
+      apiClient.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.SendGridAPIClient<body>.__init__"
       val List(sendCall) = cpg.call("send").l
       sendCall.methodFullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.SendGridAPIClient<body>.send"
     }
 
     "resolve 'client' identifier types from import information" in {
       val List(clientAssignment, clientElseWhere) = cpg.identifier("client").take(2).l
-      clientAssignment.typeFullName shouldBe "slack_sdk.py:<module>.WebClient.WebClient<body>"
-      clientElseWhere.typeFullName shouldBe "slack_sdk.py:<module>.WebClient.WebClient<body>"
+      clientAssignment.typeFullName shouldBe "slack_sdk.py:<module>.WebClient"
+      clientElseWhere.typeFullName shouldBe "slack_sdk.py:<module>.WebClient"
     }
 
     "resolve 'client' call path from identifier in child scope" in {
       val List(client) = cpg.call("WebClient").l
-      client.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.<init>"
+      client.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.WebClient<body>.__init__"
       val List(postMessage) = cpg.call("chat_postMessage").l
       postMessage.methodFullName shouldBe "slack_sdk.py:<module>.WebClient.WebClient<body>.chat_postMessage"
     }
@@ -124,26 +123,27 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'db' identifier types from import information" in {
       val List(clientAssignment, clientElseWhere) = cpg.identifier("db").take(2).l
-      clientAssignment.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>"
-      clientElseWhere.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>"
+      clientAssignment.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
+      clientElseWhere.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
     }
 
     "resolve the 'SQLAlchemy' constructor in the module" in {
       val Some(client) = cpg.call("SQLAlchemy").headOption
-      client.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<init>"
+      client.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.__init__"
     }
 
     "resolve 'User' field types" in {
       val List(id, firstname, age, address) =
         cpg.identifier.nameExact("id", "firstname", "age", "address").takeRight(4).l
-      id.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.Column<body>"
-      firstname.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.Column<body>"
-      age.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.Column<body>"
-      address.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.Column<body>"
+      id.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
+      firstname.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
+      age.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
+      address.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column"
     }
 
     "resolve the 'Column' constructor for a class member" in {
       val Some(columnConstructor) = cpg.call("Column").headOption
+      // TODO: The type below is strange, seems to be autopopulated as the recovery should give __init__
       columnConstructor.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.Column.<init>"
     }
 
@@ -226,7 +226,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .isIdentifier
         .name("d")
         .headOption
-      d.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>"
+      d.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
       d.dynamicTypeHintFullName shouldBe Seq()
     }
 
@@ -282,13 +282,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     ).cpg
 
     "be determined as a variable reference and have its type recovered correctly" in {
-      cpg.identifier("db").map(_.typeFullName).toSet shouldBe Set(
-        "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>"
-      )
+      cpg.identifier("db").map(_.typeFullName).toSet shouldBe Set("flask_sqlalchemy.py:<module>.SQLAlchemy")
 
       cpg
         .call("add")
-        .where(_.parentBlock.ast.isIdentifier.typeFullName("flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>"))
+        .where(_.parentBlock.ast.isIdentifier.typeFullName("flask_sqlalchemy.py:<module>.SQLAlchemy"))
         .where(_.parentBlock.ast.isFieldIdentifier.canonicalName("session"))
         .headOption
         .map(_.code) shouldBe Some("tmp0.add(user)")
@@ -296,13 +294,13 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "provide a dummy type to a member if the member type is not known" in {
       val Some(sessionTmpVar) = cpg.identifier("tmp0").headOption
-      sessionTmpVar.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.<member>(session)"
+      sessionTmpVar.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session)"
 
       val Some(addCall) = cpg
         .call("add")
         .headOption
-      addCall.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.<member>(session).add"
-      addCall.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.<member>(session).add"
+      addCall.typeFullName shouldBe "ANY"
+      addCall.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session).add"
       addCall.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
@@ -390,7 +388,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption
       selfFindFound.dynamicTypeHintFullName shouldBe Seq(
         "__builtin.None.find_one",
-        "pymongo.py:<module>.MongoClient.<init>.<indexAccess>.<indexAccess>.find_one"
+        "pymongo.py:<module>.MongoClient.MongoClient<body>.__init__.<indexAccess>.<indexAccess>.find_one"
       )
     }
 
@@ -502,7 +500,12 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "recover its full name successfully" in {
       val List(methodFullName) = cpg.call("query").methodFullName.l
-      methodFullName shouldBe "sqlalchemy.orm.Session.query"
+      methodFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.query").mkString(File.separator)
+    }
+
+    "reflect these types as under the type full name" in {
+      val Some(ret) = cpg.method("create_session").methodReturn.headOption
+      ret.typeFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session").mkString(File.separator)
     }
   }
 
@@ -543,8 +546,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "be sufficient to resolve method full names at calls" in {
       val List(call) = cpg.call("query").l
-      call.methodFullName.startsWith("sqlalchemy.orm") shouldBe true
+      call.methodFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.query").mkString(File.separator)
     }
+
   }
 
   "recover a member call from a reference to an imported global variable" should {
@@ -574,7 +578,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "recover a call to `add`" in {
       val Some(addCall) = cpg.call("add").headOption
-      addCall.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.SQLAlchemy<body>.<member>(session).add"
+      addCall.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session).add"
     }
   }
 
@@ -617,9 +621,15 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "with the correct identifier and call types" in {
       val Some(postCallReceiver) = cpg.identifier("db").headOption
-      postCallReceiver.typeFullName shouldBe "sqlalchemy.orm.Session"
+      postCallReceiver.typeFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session").mkString(File.separator)
       val Some(postCall) = cpg.call("query").headOption
-      postCall.methodFullName shouldBe "sqlalchemy.orm.Session.query"
+      postCall.methodFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.query").mkString(File.separator)
+    }
+
+    "reflect these types as under the type full name" in {
+      val List(p1, p2) = cpg.method("get_user_by_email").parameter.l
+      p1.typeFullName shouldBe "__builtin.str"
+      p2.typeFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session").mkString(File.separator)
     }
   }
 

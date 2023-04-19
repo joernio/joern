@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg.types
 
 import io.shiftleft.passes.KeyPool
 import org.jetbrains.kotlin.psi.{
+  KtAnnotationEntry,
   KtBinaryExpression,
   KtCallExpression,
   KtClassLiteralExpression,
@@ -22,6 +23,8 @@ import org.jetbrains.kotlin.psi.{
   KtTypeReference
 }
 
+case class AnonymousObjectContext(declaration: KtNamedFunction)
+
 trait TypeInfoProvider {
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String
 
@@ -41,7 +44,7 @@ trait TypeInfoProvider {
 
   def propertyType(expr: KtProperty, defaultValue: String): String
 
-  def fullName(expr: KtClassOrObject, defaultValue: String): String
+  def fullName(expr: KtClassOrObject, defaultValue: String, ctx: Option[AnonymousObjectContext] = None): String
 
   def fullName(expr: KtTypeAlias, defaultValue: String): String
 
@@ -54,6 +57,8 @@ trait TypeInfoProvider {
   def referenceTargetTypeFullName(expr: KtNameReferenceExpression, defaultValue: String): String
 
   def typeFullName(expr: KtBinaryExpression, defaultValue: String): String
+
+  def typeFullName(expr: KtAnnotationEntry, defaultValue: String): String
 
   def isReferenceToClass(expr: KtNameReferenceExpression): Boolean
 
@@ -85,7 +90,7 @@ trait TypeInfoProvider {
 
   def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind
 
-  def isConstructorCall(expr: KtCallExpression): Option[Boolean]
+  def isConstructorCall(expr: KtExpression): Option[Boolean]
 
   def typeFullName(expr: KtTypeReference, defaultValue: String): String
 

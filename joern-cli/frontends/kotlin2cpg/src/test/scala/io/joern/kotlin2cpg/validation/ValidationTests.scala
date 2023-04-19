@@ -549,25 +549,6 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
-  "CPG for code with simple object expression with apply called after it" should {
-    lazy val cpg = code("""
-        |package main
-        |
-        |fun main() {
-        |    val o = object { var prop = 1 }.apply { prop = 2 }
-        |    println(o.prop) // prints `2`
-        |}
-        |
-        |""".stripMargin)
-
-    "should not contain any CALL nodes with MFNs starting with `.`" in {
-      cpg.call
-        .methodFullName("\\..*")
-        .methodFullName
-        .l shouldBe List()
-    }
-  }
-
   "CPG for code with method with two callbacks with two generic types" should {
     lazy val cpg = code("""
         |package main

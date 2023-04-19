@@ -517,7 +517,7 @@ class PythonAstVisitor(
     metaTypeDecl: nodes.NewNode
   ): Unit = {
     val memberForInstance =
-      nodeBuilder.memberNode(functionName, functionDefToMethod.apply(function).fullName)
+      nodeBuilder.memberNode(functionName, functionDefToMethod.apply(function).fullName, lineAndColOf(function))
     edgeBuilder.astEdge(memberForInstance, instanceTypeDecl, contextStack.order.getAndInc)
 
     val methodForMetaClass =
@@ -532,7 +532,7 @@ class PythonAstVisitor(
         )
       }
 
-    val memberForMeta = nodeBuilder.memberNode(functionName, methodForMetaClass.fullName)
+    val memberForMeta = nodeBuilder.memberNode(functionName, methodForMetaClass.fullName, lineAndColOf(function))
     edgeBuilder.astEdge(memberForMeta, metaTypeDecl, contextStack.order.getAndInc)
   }
 
@@ -1784,25 +1784,26 @@ class PythonAstVisitor(
     * __getattribute__ and __get__.
     */
   def convert(attribute: ast.Attribute): nodes.NewNode = {
-    val baseNode  = convert(attribute.value)
-    val fieldName = attribute.attr
+    val baseNode   = convert(attribute.value)
+    val fieldName  = attribute.attr
+    val lineAndCol = lineAndColOf(attribute)
 
-    val fieldAccess = createFieldAccess(baseNode, fieldName, lineAndColOf(attribute))
+    val fieldAccess = createFieldAccess(baseNode, fieldName, lineAndCol)
 
     attribute.value match {
       case name: ast.Name if name.id == "self" =>
-        createAndRegisterMember(fieldName)
+        createAndRegisterMember(fieldName, lineAndCol)
       case _ =>
     }
 
     fieldAccess
   }
 
-  private def createAndRegisterMember(name: String): Unit = {
+  private def createAndRegisterMember(name: String, lineAndCol: LineAndColumn): Unit = {
     contextStack.findEnclosingTypeDecl() match {
       case Some(typeDecl: NewTypeDecl) =>
         if (!members.contains(typeDecl) || !members(typeDecl).contains(name)) {
-          val member = nodeBuilder.memberNode(name, "")
+          val member = nodeBuilder.memberNode(name, lineAndCol)
           edgeBuilder.astEdge(member, typeDecl, contextStack.order.getAndInc)
           members(typeDecl) = members.getOrElse(typeDecl, List()) ++ List(name)
         }
@@ -1833,8 +1834,8 @@ class PythonAstVisitor(
     val memoryOperation = memOpMap.get(name).get
     val identifier      = createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
     contextStack.astParent match {
-      case method: NewMethod if method.name.endsWith("<body>") =>
-        createAndRegisterMember(identifier.name)
+      case method: NewMethod if method.name.endsWith("<body>") && memoryOperation == Store =>
+        createAndRegisterMember(identifier.name, lineAndColOf(name))
       case _ =>
     }
     identifier

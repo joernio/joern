@@ -74,11 +74,11 @@ class Scope extends X2CpgScope[String, NewNode, NewNode] {
     methods
   }
 
-  def getEnclosingNamespaceName: Option[String] =
-    stack.map(_.scopeNode).collectFirst { case ns: NewNamespaceBlock => ns }.map(_.name)
+  def getEnclosingNamespaceNames: List[String] =
+    stack.map(_.scopeNode).collect { case ns: NewNamespaceBlock => ns.name }.reverse
 
-  def getEnclosingTypeDeclType: Option[String] =
-    stack.map(_.scopeNode).collectFirst { case td: NewTypeDecl => td }.map(_.fullName)
+  def getEnclosingTypeDeclTypeName: Option[String] =
+    stack.map(_.scopeNode).collectFirst { case td: NewTypeDecl => td }.map(_.name)
 
   def getLocalsInScope: List[NewLocal] = localStack.headOption.map(_.toList).toList.flatten
 

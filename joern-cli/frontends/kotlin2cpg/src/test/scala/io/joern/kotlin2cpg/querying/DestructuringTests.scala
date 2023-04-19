@@ -107,6 +107,18 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
     }
   }
 
+  /*
+   _______ example lowering _________
+  | -> val (one, two) = Person("a", "b")
+  | -> LOCAL one
+  | -> LOCAL two
+  | -> LOCAL tmp
+  | -> tmp = alloc
+  | -> tmp.<init>
+  | -> CALL one = tmp.component1()
+  | -> CALL two = tmp.component2()
+  |__________________________________
+   */
   "CPG for code with destructuring expression with a ctor-invocation RHS" should {
     val cpg = code("""
         |package main
@@ -394,6 +406,17 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
     }
   }
 
+  /*
+   _______ example lowering _________
+  | -> val (one, two) = makeA("AMESSAGE")
+  | -> LOCAL one
+  | -> LOCAL two
+  | -> LOCAL tmp
+  | -> tmp = makeA("AMESSAGE")
+  | -> CALL one = tmp.component1()
+  | -> CALL two = tmp.component2()
+  |__________________________________
+   */
   "CPG for code with destructuring expression with a DQE call RHS" should {
     val cpg = code("""
         |package mypkg

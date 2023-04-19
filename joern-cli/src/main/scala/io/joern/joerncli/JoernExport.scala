@@ -22,7 +22,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util.Using
 
-object JoernExport extends App {
+object JoernExport {
 
   case class Config(
     cpgFileName: String = "cpg.bin",
@@ -57,7 +57,19 @@ object JoernExport extends App {
       byNameLowercase.getOrElse(s, throw new NoSuchElementException(s"No value found for '$s'"))
   }
 
-  private def parseConfig: Option[Config] =
+  def main(args: Array[String]): Unit = {
+    parseConfig(args).foreach { config =>
+      val outDir = config.outDir
+      exitIfInvalid(outDir, config.cpgFileName)
+      mkdir(File(outDir))
+
+      Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
+        exportCpg(cpg, config.repr, config.format, Paths.get(outDir).toAbsolutePath)
+      }
+    }
+  }
+
+  private def parseConfig(args: Array[String]): Option[Config] = {
     new scopt.OptionParser[Config]("joern-export") {
       head("Dump intermediate graph representations (or entire graph) of code in a given export format")
       help("help")
@@ -79,16 +91,6 @@ object JoernExport extends App {
           s"export format, one of [${Format.values.toSeq.map(_.toString.toLowerCase).sorted.mkString("|")}] - defaults to `${Format.Dot}`"
         )
     }.parse(args, Config())
-
-  parseConfig.foreach { config =>
-    val repr   = config.repr
-    val outDir = config.outDir
-    exitIfInvalid(outDir, config.cpgFileName)
-    mkdir(File(outDir))
-
-    Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
-      exportCpg(cpg, config.repr, config.format, Paths.get(outDir).toAbsolutePath)
-    }
   }
 
   def exportCpg(cpg: Cpg, representation: Representation.Value, format: Format.Value, outDir: Path): Unit = {
@@ -112,7 +114,6 @@ object JoernExport extends App {
       case Format.Graphson =>
         exportWithOdbFormat(cpg, representation, outDir, GraphSONExporter)
     }
-
   }
 
   private def exportDot(repr: Representation.Value, outDir: Path, context: LayerCreatorContext): Unit = {

@@ -6,7 +6,8 @@ import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
-import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
+import io.joern.x2cpg.{Ast, AstCreatorBase}
+import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.utils.NodeBuilders.{
   fieldIdentifierNode,
   identifierNode,
@@ -42,13 +43,13 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForPhpFile(file: PhpFile): Ast = {
-    val namespaceBlock = globalNamespaceBlock().filename(absolutePath(filename))
+    val namespaceBlock = globalNamespaceBlock()
 
     scope.pushNewScope(namespaceBlock)
 
     val globalTypeDecl = NewTypeDecl()
       .name(namespaceBlock.name)
-      .fullName(namespaceBlock.name)
+      .fullName(namespaceBlock.fullName)
       .astParentFullName(namespaceBlock.fullName)
       .code(namespaceBlock.code)
       .filename(filename)
@@ -65,9 +66,18 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val (fileConsts, otherStmts) = file.children.partition(_.isInstanceOf[PhpConstStmt])
     val constAsts                = fileConsts.flatMap(fc => astsForConstStmt(fc.asInstanceOf[PhpConstStmt]))
-    val methodChildren           = otherStmts.map(astForStmt)
-    val clinitAst                = astForStaticAndConstInits
-    val closureMethodAsts        = scope.getAndClearAnonymousMethods
+    val globalMethodChildren = otherStmts.flatMap {
+      case const: PhpConstStmt => astsForConstStmt(const)
+
+      case ns: PhpNamespaceStmt if ns.name.isEmpty =>
+        // Empty NS name means this is the global namespace, so don't create
+        // another namespace block
+        ns.stmts.map(astForStmt)
+
+      case stmt => astForStmt(stmt) :: Nil
+    }
+    val clinitAst         = astForStaticAndConstInits
+    val closureMethodAsts = scope.getAndClearAnonymousMethods
 
     scope.popScope() // Global method
     scope.popScope() // Global typeDecl
@@ -75,7 +85,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     val globalMethodAst =
       Ast(globalMethod)
-        .withChild(Ast(NewBlock()).withChildren(methodChildren))
+        .withChild(Ast(NewBlock()).withChildren(globalMethodChildren))
         .withChild(Ast(NewMethodReturn()))
 
     val globalTypeDeclAst =
@@ -115,6 +125,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt)
       case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt)
       case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt)
+      case enumCase: PhpEnumCaseStmt       => astForEnumCase(enumCase)
       // TODO Figure out if this is breaking any assumptions that will cause issues later.
       case staticStmt: PhpStaticStmt => Ast().withChildren(astsForStaticStmt(staticStmt))
       case unhandled =>
@@ -131,7 +142,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def thisParamAstForMethod(lineNumber: Option[Integer]): Ast = {
-    val typeFullName = scope.getEnclosingTypeDeclType.getOrElse(TypeConstants.Any)
+    val typeFullName = scope.getEnclosingTypeDeclTypeName.getOrElse(TypeConstants.Any)
     val thisNode = NewMethodParameterIn()
       .name(NameConstants.This)
       .code(NameConstants.This)
@@ -147,7 +158,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def thisIdentifier(lineNumber: Option[Integer]): NewIdentifier = {
-    val typ = scope.getEnclosingTypeDeclType
+    val typ = scope.getEnclosingTypeDeclTypeName
     identifierNode(NameConstants.This, typ, dynamicTypeHintFullName = typ.toList, line = lineNumber)
       .code(s"$$${NameConstants.This}")
   }
@@ -164,34 +175,46 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     asts
   }
 
+  private def composeMethodFullName(methodName: String, isStatic: Boolean): String = {
+    val className       = getTypeDeclPrefix
+    val methodDelimiter = if (isStatic) StaticMethodDelimiter else InstanceMethodDelimiter
+
+    val nameWithClass = List(className, Some(methodName)).flatten.mkString(methodDelimiter)
+
+    prependNamespacePrefix(nameWithClass)
+  }
+
   private def astForMethodDecl(
     decl: PhpMethodDecl,
     bodyPrefixAsts: List[Ast] = Nil,
     fullNameOverride: Option[String] = None
   ): Ast = {
-    val namespacePrefix = getNamespacePrefixForName
-    val signature       = s"${Defines.UnresolvedSignature}(${decl.params.size})"
-    val fullName        = fullNameOverride.getOrElse(s"$namespacePrefix${decl.name.name}:$signature")
-
-    val modifiers = decl.modifiers.map(modifierNode)
-    val thisParam = if (decl.isClassMethod && !modifiers.exists(_.modifierType == ModifierTypes.STATIC)) {
+    val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
+    val thisParam = if (decl.isClassMethod && !isStatic) {
       Option(thisParamAstForMethod(line(decl)))
     } else {
       None
     }
 
+    val methodName = decl.name.name
+    val fullName   = fullNameOverride.getOrElse(composeMethodFullName(methodName, isStatic))
+
+    val signature = s"$UnresolvedSignature(${decl.params.size})"
+
     val parameters = thisParam.toList ++ setParamIndices(decl.params.map(astForParam))
 
+    val modifiers = decl.modifiers.map(modifierNode)
     val modifierString = decl.modifiers match {
       case Nil  => ""
       case mods => s"${mods.mkString(" ")} "
     }
-    val methodCode = s"${modifierString}function ${decl.name.name}(${parameters.map(_.rootCodeOrEmpty).mkString(",")})"
+    val methodCode = s"${modifierString}function $methodName(${parameters.map(_.rootCodeOrEmpty).mkString(",")})"
 
     val methodNode =
       NewMethod()
-        .name(decl.name.name)
+        .name(methodName)
         .fullName(fullName)
+        .filename(filename)
         .signature(signature)
         .code(methodCode)
         .lineNumber(line(decl))
@@ -500,10 +523,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     Ast(callNode)
   }
 
-  private def stripBuiltinPrefix(name: String): String = name.replaceAll(s"${PhpBuiltins.Prefix}.", "")
-
   private def astForUnsetStmt(stmt: PhpUnsetStmt): Ast = {
-    val name = stripBuiltinPrefix(PhpOperators.unset)
+    val name = PhpOperators.unset
     val args = stmt.vars.map(astForExpr)
     val code = s"$name(${args.map(_.rootCodeOrEmpty).mkString(", ")})"
     val callNode = operatorCallNode(name, code, typeFullName = Option(TypeConstants.Void), line = line(stmt))
@@ -564,7 +585,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iteratorLocal)
 
     // Condition ast
-    val isNullName = stripBuiltinPrefix(PhpOperators.isNull)
+    val isNullName = PhpOperators.isNull
     val valueAst   = astForExpr(stmt.valueVar)
     val isNullCode = s"$isNullName(${valueAst.rootCodeOrEmpty})"
     val isNullCall = operatorCallNode(isNullName, isNullCode, Option(TypeConstants.Bool), line(stmt))
@@ -610,7 +631,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     iteratorLocal: NewLocal
   ): Ast = {
     val iteratorIdentifierAst = identifierAstFromLocal(iteratorLocal, line(stmt))
-    val currentCallSignature  = s"${Defines.UnresolvedSignature}(0)"
+    val currentCallSignature  = s"$UnresolvedSignature(0)"
     val currentCallNode = NewCall()
       .name("current")
       .methodFullName(s"Iterator.current:$currentCallSignature")
@@ -712,12 +733,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
     val code         = codeForClassStmt(stmt, name)
 
-    val namespacePrefix =
-      scope.getEnclosingNamespaceName
-        .filterNot(name => name.contains(NamespaceTraversal.globalNamespaceName))
-        .map(_ + ".")
-        .getOrElse("")
-    val fullName = s"$namespacePrefix${name.name}"
+    val fullName = prependNamespacePrefix(name.name)
 
     val typeDeclNode = NewTypeDecl()
       .name(name.name)
@@ -742,10 +758,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case Nil => None
 
       case inits =>
-        val namespacePrefix = getNamespacePrefixForName
-        val signature       = s"${TypeConstants.Void}()"
-        val fullName        = s"$namespacePrefix${Defines.StaticInitMethodName}:$signature"
-        val ast             = staticInitMethodAst(inits, fullName, Option(signature), TypeConstants.Void)
+        val signature = s"${TypeConstants.Void}()"
+        val fullName  = composeMethodFullName(StaticInitMethodName, isStatic = true)
+        val ast       = staticInitMethodAst(inits, fullName, Option(signature), TypeConstants.Void)
         Option(ast)
     }
 
@@ -756,7 +771,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val properties  = bodyStmts.collect { case cp: PhpPropertyStmt => cp }.flatMap(astsForPropertyStmt)
 
     val constructorDecl = bodyStmts.collectFirst {
-      case m: PhpMethodDecl if m.name.name == Defines.ConstructorMethodName => m
+      case m: PhpMethodDecl if m.name.name == ConstructorMethodName => m
     }
 
     val constructorAst = astForConstructor(constructorDecl, createDefaultConstructor).toList
@@ -766,21 +781,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
       case _: PhpPropertyStmt => None // Handled above
 
-      case method: PhpMethodDecl if method.name.name == Defines.ConstructorMethodName => None // Handled above
+      case method: PhpMethodDecl if method.name.name == ConstructorMethodName => None // Handled above
 
-      case method: PhpMethodDecl =>
-        Option(astForMethodDecl(method))
-
-      case classLikeStmt: PhpClassLikeStmt =>
-        Option(astForClassLikeStmt(classLikeStmt))
-
-      case enumCase: PhpEnumCaseStmt => Option(astForEnumCase(enumCase))
-
-      case expr: PhpExpr => Option(astForExpr(expr))
-
-      case other =>
-        logger.warn(s"Found unhandled class body stmt $other")
-        Option(astForStmt(other))
+      // Not all statements are supported in class bodies, but since this is re-used for namespaces
+      // we allow that here.
+      case stmt => Some(astForStmt(stmt))
     }
 
     val clinitAst           = astForStaticAndConstInits
@@ -801,25 +806,30 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     }
   }
 
-  private def getNamespacePrefixForName: String = {
-    scope.getEnclosingTypeDeclType
+  private def prependNamespacePrefix(name: String): String = {
+    scope.getEnclosingNamespaceNames.filterNot(_ == NamespaceTraversal.globalNamespaceName) match {
+      case Nil   => name
+      case names => names.appended(name).mkString(NamespaceDelimiter)
+    }
+
+  }
+
+  private def getTypeDeclPrefix: Option[String] = {
+    scope.getEnclosingTypeDeclTypeName
       .filterNot(_ == NamespaceTraversal.globalNamespaceName)
-      .map(typeName => s"$typeName.")
-      .getOrElse("")
   }
 
   private def defaultConstructorAst(): Ast = {
-    val namespacePrefix = getNamespacePrefixForName
+    val fullName = composeMethodFullName(ConstructorMethodName, isStatic = false)
 
-    val signature = s"${Defines.UnresolvedSignature}(0)"
-    val fullName  = s"$namespacePrefix${Defines.ConstructorMethodName}:$signature"
+    val signature = s"$UnresolvedSignature(0)"
 
     val modifiers = List(ModifierTypes.VIRTUAL, ModifierTypes.PUBLIC, ModifierTypes.CONSTRUCTOR).map(modifierNode)
 
     val thisParam = thisParamAstForMethod(lineNumber = None)
 
     val methodNode = NewMethod()
-      .name(Defines.ConstructorMethodName)
+      .name(ConstructorMethodName)
       .fullName(fullName)
       .signature(signature)
       .isExternal(false)
@@ -945,8 +955,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val className =
       call.target
         .map(astForExpr)
-        .map(_.rootCode.getOrElse(Defines.UnresolvedNamespace))
-        .getOrElse(Defines.UnresolvedNamespace)
+        .map(_.rootCode.getOrElse(UnresolvedNamespace))
+        .getOrElse(UnresolvedNamespace)
     s"$className::$name"
   }
 
@@ -989,28 +999,26 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val fullName = call.target match {
       // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
-        s"${nameExpr.name}.$name:${Defines.UnresolvedSignature}(${arguments.size})"
+        s"${nameExpr.name}.$name:$UnresolvedSignature(${arguments.size})"
 
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
-        s"${PhpBuiltins.Prefix}.$name"
+        name
 
       // Function call
       case None if !PhpBuiltins.FuncNames.contains(name) =>
-        val namespacePrefix = scope.getEnclosingNamespaceName match {
-          case Some(NamespaceTraversal.globalNamespaceName) => ""
-          case Some(n)                                      => s"$n."
-          case None                                         => Defines.UnresolvedNamespace
-        }
-        s"$namespacePrefix$name:${Defines.UnresolvedSignature}(${arguments.size})"
+        composeMethodFullName(name, call.isStatic)
 
       // Other method calls. Need more type info for these.
       case _ => PropertyDefaults.MethodFullName
     }
 
+    // Use method signature for methods that can be linked to avoid varargs issue.
+    val signature = s"$UnresolvedSignature(${call.args.size})"
     val callNode = NewCall()
       .name(name)
       .methodFullName(fullName)
+      .signature(signature)
       .code(code)
       .dispatchType(dispatchType)
       .lineNumber(line(call))
@@ -1161,7 +1169,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForIsSetExpr(isSetExpr: PhpIsset): Ast = {
-    val name = stripBuiltinPrefix(PhpOperators.issetFunc)
+    val name = PhpOperators.issetFunc
     val args = isSetExpr.vars.map(astForExpr)
     val code = s"$name(${args.map(_.rootCodeOrEmpty).mkString(",")})"
 
@@ -1172,7 +1180,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     callAst(callNode, args)
   }
   private def astForPrintExpr(printExpr: PhpPrint): Ast = {
-    val name = stripBuiltinPrefix(PhpOperators.printFunc)
+    val name = PhpOperators.printFunc
     val arg  = astForExpr(printExpr.expr)
     val code = s"$name(${arg.rootCodeOrEmpty})"
 
@@ -1214,7 +1222,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForClone(expr: PhpCloneExpr): Ast = {
-    val name    = stripBuiltinPrefix(PhpOperators.cloneFunc)
+    val name    = PhpOperators.cloneFunc
     val argAst  = astForExpr(expr.expr)
     val argType = argAst.rootType
     val code    = s"$name ${argAst.rootCodeOrEmpty}"
@@ -1226,7 +1234,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForEmpty(expr: PhpEmptyExpr): Ast = {
-    val name   = stripBuiltinPrefix(PhpOperators.emptyFunc)
+    val name   = PhpOperators.emptyFunc
     val argAst = astForExpr(expr.expr)
     val code   = s"$name(${argAst.rootCodeOrEmpty})"
 
@@ -1238,7 +1246,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForEval(expr: PhpEvalExpr): Ast = {
-    val name   = stripBuiltinPrefix(PhpOperators.evalFunc)
+    val name   = PhpOperators.evalFunc
     val argAst = astForExpr(expr.expr)
     val code   = s"$name(${argAst.rootCodeOrEmpty})"
 
@@ -1250,7 +1258,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForExit(expr: PhpExitExpr): Ast = {
-    val name = stripBuiltinPrefix(PhpOperators.exitFunc)
+    val name = PhpOperators.exitFunc
     val args = expr.expr.map(astForExpr)
     val code = s"$name(${args.map(_.rootCodeOrEmpty).getOrElse("")})"
 
@@ -1324,7 +1332,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
      * implement the above lowering or to think of a better way to do it.
      */
 
-    val name     = stripBuiltinPrefix(PhpOperators.listFunc)
+    val name     = PhpOperators.listFunc
     val args     = expr.items.flatten.map { item => astForExpr(item.value) }
     val listCode = s"$name(${args.map(_.rootCodeOrEmpty).mkString(",")})"
     val listNode = operatorCallNode(name, listCode, line = line(expr))
@@ -1404,8 +1412,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForClosureExpr(expr: PhpClosureExpr): Ast = {
     val methodName     = getNewTmpName("__closure")
-    val typePrefix     = getNamespacePrefixForName
-    val methodFullName = s"$typePrefix$methodName:${Defines.UnresolvedSignature}(${expr.params.size})"
+    val methodFullName = composeMethodFullName(methodName, isStatic = false)
     val methodRef      = NewMethodRef().methodFullName(methodFullName).code(methodFullName).lineNumber(line(expr))
 
     val localsForUses = expr.uses.flatMap { closureUse =>
@@ -1448,8 +1455,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     }
 
     // Create method for closure
-    val name      = PhpNameExpr(methodName, expr.attributes)
-    val modifiers = Nil
+    val name = PhpNameExpr(methodName, expr.attributes)
+    // TODO Check for static modifier
+    val modifiers = if (expr.isStatic) ModifierTypes.STATIC :: Nil else Nil
     val methodDecl = PhpMethodDecl(
       name,
       expr.params,
@@ -1523,12 +1531,12 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
     // Init node
     val initArgs       = expr.args.map(astForCallArg)
-    val initSignature  = s"${Defines.UnresolvedSignature}(${initArgs.size})"
-    val initNamePrefix = s"$className.${Defines.ConstructorMethodName}"
+    val initSignature  = s"$UnresolvedSignature(${initArgs.size})"
+    val initNamePrefix = s"$className.${ConstructorMethodName}"
     val initFullName   = s"$initNamePrefix:$initSignature"
     val initCode       = s"$initNamePrefix(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
     val initCallNode = NewCall()
-      .name(Defines.ConstructorMethodName)
+      .name(ConstructorMethodName)
       .methodFullName(initFullName)
       .signature(initSignature)
       .code(initCode)
@@ -1675,7 +1683,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val args = expr.parts.map(astForExpr)
     val code = s"`${args.map(_.rootCodeOrEmpty).mkString("").replaceAll("\"", "")}`"
 
-    val callNode = operatorCallNode(stripBuiltinPrefix(PhpOperators.shellExec), code, line = line(expr))
+    val callNode = operatorCallNode(PhpOperators.shellExec, code, line = line(expr))
       .methodFullName(PhpOperators.shellExec)
 
     callAst(callNode, args)
