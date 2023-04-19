@@ -2,6 +2,7 @@ package io.joern.jssrc2cpg.passes
 
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -136,16 +137,19 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     }
   }
 
+  private lazy val exportedIdentifiers = cu.method
+    .nameExact(":program")
+    .ast
+    .isCall
+    .nameExact(Operators.assignment)
+    .filter(_.code.startsWith("exports.*"))
+    .argument
+    .isIdentifier
+    .name
+    .toSet
+
   override protected def isField(i: Identifier): Boolean =
-    state.isFieldCache.getOrElseUpdate(
-      i.id(),
-      cu.method
-        .nameExact(":program")
-        .ast
-        .assignment
-        .code("exports.*")
-        .exists(_.argument.code.exists(_.contains(i.name))) || super.isField(i)
-    )
+    state.isFieldCache.getOrElseUpdate(i.id(), exportedIdentifiers.contains(i.name) || super.isField(i))
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.contains(".alloc")) {
