@@ -34,7 +34,7 @@ package object cpgcreation {
       case Languages.PHP       => Some(PhpCpgGenerator(conf, rootPath))
       case Languages.GHIDRA    => Some(GhidraCpgGenerator(conf, rootPath))
       case Languages.KOTLIN    => Some(KotlinCpgGenerator(conf, rootPath))
-      case Languages.RUBYSRC                      => Some(RubyCpgGenerator(conf, rootPath))
+      case Languages.RUBYSRC   => Some(RubyCpgGenerator(conf, rootPath))
       case _                   => None
     }
   }

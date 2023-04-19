@@ -20,7 +20,7 @@ class PocTest extends RubyCode2CpgFixture {
     )
 
 
-    "local nodes present" in {
+    "identifier nodes present" in {
       cpg.identifier.name("a").l.size shouldBe 2
       cpg.identifier.name("b").l.size shouldBe 2
       cpg.identifier.name("c").l.size shouldBe 1

@@ -54,6 +54,10 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForVariableIdentifierContext(variableCtx: RubyParser.VariableIdentifierContext, varType: String): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     val varSymbol =
       if (variableCtx.LOCAL_VARIABLE_IDENTIFIER() != null) {
         variableCtx.LOCAL_VARIABLE_IDENTIFIER().getSymbol()
@@ -80,11 +84,19 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForSingleLeftHandSide(ctx: RubyParser.SingleLeftHandSideContext, rhsRetType: String): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     val variableCtx = ctx.variableIdentifier()
     astForVariableIdentifierContext(variableCtx, rhsRetType)
   }
 
   def astForExpressionOrCommandsContext(ctx: RubyParser.ExpressionOrCommandsContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     val asts = mutable.ArrayBuffer.empty[Ast]
     ctx
       .expressionOrCommand()
@@ -96,6 +108,10 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForSplattingArgument(ctx: RubyParser.SplattingArgumentContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     if (ctx == null) {
       return Ast()
     }
@@ -103,6 +119,10 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): (Ast, String) = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     val exprAst      = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
     val splattingAst = astForSplattingArgument(ctx.splattingArgument())
     val seqAsts      = Seq[Ast](exprAst, splattingAst)
@@ -110,13 +130,22 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForSingleAssignmentExpression(ctxSubclass: RubyParser.SingleAssignmentExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     val (rightAst, rhsRetType) = astForMultipleRightHandSide(ctxSubclass.multipleRightHandSide())
     val leftAst                = astForSingleLeftHandSide(ctxSubclass.singleLeftHandSide(), rhsRetType)
     val seqAsts                = Seq[Ast](leftAst, rightAst)
-    Ast().withChildren(seqAsts)
+    val blockNode              = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChildren(seqAsts)
   }
 
-  def astForPrimaryExpressionContext(ctx: RubyParser.PrimaryContext): Ast = {
+  def astForPrimaryContext(ctx: RubyParser.PrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     if (ctx.isInstanceOf[RubyParser.ClassDefinitionPrimaryContext]) {
       astForClassDefinitionPrimaryContext(ctx.asInstanceOf[RubyParser.ClassDefinitionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.ModuleDefinitionPrimaryContext]) {
@@ -182,14 +211,18 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         ctx.asInstanceOf[RubyParser.ChainedInvocationWithoutArgumentsPrimaryContext]
       )
     } else {
-      println("astForPrimaryExpressionContext(): Unknown context")
+      println("astForPrimaryContext(): Unknown context")
       Ast()
     }
   }
 
   def astForExpressionContext(ctx: RubyParser.ExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     if (ctx.isInstanceOf[RubyParser.PrimaryExpressionContext]) {
-      astForPrimaryExpressionContext(ctx.asInstanceOf[RubyParser.PrimaryExpressionContext].primary())
+      astForPrimaryContext(ctx.asInstanceOf[RubyParser.PrimaryExpressionContext].primary())
     } else if (ctx.isInstanceOf[RubyParser.UnaryExpressionContext]) {
       astForUnaryExpressionContext(ctx.asInstanceOf[RubyParser.UnaryExpressionContext])
     } else if (ctx.isInstanceOf[RubyParser.PowerExpressionContext]) {
@@ -231,6 +264,10 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForExpressionOrCommandContext(ctx: RubyParser.ExpressionOrCommandContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     if (ctx.isInstanceOf[RubyParser.InvocationExpressionOrCommandContext]) {
       astForInvocationExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.InvocationExpressionOrCommandContext])
     } else if (ctx.isInstanceOf[RubyParser.NotExpressionOrCommandContext]) {
@@ -266,7 +303,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForStatement(ctx: RubyParser.StatementsContext): Ast = {
-
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
     val blockNode = NewBlock().typeFullName(Defines.Any)
     val asts      = mutable.ArrayBuffer.empty[Ast]
     ctx
@@ -298,204 +337,395 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForAdditiveExpressionContext(ctx: RubyParser.AdditiveExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForArrayConstructorPrimaryContext(ctx: RubyParser.ArrayConstructorPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForBeginExpressionPrimaryContext(ctx: RubyParser.BeginExpressionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForBitwiseAndExpressionContext(ctx: RubyParser.BitwiseAndExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForBitwiseOrExpressionContext(ctx: RubyParser.BitwiseOrExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForBitwiseShiftExpressionContext(ctx: RubyParser.BitwiseShiftExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForCaseExpressionPrimaryContext(ctx: RubyParser.CaseExpressionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForChainedInvocationPrimaryContext(ctx: RubyParser.ChainedInvocationPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForChainedInvocationWithoutArgumentsPrimaryContext(
     ctx: RubyParser.ChainedInvocationWithoutArgumentsPrimaryContext
   ): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForChainedScopedConstantReferencePrimaryContext(
     ctx: RubyParser.ChainedScopedConstantReferencePrimaryContext
   ): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForClassDefinitionPrimaryContext(ctx: RubyParser.ClassDefinitionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForConditionalOperatorExpressionContext(ctx: RubyParser.ConditionalOperatorExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForEqualityExpressionContext(ctx: RubyParser.EqualityExpressionContext): Ast = {
-    Ast()
-  }
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
 
-  def astForExpressionExpressionOrCommandContext(ctx: RubyParser.ExpressionExpressionOrCommandContext): Ast = {
     Ast()
   }
 
   def astForForExpressionPrimaryContext(ctx: RubyParser.ForExpressionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForGroupingExpressionPrimaryContext(ctx: RubyParser.GroupingExpressionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForHashConstructorPrimaryContext(ctx: RubyParser.HashConstructorPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForIfExpressionPrimaryContext(ctx: RubyParser.IfExpressionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForIndexingExpressionPrimaryContext(ctx: RubyParser.IndexingExpressionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForInvocationExpressionOrCommandContext(ctx: RubyParser.InvocationExpressionOrCommandContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForInvocationWithBlockOnlyPrimaryContext(ctx: RubyParser.InvocationWithBlockOnlyPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForInvocationWithParenthesesPrimaryContext(ctx: RubyParser.InvocationWithParenthesesPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForIsDefinedExpressionContext(ctx: RubyParser.IsDefinedExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForIsDefinedPrimaryContext(ctx: RubyParser.IsDefinedPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForJumpExpressionPrimaryContext(ctx: RubyParser.JumpExpressionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForLiteralPrimaryContext(ctx: RubyParser.LiteralPrimaryContext): Ast = {
-    Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
+    if (ctx.literal().symbol() != null) {
+      Ast()
+
+    } else if (ctx.literal().numericLiteral() != null) {
+      val text = ctx.literal().numericLiteral().getText
+      val node = NewLiteral()
+        .code(text)
+        .typeFullName(Defines.Number)
+        .dynamicTypeHintFullName(List(Defines.Number))
+      Ast(node)
+    } else if (ctx.literal().SINGLE_QUOTED_STRING_LITERAL() != null) {
+      val text = ctx.literal().SINGLE_QUOTED_STRING_LITERAL().getText
+      val node = NewLiteral()
+        .code(text)
+        .typeFullName(Defines.String)
+        .dynamicTypeHintFullName(List(Defines.String))
+      Ast(node)
+    } else {
+      // double quoted string literal
+      Ast()
+    }
   }
 
   def astForMethodDefinitionPrimaryContext(ctx: RubyParser.MethodDefinitionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForMethodOnlyIdentifierPrimaryContext(ctx: RubyParser.MethodOnlyIdentifierPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForModuleDefinitionPrimaryContext(ctx: RubyParser.ModuleDefinitionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForMultipleAssignmentExpressionContext(ctx: RubyParser.MultipleAssignmentExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForMultiplicativeExpressionContext(ctx: RubyParser.MultiplicativeExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForNotExpressionOrCommandContext(ctx: RubyParser.NotExpressionOrCommandContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForOperatorAndExpressionContext(ctx: RubyParser.OperatorAndExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForOperatorOrExpressionContext(ctx: RubyParser.OperatorOrExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForOrAndExpressionOrCommandContext(ctx: RubyParser.OrAndExpressionOrCommandContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForPowerExpressionContext(ctx: RubyParser.PowerExpressionContext): Ast = {
-    Ast()
-  }
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
 
-  def astForPrimaryExpressionContext(ctx: RubyParser.PrimaryExpressionContext): Ast = {
     Ast()
   }
 
   def astForRangeExpressionContext(ctx: RubyParser.RangeExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForRelationalExpressionContext(ctx: RubyParser.RelationalExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForSimpleScopedConstantReferencePrimaryContext(
     ctx: RubyParser.SimpleScopedConstantReferencePrimaryContext
   ): Ast = {
-    Ast()
-  }
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
 
-  def astForSingleAssignmentExpressionContext(ctx: RubyParser.SingleAssignmentExpressionContext): Ast = {
     Ast()
   }
 
   def astForSuperExpressionPrimaryContext(ctx: RubyParser.SuperExpressionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForUnaryExpressionContext(ctx: RubyParser.UnaryExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForUnaryMinusExpressionContext(ctx: RubyParser.UnaryMinusExpressionContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForUnlessExpressionPrimaryContext(ctx: RubyParser.UnlessExpressionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForUntilExpressionPrimaryContext(ctx: RubyParser.UntilExpressionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForVariableReferencePrimaryContext(ctx: RubyParser.VariableReferencePrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 
   def astForWhileExpressionPrimaryContext(ctx: RubyParser.WhileExpressionPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
     Ast()
   }
 
   def astForYieldWithOptionalArgumentPrimaryContext(ctx: RubyParser.YieldWithOptionalArgumentPrimaryContext): Ast = {
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
     Ast()
   }
 }
