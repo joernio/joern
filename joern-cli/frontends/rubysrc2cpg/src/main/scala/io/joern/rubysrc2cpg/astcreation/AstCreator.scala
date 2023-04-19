@@ -27,6 +27,20 @@ import overflowdb.BatchedUpdate
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 
 class AstCreator(filename: String, global: Global) extends AstCreatorBase(filename) {
+
+  object Defines {
+    val Any: String               = "ANY"
+    val Number: String            = "__ecma.Number"
+    val String: String            = "__ecma.String"
+    val Boolean: String           = "__ecma.Boolean"
+    val Null: String              = "__ecma.Null"
+    val Math: String              = "__ecma.Math"
+    val Symbol: String            = "__ecma.Symbol"
+    val Console: String           = "__whatwg.console"
+    val Object: String            = "object"
+    val NodeModulesFolder: String = "node_modules"
+    val GlobalNamespace: String   = NamespaceTraversal.globalNamespaceName
+  }
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val charStream  = CharStreams.fromFileName(filename)
     val lexer       = new RubyLexer(charStream)
@@ -34,32 +48,44 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val parser      = new RubyParser(tokenStream)
     val programCtx  = parser.program()
 
-    val statementCtx = programCtx.compoundStatement().statements()
-    val statementAst          = astForStatement(statementCtx)
+    val statementCtx   = programCtx.compoundStatement().statements()
+    val statementAst   = astForStatement(statementCtx)
     val fileNode       = NewFile().name(filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
-    val ast = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(statementAst))
+    val ast            = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(statementAst))
     storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
 
+  protected def createIdentifierNode(
+    name: String,
+    dynamicTypeOption: Option[String],
+    line: Option[Integer],
+    column: Option[Integer]
+  ): NewIdentifier = NewIdentifier()
+    .name(name)
+    .code(name)
+    .lineNumber(line)
+    .columnNumber(column)
+    .typeFullName(Defines.Any)
+    .dynamicTypeHintFullName(dynamicTypeOption.toList)
+
   def astForVariableIdentifierContext(variableCtx: RubyParser.VariableIdentifierContext): Ast = {
-    val varText = if (variableCtx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      variableCtx.LOCAL_VARIABLE_IDENTIFIER().getSymbol.getText
-    } else if (variableCtx.GLOBAL_VARIABLE_IDENTIFIER() != null) {
-      variableCtx.GLOBAL_VARIABLE_IDENTIFIER().getSymbol.getText
-    } else if (variableCtx.INSTANCE_VARIABLE_IDENTIFIER() != null) {
-      variableCtx.INSTANCE_VARIABLE_IDENTIFIER().getSymbol.getText
-    } else if (variableCtx.CLASS_VARIABLE_IDENTIFIER() != null) {
-      variableCtx.CLASS_VARIABLE_IDENTIFIER().getSymbol.getText
-    } else if (variableCtx.CONSTANT_IDENTIFIER() != null) {
-      variableCtx.CONSTANT_IDENTIFIER().getSymbol.getText
-    }
-    println(s"Variable name: $varText")
-    val node = NewLocal()
-    node.name(varText.toString)
-    val ast = Ast(node)
-    ast
+    val varText =
+      if (variableCtx.LOCAL_VARIABLE_IDENTIFIER() != null) {
+        variableCtx.LOCAL_VARIABLE_IDENTIFIER().getSymbol.getText()
+      } else if (variableCtx.GLOBAL_VARIABLE_IDENTIFIER() != null) {
+        variableCtx.GLOBAL_VARIABLE_IDENTIFIER().getSymbol.getText()
+      } else if (variableCtx.INSTANCE_VARIABLE_IDENTIFIER() != null) {
+        variableCtx.INSTANCE_VARIABLE_IDENTIFIER().getSymbol.getText()
+      } else if (variableCtx.CLASS_VARIABLE_IDENTIFIER() != null) {
+        variableCtx.CLASS_VARIABLE_IDENTIFIER().getSymbol.getText()
+      } else if (variableCtx.CONSTANT_IDENTIFIER() != null) {
+        variableCtx.CONSTANT_IDENTIFIER().getSymbol.getText()
+      }
+
+    val node = createIdentifierNode(varText.toString, None, None, None)
+    Ast(node)
   }
 
   def astForSingleLeftHandSide(ctx: RubyParser.SingleLeftHandSideContext): Ast = {
@@ -97,8 +123,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val leftAst  = astForSingleLeftHandSide(ctxSubclass.singleLeftHandSide())
     val rightAst = astForMultipleRightHandSide(ctxSubclass.multipleRightHandSide())
     val seqAsts  = Seq[Ast](leftAst, rightAst)
-    val ast      = Ast().withChildren(seqAsts)
-    ast
+    Ast().withChildren(seqAsts)
   }
 
   def astForPrimaryExpressionContext(ctx: RubyParser.PrimaryContext): Ast = {
@@ -173,67 +198,61 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForExpressionContext(ctx: RubyParser.ExpressionContext): Ast = {
-    val ast = {
-      if (ctx.isInstanceOf[RubyParser.PrimaryExpressionContext]) {
-        astForPrimaryExpressionContext(ctx.asInstanceOf[RubyParser.PrimaryExpressionContext].primary())
-      } else if (ctx.isInstanceOf[RubyParser.UnaryExpressionContext]) {
-        astForUnaryExpressionContext(ctx.asInstanceOf[RubyParser.UnaryExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.PowerExpressionContext]) {
-        astForPowerExpressionContext(ctx.asInstanceOf[RubyParser.PowerExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.UnaryMinusExpressionContext]) {
-        astForUnaryMinusExpressionContext(ctx.asInstanceOf[RubyParser.UnaryMinusExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.MultiplicativeExpressionContext]) {
-        astForMultiplicativeExpressionContext(ctx.asInstanceOf[RubyParser.MultiplicativeExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.AdditiveExpressionContext]) {
-        astForAdditiveExpressionContext(ctx.asInstanceOf[RubyParser.AdditiveExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.BitwiseShiftExpressionContext]) {
-        astForBitwiseShiftExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseShiftExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.BitwiseAndExpressionContext]) {
-        astForBitwiseAndExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseAndExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.BitwiseOrExpressionContext]) {
-        astForBitwiseOrExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseOrExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.RelationalExpressionContext]) {
-        astForRelationalExpressionContext(ctx.asInstanceOf[RubyParser.RelationalExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.EqualityExpressionContext]) {
-        astForEqualityExpressionContext(ctx.asInstanceOf[RubyParser.EqualityExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.OperatorAndExpressionContext]) {
-        astForOperatorAndExpressionContext(ctx.asInstanceOf[RubyParser.OperatorAndExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.OperatorOrExpressionContext]) {
-        astForOperatorOrExpressionContext(ctx.asInstanceOf[RubyParser.OperatorOrExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.RangeExpressionContext]) {
-        astForRangeExpressionContext(ctx.asInstanceOf[RubyParser.RangeExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.ConditionalOperatorExpressionContext]) {
-        astForConditionalOperatorExpressionContext(ctx.asInstanceOf[RubyParser.ConditionalOperatorExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.SingleAssignmentExpressionContext]) {
-        astForSingleAssignmentExpression(ctx.asInstanceOf[RubyParser.SingleAssignmentExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.MultipleAssignmentExpressionContext]) {
-        astForMultipleAssignmentExpressionContext(ctx.asInstanceOf[RubyParser.MultipleAssignmentExpressionContext])
-      } else if (ctx.isInstanceOf[RubyParser.IsDefinedExpressionContext]) {
-        astForIsDefinedExpressionContext(ctx.asInstanceOf[RubyParser.IsDefinedExpressionContext])
-      } else {
-        println("astForExpressionContext(): Unknown context")
-        Ast()
-      }
+    if (ctx.isInstanceOf[RubyParser.PrimaryExpressionContext]) {
+      astForPrimaryExpressionContext(ctx.asInstanceOf[RubyParser.PrimaryExpressionContext].primary())
+    } else if (ctx.isInstanceOf[RubyParser.UnaryExpressionContext]) {
+      astForUnaryExpressionContext(ctx.asInstanceOf[RubyParser.UnaryExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.PowerExpressionContext]) {
+      astForPowerExpressionContext(ctx.asInstanceOf[RubyParser.PowerExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.UnaryMinusExpressionContext]) {
+      astForUnaryMinusExpressionContext(ctx.asInstanceOf[RubyParser.UnaryMinusExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.MultiplicativeExpressionContext]) {
+      astForMultiplicativeExpressionContext(ctx.asInstanceOf[RubyParser.MultiplicativeExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.AdditiveExpressionContext]) {
+      astForAdditiveExpressionContext(ctx.asInstanceOf[RubyParser.AdditiveExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.BitwiseShiftExpressionContext]) {
+      astForBitwiseShiftExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseShiftExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.BitwiseAndExpressionContext]) {
+      astForBitwiseAndExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseAndExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.BitwiseOrExpressionContext]) {
+      astForBitwiseOrExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseOrExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.RelationalExpressionContext]) {
+      astForRelationalExpressionContext(ctx.asInstanceOf[RubyParser.RelationalExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.EqualityExpressionContext]) {
+      astForEqualityExpressionContext(ctx.asInstanceOf[RubyParser.EqualityExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.OperatorAndExpressionContext]) {
+      astForOperatorAndExpressionContext(ctx.asInstanceOf[RubyParser.OperatorAndExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.OperatorOrExpressionContext]) {
+      astForOperatorOrExpressionContext(ctx.asInstanceOf[RubyParser.OperatorOrExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.RangeExpressionContext]) {
+      astForRangeExpressionContext(ctx.asInstanceOf[RubyParser.RangeExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.ConditionalOperatorExpressionContext]) {
+      astForConditionalOperatorExpressionContext(ctx.asInstanceOf[RubyParser.ConditionalOperatorExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.SingleAssignmentExpressionContext]) {
+      astForSingleAssignmentExpression(ctx.asInstanceOf[RubyParser.SingleAssignmentExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.MultipleAssignmentExpressionContext]) {
+      astForMultipleAssignmentExpressionContext(ctx.asInstanceOf[RubyParser.MultipleAssignmentExpressionContext])
+    } else if (ctx.isInstanceOf[RubyParser.IsDefinedExpressionContext]) {
+      astForIsDefinedExpressionContext(ctx.asInstanceOf[RubyParser.IsDefinedExpressionContext])
+    } else {
+      println("astForExpressionContext(): Unknown context")
+      Ast()
     }
-    ast
   }
 
   def astForExpressionOrCommandContext(ctx: RubyParser.ExpressionOrCommandContext): Ast = {
-    val ast = {
-      if (ctx.isInstanceOf[RubyParser.InvocationExpressionOrCommandContext]) {
-        astForInvocationExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.InvocationExpressionOrCommandContext])
-      } else if (ctx.isInstanceOf[RubyParser.NotExpressionOrCommandContext]) {
-        astForNotExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.NotExpressionOrCommandContext])
-      } else if (ctx.isInstanceOf[RubyParser.OrAndExpressionOrCommandContext]) {
-        astForOrAndExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.OrAndExpressionOrCommandContext])
-      } else if (ctx.isInstanceOf[RubyParser.ExpressionExpressionOrCommandContext]) {
-        astForExpressionContext(ctx.asInstanceOf[RubyParser.ExpressionExpressionOrCommandContext].expression())
-      } else {
-        println("astForExpressionOrCommandContext(): Unknown context")
-        Ast()
-      }
+    if (ctx.isInstanceOf[RubyParser.InvocationExpressionOrCommandContext]) {
+      astForInvocationExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.InvocationExpressionOrCommandContext])
+    } else if (ctx.isInstanceOf[RubyParser.NotExpressionOrCommandContext]) {
+      astForNotExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.NotExpressionOrCommandContext])
+    } else if (ctx.isInstanceOf[RubyParser.OrAndExpressionOrCommandContext]) {
+      astForOrAndExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.OrAndExpressionOrCommandContext])
+    } else if (ctx.isInstanceOf[RubyParser.ExpressionExpressionOrCommandContext]) {
+      astForExpressionContext(ctx.asInstanceOf[RubyParser.ExpressionExpressionOrCommandContext].expression())
+    } else {
+      println("astForExpressionOrCommandContext(): Unknown context")
+      Ast()
     }
-    ast
   }
 
   def astForAliasStatementContext(ctx: RubyParser.AliasStatementContext): Ast = {
@@ -258,6 +277,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForStatement(ctx: RubyParser.StatementsContext): Ast = {
 
+    val blockNode = NewBlock().typeFullName(Defines.Any)
     val seqAst = {
       ctx
         .statement()
@@ -285,8 +305,8 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         })
         .toSeq
     }
-    val ast = Ast().withChildren(seqAst)
-    ast
+
+    Ast(blockNode).withChildren(seqAst)
   }
 
   def astForAdditiveExpressionContext(ctx: RubyParser.AdditiveExpressionContext): Ast = {

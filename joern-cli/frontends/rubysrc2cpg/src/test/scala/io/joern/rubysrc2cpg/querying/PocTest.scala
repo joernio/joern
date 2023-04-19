@@ -11,6 +11,8 @@ class PocTest extends RubyCode2CpgFixture {
         |# call instance methods
         |a = 1
         |b = 2
+        |a = 3
+        |b = 4
         |c = a*b
         |puts "Multiplication is : #{c}"
         |""".stripMargin,
@@ -19,9 +21,9 @@ class PocTest extends RubyCode2CpgFixture {
 
 
     "local nodes present" in {
-      cpg.local.name("a").l.size shouldBe 1
-      cpg.local.name("b").l.size shouldBe 1
-      cpg.local.name("c").l.size shouldBe 1
+      cpg.identifier.name("a").l.size shouldBe 2
+      cpg.identifier.name("b").l.size shouldBe 2
+      cpg.identifier.name("c").l.size shouldBe 1
     }
 
     "have a call node for the printHello call" in {
