@@ -57,19 +57,6 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     diffGraph
   }
 
-  protected def createIdentifierNode(
-    name: String,
-    dynamicTypeOption: Option[String],
-    line: Option[Integer],
-    column: Option[Integer]
-  ): NewIdentifier = NewIdentifier()
-    .name(name)
-    .code(name)
-    .lineNumber(line)
-    .columnNumber(column)
-    .typeFullName(Defines.Any)
-    .dynamicTypeHintFullName(dynamicTypeOption.toList)
-
   def astForVariableIdentifierContext(variableCtx: RubyParser.VariableIdentifierContext): Ast = {
     val varText =
       if (variableCtx.LOCAL_VARIABLE_IDENTIFIER() != null) {
@@ -84,7 +71,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         variableCtx.CONSTANT_IDENTIFIER().getSymbol.getText()
       }
 
-    val node = createIdentifierNode(varText.toString, None, None, None)
+    val node = identifierNode(varText.toString, None, None, None)
     Ast(node)
   }
 
