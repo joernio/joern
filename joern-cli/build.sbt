@@ -12,8 +12,8 @@ libraryDependencies ++= Seq(
   "org.scalatest"    %% "scalatest"         % Versions.scalatest % Test
 )
 
-Test / compile := (Test / compile).dependsOn((Projects.c2cpg / stage), (Projects.jssrc2cpg / stage)).value
-Test / fork    := false
+Test / compile := (Test/compile).dependsOn((Projects.c2cpg/stage), (Projects.jssrc2cpg/stage)).value
+Test / fork := false
 
 enablePlugins(UniversalPlugin)
 enablePlugins(JavaAppPackaging)
