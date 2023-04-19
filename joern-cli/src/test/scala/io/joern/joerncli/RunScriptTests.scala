@@ -18,31 +18,31 @@ class RunScriptTests extends AnyWordSpec with Matchers {
     ("c/const-ish.sc", "const-ish")
   ).foreach { case (scriptFileName, codePathRelative) =>
     s"Executing '$scriptFileName' on '$codePathRelative'" in {
-      exec(os.RelPath(scriptFileName), s"$testCodeRoot/$codePathRelative")
+      exec(scriptFileName, s"$testCodeRoot/$codePathRelative")
     }
   }
 
   "should return Failure if" when {
     "script doesn't exist" in {
-      val result = ReplBridge.runScript(Config(scriptFile = Some(scriptsRoot / "does-not-exist.sc")))
+      val result = ReplBridge.runScript(Config(scriptFile = Some(scriptsRoot.resolve("does-not-exist.sc"))))
       result.failed.get.getMessage should include("does not exist")
     }
 
     "script runs ins an exception" in {
-      val result = ReplBridge.runScript(Config(scriptFile = Some(scriptsRoot / "trigger-error.sc")))
+      val result = ReplBridge.runScript(Config(scriptFile = Some(scriptsRoot.resolve("trigger-error.sc"))))
       result.failed.get.getMessage should include("exit code was 1")
     }
   }
 }
 
 object RunScriptTests {
-  val projectRoot  = os.Path(ProjectRoot.find.path.toAbsolutePath)
-  val scriptsRoot  = projectRoot / "scripts"
-  val testCodeRoot = s"${projectRoot.toNIO}/joern-cli/src/test/resources/testcode"
+  val projectRoot  = ProjectRoot.find.path.toAbsolutePath
+  val scriptsRoot  = projectRoot.resolve("scripts")
+  val testCodeRoot = s"${projectRoot}/joern-cli/src/test/resources/testcode"
 
-  def exec(scriptPath: os.RelPath, codePathAbsolute: String): Unit = {
+  def exec(scriptFileName: String, codePathAbsolute: String): Unit = {
     ReplBridge
-      .runScript(Config(scriptFile = Some(scriptsRoot / scriptPath), params = Map("inputPath" -> codePathAbsolute)))
+      .runScript(Config(scriptFile = Some(scriptsRoot.resolve(scriptFileName)), params = Map("inputPath" -> codePathAbsolute)))
       .get
   }
 }

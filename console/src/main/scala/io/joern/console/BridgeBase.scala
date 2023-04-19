@@ -1,7 +1,6 @@
 package io.joern.console
 
 import better.files.*
-import os.{Path, pwd}
 import replpp.scripting.ScriptRunner
 
 import scala.jdk.CollectionConverters.*
@@ -13,10 +12,10 @@ import java.util.stream.Collectors
 import scala.util.{Failure, Success, Try}
 
 case class Config(
-  scriptFile: Option[os.Path] = None,
+  scriptFile: Option[Path] = None,
   command: Option[String] = None,
   params: Map[String, String] = Map.empty,
-  additionalImports: List[os.Path] = Nil,
+  additionalImports: Seq[Path] = Nil,
   addPlugin: Option[String] = None,
   rmPlugin: Option[String] = None,
   pluginToRun: Option[String] = None,
@@ -35,7 +34,8 @@ case class Config(
   forInputPath: Option[String] = None,
   frontendArgs: Array[String] = Array.empty,
   verbose: Boolean = false,
-  dependencies: Seq[String] = Seq.empty
+  dependencies: Seq[String] = Seq.empty,
+  resolvers: Seq[String] = Seq.empty,
 )
 
 /** Base class for ReplBridge, split by topic into multiple self types.
@@ -45,15 +45,12 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
   def slProduct: SLProduct
 
   protected def parseConfig(args: Array[String]): Config = {
-    implicit def pathRead: scopt.Read[os.Path] =
-      scopt.Read.stringRead.map(os.Path(_, os.pwd)) // support both relative and absolute paths
-
     val parser = new scopt.OptionParser[Config](slProduct.name) {
       override def errorOnUnknownArgument = false
 
       note("Script execution")
 
-      opt[os.Path]("script")
+      opt[Path]("script")
         .action((x, c) => c.copy(scriptFile = Some(x)))
         .text("path to script file: will execute and exit")
 
@@ -62,17 +59,27 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .action((x, c) => c.copy(params = x))
         .text("parameter values for main function in script")
 
-      opt[Seq[os.Path]]("import")
-        .valueName("script1.sc,script2.sc,...")
-        .action((x, c) => c.copy(additionalImports = x.toList))
-        .text("import additional additional script(s): will execute and keep console open")
+      opt[Path]("import")
+        .valueName("script1.sc")
+        .unbounded()
+        .optional()
+        .action((x, c) => c.copy(additionalImports = c.additionalImports :+ x))
+        .text("import (and run) additional script(s) on startup - may be passed multiple times")
 
-      opt[Seq[String]]("dependency")
-        .valueName("com.michaelpollmeier:versionsort:1.0.7,...")
-        .action((x, c) => c.copy(dependencies = x.toList))
-        .text(
-          "resolve dependency (and it's transitive dependencies) for given maven coordinate(s): comma-separated list. use `--verbose` to print resolved jars"
-        )
+
+      opt[String]("dependencies")
+        .valueName("com.michaelpollmeier:versionsort:1.0.7.")
+        .unbounded()
+        .optional()
+        .action((x, c) => c.copy(dependencies = c.dependencies :+ x))
+        .text("resolve dependencies (including transitive dependencies) for given maven coordinate(s) - may be passed multiple times")
+
+      opt[String]("resolvers")
+        .valueName("https://repository.apache.org/content/groups/public/")
+        .unbounded()
+        .optional()
+        .action((x, c) => c.copy(resolvers = c.resolvers :+ x))
+        .text("additional repositories to resolve dependencies - may be passed multiple times")
 
       opt[String]("command")
         .action((x, c) => c.copy(command = Some(x)))
@@ -234,7 +241,7 @@ trait ScriptExecution { this: BridgeBase =>
 
   def runScript(config: Config): Try[Unit] = {
     val scriptFile = config.scriptFile.getOrElse(throw new AssertionError("no script file configured"))
-    if (!os.exists(scriptFile)) {
+    if (!Files.exists(scriptFile)) {
       Try(throw new AssertionError(s"given script file $scriptFile does not exist"))
     } else {
       val predefCode = predefPlus(importCpgCode(config))
@@ -281,7 +288,7 @@ trait PluginHandling { this: BridgeBase =>
     println("Available layer creators")
     println()
     withTemporaryScript(codeToListPlugins(), slProduct.name) { file =>
-      runScript(config.copy(scriptFile = Some(os.Path(file.path)))).get
+      runScript(config.copy(scriptFile = Some(file.path))).get
     }
   }
 
@@ -300,7 +307,7 @@ trait PluginHandling { this: BridgeBase =>
     }
     val code = loadOrCreateCpg(config, productName)
     withTemporaryScript(code, productName) { file =>
-      runScript(config.copy(scriptFile = Some(os.Path(file.path)))).get
+      runScript(config.copy(scriptFile = Some(file.path))).get
     }
   }
 

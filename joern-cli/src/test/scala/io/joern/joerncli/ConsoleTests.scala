@@ -9,13 +9,13 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
   "run" should {
     "provide a human readable overview of overlay creators" in withTestCode { codeDir =>
-      RunScriptTests.exec(os.RelPath("general/run.sc"), codeDir.toString)
+      RunScriptTests.exec("general/run.sc", codeDir.toString)
     }
   }
 
   "help" should {
     "allow getting long description via help object" in withTestCode { codeDir =>
-      RunScriptTests.exec(os.RelPath("general/help.sc"), codeDir.toString)
+      RunScriptTests.exec("general/help.sc", codeDir.toString)
     }
   }
 
