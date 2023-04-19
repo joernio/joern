@@ -227,6 +227,7 @@ trait InteractiveShell { this: BridgeBase =>
         predefFiles = config.additionalImports,
         nocolors = config.nocolors,
         dependencies = config.dependencies,
+        resolvers = config.resolvers,
         verbose = config.verbose,
         greeting = greeting,
         prompt = Option(promptStr),
@@ -254,6 +255,7 @@ trait ScriptExecution { this: BridgeBase =>
           command = config.command,
           params = config.params,
           dependencies = config.dependencies,
+          resolvers = config.resolvers,
           verbose = config.verbose
         )
       )
@@ -388,6 +390,8 @@ trait ServerHandling { this: BridgeBase =>
       replpp.Config(
         predefCode = Some(predefCode),
         predefFiles = config.additionalImports,
+        dependencies = config.dependencies,
+        resolvers = config.resolvers,
         verbose = true, // always print what's happening - helps debugging
         serverHost = config.serverHost,
         serverPort = config.serverPort,
