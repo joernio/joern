@@ -21,16 +21,16 @@ import scala.collection.mutable
   */
 abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
-  implicit private val resolver: NoResolve.type = NoResolve
-  private val fileNamePattern                   = Pattern.compile("^(.*(.py|.js)).*$")
-  protected val pathSep: Char                   = '.'
+  implicit protected val resolver: NoResolve.type = NoResolve
+  private val fileNamePattern                     = Pattern.compile("^(.*(.py|.js)).*$")
+  protected val pathSep: Char                     = '.'
 
   protected def calls: Traversal[Call] = cpg.call
     .nameNot("<operator>.*", "<operators>.*")
     .filter(c => calleeNames(c).nonEmpty && c.callee.isEmpty)
 
   protected def calleeNames(c: Call): Seq[String] =
-    (c.dynamicTypeHintFullName :+ c.typeFullName).filterNot(_.equals("ANY")).distinct
+    c.dynamicTypeHintFullName.filterNot(_.equals("ANY")).distinct
 
   protected def callees(names: Seq[String]): List[Method] = cpg.method.fullNameExact(names: _*).toList
 
@@ -74,7 +74,18 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
         .flatMap(methodMap.get)
         .filter(m => call.callee(NoResolve).fullNameExact(m.fullName).isEmpty)
         .foreach { m => builder.addEdge(call, m, EdgeTypes.CALL) }
-      if (methodNames.sizeIs == 1) builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
+      setCallees(call, methodNames, builder)
+    }
+  }
+
+  protected def setCallees(call: Call, methodNames: Seq[String], builder: DiffGraphBuilder): Unit = {
+    if (methodNames.sizeIs == 1) {
+      builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
+      builder.setNodeProperty(
+        call,
+        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+        call.dynamicTypeHintFullName.diff(methodNames)
+      )
     }
   }
 

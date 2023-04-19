@@ -15,7 +15,6 @@ import overflowdb.traversal.Traversal
 
 import java.util.concurrent.RecursiveTask
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.annotation.nowarn
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 
@@ -116,7 +115,8 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
     val changesWereMade = compilationUnit
       .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
       .map(_.get())
-      .reduce((a, b) => a || b)
+      .reduceOption((a, b) => a || b)
+      .getOrElse(false)
     if (!changesWereMade) state.stopEarly.set(true)
   }
 
@@ -201,22 +201,24 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Provides an entrypoint to add known symbols and their possible types.
     */
-  protected def prepopulateSymbolTable(): Unit = {
-    def getTypes(node: AstNode): Set[String] =
-      (node.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) :+ node.property(
-        PropertyNames.TYPE_FULL_NAME,
-        "ANY"
-      )).filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
-
+  private def prepopulateSymbolTable(): Unit = {
     (cu.ast.isIdentifier ++ cu.ast.isCall ++ cu.ast.isLocal ++ cu.ast.isParameter)
       .filter(hasTypes)
-      .foreach {
-        case x: Identifier        => symbolTable.put(x, getTypes(x))
-        case x: Call              => symbolTable.put(x, Set(x.methodFullName))
-        case x: Local             => symbolTable.put(x, getTypes(x))
-        case x: MethodParameterIn => symbolTable.put(x, getTypes(x))
-        case _                    =>
-      }
+      .foreach(prepopulateSymbolTableEntry)
+  }
+
+  protected def getTypes(node: AstNode): Set[String] =
+    (node.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) :+ node.property(
+      PropertyNames.TYPE_FULL_NAME,
+      "ANY"
+    )).filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
+
+  protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
+    case x: Identifier        => symbolTable.put(x, getTypes(x))
+    case x: Call              => symbolTable.put(x, Set(x.methodFullName))
+    case x: Local             => symbolTable.put(x, getTypes(x))
+    case x: MethodParameterIn => symbolTable.put(x, getTypes(x))
+    case _                    =>
   }
 
   private def hasTypes(node: AstNode): Boolean = node match {
@@ -360,7 +362,17 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Will build a call full path using the call base node. This method assumes the base node is in the symbol table.
     */
   protected def setCallMethodFullNameFromBase(c: Call): Set[String] = {
-    val recTypes  = c.argument.headOption.map(symbolTable.get).getOrElse(Set.empty[String])
+    val recTypes = c.argument.headOption
+      .map {
+        case x: Call if x.typeFullName != "ANY" => Set(x.typeFullName)
+        case x: Call =>
+          cpg.method.fullNameExact(c.methodFullName).methodReturn.typeFullNameNot("ANY").typeFullName.toSet match {
+            case xs if xs.nonEmpty => xs
+            case _ => symbolTable.get(x).map(t => Seq(t, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
+          }
+        case x => symbolTable.get(x)
+      }
+      .getOrElse(Set.empty[String])
     val callTypes = recTypes.map(_.concat(s"$pathSep${c.name}"))
     symbolTable.append(c, callTypes)
   }
@@ -746,6 +758,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     cu.ast
       .collect {
         case n: Local                                       => n
+        case n: Call                                        => n
         case n: Expression                                  => n
         case n: MethodParameterIn if state.isFinalIteration => n
         case n: MethodReturn if state.isFinalIteration      => n
@@ -760,10 +773,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           val typs =
             if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
             else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
-          if (typs != nodeExistingTypes(x)) {
-            state.changesWereMade.compareAndSet(false, true)
-            builder.setNodeProperty(x, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, typs)
-          }
+          storeCallTypeInfo(x, typs)
         case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
         case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
@@ -771,13 +781,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case _ =>
       }
     // Set types in an atomic way
-    newTypesForMembers.foreach { case (m, ts) =>
-      if (ts.toSeq != nodeExistingTypes(m)) {
-        state.changesWereMade.compareAndSet(false, true)
-        if (ts.size == 1) builder.setNodeProperty(m, PropertyNames.TYPE_FULL_NAME, ts.head)
-        else builder.setNodeProperty(m, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, ts)
-      }
-    }
+    newTypesForMembers.foreach { case (m, ts) => storeDefaultTypeInfo(m, ts.toSeq) }
   }
 
   protected def createCallFromIdentifierTypeFullName(typeFullName: String, callName: String): String =
@@ -810,10 +814,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val idHints   = symbolTable.get(i)
         val callTypes = symbolTable.get(call)
         persistType(i, idHints)
-        if (callTypes.isEmpty) {
+        if (callTypes.isEmpty && !call.name.startsWith("<operator>"))
           // For now, calls are treated as function pointers and thus the type should point to the method
           persistType(call, idHints.map(t => createCallFromIdentifierTypeFullName(t, call.name)))
-        } else {
+        else {
           persistType(call, callTypes)
         }
       // Case 3: 'i' is the receiver for a field access on member 'f'
@@ -955,8 +959,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             case Some(ts) => Some(ts ++ types)
             case None     => Some(types.toSet)
           }
-        case i: Identifier => storeIdentifierTypeInfo(i, types)
-        case l: Local      => storeLocalTypeInfo(l, types)
+        case i: Identifier                               => storeIdentifierTypeInfo(i, types)
+        case l: Local                                    => storeLocalTypeInfo(l, types)
+        case c: Call if !c.name.startsWith("<operator>") => storeCallTypeInfo(c, types)
+        case _: Call                                     =>
         case n =>
           state.changesWereMade.compareAndSet(false, true)
           setTypes(n, types)
@@ -964,20 +970,16 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
   }
 
-  private def nodeExistingTypes(storedNode: StoredNode): Seq[String] = (storedNode.property(
+  protected def storeCallTypeInfo(c: Call, types: Seq[String]) =
+    if (types.nonEmpty) {
+      state.changesWereMade.compareAndSet(false, true)
+      builder.setNodeProperty(c, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+    }
+
+  protected def nodeExistingTypes(storedNode: StoredNode): Seq[String] = (storedNode.property(
     PropertyNames.TYPE_FULL_NAME,
     "ANY"
   ) +: storedNode.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)).filterNot(_ == "ANY")
-
-  /** Allows one to modify the types assigned to fields.
-    */
-  protected def storeMemberTypeInfo(m: Member, types: Seq[String]): Unit = {
-    // To avoid overwriting member updates, we store them elsewhere until the end
-    newTypesForMembers.updateWith(m) {
-      case Some(ts) => Some(ts ++ types)
-      case None     => Some(types.toSet)
-    }
-  }
 
   /** Allows one to modify the types assigned to identifiers.
     */
@@ -996,11 +998,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * cleared. If not then `dynamicTypeHintFullName` is set to the types.
     */
   protected def setTypes(n: StoredNode, types: Seq[String]): Unit =
-    if (types.size == 1) {
-      builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
-      if (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty).nonEmpty)
-        builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
-    } else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+    if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
+    else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types.distinct)
 
   /** Allows one to modify the types assigned to locals.
     */
