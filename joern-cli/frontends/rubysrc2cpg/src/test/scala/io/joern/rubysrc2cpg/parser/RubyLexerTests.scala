@@ -1,18 +1,29 @@
 package io.joern.rubysrc2cpg.parser
 
+import io.joern.rubysrc2cpg.parser.RubyLexer._
+import org.antlr.v4.runtime.Token.EOF
+import org.antlr.v4.runtime._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import io.joern.rubysrc2cpg.parser.RubyLexer._
-import org.antlr.v4.runtime.{CharStreams, CommonTokenStream}
-import org.antlr.v4.runtime.Token.EOF
 
 class RubyLexerTests extends AnyFlatSpec with Matchers {
 
   def tokenize(code: String): Iterable[Int] = {
-    import scala.jdk.CollectionConverters.CollectionHasAsScala
-    val stream =  new CommonTokenStream(new RubyLexer(CharStreams.fromString(code)))
+    val lexer = new RubyLexer(CharStreams.fromString(code))
+    val syntaxErrorListener = new BaseErrorListener {
+      var errors = 0
+      override def syntaxError(recognizer: Recognizer[_, _], offendingSymbol: Any, line: Int, charPositionInLine: Int, msg: String, e: RecognitionException): Unit =
+        errors += 1
+    }
+    lexer.addErrorListener(syntaxErrorListener)
+    val stream = new CommonTokenStream(lexer)
     stream.fill() // Run the lexer
-    stream.getTokens.asScala.map(_.getType)
+    if (syntaxErrorListener.errors > 0) {
+      Seq()
+    } else {
+      import scala.jdk.CollectionConverters.CollectionHasAsScala
+      stream.getTokens.asScala.map(_.getType)
+    }
   }
 
   "Single-line comments" should "be discarded" in {
@@ -200,6 +211,5 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     val code = "\"x is \\\"4\\\"\""
     tokenize(code) shouldBe Seq(DOUBLE_QUOTED_STRING_START, DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE, DOUBLE_QUOTED_STRING_END, EOF)
   }
-
 
 }
