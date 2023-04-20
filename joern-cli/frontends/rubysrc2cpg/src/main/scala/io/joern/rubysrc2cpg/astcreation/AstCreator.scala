@@ -155,7 +155,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     } else if (ctx.isInstanceOf[RubyParser.ModuleDefinitionPrimaryContext]) {
       astForModuleDefinitionPrimaryContext(ctx.asInstanceOf[RubyParser.ModuleDefinitionPrimaryContext])
     } else if (ctx.isInstanceOf[RubyParser.MethodDefinitionPrimaryContext]) {
-      astForMethodDefinitionPrimaryContext(ctx.asInstanceOf[RubyParser.MethodDefinitionPrimaryContext])
+      astForMethodDefinitionContext(ctx.asInstanceOf[RubyParser.MethodDefinitionPrimaryContext].methodDefinition())
     } else if (ctx.isInstanceOf[RubyParser.YieldWithOptionalArgumentPrimaryContext]) {
       astForYieldWithOptionalArgumentPrimaryContext(
         ctx.asInstanceOf[RubyParser.YieldWithOptionalArgumentPrimaryContext]
@@ -598,7 +598,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     }
   }
 
-  def astForMethodDefinitionPrimaryContext(ctx: RubyParser.MethodDefinitionPrimaryContext): Ast = {
+  def astForMethodDefinitionContext(ctx: RubyParser.MethodDefinitionContext): Ast = {
     if (ctx == null) return Ast()
     println(
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
