@@ -32,12 +32,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(columnNumber)
   }
 
-  protected def createDependencyNode(name: String, groupId: String, version: String): NewDependency =
-    NewDependency()
-      .name(name)
-      .dependencyGroupId(groupId)
-      .version(version)
-
   protected def createTypeRefNode(code: String, typeFullName: String, classNode: BabelNodeInfo): NewTypeRef =
     NewTypeRef()
       .code(code)
