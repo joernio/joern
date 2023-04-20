@@ -15,6 +15,8 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000)(implicit s: 
     extends ForkJoinParallelCpgPass[Method](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  // If there are any regex method full names, load them early
+  s.loadRegexSemantics(cpg)
 
   override def generateParts(): Array[Method] = cpg.method.toArray
 

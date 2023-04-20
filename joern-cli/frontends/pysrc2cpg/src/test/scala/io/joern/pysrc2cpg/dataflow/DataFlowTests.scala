@@ -1,9 +1,9 @@
 package io.joern.pysrc2cpg.dataflow
 
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
+import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
 import io.shiftleft.semanticcpg.language._
 
@@ -322,6 +322,83 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     method.fullName shouldBe "models.py:<module>.Foo.Foo<body>.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo.Foo<body>"
+  }
+
+}
+
+class RegexDefinedFlowsDataFlowTests
+    extends PySrc2CpgFixture(
+      withOssDataflow = true,
+      extraFlows = List(
+        FlowSemantic("^path.*<module>\\.sanitizer$", List((0, 0), (1, 1)), regex = true),
+        FlowSemantic("^foo.*<module>\\.sanitizer.*", List((0, 0), (1, 1)), regex = true),
+        FlowSemantic("^foo.*\\.create_sanitizer\\.<returnValue>\\.sanitize", List((0, 0), (1, 1)), regex = true)
+      )
+    ) {
+
+  "regex matched semantic for imported method" should {
+    lazy val cpg = code(
+      """
+      |from path import sanitizer
+      |
+      |source = 1
+      |x = sanitizer(source)
+      |sink(x)
+      |""".stripMargin,
+      Seq("foo.py").mkString(java.io.File.separator)
+    )
+
+    "register that sanitizer kills the flow on the parameter" in {
+      def source = cpg.literal("1")
+      def sink   = cpg.call("sink")
+
+      sink.reachableBy(source).size shouldBe 0
+    }
+
+  }
+
+  "regex matched semantic for more than one imported method" should {
+    lazy val cpg = code(
+      """
+        |from foo import sanitizerFoo, sanitizerBar
+        |
+        |source = 1
+        |x = sanitizerFoo(source)
+        |y = sanitizerBar(source)
+        |sink(x, y)
+        |""".stripMargin,
+      Seq("foo.py").mkString(java.io.File.separator)
+    )
+
+    "register that all sanitizers kill the flow on the parameter" in {
+      def source = cpg.literal("1")
+      def sink   = cpg.call("sink")
+
+      sink.reachableBy(source).size shouldBe 0
+    }
+
+  }
+
+  "regex matched semantic for a dummy type resulting from type recovery" should {
+    val cpg = code(
+      """
+        |from foo import create_sanitizer
+        |
+        |source = 1
+        |x = create_sanitizer()
+        |y = x.sanitize(source)
+        |sink(y)
+        |""".stripMargin,
+      Seq("foo.py").mkString(java.io.File.separator)
+    )
+
+    "register that the call off of a return value has no flow" in {
+      def source = cpg.literal("1")
+      def sink   = cpg.call("sink")
+
+      sink.reachableBy(source).size shouldBe 0
+    }
+
   }
 
 }

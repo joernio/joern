@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.semanticsloader
 
 import io.joern.dataflowengineoss.{SemanticsBaseListener, SemanticsLexer, SemanticsParser}
+import io.shiftleft.codepropertygraph.Cpg
 import org.antlr.v4.runtime.tree.ParseTreeWalker
 import org.antlr.v4.runtime.{CharStream, CharStreams, CommonTokenStream}
 
@@ -25,9 +26,30 @@ object Semantics {
 
 class Semantics private (methodToSemantic: mutable.Map[String, FlowSemantic]) {
 
+  /** The map below keeps a mapping between results of a regex and the regex string it matches. e.g.
+    *
+    * `path/to/file.py:<module>.Foo.sink` -> `^path.*Foo\\.sink$`
+    */
+  private val regexMatchedFullNames = mutable.HashMap.empty[String, String]
+
+  /** Initialize all the method semantics that use regex with all their regex results before query time.
+    */
+  def loadRegexSemantics(cpg: Cpg): Unit = {
+    import io.shiftleft.semanticcpg.language._
+
+    methodToSemantic.filter(_._2.regex).foreach { case (regexString, _) =>
+      cpg.method.fullName(regexString).fullName.foreach { methodMatch =>
+        regexMatchedFullNames.put(methodMatch, regexString)
+      }
+    }
+  }
+
   def elements: List[FlowSemantic] = methodToSemantic.values.toList
 
-  def forMethod(fullName: String): Option[FlowSemantic] = methodToSemantic.get(fullName)
+  def forMethod(fullName: String): Option[FlowSemantic] = regexMatchedFullNames.get(fullName) match {
+    case Some(matchedFullName) => methodToSemantic.get(matchedFullName)
+    case None                  => methodToSemantic.get(fullName)
+  }
 
   def serialize: String = {
     elements
@@ -39,7 +61,7 @@ class Semantics private (methodToSemantic: mutable.Map[String, FlowSemantic]) {
   }
 
 }
-case class FlowSemantic(methodFullName: String, mappings: List[(Int, Int)])
+case class FlowSemantic(methodFullName: String, mappings: List[(Int, Int)], regex: Boolean = false)
 
 class Parser() {
 
