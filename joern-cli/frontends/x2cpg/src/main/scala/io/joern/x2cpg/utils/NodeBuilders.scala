@@ -4,6 +4,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotationLiteral,
   NewCall,
+  NewDependency,
   NewFieldIdentifier,
   NewIdentifier,
   NewMethodParameterIn,
@@ -50,6 +51,12 @@ object NodeBuilders {
       .lineNumber(lineNumber)
       .columnNumber(columnNumber)
   }
+
+  def dependencyNode(name: String, groupId: String, version: String): NewDependency =
+    NewDependency()
+      .name(name)
+      .dependencyGroupId(groupId)
+      .version(version)
 
   def fieldIdentifierNode(
     name: String,

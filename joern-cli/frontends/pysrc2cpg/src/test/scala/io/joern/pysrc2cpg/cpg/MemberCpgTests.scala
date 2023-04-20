@@ -2,9 +2,9 @@ package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.nodes.Member
+import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import io.shiftleft.semanticcpg.language._
 
 class MemberCpgTests extends AnyFreeSpec with Matchers {
 
@@ -75,6 +75,26 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
       memberFn.columnNumber shouldBe Some(1)
     }
 
+  }
+
+  "A class variable instantiated by some expression" - {
+
+    lazy val cpg = Py2CpgTestContext.buildCpg("""import models
+        |
+        |class SocialApp():
+        |    member1 = "1"
+        |
+        |class SocialAccount():
+        |    member2 = "2"
+        |
+        |class SocialToken(models.Model):
+        |    app = models.ForeignKey(SocialApp, on_delete=models.CASCADE)
+        |    account = models.ForeignKey(SocialAccount, on_delete=models.CASCADE)
+        |""".stripMargin)
+
+    "should only render the LHS of the expression as the member and not the RHS" in {
+      cpg.typeDecl("SocialToken<meta>").member.name.l shouldBe List("app", "account", "<fakeNew>")
+    }
   }
 
 }

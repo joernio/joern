@@ -360,7 +360,6 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val bodyJson                  = func.json("body")
     val bodyNodeInfo              = createBabelNodeInfo(bodyJson)
     val blockNode                 = createBlockNode(bodyNodeInfo)
-    val blockAst                  = Ast(blockNode)
     val additionalBlockStatements = mutable.ArrayBuffer.empty[Ast]
 
     val capturingRefNode =
@@ -389,7 +388,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
         }
       case _ => createBlockStatementAsts(bodyJson("body"))
     }
-    setArgumentIndices(methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts)
+    val methodBlockChildren = methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts
+    setArgumentIndices(methodBlockChildren)
 
     val methodReturnNode = createMethodReturnNode(func)
 
@@ -410,7 +410,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       methodAstWithAnnotations(
         methodNode,
         (thisNode +: paramNodes).map(Ast(_)),
-        blockAst.withChildren(methodBlockContent ++ additionalBlockStatements ++ bodyStmtAsts),
+        blockAst(blockNode, methodBlockChildren),
         methodReturnNode,
         List(virtualModifierNode),
         astsForDecorators(func)

@@ -1865,7 +1865,7 @@ class PythonAstVisitor(
     val memoryOperation = memOpMap.get(name).get
     val identifier      = createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
     contextStack.astParent match {
-      case _: NewMethod if contextStack.isClassContext =>
+      case _: NewMethod if contextStack.isClassContext && memoryOperation == Store =>
         createAndRegisterMember(identifier.name, lineAndColOf(name))
       case _ =>
     }

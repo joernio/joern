@@ -137,8 +137,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
     scope.popScope()
     localAstParentStack.pop()
 
-    setArgumentIndices(List(assignmentTmpAllocCallNode, callNode, tmpAllocReturnNode))
-    Ast(blockNode).withChild(assignmentTmpAllocCallNode).withChild(callNode).withChild(tmpAllocReturnNode)
+    val blockChildren = List(assignmentTmpAllocCallNode, callNode, tmpAllocReturnNode)
+    setArgumentIndices(blockChildren)
+    blockAst(blockNode, blockChildren)
   }
 
   protected def astForMetaProperty(metaProperty: BabelNodeInfo): Ast = {
@@ -341,7 +342,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     setArgumentIndices(sequenceExpressionAsts)
     localAstParentStack.pop()
     scope.popScope()
-    Ast(blockNode).withChildren(sequenceExpressionAsts)
+    blockAst(blockNode, sequenceExpressionAsts)
   }
 
   protected def astForAwaitExpression(awaitExpr: BabelNodeInfo): Ast = {
@@ -359,7 +360,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   protected def astForArrayExpression(arrExpr: BabelNodeInfo): Ast = {
     val lineNumber   = arrExpr.lineNumber
     val columnNumber = arrExpr.columnNumber
-    val elements     = Try(arrExpr.json("elements").arr).toOption.toSeq.flatten
+    val elements     = Try(arrExpr.json("elements").arr).toOption.toList.flatten
     if (elements.isEmpty) {
       Ast(
         createCallNode(
@@ -431,9 +432,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
       scope.popScope()
       localAstParentStack.pop()
 
-      val blockChildrenAsts = List(assignmentTmpArrayCallNode) ++ elementAsts :+ Ast(tmpArrayReturnNode)
+      val blockChildrenAsts = assignmentTmpArrayCallNode +: elementAsts :+ Ast(tmpArrayReturnNode)
       setArgumentIndices(blockChildrenAsts)
-      Ast(blockNode).withChildren(blockChildrenAsts)
+      blockAst(blockNode, blockChildrenAsts)
     }
   }
 
@@ -514,8 +515,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
     scope.popScope()
     localAstParentStack.pop()
 
-    val allBlockChildren = propertiesAsts :+ Ast(tmpNode)
-    setArgumentIndices(propertiesAsts)
-    Ast(blockNode).withChildren(allBlockChildren)
+    val childrenAsts = propertiesAsts :+ Ast(tmpNode)
+    setArgumentIndices(childrenAsts)
+    blockAst(blockNode, childrenAsts)
   }
 }

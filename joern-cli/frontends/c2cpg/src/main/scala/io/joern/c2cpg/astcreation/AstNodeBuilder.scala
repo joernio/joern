@@ -71,9 +71,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(columnNumber)
   }
 
-  protected def newDependencyNode(name: String, version: String): NewDependency =
-    NewDependency().name(name).version(version).dependencyGroupId(name)
-
   protected def newLocalNode(node: IASTNode, name: String, code: String, typeFullName: String): NewLocal = {
     val lineNumber   = line(node).map(Integer.valueOf)
     val columnNumber = column(node).map(Integer.valueOf)

@@ -75,12 +75,32 @@ class MethodTests extends PhpCode2CpgFixture {
   }
 
   "methods should be accessible from the file node" in {
-    val cpg = code("""<?php
+    val cpg = code(
+      """<?php
         |function foo() {
         |  static $x = 42, $y;
+        |}
+        |""".stripMargin,
+      fileName = "test.php"
+    )
+
+    cpg.file.method.name.l shouldBe List("foo")
+    cpg.method.name("foo").filename.l shouldBe List("test.php")
+  }
+
+  "global method full name should include the file for uniqueness" in {
+    val cpg = code("<?php", fileName = "test.php")
+    cpg.method.nameExact("<global>").fullName.l shouldBe List("test.php:<global>")
+  }
+
+  "methods with non-unicode-legal characters should be created with escaped char codes" in {
+    val cpg = code("""<?php
+        |function foo() {
+        |  $x = "\xFF";
         |}
         |""".stripMargin)
 
     cpg.file.method.name.l shouldBe List("foo")
+    cpg.assignment.code.l shouldBe List("$x = \"\\\\xFF\"")
   }
 }

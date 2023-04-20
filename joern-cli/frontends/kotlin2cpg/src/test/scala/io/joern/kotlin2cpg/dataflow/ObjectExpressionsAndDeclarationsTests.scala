@@ -7,21 +7,34 @@ import io.shiftleft.semanticcpg.language._
 class ObjectExpressionsAndDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
   implicit val resolver: ICallResolver = NoResolve
 
-  "CPG for code with object expression containing one member defined inline" should {
-    val cpg = code("""
-      |fun f1(p: String) {
-      |    val anObject = object { var x: String = "INITIAL_VALUE" }
-      |    anObject.x = p
-      |    println(anObject.x)
-      |}
-      |""".stripMargin)
+  "CPG for code with simple object expression" should {
+    val cpg = code("""|package mypkg
+        |
+        |fun f1(p: String) {
+        |    val o = object {
+        |        val m = "meow"
+        |        fun printWithSuffix(suffix: String) {
+        |            println(suffix + m)
+        |        }
+        |    }
+        |    o.printWithSuffix(p)
+        |}
+        |""".stripMargin)
 
-    "should find a flow through an assignment call of its member" in {
+    "should find a flow through a method defined on the object" in {
       val source = cpg.method.name("f1").parameter
       val sink   = cpg.method.name("println").callIn.argument
       val flows  = sink.reachableByFlows(source)
       flows.map(flowToResultPairs).toSet shouldBe
-        Set(List(("f1(p)", Some(2)), ("anObject.x = p", Some(4)), ("println(anObject.x)", Some(5))))
+        Set(
+          List(
+            ("f1(p)", Some(3)),
+            ("o.printWithSuffix(p)", Some(10)),
+            ("printWithSuffix(this, suffix)", Some(6)),
+            ("suffix + m", Some(7))
+          )
+        )
+
     }
   }
 

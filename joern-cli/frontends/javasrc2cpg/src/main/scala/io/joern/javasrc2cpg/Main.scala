@@ -13,7 +13,8 @@ final case class Config(
   fetchDependencies: Boolean = false,
   javaFeatureSetVersion: Option[String] = None,
   delombokJavaHome: Option[String] = None,
-  delombokMode: Option[String] = None
+  delombokMode: Option[String] = None,
+  disableDummyTypes: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
@@ -45,7 +46,11 @@ private object Frontend {
                  | default => run delombok if a lombok dependency is found and analyse delomboked code.
                  | types-only => to run delombok, but use it for type information only
                  | run-delombok => to force run delombok and analyse delomboked code.""".stripMargin)
-        .action((mode, c) => c.copy(delombokMode = Some(mode)))
+        .action((mode, c) => c.copy(delombokMode = Some(mode))),
+      opt[Unit]("no-dummyTypes")
+        .hidden()
+        .action((_, c) => c.copy(disableDummyTypes = true))
+        .text("disable generation of dummy types during type recovery")
     )
   }
 }
