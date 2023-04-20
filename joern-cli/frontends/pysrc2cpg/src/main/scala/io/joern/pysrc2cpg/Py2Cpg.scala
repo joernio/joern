@@ -45,5 +45,6 @@ class Py2Cpg(
     BatchedUpdate.applyDiff(outputCpg.graph, diffGraph)
     new CodeToCpg(outputCpg, inputProviders).createAndApply()
     new ConfigPass(outputCpg, configInputProviders).createAndApply()
+    new DendenciesFromRequirementsTxtPass(outputCpg).createAndApply()
   }
 }
