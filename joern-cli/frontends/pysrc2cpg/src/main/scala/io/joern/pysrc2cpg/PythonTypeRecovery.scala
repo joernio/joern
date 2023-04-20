@@ -158,7 +158,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
           case _                 => Seq(procedureName)
         }
       if (isMaybeConstructor)
-        pythonicFormGuesses.map(p => Seq(p, s"$expEntity<body>", "__init__").mkString(pathSep.toString)).toSet
+        pythonicFormGuesses.map(p => Seq(p, "__init__").mkString(pathSep.toString)).toSet
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
         cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
@@ -189,7 +189,6 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
       val nonConstructorV = v.toSeq
         .map(_.replaceAll("<var>", pathSep.toString).stripSuffix(s"${pathSep}__init__"))
-        .map(f => f.split(pathSep).lastOption.map(t => f.stripSuffix(s"$pathSep$t")).getOrElse(f))
       val tsNonConstructor = cpg.method.fullNameExact(nonConstructorV: _*).l
 
       if (ts.nonEmpty)
@@ -204,17 +203,6 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       }
     }
   }
-
-  override def persistType(x: StoredNode, types: Set[String]): Unit = {
-    super.persistType(x, types.map(pyBodyTypeToTypeDecl))
-  }
-
-  /** Converts `Foo.Foo<body>` that holds method declarations to `Foo` which is the "main" type declaration.
-    */
-  private def pyBodyTypeToTypeDecl(typeFullName: String): String =
-    if (typeFullName.endsWith("<body>"))
-      typeFullName.split(pathSep).lastOption.map(x => typeFullName.stripSuffix(s"$pathSep$x")).getOrElse(typeFullName)
-    else typeFullName
 
   /** Determines if a function call is a constructor by following the heuristic that Python classes are typically
     * camel-case and start with an upper-case character.
@@ -245,10 +233,10 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     val constructorPaths = symbolTable
       .get(c)
       .map(_.stripSuffix(s"${pathSep}__init__"))
-      .map {
-        case t if t.endsWith("<body>") => t
-        case t                         => t.split(pathSep).lastOption.map(x => s"$t$pathSep$x<body>").getOrElse(t)
-      }
+//      .map {
+//        case t if t.endsWith("<body>") => t
+//        case t                         => t.split(pathSep).lastOption.map(x => s"$t$pathSep$x<body>").getOrElse(t)
+//      }
     associateTypes(i, constructorPaths)
   }
 
@@ -322,10 +310,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       case t if t.matches(".*\\.<(member|returnValue|indexAccess)>(\\(.*\\))?") =>
         super.createCallFromIdentifierTypeFullName(typeFullName, callName)
       case t if isConstructor(tName) =>
-        t.split("\\.").lastOption match {
-          case Some(tName) => Seq(t, s"$tName<body>", callName).mkString(pathSep.toString)
-          case None        => Seq(t, callName).mkString(pathSep.toString)
-        }
+        Seq(t, callName).mkString(pathSep.toString)
       case _ => super.createCallFromIdentifierTypeFullName(typeFullName, callName)
     }
   }
