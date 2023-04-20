@@ -230,13 +230,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   }
 
   override def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
-    val constructorPaths = symbolTable
-      .get(c)
-      .map(_.stripSuffix(s"${pathSep}__init__"))
-//      .map {
-//        case t if t.endsWith("<body>") => t
-//        case t                         => t.split(pathSep).lastOption.map(x => s"$t$pathSep$x<body>").getOrElse(t)
-//      }
+    val constructorPaths = symbolTable.get(c).map(_.stripSuffix(s"${pathSep}__init__"))
     associateTypes(i, constructorPaths)
   }
 
