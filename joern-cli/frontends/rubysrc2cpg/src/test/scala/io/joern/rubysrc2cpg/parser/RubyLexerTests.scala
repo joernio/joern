@@ -12,7 +12,14 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     val lexer = new RubyLexer(CharStreams.fromString(code))
     val syntaxErrorListener = new BaseErrorListener {
       var errors = 0
-      override def syntaxError(recognizer: Recognizer[_, _], offendingSymbol: Any, line: Int, charPositionInLine: Int, msg: String, e: RecognitionException): Unit =
+      override def syntaxError(
+        recognizer: Recognizer[_, _],
+        offendingSymbol: Any,
+        line: Int,
+        charPositionInLine: Int,
+        msg: String,
+        e: RecognitionException
+      ): Unit =
         errors += 1
     }
     lexer.addErrorListener(syntaxErrorListener)
@@ -146,7 +153,12 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
 
   "Non-interpolated, non-escaped double-quoted string literals" should "be recognized as such" in {
     val eg = Seq("\"something\"", "\"x\n\"")
-    all(eg.map(tokenize)) shouldBe Seq(DOUBLE_QUOTED_STRING_START, DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE, DOUBLE_QUOTED_STRING_END, EOF)
+    all(eg.map(tokenize)) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      DOUBLE_QUOTED_STRING_END,
+      EOF
+    )
   }
 
   "Double-quoted string literals containing identifier interpolations" should "be recognized as such" in {
@@ -156,7 +168,8 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
       INTERPOLATED_CHARACTER_SEQUENCE,
       DOUBLE_QUOTED_STRING_END,
-      EOF)
+      EOF
+    )
   }
 
   "Double-quoted string literals containing escaped `#` characters" should "not be mistaken for interpolations" in {
@@ -171,7 +184,12 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
 
   "Double-quoted string literals containing `#`" should "not be mistaken for interpolations" in {
     val code = "\"x = #\""
-    tokenize(code) shouldBe Seq(DOUBLE_QUOTED_STRING_START, DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE, DOUBLE_QUOTED_STRING_END, EOF)
+    tokenize(code) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      DOUBLE_QUOTED_STRING_END,
+      EOF
+    )
   }
 
   "Interpolated double-quoted string literal" should "be recognized as such" in {
@@ -185,7 +203,8 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       DECIMAL_INTEGER_LITERAL,
       STRING_INTERPOLATION_END,
       DOUBLE_QUOTED_STRING_END,
-      EOF)
+      EOF
+    )
   }
 
   "Recursively interpolated double-quoted string literal" should "be recognized as such" in {
@@ -204,12 +223,18 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       STRING_INTERPOLATION_END,
       DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
       DOUBLE_QUOTED_STRING_END,
-      EOF)
+      EOF
+    )
   }
 
   "Escaped `\"` in double-quoted string literal" should "not be mistaken for end of string" in {
     val code = "\"x is \\\"4\\\"\""
-    tokenize(code) shouldBe Seq(DOUBLE_QUOTED_STRING_START, DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE, DOUBLE_QUOTED_STRING_END, EOF)
+    tokenize(code) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      DOUBLE_QUOTED_STRING_END,
+      EOF
+    )
   }
 
 }

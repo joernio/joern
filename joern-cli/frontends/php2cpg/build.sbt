@@ -7,7 +7,7 @@ scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.2.2")
 
 val phpParserVersion = "4.15.4-charfix.1"
-val phpParserDlUrl  = s"https://github.com/joernio/PHP-Parser/archive/refs/tags/$phpParserVersion.zip"
+val phpParserDlUrl   = s"https://github.com/joernio/PHP-Parser/archive/refs/tags/$phpParserVersion.zip"
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
@@ -23,10 +23,9 @@ scalacOptions ++= Seq(
   "-deprecation" // Emit warning and location for usages of deprecated APIs.
 )
 
-
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
 phpParseInstallTask := {
-  val phpBinDir      = baseDirectory.value / "bin"
+  val phpBinDir   = baseDirectory.value / "bin"
   val phpParseDir = phpBinDir / "PHP-Parser"
   if (!(phpParseDir / "bin").exists) {
     IO.createDirectory(phpParseDir)

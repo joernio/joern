@@ -25,8 +25,8 @@ class SymbolTests extends RubyParserAbstractTest {
   }
 
   "Operator-named symbols" should {
-    val symCaret = ":^"
-    val symEq2 = ":=="
+    val symCaret   = ":^"
+    val symEq2     = ":=="
     val symLRBrack = ":[]"
 
     "be parsed as primary expressions" in {
