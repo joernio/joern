@@ -14,7 +14,8 @@ case class Py2CpgOnFileSystemConfig(
   inputDir: Path = null,
   venvDir: Path = Paths.get(".venv"),
   ignoreVenvDir: Boolean = true,
-  disableDummyTypes: Boolean = false
+  disableDummyTypes: Boolean = false,
+  requirementsTxt: String = "requirements.txt"
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig] {
   override def withInputPath(inputPath: String): Py2CpgOnFileSystemConfig = {
     copy(inputDir = Paths.get(inputPath))
@@ -42,20 +43,34 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
         } else {
           Nil
         }
-      val inputFiles = collectInputFiles(config.inputDir, ignorePrefixes)
-      val inputProviders = inputFiles.map { inputFile => () =>
+      val inputFiles = collectInputFiles(config.inputDir, ignorePrefixes, config.requirementsTxt)
+      val inputProviders = inputFiles.filter(_.endsWith("py")).map { inputFile => () =>
         {
           val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
           Py2Cpg.InputPair(content, inputFile.toString, config.inputDir.relativize(inputFile).toString)
         }
       }
-
-      val py2Cpg = new Py2Cpg(inputProviders, cpg)
+      val configInputProviders =
+        inputFiles
+          .filter { inputFile =>
+            inputFile.endsWith(config.requirementsTxt)
+          }
+          .map { inputFile => () =>
+            {
+              val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
+              Py2Cpg.InputPair(content, inputFile.toString, config.inputDir.relativize(inputFile).toString)
+            }
+          }
+      val py2Cpg = new Py2Cpg(inputProviders, configInputProviders, cpg)
       py2Cpg.buildCpg()
     }
   }
 
-  private def collectInputFiles(inputDir: Path, ignorePrefixes: Iterable[Path]): Iterable[Path] = {
+  private def collectInputFiles(
+    inputDir: Path,
+    ignorePrefixes: Iterable[Path],
+    requirementsTxtFileName: String
+  ): Iterable[Path] = {
     if (!Files.exists(inputDir)) {
       logger.error(s"Cannot find $inputDir")
       return Iterable.empty
@@ -70,7 +85,7 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
           val relativeFile    = inputDir.relativize(file)
           val relativeFileStr = relativeFile.toString
           if (
-            relativeFileStr.endsWith(".py") &&
+            (relativeFileStr.endsWith(".py") || relativeFileStr.endsWith(requirementsTxtFileName)) &&
             !ignorePrefixes.exists(prefix => relativeFile.startsWith(prefix))
           ) {
             inputFiles.append(file)

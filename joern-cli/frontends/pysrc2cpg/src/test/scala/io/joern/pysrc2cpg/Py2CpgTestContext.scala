@@ -32,7 +32,7 @@ class Py2CpgTestContext {
   def buildCpg: Cpg = {
     if (buildResult.isEmpty) {
       val cpg    = new Cpg()
-      val py2Cpg = new Py2Cpg(codeAndFile.map(inputPair => () => inputPair), cpg)
+      val py2Cpg = new Py2Cpg(codeAndFile.map(inputPair => () => inputPair), Seq(), cpg)
       py2Cpg.buildCpg()
 
       val context = new LayerCreatorContext(cpg)
