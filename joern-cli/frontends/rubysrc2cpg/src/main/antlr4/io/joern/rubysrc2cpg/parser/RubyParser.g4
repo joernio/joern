@@ -272,8 +272,12 @@ association
 // --------------------------------------------------------
 
 methodDefinition
-    :   DEF wsOrNl* definedMethodName WS* methodParameterPart wsOrNl* bodyStatement wsOrNl* END
-    |   DEF wsOrNl* singletonObject wsOrNl* (DOT | COLON2) wsOrNl* definedMethodName WS* methodParameterPart wsOrNl* bodyStatement wsOrNl* END
+    :   DEF wsOrNl* methodNamePart WS* methodParameterPart wsOrNl* bodyStatement wsOrNl* END
+    ;
+
+methodNamePart
+    :   definedMethodName                                                                                           # simpleMethodNamePart
+    |   singletonObject wsOrNl* (DOT | COLON2) wsOrNl* definedMethodName                                            # singletonMethodNamePart
     ;
 
 singletonObject
