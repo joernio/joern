@@ -58,6 +58,10 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
+    if (variableCtx == null) {
+      return Ast()
+    }
+
     val varSymbol =
       if (variableCtx.LOCAL_VARIABLE_IDENTIFIER() != null) {
         variableCtx.LOCAL_VARIABLE_IDENTIFIER().getSymbol()
@@ -306,6 +310,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     println(
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
+
+    if (ctx == null) return Ast()
+
     val blockNode = NewBlock().typeFullName(Defines.Any)
     val asts      = mutable.ArrayBuffer.empty[Ast]
     ctx
