@@ -126,7 +126,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val exprAst      = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
     val splattingAst = astForSplattingArgument(ctx.splattingArgument())
     val seqAsts      = Seq[Ast](exprAst, splattingAst)
-    (Ast().withChildren(seqAsts), Defines.Number)
+    (Ast().withChildren(seqAsts), Defines.Any)
   }
 
   def astForSingleAssignmentExpression(ctxSubclass: RubyParser.SingleAssignmentExpressionContext): Ast = {
