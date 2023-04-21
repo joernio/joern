@@ -11,12 +11,24 @@ import scala.util.{Failure, Success, Try}
 
 object PhpParser {
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private val PhpParserHomeEnvVar = "PHP_PARSER_HOME"
+  private val logger              = LoggerFactory.getLogger(this.getClass)
 
   private val ExecutablePath: String = {
-    val dir = Paths.get(PhpParser.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
-    val fixedDir = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
-    Paths.get(fixedDir, "php2cpg", "bin", "PHP-Parser", "bin", "php-parse").toAbsolutePath.toString
+    Option(System.getenv(PhpParserHomeEnvVar)) match {
+      case Some(phpParserPath) if phpParserPath.nonEmpty =>
+        logger.info(s"Using php-parser path from PHP_PARSER_HOME envvar: ${phpParserPath}")
+        phpParserPath
+
+      case _ =>
+        val dir =
+          Paths.get(PhpParser.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
+        val fixedDir = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
+        val phpParserPath =
+          Paths.get(fixedDir, "php2cpg", "bin", "PHP-Parser", "bin", "php-parse").toAbsolutePath.toString
+        logger.info(s"PHP_PARSER_HOME not set. Using default php-parser location: ${phpParserPath}")
+        phpParserPath
+    }
   }
 
   private lazy val DefaultPhpIni: String = {
