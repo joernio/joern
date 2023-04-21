@@ -158,6 +158,7 @@ import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.joern.x2cpg.utils.AstPropertiesUtil._
 import io.joern.x2cpg.utils.NodeBuilders
+import io.joern.x2cpg.AstNodeBuilder
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.{PropertyDefaults => ParameterDefaults}
 import io.shiftleft.passes.IntervalKeyPool
@@ -200,7 +201,8 @@ object AstWithStaticInit {
 /** Translate a Java Parser AST into a CPG AST
   */
 class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Global, symbolSolver: JavaSymbolSolver)
-    extends AstCreatorBase(filename) {
+    extends AstCreatorBase(filename)
+    with AstNodeBuilder[Node, AstCreator] {
 
   import io.joern.javasrc2cpg.passes.AstCreator._
 
@@ -234,6 +236,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   def storeInDiffGraph(ast: Ast): Unit = {
     Ast.storeInDiffGraph(ast, diffGraph)
   }
+
+  protected def line(node: Node): Option[Integer] = node.getBegin.map(x => Integer.valueOf(x.line)).toScala
+  protected def column(node: Node): Option[Integer] = node.getBegin.map(x => Integer.valueOf(x.column)).toScala
+  protected def lineEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
+  protected def columnEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
 
   private def addImportsToScope(compilationUnit: CompilationUnit): Seq[NewImport] = {
     val (asteriskImports, specificImports) = compilationUnit.getImports.asScala.toList.partition(_.isAsterisk)
@@ -2541,15 +2548,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def unknownAst(node: Node): Ast = {
-    val unknownNode =
-      NewUnknown()
-        .code(node.toString)
-        .lineNumber(line(node))
-        .columnNumber(column(node))
-
-    Ast(unknownNode)
-  }
+  private def unknownAst(node: Node): Ast = Ast(unknownNode(node, node.toString))
 
   private def someWithDotSuffix(prefix: String): Option[String] = Some(s"$prefix.")
 
@@ -3184,17 +3183,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     scopeStack.addToScope(parameterNode, parameter.getNameAsString, Some(parameterNode.typeFullName))
     ast.withChildren(annotationAsts)
-  }
-
-}
-
-object AstCreator {
-  def line(node: Node): Option[Integer] = {
-    node.getBegin.map(x => Integer.valueOf(x.line)).toScala
-  }
-
-  def column(node: Node): Option[Integer] = {
-    node.getBegin.map(x => Integer.valueOf(x.column)).toScala
   }
 
 }
