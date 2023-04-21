@@ -26,13 +26,11 @@ class PocTest extends RubyCode2CpgFixture {
       cpg.identifier.name("c").l.size shouldBe 1
     }
 
-    "have a call node for the printHello call" in {
-      cpg.call.nameExact("printHello").l match {
-        case call :: Nil =>
-          call.lineNumber shouldBe Some(7)
-
-        case result => fail(s"Expected printHello call got $result")
-      }
+    "literal nodes present" in {
+      cpg.literal.code("1").l.size shouldBe 1
+      cpg.literal.code("2").l.size shouldBe 1
+      cpg.literal.code("3").l.size shouldBe 1
+      cpg.literal.code("4").l.size shouldBe 1
     }
   }
 
