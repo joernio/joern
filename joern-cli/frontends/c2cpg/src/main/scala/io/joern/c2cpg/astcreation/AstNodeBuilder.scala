@@ -96,10 +96,6 @@ trait AstNodeBuilder { this: AstCreator =>
     methodReturnNode(typeFullName, None, line(node), column(node))
   }
 
-  protected def newReturnNode(node: IASTNode, code: String): NewReturn = {
-    NewReturn().code(code).lineNumber(line(node)).columnNumber(column(node))
-  }
-
   protected def newParameterInNode(
     node: IASTNode,
     name: String,

@@ -51,7 +51,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
 
   private def astForReturnStatement(ret: IASTReturnStatement): Ast = {
-    val cpgReturn = newReturnNode(ret, nodeSignature(ret))
+    val cpgReturn = returnNode(ret, nodeSignature(ret))
     val expr      = nullSafeAst(ret.getReturnValue)
     Ast(cpgReturn).withChild(expr).withArgEdge(cpgReturn, expr.root)
   }
