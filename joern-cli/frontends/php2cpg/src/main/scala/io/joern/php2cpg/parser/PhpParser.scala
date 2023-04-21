@@ -17,7 +17,7 @@ object PhpParser {
   private val ExecutablePath: String = {
     Option(System.getenv(PhpParserHomeEnvVar)) match {
       case Some(phpParserPath) if phpParserPath.nonEmpty =>
-        logger.info(s"Using php-parser path from PHP_PARSER_HOME envvar: ${phpParserPath}")
+        logger.debug(s"Using php-parser path from PHP_PARSER_HOME envvar: ${phpParserPath}")
         phpParserPath
 
       case _ =>
@@ -26,7 +26,7 @@ object PhpParser {
         val fixedDir = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
         val phpParserPath =
           Paths.get(fixedDir, "php2cpg", "bin", "PHP-Parser", "bin", "php-parse").toAbsolutePath.toString
-        logger.info(s"PHP_PARSER_HOME not set. Using default php-parser location: ${phpParserPath}")
+        logger.debug(s"PHP_PARSER_HOME not set. Using default php-parser location: ${phpParserPath}")
         phpParserPath
     }
   }
