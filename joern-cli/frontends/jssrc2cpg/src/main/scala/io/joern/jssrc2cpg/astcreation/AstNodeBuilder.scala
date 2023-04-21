@@ -25,13 +25,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(columnNumber)
   }
 
-  protected def createTypeRefNode(code: String, typeFullName: String, classNode: BabelNodeInfo): NewTypeRef =
-    NewTypeRef()
-      .code(code)
-      .typeFullName(typeFullName)
-      .lineNumber(classNode.lineNumber)
-      .columnNumber(classNode.columnNumber)
-
   protected def createTypeDeclNode(
     name: String,
     fullName: String,

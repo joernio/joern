@@ -232,11 +232,11 @@ trait AstForTypesCreator { this: AstCreator =>
 
     addModifier(typeDeclNode, tsEnum.json)
 
-    val typeRefNode = createTypeRefNode(s"enum $typeName", typeFullName, tsEnum)
+    val typeRefNode_ = typeRefNode(tsEnum, s"enum $typeName", typeFullName)
 
     methodAstParentStack.push(typeDeclNode)
     dynamicInstanceTypeStack.push(typeFullName)
-    typeRefIdStack.push(typeRefNode)
+    typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
 
     val memberAsts = tsEnum.json("members").arr.toList.flatMap(m => astsForEnumMember(createBabelNodeInfo(m)))
@@ -256,7 +256,7 @@ trait AstForTypesCreator { this: AstCreator =>
     }
 
     diffGraph.addEdge(methodAstParentStack.head, typeDeclNode, EdgeTypes.AST)
-    Ast(typeRefNode)
+    Ast(typeRefNode_)
   }
 
   private def isStaticMember(json: Value): Boolean = {
@@ -305,11 +305,11 @@ trait AstForTypesCreator { this: AstCreator =>
 
     diffGraph.addEdge(methodAstParentStack.head, typeDeclNode, EdgeTypes.AST)
 
-    val typeRefNode = createTypeRefNode(s"class $typeName", typeFullName, clazz)
+    val typeRefNode_ = typeRefNode(clazz, s"class $typeName", typeFullName)
 
     methodAstParentStack.push(typeDeclNode)
     dynamicInstanceTypeStack.push(typeFullName)
-    typeRefIdStack.push(typeRefNode)
+    typeRefIdStack.push(typeRefNode_)
 
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
 
@@ -354,7 +354,7 @@ trait AstForTypesCreator { this: AstCreator =>
     }
 
     if (shouldCreateAssignmentCall) {
-      diffGraph.addEdge(localAstParentStack.head, typeRefNode, EdgeTypes.AST)
+      diffGraph.addEdge(localAstParentStack.head, typeRefNode_, EdgeTypes.AST)
 
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
       // the class definition assigned to its constructor
@@ -375,7 +375,7 @@ trait AstForTypesCreator { this: AstCreator =>
         clazz.columnNumber
       )
     } else {
-      Ast(typeRefNode)
+      Ast(typeRefNode_)
     }
   }
 

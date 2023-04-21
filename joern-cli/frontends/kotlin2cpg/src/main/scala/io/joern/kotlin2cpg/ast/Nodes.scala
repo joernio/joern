@@ -217,19 +217,6 @@ object Nodes {
       .columnNumber(column)
   }
 
-  def typeRefNode(
-    code: String,
-    typeFullName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewTypeRef = {
-    NewTypeRef()
-      .code(code)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   def unknownNode(
     code: String,
     parserTypeName: String,

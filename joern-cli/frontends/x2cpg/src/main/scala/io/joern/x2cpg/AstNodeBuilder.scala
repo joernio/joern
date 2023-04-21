@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewFieldIdentifier,
   NewMethodRef,
   NewReturn,
+  NewTypeRef,
   NewUnknown
 }
 
@@ -27,6 +28,14 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     NewMethodRef()
       .code(name)
       .methodFullName(fullName)
+      .typeFullName(typeFullName)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
+
+  protected def typeRefNode(node: Node, code: String, typeFullName: String): NewTypeRef = {
+    NewTypeRef()
+      .code(code)
       .typeFullName(typeFullName)
       .lineNumber(line(node))
       .columnNumber(column(node))
