@@ -151,7 +151,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewReturn,
   NewTypeDecl,
   NewTypeRef,
-  NewUnknown
 }
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
 import io.joern.x2cpg.datastructures.Global
@@ -203,8 +202,6 @@ object AstWithStaticInit {
 class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Global, symbolSolver: JavaSymbolSolver)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[Node, AstCreator] {
-
-  import io.joern.javasrc2cpg.passes.AstCreator._
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
