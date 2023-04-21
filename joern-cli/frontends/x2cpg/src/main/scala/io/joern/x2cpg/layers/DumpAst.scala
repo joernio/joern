@@ -23,7 +23,7 @@ class DumpAst(options: AstDumpOptions) extends LayerCreator {
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val cpg = context.cpg
     cpg.method.zipWithIndex.foreach { case (method, i) =>
-      val str = method.dotAst.head
+      val str = method.dotAst.next()
       (File(options.outDir) / s"$i-ast.dot").write(str)
     }
   }

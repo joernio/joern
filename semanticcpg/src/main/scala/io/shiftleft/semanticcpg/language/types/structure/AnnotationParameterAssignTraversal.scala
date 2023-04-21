@@ -14,9 +14,11 @@ class AnnotationParameterAssignTraversal(val traversal: Traversal[AnnotationPara
 
   /** Traverse to all values of annotation parameters
     */
-  def value: Traversal[Expression] =
+  def value: Traversal[Expression] = {
+    import io.shiftleft.semanticcpg.language._
     traversal
       .flatMap(_.astOut)
       .filterNot(_.isInstanceOf[AnnotationParameter])
       .cast[Expression]
+  }
 }

@@ -41,7 +41,7 @@ package object testing {
           graph.addNode(namespace)
           graph.addEdge(namespaceBlock, namespace, EdgeTypes.REF)
           if (inFile.isDefined) {
-            val fileNode = cpg.file.name(inFile.get).head
+            val fileNode = cpg.file.name(inFile.get).next()
             graph.addEdge(namespaceBlock, fileNode, EdgeTypes.SOURCE_FILE)
           }
         }
@@ -73,11 +73,11 @@ package object testing {
           graph.addEdge(member, modifier, EdgeTypes.AST)
 
           if (inNamespace.isDefined) {
-            val namespaceBlock = cpg.namespaceBlock(inNamespace.get).head
+            val namespaceBlock = cpg.namespaceBlock(inNamespace.get).next()
             graph.addEdge(namespaceBlock, typeDeclNode, EdgeTypes.AST)
           }
           if (inFile.isDefined) {
-            val fileNode = cpg.file.name(inFile.get).head
+            val fileNode = cpg.file.name(inFile.get).next()
             graph.addEdge(typeDeclNode, fileNode, EdgeTypes.SOURCE_FILE)
           }
         }
@@ -115,7 +115,7 @@ package object testing {
         graph.addEdge(method, modifier, EdgeTypes.AST)
 
         if (inTypeDecl.isDefined) {
-          val typeDeclNode = cpg.typeDecl.name(inTypeDecl.get).head
+          val typeDeclNode = cpg.typeDecl.name(inTypeDecl.get).next()
           graph.addEdge(typeDeclNode, method, EdgeTypes.AST)
         }
       }
@@ -137,7 +137,7 @@ package object testing {
 
     def withCallInMethod(methodName: String, callName: String, code: Option[String] = None): MockCpg =
       withCustom { (graph, cpg) =>
-        val methodNode = cpg.method.name(methodName).head
+        val methodNode = cpg.method.name(methodName).next()
         val blockNode  = methodNode.block
         val callNode   = NewCall().name(callName).code(code.getOrElse(callName))
         graph.addNode(callNode)
@@ -147,8 +147,8 @@ package object testing {
 
     def withMethodCall(calledMethod: String, callingMethod: String, code: Option[String] = None): MockCpg =
       withCustom { (graph, cpg) =>
-        val callingMethodNode = cpg.method.name(callingMethod).head
-        val calledMethodNode  = cpg.method.name(calledMethod).head
+        val callingMethodNode = cpg.method.name(callingMethod).next()
+        val calledMethodNode  = cpg.method.name(calledMethod).next()
         val callNode          = NewCall().name(calledMethod).code(code.getOrElse(calledMethod))
         graph.addEdge(callNode, calledMethodNode, EdgeTypes.CALL)
         graph.addEdge(callingMethodNode, callNode, EdgeTypes.CONTAINS)
@@ -156,7 +156,7 @@ package object testing {
 
     def withLocalInMethod(methodName: String, localName: String): MockCpg =
       withCustom { (graph, cpg) =>
-        val methodNode = cpg.method.name(methodName).head
+        val methodNode = cpg.method.name(methodName).next()
         val blockNode  = methodNode.block
         val typeNode   = NewType().name("alocaltype")
         val localNode  = NewLocal().name(localName).typeFullName("alocaltype")
@@ -168,7 +168,7 @@ package object testing {
 
     def withLiteralArgument(callName: String, literalCode: String): MockCpg = {
       withCustom { (graph, cpg) =>
-        val callNode    = cpg.call.name(callName).head
+        val callNode    = cpg.call.name(callName).next()
         val methodNode  = callNode.method
         val literalNode = NewLiteral().code(literalCode)
         val typeDecl = NewTypeDecl()
@@ -189,7 +189,7 @@ package object testing {
       withArgument(callName, NewCall().name(callArgName).code(code).argumentIndex(index))
 
     def withArgument(callName: String, newNode: NewNode): MockCpg = withCustom { (graph, cpg) =>
-      val callNode   = cpg.call.name(callName).head
+      val callNode   = cpg.call.name(callName).next()
       val methodNode = callNode.method
       val typeDecl   = NewTypeDecl().name("abc")
       graph.addEdge(callNode, newNode, EdgeTypes.AST)

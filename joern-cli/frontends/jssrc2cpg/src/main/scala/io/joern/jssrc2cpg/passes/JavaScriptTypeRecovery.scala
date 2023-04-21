@@ -44,7 +44,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   /** A heuristic method to determine if a call is a constructor or not.
     */
   override protected def isConstructor(c: Call): Boolean = {
-    c.name.endsWith("factory") && c.inCall.astParent.headOption.exists(_.isInstanceOf[Block])
+    c.name.endsWith("factory") && c.inCall.astParent.nextOption().exists(_.isInstanceOf[Block])
   }
 
   override protected def visitImport(i: Import): Unit = for {
@@ -56,7 +56,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     val sep         = Matcher.quoteReplacement(JFile.separator)
     val currentFile = codeRoot + (cu match {
       case x: File => x.name
-      case _       => cu.file.name.headOption.getOrElse("")
+      case _       => cu.file.name.nextOption().getOrElse("")
     })
     // TODO: At times there is an operation inside of a require, e.g. path.resolve(__dirname + "/../config/env/all.js")
     //  this tries to recover the string but does not perform string constant propagation
@@ -75,7 +75,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     ) match {
       case Failure(_) =>
         logger.warn(s"Unable to resolve import due to irregular regex at '${i.importedEntity.getOrElse("")}'")
-        Traversal.empty
+        Iterator.empty
       case Success(modules) => modules
     }
 
@@ -125,7 +125,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
             val methodName = x.argumentOption(2).map(_.code).getOrElse(b.referencedMethod.name)
             if (methodName == "exports") symbolTable.append(CallAlias(alias, Option("this")), Set(b.methodFullName))
             else symbolTable.append(CallAlias(methodName, Option(alias)), Set(b.methodFullName))
-            symbolTable.append(LocalVar(alias), b.referencedMethod.astParent.collectAll[Method].fullName.toSet)
+            symbolTable.append(LocalVar(alias), Iterator.single(b).referencedMethod.astParent.collectAll[Method].fullName.toSet)
           case _ =>
             Set.empty[String]
         }
@@ -154,12 +154,12 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.contains(".alloc")) {
       def newChildren = c.inAssignment.astSiblings.isCall.nameExact("<operator>.new").astChildren
-      val possibleImportIdentifier = newChildren.isIdentifier.headOption match {
+      val possibleImportIdentifier = newChildren.isIdentifier.nextOption() match {
         case Some(i) => symbolTable.get(i)
         case None    => Set.empty[String]
       }
       val possibleConstructorPointer =
-        newChildren.astChildren.isFieldIdentifier.map(f => CallAlias(f.canonicalName, Some("this"))).headOption match {
+        newChildren.astChildren.isFieldIdentifier.map(f => CallAlias(f.canonicalName, Some("this"))).nextOption() match {
           case Some(fi) => symbolTable.get(fi)
           case None     => Set.empty[String]
         }

@@ -26,7 +26,7 @@ class DumpPdg(options: PdgDumpOptions)(implicit semantics: Semantics = DefaultSe
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val cpg = context.cpg
     cpg.method.zipWithIndex.foreach { case (method, i) =>
-      val str = method.dotPdg.head
+      val str = method.dotPdg.next()
       (File(options.outDir) / s"$i-pdg.dot").write(str)
     }
   }

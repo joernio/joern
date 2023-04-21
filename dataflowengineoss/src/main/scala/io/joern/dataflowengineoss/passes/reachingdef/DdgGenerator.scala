@@ -56,7 +56,7 @@ class DdgGenerator(semantics: Semantics) {
 
     // This handles `foo(new Bar()) or return new Bar()`
     def addEdgeForBlock(block: Block, towards: StoredNode): Unit = {
-      block.astChildren.lastOption match {
+      block.astChildren.toSeq.lastOption match {
         case None => // Do nothing
         case Some(node: Identifier) =>
           val edgesToAdd = in(node).toList
@@ -113,7 +113,7 @@ class DdgGenerator(semantics: Semantics) {
     def addEdgesToReturn(ret: Return): Unit = {
       // This handles `return new Bar()`, which is lowered to
       // `return {Bar tmp = Bar.alloc(); tmp.init(); tmp}`
-      usageAnalyzer.uses(ret).collectAll[Block].foreach(block => addEdgeForBlock(block, ret))
+      usageAnalyzer.uses(ret).iterator.collectAll[Block].foreach(block => addEdgeForBlock(block, ret))
       usageAnalyzer.usedIncomingDefs(ret).foreach { case (use: CfgNode, inElements) =>
         addEdge(use, ret, use.code)
         inElements
@@ -288,7 +288,7 @@ private class UsageAnalyzer(
   private def isContainer(use: StoredNode, inElement: StoredNode): Boolean = {
     inElement match {
       case call: Call if containerSet.contains(call.name) =>
-        call.argument.headOption.exists { base =>
+        call.argument.nextOption().exists { base =>
           nodeToString(use).contains(base.code)
         }
       case _ => false
@@ -302,11 +302,11 @@ private class UsageAnalyzer(
       case call: Call if containerSet.contains(call.name) =>
         inElement match {
           case param: MethodParameterIn =>
-            call.argument.headOption.exists { base =>
+            call.argument.nextOption().exists { base =>
               base.code == param.name
             }
           case identifier: Identifier =>
-            call.argument.headOption.exists { base =>
+            call.argument.nextOption().exists { base =>
               base.code == identifier.name
             }
           case _ => false

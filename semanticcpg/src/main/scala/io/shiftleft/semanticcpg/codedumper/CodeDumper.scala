@@ -37,7 +37,7 @@ object CodeDumper {
         val method: Option[Method] = node match {
           case n: Method     => Some(n)
           case n: Expression => Some(n.method)
-          case n: Local      => n.method.headOption
+          case n: Local      => n.method.nextOption()
           case _             => None
         }
         method

@@ -8,13 +8,15 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.traversal.Traversal
 
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+
 package object scan {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   implicit class ScannerStarters(val cpg: Cpg) extends AnyVal {
     def finding: Traversal[Finding] =
-      cpg.graph.nodes(NodeTypes.FINDING).cast[Finding]
+      cpg.graph.nodes(NodeTypes.FINDING).asScala.cast[Finding]
   }
 
   implicit class QueryWrapper(q: Query) {

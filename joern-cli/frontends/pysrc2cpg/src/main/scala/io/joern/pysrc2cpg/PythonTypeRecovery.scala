@@ -60,8 +60,8 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
     def relativizeNamespace(path: String) = if (path.startsWith(".")) {
       // TODO: pysrc2cpg does not link files to the correct namespace nodes
-      val root     = cpg.metaData.root.headOption.getOrElse("")
-      val fileName = i.file.name.headOption.getOrElse("").stripPrefix(root)
+      val root     = cpg.metaData.root.nextOption().getOrElse("")
+      val fileName = i.file.name.nextOption().getOrElse("").stripPrefix(root)
       val sep      = Matcher.quoteReplacement(JFile.separator)
       // The below gives us the full path of the relative "."
       val relativeNamespace =
@@ -95,7 +95,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     a.argumentOut.l match {
       case List(i: Identifier, c: Call) if c.name.isBlank && c.signature.isBlank =>
         // This is usually some decorator wrapper
-        c.argument.isMethodRef.headOption match {
+        c.argument.isMethodRef.nextOption() match {
           case Some(mRef) => visitIdentifierAssignedToMethodRef(i, mRef)
           case None       => super.visitAssignments(a)
         }
@@ -136,7 +136,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
         methodsWithExportEntityAsIdentifier.map(f => s"$f<var>$expEntity").head
       case _ =>
         // Case 4:  Import from module using alias, e.g. import bar from foo as faz
-        val rootDirectory = cpg.metaData.root.headOption
+        val rootDirectory = cpg.metaData.root.nextOption()
         val absPath       = rootDirectory.map(r => Paths.get(r, path))
         val fileOrDir     = absPath.map(a => better.files.File(a))
         val pyFile        = absPath.map(a => Paths.get(a.toString + ".py"))
@@ -161,7 +161,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
         pythonicFormGuesses.map(p => Seq(p, s"$expEntity<body>", "__init__").mkString(pathSep.toString)).toSet
       else if (isFieldOrVar) {
         val Array(m, v) = procedureName.split("<var>")
-        cpg.typeDecl.fullNameExact(m).member.nameExact(v).headOption match {
+        cpg.typeDecl.fullNameExact(m).member.nameExact(v).nextOption() match {
           case Some(i) => (i.typeFullName +: i.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
           case None    => Set.empty
         }

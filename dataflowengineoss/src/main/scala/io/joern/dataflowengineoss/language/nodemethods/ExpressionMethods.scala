@@ -32,7 +32,7 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     *   true if these nodes are arguments to the same call, false if otherwise.
     */
   def isArgToSameCallWith(other: Expression): Boolean =
-    node.astParent.collectAll[Call].headOption.equals(other.astParent.collectAll[Call].headOption)
+    Iterator.single(node).astParent.collectAll[Call].nextOption().equals(Iterator.single(other).astParent.collectAll[Call].nextOption())
 
   /** Determines if this node has a flow to the given target node in the defined semantics.
     * @param tgt

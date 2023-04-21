@@ -16,7 +16,7 @@ import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
-import overflowdb.traversal.iterableToTraversal
+import overflowdb.traversal._
 
 import scala.annotation.unused
 import scala.jdk.CollectionConverters._
@@ -31,7 +31,7 @@ trait KtPsiToAst {
     val importAsts       = importDirectives.toList.map(astForImportDirective)
     val namespaceBlocksForImports =
       for {
-        node <- importAsts.flatMap(_.root.collectAll[NewImport])
+        node <- importAsts.flatMap(_.root.iterator.collectAll[NewImport])
         name = getName(node)
       } yield Ast(namespaceBlockNode(name, name, relativizedPath))
 
@@ -294,7 +294,7 @@ trait KtPsiToAst {
         componentNMethodAsts(typeDecl, ktClass.getPrimaryConstructor.getValueParameters.asScala.toSeq)
       case _ => Seq()
     }
-    val componentNBindingsInfo = _componentNMethodAsts.flatMap(_.root.collectAll[NewMethod]).map { methodNode =>
+    val componentNBindingsInfo = _componentNMethodAsts.flatMap(_.root.iterator.collectAll[NewMethod]).map { methodNode =>
       val node = bindingNode(methodNode.name, methodNode.signature, methodNode.fullName)
       BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
     }
@@ -304,11 +304,11 @@ trait KtPsiToAst {
       .getOrElse(List())
     val memberAsts = classDeclarations.toSeq.map(astForMember)
     val innerTypeDeclAsts =
-      classDeclarations.toSeq
+      classDeclarations.toSeq.iterator
         .collectAll[KtClassOrObject]
         .filterNot(typeInfoProvider.isCompanionObject)
         .map(astsForDeclaration(_))
-        .flatten
+        .flatMap(identity).toSeq
 
     val classFunctions = Option(ktClass.getBody)
       .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
@@ -316,7 +316,7 @@ trait KtPsiToAst {
     val methodAsts = classFunctions.toSeq.flatMap { classFn =>
       astsForMethod(classFn, needsThisParameter = true, withVirtualModifier = true)
     }
-    val bindingsInfo = methodAsts.flatMap(_.root.collectAll[NewMethod]).map { _methodNode =>
+    val bindingsInfo = methodAsts.flatMap(_.root.iterator.collectAll[NewMethod]).map { _methodNode =>
       val node = bindingNode(_methodNode.name, _methodNode.signature, _methodNode.fullName)
       BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, _methodNode, EdgeTypes.REF)))
     }
@@ -438,7 +438,7 @@ trait KtPsiToAst {
     }
     val declarationAsts          = declarations.flatMap(astsForDeclaration)
     val allStatementsButLast     = statements.dropRight(1)
-    val allStatementsButLastAsts = allStatementsButLast.map(astsForExpression(_, None)).flatten
+    val allStatementsButLastAsts = allStatementsButLast.map(astsForExpression(_, None)).flatMap(identity)
 
     val lastStatementAsts =
       if (implicitReturnAroundLastStatement && statements.nonEmpty) {
@@ -625,7 +625,7 @@ trait KtPsiToAst {
     val identifierAst = astWithRefEdgeMaybe(arrayExpr.getText, identifier)
     val astsForIndexExpr = expression.getIndexExpressions.asScala.zipWithIndex.map { case (expr, idx) =>
       astsForExpression(expr, Option(idx + 1))
-    }.flatten
+    }.flatMap(identity)
     val callNode =
       operatorCallNode(
         Operators.indexAccess,
@@ -732,7 +732,7 @@ trait KtPsiToAst {
 
         val argAsts = withIndex(call.getValueArguments.asScala.toSeq) { case (arg, idx) =>
           astsForExpression(arg.getArgumentExpression, Some(idx))
-        }.flatten
+        }.flatMap(identity)
 
         val (fullName, signature) = typeInfoProvider.fullNameWithSignature(call, (TypeConstants.any, TypeConstants.any))
         registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
@@ -934,7 +934,7 @@ trait KtPsiToAst {
       case typedExpr: KtCallExpression =>
         withIndex(typedExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
           astsForExpression(arg.getArgumentExpression, Some(idx))
-        }.flatten.toList
+        }.flatMap(identity).toList
       case typedExpr: KtNameReferenceExpression =>
         val node = fieldIdentifierNode(typedExpr.getText).argumentIndex(2)
         List(Ast(node))
@@ -1130,7 +1130,7 @@ trait KtPsiToAst {
     val tryBlockAst = astsForExpression(expr.getTryBlock, None).headOption.getOrElse(Ast())
     val clauseAsts = expr.getCatchClauses.asScala.toSeq.map { entry =>
       astsForExpression(entry.getCatchBody, None)
-    }.flatten
+    }.flatMap(identity)
     val node = operatorCallNode(Operators.tryCatch, expr.getText, Option(typeFullName), line(expr), column(expr))
     callAst(withArgumentIndex(node, argIdx), List(tryBlockAst) ++ clauseAsts)
   }

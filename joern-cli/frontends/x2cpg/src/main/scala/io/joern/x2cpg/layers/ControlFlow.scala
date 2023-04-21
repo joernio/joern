@@ -15,7 +15,7 @@ object ControlFlow {
   def defaultOpts         = new LayerCreatorOptions()
 
   def passes(cpg: Cpg): Iterator[CpgPassBase] = {
-    val cfgCreationPass = cpg.metaData.language.lastOption match {
+    val cfgCreationPass = cpg.metaData.language.toSeq.lastOption match {
       case Some(Languages.GHIDRA) => Iterator[CpgPassBase]()
       case Some(Languages.LLVM)   => Iterator[CpgPassBase]()
       case _                      => Iterator[CpgPassBase](new CfgCreationPass(cpg))

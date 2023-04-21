@@ -1,14 +1,13 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal._
 
 import scala.jdk.CollectionConverters._
 
 class MethodParameterOutTraversal(val traversal: Traversal[MethodParameterOut]) extends AnyVal {
-
-  def paramIn: Traversal[MethodParameterIn] = traversal.flatMap(_.parameterLinkIn.headOption)
+  import io.shiftleft.semanticcpg.language._
+  def paramIn: Traversal[MethodParameterIn] = traversal.flatMap(_.parameterLinkIn.nextOption())
 
   /* method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def index(num: Int): Traversal[MethodParameterOut] =
@@ -30,7 +29,7 @@ class MethodParameterOutTraversal(val traversal: Traversal[MethodParameterOut]) 
       method = paramOut.method
       call <- method.callIn
       arg  <- call.argumentOut.collectAll[Expression]
-      if paramOut.parameterLinkIn.index.headOption.contains(arg.argumentIndex)
+      if paramOut.parameterLinkIn.index.nextOption().contains(arg.argumentIndex)
     } yield arg
 
 }

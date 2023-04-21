@@ -15,7 +15,7 @@ class NamespaceCreator(cpg: Cpg) extends CpgPass(cpg) {
   /** Creates NAMESPACE nodes and connects NAMESPACE_BLOCKs to corresponding NAMESPACE nodes.
     */
   override def run(dstGraph: DiffGraphBuilder): Unit = {
-    cpg.namespaceBlock
+    cpg.namespaceBlock.toSeq
       .groupBy(_.name)
       .foreach { case (name: String, blocks) =>
         val namespace = NewNamespace().name(name)

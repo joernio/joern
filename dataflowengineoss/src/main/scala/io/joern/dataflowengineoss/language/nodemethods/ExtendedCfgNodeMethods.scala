@@ -61,8 +61,8 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     withInvisible: Boolean,
     cache: mutable.HashMap[CfgNode, Vector[PathElement]]
   )(implicit semantics: Semantics): Traversal[PathElement] = {
-    val result = ddgInPathElemInternal(path, withInvisible, cache).to(Traversal)
-    result
+    val result = ddgInPathElemInternal(path, withInvisible, cache)
+    result.iterator
   }
 
   private def ddgInPathElemInternal(

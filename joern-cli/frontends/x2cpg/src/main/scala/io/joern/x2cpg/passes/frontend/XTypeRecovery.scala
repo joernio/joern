@@ -182,7 +182,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** The root of the target codebase.
     */
-  protected val codeRoot: String = cpg.metaData.root.headOption.getOrElse("") + java.io.File.separator
+  protected val codeRoot: String = cpg.metaData.root.nextOption().getOrElse("") + java.io.File.separator
 
   /** The delimiter used to separate methods/functions in qualified names.
     */
@@ -256,8 +256,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   private def debugLocation(n: AstNode): String = {
-    val rootPath = cpg.metaData.root.headOption.getOrElse("")
-    val fileName = n.file.name.headOption.getOrElse("<unknown>").stripPrefix(rootPath)
+    val rootPath = cpg.metaData.root.nextOption().getOrElse("")
+    val fileName = n.file.name.nextOption().getOrElse("<unknown>").stripPrefix(rootPath)
     val lineNo   = n.lineNumber.getOrElse("<unknown>")
     s"$fileName#L$lineNo"
   }
@@ -324,12 +324,13 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case x: Call if x.name.equals(Operators.assignment)                => visitAssignments(new Assignment(x))
         case x: Identifier if symbolTable.contains(x)                      => symbolTable.get(x)
         case x: Call if symbolTable.contains(x)                            => symbolTable.get(x)
-        case x: Call if x.argument.headOption.exists(symbolTable.contains) => setCallMethodFullNameFromBase(x)
+        case x: Call if x.argument.nextOption().exists(symbolTable.contains) => setCallMethodFullNameFromBase(x)
         case x: Block                                                      => visitStatementsInBlock(x)
         case x: Local                                                      => symbolTable.get(x)
         case _: ControlStructure                                           => Set.empty[String]
         case x => logger.debug(s"Unhandled block element ${x.label}:${x.code} @ ${debugLocation(x)}"); Set.empty[String]
       }
+      .toSeq
       .lastOption
       .getOrElse(Set.empty[String])
 
@@ -343,7 +344,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       visitIdentifierAssignedToConstructor(i, c)
     } else if (symbolTable.contains(c)) {
       visitIdentifierAssignedToCallRetVal(i, c)
-    } else if (c.argument.headOption.exists(symbolTable.contains)) {
+    } else if (c.argument.nextOption().exists(symbolTable.contains)) {
       setCallMethodFullNameFromBase(c)
       // Repeat this method now that the call has a type
       visitIdentifierAssignedToCall(i, c)
@@ -362,7 +363,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Will build a call full path using the call base node. This method assumes the base node is in the symbol table.
     */
   protected def setCallMethodFullNameFromBase(c: Call): Set[String] = {
-    val recTypes = c.argument.headOption
+    val recTypes = c.argument.nextOption()
       .map {
         case x: Call if x.typeFullName != "ANY" => Set(x.typeFullName)
         case x: Call =>
@@ -406,7 +407,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * which this method uses [[isField]] to determine.
     */
   protected def associateTypes(symbol: LocalVar, fa: FieldAccess, types: Set[String]): Set[String] = {
-    fa.astChildren.filterNot(_.code.matches("(this|self)")).headOption.collect {
+    fa.astChildren.filterNot(_.code.matches("(this|self)")).nextOption().collect {
       case fi: FieldIdentifier =>
         getFieldParents(fa).foreach(t => persistMemberWithTypeDecl(t, fi.canonicalName, types))
       case i: Identifier if isField(i) =>
@@ -768,16 +769,16 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case x: MethodParameterIn                => setTypeFromTypeHints(x)
         case x: MethodReturn                     => setTypeFromTypeHints(x)
         case x: Identifier if symbolTable.contains(x) =>
-          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+          setTypeInformationForRecCall(x, x.inCall.nextOption(), x.inCall.argument.take(2).l)
         case x: Call if symbolTable.contains(x) =>
           val typs =
             if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
             else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
           storeCallTypeInfo(x, typs)
         case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
-          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
-        case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
-          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+          setTypeInformationForRecCall(x, x.inCall.nextOption(), x.inCall.argument.take(2).l)
+        case x: Call if x.argument.nextOption().exists(symbolTable.contains) =>
+          setTypeInformationForRecCall(x, x.inCall.nextOption(), x.inCall.argument.take(2).l)
         case _ =>
       }
     // Set types in an atomic way
@@ -823,19 +824,19 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       // Case 3: 'i' is the receiver for a field access on member 'f'
       case (Some(fieldAccess: Call), List(i: Identifier, f: FieldIdentifier))
           if fieldAccess.name.equals(Operators.fieldAccess) =>
-        val idHints   = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
+        val _idHints   = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
         val callTypes = symbolTable.get(fieldAccess)
-        persistType(i, idHints)
+        persistType(i, _idHints)
         persistType(fieldAccess, callTypes)
-        Traversal.from(fieldAccess.astParent).isCall.headOption match {
+        Iterator.single(fieldAccess.astParent).isCall.nextOption() match {
           case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
             persistType(callFromFieldName, symbolTable.get(callFromFieldName))
-          case Some(callFromFieldName) if idHints.nonEmpty =>
-            persistType(callFromFieldName, idHints.map(it => createCallFromIdentifierTypeFullName(it, f.canonicalName)))
+          case Some(callFromFieldName) if _idHints.nonEmpty =>
+            persistType(callFromFieldName, _idHints.map(it => createCallFromIdentifierTypeFullName(it, f.canonicalName)))
           case _ =>
         }
         // This field may be a function pointer
-        handlePotentialFunctionPointer(fieldAccess, idHints, f.canonicalName, f.argumentIndex, Option(i.name))
+        handlePotentialFunctionPointer(fieldAccess, _idHints, f.canonicalName, f.argumentIndex, Option(i.name))
       case _ => persistType(x, symbolTable.get(x))
     }
 
@@ -860,7 +861,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   ): Unit = {
     // Sometimes the function identifier is an argument to the call itself as a "base". In this case we don't need
     // a method ref. This happens in jssrc2cpg
-    if (funcPtr.astParent.collectAll[Call].exists(_.name == funcName)) return
+    if (Iterator.single(funcPtr.astParent).collectAll[Call].exists(_.name == funcName)) return
 
     baseTypes
       .map(t => if (t.endsWith(funcName)) t else s"$t$pathSep$funcName")
@@ -932,7 +933,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     *   the types to associate.
     */
   protected def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit =
-    typeDeclTraversal(typeFullName).member.nameExact(memberName).headOption.foreach { m =>
+    typeDeclTraversal(typeFullName).member.nameExact(memberName).nextOption().foreach { m =>
       storeNodeTypeInfo(m, types.toSeq)
     }
 
@@ -944,9 +945,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     *   the corresponding member, if found
     */
   protected def getLocalMember(i: Identifier): Option[Member] =
-    typeDeclTraversal(i.method.typeDecl.fullName.headOption.getOrElse(i.method.fullName)).member
+    typeDeclTraversal(i.method.typeDecl.fullName.nextOption().getOrElse(i.method.fullName)).member
       .nameExact(i.name)
-      .headOption
+      .nextOption()
 
   private def storeNodeTypeInfo(storedNode: StoredNode, types: Seq[String]): Unit = {
     lazy val existingTypes = nodeExistingTypes(storedNode)

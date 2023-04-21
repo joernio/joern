@@ -97,7 +97,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       case None =>
         val totalSuperclasses = (cpg.typeDecl
           .fullNameExact(typDeclFullName)
-          .headOption match {
+          .nextOption() match {
           case Some(curr) => inheritTraversal(curr, inSuperDirection)
           case None       => mutable.LinkedHashSet.empty
         }).map(_.fullName)
@@ -134,7 +134,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
           .nameExact(method.name)
           .and(_.signatureExact(method.signature))
           .map(_.fullName)
-          .headOption
+          .nextOption()
       case None => None
     }
   }
@@ -180,7 +180,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
             if (cpg.graph.indexManager.isIndexed(PropertyNames.FULL_NAME)) {
               methodFullNameToNode(destMethod)
             } else {
-              cpg.method.fullNameExact(destMethod).headOption
+              cpg.method.fullNameExact(destMethod).nextOption()
             }
           )
           .toSet

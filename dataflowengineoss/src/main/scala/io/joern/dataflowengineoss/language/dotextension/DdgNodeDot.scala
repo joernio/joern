@@ -20,15 +20,15 @@ class DdgNodeDot(val traversal: Traversal[Method]) extends AnyVal {
     DotCpg14Generator.toDotCpg14(traversal)
 
   def plotDotDdg(implicit viewer: ImageViewer, semantics: Semantics = DefaultSemantics()): Unit = {
-    Shared.plotAndDisplay(traversal.dotDdg.l, viewer)
+    Shared.plotAndDisplay(traversal.dotDdg.toList, viewer)
   }
 
   def plotDotPdg(implicit viewer: ImageViewer, semantics: Semantics = DefaultSemantics()): Unit = {
-    Shared.plotAndDisplay(traversal.dotPdg.l, viewer)
+    Shared.plotAndDisplay(traversal.dotPdg.toList, viewer)
   }
 
   def plotDotCpg14(implicit viewer: ImageViewer, semantics: Semantics = DefaultSemantics()): Unit = {
-    Shared.plotAndDisplay(traversal.dotCpg14.l, viewer)
+    Shared.plotAndDisplay(traversal.dotCpg14.toList, viewer)
   }
 
 }

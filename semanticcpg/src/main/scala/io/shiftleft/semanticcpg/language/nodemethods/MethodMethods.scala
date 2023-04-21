@@ -39,20 +39,20 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
     */
   def reversePostOrder: Traversal[CfgNode] = {
     def expand(x: CfgNode) = { x.cfgNext.iterator }
-    Traversal.from(NodeOrdering.reverseNodeList(NodeOrdering.postOrderNumbering(method, expand).toList))
+    NodeOrdering.reverseNodeList(NodeOrdering.postOrderNumbering(method, expand).toList)
   }
 
   /** List of CFG nodes in post order
     */
   def postOrder: Traversal[CfgNode] = {
     def expand(x: CfgNode) = { x.cfgNext.iterator }
-    Traversal.from(NodeOrdering.nodeList(NodeOrdering.postOrderNumbering(method, expand).toList))
+    NodeOrdering.nodeList(NodeOrdering.postOrderNumbering(method, expand).toList)
   }
 
   /** The type declaration associated with this method, e.g., the class it is defined in.
     */
   def definingTypeDecl: Option[TypeDecl] =
-    Traversal.fromSingle(method).definingTypeDecl.headOption
+    Iterator.single(method).definingTypeDecl.nextOption()
 
   /** The type declaration associated with this method, e.g., the class it is defined in. Alias for 'definingTypeDecl'
     */

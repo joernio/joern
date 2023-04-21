@@ -54,7 +54,7 @@ class DdgGenerator {
 
   private def surroundingCall(node: StoredNode): StoredNode = {
     node match {
-      case arg: Expression => arg.inCall.headOption.getOrElse(node)
+      case arg: Expression => arg.inCall.nextOption().getOrElse(node)
       case _               => node
     }
   }

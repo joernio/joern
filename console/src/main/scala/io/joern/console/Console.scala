@@ -147,7 +147,7 @@ class Console[T <: Project](
       (workspace.projects.filter(_.cpg.isDefined).iterator.flatMap { project =>
         open(project.name)
         Some(project.cpg)
-      } ++ Iterator({ open(activeProjectName); None })).flatten
+      } ++ Iterator({ open(activeProjectName); None })).flatMap(identity)
     }
   }
 
@@ -252,7 +252,7 @@ class Console[T <: Project](
       case p: Project if p.cpg.isDefined =>
         p.close
         workspace.openProject(p.name)
-    }.flatten
+    }.flatMap(identity)
   }
 
   @Doc(
@@ -390,7 +390,7 @@ class Console[T <: Project](
   }
 
   def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    new io.joern.console.cpgcreation.CpgGeneratorFactory(_config).forLanguage(cpg.metaData.language.l.head) match {
+    new io.joern.console.cpgcreation.CpgGeneratorFactory(_config).forLanguage(cpg.metaData.language.toList.head) match {
       case Some(frontend) => frontend.applyPostProcessingPasses(cpg)
       case None           => cpg
     }

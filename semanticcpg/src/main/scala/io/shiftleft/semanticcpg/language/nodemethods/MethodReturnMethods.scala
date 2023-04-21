@@ -3,7 +3,7 @@ package io.shiftleft.semanticcpg.language.nodemethods
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodReturn, NewLocation, Type}
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.{HasLocation, LocationCreator, _}
-import overflowdb.traversal.{Traversal, iterableToTraversal}
+import overflowdb.traversal.Traversal
 
 class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtension with HasLocation {
   override def location: NewLocation = {
@@ -12,7 +12,7 @@ class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtens
 
   def returnUser(implicit callResolver: ICallResolver): Traversal[Call] = {
     val method    = node._methodViaAstIn
-    val callsites = callResolver.getMethodCallsites(method)
+    val callsites = callResolver.getMethodCallsites(method).iterator
     // TODO for now we filter away all implicit calls because a change of the
     // return type to CallRepr would lead to a break in the API aka
     // the DSL steps which are subsequently allowed to be called. Before

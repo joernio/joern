@@ -8,6 +8,7 @@ import overflowdb.Node
 import overflowdb.traversal._
 import overflowdb.traversal.help.Doc
 
+
 /** Steps for all node types
   *
   * This is the base class for all steps defined on
@@ -78,8 +79,8 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Traversal[NodeType]) exte
     var cpg: Cpg = null
     traversal.map { node =>
       if (cpg == null) cpg = new Cpg(node.graph)
-      val language = cpg.metaData.language.headOption
-      val rootPath = cpg.metaData.root.headOption
+      val language = cpg.metaData.language.nextOption()
+      val rootPath = cpg.metaData.root.nextOption()
       CodeDumper.dump(node.location, language, rootPath, highlight)
     }.l
   }
@@ -87,7 +88,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Traversal[NodeType]) exte
   /* follow the incoming edges of the given type as long as possible */
   protected def walkIn(edgeType: String): Traversal[Node] =
     traversal
-      .repeat(_.in(edgeType))(_.until(_.in(edgeType).count.filter(_ == 0)))
+      .repeat(_.in(edgeType))(_.until{ iter => if(iter.in(edgeType).size == 0) None.iterator else Some(null).iterator })
 
   @Doc(
     info = "Tag node with `tagName`",

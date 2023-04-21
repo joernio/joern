@@ -15,7 +15,7 @@ class MethodTraversal(val traversal: Traversal[Method]) extends AnyVal {
     val sinkMethods   = traversal.dedup
 
     if (sourceMethods.isEmpty || sinkMethods.isEmpty) {
-      PathAwareTraversal.empty
+      new PathAwareTraversal[Method](Iterator.empty)
     } else {
       sinkMethods
         .repeat(

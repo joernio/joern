@@ -44,8 +44,8 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
   private val params           = method.parameter.sortBy(_.index)
   private val firstParam       = params.headOption
   private val lastParam        = params.lastOption
-  private val firstOutputParam = firstParam.flatMap(_.asOutput.headOption)
-  private val lastOutputParam  = method.parameter.sortBy(_.index).asOutput.lastOption
+  private val firstOutputParam = firstParam.flatMap(_.asOutput.nextOption())
+  private val lastOutputParam  = method.parameter.sortBy(_.index).asOutput.toSeq.lastOption
 
   private val lastActualCfgNode = exitNode._cfgIn.nextOption()
 
@@ -94,7 +94,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
     ns.map {
       case param: MethodParameterIn     => param    -> previousParamOrEntry(param)
       case paramOut: MethodParameterOut => paramOut -> previousOutputParamOrLastNodeOfBody(paramOut)
-      case n: CfgNode if method.cfgFirst.headOption.contains(n) => n -> List(lastParam.getOrElse(method))
+      case n: CfgNode if method.cfgFirst.nextOption().contains(n) => n -> List(lastParam.getOrElse(method))
       case n if n == exitNode                                   => n -> lastOutputParamOrLastNodeOfBody()
       case n @ (cfgNode: CfgNode)                               => n -> cfgNode.cfgPrev.l
       case n =>
@@ -115,13 +115,13 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
     n.out(EdgeTypes.CFG).map(_.asInstanceOf[StoredNode]).l
 
   private def nextParamOrBody(param: MethodParameterIn): List[StoredNode] = {
-    val nextParam = param.method.parameter.index(param.index + 1).headOption
+    val nextParam = param.method.parameter.index(param.index + 1).nextOption()
     if (nextParam.isDefined) { nextParam.toList }
     else { param.method.cfgFirst.l }
   }
 
   private def nextParamOutOrExit(paramOut: MethodParameterOut): List[StoredNode] = {
-    val nextParam = paramOut.method.parameter.index(paramOut.index + 1).asOutput.headOption
+    val nextParam = paramOut.method.parameter.index(paramOut.index + 1).asOutput.nextOption()
     if (nextParam.isDefined) { nextParam.toList }
     else { List(exitNode) }
   }
@@ -137,13 +137,13 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
   }
 
   private def previousParamOrEntry(param: MethodParameterIn): List[StoredNode] = {
-    val prevParam = param.method.parameter.index(param.index - 1).headOption
+    val prevParam = param.method.parameter.index(param.index - 1).nextOption()
     if (prevParam.isDefined) { prevParam.toList }
     else { List(method) }
   }
 
   private def previousOutputParamOrLastNodeOfBody(paramOut: MethodParameterOut): List[StoredNode] = {
-    val prevParam = paramOut.method.parameter.index(paramOut.index - 1).asOutput.headOption
+    val prevParam = paramOut.method.parameter.index(paramOut.index - 1).asOutput.nextOption()
     if (prevParam.isDefined) { prevParam.toList }
     else { lastActualCfgNode.toList }
   }
@@ -280,7 +280,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
           /** Killing an identifier should also kill field accesses on that identifier. For example, a reassignment `x =
             * new Box()` should kill any previous calls to `x.value`, `x.length()`, etc.
             */
-          val sameObjects: Iterable[Call] = allCalls.values.flatten
+          val sameObjects: Iterable[Call] = allCalls.values.flatMap(identity)
             .filter(_.name == Operators.fieldAccess)
             .filter(_.ast.isIdentifier.nameExact(identifier.name).nonEmpty)
 

@@ -179,5 +179,5 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
 
   def numberOfLines: Traversal[Int] = traversal.map(_.numberOfLines)
 
-  private def traversal = Traversal.from(iterableOnce)
+  private def traversal: Iterator[Method] = iterableOnce.iterator
 }

@@ -43,7 +43,7 @@ class SourceTravsToStartingPointsTask[NodeType](sourceTravs: Traversal[NodeType]
     val sources: List[StoredNode] = sourceTravs
       .flatMap(_.toList)
       .collect { case n: StoredNode => n }
-      .dedup
+      .distinct
       .toList
       .sortBy(_.id)
     val tasks = sources.map(src => (src, new SourceToStartingPoints(src).fork()))
@@ -76,10 +76,10 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case member: Member =>
         usages(targetsToClassIdentifierPair(List(member)))
       case x: Declaration =>
-        List(x).collectAll[CfgNode].toList
+        Iterator(x).collectAll[CfgNode].toList
       case x: Identifier =>
         withFieldAndIndexAccesses(
-          List(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
+          Iterator(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
         )
       case x => List(x).collect { case y: CfgNode => y }
     }
@@ -101,7 +101,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   private def usages(pairs: List[(TypeDecl, AstNode)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, astNode) =>
-      val nonConstructorMethods = methodsRecursively(typeDecl)
+      val nonConstructorMethods = methodsRecursively(typeDecl).iterator
         .and(
           _.whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName)),
           // handle Python
@@ -125,7 +125,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
             }
           }
           .takeWhile(notLeftHandOfAssignment)
-          .headOption
+          .nextOption()
       }.l
       usagesInSameClass ++ usagesInOtherClasses
     }
@@ -140,7 +140,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case identifier: Identifier =>
         usagesForName(identifier.name, m)
       case fieldIdentifier: FieldIdentifier =>
-        val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+        val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber))
         fieldIdentifiers
           .canonicalNameExact(fieldIdentifier.canonicalName)
           .inFieldAccess
@@ -153,13 +153,13 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   private def usagesForName(name: String, m: Method): List[Expression] = {
-    val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+    val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber))
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
-    val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+    val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber))
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
       .inFieldAccess
-      .where(_.argument(1).codeExact("this", "self", m.typeDecl.name.head))
+      .where(_.argument(1).codeExact("this", "self", m.typeDecl.name.next()))
       .takeWhile(notLeftHandOfAssignment)
       .l
     (identifierUsages ++ fieldAccessUsages).headOption.toList
@@ -195,7 +195,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   private def isTargetInAssignment(identifier: Identifier): List[Identifier] = {
-    Traversal(identifier).argumentIndex(1).where(_.inAssignment).l
+    Iterator.single(identifier).argumentIndex(1).where(_.inAssignment).l
   }
 
   private def notLeftHandOfAssignment(x: Expression): Boolean = {

@@ -325,7 +325,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .map(cfgFor)
       .reduceOption((x, y) => x ++ y)
       .getOrElse(Cfg.empty) ++ cfgForSingleNode(call)
-    val cfgForExpansion = call.astChildren.lastOption.map(cfgFor).getOrElse(Cfg.empty)
+    val cfgForExpansion = call.astChildren.toSeq.lastOption.map(cfgFor).getOrElse(Cfg.empty)
     val cfg = Cfg
       .from(cfgForMacroCall, cfgForExpansion)
       .copy(
@@ -378,8 +378,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * inner CFG as bodyCfg ++ conditionCfg and then connect edges according to the semantics of do-while.
     */
   protected def cfgForDoStatement(node: ControlStructure): Cfg = {
-    val bodyCfg      = node.astChildren.where(_.order(1)).headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val bodyCfg      = node.astChildren.where(_.order(1)).nextOption().map(cfgFor).getOrElse(Cfg.empty)
+    val conditionCfg = node.condition.nextOption().map(cfgFor).getOrElse(Cfg.empty)
     val innerCfg     = bodyCfg ++ conditionCfg
 
     val diffGraphs =
@@ -403,9 +403,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * are optional.
     */
   protected def cfgForWhileStatement(node: ControlStructure): Cfg = {
-    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val trueCfg      = Traversal.fromSingle(node).whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val falseCfg     = Traversal.fromSingle(node).whenFalse.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val conditionCfg = node.condition.nextOption().map(cfgFor).getOrElse(Cfg.empty)
+    val trueCfg      =node.whenTrue.nextOption().map(cfgFor).getOrElse(Cfg.empty)
+    val falseCfg     = node.whenFalse.nextOption().map(cfgFor).getOrElse(Cfg.empty)
 
     val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode) ++
       edgesFromFringeTo(trueCfg, falseCfg.entryNode) ++
@@ -427,8 +427,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   /** CFG creation for switch statements of the form `switch { case condition: ... }`.
     */
   protected def cfgForSwitchStatement(node: ControlStructure): Cfg = {
-    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val bodyCfg      = Traversal.fromSingle(node).whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val conditionCfg = node.condition.nextOption().map(cfgFor).getOrElse(Cfg.empty)
+    val bodyCfg      = node.whenTrue.nextOption().map(cfgFor).getOrElse(Cfg.empty)
 
     cfgForSwitchLike(conditionCfg, bodyCfg :: Nil)
   }
@@ -436,9 +436,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   /** CFG creation for if statements of the form `if(condition) body`, optionally followed by `else body2`.
     */
   protected def cfgForIfStatement(node: ControlStructure): Cfg = {
-    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val trueCfg      = Traversal.fromSingle(node).whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val falseCfg     = Traversal.fromSingle(node).whenFalse.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val conditionCfg = node.condition.nextOption().map(cfgFor).getOrElse(Cfg.empty)
+    val trueCfg      = node.whenTrue.nextOption().map(cfgFor).getOrElse(Cfg.empty)
+    val falseCfg     = node.whenFalse.nextOption().map(cfgFor).getOrElse(Cfg.empty)
 
     val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode) ++
       edgesFromFringeTo(conditionCfg, falseCfg.entryNode)
@@ -471,19 +471,15 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * field of the `Block` node must be set to `finally`.
     */
   protected def cfgForTryStatement(node: ControlStructure): Cfg = {
-    val maybeTryBlock =
-      Traversal
-        .fromSingle(node)
+    val maybeTryBlock = node
         .astChildren
         .where(_.order(1))
         .where(_.astChildren) // Filter out empty `try` bodies
-        .headOption
+        .nextOption()
 
     val tryBodyCfg: Cfg = maybeTryBlock.map(cfgFor).getOrElse(Cfg.empty)
 
-    val catchBodyCfgs: List[Cfg] =
-      Traversal
-        .fromSingle(node)
+    val catchBodyCfgs: List[Cfg] = node
         .astChildren
         .where(_.order(2))
         .toList match {
@@ -491,13 +487,11 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         case asts => asts.map(cfgFor)
       }
 
-    val maybeFinallyBodyCfg: List[Cfg] =
-      Traversal
-        .fromSingle(node)
+    val maybeFinallyBodyCfg: List[Cfg] = node
         .astChildren
         .where(_.order(3))
         .map(cfgFor)
-        .headOption // Assume there can only be one
+        .nextOption() // Assume there can only be one
         .toList
 
     val tryToCatchEdges = catchBodyCfgs.flatMap { catchBodyCfg =>
@@ -509,7 +503,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         catchBodyCfg   <- catchBodyCfgs;
         finallyBodyCfg <- maybeFinallyBodyCfg
       ) yield edgesFromFringeTo(catchBodyCfg, finallyBodyCfg.entryNode)
-    ).flatten
+    ).flatMap(identity).toList
 
     val tryToFinallyEdges = maybeFinallyBodyCfg.flatMap { cfg =>
       edgesFromFringeTo(tryBodyCfg, cfg.entryNode)
@@ -563,8 +557,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   /** CFG creation for match expressions of the form `match { case condition: expr ... }`
     */
   protected def cfgForMatchExpression(node: ControlStructure): Cfg = {
-    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val bodyCfgs     = Traversal.fromSingle(node).whenTrue.headOption.map(cfgsForMatchCases).getOrElse(Nil)
+    val conditionCfg = Iterator.single(node).condition.nextOption().map(cfgFor).getOrElse(Cfg.empty)
+    val bodyCfgs     = Iterator.single(node).whenTrue.nextOption().map(cfgsForMatchCases).getOrElse(Nil)
 
     cfgForSwitchLike(conditionCfg, bodyCfgs)
   }

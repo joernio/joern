@@ -15,7 +15,7 @@ class MipsReturnEdgesPass(cpg: Cpg) extends CpgPass(cpg) {
       // We expect v1|v0 as return
       // Note: this is not sufficient but a first approach without using data flow
       //        the first .cfgNext is skipping a _nop instruction after the call
-      val to = from.cfgNext.cfgNext.isCall.argument.code("v(0|1)").headOption
+      val to = from.cfgNext.cfgNext.isCall.argument.code("v(0|1)").nextOption()
       if (to.nonEmpty) {
         diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, from.code)
       }

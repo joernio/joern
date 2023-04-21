@@ -14,13 +14,13 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
       .collect {
         case expr: Expression if expr.argumentIndex == index => expr
       }
-      .to(Traversal)
+
 
   def argument: Traversal[Expression] =
     node._argumentOut.collectAll[Expression]
 
   def argument(index: Int): Expression =
-    arguments(index).head
+    arguments(index).next()
 
   def argumentOption(index: Int): Option[Expression] =
     node._argumentOut.collectFirst {

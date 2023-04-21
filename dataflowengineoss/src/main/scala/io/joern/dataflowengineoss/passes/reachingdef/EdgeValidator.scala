@@ -1,13 +1,12 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
-import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.Engine.isOutputArgOfInternalMethod
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, StoredNode}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 
 object EdgeValidator {
+  import io.joern.dataflowengineoss.language._
 
   /** Determines whether the edge from `parentNode`to `childNode` is valid, according to the given semantics.
     */
@@ -28,7 +27,7 @@ object EdgeValidator {
   private def isValidEdgeToExpression(parNode: CfgNode, curNode: Expression)(implicit semantics: Semantics): Boolean =
     parNode match {
       case parentNode: Expression =>
-        val sameCallSite = parentNode.inCall.l == curNode.start.inCall.l
+        val sameCallSite = parentNode.inCall.l == curNode.inCall.l
         !(sameCallSite && isOutputArgOfInternalMethod(parentNode)) &&
         (sameCallSite && parentNode.isUsed && curNode.isDefined || !sameCallSite && curNode.isUsed)
       case _ =>

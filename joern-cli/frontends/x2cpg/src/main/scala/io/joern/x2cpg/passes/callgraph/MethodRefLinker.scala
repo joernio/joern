@@ -70,7 +70,7 @@ object MethodRefLinker {
     dstNotExistsHandler: Option[(StoredNode, String) => Unit]
   ): Unit = {
     var loggedDeprecationWarning = false
-    Traversal(cpg.graph.nodes(srcLabels: _*)).foreach { srcNode =>
+    cpg.graph.nodes(srcLabels: _*).asScala.foreach { srcNode =>
       // If the source node does not have any outgoing edges of this type
       // This check is just required for backward compatibility
       if (srcNode.outE(edgeType).isEmpty) {
@@ -120,7 +120,7 @@ object MethodRefLinker {
     dstGraph: DiffGraphBuilder
   ): Unit = {
     var loggedDeprecationWarning = false
-    Traversal(cpg.graph.nodes(srcLabels: _*)).cast[SRC_NODE_TYPE].foreach { srcNode =>
+    cpg.graph.nodes(srcLabels: _*).asScala.cast[SRC_NODE_TYPE].foreach { srcNode =>
       if (!srcNode.outE(edgeType).hasNext) {
         getDstFullNames(srcNode).foreach { dstFullName =>
           dstNodeMap(dstFullName) match {

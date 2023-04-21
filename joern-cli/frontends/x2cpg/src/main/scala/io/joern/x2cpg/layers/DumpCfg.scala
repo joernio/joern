@@ -23,7 +23,7 @@ class DumpCfg(options: CfgDumpOptions) extends LayerCreator {
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val cpg = context.cpg
     cpg.method.zipWithIndex.foreach { case (method, i) =>
-      val str = method.dotCfg.head
+      val str = method.dotCfg.next()
       (File(options.outDir) / s"$i-cfg.dot").write(str)
     }
   }

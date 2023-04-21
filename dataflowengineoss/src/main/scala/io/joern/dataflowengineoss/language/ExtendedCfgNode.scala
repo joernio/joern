@@ -39,7 +39,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     val sources = sourceTravsToStartingPoints(sourceTravs: _*)
     val reachedSources =
       reachableByInternal(sources).map(_.path.head.node)
-    Traversal.from(reachedSources).cast[NodeType]
+    reachedSources.iterator.cast[NodeType]
   }
 
   def reachableByFlows[A](sourceTravs: Traversal[A]*)(implicit context: EngineContext): Traversal[Path] = {
@@ -59,10 +59,10 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
         }
       }
       .filter(_.isDefined)
-      .dedup
+      .distinct
       .flatten
       .toVector
-    paths.to(Traversal)
+    paths.iterator
   }
 
   def reachableByDetailed[NodeType](

@@ -14,7 +14,7 @@ class ReturnEdgesPass(cpg: Cpg) extends CpgPass(cpg) {
 
     cpg.call.nameNot("<operator>.*").foreach { from =>
       // We expect RAX/EAX as return
-      val to = from.cfgNext.isCall.argument.code("(R|E)AX").headOption
+      val to = from.cfgNext.isCall.argument.code("(R|E)AX").nextOption()
       if (to.nonEmpty) diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, from.code)
     }
   }

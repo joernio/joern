@@ -11,7 +11,7 @@ object Overlays {
   def appendOverlayName(cpg: Cpg, overlayName: String): Unit = {
     new CpgPass(cpg) {
       override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
-        cpg.metaData.headOption match {
+        cpg.metaData.nextOption() match {
           case Some(metaData) =>
             val newValue = metaData.overlays :+ overlayName
             diffGraph.setNodeProperty(metaData, Properties.OVERLAYS.name, newValue)
@@ -25,7 +25,7 @@ object Overlays {
   def removeLastOverlayName(cpg: Cpg): Unit = {
     new CpgPass(cpg) {
       override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
-        cpg.metaData.headOption match {
+        cpg.metaData.nextOption() match {
           case Some(metaData) =>
             val newValue = metaData.overlays.dropRight(1)
             diffGraph.setNodeProperty(metaData, Properties.OVERLAYS.name, newValue)
@@ -37,7 +37,7 @@ object Overlays {
   }
 
   def appliedOverlays(cpg: Cpg): Seq[String] = {
-    cpg.metaData.headOption match {
+    cpg.metaData.nextOption() match {
       case Some(metaData) => Option(metaData.overlays).getOrElse(Nil)
       case None =>
         System.err.println("Missing metaData block")

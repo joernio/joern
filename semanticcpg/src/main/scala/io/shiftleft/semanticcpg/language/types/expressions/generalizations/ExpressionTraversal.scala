@@ -62,7 +62,7 @@ class ExpressionTraversal[NodeType <: Expression](val traversal: Traversal[NodeT
     traversal
       .in(EdgeTypes.CONTAINS)
       .flatMap {
-        case x: Method   => Traversal.from(x)
+        case x: Method   => Iterator.single(x)
         case x: TypeDecl => x.astParent
       }
       .collectAll[Method]

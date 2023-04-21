@@ -31,7 +31,7 @@ object Path {
       rows = path.elements.map { astNode =>
         val nodeType   = astNode.getClass.getSimpleName
         val lineNumber = astNode.lineNumber.getOrElse("N/A").toString
-        val fileName   = astNode.file.name.headOption.getOrElse("N/A")
+        val fileName   = astNode.file.name.nextOption().getOrElse("N/A")
 
         astNode match {
           case member: Member =>

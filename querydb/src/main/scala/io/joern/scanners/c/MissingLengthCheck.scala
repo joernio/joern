@@ -64,7 +64,7 @@ object MissingLengthCheck extends QueryBundle {
     * the array, determine whether a check of at least one of the potential length fields exist for each literal
     */
   def checked(arrayAccess: OpNodes.ArrayAccess, lens: Seq[String]): Boolean = {
-    val arrayIndex = arrayAccess.argument(2).ast.isLiteral.toInt.headOption match {
+    val arrayIndex = arrayAccess.argument(2).ast.isLiteral.toInt.nextOption() match {
       case Some(x) => x
       case None    => return true // we can only deal with literals as indices here
     }

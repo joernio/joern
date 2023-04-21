@@ -46,9 +46,9 @@ object UsageSlicing {
       .flatMap(_.get())
       .groupBy { case (scope, _) => scope }
       .view
-      .mapValues(_.l.map { case (_, slice) => slice }.toSet)
+      .mapValues(_.toList.map { case (_, slice) => slice }.toSet)
       .toMap
-      .l
+      .toList
       .toMap
 
     val fjp = ForkJoinPool.commonPool()
@@ -82,7 +82,7 @@ object UsageSlicing {
               case x: FieldIdentifier => Option(x.code)
               case x: Call            => Option(x.name)
               case _                  => None
-            }.headOption
+            }.nextOption()
           else if (isConstructor) {
             val m = constructorTypeMatcher.matcher(baseCall.code)
             if (m.find()) Option(m.group(1))
@@ -96,9 +96,9 @@ object UsageSlicing {
                       else if (isConstructor)
                         baseCall.ast.isCall
                           .nameExact("<operator>.new")
-                          .lastOption
+                          .toSeq.lastOption
                           .map(_.argument)
-                          .getOrElse(Traversal.empty)
+                          .getOrElse(Iterator.empty)
                       else baseCall.argument)
           .collect { case n: Expression if n.argumentIndex > 0 => n }
           .flatMap {
@@ -117,10 +117,10 @@ object UsageSlicing {
         val returnType = baseCall.argumentOut
           .flatMap {
             case x: Call =>
-              Try(x.callee(resolver).methodReturn.typeFullName.head).toOption
+              Try(x.callee(resolver).methodReturn.typeFullName.next()).toOption
             case _ => None
           }
-          .headOption
+          .nextOption()
           .getOrElse("ANY")
 
         Option(ObservedCall(callName.get, params, returnType))
@@ -144,10 +144,10 @@ object UsageSlicing {
           local.referencingIdentifiers.inCall.astParent.assignment
             .where(_.argument(1).code(tgt.name))
             .argument(2)
-            .headOption match {
+            .nextOption() match {
             // In the case of a constructor, we should get the "new" call
             case Some(block: Block) =>
-              block.ast.isCall.nameExact("<operator>.new").lastOption
+              block.ast.isCall.nameExact("<operator>.new").toSeq.lastOption
             case x => x
           }
         case x => Some(x)
@@ -166,7 +166,7 @@ object UsageSlicing {
             if !genCall.name.matches("(require|import)") =>
           Option(
             (
-              local.method.fullName.head,
+              local.method.fullName.next(),
               ObjectUsageSlice(
                 targetObj = createDefComponent(local),
                 definedBy = Option(createDefComponent(genCall)),

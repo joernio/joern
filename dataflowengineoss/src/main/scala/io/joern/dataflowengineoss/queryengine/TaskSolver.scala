@@ -187,7 +187,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       case arg: Expression
           if path.size > 1
             && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c))
-            && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
+            && !arg.inCall.nextOption().exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
         createPartialResultForOutputArgOrRet()
 
       // All other cases: expand into parents

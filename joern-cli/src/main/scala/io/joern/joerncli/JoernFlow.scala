@@ -47,7 +47,7 @@ object JoernFlow {
 
       debugOut("Determining flows...")
       sinks.foreach { s =>
-        List(s).to(Traversal).reachableByFlows(sources.to(Traversal)).p.foreach(println)
+        List(s).reachableByFlows(sources).p.foreach(println)
       }
       debugOut("[DONE]")
 

@@ -221,7 +221,7 @@ object Engine {
             val sameCallSite   = parentNode.inCall.l == childNode.start.inCall.l
             val visible = if (sameCallSite) {
               val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
-              val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
+              val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).iterator.internal
               (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
             } else {
               parentNode.isDefined
@@ -242,7 +242,7 @@ object Engine {
     arg.inCall.l match {
       case List(call) =>
         methodsForCall(call)
-          .to(Traversal)
+          .iterator
           .internal
           .isNotStub
           .nonEmpty && semanticsForCall(call).isEmpty
@@ -273,7 +273,7 @@ object Engine {
 
   def argToOutputParams(arg: Expression): Traversal[MethodParameterOut] = {
     argToMethods(arg)
-      .to(Traversal)
+      .iterator
       .parameter
       .index(arg.argumentIndex)
       .asOutput
@@ -291,7 +291,7 @@ object Engine {
 
   def isCallToInternalMethod(call: Call): Boolean = {
     methodsForCall(call)
-      .to(Traversal)
+      .iterator
       .internal
       .nonEmpty
   }
