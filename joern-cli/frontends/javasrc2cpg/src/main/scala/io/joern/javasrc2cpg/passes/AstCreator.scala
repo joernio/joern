@@ -150,7 +150,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewNode,
   NewReturn,
   NewTypeDecl,
-  NewTypeRef,
+  NewTypeRef
 }
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
 import io.joern.x2cpg.datastructures.Global
