@@ -8,15 +8,6 @@ import org.eclipse.cdt.core.dom.ast.IASTPreprocessorIncludeStatement
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstNodeBuilder { this: AstCreator =>
-
-  protected def newFieldIdentifierNode(node: IASTNode, name: String, code: String): NewFieldIdentifier = {
-    NewFieldIdentifier()
-      .canonicalName(name)
-      .code(code)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-  }
-
   protected def newIdentifierNode(node: IASTNode, name: String, code: String, typeFullName: String): NewIdentifier = {
     NewIdentifier()
       .name(name)
@@ -85,13 +76,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .fullName(fullname)
   }
 
-  protected def newBlockNode(node: IASTNode, typeFullName: String): NewBlock = {
-    NewBlock()
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .typeFullName(typeFullName)
-  }
-
   protected def newMethodReturnNode(node: IASTNode, typeFullName: String): NewMethodReturn = {
     methodReturnNode(typeFullName, None, line(node), column(node))
   }
@@ -134,8 +118,8 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column(node))
       .lineNumberEnd(lineEnd(node))
       .columnNumberEnd(columnEnd(node))
-      .astParentType(astParentType.getOrElse("<empty>"))
-      .astParentFullName(astParentFullName.getOrElse("<empty>"))
+      .astParentType(astParentType.getOrElse(Defines.empty))
+      .astParentFullName(astParentFullName.getOrElse(Defines.empty))
   }
 
   protected def newMethodRefNode(

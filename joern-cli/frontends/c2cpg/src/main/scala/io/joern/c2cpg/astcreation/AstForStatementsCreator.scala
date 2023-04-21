@@ -15,8 +15,8 @@ trait AstForStatementsCreator { this: AstCreator =>
   import io.joern.c2cpg.astcreation.AstCreatorHelper.OptionSafeAst
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, order: Int = -1): Ast = {
-    val blockNode = newBlockNode(blockStmt, registerType(Defines.voidTypeName)).order(order).argumentIndex(order)
-    scope.pushNewScope(blockNode)
+    val node = blockNode(blockStmt, Defines.empty, registerType(Defines.voidTypeName)).order(order).argumentIndex(order)
+    scope.pushNewScope(node)
     var currOrder = 1
     val childAsts = blockStmt.getStatements.flatMap { stmt =>
       val r = astsForStatement(stmt, currOrder)
@@ -24,7 +24,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       r
     }
     scope.popScope()
-    blockAst(blockNode, childAsts.toList)
+    blockAst(node, childAsts.toList)
   }
 
   private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
@@ -157,7 +157,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val code    = s"for ($codeInit$codeCond;$codeIter)"
     val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
 
-    val initAstBlock = newBlockNode(forStmt, registerType(Defines.voidTypeName))
+    val initAstBlock = blockNode(forStmt, Defines.empty, registerType(Defines.voidTypeName))
     scope.pushNewScope(initAstBlock)
     val initAst = blockAst(initAstBlock, nullSafeAst(forStmt.getInitializerStatement, 1).toList)
     scope.popScope()
@@ -200,7 +200,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         (c, a)
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
         val c         = s"if (${nullSafeCode(s.getConditionDeclaration)})"
-        val exprBlock = newBlockNode(s.getConditionDeclaration, Defines.voidTypeName)
+        val exprBlock = blockNode(s.getConditionDeclaration, Defines.empty, Defines.voidTypeName)
         scope.pushNewScope(exprBlock)
         val a = astsForDeclaration(s.getConditionDeclaration)
         setArgumentIndices(a)
@@ -213,7 +213,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val thenAst = ifStmt.getThenClause match {
       case block: IASTCompoundStatement => astForBlockStatement(block)
       case other if other != null =>
-        val thenBlock = newBlockNode(other, Defines.voidTypeName)
+        val thenBlock = blockNode(other, Defines.empty, Defines.voidTypeName)
         scope.pushNewScope(thenBlock)
         val a = astsForStatement(other)
         setArgumentIndices(a)
@@ -229,7 +229,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         Ast(elseNode).withChild(elseAst)
       case other if other != null =>
         val elseNode  = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
-        val elseBlock = newBlockNode(other, Defines.voidTypeName)
+        val elseBlock = blockNode(other, Defines.empty, Defines.voidTypeName)
         scope.pushNewScope(elseBlock)
         val a = astsForStatement(other)
         setArgumentIndices(a)

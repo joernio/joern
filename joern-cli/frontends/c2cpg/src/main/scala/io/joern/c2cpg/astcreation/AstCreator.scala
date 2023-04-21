@@ -76,7 +76,7 @@ class AstCreator(
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewScope(fakeGlobalMethod)
 
-    val blockNode = newBlockNode(iASTTranslationUnit, registerType(Defines.anyTypeName))
+    val blockNode_ = blockNode(iASTTranslationUnit, Defines.empty, registerType(Defines.anyTypeName))
 
     val declsAsts = allDecls.flatMap { stmt =>
       CGlobal.getAstsFromAstCache(
@@ -92,7 +92,7 @@ class AstCreator(
 
     val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName)
     Ast(fakeGlobalTypeDecl).withChild(
-      methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode, declsAsts), methodReturn)
+      methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, declsAsts), methodReturn)
     )
   }
 }

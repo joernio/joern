@@ -56,7 +56,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val op     = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
     val ma     = newCallNode(fieldRef, op, op, DispatchTypes.STATIC_DISPATCH)
     val owner  = astForExpression(fieldRef.getFieldOwner)
-    val member = newFieldIdentifierNode(fieldRef, fieldRef.getFieldName.toString, fieldRef.getFieldName.toString)
+    val member = fieldIdentifierNode(fieldRef, fieldRef.getFieldName.toString, fieldRef.getFieldName.toString)
     callAst(ma, List(owner, Ast(member)))
   }
 
@@ -107,7 +107,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       Ast(newLiteralNode(qualId.getLastName, "<global>", Defines.anyTypeName))
     }
 
-    val member = newFieldIdentifierNode(qualId.getLastName, qualId.getLastName.toString, qualId.getLastName.toString)
+    val member = fieldIdentifierNode(qualId.getLastName, qualId.getLastName.toString, qualId.getLastName.toString)
     callAst(ma, List(owner, Ast(member)))
   }
 

@@ -92,7 +92,7 @@ import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.x2cpg.utils.NodeBuilders.{
   annotationLiteralNode,
   callNode,
-  fieldIdentifierNode,
+  fieldIdentifierNode => newFieldIdentifierNode,
   identifierNode,
   methodReturnNode,
   modifierNode,
@@ -1405,7 +1405,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       line = lineNo
     )
     val fieldAccessIdentifier      = identifierNode(iterableSource.name, iterableSource.typeFullName, lineNo)
-    val fieldAccessFieldIdentifier = fieldIdentifierNode("length", lineNo)
+    val fieldAccessFieldIdentifier = newFieldIdentifierNode("length", lineNo)
     val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
     val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
     val compareArgs                = List(Ast(comparisonIdxIdentifier), fieldAccessAst)

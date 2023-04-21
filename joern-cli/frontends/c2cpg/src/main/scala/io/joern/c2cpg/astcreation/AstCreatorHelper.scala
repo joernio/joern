@@ -378,8 +378,8 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer): Ast = {
-    val blockNode = newBlockNode(d, Defines.voidTypeName)
-    scope.pushNewScope(blockNode)
+    val node = blockNode(d, Defines.empty, Defines.voidTypeName)
+    scope.pushNewScope(node)
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
@@ -388,12 +388,12 @@ trait AstCreatorHelper { this: AstCreator =>
       callAst(callNode, List(left, right))
     }
     scope.popScope()
-    blockAst(blockNode, calls.toList)
+    blockAst(node, calls.toList)
   }
 
   private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer): Ast = {
-    val blockNode = newBlockNode(d, Defines.voidTypeName)
-    scope.pushNewScope(blockNode)
+    val node = blockNode(d, Defines.empty, Defines.voidTypeName)
+    scope.pushNewScope(node)
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
@@ -402,7 +402,7 @@ trait AstCreatorHelper { this: AstCreator =>
       callAst(callNode, List(left, right))
     }
     scope.popScope()
-    blockAst(blockNode, calls.toList)
+    blockAst(node, calls.toList)
   }
 
   private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer): Ast = {
