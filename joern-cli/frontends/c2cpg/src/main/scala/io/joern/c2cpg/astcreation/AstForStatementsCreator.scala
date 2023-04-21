@@ -57,16 +57,16 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForBreakStatement(br: IASTBreakStatement): Ast = {
-    Ast(newControlStructureNode(br, ControlStructureTypes.BREAK, nodeSignature(br)))
+    Ast(controlStructureNode(br, ControlStructureTypes.BREAK, nodeSignature(br)))
   }
 
   private def astForContinueStatement(cont: IASTContinueStatement): Ast = {
-    Ast(newControlStructureNode(cont, ControlStructureTypes.CONTINUE, nodeSignature(cont)))
+    Ast(controlStructureNode(cont, ControlStructureTypes.CONTINUE, nodeSignature(cont)))
   }
 
   private def astForGotoStatement(goto: IASTGotoStatement): Ast = {
     val code = s"goto ${ASTStringUtil.getSimpleName(goto.getName)};"
-    Ast(newControlStructureNode(goto, ControlStructureTypes.GOTO, code))
+    Ast(controlStructureNode(goto, ControlStructureTypes.GOTO, code))
   }
 
   private def astsForGnuGotoStatement(goto: IGNUASTGotoStatement): Seq[Ast] = {
@@ -75,7 +75,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     // For such GOTOs we cannot statically determine the target label. As a quick
     // hack we simply put edges to all labels found indicated by *. This might be an over-taint.
     val code     = s"goto *;"
-    val gotoNode = Ast(newControlStructureNode(goto, ControlStructureTypes.GOTO, code))
+    val gotoNode = Ast(controlStructureNode(goto, ControlStructureTypes.GOTO, code))
     val exprNode = nullSafeAst(goto.getLabelNameExpression)
     Seq(gotoNode, exprNode)
   }
@@ -88,7 +88,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
     val code         = nodeSignature(doStmt)
-    val doNode       = newControlStructureNode(doStmt, ControlStructureTypes.DO, code)
+    val doNode       = controlStructureNode(doStmt, ControlStructureTypes.DO, code)
     val conditionAst = nullSafeAst(doStmt.getCondition)
     val bodyAst      = nullSafeAst(doStmt.getBody)
     controlStructureAst(doNode, Some(conditionAst), bodyAst, placeConditionLast = true)
@@ -96,7 +96,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Ast = {
     val code         = s"switch(${nullSafeCode(switchStmt.getControllerExpression)})"
-    val switchNode   = newControlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code)
+    val switchNode   = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code)
     val conditionAst = nullSafeAst(switchStmt.getControllerExpression)
     val stmtAsts     = nullSafeAst(switchStmt.getBody)
     controlStructureAst(switchNode, Some(conditionAst), stmtAsts)
@@ -113,7 +113,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {
-    val cpgTry = newControlStructureNode(tryStmt, ControlStructureTypes.TRY, "try")
+    val cpgTry = controlStructureNode(tryStmt, ControlStructureTypes.TRY, "try")
     val body   = nullSafeAst(tryStmt.getTryBody)
     // All catches must have order 2 for correct control flow generation.
     // TODO fix this. Multiple siblings with the same order are invalid
@@ -155,7 +155,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val codeIter = nullSafeCode(forStmt.getIterationExpression)
 
     val code    = s"for ($codeInit$codeCond;$codeIter)"
-    val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code)
+    val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
 
     val initAstBlock = newBlockNode(forStmt, registerType(Defines.voidTypeName))
     scope.pushNewScope(initAstBlock)
@@ -173,7 +173,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val codeInit = nullSafeCode(forStmt.getInitializerClause)
 
     val code    = s"for ($codeDecl:$codeInit)"
-    val forNode = newControlStructureNode(forStmt, ControlStructureTypes.FOR, code)
+    val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
 
     val initAst = astForNode(forStmt.getInitializerClause)
     val declAst = astsForDeclaration(forStmt.getDeclaration)
@@ -208,7 +208,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         (c, blockAst(exprBlock, a.toList))
     }
 
-    val ifNode = newControlStructureNode(ifStmt, ControlStructureTypes.IF, code)
+    val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code)
 
     val thenAst = ifStmt.getThenClause match {
       case block: IASTCompoundStatement => astForBlockStatement(block)
@@ -224,11 +224,11 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val elseAst = ifStmt.getElseClause match {
       case block: IASTCompoundStatement =>
-        val elseNode = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
+        val elseNode = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
         val elseAst  = astForBlockStatement(block)
         Ast(elseNode).withChild(elseAst)
       case other if other != null =>
-        val elseNode  = newControlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
+        val elseNode  = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
         val elseBlock = newBlockNode(other, Defines.voidTypeName)
         scope.pushNewScope(elseBlock)
         val a = astsForStatement(other)

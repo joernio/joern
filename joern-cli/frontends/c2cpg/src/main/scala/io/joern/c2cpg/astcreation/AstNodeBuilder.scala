@@ -175,19 +175,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column(node))
   }
 
-  protected def newControlStructureNode(
-    node: IASTNode,
-    controlStructureType: String,
-    code: String
-  ): NewControlStructure = {
-    NewControlStructure()
-      .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(controlStructureType)
-      .code(code)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-  }
-
   protected def newJumpTargetNode(node: IASTNode): NewJumpTarget = {
     val code = nodeSignature(node)
     val name = node match {
