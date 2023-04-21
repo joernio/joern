@@ -37,36 +37,35 @@ class PocTest extends RubyCode2CpgFixture {
   "The CPG generated for a class" should {
     val cpg = code(
       """
-        |# define a class
-        |class Box
-        |   BOX_COMPANY = "TATA Inc"
-        |   BOXWEIGHT = 10
-        |   # constructor method
-        |   def initialize(w,h)
-        |      @width, @height = w, h
-        |   end
-        |   # instance method
-        |   def getArea
-        |      @width * @height
-        |   end
+        |class Person
+        |  attr_accessor :name, :age
+        |
+        |  def initialize(name, age)
+        |    @name = name
+        |    @age = age
+        |  end
+        |
+        |  def greet
+        |    puts "Hello, my name is #{@name} and I am #{@age} years old."
+        |  end
+        |
+        |  def have_birthday
+        |    @age += 1
+        |    puts "Happy birthday! You are now #{@age} years old."
+        |  end
         |end
         |
-        |# create an object
-        |box = Box.new(10, 20)
-        |
-        |# call instance methods
-        |a = box.getArea()
-        |puts "Area of the box is : #{a}"
-        |puts Box::BOX_COMPANY
-        |puts "Box weight is: #{Box::BOXWEIGHT}"
         |""".stripMargin,
-      fileName = "printhello.rb"
+      fileName = "classtest.rb"
     )
 
 
     "identifier nodes present" in {
-      cpg.identifier.name("box").l.size shouldBe 1
-      cpg.identifier.name("a").l.size shouldBe 1
+      cpg.identifier.name("name").l.size shouldBe 1
+      cpg.identifier.name("age").l.size shouldBe 1
+      cpg.identifier.name("@name").l.size shouldBe 1
+      cpg.identifier.name("@age").l.size shouldBe 2
+      cpg.identifier.size shouldBe 5
     }
   }
 
@@ -96,7 +95,7 @@ class PocTest extends RubyCode2CpgFixture {
       cpg.identifier.name("num2").l.size shouldBe 1
       cpg.identifier.name("num3").l.size shouldBe 1
       val lst = cpg.identifier.l
-      lst.size shouldBe 7
+      lst.size shouldBe 8
     }
   }
 }
