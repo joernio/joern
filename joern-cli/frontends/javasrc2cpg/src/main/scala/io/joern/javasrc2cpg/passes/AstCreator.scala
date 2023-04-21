@@ -237,9 +237,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     Ast.storeInDiffGraph(ast, diffGraph)
   }
 
-  protected def line(node: Node): Option[Integer] = node.getBegin.map(x => Integer.valueOf(x.line)).toScala
-  protected def column(node: Node): Option[Integer] = node.getBegin.map(x => Integer.valueOf(x.column)).toScala
-  protected def lineEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
+  protected def line(node: Node): Option[Integer]      = node.getBegin.map(x => Integer.valueOf(x.line)).toScala
+  protected def column(node: Node): Option[Integer]    = node.getBegin.map(x => Integer.valueOf(x.column)).toScala
+  protected def lineEnd(node: Node): Option[Integer]   = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
   protected def columnEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
 
   private def addImportsToScope(compilationUnit: CompilationUnit): Seq[NewImport] = {
