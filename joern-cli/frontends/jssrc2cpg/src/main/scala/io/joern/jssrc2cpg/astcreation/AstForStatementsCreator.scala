@@ -58,7 +58,8 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForReturnStatement(ret: BabelNodeInfo): Ast = {
-    val retNode = createReturnNode(ret)
+    val retCode = ret.code.stripSuffix(";")
+    val retNode = returnNode(ret, retCode)
     safeObj(ret.json, "argument")
       .map { argument =>
         val argAst = astForNodeWithFunctionReference(Obj(argument))

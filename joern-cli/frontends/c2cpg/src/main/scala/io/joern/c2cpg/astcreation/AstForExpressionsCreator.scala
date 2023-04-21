@@ -198,7 +198,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     val expr    = astForExpression(castExpression.getOperand)
     val argNode = castExpression.getTypeId
-    val arg     = newUnknownNode(argNode)
+    val arg     = unknownNode(argNode, nodeSignature(argNode))
 
     callAst(cpgCastExpression, List(Ast(arg), expr))
   }
@@ -239,7 +239,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val cpgCastExpression =
       newCallNode(typeIdInit, Operators.cast, Operators.cast, DispatchTypes.STATIC_DISPATCH)
 
-    val typeAst = newUnknownNode(typeIdInit.getTypeId)
+    val typeAst = unknownNode(typeIdInit.getTypeId, nodeSignature(typeIdInit.getTypeId))
     val expr    = astForNode(typeIdInit.getInitializer)
     callAst(cpgCastExpression, List(Ast(typeAst), expr))
   }

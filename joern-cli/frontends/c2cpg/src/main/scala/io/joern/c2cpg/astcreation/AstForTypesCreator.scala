@@ -142,7 +142,7 @@ trait AstForTypesCreator { this: AstCreator =>
     Ast(typeDeclNode)
   }
 
-  protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(newUnknownNode(asm))
+  protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(unknownNode(asm, nodeSignature(asm)))
 
   private def astForStructuredBindingDeclaration(decl: ICPPASTStructuredBindingDeclaration): Ast = {
     val blockNode = newBlockNode(decl, Defines.voidTypeName)
