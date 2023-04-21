@@ -1,4 +1,4 @@
-package io.joern.kotlin2cpg.passes
+package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.ast.Nodes._
 import io.joern.kotlin2cpg.Constants

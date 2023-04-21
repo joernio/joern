@@ -1,4 +1,4 @@
-package io.joern.kotlin2cpg.passes
+package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
@@ -9,6 +9,7 @@ import io.shiftleft.passes.IntervalKeyPool
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack._
+import io.joern.kotlin2cpg.datastructures.Scope
 import org.jetbrains.kotlin.psi._
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
 import org.slf4j.{Logger, LoggerFactory}

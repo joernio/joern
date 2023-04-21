@@ -1,4 +1,4 @@
-package io.joern.kotlin2cpg.passes
+package io.joern.kotlin2cpg.datastructures
 
 import io.joern.x2cpg.datastructures.ScopeElement
 import io.joern.x2cpg.datastructures.{Scope => X2CpgScope}
