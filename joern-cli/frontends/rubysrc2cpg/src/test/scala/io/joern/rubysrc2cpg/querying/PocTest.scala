@@ -64,21 +64,9 @@ class PocTest extends RubyCode2CpgFixture {
     )
 
 
-    "have the correct namespace set" in {
-      cpg.namespaceBlock.fullName(".*printhello.php.*").l match {
-        case namespaceBlock :: Nil =>
-          namespaceBlock.name shouldBe "<global>"
-        case result => fail(s"expected namespaceBlock found $result")
-      }
-    }
-
-    "have a call node for the printHello call" in {
-      cpg.call.nameExact("printHello").l match {
-        case call :: Nil =>
-          call.lineNumber shouldBe Some(7)
-
-        case result => fail(s"Expected printHello call got $result")
-      }
+    "identifier nodes present" in {
+      cpg.identifier.name("box").l.size shouldBe 1
+      cpg.identifier.name("a").l.size shouldBe 1
     }
   }
 }

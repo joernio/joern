@@ -320,7 +320,7 @@ parameters
     :   mandatoryParameters (COMMA wsOrNl* optionalParameters)? (COMMA arrayParameter)? (COMMA procParameter)?
     |   optionalParameters (COMMA wsOrNl* arrayParameter)? (COMMA wsOrNl* procParameter)?
     |   arrayParameter (COMMA wsOrNl* procParameter)?
-    |   procParameter
+    |   arrayParameter
     ;
 
 mandatoryParameters

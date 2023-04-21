@@ -24,7 +24,9 @@ import org.apache.commons.lang.mutable.Mutable
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
+import java.util
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 class AstCreator(filename: String, global: Global) extends AstCreatorBase(filename) {
 
@@ -598,13 +600,88 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     }
   }
 
-  def astForMethodDefinitionContext(ctx: RubyParser.MethodDefinitionContext): Ast = {
+  def astForMethodNamePartContext(ctx: RubyParser.MethodNamePartContext): Ast = {
     if (ctx == null) return Ast()
     println(
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
     Ast()
+  }
+  def astForMethodParameterPart(ctx: RubyParser.MethodParameterPartContext): Ast = {
+    if (ctx == null || ctx.parameters() == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
+    // NOT differentiating between the productions here since either way we get paramaters
+    val mandatoryParameters = ctx.parameters().mandatoryParameters()
+    val optionalParameters  = ctx.parameters().optionalParameters()
+    val arrayParameter      = ctx.parameters().arrayParameter()
+    val procParameter       = ctx.parameters().procParameter()
+
+    val localVarList = ListBuffer[TerminalNode]()
+
+    if (mandatoryParameters != null) {
+      mandatoryParameters
+        .LOCAL_VARIABLE_IDENTIFIER()
+        .forEach(localVar => {
+          localVarList.addOne(localVar)
+        })
+    }
+
+    if (optionalParameters != null) {
+      val optionalParameterList = optionalParameters.optionalParameter()
+      optionalParameterList.forEach(param => {
+        localVarList.addOne(param.LOCAL_VARIABLE_IDENTIFIER())
+      })
+    }
+
+    if (arrayParameter != null) {
+      localVarList.addOne(arrayParameter.LOCAL_VARIABLE_IDENTIFIER())
+    }
+
+    if (procParameter != null) {
+      localVarList.addOne(procParameter.LOCAL_VARIABLE_IDENTIFIER())
+    }
+
+    val seqNodes = localVarList
+      .map(localVar => {
+        val varSymbol = localVar.getSymbol()
+        identifierNode(
+          varSymbol.getText,
+          None,
+          Some(varSymbol.getLine()),
+          Some(varSymbol.getCharPositionInLine()),
+          List(Defines.Any)
+        ).typeFullName(Defines.Any)
+      })
+      .toSeq
+
+    Ast(seqNodes)
+  }
+
+  def astForBodyStatement(ctx: RubyParser.BodyStatementContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
+    Ast()
+  }
+
+  def astForMethodDefinitionContext(ctx: RubyParser.MethodDefinitionContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
+    val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
+    val astMethodParam = astForMethodParameterPart(ctx.methodParameterPart())
+    val astBody        = astForBodyStatement(ctx.bodyStatement())
+
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChildren(Seq[Ast](astMethodName, astMethodParam, astBody))
   }
 
   def astForMethodOnlyIdentifierPrimaryContext(ctx: RubyParser.MethodOnlyIdentifierPrimaryContext): Ast = {
