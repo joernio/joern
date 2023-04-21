@@ -45,7 +45,7 @@ trait AstCreatorHelper { this: AstCreator =>
          |  Column: ${node.columnNumber.getOrElse(-1)}
          |  """.stripMargin
     logger.info(text)
-    Ast(newUnknown(node))
+    Ast(unknownNode(node, node.code))
   }
 
   protected def registerType(typeName: String, typeFullName: String): Unit = {

@@ -77,11 +77,11 @@ trait AstCreatorHelper { this: AstCreator =>
     SourceFiles.toRelativePath(path, config.inputPath)
   }
 
-  protected def line(node: IASTNode): Option[Int] = {
+  protected def line(node: IASTNode): Option[Integer] = {
     nullSafeFileLocation(node).map(_.getStartingLineNumber)
   }
 
-  protected def lineEnd(node: IASTNode): Option[Int] = {
+  protected def lineEnd(node: IASTNode): Option[Integer] = {
     nullSafeFileLocationLast(node).map(_.getEndingLineNumber)
   }
 
@@ -98,14 +98,14 @@ trait AstCreatorHelper { this: AstCreator =>
     column
   }
 
-  protected def column(node: IASTNode): Option[Int] = {
+  protected def column(node: IASTNode): Option[Integer] = {
     val loc = nullSafeFileLocation(node)
     loc.map { x =>
       offsetToColumn(node, x.getNodeOffset)
     }
   }
 
-  protected def columnEnd(node: IASTNode): Option[Int] = {
+  protected def columnEnd(node: IASTNode): Option[Integer] = {
     val loc = nullSafeFileLocation(node)
     loc.map { x =>
       offsetToColumn(node, x.getNodeOffset + x.getNodeLength - 1)
@@ -207,7 +207,7 @@ trait AstCreatorHelper { this: AstCreator =>
       val text = notHandledText(node)
       logger.info(text)
     }
-    Ast(newUnknownNode(node))
+    Ast(unknownNode(node, nodeSignature(node)))
   }
 
   protected def nullSafeCode(node: IASTNode): String = {

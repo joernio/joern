@@ -9,7 +9,9 @@ import io.shiftleft.passes.IntervalKeyPool
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.AstNodeBuilder
 import io.joern.kotlin2cpg.datastructures.Scope
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi._
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
 import org.slf4j.{Logger, LoggerFactory}
@@ -23,7 +25,8 @@ case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRe
 
 class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvider, global: Global)
     extends AstCreatorBase(fileWithMeta.filename)
-    with KtPsiToAst {
+    with KtPsiToAst
+    with AstNodeBuilder[PsiElement, AstCreator] {
 
   protected val closureBindingDefQueue: mutable.ArrayBuffer[ClosureBindingDef] = mutable.ArrayBuffer.empty
   protected val bindingInfoQueue: mutable.ArrayBuffer[BindingInfo]             = mutable.ArrayBuffer.empty
@@ -57,6 +60,52 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   protected def registerType(typeName: String): String = {
     global.usedTypes.putIfAbsent(typeName, true)
     typeName
+  }
+
+  def line(element: PsiElement): Option[Integer] = {
+    try {
+      Some(
+        element.getContainingFile.getViewProvider.getDocument
+          .getLineNumber(element.getTextOffset) + 1
+      )
+    } catch {
+      case _: Throwable => None
+    }
+  }
+
+  def column(element: PsiElement): Option[Integer] = {
+    try {
+      val lineNumber =
+        element.getContainingFile.getViewProvider.getDocument
+          .getLineNumber(element.getTextOffset)
+      val lineOffset =
+        element.getContainingFile.getViewProvider.getDocument.getLineStartOffset(lineNumber)
+      Some(element.getTextOffset - lineOffset)
+    } catch {
+      case _: Throwable => None
+    }
+  }
+
+  def lineEnd(element: PsiElement): Option[Integer] = {
+    val lastElement = element match {
+      case namedFn: KtNamedFunction =>
+        Option(namedFn.getBodyBlockExpression)
+          .map(_.getRBrace)
+          .getOrElse(element)
+      case elem => elem
+    }
+    line(lastElement)
+  }
+
+  def columnEnd(element: PsiElement): Option[Integer] = {
+    val lastElement = element match {
+      case namedFn: KtNamedFunction =>
+        Option(namedFn.getBodyBlockExpression)
+          .map(_.getRBrace)
+          .getOrElse(element)
+      case elem => elem
+    }
+    column(lastElement)
   }
 
   protected def getName(node: NewImport): String = {

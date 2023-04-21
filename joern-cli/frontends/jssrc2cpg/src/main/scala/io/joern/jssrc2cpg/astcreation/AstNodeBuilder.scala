@@ -13,13 +13,6 @@ import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstNodeBuilder { this: AstCreator =>
 
-  protected def newUnknown(node: BabelNodeInfo): NewUnknown =
-    NewUnknown()
-      .parserTypeName(node.node.toString)
-      .code(node.code)
-      .lineNumber(node.lineNumber)
-      .columnNumber(node.columnNumber)
-
   protected def createAnnotationNode(annotation: BabelNodeInfo, name: String, fullName: String): NewAnnotation = {
     val code         = annotation.code
     val lineNumber   = annotation.lineNumber
@@ -63,12 +56,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .aliasTypeFullName(alias)
       .lineNumber(line)
       .columnNumber(column)
-
-  protected def createReturnNode(ret: BabelNodeInfo): NewReturn =
-    NewReturn()
-      .code(ret.code.stripSuffix(";"))
-      .lineNumber(ret.lineNumber)
-      .columnNumber(ret.columnNumber)
 
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
     methodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)

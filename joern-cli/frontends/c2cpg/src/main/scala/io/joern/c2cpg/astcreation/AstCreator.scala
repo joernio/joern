@@ -9,7 +9,8 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack._
-import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
+import io.joern.x2cpg.{AstNodeBuilder => X2CpgAstNodeBuilder}
+import org.eclipse.cdt.core.dom.ast.{IASTNode, IASTTranslationUnit}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.concurrent.ConcurrentHashMap
@@ -30,7 +31,8 @@ class AstCreator(
     with AstForExpressionsCreator
     with AstNodeBuilder
     with AstCreatorHelper
-    with MacroHandler {
+    with MacroHandler
+    with X2CpgAstNodeBuilder[IASTNode, AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
@@ -93,5 +95,4 @@ class AstCreator(
       methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode, declsAsts), methodReturn)
     )
   }
-
 }
