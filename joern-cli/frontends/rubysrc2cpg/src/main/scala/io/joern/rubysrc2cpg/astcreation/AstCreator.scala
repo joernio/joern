@@ -637,16 +637,8 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
-      val node = identifierNode(
-        varSymbol.getText,
-        None,
-        Some(varSymbol.getLine()),
-        Some(varSymbol.getCharPositionInLine()),
-        List(Defines.Any)
-      ).typeFullName(Defines.Any)
-      Ast(node)
+      val localVar = ctx.LOCAL_VARIABLE_IDENTIFIER()
+      Ast()
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       Ast()
     } else if (ctx.methodOnlyIdentifier() != null) {
@@ -714,13 +706,13 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    if( ctx.variableIdentifier() != null ){
+    if (ctx.variableIdentifier() != null) {
       astForVariableIdentifierContext(ctx.variableIdentifier(), Defines.Any)
-    }else if(ctx.pseudoVariableIdentifier() != null){
+    } else if (ctx.pseudoVariableIdentifier() != null) {
       Ast()
-    }else if(ctx.expressionOrCommand() != null){
+    } else if (ctx.expressionOrCommand() != null) {
       astForExpressionOrCommandContext(ctx.expressionOrCommand())
-    }else{
+    } else {
       Ast()
     }
   }

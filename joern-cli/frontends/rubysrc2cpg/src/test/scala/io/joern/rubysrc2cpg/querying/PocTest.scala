@@ -69,4 +69,34 @@ class PocTest extends RubyCode2CpgFixture {
       cpg.identifier.name("a").l.size shouldBe 1
     }
   }
+
+  "The CPG generated for a multiplication example" should {
+    val cpg = code(
+      """
+        |def add_three_numbers(num1, num2, num3)
+        |  sum = num1 + num2 + num3
+        |  return sum
+        |end
+        |
+        |a = 1
+        |b = 2
+        |c = 3
+        |
+        |sumOfThree = add_three_numbers( a, b, c )
+        |""".stripMargin,
+      fileName = "sum.rb"
+    )
+
+    "function test" in {
+      cpg.identifier.name("a").l.size shouldBe 1
+      cpg.identifier.name("b").l.size shouldBe 1
+      cpg.identifier.name("c").l.size shouldBe 1
+      cpg.identifier.name("sumOfThree").l.size shouldBe 1
+      cpg.identifier.name("num1").l.size shouldBe 1
+      cpg.identifier.name("num2").l.size shouldBe 1
+      cpg.identifier.name("num3").l.size shouldBe 1
+      val lst = cpg.identifier.l
+      lst.size shouldBe 7
+    }
+  }
 }
