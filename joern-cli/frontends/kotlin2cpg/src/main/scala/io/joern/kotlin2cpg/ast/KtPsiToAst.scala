@@ -128,7 +128,7 @@ trait KtPsiToAst {
         identifierNode(Constants.this_, typeDecl.fullName).dynamicTypeHintFullName(Seq(typeDecl.fullName))
       val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParam)
 
-      val fieldIdentifier = fieldIdentifierNode(valueParam.getName, line(valueParam), column(valueParam))
+      val fieldIdentifier = fieldIdentifierNode(valueParam, valueParam.getName, valueParam.getName)
       val fieldAccessCall =
         operatorCallNode(Operators.fieldAccess, s"${Constants.this_}.${valueParam.getName}", Option(typeFullName))
       val fieldAccessCallAst = callAst(fieldAccessCall, List(thisAst, Ast(fieldIdentifier)))
@@ -187,7 +187,7 @@ trait KtPsiToAst {
     val thisIdentifier     = identifierNode(Constants.this_, classFullName).dynamicTypeHintFullName(Set(classFullName))
     val thisAst            = astWithRefEdgeMaybe(Constants.this_, thisIdentifier)
 
-    val fieldIdentifier = fieldIdentifierNode(paramName)
+    val fieldIdentifier = fieldIdentifierNode(param, paramName, paramName)
     val fieldAccessCall =
       operatorCallNode(Operators.fieldAccess, s"${Constants.this_}.$paramName", Option(typeFullName))
     val fieldAccessCallAst = callAst(fieldAccessCall, List(thisAst, Ast(fieldIdentifier)))
@@ -929,7 +929,7 @@ trait KtPsiToAst {
           astsForExpression(arg.getArgumentExpression, Some(idx))
         }.flatten.toList
       case typedExpr: KtNameReferenceExpression =>
-        val node = fieldIdentifierNode(typedExpr.getText).argumentIndex(2)
+        val node = fieldIdentifierNode(typedExpr, typedExpr.getText, typedExpr.getText).argumentIndex(2)
         List(Ast(node))
       case _ => List()
     }
@@ -1615,7 +1615,7 @@ trait KtPsiToAst {
       val argAsts = List(
         // TODO: change this to a TYPE_REF node as soon as the closed source data-flow engine supports it
         identifierNode(expr.getIdentifier.getText, typeFullName, line(expr), column(expr)),
-        fieldIdentifierNode(Constants.companionObjectMemberName, line(expr), column(expr))
+        fieldIdentifierNode(expr, Constants.companionObjectMemberName, Constants.companionObjectMemberName)
       ).map(Ast(_))
       val node = operatorCallNode(Operators.fieldAccess, expr.getText, Option(typeFullName), line(expr), column(expr))
       callAst(withArgumentIndex(node, argIdx), argAsts)
@@ -1634,7 +1634,7 @@ trait KtPsiToAst {
     )
     val thisNode             = identifierNode(Constants.this_, referenceTargetTypeFullName, line(expr), column(expr))
     val thisAst              = astWithRefEdgeMaybe(Constants.this_, thisNode)
-    val _fieldIdentifierNode = fieldIdentifierNode(expr.getReferencedName, line(expr), column(expr))
+    val _fieldIdentifierNode = fieldIdentifierNode(expr, expr.getReferencedName, expr.getReferencedName)
     val node = operatorCallNode(
       Operators.fieldAccess,
       s"${Constants.this_}.${expr.getReferencedName}",

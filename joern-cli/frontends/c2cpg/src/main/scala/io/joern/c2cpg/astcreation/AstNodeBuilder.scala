@@ -8,15 +8,6 @@ import org.eclipse.cdt.core.dom.ast.IASTPreprocessorIncludeStatement
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstNodeBuilder { this: AstCreator =>
-
-  protected def newFieldIdentifierNode(node: IASTNode, name: String, code: String): NewFieldIdentifier = {
-    NewFieldIdentifier()
-      .canonicalName(name)
-      .code(code)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-  }
-
   protected def newIdentifierNode(node: IASTNode, name: String, code: String, typeFullName: String): NewIdentifier = {
     NewIdentifier()
       .name(name)

@@ -3,10 +3,8 @@ package io.joern.kotlin2cpg.ast
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBinding,
-  NewBlock,
   NewCall,
   NewClosureBinding,
-  NewFieldIdentifier,
   NewIdentifier,
   NewJumpTarget,
   NewLiteral,
@@ -56,18 +54,6 @@ object Nodes {
       .closureBindingId(closureBindingId)
       .closureOriginalName(originalName)
       .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
-  }
-
-  def fieldIdentifierNode(
-    name: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewFieldIdentifier = {
-    NewFieldIdentifier()
-      .code(name)
-      .canonicalName(name)
-      .lineNumber(line)
-      .columnNumber(column)
   }
 
   def identifierNode(

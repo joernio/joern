@@ -3,6 +3,7 @@ package io.joern.x2cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewControlStructure,
+  NewFieldIdentifier,
   NewMethodRef,
   NewReturn,
   NewUnknown
@@ -55,4 +56,11 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .columnNumber(column(node))
   }
 
+  protected def fieldIdentifierNode(node: Node, name: String, code: String): NewFieldIdentifier = {
+    NewFieldIdentifier()
+      .canonicalName(name)
+      .code(code)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
 }
