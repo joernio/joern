@@ -713,7 +713,16 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     println(
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
-    Ast()
+
+    if( ctx.variableIdentifier() != null ){
+      astForVariableIdentifierContext(ctx.variableIdentifier(), Defines.Any)
+    }else if(ctx.pseudoVariableIdentifier() != null){
+      Ast()
+    }else if(ctx.expressionOrCommand() != null){
+      astForExpressionOrCommandContext(ctx.expressionOrCommand())
+    }else{
+      Ast()
+    }
   }
 
   def astForSingletonMethodNamePartContext(ctx: RubyParser.SingletonMethodNamePartContext): Ast = {
