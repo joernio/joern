@@ -34,7 +34,7 @@ case class FileContentAtPath(content: String, relativizedPath: String, filename:
 
 class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
   protected val logger = LoggerFactory.getLogger(getClass)
-  val parsingError   = "KOTLIN2CPG_PARSING_ERROR"
+  val parsingError     = "KOTLIN2CPG_PARSING_ERROR"
   private val defaultKotlinStdlibContentRootJarPaths = Seq(
     DefaultContentRootJarPath("jars/kotlin-stdlib-1.6.0.jar", isResource = true),
     DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.6.0.jar", isResource = true),
