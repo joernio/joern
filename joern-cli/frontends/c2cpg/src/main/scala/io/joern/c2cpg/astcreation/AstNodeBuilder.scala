@@ -76,13 +76,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .fullName(fullname)
   }
 
-  protected def newBlockNode(node: IASTNode, typeFullName: String): NewBlock = {
-    NewBlock()
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .typeFullName(typeFullName)
-  }
-
   protected def newMethodReturnNode(node: IASTNode, typeFullName: String): NewMethodReturn = {
     methodReturnNode(typeFullName, None, line(node), column(node))
   }
@@ -125,8 +118,8 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column(node))
       .lineNumberEnd(lineEnd(node))
       .columnNumberEnd(columnEnd(node))
-      .astParentType(astParentType.getOrElse("<empty>"))
-      .astParentFullName(astParentFullName.getOrElse("<empty>"))
+      .astParentType(astParentType.getOrElse(Defines.empty))
+      .astParentFullName(astParentFullName.getOrElse(Defines.empty))
   }
 
   protected def newMethodRefNode(
