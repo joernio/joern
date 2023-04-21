@@ -205,10 +205,10 @@ class AstGenRunner(config: Config) {
 
   private def processEjsFiles(in: File, out: File, ejsFiles: List[String]): Try[Seq[String]] = {
     val tmpJsFiles = ejsFiles.map { ejsFilePath =>
-      val ejsFile           = File(ejsFilePath)
-      val maybeOriginalFile = File(ejsFilePath.stripSuffix(".ejs") + ".js")
-      if (isTranspiledFile(maybeOriginalFile.pathAsString)) {
-        maybeOriginalFile
+      val ejsFile             = File(ejsFilePath)
+      val maybeTranspiledFile = File(ejsFilePath.stripSuffix(".ejs") + ".js")
+      if (isTranspiledFile(maybeTranspiledFile.pathAsString)) {
+        maybeTranspiledFile
       } else {
         val ls                = SourceFiles.retrieveLineSeparator(ejsFilePath)
         val sourceFileContent = IOUtils.readLinesInFile(ejsFile.path).mkString("", ls, ls)
