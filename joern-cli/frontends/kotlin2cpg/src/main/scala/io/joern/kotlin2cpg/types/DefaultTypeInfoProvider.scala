@@ -588,7 +588,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val paramsString =
       if (expr.getValueParameters.isEmpty) TypeConstants.javaLangObject
       else
-        s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject).repeat(expr.getValueParameters.size())}"
+        s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * expr.getValueParameters.size()}"
     s"${TypeConstants.javaLangObject}($paramsString)"
   }
 

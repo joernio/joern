@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.utils.NodeBuilders.dependencyNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
@@ -34,6 +35,8 @@ object AstCreatorHelper {
 trait AstCreatorHelper { this: AstCreator =>
 
   private var usedNames: Int = 0
+
+  private val IncludeKeyword = "include"
 
   protected def uniqueName(target: String, name: String, fullName: String): (String, String) = {
     if (name.isEmpty && (fullName.isEmpty || fullName.endsWith("."))) {
@@ -349,11 +352,11 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def attachDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Unit = {
     val allIncludes = iASTTranslationUnit.getIncludeDirectives.toIndexedSeq
     allIncludes.foreach { include =>
-      val name           = include.getName.toString
-      val dependencyNode = newDependencyNode(name, "include")
-      val importNode     = newImportNode(nodeSignature(include), name, include)
-      diffGraph.addNode(dependencyNode)
-      diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
+      val name            = include.getName.toString
+      val _dependencyNode = dependencyNode(name, name, IncludeKeyword)
+      val importNode      = newImportNode(nodeSignature(include), name, include)
+      diffGraph.addNode(_dependencyNode)
+      diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
     }
   }
 

@@ -196,7 +196,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
         symbolTable.put(k, ts.fullName.toSet)
       else if (ms.nonEmpty)
         symbolTable.put(k, ms.fullName.toSet)
-      else if (tsNonConstructor.nonEmpty)
+      else if (!tsNonConstructor.forall(_.name == "<module>"))
         symbolTable.put(k, tsNonConstructor.fullName.toSet)
       else {
         // This is likely external and we will ignore the init variant to be consistent

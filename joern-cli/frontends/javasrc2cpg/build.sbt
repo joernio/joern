@@ -32,18 +32,18 @@ packTestCode := {
   import net.lingala.zip4j.model.enums.{CompressionLevel, CompressionMethod}
   import java.nio.file.Paths
 
-  val pkgRoot = "io"
-  val testClassOutputPath = Paths.get("joern-cli", "frontends", "javasrc2cpg", "target", "scala-2.13", "test-classes")
+  val pkgRoot              = "io"
+  val testClassOutputPath  = Paths.get("joern-cli", "frontends", "javasrc2cpg", "target", "scala-2.13", "test-classes")
   val relativeTestCodePath = Paths.get(pkgRoot, "joern", "javasrc2cpg", "jartypereader", "testcode")
 
   File(testClassOutputPath.resolve(relativeTestCodePath)).list.filter(_.exists).foreach { testDir =>
-    val tmpDir = File.newTemporaryDirectory()
+    val tmpDir                     = File.newTemporaryDirectory()
     val tmpDirWithCorrectPkgStruct = File(tmpDir.path.resolve(relativeTestCodePath)).createDirectoryIfNotExists()
     testDir.copyToDirectory(tmpDirWithCorrectPkgStruct)
     val testRootPath = tmpDir.path.resolve(pkgRoot)
 
-    val jarFilePath = testClassOutputPath.resolve(testDir.name ++ ".jar")
-    val jarFile = new ZipFile(jarFilePath.toAbsolutePath.toString)
+    val jarFilePath   = testClassOutputPath.resolve(testDir.name ++ ".jar")
+    val jarFile       = new ZipFile(jarFilePath.toAbsolutePath.toString)
     val zipParameters = new ZipParameters()
     zipParameters.setCompressionMethod(CompressionMethod.DEFLATE)
     zipParameters.setCompressionLevel(CompressionLevel.NORMAL)
@@ -53,4 +53,4 @@ packTestCode := {
     jarFile.addFolder(File(testRootPath).toJava)
   }
 }
-packTestCode := packTestCode.triggeredBy(Test/compile).value
+packTestCode := packTestCode.triggeredBy(Test / compile).value
