@@ -600,13 +600,145 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     }
   }
 
-  def astForMethodNamePartContext(ctx: RubyParser.MethodNamePartContext): Ast = {
+  def astForSimpleMethodNamePartContext(ctx: RubyParser.SimpleMethodNamePartContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+    astForDefinedMethodNameContext(ctx.definedMethodName())
+  }
+
+  def astForMethodOnlyIdentifier(ctx: RubyParser.MethodOnlyIdentifierContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+    if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
+      val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
+      val varSymbol = localVar.getSymbol()
+      val node = identifierNode(
+        varSymbol.getText,
+        None,
+        Some(varSymbol.getLine()),
+        Some(varSymbol.getCharPositionInLine()),
+        List(Defines.Any)
+      ).typeFullName(Defines.Any)
+      Ast(node)
+    } else if (ctx.CONSTANT_IDENTIFIER() != null) {
+      Ast()
+    } else {
+      Ast()
+    }
+  }
+
+  def astForMethodIdentifierContext(ctx: RubyParser.MethodIdentifierContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+    if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
+      val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
+      val varSymbol = localVar.getSymbol()
+      val node = identifierNode(
+        varSymbol.getText,
+        None,
+        Some(varSymbol.getLine()),
+        Some(varSymbol.getCharPositionInLine()),
+        List(Defines.Any)
+      ).typeFullName(Defines.Any)
+      Ast(node)
+    } else if (ctx.CONSTANT_IDENTIFIER() != null) {
+      Ast()
+    } else if (ctx.methodOnlyIdentifier() != null) {
+      astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
+    } else {
+      Ast()
+    }
+  }
+
+  def astForMethodNameContext(ctx: RubyParser.MethodNameContext): Ast = {
     if (ctx == null) return Ast()
     println(
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
+    if (ctx.methodIdentifier() != null) {
+      astForMethodIdentifierContext(ctx.methodIdentifier())
+    } else if (ctx.operatorMethodName() != null) {
+      Ast()
+
+    } else if (ctx.keyword() != null) {
+      Ast()
+    } else {
+      Ast()
+    }
+  }
+  def astForAssignmentLikeMethodIdentifierContext(ctx: RubyParser.AssignmentLikeMethodIdentifierContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
+    if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
+      val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
+      val varSymbol = localVar.getSymbol()
+      val node = identifierNode(
+        varSymbol.getText,
+        None,
+        Some(varSymbol.getLine()),
+        Some(varSymbol.getCharPositionInLine()),
+        List(Defines.Any)
+      ).typeFullName(Defines.Any)
+      Ast(node)
+    } else if (ctx.CONSTANT_IDENTIFIER() != null) {
+      Ast()
+    } else {
+      Ast()
+    }
+  }
+
+  def astForDefinedMethodNameContext(ctx: RubyParser.DefinedMethodNameContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
+    val methodNameAst         = astForMethodNameContext(ctx.methodName())
+    val assignLinkedMethodAst = astForAssignmentLikeMethodIdentifierContext(ctx.assignmentLikeMethodIdentifier())
+    Ast().withChildren(Seq[Ast](methodNameAst, assignLinkedMethodAst))
+  }
+
+  def astForSingletonObjextContext(ctx: RubyParser.SingletonObjectContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
     Ast()
+  }
+
+  def astForSingletonMethodNamePartContext(ctx: RubyParser.SingletonMethodNamePartContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
+    val definedMethodNameAst = astForDefinedMethodNameContext(ctx.definedMethodName())
+    val singletonObjAst      = astForSingletonObjextContext(ctx.singletonObject())
+    Ast()
+  }
+
+  def astForMethodNamePartContext(ctx: RubyParser.MethodNamePartContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+    if (ctx.isInstanceOf[RubyParser.SimpleMethodNamePartContext]) {
+      astForSimpleMethodNamePartContext(ctx.asInstanceOf[RubyParser.SimpleMethodNamePartContext])
+    } else if (ctx.isInstanceOf[RubyParser.SingletonMethodNamePartContext]) {
+      astForSingletonMethodNamePartContext(ctx.asInstanceOf[RubyParser.SingletonMethodNamePartContext])
+    } else {
+      Ast()
+    }
   }
   def astForMethodParameterPart(ctx: RubyParser.MethodParameterPartContext): Ast = {
     if (ctx == null || ctx.parameters() == null) return Ast()
@@ -666,7 +798,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     println(
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
-
+    astForStatement(ctx.compoundStatement().statements())
     Ast()
   }
 
