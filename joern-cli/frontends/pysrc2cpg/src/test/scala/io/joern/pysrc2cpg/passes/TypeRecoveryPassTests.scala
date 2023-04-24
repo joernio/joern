@@ -784,6 +784,21 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     allPageRef.code shouldBe "PasswordChange"
   }
 
+  "Classes extended by function calls" should {
+    lazy val cpg = code("""
+        |from sqlalchemy.ext.declarative import declarative_base
+        |
+        |class Foo(declarative_base(metadata=metadata)):
+        |    pass
+        |""".stripMargin)
+
+    "should present an appropriate dummy type" in {
+      cpg.typeDecl("Foo").inheritsFromTypeFullName.l shouldBe List(
+        Seq("sqlalchemy", "ext", "declarative.py:<module>.declarative_base.<returnValue>").mkString(File.separator)
+      )
+    }
+  }
+
   "Class methods with the `@classmethod` decorator" should {
     lazy val cpg = code("""
         |class MyClass:

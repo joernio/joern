@@ -2,6 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language._
@@ -319,6 +320,22 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
          typeFullName.substring(0, typeFullName.lastIndexOf(pathSep))
        else typeFullName).concat("<meta>")
   }
+
+  override protected def postSetTypeInformation(): Unit =
+    cu.typeDecl.map(t => t -> t.inheritsFromTypeFullName.partition(_.startsWith("tmp"))).foreach {
+      case (t, (tmpTypes, nonTmpTypes)) =>
+        val existingTypes = (tmpTypes ++ nonTmpTypes).distinct
+        val resolvedTypes = tmpTypes.flatMap { tmpT =>
+          val tmpKey = LocalVar(tmpT)
+          if (symbolTable.contains(tmpKey))
+            symbolTable.get(tmpKey)
+          else Set(tmpT)
+        }
+        if (existingTypes != resolvedTypes && resolvedTypes.nonEmpty) {
+          state.changesWereMade.compareAndExchange(false, true)
+          builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, resolvedTypes)
+        }
+    }
 
   override def prepopulateSymbolTable(): Unit = {
     cu.ast.isMethodRef.where(_.astSiblings.isIdentifier.nameExact("classmethod")).referencedMethod.foreach {
