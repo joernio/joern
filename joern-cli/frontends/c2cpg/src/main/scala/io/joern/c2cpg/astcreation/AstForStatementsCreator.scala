@@ -87,24 +87,57 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
-    val code         = nodeSignature(doStmt)
-    val doNode       = controlStructureNode(doStmt, ControlStructureTypes.DO, code)
-    val conditionAst = nullSafeAst(doStmt.getCondition)
-    val bodyAst      = nullSafeAst(doStmt.getBody)
+    val code   = nodeSignature(doStmt)
+    val doNode = controlStructureNode(doStmt, ControlStructureTypes.DO, code)
+    val conditionAst = doStmt.getCondition match {
+      case exprList: IASTExpressionList =>
+        val compareAstBlock = blockNode(doStmt, Defines.empty, registerType(Defines.voidTypeName))
+        scope.pushNewScope(compareAstBlock)
+        val compareBlockAstChildren = exprList.getExpressions.toList.map(nullSafeAst)
+        setArgumentIndices(compareBlockAstChildren)
+        val compareBlockAst = blockAst(compareAstBlock, compareBlockAstChildren)
+        scope.popScope()
+        compareBlockAst
+      case other =>
+        nullSafeAst(other)
+    }
+    val bodyAst = nullSafeAst(doStmt.getBody)
     controlStructureAst(doNode, Some(conditionAst), bodyAst, placeConditionLast = true)
   }
 
   private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Ast = {
-    val code         = s"switch(${nullSafeCode(switchStmt.getControllerExpression)})"
-    val switchNode   = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code)
-    val conditionAst = nullSafeAst(switchStmt.getControllerExpression)
-    val stmtAsts     = nullSafeAst(switchStmt.getBody)
+    val code       = s"switch(${nullSafeCode(switchStmt.getControllerExpression)})"
+    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code)
+    val conditionAst = switchStmt.getControllerExpression match {
+      case exprList: IASTExpressionList =>
+        val compareAstBlock = blockNode(switchStmt, Defines.empty, registerType(Defines.voidTypeName))
+        scope.pushNewScope(compareAstBlock)
+        val compareBlockAstChildren = exprList.getExpressions.toList.map(nullSafeAst)
+        setArgumentIndices(compareBlockAstChildren)
+        val compareBlockAst = blockAst(compareAstBlock, compareBlockAstChildren)
+        scope.popScope()
+        compareBlockAst
+      case other =>
+        nullSafeAst(other)
+    }
+    val stmtAsts = nullSafeAst(switchStmt.getBody)
     controlStructureAst(switchNode, Some(conditionAst), stmtAsts)
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
     val labelNode = newJumpTargetNode(caseStmt)
-    val stmt      = nullSafeAst(caseStmt.getExpression)
+    val stmt = caseStmt.getExpression match {
+      case exprList: IASTExpressionList =>
+        val compareAstBlock = blockNode(caseStmt, Defines.empty, registerType(Defines.voidTypeName))
+        scope.pushNewScope(compareAstBlock)
+        val compareBlockAstChildren = exprList.getExpressions.toList.map(nullSafeAst)
+        setArgumentIndices(compareBlockAstChildren)
+        val compareBlockAst = blockAst(compareAstBlock, compareBlockAstChildren)
+        scope.popScope()
+        compareBlockAst
+      case other =>
+        nullSafeAst(other)
+    }
     Seq(Ast(labelNode), stmt)
   }
 
@@ -162,9 +195,21 @@ trait AstForStatementsCreator { this: AstCreator =>
     val initAst = blockAst(initAstBlock, nullSafeAst(forStmt.getInitializerStatement, 1).toList)
     scope.popScope()
 
-    val compareAst = nullSafeAst(forStmt.getConditionExpression, 2)
-    val updateAst  = nullSafeAst(forStmt.getIterationExpression, 3)
-    val bodyAsts   = nullSafeAst(forStmt.getBody, 4)
+    val compareAst = forStmt.getConditionExpression match {
+      case exprList: IASTExpressionList =>
+        val compareAstBlock = blockNode(forStmt, Defines.empty, registerType(Defines.voidTypeName)).argumentIndex(2)
+        scope.pushNewScope(compareAstBlock)
+        val compareBlockAstChildren = exprList.getExpressions.toList.map(nullSafeAst)
+        setArgumentIndices(compareBlockAstChildren)
+        val compareBlockAst = blockAst(compareAstBlock, compareBlockAstChildren)
+        scope.popScope()
+        compareBlockAst
+      case other =>
+        nullSafeAst(other, 2)
+    }
+
+    val updateAst = nullSafeAst(forStmt.getIterationExpression, 3)
+    val bodyAsts  = nullSafeAst(forStmt.getBody, 4)
     forAst(forNode, Seq(), Seq(initAst), Seq(compareAst), Seq(updateAst), bodyAsts)
   }
 
@@ -182,22 +227,40 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForWhile(whileStmt: IASTWhileStatement): Ast = {
-    val code         = s"while (${nullSafeCode(whileStmt.getCondition)})"
-    val conditionAst = nullSafeAst(whileStmt.getCondition)
-    val bodyAst      = nullSafeAst(whileStmt.getBody)
-    whileAst(Some(conditionAst), bodyAst, Some(code))
+    val code = s"while (${nullSafeCode(whileStmt.getCondition)})"
+    val compareAst = whileStmt.getCondition match {
+      case exprList: IASTExpressionList =>
+        val compareAstBlock = blockNode(whileStmt, Defines.empty, registerType(Defines.voidTypeName))
+        scope.pushNewScope(compareAstBlock)
+        val compareBlockAstChildren = exprList.getExpressions.toList.map(nullSafeAst)
+        setArgumentIndices(compareBlockAstChildren)
+        val compareBlockAst = blockAst(compareAstBlock, compareBlockAstChildren)
+        scope.popScope()
+        compareBlockAst
+      case other =>
+        nullSafeAst(other)
+    }
+    val bodyAst = nullSafeAst(whileStmt.getBody)
+    whileAst(Some(compareAst), bodyAst, Some(code))
   }
 
   private def astForIf(ifStmt: IASTIfStatement): Ast = {
     val (code, conditionAst) = ifStmt match {
-      case s: CASTIfStatement =>
+      case s @ (_: CASTIfStatement | _: CPPASTIfStatement) if s.getConditionExpression != null =>
         val c = s"if (${nullSafeCode(s.getConditionExpression)})"
-        val a = nullSafeAst(ifStmt.getConditionExpression)
-        (c, a)
-      case s: CPPASTIfStatement if s.getConditionExpression != null =>
-        val c = s"if (${nullSafeCode(s.getConditionExpression)})"
-        val a = nullSafeAst(ifStmt.getConditionExpression)
-        (c, a)
+        val compareAst = s.getConditionExpression match {
+          case exprList: IASTExpressionList =>
+            val compareAstBlock = blockNode(s, Defines.empty, registerType(Defines.voidTypeName))
+            scope.pushNewScope(compareAstBlock)
+            val compareBlockAstChildren = exprList.getExpressions.toList.map(nullSafeAst)
+            setArgumentIndices(compareBlockAstChildren)
+            val compareBlockAst = blockAst(compareAstBlock, compareBlockAstChildren)
+            scope.popScope()
+            compareBlockAst
+          case other =>
+            nullSafeAst(other)
+        }
+        (c, compareAst)
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
         val c         = s"if (${nullSafeCode(s.getConditionDeclaration)})"
         val exprBlock = blockNode(s.getConditionDeclaration, Defines.empty, Defines.voidTypeName)
