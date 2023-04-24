@@ -201,7 +201,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Provides an entrypoint to add known symbols and their possible types.
     */
-  private def prepopulateSymbolTable(): Unit = {
+  protected def prepopulateSymbolTable(): Unit = {
     (cu.ast.isIdentifier ++ cu.ast.isCall ++ cu.ast.isLocal ++ cu.ast.isParameter)
       .filter(hasTypes)
       .foreach(prepopulateSymbolTableEntry)

@@ -232,7 +232,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def fixQualifiedName(name: String): String =
-    name.replace(Defines.qualifiedNameSeparator, ".")
+    name.stripPrefix(Defines.qualifiedNameSeparator).replace(Defines.qualifiedNameSeparator, ".")
 
   protected def isQualifiedName(name: String): Boolean =
     name.startsWith(Defines.qualifiedNameSeparator)

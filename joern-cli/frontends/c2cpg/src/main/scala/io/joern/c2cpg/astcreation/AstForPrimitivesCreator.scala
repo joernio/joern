@@ -107,7 +107,11 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       Ast(newLiteralNode(qualId.getLastName, "<global>", Defines.anyTypeName))
     }
 
-    val member = fieldIdentifierNode(qualId.getLastName, qualId.getLastName.toString, qualId.getLastName.toString)
+    val member = fieldIdentifierNode(
+      qualId.getLastName,
+      fixQualifiedName(qualId.getLastName.toString),
+      qualId.getLastName.toString
+    )
     callAst(ma, List(owner, Ast(member)))
   }
 

@@ -102,9 +102,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     val fullName = typeFor(call.getFunctionNameExpression) match {
       case t if t != Defines.anyTypeName => s"$t.$name"
-      case _                             => name
+      case _                             => fixQualifiedName(name)
     }
-    val cpgCall = newCallNode(call, name, fullName, dd)
+    val cpgCall = newCallNode(call, fixQualifiedName(name), fullName, dd)
     val args    = call.getArguments.toList.map(a => astForNode(a))
     rec.root match {
       // Optimization: do not include the receiver if the receiver is just the function name,
@@ -112,7 +112,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       // have so many call sites in CPGs, this drastically reduces the number of nodes.
       // Moreover, the data flow tracker does not need to track `f`, which would not make
       // much sense anyway.
-      case Some(r: NewIdentifier) if r.name == name =>
+      case Some(r: NewIdentifier) if r.name == fixQualifiedName(name) =>
         callAst(cpgCall, args)
       case Some(_) =>
         callAst(cpgCall, args, Option(rec))
@@ -203,6 +203,18 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callAst(cpgCastExpression, List(Ast(arg), expr))
   }
 
+  private def astsForConstructorInitializer(initializer: IASTInitializer): List[Ast] = {
+    initializer match {
+      case init: ICPPASTConstructorInitializer => init.getArguments.toList.map(x => astForNode(x))
+      case _                                   => Nil // null or unexpected type
+    }
+  }
+
+  private def astsForInitializerPlacements(initializerPlacements: Array[IASTInitializerClause]): List[Ast] = {
+    if (initializerPlacements != null) initializerPlacements.toList.map(x => astForNode(x))
+    else Nil
+  }
+
   private def astForNewExpression(newExpression: ICPPASTNewExpression): Ast = {
     val cpgNewExpression =
       newCallNode(newExpression, "<operator>.new", "<operator>.new", DispatchTypes.STATIC_DISPATCH)
@@ -213,17 +225,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
       Ast(cpgNewExpression).withChild(cpgTypeId).withArgEdge(cpgNewExpression, cpgTypeId.root.get)
     } else {
       val cpgTypeId = astForIdentifier(typeId.getDeclSpecifier)
-      val args =
-        if (
-          newExpression.getInitializer != null && newExpression.getInitializer
-            .isInstanceOf[ICPPASTConstructorInitializer]
-        ) {
-          val args = newExpression.getInitializer.asInstanceOf[ICPPASTConstructorInitializer].getArguments.toList
-          args.map(x => astForNode(x))
-        } else {
-          List()
-        }
-
+      val args = astsForConstructorInitializer(newExpression.getInitializer) ++
+        astsForInitializerPlacements(newExpression.getPlacementArguments)
       callAst(cpgNewExpression, List(cpgTypeId) ++ args)
     }
   }

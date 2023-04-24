@@ -4,6 +4,7 @@ import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
@@ -335,5 +336,20 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
           builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, resolvedTypes)
         }
     }
+
+  override def prepopulateSymbolTable(): Unit = {
+    cu.ast.isMethodRef.where(_.astSiblings.isIdentifier.nameExact("classmethod")).referencedMethod.foreach {
+      classMethod =>
+        classMethod.parameter
+          .nameExact("cls")
+          .foreach { cls =>
+            val clsPath = classMethod.typeDecl.fullName.map(_.stripSuffix("<meta>")).toSet
+            symbolTable.put(LocalVar(cls.name), clsPath)
+            if (cls.typeFullName == "ANY")
+              builder.setNodeProperty(cls, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, clsPath.toSeq)
+          }
+    }
+    super.prepopulateSymbolTable()
+  }
 
 }
