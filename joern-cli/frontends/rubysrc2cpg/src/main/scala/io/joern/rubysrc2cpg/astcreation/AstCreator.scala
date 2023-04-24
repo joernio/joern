@@ -983,7 +983,12 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    val expressions           = ctx.expression()
+    val baseExpressionAst     = astForExpressionContext(expressions.get(0))
+    val exponentExpressionAst = astForExpressionContext(expressions.get(1))
+    // TODO create a method Ast
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChildren(Seq[Ast](baseExpressionAst, exponentExpressionAst))
   }
 
   def astForRangeExpressionContext(ctx: RubyParser.RangeExpressionContext): Ast = {
@@ -1036,7 +1041,11 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    val expressionAst = astForExpressionContext(ctx.expression())
+    val operatorToken = ctx.op
+    // TODO create a method Ast
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChild(expressionAst)
   }
 
   def astForUnaryMinusExpressionContext(ctx: RubyParser.UnaryMinusExpressionContext): Ast = {
@@ -1083,13 +1092,13 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     )
 
     val ast =
-    if (ctx.variableIdentifier() != null) {
-      astForVariableIdentifierContext(ctx.variableIdentifier(), Defines.Any)
-    } else if (ctx.pseudoVariableIdentifier() != null) {
-      astForPseudoVariableIdentifierContext(ctx.pseudoVariableIdentifier())
-    } else {
-      Ast()
-    }
+      if (ctx.variableIdentifier() != null) {
+        astForVariableIdentifierContext(ctx.variableIdentifier(), Defines.Any)
+      } else if (ctx.pseudoVariableIdentifier() != null) {
+        astForPseudoVariableIdentifierContext(ctx.pseudoVariableIdentifier())
+      } else {
+        Ast()
+      }
 
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Ast(blockNode).withChild(ast)

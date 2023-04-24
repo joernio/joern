@@ -106,16 +106,18 @@ class PocTest extends RubyCode2CpgFixture {
           |b = !a
           |c = ~a
           |e = +a
+          |f = b**a
           |""".stripMargin,
         fileName = "sum.rb"
       )
 
       "expression test" in {
-        cpg.identifier.name("a").l.size shouldBe 5
-        cpg.identifier.name("b").l.size shouldBe 2//unaryExpression
+        cpg.identifier.name("a").l.size shouldBe 6
+        cpg.identifier.name("b").l.size shouldBe 3//unaryExpression
         cpg.identifier.name("c").l.size shouldBe 1//unaryExpression
         cpg.identifier.name("e").l.size shouldBe 1//unaryExpression
-        cpg.identifier.size shouldBe 9
+        cpg.identifier.name("f").l.size shouldBe 1//powerExpression
+        cpg.identifier.size shouldBe 12
       }
     }
 
