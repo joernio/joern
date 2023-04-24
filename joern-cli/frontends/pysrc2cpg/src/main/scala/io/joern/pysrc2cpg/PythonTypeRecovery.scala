@@ -324,7 +324,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     cu.ast.isMethodRef.where(_.astSiblings.isIdentifier.nameExact("classmethod")).referencedMethod.foreach {
       classMethod =>
         classMethod.parameter
-          .name("cls")
+          .nameExact("cls")
           .foreach { cls =>
             val clsPath = classMethod.typeDecl.fullName.map(_.stripSuffix("<meta>")).toSet
             symbolTable.put(LocalVar(cls.name), clsPath)
