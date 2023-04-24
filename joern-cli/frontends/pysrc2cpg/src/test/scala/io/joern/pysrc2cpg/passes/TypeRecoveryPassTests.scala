@@ -794,7 +794,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "should present an appropriate dummy type" in {
       cpg.typeDecl("Foo").inheritsFromTypeFullName.l shouldBe List(
-        "sqlalchemy/ext/declarative.py:<module>.declarative_base.<returnValue>"
+        Seq("sqlalchemy", "ext", "declarative.py:<module>.declarative_base.<returnValue>").mkString(File.separator)
       )
     }
   }
