@@ -67,8 +67,9 @@ object SourceFiles {
     */
   def toAbsolutePath(path: String, rootPath: String): String = {
     val absolutePath = Paths.get(path) match {
-      case p if p.isAbsolute => p
-      case f                 => Paths.get(rootPath, f.toString)
+      case p if p.isAbsolute            => p
+      case _ if rootPath.endsWith(path) => Paths.get(rootPath)
+      case p                            => Paths.get(rootPath, p.toString)
     }
     absolutePath.normalize().toString
   }
@@ -80,7 +81,11 @@ object SourceFiles {
     if (path.startsWith(rootPath)) {
       val absolutePath = Paths.get(path).toAbsolutePath
       val projectPath  = Paths.get(rootPath).toAbsolutePath
-      projectPath.relativize(absolutePath).toString
+      if (absolutePath.compareTo(projectPath) == 0) {
+        absolutePath.getFileName.toString
+      } else {
+        projectPath.relativize(absolutePath).toString
+      }
     } else {
       path
     }
