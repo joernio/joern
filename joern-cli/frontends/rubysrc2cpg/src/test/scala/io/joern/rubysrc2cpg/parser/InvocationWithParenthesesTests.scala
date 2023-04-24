@@ -33,7 +33,7 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  (
             |  WsOrNl
 ${"   " /* accounting for the Nl */}
-${""    /* accounting for the Ws, which is none */}
+${"" /* accounting for the Ws, which is none */}
             |  )
             |""".stripMargin
       }
@@ -91,8 +91,5 @@ ${"       "}
     }
 
   }
-
-
-
 
 }
