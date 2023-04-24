@@ -249,6 +249,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     assignments.foreach(visitAssignments)
     // Persist findings
     setTypeInformation()
+    // Entrypoint for any final changes
+    postSetTypeInformation()
     // Return number of changes
     state.changesWereMade.get()
   } finally {
@@ -1006,5 +1008,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def storeLocalTypeInfo(l: Local, types: Seq[String]): Unit = {
     storeDefaultTypeInfo(l, if (state.config.enabledDummyTypes) types else types.filterNot(XTypeRecovery.isDummyType))
   }
+
+  /** Allows an implementation to perform an operation once type persistence is complete.
+    */
+  protected def postSetTypeInformation(): Unit = {}
 
 }

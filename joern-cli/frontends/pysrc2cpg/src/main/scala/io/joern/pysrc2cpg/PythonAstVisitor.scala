@@ -2,7 +2,8 @@ package io.joern.pysrc2cpg
 
 import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
-import io.joern.pythonparser.{AstPrinter, ast}
+import io.joern.pythonparser.ast
+import io.joern.pythonparser.ast.iexpr
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -406,8 +407,22 @@ class PythonAstVisitor(
     val instanceTypeDeclName     = classDef.name
     val instanceTypeDeclFullName = calculateFullNameFromContext(instanceTypeDeclName)
 
-    // TODO for now we just take the code of the base expression and pretend they are full names.
-    val inheritsFrom = classDef.bases.map(nodeToCode.getCode)
+    // TODO for now we just take the code of the base expression and pretend they are full names, converting special
+    //  nodes as we go.
+    def handleInheritance(fs: List[iexpr]): List[String] = fs match {
+      case (x: ast.Call) :: xs =>
+        val node       = convert(x)
+        val parent     = contextStack.astParent
+        val tmpVar     = createIdentifierNode(getUnusedName(), Store, lineAndColOf(x))
+        val assignment = createAssignment(tmpVar, node, lineAndColOf(x))
+        diffGraph.addEdge(parent, assignment, EdgeTypes.AST)
+        tmpVar.name +: handleInheritance(xs)
+      case x :: xs =>
+        nodeToCode.getCode(x) +: handleInheritance(xs)
+      case Nil => Nil
+    }
+
+    val inheritsFrom = handleInheritance(classDef.bases.toList)
 
     val instanceType = nodeBuilder.typeNode(instanceTypeDeclName, instanceTypeDeclFullName)
     val instanceTypeDecl =
