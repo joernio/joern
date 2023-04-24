@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser.{IF, IS_DEFINED, ModifierStatementContext, RESCUE, UNLESS, UNTIL, WHILE}
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser, RubyParserVisitor}
 import org.antlr.v4.runtime.tree.{ErrorNode, ParseTree, ParseTreeListener, ParseTreeWalker, RuleNode, TerminalNode}
-import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext}
+import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, Token}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
@@ -1005,11 +1005,16 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     println(
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
+    astForBinaryExpression(ctx.expression().get(0), ctx.expression().get(1), ctx.op)
+  }
 
-    val expressions      = ctx.expression()
-    val lhsExpressionAst = astForExpressionContext(expressions.get(0))
-    val rhsExpressionAst = astForExpressionContext(expressions.get(1))
-    val operatorToken    = ctx.op
+  def astForBinaryExpression(
+    lhs: RubyParser.ExpressionContext,
+    rhs: RubyParser.ExpressionContext,
+    operatorToken: Token
+  ): Ast = {
+    val lhsExpressionAst = astForExpressionContext(lhs)
+    val rhsExpressionAst = astForExpressionContext(rhs)
     // TODO create a method Ast
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Ast(blockNode).withChildren(Seq[Ast](lhsExpressionAst, rhsExpressionAst))
