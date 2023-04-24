@@ -77,11 +77,11 @@ trait AstCreatorHelper { this: AstCreator =>
     SourceFiles.toRelativePath(path, config.inputPath)
   }
 
-  protected def line(node: IASTNode): Option[Int] = {
+  protected def line(node: IASTNode): Option[Integer] = {
     nullSafeFileLocation(node).map(_.getStartingLineNumber)
   }
 
-  protected def lineEnd(node: IASTNode): Option[Int] = {
+  protected def lineEnd(node: IASTNode): Option[Integer] = {
     nullSafeFileLocationLast(node).map(_.getEndingLineNumber)
   }
 
@@ -98,14 +98,14 @@ trait AstCreatorHelper { this: AstCreator =>
     column
   }
 
-  protected def column(node: IASTNode): Option[Int] = {
+  protected def column(node: IASTNode): Option[Integer] = {
     val loc = nullSafeFileLocation(node)
     loc.map { x =>
       offsetToColumn(node, x.getNodeOffset)
     }
   }
 
-  protected def columnEnd(node: IASTNode): Option[Int] = {
+  protected def columnEnd(node: IASTNode): Option[Integer] = {
     val loc = nullSafeFileLocation(node)
     loc.map { x =>
       offsetToColumn(node, x.getNodeOffset + x.getNodeLength - 1)
@@ -207,7 +207,7 @@ trait AstCreatorHelper { this: AstCreator =>
       val text = notHandledText(node)
       logger.info(text)
     }
-    Ast(newUnknownNode(node))
+    Ast(unknownNode(node, nodeSignature(node)))
   }
 
   protected def nullSafeCode(node: IASTNode): String = {
@@ -232,7 +232,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def fixQualifiedName(name: String): String =
-    name.replace(Defines.qualifiedNameSeparator, ".")
+    name.stripPrefix(Defines.qualifiedNameSeparator).replace(Defines.qualifiedNameSeparator, ".")
 
   protected def isQualifiedName(name: String): Boolean =
     name.startsWith(Defines.qualifiedNameSeparator)
@@ -378,8 +378,8 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer): Ast = {
-    val blockNode = newBlockNode(d, Defines.voidTypeName)
-    scope.pushNewScope(blockNode)
+    val node = blockNode(d, Defines.empty, Defines.voidTypeName)
+    scope.pushNewScope(node)
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
@@ -388,12 +388,12 @@ trait AstCreatorHelper { this: AstCreator =>
       callAst(callNode, List(left, right))
     }
     scope.popScope()
-    blockAst(blockNode, calls.toList)
+    blockAst(node, calls.toList)
   }
 
   private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer): Ast = {
-    val blockNode = newBlockNode(d, Defines.voidTypeName)
-    scope.pushNewScope(blockNode)
+    val node = blockNode(d, Defines.empty, Defines.voidTypeName)
+    scope.pushNewScope(node)
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
@@ -402,7 +402,7 @@ trait AstCreatorHelper { this: AstCreator =>
       callAst(callNode, List(left, right))
     }
     scope.popScope()
-    blockAst(blockNode, calls.toList)
+    blockAst(node, calls.toList)
   }
 
   private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer): Ast = {

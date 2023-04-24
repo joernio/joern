@@ -763,6 +763,24 @@ class AstCreationPassTests extends AbstractPassTest {
       arg2.code shouldBe "foo(x)"
     }
 
+    "not create an expression list for comma operator" in AstFixture("""
+        |int something(void);
+        |void a() {
+        |  int b;
+        |  int c;
+        |  for (; b = something(), b > c;) {}
+        |}
+      """.stripMargin) { cpg =>
+      val List(forLoop)        = cpg.controlStructure.l
+      val List(conditionBlock) = forLoop.condition.collectAll[Block].l
+      conditionBlock.argumentIndex shouldBe 2
+      val List(assignmentCall, greaterCall) = conditionBlock.astChildren.collectAll[Call].l
+      assignmentCall.argumentIndex shouldBe 1
+      assignmentCall.code shouldBe "b = something()"
+      greaterCall.argumentIndex shouldBe 2
+      greaterCall.code shouldBe "b > c"
+    }
+
     "be correct for call expression" in AstFixture("""
         |void method(int x) {
         |  foo(x);
@@ -1355,6 +1373,26 @@ class AstCreationPassTests extends AbstractPassTest {
     ) { cpg =>
       // TODO: "<operator>.new" is not part of Operators
       cpg.call.name("<operator>.new").code("new int\\[n\\]").argument.code("int").size shouldBe 1
+    }
+
+    "be correct for 'new' with explicit identifier" in AstFixture(
+      """
+        |void a() {
+        |  char buf[80];
+        |  new (buf) string("hi");
+        |}
+        |""".stripMargin,
+      "file.cpp"
+    ) { cpg =>
+      // TODO: "<operator>.new" is not part of Operators
+      val List(newCall)         = cpg.call.name("<operator>.new").l
+      val List(string, hi, buf) = newCall.argument.l
+      string.argumentIndex shouldBe 1
+      string.code shouldBe "string"
+      hi.argumentIndex shouldBe 2
+      hi.code shouldBe "\"hi\""
+      buf.argumentIndex shouldBe 3
+      buf.code shouldBe "buf"
     }
 
     // for: https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1526

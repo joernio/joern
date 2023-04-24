@@ -36,8 +36,8 @@ object CGlobal extends Global {
     diffGraph: DiffGraphBuilder,
     filename: String,
     fromFilename: String,
-    linenumber: Option[Int],
-    columnnumber: Option[Int],
+    linenumber: Option[Integer],
+    columnnumber: Option[Integer],
     astCreatorFunction: => Seq[Ast]
   ): Seq[Ast] = {
     val (callCreatorFunc, addDirectlyToDiff) =

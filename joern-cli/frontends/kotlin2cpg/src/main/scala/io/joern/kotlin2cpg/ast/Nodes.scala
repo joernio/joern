@@ -3,11 +3,8 @@ package io.joern.kotlin2cpg.ast
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBinding,
-  NewBlock,
   NewCall,
   NewClosureBinding,
-  NewControlStructure,
-  NewFieldIdentifier,
   NewIdentifier,
   NewJumpTarget,
   NewLiteral,
@@ -15,11 +12,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMember,
   NewMethod,
   NewMethodParameterIn,
-  NewMethodRef,
-  NewMethodReturn,
   NewModifier,
   NewNamespaceBlock,
-  NewReturn,
   NewTypeDecl,
   NewTypeRef,
   NewUnknown
@@ -34,14 +28,6 @@ object Nodes {
       .signature(signature)
   }
 
-  def blockNode(code: String, typeFullName: String, line: Int = -1, column: Int = -1): NewBlock = {
-    NewBlock()
-      .code(code)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   def callNode(
     code: String,
     name: String,
@@ -49,8 +35,8 @@ object Nodes {
     signature: String,
     typeFullName: String,
     dispatchType: String,
-    line: Int = -1,
-    column: Int = -1
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
   ): NewCall = {
     NewCall()
       .code(code)
@@ -70,23 +56,12 @@ object Nodes {
       .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
   }
 
-  def controlStructureNode(code: String, _type: String, line: Int = -1, column: Int = -1): NewControlStructure = {
-    NewControlStructure()
-      .code(code)
-      .controlStructureType(_type)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def fieldIdentifierNode(name: String, line: Int = -1, column: Int = -1): NewFieldIdentifier = {
-    NewFieldIdentifier()
-      .code(name)
-      .canonicalName(name)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def identifierNode(name: String, typeFullName: String, line: Int = -1, column: Int = -1): NewIdentifier = {
+  def identifierNode(
+    name: String,
+    typeFullName: String,
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
+  ): NewIdentifier = {
     NewIdentifier()
       .code(name)
       .name(name)
@@ -99,8 +74,8 @@ object Nodes {
     code: String,
     name: String,
     parserTypeName: String,
-    line: Int = -1,
-    column: Int = -1
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
   ): NewJumpTarget = {
     NewJumpTarget()
       .code(code)
@@ -114,8 +89,8 @@ object Nodes {
     name: String,
     typeFullName: String,
     closureBindingId: Option[String] = None,
-    line: Int = -1,
-    column: Int = -1
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
   ): NewLocal = {
     NewLocal()
       .code(name)
@@ -126,7 +101,12 @@ object Nodes {
       .columnNumber(column)
   }
 
-  def literalNode(code: String, typeFullName: String, line: Int = -1, column: Int = -1): NewLiteral = {
+  def literalNode(
+    code: String,
+    typeFullName: String,
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
+  ): NewLiteral = {
     NewLiteral()
       .code(code)
       .typeFullName(typeFullName)
@@ -137,8 +117,8 @@ object Nodes {
   def methodParameterNode(
     name: String,
     typeFullName: String,
-    line: Int = -1,
-    column: Int = -1
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
   ): NewMethodParameterIn = {
     NewMethodParameterIn()
       .name(name)
@@ -154,10 +134,10 @@ object Nodes {
     fullName: String,
     signature: String,
     fileName: String,
-    line: Int = -1,
-    column: Int = -1,
-    lineEnd: Int = -1,
-    columnEnd: Int = -1
+    line: Option[Integer] = None,
+    column: Option[Integer] = None,
+    lineEnd: Option[Integer] = None,
+    columnEnd: Option[Integer] = None
   ): NewMethod = {
     NewMethod()
       .code(name)
@@ -172,25 +152,15 @@ object Nodes {
       .columnNumberEnd(columnEnd)
   }
 
-  def memberNode(name: String, typeFullName: String, line: Int = -1, column: Int = -1): NewMember = {
+  def memberNode(
+    name: String,
+    typeFullName: String,
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
+  ): NewMember = {
     NewMember()
       .name(name)
       .code(name)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def methodRefNode(
-    name: String,
-    fullName: String,
-    typeFullName: String,
-    line: Int = -1,
-    column: Int = -1
-  ): NewMethodRef = {
-    NewMethodRef()
-      .code(name)
-      .methodFullName(fullName)
       .typeFullName(typeFullName)
       .lineNumber(line)
       .columnNumber(column)
@@ -212,8 +182,8 @@ object Nodes {
     name: String,
     code: String,
     typeFullName: Option[String] = None,
-    line: Int = -1,
-    column: Int = -1
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
   ): NewCall = {
     NewCall()
       .name(name)
@@ -226,21 +196,14 @@ object Nodes {
       .columnNumber(column)
   }
 
-  def returnNode(code: String, line: Int = -1, column: Int = -1): NewReturn = {
-    NewReturn()
-      .code(code)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   def typeDeclNode(
     name: String,
     fullName: String,
     fileName: String,
     inheritsFromFullNames: collection.Seq[String],
     aliasTypeFullName: Option[String] = None,
-    line: Int = -1,
-    column: Int = -1
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
   ): NewTypeDecl = {
     NewTypeDecl()
       .code(name)
@@ -254,15 +217,12 @@ object Nodes {
       .columnNumber(column)
   }
 
-  def typeRefNode(code: String, typeFullName: String, line: Int = -1, column: Int = -1): NewTypeRef = {
-    NewTypeRef()
-      .code(code)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def unknownNode(code: String, parserTypeName: String, line: Int = -1, column: Int = -1): NewUnknown = {
+  def unknownNode(
+    code: String,
+    parserTypeName: String,
+    line: Option[Integer] = None,
+    column: Option[Integer] = None
+  ): NewUnknown = {
     NewUnknown()
       .code(code)
       .parserTypeName(parserTypeName)

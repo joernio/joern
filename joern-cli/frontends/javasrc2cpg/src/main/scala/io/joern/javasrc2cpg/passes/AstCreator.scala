@@ -92,7 +92,7 @@ import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.x2cpg.utils.NodeBuilders.{
   annotationLiteralNode,
   callNode,
-  fieldIdentifierNode,
+  fieldIdentifierNode => newFieldIdentifierNode,
   identifierNode,
   methodReturnNode,
   modifierNode,
@@ -150,14 +150,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewNode,
   NewReturn,
   NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
+  NewTypeRef
 }
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.joern.x2cpg.utils.AstPropertiesUtil._
 import io.joern.x2cpg.utils.NodeBuilders
+import io.joern.x2cpg.AstNodeBuilder
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.{PropertyDefaults => ParameterDefaults}
 import io.shiftleft.passes.IntervalKeyPool
@@ -200,9 +200,8 @@ object AstWithStaticInit {
 /** Translate a Java Parser AST into a CPG AST
   */
 class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Global, symbolSolver: JavaSymbolSolver)
-    extends AstCreatorBase(filename) {
-
-  import io.joern.javasrc2cpg.passes.AstCreator._
+    extends AstCreatorBase(filename)
+    with AstNodeBuilder[Node, AstCreator] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -234,6 +233,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   def storeInDiffGraph(ast: Ast): Unit = {
     Ast.storeInDiffGraph(ast, diffGraph)
   }
+
+  protected def line(node: Node): Option[Integer]      = node.getBegin.map(x => Integer.valueOf(x.line)).toScala
+  protected def column(node: Node): Option[Integer]    = node.getBegin.map(x => Integer.valueOf(x.column)).toScala
+  protected def lineEnd(node: Node): Option[Integer]   = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
+  protected def columnEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
 
   private def addImportsToScope(compilationUnit: CompilationUnit): Seq[NewImport] = {
     val (asteriskImports, specificImports) = compilationUnit.getImports.asScala.toList.partition(_.isAsterisk)
@@ -1401,7 +1405,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       line = lineNo
     )
     val fieldAccessIdentifier      = identifierNode(iterableSource.name, iterableSource.typeFullName, lineNo)
-    val fieldAccessFieldIdentifier = fieldIdentifierNode("length", lineNo)
+    val fieldAccessFieldIdentifier = newFieldIdentifierNode("length", lineNo)
     val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
     val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
     val compareArgs                = List(Ast(comparisonIdxIdentifier), fieldAccessAst)
@@ -2541,15 +2545,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def unknownAst(node: Node): Ast = {
-    val unknownNode =
-      NewUnknown()
-        .code(node.toString)
-        .lineNumber(line(node))
-        .columnNumber(column(node))
-
-    Ast(unknownNode)
-  }
+  private def unknownAst(node: Node): Ast = Ast(unknownNode(node, node.toString))
 
   private def someWithDotSuffix(prefix: String): Option[String] = Some(s"$prefix.")
 
@@ -3184,17 +3180,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     scopeStack.addToScope(parameterNode, parameter.getNameAsString, Some(parameterNode.typeFullName))
     ast.withChildren(annotationAsts)
-  }
-
-}
-
-object AstCreator {
-  def line(node: Node): Option[Integer] = {
-    node.getBegin.map(x => Integer.valueOf(x.line)).toScala
-  }
-
-  def column(node: Node): Option[Integer] = {
-    node.getBegin.map(x => Integer.valueOf(x.column)).toScala
   }
 
 }

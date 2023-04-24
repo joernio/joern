@@ -142,17 +142,17 @@ trait AstForTypesCreator { this: AstCreator =>
     Ast(typeDeclNode)
   }
 
-  protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(newUnknownNode(asm))
+  protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(unknownNode(asm, nodeSignature(asm)))
 
   private def astForStructuredBindingDeclaration(decl: ICPPASTStructuredBindingDeclaration): Ast = {
-    val blockNode = newBlockNode(decl, Defines.voidTypeName)
-    scope.pushNewScope(blockNode)
+    val node = blockNode(decl, Defines.empty, Defines.voidTypeName)
+    scope.pushNewScope(node)
     val childAsts = decl.getNames.toList.map { name =>
       astForNode(name)
     }
     scope.popScope()
     setArgumentIndices(childAsts)
-    blockAst(blockNode, childAsts)
+    blockAst(node, childAsts)
   }
 
   protected def astsForDeclaration(decl: IASTDeclaration): Seq[Ast] = {

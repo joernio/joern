@@ -300,7 +300,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
       )
 
     val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
-    method.fullName shouldBe "models.py:<module>.Foo.Foo<body>.__init__"
+    method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo<meta>"
   }
@@ -319,9 +319,9 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
       )
 
     val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
-    method.fullName shouldBe "models.py:<module>.Foo.Foo<body>.__init__"
+    method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
-    typeDeclFullName shouldBe "models.py:<module>.Foo.Foo<body>"
+    typeDeclFullName shouldBe "models.py:<module>.Foo"
   }
 
 }

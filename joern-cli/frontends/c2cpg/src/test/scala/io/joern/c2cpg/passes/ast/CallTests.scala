@@ -112,6 +112,46 @@ class CallTests extends CCodeToCpgSuite {
       val List(callIn) = m.callIn.l
       callIn.code shouldBe "b->GetObj()"
     }
-
   }
+
+  "CallTest 3" should {
+    val cpg = code(
+      """
+        |int square(int num) {
+        |    return num * num;
+        |}
+        |void call_square() {
+        |    ::square(10);
+        |}
+        |""".stripMargin,
+      "test.cpp"
+    )
+    "have correct names for static methods / calls" in {
+      cpg.method.name("square").fullName.head shouldBe "square"
+      cpg.method.name("call_square").call.methodFullName.head shouldBe "square"
+    }
+  }
+
+  "CallTest 4" should {
+    val cpg = code(
+      """
+        |class A {
+        |  public:
+        |    static int square(int num) {
+        |      return num * num;
+        |    }
+        |};
+        |
+        |void call_square() {
+        |  A::square(10);
+        |}
+        |""".stripMargin,
+      "test.cpp"
+    )
+    "have correct names for static methods / calls from classes" in {
+      cpg.method.name("square").fullName.head shouldBe "A.square"
+      cpg.method.name("call_square").call.methodFullName.head shouldBe "A.square"
+    }
+  }
+
 }
