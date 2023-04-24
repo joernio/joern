@@ -450,6 +450,7 @@ class PythonAstVisitor(
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create <body> function which contains the code defining the class
+    // TODO: The below should not be metaTypeDeclNode but rather instanceTypeDecl
     contextStack.pushClass(classDef.name, metaTypeDeclNode)
     val (_, methodRefNode) = createMethodAndMethodRef(
       instanceTypeDeclName,

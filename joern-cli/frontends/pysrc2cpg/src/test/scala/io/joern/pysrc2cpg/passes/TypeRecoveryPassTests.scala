@@ -784,4 +784,21 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     allPageRef.code shouldBe "PasswordChange"
   }
 
+  "Class methods with the `@classmethod` decorator" should {
+    lazy val cpg = code("""
+        |class MyClass:
+        |
+        |    @classmethod
+        |    def class_method(cls):
+        |        print("Class Method ", cls)
+        |
+        |""".stripMargin)
+
+    "resolve the cls variable" in {
+      cpg.method("class_method").parameter.name("cls").typeFullName.headOption shouldBe Some(
+        "Test0.py:<module>.MyClass"
+      )
+    }
+  }
+
 }
