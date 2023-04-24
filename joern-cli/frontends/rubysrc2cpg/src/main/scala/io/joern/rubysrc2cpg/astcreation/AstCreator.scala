@@ -346,12 +346,17 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForBeginStatementContext(ctx: RubyParser.BeginStatementContext): Ast = {
     if (ctx == null) return Ast()
-    Ast()
+
+    val astStmts  = astForStatementsContext(ctx.statements())
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChild(astStmts)
   }
 
   def astForEndStatementContext(ctx: RubyParser.EndStatementContext): Ast = {
     if (ctx == null) return Ast()
-    Ast()
+    val astStmts  = astForStatementsContext(ctx.statements())
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChild(astStmts)
   }
 
   def astForModifierStatementContext(ctx: ModifierStatementContext): Ast = {

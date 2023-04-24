@@ -113,5 +113,37 @@ class PocTest extends RubyCode2CpgFixture {
         cpg.identifier.size shouldBe 3
       }
     }
+
+    "The CPG generated for begin and end blocks" should {
+      val cpg = code(
+        """
+          |#!/usr/bin/env ruby
+          |
+          |# This code block will be executed before the program begins
+          |BEGIN {
+          |  beginvar = 5
+          |  beginbool = beginvar > 21
+          |}
+          |
+          |# This is the main logic of the program
+          |puts "Hello, world!"
+          |
+          |# This code block will be executed after the program finishes
+          |END {
+          |  endvar = 67
+          |  endbool = endvar > 23
+          |}
+          |""".stripMargin,
+        fileName = "beginning_of_the_end.rb"
+      )
+
+      "beginning_of_the_end test" in {
+        cpg.identifier.name("beginvar").l.size shouldBe 2
+        cpg.identifier.name("endvar").l.size shouldBe 2
+        cpg.identifier.name("beginbool").l.size shouldBe 1
+        cpg.identifier.name("endbool").l.size shouldBe 1
+        cpg.identifier.size shouldBe 6
+      }
+    }
   }
 }
