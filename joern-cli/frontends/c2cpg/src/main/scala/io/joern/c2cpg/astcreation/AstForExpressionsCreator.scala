@@ -203,6 +203,20 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callAst(cpgCastExpression, List(Ast(arg), expr))
   }
 
+  private def astsForConstructorInitializer(initializer: IASTInitializer): List[Ast] = {
+    if (initializer != null && initializer.isInstanceOf[ICPPASTConstructorInitializer]) {
+      val args = initializer.asInstanceOf[ICPPASTConstructorInitializer].getArguments.toList
+      args.map(x => astForNode(x))
+    } else {
+      Nil
+    }
+  }
+
+  private def astsForInitializerPlacements(initializerPlacements: Array[IASTInitializerClause]): List[Ast] = {
+    if (initializerPlacements != null) initializerPlacements.toList.map(x => astForNode(x))
+    else Nil
+  }
+
   private def astForNewExpression(newExpression: ICPPASTNewExpression): Ast = {
     val cpgNewExpression =
       newCallNode(newExpression, "<operator>.new", "<operator>.new", DispatchTypes.STATIC_DISPATCH)
@@ -213,17 +227,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
       Ast(cpgNewExpression).withChild(cpgTypeId).withArgEdge(cpgNewExpression, cpgTypeId.root.get)
     } else {
       val cpgTypeId = astForIdentifier(typeId.getDeclSpecifier)
-      val args =
-        if (
-          newExpression.getInitializer != null && newExpression.getInitializer
-            .isInstanceOf[ICPPASTConstructorInitializer]
-        ) {
-          val args = newExpression.getInitializer.asInstanceOf[ICPPASTConstructorInitializer].getArguments.toList
-          args.map(x => astForNode(x))
-        } else {
-          List()
-        }
-
+      val args = astsForConstructorInitializer(newExpression.getInitializer) ++
+        astsForInitializerPlacements(newExpression.getPlacementArguments)
       callAst(cpgNewExpression, List(cpgTypeId) ++ args)
     }
   }
