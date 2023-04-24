@@ -332,7 +332,7 @@ optionalParameters
     ;
 
 optionalParameter
-    :   LOCAL_VARIABLE_IDENTIFIER EQ wsOrNl* expression
+    :   LOCAL_VARIABLE_IDENTIFIER WS* EQ wsOrNl* expression
     ;
 
 arrayParameter
