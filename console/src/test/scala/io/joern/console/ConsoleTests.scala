@@ -405,7 +405,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       console.importCode(codeDir.toString)
       Run.runCustomQuery(console, console.cpg.method.newTagNode("mytag"))
       console.cpg.tag.name("mytag").method.name.toSet should contain("main")
-      console.cpg.metaData.map(_.overlays).head.last shouldBe "custom"
+      console.cpg.metaData.map(_.overlays).next().last shouldBe "custom"
     }
   }
 

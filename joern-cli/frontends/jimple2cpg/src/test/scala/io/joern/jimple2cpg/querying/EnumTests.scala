@@ -104,16 +104,16 @@ class EnumTests extends JimpleCode2CpgFixture {
       redCall.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       redCall.methodFullName shouldBe "Color.<init>:void(java.lang.String,int,java.lang.String)"
       redCall.astChildren.size shouldBe 4
-      redCall.astChildren.last shouldBe a[Literal]
-      redCall.astChildren.last.code shouldBe "\"Red\""
+      redCall.astChildren.l.last shouldBe a[Literal]
+      redCall.astChildren.l.last.code shouldBe "\"Red\""
 
       b.code shouldBe "BLUE"
 
       blueCall.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
       blueCall.methodFullName shouldBe "Color.<init>:void(java.lang.String,int,java.lang.String)"
       blueCall.astChildren.size shouldBe 4
-      blueCall.astChildren.last shouldBe a[Literal]
-      blueCall.astChildren.last.code shouldBe "\"Blue\""
+      blueCall.astChildren.l.last shouldBe a[Literal]
+      blueCall.astChildren.l.last.code shouldBe "\"Blue\""
     }
   }
 

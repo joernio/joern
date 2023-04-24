@@ -27,7 +27,7 @@ class ReflectionTests extends JimpleCode2CpgFixture {
     fooClazz.typeFullName shouldBe "java.lang.Class"
     fooClazz.parentExpression match {
       case Some(call) =>
-        call.ast.isLiteral.headOption match {
+        call.ast.isLiteral.nextOption() match {
           case Some(classLiteral) =>
             classLiteral.code shouldBe "Foo.class"
             classLiteral.typeFullName shouldBe "java.lang.Class"

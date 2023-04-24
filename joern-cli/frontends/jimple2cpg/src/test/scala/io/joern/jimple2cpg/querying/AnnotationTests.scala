@@ -18,7 +18,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
         |""".stripMargin).cpg
 
     "test annotation node properties" in {
-      val annotationNode = cpg.typeDecl("SomeClass").annotation.head
+      val annotationNode = cpg.typeDecl("SomeClass").annotation.next()
       annotationNode.code shouldBe """@NormalAnnotation(value = "annotation")"""
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "NormalAnnotation"
@@ -47,7 +47,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
         |""".stripMargin).cpg
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").annotation.next()
       annotationNode.code shouldBe "@NormalAnnotation(value = \"classAnnotation\")"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "NormalAnnotation"
@@ -92,7 +92,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
         |""".stripMargin).cpg
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").annotation.next()
       annotationNode.code shouldBe "@MarkerAnnotation()"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "MarkerAnnotation"
@@ -122,7 +122,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
         |""".stripMargin).cpg
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.fullNameExact("SomeClass.<init>:void()").annotation.head
+      val annotationNode = cpg.method.fullNameExact("SomeClass.<init>:void()").annotation.next()
       annotationNode.code shouldBe "@MarkerAnnotation()"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "MarkerAnnotation"
@@ -151,7 +151,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
         |""".stripMargin).cpg
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").parameter.name("x").annotation.head
+      val annotationNode = cpg.method.name("function").parameter.name("x").annotation.next()
       annotationNode.code shouldBe "@MarkerAnnotation()"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "MarkerAnnotation"
@@ -173,7 +173,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
         |""".stripMargin).cpg
 
     "test annotation node properties" in {
-      val annotationNode = cpg.typeDecl.name("SomeClass").member.name("x").annotation.head
+      val annotationNode = cpg.typeDecl.name("SomeClass").member.name("x").annotation.next()
       annotationNode.code shouldBe "@MarkerAnnotation()"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "MarkerAnnotation"
@@ -203,7 +203,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
         |""".stripMargin).cpg
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").annotation.next()
       annotationNode.code shouldBe "@NormalAnnotation(value = {\"aaa\", \"bbb\"})"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "NormalAnnotation"
@@ -260,7 +260,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
         |""".stripMargin).cpg
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").annotation.next()
       annotationNode.code shouldBe "@NormalAnnotation(value = 2)"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "NormalAnnotation"
@@ -301,7 +301,7 @@ class AnnotationTests extends JimpleCode2CpgFixture {
         |""".stripMargin).cpg
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").annotation.next()
       annotationNode.code shouldBe "@NormalAnnotation(value = @OtherAnnotation())"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "NormalAnnotation"

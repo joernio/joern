@@ -12,7 +12,7 @@ class ReturnCpgTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "test return node properties" in {
-      val returnNode = cpg.ret.head
+      val returnNode = cpg.ret.next()
       returnNode.code shouldBe "return"
       returnNode.lineNumber shouldBe Some(2)
     }
@@ -24,13 +24,13 @@ class ReturnCpgTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "test return node properties" in {
-      val returnNode = cpg.ret.head
+      val returnNode = cpg.ret.next()
       returnNode.code shouldBe "return a"
       returnNode.lineNumber shouldBe Some(2)
     }
 
     "test return node ast children" in {
-      cpg.ret.astChildren.order(1).isIdentifier.head.code shouldBe "a"
+      cpg.ret.astChildren.order(1).isIdentifier.next().code shouldBe "a"
     }
   }
 
@@ -40,13 +40,13 @@ class ReturnCpgTests extends AnyFreeSpec with Matchers {
                                                 |""".stripMargin)
 
     "test return node properties" in {
-      val returnNode = cpg.ret.head
+      val returnNode = cpg.ret.next()
       returnNode.code shouldBe "return {a:1}"
       returnNode.lineNumber shouldBe Some(2)
     }
 
     "test return node ast children" in {
-      cpg.ret.astChildren.order(1).head.code shouldBe
+      cpg.ret.astChildren.order(1).next().code shouldBe
         "tmp0 = {}\ntmp0[a] = 1\ntmp0"
     }
   }

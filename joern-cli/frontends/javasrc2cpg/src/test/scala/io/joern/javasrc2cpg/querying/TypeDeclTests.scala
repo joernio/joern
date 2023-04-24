@@ -101,7 +101,7 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
           |package a;
           |public class B extends A {}
           |""".stripMargin)
-      val typeDecl = cpg.typeDecl("B").head
+      val typeDecl = cpg.typeDecl("B").next()
       typeDecl.inheritsFromTypeFullName should contain("a.A")
     }
   }
@@ -151,7 +151,7 @@ class TypeDeclTests extends JavaSrcCode2CpgFixture {
 
     val List(x) = cpg.typeDecl.name(".*InnerClass2").l
     x.method.size shouldBe 1
-    val constructor = x.method.head
+    val constructor = x.method.next()
 
     constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
     constructor.fullName shouldBe s"$typeFullName.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
@@ -162,7 +162,7 @@ class TypeDeclTests extends JavaSrcCode2CpgFixture {
     )
 
     constructor.parameter.size shouldBe 1
-    val thisParam = constructor.parameter.head
+    val thisParam = constructor.parameter.next()
     thisParam.name shouldBe "this"
     thisParam.typeFullName shouldBe typeFullName
     thisParam.order shouldBe 0
@@ -235,8 +235,8 @@ class TypeDeclTests extends JavaSrcCode2CpgFixture {
           case List(method) =>
             method.fullName shouldBe "a.b.c.d.OuterClass$InnerClass.id:int(int)"
             method.signature shouldBe "int(int)"
-            method.block.astChildren.head shouldBe a[Return]
-            method.block.ast.isIdentifier.head.name shouldBe "x"
+            method.block.astChildren.next() shouldBe a[Return]
+            method.block.ast.isIdentifier.next().name shouldBe "x"
 
           case res => fail(s"Expected id method in InnerClass but got $res")
         }

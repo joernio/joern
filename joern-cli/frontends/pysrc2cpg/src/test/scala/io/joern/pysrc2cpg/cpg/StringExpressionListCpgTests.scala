@@ -11,24 +11,24 @@ class StringExpressionListCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg(""""one" "two" "three"""".stripMargin)
 
     "test stringExpressionList operator node" in {
-      val callNode = cpg.call.methodFullName("<operator>.stringExpressionList").head
+      val callNode = cpg.call.methodFullName("<operator>.stringExpressionList").next()
       callNode.code shouldBe """"one" "two" "three""""
       callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.lineNumber shouldBe Some(1)
     }
 
     "test stringExpressionList operator node arguments" in {
-      val callNode = cpg.call.methodFullName("<operator>.stringExpressionList").head
+      val callNode = cpg.call.methodFullName("<operator>.stringExpressionList").next()
 
-      val child1 = callNode.astChildren.order(1).isLiteral.head
+      val child1 = callNode.astChildren.order(1).isLiteral.next()
       child1.code shouldBe "\"one\""
       child1.argumentIndex shouldBe 1
 
-      val child2 = callNode.astChildren.order(2).isLiteral.head
+      val child2 = callNode.astChildren.order(2).isLiteral.next()
       child2.code shouldBe "\"two\""
       child2.argumentIndex shouldBe 2
 
-      val child3 = callNode.astChildren.order(3).isLiteral.head
+      val child3 = callNode.astChildren.order(3).isLiteral.next()
       child3.code shouldBe "\"three\""
       child3.argumentIndex shouldBe 3
     }

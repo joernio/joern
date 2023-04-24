@@ -13,7 +13,7 @@ class OverlaysTests extends AnyWordSpec with Matchers {
       val cpg = MockCpg().withMetaData().cpg
       Overlays.appendOverlayName(cpg, "foo")
       Overlays.appendOverlayName(cpg, "bar")
-      cpg.metaData.head.overlays shouldBe List("foo", "bar")
+      cpg.metaData.next().overlays shouldBe List("foo", "bar")
     }
 
     "allow querying `overlays`" in {

@@ -37,7 +37,7 @@ class TryExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false)
       firstArg.order shouldBe 1
       secondArg.order shouldBe 2
 
-      val firstAstChildOfFirstArg = firstArg.astChildren.head.asInstanceOf[Identifier]
+      val firstAstChildOfFirstArg = firstArg.astChildren.next().asInstanceOf[Identifier]
       firstAstChildOfFirstArg.order shouldBe 1
       firstAstChildOfFirstArg.name shouldBe "x"
       firstAstChildOfFirstArg.code shouldBe "x"
@@ -45,7 +45,7 @@ class TryExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false)
       firstAstChildOfFirstArg.lineNumber shouldBe Some(7)
       firstAstChildOfFirstArg.columnNumber shouldBe Some(8)
 
-      val firstAstChildOfSecondArg = secondArg.astChildren.head.asInstanceOf[Call]
+      val firstAstChildOfSecondArg = secondArg.astChildren.next().asInstanceOf[Call]
       firstAstChildOfSecondArg.order shouldBe 1
       firstAstChildOfSecondArg.name shouldBe "toInt"
       firstAstChildOfSecondArg.code shouldBe "r.toInt()"

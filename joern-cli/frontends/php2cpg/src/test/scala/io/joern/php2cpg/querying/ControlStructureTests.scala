@@ -230,7 +230,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
                       |}
                       |""".stripMargin)
 
-      val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).head
+      val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).next()
 
       inside(ifAst.condition.l) { case List(condition1: Identifier) =>
         condition1.name shouldBe "cond1"
@@ -309,7 +309,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
                       |}
                       |""".stripMargin)
 
-      val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).head
+      val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).next()
 
       inside(ifAst.condition.l) { case List(condition1: Identifier) =>
         condition1.name shouldBe "cond1"
@@ -367,7 +367,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
                       |endif;
                       |""".stripMargin)
 
-      val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).head
+      val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).next()
 
       inside(ifAst.condition.l) { case List(condition1: Identifier) =>
         condition1.name shouldBe "cond1"
@@ -1071,7 +1071,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         currentCall.name shouldBe "current"
         currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
         currentCall.code shouldBe "$iter_tmp0->current()"
-        inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
+        inside(currentCall.argument(0)::Nil) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"
           iterRecv.argumentIndex shouldBe 0
         }
@@ -1089,7 +1089,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       nextCall.name shouldBe "next"
       nextCall.methodFullName shouldBe "Iterator.next:void()"
       nextCall.code shouldBe "$iter_tmp0->next()"
-      inside(nextCall.argument(0).l) { case List(iterTmp: Identifier) =>
+      inside(nextCall.argument(0)::Nil) { case List(iterTmp: Identifier) =>
         iterTmp.name shouldBe "iter_tmp0"
         iterTmp.code shouldBe "$iter_tmp0"
         iterTmp.argumentIndex shouldBe 0
@@ -1143,7 +1143,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           currentCall.name shouldBe "current"
           currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
           currentCall.code shouldBe "$iter_tmp0->current()"
-          inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
+          inside(currentCall.argument(0)::Nil) { case List(iterRecv: Identifier) =>
             iterRecv.name shouldBe "iter_tmp0"
             iterRecv.argumentIndex shouldBe 0
           }
@@ -1200,7 +1200,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         currentCall.name shouldBe "current"
         currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
         currentCall.code shouldBe "$iter_tmp0->current()"
-        inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
+        inside(currentCall.argument(0)::Nil) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"
           iterRecv.argumentIndex shouldBe 0
         }

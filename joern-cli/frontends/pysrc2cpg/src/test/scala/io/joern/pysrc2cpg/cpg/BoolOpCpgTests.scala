@@ -10,7 +10,7 @@ class BoolOpCpgTests extends AnyFreeSpec with Matchers {
   lazy val cpg = Py2CpgTestContext.buildCpg("""x or y or z""".stripMargin)
 
   "test boolOp 'or' call node properties" in {
-    val orCall = cpg.call.methodFullName(Operators.logicalOr).head
+    val orCall = cpg.call.methodFullName(Operators.logicalOr).next()
     orCall.code shouldBe "x or y or z"
     orCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     orCall.lineNumber shouldBe Some(1)
@@ -23,21 +23,21 @@ class BoolOpCpgTests extends AnyFreeSpec with Matchers {
       .astChildren
       .order(1)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "x"
     cpg.call
       .methodFullName(Operators.logicalOr)
       .astChildren
       .order(2)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "y"
     cpg.call
       .methodFullName(Operators.logicalOr)
       .astChildren
       .order(3)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "z"
   }
 
@@ -47,21 +47,21 @@ class BoolOpCpgTests extends AnyFreeSpec with Matchers {
       .argument
       .argumentIndex(1)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "x"
     cpg.call
       .methodFullName(Operators.logicalOr)
       .argument
       .argumentIndex(2)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "y"
     cpg.call
       .methodFullName(Operators.logicalOr)
       .argument
       .argumentIndex(3)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "z"
   }
 }

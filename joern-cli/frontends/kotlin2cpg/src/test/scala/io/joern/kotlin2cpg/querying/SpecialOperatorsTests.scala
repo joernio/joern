@@ -144,7 +144,7 @@ class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     }
 
     "should contain an IDENTIFIER node for  " in {
-      cpg.identifier.nameExact("foo").head.typeFullName shouldBe "int"
+      cpg.identifier.nameExact("foo").next().typeFullName shouldBe "int"
     }
   }
 
@@ -160,7 +160,7 @@ class SpecialOperatorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
         |""".stripMargin)
 
     "should contain an IDENTIFIER node for the result of the elvis operator call with the correct TYPE_FULL_NAME set" in {
-      cpg.identifier.nameExact("isValid").head.typeFullName shouldBe "boolean"
+      cpg.identifier.nameExact("isValid").next().typeFullName shouldBe "boolean"
     }
   }
 

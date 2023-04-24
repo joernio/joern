@@ -59,11 +59,11 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
         cons.signature shouldBe "void(int)"
         cons.code shouldBe "Foo(int x)"
         cons.parameter.size shouldBe 2
-        val objParam = cons.parameter.index(0).head
+        val objParam = cons.parameter.index(0).next()
         objParam.name shouldBe "this"
         objParam.typeFullName shouldBe "Foo"
         objParam.dynamicTypeHintFullName shouldBe Seq("Foo")
-        val otherParam = cons.parameter.index(1).head
+        val otherParam = cons.parameter.index(1).next()
         otherParam.name shouldBe "x"
         otherParam.typeFullName shouldBe "int"
         otherParam.dynamicTypeHintFullName shouldBe Seq()
@@ -78,16 +78,16 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
         cons1.signature shouldBe "void(int)"
         cons1.code shouldBe "Bar(int x)"
         cons1.parameter.size shouldBe 2
-        cons1.parameter.index(0).head.name shouldBe "this"
-        cons1.parameter.index(1).head.name shouldBe "x"
+        cons1.parameter.index(0).next().name shouldBe "this"
+        cons1.parameter.index(1).next().name shouldBe "x"
 
         cons2.fullName shouldBe "Bar.<init>:void(int,int)"
         cons2.signature shouldBe "void(int,int)"
         cons2.code shouldBe "Bar(int x, int y)"
         cons2.parameter.size shouldBe 3
-        cons2.parameter.index(0).head.name shouldBe "this"
-        cons2.parameter.index(1).head.name shouldBe "x"
-        cons2.parameter.index(2).head.name shouldBe "y"
+        cons2.parameter.index(0).next().name shouldBe "this"
+        cons2.parameter.index(1).next().name shouldBe "x"
+        cons2.parameter.index(2).next().name shouldBe "y"
 
       case res =>
         fail(s"Expected 2 Bar constructors, but got $res")
@@ -112,7 +112,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe "Bar.<init>:void(int,int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
+        init.callOut.next().fullName shouldBe "Bar.<init>:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
@@ -150,7 +150,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe "Bar.<init>:void(int,int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
+        init.callOut.next().fullName shouldBe "Bar.<init>:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
@@ -194,7 +194,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe "Bar.<init>:void(int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(int)"
+        init.callOut.next().fullName shouldBe "Bar.<init>:void(int)"
         init.signature shouldBe "void(int)"
         init.code shouldBe "$stack1.Bar(42)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString

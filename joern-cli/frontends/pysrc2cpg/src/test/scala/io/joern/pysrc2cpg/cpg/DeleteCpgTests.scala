@@ -11,7 +11,7 @@ class DeleteCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""del x, y""".stripMargin)
 
     "test call node properties" in {
-      val callNode = cpg.call.methodFullNameExact("<operator>.delete").head
+      val callNode = cpg.call.methodFullNameExact("<operator>.delete").next()
       callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.code shouldBe "del x, y"
       callNode.lineNumber shouldBe Some(1)
@@ -23,14 +23,14 @@ class DeleteCpgTests extends AnyFreeSpec with Matchers {
         .astChildren
         .order(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
       cpg.call
         .methodFullName("<operator>.delete")
         .astChildren
         .order(2)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "y"
     }
 
@@ -40,14 +40,14 @@ class DeleteCpgTests extends AnyFreeSpec with Matchers {
         .argument
         .argumentIndex(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
       cpg.call
         .methodFullName("<operator>.delete")
         .argument
         .argumentIndex(2)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "y"
     }
   }

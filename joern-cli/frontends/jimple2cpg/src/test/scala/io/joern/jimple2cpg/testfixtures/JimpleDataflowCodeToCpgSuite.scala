@@ -40,8 +40,8 @@ class JimpleDataFlowCodeToCpgSuite extends Code2CpgFixture(() => new JimpleDataf
     sourceCode: String = "\"MALICIOUS\"",
     sinkPattern: String = ".*println.*"
   )(implicit cpg: Cpg): (Traversal[Literal], Traversal[Expression]) = {
-    val sourceMethod = cpg.method(s".*$sourceMethodName").head
-    val sinkMethod   = cpg.method(s".*$sinkMethodName").head
+    val sourceMethod = cpg.method(s".*$sourceMethodName").next()
+    val sinkMethod   = cpg.method(s".*$sinkMethodName").next()
 
     def source = sourceMethod.literal.code(sourceCode)
 

@@ -11,7 +11,7 @@ class AssertCpgTests extends AnyFreeSpec with Matchers {
   lazy val cpg = Py2CpgTestContext.buildCpg("""assert x, y """.stripMargin)
 
   "test assert operator call node properties" in {
-    val assignCall = cpg.call.methodFullName("<operator>.assert").head
+    val assignCall = cpg.call.methodFullName("<operator>.assert").next()
     assignCall.code shouldBe "assert x, y"
     assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     assignCall.lineNumber shouldBe Some(1)
@@ -24,14 +24,14 @@ class AssertCpgTests extends AnyFreeSpec with Matchers {
       .astChildren
       .order(1)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "x"
     cpg.call
       .methodFullName("<operator>.assert")
       .astChildren
       .order(2)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "y"
   }
 
@@ -41,14 +41,14 @@ class AssertCpgTests extends AnyFreeSpec with Matchers {
       .argument
       .argumentIndex(1)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "x"
     cpg.call
       .methodFullName("<operator>.assert")
       .argument
       .argumentIndex(2)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "y"
   }
 }

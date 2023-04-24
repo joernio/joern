@@ -11,7 +11,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""x = 2""".stripMargin)
 
     "test assignment node properties" in {
-      val assignCall = cpg.call.methodFullName(Operators.assignment).head
+      val assignCall = cpg.call.methodFullName(Operators.assignment).next()
       assignCall.code shouldBe "x = 2"
       assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignCall.lineNumber shouldBe Some(1)
@@ -24,14 +24,14 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
         .astChildren
         .order(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
       cpg.call
         .methodFullName(Operators.assignment)
         .astChildren
         .order(2)
         .isLiteral
-        .head
+        .next()
         .code shouldBe "2"
     }
 
@@ -41,14 +41,14 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
         .argument
         .argumentIndex(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
       cpg.call
         .methodFullName(Operators.assignment)
         .argument
         .argumentIndex(2)
         .isLiteral
-        .head
+        .next()
         .code shouldBe "2"
     }
   }
@@ -60,7 +60,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""x, (y, z) = list""".stripMargin)
 
     def getSurroundingBlock: nodes.Block = {
-      cpg.all.collect { case block: nodes.Block if block.code != "" => block }.head
+      cpg.all.collect { case block: nodes.Block if block.code != "" => block }.next()
     }
 
     "test block exists" in {
@@ -79,7 +79,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test local node" in {
-      cpg.method.name("<module>").local.name("tmp0").headOption should not be empty
+      cpg.method.name("<module>").local.name("tmp0").nextOption() should not be empty
     }
 
     "test tmp variable assignment" in {
@@ -109,7 +109,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""x = y = list""".stripMargin)
 
     def getSurroundingBlock: nodes.Block = {
-      cpg.all.collect { case block: nodes.Block if block.code != "" => block }.head
+      cpg.all.collect { case block: nodes.Block if block.code != "" => block }.next()
     }
 
     "test block exists" in {
@@ -127,7 +127,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test local node" in {
-      cpg.method.name("<module>").local.name("tmp0").headOption should not be empty
+      cpg.method.name("<module>").local.name("tmp0").nextOption() should not be empty
     }
 
     "test tmp variable assignment" in {
@@ -150,7 +150,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""x: y = z""".stripMargin)
 
     "test assignment node properties" in {
-      val assignCall = cpg.call.methodFullName(Operators.assignment).head
+      val assignCall = cpg.call.methodFullName(Operators.assignment).next()
       assignCall.code shouldBe "x = z"
       assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignCall.lineNumber shouldBe Some(1)
@@ -163,14 +163,14 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
         .astChildren
         .order(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
       cpg.call
         .methodFullName(Operators.assignment)
         .astChildren
         .order(2)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "z"
     }
 
@@ -180,14 +180,14 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
         .argument
         .argumentIndex(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
       cpg.call
         .methodFullName(Operators.assignment)
         .argument
         .argumentIndex(2)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "z"
     }
   }
@@ -196,7 +196,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""x: y""".stripMargin)
 
     "test target expression node properties" in {
-      val assignCall = cpg.identifier.name("x").head
+      val assignCall = cpg.identifier.name("x").next()
       assignCall.code shouldBe "x"
       assignCall.lineNumber shouldBe Some(1)
       assignCall.columnNumber shouldBe Some(1)
@@ -207,7 +207,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""x += y""".stripMargin)
 
     "test assignment node properties" in {
-      val assignCall = cpg.call.methodFullName(Operators.assignmentPlus).head
+      val assignCall = cpg.call.methodFullName(Operators.assignmentPlus).next()
       assignCall.code shouldBe "x += y"
       assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignCall.lineNumber shouldBe Some(1)
@@ -220,14 +220,14 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
         .astChildren
         .order(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
       cpg.call
         .methodFullName(Operators.assignmentPlus)
         .astChildren
         .order(2)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "y"
     }
 
@@ -237,14 +237,14 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
         .argument
         .argumentIndex(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
       cpg.call
         .methodFullName(Operators.assignmentPlus)
         .argument
         .argumentIndex(2)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "y"
     }
   }

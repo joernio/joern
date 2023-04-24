@@ -37,7 +37,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
         List(("sz = -5", 9), ("read(fd, buff, sz)", 11))
       )
 
-    val tmpSourceFile = flows.head.elements.head.asInstanceOf[CfgNode].method.filename
+    val tmpSourceFile = flows.next().elements.head.asInstanceOf[CfgNode].method.filename
     val flowsPretty   = flows.p.mkString
     flowsPretty should (include("sz = 20") and include("read(fd, buff, sz)"))
     flowsPretty should include(tmpSourceFile)
@@ -461,7 +461,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     cpg.call
       .code("bar.*")
       .outE(EdgeTypes.REACHING_DEF)
-      .count(_.inNode() == cpg.ret.head) shouldBe 1
+      .count(_.inNode() == cpg.ret.next()) shouldBe 1
   }
 
   "Flow from outer params to inner params" in {

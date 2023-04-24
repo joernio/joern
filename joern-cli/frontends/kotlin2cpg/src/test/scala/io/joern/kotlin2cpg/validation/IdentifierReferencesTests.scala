@@ -109,12 +109,12 @@ class IdentifierReferencesTests extends KotlinCode2CpgFixture(withOssDataflow = 
         |""".stripMargin)
 
     "identifiers to the parameters exist" in {
-      val param = cpg.method.name("foo").parameter.name("x").head
+      val param = cpg.method.name("foo").parameter.name("x").next()
       param.referencingIdentifiers.toSet should not be Set()
     }
 
     "identifiers to the locals exist" in {
-      val localNode = cpg.method.name("foo").local.name("y").head
+      val localNode = cpg.method.name("foo").local.name("y").next()
       localNode.referencingIdentifiers.toSet should not be Set()
     }
   }
@@ -128,7 +128,7 @@ class IdentifierReferencesTests extends KotlinCode2CpgFixture(withOssDataflow = 
         |""".stripMargin)
 
     "identifiers to the parameters exist" in {
-      val param = cpg.method.name("foo").parameter.name("x").head
+      val param = cpg.method.name("foo").parameter.name("x").next()
       param.referencingIdentifiers.toSet should not be Set()
     }
   }

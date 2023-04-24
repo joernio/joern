@@ -23,7 +23,7 @@ class SpecialOperatorTests extends JavaSrcCode2CpgFixture {
       |""".stripMargin)
 
   "it should create a call to `<operator>.instanceOf` with the correct arguments" in {
-    val call = cpg.call.nameExact("<operator>.instanceOf").head
+    val call = cpg.call.nameExact("<operator>.instanceOf").next()
 
     call.argument.size shouldBe 2
     call.order shouldBe 1
@@ -46,7 +46,7 @@ class SpecialOperatorTests extends JavaSrcCode2CpgFixture {
   }
 
   "it should create a call to `<operator>.cast` with the correct arguments" in {
-    val call = cpg.call.nameExact("<operator>.cast").head
+    val call = cpg.call.nameExact("<operator>.cast").next()
 
     call.argument.size shouldBe 2
     call.order shouldBe 2

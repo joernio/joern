@@ -18,7 +18,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").annotation.next()
       annotationNode.code shouldBe "@NormalAnnotation(value = \"classAnnotation\")"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"
@@ -59,7 +59,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").annotation.next()
       annotationNode.code shouldBe "@SingleAnnotation(\"classAnnotation\")"
       annotationNode.name shouldBe "SingleAnnotation"
       annotationNode.fullName shouldBe "some.SingleAnnotation"
@@ -99,7 +99,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").annotation.next()
       annotationNode.code shouldBe "@MarkerAnnotation()"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
@@ -125,7 +125,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).annotation.head
+      val annotationNode = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).annotation.next()
       annotationNode.code shouldBe "@MarkerAnnotation()"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
@@ -149,7 +149,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").parameter.name("x").annotation.head
+      val annotationNode = cpg.method.name("function").parameter.name("x").annotation.next()
       annotationNode.code shouldBe "@MarkerAnnotation"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
@@ -167,7 +167,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "test annotation node properties" in {
-      val annotationNode = cpg.typeDecl.name("SomeClass").member.name("x").annotation.head
+      val annotationNode = cpg.typeDecl.name("SomeClass").member.name("x").annotation.next()
       annotationNode.code shouldBe "@MarkerAnnotation"
       annotationNode.name shouldBe "MarkerAnnotation"
       annotationNode.fullName shouldBe "some.MarkerAnnotation"
@@ -188,7 +188,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").annotation.next()
       annotationNode.code shouldBe "@NormalAnnotation(value = 2)"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"
@@ -216,7 +216,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").annotation.next()
       annotationNode.code shouldBe "@NormalAnnotation(value = { \"aaa\", \"bbb\" })"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"
@@ -266,7 +266,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").annotation.next()
       annotationNode.code shouldBe "@NormalAnnotation(value = @OtherAnnotation)"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"

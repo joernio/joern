@@ -10,7 +10,7 @@ class BinOpCpgTests extends AnyFreeSpec with Matchers {
   lazy val cpg = Py2CpgTestContext.buildCpg("""1 + 2""".stripMargin)
 
   "test binOp 'add' call node properties" in {
-    val additionCall = cpg.call.methodFullName(Operators.addition).head
+    val additionCall = cpg.call.methodFullName(Operators.addition).next()
     additionCall.code shouldBe "1 + 2"
     additionCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     additionCall.lineNumber shouldBe Some(1)
@@ -23,14 +23,14 @@ class BinOpCpgTests extends AnyFreeSpec with Matchers {
       .astChildren
       .order(1)
       .isLiteral
-      .head
+      .next()
       .code shouldBe "1"
     cpg.call
       .methodFullName(Operators.addition)
       .astChildren
       .order(2)
       .isLiteral
-      .head
+      .next()
       .code shouldBe "2"
   }
 
@@ -40,14 +40,14 @@ class BinOpCpgTests extends AnyFreeSpec with Matchers {
       .argument
       .argumentIndex(1)
       .isLiteral
-      .head
+      .next()
       .code shouldBe "1"
     cpg.call
       .methodFullName(Operators.addition)
       .argument
       .argumentIndex(2)
       .isLiteral
-      .head
+      .next()
       .code shouldBe "2"
   }
 }

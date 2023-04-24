@@ -57,8 +57,8 @@ class TypeTests extends AnyWordSpec with Matchers {
       .withTypeDecl("Derived")
       .withTypeDecl("DerivedFromDerived")
       .withCustom { case (graph, cpg) =>
-        graph.addEdge(cpg.typeDecl("Derived").head, cpg.typ.name("Base").head, EdgeTypes.INHERITS_FROM)
-        graph.addEdge(cpg.typeDecl("DerivedFromDerived").head, cpg.typ.name("Derived").head, EdgeTypes.INHERITS_FROM)
+        graph.addEdge(cpg.typeDecl("Derived").next(), cpg.typ.name("Base").next(), EdgeTypes.INHERITS_FROM)
+        graph.addEdge(cpg.typeDecl("DerivedFromDerived").next(), cpg.typ.name("Derived").next(), EdgeTypes.INHERITS_FROM)
       }
       .cpg
 
@@ -116,8 +116,8 @@ class TypeTests extends AnyWordSpec with Matchers {
       .withTypeDecl("Derived")
       .withTypeDecl("DerivedFromDerived")
       .withCustom { case (graph, cpg) =>
-        graph.addEdge(cpg.typeDecl("Derived").head, cpg.typ.name("Base").head, EdgeTypes.INHERITS_FROM)
-        graph.addEdge(cpg.typeDecl("DerivedFromDerived").head, cpg.typ.name("Derived").head, EdgeTypes.INHERITS_FROM)
+        graph.addEdge(cpg.typeDecl("Derived").next(), cpg.typ.name("Base").next(), EdgeTypes.INHERITS_FROM)
+        graph.addEdge(cpg.typeDecl("DerivedFromDerived").next(), cpg.typ.name("Derived").next(), EdgeTypes.INHERITS_FROM)
       }
       .cpg
 

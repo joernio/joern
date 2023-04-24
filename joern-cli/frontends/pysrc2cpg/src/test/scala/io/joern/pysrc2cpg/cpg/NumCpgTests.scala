@@ -9,7 +9,7 @@ class NumCpgTests extends AnyFreeSpec with Matchers {
   lazy val cpg = Py2CpgTestContext.buildCpg("""1""".stripMargin)
 
   "test num literal node properties" in {
-    val literal = cpg.literal.head
+    val literal = cpg.literal.next()
     literal.code shouldBe "1"
     literal.lineNumber shouldBe Some(1)
     literal.columnNumber shouldBe Some(1)

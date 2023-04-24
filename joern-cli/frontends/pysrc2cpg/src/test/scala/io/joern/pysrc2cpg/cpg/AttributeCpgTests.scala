@@ -10,7 +10,7 @@ class AttributeCpgTests extends AnyFreeSpec with Matchers {
   lazy val cpg = Py2CpgTestContext.buildCpg("""x.y""".stripMargin)
 
   "test field access call node properties" in {
-    val callNode = cpg.call.methodFullName(Operators.fieldAccess).head
+    val callNode = cpg.call.methodFullName(Operators.fieldAccess).next()
     callNode.code shouldBe "x.y"
     callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     callNode.lineNumber shouldBe Some(1)
@@ -22,14 +22,14 @@ class AttributeCpgTests extends AnyFreeSpec with Matchers {
       .astChildren
       .order(1)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "x"
     cpg.call
       .methodFullName(Operators.fieldAccess)
       .astChildren
       .order(2)
       .isFieldIdentifier
-      .head
+      .next()
       .code shouldBe "y"
   }
 
@@ -39,14 +39,14 @@ class AttributeCpgTests extends AnyFreeSpec with Matchers {
       .argument
       .argumentIndex(1)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "x"
     cpg.call
       .methodFullName(Operators.fieldAccess)
       .argument
       .argumentIndex(2)
       .isFieldIdentifier
-      .head
+      .next()
       .code shouldBe "y"
   }
 }

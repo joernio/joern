@@ -235,7 +235,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       iteratorLocal.typeFullName shouldBe "ANY"
 
       // TODO: add test for the block in here
-      val iteratorAssignment = cpg.call.code("iterator.*itera.*").head
+      val iteratorAssignment = cpg.call.code("iterator.*itera.*").next()
       iteratorAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       iteratorAssignment.name shouldBe Operators.assignment
       iteratorAssignment.methodFullName shouldBe Operators.assignment
@@ -259,7 +259,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       iteratorAssignmentRhsArg.argumentIndex shouldBe 0
       iteratorAssignmentRhsArg.typeFullName shouldBe "java.util.List"
 
-      val controlStructure = cpg.controlStructure.head
+      val controlStructure = cpg.controlStructure.next()
       controlStructure.controlStructureType shouldBe ControlStructureTypes.WHILE
       controlStructure.order shouldBe 3
       controlStructure.condition.size shouldBe 1
@@ -348,7 +348,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       iteratorLocal.typeFullName shouldBe "ANY"
 
       // TODO: add test for the block in here
-      val iteratorAssignment = cpg.call.code("iterator.*itera.*").head
+      val iteratorAssignment = cpg.call.code("iterator.*itera.*").next()
       iteratorAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       iteratorAssignment.name shouldBe Operators.assignment
       iteratorAssignment.methodFullName shouldBe Operators.assignment
@@ -372,7 +372,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       iteratorAssignmentRhsArg.argumentIndex shouldBe 0
       iteratorAssignmentRhsArg.typeFullName shouldBe "java.util.List"
 
-      val controlStructure = cpg.controlStructure.head
+      val controlStructure = cpg.controlStructure.next()
       controlStructure.controlStructureType shouldBe ControlStructureTypes.WHILE
       controlStructure.order shouldBe 3
       controlStructure.condition.size shouldBe 1

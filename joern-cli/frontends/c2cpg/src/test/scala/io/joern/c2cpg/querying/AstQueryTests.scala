@@ -134,11 +134,11 @@ class AstQueryTests extends CCodeToCpgSuite {
     }
 
     "astSiblings" in {
-      val local       = cpg.local.code("int x").head
+      val local       = cpg.local.code("int x").next()
       val astSiblings = local.astSiblings.toSet
 
-      val assignment = cpg.call.code("x = 10").head
-      val condition  = cpg.controlStructure.code(".*(x > 10).*").head
+      val assignment = cpg.call.code("x = 10").next()
+      val condition  = cpg.controlStructure.code(".*(x > 10).*").next()
 
       astSiblings should contain(assignment)
       astSiblings should contain(condition)

@@ -24,7 +24,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have return node for arrow functions" in AstFixture("const foo = () => 42;") { cpg =>
       // Return node is necessary data flow
       val methodBlock = cpg.method("anonymous").astChildren.isBlock
-      val literal     = methodBlock.astChildren.isReturn.astChildren.isLiteral.head
+      val literal     = methodBlock.astChildren.isReturn.astChildren.isLiteral.next()
       literal.code shouldBe "42"
     }
 
@@ -434,7 +434,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       ns.name shouldBe Defines.GlobalNamespace
       ns.fullName should endWith(s"code.js:${Defines.GlobalNamespace}")
       ns.order shouldBe 1
-      ns.typeDecl.nameExact(":program").method.head.name shouldBe ":program"
+      ns.typeDecl.nameExact(":program").method.next().name shouldBe ":program"
     }
 
     "have correct structure for empty method nested in top level method" in AstFixture("function method(x) {}") { cpg =>
@@ -455,7 +455,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodIdentifier) = assignment.astChildren.isIdentifier.argumentIndex(1).l
       methodIdentifier.name shouldBe "method"
 
-      methodIdentifier.refOut.head shouldBe localForMethod
+      methodIdentifier.refOut.next() shouldBe localForMethod
     }
 
     "have correct parameter order in lambda function with ignored param" in AstFixture("var x = ([, param]) => param") {
@@ -545,7 +545,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     }
 
     "be correct for lambdas returning lambdas" in AstFixture("() => async () => { }") { cpg =>
-      cpg.method.fullName.sorted.l shouldBe List(
+      cpg.method.fullName.sorted shouldBe List(
         "code.js::program",
         "code.js::program:anonymous",
         "code.js::program:anonymous:anonymous"
@@ -713,7 +713,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have local variable for function with correct type full name" in AstFixture("function method(x) {}") { cpg =>
       val List(method) = cpg.method.nameExact(":program").l
       val block        = method.block
-      val localFoo     = block.local.head
+      val localFoo     = block.local.next()
       localFoo.name shouldBe "method"
       localFoo.typeFullName should endWith("code.js::program:method")
     }
@@ -727,7 +727,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       binding.signature shouldBe ""
 
       val List(boundMethod) = binding.refOut.l
-      boundMethod shouldBe cpg.method.nameExact("method").head
+      boundMethod shouldBe cpg.method.nameExact("method").next()
     }
 
     "have correct structure for empty method" in AstFixture("function method(x) {}") { cpg =>
@@ -1528,11 +1528,11 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     val List(call) = node.astChildren.isCall.codeExact(s"_tmp_0.$keyName = $assignedValue").l
     call.methodFullName shouldBe Operators.assignment
 
-    val List(tmpAccess) = call.argument(1).l.isCall.l
+    val List(tmpAccess) = (call.argument(1)::Nil).isCall.l
     tmpAccess.code shouldBe s"_tmp_0.$keyName"
     tmpAccess.methodFullName shouldBe Operators.fieldAccess
     tmpAccess.argumentIndex shouldBe 1
-    val List(value) = call.argument(2).l
+    val List(value) = call.argument(2)::Nil
     value.code shouldBe assignedValue
 
     val List(leftHandSideTmpId) = tmpAccess.astChildren.isIdentifier.nameExact("_tmp_0").l

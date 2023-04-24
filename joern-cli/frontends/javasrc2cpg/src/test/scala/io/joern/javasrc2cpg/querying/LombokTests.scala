@@ -30,7 +30,7 @@ class LombokTests extends JavaSrcCode2CpgFixture(delombokMode = "run-delombok") 
     }
 
     "not give the delomboked filename" in {
-      cpg.typeDecl.name("Foo").filename.head.contains("lombok") shouldBe false
+      cpg.typeDecl.name("Foo").filename.next().contains("lombok") shouldBe false
     }
   }
 
@@ -68,9 +68,9 @@ class LombokTests extends JavaSrcCode2CpgFixture(delombokMode = "run-delombok") 
     )
 
     // Getter type should be resolved since the getter code is included in the delombok source.
-    cpg.call.name("getFirstName").head.methodFullName shouldBe "Foo.getFirstName:java.lang.String()"
+    cpg.call.name("getFirstName").next().methodFullName shouldBe "Foo.getFirstName:java.lang.String()"
     // Member should be created since we're processing full delombok source.
-    cpg.member.name("log").head.typeFullName shouldBe "java.util.logging.Logger"
+    cpg.member.name("log").next().typeFullName shouldBe "java.util.logging.Logger"
   }
 }
 
@@ -109,7 +109,7 @@ class LombokTypesOnlyTests extends JavaSrcCode2CpgFixture(delombokMode = "types-
     )
 
     // Getter type should be resolved since the getter code is included in the delombok source used for type info.
-    cpg.call.name("getFirstName").head.methodFullName shouldBe "Foo.getFirstName:java.lang.String()"
+    cpg.call.name("getFirstName").next().methodFullName shouldBe "Foo.getFirstName:java.lang.String()"
     // Log member should not be found since it hasn't been generated in the source we scan.
     cpg.member.name("log").isEmpty shouldBe true
   }
@@ -151,7 +151,7 @@ class NoLombokTests extends JavaSrcCode2CpgFixture() {
 
     // Getter type should be unresolved since it's not available in source processed or in type info source.
     val unresolvedName = s"Foo.getFirstName:${Defines.UnresolvedSignature}(0)"
-    cpg.call.name("getFirstName").head.methodFullName shouldBe unresolvedName
+    cpg.call.name("getFirstName").next().methodFullName shouldBe unresolvedName
     // Log member should not be found since it hasn't been generated in the source we scan.
     cpg.member.name("log").isEmpty shouldBe true
   }

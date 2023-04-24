@@ -18,9 +18,9 @@ class MethodTests extends AnyWordSpec with Matchers {
     .withCallInMethod("foo", "call2")
     .withLiteralArgument("call", "literal")
     .withCustom { case (graph, cpg) =>
-      val method       = cpg.method("foo").head
-      val call         = cpg.call.name("call").head
-      val methodReturn = cpg.method("foo").methodReturn.head
+      val method       = cpg.method("foo").next()
+      val call         = cpg.call.name("call").next()
+      val methodReturn = cpg.method("foo").methodReturn.next()
       graph.addEdge(method, call, EdgeTypes.CFG)
       graph.addEdge(call, methodReturn, EdgeTypes.CFG)
     }
@@ -54,8 +54,8 @@ class MethodTests extends AnyWordSpec with Matchers {
           .withNamespace("namespace")
           .withMethod("foo")
           .withCustom { case (graph, cpg) =>
-            val namespaceBlock = cpg.namespaceBlock("namespace").head
-            val method         = cpg.method("foo").head
+            val namespaceBlock = cpg.namespaceBlock("namespace").next()
+            val method         = cpg.method("foo").next()
             graph.setNodeProperty(method, Method.PropertyNames.AstParentType, NamespaceBlock.Label)
             graph.addEdge(namespaceBlock, method, EdgeTypes.AST)
           }

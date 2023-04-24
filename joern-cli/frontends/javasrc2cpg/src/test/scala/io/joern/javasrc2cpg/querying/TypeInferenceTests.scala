@@ -45,7 +45,7 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
 
     "have the correct signature if the method parameter and return types can be inferred" in {
       // This is the more complex case that relies on type information across compilation units.
-      val methodFullName = cpg.call.name("getSgClient").head.methodFullName
+      val methodFullName = cpg.call.name("getSgClient").next().methodFullName
       methodFullName shouldBe "org.codeminers.thirdparty.ThirdParty.getSgClient:com.sendgrid.SendGrid()"
     }
   }
@@ -137,8 +137,8 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "be inferred from imports" in {
-      cpg.member.name("env").typeFullName.head shouldBe "b.Environment"
-      cpg.member.name("log").typeFullName.head shouldBe "a.Logger"
+      cpg.member.name("env").typeFullName.next() shouldBe "b.Environment"
+      cpg.member.name("log").typeFullName.next() shouldBe "a.Logger"
     }
 
     "be used in calls" in {
@@ -243,14 +243,14 @@ class JavaTypeRecoveryPassTests extends JavaSrcCode2CpgFixture(enableTypeRecover
     )
 
     "should be resolved using dummy return values" in {
-      val Some(getResultList) = cpg.call("getResultList").headOption
+      val Some(getResultList) = cpg.call("getResultList").nextOption()
       // Changes the below from <unresolvedNamespace>.getResultList:<unresolvedSignature>(0) to:
       getResultList.methodFullName shouldBe "org.hibernate.Session.createNamedQuery:<unresolvedSignature>(2).<returnValue>.getResultList:<unresolvedSignature>(0)"
       getResultList.dynamicTypeHintFullName shouldBe Seq()
     }
 
     "hint that `transaction` may be of the null type" in {
-      val Some(transaction) = cpg.identifier("transaction").headOption
+      val Some(transaction) = cpg.identifier("transaction").nextOption()
       transaction.typeFullName shouldBe "org.hibernate.Transaction"
       transaction.dynamicTypeHintFullName.contains("null")
     }

@@ -14,7 +14,7 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
         |      }
         |}
         |""".stripMargin)
-    val methodBody = cpg.method.name("test1").astChildren.collect { case b: Block => b }.head
+    val methodBody = cpg.method.name("test1").astChildren.collect { case b: Block => b }.next()
     methodBody.astChildren.size shouldBe 2
 
     val (local, assig) = methodBody.astChildren.l match {
@@ -39,7 +39,7 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
         |    }
         |}
         |""".stripMargin)
-    val methodBody = cpg.method.name("test2").astChildren.collect { case b: Block => b }.head
+    val methodBody = cpg.method.name("test2").astChildren.collect { case b: Block => b }.next()
     methodBody.astChildren.size shouldBe 2
 
     val (local, assig) = methodBody.astChildren.l match {
@@ -65,7 +65,7 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
         |    }
         |}
         |""".stripMargin)
-    val methodBody = cpg.method.name("test3").astChildren.collect { case b: Block => b }.head
+    val methodBody = cpg.method.name("test3").astChildren.collect { case b: Block => b }.next()
     methodBody.astChildren.size shouldBe 4
 
     val (localX, localY, assigX, assigY) = methodBody.astChildren.l match {
@@ -95,7 +95,7 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
         |    }
         |}
         |""".stripMargin)
-    val methodBody = cpg.method.name("test4").astChildren.collect { case b: Block => b }.head
+    val methodBody = cpg.method.name("test4").astChildren.collect { case b: Block => b }.next()
     methodBody.astChildren.size shouldBe 6
 
     val (localX, localY, localZ, assigY, assigX, assigZ) = methodBody.astChildren.l match {
@@ -129,7 +129,7 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
         |    }
         |}
         |""".stripMargin)
-    val methodBody = cpg.method.name("test5").astChildren.collect { case b: Block => b }.head
+    val methodBody = cpg.method.name("test5").astChildren.collect { case b: Block => b }.next()
     methodBody.astChildren.size shouldBe 6
 
     val (localX, localY, assigY, localZ, assigZ, assigX) = methodBody.astChildren.l match {

@@ -291,7 +291,7 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
       succOf("3") shouldBe expected(("i < 3", AlwaysEdge))
 
       import io.shiftleft.semanticcpg.language._
-      val codeStr = cpg.method.ast.code(".*loop1:.*").code.head
+      val codeStr = cpg.method.ast.code(".*loop1:.*").code.next()
       succOf("i < 3") shouldBe expected(("loop2:", AlwaysEdge), (codeStr, AlwaysEdge))
       succOf(codeStr) shouldBe expected(("RET", AlwaysEdge))
 
@@ -302,7 +302,7 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
       succOf("j", 1) shouldBe expected(("3", 1, AlwaysEdge))
       succOf("3", 1) shouldBe expected(("j < 3", AlwaysEdge))
 
-      val code2 = cpg.method.ast.isBlock.code("loop2: for.*").code.head
+      val code2 = cpg.method.ast.isBlock.code("loop2: for.*").code.next()
       succOf("j < 3") shouldBe expected((code2, AlwaysEdge), ("i", 2, AlwaysEdge))
       succOf(code2) shouldBe expected(("i", 2, AlwaysEdge))
 
@@ -704,7 +704,7 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
     )
 
     import io.shiftleft.semanticcpg.language._
-    val code = cpg.method.ast.isBlock.code("for \\(var i.*foo.*}").code.head
+    val code = cpg.method.ast.isBlock.code("for \\(var i.*foo.*}").code.next()
     succOf("!(_result_0 = _iterator_0.next()).done") shouldBe expected(("i", 1, TrueEdge), (code, FalseEdge))
     succOf(code) shouldBe expected(("RET", AlwaysEdge))
 

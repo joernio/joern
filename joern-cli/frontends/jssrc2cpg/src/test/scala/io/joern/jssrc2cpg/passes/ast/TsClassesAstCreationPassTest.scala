@@ -22,9 +22,9 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         direction.code shouldBe "enum Direction"
         direction.fullName shouldBe "code.ts::program:Direction"
         direction.filename shouldBe "code.ts"
-        direction.file.name.head shouldBe "code.ts"
+        direction.file.name.next() shouldBe "code.ts"
         inside(direction.method.name(io.joern.x2cpg.Defines.StaticInitMethodName).l) { case List(init) =>
-          init.block.astChildren.isCall.code.head shouldBe "Up = 1"
+          init.block.astChildren.isCall.code.next() shouldBe "Up = 1"
         }
         inside(cpg.typeDecl("Direction").member.l) { case List(up, down, left, right) =>
           up.name shouldBe "Up"
@@ -88,9 +88,9 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         greeter.code shouldBe "class Greeter"
         greeter.fullName shouldBe "code.ts::program:Greeter"
         greeter.filename shouldBe "code.ts"
-        greeter.file.name.head shouldBe "code.ts"
-        val constructor = greeter.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).head
-        greeter.method.isConstructor.head shouldBe constructor
+        greeter.file.name.next() shouldBe "code.ts"
+        val constructor = greeter.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).next()
+        greeter.method.isConstructor.next() shouldBe constructor
         constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
         inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, greet) =>
           greeting.name shouldBe "greeting"
@@ -112,10 +112,10 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         greeter.code shouldBe "class Greeter"
         greeter.fullName shouldBe "code.ts::program:Greeter"
         greeter.filename shouldBe "code.ts"
-        greeter.file.name.head shouldBe "code.ts"
-        val constructor = greeter.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).head
+        greeter.file.name.next() shouldBe "code.ts"
+        val constructor = greeter.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).next()
         constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
-        greeter.method.isConstructor.head shouldBe constructor
+        greeter.method.isConstructor.next() shouldBe constructor
         inside(cpg.typeDecl("Greeter").member.l) { case List(greeting) =>
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
@@ -134,11 +134,11 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |""".stripMargin) { cpg =>
       inside(cpg.typeDecl.name("Greeter.*").l) { case List(greeter) =>
         greeter.name shouldBe "Greeter"
-        cpg.typeDecl.isAbstract.head shouldBe greeter
-        greeter.member.isStatic.head shouldBe greeter.member.name("a").head
+        cpg.typeDecl.isAbstract.next() shouldBe greeter
+        greeter.member.isStatic.next() shouldBe greeter.member.name("a").next()
         greeter.member.isPrivate.l shouldBe greeter.member.name("b", "e").l
-        greeter.member.isPublic.head shouldBe greeter.member.name("c").head
-        greeter.member.isProtected.head shouldBe greeter.member.name("d").head
+        greeter.member.isPublic.next() shouldBe greeter.member.name("c").next()
+        greeter.member.isProtected.next() shouldBe greeter.member.name("d").next()
       }
     }
 
@@ -146,7 +146,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |interface A {};
         |interface B {};
         |""".stripMargin) { cpg =>
-      cpg.method.fullName.sorted.l shouldBe List(
+      cpg.method.fullName.sorted shouldBe List(
         "code.ts::program",
         s"code.ts::program:A:${io.joern.x2cpg.Defines.ConstructorMethodName}",
         s"code.ts::program:B:${io.joern.x2cpg.Defines.ConstructorMethodName}"
@@ -167,7 +167,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         greeter.code shouldBe "interface Greeter"
         greeter.fullName shouldBe "code.ts::program:Greeter"
         greeter.filename shouldBe "code.ts"
-        greeter.file.name.head shouldBe "code.ts"
+        greeter.file.name.next() shouldBe "code.ts"
         inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo, anon) =>
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
@@ -185,7 +185,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
           constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
           constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
           constructor.code shouldBe "new: Greeter"
-          greeter.method.isConstructor.head shouldBe constructor
+          greeter.method.isConstructor.next() shouldBe constructor
           anon.name shouldBe "anonymous"
           anon.fullName shouldBe "code.ts::program:Greeter:anonymous"
           anon.code shouldBe "(source: string, subString: string): boolean;"
@@ -205,14 +205,14 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         greeter.code shouldBe "interface Greeter"
         greeter.fullName shouldBe "code.ts::program:Greeter"
         greeter.filename shouldBe "code.ts"
-        greeter.file.name.head shouldBe "code.ts"
+        greeter.file.name.next() shouldBe "code.ts"
         inside(cpg.typeDecl("Greeter").method.l) { case List(constructor) =>
           constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
           constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
           constructor.code shouldBe "new (param: string) : Greeter"
           constructor.parameter.name.l shouldBe List("this", "param")
           constructor.parameter.code.l shouldBe List("this", "param: string")
-          greeter.method.isConstructor.head shouldBe constructor
+          greeter.method.isConstructor.next() shouldBe constructor
         }
       }
     }
@@ -225,7 +225,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
       inside(cpg.namespaceBlock("A").l) { case List(a) =>
         a.code should startWith("namespace A")
         a.fullName shouldBe "code.ts::program:A"
-        a.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:Foo"
+        a.typeDecl.name("Foo").next().fullName shouldBe "code.ts::program:A:Foo"
       }
     }
 
@@ -241,17 +241,17 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
       inside(cpg.namespaceBlock("A").l) { case List(a) =>
         a.code should startWith("namespace A")
         a.fullName shouldBe "code.ts::program:A"
-        a.astChildren.astChildren.isNamespaceBlock.name("B").head shouldBe cpg.namespaceBlock("B").head
+        a.astChildren.astChildren.isNamespaceBlock.name("B").next() shouldBe cpg.namespaceBlock("B").next()
       }
       inside(cpg.namespaceBlock("B").l) { case List(b) =>
         b.code should startWith("namespace B")
         b.fullName shouldBe "code.ts::program:A:B"
-        b.astChildren.astChildren.isNamespaceBlock.name("C").head shouldBe cpg.namespaceBlock("C").head
+        b.astChildren.astChildren.isNamespaceBlock.name("C").next() shouldBe cpg.namespaceBlock("C").next()
       }
       inside(cpg.namespaceBlock("C").l) { case List(c) =>
         c.code should startWith("namespace C")
         c.fullName shouldBe "code.ts::program:A:B:C"
-        c.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
+        c.typeDecl.name("Foo").next().fullName shouldBe "code.ts::program:A:B:C:Foo"
       }
     }
 
@@ -263,17 +263,17 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
       inside(cpg.namespaceBlock("A").l) { case List(a) =>
         a.code should startWith("namespace A")
         a.fullName shouldBe "code.ts::program:A"
-        a.astChildren.isNamespaceBlock.name("B").head shouldBe cpg.namespaceBlock("B").head
+        a.astChildren.isNamespaceBlock.name("B").next() shouldBe cpg.namespaceBlock("B").next()
       }
       inside(cpg.namespaceBlock("B").l) { case List(b) =>
         b.code should startWith("B.C")
         b.fullName shouldBe "code.ts::program:A:B"
-        b.astChildren.isNamespaceBlock.name("C").head shouldBe cpg.namespaceBlock("C").head
+        b.astChildren.isNamespaceBlock.name("C").next() shouldBe cpg.namespaceBlock("C").next()
       }
       inside(cpg.namespaceBlock("C").l) { case List(c) =>
         c.code should startWith("C")
         c.fullName shouldBe "code.ts::program:A:B:C"
-        c.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
+        c.typeDecl.name("Foo").next().fullName shouldBe "code.ts::program:A:B:C:Foo"
       }
     }
 

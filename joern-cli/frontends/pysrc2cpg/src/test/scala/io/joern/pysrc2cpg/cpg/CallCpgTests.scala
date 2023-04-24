@@ -13,7 +13,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     lazy val cpg = code("""func(a, b)""".stripMargin, "test.py")
 
     "test call node properties" in {
-      val callNode = cpg.call.codeExact("func(a, b)").head
+      val callNode = cpg.call.codeExact("func(a, b)").next()
       callNode.name shouldBe "func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
@@ -21,30 +21,30 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "test call receiver" in {
-      val callNode     = cpg.call.codeExact("func(a, b)").head
-      val callReceiver = callNode.receiver.isIdentifier.head
+      val callNode     = cpg.call.codeExact("func(a, b)").next()
+      val callReceiver = callNode.receiver.isIdentifier.next()
       callReceiver.code shouldBe "func"
 
-      callNode.astChildren.order(0).head shouldBe callReceiver
+      callNode.astChildren.order(0).next() shouldBe callReceiver
       callNode.start.argument.b should not contain callReceiver
     }
 
     "test call instance param" in {
-      val callNode = cpg.call.codeExact("func(a, b)").head
+      val callNode = cpg.call.codeExact("func(a, b)").next()
       callNode.argumentOption(0) shouldBe None
     }
 
     "test call arguments" in {
-      val callNode = cpg.call.codeExact("func(a, b)").head
+      val callNode = cpg.call.codeExact("func(a, b)").next()
       val arg1     = callNode.argument(1)
       arg1.code shouldBe "a"
 
-      callNode.astChildren.order(1).head shouldBe arg1
+      callNode.astChildren.order(1).next() shouldBe arg1
 
       val arg2 = callNode.argument(2)
       arg2.code shouldBe "b"
 
-      callNode.astChildren.order(2).head shouldBe arg2
+      callNode.astChildren.order(2).next() shouldBe arg2
     }
   }
 
@@ -52,7 +52,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     lazy val cpg = code("""func(a, b, namedPar = c)""".stripMargin, "test.py")
 
     "test call node properties" in {
-      val callNode = cpg.call.codeExact("func(a, b, namedPar = c)").head
+      val callNode = cpg.call.codeExact("func(a, b, namedPar = c)").next()
       callNode.name shouldBe "func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
@@ -60,18 +60,18 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "test call arguments" in {
-      val callNode = cpg.call.codeExact("func(a, b, namedPar = c)").head
+      val callNode = cpg.call.codeExact("func(a, b, namedPar = c)").next()
       val arg1     = callNode.argument(1)
       arg1.code shouldBe "a"
 
-      callNode.astChildren.order(1).head shouldBe arg1
+      callNode.astChildren.order(1).next() shouldBe arg1
 
       val arg2 = callNode.argument(2)
       arg2.code shouldBe "b"
 
-      callNode.astChildren.order(2).head shouldBe arg2
+      callNode.astChildren.order(2).next() shouldBe arg2
 
-      val namedArg = callNode.astChildren.order(3).isIdentifier.head
+      val namedArg = callNode.astChildren.order(3).isIdentifier.next()
       namedArg.code shouldBe "c"
       namedArg.argumentIndex shouldBe -1
       namedArg.argumentName shouldBe Some("namedPar")
@@ -82,7 +82,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     lazy val cpg = code("""x.func(a, b)""".stripMargin, "test.py")
 
     "test call node properties" in {
-      val callNode = cpg.call.codeExact("x.func(a, b)").head
+      val callNode = cpg.call.codeExact("x.func(a, b)").next()
       callNode.name shouldBe "func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
@@ -90,33 +90,33 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "test call receiver" in {
-      val callNode     = cpg.call.codeExact("x.func(a, b)").head
-      val callReceiver = callNode.receiver.head
+      val callNode     = cpg.call.codeExact("x.func(a, b)").next()
+      val callReceiver = callNode.receiver.next()
       callReceiver.code shouldBe "x.func"
 
-      callNode.astChildren.order(0).head shouldBe callReceiver
+      callNode.astChildren.order(0).next() shouldBe callReceiver
       callNode.start.argument.b should not contain callReceiver
     }
 
     "test call instance param" in {
-      val callNode    = cpg.call.codeExact("x.func(a, b)").head
+      val callNode    = cpg.call.codeExact("x.func(a, b)").next()
       val instanceArg = callNode.argument(0)
       instanceArg.code shouldBe "x"
 
-      callNode.astChildren.order(1).head shouldBe instanceArg
+      callNode.astChildren.order(1).next() shouldBe instanceArg
     }
 
     "test call arguments" in {
-      val callNode = cpg.call.codeExact("x.func(a, b)").head
+      val callNode = cpg.call.codeExact("x.func(a, b)").next()
       val arg1     = callNode.argument(1)
       arg1.code shouldBe "a"
 
-      callNode.astChildren.order(2).head shouldBe arg1
+      callNode.astChildren.order(2).next() shouldBe arg1
 
       val arg2 = callNode.argument(2)
       arg2.code shouldBe "b"
 
-      callNode.astChildren.order(3).head shouldBe arg2
+      callNode.astChildren.order(3).next() shouldBe arg2
     }
   }
 
@@ -124,7 +124,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     lazy val cpg = code("""x.func(a, b, namedPar = c)""".stripMargin, "test.py")
 
     "test call node properties" in {
-      val callNode = cpg.call.codeExact("x.func(a, b, namedPar = c)").head
+      val callNode = cpg.call.codeExact("x.func(a, b, namedPar = c)").next()
       callNode.name shouldBe "func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
@@ -132,18 +132,18 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "test call arguments" in {
-      val callNode = cpg.call.codeExact("x.func(a, b, namedPar = c)").head
+      val callNode = cpg.call.codeExact("x.func(a, b, namedPar = c)").next()
       val arg1     = callNode.argument(1)
       arg1.code shouldBe "a"
 
-      callNode.astChildren.order(2).head shouldBe arg1
+      callNode.astChildren.order(2).next() shouldBe arg1
 
       val arg2 = callNode.argument(2)
       arg2.code shouldBe "b"
 
-      callNode.astChildren.order(3).head shouldBe arg2
+      callNode.astChildren.order(3).next() shouldBe arg2
 
-      val namedArg = callNode.astChildren.order(4).isIdentifier.head
+      val namedArg = callNode.astChildren.order(4).isIdentifier.next()
       namedArg.code shouldBe "c"
       namedArg.argumentIndex shouldBe -1
       namedArg.argumentName shouldBe Some("namedPar")
@@ -162,7 +162,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     )
 
     "test call node properties" in {
-      val callNode = cpg.call.codeExact("func(a, b)").head
+      val callNode = cpg.call.codeExact("func(a, b)").next()
       callNode.name shouldBe "func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
@@ -209,33 +209,33 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "test call node properties for normal import from module on root path" in {
-      val callNode = cpg.call.codeExact("foo_func(a, b)").head
+      val callNode = cpg.call.codeExact("foo_func(a, b)").next()
       callNode.name shouldBe "foo_func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(6)
       callNode.methodFullName shouldBe "foo.py:<module>.foo_func"
-      callNode.callee(NoResolve).isExternal.headOption shouldBe Some(false)
+      callNode.callee(NoResolve).isExternal.nextOption() shouldBe Some(false)
     }
 
     "test call node properties for normal import from module deeper on a module path" in {
-      val callNode = cpg.call.codeExact("bar_func(a, b)").head
+      val callNode = cpg.call.codeExact("bar_func(a, b)").next()
       callNode.name shouldBe "bar_func"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(7)
       callNode.methodFullName shouldBe Seq("foo", "bar", "__init__.py:<module>.bar_func").mkString(File.separator)
-      callNode.callee(NoResolve).isExternal.headOption shouldBe Some(false)
+      callNode.callee(NoResolve).isExternal.nextOption() shouldBe Some(false)
     }
 
     "test call node properties for aliased import from module on root path" in {
-      val callNode = cpg.call.codeExact("baz(a, b)").head
+      val callNode = cpg.call.codeExact("baz(a, b)").next()
       callNode.name shouldBe "baz"
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(8)
       callNode.methodFullName shouldBe "foo.py:<module>.faz"
-      callNode.callee(NoResolve).isExternal.headOption shouldBe Some(false)
+      callNode.callee(NoResolve).isExternal.nextOption() shouldBe Some(false)
     }
   }
 

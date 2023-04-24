@@ -10,7 +10,7 @@ class UnaryOpCpgTests extends AnyFreeSpec with Matchers {
   lazy val cpg = Py2CpgTestContext.buildCpg("""~1""".stripMargin)
 
   "test unaryOp 'invert' call node properties" in {
-    val plusCall = cpg.call.methodFullName(Operators.not).head
+    val plusCall = cpg.call.methodFullName(Operators.not).next()
     plusCall.code shouldBe "~1"
     plusCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     plusCall.lineNumber shouldBe Some(1)
@@ -18,7 +18,7 @@ class UnaryOpCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test unaryOp 'invert' ast children" in {
-    cpg.call.methodFullName(Operators.not).astChildren.order(1).isLiteral.head.code shouldBe "1"
+    cpg.call.methodFullName(Operators.not).astChildren.order(1).isLiteral.next().code shouldBe "1"
   }
 
   "test unaryOp 'invert' arguments" in {
@@ -27,7 +27,7 @@ class UnaryOpCpgTests extends AnyFreeSpec with Matchers {
       .argument
       .argumentIndex(1)
       .isLiteral
-      .head
+      .next()
       .code shouldBe "1"
   }
 }

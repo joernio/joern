@@ -337,11 +337,11 @@ class MemberTests extends JavaSrcCode2CpgFixture {
 
       cpg.typeDecl.nameExact("Bar").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).size shouldBe 1
 
-      val clinit = cpg.typeDecl.nameExact("Bar").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).head
+      val clinit = cpg.typeDecl.nameExact("Bar").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).next()
       clinit.signature shouldBe "void()"
       clinit.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.StaticInitMethodName}:void()"
 
-      clinit.body.astChildren.l match {
+      clinit.next().astChildren.l match {
         case List(
               isStaticInit: Call,
               isStaticObjectAssign: Call,
@@ -351,7 +351,7 @@ class MemberTests extends JavaSrcCode2CpgFixture {
             ) =>
           isStaticInit.methodFullName shouldBe Operators.assignment
           isStaticInit.argument.size shouldBe 2
-          isStaticInit.argument.headOption match {
+          isStaticInit.argument.nextOption() match {
             case Some(fieldAccess: Call) =>
               fieldAccess.argument.size shouldBe 2
               fieldAccess.code shouldBe "Bar.isStatic"

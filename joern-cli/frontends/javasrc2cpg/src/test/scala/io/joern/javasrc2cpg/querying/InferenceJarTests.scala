@@ -24,7 +24,7 @@ class InferenceJarTests extends AnyFreeSpec with Matchers {
     lazy val cpg         = JavaSrc2CpgTestContext.buildCpg(code, inferenceJarPaths = Set(inferenceJarPath))
 
     "it should resolve the type for Deps" in {
-      val call = cpg.method.name("test1").call.name("foo").head
+      val call = cpg.method.name("test1").call.name("foo").next()
       call.methodFullName shouldBe "Deps.foo:int()"
       call.typeFullName shouldBe "int"
       call.signature shouldBe "int()"
@@ -32,12 +32,12 @@ class InferenceJarTests extends AnyFreeSpec with Matchers {
 
     "it should create stubs for elements used in Deps" in {
       cpg.typeDecl.name("Deps").size shouldBe 1
-      val depsTypeDecl = cpg.typeDecl.name("Deps").head
+      val depsTypeDecl = cpg.typeDecl.name("Deps").next()
       depsTypeDecl.fullName shouldBe "Deps"
       depsTypeDecl.isExternal shouldBe true
 
       cpg.method.name("foo").size shouldBe 1
-      val fooMethod = cpg.method.name("foo").head
+      val fooMethod = cpg.method.name("foo").next()
       fooMethod.fullName shouldBe "Deps.foo:int()"
       fooMethod.signature shouldBe "int()"
     }
@@ -47,7 +47,7 @@ class InferenceJarTests extends AnyFreeSpec with Matchers {
     lazy val cpg = JavaSrc2CpgTestContext.buildCpg(code)
 
     "it should fail to resolve the type for Deps" in {
-      val call = cpg.method.name("test1").call.name("foo").head
+      val call = cpg.method.name("test1").call.name("foo").next()
       call.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.foo:${Defines.UnresolvedSignature}(0)"
       call.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       call.typeFullName shouldBe "ANY"

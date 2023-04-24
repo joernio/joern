@@ -11,6 +11,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.traversal.Traversal
 
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+
 class StepsTest extends AnyWordSpec with Matchers {
 
   private val cpg: Cpg = MockCpg()
@@ -39,14 +41,14 @@ class StepsTest extends AnyWordSpec with Matchers {
 
     "filter with traversal on cpg type" in {
       def allMethods    = cpg.method.l
-      val publicMethods = allMethods.to(Traversal).where(_.isPublic)
+      val publicMethods = allMethods.iterator.where(_.isPublic)
       allMethods.size should be > publicMethods.toList.size
     }
 
     "filter on id" when {
       "providing one" in {
         // find an arbitrary method so we can find it again in the next step
-        val method: Method        = cpg.method.head
+        val method: Method        = cpg.method.next()
         val results: List[Method] = cpg.method.id(method.id).toList
         results.size shouldBe 1
         results.head.underlying.id
@@ -101,11 +103,11 @@ class StepsTest extends AnyWordSpec with Matchers {
 
     "return the parent block for a block's AST child" in {
       val List(block: Block)        = cpg.method("woo").block.l
-      val blockDirectChild: AstNode = cpg.method("woo").block.ast.head
-      val blockLeafChild: AstNode   = cpg.method("woo").block.ast.last
+      val blockDirectChild: AstNode = cpg.method("woo").block.ast.next()
+      val blockLeafChild: AstNode   = cpg.method("woo").block.ast.l.last
 
-      blockDirectChild.parentBlock.head shouldBe block
-      blockLeafChild.parentBlock.head shouldBe block
+      blockDirectChild.parentBlock.next() shouldBe block
+      blockLeafChild.parentBlock.next() shouldBe block
     }
 
     "return an empty traversal if no block is found" in {
@@ -145,14 +147,14 @@ class StepsTest extends AnyWordSpec with Matchers {
 
     "use default `toString` if nothing else applies" in {
       case class Foo(i: Int)
-      val steps: Steps[Foo] = new Steps(Traversal.fromSingle(Foo(42)))
+      val steps: Steps[Foo] = new Steps(Iterator.single(Foo(42)))
       steps.p.head shouldBe "Foo(42)"
     }
 
     "render nodes as `(label,id): properties`" in {
       def mainMethods: Traversal[Method] = cpg.method.name("woo")
 
-      val nodeId  = mainMethods.head.id
+      val nodeId  = mainMethods.next().id
       val printed = mainMethods.p.head
       printed.should(startWith(s"""(METHOD,$nodeId):"""))
       printed.should(include("IS_EXTERNAL: false"))
@@ -204,13 +206,13 @@ class StepsTest extends AnyWordSpec with Matchers {
     "provides generic help" when {
       "using verbose mode" when {
         "traversing nodes" in {
-          val methodTraversal = Traversal.empty[Method]
+          val methodTraversal = Iterator.empty[Method]
           methodTraversal.helpVerbose should include(".l")
           methodTraversal.helpVerbose should include(".label")
         }
 
         "traversing non-nodes" in {
-          val stringTraversal = Traversal.empty[String]
+          val stringTraversal = Iterator.empty[String]
           stringTraversal.helpVerbose should include(".l")
           stringTraversal.helpVerbose should not include ".label"
         }
@@ -225,16 +227,16 @@ class StepsTest extends AnyWordSpec with Matchers {
      * code without errors, and intellij's autocomplete works.
      */
     def literal = cpg.literal.code("moo")
-    literal.method.name.head shouldBe "foo"
-    literal.head.method.name shouldBe "foo"
+    literal.method.name.next() shouldBe "foo"
+    literal.next().method.name shouldBe "foo"
 
     def typ = cpg.typ.nameExact("AClass")
-    typ.namespace.name.head shouldBe "anamespace"
-    typ.head.namespace.name.head shouldBe "anamespace"
+    typ.namespace.name.next() shouldBe "anamespace"
+    typ.next().namespace.name.next() shouldBe "anamespace"
 
     def typeDecl = cpg.typeDecl.nameExact("AClass")
-    typeDecl.namespace.name.head shouldBe "anamespace"
-    typeDecl.head.namespace.name.head shouldBe "anamespace"
+    typeDecl.namespace.name.next() shouldBe "anamespace"
+    typeDecl.next().namespace.name.next() shouldBe "anamespace"
 
     def call = cpg.call.nameExact("acall")
     call.method.name.size shouldBe 1
@@ -243,35 +245,35 @@ class StepsTest extends AnyWordSpec with Matchers {
     // not testable in this cpg, but if it compiles it's probably fine
     def controlStructure = cpg.controlStructure
     controlStructure.condition
-    controlStructure.headOption.map(_.condition)
+    controlStructure.nextOption().map(_.condition)
 
     def identifier = cpg.identifier.name("anidentifier")
     identifier.refsTo.size shouldBe 1
-    identifier.head.refsTo.size shouldBe 1
+    identifier.next().refsTo.size shouldBe 1
 
     def member = cpg.member.name("amember")
-    member.typeDecl.name.head shouldBe "AClass"
-    member.head.typeDecl.name shouldBe "AClass"
+    member.typeDecl.name.next() shouldBe "AClass"
+    member.next().typeDecl.name shouldBe "AClass"
 
     def local = cpg.local.name("local")
-    local.typ.name.head shouldBe "alocaltype"
-    local.head.typ.name.head shouldBe "alocaltype"
+    local.typ.name.next() shouldBe "alocaltype"
+    local.next().typ.name.next() shouldBe "alocaltype"
 
     def method = cpg.method.name("foo")
     method.parameter.size shouldBe 1
-    method.head.parameter.size shouldBe 1
+    method.next().parameter.size shouldBe 1
 
     def methodParameterIn = cpg.parameter.name("param1")
-    methodParameterIn.typ.name.head shouldBe "paramtype"
-    methodParameterIn.head.typ.name shouldBe "paramtype"
+    methodParameterIn.typ.name.next() shouldBe "paramtype"
+    methodParameterIn.next().typ.name shouldBe "paramtype"
 
     def methodParameterOut =
       cpg.graph
-        .nodes(NodeTypes.METHOD_PARAMETER_OUT)
+        .nodes(NodeTypes.METHOD_PARAMETER_OUT).asScala
         .cast[MethodParameterOut]
         .name("param1")
-    methodParameterOut.typ.name.head shouldBe "paramtype"
-    methodParameterOut.head.typ.name.head shouldBe "paramtype"
+    methodParameterOut.typ.name.next() shouldBe "paramtype"
+    methodParameterOut.next().typ.name.next() shouldBe "paramtype"
 
     def methodReturn = cpg.methodReturn.typeFullNameExact("int")
     methodReturn.method.name.toSetMutable shouldBe Set("foo", "woo")
@@ -279,58 +281,58 @@ class StepsTest extends AnyWordSpec with Matchers {
 
     def namespace = cpg.namespace.name("anamespace")
     namespace.typeDecl.name.toSetMutable shouldBe Set("AClass")
-    namespace.head.typeDecl.name.toSetMutable shouldBe Set("AClass")
+    namespace.next().typeDecl.name.toSetMutable shouldBe Set("AClass")
 
     def namespaceBlock = cpg.namespaceBlock.name("anamespace")
     namespaceBlock.typeDecl.name.toSetMutable shouldBe Set("AClass")
     namespaceBlock.flatMap(_.typeDecl.name).toSetMutable shouldBe Set("AClass")
 
     def file = cpg.file.name("afile.c")
-    file.typeDecl.name.head shouldBe "AClass"
-    file.head.typeDecl.name.head shouldBe "AClass"
+    file.typeDecl.name.next() shouldBe "AClass"
+    file.next().typeDecl.name.next() shouldBe "AClass"
 
-    def block = cpg.graph.nodes(NodeTypes.BLOCK).cast[Block].typeFullName("int")
+    def block = cpg.graph.nodes(NodeTypes.BLOCK).asScala.cast[Block].typeFullName("int")
     block.local.name.size shouldBe 1
     block.flatMap(_.local.name).size shouldBe 1
 
     // not testable in this cpg, but if it compiles it's probably fine
     def methodRef = cpg.methodRef
     methodRef.referencedMethod
-    methodRef.headOption.map(_.referencedMethod)
+    methodRef.nextOption().map(_.referencedMethod)
 
     def expression: Traversal[Expression] = cpg.identifier.name("anidentifier").cast[Expression]
     expression.expressionUp.isCall.size shouldBe 1
-    expression.head.expressionUp.isCall.size shouldBe 1
+    expression.next().expressionUp.isCall.size shouldBe 1
 
 //    def cfg: Traversal[CfgNode] = cpg.method.name("add")
 
     def ast: Traversal[AstNode] = cpg.method.name("foo").cast[AstNode]
-    ast.astParent.property(Properties.NAME).head shouldBe "AClass"
-    ast.head.astParent.property(Properties.NAME) shouldBe "AClass"
+    ast.astParent.property(Properties.NAME).next() shouldBe "AClass"
+    ast.next().astParent.property(Properties.NAME) shouldBe "AClass"
 
     // methodForCallGraph
     method.call.size shouldBe 1
-    method.head.call.size shouldBe 1
+    method.next().call.size shouldBe 1
 
     // callForCallGraph - only verifying that it compiles
     call.callee(NoResolve)
-    call.head.callee(NoResolve)
+    call.next().callee(NoResolve)
 
     // AstNodeDot - only verifying that it compiles
     ast.dotAst
-    ast.head.dotAst
+    ast.next().dotAst
 
     // dotCfg
-    method.dotCfg.head.startsWith("digraph add {")
-    method.head.dotCfg.head.startsWith("digraph add {")
+    method.dotCfg.next().startsWith("digraph add {")
+    method.next().dotCfg.next().startsWith("digraph add {")
 
     // typeFullName
-    local.typeFullName.head shouldBe "alocaltype"
-    local.head.typeFullName shouldBe "alocaltype"
+    local.typeFullName.next() shouldBe "alocaltype"
+    local.next().typeFullName shouldBe "alocaltype"
 
     // modifierAccessors
     method.modifier.modifierType.toSetMutable shouldBe Set("modifiertype")
-    method.head.modifier.modifierType.toSetMutable shouldBe Set("modifiertype")
+    method.next().modifier.modifierType.toSetMutable shouldBe Set("modifiertype")
   }
 
   "id starter step" in {

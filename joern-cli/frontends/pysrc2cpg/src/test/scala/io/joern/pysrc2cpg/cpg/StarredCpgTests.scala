@@ -11,7 +11,7 @@ class StarredCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""func(*x)""".stripMargin)
 
     "test starred unpack node properties" in {
-      val starredUnrollCall = cpg.call.methodFullName("<operator>.starredUnpack").head
+      val starredUnrollCall = cpg.call.methodFullName("<operator>.starredUnpack").next()
       starredUnrollCall.code shouldBe "*x"
       starredUnrollCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       starredUnrollCall.lineNumber shouldBe Some(1)
@@ -24,7 +24,7 @@ class StarredCpgTests extends AnyFreeSpec with Matchers {
         .astChildren
         .order(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
     }
 
@@ -34,7 +34,7 @@ class StarredCpgTests extends AnyFreeSpec with Matchers {
         .argument
         .argumentIndex(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
     }
   }

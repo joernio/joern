@@ -108,7 +108,7 @@ class CallTests extends CCodeToCpgSuite {
     "have the correct callIn" in {
       val List(m) = cpg.method.nameNot("<global>").where(_.ast.isReturn.code(".*nullptr.*")).l
       val List(c) = cpg.call.codeExact("b->GetObj()").l
-      c.callee.head shouldBe m
+      c.callee.next() shouldBe m
       val List(callIn) = m.callIn.l
       callIn.code shouldBe "b->GetObj()"
     }

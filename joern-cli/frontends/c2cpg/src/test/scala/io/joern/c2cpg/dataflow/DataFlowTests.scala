@@ -436,7 +436,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       flowsPretty should include("sz = 20")
       flowsPretty should include("read(fd, buff, sz)")
 
-      val tmpSourceFile = flows.head.elements.head.asInstanceOf[CfgNode].method.filename
+      val tmpSourceFile = flows.next().elements.head.asInstanceOf[CfgNode].method.filename
       flowsPretty should include(tmpSourceFile)
     }
   }
@@ -1081,7 +1081,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       cpg
         .call("bar")
         .outE(EdgeTypes.REACHING_DEF)
-        .count(_.inNode() == cpg.ret.head) shouldBe 1
+        .count(_.inNode() == cpg.ret.next()) shouldBe 1
     }
   }
 
@@ -1379,7 +1379,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       |}""".stripMargin)
 
     "not find a flow from 'a' at 'foo' to 'sink'" in {
-      val src  = cpg.call("foo").inAssignment.target.head
+      val src  = cpg.call("foo").inAssignment.target.next()
       val sink = cpg.method("sink").parameter
       sink.reachableByFlows(src).size shouldBe 0
     }

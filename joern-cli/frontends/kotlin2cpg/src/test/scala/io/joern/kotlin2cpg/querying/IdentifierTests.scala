@@ -71,7 +71,7 @@ class IdentifierTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         .codeExact("filter")
         .isIdentifier
         .typeFullName
-        .head shouldBe "android.content.IntentFilter"
+        .next() shouldBe "android.content.IntentFilter"
     }
   }
 }

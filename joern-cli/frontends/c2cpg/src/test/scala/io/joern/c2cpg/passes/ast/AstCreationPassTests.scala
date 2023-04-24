@@ -138,7 +138,7 @@ class AstCreationPassTests extends AbstractPassTest {
         l2.signature shouldBe "string anonymous_lambda_1 (string,string)"
       }
 
-      inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {
+      inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).next().bindsOut.l) {
         case List(bX: Binding, bY: Binding) =>
           bX.name shouldBe lambda1FullName
           bX.signature shouldBe "int anonymous_lambda_0 (int,int)"
@@ -187,7 +187,7 @@ class AstCreationPassTests extends AbstractPassTest {
         l1.signature shouldBe signature
       }
 
-      inside(cpg.typeDecl("Foo").head.bindsOut.l) { case List(binding: Binding) =>
+      inside(cpg.typeDecl("Foo").next().bindsOut.l) { case List(binding: Binding) =>
         binding.name shouldBe lambdaName
         binding.signature shouldBe signature
         inside(binding.refOut.l) { case List(method: Method) =>
@@ -229,7 +229,7 @@ class AstCreationPassTests extends AbstractPassTest {
         l1.signature shouldBe signature
       }
 
-      inside(cpg.typeDecl.fullNameExact("A.B.Foo").head.bindsOut.l) { case List(binding: Binding) =>
+      inside(cpg.typeDecl.fullNameExact("A.B.Foo").next().bindsOut.l) { case List(binding: Binding) =>
         binding.name shouldBe lambdaName
         binding.signature shouldBe signature
         inside(binding.refOut.l) { case List(method: Method) =>
@@ -279,7 +279,7 @@ class AstCreationPassTests extends AbstractPassTest {
         l1.signature shouldBe signature1
       }
 
-      inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {
+      inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).next().bindsOut.l) {
         case List(b1: Binding, b2: Binding) =>
           b1.name shouldBe lambda1Name
           b1.signature shouldBe signature1
@@ -617,10 +617,10 @@ class AstCreationPassTests extends AbstractPassTest {
 
         ifStmt.whenTrue.assignment
           .map(x => (x.target.code, x.source.code))
-          .headOption shouldBe Some(("y", "0"))
+          .nextOption() shouldBe Some(("y", "0"))
         ifStmt.whenFalse.assignment
           .map(x => (x.target.code, x.source.code))
-          .headOption shouldBe Some(("y", "1"))
+          .nextOption() shouldBe Some(("y", "1"))
       }
     }
 
@@ -757,9 +757,9 @@ class AstCreationPassTests extends AbstractPassTest {
       val List(expressionListCall)   = bracketedPrimaryCall.argument.isCall.l
       expressionListCall.name shouldBe "<operator>.expressionList"
 
-      val List(arg1) = expressionListCall.argument(1).collectAll[Call].l
+      val List(arg1) = expressionListCall.argument(1).start.collectAll[Call].l
       arg1.code shouldBe "__sync_synchronize()"
-      val List(arg2) = expressionListCall.argument(2).collectAll[Call].l
+      val List(arg2) = expressionListCall.argument(2).start.collectAll[Call].l
       arg2.code shouldBe "foo(x)"
     }
 
@@ -1256,7 +1256,7 @@ class AstCreationPassTests extends AbstractPassTest {
         .ast
         .isReturn
         .outE(EdgeTypes.ARGUMENT)
-        .head
+        .next()
         .inNode()
         .get
         .asInstanceOf[CallDb]
@@ -1633,7 +1633,7 @@ class AstCreationPassTests extends AbstractPassTest {
        |  int a[3] = { [1] = 5, [2] = 10, [3 ... 9] = 15 };
        |};
       """.stripMargin) { cpg =>
-      inside(cpg.assignment.head.astChildren.l) { case List(ident: Identifier, call: Call) =>
+      inside(cpg.assignment.next().astChildren.l) { case List(ident: Identifier, call: Call) =>
         ident.typeFullName shouldBe "int[3]"
         ident.order shouldBe 1
         call.code shouldBe "{ [1] = 5, [2] = 10, [3 ... 9] = 15 }"
@@ -1653,8 +1653,8 @@ class AstCreationPassTests extends AbstractPassTest {
           call2.argument.code.l shouldBe List("2", "10")
           call3.code shouldBe "[3 ... 9] = 15"
           call3.name shouldBe Operators.assignment
-          val List(desCall) = call3.argument(1).collectAll[Call].l
-          val List(value)   = call3.argument(2).collectAll[Literal].l
+          val List(desCall) = call3.argument(1).start.collectAll[Call].l
+          val List(value)   = call3.argument(2).start.collectAll[Literal].l
           value.code shouldBe "15"
           desCall.name shouldBe Operators.arrayInitializer
           desCall.code shouldBe "[3 ... 9]"
@@ -1672,7 +1672,7 @@ class AstCreationPassTests extends AbstractPassTest {
       """.stripMargin,
       "test.cpp"
     ) { cpg =>
-      inside(cpg.assignment.head.astChildren.l) { case List(ident: Identifier, call: Call) =>
+      inside(cpg.assignment.next().astChildren.l) { case List(ident: Identifier, call: Call) =>
         ident.typeFullName shouldBe "int[3]"
         ident.order shouldBe 1
         call.code shouldBe "{ [1] = 5, [2] = 10, [3 ... 9] = 15 }"
@@ -1692,8 +1692,8 @@ class AstCreationPassTests extends AbstractPassTest {
           call2.argument.code.l shouldBe List("2", "10")
           call3.code shouldBe "[3 ... 9] = 15"
           call3.name shouldBe Operators.assignment
-          val List(desCall) = call3.argument(1).collectAll[Call].l
-          val List(value)   = call3.argument(2).collectAll[Literal].l
+          val List(desCall) = call3.argument(1).start.collectAll[Call].l
+          val List(value)   = call3.argument(2).start.collectAll[Literal].l
           value.code shouldBe "15"
           desCall.name shouldBe Operators.arrayInitializer
           desCall.code shouldBe "[3 ... 9]"
@@ -1708,7 +1708,7 @@ class AstCreationPassTests extends AbstractPassTest {
         |  struct foo b = { .a = 1, .b = 2 };
         |};
       """.stripMargin) { cpg =>
-      inside(cpg.assignment.head.astChildren.l) { case List(ident: Identifier, call: Call) =>
+      inside(cpg.assignment.next().astChildren.l) { case List(ident: Identifier, call: Call) =>
         ident.typeFullName shouldBe "foo"
         ident.order shouldBe 1
         call.code shouldBe "{ .a = 1, .b = 2 }"

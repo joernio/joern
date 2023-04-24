@@ -20,7 +20,7 @@ class CodeDumperTests extends CCodeToCpgSuite {
 
   private val cpg = code(codeString, "test.c")
 
-  private val path = File(cpg.metaData.root.head) / "test.c"
+  private val path = File(cpg.metaData.root.next()) / "test.c"
 
   override def beforeAll(): Unit = {
     super.beforeAll()

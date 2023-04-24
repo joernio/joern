@@ -14,7 +14,7 @@ class BindingTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
     "have two bindings" in {
-      val typeDecl = cpg.typeDecl(".*SomeConsumer.*").head
+      val typeDecl = cpg.typeDecl(".*SomeConsumer.*").next()
       val methodBinding = typeDecl.methodBinding
         .name("accept")
         .map(binding => (binding.name, binding.signature, binding.methodFullName))
@@ -50,7 +50,7 @@ class BindingTests extends JavaSrcCode2CpgFixture {
     )
 
     "have two bindings for SomeConsumer" in {
-      val typeDecl = cpg.typeDecl(".*SomeConsumer.*").head
+      val typeDecl = cpg.typeDecl(".*SomeConsumer.*").next()
       val methodBinding = typeDecl.methodBinding
         .name("accept")
         .map(binding => (binding.name, binding.signature, binding.methodFullName))
@@ -62,7 +62,7 @@ class BindingTests extends JavaSrcCode2CpgFixture {
     }
 
     "have three bindings for OtherConsumer" in {
-      val typeDecl = cpg.typeDecl(".*OtherConsumer.*").head
+      val typeDecl = cpg.typeDecl(".*OtherConsumer.*").next()
       val methodBinding = typeDecl.methodBinding
         .name("accept")
         .map(binding => (binding.name, binding.signature, binding.methodFullName))

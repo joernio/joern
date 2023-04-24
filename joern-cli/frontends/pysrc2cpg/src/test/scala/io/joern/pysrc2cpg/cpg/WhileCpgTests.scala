@@ -11,23 +11,23 @@ class WhileCpgTests extends AnyFreeSpec with Matchers {
         |  y""".stripMargin)
 
     "test control structure node properties" in {
-      val controlStructureNode = cpg.controlStructure.head
+      val controlStructureNode = cpg.controlStructure.next()
       controlStructureNode.code shouldBe "while ... : ..."
       controlStructureNode.controlStructureType shouldBe ControlStructureTypes.WHILE
       controlStructureNode.lineNumber shouldBe Some(1)
     }
 
     "test control structure condition" in {
-      val conditionNode = cpg.controlStructure.condition.head
+      val conditionNode = cpg.controlStructure.condition.next()
       conditionNode.code shouldBe "x"
-      cpg.controlStructure.astChildren.order(1).head shouldBe conditionNode
+      cpg.controlStructure.astChildren.order(1).next() shouldBe conditionNode
     }
 
     "test control structure body" in {
-      val bodyNode = cpg.controlStructure.whenTrue.isExpression.head
+      val bodyNode = cpg.controlStructure.whenTrue.isExpression.next()
       bodyNode.isInstanceOf[nodes.Block] shouldBe true
       bodyNode.code shouldBe "y"
-      cpg.controlStructure.astChildren.order(2).head shouldBe bodyNode
+      cpg.controlStructure.astChildren.order(2).next() shouldBe bodyNode
     }
   }
 
@@ -38,30 +38,30 @@ class WhileCpgTests extends AnyFreeSpec with Matchers {
         |  z""".stripMargin)
 
     "test control structure node properties" in {
-      val controlStructureNode = cpg.controlStructure.head
+      val controlStructureNode = cpg.controlStructure.next()
       controlStructureNode.code shouldBe "while ... : ..."
       controlStructureNode.controlStructureType shouldBe ControlStructureTypes.WHILE
       controlStructureNode.lineNumber shouldBe Some(1)
     }
 
     "test control structure condition" in {
-      val conditionNode = cpg.controlStructure.condition.head
+      val conditionNode = cpg.controlStructure.condition.next()
       conditionNode.code shouldBe "x"
-      cpg.controlStructure.astChildren.order(1).head shouldBe conditionNode
+      cpg.controlStructure.astChildren.order(1).next() shouldBe conditionNode
     }
 
     "test control structure body" in {
-      val bodyNode = cpg.controlStructure.whenTrue.isExpression.head
+      val bodyNode = cpg.controlStructure.whenTrue.isExpression.next()
       bodyNode.isInstanceOf[nodes.Block] shouldBe true
       bodyNode.code shouldBe "y"
-      cpg.controlStructure.astChildren.order(2).head shouldBe bodyNode
+      cpg.controlStructure.astChildren.order(2).next() shouldBe bodyNode
     }
 
     "test control structure else" in {
-      val elseNode = cpg.controlStructure.whenFalse.isExpression.head
+      val elseNode = cpg.controlStructure.whenFalse.isExpression.next()
       elseNode.isInstanceOf[nodes.Block] shouldBe true
       elseNode.code shouldBe "z"
-      cpg.controlStructure.astChildren.order(3).head shouldBe elseNode
+      cpg.controlStructure.astChildren.order(3).next() shouldBe elseNode
     }
   }
 }

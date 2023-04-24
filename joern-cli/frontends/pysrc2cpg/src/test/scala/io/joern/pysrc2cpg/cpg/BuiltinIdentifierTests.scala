@@ -15,7 +15,7 @@ class BuiltinIdentifierTests extends AnyFreeSpec with Matchers {
     }
 
     "test type ref to list meta type exists" in {
-      val typeRef = cpg.typeRef.code("__builtins__.list").head
+      val typeRef = cpg.typeRef.code("__builtins__.list").next()
       typeRef.typeFullName shouldBe "__builtin.list<meta>"
     }
   }

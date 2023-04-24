@@ -3,18 +3,11 @@ package io.joern.javasrc2cpg.querying
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Binding,
-  Call,
-  ClosureBinding,
-  Identifier,
-  Local,
-  MethodParameterIn,
-  MethodRef,
-  Return
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Call, ClosureBinding, Identifier, Local, MethodParameterIn, MethodRef, Return}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
+
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 class LambdaTests extends JavaSrcCode2CpgFixture {
   "nested lambdas" should {
@@ -123,17 +116,17 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         case Seq(fallbackClosureBinding, _) =>
           fallbackClosureBinding.label shouldBe "CLOSURE_BINDING"
 
-          val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
+          val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").next()
           fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
 
-          fallbackClosureBinding.outE.collectAll[Ref].map(_.inNode()).l match {
+          fallbackClosureBinding.outE.asScala.collectAll[Ref].map(_.inNode()).l match {
             case List(capturedParam: MethodParameterIn) =>
               capturedParam.name shouldBe "fallback"
               capturedParam.method.fullName shouldBe "Foo.test1:void(java.lang.String,java.lang.String)"
             case result => fail(s"Expected single capturedParam but got $result")
           }
 
-          fallbackClosureBinding.inE.collectAll[Capture].map(_.outNode()).l match {
+          fallbackClosureBinding.inE.asScala.collectAll[Capture].map(_.outNode()).l match {
             case List(outMethod: MethodRef) =>
               outMethod.methodFullName shouldBe "Foo.lambda$0:java.lang.String(java.lang.String)"
             case result => fail(s"Expected single METHOD_REF but got $result")
@@ -522,7 +515,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           ret.order shouldBe 2
           ret.astChildren.size shouldBe 1
           ret.astChildren.collectAll[Call].size shouldBe 1
-          val fooCall = ret.astChildren.collectAll[Call].head
+          val fooCall = ret.astChildren.collectAll[Call].next()
           fooCall.name shouldBe "foo"
           fooCall.methodFullName shouldBe "TestClass.foo:java.lang.String(java.lang.Integer,java.lang.Integer,java.lang.String)"
           fooCall.typeFullName shouldBe "java.lang.String"
@@ -556,17 +549,17 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         case List(capturedClosureBinding) =>
           capturedClosureBinding.label shouldBe "CLOSURE_BINDING"
 
-          val capturedLocal = cpg.method.name(".*lambda.*").local.name("captured").head
+          val capturedLocal = cpg.method.name(".*lambda.*").local.name("captured").next()
           capturedClosureBinding.closureBindingId shouldBe capturedLocal.closureBindingId
 
-          capturedClosureBinding.outE.collectAll[Ref].map(_.inNode()).l match {
+          capturedClosureBinding.outE.asScala.collectAll[Ref].map(_.inNode()).l match {
             case List(capturedParam: MethodParameterIn) =>
               capturedParam.name shouldBe "captured"
               capturedParam.method.fullName shouldBe "TestClass.test:Foo(java.lang.String)"
             case result => fail(s"Expected single capturedParam but got $result")
           }
 
-          capturedClosureBinding.inE.collectAll[Capture].map(_.outNode()).l match {
+          capturedClosureBinding.inE.asScala.collectAll[Capture].map(_.outNode()).l match {
             case List(outMethod: MethodRef) =>
               outMethod.methodFullName shouldBe "TestClass.lambda$0:java.lang.String(java.lang.Integer,java.lang.Integer)"
             case result => fail(s"Expected single out METHOD_REF but got $result")

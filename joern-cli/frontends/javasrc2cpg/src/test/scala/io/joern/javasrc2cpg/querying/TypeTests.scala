@@ -21,8 +21,8 @@ class NewTypeTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.identifier.name("instance").typeFullName.head shouldBe "java.lang.Object"
-      cpg.call.name("newInstance").head.signature shouldBe "java.lang.Object()"
+      cpg.identifier.name("instance").typeFullName.next() shouldBe "java.lang.Object"
+      cpg.call.name("newInstance").next().signature shouldBe "java.lang.Object()"
     }
 
     "there is a lower bound" in {
@@ -37,8 +37,8 @@ class NewTypeTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.identifier.name("instance").typeFullName.head shouldBe "java.lang.Object"
-      cpg.call.name("newInstance").head.signature shouldBe "java.lang.Object()"
+      cpg.identifier.name("instance").typeFullName.next() shouldBe "java.lang.Object"
+      cpg.call.name("newInstance").next().signature shouldBe "java.lang.Object()"
     }
 
     "there is an upper bound" in {
@@ -53,8 +53,8 @@ class NewTypeTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.identifier.name("instance").typeFullName.head shouldBe "java.lang.Object"
-      cpg.call.name("newInstance").head.signature shouldBe "java.lang.Object()"
+      cpg.identifier.name("instance").typeFullName.next() shouldBe "java.lang.Object"
+      cpg.call.name("newInstance").next().signature shouldBe "java.lang.Object()"
     }
   }
 
@@ -249,7 +249,7 @@ class TypeTests extends JavaSrcCode2CpgFixture {
   }
 
   "should handle primitive type arrays" in {
-    cpg.method.name("bar").parameter.name("xs").headOption match {
+    cpg.method.name("bar").parameter.name("xs").nextOption() match {
       case Some(param) =>
         param.typeFullName shouldBe "int[]"
         param.typ.name shouldBe "int[]"
@@ -260,7 +260,7 @@ class TypeTests extends JavaSrcCode2CpgFixture {
   }
 
   "should handle reference type arrays" in {
-    cpg.method.name("baz").parameter.name("fs").headOption match {
+    cpg.method.name("baz").parameter.name("fs").nextOption() match {
       case Some(param) =>
         param.typeFullName shouldBe "foo.Foo[]"
         param.typ.name shouldBe "Foo[]"

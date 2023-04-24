@@ -23,36 +23,36 @@ class MethodCfgLayoutTests extends CCodeToCpgSuite {
         |""".stripMargin)
 
     "be correct for decl assignment in method1" in {
-      val x = cpg.method.nameExact("method1").cfgNext.collectAll[Identifier].head
+      val x = cpg.method.nameExact("method1").cfgNext.collectAll[Identifier].next()
       x.name shouldBe "x"
 
-      val one = x.cfgOut.collectAll[Literal].head
+      val one = x.cfgOut.collectAll[Literal].next()
       one.code shouldBe "1"
 
-      val call = one.cfgOut.collectAll[Call].head
+      val call = one.cfgOut.collectAll[Call].next()
       call.name shouldBe Operators.assignment
 
-      val ret = call.cfgOut.collectAll[MethodReturn].head
+      val ret = call.cfgOut.collectAll[MethodReturn].next()
       ret.code shouldBe "RET"
     }
 
     "be correct for nested expression in method2" in {
-      val x = cpg.method.nameExact("method2").cfgNext.collectAll[Identifier].head
+      val x = cpg.method.nameExact("method2").cfgNext.collectAll[Identifier].next()
       x.name shouldBe "x"
 
-      val y = x.cfgNext.collectAll[Identifier].head
+      val y = x.cfgNext.collectAll[Identifier].next()
       y.name shouldBe "y"
 
-      val z = y.cfgNext.collectAll[Identifier].head
+      val z = y.cfgNext.collectAll[Identifier].next()
       z.name shouldBe "z"
 
-      val call1 = z.cfgOut.collectAll[Call].head
+      val call1 = z.cfgOut.collectAll[Call].next()
       call1.name shouldBe Operators.addition
 
-      val call2 = call1.cfgOut.collectAll[Call].head
+      val call2 = call1.cfgOut.collectAll[Call].next()
       call2.name shouldBe Operators.assignment
 
-      val ret = call2.cfgOut.collectAll[MethodReturn].head
+      val ret = call2.cfgOut.collectAll[MethodReturn].next()
       ret.code shouldBe "RET"
     }
   }

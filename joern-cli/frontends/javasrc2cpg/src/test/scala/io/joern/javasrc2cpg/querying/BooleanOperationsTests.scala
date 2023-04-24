@@ -92,14 +92,14 @@ class BooleanOperationsTests extends JavaSrcCode2CpgFixture {
   }
 
   "should contain a call node for the logicalAnd operator" in {
-    val op                                 = cpg.call.nameExact(Operators.logicalAnd).head
+    val op                                 = cpg.call.nameExact(Operators.logicalAnd).next()
     val List(a: Identifier, b: Identifier) = op.astOut.l
     a.name shouldBe "a"
     b.name shouldBe "b"
   }
 
   "should contain a call node for the logicalOr operator" in {
-    val op                                 = cpg.call.nameExact(Operators.logicalOr).head
+    val op                                 = cpg.call.nameExact(Operators.logicalOr).next()
     val List(a: Identifier, b: Identifier) = op.astOut.l
     a.name shouldBe "c"
     b.name shouldBe "d"

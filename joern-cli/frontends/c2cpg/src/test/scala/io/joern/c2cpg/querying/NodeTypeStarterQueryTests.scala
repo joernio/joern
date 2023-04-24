@@ -4,7 +4,6 @@ import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.{Languages, NodeTypes}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import overflowdb.traversal._
 
 /** The following tests show in detail how queries can be started. For all node types, for which it seems reasonable,
   * all nodes of that type can be used as a starting point, e.g., `cpg.method` starts at all methods while `cpg.local`
@@ -110,8 +109,8 @@ class NodeTypeStarterQueryTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving nodes by id" in {
-    val method1 = cpg.method.name("main").head
-    val method2 = cpg.method.name("libfunc").head
+    val method1 = cpg.method.name("main").next()
+    val method2 = cpg.method.name("libfunc").next()
 
     cpg.id(method1.id).l shouldBe Seq(method1)
     cpg.ids(method1.id, method2.id).l shouldBe Seq(method1, method2)

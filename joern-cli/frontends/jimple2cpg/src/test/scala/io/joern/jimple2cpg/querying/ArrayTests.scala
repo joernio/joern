@@ -37,7 +37,7 @@ class ArrayTests extends JimpleCode2CpgFixture {
 
     arrayInit.code shouldBe "new int[3]"
     arrayInit.methodFullName shouldBe Operators.alloc
-    arrayInit.astChildren.headOption match {
+    arrayInit.astChildren.nextOption() match {
       case Some(alloc) =>
         alloc shouldBe a[Literal]
         alloc.code shouldBe "3"

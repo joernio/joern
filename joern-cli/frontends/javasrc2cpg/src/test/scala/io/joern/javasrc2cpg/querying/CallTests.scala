@@ -10,6 +10,8 @@ import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 import overflowdb.traversal.toNodeTraversal
 
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+
 class NewCallTests extends JavaSrcCode2CpgFixture {
 
   "constructor init method call" should {
@@ -24,7 +26,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "have correct methodFullName and signature" in {
-      val initCall = cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).head
+      val initCall = cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).next()
       initCall.signature shouldBe "void(long)"
       initCall.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(long)"
     }
@@ -76,7 +78,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       cpg.call
         .name("get")
         .methodFullName
-        .head shouldBe s"${Defines.UnresolvedNamespace}.get:${Defines.UnresolvedSignature}(0)"
+        .next() shouldBe s"${Defines.UnresolvedNamespace}.get:${Defines.UnresolvedSignature}(0)"
     }
   }
 
@@ -99,7 +101,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         .argument(0)
         .l match {
         case List(thisNode: Identifier) =>
-          thisNode.outE.collectAll[Ref].map(_.inNode).l match {
+          thisNode.outE.asScala.collectAll[Ref].map(_.inNode).l match {
             case List(paramNode: MethodParameterIn) =>
               paramNode.name shouldBe "this"
               paramNode.method.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
@@ -184,7 +186,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "have correct methodFullName" in {
-      cpg.call.nameExact("method").methodFullName.head shouldBe "Derived.method:void(int)"
+      cpg.call.nameExact("method").methodFullName.next() shouldBe "Derived.method:void(int)"
     }
   }
 
@@ -210,7 +212,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "have correct methodFullName" in {
-      cpg.call.nameExact("method").methodFullName.head shouldBe "MoreDerived.method:void(int)"
+      cpg.call.nameExact("method").methodFullName.next() shouldBe "MoreDerived.method:void(int)"
     }
   }
 
@@ -266,10 +268,10 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "have correct substitute type as expression type" in {
-      cpg.call.name("apply").evalType.head shouldBe "java.lang.Integer"
+      cpg.call.name("apply").evalType.next() shouldBe "java.lang.Integer"
     }
     "have correct methodFullName to erased method signature" in {
-      cpg.call.name("apply").methodFullName.head shouldBe
+      cpg.call.name("apply").methodFullName.next() shouldBe
         "java.util.function.Function.apply:java.lang.Object(java.lang.Object)"
     }
   }
@@ -287,7 +289,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "have correct methodFullName" in {
-      cpg.call("foo").methodFullName.head shouldBe "Foo.foo:void(java.lang.Number)"
+      cpg.call("foo").methodFullName.next() shouldBe "Foo.foo:void(java.lang.Number)"
     }
   }
 
@@ -305,7 +307,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "should have correct methodFullName" in {
-      cpg.call("foo").methodFullName.head shouldBe "Foo.foo:void(java.lang.Object[])"
+      cpg.call("foo").methodFullName.next() shouldBe "Foo.foo:void(java.lang.Object[])"
     }
   }
 
@@ -320,7 +322,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "create a `super` receiver with fields correctly set" in {
-      val superReceiver = cpg.call.name("toString").argument(0).collectAll[Identifier].head
+      val superReceiver = cpg.call.name("toString").argument(0).collectAll[Identifier].next()
       superReceiver.name shouldBe "this"
       superReceiver.code shouldBe "super"
       superReceiver.typeFullName shouldBe "java.lang.Object"
@@ -446,7 +448,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
   }
 
   "should create a call node for call on explicit object" in {
-    val call = cpg.typeDecl.name("Bar").method.name("foo").call.nameExact("myMethod").head
+    val call = cpg.typeDecl.name("Bar").method.name("foo").call.nameExact("myMethod").next()
 
     call.code shouldBe "myObj.myMethod(\"Hello, world!\")"
     call.name shouldBe "myMethod"
@@ -467,7 +469,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
   }
 
   "should create a call node for a call with an implicit `this`" in {
-    val call = cpg.typeDecl.name("Bar").method.name("bar").call.nameExact("foo").head
+    val call = cpg.typeDecl.name("Bar").method.name("bar").call.nameExact("foo").next()
 
     call.code shouldBe "this.foo(obj)"
     call.name shouldBe "foo"
@@ -490,7 +492,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
   }
 
   "should create a call node for a call with an explicit `this`" in {
-    val call = cpg.typeDecl.name("Bar").method.name("baz").call.nameExact("foo").head
+    val call = cpg.typeDecl.name("Bar").method.name("baz").call.nameExact("foo").next()
 
     call.code shouldBe "this.foo(obj)"
     call.name shouldBe "foo"
@@ -517,14 +519,14 @@ class CallTests extends JavaSrcCode2CpgFixture {
   }
 
   "should create correct code field for static call" in {
-    val call = cpg.typeDecl.name("Bar").method.name("qux").call.head
+    val call = cpg.typeDecl.name("Bar").method.name("qux").call.next()
     call.name shouldBe "staticMethod"
     call.methodFullName shouldBe "test.Bar.staticMethod:void()"
     call.code shouldBe "staticMethod()"
   }
 
   "should create correct call signature for method call without args" in {
-    val call = cpg.typeDecl.name("Bar").method.name("quux").call.head
+    val call = cpg.typeDecl.name("Bar").method.name("quux").call.next()
     call.name shouldBe "bar"
     call.methodFullName shouldBe "test.Bar.bar:void()"
     call.signature shouldBe "void()"
@@ -548,6 +550,6 @@ class CallTests2 extends JavaSrcCode2CpgFixture {
       |""".stripMargin)
 
   "test methodFullName for call to generic function" in {
-    cpg.call(".*ident.*").methodFullName.head shouldBe "Foo$Ops.ident:java.lang.Object(java.lang.Object)"
+    cpg.call(".*ident.*").methodFullName.next() shouldBe "Foo$Ops.ident:java.lang.Object(java.lang.Object)"
   }
 }

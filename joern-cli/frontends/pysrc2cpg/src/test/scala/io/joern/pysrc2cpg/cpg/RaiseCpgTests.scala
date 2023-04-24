@@ -23,14 +23,14 @@ class RaiseCpgTests extends AnyFreeSpec with Matchers {
         .astChildren
         .order(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
       cpg.call
         .methodFullName("<operator>.raise")
         .astChildren
         .order(2)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "y"
     }
 
@@ -40,14 +40,14 @@ class RaiseCpgTests extends AnyFreeSpec with Matchers {
         .argument
         .argumentIndex(1)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "x"
       cpg.call
         .methodFullName("<operator>.raise")
         .argument
         .argumentIndex(2)
         .isIdentifier
-        .head
+        .next()
         .code shouldBe "y"
     }
   }

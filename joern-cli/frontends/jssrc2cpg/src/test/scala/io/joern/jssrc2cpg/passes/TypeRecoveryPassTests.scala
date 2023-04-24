@@ -93,11 +93,11 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin).cpg
 
     "resolve 'print' and 'max' calls" in {
-      val Some(printCall) = cpg.call("log").headOption
+      val Some(printCall) = cpg.call("log").nextOption()
       printCall.methodFullName shouldBe "__whatwg.console:log"
-      val Some(maxCall) = cpg.call("abs").headOption
+      val Some(maxCall) = cpg.call("abs").nextOption()
       maxCall.methodFullName shouldBe "__ecma.Math:abs"
-      val Some(x) = cpg.identifier("x").headOption
+      val Some(x) = cpg.identifier("x").nextOption()
       // TODO: Ideally we would know the result of `abs` but this can be a future task
       x.typeFullName shouldBe "__ecma.Math:abs:<returnValue>"
     }
@@ -131,11 +131,11 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     ).cpg
 
     "resolve 'x' and 'y' locally under foo.py" in {
-      val Some(x) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("x").headOption
+      val Some(x) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("x").nextOption()
       x.typeFullName shouldBe "__ecma.Number"
-      val Some(y) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("y").headOption
+      val Some(y) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("y").nextOption()
       y.typeFullName shouldBe "__ecma.String"
-      val Some(db) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("db").headOption
+      val Some(db) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("db").nextOption()
       db.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
     }
 
@@ -158,7 +158,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .ast
         .isIdentifier
         .nameExact("d")
-        .headOption
+        .nextOption()
       d.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
       d.dynamicTypeHintFullName shouldBe Seq()
     }
@@ -172,7 +172,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .l
       d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy:createTable"
       d.dynamicTypeHintFullName shouldBe Seq()
-      d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
+      d.callee(NoResolve).isExternal.nextOption() shouldBe Some(true)
     }
 
     "resolve a 'deleteTable' call directly from 'foo.db' field access correctly" in {
@@ -184,7 +184,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .l
       d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy:deleteTable"
       d.dynamicTypeHintFullName shouldBe empty
-      d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
+      d.callee(NoResolve).isExternal.nextOption() shouldBe Some(true)
     }
 
   }

@@ -64,12 +64,12 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
   private val _succ: Map[StoredNode, List[StoredNode]] = initSucc(allNodesReversePostOrder)
   private val _pred: Map[StoredNode, List[StoredNode]] = initPred(allNodesReversePostOrder, method)
 
-  override def succ(node: StoredNode): IterableOnce[StoredNode] = {
-    _succ.apply(node)
+  override def succ(node: StoredNode): Iterator[StoredNode] = {
+    _succ.apply(node).iterator
   }
 
-  override def pred(node: StoredNode): IterableOnce[StoredNode] = {
-    _pred.apply(node)
+  override def pred(node: StoredNode): Iterator[StoredNode] = {
+    _pred.apply(node).iterator
   }
 
   /** Create a map that allows CFG successors to be retrieved for each node

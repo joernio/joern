@@ -119,7 +119,7 @@ class TypeAliasTests extends KotlinCode2CpgFixture(withOssDataflow = false, with
         |""".stripMargin)
 
     "should contain a TYPE_DECL with the correct ALIAS_TYPE_FULL_NAME set" in {
-      cpg.typeDecl.nameExact("Form").aliasTypeFullName.head shouldBe "java.util.List"
+      cpg.typeDecl.nameExact("Form").aliasTypeFullName.next() shouldBe "java.util.List"
     }
   }
 

@@ -37,7 +37,7 @@ class CallNodeTests extends GhidraBinToCpgSuite {
           .order(2)
           .code("0xa")
       )
-      .head
+      .next()
       .code
 
     result shouldBe "MOV dword ptr [RBP + -0x4],0xa"

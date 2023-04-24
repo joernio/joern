@@ -44,7 +44,7 @@ class SynchronizedTests extends JavaSrcCode2CpgFixture {
       _: MethodReturn
     ) = method.astChildren.l
     param.code shouldBe "String s"
-    body.astChildren.head shouldBe a[Return]
+    body.astChildren.next() shouldBe a[Return]
     publicModifier.modifierType shouldBe ModifierTypes.PUBLIC
     staticModifier.modifierType shouldBe ModifierTypes.STATIC
   }
@@ -58,6 +58,6 @@ class SynchronizedTests extends JavaSrcCode2CpgFixture {
 
     mod.modifierType shouldBe "SYNCHRONIZED"
     cond.code shouldBe "this"
-    body.astChildren.head.code shouldBe "s += \"A\""
+    body.astChildren.next().code shouldBe "s += \"A\""
   }
 }

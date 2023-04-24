@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Evalu
 import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
 import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Block, ClosureBinding, MethodRef, Return}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.jIteratortoTraversal
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
   "CPG for code with a simple lambda which captures a method parameter" should {
@@ -28,7 +28,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
-      cb.outE.collectAll[Ref].size shouldBe 1
+      cb.outE.asScala.collectAll[Ref].size shouldBe 1
     }
 
     "should contain a CALL node with the signature of the lambda" in {
@@ -65,7 +65,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
-      cb.outE.collectAll[Ref].size shouldBe 1
+      cb.outE.asScala.collectAll[Ref].size shouldBe 1
     }
   }
 
@@ -192,7 +192,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
       val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
-      val hasReturnAsLastChild = b.astChildren.last match {
+      val hasReturnAsLastChild = b.astChildren.l.last match {
         case _: Return => true
         case _         => false
       }

@@ -14,13 +14,13 @@ class BindingTests extends AnyWordSpec with Matchers {
     .withMethod("<init>")
     .withMethod("boundMethod")
     .withCustom { (graph, cpg) =>
-      val typeDecl = cpg.typeDecl.name("BindingTest").head
+      val typeDecl = cpg.typeDecl.name("BindingTest").next()
       val binding1 = NewBinding().name("<init>")
       val binding2 = NewBinding().name("boundMethod")
       graph.addEdge(typeDecl, binding1, EdgeTypes.BINDS)
       graph.addEdge(typeDecl, binding2, EdgeTypes.BINDS)
-      graph.addEdge(binding1, cpg.method("<init>").head, EdgeTypes.REF)
-      graph.addEdge(binding2, cpg.method("boundMethod").head, EdgeTypes.REF)
+      graph.addEdge(binding1, cpg.method("<init>").next(), EdgeTypes.REF)
+      graph.addEdge(binding2, cpg.method("boundMethod").next(), EdgeTypes.REF)
     }
     .cpg
 

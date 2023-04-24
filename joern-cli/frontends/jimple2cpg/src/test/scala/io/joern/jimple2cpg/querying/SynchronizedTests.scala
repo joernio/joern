@@ -31,7 +31,7 @@ class SynchronizedTests extends JimpleCode2CpgFixture {
     val List(param)                              = method.parameter.l
     val body                                     = method.block
     param.code shouldBe "java.lang.String s"
-    body.astChildren.head shouldBe a[Return]
+    body.astChildren.next() shouldBe a[Return]
   }
 
   "it should create a enter/exit monitor nodes" in {

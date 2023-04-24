@@ -20,7 +20,7 @@ class CodeDumperTest extends JsSrc2CpgSuite {
 
   private val cpg = code(codeString, "index.js")
 
-  private val path = File(cpg.metaData.root.head) / "index.js"
+  private val path = File(cpg.metaData.root.next()) / "index.js"
 
   override def beforeAll(): Unit = {
     super.beforeAll()

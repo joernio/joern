@@ -18,7 +18,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "boolean[]"
+      cpg.identifier.nameExact("nums").next().typeFullName shouldBe "boolean[]"
     }
   }
 
@@ -36,7 +36,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "byte[]"
+      cpg.identifier.nameExact("nums").next().typeFullName shouldBe "byte[]"
     }
   }
 
@@ -71,7 +71,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "char[]"
+      cpg.identifier.nameExact("nums").next().typeFullName shouldBe "char[]"
     }
   }
 
@@ -89,7 +89,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "double[]"
+      cpg.identifier.nameExact("nums").next().typeFullName shouldBe "double[]"
     }
   }
 
@@ -107,7 +107,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "float[]"
+      cpg.identifier.nameExact("nums").next().typeFullName shouldBe "float[]"
     }
   }
 
@@ -125,7 +125,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "int[]"
+      cpg.identifier.nameExact("nums").next().typeFullName shouldBe "int[]"
     }
   }
 
@@ -143,7 +143,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "long[]"
+      cpg.identifier.nameExact("nums").next().typeFullName shouldBe "long[]"
     }
   }
 
@@ -161,7 +161,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
         |""".stripMargin)
 
     "should contain an IDENTIFIER node with a TYPE_FULL_NAME of its mapped type" in {
-      cpg.identifier.nameExact("nums").head.typeFullName shouldBe "short[]"
+      cpg.identifier.nameExact("nums").next().typeFullName shouldBe "short[]"
     }
   }
 }

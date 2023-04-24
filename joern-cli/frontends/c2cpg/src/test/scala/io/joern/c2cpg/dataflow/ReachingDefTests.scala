@@ -15,7 +15,7 @@ class ReachingDefTests extends DataFlowCodeToCpgSuite {
        |}
        |""".stripMargin)
 
-    val fooMethod = cpg.method("foo").head
+    val fooMethod = cpg.method("foo").next()
     val flowGraph = new ReachingDefFlowGraph(fooMethod)
 
     "create ReachingDefFlowGraph with correct entry/exit" in {
@@ -49,14 +49,14 @@ class ReachingDefTests extends DataFlowCodeToCpgSuite {
       |}
       |""".stripMargin)
 
-    val fooMethod = cpg.method("foo").head
+    val fooMethod = cpg.method("foo").next()
     val flowGraph = new ReachingDefFlowGraph(fooMethod)
 
     "create ReachingDefFlowGraph with correct successors" in {
-      val param1    = fooMethod.parameter.index(1).head
-      val param2    = fooMethod.parameter.index(2).head
-      val paramOut1 = param1.asOutput.head
-      val paramOut2 = param2.asOutput.head
+      val param1    = fooMethod.parameter.index(1).next()
+      val param2    = fooMethod.parameter.index(2).next()
+      val paramOut1 = param1.asOutput.next()
+      val paramOut2 = param2.asOutput.next()
 
       flowGraph.succ(fooMethod) shouldBe List(param1)
       flowGraph.succ(param1) shouldBe List(param2)
@@ -70,10 +70,10 @@ class ReachingDefTests extends DataFlowCodeToCpgSuite {
     }
 
     "create ReachingDefFlowGraph with correct predecessors" in {
-      val param1    = fooMethod.parameter.index(1).head
-      val param2    = fooMethod.parameter.index(2).head
-      val paramOut1 = param1.asOutput.head
-      val paramOut2 = param2.asOutput.head
+      val param1    = fooMethod.parameter.index(1).next()
+      val param2    = fooMethod.parameter.index(2).next()
+      val paramOut1 = param1.asOutput.next()
+      val paramOut2 = param2.asOutput.next()
       val List(ret) = cpg.method("foo").ast.isReturn.l
 
       flowGraph.pred(param2) shouldBe List(param1)
@@ -92,30 +92,30 @@ class ReachingDefTests extends DataFlowCodeToCpgSuite {
       |}
       |""".stripMargin)
 
-    val fooMethod = cpg.method("foo").head
+    val fooMethod = cpg.method("foo").next()
     val flowGraph = new ReachingDefFlowGraph(fooMethod)
 
     "create ReachingDefFlowGraph with correct successors" in {
-      val param1    = fooMethod.parameter.index(1).head
-      val param2    = fooMethod.parameter.index(2).head
-      val paramOut1 = param1.asOutput.head
-      val paramOut2 = param2.asOutput.head
+      val param1    = fooMethod.parameter.index(1).next()
+      val param2    = fooMethod.parameter.index(2).next()
+      val paramOut1 = param1.asOutput.next()
+      val paramOut2 = param2.asOutput.next()
       flowGraph.succ(param1) shouldBe List(param2)
 
       val List(id) = flowGraph.succ(param2).collectAll[Identifier].l
       id.name shouldBe "y"
 
-      flowGraph.succ(cpg.call.codeExact("y = x + 1").head) shouldBe List(paramOut1)
+      flowGraph.succ(cpg.call.codeExact("y = x + 1").next()) shouldBe List(paramOut1)
       flowGraph.succ(paramOut1) shouldBe List(paramOut2)
       flowGraph.succ(paramOut2) shouldBe List(fooMethod.methodReturn)
     }
 
     "create ReachingDefFlowGraph with correct predecessors" in {
-      val param1    = fooMethod.parameter.index(1).head
-      val param2    = fooMethod.parameter.index(2).head
-      val paramOut1 = param1.asOutput.head
-      val paramOut2 = param2.asOutput.head
-      val call      = cpg.call.codeExact("y = x + 1").head
+      val param1    = fooMethod.parameter.index(1).next()
+      val param2    = fooMethod.parameter.index(2).next()
+      val paramOut1 = param1.asOutput.next()
+      val paramOut2 = param2.asOutput.next()
+      val call      = cpg.call.codeExact("y = x + 1").next()
 
       flowGraph.pred(param1) shouldBe List(fooMethod)
       flowGraph.pred(param2) shouldBe List(param1)

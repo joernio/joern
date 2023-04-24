@@ -9,40 +9,40 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |  pass
         |""".stripMargin)
     "have correct instance class type and typeDecl" in {
-      cpg.typ.name("Foo").fullName.head shouldBe "Test0.py:<module>.Foo"
-      val typeDecl = cpg.typeDecl.name("Foo").head
+      cpg.typ.name("Foo").fullName.next() shouldBe "Test0.py:<module>.Foo"
+      val typeDecl = cpg.typeDecl.name("Foo").next()
       typeDecl.fullName shouldBe "Test0.py:<module>.Foo"
-      typeDecl.astParent.head shouldBe cpg.method.name("<module>").head
+      typeDecl.astParent.next() shouldBe cpg.method.name("<module>").next()
     }
 
     "have correct meta class type and typeDecl" in {
-      cpg.typ.name("Foo<meta>").fullName.head shouldBe "Test0.py:<module>.Foo<meta>"
-      val typeDecl = cpg.typeDecl.name("Foo<meta>").head
+      cpg.typ.name("Foo<meta>").fullName.next() shouldBe "Test0.py:<module>.Foo<meta>"
+      val typeDecl = cpg.typeDecl.name("Foo<meta>").next()
       typeDecl.fullName shouldBe "Test0.py:<module>.Foo<meta>"
-      typeDecl.astParent.head shouldBe cpg.method.name("<module>").head
+      typeDecl.astParent.next() shouldBe cpg.method.name("<module>").next()
     }
 
     "have correct class body type and typeDecl" in {
-      cpg.typ.name("Foo<body>").fullName.head shouldBe "Test0.py:<module>.Foo.Foo<body>"
-      val typeDecl = cpg.typeDecl.name("Foo<body>").head
+      cpg.typ.name("Foo<body>").fullName.next() shouldBe "Test0.py:<module>.Foo.Foo<body>"
+      val typeDecl = cpg.typeDecl.name("Foo<body>").next()
       typeDecl.fullName shouldBe "Test0.py:<module>.Foo.Foo<body>"
-      typeDecl.astParent.head shouldBe cpg.typeDecl.name("Foo<meta>").head
+      typeDecl.astParent.next() shouldBe cpg.typeDecl.name("Foo<meta>").next()
     }
 
     "have correct meta class call handler type and typeDecl" in {
-      cpg.typ.name("<metaClassCallHandler>").fullName.head shouldBe
+      cpg.typ.name("<metaClassCallHandler>").fullName.next() shouldBe
         "Test0.py:<module>.Foo.<metaClassCallHandler>"
-      val typeDecl = cpg.typeDecl.name("<metaClassCallHandler>").head
+      val typeDecl = cpg.typeDecl.name("<metaClassCallHandler>").next()
       typeDecl.fullName shouldBe "Test0.py:<module>.Foo.<metaClassCallHandler>"
-      typeDecl.astParent.head shouldBe cpg.typeDecl.name("Foo<meta>").head
+      typeDecl.astParent.next() shouldBe cpg.typeDecl.name("Foo<meta>").next()
     }
 
     "have correct fake new type and typeDecl" in {
-      cpg.typ.name("<fakeNew>").fullName.head shouldBe
+      cpg.typ.name("<fakeNew>").fullName.next() shouldBe
         "Test0.py:<module>.Foo.<fakeNew>"
-      val typeDecl = cpg.typeDecl.name("<fakeNew>").head
+      val typeDecl = cpg.typeDecl.name("<fakeNew>").next()
       typeDecl.fullName shouldBe "Test0.py:<module>.Foo.<fakeNew>"
-      typeDecl.astParent.head shouldBe cpg.typeDecl.name("Foo<meta>").head
+      typeDecl.astParent.next() shouldBe cpg.typeDecl.name("Foo<meta>").next()
     }
   }
 
@@ -53,12 +53,12 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
           |    pass
           |""".stripMargin)
 
-      val handlerMethod = cpg.method.name("<metaClassCallHandler>").head
+      val handlerMethod = cpg.method.name("<metaClassCallHandler>").next()
       handlerMethod.fullName shouldBe "Test0.py:<module>.Foo.<metaClassCallHandler>"
       handlerMethod.lineNumber shouldBe Some(2)
 
       handlerMethod.parameter.size shouldBe 1
-      val xParameter = handlerMethod.parameter.head
+      val xParameter = handlerMethod.parameter.next()
       xParameter.name shouldBe "x"
 
     }
@@ -69,12 +69,12 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
           |    pass
           |""".stripMargin)
 
-      val handlerMethod = cpg.method.name("<metaClassCallHandler>").head
+      val handlerMethod = cpg.method.name("<metaClassCallHandler>").next()
       handlerMethod.fullName shouldBe "Test0.py:<module>.Foo.<metaClassCallHandler>"
       handlerMethod.lineNumber shouldBe Some(2)
 
       handlerMethod.parameter.size shouldBe 1
-      val xParameter = handlerMethod.parameter.head
+      val xParameter = handlerMethod.parameter.next()
       xParameter.name shouldBe "x"
 
     }

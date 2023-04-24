@@ -60,7 +60,7 @@ class ConditionalTests extends JavaSrcCode2CpgFixture {
       |  }
       |}
       |""".stripMargin)
-    val method = cpg.method.name("baz").head
+    val method = cpg.method.name("baz").next()
     method.call(Operators.conditional).size shouldBe 2
     val List(parentC: Call, childC: Call) = method.call(Operators.conditional).l
 

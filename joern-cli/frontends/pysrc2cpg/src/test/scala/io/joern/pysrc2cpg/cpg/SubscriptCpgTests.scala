@@ -10,7 +10,7 @@ class SubscriptCpgTests extends AnyFreeSpec with Matchers {
   lazy val cpg = Py2CpgTestContext.buildCpg("""x[1]""".stripMargin)
 
   "test index access node properties" in {
-    val assignCall = cpg.call.methodFullName(Operators.indexAccess).head
+    val assignCall = cpg.call.methodFullName(Operators.indexAccess).next()
     assignCall.code shouldBe "x[1]"
     assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     assignCall.lineNumber shouldBe Some(1)
@@ -23,14 +23,14 @@ class SubscriptCpgTests extends AnyFreeSpec with Matchers {
       .astChildren
       .order(1)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "x"
     cpg.call
       .methodFullName(Operators.indexAccess)
       .astChildren
       .order(2)
       .isLiteral
-      .head
+      .next()
       .code shouldBe "1"
   }
 
@@ -40,14 +40,14 @@ class SubscriptCpgTests extends AnyFreeSpec with Matchers {
       .argument
       .argumentIndex(1)
       .isIdentifier
-      .head
+      .next()
       .code shouldBe "x"
     cpg.call
       .methodFullName(Operators.indexAccess)
       .argument
       .argumentIndex(2)
       .isLiteral
-      .head
+      .next()
       .code shouldBe "1"
   }
 }

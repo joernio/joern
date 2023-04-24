@@ -14,9 +14,9 @@ class ExpressionTraversalTests extends AnyWordSpec with Matchers {
     .withCallInMethod("methodForCfgTest", "call1")
     .withCallInMethod("methodForCfgTest", "call2")
     .withCustom { (graph, cpg) =>
-      val method = cpg.method("methodForCfgTest").head
-      val call1  = cpg.call.name("call1").head
-      val call2  = cpg.call.name("call2").head
+      val method = cpg.method("methodForCfgTest").next()
+      val call1  = cpg.call.name("call1").next()
+      val call2  = cpg.call.name("call2").next()
       graph.addEdge(method, call1, EdgeTypes.CFG)
       graph.addEdge(call1, call2, EdgeTypes.CFG)
       graph.addEdge(call2, method.methodReturn, EdgeTypes.CFG)

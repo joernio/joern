@@ -32,8 +32,8 @@ class JavaDataflowFixture extends AnyFlatSpec with Matchers {
     sourceCode: String = "\"MALICIOUS\"",
     sinkPattern: String = ".*println.*"
   ): (Traversal[Literal], Traversal[Expression]) = {
-    val sourceMethod = cpg.method(s".*$sourceMethodName.*").head
-    val sinkMethod   = cpg.method(s".*$sinkMethodName.*").head
+    val sourceMethod = cpg.method(s".*$sourceMethodName.*").next()
+    val sinkMethod   = cpg.method(s".*$sinkMethodName.*").next()
     def source       = sourceMethod.literal.code(sourceCode)
     def sink         = sinkMethod.call.name(sinkPattern).argument(1).ast.collectAll[Expression]
 

@@ -12,7 +12,7 @@ class CompareCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""x < y""".stripMargin)
 
     "test compare node" in {
-      val callNode = cpg.call.code("x < y").head
+      val callNode = cpg.call.code("x < y").next()
       callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.name shouldBe Operators.lessThan
       callNode.methodFullName shouldBe Operators.lessThan
@@ -20,13 +20,13 @@ class CompareCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test compare node ast children" in {
-      cpg.call.code("x < y").astChildren.order(1).isIdentifier.head.code shouldBe "x"
-      cpg.call.code("x < y").astChildren.order(2).isIdentifier.head.code shouldBe "y"
+      cpg.call.code("x < y").astChildren.order(1).isIdentifier.next().code shouldBe "x"
+      cpg.call.code("x < y").astChildren.order(2).isIdentifier.next().code shouldBe "y"
     }
 
     "test compare node arguments" in {
-      cpg.call.code("x < y").argument.argumentIndex(1).isIdentifier.head.code shouldBe "x"
-      cpg.call.code("x < y").argument.argumentIndex(2).isIdentifier.head.code shouldBe "y"
+      cpg.call.code("x < y").argument.argumentIndex(1).isIdentifier.next().code shouldBe "x"
+      cpg.call.code("x < y").argument.argumentIndex(2).isIdentifier.next().code shouldBe "y"
     }
   }
 
@@ -34,11 +34,11 @@ class CompareCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""x < y < z""".stripMargin)
 
     "test compare node" in {
-      val assign1Node = cpg.call.code("tmp0 = y").head
-      val andNode     = assign1Node.astParent.astChildren.order(assign1Node.order + 1).isCall.head
+      val assign1Node = cpg.call.code("tmp0 = y").next()
+      val andNode     = assign1Node.astParent.astChildren.order(assign1Node.order + 1).isCall.next()
       andNode.code shouldBe "x < tmp0 and tmp0 < z"
-      andNode.astChildren.order(1).isCall.code.head shouldBe "x < tmp0"
-      andNode.astChildren.order(2).isBlock.code.head shouldBe "tmp0 < z"
+      andNode.astChildren.order(1).isCall.code.next() shouldBe "x < tmp0"
+      andNode.astChildren.order(2).isBlock.code.next() shouldBe "tmp0 < z"
     }
 
   }

@@ -183,7 +183,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       iterIdentifier.typeFullName shouldBe "java.lang.String[]"
       iterIdentifier.order shouldBe 1
       iterIdentifier.argumentIndex shouldBe 1
-      iterIdentifier.refOut.toSet should contain(cpg.local.nameExact("$iterLocal0").head)
+      iterIdentifier.refOut.toSet should contain(cpg.local.nameExact("$iterLocal0").next())
 
       arrayInitializer.name shouldBe Operators.arrayInitializer
       arrayInitializer.methodFullName shouldBe Operators.arrayInitializer
@@ -265,7 +265,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
               items.typeFullName shouldBe "java.lang.String[]"
               items.order shouldBe 1
               items.argumentIndex shouldBe 1
-              items.refOut.toSet should contain(cpg.method.name("foo").local.nameExact("$iterLocal0").head)
+              items.refOut.toSet should contain(cpg.method.name("foo").local.nameExact("$iterLocal0").next())
 
               length.code shouldBe "length"
               length.order shouldBe 2
@@ -338,7 +338,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           iterLocal.typeFullName shouldBe "java.lang.String[]"
           iterLocal.order shouldBe 1
           iterLocal.argumentIndex shouldBe 1
-          iterLocal.refOut.toSet should contain(cpg.local.nameExact("$iterLocal0").head)
+          iterLocal.refOut.toSet should contain(cpg.local.nameExact("$iterLocal0").next())
 
           idx.name shouldBe "$idx0"
           idx.typeFullName shouldBe "int"
@@ -445,7 +445,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
               items.typeFullName shouldBe "java.lang.String[]"
               items.order shouldBe 1
               items.argumentIndex shouldBe 1
-              items.refOut.toSet should contain(cpg.parameter.name("items").head)
+              items.refOut.toSet should contain(cpg.parameter.name("items").next())
 
               length.code shouldBe "length"
               length.order shouldBe 2
@@ -518,7 +518,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           items.typeFullName shouldBe "java.lang.String[]"
           items.order shouldBe 1
           items.argumentIndex shouldBe 1
-          items.refOut.toSet should contain(cpg.parameter.name("items").head)
+          items.refOut.toSet should contain(cpg.parameter.name("items").next())
 
           idx.name shouldBe "$idx0"
           idx.typeFullName shouldBe "int"
@@ -602,7 +602,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       iteratorCall.order shouldBe 2
       iteratorCall.argumentIndex shouldBe 2
 
-      iteratorCall.argument(0).l match {
+      iteratorCall.argument(0)::Nil match {
         case List(items: Identifier) =>
           items.name shouldBe "items"
           items.typeFullName shouldBe "java.util.List"
@@ -631,7 +631,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       conditionCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       conditionCall.order shouldBe 1
 
-      conditionCall.argument(0).l match {
+      conditionCall.argument(0)::Nil match {
         case List(receiver: Identifier) =>
           receiver.name shouldBe "$iterLocal0"
           receiver.typeFullName shouldBe "java.util.Iterator"
@@ -688,7 +688,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       assignSource.typeFullName shouldBe "java.lang.Object"
       assignSource.order shouldBe 2
       assignSource.argumentIndex shouldBe 2
-      assignSource.argument(0).l match {
+      assignSource.argument(0)::Nil match {
         case List(iterIdent: Identifier) =>
           iterIdent.name shouldBe "$iterLocal0"
           iterIdent.typeFullName shouldBe "java.util.Iterator"
@@ -824,23 +824,23 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
   }
 
   "should identify an else block" in {
-    val ifBlock = cpg.method.name("elseTest").ifBlock.head
+    val ifBlock = cpg.method.name("elseTest").ifBlock.next()
     ifBlock.code shouldBe "if (b)"
     val List(condition: Identifier, thenBlock: Block, elseBlock: ControlStructure) = ifBlock.astChildren.l
     condition.code shouldBe "b"
     condition.order shouldBe 1
 
     thenBlock.order shouldBe 2
-    val thenBody = thenBlock.astChildren.head.asInstanceOf[Call]
+    val thenBody = thenBlock.astChildren.next().asInstanceOf[Call]
     thenBody.code shouldBe "x = 42"
-    thenBody.argument.head.code shouldBe "x"
-    thenBody.argument.tail.head.code shouldBe "42"
+    thenBody.argument.next().code shouldBe "x"
+    thenBody.argument.l.tail.head.code shouldBe "42"
     thenBody.order shouldBe 1
 
     elseBlock.code shouldBe "else"
     elseBlock.controlStructureType shouldBe "ELSE"
     elseBlock.order shouldBe 3
-    val elseAssign = elseBlock.astChildren.head.astChildren.head.asInstanceOf[Call]
+    val elseAssign = elseBlock.astChildren.next().astChildren.next().asInstanceOf[Call]
     elseAssign.order shouldBe 1
     elseAssign.code shouldBe "x = 39"
   }

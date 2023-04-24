@@ -95,10 +95,10 @@ class RequirePassTests extends DataFlowCodeToCpgSuite {
       Seq("d1", "baz.ts").mkString(File.separator)
     )
 
-    cpg.call("bar").methodFullName.headOption shouldBe Some(
+    cpg.call("bar").methodFullName.nextOption() shouldBe Some(
       Seq("d1", "d2", "bar.ts::program:bar").mkString(File.separator)
     )
-    cpg.call("foo").methodFullName.headOption shouldBe Some("foo.ts::program:foo")
+    cpg.call("foo").methodFullName.nextOption() shouldBe Some("foo.ts::program:foo")
   }
 
 }

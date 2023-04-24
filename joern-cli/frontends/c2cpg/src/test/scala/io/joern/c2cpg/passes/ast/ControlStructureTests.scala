@@ -109,7 +109,7 @@ class ControlStructureTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
           updateX.code shouldBe "--x"
         }
         inside(forLoop.astChildren.order(4).l) { case List(loopBody) =>
-          loopBody.astChildren.isCall.head.code shouldBe "bar()"
+          loopBody.astChildren.isCall.next().code shouldBe "bar()"
         }
       }
     }

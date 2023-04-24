@@ -22,16 +22,16 @@ class LiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should contain LITERAL nodes with the correct TYPE_FULL_NAME set" in {
-      cpg.literal("1").typeFullName.head shouldBe "int"
-      cpg.literal("true").typeFullName.head shouldBe "boolean"
-      cpg.literal("127").typeFullName.head shouldBe "byte"
-      cpg.literal("1.0").typeFullName.head shouldBe "double"
-      cpg.literal("\'A\'").typeFullName.head shouldBe "char"
-      cpg.literal("\"ABC\"").typeFullName.head shouldBe "java.lang.String"
-      cpg.literal("1_000_000").typeFullName.head shouldBe "int"
-      cpg.literal("9999L").typeFullName.head shouldBe "long"
-      cpg.literal("0xB4DF00D").typeFullName.head shouldBe "int"
-      cpg.literal("0b010101").typeFullName.head shouldBe "int"
+      cpg.literal("1").typeFullName.next() shouldBe "int"
+      cpg.literal("true").typeFullName.next() shouldBe "boolean"
+      cpg.literal("127").typeFullName.next() shouldBe "byte"
+      cpg.literal("1.0").typeFullName.next() shouldBe "double"
+      cpg.literal("\'A\'").typeFullName.next() shouldBe "char"
+      cpg.literal("\"ABC\"").typeFullName.next() shouldBe "java.lang.String"
+      cpg.literal("1_000_000").typeFullName.next() shouldBe "int"
+      cpg.literal("9999L").typeFullName.next() shouldBe "long"
+      cpg.literal("0xB4DF00D").typeFullName.next() shouldBe "int"
+      cpg.literal("0b010101").typeFullName.next() shouldBe "int"
     }
   }
 
@@ -51,14 +51,14 @@ class LiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should contain LITERAL nodes with the correct TYPE_FULL_NAME set" in {
-      cpg.literal("1").typeFullName.head shouldBe "int"
-      cpg.literal("1.0").typeFullName.head shouldBe "double"
-      cpg.literal("\'A\'").typeFullName.head shouldBe "char"
-      cpg.literal("\"ABC\"").typeFullName.head shouldBe "java.lang.String"
-      cpg.literal("1_000_000").typeFullName.head shouldBe "int"
-      cpg.literal("9999L").typeFullName.head shouldBe "long"
-      cpg.literal("0xB4DF00D").typeFullName.head shouldBe "int"
-      cpg.literal("0b010101").typeFullName.head shouldBe "int"
+      cpg.literal("1").typeFullName.next() shouldBe "int"
+      cpg.literal("1.0").typeFullName.next() shouldBe "double"
+      cpg.literal("\'A\'").typeFullName.next() shouldBe "char"
+      cpg.literal("\"ABC\"").typeFullName.next() shouldBe "java.lang.String"
+      cpg.literal("1_000_000").typeFullName.next() shouldBe "int"
+      cpg.literal("9999L").typeFullName.next() shouldBe "long"
+      cpg.literal("0xB4DF00D").typeFullName.next() shouldBe "int"
+      cpg.literal("0b010101").typeFullName.next() shouldBe "int"
     }
   }
 }

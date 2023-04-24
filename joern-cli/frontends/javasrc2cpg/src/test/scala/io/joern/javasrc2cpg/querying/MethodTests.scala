@@ -2,7 +2,6 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 
 import java.io.File
 
@@ -89,7 +88,7 @@ class MethodTests2 extends JavaSrcCode2CpgFixture {
       |}
       |""".stripMargin)
   "test methodFullName for call to static method of different class without scope" in {
-    cpg.call("method").methodFullName.head shouldBe "Foo.method:void(java.lang.Integer)"
+    cpg.call("method").methodFullName.next() shouldBe "Foo.method:void(java.lang.Integer)"
   }
 }
 
@@ -102,6 +101,6 @@ class MethodTests3 extends JavaSrcCode2CpgFixture {
       |""".stripMargin)
   "test method virtual modifier" in {
     cpg.method("staticMethod").isVirtual.size shouldBe 0
-    cpg.method("virtualMethod").isVirtual.fullName.head shouldBe "Foo.virtualMethod:void(java.lang.Integer)"
+    cpg.method("virtualMethod").isVirtual.fullName.next() shouldBe "Foo.virtualMethod:void(java.lang.Integer)"
   }
 }

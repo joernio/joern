@@ -15,6 +15,6 @@ abstract class AbstractDomPassTest extends AbstractPassTest {
     cpg.templateDom.code.map(StringUtils.normalizeSpace).l
 
   protected def parentTemplateDom(c: Expression): TemplateDom =
-    c.parentExpression.isTemplateDom.head
+    c.parentExpression.isTemplateDom.next()
 
 }
