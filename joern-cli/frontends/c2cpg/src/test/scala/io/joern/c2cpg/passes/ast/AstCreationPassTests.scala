@@ -1375,6 +1375,26 @@ class AstCreationPassTests extends AbstractPassTest {
       cpg.call.name("<operator>.new").code("new int\\[n\\]").argument.code("int").size shouldBe 1
     }
 
+    "be correct for 'new' with explicit identifier" in AstFixture(
+      """
+        |void a() {
+        |  char buf[80];
+        |  new (buf) string("hi");
+        |}
+        |""".stripMargin,
+      "file.cpp"
+    ) { cpg =>
+      // TODO: "<operator>.new" is not part of Operators
+      val List(newCall)         = cpg.call.name("<operator>.new").l
+      val List(string, hi, buf) = newCall.argument.l
+      string.argumentIndex shouldBe 1
+      string.code shouldBe "string"
+      hi.argumentIndex shouldBe 2
+      hi.code shouldBe "\"hi\""
+      buf.argumentIndex shouldBe 3
+      buf.code shouldBe "buf"
+    }
+
     // for: https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1526
     "be correct for array size" in AstFixture("""
         |int main() {
