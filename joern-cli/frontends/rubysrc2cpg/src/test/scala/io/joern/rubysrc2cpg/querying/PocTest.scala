@@ -98,19 +98,24 @@ class PocTest extends RubyCode2CpgFixture {
       lst.size shouldBe 8
     }
 
-    "The CPG generated for a modifiers and expressions" should {
+    "The CPG generated for a expressions" should {
       val cpg = code(
         """
           |a = 1
           |b = 2 if a > 1
+          |b = !a
+          |c = ~a
+          |e = +a
           |""".stripMargin,
         fileName = "sum.rb"
       )
 
-      "function test" in {
-        cpg.identifier.name("a").l.size shouldBe 2
-        cpg.identifier.name("b").l.size shouldBe 1
-        cpg.identifier.size shouldBe 3
+      "expression test" in {
+        cpg.identifier.name("a").l.size shouldBe 5
+        cpg.identifier.name("b").l.size shouldBe 2//unaryExpression
+        cpg.identifier.name("c").l.size shouldBe 1//unaryExpression
+        cpg.identifier.name("e").l.size shouldBe 1//unaryExpression
+        cpg.identifier.size shouldBe 9
       }
     }
 
