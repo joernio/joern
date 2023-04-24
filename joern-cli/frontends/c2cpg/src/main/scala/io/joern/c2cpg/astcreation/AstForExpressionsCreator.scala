@@ -102,9 +102,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
     val fullName = typeFor(call.getFunctionNameExpression) match {
       case t if t != Defines.anyTypeName => s"$t.$name"
-      case _                             => name
+      case _                             => fixQualifiedName(name)
     }
-    val cpgCall = newCallNode(call, name, fullName, dd)
+    val cpgCall = newCallNode(call, fixQualifiedName(name), fullName, dd)
     val args    = call.getArguments.toList.map(a => astForNode(a))
     rec.root match {
       // Optimization: do not include the receiver if the receiver is just the function name,
@@ -112,7 +112,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       // have so many call sites in CPGs, this drastically reduces the number of nodes.
       // Moreover, the data flow tracker does not need to track `f`, which would not make
       // much sense anyway.
-      case Some(r: NewIdentifier) if r.name == name =>
+      case Some(r: NewIdentifier) if r.name == fixQualifiedName(name) =>
         callAst(cpgCall, args)
       case Some(_) =>
         callAst(cpgCall, args, Option(rec))
