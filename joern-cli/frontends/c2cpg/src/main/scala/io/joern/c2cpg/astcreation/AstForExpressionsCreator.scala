@@ -204,11 +204,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   private def astsForConstructorInitializer(initializer: IASTInitializer): List[Ast] = {
-    if (initializer != null && initializer.isInstanceOf[ICPPASTConstructorInitializer]) {
-      val args = initializer.asInstanceOf[ICPPASTConstructorInitializer].getArguments.toList
-      args.map(x => astForNode(x))
-    } else {
-      Nil
+    initializer match {
+      case init: ICPPASTConstructorInitializer => init.getArguments.toList.map(x => astForNode(x))
+      case _                                   => Nil // null or unexpected type
     }
   }
 
