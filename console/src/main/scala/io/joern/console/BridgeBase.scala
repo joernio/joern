@@ -54,10 +54,17 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .action((x, c) => c.copy(scriptFile = Some(x)))
         .text("path to script file: will execute and exit")
 
-      opt[Map[String, String]]('p', "params")
-        .valueName("k1=v1,k2=v2")
-        .action((x, c) => c.copy(params = x))
-        .text("parameter values for main function in script")
+      opt[String]("param")
+        .valueName("param1=value1")
+        .unbounded()
+        .optional()
+        .action { (x, c) =>
+          x.split("=", 2) match {
+            case Array(key, value) => c.copy(params = c.params + (key -> value))
+            case _ => throw new IllegalArgumentException(s"unable to parse param input $x")
+          }
+        }
+        .text("key/value pair for main function in script - may be passed multiple times")
 
       opt[Path]("import")
         .valueName("script1.sc")
@@ -66,15 +73,14 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .action((x, c) => c.copy(additionalImports = c.additionalImports :+ x))
         .text("import (and run) additional script(s) on startup - may be passed multiple times")
 
-
-      opt[String]("dependencies")
-        .valueName("com.michaelpollmeier:versionsort:1.0.7.")
+      opt[String]('d', "dep")
+        .valueName("com.michaelpollmeier:versionsort:1.0.7")
         .unbounded()
         .optional()
         .action((x, c) => c.copy(dependencies = c.dependencies :+ x))
-        .text("resolve dependencies (including transitive dependencies) for given maven coordinate(s) - may be passed multiple times")
+        .text("add artifacts (including transitive dependencies) for given maven coordinate to classpath - may be passed multiple times")
 
-      opt[String]("resolvers")
+      opt[String]('r', "repo")
         .valueName("https://repository.apache.org/content/groups/public/")
         .unbounded()
         .optional()
