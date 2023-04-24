@@ -31,7 +31,7 @@ class GhidraQueryTestSuite[QB <: QueryBundle](val queryBundle: QB) extends DataF
       .flatMap(_.evidence)
       .collect { case cfgNode: nodes.CfgNode =>
         cfgNode.method.name
-      }
+      }.iterator
       .toSetImmutable
   }
 }

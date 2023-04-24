@@ -11,7 +11,7 @@ class UseAfterFreeReturnTests extends CQueryTestSuite(UseAfterFree) {
   "should flag `bad` function only" in {
     val x = queryBundle.freeReturnedValue()
     x(cpg)
-      .flatMap(_.evidence)
+      .flatMap(_.evidence).iterator
       .cast[nodes.Identifier]
       .method
       .name
