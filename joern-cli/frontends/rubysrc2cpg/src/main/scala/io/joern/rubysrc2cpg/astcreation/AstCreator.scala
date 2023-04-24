@@ -1081,6 +1081,8 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     println(
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
+
+    val ast =
     if (ctx.variableIdentifier() != null) {
       astForVariableIdentifierContext(ctx.variableIdentifier(), Defines.Any)
     } else if (ctx.pseudoVariableIdentifier() != null) {
@@ -1088,6 +1090,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     } else {
       Ast()
     }
+
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChild(ast)
   }
 
   def astForVariableReferencePrimaryContext(ctx: RubyParser.VariableReferencePrimaryContext): Ast = {
