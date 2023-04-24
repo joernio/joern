@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.parser.RubyParser.{IS_DEFINED, ModifierStatementContext}
+import io.joern.rubysrc2cpg.parser.RubyParser.{IF, IS_DEFINED, ModifierStatementContext, RESCUE, UNLESS, UNTIL, WHILE}
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser, RubyParserVisitor}
 import org.antlr.v4.runtime.tree.{ErrorNode, ParseTree, ParseTreeListener, ParseTreeWalker, RuleNode, TerminalNode}
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext}
@@ -47,7 +47,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val programCtx  = parser.program()
 
     val statementCtx   = programCtx.compoundStatement().statements()
-    val statementAst   = astForStatement(statementCtx)
+    val statementAst   = astForStatementsContext(statementCtx)
     val fileNode       = NewFile().name(filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
     val ast            = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(statementAst))
@@ -290,9 +290,53 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     }
   }
 
+  def astForSymbolContext(ctx: RubyParser.SymbolContext): Ast = {
+    if (ctx == null) return Ast()
+
+    if (ctx.SYMBOL_LITERAL() != null) {
+      val symbol = ctx.SYMBOL_LITERAL().getSymbol()
+      val text   = symbol.getText()
+      val node = NewLiteral()
+        .code(text)
+        .typeFullName(Defines.String)
+        .dynamicTypeHintFullName(List(Defines.String))
+      Ast(node)
+    } else if (ctx.SINGLE_QUOTED_STRING_LITERAL() != null) {
+      Ast()
+    } else {
+      Ast()
+    }
+  }
+
+  def astForDefinedMethodNameOrSymbolContext(ctx: RubyParser.DefinedMethodNameOrSymbolContext): Ast = {
+    if (ctx == null) return Ast()
+
+    val definedMethodNameCtx = ctx.definedMethodName()
+    val symbolCtx            = ctx.symbol()
+
+    val asts = ListBuffer[Ast]()
+    if (definedMethodNameCtx != null) {
+      asts.addOne(astForDefinedMethodNameContext(definedMethodNameCtx))
+    }
+
+    if (symbolCtx != null) {
+      asts.addOne(astForSymbolContext(symbolCtx))
+    }
+
+    Ast().withChildren(asts)
+  }
+
   def astForAliasStatementContext(ctx: RubyParser.AliasStatementContext): Ast = {
     if (ctx == null) return Ast()
-    Ast()
+
+    val asts = ListBuffer[Ast]()
+    ctx
+      .definedMethodNameOrSymbol()
+      .forEach(dms => {
+        asts.addOne(astForDefinedMethodNameOrSymbolContext(dms))
+      })
+
+    Ast().withChildren(asts)
   }
 
   def astForUndefStatementContext(ctx: RubyParser.UndefStatementContext): Ast = {
@@ -313,9 +357,55 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   def astForModifierStatementContext(ctx: ModifierStatementContext): Ast = {
     if (ctx == null) return Ast()
     Ast()
+
+    if (ctx.statement().size() != 2) {
+      // unsupported or invalid modifer statement
+      Ast()
+    }
+    val leftAst        = astForStatementContext(ctx.statement(0))
+    val statementRight = ctx.statement(1)
+
+    val modifierToken = ctx.mod
+
+    // Separating the cases so that each could be handled differently if needed
+    val rightAst = modifierToken.getType() match {
+      case IF     => astForStatementContext(statementRight)
+      case UNLESS => astForStatementContext(statementRight)
+      case WHILE  => astForStatementContext(statementRight)
+      case UNTIL  => astForStatementContext(statementRight)
+      case RESCUE => astForStatementContext(statementRight)
+    }
+
+    leftAst.withChild(rightAst)
   }
 
-  def astForStatement(ctx: RubyParser.StatementsContext): Ast = {
+  def astForStatementContext(ctx: RubyParser.StatementContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
+    if (ctx.isInstanceOf[RubyParser.AliasStatementContext]) {
+      astForAliasStatementContext(ctx.asInstanceOf[RubyParser.AliasStatementContext])
+    } else if (ctx.isInstanceOf[RubyParser.UndefStatementContext]) {
+      astForUndefStatementContext(ctx.asInstanceOf[RubyParser.UndefStatementContext])
+    } else if (ctx.isInstanceOf[RubyParser.BeginStatementContext]) {
+      astForBeginStatementContext(ctx.asInstanceOf[RubyParser.BeginStatementContext])
+    } else if (ctx.isInstanceOf[RubyParser.EndStatementContext]) {
+      astForEndStatementContext(ctx.asInstanceOf[RubyParser.EndStatementContext])
+    } else if (ctx.isInstanceOf[RubyParser.ModifierStatementContext]) {
+      astForModifierStatementContext(ctx.asInstanceOf[RubyParser.ModifierStatementContext])
+    } else if (ctx.isInstanceOf[RubyParser.ExpressionOrCommandStatementContext]) {
+      astForExpressionOrCommandContext(
+        ctx.asInstanceOf[RubyParser.ExpressionOrCommandStatementContext].expressionOrCommand()
+      )
+    } else {
+      println("astForExpressionContext(): Unknown context")
+      Ast()
+    }
+  }
+
+  def astForStatementsContext(ctx: RubyParser.StatementsContext): Ast = {
     if (ctx == null) return Ast()
     println(
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
@@ -326,26 +416,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     ctx
       .statement()
       .forEach(st => {
-        val ast =
-          if (st.isInstanceOf[RubyParser.AliasStatementContext]) {
-            astForAliasStatementContext(st.asInstanceOf[RubyParser.AliasStatementContext])
-          } else if (st.isInstanceOf[RubyParser.UndefStatementContext]) {
-            astForUndefStatementContext(st.asInstanceOf[RubyParser.UndefStatementContext])
-          } else if (st.isInstanceOf[RubyParser.BeginStatementContext]) {
-            astForBeginStatementContext(st.asInstanceOf[RubyParser.BeginStatementContext])
-          } else if (st.isInstanceOf[RubyParser.EndStatementContext]) {
-            astForEndStatementContext(st.asInstanceOf[RubyParser.EndStatementContext])
-          } else if (st.isInstanceOf[RubyParser.ModifierStatementContext]) {
-            astForModifierStatementContext(st.asInstanceOf[RubyParser.ModifierStatementContext])
-          } else if (st.isInstanceOf[RubyParser.ExpressionOrCommandStatementContext]) {
-            astForExpressionOrCommandContext(
-              st.asInstanceOf[RubyParser.ExpressionOrCommandStatementContext].expressionOrCommand()
-            )
-          } else {
-            println("astForExpressionContext(): Unknown context")
-            Ast()
-          }
-        asts.addOne(ast)
+        asts.addOne(astForStatementContext(st))
       })
 
     Ast(blockNode).withChildren(asts.toSeq)
@@ -738,7 +809,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
     val definedMethodNameAst = astForDefinedMethodNameContext(ctx.definedMethodName())
     val singletonObjAst      = astForSingletonObjextContext(ctx.singletonObject())
-    Ast()
+    Ast().withChildren(Seq[Ast](definedMethodNameAst, singletonObjAst))
   }
 
   def astForMethodNamePartContext(ctx: RubyParser.MethodNamePartContext): Ast = {
@@ -812,7 +883,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     println(
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
-    astForStatement(ctx.compoundStatement().statements())
+    astForStatementsContext(ctx.compoundStatement().statements())
   }
 
   def astForMethodDefinitionContext(ctx: RubyParser.MethodDefinitionContext): Ast = {
@@ -925,7 +996,13 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    val expressions      = ctx.expression()
+    val lhsExpressionAst = astForExpressionContext(expressions.get(0))
+    val rhsExpressionAst = astForExpressionContext(expressions.get(1))
+    val operatorToken    = ctx.op
+    // TODO create a method Ast
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChildren(Seq[Ast](lhsExpressionAst, rhsExpressionAst))
   }
 
   def astForSimpleScopedConstantReferencePrimaryContext(
@@ -985,13 +1062,36 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast()
   }
 
-  def astForVariableReferencePrimaryContext(ctx: RubyParser.VariableReferencePrimaryContext): Ast = {
+  def astForPseudoVariableIdentifierContext(ctx: RubyParser.PseudoVariableIdentifierContext): Ast = {
     if (ctx == null) return Ast()
     println(
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
     Ast()
+  }
+
+  def astForVariableRefenceContext(ctx: RubyParser.VariableReferenceContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+    if (ctx.variableIdentifier() != null) {
+      astForVariableIdentifierContext(ctx.variableIdentifier(), Defines.Any)
+    } else if (ctx.pseudoVariableIdentifier() != null) {
+      astForPseudoVariableIdentifierContext(ctx.pseudoVariableIdentifier())
+    } else {
+      Ast()
+    }
+  }
+
+  def astForVariableReferencePrimaryContext(ctx: RubyParser.VariableReferencePrimaryContext): Ast = {
+    if (ctx == null) return Ast()
+    println(
+      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
+    )
+
+    astForVariableRefenceContext(ctx.variableReference())
   }
 
   def astForWhileExpressionPrimaryContext(ctx: RubyParser.WhileExpressionPrimaryContext): Ast = {

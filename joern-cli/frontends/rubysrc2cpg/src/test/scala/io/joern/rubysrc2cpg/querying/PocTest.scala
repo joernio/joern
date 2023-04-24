@@ -61,11 +61,11 @@ class PocTest extends RubyCode2CpgFixture {
 
 
     "identifier nodes present" in {
-      cpg.identifier.name("name").l.size shouldBe 1
-      cpg.identifier.name("age").l.size shouldBe 1
+      cpg.identifier.name("name").l.size shouldBe 2
+      cpg.identifier.name("age").l.size shouldBe 2
       cpg.identifier.name("@name").l.size shouldBe 1
       cpg.identifier.name("@age").l.size shouldBe 2
-      cpg.identifier.size shouldBe 5
+      cpg.identifier.size shouldBe 7
     }
   }
 
@@ -96,6 +96,22 @@ class PocTest extends RubyCode2CpgFixture {
       cpg.identifier.name("num3").l.size shouldBe 1
       val lst = cpg.identifier.l
       lst.size shouldBe 8
+    }
+
+    "The CPG generated for a modifiers and expressions" should {
+      val cpg = code(
+        """
+          |a = 1
+          |b = 2 if a > 1
+          |""".stripMargin,
+        fileName = "sum.rb"
+      )
+
+      "function test" in {
+        cpg.identifier.name("a").l.size shouldBe 2
+        cpg.identifier.name("b").l.size shouldBe 1
+        cpg.identifier.size shouldBe 3
+      }
     }
   }
 }
