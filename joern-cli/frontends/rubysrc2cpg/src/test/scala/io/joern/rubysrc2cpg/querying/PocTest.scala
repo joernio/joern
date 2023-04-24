@@ -21,8 +21,8 @@ class PocTest extends RubyCode2CpgFixture {
 
 
     "identifier nodes present" in {
-      cpg.identifier.name("a").l.size shouldBe 2
-      cpg.identifier.name("b").l.size shouldBe 2
+      cpg.identifier.name("a").l.size shouldBe 3
+      cpg.identifier.name("b").l.size shouldBe 3
       cpg.identifier.name("c").l.size shouldBe 1
     }
 
@@ -107,17 +107,21 @@ class PocTest extends RubyCode2CpgFixture {
           |c = ~a
           |e = +a
           |f = b**a
+          |g = a*b
+          |h = a+b
           |""".stripMargin,
         fileName = "sum.rb"
       )
 
       "expression test" in {
-        cpg.identifier.name("a").l.size shouldBe 6
-        cpg.identifier.name("b").l.size shouldBe 3//unaryExpression
+        cpg.identifier.name("a").l.size shouldBe 8
+        cpg.identifier.name("b").l.size shouldBe 5//unaryExpression
         cpg.identifier.name("c").l.size shouldBe 1//unaryExpression
         cpg.identifier.name("e").l.size shouldBe 1//unaryExpression
         cpg.identifier.name("f").l.size shouldBe 1//powerExpression
-        cpg.identifier.size shouldBe 12
+        cpg.identifier.name("g").l.size shouldBe 1//multiplicative Expression
+        cpg.identifier.name("h").l.size shouldBe 1//multiplicative Expression
+        cpg.identifier.size shouldBe 18
       }
     }
 

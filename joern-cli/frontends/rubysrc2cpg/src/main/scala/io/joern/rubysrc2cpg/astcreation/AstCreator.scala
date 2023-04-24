@@ -433,7 +433,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    astForBinaryExpression(ctx.expression().get(0), ctx.expression().get(1), ctx.op)
   }
 
   def astForArrayConstructorPrimaryContext(ctx: RubyParser.ArrayConstructorPrimaryContext): Ast = {
@@ -938,7 +938,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    astForBinaryExpression(ctx.expression().get(0), ctx.expression().get(1), ctx.op)
   }
 
   def astForNotExpressionOrCommandContext(ctx: RubyParser.NotExpressionOrCommandContext): Ast = {
