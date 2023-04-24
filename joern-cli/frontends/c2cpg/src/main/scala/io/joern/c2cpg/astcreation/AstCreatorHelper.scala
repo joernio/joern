@@ -17,6 +17,10 @@ import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIdExpression, CPPFunction}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPEvaluation
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalCompositeAccess
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFieldReference
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.{Path, Paths}
@@ -145,7 +149,9 @@ trait AstCreatorHelper { this: AstCreator =>
         rawType
       }
     StringUtils.normalizeSpace(tpe) match {
-      case ""                   => Defines.anyTypeName
+      case "" => Defines.anyTypeName
+      case t if t.contains(" ->") =>
+        fixQualifiedName(t.substring(0, t.indexOf(" ->")))
       case t if t.contains("?") => Defines.anyTypeName
       case t if t.contains("#") => Defines.anyTypeName
       case t if t.contains("{") && t.contains("}") =>
@@ -165,6 +171,13 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def typeFor(node: IASTNode, stripKeywords: Boolean = true): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     node match {
+      case f: CPPASTFieldReference =>
+        val x = f.getFieldOwner.getEvaluation match {
+          case evaluation: EvalMemberAccess => cleanType(evaluation.getOwnerType.toString, stripKeywords)
+          case evaluation: EvalBinding      => cleanType(evaluation.getType.toString, stripKeywords)
+          case _ => cleanType(ASTTypeUtil.getType(f.getFieldOwner.getExpressionType), stripKeywords)
+        }
+        x
       case f: IASTFieldReference =>
         cleanType(ASTTypeUtil.getType(f.getFieldOwner.getExpressionType), stripKeywords)
       case a: IASTArrayDeclarator if ASTTypeUtil.getNodeType(a).startsWith("? ") =>
@@ -176,6 +189,11 @@ trait AstCreatorHelper { this: AstCreator =>
         val nodeType = ASTTypeUtil.getNodeType(node)
         val arr      = nodeType.substring(nodeType.indexOf("["), nodeType.indexOf("]") + 1)
         s"$tpe$arr"
+      case s: CPPASTIdExpression =>
+        s.getEvaluation match {
+          case evaluation: EvalMemberAccess => cleanType(evaluation.getOwnerType.toString, stripKeywords)
+          case _                            => cleanType(ASTTypeUtil.getNodeType(s), stripKeywords)
+        }
       case _: IASTIdExpression | _: IASTName | _: IASTDeclarator =>
         cleanType(ASTTypeUtil.getNodeType(node), stripKeywords)
       case s: IASTNamedTypeSpecifier =>
