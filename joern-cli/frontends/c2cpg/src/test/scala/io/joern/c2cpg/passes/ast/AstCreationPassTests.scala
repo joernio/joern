@@ -763,6 +763,24 @@ class AstCreationPassTests extends AbstractPassTest {
       arg2.code shouldBe "foo(x)"
     }
 
+    "not create an expression list for comma operator" in AstFixture("""
+        |int something(void);
+        |void a() {
+        |  int b;
+        |  int c;
+        |  for (; b = something(), b > c;) {}
+        |}
+      """.stripMargin) { cpg =>
+      val List(forLoop)        = cpg.controlStructure.l
+      val List(conditionBlock) = forLoop.condition.collectAll[Block].l
+      conditionBlock.argumentIndex shouldBe 2
+      val List(assignmentCall, greaterCall) = conditionBlock.astChildren.collectAll[Call].l
+      assignmentCall.argumentIndex shouldBe 1
+      assignmentCall.code shouldBe "b = something()"
+      greaterCall.argumentIndex shouldBe 2
+      greaterCall.code shouldBe "b > c"
+    }
+
     "be correct for call expression" in AstFixture("""
         |void method(int x) {
         |  foo(x);
