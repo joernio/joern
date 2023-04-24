@@ -800,8 +800,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
   }
 
   "Class methods with the `@classmethod` decorator" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |class MyClass:
         |
         |    @classmethod
