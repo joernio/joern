@@ -14,6 +14,7 @@ final case class Config(
   javaFeatureSetVersion: Option[String] = None,
   delombokJavaHome: Option[String] = None,
   delombokMode: Option[String] = None,
+  enableTypeRecovery: Boolean = false,
   disableDummyTypes: Boolean = false
 ) extends X2CpgConfig[Config] {
 
@@ -47,6 +48,10 @@ private object Frontend {
                  | types-only => to run delombok, but use it for type information only
                  | run-delombok => to force run delombok and analyse delomboked code.""".stripMargin)
         .action((mode, c) => c.copy(delombokMode = Some(mode))),
+      opt[Unit]("enable-type-recovery")
+        .hidden()
+        .action((_, c) => c.copy(enableTypeRecovery = true))
+        .text("enable generic type recovery"),
       opt[Unit]("no-dummyTypes")
         .hidden()
         .action((_, c) => c.copy(disableDummyTypes = true))
