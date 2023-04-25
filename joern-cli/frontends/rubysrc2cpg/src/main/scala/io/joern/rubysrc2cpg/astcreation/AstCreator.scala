@@ -15,6 +15,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{
   modifierNode,
   operatorCallNode
 }
+import io.shiftleft.codepropertygraph.cpgloading.ProtoToCpg.logger
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -39,6 +40,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val Array: String   = "array"
     val Symbol: String  = "symbol"
   }
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val charStream  = CharStreams.fromFileName(filename)
     val lexer       = new RubyLexer(charStream)
@@ -194,7 +198,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         ctx.asInstanceOf[RubyParser.ChainedInvocationWithoutArgumentsPrimaryContext]
       )
     } else {
-      println("astForPrimaryContext(): Unknown context")
+      logger.error("astForPrimaryContext(): Unknown context")
       Ast()
     }
   }
@@ -239,7 +243,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     } else if (ctx.isInstanceOf[RubyParser.IsDefinedExpressionContext]) {
       astForIsDefinedExpressionContext(ctx.asInstanceOf[RubyParser.IsDefinedExpressionContext])
     } else {
-      println("astForExpressionContext(): Unknown context")
+      logger.error("astForExpressionContext(): Unknown context")
       Ast()
     }
   }
@@ -256,7 +260,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     } else if (ctx.isInstanceOf[RubyParser.ExpressionExpressionOrCommandContext]) {
       astForExpressionContext(ctx.asInstanceOf[RubyParser.ExpressionExpressionOrCommandContext].expression())
     } else {
-      println("astForExpressionOrCommandContext(): Unknown context")
+      logger.error("astForExpressionOrCommandContext(): Unknown context")
       Ast()
     }
   }
@@ -265,7 +269,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     if (ctx == null) return Ast()
 
     if (ctx.SYMBOL_LITERAL() != null) {
-      val text   = ctx.getText
+      val text = ctx.getText
       val node = NewLiteral()
         .code(text)
         .typeFullName(Defines.String)
@@ -372,7 +376,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         ctx.asInstanceOf[RubyParser.ExpressionOrCommandStatementContext].expressionOrCommand()
       )
     } else {
-      println("astForExpressionContext(): Unknown context")
+      logger.error("astForExpressionContext(): Unknown context")
       Ast()
     }
   }
