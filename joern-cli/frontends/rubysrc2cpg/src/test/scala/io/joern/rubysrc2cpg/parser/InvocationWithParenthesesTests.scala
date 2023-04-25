@@ -88,8 +88,47 @@ ${"       "}
             |  )
             |""".stripMargin
       }
+
+      "it contains a single symbol literal positional argument" in {
+        val code = "foo(:region)"
+
+        printAst(_.primary(), code) shouldEqual
+          """InvocationWithParenthesesPrimary
+            | MethodIdentifier
+            |  foo
+            | ArgumentsWithParentheses
+            |  (
+            |  Arguments
+            |   Expressions
+            |    PrimaryExpression
+            |     LiteralPrimary
+            |      Literal
+            |       Symbol
+            |        :region
+            |  )
+            |""".stripMargin
+      }
+
+      "it contains a single symbol literal positional argument and trailing comma" in {
+        val code = "foo(:region,)"
+
+        printAst(_.primary(), code) shouldEqual
+          """InvocationWithParenthesesPrimary
+            | MethodIdentifier
+            |  foo
+            | ArgumentsWithParentheses
+            |  (
+            |  Arguments
+            |   Expressions
+            |    PrimaryExpression
+            |     LiteralPrimary
+            |      Literal
+            |       Symbol
+            |        :region
+            |  ,
+            |  )
+            |""".stripMargin
+      }
     }
-
   }
-
 }
