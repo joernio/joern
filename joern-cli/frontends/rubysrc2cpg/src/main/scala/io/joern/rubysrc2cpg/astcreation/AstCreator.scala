@@ -265,8 +265,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     if (ctx == null) return Ast()
 
     if (ctx.SYMBOL_LITERAL() != null) {
-      val symbol = ctx.SYMBOL_LITERAL().getSymbol()
-      val text   = symbol.getText()
+      val text   = ctx.getText
       val node = NewLiteral()
         .code(text)
         .typeFullName(Defines.String)
@@ -532,14 +531,14 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       Ast()
 
     } else if (ctx.literal().numericLiteral() != null) {
-      val text = ctx.literal().numericLiteral().getText
+      val text = ctx.getText
       val node = NewLiteral()
         .code(text)
         .typeFullName(Defines.Number)
         .dynamicTypeHintFullName(List(Defines.Number))
       Ast(node)
     } else if (ctx.literal().SINGLE_QUOTED_STRING_LITERAL() != null) {
-      val text = ctx.literal().SINGLE_QUOTED_STRING_LITERAL().getText
+      val text = ctx.getText
       val node = NewLiteral()
         .code(text)
         .typeFullName(Defines.String)
