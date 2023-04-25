@@ -71,7 +71,10 @@ trait AstForTypesCreator { this: AstCreator =>
         val tpe      = registerType(typeFor(declarator))
         Ast(newTypeDeclNode(declarator, name, registerType(name), filename, nodeSignature(d), alias = Option(tpe)))
       case d if parentIsClassDef(d) =>
-        val tpe = registerType(typeFor(declaration.getDeclSpecifier))
+        val tpe = declarator match {
+          case _: IASTArrayDeclarator => registerType(typeFor(declarator))
+          case _                      => registerType(typeFor(declaration.getDeclSpecifier))
+        }
         Ast(newMemberNode(declarator, name, nodeSignature(declarator), tpe))
       case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
         val tpe       = registerType(typeFor(declarator))

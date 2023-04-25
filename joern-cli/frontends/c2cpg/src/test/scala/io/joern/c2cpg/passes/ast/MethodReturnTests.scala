@@ -14,7 +14,7 @@ class MethodReturnTests extends CCodeToCpgSuite {
     "should have METHOD_RETURN node with correct fields" in {
       val List(x, _) = cpg.methodReturn.l
       x.code shouldBe "RET"
-      x.typeFullName shouldBe "int*"
+      x.typeFullName shouldBe "int"
       x.lineNumber shouldBe Option(2)
       x.columnNumber shouldBe Option(2)
       // we expect the METHOD_RETURN node to be the right-most

@@ -24,6 +24,11 @@ import scala.annotation.nowarn
 import scala.collection.mutable
 
 object AstCreatorHelper {
+
+  // maximum length of code fields in number of characters
+  private val MaxCodeLength: Int = 1000
+  private val MinCodeLength: Int = 50
+
   implicit class OptionSafeAst(val ast: Ast) extends AnyVal {
     def withArgEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
       case Some(value) => ast.withArgEdge(src, value)
@@ -33,6 +38,8 @@ object AstCreatorHelper {
 }
 
 trait AstCreatorHelper { this: AstCreator =>
+
+  import AstCreatorHelper._
 
   private var usedNames: Int = 0
 
@@ -176,6 +183,8 @@ trait AstCreatorHelper { this: AstCreator =>
         val nodeType = ASTTypeUtil.getNodeType(node)
         val arr      = nodeType.substring(nodeType.indexOf("["), nodeType.indexOf("]") + 1)
         s"$tpe$arr"
+      case a: IASTArrayDeclarator if ASTTypeUtil.getNodeType(a).contains(" [") =>
+        cleanType(ASTTypeUtil.getNodeType(node))
       case _: IASTIdExpression | _: IASTName | _: IASTDeclarator =>
         cleanType(ASTTypeUtil.getNodeType(node), stripKeywords)
       case s: IASTNamedTypeSpecifier =>
@@ -194,6 +203,9 @@ trait AstCreatorHelper { this: AstCreator =>
         cleanType(getNodeSignature(node), stripKeywords)
     }
   }
+
+  protected def shortenCode(code: String, length: Int = MaxCodeLength): String =
+    StringUtils.abbreviate(code, math.max(MinCodeLength, length))
 
   private def notHandledText(node: IASTNode): String =
     s"""Node '${node.getClass.getSimpleName}' not handled yet!
@@ -339,7 +351,7 @@ trait AstCreatorHelper { this: AstCreator =>
     val tpe      = typeFor(spec, stripKeywords)
     val pointers = parentDecl.getPointerOperators
     val arr = parentDecl match {
-      case p: IASTArrayDeclarator => "[]" * p.getArrayModifiers.length
+      case p: IASTArrayDeclarator => p.getArrayModifiers.toList.map(_.getRawSignature).mkString
       case _                      => ""
     }
     if (pointers.isEmpty) { s"$tpe$arr" }
