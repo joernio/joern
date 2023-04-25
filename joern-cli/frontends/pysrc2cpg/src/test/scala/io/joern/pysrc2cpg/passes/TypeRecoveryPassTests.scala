@@ -790,10 +790,21 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |
         |class Foo(declarative_base(metadata=metadata)):
         |    pass
+        |
+        |x = declarative_base(metadata=metadata)
+        |class Bar(x):
+        |    pass
+        |
         |""".stripMargin)
 
-    "should present an appropriate dummy type" in {
+    "present an appropriate dummy type for direct call returns" in {
       cpg.typeDecl("Foo").inheritsFromTypeFullName.l shouldBe List(
+        Seq("sqlalchemy", "ext", "declarative.py:<module>.declarative_base.<returnValue>").mkString(File.separator)
+      )
+    }
+
+    "present an appropriate dummy type for call results held by identifiers" in {
+      cpg.typeDecl("Bar").inheritsFromTypeFullName.l shouldBe List(
         Seq("sqlalchemy", "ext", "declarative.py:<module>.declarative_base.<returnValue>").mkString(File.separator)
       )
     }
