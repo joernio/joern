@@ -460,7 +460,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    astForBinaryExpression(ctx.expression().get(0), ctx.expression().get(1), ctx.op)
   }
 
   def astForBitwiseOrExpressionContext(ctx: RubyParser.BitwiseOrExpressionContext): Ast = {
@@ -469,7 +469,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    astForBinaryExpression(ctx.expression().get(0), ctx.expression().get(1), ctx.op)
   }
 
   def astForBitwiseShiftExpressionContext(ctx: RubyParser.BitwiseShiftExpressionContext): Ast = {
@@ -478,7 +478,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    astForBinaryExpression(ctx.expression().get(0), ctx.expression().get(1), ctx.op)
   }
 
   def astForCaseExpressionPrimaryContext(ctx: RubyParser.CaseExpressionPrimaryContext): Ast = {
@@ -558,7 +558,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    astForBinaryExpression(ctx.expression().get(0), ctx.expression().get(1), ctx.op)
   }
 
   def astForForExpressionPrimaryContext(ctx: RubyParser.ForExpressionPrimaryContext): Ast = {
@@ -956,7 +956,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    astForBinaryExpression(ctx.expression().get(0), ctx.expression().get(1), ctx.op)
   }
 
   def astForOperatorOrExpressionContext(ctx: RubyParser.OperatorOrExpressionContext): Ast = {
@@ -965,7 +965,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    astForBinaryExpression(ctx.expression().get(0), ctx.expression().get(1), ctx.op)
   }
 
   def astForOrAndExpressionOrCommandContext(ctx: RubyParser.OrAndExpressionOrCommandContext): Ast = {
@@ -997,7 +997,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
     )
 
-    Ast()
+    astForBinaryExpression(ctx.expression().get(0), ctx.expression().get(1), ctx.op)
   }
 
   def astForRelationalExpressionContext(ctx: RubyParser.RelationalExpressionContext): Ast = {

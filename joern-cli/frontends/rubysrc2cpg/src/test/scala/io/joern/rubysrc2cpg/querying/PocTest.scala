@@ -109,19 +109,33 @@ class PocTest extends RubyCode2CpgFixture {
           |f = b**a
           |g = a*b
           |h = a+b
+          |i = a >> b
+          |j = a | b
+          |k = a & b
+          |l = a && b
+          |m = a || b
+          |n = a .. b
+          |o = a ... b
           |""".stripMargin,
         fileName = "sum.rb"
       )
 
       "expression test" in {
-        cpg.identifier.name("a").l.size shouldBe 8
-        cpg.identifier.name("b").l.size shouldBe 5//unaryExpression
+        cpg.identifier.name("a").l.size shouldBe 15
+        cpg.identifier.name("b").l.size shouldBe 12//unaryExpression
         cpg.identifier.name("c").l.size shouldBe 1//unaryExpression
         cpg.identifier.name("e").l.size shouldBe 1//unaryExpression
         cpg.identifier.name("f").l.size shouldBe 1//powerExpression
         cpg.identifier.name("g").l.size shouldBe 1//multiplicative Expression
-        cpg.identifier.name("h").l.size shouldBe 1//multiplicative Expression
-        cpg.identifier.size shouldBe 18
+        cpg.identifier.name("h").l.size shouldBe 1//additive Expression
+        cpg.identifier.name("i").l.size shouldBe 1//bitwise shift Expression
+        cpg.identifier.name("j").l.size shouldBe 1//bitwise or Expression
+        cpg.identifier.name("k").l.size shouldBe 1//bitwise and Expression
+        cpg.identifier.name("l").l.size shouldBe 1//operator and Expression
+        cpg.identifier.name("m").l.size shouldBe 1//operator or Expression
+        cpg.identifier.name("n").l.size shouldBe 1//inclusive range Expression
+        cpg.identifier.name("o").l.size shouldBe 1//exclusive range Expression
+        cpg.identifier.size shouldBe 39
       }
     }
 
