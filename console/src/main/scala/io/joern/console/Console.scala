@@ -390,7 +390,7 @@ class Console[T <: Project](
   }
 
   def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    new io.joern.console.cpgcreation.CpgGeneratorFactory(_config).forLanguage(cpg.metaData.language.toList.head) match {
+    new io.joern.console.cpgcreation.CpgGeneratorFactory(_config).forLanguage(cpg.metaData.language.next()) match {
       case Some(frontend) => frontend.applyPostProcessingPasses(cpg)
       case None           => cpg
     }
