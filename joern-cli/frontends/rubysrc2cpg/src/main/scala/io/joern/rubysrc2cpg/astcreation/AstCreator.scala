@@ -205,63 +205,64 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForExpressionContext(ctx: RubyParser.ExpressionContext): Ast = {
     if (ctx == null) return Ast()
-
-    if (ctx.isInstanceOf[RubyParser.PrimaryExpressionContext]) {
-      astForPrimaryContext(ctx.asInstanceOf[RubyParser.PrimaryExpressionContext].primary())
-    } else if (ctx.isInstanceOf[RubyParser.UnaryExpressionContext]) {
-      astForUnaryExpressionContext(ctx.asInstanceOf[RubyParser.UnaryExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.PowerExpressionContext]) {
-      astForPowerExpressionContext(ctx.asInstanceOf[RubyParser.PowerExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.UnaryMinusExpressionContext]) {
-      astForUnaryMinusExpressionContext(ctx.asInstanceOf[RubyParser.UnaryMinusExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.MultiplicativeExpressionContext]) {
-      astForMultiplicativeExpressionContext(ctx.asInstanceOf[RubyParser.MultiplicativeExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.AdditiveExpressionContext]) {
-      astForAdditiveExpressionContext(ctx.asInstanceOf[RubyParser.AdditiveExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.BitwiseShiftExpressionContext]) {
-      astForBitwiseShiftExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseShiftExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.BitwiseAndExpressionContext]) {
-      astForBitwiseAndExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseAndExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.BitwiseOrExpressionContext]) {
-      astForBitwiseOrExpressionContext(ctx.asInstanceOf[RubyParser.BitwiseOrExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.RelationalExpressionContext]) {
-      astForRelationalExpressionContext(ctx.asInstanceOf[RubyParser.RelationalExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.EqualityExpressionContext]) {
-      astForEqualityExpressionContext(ctx.asInstanceOf[RubyParser.EqualityExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.OperatorAndExpressionContext]) {
-      astForOperatorAndExpressionContext(ctx.asInstanceOf[RubyParser.OperatorAndExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.OperatorOrExpressionContext]) {
-      astForOperatorOrExpressionContext(ctx.asInstanceOf[RubyParser.OperatorOrExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.RangeExpressionContext]) {
-      astForRangeExpressionContext(ctx.asInstanceOf[RubyParser.RangeExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.ConditionalOperatorExpressionContext]) {
-      astForConditionalOperatorExpressionContext(ctx.asInstanceOf[RubyParser.ConditionalOperatorExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.SingleAssignmentExpressionContext]) {
-      astForSingleAssignmentExpressionContext(ctx.asInstanceOf[RubyParser.SingleAssignmentExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.MultipleAssignmentExpressionContext]) {
-      astForMultipleAssignmentExpressionContext(ctx.asInstanceOf[RubyParser.MultipleAssignmentExpressionContext])
-    } else if (ctx.isInstanceOf[RubyParser.IsDefinedExpressionContext]) {
-      astForIsDefinedExpressionContext(ctx.asInstanceOf[RubyParser.IsDefinedExpressionContext])
-    } else {
-      logger.error("astForExpressionContext(): Unknown context")
-      Ast()
+    ctx match {
+      case ctx: RubyParser.PrimaryExpressionContext =>
+        astForPrimaryContext(ctx.primary())
+      case ctx: RubyParser.UnaryExpressionContext =>
+        astForUnaryExpressionContext(ctx)
+      case ctx: RubyParser.PowerExpressionContext =>
+        astForPowerExpressionContext(ctx)
+      case ctx: RubyParser.UnaryMinusExpressionContext =>
+        astForUnaryMinusExpressionContext(ctx)
+      case ctx: RubyParser.MultiplicativeExpressionContext =>
+        astForMultiplicativeExpressionContext(ctx)
+      case ctx: RubyParser.AdditiveExpressionContext =>
+        astForAdditiveExpressionContext(ctx)
+      case ctx: RubyParser.BitwiseShiftExpressionContext =>
+        astForBitwiseShiftExpressionContext(ctx)
+      case ctx: RubyParser.BitwiseAndExpressionContext =>
+        astForBitwiseAndExpressionContext(ctx)
+      case ctx: RubyParser.BitwiseOrExpressionContext =>
+        astForBitwiseOrExpressionContext(ctx)
+      case ctx: RubyParser.RelationalExpressionContext =>
+        astForRelationalExpressionContext(ctx)
+      case ctx: RubyParser.EqualityExpressionContext =>
+        astForEqualityExpressionContext(ctx)
+      case ctx: RubyParser.OperatorAndExpressionContext =>
+        astForOperatorAndExpressionContext(ctx)
+      case ctx: RubyParser.OperatorOrExpressionContext =>
+        astForOperatorOrExpressionContext(ctx)
+      case ctx: RubyParser.RangeExpressionContext =>
+        astForRangeExpressionContext(ctx)
+      case ctx: RubyParser.ConditionalOperatorExpressionContext =>
+        astForConditionalOperatorExpressionContext(ctx)
+      case ctx: RubyParser.SingleAssignmentExpressionContext =>
+        astForSingleAssignmentExpressionContext(ctx)
+      case ctx: RubyParser.MultipleAssignmentExpressionContext =>
+        astForMultipleAssignmentExpressionContext(ctx)
+      case ctx: RubyParser.IsDefinedExpressionContext =>
+        astForIsDefinedExpressionContext(ctx)
+      case _ =>
+        logger.error("astForExpressionContext(): Unknown context")
+        Ast()
     }
   }
 
   def astForExpressionOrCommandContext(ctx: RubyParser.ExpressionOrCommandContext): Ast = {
     if (ctx == null) return Ast()
 
-    if (ctx.isInstanceOf[RubyParser.InvocationExpressionOrCommandContext]) {
-      astForInvocationExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.InvocationExpressionOrCommandContext])
-    } else if (ctx.isInstanceOf[RubyParser.NotExpressionOrCommandContext]) {
-      astForNotExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.NotExpressionOrCommandContext])
-    } else if (ctx.isInstanceOf[RubyParser.OrAndExpressionOrCommandContext]) {
-      astForOrAndExpressionOrCommandContext(ctx.asInstanceOf[RubyParser.OrAndExpressionOrCommandContext])
-    } else if (ctx.isInstanceOf[RubyParser.ExpressionExpressionOrCommandContext]) {
-      astForExpressionContext(ctx.asInstanceOf[RubyParser.ExpressionExpressionOrCommandContext].expression())
-    } else {
-      logger.error("astForExpressionOrCommandContext(): Unknown context")
-      Ast()
+    ctx match {
+      case ctx: RubyParser.InvocationExpressionOrCommandContext =>
+        astForInvocationExpressionOrCommandContext(ctx)
+      case ctx: RubyParser.NotExpressionOrCommandContext =>
+        astForNotExpressionOrCommandContext(ctx)
+      case ctx: RubyParser.OrAndExpressionOrCommandContext =>
+        astForOrAndExpressionOrCommandContext(ctx)
+      case ctx: RubyParser.ExpressionExpressionOrCommandContext =>
+        astForExpressionContext(ctx.expression())
+      case _ =>
+        logger.error("astForExpressionOrCommandContext(): Unknown context")
+        Ast()
     }
   }
 
