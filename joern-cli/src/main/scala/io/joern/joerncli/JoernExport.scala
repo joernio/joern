@@ -113,6 +113,8 @@ object JoernExport {
         exportWithOdbFormat(cpg, representation, outDir, GraphMLExporter)
       case Format.Graphson =>
         exportWithOdbFormat(cpg, representation, outDir, GraphSONExporter)
+      case other =>
+        throw new NotImplementedError(s"repr=$representation not yet supported for format=$format")
     }
   }
 
@@ -126,6 +128,7 @@ object JoernExport {
       case Cdg   => new DumpCdg(CdgDumpOptions(outDirStr)).create(context)
       case Pdg   => new DumpPdg(PdgDumpOptions(outDirStr)).create(context)
       case Cpg14 => new DumpCpg14(Cpg14DumpOptions(outDirStr)).create(context)
+      case other => throw new NotImplementedError(s"repr=$repr not yet supported for this format")
     }
   }
 
@@ -152,6 +155,8 @@ object JoernExport {
             exporter.runExport(nodes, subGraph.edges, outFileName)
           }
           .reduce(plus)
+      case other =>
+        throw new NotImplementedError(s"repr=$repr not yet supported for this format")
     }
 
     println(s"exported $nodeCount nodes, $edgeCount edges into $outDir")
