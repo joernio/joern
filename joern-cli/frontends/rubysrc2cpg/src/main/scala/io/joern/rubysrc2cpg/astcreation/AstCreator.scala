@@ -83,7 +83,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast(node)
   }
 
-  def astForSingleLeftHandSide(ctx: RubyParser.SingleLeftHandSideContext, rhsRetType: String): Ast = {
+  def astForSingleLeftHandSideContext(ctx: RubyParser.SingleLeftHandSideContext, rhsRetType: String): Ast = {
     if (ctx == null) return Ast()
     val variableCtx = ctx.variableIdentifier()
     astForVariableIdentifierContext(variableCtx, rhsRetType)
@@ -102,26 +102,25 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast().withChildren(asts.toSeq)
   }
 
-  def astForSplattingArgument(ctx: RubyParser.SplattingArgumentContext): Ast = {
+  def astForSplattingArgumentContext(ctx: RubyParser.SplattingArgumentContext): Ast = {
     if (ctx == null) return Ast()
-
     astForExpressionOrCommandContext(ctx.expressionOrCommand())
   }
 
-  def astForMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): (Ast, String) = {
+  def astForMultipleRightHandSideContext(ctx: RubyParser.MultipleRightHandSideContext): (Ast, String) = {
     if (ctx == null) return (Ast(), Defines.Any)
 
     val exprAst      = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
-    val splattingAst = astForSplattingArgument(ctx.splattingArgument())
+    val splattingAst = astForSplattingArgumentContext(ctx.splattingArgument())
     val seqAsts      = Seq[Ast](exprAst, splattingAst)
     (Ast().withChildren(seqAsts), Defines.Any)
   }
 
-  def astForSingleAssignmentExpression(ctx: RubyParser.SingleAssignmentExpressionContext): Ast = {
+  def astForSingleAssignmentExpressionContext(ctx: RubyParser.SingleAssignmentExpressionContext): Ast = {
     if (ctx == null) return Ast()
 
-    val (rightAst, rhsRetType) = astForMultipleRightHandSide(ctx.multipleRightHandSide())
-    val leftAst                = astForSingleLeftHandSide(ctx.singleLeftHandSide(), rhsRetType)
+    val (rightAst, rhsRetType) = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
+    val leftAst                = astForSingleLeftHandSideContext(ctx.singleLeftHandSide(), rhsRetType)
     val seqAsts                = Seq[Ast](leftAst, rightAst)
     val blockNode              = NewBlock().typeFullName(Defines.Any)
     Ast(blockNode).withChildren(seqAsts)
@@ -234,7 +233,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     } else if (ctx.isInstanceOf[RubyParser.ConditionalOperatorExpressionContext]) {
       astForConditionalOperatorExpressionContext(ctx.asInstanceOf[RubyParser.ConditionalOperatorExpressionContext])
     } else if (ctx.isInstanceOf[RubyParser.SingleAssignmentExpressionContext]) {
-      astForSingleAssignmentExpression(ctx.asInstanceOf[RubyParser.SingleAssignmentExpressionContext])
+      astForSingleAssignmentExpressionContext(ctx.asInstanceOf[RubyParser.SingleAssignmentExpressionContext])
     } else if (ctx.isInstanceOf[RubyParser.MultipleAssignmentExpressionContext]) {
       astForMultipleAssignmentExpressionContext(ctx.asInstanceOf[RubyParser.MultipleAssignmentExpressionContext])
     } else if (ctx.isInstanceOf[RubyParser.IsDefinedExpressionContext]) {
@@ -457,7 +456,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     if (ctx == null) return Ast()
     val astClassOrModuleRef = astForClassDefinitionContext(ctx.classDefinition().classOrModuleReference())
     val astExprOfCommand    = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
-    val astBodyStatement    = astForBodyStatement(ctx.classDefinition().bodyStatement())
+    val astBodyStatement    = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
 
     Ast().withChildren(Seq[Ast](astClassOrModuleRef, astExprOfCommand, astBodyStatement))
   }
@@ -663,7 +662,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       Ast()
     }
   }
-  def astForMethodParameterPart(ctx: RubyParser.MethodParameterPartContext): Ast = {
+  def astForMethodParameterPartContext(ctx: RubyParser.MethodParameterPartContext): Ast = {
     if (ctx == null || ctx.parameters() == null) return Ast()
     // NOT differentiating between the productions here since either way we get paramaters
     val mandatoryParameters = ctx.parameters().mandatoryParameters()
@@ -712,7 +711,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast(seqNodes)
   }
 
-  def astForBodyStatement(ctx: RubyParser.BodyStatementContext): Ast = {
+  def astForBodyStatementContext(ctx: RubyParser.BodyStatementContext): Ast = {
     if (ctx == null) return Ast()
     astForStatementsContext(ctx.compoundStatement().statements())
   }
@@ -720,8 +719,8 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   def astForMethodDefinitionContext(ctx: RubyParser.MethodDefinitionContext): Ast = {
     if (ctx == null) return Ast()
     val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
-    val astMethodParam = astForMethodParameterPart(ctx.methodParameterPart())
-    val astBody        = astForBodyStatement(ctx.bodyStatement())
+    val astMethodParam = astForMethodParameterPartContext(ctx.methodParameterPart())
+    val astBody        = astForBodyStatementContext(ctx.bodyStatement())
 
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Ast(blockNode).withChildren(Seq[Ast](astMethodName, astMethodParam, astBody))
