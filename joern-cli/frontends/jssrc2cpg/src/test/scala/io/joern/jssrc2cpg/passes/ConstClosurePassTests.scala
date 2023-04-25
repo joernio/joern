@@ -13,4 +13,22 @@ class ConstClosurePassTests extends DataFlowCodeToCpgSuite {
     m.fullName.endsWith("program:foo") shouldBe true
   }
 
+  "should return method `export.foo` via `cpg.method`" in {
+    val cpg = code("""
+        |exports.foo = (function() {
+        |	var count = 0;
+        |	return function() {
+        |		count++;
+        |		return count;
+        |	};
+        |})();
+        |
+        |this.foo();
+        |""".stripMargin)
+
+    val List(m) = cpg.method.name("foo").l
+    m.name shouldBe "foo"
+    m.fullName.endsWith("program:foo") shouldBe true
+  }
+
 }
