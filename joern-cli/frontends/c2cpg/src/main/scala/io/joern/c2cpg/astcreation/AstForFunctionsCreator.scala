@@ -48,11 +48,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
   }
 
-  @tailrec
   private def parameters(funct: IASTNode): Seq[IASTNode] = funct match {
-    case decl: CPPASTFunctionDeclarator            => decl.getParameters.toIndexedSeq
-    case decl: CASTFunctionDeclarator              => decl.getParameters.toIndexedSeq
-    case defn: IASTFunctionDefinition              => parameters(defn.getDeclarator)
+    case arr: IASTArrayDeclarator       => parameters(arr.getNestedDeclarator)
+    case decl: CPPASTFunctionDeclarator => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
+    case decl: CASTFunctionDeclarator   => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
+    case defn: IASTFunctionDefinition   => parameters(defn.getDeclarator)
     case lambdaExpression: ICPPASTLambdaExpression => parameters(lambdaExpression.getDeclarator)
     case knr: ICASTKnRFunctionDeclarator           => knr.getParameterDeclarations.toIndexedSeq
     case other if other != null                    => notHandledYet(other); Seq.empty
@@ -132,7 +132,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val templateParams = templateParameters(funcDecl).getOrElse("")
     val signature =
       s"$returnType $fullname$templateParams ${parameterListSignature(funcDecl)}"
-    val code = nodeSignature(funcDecl)
+    val code = nodeSignature(funcDecl.getParent)
     val methodNode =
       newMethodNode(funcDecl, StringUtils.normalizeSpace(name), code, StringUtils.normalizeSpace(fullname), filename)
         .isExternal(false)

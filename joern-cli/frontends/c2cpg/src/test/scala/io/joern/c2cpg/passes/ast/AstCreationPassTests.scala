@@ -1954,6 +1954,15 @@ class AstCreationPassTests extends AbstractPassTest {
   }
 
   "AST with types" should {
+
+    "be correct for function edge case" in AstFixture("class Foo { char (*(*x())[5])() }", "test.cpp") { cpg =>
+      val List(method) = cpg.method.nameNot("<global>").l
+      method.name shouldBe "x"
+      method.fullName shouldBe "Foo.x"
+      method.code shouldBe "char (*(*x())[5])()"
+      method.signature shouldBe "char Foo.x ()"
+    }
+
     "be consistent with pointer types" in AstFixture("""
         |struct x { char * z; };
         |char *a(char *y) {
