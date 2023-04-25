@@ -13,10 +13,6 @@ libraryDependencies ++= Seq(
   "net.lingala.zip4j"       % "zip4j"                      % "2.11.5"
 )
 
-scalacOptions ++= Seq(
-  "-deprecation" // Emit warning and location for usages of deprecated APIs.
-)
-
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 trapExit                      := false
 Global / onChangedBuildSource := ReloadOnSourceChanges

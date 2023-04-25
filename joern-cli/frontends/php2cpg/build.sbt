@@ -16,10 +16,6 @@ libraryDependencies ++= Seq(
   "io.circe"      %% "circe-core"        % "0.15.0-M1"
 )
 
-scalacOptions ++= Seq(
-  "-deprecation" // Emit warning and location for usages of deprecated APIs.
-)
-
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
 phpParseInstallTask := {
   val phpBinDir   = baseDirectory.value / "bin"

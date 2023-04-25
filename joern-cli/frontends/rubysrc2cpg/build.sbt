@@ -8,10 +8,6 @@ libraryDependencies ++= Seq(
   "org.antlr"      % "antlr4-runtime"    % Versions.antlr
 )
 
-scalacOptions ++= Seq(
-  "-deprecation" // Emit warning and location for usages of deprecated APIs.
-)
-
 enablePlugins(JavaAppPackaging, LauncherJarPlugin, Antlr4Plugin)
 
 Antlr4 / antlr4PackageName := Some("io.joern.rubysrc2cpg.parser")

@@ -8,10 +8,6 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
-scalacOptions ++= Seq(
-  "-deprecation" // Emit warning and location for usages of deprecated APIs.
-)
-
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 trapExit    := false
 Test / fork := true
