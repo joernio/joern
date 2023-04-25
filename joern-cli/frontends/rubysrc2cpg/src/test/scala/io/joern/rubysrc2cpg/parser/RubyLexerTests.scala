@@ -8,20 +8,22 @@ import org.scalatest.matchers.should.Matchers
 
 class RubyLexerTests extends AnyFlatSpec with Matchers {
 
+  class RubySyntaxErrorListener extends BaseErrorListener {
+    var errors = 0
+    override def syntaxError(
+      recognizer: Recognizer[_, _],
+      offendingSymbol: Any,
+      line: Int,
+      charPositionInLine: Int,
+      msg: String,
+      e: RecognitionException
+    ): Unit =
+      errors += 1
+  }
+
   def tokenize(code: String): Iterable[Int] = {
-    val lexer = new RubyLexer(CharStreams.fromString(code))
-    val syntaxErrorListener = new BaseErrorListener {
-      var errors = 0
-      override def syntaxError(
-        recognizer: Recognizer[_, _],
-        offendingSymbol: Any,
-        line: Int,
-        charPositionInLine: Int,
-        msg: String,
-        e: RecognitionException
-      ): Unit =
-        errors += 1
-    }
+    val lexer               = new RubyLexer(CharStreams.fromString(code))
+    val syntaxErrorListener = new RubySyntaxErrorListener
     lexer.addErrorListener(syntaxErrorListener)
     val stream = new CommonTokenStream(lexer)
     stream.fill() // Run the lexer

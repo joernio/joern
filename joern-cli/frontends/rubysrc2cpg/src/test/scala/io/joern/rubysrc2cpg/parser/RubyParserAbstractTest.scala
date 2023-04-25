@@ -12,7 +12,7 @@ abstract class RubyParserAbstractTest extends AnyWordSpec with Matchers {
   def rubyParser(code: String): RubyParser =
     new RubyParser(rubyStream(code))
 
-  def prettyPrint(withContext: RubyParser => ParserRuleContext, input: String): String =
+  def printAst(withContext: RubyParser => ParserRuleContext, input: String): String =
     AstPrinter.print(withContext(rubyParser(input)))
 
   def accepts(withContext: RubyParser => ParserRuleContext, input: String): Boolean = {

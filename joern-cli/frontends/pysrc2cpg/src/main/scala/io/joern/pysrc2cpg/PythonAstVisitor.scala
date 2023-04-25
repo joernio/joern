@@ -435,8 +435,22 @@ class PythonAstVisitor(
     val instanceTypeDeclName     = classDef.name
     val instanceTypeDeclFullName = calculateFullNameFromContext(instanceTypeDeclName)
 
-    // TODO for now we just take the code of the base expression and pretend they are full names.
-    val inheritsFrom = classDef.bases.map(nodeToCode.getCode)
+    // TODO for now we just take the code of the base expression and pretend they are full names, converting special
+    //  nodes as we go.
+    def handleInheritance(fs: List[ast.iexpr]): List[String] = fs match {
+      case (x: ast.Call) :: xs =>
+        val node       = convert(x)
+        val parent     = contextStack.astParent
+        val tmpVar     = createIdentifierNode(getUnusedName(), Store, lineAndColOf(x))
+        val assignment = createAssignment(tmpVar, node, lineAndColOf(x))
+        diffGraph.addEdge(parent, assignment, EdgeTypes.AST)
+        tmpVar.name +: handleInheritance(xs)
+      case x :: xs =>
+        nodeToCode.getCode(x) +: handleInheritance(xs)
+      case Nil => Nil
+    }
+
+    val inheritsFrom = handleInheritance(classDef.bases.toList)
 
     val instanceType = nodeBuilder.typeNode(instanceTypeDeclName, instanceTypeDeclFullName)
     val instanceTypeDecl =

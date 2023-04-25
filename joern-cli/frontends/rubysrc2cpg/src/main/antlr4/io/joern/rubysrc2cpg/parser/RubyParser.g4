@@ -208,9 +208,9 @@ indexingArguments
 
 argumentsWithParentheses
     :   LPAREN wsOrNl* RPAREN
-    |   LPAREN arguments RPAREN
-    |   LPAREN expressions WS* COMMA wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN
-    |   LPAREN chainedCommandWithDoBlock RPAREN
+    |   LPAREN wsOrNl* arguments wsOrNl* RPAREN
+    |   LPAREN wsOrNl* expressions WS* COMMA wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN
+    |   LPAREN wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN
     ;
 
 expressions
