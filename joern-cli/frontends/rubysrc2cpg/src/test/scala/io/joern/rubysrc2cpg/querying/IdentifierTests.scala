@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
-class PocTest extends RubyCode2CpgFixture {
+class IdentifierTests extends RubyCode2CpgFixture {
 
   "The CPG generated for a multiplication example" should {
     val cpg = code(
