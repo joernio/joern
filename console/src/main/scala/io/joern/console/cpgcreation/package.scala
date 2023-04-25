@@ -17,7 +17,6 @@ package object cpgcreation {
     args: List[String]
   ): Option[CpgGenerator] = {
     lazy val conf = config.withArgs(args)
-    println(s"Identfied language is $language")
     language match {
       case Languages.CSHARP             => Some(CSharpCpgGenerator(conf, rootPath))
       case Languages.C | Languages.NEWC => Some(CCpgGenerator(conf, rootPath))

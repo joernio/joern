@@ -85,10 +85,6 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForSingleLeftHandSide(ctx: RubyParser.SingleLeftHandSideContext, rhsRetType: String): Ast = {
     if (ctx == null) return Ast()
-    println(
-      s"${Thread.currentThread.getStackTrace()(1).getMethodName}() invoked. Stack size: ${Thread.currentThread.getStackTrace().size}"
-    )
-
     val variableCtx = ctx.variableIdentifier()
     astForVariableIdentifierContext(variableCtx, rhsRetType)
   }
