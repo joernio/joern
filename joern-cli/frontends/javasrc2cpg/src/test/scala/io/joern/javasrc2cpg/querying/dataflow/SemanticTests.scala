@@ -23,7 +23,7 @@ class SemanticTests
 
   override val code: String =
     """
-      |import java.nio.Library;
+      |import ext.Library;
       |
       |public class Test {
       | public void test1() {
