@@ -520,7 +520,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     blockAst(blockNode, childrenAsts)
   }
 
-  protected def astForSatisfiesExpression(satisfiesExpr: BabelNodeInfo): Ast = {
+  protected def astForTSSatisfiesExpression(satisfiesExpr: BabelNodeInfo): Ast = {
     // Ignores the type, i.e. `x satisfies T` is understood as `x`.
     astForNode(satisfiesExpr.json("expression"))
   }
