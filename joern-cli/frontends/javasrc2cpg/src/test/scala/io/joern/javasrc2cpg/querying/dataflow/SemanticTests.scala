@@ -8,28 +8,22 @@ import scala.jdk.CollectionConverters._
 
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.x2cpg.Defines
 
 class SemanticTests
     extends JavaDataflowFixture(extraFlows =
       List(
         FlowSemantic("Test.sanitize:java.lang.String(java.lang.String)", List((0, 0), (1, 1))),
-        FlowSemantic("^ext\\.Library\\.taintReturn:.*", List((0, 0), (1, -1)), regex = true),
+        FlowSemantic(s"ext.Library.killParam:${Defines.UnresolvedSignature}(1)", List.empty),
         FlowSemantic("^ext\\.Library\\.taintNone:.*", List((0, 0), (1, 1)), regex = true),
         FlowSemantic("^ext\\.Library\\.taint1to2:.*", List((1, 2)), regex = true)
       )
     ) {
   behavior of "Dataflow through custom semantics"
 
-  // new Parser().parse("""
-  //  "Test.sanitize:java.lang.String(java.lang.String)" 0->0 1->1
-  //  "ext.Library.taintReturn:<unresolvedSignature>(1)" 0->0 1->-1
-  //  "ext.Library.taintNone:<unresolvedSignature>(1)" 0->0 1->1
-  //  "ext.Library.taint1to2:<unresolvedSignature>(2)" 0->0 1->1 2->2 1->2
-  //  """)
-
   override val code: String =
     """
-      |import ext.Library;
+      |import java.nio.Library;
       |
       |public class Test {
       | public void test1() {
@@ -53,23 +47,19 @@ class SemanticTests
       |
       | public void test4() {
       |   String s = "MALICIOUS";
-      |   String b = Library.taintReturn(s);
-      |   System.out.println(b);
+      |   StringBuilder sb = new StringBuilder(s);
+      |   Library.killParam(sb);
+      |   String c = sb.toString();
+      |   System.out.println(c);
       | }
       |
       | public void test5() {
-      |   String s = "MALICIOUS";
-      |   String b = Library.taintReturn(s);
-      |   System.out.println(s);
-      | }
-      |
-      | public void test6() {
       |   String s = "MALICIOUS";
       |   String b = Library.taintNone(s);
       |   System.out.println(b);
       | }
       |
-      | public void test7() {
+      | public void test6() {
       |   String s = "MALICIOUS";
       |   StringBuilder sb = new StringBuilder();
       |   Library.taint1to2(s, sb);
@@ -99,28 +89,23 @@ class SemanticTests
     sink.reachableBy(source).size shouldBe 0
   }
 
-  it should "continue in external method" in {
+  it should "taints return for unresolved method by default" in {
     val (source, sink) = getConstSourceSink("test3")
     sink.reachableBy(source).size shouldBe 1
   }
 
-  it should "continue in custom external method" in {
-    val (source, sink) = getConstSourceSink("test4")
-    sink.reachableBy(source).size shouldBe 1
-  }
-
   it should "be killed if semantic does not specify that it taints itself" in {
-    val (source, sink) = getConstSourceSink("test5")
-    sink.reachableBy(source).size shouldBe 1 // XXX: not killed
+    val (source, sink) = getConstSourceSink("test4")
+    sink.reachableBy(source).size shouldBe 0
   }
 
   it should "be killed in custom semantic" in {
-    val (source, sink) = getConstSourceSink("test6")
+    val (source, sink) = getConstSourceSink("test5")
     sink.reachableBy(source).size shouldBe 0
   }
 
   it should "taint param2" in {
-    val (source, sink) = getConstSourceSink("test7")
+    val (source, sink) = getConstSourceSink("test6")
     sink.reachableBy(source).size shouldBe 1
   }
 }
