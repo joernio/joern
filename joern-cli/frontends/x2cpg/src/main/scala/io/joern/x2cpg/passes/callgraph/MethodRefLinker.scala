@@ -20,9 +20,7 @@ class MethodRefLinker(cpg: Cpg) extends CpgPass(cpg) {
   import MethodRefLinker.linkToSingle
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
-    // Create REF edges from METHOD_REFs to
-    // METHOD
-
+    // Create REF edges from METHOD_REFs to METHOD
     linkToSingle(
       cpg,
       srcLabels = List(NodeTypes.METHOD_REF),
@@ -56,6 +54,12 @@ object MethodRefLinker {
   def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[_ <: NodeDb]] =
     cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
 
+  /** Types from C/C++ can be annotated with * to indicate being a reference. As our CPG schema currently lacks a
+    * separate field for that information the * is part of the type full name and needs to be removed when linking.
+    */
+  private def dereferenceTypeFullName(fullName: String): String =
+    fullName.replace("*", "")
+
   /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the
     * destination node in `dstNodeMap`, and create an edge of type `edgeType` between `n` and the destination node.
     */
@@ -78,24 +82,36 @@ object MethodRefLinker {
         srcNode
           .propertyOption(key)
           .filter { dstFullName =>
-            !srcNode.propertyDefaultValue(dstFullNameKey).equals(dstFullName)
+            !srcNode.propertyDefaultValue(dstFullNameKey).equals(dereferenceTypeFullName(dstFullName))
           }
           .ifPresent { dstFullName =>
             // for `UNKNOWN` this is not always set, so we're using an Option here
             val srcStoredNode = srcNode.asInstanceOf[StoredNode]
-            dstNodeMap(dstFullName) match {
+            dstNodeMap(dereferenceTypeFullName(dstFullName)) match {
               case Some(dstNode) =>
                 dstGraph.addEdge(srcStoredNode, dstNode, edgeType)
+              case None if dstNodeMap(dstFullName).isDefined =>
+                dstGraph.addEdge(srcStoredNode, dstNodeMap(dstFullName).get, edgeType)
               case None if dstNotExistsHandler.isDefined =>
-                dstNotExistsHandler.get(srcStoredNode, dstFullName)
+                dstNotExistsHandler.get(srcStoredNode, dereferenceTypeFullName(dstFullName))
               case _ =>
-                logFailedDstLookup(edgeType, srcNode.label, srcNode.id.toString, dstNodeLabel, dstFullName)
+                logFailedDstLookup(
+                  edgeType,
+                  srcNode.label,
+                  srcNode.id.toString,
+                  dstNodeLabel,
+                  dereferenceTypeFullName(dstFullName)
+                )
             }
           }
       } else {
         srcNode.out(edgeType).property(Properties.FULL_NAME).nextOption() match {
           case Some(dstFullName) =>
-            dstGraph.setNodeProperty(srcNode.asInstanceOf[StoredNode], dstFullNameKey, dstFullName)
+            dstGraph.setNodeProperty(
+              srcNode.asInstanceOf[StoredNode],
+              dstFullNameKey,
+              dereferenceTypeFullName(dstFullName)
+            )
           case None => logger.info(s"Missing outgoing edge of type $edgeType from node $srcNode")
         }
         if (!loggedDeprecationWarning) {
@@ -123,14 +139,24 @@ object MethodRefLinker {
     Traversal(cpg.graph.nodes(srcLabels: _*)).cast[SRC_NODE_TYPE].foreach { srcNode =>
       if (!srcNode.outE(edgeType).hasNext) {
         getDstFullNames(srcNode).foreach { dstFullName =>
-          dstNodeMap(dstFullName) match {
-            case Some(dstNode) => dstGraph.addEdge(srcNode, dstNode, edgeType)
-            case None => logFailedDstLookup(edgeType, srcNode.label, srcNode.id.toString, dstNodeLabel, dstFullName)
+          dstNodeMap(dereferenceTypeFullName(dstFullName)) match {
+            case Some(dstNode) =>
+              dstGraph.addEdge(srcNode, dstNode, edgeType)
+            case None if dstNodeMap(dstFullName).isDefined =>
+              dstGraph.addEdge(srcNode, dstNodeMap(dstFullName).get, edgeType)
+            case None =>
+              logFailedDstLookup(
+                edgeType,
+                srcNode.label,
+                srcNode.id.toString,
+                dstNodeLabel,
+                dereferenceTypeFullName(dstFullName)
+              )
           }
         }
       } else {
         val dstFullNames = srcNode.out(edgeType).property(Properties.FULL_NAME).l
-        dstGraph.setNodeProperty(srcNode, dstFullNameKey, dstFullNames)
+        dstGraph.setNodeProperty(srcNode, dstFullNameKey, dstFullNames.map(dereferenceTypeFullName))
         if (!loggedDeprecationWarning) {
           logger.info(
             s"Using deprecated CPG format with already existing $edgeType edge between" +

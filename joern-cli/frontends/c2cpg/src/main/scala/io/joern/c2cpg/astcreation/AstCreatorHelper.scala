@@ -147,7 +147,13 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def cleanType(rawType: String, stripKeywords: Boolean = true): String = {
     val tpe =
       if (stripKeywords) {
-        reservedTypeKeywords.foldLeft(rawType)((cur, repl) => cur.replace(s"$repl ", ""))
+        reservedTypeKeywords.foldLeft(rawType) { (cur, repl) =>
+          if (cur.contains(s"$repl ")) {
+            dereferenceTypeFullName(cur.replace(s"$repl ", ""))
+          } else {
+            cur
+          }
+        }
       } else {
         rawType
       }
@@ -163,7 +169,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case t if t.contains(Defines.qualifiedNameSeparator) =>
         fixQualifiedName(t).split(".").lastOption.getOrElse(Defines.anyTypeName)
       case t if t.contains("[") && t.contains("]") => t.replace(" ", "")
-      case t if t.contains("*")                    => t.replace("*", "").replace(" ", "")
+      case t if t.contains("*")                    => t.replace(" ", "")
       case someType                                => someType
     }
   }
@@ -242,6 +248,9 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def nullSafeAst(node: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
     Option(node).map(astsForStatement(_, argIndex)).getOrElse(Seq.empty)
   }
+
+  protected def dereferenceTypeFullName(fullName: String): String =
+    fullName.replace("*", "")
 
   protected def fixQualifiedName(name: String): String =
     name.stripPrefix(Defines.qualifiedNameSeparator).replace(Defines.qualifiedNameSeparator, ".")

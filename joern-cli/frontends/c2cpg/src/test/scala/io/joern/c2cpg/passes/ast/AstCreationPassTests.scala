@@ -47,7 +47,7 @@ class AstCreationPassTests extends AbstractPassTest {
           x.order shouldBe 1
           args.name shouldBe "args"
           args.code shouldBe "int*... args"
-          args.typeFullName shouldBe "int"
+          args.typeFullName shouldBe "int*"
           args.isVariadic shouldBe true
           args.order shouldBe 2
         }
@@ -86,11 +86,11 @@ class AstCreationPassTests extends AbstractPassTest {
         inside(m.parameter.l) { case List(x, y) =>
           x.name shouldBe "x"
           x.code shouldBe "int *x;"
-          x.typeFullName shouldBe "int"
+          x.typeFullName shouldBe "int*"
           x.order shouldBe 1
           y.name shouldBe "y"
           y.code shouldBe "int *y;"
-          y.typeFullName shouldBe "int"
+          y.typeFullName shouldBe "int*"
           y.order shouldBe 2
         }
       }
@@ -345,7 +345,7 @@ class AstCreationPassTests extends AbstractPassTest {
         |}
         |""".stripMargin) { cpg =>
       inside(cpg.method.name("method").parameter.l) { case List(param: MethodParameterIn) =>
-        param.typeFullName shouldBe "a_struct_type"
+        param.typeFullName shouldBe "a_struct_type*"
         param.name shouldBe "a_struct"
         param.code shouldBe "a_struct_type *a_struct"
       }
@@ -360,7 +360,7 @@ class AstCreationPassTests extends AbstractPassTest {
        |""".stripMargin) { cpg =>
       inside(cpg.method.name("method").parameter.l) { case List(param: MethodParameterIn) =>
         param.code shouldBe "struct date *date"
-        param.typeFullName shouldBe "date"
+        param.typeFullName shouldBe "date*"
         param.name shouldBe "date"
       }
     }
@@ -1969,10 +1969,10 @@ class AstCreationPassTests extends AbstractPassTest {
         |  char *x;
         |}
       """.stripMargin) { cpg =>
-      cpg.member.name("z").typeFullName.head shouldBe "char"
-      cpg.parameter.name("y").typeFullName.head shouldBe "char"
-      cpg.local.name("x").typeFullName.head shouldBe "char"
-      cpg.method.name("a").methodReturn.typeFullName.head shouldBe "char"
+      cpg.member.name("z").typeFullName.head shouldBe "char*"
+      cpg.parameter.name("y").typeFullName.head shouldBe "char*"
+      cpg.local.name("x").typeFullName.head shouldBe "char*"
+      cpg.method.name("a").methodReturn.typeFullName.head shouldBe "char*"
     }
 
     "be consistent with array types" in AstFixture("""

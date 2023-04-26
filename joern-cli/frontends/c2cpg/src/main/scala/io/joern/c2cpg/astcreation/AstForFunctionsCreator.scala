@@ -147,14 +147,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     scope.popScope()
 
-    val stubAst = methodStubAst(
-      methodNode,
-      parameterNodes,
-      newMethodReturnNode(
-        funcDecl,
-        registerType(typeFor(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier))
-      )
-    )
+    val stubAst     = methodStubAst(methodNode, parameterNodes, newMethodReturnNode(funcDecl, registerType(returnType)))
     val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode, name, fullname, signature)
     stubAst.merge(typeDeclAst)
   }
@@ -185,7 +178,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       methodNode,
       parameterNodes.map(Ast(_)),
       astForMethodBody(Option(funcDef.getBody)),
-      newMethodReturnNode(funcDef, registerType(typeFor(funcDef.getDeclSpecifier)))
+      newMethodReturnNode(funcDef, registerType(returnType))
     )
 
     scope.popScope()
