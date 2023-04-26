@@ -204,6 +204,7 @@ class AstCreator(
       case TemplateLiteral           => astForTemplateLiteral(nodeInfo)
       case TemplateElement           => astForTemplateElement(nodeInfo)
       case SpreadElement             => astForSpreadOrRestElement(nodeInfo)
+      case TSSatisfiesExpression     => astForSatisfiesExpression(nodeInfo)
       case JSXElement                => astForJsxElement(nodeInfo)
       case JSXOpeningElement         => astForJsxOpeningElement(nodeInfo)
       case JSXClosingElement         => astForJsxClosingElement(nodeInfo)
@@ -215,7 +216,6 @@ class AstCreator(
       case JSXAttribute              => astForJsxAttribute(nodeInfo)
       case EmptyStatement            => Ast()
       case DebuggerStatement         => Ast()
-      case TSSatisfiesExpression     => Ast()
       case _                         => notHandledYet(nodeInfo)
     }
   }
