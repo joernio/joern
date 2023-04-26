@@ -59,6 +59,10 @@ class TsAstCreationPassTest extends AbstractPassTest {
         parentTypeDecl.bindsOut.flatMap(_.refOut).l should contain(func)
     }
 
+    "have correct structure for type assertion" in TsAstFixture("let emptyArray = <VNode[]>[];") { cpg =>
+      cpg.call.code.l shouldBe List("let emptyArray = <VNode[]>[]")
+    }
+
   }
 
 }
