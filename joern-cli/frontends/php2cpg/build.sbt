@@ -6,9 +6,9 @@ name := "php2cpg"
 scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.2.2")
 
-val phpParserVersion = "4.15.4-charfix.1"
-val phpParserDlUrl   = s"https://github.com/joernio/PHP-Parser/archive/refs/tags/$phpParserVersion.zip"
-
+val phpParserVersion = "4.15.5"
+val phpParserBinName = "php-parser.phar"
+val phpParserDlUrl   = s"https://github.com/joernio/PHP-Parser/releases/download/v$phpParserVersion/$phpParserBinName"
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
@@ -26,30 +26,23 @@ scalacOptions ++= Seq(
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
 phpParseInstallTask := {
   val phpBinDir   = baseDirectory.value / "bin"
-  val phpParseDir = phpBinDir / "PHP-Parser"
-  if (!(phpParseDir / "bin").exists) {
-    IO.createDirectory(phpParseDir)
+  if (!(phpBinDir / phpParserBinName).exists) {
+    IO.createDirectory(phpBinDir)
     val downloadedFile = SimpleCache.downloadMaybe(phpParserDlUrl)
-    IO.withTemporaryDirectory { tempDir =>
-      IO.unzip(downloadedFile, tempDir)
-
-      val srcDir = tempDir / s"PHP-Parser-$phpParserVersion"
-      IO.copyDirectory(srcDir, phpParseDir)
-    }
+    IO.copyFile(downloadedFile, phpBinDir / phpParserBinName)
   }
 
   val distDir = (Universal / stagingDirectory).value / "bin"
   distDir.mkdirs()
   IO.copyDirectory(phpBinDir, distDir)
-
-  // permissions are lost during the download; need to set them manually
-  (phpParseDir / "bin").listFiles().foreach(_.setExecutable(true, false))
-  (distDir / "PHP-Parser" / "bin").listFiles().foreach(_.setExecutable(true, false))
 }
 
 cleanFiles ++= Seq(
+  // left to clean legacy representation
   baseDirectory.value / "bin" / "PHP-Parser",
-  (Universal / stagingDirectory).value / "bin" / "PHP-Parser"
+  baseDirectory.value / "bin" / phpParserBinName,
+  (Universal / stagingDirectory).value / "bin" / "PHP-Parser",
+  (Universal / stagingDirectory).value / "bin" / phpParserBinName
 )
 
 Compile / compile := ((Compile / compile) dependsOn phpParseInstallTask).value
