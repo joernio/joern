@@ -215,6 +215,7 @@ class AstCreator(
       case JSXAttribute              => astForJsxAttribute(nodeInfo)
       case EmptyStatement            => Ast()
       case DebuggerStatement         => Ast()
+      case TSSatisfiesExpression     => Ast()
       case _                         => notHandledYet(nodeInfo)
     }
   }
