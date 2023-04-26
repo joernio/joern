@@ -17,7 +17,7 @@ class MethodTests extends CCodeToCpgSuite {
       inside(cpg.method.name("main").l) { case List(x) =>
         x.name shouldBe "main"
         x.fullName shouldBe "main"
-        x.code shouldBe "int main (int argc,char **argv)"
+        x.code should startWith("int main(int argc, char **argv) {")
         x.signature shouldBe "int main (int,char**)"
         x.isExternal shouldBe false
         x.order shouldBe 1
@@ -133,7 +133,7 @@ class MethodTests extends CCodeToCpgSuite {
       method.columnNumber shouldBe Option(1)
       method.lineNumberEnd shouldBe Option(4)
       method.columnNumberEnd shouldBe Option(1)
-      method.code shouldBe "int foo (int x,int y)"
+      method.code should startWith("int foo(int x, int y) {")
     }
 
     "have correct METHOD_PARAMETER_IN nodes for method foo" in {

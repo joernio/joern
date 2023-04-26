@@ -123,12 +123,12 @@ class TypeNodePassTests extends CCodeToCpgSuite {
         }
         inside(cpg.local.l) { case List(ptr) =>
           ptr.name shouldBe "ptr"
-          ptr.typeFullName shouldBe "test"
+          ptr.typeFullName shouldBe "test*"
           ptr.code shouldBe "struct test* ptr"
         }
         inside(cpg.local.typ.referencedTypeDecl.l) { case List(tpe) =>
-          tpe.fullName shouldBe "test"
           tpe.name shouldBe "test"
+          tpe.fullName shouldBe "test"
           tpe.code should startWith("struct test")
         }
       }
@@ -170,14 +170,14 @@ class TypeNodePassTests extends CCodeToCpgSuite {
        |}""".stripMargin)
       inside(cpg.call("free").argument(1).isIdentifier.l) { case List(badChar) =>
         badChar.name shouldBe "badChar"
-        badChar.typeFullName shouldBe "char"
+        badChar.typeFullName shouldBe "char*"
         inside(badChar.typ.l) { case List(tpe) =>
-          tpe.fullName shouldBe "char"
-          tpe.name shouldBe "char"
+          tpe.fullName shouldBe "char*"
+          tpe.name shouldBe "char*"
         }
         inside(cpg.method("test_func").ast.isLocal.name(badChar.name).code(".*\\*.*").l) { case List(ptr) =>
           ptr.name shouldBe "badChar"
-          ptr.typeFullName shouldBe "char"
+          ptr.typeFullName shouldBe "char*"
           ptr.code shouldBe "char* badChar"
         }
       }

@@ -1,20 +1,13 @@
 package io.joern.x2cpg.passes.base
 
-import io.joern.x2cpg.passes.callgraph.MethodRefLinker
-import io.joern.x2cpg.passes.callgraph.MethodRefLinker.{
-  methodFullNameToNode,
-  namespaceBlockFullNameToNode,
-  typeDeclFullNameToNode
-}
+import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 
-class AstLinkerPass(cpg: Cpg) extends CpgPass(cpg) {
-
-  import MethodRefLinker.{logFailedSrcLookup, logger}
+class AstLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     cpg.method.whereNot(_.astParent).foreach { method =>

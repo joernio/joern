@@ -48,11 +48,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
   }
 
-  @tailrec
   private def parameters(funct: IASTNode): Seq[IASTNode] = funct match {
-    case decl: CPPASTFunctionDeclarator            => decl.getParameters.toIndexedSeq
-    case decl: CASTFunctionDeclarator              => decl.getParameters.toIndexedSeq
-    case defn: IASTFunctionDefinition              => parameters(defn.getDeclarator)
+    case arr: IASTArrayDeclarator       => parameters(arr.getNestedDeclarator)
+    case decl: CPPASTFunctionDeclarator => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
+    case decl: CASTFunctionDeclarator   => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
+    case defn: IASTFunctionDefinition   => parameters(defn.getDeclarator)
     case lambdaExpression: ICPPASTLambdaExpression => parameters(lambdaExpression.getDeclarator)
     case knr: ICASTKnRFunctionDeclarator           => knr.getParameterDeclarations.toIndexedSeq
     case other if other != null                    => notHandledYet(other); Seq.empty
@@ -68,17 +68,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
     case _                                         => false
   }
 
-  private def parameterListSignature(func: IASTNode, includeParamNames: Boolean): String = {
+  private def parameterListSignature(func: IASTNode): String = {
     val variadic = if (isVariadic(func)) "..." else ""
-    val elements =
-      if (!includeParamNames) {
-        parameters(func).map {
-          case p: IASTParameterDeclaration => typeForDeclSpecifier(p.getDeclSpecifier)
-          case other                       => typeForDeclSpecifier(other)
-        }
-      } else {
-        parameters(func).map(p => nodeSignature(p))
-      }
+    val elements = parameters(func).map {
+      case p: IASTParameterDeclaration => typeForDeclSpecifier(p.getDeclSpecifier)
+      case other                       => typeForDeclSpecifier(other)
+    }
     s"(${elements.mkString(",")}$variadic)"
   }
 
@@ -103,8 +98,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case null => Defines.anyTypeName
     }
     val (name, fullname) = uniqueName("lambda", "", fullName(lambdaExpression))
-    val signature = s"$returnType $fullname ${parameterListSignature(lambdaExpression, includeParamNames = false)}"
-    val code      = s"$returnType $name ${parameterListSignature(lambdaExpression, includeParamNames = true)}"
+    val signature        = s"$returnType $fullname ${parameterListSignature(lambdaExpression)}"
+    val code             = nodeSignature(lambdaExpression)
     val methodNode = newMethodNode(
       lambdaExpression,
       StringUtils.normalizeSpace(name),
@@ -136,8 +131,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val fullname       = fullName(funcDecl)
     val templateParams = templateParameters(funcDecl).getOrElse("")
     val signature =
-      s"$returnType $fullname$templateParams ${parameterListSignature(funcDecl, includeParamNames = false)}"
-    val code = s"$returnType $name ${parameterListSignature(funcDecl, includeParamNames = true)}"
+      s"$returnType $fullname$templateParams ${parameterListSignature(funcDecl)}"
+    val code = nodeSignature(funcDecl.getParent)
     val methodNode =
       newMethodNode(funcDecl, StringUtils.normalizeSpace(name), code, StringUtils.normalizeSpace(fullname), filename)
         .isExternal(false)
@@ -164,8 +159,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val fullname       = fullName(funcDef)
     val templateParams = templateParameters(funcDef).getOrElse("")
     val signature =
-      s"$returnType $fullname$templateParams ${parameterListSignature(funcDef, includeParamNames = false)}"
-    val code = s"$returnType $name ${parameterListSignature(funcDef, includeParamNames = true)}"
+      s"$returnType $fullname$templateParams ${parameterListSignature(funcDef)}"
+    val code = nodeSignature(funcDef)
     val methodNode =
       newMethodNode(funcDef, StringUtils.normalizeSpace(name), code, StringUtils.normalizeSpace(fullname), filename)
         .isExternal(false)
@@ -179,18 +174,18 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
     setVariadic(parameterNodes, funcDef)
 
-    val stubAst = methodAst(
+    val astForMethod = methodAst(
       methodNode,
       parameterNodes.map(Ast(_)),
       astForMethodBody(Option(funcDef.getBody)),
-      newMethodReturnNode(funcDef, registerType(typeForDeclSpecifier(funcDef.getDeclSpecifier)))
+      newMethodReturnNode(funcDef, registerType(returnType))
     )
 
     scope.popScope()
     methodAstParentStack.pop()
 
     val typeDeclAst = createFunctionTypeAndTypeDecl(funcDef, methodNode, name, fullname, signature)
-    stubAst.merge(typeDeclAst)
+    astForMethod.merge(typeDeclAst)
   }
 
   private def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
