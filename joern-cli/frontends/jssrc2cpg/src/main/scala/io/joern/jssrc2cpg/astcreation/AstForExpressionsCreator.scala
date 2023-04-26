@@ -519,4 +519,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
     setArgumentIndices(childrenAsts)
     blockAst(blockNode, childrenAsts)
   }
+
+  protected def astForTSSatisfiesExpression(satisfiesExpr: BabelNodeInfo): Ast = {
+    // Ignores the type, i.e. `x satisfies T` is understood as `x`.
+    astForNode(satisfiesExpr.json("expression"))
+  }
 }

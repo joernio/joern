@@ -63,6 +63,13 @@ class TsAstCreationPassTest extends AbstractPassTest {
       cpg.call.code.l shouldBe List("let emptyArray = <VNode[]>[]")
     }
 
+    "have correct structure for satisfies expressions" in TsAstFixture("let x = y satisfies T;") { cpg =>
+      val List(assignment) = cpg.assignment.l
+      val List(x, y)       = assignment.argument.l
+      assignment.code shouldBe "let x = y satisfies T"
+      x.code shouldBe "x"
+      y.code shouldBe "y"
+    }
   }
 
 }
