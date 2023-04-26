@@ -32,12 +32,12 @@ class ContainsEdgePass(cpg: Cpg) extends ConcurrentWriterCpgPass[AstNode](cpg) {
 
 object ContainsEdgePass {
 
-  def isSourceType(node: StoredNode): Boolean = node match {
+  private def isSourceType(node: StoredNode): Boolean = node match {
     case _: Method | _: TypeDecl | _: File => true
     case _                                 => false
   }
 
-  def isDestinationType(node: StoredNode): Boolean = node match {
+  private def isDestinationType(node: StoredNode): Boolean = node match {
     case _: Block | _: Identifier | _: FieldIdentifier | _: Return | _: Method | _: TypeDecl | _: Call | _: Literal |
         _: MethodRef | _: TypeRef | _: ControlStructure | _: JumpTarget | _: Unknown | _: TemplateDom =>
       true
