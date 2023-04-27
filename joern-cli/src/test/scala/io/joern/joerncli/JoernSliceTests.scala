@@ -14,7 +14,9 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
     Languages.JSSRC
   ) { case (cpg: Cpg, _) =>
     val programSlice =
-      UsageSlicing.calculateUsageSlice(cpg, JoernSlice.Config()).asInstanceOf[ProgramUsageSlice]
+      UsageSlicing
+        .calculateUsageSlice(cpg, JoernSlice.Config(excludeOperatorCalls = true))
+        .asInstanceOf[ProgramUsageSlice]
 
     "extract 'express.js' slice" in {
       val Some(slice) = programSlice.objectSlices.get("main.js::program").flatMap(_.headOption)

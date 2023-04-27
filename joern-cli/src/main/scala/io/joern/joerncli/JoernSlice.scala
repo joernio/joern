@@ -33,7 +33,8 @@ object JoernSlice {
     sourceFile: Option[String] = None,
     sliceDepth: Int = 20,
     minNumCalls: Int = 1,
-    typeRecoveryDummyTypes: Boolean = false
+    typeRecoveryDummyTypes: Boolean = false,
+    excludeOperatorCalls: Boolean = false
   )
 
   def main(args: Array[String]): Unit = {
@@ -99,6 +100,9 @@ object JoernSlice {
       opt[Boolean]("dummy-types")
         .text(s"for generating CPGs that use type recovery, enables the use of dummy types - defaults to false.")
         .action((x, c) => c.copy(typeRecoveryDummyTypes = x))
+      opt[Boolean]("exclude-operators")
+        .text(s"excludes operator calls in the slices - defaults to false.")
+        .action((x, c) => c.copy(excludeOperatorCalls = x))
 
     }.parse(args, Config())
 

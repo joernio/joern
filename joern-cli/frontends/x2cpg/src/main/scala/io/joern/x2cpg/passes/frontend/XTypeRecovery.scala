@@ -889,7 +889,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             builder.addNode(mRef)
             builder.addEdge(mRef, m, EdgeTypes.REF)
             builder.addEdge(inCall, mRef, EdgeTypes.AST)
-            builder.addEdge(inCall, mRef, EdgeTypes.ARGUMENT)
+            if (inCall.isInstanceOf[Call]) builder.addEdge(inCall, mRef, EdgeTypes.ARGUMENT)
             mRef.argumentIndex(inCall.astChildren.size)
           }
         addedNodes.add((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
