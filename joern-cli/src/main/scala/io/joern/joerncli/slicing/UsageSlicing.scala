@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{ForkJoinPool, RecursiveTask}
 import java.util.regex.Pattern
 import scala.collection.concurrent.TrieMap
@@ -16,6 +17,7 @@ object UsageSlicing {
 
   private val resolver               = NoResolve
   private val constructorTypeMatcher = Pattern.compile(".*new (\\w+)\\(.*")
+  private val excludeOperatorCalls   = new AtomicBoolean(false)
 
   /** Generates object slices from the given CPG.
     *
@@ -25,6 +27,8 @@ object UsageSlicing {
     *   a set of object slices.
     */
   def calculateUsageSlice(cpg: Cpg, config: Config): ProgramSlice = {
+    excludeOperatorCalls.set(config.excludeOperatorCalls)
+
     def getAssignmentDecl: Traversal[Declaration] = (config.sourceFile match {
       case Some(fileName) => cpg.file.nameExact(fileName).assignment
       case None           => cpg.assignment
@@ -204,9 +208,10 @@ object UsageSlicing {
       }
       .inCall
       .flatMap {
-        case c if c.name.equals(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
-        case c if !c.name.startsWith("<operator>")                                                   => Some(c)
-        case _                                                                                       => None
+        case c if c.name.startsWith(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
+        case c if excludeOperatorCalls.get() && c.name.startsWith("<operator>")                          => None
+        case c                                                                                           => Some(c)
+        case _                                                                                           => None
       }
       .dedup
       .toList
