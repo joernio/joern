@@ -167,8 +167,12 @@ class CallTests extends CCodeToCpgSuite {
       "test.cpp"
     )
     "have correct type full names for calls" in {
-      cpg.call.methodFullName.l shouldBe List("A.b")
-      cpg.method.name("b").internal.fullName.l shouldBe List("A.b")
+      val List(bCall) = cpg.call.l
+      bCall.methodFullName shouldBe "A.b"
+      val List(bMethod) = cpg.method.name("b").internal.l
+      bMethod.fullName shouldBe "A.b"
+      bMethod.callIn.head shouldBe bCall
+      bCall.callee.head shouldBe bMethod
     }
   }
 
