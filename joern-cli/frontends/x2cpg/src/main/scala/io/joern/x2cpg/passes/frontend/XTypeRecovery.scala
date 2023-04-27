@@ -323,7 +323,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def visitStatementsInBlock(b: Block): Set[String] =
     b.astChildren
       .map {
-        case x: Call if x.name.equals(Operators.assignment)                => visitAssignments(new Assignment(x))
+        case x: Call if x.name.startsWith(Operators.assignment)            => visitAssignments(new Assignment(x))
         case x: Identifier if symbolTable.contains(x)                      => symbolTable.get(x)
         case x: Call if symbolTable.contains(x)                            => symbolTable.get(x)
         case x: Call if x.argument.headOption.exists(symbolTable.contains) => setCallMethodFullNameFromBase(x)
