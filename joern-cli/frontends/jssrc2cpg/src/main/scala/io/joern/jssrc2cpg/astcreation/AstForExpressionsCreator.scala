@@ -5,8 +5,8 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.{Defines, EcmaBuiltins, GlobalBuiltins}
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, nodes}
 
 import scala.util.Try
 
@@ -92,7 +92,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
       case None =>
         typeFor(thisExpr) match {
           case t if t != Defines.Any => Option(t)
-          case _                     => None
+          case _ if methodAstParentStack.collect { case n: nodes.NewMethod if n.name == ":program" => n }.nonEmpty =>
+            methodAstParentStack.collectFirst { case n: NewMethod if n.name == ":program" => n.fullName }
+          case _ => None
         }
     }
     val thisNode = createIdentifierNode(thisExpr.code, dynamicTypeOption, thisExpr.lineNumber, thisExpr.columnNumber)

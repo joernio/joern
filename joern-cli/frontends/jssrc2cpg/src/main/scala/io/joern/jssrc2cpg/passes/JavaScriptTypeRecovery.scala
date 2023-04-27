@@ -87,7 +87,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     val matchingExports = if (isImportingModule) {
       // If we are importing the whole module, we need to load all entities
       targetAssignments
-        .code(s"\\_tmp\\_\\d+\\.\\w+ =.*", "module\\.exports.*")
+        .code(s"\\_tmp\\_\\d+\\.\\w+ =.*", "(module\\.)?exports.*")
         .dedup
         .l
     } else {
@@ -126,6 +126,12 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
             if (methodName == "exports") symbolTable.append(CallAlias(alias, Option("this")), Set(b.methodFullName))
             else symbolTable.append(CallAlias(methodName, Option(alias)), Set(b.methodFullName))
             symbolTable.append(LocalVar(alias), b.referencedMethod.astParent.collectAll[Method].fullName.toSet)
+          case List(_, y: Call) =>
+            // Exported closure with a method ref within the AST of the RHS
+            y.ast.isMethodRef.flatMap { mRef =>
+              val methodName = mRef.referencedMethod.name
+              symbolTable.append(CallAlias(methodName, Option(alias)), Set(mRef.methodFullName))
+            }
           case _ =>
             Set.empty[String]
         }
@@ -150,6 +156,11 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def isField(i: Identifier): Boolean =
     state.isFieldCache.getOrElseUpdate(i.id(), exportedIdentifiers.contains(i.name) || super.isField(i))
+
+  override protected def prepopulateSymbolTable(): Unit = {
+    super.prepopulateSymbolTable()
+    cu.ast.isMethod.foreach(f => symbolTable.put(CallAlias(f.name, Option("this")), Set(f.fullName)))
+  }
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.contains(".alloc")) {
