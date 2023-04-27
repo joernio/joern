@@ -154,4 +154,26 @@ class CallTests extends CCodeToCpgSuite {
     }
   }
 
+  "CallTest 5" should {
+    val cpg = code(
+      """
+        |class A {
+        |  void a() {
+        |    b();
+        |  }
+        |  void b() {}
+        |};
+        |""".stripMargin,
+      "test.cpp"
+    )
+    "have correct type full names for calls" in {
+      val List(bCall) = cpg.call.l
+      bCall.methodFullName shouldBe "A.b"
+      val List(bMethod) = cpg.method.name("b").internal.l
+      bMethod.fullName shouldBe "A.b"
+      bMethod.callIn.head shouldBe bCall
+      bCall.callee.head shouldBe bMethod
+    }
+  }
+
 }
