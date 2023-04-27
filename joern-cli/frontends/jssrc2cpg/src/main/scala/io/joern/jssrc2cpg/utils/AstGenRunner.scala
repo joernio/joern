@@ -228,9 +228,10 @@ class AstGenRunner(config: Config) {
       val jsonFile    = File(jsonPath)
       val jsonContent = IOUtils.readLinesInFile(jsonFile.path).mkString
       val json        = ujson.read(jsonContent)
-      val fileName    = json("relativeName").str
+      val fileName    = json("fullName").str
       val newFileName = fileName.replace(".js", ".ejs")
       json("relativeName") = newFileName
+      json("fullName") = newFileName
       jsonFile.writeText(json.toString())
     }
 
