@@ -35,7 +35,7 @@ case class Config(
   frontendArgs: Array[String] = Array.empty,
   verbose: Boolean = false,
   dependencies: Seq[String] = Seq.empty,
-  resolvers: Seq[String] = Seq.empty,
+  resolvers: Seq[String] = Seq.empty
 )
 
 /** Base class for ReplBridge, split by topic into multiple self types.
@@ -61,7 +61,7 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .action { (x, c) =>
           x.split("=", 2) match {
             case Array(key, value) => c.copy(params = c.params + (key -> value))
-            case _ => throw new IllegalArgumentException(s"unable to parse param input $x")
+            case _                 => throw new IllegalArgumentException(s"unable to parse param input $x")
           }
         }
         .text("key/value pair for main function in script - may be passed multiple times")
@@ -78,7 +78,9 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .unbounded()
         .optional()
         .action((x, c) => c.copy(dependencies = c.dependencies :+ x))
-        .text("add artifacts (including transitive dependencies) for given maven coordinate to classpath - may be passed multiple times")
+        .text(
+          "add artifacts (including transitive dependencies) for given maven coordinate to classpath - may be passed multiple times"
+        )
 
       opt[String]('r', "repo")
         .valueName("https://repository.apache.org/content/groups/public/")
