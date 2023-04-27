@@ -110,10 +110,10 @@ primary
 // --------------------------------------------------------
 
 singleLeftHandSide
-    :   variableIdentifier
-    |   primary LBRACK arguments? RBRACK
-    |   primary (DOT | COLON2) (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER)
-    |   COLON2 CONSTANT_IDENTIFIER
+    :   variableIdentifier                                                                                          # variableIdentifierOnly
+    |   primary LBRACK arguments? RBRACK                                                                            # primaryInsideBrackets
+    |   primary (DOT | COLON2) (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER)                                    # xdoty
+    |   COLON2 CONSTANT_IDENTIFIER                                                                                  # scopedConstantAccess
     ;
 
 multipleLeftHandSide

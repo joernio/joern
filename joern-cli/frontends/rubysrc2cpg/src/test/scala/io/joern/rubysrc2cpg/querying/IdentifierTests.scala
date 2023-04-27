@@ -114,15 +114,16 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |m = a || b
           |n = a .. b
           |o = a ... b
+          |p = ( a > b ) ? c : e
           |""".stripMargin,
         fileName = "sum.rb"
       )
 
       "expression test" in {
-        cpg.identifier.name("a").l.size shouldBe 15
-        cpg.identifier.name("b").l.size shouldBe 12 // unaryExpression
-        cpg.identifier.name("c").l.size shouldBe 1  // unaryExpression
-        cpg.identifier.name("e").l.size shouldBe 1  // unaryExpression
+        cpg.identifier.name("a").l.size shouldBe 16
+        cpg.identifier.name("b").l.size shouldBe 13 // unaryExpression
+        cpg.identifier.name("c").l.size shouldBe 2  // unaryExpression
+        cpg.identifier.name("e").l.size shouldBe 2  // unaryExpression
         cpg.identifier.name("f").l.size shouldBe 1  // powerExpression
         cpg.identifier.name("g").l.size shouldBe 1  // multiplicative Expression
         cpg.identifier.name("h").l.size shouldBe 1  // additive Expression
@@ -133,7 +134,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
         cpg.identifier.name("m").l.size shouldBe 1  // operator or Expression
         cpg.identifier.name("n").l.size shouldBe 1  // inclusive range Expression
         cpg.identifier.name("o").l.size shouldBe 1  // exclusive range Expression
-        cpg.identifier.size shouldBe 39
+        cpg.identifier.name("p").l.size shouldBe 1  // conditionalOperatorExpression
+        cpg.identifier.size shouldBe 44
       }
     }
 

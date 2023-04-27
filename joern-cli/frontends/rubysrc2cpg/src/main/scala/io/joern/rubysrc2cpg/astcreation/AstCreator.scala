@@ -54,9 +54,36 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast(node)
   }
 
-  def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext, rhsRetType: String): Ast = {
-    val variableCtx = ctx.variableIdentifier()
-    astForVariableIdentifierContext(variableCtx, rhsRetType)
+  def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext, rhsRetType: String): Ast = ctx match {
+    case ctx: VariableIdentifierOnlyContext => astForVariableIdentifierContext(ctx.variableIdentifier(), rhsRetType)
+    case ctx: PrimaryInsideBracketsContext  => astForPrimaryContext(ctx.primary())
+    case ctx: XdotyContext =>
+      val xAst = astForPrimaryContext(ctx.primary())
+      val yAst = {
+        if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
+          val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
+          val varSymbol = localVar.getSymbol()
+          val node = identifierNode(
+            varSymbol.getText,
+            None,
+            Some(varSymbol.getLine()),
+            Some(varSymbol.getCharPositionInLine()),
+            List(Defines.Any)
+          ).typeFullName(Defines.Any)
+          Ast(node)
+        } else if (ctx.CONSTANT_IDENTIFIER() != null) {
+          Ast()
+        } else {
+          Ast()
+        }
+      }
+      xAst.withChild(yAst)
+    case ctx: ScopedConstantAccessContext =>
+      Ast()
+    case _ =>
+      logger.error("astForSingleLeftHandSideContext() All contexts mismatched.")
+      Ast()
+
   }
 
   def astForExpressionOrCommandsContext(ctx: ExpressionOrCommandsContext): Ast = {
@@ -117,6 +144,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     case ctx: ChainedInvocationPrimaryContext         => astForChainedInvocationPrimaryContext(ctx)
     case ctx: ChainedInvocationWithoutArgumentsPrimaryContext =>
       astForChainedInvocationWithoutArgumentsPrimaryContext(ctx)
+    case _ =>
+      logger.error("astForPrimaryContext() All contexts mismatched.")
+      Ast()
   }
 
   def astForExpressionContext(ctx: ExpressionContext): Ast = ctx match {
@@ -138,6 +168,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     case ctx: SingleAssignmentExpressionContext    => astForSingleAssignmentExpressionContext(ctx)
     case ctx: MultipleAssignmentExpressionContext  => astForMultipleAssignmentExpressionContext(ctx)
     case ctx: IsDefinedExpressionContext           => astForIsDefinedExpressionContext(ctx)
+    case _ =>
+      logger.error("astForExpressionContext() All contexts mismatched.")
+      Ast()
   }
 
   def astForExpressionOrCommandContext(ctx: ExpressionOrCommandContext): Ast = {
@@ -148,6 +181,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       case ctx: NotExpressionOrCommandContext        => astForNotExpressionOrCommandContext(ctx)
       case ctx: OrAndExpressionOrCommandContext      => astForOrAndExpressionOrCommandContext(ctx)
       case ctx: ExpressionExpressionOrCommandContext => astForExpressionContext(ctx.expression())
+      case _ =>
+        logger.error("astForExpressionOrCommandContext() All contexts mismatched.")
+        Ast()
     }
   }
 
@@ -244,9 +280,14 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     case ctx: EndStatementContext                 => astForEndStatementContext(ctx)
     case ctx: ModifierStatementContext            => astForModifierStatementContext(ctx)
     case ctx: ExpressionOrCommandStatementContext => astForExpressionOrCommandContext(ctx.expressionOrCommand())
+    case _ =>
+      logger.error("astForStatementContext() All contexts mismatched.")
+      Ast()
   }
 
   def astForStatementsContext(ctx: StatementsContext): Ast = {
+    if (ctx == null) return Ast()
+
     val blockNode = NewBlock().typeFullName(Defines.Any)
     val asts      = mutable.ArrayBuffer.empty[Ast]
     ctx
@@ -313,7 +354,12 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForConditionalOperatorExpressionContext(ctx: ConditionalOperatorExpressionContext): Ast = {
-    Ast()
+    val ifConditionAst = astForExpressionContext(ctx.expression().get(0))
+    val thenAst        = astForExpressionContext(ctx.expression().get(1))
+    val elseAst        = astForExpressionContext(ctx.expression().get(2))
+
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChildren(Seq[Ast](ifConditionAst, thenAst, elseAst))
   }
 
   def astForEqualityExpressionContext(ctx: EqualityExpressionContext): Ast = {
@@ -325,7 +371,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForGroupingExpressionPrimaryContext(ctx: GroupingExpressionPrimaryContext): Ast = {
-    Ast()
+    astForStatementsContext(ctx.compoundStatement().statements())
   }
 
   def astForHashConstructorPrimaryContext(ctx: HashConstructorPrimaryContext): Ast = {
@@ -481,6 +527,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   def astForMethodNamePartContext(ctx: MethodNamePartContext): Ast = ctx match {
     case ctx: SimpleMethodNamePartContext    => astForSimpleMethodNamePartContext(ctx)
     case ctx: SingletonMethodNamePartContext => astForSingletonMethodNamePartContext(ctx)
+    case _ =>
+      logger.error("astForMethodNamePartContext() All contexts mismatched.")
+      Ast()
   }
 
   def astForMethodParameterPartContext(ctx: MethodParameterPartContext): Ast = {
