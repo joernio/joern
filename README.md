@@ -21,8 +21,8 @@ Documentation: https://docs.joern.io/
 
 Specification: https://cpg.joern.io
 
-<!-- drop in a few months, e.g. march 2023 -->
-## Announcement: upgrading from Joern 1.1.x to 1.2.x: see notes [below](#12x-upgrade-to-scala-3)
+<!-- drop in a few months, e.g. end of 2023 -->
+## Announcement: upgrading from Joern 1.x to 2.x: see notes [below](#12x-upgrade-to-scala-3)
 
 ## Requirements
 
@@ -47,7 +47,7 @@ joern
 ██   ██║██║   ██║██╔══╝  ██╔══██╗██║╚██╗██║
 ╚█████╔╝╚██████╔╝███████╗██║  ██║██║ ╚████║
  ╚════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝
-Version: 1.2.0
+Version: 2.0.1
 Type `help` to begin
 
 joern>
@@ -124,15 +124,36 @@ variable `JOERN_BENCHMARK_RESULT_FILE`.
 
 ## Upgrade notes
 
-### 1.2.x: Upgrade to Scala 3
-Joern is based on Scala. As of Joern 1.2.x we upgraded from Scala 2 to Scala 3. 
+### 2.0.x: Upgrade to Scala 3
+Joern is based on Scala. As of Joern 2.0.x we upgraded from Scala 2 to Scala 3. 
 This is a major version upgrade and Scala 3 is essentially a new language with a new REPL implementation, so this may sound scary. 
 
 That being said, both the Scala as well as Joern maintainers have made an effort to minimize changes to the API, in order to ease the transition for users. Most importantly, the Joern workspace DSL (`importCode(...)` etc.) and the CPG Traversal DSL (e.g. `cpg.method.name("foo").l`) are unchanged. The latter is based on Scala collections API, which is actually identical (a shared library) between Scala 2 and Scala 3. 
 
-Depending on your level of integration with Joern you most likely won't notice anything. If you do, please check the list below, and if that doesn't help: open a [github issue](https://github.com/joernio/joern/issues/new) or hit us up on [discord](https://discord.gg/vv4MH284Hc).
+Depending on your use case you may not even notice a difference: we've tried to keep as much as possible just like it was - most importantly the query DSL.
+There are however a few changes - some that we believe are the better, and some were just unavoidable. Here's the most important ones as far as I can tell:
 
-Common issues when upgrading Scala 2 to Scala 3:
+1) The 'import a script' magic `$file.foo` from Ammonite was replaced by the `//> using file foo.sc` directive. This works in an active joern REPL as well as in scripts.
+
+2) Adding dependencies: the magic `$ivy.my-dependency` was replaced:
+* `--dep` parameter, e.g. `./joern --dep com.michaelpollmeier:versionsort:1.0.7`. Can be specified multiple times.
+* For scripts there's a slightly nicer alternative that let's you specify your dependencies within the script itself: `//> using dep com.michaelpollmeier:versionsort:1.0.7`
+* all dependencies need to be known when joern starts, i.e. you can not dynamically add more dependencies to an active joern REPL session
+
+3) Script parameters: pass multiple `--param` parameters rather than one comma-separated list. Example:
+```
+// old
+./joern --script foo.sc --params paramA=valueA,paramB=valueB
+// new
+./joern --script foo.sc --param paramA=valueA --param paramB=valueB
+```
+While that's slightly longer it is also less complex, easier to read, and you can pass values that contain commas :)
+
+Apart from that, Scala 3 is a bit stricter when it comes to adding or leaving out `()` for function application. The compiler messages are (on average) much better than before, so hopefully it'll guide you as good as possible. 
+
+Depending on your level of integration with Joern you might not even notice anything. If you do, please check the lists above and below, and if that doesn't help: open a [github issue](https://github.com/joernio/joern/issues/new) or hit us up on [discord](https://discord.gg/vv4MH284Hc).
+
+Some more generic Scala-issues when upgrading Scala 2 to Scala 3:
 
 1. anonymous functions need an extra parenthesis around their parameter list:
 ```scala
