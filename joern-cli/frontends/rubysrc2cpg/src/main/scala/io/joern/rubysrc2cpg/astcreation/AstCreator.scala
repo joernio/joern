@@ -341,12 +341,22 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast()
   }
 
-  def astForClassDefinitionContext(ctx: ClassOrModuleReferenceContext): Ast = {
-    Ast()
+  def astForScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): Ast = {
+    val primaryAst = astForPrimaryContext(ctx.primary())
+    // TODO handle ctx.CONSTANT_IDENTIFIER()
+    primaryAst
+  }
+
+  def astForClassOrModuleReferenceContext(ctx: ClassOrModuleReferenceContext): Ast = {
+    if (ctx.scopedConstantReference() != null) {
+      astForScopedConstantReferenceContext(ctx.scopedConstantReference())
+    } else {
+      Ast()
+    }
   }
 
   def astForClassDefinitionPrimaryContext(ctx: ClassDefinitionPrimaryContext): Ast = {
-    val astClassOrModuleRef = astForClassDefinitionContext(ctx.classDefinition().classOrModuleReference())
+    val astClassOrModuleRef = astForClassOrModuleReferenceContext(ctx.classDefinition().classOrModuleReference())
     val astExprOfCommand    = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
     val astBodyStatement    = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
 
@@ -599,7 +609,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Ast = {
-    Ast()
+    val referenceAst = astForClassOrModuleReferenceContext(ctx.moduleDefinition().classOrModuleReference())
+    val bodyStmtAst  = astForBodyStatementContext(ctx.moduleDefinition().bodyStatement())
+    referenceAst.withChild(bodyStmtAst)
   }
 
   def astForMultipleAssignmentExpressionContext(ctx: MultipleAssignmentExpressionContext): Ast = {
