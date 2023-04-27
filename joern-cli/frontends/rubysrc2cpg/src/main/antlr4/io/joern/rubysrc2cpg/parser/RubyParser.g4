@@ -179,11 +179,11 @@ argumentsWithoutParentheses
     ;
 
 arguments
-    :   blockArgument
-    |   splattingArgument (COMMA wsOrNl* blockArgument)?
-    |   expressions WS* COMMA wsOrNl* associations (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?
-    |   (expressions | associations) (WS* COMMA wsOrNl* blockArgument)?
-    |   command
+    :   blockArgument                                                                                                           # blockArgumentType
+    |   splattingArgument (COMMA wsOrNl* blockArgument)?                                                                        # blockSplattingType
+    |   expressions WS* COMMA wsOrNl* associations (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?    # blockSplattingExprAssocType
+    |   (expressions | associations) (WS* COMMA wsOrNl* blockArgument)?                                                         # blockExprAssocType
+    |   command                                                                                                                 # commandType
     ;
 
 blockArgument

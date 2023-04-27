@@ -718,7 +718,48 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast()
   }
 
-  def astForYieldWithOptionalArgumentPrimaryContext(ctx: YieldWithOptionalArgumentPrimaryContext): Ast = {
+  def astForBlockArgumentContext(ctx: BlockArgumentContext): Ast = {
+    astForExpressionContext(ctx.expression())
+  }
+
+  def astForBlockArgumentTypeContext(ctx: BlockArgumentTypeContext): Ast = {
+    astForBlockArgumentContext(ctx.blockArgument())
+  }
+
+  def astForBlockSplattingTypeContext(ctx: BlockSplattingTypeContext): Ast = {
+    val blockArgAst = astForBlockArgumentContext(ctx.blockArgument())
+    val splatAst    = astForSplattingArgumentContext(ctx.splattingArgument())
+    Ast().withChildren(Seq[Ast](blockArgAst, splatAst))
+  }
+
+  def astForBlockSplattingExprAssocTypeContext(ctx: BlockSplattingExprAssocTypeContext): Ast = {
     Ast()
+  }
+
+  def astForBlockExprAssocTypeContext(ctx: BlockExprAssocTypeContext): Ast = {
+    Ast()
+  }
+
+  def astForCommandTypeContext(ctx: CommandTypeContext): Ast = {
+    Ast()
+  }
+
+  def astForArgumentsContext(ctx: ArgumentsContext): Ast = ctx match {
+    case ctx: BlockArgumentTypeContext           => astForBlockArgumentTypeContext(ctx)
+    case ctx: BlockSplattingTypeContext          => astForBlockSplattingTypeContext(ctx)
+    case ctx: BlockSplattingExprAssocTypeContext => astForBlockSplattingExprAssocTypeContext(ctx)
+    case ctx: BlockExprAssocTypeContext          => astForBlockExprAssocTypeContext(ctx)
+    case ctx: CommandTypeContext                 => astForCommandTypeContext(ctx)
+    case _ =>
+      logger.error("astForArgumentsContext() All contexts mismatched.")
+      Ast()
+  }
+
+  def astForYieldWithOptionalArgumentContext(ctx: YieldWithOptionalArgumentContext): Ast = {
+    astForArgumentsContext(ctx.arguments())
+  }
+
+  def astForYieldWithOptionalArgumentPrimaryContext(ctx: YieldWithOptionalArgumentPrimaryContext): Ast = {
+    astForYieldWithOptionalArgumentContext(ctx.yieldWithOptionalArgument())
   }
 }
