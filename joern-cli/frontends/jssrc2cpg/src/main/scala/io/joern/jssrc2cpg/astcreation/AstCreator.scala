@@ -204,6 +204,7 @@ class AstCreator(
       case TemplateLiteral           => astForTemplateLiteral(nodeInfo)
       case TemplateElement           => astForTemplateElement(nodeInfo)
       case SpreadElement             => astForSpreadOrRestElement(nodeInfo)
+      case TSSatisfiesExpression     => astForTSSatisfiesExpression(nodeInfo)
       case JSXElement                => astForJsxElement(nodeInfo)
       case JSXOpeningElement         => astForJsxOpeningElement(nodeInfo)
       case JSXClosingElement         => astForJsxClosingElement(nodeInfo)

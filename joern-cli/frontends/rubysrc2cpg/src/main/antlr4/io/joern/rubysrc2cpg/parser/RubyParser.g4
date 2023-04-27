@@ -208,9 +208,9 @@ indexingArguments
 
 argumentsWithParentheses
     :   LPAREN wsOrNl* RPAREN
-    |   LPAREN arguments RPAREN
-    |   LPAREN expressions WS* COMMA wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN
-    |   LPAREN chainedCommandWithDoBlock RPAREN
+    |   LPAREN wsOrNl* arguments (WS* COMMA)? wsOrNl* RPAREN
+    |   LPAREN wsOrNl* expressions WS* COMMA wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN
+    |   LPAREN wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN
     ;
 
 expressions
@@ -332,7 +332,7 @@ optionalParameters
     ;
 
 optionalParameter
-    :   LOCAL_VARIABLE_IDENTIFIER EQ wsOrNl* expression
+    :   LOCAL_VARIABLE_IDENTIFIER WS* EQ wsOrNl* expression
     ;
 
 arrayParameter

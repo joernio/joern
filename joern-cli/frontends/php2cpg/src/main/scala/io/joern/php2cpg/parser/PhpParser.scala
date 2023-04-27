@@ -11,13 +11,13 @@ import scala.util.{Failure, Success, Try}
 
 object PhpParser {
 
-  private val PhpParserHomeEnvVar = "PHP_PARSER_HOME"
-  private val logger              = LoggerFactory.getLogger(this.getClass)
+  private val PhpParserBinEnvVar = "PHP_PARSER_BIN"
+  private val logger             = LoggerFactory.getLogger(this.getClass)
 
   private val ExecutablePath: String = {
-    Option(System.getenv(PhpParserHomeEnvVar)) match {
+    Option(System.getenv(PhpParserBinEnvVar)) match {
       case Some(phpParserPath) if phpParserPath.nonEmpty =>
-        logger.debug(s"Using php-parser path from PHP_PARSER_HOME envvar: ${phpParserPath}")
+        logger.debug(s"Using php-parser path from PHP_PARSER_BIN envvar: ${phpParserPath}")
         phpParserPath
 
       case _ =>
@@ -25,7 +25,7 @@ object PhpParser {
           Paths.get(PhpParser.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
         val fixedDir = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
         val phpParserPath =
-          Paths.get(fixedDir, "php2cpg", "bin", "PHP-Parser", "bin", "php-parse").toAbsolutePath.toString
+          Paths.get(fixedDir, "php2cpg", "bin", "php-parser.phar").toAbsolutePath.toString
         logger.debug(s"PHP_PARSER_HOME not set. Using default php-parser location: ${phpParserPath}")
         phpParserPath
     }
@@ -65,12 +65,12 @@ object PhpParser {
 
   def parseFile(inputPath: String, phpIniOverride: Option[String]): Option[PhpFile] = {
     val inputFile      = File(inputPath)
+    val inputFilePath  = inputFile.canonicalPath
     val inputDirectory = inputFile.parent.canonicalPath
-    val filename       = inputFile.name
     val phpIniPath     = getPhpIniPath(phpIniOverride)
 
-    ExternalCommand.run(phpParseCommand(filename, phpIniPath), inputDirectory, separateStdErr = true) match {
-      case Success(outputLines) => processParserOutput(outputLines, inputFile.canonicalPath)
+    ExternalCommand.run(phpParseCommand(inputFilePath, phpIniPath), inputDirectory, separateStdErr = true) match {
+      case Success(outputLines) => processParserOutput(outputLines, inputFilePath)
 
       case Failure(exception) =>
         logger.error(s"php-parser failed to parse input file $inputPath", exception)

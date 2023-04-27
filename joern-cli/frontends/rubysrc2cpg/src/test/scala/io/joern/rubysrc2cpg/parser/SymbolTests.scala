@@ -2,54 +2,93 @@ package io.joern.rubysrc2cpg.parser
 
 class SymbolTests extends RubyParserAbstractTest {
 
-  "Keyword-named symbols" should {
-    val symWhile = ":while"
-    val symDef   = ":def"
+  "Symbol literals" should {
 
-    "be parsed as symbols" in {
-      prettyPrint(_.symbol(), symWhile) shouldBe
-        """Symbol
-          | :while
-          |""".stripMargin
+    "be parsed as primary expressions" when {
 
-      prettyPrint(_.symbol(), symDef) shouldBe
-        """Symbol
-          | :def
-          |""".stripMargin
-    }
+      def symbolLiteralParseTreeText(symbolName: String): String =
+        s"""LiteralPrimary
+           | Literal
+           |  Symbol
+           |   $symbolName
+           |""".stripMargin
 
-    "be accepted as literals" in {
-      accepts(_.literal(), symWhile) shouldBe true
-      accepts(_.literal(), symDef) shouldBe true
+      "they are named after keywords" in {
+        val eg = Seq(
+          ":__LINE__",
+          ":__ENCODING__",
+          ":__FILE__",
+          ":BEGIN",
+          ":END",
+          ":alias",
+          ":begin",
+          ":break",
+          ":case",
+          ":class",
+          ":def",
+          ":defined?",
+          ":do",
+          ":else",
+          ":elsif",
+          ":end",
+          ":ensure",
+          ":for",
+          ":false",
+          ":if",
+          ":in",
+          ":module",
+          ":next",
+          ":nil",
+          ":not",
+          ":or",
+          ":redo",
+          ":rescue",
+          ":retry",
+          ":self",
+          ":super",
+          ":then",
+          ":true",
+          ":undef",
+          ":unless",
+          ":until",
+          ":when",
+          ":while",
+          ":yield"
+        )
+        eg.map(code => printAst(_.primary(), code)) shouldEqual eg.map(symbolLiteralParseTreeText)
+      }
+
+      "they are named after operators" in {
+        val eg = Seq(
+          ":^",
+          ":&",
+          ":|",
+          ":<=>",
+          ":==",
+          ":===",
+          ":=~",
+          ":>",
+          ":>=",
+          ":<",
+          ":<=",
+          ":<<",
+          ":>>",
+          ":+",
+          ":-",
+          ":*",
+          ":/",
+          ":%",
+          ":**",
+          ":~",
+          ":+@",
+          ":-@",
+          ":[]",
+          ":[]="
+        )
+        eg.map(code => printAst(_.primary(), code)) shouldEqual eg.map(symbolLiteralParseTreeText)
+      }
+
     }
   }
 
-  "Operator-named symbols" should {
-    val symCaret   = ":^"
-    val symEq2     = ":=="
-    val symLRBrack = ":[]"
-
-    "be parsed as primary expressions" in {
-      prettyPrint(_.primary(), symCaret) shouldEqual
-        """LiteralPrimary
-          | Literal
-          |  Symbol
-          |   :^
-          |""".stripMargin
-
-      prettyPrint(_.primary(), symEq2) shouldEqual
-        """LiteralPrimary
-          | Literal
-          |  Symbol
-          |   :==
-          |""".stripMargin
-
-      prettyPrint(_.primary(), symLRBrack) shouldEqual
-        """LiteralPrimary
-          | Literal
-          |  Symbol
-          |   :[]
-          |""".stripMargin
-    }
-  }
 }

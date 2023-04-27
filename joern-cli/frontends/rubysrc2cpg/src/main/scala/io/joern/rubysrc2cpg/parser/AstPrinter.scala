@@ -13,10 +13,10 @@ object AstPrinter {
     val contextName = context.getClass.getSimpleName.stripSuffix("Context")
     val nextLevel   = level + indentationIncrement
     sb.append(s"$indentation$contextName\n")
-    context.children.forEach {
+    Option(context.children).foreach(_.forEach {
       case c: ParserRuleContext => print(nextLevel, sb, c)
       case t: TerminalNode      => print(nextLevel, sb, t)
-    }
+    })
     sb
   }
 
