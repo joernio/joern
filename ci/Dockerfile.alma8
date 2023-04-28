@@ -9,7 +9,7 @@ LABEL maintainer="joern" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.title="joern" \
       org.opencontainers.image.description="Joern is a platform for analyzing source code, bytecode, and binary executables" \
-      org.opencontainers.docker.cmd="docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/joern"
+      org.opencontainers.docker.cmd="docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/joern-alma8"
 
 ENV JOERN_HOME=/usr/local/bin \
     JAVA_HOME="/etc/alternatives/jre_17" \
