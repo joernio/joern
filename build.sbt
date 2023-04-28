@@ -1,6 +1,6 @@
 name                     := "joern"
 ThisBuild / organization := "io.joern"
-ThisBuild / scalaVersion := "3.3.0-RC4"
+ThisBuild / scalaVersion := "3.3.0-RC5"
 
 val cpgVersion = "1.3.598+4-76927162"
 
