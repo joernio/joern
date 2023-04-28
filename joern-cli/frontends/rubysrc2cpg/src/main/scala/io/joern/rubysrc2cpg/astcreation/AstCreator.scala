@@ -309,7 +309,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForBeginExpressionPrimaryContext(ctx: BeginExpressionPrimaryContext): Ast = {
-    Ast()
+    astForBodyStatementContext(ctx.beginExpression().bodyStatement())
   }
 
   def astForBitwiseAndExpressionContext(ctx: BitwiseAndExpressionContext): Ast = {
