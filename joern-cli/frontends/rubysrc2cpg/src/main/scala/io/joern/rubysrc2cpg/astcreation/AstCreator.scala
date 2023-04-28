@@ -324,8 +324,38 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
   }
 
+  def astForWhenArgumentContext(ctx: WhenArgumentContext): Ast = {
+    val expAsts = if (ctx.expressions() != null) {
+      ctx
+        .expressions()
+        .expression()
+        .asScala
+        .map(exp => {
+          astForExpressionContext(exp)
+        })
+        .toSeq
+    } else {
+      Seq[Ast]()
+    }
+    val splatAst = astForSplattingArgumentContext(ctx.splattingArgument())
+    Ast().withChildren(expAsts).withChild(splatAst)
+  }
+
   def astForCaseExpressionPrimaryContext(ctx: CaseExpressionPrimaryContext): Ast = {
-    Ast()
+    val exprCmdAst = astForExpressionOrCommandContext(ctx.caseExpression().expressionOrCommand())
+    val caseAsts = ctx
+      .caseExpression()
+      .whenClause()
+      .asScala
+      .map(wh => {
+        val thenAst = astForThenClauseContext(wh.thenClause())
+        val whenAst = astForWhenArgumentContext(wh.whenArgument())
+        whenAst.withChild(thenAst)
+      })
+      .toSeq
+
+    val elseAst = astForElseClauseContext(ctx.caseExpression().elseClause())
+    exprCmdAst.withChildren(caseAsts).withChild(elseAst)
   }
 
   def astForChainedInvocationPrimaryContext(ctx: ChainedInvocationPrimaryContext): Ast = {
