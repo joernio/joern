@@ -64,4 +64,6 @@ object Main extends X2CpgMain(cmdLineParser, new JavaSrc2Cpg()) {
   def run(config: Config, javasrc2Cpg: JavaSrc2Cpg): Unit = {
     javasrc2Cpg.run(config)
   }
+
+  def getCmdLineParser = cmdLineParser
 }
