@@ -719,7 +719,10 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Ast = {
-    Ast()
+    val unlessAst = astForExpressionOrCommandContext(ctx.unlessExpression().expressionOrCommand())
+    val thenAst   = astForThenClauseContext(ctx.unlessExpression().thenClause())
+    val elseAst   = astForElseClauseContext(ctx.unlessExpression().elseClause())
+    unlessAst.withChildren(Seq[Ast](thenAst, elseAst))
   }
 
   def astForUntilExpressionPrimaryContext(ctx: UntilExpressionPrimaryContext): Ast = {
