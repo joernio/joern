@@ -21,9 +21,9 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
       member.code shouldBe "x"
     }
 
-    "should have the MEMBER attached to the meta class" in {
+    "should have the MEMBER attached to the class" in {
       val List(typeDecl) = cpg.member.name("x").typeDecl.l
-      typeDecl.name shouldBe "Foo<meta>"
+      typeDecl.name shouldBe "Foo"
     }
   }
 
@@ -40,9 +40,9 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
       member.code shouldBe "x"
     }
 
-    "should have the MEMBER attached to the meta class" in {
+    "should have the MEMBER attached to the class" in {
       val List(typeDecl) = cpg.member.name("x").typeDecl.l
-      typeDecl.name shouldBe "Foo<meta>"
+      typeDecl.name shouldBe "Foo"
     }
 
   }
@@ -61,9 +61,9 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
       member.code shouldBe "x"
     }
 
-    "should have the MEMBER attached to the meta class" in {
+    "should have the MEMBER attached to the class" in {
       val List(typeDecl) = cpg.member.name("x").typeDecl.l
-      typeDecl.name shouldBe "Foo<meta>"
+      typeDecl.name shouldBe "Foo"
       typeDecl.lineNumber shouldBe Some(2)
       typeDecl.columnNumber shouldBe Some(1)
     }
@@ -93,7 +93,7 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "should only render the LHS of the expression as the member and not the RHS" in {
-      cpg.typeDecl("SocialToken<meta>").member.name.l shouldBe List("app", "account", "<fakeNew>")
+      cpg.typeDecl("SocialToken").member.name.l shouldBe List("app", "account")
     }
   }
 
