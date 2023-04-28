@@ -11,5 +11,5 @@ ENV PATH ${PATH}:${SBT_HOME}/bin
 RUN curl -sL "https://github.com/sbt/sbt/releases/download/v$SBT_VERSION/sbt-$SBT_VERSION.tgz" | gunzip | tar -x -C /usr/local
 
 # building joern
-RUN git clone https://github.com/ShiftLeftSecurity/joern.git && cd joern && sbt stage
+RUN git clone https://github.com/joernio/joern && cd joern && sbt stage
 WORKDIR /joern
