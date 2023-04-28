@@ -778,8 +778,14 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     astForVariableRefenceContext(ctx.variableReference())
   }
 
+  def astForDoClauseContext(ctx: DoClauseContext): Ast = {
+    astForStatementsContext(ctx.compoundStatement().statements())
+  }
+
   def astForWhileExpressionPrimaryContext(ctx: WhileExpressionPrimaryContext): Ast = {
-    Ast()
+    val exprCmdAst  = astForExpressionOrCommandContext(ctx.whileExpression().expressionOrCommand())
+    val doClauseAst = astForDoClauseContext(ctx.whileExpression().doClause())
+    exprCmdAst.withChild(doClauseAst)
   }
 
   def astForBlockArgumentContext(ctx: BlockArgumentContext): Ast = {
