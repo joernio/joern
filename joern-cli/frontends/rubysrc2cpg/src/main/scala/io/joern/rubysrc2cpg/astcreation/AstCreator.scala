@@ -407,8 +407,41 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
   }
 
+  def astForGroupedLeftHandSideContext(ctx: GroupedLeftHandSideContext): Ast = {
+    astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
+  }
+
+  def astForMultipleLeftHandSideContext(ctx: MultipleLeftHandSideContext): Ast = {
+    val asts = ctx
+      .multipleLeftHandSideItem()
+      .asScala
+      .map(item => {
+        if (item.singleLeftHandSide() != null) {
+          astForSingleLeftHandSideContext(item.singleLeftHandSide(), Defines.Any)
+        } else {
+          astForGroupedLeftHandSideContext(item.groupedLeftHandSide())
+        }
+      })
+      .toSeq
+    Ast().withChildren(asts)
+  }
+
+  def astForForVariableContext(ctx: ForVariableContext): Ast = {
+    if (ctx.singleLeftHandSide() != null) {
+      astForSingleLeftHandSideContext(ctx.singleLeftHandSide(), Defines.Any)
+    } else if (ctx.multipleLeftHandSide() != null) {
+      astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
+    } else {
+      Ast()
+    }
+  }
+
   def astForForExpressionPrimaryContext(ctx: ForExpressionPrimaryContext): Ast = {
-    Ast()
+    val forVarAst   = astForForVariableContext(ctx.forExpression().forVariable())
+    val exprCmdAst  = astForExpressionOrCommandContext(ctx.forExpression().expressionOrCommand())
+    val doClauseAst = astForDoClauseContext(ctx.forExpression().doClause())
+    val blockNode   = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChildren(Seq[Ast](forVarAst, exprCmdAst)).withChild(doClauseAst)
   }
 
   def astForGroupingExpressionPrimaryContext(ctx: GroupingExpressionPrimaryContext): Ast = {
