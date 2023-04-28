@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, Token}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
+import java.util
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -388,8 +389,38 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast()
   }
 
+  def astForThenClauseContext(ctx: ThenClauseContext): Ast = {
+    astForStatementsContext(ctx.compoundStatement().statements())
+  }
+
+  def astForElsifClauseContext(ctx: util.List[ElsifClauseContext]): Seq[Ast] = {
+    if (ctx == null) return Seq[Ast]()
+
+    ctx.asScala
+      .map(elif => {
+        val thenAst   = astForThenClauseContext(elif.thenClause())
+        val expCmdAst = astForExpressionOrCommandContext(elif.expressionOrCommand())
+        val blockNode = NewBlock().typeFullName(Defines.Any)
+        Ast(blockNode).withChildren(Seq[Ast](thenAst, expCmdAst))
+      })
+      .toSeq
+  }
+
+  def astForElseClauseContext(ctx: ElseClauseContext): Ast = {
+    if (ctx == null) return Ast()
+    astForStatementsContext(ctx.compoundStatement().statements())
+  }
+
+  def astForIfExpressionContext(ctx: IfExpressionContext): Ast = {
+    val ifAst      = astForExpressionOrCommandContext(ctx.expressionOrCommand())
+    val thenAst    = astForThenClauseContext(ctx.thenClause())
+    val elseifAsts = astForElsifClauseContext(ctx.elsifClause())
+    val elseAst    = astForElseClauseContext(ctx.elseClause())
+    ifAst.withChildren(Seq[Ast](thenAst, elseAst)).withChildren(elseifAsts)
+  }
+
   def astForIfExpressionPrimaryContext(ctx: IfExpressionPrimaryContext): Ast = {
-    Ast()
+    astForIfExpressionContext(ctx.ifExpression())
   }
 
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Ast = {
