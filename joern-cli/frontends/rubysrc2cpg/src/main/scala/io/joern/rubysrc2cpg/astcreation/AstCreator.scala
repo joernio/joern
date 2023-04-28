@@ -732,16 +732,62 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast().withChildren(Seq[Ast](blockArgAst, splatAst))
   }
 
-  def astForBlockSplattingExprAssocTypeContext(ctx: BlockSplattingExprAssocTypeContext): Ast = {
+  def astForAssociationsContext(ctx: AssociationsContext) = {
     Ast()
+  }
+
+  def astForBlockSplattingExprAssocTypeContext(ctx: BlockSplattingExprAssocTypeContext): Ast = {
+    val blockArgAst     = astForBlockArgumentContext(ctx.blockArgument())
+    val splatAst        = astForSplattingArgumentContext(ctx.splattingArgument())
+    val associationsAst = astForAssociationsContext(ctx.associations())
+    val expAsts         = ctx.expressions().expression().asScala.map(exp => astForExpressionContext(exp)).toSeq
+    val blockNodeExp    = NewBlock().typeFullName(Defines.Any)
+    val expAst          = Ast(blockNodeExp).withChildren(expAsts)
+
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChildren(Seq[Ast](blockArgAst, splatAst, associationsAst, expAst))
   }
 
   def astForBlockExprAssocTypeContext(ctx: BlockExprAssocTypeContext): Ast = {
-    Ast()
+    val blockArgAst = astForBlockArgumentContext(ctx.blockArgument())
+    val assocOrExpAst = if (ctx.associations() != null) {
+      astForAssociationsContext(ctx.associations())
+    } else {
+      val blockNodeExp = NewBlock().typeFullName(Defines.Any)
+      val asts         = ctx.expressions().expression().asScala.map(exp => astForExpressionContext(exp)).toSeq
+      Ast(blockNodeExp).withChildren(asts)
+    }
+
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChildren(Seq[Ast](blockArgAst, assocOrExpAst))
+  }
+
+  def astForArgumentsWithoutParenthesesContext(ctx: ArgumentsWithoutParenthesesContext): Ast = {
+    astForArgumentsContext(ctx.arguments())
+  }
+
+  def astForCommandContext(ctx: CommandContext): Ast = {
+    val argumentsWithoutParenAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+    val blockNode                = NewBlock().typeFullName(Defines.Any)
+
+    if (ctx.SUPER() != null) {
+      Ast(blockNode).withChild(argumentsWithoutParenAst)
+    } else if (ctx.YIELD() != null) {
+      Ast(blockNode).withChild(argumentsWithoutParenAst)
+    } else if (ctx.methodIdentifier() != null) {
+      val methodIdentifierAst = astForMethodIdentifierContext(ctx.methodIdentifier())
+      Ast(blockNode).withChildren(Seq[Ast](argumentsWithoutParenAst, methodIdentifierAst))
+    } else if (ctx.primary() != null) {
+      val primaryAst    = astForPrimaryContext(ctx.primary())
+      val methodNameAst = astForMethodNameContext(ctx.methodName())
+      Ast(blockNode).withChildren(Seq[Ast](primaryAst, methodNameAst, argumentsWithoutParenAst))
+    } else {
+      Ast()
+    }
   }
 
   def astForCommandTypeContext(ctx: CommandTypeContext): Ast = {
-    Ast()
+    astForCommandContext(ctx.command())
   }
 
   def astForArgumentsContext(ctx: ArgumentsContext): Ast = ctx match {
