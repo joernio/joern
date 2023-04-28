@@ -827,4 +827,30 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "calls from imported class fields" should {
+    lazy val cpg = code(
+      """
+        |from .models import Profile
+        |
+        |def profile(request):
+        |    profile = Profile.objects.filter(user=request.user).order_by('-id')[0]
+        |""".stripMargin,
+      "views.py"
+    ).moreCode(
+      """
+        |from django.db import models
+        |
+        |class Profile(models.Model):
+        |    user = models.CharField(max_length=20)
+        |    name = models.CharField(max_length=50)
+        |""".stripMargin,
+      "models.py"
+    )
+
+    "resolve the `filter` call" in {
+      val Some(call) = cpg.call.nameExact("filter").headOption
+      call.methodFullName shouldBe "models.py:<module>.Profile.<member>(objects).filter"
+    }
+  }
+
 }

@@ -2,7 +2,6 @@ package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language._
@@ -267,13 +266,9 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     if (fa.method.name == "<module>") {
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
-      val parentTypes =
-        fa.method.typeDecl.fullName.map(_.stripSuffix("<meta>")).toSeq
+      val parentTypes       = fa.method.typeDecl.fullName.toSeq
       val baseTypeFullNames = cpg.typeDecl.fullNameExact(parentTypes: _*).inheritsFromTypeFullName.toSeq
-      (parentTypes ++ baseTypeFullNames)
-        .map(_.concat("<meta>"))
-        .filterNot(_.toLowerCase.matches("(any|object)"))
-        .toSet
+      (parentTypes ++ baseTypeFullNames).filterNot(_.toLowerCase.matches("(any|object)")).toSet
     } else {
       super.getFieldParents(fa)
     }
@@ -293,11 +288,6 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     }).toSet
   }
 
-  override def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit = {
-    val pythonName = convertTypeFullNameToPythonMeta(typeFullName)
-    super.persistMemberWithTypeDecl(pythonName, memberName, types)
-  }
-
   override def createCallFromIdentifierTypeFullName(typeFullName: String, callName: String): String = {
     lazy val tName = typeFullName.split("\\.").lastOption.getOrElse(typeFullName)
     typeFullName match {
@@ -308,17 +298,6 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
         Seq(t, callName).mkString(pathSep.toString)
       case _ => super.createCallFromIdentifierTypeFullName(typeFullName, callName)
     }
-  }
-
-  override def typeDeclTraversal(typeFullName: String): Traversal[TypeDecl] =
-    cpg.typeDecl.fullNameExact(convertTypeFullNameToPythonMeta(typeFullName))
-
-  private def convertTypeFullNameToPythonMeta(typeFullName: String): String = {
-    if (typeFullName.endsWith("<module>") || typeFullName.endsWith("<meta>")) typeFullName
-    else
-      (if (typeFullName.contains(pathSep))
-         typeFullName.substring(0, typeFullName.lastIndexOf(pathSep))
-       else typeFullName).concat("<meta>")
   }
 
   override protected def postSetTypeInformation(): Unit =
@@ -339,7 +318,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
         classMethod.parameter
           .nameExact("cls")
           .foreach { cls =>
-            val clsPath = classMethod.typeDecl.fullName.map(_.stripSuffix("<meta>")).toSet
+            val clsPath = classMethod.typeDecl.fullName.toSet
             symbolTable.put(LocalVar(cls.name), clsPath)
             if (cls.typeFullName == "ANY")
               builder.setNodeProperty(cls, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, clsPath.toSeq)
