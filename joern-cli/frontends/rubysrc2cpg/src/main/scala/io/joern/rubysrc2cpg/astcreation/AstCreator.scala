@@ -313,8 +313,41 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
   }
 
+  def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Ast = ctx match {
+    case ctx: RubyParser.CommandOnlyContext =>
+      astForCommandContext(ctx.command())
+    case ctx: RubyParser.ExpressionsOnlyContext =>
+      val expAsts =
+        ctx
+          .expressions()
+          .expression()
+          .asScala
+          .map(exp => {
+            astForExpressionContext(exp)
+          })
+          .toSeq
+      Ast().withChildren(expAsts)
+    case ctx: RubyParser.ExpressionsAndSplattingContext =>
+      val expAsts = ctx
+        .expressions()
+        .expression()
+        .asScala
+        .map(exp => {
+          astForExpressionContext(exp)
+        })
+        .toSeq
+      val splatAst = astForSplattingArgumentContext(ctx.splattingArgument())
+      Ast().withChildren(expAsts).merge(splatAst)
+
+    case ctx: AssociationsOnlyContext =>
+      astForAssociationsContext(ctx.associations())
+    case ctx: RubyParser.SplattingOnlyContext =>
+      astForSplattingArgumentContext(ctx.splattingArgument())
+    case _ => Ast()
+  }
+
   def astForArrayConstructorPrimaryContext(ctx: ArrayConstructorPrimaryContext): Ast = {
-    Ast()
+    astForIndexingArgumentsContext(ctx.arrayConstructor().indexingArguments())
   }
 
   def astForBeginExpressionPrimaryContext(ctx: BeginExpressionPrimaryContext): Ast = {
@@ -378,7 +411,18 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForChainedScopedConstantReferencePrimaryContext(ctx: ChainedScopedConstantReferencePrimaryContext): Ast = {
-    Ast()
+    val primaryAst = astForPrimaryContext(ctx.primary())
+    val localVar   = ctx.CONSTANT_IDENTIFIER()
+    val varSymbol  = localVar.getSymbol()
+    val node = identifierNode(
+      varSymbol.getText,
+      None,
+      Some(varSymbol.getLine()),
+      Some(varSymbol.getCharPositionInLine()),
+      List(Defines.Any)
+    ).typeFullName(Defines.Any)
+    val constAst = Ast(node)
+    primaryAst.withChild(constAst)
   }
 
   def astForScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): Ast = {
@@ -897,8 +941,21 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast().withChildren(Seq[Ast](blockArgAst, splatAst))
   }
 
+  def astForAssociationContext(ctx: AssociationContext): Ast = {
+    val expr1Ast = astForExpressionContext(ctx.expression().get(0))
+    val expr2Ast = astForExpressionContext(ctx.expression().get(1))
+    Ast().withChildren(Seq[Ast](expr1Ast, expr2Ast))
+  }
+
   def astForAssociationsContext(ctx: AssociationsContext) = {
-    Ast()
+    val asts = ctx
+      .association()
+      .asScala
+      .map(assoc => {
+        astForAssociationContext(assoc)
+      })
+      .toSeq
+    Ast().withChildren(asts)
   }
 
   def astForBlockSplattingExprAssocTypeContext(ctx: BlockSplattingExprAssocTypeContext): Ast = {
