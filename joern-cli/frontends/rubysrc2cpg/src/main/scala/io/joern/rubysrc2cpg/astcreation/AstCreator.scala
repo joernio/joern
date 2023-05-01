@@ -597,7 +597,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForIsDefinedPrimaryContext(ctx: IsDefinedPrimaryContext): Ast = {
-    Ast()
+    astForExpressionOrCommandContext(ctx.expressionOrCommand())
   }
 
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Ast = {
@@ -900,9 +900,54 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForSuperExpressionPrimaryContext(ctx: SuperExpressionPrimaryContext): Ast = {
+    val argAst = astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
+    val blockAst = if (ctx.block() != null) {
+      astForBlockContext(ctx.block())
+    } else {
+      Ast()
+    }
+    argAst.withChild(blockAst)
+  }
+
+  def astForArgumentsWithParenthesesContext(ctx: ArgumentsWithParenthesesContext): Ast = {
     Ast()
   }
 
+  def astForBlockParametersContext(ctx: BlockParametersContext): Ast = {
+    if (ctx.singleLeftHandSide() != null) {
+      astForSingleLeftHandSideContext(ctx.singleLeftHandSide(), Defines.Any)
+    } else if (ctx.multipleLeftHandSide() != null) {
+      astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
+    } else {
+      Ast()
+    }
+  }
+
+  def astForBlockParameterContext(ctx: BlockParameterContext): Ast = {
+    astForBlockParametersContext(ctx.blockParameters())
+  }
+
+  def astForDoBlockContext(ctx: DoBlockContext): Ast = {
+    val stmtAst = astForStatementsContext(ctx.compoundStatement().statements())
+    val bpAst   = astForBlockParameterContext(ctx.blockParameter())
+    bpAst.merge(stmtAst)
+  }
+
+  def astForBraceBlockContext(ctx: BraceBlockContext): Ast = {
+    val stmtAst = astForStatementsContext(ctx.compoundStatement().statements())
+    val bpAst   = astForBlockParameterContext(ctx.blockParameter())
+    bpAst.merge(stmtAst)
+  }
+
+  def astForBlockContext(ctx: BlockContext): Ast = {
+    if (ctx.doBlock() != null) {
+      astForDoBlockContext(ctx.doBlock())
+    } else if (ctx.braceBlock() != null) {
+      astForBraceBlockContext(ctx.braceBlock())
+    } else {
+      Ast()
+    }
+  }
   def astForUnaryExpressionContext(ctx: UnaryExpressionContext): Ast = {
     val expressionAst = astForExpressionContext(ctx.expression())
     val operatorToken = ctx.op
@@ -912,7 +957,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForUnaryMinusExpressionContext(ctx: UnaryMinusExpressionContext): Ast = {
-    Ast()
+    astForExpressionContext(ctx.expression())
   }
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Ast = {
