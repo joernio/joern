@@ -63,7 +63,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("age").l.size shouldBe 2
       cpg.identifier.name("@name").l.size shouldBe 1
       cpg.identifier.name("@age").l.size shouldBe 2
-      cpg.identifier.size shouldBe 7
+      cpg.identifier.size shouldBe 10
     }
   }
 
@@ -93,7 +93,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("num2").l.size shouldBe 1
       cpg.identifier.name("num3").l.size shouldBe 1
       val lst = cpg.identifier.l
-      lst.size shouldBe 8
+      lst.size shouldBe 9
     }
 
     "The CPG generated for a expressions" should {

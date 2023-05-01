@@ -73,7 +73,16 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
           ).typeFullName(Defines.Any)
           Ast(node)
         } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-          Ast()
+          val localVar  = ctx.CONSTANT_IDENTIFIER()
+          val varSymbol = localVar.getSymbol()
+          val node = identifierNode(
+            varSymbol.getText,
+            None,
+            Some(varSymbol.getLine()),
+            Some(varSymbol.getCharPositionInLine()),
+            List(Defines.Any)
+          ).typeFullName(Defines.Any)
+          Ast(node)
         } else {
           Ast()
         }
@@ -374,7 +383,16 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): Ast = {
     val primaryAst = astForPrimaryContext(ctx.primary())
-    // TODO handle ctx.CONSTANT_IDENTIFIER()
+    val localVar   = ctx.CONSTANT_IDENTIFIER()
+    val varSymbol  = localVar.getSymbol()
+    val node = identifierNode(
+      varSymbol.getText,
+      None,
+      Some(varSymbol.getLine()),
+      Some(varSymbol.getCharPositionInLine()),
+      List(Defines.Any)
+    ).typeFullName(Defines.Any)
+    Ast(node)
     primaryAst
   }
 
@@ -552,7 +570,16 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       ).typeFullName(Defines.Any)
       Ast(node)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      Ast()
+      val localVar  = ctx.CONSTANT_IDENTIFIER()
+      val varSymbol = localVar.getSymbol()
+      val node = identifierNode(
+        varSymbol.getText,
+        None,
+        Some(varSymbol.getLine()),
+        Some(varSymbol.getCharPositionInLine()),
+        List(Defines.Any)
+      ).typeFullName(Defines.Any)
+      Ast(node)
     } else {
       Ast()
     }
@@ -560,10 +587,27 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForMethodIdentifierContext(ctx: MethodIdentifierContext): Ast = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      val localVar = ctx.LOCAL_VARIABLE_IDENTIFIER()
-      Ast()
+      val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
+      val varSymbol = localVar.getSymbol()
+      val node = identifierNode(
+        varSymbol.getText,
+        None,
+        Some(varSymbol.getLine()),
+        Some(varSymbol.getCharPositionInLine()),
+        List(Defines.Any)
+      ).typeFullName(Defines.Any)
+      Ast(node)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      Ast()
+      val localVar  = ctx.CONSTANT_IDENTIFIER()
+      val varSymbol = localVar.getSymbol()
+      val node = identifierNode(
+        varSymbol.getText,
+        None,
+        Some(varSymbol.getLine()),
+        Some(varSymbol.getCharPositionInLine()),
+        List(Defines.Any)
+      ).typeFullName(Defines.Any)
+      Ast(node)
     } else if (ctx.methodOnlyIdentifier() != null) {
       astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     } else {
@@ -598,7 +642,16 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       ).typeFullName(Defines.Any)
       Ast(node)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      Ast()
+      val localVar  = ctx.CONSTANT_IDENTIFIER()
+      val varSymbol = localVar.getSymbol()
+      val node = identifierNode(
+        varSymbol.getText,
+        None,
+        Some(varSymbol.getLine()),
+        Some(varSymbol.getCharPositionInLine()),
+        List(Defines.Any)
+      ).typeFullName(Defines.Any)
+      Ast(node)
     } else {
       Ast()
     }
