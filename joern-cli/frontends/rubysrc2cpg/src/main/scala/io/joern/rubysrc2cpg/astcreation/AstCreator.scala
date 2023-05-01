@@ -815,7 +815,16 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForSimpleScopedConstantReferencePrimaryContext(ctx: SimpleScopedConstantReferencePrimaryContext): Ast = {
-    Ast()
+    val localVar  = ctx.CONSTANT_IDENTIFIER()
+    val varSymbol = localVar.getSymbol()
+    val node = identifierNode(
+      varSymbol.getText,
+      None,
+      Some(varSymbol.getLine()),
+      Some(varSymbol.getCharPositionInLine()),
+      List(Defines.Any)
+    ).typeFullName(Defines.Any)
+    Ast(node)
   }
 
   def astForSuperExpressionPrimaryContext(ctx: SuperExpressionPrimaryContext): Ast = {
