@@ -199,11 +199,11 @@ splattingArgument
     ;
 
 indexingArguments
-    :   command
-    |   expressions (WS* COMMA wsOrNl*)?
-    |   expressions WS* COMMA wsOrNl* splattingArgument
-    |   associations (WS* COMMA wsOrNl*)?
-    |   splattingArgument
+    :   command                                                                                                                 # commandOnly
+    |   expressions (WS* COMMA wsOrNl*)?                                                                                        # expressionsOnly
+    |   expressions WS* COMMA wsOrNl* splattingArgument                                                                         # expressionsAndSplatting
+    |   associations (WS* COMMA wsOrNl*)?                                                                                       # associationsOnly
+    |   splattingArgument                                                                                                       # splattingOnly
     ;
 
 argumentsWithParentheses
