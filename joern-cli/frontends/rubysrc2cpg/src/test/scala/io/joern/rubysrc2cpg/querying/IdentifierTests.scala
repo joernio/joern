@@ -92,6 +92,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("num1").l.size shouldBe 1
       cpg.identifier.name("num2").l.size shouldBe 1
       cpg.identifier.name("num3").l.size shouldBe 1
+      cpg.identifier.name("sum").l.size shouldBe 1
+      cpg.identifier.name("add_three_numbers").l.size shouldBe 1
       val lst = cpg.identifier.l
       lst.size shouldBe 9
     }
