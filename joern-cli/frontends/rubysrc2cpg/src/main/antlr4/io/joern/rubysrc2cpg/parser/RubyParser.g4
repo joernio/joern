@@ -365,7 +365,7 @@ elseClause
     ;
 
 unlessExpression
-    :   UNLESS wsOrNl* expressionOrCommand WS* thenClause elseClause? END
+    :   UNLESS wsOrNl* expressionOrCommand WS* thenClause wsOrNl* elseClause? wsOrNl* END
     ;
 
 caseExpression
