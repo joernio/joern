@@ -41,6 +41,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
         callExpr.lineNumber,
         callExpr.columnNumber
       )
+    // If the callee is a function itself, e.g. closure, then resolve this locally, if possible
+    callExpr.json.obj
+      .get("callee")
+      .map(createBabelNodeInfo)
+      .flatMap {
+        case callee if callee.node.isInstanceOf[FunctionLike] => functionNodeToNameAndFullName.get(callee)
+        case _                                                => None
+      }
+      .foreach { case (name, fullName) => callNode.name(name).methodFullName(fullName) }
     callAst(callNode, args, receiver = Option(receiverAst), base = Option(Ast(baseNode)))
   }
 
