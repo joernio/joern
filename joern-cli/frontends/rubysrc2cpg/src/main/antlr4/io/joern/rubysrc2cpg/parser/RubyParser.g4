@@ -169,9 +169,9 @@ chainedCommandWithDoBlock
     ;
 
 commandWithDoBlock
-    :   SUPER argumentsWithoutParentheses WS* doBlock
-    |   methodIdentifier argumentsWithoutParentheses WS* doBlock
-    |   primary WS* (DOT | COLON2) methodName argumentsWithoutParentheses WS* doBlock
+    :   SUPER argumentsWithoutParentheses WS* doBlock                                                                           # argsAndDoBlock
+    |   methodIdentifier argumentsWithoutParentheses WS* doBlock                                                                # argsAndDoBlockAndMethodId
+    |   primary WS* (DOT | COLON2) methodName argumentsWithoutParentheses WS* doBlock                                           # primaryMethodArgsDoBlock
     ;
 
 argumentsWithoutParentheses
