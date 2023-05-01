@@ -594,7 +594,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   def astForInvocationWithBlockOnlyPrimaryContext(ctx: InvocationWithBlockOnlyPrimaryContext): Ast = {
     val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier())
     val blockAst    = astForBlockContext(ctx.block())
-    blockAst // TODO fix this
+    blockAst.withChild(methodIdAst)
   }
 
   def astForInvocationWithParenthesesPrimaryContext(ctx: InvocationWithParenthesesPrimaryContext): Ast = {
