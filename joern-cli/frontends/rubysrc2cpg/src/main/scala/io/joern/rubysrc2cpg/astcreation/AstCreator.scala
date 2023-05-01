@@ -123,6 +123,33 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast(blockNode).withChildren(seqAsts)
   }
 
+  def astForStringInterpolationPrimaryContext(ctx: StringInterpolationPrimaryContext): Ast = {
+    val varAsts = ctx
+      .stringInterpolation()
+      .interpolation()
+      .asScala
+      .map(inter => {
+        astForStatementsContext(inter.compoundStatement().statements())
+      })
+      .toSeq
+
+    val nodes = ctx
+      .stringInterpolation()
+      .DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE()
+      .asScala
+      .map { substr =>
+        {
+          NewLiteral()
+            .code(substr.getText)
+            .typeFullName(Defines.String)
+            .dynamicTypeHintFullName(List(Defines.String))
+        }
+      }
+      .toSeq
+    val strAst = Ast(nodes)
+    Ast().withChildren(varAsts).merge(strAst)
+  }
+
   def astForPrimaryContext(ctx: PrimaryContext): Ast = ctx match {
     case ctx: ClassDefinitionPrimaryContext           => astForClassDefinitionPrimaryContext(ctx)
     case ctx: ModuleDefinitionPrimaryContext          => astForModuleDefinitionPrimaryContext(ctx)
@@ -145,6 +172,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     case ctx: ArrayConstructorPrimaryContext          => astForArrayConstructorPrimaryContext(ctx)
     case ctx: HashConstructorPrimaryContext           => astForHashConstructorPrimaryContext(ctx)
     case ctx: LiteralPrimaryContext                   => astForLiteralPrimaryContext(ctx)
+    case ctx: StringInterpolationPrimaryContext       => astForStringInterpolationPrimaryContext(ctx)
     case ctx: IsDefinedPrimaryContext                 => astForIsDefinedPrimaryContext(ctx)
     case ctx: SuperExpressionPrimaryContext           => astForSuperExpressionPrimaryContext(ctx)
     case ctx: IndexingExpressionPrimaryContext        => astForIndexingExpressionPrimaryContext(ctx)
@@ -511,7 +539,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForHashConstructorPrimaryContext(ctx: HashConstructorPrimaryContext): Ast = {
-    Ast()
+    astForAssociationsContext(ctx.hashConstructor().associations())
   }
 
   def astForThenClauseContext(ctx: ThenClauseContext): Ast = {
