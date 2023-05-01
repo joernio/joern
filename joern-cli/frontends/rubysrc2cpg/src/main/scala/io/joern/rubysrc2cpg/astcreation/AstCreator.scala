@@ -584,7 +584,6 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForInvocationExpressionOrCommandContext(ctx: InvocationExpressionOrCommandContext): Ast = {
     astForInvocationWithoutParenthesesContext(ctx.invocationWithoutParentheses())
-    Ast() // TODO fix this
   }
 
   def astForInvocationWithoutParenthesesContext(ctx: InvocationWithoutParenthesesContext): Ast = {
