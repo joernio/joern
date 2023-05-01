@@ -577,7 +577,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Ast = {
-    Ast()
+    val primaryAst = astForPrimaryContext(ctx.primary())
+    val argsAst    = astForIndexingArgumentsContext(ctx.indexingArguments())
+    primaryAst.withChild(argsAst)
   }
 
   def astForInvocationExpressionOrCommandContext(ctx: InvocationExpressionOrCommandContext): Ast = {
@@ -824,7 +826,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForMethodOnlyIdentifierPrimaryContext(ctx: MethodOnlyIdentifierPrimaryContext): Ast = {
-    Ast()
+    astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
   }
 
   def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Ast = {
@@ -1095,7 +1097,11 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForBlockExprAssocTypeContext(ctx: BlockExprAssocTypeContext): Ast = {
-    val blockArgAst = astForBlockArgumentContext(ctx.blockArgument())
+    val blockArgAst = if (ctx.blockArgument() != null) {
+      astForBlockArgumentContext(ctx.blockArgument())
+    } else {
+      Ast()
+    }
     val assocOrExpAst = if (ctx.associations() != null) {
       astForAssociationsContext(ctx.associations())
     } else {
