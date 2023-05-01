@@ -909,8 +909,54 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     argAst.withChild(blockAst)
   }
 
-  def astForArgumentsWithParenthesesContext(ctx: ArgumentsWithParenthesesContext): Ast = {
-    Ast()
+  def astForCommandWithDoBlockContext(ctx: CommandWithDoBlockContext): Ast = ctx match {
+    case ctx: ArgsAndDoBlockContext =>
+      val argsAst    = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val doBlockAst = astForDoBlockContext(ctx.doBlock())
+      argsAst.withChild(doBlockAst)
+    case ctx: RubyParser.ArgsAndDoBlockAndMethodIdContext =>
+      val argsAst     = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val doBlockAst  = astForDoBlockContext(ctx.doBlock())
+      val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier())
+      methodIdAst.withChild(argsAst).withChild(doBlockAst)
+    case ctx: RubyParser.PrimaryMethodArgsDoBlockContext =>
+      val argsAst       = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val doBlockAst    = astForDoBlockContext(ctx.doBlock())
+      val methodNameAst = astForMethodNameContext(ctx.methodName())
+      methodNameAst.withChild(argsAst).withChild(doBlockAst)
+    case _ => Ast()
+  }
+
+  def astForChainedCommandWithDoBlockContext(ctx: ChainedCommandWithDoBlockContext): Ast = {
+    val cmdAst    = astForCommandWithDoBlockContext(ctx.commandWithDoBlock())
+    val mNameAsts = ctx.methodName().asScala.map(mName => astForMethodNameContext(mName)).toSeq
+    val apAsts = ctx
+      .argumentsWithParentheses()
+      .asScala
+      .map(ap => {
+        astForArgumentsWithParenthesesContext(ap)
+      })
+      .toSeq
+    cmdAst.withChildren(mNameAsts).withChildren(apAsts)
+  }
+
+  def astForArgumentsWithParenthesesContext(ctx: ArgumentsWithParenthesesContext): Ast = ctx match {
+    case ctx: BlankArgsContext => Ast()
+    case ctx: ArgsOnlyContext  => astForArgumentsContext(ctx.arguments())
+    case ctx: ExpressionsAndChainedCommandWithDoBlockContext =>
+      val expAsts = ctx
+        .expressions()
+        .expression
+        .asScala
+        .map(exp => {
+          astForExpressionContext(exp)
+        })
+        .toSeq
+      val ccDoBlock = astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
+      Ast().withChildren(expAsts).merge(ccDoBlock)
+    case ctx: ChainedCommandWithDoBlockOnlyContext =>
+      astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
+    case _ => Ast()
   }
 
   def astForBlockParametersContext(ctx: BlockParametersContext): Ast = {
@@ -1009,8 +1055,13 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForBlockSplattingTypeContext(ctx: BlockSplattingTypeContext): Ast = {
-    val blockArgAst = astForBlockArgumentContext(ctx.blockArgument())
-    val splatAst    = astForSplattingArgumentContext(ctx.splattingArgument())
+    val blockArgAst = if (ctx.blockArgument() != null) {
+      astForBlockArgumentContext(ctx.blockArgument())
+    } else {
+      Ast()
+    }
+
+    val splatAst = astForSplattingArgumentContext(ctx.splattingArgument())
     Ast().withChildren(Seq[Ast](blockArgAst, splatAst))
   }
 
