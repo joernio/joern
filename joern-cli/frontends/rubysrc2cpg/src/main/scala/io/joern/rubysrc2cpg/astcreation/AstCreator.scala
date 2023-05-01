@@ -583,15 +583,34 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForInvocationExpressionOrCommandContext(ctx: InvocationExpressionOrCommandContext): Ast = {
+    astForInvocationWithoutParenthesesContext(ctx.invocationWithoutParentheses())
+    Ast() // TODO fix this
+  }
+
+  def astForInvocationWithoutParenthesesContext(ctx: InvocationWithoutParenthesesContext): Ast = {
     Ast()
   }
 
   def astForInvocationWithBlockOnlyPrimaryContext(ctx: InvocationWithBlockOnlyPrimaryContext): Ast = {
-    Ast()
+    astForMethodIdentifierContext(ctx.methodIdentifier())
+      .withChild(astForBlockContext(ctx.block()))
   }
 
   def astForInvocationWithParenthesesPrimaryContext(ctx: InvocationWithParenthesesPrimaryContext): Ast = {
+
+    val blockAst = if (ctx.block() != null) {
+      astForBlockContext(ctx.block())
+    } else {
+      Ast()
+    }
+    val ast = astForMethodIdentifierContext(ctx.methodIdentifier())
+      .withChild(astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses()))
+      .withChild(blockAst)
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChild(ast)
     Ast()
+
+    Ast() // TODO fix this
   }
 
   def astForIsDefinedExpressionContext(ctx: IsDefinedExpressionContext): Ast = {
@@ -939,7 +958,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         astForArgumentsWithParenthesesContext(ap)
       })
       .toSeq
-    cmdAst.withChildren(mNameAsts).withChildren(apAsts)
+    val ast       = cmdAst.withChildren(mNameAsts).withChildren(apAsts)
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChild(ast)
   }
 
   def astForArgumentsWithParenthesesContext(ctx: ArgumentsWithParenthesesContext): Ast = ctx match {
@@ -955,7 +976,8 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         })
         .toSeq
       val ccDoBlock = astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
-      Ast().withChildren(expAsts).merge(ccDoBlock)
+      val blockNode = NewBlock().typeFullName(Defines.Any)
+      Ast(blockNode).withChildren(expAsts).merge(ccDoBlock)
     case ctx: ChainedCommandWithDoBlockOnlyContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
     case _ => Ast()
@@ -972,19 +994,35 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForBlockParameterContext(ctx: BlockParameterContext): Ast = {
-    astForBlockParametersContext(ctx.blockParameters())
+    if (ctx.blockParameters() != null) {
+      astForBlockParametersContext(ctx.blockParameters())
+    } else {
+      Ast()
+    }
   }
 
   def astForDoBlockContext(ctx: DoBlockContext): Ast = {
     val stmtAst = astForStatementsContext(ctx.compoundStatement().statements())
-    val bpAst   = astForBlockParameterContext(ctx.blockParameter())
-    bpAst.merge(stmtAst)
+    val ast = if (ctx.blockParameter() != null) {
+      val bpAst = astForBlockParameterContext(ctx.blockParameter())
+      bpAst.merge(stmtAst)
+    } else {
+      stmtAst
+    }
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChild(ast)
   }
 
   def astForBraceBlockContext(ctx: BraceBlockContext): Ast = {
     val stmtAst = astForStatementsContext(ctx.compoundStatement().statements())
-    val bpAst   = astForBlockParameterContext(ctx.blockParameter())
-    bpAst.merge(stmtAst)
+    val ast = if (ctx.blockParameter() != null) {
+      val bpAst = astForBlockParameterContext(ctx.blockParameter())
+      bpAst.merge(stmtAst)
+    } else {
+      stmtAst
+    }
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChild(ast)
   }
 
   def astForBlockContext(ctx: BlockContext): Ast = {
@@ -995,6 +1033,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     } else {
       Ast()
     }
+    Ast() // TODO fix this
   }
   def astForUnaryExpressionContext(ctx: UnaryExpressionContext): Ast = {
     val expressionAst = astForExpressionContext(ctx.expression())
@@ -1016,11 +1055,13 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForUntilExpressionPrimaryContext(ctx: UntilExpressionPrimaryContext): Ast = {
-    Ast()
+    astForExpressionOrCommandContext(ctx.untilExpression().expressionOrCommand())
+      .withChild(astForDoClauseContext(ctx.untilExpression().doClause()))
   }
 
   def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Ast = {
-    Ast()
+    val node = identifierNode(ctx.getText, None, Some(-1), Some(-1), List(Defines.Any)).typeFullName(Defines.Any)
+    Ast(node)
   }
 
   def astForVariableRefenceContext(ctx: RubyParser.VariableReferenceContext): Ast = {
@@ -1049,6 +1090,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForBlockArgumentContext(ctx: BlockArgumentContext): Ast = {
+    if (ctx == null) return Ast()
     astForExpressionContext(ctx.expression())
   }
 
