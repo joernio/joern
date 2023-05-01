@@ -597,16 +597,15 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForInvocationWithParenthesesPrimaryContext(ctx: InvocationWithParenthesesPrimaryContext): Ast = {
-
-    val blockAst = if (ctx.block() != null) {
-      astForBlockContext(ctx.block())
-    } else {
-      Ast()
-    }
     val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier())
     val parenAst    = astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
 
-    blockAst // TODO fix this
+    if (ctx.block() != null) {
+      val blockAst = astForBlockContext(ctx.block())
+      blockAst // TODO fix this
+    } else {
+      Ast()
+    }
   }
 
   def astForIsDefinedExpressionContext(ctx: IsDefinedExpressionContext): Ast = {
@@ -859,7 +858,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForNotExpressionOrCommandContext(ctx: NotExpressionOrCommandContext): Ast = {
-    Ast()
+    astForExpressionOrCommandContext(ctx.expressionOrCommand())
   }
 
   def astForOperatorAndExpressionContext(ctx: OperatorAndExpressionContext): Ast = {
