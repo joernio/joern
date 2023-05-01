@@ -223,6 +223,12 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
       val Some(x) = cpg.file("foo.js").ast.isCall.nameExact("getIncrementalInteger").headOption
       x.methodFullName shouldBe "util.js::program:getIncrementalInteger"
     }
+
+    "resolve the full name of the currying from the closure" in {
+      val Some(x) = cpg.file("util.js").ast.isCall.lineNumber(4).lastOption
+      x.name shouldBe "anonymous"
+      x.methodFullName shouldBe "util.js::program:anonymous"
+    }
   }
 
 }
