@@ -13,6 +13,11 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 
+/**
+  * NodeBuilders helps with node creation and is intended to be used when functions from `x2cpg.AstCreatorBase`
+  * are not appropriate; for example, in cases in which the node's line and column are _not_ set from
+  * the base ASTNode type of a specific frontend.
+  */
 object NodeBuilders {
 
   private def composeCallSignature(returnType: String, argumentTypes: Iterable[String]): String = {
