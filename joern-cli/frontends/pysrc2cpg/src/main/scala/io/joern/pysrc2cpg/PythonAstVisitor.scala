@@ -464,8 +464,7 @@ class PythonAstVisitor(
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create <body> function which contains the code defining the class
-    // TODO: The below should not be metaTypeDeclNode but rather instanceTypeDecl
-    contextStack.pushClass(classDef.name, metaTypeDeclNode)
+    contextStack.pushClass(classDef.name, instanceTypeDecl)
     val (_, methodRefNode) = createMethodAndMethodRef(
       instanceTypeDeclName,
       instanceTypeDeclFullName,
@@ -496,20 +495,6 @@ class PythonAstVisitor(
       )
     }
 
-    val metaClassCallHandlerMethod =
-      createMetaClassCallHandlerMethod(initParameters, metaTypeDeclName, metaTypeDeclFullName, instanceTypeDeclFullName)
-
-    createBinding(metaClassCallHandlerMethod, metaTypeDeclNode)
-
-    // Create fake __new__ regardless whether there is an actual implementation in the code.
-    // We do this to model the __init__ call in a visible way for the data flow tracker.
-    // This is done because very often the __init__ call is hidden in a super().__new__ call
-    // and we cant yet handle super().
-    val fakeNewMethod = createFakeNewMethod(initParameters)
-
-    val fakeNewMember = nodeBuilder.memberNode("<fakeNew>", fakeNewMethod.fullName)
-    edgeBuilder.astEdge(fakeNewMember, metaTypeDeclNode, contextStack.order.getAndInc)
-
     // Create binding into class instance type for each method.
     // Also create bindings into meta class type to enable calls like "MyClass.func(obj, p1)".
     // For non static methods we create an adapter method which basically only shifts the parameters
@@ -537,6 +522,24 @@ class PythonAstVisitor(
       case _ =>
       // All other body statements are currently ignored.
     }
+
+    contextStack.pop()
+
+    contextStack.pushClass(classDef.name, metaTypeDeclNode)
+
+    val metaClassCallHandlerMethod =
+      createMetaClassCallHandlerMethod(initParameters, metaTypeDeclName, metaTypeDeclFullName, instanceTypeDeclFullName)
+
+    createBinding(metaClassCallHandlerMethod, metaTypeDeclNode)
+
+    // Create fake __new__ regardless whether there is an actual implementation in the code.
+    // We do this to model the __init__ call in a visible way for the data flow tracker.
+    // This is done because very often the __init__ call is hidden in a super().__new__ call
+    // and we cant yet handle super().
+    val fakeNewMethod = createFakeNewMethod(initParameters)
+
+    val fakeNewMember = nodeBuilder.memberNode("<fakeNew>", fakeNewMethod.fullName)
+    edgeBuilder.astEdge(fakeNewMember, metaTypeDeclNode, contextStack.order.getAndInc)
 
     contextStack.pop()
 

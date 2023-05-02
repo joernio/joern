@@ -189,4 +189,46 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
   }
 
+  "Importing an anonymous function" should {
+    lazy val cpg = code(
+      """
+        |var refThis = this;
+        |
+        |exports.getIncrementalInteger = (function() {
+        |	var count = 0;
+        |	return function() {
+        |		count++;
+        |		return count;
+        |	};
+        |})();
+        |
+        |refThis.getIncrementalInteger();
+        |""".stripMargin,
+      "util.js"
+    ).moreCode(
+      """
+        |var util = require("./util.js");
+        |
+        |util.getIncrementalInteger()
+        |""".stripMargin,
+      "foo.js"
+    )
+
+    "resolve the method full name off of an aliased 'this'" in {
+      val Some(x) = cpg.file("util.js").ast.isCall.nameExact("getIncrementalInteger").headOption
+      x.methodFullName shouldBe "util.js::program:getIncrementalInteger"
+    }
+
+    "resolve the method full name off of the imported 'util'" in {
+      val Some(x) = cpg.file("foo.js").ast.isCall.nameExact("getIncrementalInteger").headOption
+      x.methodFullName shouldBe "util.js::program:getIncrementalInteger"
+    }
+
+    "resolve the full name of the currying from the closure" in {
+      val Some(x) = cpg.file("util.js").ast.isCall.lineNumber(4).lastOption
+      x.name shouldBe "anonymous"
+      x.methodFullName shouldBe "util.js::program:anonymous"
+    }
+  }
+
 }

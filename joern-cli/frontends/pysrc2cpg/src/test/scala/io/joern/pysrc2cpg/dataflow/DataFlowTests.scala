@@ -302,7 +302,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
     method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
-    typeDeclFullName shouldBe "models.py:<module>.Foo<meta>"
+    typeDeclFullName shouldBe "models.py:<module>.Foo"
   }
 
   "lookup of __init__ call even when hidden in base class" in {

@@ -87,7 +87,6 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       new ConfigFileCreationPass(config.inputPath, cpg).createAndApply()
       new TypeNodePass(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
       new TypeInferencePass(cpg).createAndApply()
-      if (config.enableTypeRecovery) typeRecoveryPasses(cpg, Option(config)).foreach(_.createAndApply())
     }
   }
 

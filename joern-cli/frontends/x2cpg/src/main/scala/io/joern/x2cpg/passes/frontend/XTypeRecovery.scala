@@ -323,7 +323,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def visitStatementsInBlock(b: Block): Set[String] =
     b.astChildren
       .map {
-        case x: Call if x.name.equals(Operators.assignment)                => visitAssignments(new Assignment(x))
+        case x: Call if x.name.startsWith(Operators.assignment)            => visitAssignments(new Assignment(x))
         case x: Identifier if symbolTable.contains(x)                      => symbolTable.get(x)
         case x: Call if symbolTable.contains(x)                            => symbolTable.get(x)
         case x: Call if x.argument.headOption.exists(symbolTable.contains) => setCallMethodFullNameFromBase(x)
@@ -611,17 +611,17 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       sb.toString()
     }
 
-    fa.astChildren.l match {
-      case List(i: Identifier, f: FieldIdentifier) if i.name.matches("(self|this)") => wrapName(f.canonicalName)
-      case List(i: Identifier, f: FieldIdentifier) => wrapName(s"${i.name}$pathSep${f.canonicalName}")
-      case List(c: Call, f: FieldIdentifier) if c.name.equals(Operators.fieldAccess) =>
+    fa.argumentOut.l match {
+      case ::(i: Identifier, ::(f: FieldIdentifier, _)) if i.name.matches("(self|this)") => wrapName(f.canonicalName)
+      case ::(i: Identifier, ::(f: FieldIdentifier, _)) => wrapName(s"${i.name}$pathSep${f.canonicalName}")
+      case ::(c: Call, ::(f: FieldIdentifier, _)) if c.name.equals(Operators.fieldAccess) =>
         wrapName(getFieldName(new FieldAccess(c), suffix = f.canonicalName))
-      case List(c: Call, f: FieldIdentifier) if getTypesFromCall(c).nonEmpty =>
+      case ::(c: Call, ::(f: FieldIdentifier, _)) if getTypesFromCall(c).nonEmpty =>
         // TODO: Handle this case better
         wrapName(s"${getTypesFromCall(c).head}$pathSep${f.canonicalName}")
-      case List(f: FieldIdentifier, c: Call) if c.name.equals(Operators.fieldAccess) =>
+      case ::(f: FieldIdentifier, ::(c: Call, _)) if c.name.equals(Operators.fieldAccess) =>
         wrapName(getFieldName(new FieldAccess(c), prefix = f.canonicalName))
-      case List(c: Call, f: FieldIdentifier) =>
+      case ::(c: Call, ::(f: FieldIdentifier, _)) =>
         // TODO: Handle this case better
         val callCode = if (c.code.contains("(")) c.code.substring(c.code.indexOf("(")) else c.code
         XTypeRecovery.dummyMemberType(callCode, f.canonicalName, pathSep)
@@ -693,24 +693,24 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def visitIdentifierAssignedToFieldLoad(i: Identifier, fa: FieldAccess): Set[String] = {
     val fieldName = getFieldName(fa)
-    fa.astChildren.l match {
-      case List(base: Identifier, fi: FieldIdentifier) if symbolTable.contains(LocalVar(base.name)) =>
+    fa.argumentOut.l match {
+      case ::(base: Identifier, ::(fi: FieldIdentifier, _)) if symbolTable.contains(LocalVar(base.name)) =>
         // Get field from global table if referenced as a variable
         val localTypes = symbolTable.get(LocalVar(base.name))
         associateInterproceduralTypes(i, base, fi, fieldName, localTypes)
-      case List(base: Identifier, fi: FieldIdentifier) if symbolTable.contains(LocalVar(fieldName)) =>
+      case ::(base: Identifier, ::(fi: FieldIdentifier, _)) if symbolTable.contains(LocalVar(fieldName)) =>
         val localTypes = symbolTable.get(LocalVar(fieldName))
         associateInterproceduralTypes(i, base, fi, fieldName, localTypes)
-      case List(base: Identifier, fi: FieldIdentifier) =>
+      case ::(base: Identifier, ::(fi: FieldIdentifier, _)) =>
         val dummyTypes = Set(s"$fieldName$pathSep${XTypeRecovery.DummyReturnType}")
         associateInterproceduralTypes(i, base, fi, fieldName, dummyTypes)
-      case List(c: Call, f: FieldIdentifier) if c.name.equals(Operators.fieldAccess) =>
+      case ::(c: Call, ::(fi: FieldIdentifier, _)) if c.name.equals(Operators.fieldAccess) =>
         val baseName = getFieldName(new FieldAccess(c))
         // Build type regardless of length
         // TODO: This is more prone to giving dummy values as it does not do global look-ups
         //  but this is okay for now
         val buf = mutable.ArrayBuffer.empty[String]
-        for (segment <- baseName.split(pathSep) ++ Array(f.canonicalName)) {
+        for (segment <- baseName.split(pathSep) ++ Array(fi.canonicalName)) {
           val types =
             if (buf.isEmpty) symbolTable.get(LocalVar(segment))
             else buf.flatMap(t => symbolTable.get(LocalVar(s"$t$pathSep$segment"))).toSet
@@ -724,10 +724,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           }
         }
         associateTypes(i, buf.toSet)
-      case List(call: Call, f: FieldIdentifier) =>
+      case ::(call: Call, ::(fi: FieldIdentifier, _)) =>
         assignTypesToCall(
           call,
-          Set(fieldName.stripSuffix(s"${XTypeRecovery.DummyMemberLoad}$pathSep${f.canonicalName}"))
+          Set(fieldName.stripSuffix(s"${XTypeRecovery.DummyMemberLoad}$pathSep${fi.canonicalName}"))
         )
       case _ =>
         logger.warn(s"Unable to assign identifier '${i.name}' to field load '$fieldName' @ ${debugLocation(i)}")
@@ -837,7 +837,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           case _ =>
         }
         // This field may be a function pointer
-        handlePotentialFunctionPointer(fieldAccess, idHints, f.canonicalName, f.argumentIndex, Option(i.name))
+        handlePotentialFunctionPointer(fieldAccess, idHints, f.canonicalName, Option(i.name))
       case _ => persistType(x, symbolTable.get(x))
     }
 
@@ -857,7 +857,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     funcPtr: Expression,
     baseTypes: Set[String],
     funcName: String,
-    argIdx: Int,
     baseName: Option[String] = None
   ): Unit = {
     // Sometimes the function identifier is an argument to the call itself as a "base". In this case we don't need
@@ -873,7 +872,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           NewMethodRef()
             .code(s"${baseName.map(_.appended(pathSep)).getOrElse("")}$funcName")
             .methodFullName(m.fullName)
-            .argumentIndex(argIdx + 1)
             .lineNumber(funcPtr.lineNumber)
             .columnNumber(funcPtr.columnNumber)
         )
@@ -889,8 +887,13 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             builder.addNode(mRef)
             builder.addEdge(mRef, m, EdgeTypes.REF)
             builder.addEdge(inCall, mRef, EdgeTypes.AST)
-            builder.addEdge(inCall, mRef, EdgeTypes.ARGUMENT)
-            mRef.argumentIndex(inCall.astChildren.size)
+            inCall match {
+              case x: Call =>
+                builder.addEdge(x, mRef, EdgeTypes.ARGUMENT)
+                mRef.argumentIndex(x.argumentOut.size + 1)
+              case x =>
+                mRef.argumentIndex(x.astChildren.size + 1)
+            }
           }
         addedNodes.add((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
       }
@@ -903,7 +906,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       x match {
         case i: Identifier if symbolTable.contains(i) =>
           if (isField(i)) persistMemberType(i, filteredTypes)
-          handlePotentialFunctionPointer(i, filteredTypes, i.name, i.argumentIndex)
+          handlePotentialFunctionPointer(i, filteredTypes, i.name)
         case _ =>
       }
     }
