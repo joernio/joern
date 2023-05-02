@@ -147,6 +147,7 @@ class AstCreator(
       case TSEnumDeclaration         => astForEnum(nodeInfo)
       case DeclareTypeAlias          => astForTypeAlias(nodeInfo)
       case TypeAlias                 => astForTypeAlias(nodeInfo)
+      case TSTypeAssertion           => astForCastExpression(nodeInfo)
       case TSTypeAliasDeclaration    => astForTypeAlias(nodeInfo)
       case NewExpression             => astForNewExpression(nodeInfo)
       case ThisExpression            => astForThisExpression(nodeInfo)

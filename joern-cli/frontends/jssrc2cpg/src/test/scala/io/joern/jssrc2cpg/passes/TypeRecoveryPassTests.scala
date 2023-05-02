@@ -277,4 +277,19 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Type casts of an identifier and call receiver" should {
+    lazy val cpg = code("""
+        |let imgScr: string = <string>this.imageElement;
+        |this.imageElement = new HTMLImageElement();
+        |(<HTMLImageElement>this.imageElement).src = imgScr;
+        |""".stripMargin)
+
+    "succeed in propagating type cast identifiers" in {
+      val Some(imgSrc) = cpg.identifier("imgScr").headOption
+      imgSrc.typeFullName shouldBe "__ecma.String"
+      val Some(_tmp_0) = cpg.identifier("_tmp_0").headOption
+      _tmp_0.typeFullName shouldBe "__ecma.HTMLImageElement"
+    }
+  }
+
 }

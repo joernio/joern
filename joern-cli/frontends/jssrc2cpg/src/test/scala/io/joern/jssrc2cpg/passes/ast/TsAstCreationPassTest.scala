@@ -60,7 +60,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
     }
 
     "have correct structure for type assertion" in TsAstFixture("let emptyArray = <VNode[]>[];") { cpg =>
-      cpg.call.code.l shouldBe List("let emptyArray = <VNode[]>[]")
+      cpg.assignment.code.l shouldBe List("let emptyArray = <VNode[]>[]")
     }
 
     "have correct structure for satisfies expressions" in TsAstFixture("let x = y satisfies T;") { cpg =>
