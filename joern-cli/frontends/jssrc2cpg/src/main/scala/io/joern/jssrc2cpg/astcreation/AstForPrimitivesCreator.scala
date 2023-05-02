@@ -3,7 +3,7 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
 trait AstForPrimitivesCreator { this: AstCreator =>
 
@@ -132,7 +132,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     if (expressions.isEmpty && quasis.isEmpty) {
       astForTemplateElement(createBabelNodeInfo(quasisTail))
     } else {
-      val callName = "<operator>.formatString"
+      val callName = Operators.formatString
       val argsCodes = expressions.zip(quasis).flatMap { case (expression, quasi) =>
         List(s"\"${quasi("value")("raw").str}\"", code(expression))
       }

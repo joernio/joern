@@ -3,7 +3,7 @@ package io.joern.joerncli
 import better.files.File
 import io.joern.joerncli.slicing.{DefComponent, ProgramUsageSlice, UsageSlicing}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.{Languages, Operators}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -89,7 +89,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
       val List((arg1, pos1)) = slice.argToCalls
 
       pos1 shouldBe 2
-      arg1.callName shouldBe "<operator>.formatString"
+      arg1.callName shouldBe Operators.formatString
       arg1.paramTypes shouldBe List("__ecma.String", "__ecma.String", "__ecma.String")
       arg1.returnType shouldBe "ANY"
     }
