@@ -610,7 +610,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForIsDefinedExpressionContext(ctx: IsDefinedExpressionContext): Ast = {
-    Ast()
+    astForExpressionContext(ctx.expression())
   }
 
   def astForIsDefinedPrimaryContext(ctx: IsDefinedPrimaryContext): Ast = {
