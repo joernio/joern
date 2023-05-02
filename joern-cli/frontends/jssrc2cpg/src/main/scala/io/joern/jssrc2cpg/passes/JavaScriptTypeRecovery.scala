@@ -1,10 +1,12 @@
 package io.joern.jssrc2cpg.passes
 
+import io.joern.x2cpg.Defines.ConstructorMethodName
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
 
@@ -46,6 +48,9 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   override protected def isConstructor(c: Call): Boolean = {
     c.name.endsWith("factory") && c.inCall.astParent.headOption.exists(_.isInstanceOf[Block])
   }
+
+  override protected def isConstructor(name: String): Boolean =
+    !name.isBlank && (name.charAt(0).isUpper || name.endsWith("factory"))
 
   override protected def visitImport(i: Import): Unit = for {
     rawEntity <- i.importedEntity.map(_.stripPrefix("./"))
@@ -163,7 +168,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   }
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
-    val constructorPaths = if (c.methodFullName.contains(".alloc")) {
+    val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {
       def newChildren = c.inAssignment.astSiblings.isCall.nameExact("<operator>.new").astChildren
       val possibleImportIdentifier = newChildren.isIdentifier.headOption match {
         case Some(i) => symbolTable.get(i)
@@ -180,6 +185,21 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
       else Set.empty[String]
     } else (symbolTable.get(c) + c.methodFullName).map(t => t.stripSuffix(".factory"))
     associateTypes(i, constructorPaths)
+  }
+
+  override protected def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
+    operation match {
+      case "<operator>.new" =>
+        c.astChildren.l match {
+          case ::(fa: Call, ::(i: Identifier, _)) if fa.name == Operators.fieldAccess =>
+            symbolTable.append(
+              c,
+              visitIdentifierAssignedToFieldLoad(i, new FieldAccess(fa)).map(t => s"$t$pathSep$ConstructorMethodName")
+            )
+          case _ => Set.empty
+        }
+      case _ => super.visitIdentifierAssignedToOperator(i, c, operation)
+    }
   }
 
   override protected def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] =
