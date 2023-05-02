@@ -90,13 +90,13 @@ import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.x2cpg.utils.NodeBuilders.{
-  annotationLiteralNode,
-  callNode,
-  fieldIdentifierNode => newFieldIdentifierNode,
-  identifierNode,
-  methodReturnNode,
-  modifierNode,
-  operatorCallNode
+  newAnnotationLiteralNode,
+  newCallNode,
+  newFieldIdentifierNode,
+  newIdentifierNode,
+  newMethodReturnNode,
+  newModifierNode,
+  newOperatorCallNode
 }
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{BlockScope, MethodScope, NamespaceScope, TypeDeclScope}
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
@@ -480,7 +480,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .getOrElse(TypeConstants.Object)
     typeInfoCalc.registerType(typeFullName)
 
-    identifierNode(name, Some(typeFullName))
+    newIdentifierNode(name, Some(typeFullName))
   }
 
   private def identifierForResolvedTypeParameter(typeParameter: ResolvedTypeParameterDeclaration): NewIdentifier = {
@@ -489,7 +489,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .flatMap(typeInfoCalc.fullName)
       .getOrElse(TypeConstants.Object)
     typeInfoCalc.registerType(typeFullName)
-    identifierNode(name, Some(typeFullName))
+    newIdentifierNode(name, Some(typeFullName))
   }
 
   private def clinitAstFromStaticInits(staticInits: Seq[Ast]): Option[Ast] = {
@@ -541,10 +541,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     } else {
       None
     }
-    val accessModifier = accessModifierType.map(modifierNode)
+    val accessModifier = accessModifierType.map(newModifierNode)
 
     val abstractModifier =
-      Option.when(isInterface || typ.getMethods.asScala.exists(_.isAbstract))(modifierNode(ModifierTypes.ABSTRACT))
+      Option.when(isInterface || typ.getMethods.asScala.exists(_.isAbstract))(newModifierNode(ModifierTypes.ABSTRACT))
 
     List(accessModifier, abstractModifier).flatten
   }
@@ -700,9 +700,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val thisAst = Ast(thisNodeForMethod(typeFullName, lineNumber = None))
     val bodyAst = Ast(NewBlock()).withChildren(scopeStack.getMemberInitializers)
 
-    val returnNode = methodReturnNode(TypeConstants.Void, line = None, column = None)
+    val returnNode = newMethodReturnNode(TypeConstants.Void, line = None, column = None)
 
-    val modifiers = List(modifierNode(ModifierTypes.CONSTRUCTOR), modifierNode(ModifierTypes.PUBLIC))
+    val modifiers = List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
 
     methodAstWithAnnotations(constructorNode, Seq(thisAst), bodyAst, returnNode, modifiers)
   }
@@ -733,7 +733,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def modifiersForFieldDeclaration(decl: FieldDeclaration): Seq[Ast] = {
     val staticModifier =
-      Option.when(decl.isStatic)(modifierNode(ModifierTypes.STATIC))
+      Option.when(decl.isStatic)(newModifierNode(ModifierTypes.STATIC))
 
     val accessModifierType =
       if (decl.isPublic)
@@ -745,7 +745,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       else
         None
 
-    val accessModifier = accessModifierType.map(modifierNode)
+    val accessModifier = accessModifierType.map(newModifierNode)
 
     List(staticModifier, accessModifier).flatten.map(Ast(_))
   }
@@ -837,7 +837,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     lineNumber: Option[Integer]
   ): NewMethodParameterIn = {
     val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(TypeConstants.Any))
-    NodeBuilders.thisParameterNode(typeFullName, maybeTypeFullName.toSeq, lineNumber)
+    NodeBuilders.newThisParameterNode(typeFullName, maybeTypeFullName.toSeq, lineNumber)
   }
 
   private def convertAnnotationValueExpr(expr: Expression): Option[Ast] = {
@@ -889,14 +889,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def astForAnnotationLiteralExpr(literalExpr: LiteralExpr): Ast = {
     val valueNode =
       literalExpr match {
-        case literal: StringLiteralExpr    => annotationLiteralNode(literal.getValue)
-        case literal: IntegerLiteralExpr   => annotationLiteralNode(literal.getValue)
-        case literal: BooleanLiteralExpr   => annotationLiteralNode(java.lang.Boolean.toString(literal.getValue))
-        case literal: CharLiteralExpr      => annotationLiteralNode(literal.getValue)
-        case literal: DoubleLiteralExpr    => annotationLiteralNode(literal.getValue)
-        case literal: LongLiteralExpr      => annotationLiteralNode(literal.getValue)
-        case _: NullLiteralExpr            => annotationLiteralNode("null")
-        case literal: TextBlockLiteralExpr => annotationLiteralNode(literal.getValue)
+        case literal: StringLiteralExpr    => newAnnotationLiteralNode(literal.getValue)
+        case literal: IntegerLiteralExpr   => newAnnotationLiteralNode(literal.getValue)
+        case literal: BooleanLiteralExpr   => newAnnotationLiteralNode(java.lang.Boolean.toString(literal.getValue))
+        case literal: CharLiteralExpr      => newAnnotationLiteralNode(literal.getValue)
+        case literal: DoubleLiteralExpr    => newAnnotationLiteralNode(literal.getValue)
+        case literal: LongLiteralExpr      => newAnnotationLiteralNode(literal.getValue)
+        case _: NullLiteralExpr            => newAnnotationLiteralNode("null")
+        case literal: TextBlockLiteralExpr => newAnnotationLiteralNode(literal.getValue)
       }
 
     Ast(valueNode)
@@ -971,7 +971,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callableDeclaration match {
       case methodDeclaration: MethodDeclaration =>
         Option.when(methodDeclaration.isAbstract || (isInterfaceMethod && !methodDeclaration.isDefault)) {
-          modifierNode(ModifierTypes.ABSTRACT)
+          newModifierNode(ModifierTypes.ABSTRACT)
         }
 
       case _ => None
@@ -984,7 +984,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val abstractModifier = abstractModifierForCallable(methodDeclaration, isInterfaceMethod)
 
     val staticVirtualModifierType = if (methodDeclaration.isStatic) ModifierTypes.STATIC else ModifierTypes.VIRTUAL
-    val staticVirtualModifier     = Some(modifierNode(staticVirtualModifierType))
+    val staticVirtualModifier     = Some(newModifierNode(staticVirtualModifierType))
 
     val accessModifierType = if (methodDeclaration.isPublic) {
       Some(ModifierTypes.PUBLIC)
@@ -998,7 +998,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     } else {
       None
     }
-    val accessModifier = accessModifierType.map(modifierNode)
+    val accessModifier = accessModifierType.map(newModifierNode)
 
     List(accessModifier, abstractModifier, staticVirtualModifier).flatten
   }
@@ -1043,7 +1043,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
 
     val bodyAst = methodDeclaration.getBody.toScala.map(astForBlockStatement(_)).getOrElse(Ast(NewBlock()))
-    val methodReturn = methodReturnNode(
+    val methodReturn = newMethodReturnNode(
       returnTypeFullName.getOrElse(TypeConstants.Any),
       None,
       line(methodDeclaration.getType),
@@ -1062,7 +1062,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def constructorReturnNode(constructorDeclaration: ConstructorDeclaration): NewMethodReturn = {
     val line   = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
     val column = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
-    methodReturnNode(TypeConstants.Void, None, line, column)
+    newMethodReturnNode(TypeConstants.Void, None, line, column)
   }
 
   /** Constructor and Method declarations share a lot of fields, so this method adds the fields they have in common.
@@ -1339,8 +1339,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val iterableLocalAst = Ast(iterableLocalNode)
 
     val iterableAssignNode =
-      operatorCallNode(Operators.assignment, code = "", line = lineNo, typeFullName = iterableType)
-    val iterableAssignIdentifier = identifierNode(iterableName, iterableType, lineNo)
+      newOperatorCallNode(Operators.assignment, code = "", line = lineNo, typeFullName = iterableType)
+    val iterableAssignIdentifier = newIdentifierNode(iterableName, iterableType, lineNo)
     val iterableAssignArgs       = List(Ast(iterableAssignIdentifier), iterableAst)
     val iterableAssignAst =
       callAst(iterableAssignNode, iterableAssignArgs)
@@ -1367,13 +1367,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def nativeForEachIdxInitializerAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
     val idxName = idxLocal.name
-    val idxInitializerCallNode = operatorCallNode(
+    val idxInitializerCallNode = newOperatorCallNode(
       Operators.assignment,
       code = s"int $idxName = 0",
       line = lineNo,
       typeFullName = Some(TypeConstants.Int)
     )
-    val idxIdentifierArg = identifierNode(idxName, Some(idxLocal.typeFullName), lineNo)
+    val idxIdentifierArg = newIdentifierNode(idxName, Some(idxLocal.typeFullName), lineNo)
     val zeroLiteral =
       NewLiteral()
         .code("0")
@@ -1391,20 +1391,20 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   ): Ast = {
     val idxName = idxLocal.name
 
-    val compareNode = operatorCallNode(
+    val compareNode = newOperatorCallNode(
       Operators.lessThan,
       code = s"$idxName < ${iterableSource.name}.length",
       typeFullName = Some(TypeConstants.Boolean),
       line = lineNo
     )
-    val comparisonIdxIdentifier = identifierNode(idxName, Some(idxLocal.typeFullName), lineNo)
-    val comparisonFieldAccess = operatorCallNode(
+    val comparisonIdxIdentifier = newIdentifierNode(idxName, Some(idxLocal.typeFullName), lineNo)
+    val comparisonFieldAccess = newOperatorCallNode(
       Operators.fieldAccess,
       code = s"${iterableSource.name}.length",
       typeFullName = Some(TypeConstants.Int),
       line = lineNo
     )
-    val fieldAccessIdentifier      = identifierNode(iterableSource.name, iterableSource.typeFullName, lineNo)
+    val fieldAccessIdentifier      = newIdentifierNode(iterableSource.name, iterableSource.typeFullName, lineNo)
     val fieldAccessFieldIdentifier = newFieldIdentifierNode("length", lineNo)
     val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
     val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
@@ -1419,13 +1419,13 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def nativeForEachIncrementAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
-    val incrementNode = operatorCallNode(
+    val incrementNode = newOperatorCallNode(
       Operators.postIncrement,
       code = s"${idxLocal.name}++",
       typeFullName = Some(TypeConstants.Int),
       line = lineNo
     )
-    val incrementArg    = identifierNode(idxLocal.name, Some(idxLocal.typeFullName), lineNo)
+    val incrementArg    = newIdentifierNode(idxLocal.name, Some(idxLocal.typeFullName), lineNo)
     val incrementArgAst = Ast(incrementArg)
     callAst(incrementNode, List(incrementArgAst))
       .withRefEdge(incrementArg, idxLocal)
@@ -1481,16 +1481,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     // solution for debugging.
     val lineNo = variableLocal.lineNumber
     val varAssignNode =
-      operatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(variableLocal.typeFullName), lineNo)
+      newOperatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(variableLocal.typeFullName), lineNo)
 
-    val targetNode = identifierNode(variableLocal.name, Some(variableLocal.typeFullName), lineNo)
+    val targetNode = newIdentifierNode(variableLocal.name, Some(variableLocal.typeFullName), lineNo)
 
     val indexAccessTypeFullName = iterable.typeFullName.map(_.replaceAll(raw"\[]", ""))
     val indexAccess =
-      operatorCallNode(Operators.indexAccess, PropertyDefaults.Code, indexAccessTypeFullName, lineNo)
+      newOperatorCallNode(Operators.indexAccess, PropertyDefaults.Code, indexAccessTypeFullName, lineNo)
 
-    val indexAccessIdentifier = identifierNode(iterable.name, iterable.typeFullName, lineNo)
-    val indexAccessIndex      = identifierNode(idxLocal.name, Some(idxLocal.typeFullName), lineNo)
+    val indexAccessIdentifier = newIdentifierNode(iterable.name, iterable.typeFullName, lineNo)
+    val indexAccessIndex      = newIdentifierNode(idxLocal.name, Some(idxLocal.typeFullName), lineNo)
 
     val indexAccessArgsAsts = List(indexAccessIdentifier, indexAccessIndex).map(Ast(_))
     val indexAccessAst      = callAst(indexAccess, indexAccessArgsAsts)
@@ -1575,11 +1575,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     lineNo: Option[Integer]
   ): Ast = {
     val iteratorAssignNode =
-      operatorCallNode(Operators.assignment, code = "", typeFullName = Some(TypeConstants.Iterator), line = lineNo)
-    val iteratorAssignIdentifier = identifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
+      newOperatorCallNode(Operators.assignment, code = "", typeFullName = Some(TypeConstants.Iterator), line = lineNo)
+    val iteratorAssignIdentifier = newIdentifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
 
     val iteratorCallNode =
-      callNode("iterator", iterableType, TypeConstants.Iterator, DispatchTypes.DYNAMIC_DISPATCH, lineNumber = lineNo)
+      newCallNode("iterator", iterableType, TypeConstants.Iterator, DispatchTypes.DYNAMIC_DISPATCH, lineNumber = lineNo)
 
     val actualIteratorAst = astsForExpression(iterExpr, expectedType = ExpectedType.empty).toList match {
       case Nil =>
@@ -1602,7 +1602,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def hasNextCallAstForForEach(iteratorLocalNode: NewLocal, lineNo: Option[Integer]): Ast = {
     val iteratorHasNextCallNode =
-      callNode(
+      newCallNode(
         "hasNext",
         Some(TypeConstants.Iterator),
         TypeConstants.Boolean,
@@ -1610,7 +1610,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         lineNumber = lineNo
       )
     val iteratorHasNextCallReceiver =
-      identifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
+      newIdentifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
 
     callAst(iteratorHasNextCallNode, base = Some(Ast(iteratorHasNextCallReceiver)))
       .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
@@ -1620,18 +1620,18 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val lineNo          = variableLocal.lineNumber
     val forVariableType = variableLocal.typeFullName
     val varLocalAssignNode =
-      operatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(forVariableType), lineNo)
-    val varLocalAssignIdentifier = identifierNode(variableLocal.name, Some(variableLocal.typeFullName), lineNo)
+      newOperatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(forVariableType), lineNo)
+    val varLocalAssignIdentifier = newIdentifierNode(variableLocal.name, Some(variableLocal.typeFullName), lineNo)
 
     val iterNextCallNode =
-      callNode(
+      newCallNode(
         "next",
         Some(TypeConstants.Iterator),
         TypeConstants.Object,
         DispatchTypes.DYNAMIC_DISPATCH,
         lineNumber = lineNo
       )
-    val iterNextCallReceiver = identifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
+    val iterNextCallReceiver = newIdentifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
     val iterNextCallAst =
       callAst(iterNextCallNode, base = Some(Ast(iterNextCallReceiver)))
         .withRefEdge(iterNextCallReceiver, iteratorLocalNode)
@@ -1715,7 +1715,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .lineNumber(line(stmt))
         .columnNumber(column(stmt))
 
-    val modifier = Ast(modifierNode("SYNCHRONIZED"))
+    val modifier = Ast(newModifierNode("SYNCHRONIZED"))
 
     val exprAsts = astsForExpression(stmt.getExpression, ExpectedType.empty)
     val bodyAst  = astForBlockStatement(stmt.getBody)
@@ -1821,7 +1821,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
-    val callNode = operatorCallNode(
+    val callNode = newOperatorCallNode(
       operatorName,
       code = expr.toString,
       typeFullName = Some(typeFullName),
@@ -1837,7 +1837,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       expressionReturnTypeFullName(expr)
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
-    val callNode = operatorCallNode(
+    val callNode = newOperatorCallNode(
       Operators.indexAccess,
       code = expr.toString,
       typeFullName = Some(typeFullName),
@@ -1862,7 +1862,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     maybeInitializerAst.getOrElse {
       val typeFullName = expressionReturnTypeFullName(expr).orElse(expectedType.fullName).getOrElse(TypeConstants.Any)
-      val callNode     = operatorCallNode(Operators.alloc, code = expr.toString, typeFullName = Some(typeFullName))
+      val callNode     = newOperatorCallNode(Operators.alloc, code = expr.toString, typeFullName = Some(typeFullName))
       val levelAsts = expr.getLevels.asScala.flatMap { lvl =>
         lvl.getDimension.toScala match {
           case Some(dimension) => astsForExpression(dimension, ExpectedType.Int)
@@ -1879,7 +1879,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       expressionReturnTypeFullName(expr)
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
-    val callNode = operatorCallNode(
+    val callNode = newOperatorCallNode(
       Operators.arrayInitializer,
       code = expr.toString,
       typeFullName = Some(typeFullName),
@@ -1950,7 +1950,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
-    val callNode = operatorCallNode(
+    val callNode = newOperatorCallNode(
       operatorName,
       code = expr.toString,
       typeFullName = Some(typeFullName),
@@ -1968,7 +1968,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
-    val callNode = operatorCallNode(
+    val callNode = newOperatorCallNode(
       Operators.cast,
       code = expr.toString,
       typeFullName = Some(typeFullName),
@@ -2023,7 +2023,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val code = s"${targetAst.rootCodeOrEmpty} ${expr.getOperator.asString} ${argsAsts.rootCodeOrEmpty}"
 
-    val callNode = operatorCallNode(operatorName, code, Some(typeFullName), line(expr), column(expr))
+    val callNode = newOperatorCallNode(operatorName, code, Some(typeFullName), line(expr), column(expr))
 
     if (partialConstructorQueue.isEmpty) {
       val assignAst = callAst(callNode, targetAst ++ argsAsts)
@@ -2126,7 +2126,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .getOrElse(s"${Defines.UnresolvedNamespace}.${variable.getTypeAsString}")
       val code = s"$typeName $name = ${initializerAsts.rootCodeOrEmpty}"
 
-      val callNode = operatorCallNode(Operators.assignment, code, typeFullName, lineNumber, columnNumber)
+      val callNode = newOperatorCallNode(Operators.assignment, code, typeFullName, lineNumber, columnNumber)
 
       val targetAst = scopeStack.lookupVariable(name) match {
         case Some(nodeTypeInfo) if nodeTypeInfo.isField && !nodeTypeInfo.isStatic =>
@@ -2135,7 +2135,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
         case maybeCorrespNode =>
           val identifier =
-            identifierNode(name, Some(typeFullName.getOrElse(TypeConstants.Any)), line(variable), column(variable))
+            newIdentifierNode(name, Some(typeFullName.getOrElse(TypeConstants.Any)), line(variable), column(variable))
           Ast(identifier).withRefEdges(identifier, maybeCorrespNode.map(_.node).toList)
       }
 
@@ -2183,10 +2183,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForClassExpr(expr: ClassExpr): Ast = {
     val someTypeFullName = Some(TypeConstants.Class)
-    val callNode = operatorCallNode(Operators.fieldAccess, expr.toString, someTypeFullName, line(expr), column(expr))
+    val callNode = newOperatorCallNode(Operators.fieldAccess, expr.toString, someTypeFullName, line(expr), column(expr))
 
     val identifierType = typeInfoCalc.fullName(expr.getType)
-    val identifier     = identifierNode(expr.getTypeAsString, identifierType, line(expr), column(expr))
+    val identifier     = newIdentifierNode(expr.getTypeAsString, identifierType, line(expr), column(expr))
     val idAst          = Ast(identifier)
 
     val fieldIdentifier = NewFieldIdentifier()
@@ -2211,7 +2211,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
-    val callNode = operatorCallNode(Operators.conditional, expr.toString, Some(typeFullName), line(expr), column(expr))
+    val callNode = newOperatorCallNode(Operators.conditional, expr.toString, Some(typeFullName), line(expr), column(expr))
 
     callAst(callNode, condAst ++ thenAst ++ elseAst)
   }
@@ -2226,7 +2226,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
-    val callNode = operatorCallNode(Operators.fieldAccess, expr.toString, Some(typeFullName), line(expr), column(expr))
+    val callNode = newOperatorCallNode(Operators.fieldAccess, expr.toString, Some(typeFullName), line(expr), column(expr))
 
     val fieldIdentifier = expr.getName
     val identifierAsts  = astsForExpression(expr.getScope, ExpectedType.empty)
@@ -2242,7 +2242,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForInstanceOfExpr(expr: InstanceOfExpr): Ast = {
     val booleanTypeFullName = Some(TypeConstants.Boolean)
-    val callNode = operatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
+    val callNode = newOperatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
 
     val exprAst      = astsForExpression(expr.getExpression, ExpectedType.empty)
     val typeFullName = typeInfoCalc.fullName(expr.getType).getOrElse(TypeConstants.Any)
@@ -2266,7 +2266,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     columnNo: Option[Integer]
   ): Ast = {
     val typeFullName     = identifierType.orElse(Some(TypeConstants.Any)).map(typeInfoCalc.registerType)
-    val identifier       = identifierNode(identifierName, typeFullName, lineNo, columnNo)
+    val identifier       = newIdentifierNode(identifierName, typeFullName, lineNo, columnNo)
     val maybeCorrespNode = scopeStack.lookupVariable(identifierName).map(_.node)
 
     val fieldIdentifier = NewFieldIdentifier()
@@ -2277,7 +2277,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val fieldAccessCode = s"$identifierName.$fieldIdentifierName"
     val fieldAccess =
-      operatorCallNode(
+      newOperatorCallNode(
         Operators.fieldAccess,
         fieldAccessCode,
         returnType.orElse(Some(TypeConstants.Any)),
@@ -2321,7 +2321,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
       case _ =>
         val identifier =
-          identifierNode(name, typeFullName.orElse(Some(TypeConstants.Any)), line(nameExpr), column(nameExpr))
+          newIdentifierNode(name, typeFullName.orElse(Some(TypeConstants.Any)), line(nameExpr), column(nameExpr))
 
         val variableOption = scopeStack
           .lookupVariable(name)
@@ -2402,7 +2402,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val argumentTypes = argumentTypesForMethodLike(maybeResolvedExpr)
 
-    val allocNode = operatorCallNode(
+    val allocNode = newOperatorCallNode(
       Operators.alloc,
       expr.toString,
       typeFullName.orElse(Some(TypeConstants.Any)),
@@ -2448,12 +2448,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val tempName = "$obj" ++ tempConstCount.toString
     tempConstCount += 1
-    val identifier    = identifierNode(tempName, Some(allocNode.typeFullName))
+    val identifier    = newIdentifierNode(tempName, Some(allocNode.typeFullName))
     val identifierAst = Ast(identifier)
 
     val allocAst = Ast(allocNode)
 
-    val assignmentNode = operatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(allocNode.typeFullName))
+    val assignmentNode = newOperatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(allocNode.typeFullName))
 
     val assignmentAst = callAst(assignmentNode, List(identifierAst, allocAst))
 
@@ -2475,7 +2475,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       expressionReturnTypeFullName(expr)
         .orElse(expectedType.fullName)
 
-    val identifier = identifierNode(expr.toString, typeFullName, line(expr), column(expr))
+    val identifier = newIdentifierNode(expr.toString, typeFullName, line(expr), column(expr))
     val thisParam  = scopeStack.lookupVariable(NameConstants.This)
 
     thisParam.foreach { nodeTypeInfo =>
@@ -2503,7 +2503,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       column(stmt)
     )
 
-    val thisNode = identifierNode(NameConstants.This, typeFullName.orElse(Some(TypeConstants.Any)))
+    val thisNode = newIdentifierNode(NameConstants.This, typeFullName.orElse(Some(TypeConstants.Any)))
     scopeStack.lookupVariable(NameConstants.This).foreach { thisParam =>
       diffGraph.addEdge(thisNode, thisParam.node, EdgeTypes.REF)
     }
@@ -2606,7 +2606,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     Option.when(maybeScope.isDefined || dispatchType == DispatchTypes.DYNAMIC_DISPATCH) {
       val name = maybeScope.map(_.toString).getOrElse(NameConstants.This)
-      identifierNode(name, typeFullName, line(call), column(call))
+      newIdentifierNode(name, typeFullName, line(call), column(call))
     }
   }
 
@@ -2840,10 +2840,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val parameters = thisParam ++ parametersWithoutThis
 
     val lambdaMethodNode = createLambdaMethodNode(lambdaMethodName, parametersWithoutThis, returnType)
-    val returnNode       = methodReturnNode(returnType.getOrElse(TypeConstants.Any), None, line(expr), column(expr))
-    val virtualModifier  = Some(modifierNode(ModifierTypes.VIRTUAL))
-    val staticModifier   = Option.when(thisParam.isEmpty)(modifierNode(ModifierTypes.STATIC))
-    val privateModifier  = Some(modifierNode(ModifierTypes.PRIVATE))
+    val returnNode       = newMethodReturnNode(returnType.getOrElse(TypeConstants.Any), None, line(expr), column(expr))
+    val virtualModifier  = Some(newModifierNode(ModifierTypes.VIRTUAL))
+    val staticModifier   = Option.when(thisParam.isEmpty)(newModifierNode(ModifierTypes.STATIC))
+    val privateModifier  = Some(newModifierNode(ModifierTypes.PRIVATE))
 
     val modifiers = List(virtualModifier, staticModifier, privateModifier).flatten.map(Ast(_))
 
@@ -3054,7 +3054,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case Success(_) if hasVariadicParameter =>
         val expectedVariadicTypeFullName = getExpectedParamType(tryResolvedDecl, paramCount - 1).fullName
         val (regularArgs, varargs)       = argsAsts.splitAt(paramCount - 1)
-        val arrayInitializer = operatorCallNode(
+        val arrayInitializer = newOperatorCallNode(
           Operators.arrayInitializer,
           Operators.arrayInitializer,
           expectedVariadicTypeFullName,
@@ -3142,7 +3142,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     typeInfoCalc.registerType(typeFullName)
 
     val identifier =
-      identifierNode(NameConstants.Super, Some(typeFullName), line(superExpr), column(superExpr))
+      newIdentifierNode(NameConstants.Super, Some(typeFullName), line(superExpr), column(superExpr))
         .name(NameConstants.This) // Necessary for closed source dataflow
 
     Ast(identifier)

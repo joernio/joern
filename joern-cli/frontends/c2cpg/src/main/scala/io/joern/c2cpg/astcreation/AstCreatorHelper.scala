@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.utils.NodeBuilders.dependencyNode
+import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
@@ -401,7 +401,7 @@ trait AstCreatorHelper { this: AstCreator =>
     val allIncludes = iASTTranslationUnit.getIncludeDirectives.toIndexedSeq
     allIncludes.foreach { include =>
       val name            = include.getName.toString
-      val _dependencyNode = dependencyNode(name, name, IncludeKeyword)
+      val _dependencyNode = newDependencyNode(name, name, IncludeKeyword)
       val importNode      = newImportNode(nodeSignature(include), name, include)
       diffGraph.addNode(_dependencyNode)
       diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
