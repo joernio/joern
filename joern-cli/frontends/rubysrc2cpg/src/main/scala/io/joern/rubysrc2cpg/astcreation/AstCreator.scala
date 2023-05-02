@@ -432,15 +432,34 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForChainedInvocationPrimaryContext(ctx: ChainedInvocationPrimaryContext): Ast = {
-    // TODO to be implemented
-    Ast()
+    val primaryAst    = astForPrimaryContext(ctx.primary())
+    val methodNameAst = astForMethodNameContext(ctx.methodName())
+    val argsWithParenthesesAst = if (ctx.argumentsWithParentheses() != null) {
+      astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
+    } else {
+      Ast()
+    }
+    val blockAst = if (ctx.block() != null) {
+      astForBlockContext(ctx.block())
+    } else {
+      Ast()
+    }
+
+    primaryAst.withChild(methodNameAst).withChildren(Seq[Ast](argsWithParenthesesAst, blockAst))
   }
 
   def astForChainedInvocationWithoutArgumentsPrimaryContext(
     ctx: ChainedInvocationWithoutArgumentsPrimaryContext
   ): Ast = {
-    // TODO to be implemented
-    Ast()
+    val primaryAst    = astForPrimaryContext(ctx.primary())
+    val methodNameAst = astForMethodNameContext(ctx.methodName())
+    val blockAst = if (ctx.block() != null) {
+      astForBlockContext(ctx.block())
+    } else {
+      Ast()
+    }
+
+    primaryAst.withChild(methodNameAst).withChild(blockAst)
   }
 
   def astForChainedScopedConstantReferencePrimaryContext(ctx: ChainedScopedConstantReferencePrimaryContext): Ast = {
@@ -523,7 +542,8 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
           }
         })
         .toSeq
-      Ast().withChildren(asts)
+      val blockNode = NewBlock().typeFullName(Defines.Any)
+      Ast(blockNode).withChildren(asts)
     case ctx: PackingLeftHandSideOnlyContext => astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
     case ctx: GroupedLeftHandSideOnlyContext => astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
     case _                                   => Ast()
@@ -645,20 +665,22 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForLiteralPrimaryContext(ctx: LiteralPrimaryContext): Ast = {
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    val blockAst  = Ast(blockNode)
     if (ctx.literal().numericLiteral() != null) {
       val text = ctx.getText
       val node = NewLiteral()
         .code(text)
         .typeFullName(Defines.Number)
         .dynamicTypeHintFullName(List(Defines.Number))
-      Ast(node)
+      blockAst.withChild(Ast(node))
     } else if (ctx.literal().SINGLE_QUOTED_STRING_LITERAL() != null) {
       val text = ctx.getText
       val node = NewLiteral()
         .code(text)
         .typeFullName(Defines.String)
         .dynamicTypeHintFullName(List(Defines.String))
-      Ast(node)
+      blockAst.withChild(Ast(node))
     } else {
       // double quoted string literal
       Ast()
@@ -671,27 +693,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Ast = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
-      val node = identifierNode(
-        varSymbol.getText,
-        None,
-        Some(varSymbol.getLine()),
-        Some(varSymbol.getCharPositionInLine()),
-        List(Defines.Any)
-      ).typeFullName(Defines.Any)
-      Ast(node)
+      Ast() // TODO this should be made a method identifier
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val localVar  = ctx.CONSTANT_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
-      val node = identifierNode(
-        varSymbol.getText,
-        None,
-        Some(varSymbol.getLine()),
-        Some(varSymbol.getCharPositionInLine()),
-        List(Defines.Any)
-      ).typeFullName(Defines.Any)
-      Ast(node)
+      Ast() // TODO this should be made a method identifier
     } else {
       Ast()
     }
@@ -699,27 +703,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForMethodIdentifierContext(ctx: MethodIdentifierContext): Ast = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
-      val node = identifierNode(
-        varSymbol.getText,
-        None,
-        Some(varSymbol.getLine()),
-        Some(varSymbol.getCharPositionInLine()),
-        List(Defines.Any)
-      ).typeFullName(Defines.Any)
-      Ast(node)
+      Ast() // TODO this should be made a method identifier
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val localVar  = ctx.CONSTANT_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
-      val node = identifierNode(
-        varSymbol.getText,
-        None,
-        Some(varSymbol.getLine()),
-        Some(varSymbol.getCharPositionInLine()),
-        List(Defines.Any)
-      ).typeFullName(Defines.Any)
-      Ast(node)
+      Ast() // TODO this should be made a method identifier
     } else if (ctx.methodOnlyIdentifier() != null) {
       astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     } else {
@@ -957,7 +943,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       Some(varSymbol.getCharPositionInLine()),
       List(Defines.Any)
     ).typeFullName(Defines.Any)
-    Ast(node)
+
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Ast(blockNode).withChild(Ast(node))
   }
 
   def astForSuperExpressionPrimaryContext(ctx: SuperExpressionPrimaryContext): Ast = {
@@ -1049,12 +1037,10 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val stmtAst = astForStatementsContext(ctx.compoundStatement().statements())
     if (ctx.blockParameter() != null) {
       val bpAst     = astForBlockParameterContext(ctx.blockParameter())
-      val ast       = bpAst.merge(stmtAst)
       val blockNode = NewBlock().typeFullName(Defines.Any)
-      Ast(blockNode).withChild(ast)
+      Ast(blockNode).withChild(bpAst).withChild(stmtAst)
     } else {
       stmtAst
-      Ast() // TODO fix this
     }
   }
 

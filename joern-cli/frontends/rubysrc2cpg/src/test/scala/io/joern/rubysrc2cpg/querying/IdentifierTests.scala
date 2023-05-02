@@ -54,6 +54,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |  end
         |end
         |
+        |Person p
+        |p.greet()
         |""".stripMargin,
       fileName = "classtest.rb"
     )
@@ -63,7 +65,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("age").l.size shouldBe 2
       cpg.identifier.name("@name").l.size shouldBe 2
       cpg.identifier.name("@age").l.size shouldBe 4
-      cpg.identifier.size shouldBe 16
+      cpg.identifier.size shouldBe 12
     }
   }
 
@@ -89,13 +91,12 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("b").l.size shouldBe 1
       cpg.identifier.name("c").l.size shouldBe 1
       cpg.identifier.name("sumOfThree").l.size shouldBe 1
-      cpg.identifier.name("num1").l.size shouldBe 2
+      cpg.identifier.name("num1").l.size shouldBe 1
       cpg.identifier.name("num2").l.size shouldBe 2
       cpg.identifier.name("num3").l.size shouldBe 2
       cpg.identifier.name("sum").l.size shouldBe 2
-      cpg.identifier.name("add_three_numbers").l.size shouldBe 1
       val lst = cpg.identifier.l
-      lst.size shouldBe 13
+      lst.size shouldBe 11
     }
 
     "The CPG generated for a expressions" should {
@@ -169,7 +170,60 @@ class IdentifierTests extends RubyCode2CpgFixture {
         cpg.identifier.name("endvar").l.size shouldBe 2
         cpg.identifier.name("beginbool").l.size shouldBe 1
         cpg.identifier.name("endbool").l.size shouldBe 1
-        cpg.identifier.size shouldBe 7
+        cpg.identifier.size shouldBe 6
+      }
+    }
+
+    "The CPG generated for do block" should {
+      val cpg = code(
+        """
+          |[1, 2, "three"].each do |n|
+          | puts n
+          |end
+          |""".stripMargin,
+        fileName = "doblock.rb"
+      )
+
+      "doblocktest" in {
+        cpg.identifier.name("n").l.size shouldBe 2
+        cpg.identifier.size shouldBe 2
+      }
+    }
+
+    "The CPG generated for failing test" should {
+      val cpg = code(
+        """
+          |[1, 2, "three"].each do |n, m|
+          |  expect {
+          |  someObject.someMethod(n)
+          |  someObject.someMethod(m)
+          |  }.to otherMethod(n).by(1)
+          |end
+          |
+          |""".stripMargin,
+        fileName = "dofailing.rb"
+      )
+
+      "dofailing" in {
+        cpg.identifier.name("n").l.size shouldBe 1
+        cpg.identifier.name("m").l.size shouldBe 1
+        cpg.identifier.size shouldBe 2
+      }
+    }
+
+    "The CPG generated for rails test" should {
+      val cpg = code(
+        """
+          |Rails.application.configure do
+          |  config.log_formatter = ::Logger::Formatter.new
+          |end
+          |
+          |""".stripMargin,
+        fileName = "dofailing.rb"
+      )
+
+      "railstest" in {
+        cpg.identifier.size shouldBe 5
       }
     }
   }
