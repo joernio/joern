@@ -645,7 +645,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
     if (ctx.block() != null) {
       val blockAst = astForBlockContext(ctx.block())
-      blockAst // TODO fix this
+      methodIdAst.withChild(parenAst).withChild(blockAst)
     } else {
       Ast()
     }
