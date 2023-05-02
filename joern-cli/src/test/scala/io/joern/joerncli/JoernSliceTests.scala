@@ -78,7 +78,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
   ) { case (cpg: Cpg, _) =>
     val programSlice =
       UsageSlicing
-        .calculateUsageSlice(cpg, JoernSlice.Config(excludeOperatorCalls = true))
+        .calculateUsageSlice(cpg, JoernSlice.Config())
         .asInstanceOf[ProgramUsageSlice]
 
     "extract 'name' parameter slice from 'startScene'" in {
@@ -86,7 +86,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
       slice.definedBy shouldBe Some(DefComponent("name", "__ecma.String"))
       slice.targetObj shouldBe DefComponent("name", "__ecma.String")
 
-      val List((arg1, pos1)) = slice.argToCalls
+      val List(_, _, (arg1, pos1)) = slice.argToCalls
 
       pos1 shouldBe 2
       arg1.callName shouldBe Operators.formatString
