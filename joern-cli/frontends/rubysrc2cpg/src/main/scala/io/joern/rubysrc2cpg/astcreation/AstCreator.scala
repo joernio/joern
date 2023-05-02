@@ -5,6 +5,7 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.NodeBuilders.identifierNode
 import io.joern.x2cpg.{Ast, AstCreatorBase}
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, Token}
@@ -850,7 +851,18 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForMultipleAssignmentExpressionContext(ctx: MultipleAssignmentExpressionContext): Ast = {
-    Ast()
+    val lhsAst            = astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
+    val (rhsAst, rhsType) = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
+    // TODO use rhsType
+    val callNode = NewCall()
+      .name(ctx.EQ().getText)
+      .code(ctx.getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(-1)
+      .columnNumber(-1)
+    callAst(callNode).withChildren(Seq[Ast](lhsAst, rhsAst))
   }
 
   def astForMultiplicativeExpressionContext(ctx: MultiplicativeExpressionContext): Ast = {
