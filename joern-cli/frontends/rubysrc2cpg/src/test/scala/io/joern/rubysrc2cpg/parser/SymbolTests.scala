@@ -10,8 +10,7 @@ class SymbolTests extends RubyParserAbstractTest {
         s"""LiteralPrimary
            | Literal
            |  Symbol
-           |   $symbolName
-           |""".stripMargin
+           |   $symbolName""".stripMargin
 
       "they are named after keywords" in {
         val eg = Seq(

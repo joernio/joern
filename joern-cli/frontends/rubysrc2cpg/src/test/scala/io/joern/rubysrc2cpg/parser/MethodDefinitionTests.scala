@@ -9,11 +9,10 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
       "it contains no parameters" in {
         val code = "def foo; end"
         printAst(_.primary(), code) shouldEqual
-          s"""MethodDefinitionPrimary
+          """MethodDefinitionPrimary
             | MethodDefinition
             |  def
             |  WsOrNl
-${"    "}
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -23,21 +22,18 @@ ${"    "}
             |   Separator
             |    ;
             |  WsOrNl
-${"    "}
             |  BodyStatement
             |   CompoundStatement
-            |  end
-            |""".stripMargin
+            |  end""".stripMargin
       }
 
       "it contains a mandatory parameter" in {
         val code = "def foo(x);end"
         printAst(_.primary(), code) shouldEqual
-          s"""MethodDefinitionPrimary
+          """MethodDefinitionPrimary
             | MethodDefinition
             |  def
             |  WsOrNl
-${"    "}
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -54,18 +50,16 @@ ${"    "}
             |    Separators
             |     Separator
             |      ;
-            |  end
-            |""".stripMargin
+            |  end""".stripMargin
       }
 
       "it contains an optional numeric parameter" in {
         val code = "def foo(x=1);end"
         printAst(_.primary(), code) shouldEqual
-          s"""MethodDefinitionPrimary
+          """MethodDefinitionPrimary
              | MethodDefinition
              |  def
              |  WsOrNl
-${"    "}
              |  SimpleMethodNamePart
              |   DefinedMethodName
              |    MethodName
@@ -90,8 +84,7 @@ ${"    "}
              |    Separators
              |     Separator
              |      ;
-             |  end
-             |""".stripMargin
+             |  end""".stripMargin
       }
     }
   }
