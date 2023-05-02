@@ -1521,11 +1521,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val tmpLocal = getTmpLocal(Option(className), line(expr))
 
     // Alloc assign
-    val allocCode             = s"$className.<alloc>()"
-    val allocNode             = newOperatorCallNode(Operators.alloc, allocCode, Option(className), line(expr))
-    val allocAst              = callAst(allocNode, base = maybeNameAst)
-    val allocAssignCode       = s"${tmpLocal.code} = ${allocAst.rootCodeOrEmpty}"
-    val allocAssignNode       = newOperatorCallNode(Operators.assignment, allocAssignCode, Option(className), line(expr))
+    val allocCode       = s"$className.<alloc>()"
+    val allocNode       = newOperatorCallNode(Operators.alloc, allocCode, Option(className), line(expr))
+    val allocAst        = callAst(allocNode, base = maybeNameAst)
+    val allocAssignCode = s"${tmpLocal.code} = ${allocAst.rootCodeOrEmpty}"
+    val allocAssignNode = newOperatorCallNode(Operators.assignment, allocAssignCode, Option(className), line(expr))
     val allocAssignIdentifier = identifierAstFromLocal(tmpLocal, line(expr))
     val allocAssignAst        = callAst(allocAssignNode, allocAssignIdentifier :: allocAst :: Nil)
 
@@ -1704,7 +1704,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForConstFetchExpr(expr: PhpConstFetchExpr): Ast = {
 
-    val identifier      = newIdentifierNode(NamespaceTraversal.globalNamespaceName, typeFullName = None, line = line(expr))
+    val identifier = newIdentifierNode(NamespaceTraversal.globalNamespaceName, typeFullName = None, line = line(expr))
     val fieldIdentifier = newFieldIdentifierNode(expr.name.name, line = line(expr))
 
     val fieldAccessNode = newOperatorCallNode(Operators.fieldAccess, code = expr.name.name, line = line(expr))

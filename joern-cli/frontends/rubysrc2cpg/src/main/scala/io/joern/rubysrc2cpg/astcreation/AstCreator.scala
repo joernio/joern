@@ -50,7 +50,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val variableName = token.getText
     val line         = token.getLine
     val column       = token.getCharPositionInLine
-    val node         = newIdentifierNode(variableName, None, Some(line), Some(column), List(varType)).typeFullName(varType)
+    val node = newIdentifierNode(variableName, None, Some(line), Some(column), List(varType)).typeFullName(varType)
     Ast(node)
   }
 

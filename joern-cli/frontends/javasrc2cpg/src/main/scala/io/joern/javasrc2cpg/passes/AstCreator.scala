@@ -1576,7 +1576,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   ): Ast = {
     val iteratorAssignNode =
       newOperatorCallNode(Operators.assignment, code = "", typeFullName = Some(TypeConstants.Iterator), line = lineNo)
-    val iteratorAssignIdentifier = newIdentifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
+    val iteratorAssignIdentifier =
+      newIdentifierNode(iteratorLocalNode.name, Some(iteratorLocalNode.typeFullName), lineNo)
 
     val iteratorCallNode =
       newCallNode("iterator", iterableType, TypeConstants.Iterator, DispatchTypes.DYNAMIC_DISPATCH, lineNumber = lineNo)
@@ -2211,7 +2212,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
-    val callNode = newOperatorCallNode(Operators.conditional, expr.toString, Some(typeFullName), line(expr), column(expr))
+    val callNode =
+      newOperatorCallNode(Operators.conditional, expr.toString, Some(typeFullName), line(expr), column(expr))
 
     callAst(callNode, condAst ++ thenAst ++ elseAst)
   }
@@ -2226,7 +2228,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
-    val callNode = newOperatorCallNode(Operators.fieldAccess, expr.toString, Some(typeFullName), line(expr), column(expr))
+    val callNode =
+      newOperatorCallNode(Operators.fieldAccess, expr.toString, Some(typeFullName), line(expr), column(expr))
 
     val fieldIdentifier = expr.getName
     val identifierAsts  = astsForExpression(expr.getScope, ExpectedType.empty)
@@ -2242,7 +2245,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def astForInstanceOfExpr(expr: InstanceOfExpr): Ast = {
     val booleanTypeFullName = Some(TypeConstants.Boolean)
-    val callNode = newOperatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
+    val callNode =
+      newOperatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
 
     val exprAst      = astsForExpression(expr.getExpression, ExpectedType.empty)
     val typeFullName = typeInfoCalc.fullName(expr.getType).getOrElse(TypeConstants.Any)
