@@ -103,13 +103,24 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
         |  static {
         |    this.d = false
         |  }
+        |  constructor(param1, param2) {
+        |    // also register e and f as dynamically declared members
+        |    this.e = param1;
+        |    this.f = param2;
+        |    // chained access should not result in member creation
+        |    this.f.g = param2;
+        |  }
         |}""".stripMargin) { cpg =>
       val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(a, b)           = classATypeDecl.member.not(_.isStatic).l
+      val List(a, b, e, f)     = classATypeDecl.member.not(_.isStatic).l
       a.name shouldBe "a"
       a.code shouldBe "a = 1"
       b.name shouldBe "b"
       b.code shouldBe """b = "foo""""
+      e.name shouldBe "e"
+      e.code shouldBe "this.e = param1;"
+      f.name shouldBe "f"
+      f.code shouldBe "this.f = param2;"
 
       val List(c, d) = classATypeDecl.member.isStatic.l
       c.name shouldBe "c"
@@ -124,9 +135,12 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
 
       val List(constructor) =
         cpg.typeDecl.nameExact("ClassA").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l
-      val List(aInitCall, bInitCall) = constructor.block.assignment.l
+      val List(aInitCall, bInitCall, eInitCall, fInitCall, gCall) = constructor.block.assignment.l
       aInitCall.code shouldBe "a = 1"
       bInitCall.code shouldBe """b = "foo""""
+      eInitCall.code shouldBe "this.e = param1"
+      fInitCall.code shouldBe "this.f = param2"
+      gCall.code shouldBe "this.f.g = param2"
     }
 
     "have method for non-static method in ClassA AST" in AstFixture("""
@@ -139,7 +153,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       methodFoo.code shouldBe "foo() {}"
     }
 
-    "have TYPE_REF to <meta> for ClassA" in AstFixture("var x = class ClassA {}") { cpg =>
+    "have TYPE_REF to ClassA" in AstFixture("var x = class ClassA {}") { cpg =>
       val List(program)         = cpg.method.nameExact(":program").l
       val List(programBlock)    = program.astChildren.isBlock.l
       val List(assignmentToTmp) = programBlock.astChildren.isCall.l
