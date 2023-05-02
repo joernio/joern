@@ -203,6 +203,14 @@ class AstGenRunner(config: Config) {
     }
   }
 
+  /** Changes the file-extension by renaming this file; if file does not have an extension, it adds the extension. If
+    * file does not exist (or is a directory) no change is done and the current file is returned.
+    */
+  private def changeExtensionTo(file: File, extension: String): File = {
+    val newName = s"${file.nameWithoutExtension(includeAll = false)}.${extension.stripPrefix(".")}"
+    if (file.isRegularFile) file.renameTo(newName) else if (file.notExists) File(newName) else file
+  }
+
   private def processEjsFiles(in: File, out: File, ejsFiles: List[String]): Try[Seq[String]] = {
     val tmpJsFiles = ejsFiles.map { ejsFilePath =>
       val ejsFile             = File(ejsFilePath)
@@ -210,12 +218,11 @@ class AstGenRunner(config: Config) {
       if (isTranspiledFile(maybeTranspiledFile.pathAsString)) {
         maybeTranspiledFile
       } else {
-        val ls                = SourceFiles.retrieveLineSeparator(ejsFilePath)
-        val sourceFileContent = IOUtils.readLinesInFile(ejsFile.path).mkString("", ls, ls)
+        val sourceFileContent = IOUtils.readEntireFile(ejsFile.path)
         val preprocessContent = new EjsPreprocessor().preprocess(sourceFileContent)
         (out / in.relativize(ejsFile).toString).parent.createDirectoryIfNotExists(createParents = true)
         val newEjsFile = ejsFile.copyTo(out / in.relativize(ejsFile).toString)
-        val jsFile     = newEjsFile.changeExtensionTo(".js").writeText(preprocessContent)
+        val jsFile     = changeExtensionTo(newEjsFile, ".js").writeText(preprocessContent)
         newEjsFile.createFile().writeText(sourceFileContent)
         jsFile
       }
@@ -229,7 +236,7 @@ class AstGenRunner(config: Config) {
       val jsonContent = IOUtils.readLinesInFile(jsonFile.path).mkString
       val json        = ujson.read(jsonContent)
       val fileName    = json("fullName").str
-      val newFileName = fileName.replace(".js", ".ejs")
+      val newFileName = fileName.patch(fileName.lastIndexOf(".js"), ".ejs", 3)
       json("relativeName") = newFileName
       json("fullName") = newFileName
       jsonFile.writeText(json.toString())
