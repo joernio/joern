@@ -197,18 +197,13 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
     }
   }
 
-  /** Override this method to implement script decryption
-    */
-  protected def decryptedScript(scriptFile: os.Path): os.Path =
-    scriptFile
-
-  private def readScript(scriptFile: File): List[String] = {
-    val code = scriptFile.lines.toList
-    println(s"importing $scriptFile (${code.size} lines)")
-    code
+  protected def createPredefFile(additionalLines: Seq[String]): Path = {
+    val tmpFile = Files.createTempFile("joern-predef", "sc")
+    File(tmpFile).write(predefPlus(additionalLines))
+    tmpFile.toAbsolutePath
   }
 
-  protected def predefPlus(lines: List[String]): String
+  protected def predefPlus(lines: Seq[String]): String
 
   protected def greeting: String
 
@@ -227,12 +222,11 @@ trait InteractiveShell { this: BridgeBase =>
          |""".stripMargin
     }
 
-    val predefCode = predefPlus(replConfig.toList)
+    val predefFile = createPredefFile(replConfig.toSeq)
 
     replpp.InteractiveShell.run(
       replpp.Config(
-        predefCode = Some(predefCode),
-        predefFiles = config.additionalImports,
+        predefFiles = predefFile +: config.additionalImports,
         nocolors = config.nocolors,
         dependencies = config.dependencies,
         resolvers = config.resolvers,
@@ -253,12 +247,10 @@ trait ScriptExecution { this: BridgeBase =>
     if (!Files.exists(scriptFile)) {
       Try(throw new AssertionError(s"given script file $scriptFile does not exist"))
     } else {
-      val predefCode = predefPlus(importCpgCode(config))
-
+      val predefFile = createPredefFile(importCpgCode(config))
       val scriptReturn = ScriptRunner.exec(
         replpp.Config(
-          predefCode = Some(predefCode),
-          predefFiles = config.additionalImports,
+          predefFiles = predefFile +: config.additionalImports,
           scriptFile = Option(scriptFile),
           command = config.command,
           params = config.params,
@@ -392,12 +384,11 @@ trait PluginHandling { this: BridgeBase =>
 trait ServerHandling { this: BridgeBase =>
 
   protected def startHttpServer(config: Config): Unit = {
-    val predefCode = predefPlus(Nil)
+    val predefFile = createPredefFile(Nil)
 
     replpp.server.ReplServer.startHttpServer(
       replpp.Config(
-        predefCode = Some(predefCode),
-        predefFiles = config.additionalImports,
+        predefFiles = predefFile +: config.additionalImports,
         dependencies = config.dependencies,
         resolvers = config.resolvers,
         verbose = true, // always print what's happening - helps debugging

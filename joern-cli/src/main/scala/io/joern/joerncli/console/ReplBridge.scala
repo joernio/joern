@@ -14,7 +14,7 @@ object ReplBridge extends BridgeBase {
 
   /** Code that is executed when starting the shell
     */
-  override def predefPlus(lines: List[String]): String = {
+  override def predefPlus(lines: Seq[String]): String = {
     s"""${Predefined.forInteractiveShell}
        |${lines.mkString("\n")}
        |""".stripMargin

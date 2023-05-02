@@ -237,7 +237,7 @@ object JoernScan extends BridgeBase {
     }
   }
 
-  override protected def predefPlus(lines: List[String]): String = ReplBridge.predefPlus(lines)
+  override protected def predefPlus(lines: Seq[String]): String = ReplBridge.predefPlus(lines)
   override protected def promptStr                               = ReplBridge.promptStr
 
   override protected def greeting: String = ReplBridge.greeting
