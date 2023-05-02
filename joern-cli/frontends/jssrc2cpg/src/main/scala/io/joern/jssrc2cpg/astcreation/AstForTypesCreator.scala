@@ -69,10 +69,12 @@ trait AstForTypesCreator { this: AstCreator =>
 
   private def classMembers(clazz: BabelNodeInfo, withConstructor: Boolean = true): Seq[Value] = {
     val allMembers = Try(clazz.json("body")("body").arr).toOption.toSeq.flatten
+    val dynamicallyDeclaredMembers =
+      allMembers.find(isConstructor).flatMap(c => Try(c("body")("body").arr).toOption).toSeq.flatten
     if (withConstructor) {
-      allMembers
+      allMembers ++ dynamicallyDeclaredMembers
     } else {
-      allMembers.filterNot(isConstructor)
+      allMembers.filterNot(isConstructor) ++ dynamicallyDeclaredMembers
     }
   }
 
@@ -178,6 +180,10 @@ trait AstForTypesCreator { this: AstCreator =>
         addModifier(function, nodeInfo.json)
         val dynamicTypeHintFullName = Option(function.fullName)
         createMemberNode(function.name, nodeInfo, dynamicTypeHintFullName)
+      case ExpressionStatement if isInitializedMember(classElement) =>
+        val memberNodeInfo = createBabelNodeInfo(nodeInfo.json("expression")("left")("property"))
+        val name           = memberNodeInfo.code
+        createMemberNode(name, nodeInfo, dynamicTypeOption = None)
       case _ =>
         val name = nodeInfo.node match {
           case ClassProperty        => code(nodeInfo.json("key"))
@@ -265,7 +271,18 @@ trait AstForTypesCreator { this: AstCreator =>
     nodeInfo != ClassMethod && nodeInfo != ClassPrivateMethod && isStatic
   }
 
-  private def isInitializedMember(json: Value): Boolean = hasKey(json, "value") && !json("value").isNull
+  private def isInitializedMember(json: Value): Boolean = {
+    val hasInitializedValue = hasKey(json, "value") && !json("value").isNull
+    val isAssignment = createBabelNodeInfo(json) match {
+      case node if node.node == ExpressionStatement =>
+        val exprNode = createBabelNodeInfo(node.json("expression"))
+        exprNode.node == AssignmentExpression &&
+        createBabelNodeInfo(exprNode.json("left")).node == MemberExpression &&
+        code(exprNode.json("left")).startsWith("this.")
+      case _ => false
+    }
+    hasInitializedValue || isAssignment
+  }
 
   private def isStaticInitBlock(json: Value): Boolean = createBabelNodeInfo(json).node == StaticBlock
 
