@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
@@ -123,7 +123,7 @@ trait KtPsiToAst {
     parameters.zipWithIndex.map { case (valueParam, idx) =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(valueParam, TypeConstants.any))
 
-      val thisParam = NodeBuilders.thisParameterNode(typeDecl.fullName, Seq())
+      val thisParam = NodeBuilders.newThisParameterNode(typeDecl.fullName, Seq())
       val thisIdentifier =
         identifierNode(Constants.this_, typeDecl.fullName).dynamicTypeHintFullName(Seq(typeDecl.fullName))
       val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParam)
@@ -145,7 +145,7 @@ trait KtPsiToAst {
         methodNode(componentName, fullName, signature, relativizedPath),
         Seq(Ast(thisParam)),
         methodBlockAst,
-        methodReturnNode(typeFullName, None, None, None)
+        newMethodReturnNode(typeFullName, None, None, None)
       )
     }
   }
@@ -162,7 +162,7 @@ trait KtPsiToAst {
         methodNode(Constants.init, fullName, signature, relativizedPath, line(ctor), column(ctor))
       scope.pushNewScope(secondaryCtorMethodNode)
 
-      val ctorThisParam = NodeBuilders.thisParameterNode(classFullName, Seq(classFullName))
+      val ctorThisParam = NodeBuilders.newThisParameterNode(classFullName, Seq(classFullName))
       scope.addToScope(Constants.this_, ctorThisParam)
 
       val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++
@@ -172,7 +172,7 @@ trait KtPsiToAst {
       scope.popScope()
 
       val ctorMethodReturnNode =
-        methodReturnNode(TypeConstants.void, None, line(ctor), column(ctor))
+        newMethodReturnNode(TypeConstants.void, None, line(ctor), column(ctor))
 
       // TODO: see if necessary to take the other asts for the ctorMethodBlock
       methodAst(secondaryCtorMethodNode, constructorParamsAsts, ctorMethodBlockAst.head, ctorMethodReturnNode)
@@ -240,7 +240,7 @@ trait KtPsiToAst {
       line(ktClass.getPrimaryConstructor),
       column(ktClass.getPrimaryConstructor)
     )
-    val ctorThisParam = NodeBuilders.thisParameterNode(classFullName, Seq(classFullName))
+    val ctorThisParam = NodeBuilders.newThisParameterNode(classFullName, Seq(classFullName))
     scope.addToScope(Constants.this_, ctorThisParam)
 
     val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++ withIndex(constructorParams) { (p, idx) =>
@@ -255,7 +255,7 @@ trait KtPsiToAst {
     val anonymousInitExpressions = ktClass.getAnonymousInitializers.asScala
     val anonymousInitAsts        = anonymousInitExpressions.flatMap(astsForExpression(_, None))
 
-    val constructorMethodReturn = methodReturnNode(
+    val constructorMethodReturn = newMethodReturnNode(
       TypeConstants.void,
       None,
       line(ktClass.getPrimaryConstructor),
@@ -378,7 +378,7 @@ trait KtPsiToAst {
 
     val thisParameterMaybe = if (needsThisParameter) {
       val typeDeclFullName = registerType(typeInfoProvider.containingTypeDeclFullName(ktFn, TypeConstants.any))
-      val node             = NodeBuilders.thisParameterNode(typeDeclFullName, Seq(typeDeclFullName))
+      val node             = NodeBuilders.newThisParameterNode(typeDeclFullName, Seq(typeDeclFullName))
       scope.addToScope(Constants.this_, node)
       Option(node)
     } else None
@@ -401,7 +401,7 @@ trait KtPsiToAst {
     val otherBodyAsts     = bodyAsts.drop(1)
     val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
-    val _methodReturnNode = methodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
+    val _methodReturnNode = newMethodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
 
     val modifierNodes =
       if (withVirtualModifier) Seq(modifierNode(ModifierTypes.VIRTUAL))
@@ -586,7 +586,7 @@ trait KtPsiToAst {
       lambdaMethodNode,
       parametersAsts,
       bodyAst,
-      methodReturnNode(returnTypeFullName, None, line(expr), column(expr))
+      newMethodReturnNode(returnTypeFullName, None, line(expr), column(expr))
     ).withChild(Ast(modifierNode(ModifierTypes.VIRTUAL)))
 
     val _methodRefNode =

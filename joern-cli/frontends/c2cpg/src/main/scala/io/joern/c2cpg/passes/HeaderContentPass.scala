@@ -12,7 +12,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import overflowdb.traversal.toNodeTraversal
 
 class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
@@ -46,7 +46,7 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
     val blockNode = NewBlock().typeFullName(Defines.anyTypeName)
 
-    val methodReturn = methodReturnNode(Defines.anyTypeName, line = None, column = None)
+    val methodReturn = newMethodReturnNode(Defines.anyTypeName, line = None, column = None)
 
     val ast = Ast(includesFile).withChild(
       Ast(namespaceBlock)

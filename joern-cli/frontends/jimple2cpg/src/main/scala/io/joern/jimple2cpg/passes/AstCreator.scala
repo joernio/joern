@@ -721,7 +721,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
             .argumentIndex(0)
             .dynamicTypeHintFullName(Seq(parentType))
         case x: NewMethodParameterIn =>
-          NodeBuilders.thisParameterNode(parentType, Seq(parentType), line(method.tryResolve()))
+          NodeBuilders.newThisParameterNode(parentType, Seq(parentType), line(method.tryResolve()))
         case x => x
       })
     } else {
@@ -1085,7 +1085,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   private def astForMethodReturn(methodDeclaration: SootMethod): Ast = {
     val typeFullName = registerType(methodDeclaration.getReturnType.toQuotedString)
     val methodReturnNode = NodeBuilders
-      .methodReturnNode(typeFullName, None, line(methodDeclaration), None)
+      .newMethodReturnNode(typeFullName, None, line(methodDeclaration), None)
       .order(methodDeclaration.getParameterCount + 2)
     Ast(methodReturnNode)
   }

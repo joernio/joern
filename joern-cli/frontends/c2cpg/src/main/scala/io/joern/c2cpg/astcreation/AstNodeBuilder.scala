@@ -1,6 +1,6 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
+import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode => newMethodReturnNode_}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTLabelStatement, IASTNode}
@@ -77,7 +77,7 @@ trait AstNodeBuilder { this: AstCreator =>
   }
 
   protected def newMethodReturnNode(node: IASTNode, typeFullName: String): NewMethodReturn = {
-    methodReturnNode(typeFullName, None, line(node), column(node))
+    newMethodReturnNode_(typeFullName, None, line(node), column(node))
   }
 
   protected def newParameterInNode(

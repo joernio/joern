@@ -6,8 +6,8 @@ import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.datastructures.Stack.{Stack, _}
-import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
+import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.{AstNodeBuilder => X2CpgAstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
@@ -115,7 +115,7 @@ class AstCreator(
     val methodChildren = astsForFile(astNodeInfo)
     setArgumentIndices(methodChildren)
 
-    val methodReturn = methodReturnNode(Defines.Any, line = None, column = None)
+    val methodReturn = newMethodReturnNode(Defines.Any, line = None, column = None)
 
     localAstParentStack.pop()
     scope.popScope()

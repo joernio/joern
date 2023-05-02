@@ -13,6 +13,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 
+/** NodeBuilders helps with node creation and is intended to be used when functions from `x2cpg.AstCreatorBase` are not
+  * appropriate; for example, in cases in which the node's line and column are _not_ set from the base ASTNode type of a
+  * specific frontend.
+  */
 object NodeBuilders {
 
   private def composeCallSignature(returnType: String, argumentTypes: Iterable[String]): String = {
@@ -24,12 +28,12 @@ object NodeBuilders {
     s"$typeDeclPrefix$name:$signature"
   }
 
-  def annotationLiteralNode(name: String): NewAnnotationLiteral =
+  def newAnnotationLiteralNode(name: String): NewAnnotationLiteral =
     NewAnnotationLiteral()
       .name(name)
       .code(name)
 
-  def callNode(
+  def newCallNode(
     methodName: String,
     typeDeclFullName: Option[String],
     returnTypeFullName: String,
@@ -52,13 +56,13 @@ object NodeBuilders {
       .columnNumber(columnNumber)
   }
 
-  def dependencyNode(name: String, groupId: String, version: String): NewDependency =
+  def newDependencyNode(name: String, groupId: String, version: String): NewDependency =
     NewDependency()
       .name(name)
       .dependencyGroupId(groupId)
       .version(version)
 
-  def fieldIdentifierNode(
+  def newFieldIdentifierNode(
     name: String,
     line: Option[Integer] = None,
     column: Option[Integer] = None
@@ -70,7 +74,7 @@ object NodeBuilders {
       .columnNumber(column)
   }
 
-  def identifierNode(
+  def newIdentifierNode(
     name: String,
     typeFullName: Option[String],
     line: Option[Integer] = None,
@@ -88,9 +92,9 @@ object NodeBuilders {
     identifier
   }
 
-  def modifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
+  def newModifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
 
-  def operatorCallNode(
+  def newOperatorCallNode(
     name: String,
     code: String,
     typeFullName: Option[String] = None,
@@ -108,7 +112,7 @@ object NodeBuilders {
       .columnNumber(column)
   }
 
-  def thisParameterNode(
+  def newThisParameterNode(
     typeFullName: String,
     dynamicTypeHintFullName: Seq[String] = Seq.empty,
     line: Option[Integer] = None,
@@ -128,7 +132,7 @@ object NodeBuilders {
 
   /** Create a method return node
     */
-  def methodReturnNode(
+  def newMethodReturnNode(
     typeFullName: String,
     dynamicTypeHintFullName: Option[String] = None,
     line: Option[Integer],

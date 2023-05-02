@@ -3,7 +3,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.NodeBuilders.identifierNode
+import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
@@ -50,7 +50,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val variableName = token.getText
     val line         = token.getLine
     val column       = token.getCharPositionInLine
-    val node         = identifierNode(variableName, None, Some(line), Some(column), List(varType)).typeFullName(varType)
+    val node = newIdentifierNode(variableName, None, Some(line), Some(column), List(varType)).typeFullName(varType)
     Ast(node)
   }
 
@@ -393,7 +393,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
-      val node = identifierNode(
+      val node = newIdentifierNode(
         varSymbol.getText,
         None,
         Some(varSymbol.getLine()),
@@ -439,7 +439,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
-      val node = identifierNode(
+      val node = newIdentifierNode(
         varSymbol.getText,
         None,
         Some(varSymbol.getLine()),
@@ -519,7 +519,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val seqNodes = localVarList
       .map(localVar => {
         val varSymbol = localVar.getSymbol()
-        identifierNode(
+        newIdentifierNode(
           varSymbol.getText,
           None,
           Some(varSymbol.getLine()),
