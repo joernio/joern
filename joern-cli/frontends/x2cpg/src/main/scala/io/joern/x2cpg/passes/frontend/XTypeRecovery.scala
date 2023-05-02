@@ -469,6 +469,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case Operators.alloc       => visitIdentifierAssignedToConstructor(i, c)
       case Operators.fieldAccess => visitIdentifierAssignedToFieldLoad(i, new FieldAccess(c))
       case Operators.indexAccess => visitIdentifierAssignedToIndexAcess(i, c)
+      case Operators.cast        => visitIdentifierAssignedToCast(i, c)
       case x                     => logger.debug(s"Unhandled operation $x (${c.code}) @ ${debugLocation(c)}"); Set.empty
     }
   }
@@ -746,11 +747,13 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Visits an identifier being assigned to the result of an index access operation.
     */
-  protected def visitIdentifierAssignedToIndexAcess(i: Identifier, c: Call): Set[String] = {
-    val iaTypes = getTypesFromCall(c)
-    if (iaTypes.nonEmpty) associateTypes(i, iaTypes)
-    else Set.empty
-  }
+  protected def visitIdentifierAssignedToIndexAcess(i: Identifier, c: Call): Set[String] =
+    associateTypes(i, getTypesFromCall(c))
+
+  /** Visits an identifier that is the target of a cast operation.
+    */
+  protected def visitIdentifierAssignedToCast(i: Identifier, c: Call): Set[String] =
+    associateTypes(i, (c.typeFullName +: c.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet)
 
   protected def getFieldBaseType(base: Identifier, fi: FieldIdentifier): Set[String] =
     getFieldBaseType(base.name, fi.canonicalName)

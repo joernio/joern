@@ -248,13 +248,19 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForCastExpression(castExpr: BabelNodeInfo): Ast = {
-    val op      = Operators.cast
+    val op = Operators.cast
+    val typ = typeFor(castExpr) match {
+      case t if GlobalBuiltins.builtins.contains(t) => s"__ecma.$t"
+      case t                                        => t
+    }
     val lhsNode = castExpr.json("typeAnnotation")
-    val lhsAst  = Ast(createLiteralNode(code(lhsNode), None, line(lhsNode), column(lhsNode)))
-    val rhsAst  = astForNodeWithFunctionReference(castExpr.json("expression"))
-
+    val lhsAst = Ast(
+      createLiteralNode(code(lhsNode), None, line(lhsNode), column(lhsNode)).dynamicTypeHintFullName(Seq(typ))
+    )
+    val rhsAst = astForNodeWithFunctionReference(castExpr.json("expression"))
     val callNode =
       createCallNode(castExpr.code, op, DispatchTypes.STATIC_DISPATCH, castExpr.lineNumber, castExpr.columnNumber)
+        .dynamicTypeHintFullName(Seq(typ))
     val argAsts = List(lhsAst, rhsAst)
     callAst(callNode, argAsts)
   }
