@@ -202,6 +202,26 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     }
   }
 
+  override protected def associateInterproceduralTypes(
+    i: Identifier,
+    fieldFullName: String,
+    fieldName: String,
+    globalTypes: Set[String],
+    baseTypes: Set[String]
+  ): Set[String] = {
+    if (symbolTable.contains(LocalVar(fieldName))) symbolTable.get(LocalVar(fieldName))
+    else if (symbolTable.contains(CallAlias(fieldName, Option("this"))))
+      symbolTable.get(CallAlias(fieldName, Option("this")))
+    else
+      super.associateInterproceduralTypes(
+        i: Identifier,
+        fieldFullName: String,
+        fieldName: String,
+        globalTypes: Set[String],
+        baseTypes: Set[String]
+      )
+  }
+
   override protected def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] =
     if (c.name == "require") Set.empty
     else super.visitIdentifierAssignedToCall(i, c)

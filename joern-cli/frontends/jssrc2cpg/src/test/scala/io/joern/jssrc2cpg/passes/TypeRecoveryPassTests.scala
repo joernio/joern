@@ -246,7 +246,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
   }
 
-  "Type obtained via assignment from `require` to {...} " should {
+  "Type obtained via assignment from `require` to {...}" should {
     lazy val cpg = code("""
         |const { google } = require('googleapis');
         |const driveObj = google.drive({ version: 'v3', auth });
