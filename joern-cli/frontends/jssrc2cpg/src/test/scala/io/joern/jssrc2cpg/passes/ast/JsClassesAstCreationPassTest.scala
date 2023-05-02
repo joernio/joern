@@ -107,6 +107,8 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
         |    // also register e and f as dynamically declared members
         |    this.e = param1;
         |    this.f = param2;
+        |    // chained access should not result in member creation
+        |    this.f.g = param2;
         |  }
         |}""".stripMargin) { cpg =>
       val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
@@ -133,11 +135,12 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
 
       val List(constructor) =
         cpg.typeDecl.nameExact("ClassA").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l
-      val List(aInitCall, bInitCall, eInitCall, fInitCall) = constructor.block.assignment.l
+      val List(aInitCall, bInitCall, eInitCall, fInitCall, gCall) = constructor.block.assignment.l
       aInitCall.code shouldBe "a = 1"
       bInitCall.code shouldBe """b = "foo""""
       eInitCall.code shouldBe "this.e = param1"
       fInitCall.code shouldBe "this.f = param2"
+      gCall.code shouldBe "this.f.g = param2"
     }
 
     "have method for non-static method in ClassA AST" in AstFixture("""

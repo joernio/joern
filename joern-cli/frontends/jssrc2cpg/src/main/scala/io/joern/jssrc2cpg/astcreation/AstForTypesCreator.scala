@@ -70,7 +70,12 @@ trait AstForTypesCreator { this: AstCreator =>
   private def classMembers(clazz: BabelNodeInfo, withConstructor: Boolean = true): Seq[Value] = {
     val allMembers = Try(clazz.json("body")("body").arr).toOption.toSeq.flatten
     val dynamicallyDeclaredMembers =
-      allMembers.find(isConstructor).flatMap(c => Try(c("body")("body").arr).toOption).toSeq.flatten
+      allMembers
+        .find(isConstructor)
+        .flatMap(c => Try(c("body")("body").arr).toOption)
+        .toSeq
+        .flatten
+        .filter(isInitializedMember)
     if (withConstructor) {
       allMembers ++ dynamicallyDeclaredMembers
     } else {
@@ -278,7 +283,7 @@ trait AstForTypesCreator { this: AstCreator =>
         val exprNode = createBabelNodeInfo(node.json("expression"))
         exprNode.node == AssignmentExpression &&
         createBabelNodeInfo(exprNode.json("left")).node == MemberExpression &&
-        code(exprNode.json("left")).startsWith("this.")
+        code(exprNode.json("left")("object")) == "this"
       case _ => false
     }
     hasInitializedValue || isAssignment
