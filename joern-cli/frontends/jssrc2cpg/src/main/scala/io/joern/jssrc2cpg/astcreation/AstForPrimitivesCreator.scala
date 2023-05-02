@@ -132,7 +132,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     if (expressions.isEmpty && quasis.isEmpty) {
       astForTemplateElement(createBabelNodeInfo(quasisTail))
     } else {
-      val callName = "__Runtime.TO_STRING"
+      val callName = "<operator>.formatString"
       val argsCodes = expressions.zip(quasis).flatMap { case (expression, quasi) =>
         List(s"\"${quasi("value")("raw").str}\"", code(expression))
       }

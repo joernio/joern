@@ -151,8 +151,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       fooCall.code shouldBe s"foo(`Hello $${world}!`)"
 
       val List(templateCall) = fooCall.astChildren.isCall.l
-      templateCall.name shouldBe "__Runtime.TO_STRING"
-      templateCall.code shouldBe """__Runtime.TO_STRING("Hello ", world, "!")"""
+      templateCall.name shouldBe "<operator>.formatString"
+      templateCall.code shouldBe """<operator>.formatString("Hello ", world, "!")"""
 
       val List(argument1) = templateCall.astChildren.isLiteral.order(1).l
       argument1.argumentIndex shouldBe 1
@@ -173,8 +173,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodBlock) = method.astChildren.isBlock.l
 
       val List(call) = methodBlock.astChildren.isCall.l
-      call.name shouldBe "__Runtime.TO_STRING"
-      call.code shouldBe "__Runtime.TO_STRING(\"\", x + 1, \"\")"
+      call.name shouldBe "<operator>.formatString"
+      call.code shouldBe "<operator>.formatString(\"\", x + 1, \"\")"
 
       val List(argument1) = call.astChildren.isLiteral.order(1).l
       argument1.argumentIndex shouldBe 1
@@ -194,12 +194,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodBlock) = method.astChildren.isBlock.l
 
       val List(rawCall) = methodBlock.astChildren.isCall.l
-      rawCall.code shouldBe """String.raw(__Runtime.TO_STRING("../", 42, "\.."))"""
+      rawCall.code shouldBe """String.raw(<operator>.formatString("../", 42, "\.."))"""
 
-      val List(runtimeCall) = rawCall.astChildren.isCall.nameExact("__Runtime.TO_STRING").l
+      val List(runtimeCall) = rawCall.astChildren.isCall.nameExact("<operator>.formatString").l
       runtimeCall.order shouldBe 1
       runtimeCall.argumentIndex shouldBe 1
-      runtimeCall.code shouldBe """__Runtime.TO_STRING("../", 42, "\..")"""
+      runtimeCall.code shouldBe """<operator>.formatString("../", 42, "\..")"""
 
       val List(argument1) = runtimeCall.astChildren.isLiteral.codeExact("\"../\"").l
       argument1.order shouldBe 1

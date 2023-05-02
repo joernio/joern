@@ -89,7 +89,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
       val List((arg1, pos1)) = slice.argToCalls
 
       pos1 shouldBe 2
-      arg1.callName shouldBe "__Runtime.TO_STRING"
+      arg1.callName shouldBe "<operator>.formatString"
       arg1.paramTypes shouldBe List("__ecma.String", "__ecma.String", "__ecma.String")
       arg1.returnType shouldBe "ANY"
     }
