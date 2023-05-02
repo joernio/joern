@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import java.util
+import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -890,7 +891,17 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForOrAndExpressionOrCommandContext(ctx: OrAndExpressionOrCommandContext): Ast = {
-    Ast()
+    val lhsAst = astForExpressionOrCommandContext(ctx.expressionOrCommand().get(0))
+    val rhsAst = astForExpressionOrCommandContext(ctx.expressionOrCommand().get(1))
+    val callNode = NewCall()
+      .name(ctx.op.getText)
+      .code(ctx.getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(-1)
+      .columnNumber(-1)
+    callAst(callNode).withChildren(Seq[Ast](lhsAst, rhsAst))
   }
 
   def astForPowerExpressionContext(ctx: PowerExpressionContext): Ast = {
