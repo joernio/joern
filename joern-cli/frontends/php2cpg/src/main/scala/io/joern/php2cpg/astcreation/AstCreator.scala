@@ -1086,7 +1086,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       case None =>
         // With variable variables, it's possible to use a valid variable without having an obvious assignment to it.
         // If a name is unknown at this point, assume it's a local that had a value assigned in some way at some point.
-        val local = NewLocal().name(identifier.name).code(s"$$${identifier.code}")
+        val local = NewLocal().name(identifier.name).code(s"$$${identifier.code}").typeFullName(identifier.typeFullName)
         scope.addToScope(local.name, local)
         diffGraph.addEdge(identifier, local, EdgeTypes.REF)
     }
