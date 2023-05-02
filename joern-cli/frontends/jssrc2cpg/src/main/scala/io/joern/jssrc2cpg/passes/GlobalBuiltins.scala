@@ -10,6 +10,7 @@ object GlobalBuiltins {
     "encodeURIComponent",
     "eval",
     "fetch",
+    "HTMLImageElement",
     "isFinite",
     "isNaN",
     "JSON.parse",
