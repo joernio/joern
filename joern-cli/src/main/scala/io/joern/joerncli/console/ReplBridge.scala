@@ -14,11 +14,8 @@ object ReplBridge extends BridgeBase {
 
   /** Code that is executed when starting the shell
     */
-  override def predefPlus(lines: Seq[String]): String = {
-    s"""${Predefined.forInteractiveShell}
-       |${lines.mkString("\n")}
-       |""".stripMargin
-  }
+  override def predefLines =
+    Predefined.forInteractiveShell
 
   override def greeting = JoernConsole.banner()
 

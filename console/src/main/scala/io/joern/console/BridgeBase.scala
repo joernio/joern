@@ -197,13 +197,14 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
     }
   }
 
-  protected def createPredefFile(additionalLines: Seq[String]): Path = {
+  protected def createPredefFile(additionalLines: Seq[String] = Nil): Path = {
     val tmpFile = Files.createTempFile("joern-predef", "sc")
-    File(tmpFile).write(predefPlus(additionalLines))
+    Files.write(tmpFile, (predefLines ++ additionalLines).asJava)
     tmpFile.toAbsolutePath
   }
 
-  protected def predefPlus(lines: Seq[String]): String
+  /** code that is executed on startup */
+  protected def predefLines: Seq[String]
 
   protected def greeting: String
 
