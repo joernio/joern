@@ -6,7 +6,9 @@ import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
 import overflowdb._
 import overflowdb.traversal.help
 import overflowdb.traversal.help.Doc
-import overflowdb.traversal.{Traversal, TraversalSource, InitialTraversal}
+import overflowdb.traversal.{InitialTraversal, TraversalSource}
+
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 @help.TraversalSource
 class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
@@ -15,7 +17,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All nodes of the graph")
   override def all: Traversal[StoredNode] =
-    cpg.graph.nodes.cast[StoredNode]
+    cpg.graph.nodes.asScala.cast[StoredNode]
 
   /** Traverse to all annotations
     */

@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 import io.shiftleft.semanticcpg.language._
 import org.json4s.DefaultFormats
 import org.json4s.native.Serialization
-import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -17,7 +16,7 @@ import scala.util.hashing.MurmurHash3
 
 class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, String)] {
   override def structureToString(pair: (String, String)): String = pair._1 + ":" + pair._2
-  override def extractObjects(cpg: Cpg): Traversal[AstNode] = Traversal(cpg.graph.V.collect { case x: AstNode => x })
+  override def extractObjects(cpg: Cpg): Traversal[AstNode] = cpg.graph.V.collect { case x: AstNode => x }
   override def enumerateSubStructures(obj: AstNode): List[(String, String)] = {
     val relevantFieldTypes = Set(PropertyNames.NAME, PropertyNames.FULL_NAME, PropertyNames.CODE)
     val relevantFields = obj

@@ -4,7 +4,6 @@ import io.joern.suites.CQueryTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.console.scan._
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.iterableToTraversal
 
 class UseAfterFreePostUsage extends CQueryTestSuite(UseAfterFree) {
 
@@ -12,6 +11,7 @@ class UseAfterFreePostUsage extends CQueryTestSuite(UseAfterFree) {
     val x = queryBundle.freePostDominatesUsage()
     x(cpg)
       .flatMap(_.evidence)
+      .iterator
       .cast[nodes.Identifier]
       .method
       .name

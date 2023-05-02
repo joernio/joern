@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
 import java.util.regex.{Matcher, Pattern}
@@ -75,7 +74,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     ) match {
       case Failure(_) =>
         logger.warn(s"Unable to resolve import due to irregular regex at '${i.importedEntity.getOrElse("")}'")
-        Traversal.empty
+        Iterator.empty
       case Success(modules) => modules
     }
 
@@ -125,7 +124,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
             val methodName = x.argumentOption(2).map(_.code).getOrElse(b.referencedMethod.name)
             if (methodName == "exports") symbolTable.append(CallAlias(alias, Option("this")), Set(b.methodFullName))
             else symbolTable.append(CallAlias(methodName, Option(alias)), Set(b.methodFullName))
-            symbolTable.append(LocalVar(alias), b.referencedMethod.astParent.collectAll[Method].fullName.toSet)
+            symbolTable.append(LocalVar(alias), b.referencedMethod.astParent.start.collectAll[Method].fullName.toSet)
           case List(_, y: Call) =>
             // Exported closure with a method ref within the AST of the RHS
             y.ast.isMethodRef.flatMap { mRef =>

@@ -27,7 +27,7 @@ class LocalClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(td: TypeDecl) = cpg.typeDecl.nameExact("AClass").l
       td.fullName shouldBe "mypkg.main.AClass"
       td.method.filterNot { m => m.fullName.startsWith("mypkg.main.AClass") }.fullName.l shouldBe List()
-      td.inheritsFromTypeFullName.l shouldBe List("java.lang.Object")
+      td.inheritsFromTypeFullName shouldBe List("java.lang.Object")
     }
   }
 
@@ -60,7 +60,7 @@ class LocalClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         .filterNot { m => m.fullName.startsWith("mypkg.f1.AClass.doSomething.BClass") }
         .fullName
         .l shouldBe List()
-      td.inheritsFromTypeFullName.l shouldBe List("java.lang.Object")
+      td.inheritsFromTypeFullName shouldBe List("java.lang.Object")
     }
   }
 }

@@ -3,9 +3,8 @@ package io.shiftleft.semanticcpg.language.types.structure
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import overflowdb._
 import overflowdb.traversal.help.Doc
-import overflowdb.traversal.{Traversal, help, toElementTraversal, toNodeTraversal}
+import overflowdb.traversal.help
 
 /** A method, function, or procedure
   */
@@ -179,5 +178,5 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
 
   def numberOfLines: Traversal[Int] = traversal.map(_.numberOfLines)
 
-  private def traversal = Traversal.from(iterableOnce)
+  private def traversal = iterableOnce.iterator
 }
