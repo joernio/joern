@@ -22,7 +22,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     "identifier nodes present" in {
       cpg.identifier.name("a").l.size shouldBe 3
       cpg.identifier.name("b").l.size shouldBe 3
-      cpg.identifier.name("c").l.size shouldBe 1
+      cpg.identifier.name("c").l.size shouldBe 2
     }
 
     "literal nodes present" in {
@@ -61,9 +61,9 @@ class IdentifierTests extends RubyCode2CpgFixture {
     "identifier nodes present" in {
       cpg.identifier.name("name").l.size shouldBe 2
       cpg.identifier.name("age").l.size shouldBe 2
-      cpg.identifier.name("@name").l.size shouldBe 1
-      cpg.identifier.name("@age").l.size shouldBe 2
-      cpg.identifier.size shouldBe 10
+      cpg.identifier.name("@name").l.size shouldBe 2
+      cpg.identifier.name("@age").l.size shouldBe 4
+      cpg.identifier.size shouldBe 16
     }
   }
 
@@ -89,13 +89,13 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("b").l.size shouldBe 1
       cpg.identifier.name("c").l.size shouldBe 1
       cpg.identifier.name("sumOfThree").l.size shouldBe 1
-      cpg.identifier.name("num1").l.size shouldBe 1
-      cpg.identifier.name("num2").l.size shouldBe 1
-      cpg.identifier.name("num3").l.size shouldBe 1
-      cpg.identifier.name("sum").l.size shouldBe 1
+      cpg.identifier.name("num1").l.size shouldBe 2
+      cpg.identifier.name("num2").l.size shouldBe 2
+      cpg.identifier.name("num3").l.size shouldBe 2
+      cpg.identifier.name("sum").l.size shouldBe 2
       cpg.identifier.name("add_three_numbers").l.size shouldBe 1
       val lst = cpg.identifier.l
-      lst.size shouldBe 9
+      lst.size shouldBe 13
     }
 
     "The CPG generated for a expressions" should {
@@ -169,7 +169,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         cpg.identifier.name("endvar").l.size shouldBe 2
         cpg.identifier.name("beginbool").l.size shouldBe 1
         cpg.identifier.name("endbool").l.size shouldBe 1
-        cpg.identifier.size shouldBe 6
+        cpg.identifier.size shouldBe 7
       }
     }
   }

@@ -599,9 +599,18 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     astForInvocationWithoutParenthesesContext(ctx.invocationWithoutParentheses())
   }
 
-  def astForInvocationWithoutParenthesesContext(ctx: InvocationWithoutParenthesesContext): Ast = {
-    // TODO to be implemented
-    Ast()
+  def astForInvocationWithoutParenthesesContext(ctx: InvocationWithoutParenthesesContext): Ast = ctx match {
+    case ctx: SingleCommandOnlyContext     => astForCommandContext(ctx.command())
+    case ctx: ChainedCommandDoBlockContext => astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
+    case ctx: ChainedCommandDoBlockDorCol2mNameArgsContext =>
+      val cmdDoBlockAst  = astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
+      val methodNameAst  = astForMethodNameContext(ctx.methodName())
+      val argsWOParenAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      Ast()
+    case ctx: ReturnArgsContext => astForArgumentsContext(ctx.arguments())
+    case ctx: BreakArgsContext  => astForArgumentsContext(ctx.arguments())
+    case ctx: NextArgsContext   => astForArgumentsContext(ctx.arguments())
+    case _                      => Ast()
   }
 
   def astForInvocationWithBlockOnlyPrimaryContext(ctx: InvocationWithBlockOnlyPrimaryContext): Ast = {
@@ -970,12 +979,16 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       val argsAst     = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       val doBlockAst  = astForDoBlockContext(ctx.doBlock())
       val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier())
-      methodIdAst.withChild(argsAst).withChild(doBlockAst)
+      val blockNode   = NewBlock().typeFullName(Defines.Any)
+      argsAst
+      methodIdAst
+      doBlockAst
     case ctx: RubyParser.PrimaryMethodArgsDoBlockContext =>
       val argsAst       = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       val doBlockAst    = astForDoBlockContext(ctx.doBlock())
       val methodNameAst = astForMethodNameContext(ctx.methodName())
-      methodNameAst.withChild(argsAst).withChild(doBlockAst)
+      val primaryAst    = astForPrimaryContext(ctx.primary())
+      primaryAst.withChild(methodNameAst).withChild(argsAst).withChild(doBlockAst)
     case _ => Ast()
   }
 
@@ -1034,14 +1047,15 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForDoBlockContext(ctx: DoBlockContext): Ast = {
     val stmtAst = astForStatementsContext(ctx.compoundStatement().statements())
-    val ast = if (ctx.blockParameter() != null) {
-      val bpAst = astForBlockParameterContext(ctx.blockParameter())
-      bpAst.merge(stmtAst)
+    if (ctx.blockParameter() != null) {
+      val bpAst     = astForBlockParameterContext(ctx.blockParameter())
+      val ast       = bpAst.merge(stmtAst)
+      val blockNode = NewBlock().typeFullName(Defines.Any)
+      Ast(blockNode).withChild(ast)
     } else {
       stmtAst
+      Ast() // TODO fix this
     }
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    Ast(blockNode).withChild(ast)
   }
 
   def astForBraceBlockContext(ctx: BraceBlockContext): Ast = {
@@ -1054,6 +1068,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     }
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Ast(blockNode).withChild(ast)
+    Ast()
   }
 
   def astForBlockContext(ctx: BlockContext): Ast = {
