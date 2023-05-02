@@ -117,9 +117,9 @@ singleLeftHandSide
     ;
 
 multipleLeftHandSide
-    :   (multipleLeftHandSideItem COMMA wsOrNl*)+ (multipleLeftHandSideItem | packingLeftHandSide)?
-    |   packingLeftHandSide
-    |   groupedLeftHandSide
+    :   (multipleLeftHandSideItem COMMA wsOrNl*)+ (multipleLeftHandSideItem | packingLeftHandSide)?                 # multipleLeftHandSideAndpackingLeftHandSide
+    |   packingLeftHandSide                                                                                         # packingLeftHandSideOnly
+    |   groupedLeftHandSide                                                                                         # groupedLeftHandSideOnly
     ;
 
 multipleLeftHandSideItem

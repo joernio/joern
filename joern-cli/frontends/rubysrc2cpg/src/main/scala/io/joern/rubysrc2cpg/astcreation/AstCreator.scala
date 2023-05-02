@@ -502,19 +502,27 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
   }
 
-  def astForMultipleLeftHandSideContext(ctx: MultipleLeftHandSideContext): Ast = {
-    val asts = ctx
-      .multipleLeftHandSideItem()
-      .asScala
-      .map(item => {
-        if (item.singleLeftHandSide() != null) {
-          astForSingleLeftHandSideContext(item.singleLeftHandSide(), Defines.Any)
-        } else {
-          astForGroupedLeftHandSideContext(item.groupedLeftHandSide())
-        }
-      })
-      .toSeq
-    Ast().withChildren(asts)
+  def astForPackingLeftHandSideContext(ctx: PackingLeftHandSideContext): Ast = {
+    astForSingleLeftHandSideContext(ctx.singleLeftHandSide(), Defines.Any)
+  }
+
+  def astForMultipleLeftHandSideContext(ctx: MultipleLeftHandSideContext): Ast = ctx match {
+    case ctx: MultipleLeftHandSideAndpackingLeftHandSideContext =>
+      val asts = ctx
+        .multipleLeftHandSideItem()
+        .asScala
+        .map(item => {
+          if (item.singleLeftHandSide() != null) {
+            astForSingleLeftHandSideContext(item.singleLeftHandSide(), Defines.Any)
+          } else {
+            astForGroupedLeftHandSideContext(item.groupedLeftHandSide())
+          }
+        })
+        .toSeq
+      Ast().withChildren(asts)
+    case ctx: PackingLeftHandSideOnlyContext => astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
+    case ctx: GroupedLeftHandSideOnlyContext => astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
+    case _                                   => Ast()
   }
 
   def astForForVariableContext(ctx: ForVariableContext): Ast = {
