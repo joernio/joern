@@ -58,13 +58,6 @@ trait AstNodeBuilder { this: AstCreator =>
     ast.root.foreach { case expr: ExpressionNew => expr.order = order }
   }
 
-  protected def createReturnAst(returnNode: NewReturn, arguments: List[Ast] = List()): Ast = {
-    setArgumentIndices(arguments)
-    Ast(returnNode)
-      .withChildren(arguments)
-      .withArgEdges(returnNode, arguments.flatMap(_.root))
-  }
-
   protected def createJumpTarget(switchCase: BabelNodeInfo): NewJumpTarget = {
     val (switchName, switchCode) = if (switchCase.json("test").isNull) {
       ("default", "default:")

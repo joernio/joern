@@ -385,7 +385,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           case _ =>
             // when body is just one expression like const foo = () => 42, generate a Return node
             val retCode = bodyNodeInfo.code.stripSuffix(";")
-            createReturnAst(returnNode(bodyNodeInfo, retCode), List(astForNodeWithFunctionReference(bodyJson))) :: Nil
+            returnAst(returnNode(bodyNodeInfo, retCode), List(astForNodeWithFunctionReference(bodyJson))) :: Nil
         }
       case _ => createBlockStatementAsts(bodyJson("body"))
     }
