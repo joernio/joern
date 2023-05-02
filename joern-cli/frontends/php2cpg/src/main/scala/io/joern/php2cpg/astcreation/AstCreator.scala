@@ -526,9 +526,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForUnsetStmt(stmt: PhpUnsetStmt): Ast = {
-    val name = PhpOperators.unset
-    val args = stmt.vars.map(astForExpr)
-    val code = s"$name(${args.map(_.rootCodeOrEmpty).mkString(", ")})"
+    val name         = PhpOperators.unset
+    val args         = stmt.vars.map(astForExpr)
+    val code         = s"$name(${args.map(_.rootCodeOrEmpty).mkString(", ")})"
     val typeFullName = registerType(TypeConstants.Void)
     val callNode = newOperatorCallNode(name, code, typeFullName = Option(typeFullName), line = line(stmt))
       .methodFullName(PhpOperators.unset)
@@ -542,7 +542,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val varsAsts = stmt.vars.map(astForExpr)
     val code     = s"${PhpOperators.global} ${varsAsts.map(_.rootCodeOrEmpty).mkString(", ")}"
 
-    val typeFullName = registerType(TypeConstants.Void)
+    val typeFullName   = registerType(TypeConstants.Void)
     val globalCallNode = newOperatorCallNode(PhpOperators.global, code, Option(typeFullName), line(stmt))
 
     callAst(globalCallNode, varsAsts)
@@ -856,7 +856,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
       callAst(fieldAccessNode, List(identifier, fieldIdentifier).map(Ast(_))).withRefEdges(identifier, thisParam.toList)
     } else {
       val identifierCode = memberNode.code.replaceAll("const ", "").replaceAll("case ", "")
-      val typeFullName = Option(memberNode.typeFullName).map(registerType)
+      val typeFullName   = Option(memberNode.typeFullName).map(registerType)
       val identifier = newIdentifierNode(memberNode.name, typeFullName, line = memberNode.lineNumber)
         .code(identifierCode)
       Ast(identifier).withRefEdge(identifier, memberNode)
@@ -1177,9 +1177,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForIsSetExpr(isSetExpr: PhpIsset): Ast = {
-    val name = PhpOperators.issetFunc
-    val args = isSetExpr.vars.map(astForExpr)
-    val code = s"$name(${args.map(_.rootCodeOrEmpty).mkString(",")})"
+    val name         = PhpOperators.issetFunc
+    val args         = isSetExpr.vars.map(astForExpr)
+    val code         = s"$name(${args.map(_.rootCodeOrEmpty).mkString(",")})"
     val typeFullName = registerType(TypeConstants.Bool)
 
     val callNode =
@@ -1189,9 +1189,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     callAst(callNode, args)
   }
   private def astForPrintExpr(printExpr: PhpPrint): Ast = {
-    val name = PhpOperators.printFunc
-    val arg  = astForExpr(printExpr.expr)
-    val code = s"$name(${arg.rootCodeOrEmpty})"
+    val name         = PhpOperators.printFunc
+    val arg          = astForExpr(printExpr.expr)
+    val code         = s"$name(${arg.rootCodeOrEmpty})"
     val typeFullName = registerType(TypeConstants.Int)
 
     val callNode =
@@ -1244,9 +1244,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForEmpty(expr: PhpEmptyExpr): Ast = {
-    val name   = PhpOperators.emptyFunc
-    val argAst = astForExpr(expr.expr)
-    val code   = s"$name(${argAst.rootCodeOrEmpty})"
+    val name         = PhpOperators.emptyFunc
+    val argAst       = astForExpr(expr.expr)
+    val code         = s"$name(${argAst.rootCodeOrEmpty})"
     val typeFullName = registerType(TypeConstants.Bool)
 
     val callNode =
@@ -1257,9 +1257,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForEval(expr: PhpEvalExpr): Ast = {
-    val name   = PhpOperators.evalFunc
-    val argAst = astForExpr(expr.expr)
-    val code   = s"$name(${argAst.rootCodeOrEmpty})"
+    val name         = PhpOperators.evalFunc
+    val argAst       = astForExpr(expr.expr)
+    val code         = s"$name(${argAst.rootCodeOrEmpty})"
     val typeFullName = registerType(TypeConstants.Bool)
 
     val callNode =
@@ -1270,9 +1270,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForExit(expr: PhpExitExpr): Ast = {
-    val name = PhpOperators.exitFunc
-    val args = expr.expr.map(astForExpr)
-    val code = s"$name(${args.map(_.rootCodeOrEmpty).getOrElse("")})"
+    val name         = PhpOperators.exitFunc
+    val args         = expr.expr.map(astForExpr)
+    val code         = s"$name(${args.map(_.rootCodeOrEmpty).getOrElse("")})"
     val typeFullName = registerType(TypeConstants.Void)
 
     val callNode = newOperatorCallNode(name, code, Some(typeFullName), line(expr))
@@ -1281,7 +1281,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     callAst(callNode, args.toList)
   }
 
-  private def getTmpLocal(maybeTypeFullName: Option[String], lineNumber: Option[Integer], prefix: String = ""): NewLocal = {
+  private def getTmpLocal(
+    maybeTypeFullName: Option[String],
+    lineNumber: Option[Integer],
+    prefix: String = ""
+  ): NewLocal = {
     val name = s"$prefix${getNewTmpName()}"
 
     val typeFullName = maybeTypeFullName.map(registerType).getOrElse(TypeConstants.Any)
@@ -1305,7 +1309,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForArrayExpr(expr: PhpArrayExpr): Ast = {
-    val idxTracker = new ArrayIndexTracker
+    val idxTracker   = new ArrayIndexTracker
     val typeFullName = registerType(TypeConstants.Array)
 
     val tmpLocal = getTmpLocal(Some(typeFullName), line(expr))
@@ -1661,7 +1665,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     val classAst = astForExpr(expr.className)
 
     val code           = s"${exprAst.rootCodeOrEmpty} instanceof ${classAst.rootCodeOrEmpty}"
-    val typeFullName = registerType(TypeConstants.Bool)
+    val typeFullName   = registerType(TypeConstants.Bool)
     val instanceOfNode = newOperatorCallNode(Operators.instanceOf, code, Some(typeFullName), line(expr))
 
     callAst(instanceOfNode, exprAst :: classAst :: Nil)
