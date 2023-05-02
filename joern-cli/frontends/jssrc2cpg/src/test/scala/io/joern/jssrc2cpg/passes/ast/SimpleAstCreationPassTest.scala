@@ -194,7 +194,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodBlock) = method.astChildren.isBlock.l
 
       val List(rawCall) = methodBlock.astChildren.isCall.l
-      rawCall.code shouldBe "String.raw("  + Operators.formatString + """("../", 42, "\.."))"""
+      rawCall.code shouldBe "String.raw(" + Operators.formatString + """("../", 42, "\.."))"""
 
       val List(runtimeCall) = rawCall.astChildren.isCall.nameExact(Operators.formatString).l
       runtimeCall.order shouldBe 1
