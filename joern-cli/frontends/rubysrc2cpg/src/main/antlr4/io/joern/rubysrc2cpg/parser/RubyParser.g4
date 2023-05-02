@@ -149,12 +149,12 @@ expressionOrCommands
 // --------------------------------------------------------
 
 invocationWithoutParentheses
-    :   command
-    |   chainedCommandWithDoBlock
-    |   chainedCommandWithDoBlock (DOT | COLON2) methodName argumentsWithoutParentheses
-    |   RETURN WS arguments
-    |   BREAK WS arguments
-    |   NEXT WS arguments
+    :   command                                                                                                                 # singleCommandOnly
+    |   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlock
+    |   chainedCommandWithDoBlock (DOT | COLON2) methodName argumentsWithoutParentheses                                         # chainedCommandDoBlockDorCol2mNameArgs
+    |   RETURN WS arguments                                                                                                     # returnArgs
+    |   BREAK WS arguments                                                                                                      # breakArgs
+    |   NEXT WS arguments                                                                                                       # nextArgs
     ;
 
 command

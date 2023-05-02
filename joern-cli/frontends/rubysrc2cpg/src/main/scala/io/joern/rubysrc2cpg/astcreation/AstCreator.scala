@@ -274,6 +274,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForUndefStatementContext(ctx: UndefStatementContext): Ast = {
+    // TODO to be implemented
     Ast()
   }
 
@@ -431,12 +432,14 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForChainedInvocationPrimaryContext(ctx: ChainedInvocationPrimaryContext): Ast = {
+    // TODO to be implemented
     Ast()
   }
 
   def astForChainedInvocationWithoutArgumentsPrimaryContext(
     ctx: ChainedInvocationWithoutArgumentsPrimaryContext
   ): Ast = {
+    // TODO to be implemented
     Ast()
   }
 
@@ -597,6 +600,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForInvocationWithoutParenthesesContext(ctx: InvocationWithoutParenthesesContext): Ast = {
+    // TODO to be implemented
     Ast()
   }
 
@@ -627,6 +631,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Ast = {
+    // TODO to be implemented
     Ast()
   }
 
