@@ -115,12 +115,20 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       val List(a, b, e, f)     = classATypeDecl.member.not(_.isStatic).l
       a.name shouldBe "a"
       a.code shouldBe "a = 1"
+      a.lineNumber shouldBe Some(3)
+      a.columnNumber shouldBe Some(2)
       b.name shouldBe "b"
       b.code shouldBe """b = "foo""""
+      b.lineNumber shouldBe Some(4)
+      b.columnNumber shouldBe Some(2)
       e.name shouldBe "e"
       e.code shouldBe "this.e = param1;"
+      e.lineNumber shouldBe Some(12)
+      e.columnNumber shouldBe Some(4)
       f.name shouldBe "f"
       f.code shouldBe "this.f = param2;"
+      f.lineNumber shouldBe Some(13)
+      f.columnNumber shouldBe Some(4)
 
       val List(c, d) = classATypeDecl.member.isStatic.l
       c.name shouldBe "c"
