@@ -6,7 +6,7 @@ import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
-import io.joern.x2cpg.{Ast, AstCreatorBase}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
 import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.utils.NodeBuilders.{
   newFieldIdentifierNode,
@@ -23,7 +23,9 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstCreatorBase(filename) {
+class AstCreator(filename: String, phpAst: PhpFile, global: Global)
+    extends AstCreatorBase(filename)
+    with AstNodeBuilder[PhpNode, AstCreator] {
 
   private val logger     = LoggerFactory.getLogger(AstCreator.getClass)
   private val scope      = new Scope()
@@ -161,7 +163,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def thisIdentifier(lineNumber: Option[Integer]): NewIdentifier = {
     val typ = scope.getEnclosingTypeDeclTypeName
-    newIdentifierNode(NameConstants.This, typ, dynamicTypeHintFullName = typ.toList, line = lineNumber)
+    newIdentifierNode(NameConstants.This, typ.getOrElse("ANY"), typ.toList, lineNumber)
       .code(s"$$${NameConstants.This}")
   }
 
@@ -505,7 +507,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
   }
 
   private def astForDeclareItem(item: PhpDeclareItem): Ast = {
-    val key   = newIdentifierNode(item.key.name, typeFullName = None, line = line(item))
+    val key   = identifierNode(item, item.key.name, item.key.name, "ANY")
     val value = astForExpr(item.value)
     val code  = s"${key.name}=${value.rootCodeOrEmpty}"
 
@@ -857,7 +859,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     } else {
       val identifierCode = memberNode.code.replaceAll("const ", "").replaceAll("case ", "")
       val typeFullName   = Option(memberNode.typeFullName).map(registerType)
-      val identifier = newIdentifierNode(memberNode.name, typeFullName, line = memberNode.lineNumber)
+      val identifier = newIdentifierNode(memberNode.name, typeFullName.getOrElse("ANY"))
         .code(identifierCode)
       Ast(identifier).withRefEdge(identifier, memberNode)
     }
@@ -1303,7 +1305,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def identifierAstFromLocal(local: NewLocal, lineNumber: Option[Integer] = None): Ast = {
     val typeFullName = Option(local.typeFullName).map(registerType)
-    val identifier = newIdentifierNode(local.name, typeFullName, lineNumber)
+    val identifier = newIdentifierNode(local.name, typeFullName.getOrElse("ANY"), Seq(), lineNumber)
       .code(s"$$${local.name}")
     Ast(identifier).withRefEdge(identifier, local)
   }
@@ -1726,7 +1728,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
 
   private def astForConstFetchExpr(expr: PhpConstFetchExpr): Ast = {
 
-    val identifier = newIdentifierNode(NamespaceTraversal.globalNamespaceName, typeFullName = None, line = line(expr))
+    val identifier =
+      identifierNode(expr, NamespaceTraversal.globalNamespaceName, NamespaceTraversal.globalNamespaceName, "ANY")
     val fieldIdentifier = newFieldIdentifierNode(expr.name.name, line = line(expr))
 
     val fieldAccessNode = newOperatorCallNode(Operators.fieldAccess, code = expr.name.name, line = line(expr))
@@ -1735,7 +1738,10 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global) extends AstC
     callAst(fieldAccessNode, args)
   }
 
-  private def line(phpNode: PhpNode): Option[Integer] = phpNode.attributes.lineNumber
+  protected def line(phpNode: PhpNode): Option[Integer]      = phpNode.attributes.lineNumber
+  protected def column(phpNode: PhpNode): Option[Integer]    = None
+  protected def lineEnd(phpNode: PhpNode): Option[Integer]   = None
+  protected def columnEnd(phpNode: PhpNode): Option[Integer] = None
 }
 
 object AstCreator {

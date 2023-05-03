@@ -53,14 +53,14 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   private def createExportCallAst(name: String, exportName: String, declaration: BabelNodeInfo): Ast = {
     val exportCallAst = if (name == DefaultsKey) {
       createIndexAccessCallAst(
-        createIdentifierNode(exportName, declaration),
+        identifierNode(declaration, exportName),
         literalNode(declaration, s"\"$DefaultsKey\"", Option(Defines.String)),
         declaration.lineNumber,
         declaration.columnNumber
       )
     } else {
       createFieldAccessCallAst(
-        createIdentifierNode(exportName, declaration),
+        identifierNode(declaration, exportName),
         createFieldIdentifierNode(name, declaration.lineNumber, declaration.columnNumber),
         declaration.lineNumber,
         declaration.columnNumber
@@ -78,7 +78,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     from match {
       case Some(value) =>
         val call = createFieldAccessCallAst(
-          createIdentifierNode(value, None, declaration.lineNumber, declaration.columnNumber),
+          identifierNode(declaration, value, Seq.empty),
           createFieldIdentifierNode(name, declaration.lineNumber, declaration.columnNumber),
           declaration.lineNumber,
           declaration.columnNumber
@@ -93,7 +93,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case None =>
         createAssignmentCallAst(
           exportCallAst,
-          Ast(createIdentifierNode(name, declaration)),
+          Ast(identifierNode(declaration, name)),
           s"${codeOf(exportCallAst.nodes.head)} = $name",
           declaration.lineNumber,
           declaration.columnNumber
@@ -128,7 +128,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       Ast()
     } else {
       val strippedCode = cleanImportName(fromName).stripPrefix("_")
-      val id           = createIdentifierNode(s"_$strippedCode", declaration)
+      val id           = identifierNode(declaration, s"_$strippedCode")
       val localNode    = newLocalNode(id.code, Defines.Any).order(0)
       scope.addVariable(id.code, localNode, BlockScope)
       scope.addVariableReference(id.code, id)
@@ -405,7 +405,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     nodeInfo: BabelNodeInfo
   ): Ast = {
     val destName  = alias.getOrElse(name)
-    val destNode  = createIdentifierNode(destName, nodeInfo)
+    val destNode  = identifierNode(nodeInfo, destName)
     val localNode = newLocalNode(destName, Defines.Any).order(0)
     scope.addVariable(destName, localNode, BlockScope)
     scope.addVariableReference(destName, destNode)
@@ -421,8 +421,8 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       nodeInfo.columnNumber
     )
 
-    val receiverNode = createIdentifierNode(RequireKeyword, nodeInfo)
-    val thisNode     = createIdentifierNode("this", nodeInfo)
+    val receiverNode = identifierNode(nodeInfo, RequireKeyword)
+    val thisNode     = identifierNode(nodeInfo, "this")
     scope.addVariableReference(thisNode.name, thisNode)
     val cAst = callAst(
       sourceCall,
@@ -532,7 +532,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
     scope.addVariable(element.code, localNode, MethodScope)
 
-    val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
+    val fieldAccessTmpNode = identifierNode(element, localTmpName)
     val keyNode            = createFieldIdentifierNode(key.code, key.lineNumber, key.columnNumber)
     val accessAst = createFieldAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
     createAssignmentCallAst(
@@ -551,7 +551,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
     scope.addVariable(element.code, localNode, MethodScope)
 
-    val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
+    val fieldAccessTmpNode = identifierNode(element, localTmpName)
     val keyNode            = literalNode(element, index.toString, Option(Defines.Number))
     val accessAst = createIndexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
     createAssignmentCallAst(
@@ -581,7 +581,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val testAst = {
-      val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
+      val fieldAccessTmpNode = identifierNode(element, localTmpName)
       val keyNode            = literalNode(element, index.toString, Option(Defines.Number))
       val accessAst =
         createIndexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
@@ -589,7 +589,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       createEqualsCallAst(accessAst, Ast(voidCallNode), element.lineNumber, element.columnNumber)
     }
     val falseAst = {
-      val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
+      val fieldAccessTmpNode = identifierNode(element, localTmpName)
       val keyNode            = literalNode(element, index.toString, Option(Defines.Number))
       createIndexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
     }
@@ -622,7 +622,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val testAst = {
-      val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
+      val fieldAccessTmpNode = identifierNode(element, localTmpName)
       val keyNode            = createFieldIdentifierNode(key.code, key.lineNumber, key.columnNumber)
       val accessAst =
         createFieldAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
@@ -630,7 +630,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       createEqualsCallAst(accessAst, Ast(voidCallNode), element.lineNumber, element.columnNumber)
     }
     val falseAst = {
-      val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
+      val fieldAccessTmpNode = identifierNode(element, localTmpName)
       val keyNode            = createFieldIdentifierNode(key.code, key.lineNumber, key.columnNumber)
       createFieldAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
     }
@@ -647,7 +647,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
   private def createParamAst(pattern: BabelNodeInfo, keyName: String, sourceAst: Ast): Ast = {
     val testAst = {
-      val lhsNode = createIdentifierNode(keyName, pattern)
+      val lhsNode = identifierNode(pattern, keyName)
       scope.addVariableReference(keyName, lhsNode)
       val rhsNode = createCallNode(
         "void 0",
@@ -660,7 +660,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
 
     val falseNode = {
-      val initNode = createIdentifierNode(keyName, pattern)
+      val initNode = identifierNode(pattern, keyName)
       scope.addVariableReference(keyName, initNode)
       initNode
     }
@@ -680,7 +680,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     localAstParentStack.push(blockNode)
 
     val localNode = newLocalNode(localTmpName, Defines.Any).order(0)
-    val tmpNode   = createIdentifierNode(localTmpName, pattern)
+    val tmpNode   = identifierNode(pattern, localTmpName)
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
     scope.addVariable(localTmpName, localNode, BlockScope)
     scope.addVariableReference(localTmpName, tmpNode)
@@ -701,7 +701,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
           val nodeInfo = createBabelNodeInfo(element)
           nodeInfo.node match {
             case RestElement =>
-              val arg1Ast = Ast(createIdentifierNode(localTmpName, nodeInfo))
+              val arg1Ast = Ast(identifierNode(nodeInfo, localTmpName))
               astForSpreadOrRestElement(nodeInfo, Option(arg1Ast))
             case _ =>
               val nodeInfo = createBabelNodeInfo(element("value"))
@@ -724,7 +724,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
             val nodeInfo = createBabelNodeInfo(element)
             nodeInfo.node match {
               case RestElement =>
-                val fieldAccessTmpNode = createIdentifierNode(localTmpName, nodeInfo)
+                val fieldAccessTmpNode = identifierNode(nodeInfo, localTmpName)
                 val keyNode            = literalNode(nodeInfo, index.toString, Option(Defines.Number))
                 val accessAst =
                   createIndexAccessCallAst(fieldAccessTmpNode, keyNode, nodeInfo.lineNumber, nodeInfo.columnNumber)
@@ -741,7 +741,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
         List(convertDestructingObjectElement(pattern, pattern, localTmpName))
     }
 
-    val returnTmpNode = createIdentifierNode(localTmpName, pattern)
+    val returnTmpNode = identifierNode(pattern, localTmpName)
     scope.popScope()
     localAstParentStack.pop()
 

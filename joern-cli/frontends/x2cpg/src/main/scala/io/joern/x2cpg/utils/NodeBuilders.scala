@@ -103,25 +103,25 @@ object NodeBuilders {
       .columnNumber(column)
   }
 
-  def newIdentifierNode(
-    name: String,
-    typeFullName: Option[String],
-    line: Option[Integer] = None,
-    column: Option[Integer] = None,
-    dynamicTypeHintFullName: Seq[String] = Seq.empty
-  ): NewIdentifier = {
-    val identifier = NewIdentifier()
-      .name(name)
-      .code(name)
-      .lineNumber(line)
-      .columnNumber(column)
-      .dynamicTypeHintFullName(dynamicTypeHintFullName)
+  def newModifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
 
-    typeFullName.map(identifier.typeFullName(_))
-    identifier
+  def newIdentifierNode(name: String, typeFullName: String, dynamicTypeHints: Seq[String] = Seq()): NewIdentifier = {
+    newIdentifierNode(name, typeFullName, dynamicTypeHints, None)
   }
 
-  def newModifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
+  def newIdentifierNode(
+    name: String,
+    typeFullName: String,
+    dynamicTypeHints: Seq[String],
+    line: Option[Integer]
+  ): NewIdentifier = {
+    NewIdentifier()
+      .code(name)
+      .name(name)
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHints)
+      .lineNumber(line)
+  }
 
   def newOperatorCallNode(
     name: String,
