@@ -6,7 +6,6 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Global
 
-import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
