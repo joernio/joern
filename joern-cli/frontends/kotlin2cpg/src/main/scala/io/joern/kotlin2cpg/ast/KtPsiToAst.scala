@@ -275,7 +275,7 @@ trait KtPsiToAst {
     val membersFromPrimaryCtorAsts = ktClass.getPrimaryConstructorParameters.asScala.toList.collect {
       case param if param.hasValOrVar =>
         val typeFullName = registerType(typeInfoProvider.parameterType(param, TypeConstants.any))
-        Ast(memberNode(param.getName, typeFullName, line(param), column(param)))
+        Ast(memberNode(param, param.getName, param.getName, typeFullName))
     }
 
     val primaryCtorCall =
@@ -337,7 +337,12 @@ trait KtPsiToAst {
       }
       registerType(companionMemberTypeFullName)
 
-      val companionObjectMember = memberNode(Constants.companionObjectMemberName, companionMemberTypeFullName)
+      val companionObjectMember = memberNode(
+        ktClass,
+        Constants.companionObjectMemberName,
+        Constants.companionObjectMemberName,
+        companionMemberTypeFullName
+      )
       ast.withChild(Ast(companionObjectMember))
     } else {
       ast
@@ -1824,7 +1829,7 @@ trait KtPsiToAst {
     }
     registerType(typeFullName)
 
-    val node = memberNode(name, typeFullName, line(decl), column(decl))
+    val node = memberNode(decl, name, name, typeFullName)
     scope.addToScope(name, node)
     Ast(node)
   }

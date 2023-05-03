@@ -4,6 +4,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewControlStructure,
   NewFieldIdentifier,
+  NewMember,
   NewMethodRef,
   NewReturn,
   NewTypeRef,
@@ -29,6 +30,24 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .code(code)
       .methodFullName(methodFullName)
       .typeFullName(typeFullName)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
+
+  protected def memberNode(node: Node, name: String, code: String, typeFullName: String): NewMember =
+    memberNode(node, name, code, typeFullName, Seq())
+  protected def memberNode(
+    node: Node,
+    name: String,
+    code: String,
+    typeFullName: String,
+    dynamicTypeHints: Seq[String] = Seq()
+  ): NewMember = {
+    NewMember()
+      .code(code)
+      .name(name)
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
