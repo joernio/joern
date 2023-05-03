@@ -186,7 +186,10 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
       new PluginManager(InstallConfig().rootPath).rm(config.rmPlugin.get)
     } else if (config.scriptFile.isDefined) {
       val scriptReturn = runScript(config)
-      if (scriptReturn.isFailure) System.exit(1)
+      if (scriptReturn.isFailure) {
+        println(scriptReturn.failed.get.getMessage)
+        System.exit(1)
+      }
     } else if (config.server) {
       GlobalReporting.enable()
       startHttpServer(config)
@@ -246,7 +249,7 @@ trait ScriptExecution { this: BridgeBase =>
   def runScript(config: Config): Try[Unit] = {
     val scriptFile = config.scriptFile.getOrElse(throw new AssertionError("no script file configured"))
     if (!Files.exists(scriptFile)) {
-      Try(throw new AssertionError(s"given script file $scriptFile does not exist"))
+      Try(throw new AssertionError(s"given script file `$scriptFile` does not exist"))
     } else {
       val predefFile = createPredefFile(importCpgCode(config))
       val scriptReturn = ScriptRunner.exec(
