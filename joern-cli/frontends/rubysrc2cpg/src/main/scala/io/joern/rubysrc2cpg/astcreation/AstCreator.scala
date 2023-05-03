@@ -635,7 +635,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       val cmdDoBlockAst  = astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
       val methodNameAst  = astForMethodNameContext(ctx.methodName())
       val argsWOParenAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-      Ast() // TODO fix this
+      cmdDoBlockAst.withChild(methodNameAst).withChild(argsWOParenAst)
     case ctx: ReturnArgsInvocationWithoutParenthesesContext => astForArgumentsContext(ctx.arguments())
     case ctx: BreakArgsInvocationWithoutParenthesesContext  => astForArgumentsContext(ctx.arguments())
     case ctx: NextArgsInvocationWithoutParenthesesContext   => astForArgumentsContext(ctx.arguments())
