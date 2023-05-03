@@ -4,8 +4,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewControlStructure,
   NewFieldIdentifier,
-  NewMember,
   NewLiteral,
+  NewLocal,
+  NewMember,
   NewMethodRef,
   NewReturn,
   NewTypeRef,
@@ -107,4 +108,19 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
+
+  protected def localNode(
+    node: Node,
+    name: String,
+    code: String,
+    typeFullName: String,
+    closureBindingId: Option[String] = None
+  ): NewLocal =
+    NewLocal()
+      .name(name)
+      .code(code)
+      .typeFullName(typeFullName)
+      .closureBindingId(closureBindingId)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
 }

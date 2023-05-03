@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewDependency,
   NewFieldIdentifier,
   NewIdentifier,
+  NewLocal,
   NewMethodParameterIn,
   NewMethodReturn,
   NewModifier
@@ -40,6 +41,14 @@ object NodeBuilders {
       .name(name)
       .methodFullName(methodFullName)
       .signature(signature)
+  }
+
+  def newLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal = {
+    NewLocal()
+      .code(name)
+      .name(name)
+      .typeFullName(typeFullName)
+      .closureBindingId(closureBindingId)
   }
 
   def newClosureBindingNode(

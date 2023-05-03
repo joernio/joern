@@ -34,15 +34,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column(include))
   }
 
-  protected def newLocalNode(node: IASTNode, name: String, code: String, typeFullName: String): NewLocal = {
-    NewLocal()
-      .code(code)
-      .name(name)
-      .typeFullName(typeFullName)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-  }
-
   protected def newNamespaceBlockNode(
     node: IASTNode,
     name: String,

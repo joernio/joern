@@ -321,9 +321,6 @@ trait AstNodeBuilder { this: AstCreator =>
     .columnNumber(column)
     .typeFullName(Defines.Any)
 
-  protected def createLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal =
-    NewLocal().code(name).name(name).typeFullName(typeFullName).closureBindingId(closureBindingId).order(0)
-
   protected def createTemplateDomNode(
     name: String,
     code: String,

@@ -5,7 +5,7 @@ import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
+import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
@@ -70,7 +70,7 @@ trait AstCreatorHelper { this: AstCreator =>
       .orElse(codeForBabelNodeInfo(nodeInfo).headOption)
       .getOrElse {
         val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
-        val localNode = createLocalNode(tmpName, Defines.Any)
+        val localNode = newLocalNode(tmpName, Defines.Any).order(0)
         diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
         tmpName
       }
@@ -277,7 +277,7 @@ trait AstCreatorHelper { this: AstCreator =>
                   case None =>
                     val methodScopeNode = methodScope.scopeNode
                     val localNode =
-                      createLocalNode(origin.variableName, Defines.Any, Option(closureBindingIdProperty))
+                      newLocalNode(origin.variableName, Defines.Any, Option(closureBindingIdProperty)).order(0)
                     diffGraph.addEdge(methodScopeNode, localNode, EdgeTypes.AST)
                     val closureBindingNode = newClosureBindingNode(
                       closureBindingIdProperty,
@@ -313,7 +313,7 @@ trait AstCreatorHelper { this: AstCreator =>
     methodScopeNodeId: NewNode,
     variableName: String
   ): (NewNode, ScopeType) = {
-    val local = createLocalNode(variableName, Defines.Any)
+    val local = newLocalNode(variableName, Defines.Any).order(0)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     (local, MethodScope)
   }

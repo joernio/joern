@@ -67,22 +67,6 @@ object Nodes {
       .columnNumber(column)
   }
 
-  def localNode(
-    name: String,
-    typeFullName: String,
-    closureBindingId: Option[String] = None,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewLocal = {
-    NewLocal()
-      .code(name)
-      .name(name)
-      .typeFullName(typeFullName)
-      .closureBindingId(closureBindingId)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   def methodParameterNode(
     name: String,
     typeFullName: String,

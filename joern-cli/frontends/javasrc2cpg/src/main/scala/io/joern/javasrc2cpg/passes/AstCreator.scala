@@ -1322,14 +1322,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         iterableAsts.head
     }
 
-    val iterableName = nextIterableName()
-    val iterableLocalNode =
-      NewLocal()
-        .name(iterableName)
-        .code(iterableName)
-        .lineNumber(lineNo)
-    iterableType.foreach(iterableLocalNode.typeFullName(_))
-    val iterableLocalAst = Ast(iterableLocalNode)
+    val iterableName      = nextIterableName()
+    val iterableLocalNode = localNode(iterableExpression, iterableName, iterableName, iterableType.getOrElse("ANY"))
+    val iterableLocalAst  = Ast(iterableLocalNode)
 
     val iterableAssignNode =
       newOperatorCallNode(Operators.assignment, code = "", line = lineNo, typeFullName = iterableType)
