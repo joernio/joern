@@ -87,16 +87,16 @@ class IdentifierTests extends RubyCode2CpgFixture {
     )
 
     "function test" in {
-      cpg.identifier.name("a").l.size shouldBe 1
-      cpg.identifier.name("b").l.size shouldBe 1
-      cpg.identifier.name("c").l.size shouldBe 1
+      cpg.identifier.name("a").l.size shouldBe 2
+      cpg.identifier.name("b").l.size shouldBe 2
+      cpg.identifier.name("c").l.size shouldBe 2
       cpg.identifier.name("sumOfThree").l.size shouldBe 1
       cpg.identifier.name("num1").l.size shouldBe 1
       cpg.identifier.name("num2").l.size shouldBe 2
       cpg.identifier.name("num3").l.size shouldBe 2
       cpg.identifier.name("sum").l.size shouldBe 2
       val lst = cpg.identifier.l
-      lst.size shouldBe 11
+      lst.size shouldBe 14
     }
 
     "The CPG generated for a expressions" should {
@@ -205,9 +205,9 @@ class IdentifierTests extends RubyCode2CpgFixture {
       )
 
       "dofailing" in {
-        cpg.identifier.name("n").l.size shouldBe 1
-        cpg.identifier.name("m").l.size shouldBe 1
-        cpg.identifier.size shouldBe 2
+        cpg.identifier.name("n").l.size shouldBe 3
+        cpg.identifier.name("m").l.size shouldBe 2
+        cpg.identifier.size shouldBe 7
       }
     }
 

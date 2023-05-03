@@ -1100,14 +1100,14 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   def astForBraceBlockContext(ctx: BraceBlockContext): Ast = {
     val stmtAst = astForStatementsContext(ctx.compoundStatement().statements())
     val ast = if (ctx.blockParameter() != null) {
-      val bpAst = astForBlockParameterContext(ctx.blockParameter())
-      bpAst.merge(stmtAst)
+      val bpAst     = astForBlockParameterContext(ctx.blockParameter())
+      val blockNode = NewBlock().typeFullName(Defines.Any)
+      Ast(blockNode).withChild(bpAst).withChild(stmtAst)
     } else {
       stmtAst
     }
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Ast(blockNode).withChild(ast)
-    Ast()
   }
 
   def astForBlockContext(ctx: BlockContext): Ast = {
