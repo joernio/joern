@@ -234,6 +234,8 @@ trait AstForTypesCreator { this: AstCreator =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
 
+    val lineNumber             = line(typeSpecifier)
+    val columnNumber           = column(typeSpecifier)
     val name                   = ASTStringUtil.getSimpleName(typeSpecifier.getName)
     val fullname               = registerType(cleanType(fullName(typeSpecifier)))
     val code                   = nodeSignature(typeSpecifier)
@@ -272,7 +274,10 @@ trait AstForTypesCreator { this: AstCreator =>
         calls,
         s"$fullname:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
-        Defines.anyTypeName
+        Defines.anyTypeName,
+        Some(filename),
+        lineNumber,
+        columnNumber
       )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
@@ -336,6 +341,8 @@ trait AstForTypesCreator { this: AstCreator =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
 
+    val lineNumber   = line(typeSpecifier)
+    val columnNumber = column(typeSpecifier)
     val (name, fullname) =
       uniqueName("enum", ASTStringUtil.getSimpleName(typeSpecifier.getName), fullName(typeSpecifier))
     val typeDecl = newTypeDeclNode(typeSpecifier, name, registerType(fullname), filename, nodeSignature(typeSpecifier))
@@ -357,7 +364,10 @@ trait AstForTypesCreator { this: AstCreator =>
         calls,
         s"$fullname:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
-        Defines.anyTypeName
+        Defines.anyTypeName,
+        Some(filename),
+        lineNumber,
+        columnNumber
       )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
