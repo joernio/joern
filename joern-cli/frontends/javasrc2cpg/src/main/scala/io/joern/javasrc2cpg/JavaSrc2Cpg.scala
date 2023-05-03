@@ -137,11 +137,8 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
     val typesSources    = getSourcesFromDir(sourceDirectories.typesSourceDir)
 
     val analysisAstsMap = analysisSources.par.flatMap { sourceFilename =>
-      val originalFilename = sourceFilename.replaceAll(
-        // Pattern.quote used to escape Windows paths
-        escapeBackslash(sourceDirectories.analysisSourceDir),
-        escapeBackslash(config.inputPath)
-      )
+      val originalFilename =
+        Paths.get(sourceDirectories.analysisSourceDir).relativize(Paths.get(sourceFilename)).toString
       val sourceFileInfo  = SourceFileInfo(sourceFilename, originalFilename)
       val maybeParsedFile = parseFile(sourceFilename)
 
@@ -165,7 +162,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
     val dependencies        = getDependencyList(config)
     val delombokMode        = getDelombokMode(config)
     val hasLombokDependency = dependencies.exists(_.contains("lombok"))
-    val originalSourcesDir  = config.inputPath
+    val originalSourcesDir  = File(config.inputPath).canonicalPath
     lazy val delombokDir    = Delombok.run(originalSourcesDir, config.delombokJavaHome)
 
     delombokMode match {

@@ -3,10 +3,13 @@ package io.joern.x2cpg.utils
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotationLiteral,
+  NewBinding,
   NewCall,
+  NewClosureBinding,
   NewDependency,
   NewFieldIdentifier,
   NewIdentifier,
+  NewLocal,
   NewMethodParameterIn,
   NewMethodReturn,
   NewModifier
@@ -32,6 +35,32 @@ object NodeBuilders {
     NewAnnotationLiteral()
       .name(name)
       .code(name)
+
+  def newBindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
+    NewBinding()
+      .name(name)
+      .methodFullName(methodFullName)
+      .signature(signature)
+  }
+
+  def newLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal = {
+    NewLocal()
+      .code(name)
+      .name(name)
+      .typeFullName(typeFullName)
+      .closureBindingId(closureBindingId)
+  }
+
+  def newClosureBindingNode(
+    closureBindingId: String,
+    originalName: String,
+    evaluationStrategy: String
+  ): NewClosureBinding = {
+    NewClosureBinding()
+      .closureBindingId(closureBindingId)
+      .closureOriginalName(originalName)
+      .evaluationStrategy(evaluationStrategy)
+  }
 
   def newCallNode(
     methodName: String,
@@ -74,25 +103,25 @@ object NodeBuilders {
       .columnNumber(column)
   }
 
-  def newIdentifierNode(
-    name: String,
-    typeFullName: Option[String],
-    line: Option[Integer] = None,
-    column: Option[Integer] = None,
-    dynamicTypeHintFullName: Seq[String] = Seq.empty
-  ): NewIdentifier = {
-    val identifier = NewIdentifier()
-      .name(name)
-      .code(name)
-      .lineNumber(line)
-      .columnNumber(column)
-      .dynamicTypeHintFullName(dynamicTypeHintFullName)
+  def newModifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
 
-    typeFullName.map(identifier.typeFullName(_))
-    identifier
+  def newIdentifierNode(name: String, typeFullName: String, dynamicTypeHints: Seq[String] = Seq()): NewIdentifier = {
+    newIdentifierNode(name, typeFullName, dynamicTypeHints, None)
   }
 
-  def newModifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
+  def newIdentifierNode(
+    name: String,
+    typeFullName: String,
+    dynamicTypeHints: Seq[String],
+    line: Option[Integer]
+  ): NewIdentifier = {
+    NewIdentifier()
+      .code(name)
+      .name(name)
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHints)
+      .lineNumber(line)
+  }
 
   def newOperatorCallNode(
     name: String,

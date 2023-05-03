@@ -106,31 +106,6 @@ trait AstNodeBuilder { this: AstCreator =>
     param
   }
 
-  protected def createMethodRefNode(code: String, methodFullName: String, func: BabelNodeInfo): NewMethodRef = {
-    val line   = func.lineNumber
-    val column = func.columnNumber
-    NewMethodRef()
-      .code(code)
-      .methodFullName(methodFullName)
-      .typeFullName(methodFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  protected def createMemberNode(name: String, node: BabelNodeInfo, dynamicTypeOption: Option[String]): NewMember = {
-    val tpe    = typeFor(node)
-    val code   = node.code
-    val line   = node.lineNumber
-    val column = node.columnNumber
-    NewMember()
-      .code(code)
-      .name(name)
-      .typeFullName(tpe)
-      .dynamicTypeHintFullName(dynamicTypeOption.toList)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   protected def createMethodNode(methodName: String, methodFullName: String, func: BabelNodeInfo): NewMethod = {
     val line      = func.lineNumber
     val column    = func.columnNumber
@@ -268,22 +243,12 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column)
   }
 
-  protected def createLiteralNode(
-    code: String,
-    dynamicTypeOption: Option[String],
-    line: Option[Integer],
-    column: Option[Integer]
-  ): NewLiteral = {
+  protected def literalNode(node: BabelNodeInfo, code: String, dynamicTypeOption: Option[String]): NewLiteral = {
     val typeFullName = dynamicTypeOption match {
       case Some(value) if Defines.JsTypes.contains(value) => value
       case _                                              => Defines.Any
     }
-    NewLiteral()
-      .code(code)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-      .dynamicTypeHintFullName(dynamicTypeOption.toList)
+    literalNode(node, code, typeFullName, dynamicTypeOption.toList)
   }
 
   protected def createEqualsCallAst(dest: Ast, source: Ast, line: Option[Integer], column: Option[Integer]): Ast = {
@@ -317,28 +282,19 @@ trait AstNodeBuilder { this: AstCreator =>
     callAst(callNode, arguments)
   }
 
-  protected def createIdentifierNode(name: String, node: BabelNodeInfo): NewIdentifier = {
+  protected def identifierNode(node: BabelNodeInfo, name: String): NewIdentifier = {
     val dynamicInstanceTypeOption = name match {
       case "this"    => dynamicInstanceTypeStack.headOption
       case "console" => Option(Defines.Console)
       case "Math"    => Option(Defines.Math)
       case _         => None
     }
-    createIdentifierNode(name, dynamicInstanceTypeOption, node.lineNumber, node.columnNumber)
+    identifierNode(node, name, name, Defines.Any, dynamicInstanceTypeOption.toList)
   }
 
-  protected def createIdentifierNode(
-    name: String,
-    dynamicTypeOption: Option[String],
-    line: Option[Integer],
-    column: Option[Integer]
-  ): NewIdentifier = NewIdentifier()
-    .name(name)
-    .code(name)
-    .lineNumber(line)
-    .columnNumber(column)
-    .typeFullName(Defines.Any)
-    .dynamicTypeHintFullName(dynamicTypeOption.toList)
+  protected def identifierNode(node: BabelNodeInfo, name: String, dynamicTypeHints: Seq[String]): NewIdentifier = {
+    identifierNode(node, name, name, Defines.Any, dynamicTypeHints)
+  }
 
   protected def createStaticCallNode(
     code: String,
@@ -355,17 +311,6 @@ trait AstNodeBuilder { this: AstCreator =>
     .lineNumber(line)
     .columnNumber(column)
     .typeFullName(Defines.Any)
-
-  protected def createLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal =
-    NewLocal().code(name).name(name).typeFullName(typeFullName).closureBindingId(closureBindingId).order(0)
-
-  protected def createClosureBindingNode(closureBindingId: String, closureOriginalName: String): NewClosureBinding =
-    NewClosureBinding()
-      .closureBindingId(Option(closureBindingId))
-      .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
-      .closureOriginalName(Option(closureOriginalName))
-
-  protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
 
   protected def createTemplateDomNode(
     name: String,
@@ -410,7 +355,7 @@ trait AstNodeBuilder { this: AstCreator =>
     // Problem for https://github.com/ShiftLeftSecurity/codescience/issues/3626 here.
     // As the type (thus, the signature) of the function node is unknown (i.e., ANY*)
     // we can't generate the correct binding with signature.
-    val bindingNode = createBindingNode()
+    val bindingNode = NewBinding().name("").signature("")
     Ast(functionTypeDeclNode).withBindsEdge(functionTypeDeclNode, bindingNode).withRefEdge(bindingNode, methodNode)
   }
 

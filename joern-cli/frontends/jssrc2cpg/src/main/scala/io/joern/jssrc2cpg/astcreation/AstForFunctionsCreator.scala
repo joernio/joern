@@ -6,6 +6,7 @@ import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newLocalNode}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier => _, _}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
 import ujson.Value
@@ -27,7 +28,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     ast.root match {
       case Some(_: NewIdentifier) =>
         val keyNode   = createFieldIdentifierNode(restName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
-        val paramNode = createIdentifierNode(paramName, elementNodeInfo)
+        val paramNode = identifierNode(elementNodeInfo, paramName)
         val accessAst =
           createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
         createAssignmentCallAst(
@@ -38,7 +39,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           elementNodeInfo.columnNumber
         )
       case _ =>
-        val localParamNode = createIdentifierNode(restName, elementNodeInfo)
+        val localParamNode = identifierNode(elementNodeInfo, restName)
         createAssignmentCallAst(
           Ast(localParamNode),
           ast,
@@ -61,7 +62,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           val paramName = nodeInfo.code.replace("...", "")
           val tpe       = typeFor(nodeInfo)
           if (createLocals) {
-            val localNode = createLocalNode(paramName, tpe)
+            val localNode = newLocalNode(paramName, tpe).order(0)
             diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
           }
           createParameterInNode(
@@ -125,14 +126,14 @@ trait AstForFunctionsCreator { this: AstCreator =>
                 case Identifier =>
                   val elemName       = code(elementNodeInfo.json)
                   val tpe            = typeFor(elementNodeInfo)
-                  val localParamNode = createIdentifierNode(elemName, elementNodeInfo)
+                  val localParamNode = identifierNode(elementNodeInfo, elemName)
                   localParamNode.typeFullName = tpe
 
-                  val localNode = createLocalNode(elemName, tpe)
+                  val localNode = newLocalNode(elemName, tpe).order(0)
                   diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
                   scope.addVariable(elemName, localNode, MethodScope)
 
-                  val paramNode = createIdentifierNode(paramName, elementNodeInfo)
+                  val paramNode = identifierNode(elementNodeInfo, paramName)
                   scope.addVariableReference(paramName, paramNode)
 
                   val keyNode =
@@ -175,14 +176,14 @@ trait AstForFunctionsCreator { this: AstCreator =>
               case ObjectProperty =>
                 val elemName       = code(elementNodeInfo.json("key"))
                 val tpe            = typeFor(elementNodeInfo)
-                val localParamNode = createIdentifierNode(elemName, elementNodeInfo)
+                val localParamNode = identifierNode(elementNodeInfo, elemName)
                 localParamNode.typeFullName = tpe
 
-                val localNode = createLocalNode(elemName, tpe)
+                val localNode = newLocalNode(elemName, tpe).order(0)
                 diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
                 scope.addVariable(elemName, localNode, MethodScope)
 
-                val paramNode = createIdentifierNode(paramName, elementNodeInfo)
+                val paramNode = identifierNode(elementNodeInfo, paramName)
                 scope.addVariableReference(paramName, paramNode)
 
                 val keyNode =
@@ -241,7 +242,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val lhsAst = astForNode(lhsElement)
 
     val testAst = {
-      val keyNode = createIdentifierNode(codeOf(lhsAst.nodes.head), element)
+      val keyNode = identifierNode(element, codeOf(lhsAst.nodes.head))
       val voidCallNode = createCallNode(
         "void 0",
         "<operator>.void",
@@ -252,7 +253,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       val equalsCallAst = createEqualsCallAst(Ast(keyNode), Ast(voidCallNode), element.lineNumber, element.columnNumber)
       equalsCallAst
     }
-    val falseNode = createIdentifierNode(codeOf(lhsAst.nodes.head), element)
+    val falseNode = identifierNode(element, codeOf(lhsAst.nodes.head))
     val ternaryNodeAst =
       createTernaryCallAst(testAst, rhsAst, Ast(falseNode), element.lineNumber, element.columnNumber)
     createAssignmentCallAst(
@@ -269,7 +270,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   protected def astForTSDeclareFunction(func: BabelNodeInfo): Ast = {
     val functionNode = createMethodDefinitionNode(func)
-    val bindingNode  = createBindingNode()
+    val bindingNode  = newBindingNode("", "", "")
     diffGraph.addEdge(getParentTypeDecl, bindingNode, EdgeTypes.BINDS)
     diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
     addModifier(functionNode, func.json)
@@ -335,18 +336,18 @@ trait AstForFunctionsCreator { this: AstCreator =>
     methodBlockContent: List[Ast] = List.empty
   ): MethodAst = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
-    val methodRefNode = if (!shouldCreateFunctionReference) {
+    val methodRefNode_ = if (!shouldCreateFunctionReference) {
       None
-    } else { Option(createMethodRefNode(methodName, methodFullName, func)) }
+    } else { Option(methodRefNode(func, methodName, methodFullName, methodFullName)) }
 
     val callAst = if (shouldCreateAssignmentCall && shouldCreateFunctionReference) {
-      val idNode  = createIdentifierNode(methodName, func)
-      val idLocal = createLocalNode(methodName, methodFullName)
+      val idNode  = identifierNode(func, methodName)
+      val idLocal = newLocalNode(methodName, methodFullName).order(0)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
       scope.addVariable(methodName, idLocal, BlockScope)
       scope.addVariableReference(methodName, idNode)
       val code       = s"function $methodName = ${func.code}"
-      val assignment = createAssignmentCallAst(idNode, methodRefNode.get, code, func.lineNumber, func.columnNumber)
+      val assignment = createAssignmentCallAst(idNode, methodRefNode_.get, code, func.lineNumber, func.columnNumber)
       assignment
     } else {
       Ast()
@@ -364,7 +365,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val capturingRefNode =
       if (shouldCreateFunctionReference) {
-        methodRefNode
+        methodRefNode_
       } else {
         typeRefIdStack.headOption
       }
@@ -420,7 +421,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, methodNode, EdgeTypes.AST)
 
-    methodRefNode match {
+    methodRefNode_ match {
       case Some(ref) if callAst.nodes.isEmpty =>
         MethodAst(Ast(ref), methodNode, mAst)
       case _ =>

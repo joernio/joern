@@ -75,21 +75,21 @@ trait AstForTypesCreator { this: AstCreator =>
           case _: IASTArrayDeclarator => registerType(typeFor(declarator))
           case _                      => registerType(typeForDeclSpecifier(declaration.getDeclSpecifier))
         }
-        Ast(newMemberNode(declarator, name, nodeSignature(declarator), tpe))
+        Ast(memberNode(declarator, name, nodeSignature(declarator), tpe))
       case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
-        val tpe       = registerType(typeFor(declarator))
-        val codeTpe   = typeFor(declarator, stripKeywords = false)
-        val localNode = newLocalNode(declarator, name, s"$codeTpe $name", tpe)
-        scope.addToScope(name, (localNode, tpe))
-        Ast(localNode)
+        val tpe     = registerType(typeFor(declarator))
+        val codeTpe = typeFor(declarator, stripKeywords = false)
+        val node    = localNode(declarator, name, s"$codeTpe $name", tpe)
+        scope.addToScope(name, (node, tpe))
+        Ast(node)
       case _ =>
         val tpe = registerType(
           cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = true, index))
         )
-        val codeTpe   = typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = false, index)
-        val localNode = newLocalNode(declarator, name, s"$codeTpe $name", tpe)
-        scope.addToScope(name, (localNode, tpe))
-        Ast(localNode)
+        val codeTpe = typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = false, index)
+        val node    = localNode(declarator, name, s"$codeTpe $name", tpe)
+        scope.addToScope(name, (node, tpe))
+        Ast(node)
     }
 
   }
@@ -234,6 +234,8 @@ trait AstForTypesCreator { this: AstCreator =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
 
+    val lineNumber             = line(typeSpecifier)
+    val columnNumber           = column(typeSpecifier)
     val name                   = ASTStringUtil.getSimpleName(typeSpecifier.getName)
     val fullname               = registerType(cleanType(fullName(typeSpecifier)))
     val code                   = nodeSignature(typeSpecifier)
@@ -272,7 +274,10 @@ trait AstForTypesCreator { this: AstCreator =>
         calls,
         s"$fullname:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
-        Defines.anyTypeName
+        Defines.anyTypeName,
+        Some(filename),
+        lineNumber,
+        columnNumber
       )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
@@ -310,7 +315,7 @@ trait AstForTypesCreator { this: AstCreator =>
         enumeration.getBaseType.toString
       case _ => typeFor(enumerator)
     }
-    val cpgMember = newMemberNode(
+    val cpgMember = memberNode(
       enumerator,
       ASTStringUtil.getSimpleName(enumerator.getName),
       nodeSignature(enumerator),
@@ -336,6 +341,8 @@ trait AstForTypesCreator { this: AstCreator =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
 
+    val lineNumber   = line(typeSpecifier)
+    val columnNumber = column(typeSpecifier)
     val (name, fullname) =
       uniqueName("enum", ASTStringUtil.getSimpleName(typeSpecifier.getName), fullName(typeSpecifier))
     val typeDecl = newTypeDeclNode(typeSpecifier, name, registerType(fullname), filename, nodeSignature(typeSpecifier))
@@ -357,7 +364,10 @@ trait AstForTypesCreator { this: AstCreator =>
         calls,
         s"$fullname:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
-        Defines.anyTypeName
+        Defines.anyTypeName,
+        Some(filename),
+        lineNumber,
+        columnNumber
       )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }

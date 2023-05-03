@@ -3,8 +3,8 @@ import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newIdentifierNode, newModifierNode}
-import io.joern.x2cpg.{Ast, AstCreatorBase}
+import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newIdentifierNode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
@@ -13,12 +13,13 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import java.util
-import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class AstCreator(filename: String, global: Global) extends AstCreatorBase(filename) {
+class AstCreator(filename: String, global: Global)
+    extends AstCreatorBase(filename)
+    with AstNodeBuilder[TerminalNode, AstCreator] {
 
   object Defines {
     val Any: String     = "ANY"
@@ -48,12 +49,16 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     diffGraph
   }
 
+  protected def line(node: TerminalNode): Option[Integer]      = Option(node.getSymbol.getLine)
+  protected def column(node: TerminalNode): Option[Integer]    = Option(node.getSymbol.getCharPositionInLine)
+  protected def lineEnd(node: TerminalNode): Option[Integer]   = None
+  protected def columnEnd(node: TerminalNode): Option[Integer] = None
+
   def astForVariableIdentifierContext(ctx: VariableIdentifierContext, varType: String): Ast = {
-    val token        = ctx.children.asScala.map(_.asInstanceOf[TerminalNode].getSymbol).head
+    val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
+    val token        = terminalNode.getSymbol
     val variableName = token.getText
-    val line         = token.getLine
-    val column       = token.getCharPositionInLine
-    val node = newIdentifierNode(variableName, None, Some(line), Some(column), List(varType)).typeFullName(varType)
+    val node         = identifierNode(terminalNode, variableName, variableName, varType, List(varType))
     Ast(node)
   }
 
@@ -67,24 +72,12 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
           val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
           val varSymbol = localVar.getSymbol()
-          val node = newIdentifierNode(
-            varSymbol.getText,
-            None,
-            Some(varSymbol.getLine()),
-            Some(varSymbol.getCharPositionInLine()),
-            List(Defines.Any)
-          ).typeFullName(Defines.Any)
+          val node      = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
           Ast(node)
         } else if (ctx.CONSTANT_IDENTIFIER() != null) {
           val localVar  = ctx.CONSTANT_IDENTIFIER()
           val varSymbol = localVar.getSymbol()
-          val node = newIdentifierNode(
-            varSymbol.getText,
-            None,
-            Some(varSymbol.getLine()),
-            Some(varSymbol.getCharPositionInLine()),
-            List(Defines.Any)
-          ).typeFullName(Defines.Any)
+          val node      = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
           Ast(node)
         } else {
           Ast()
@@ -469,14 +462,8 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val primaryAst = astForPrimaryContext(ctx.primary())
     val localVar   = ctx.CONSTANT_IDENTIFIER()
     val varSymbol  = localVar.getSymbol()
-    val node = newIdentifierNode(
-      varSymbol.getText,
-      None,
-      Some(varSymbol.getLine()),
-      Some(varSymbol.getCharPositionInLine()),
-      List(Defines.Any)
-    ).typeFullName(Defines.Any)
-    val constAst = Ast(node)
+    val node       = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+    val constAst   = Ast(node)
     primaryAst.withChild(constAst)
   }
 
@@ -484,13 +471,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val primaryAst = astForPrimaryContext(ctx.primary())
     val localVar   = ctx.CONSTANT_IDENTIFIER()
     val varSymbol  = localVar.getSymbol()
-    val node = newIdentifierNode(
-      varSymbol.getText,
-      None,
-      Some(varSymbol.getLine()),
-      Some(varSymbol.getCharPositionInLine()),
-      List(Defines.Any)
-    ).typeFullName(Defines.Any)
+    val node       = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
     Ast(node)
     primaryAst
   }
@@ -793,24 +774,12 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
-      val node = newIdentifierNode(
-        varSymbol.getText,
-        None,
-        Some(varSymbol.getLine()),
-        Some(varSymbol.getCharPositionInLine()),
-        List(Defines.Any)
-      ).typeFullName(Defines.Any)
+      val node      = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Ast(node)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localVar  = ctx.CONSTANT_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
-      val node = newIdentifierNode(
-        varSymbol.getText,
-        None,
-        Some(varSymbol.getLine()),
-        Some(varSymbol.getCharPositionInLine()),
-        List(Defines.Any)
-      ).typeFullName(Defines.Any)
+      val node      = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Ast(node)
     } else {
       Ast()
@@ -885,13 +854,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     val seqNodes = localVarList
       .map(localVar => {
         val varSymbol = localVar.getSymbol()
-        newIdentifierNode(
-          varSymbol.getText,
-          None,
-          Some(varSymbol.getLine()),
-          Some(varSymbol.getCharPositionInLine()),
-          List(Defines.Any)
-        ).typeFullName(Defines.Any)
+        identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       })
       .toSeq
 
@@ -998,14 +961,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   def astForSimpleScopedConstantReferencePrimaryContext(ctx: SimpleScopedConstantReferencePrimaryContext): Ast = {
     val localVar  = ctx.CONSTANT_IDENTIFIER()
     val varSymbol = localVar.getSymbol()
-    val node = newIdentifierNode(
-      varSymbol.getText,
-      None,
-      Some(varSymbol.getLine()),
-      Some(varSymbol.getCharPositionInLine()),
-      List(Defines.Any)
-    ).typeFullName(Defines.Any)
-
+    val node      = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Ast(blockNode).withChild(Ast(node))
   }
@@ -1154,8 +1110,19 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Ast = {
-    val node = newIdentifierNode(ctx.getText, None, Some(-1), Some(-1), List(Defines.Any)).typeFullName(Defines.Any)
-    Ast(node)
+    val node = {
+      if (ctx.TRUE() != null) { ctx.TRUE() }
+      else if (ctx.NIL() != null) { ctx.NIL() }
+      else if (ctx.FALSE() != null) { ctx.FALSE() }
+      else if (ctx.SELF() != null) { ctx.SELF() }
+      else if (ctx.FILE__() != null) { ctx.FILE__() }
+      else if (ctx.LINE__() != null) { ctx.LINE__() }
+      else if (ctx.ENCODING__() != null) { ctx.ENCODING__() }
+      else return Ast()
+    }
+
+    val astNode = identifierNode(node, ctx.getText, ctx.getText, Defines.Any, List(Defines.Any))
+    Ast(astNode)
   }
 
   def astForVariableRefenceContext(ctx: RubyParser.VariableReferenceContext): Ast = {

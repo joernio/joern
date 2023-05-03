@@ -8,7 +8,8 @@ import java.io.File
 
 class MethodTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code(""" class Foo {
+  val cpg = code(
+    """ class Foo {
       |   int foo(int param1, int param2) {
       |     return 1;
       |   }
@@ -23,7 +24,9 @@ class MethodTests extends JavaSrcCode2CpgFixture {
       | class Baz {
       |   void baz() {}
       | }
-      |""".stripMargin)
+      |""".stripMargin,
+    fileName = "Foo.java"
+  )
 
   "should contain exactly one non-stub method node in Foo with correct fields" in {
     val List(x) =
@@ -34,11 +37,7 @@ class MethodTests extends JavaSrcCode2CpgFixture {
     x.signature shouldBe "int(int,int)"
     x.isExternal shouldBe false
     x.order shouldBe 1
-    x.filename should (
-      startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:"   // Windows
-    )
-    x.filename.endsWith(".java") shouldBe true
+    x.filename shouldBe "Foo.java"
     x.lineNumber shouldBe Some(2)
     x.lineNumberEnd shouldBe Some(4)
     x.columnNumber shouldBe Some(4)

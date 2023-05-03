@@ -57,22 +57,24 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
     blockNode
   }
 
+  private def setExternal(dstGraph: DiffGraphBuilder): Unit = {
+    cpg.method.foreach { method =>
+      if (systemIncludePaths.exists(p => method.filename.startsWith(p.toString))) {
+        dstGraph.setNodeProperty(method, PropertyNames.IS_EXTERNAL, true)
+      }
+    }
+    cpg.typeDecl.foreach { typeDecl =>
+      if (systemIncludePaths.exists(p => typeDecl.filename.startsWith(p.toString))) {
+        dstGraph.setNodeProperty(typeDecl, PropertyNames.IS_EXTERNAL, true)
+      }
+    }
+  }
+
   private def createMissingAstEdges(dstGraph: DiffGraphBuilder): Unit = {
     val globalBlock = createGlobalBlock(dstGraph)
     cpg.all.not(_.inE(EdgeTypes.AST)).foreach {
-      case srcNode: Method =>
-        dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
-        if (systemIncludePaths.exists(p => srcNode.filename.startsWith(p.toString))) {
-          dstGraph.setNodeProperty(srcNode, PropertyNames.IS_EXTERNAL, true)
-        }
-      case srcNode: TypeDecl =>
-        dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
-        if (systemIncludePaths.exists(p => srcNode.filename.startsWith(p.toString))) {
-          dstGraph.setNodeProperty(srcNode, PropertyNames.IS_EXTERNAL, true)
-        }
       case _ @(_: MetaData | _: Binding | _: Type | _: Dependency | _: Import) => // do nothing
-      case srcNode =>
-        dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
+      case srcNode => dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
     }
   }
 
@@ -97,6 +99,7 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
     if (CGlobal.shouldBeCleared()) {
       createMissingAstEdges(dstGraph)
       createMissingTypeDecls(dstGraph)
+      setExternal(dstGraph)
     }
   }
 
