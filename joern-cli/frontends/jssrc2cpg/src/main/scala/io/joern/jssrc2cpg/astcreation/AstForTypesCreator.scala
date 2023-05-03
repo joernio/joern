@@ -380,8 +380,7 @@ trait AstForTypesCreator { this: AstCreator =>
 
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
       // the class definition assigned to its constructor
-      val classIdNode =
-        createIdentifierNode(typeName, Option(constructorNode.fullName), clazz.lineNumber, clazz.columnNumber)
+      val classIdNode = identifierNode(clazz, typeName, Seq(constructorNode.fullName))
       val constructorRefNode =
         methodRefNode(clazz, constructorNode.code, constructorNode.fullName, constructorNode.fullName)
 

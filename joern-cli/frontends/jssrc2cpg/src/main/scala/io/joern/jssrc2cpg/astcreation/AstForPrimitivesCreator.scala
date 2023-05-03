@@ -9,7 +9,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForIdentifier(ident: BabelNodeInfo, typeFullName: Option[String] = None): Ast = {
     val name      = ident.json("name").str
-    val identNode = createIdentifierNode(name, ident)
+    val identNode = identifierNode(ident, name)
     val tpe = typeFullName match {
       case Some(Defines.Any) => typeFor(ident)
       case Some(otherType)   => otherType
@@ -21,10 +21,10 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   protected def astForSuperKeyword(superKeyword: BabelNodeInfo): Ast =
-    Ast(createIdentifierNode("super", superKeyword))
+    Ast(identifierNode(superKeyword, "super"))
 
   protected def astForImportKeyword(importKeyword: BabelNodeInfo): Ast =
-    Ast(createIdentifierNode("import", importKeyword))
+    Ast(identifierNode(importKeyword, "import"))
 
   protected def astForNullLiteral(nullLiteral: BabelNodeInfo): Ast =
     Ast(literalNode(nullLiteral, nullLiteral.code, Option(Defines.Null)))

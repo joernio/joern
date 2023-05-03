@@ -282,28 +282,19 @@ trait AstNodeBuilder { this: AstCreator =>
     callAst(callNode, arguments)
   }
 
-  protected def createIdentifierNode(name: String, node: BabelNodeInfo): NewIdentifier = {
+  protected def identifierNode(node: BabelNodeInfo, name: String): NewIdentifier = {
     val dynamicInstanceTypeOption = name match {
       case "this"    => typeHintForThisExpression(Option(node)).headOption
       case "console" => Option(Defines.Console)
       case "Math"    => Option(Defines.Math)
       case _         => None
     }
-    createIdentifierNode(name, dynamicInstanceTypeOption, node.lineNumber, node.columnNumber)
+    identifierNode(node, name, name, Defines.Any, dynamicInstanceTypeOption.toList)
   }
 
-  protected def createIdentifierNode(
-    name: String,
-    dynamicTypeOption: Option[String],
-    line: Option[Integer],
-    column: Option[Integer]
-  ): NewIdentifier = NewIdentifier()
-    .name(name)
-    .code(name)
-    .lineNumber(line)
-    .columnNumber(column)
-    .typeFullName(Defines.Any)
-    .dynamicTypeHintFullName(dynamicTypeOption.toList)
+  protected def identifierNode(node: BabelNodeInfo, name: String, dynamicTypeHints: Seq[String]): NewIdentifier = {
+    identifierNode(node, name, name, Defines.Any, dynamicTypeHints)
+  }
 
   protected def createStaticCallNode(
     code: String,

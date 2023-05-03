@@ -35,20 +35,6 @@ object Nodes {
       .columnNumber(column)
   }
 
-  def identifierNode(
-    name: String,
-    typeFullName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewIdentifier = {
-    NewIdentifier()
-      .code(name)
-      .name(name)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   def jumpTargetNode(
     code: String,
     name: String,
