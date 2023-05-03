@@ -374,7 +374,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       astForAssociationsContext(ctx.associations())
     case ctx: RubyParser.SplattingOnlyContext =>
       astForSplattingArgumentContext(ctx.splattingArgument())
-    case _ => Ast()
+    case _ =>
+      logger.error("astForIndexingArgumentsContext() All contexts mismatched.")
+      Ast()
   }
 
   def astForArrayConstructorPrimaryContext(ctx: ArrayConstructorPrimaryContext): Ast = {
@@ -547,7 +549,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       Ast(blockNode).withChildren(asts)
     case ctx: PackingLeftHandSideOnlyContext => astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
     case ctx: GroupedLeftHandSideOnlyContext => astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
-    case _                                   => Ast()
+    case _ =>
+      logger.error("astForMultipleLeftHandSideContext() All contexts mismatched.")
+      Ast()
   }
 
   def astForForVariableContext(ctx: ForVariableContext): Ast = {
@@ -631,7 +635,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     case ctx: ReturnArgsContext => astForArgumentsContext(ctx.arguments())
     case ctx: BreakArgsContext  => astForArgumentsContext(ctx.arguments())
     case ctx: NextArgsContext   => astForArgumentsContext(ctx.arguments())
-    case _                      => Ast()
+    case _ =>
+      logger.error("astForInvocationWithoutParenthesesContext() All contexts mismatched.")
+      Ast()
   }
 
   def astForInvocationWithBlockOnlyPrimaryContext(ctx: InvocationWithBlockOnlyPrimaryContext): Ast = {
@@ -1030,7 +1036,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       val methodNameAst = astForMethodNameContext(ctx.methodName())
       val primaryAst    = astForPrimaryContext(ctx.primary())
       primaryAst.withChild(methodNameAst).withChild(argsAst).withChild(doBlockAst)
-    case _ => Ast()
+    case _ =>
+      logger.error("astForCommandWithDoBlockContext() All contexts mismatched.")
+      Ast()
   }
 
   def astForChainedCommandWithDoBlockContext(ctx: ChainedCommandWithDoBlockContext): Ast = {
@@ -1065,7 +1073,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       Ast(blockNode).withChildren(expAsts).merge(ccDoBlock)
     case ctx: ChainedCommandWithDoBlockOnlyContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
-    case _ => Ast()
+    case _ =>
+      logger.error("astForArgumentsWithParenthesesContext() All contexts mismatched.")
+      Ast()
   }
 
   def astForBlockParametersContext(ctx: BlockParametersContext): Ast = {
