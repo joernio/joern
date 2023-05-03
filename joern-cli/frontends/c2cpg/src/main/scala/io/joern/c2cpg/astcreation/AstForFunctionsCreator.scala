@@ -121,7 +121,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val typeDeclAst = createFunctionTypeAndTypeDecl(lambdaExpression, methodNode, name, fullname, signature)
     Ast.storeInDiffGraph(stubAst.merge(typeDeclAst), diffGraph)
 
-    Ast(newMethodRefNode(code, fullname, methodNode.astParentFullName, lambdaExpression))
+    Ast(methodRefNode(lambdaExpression, code, fullname, methodNode.astParentFullName))
   }
 
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {

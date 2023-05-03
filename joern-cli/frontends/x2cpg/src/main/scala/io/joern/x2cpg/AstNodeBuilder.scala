@@ -24,10 +24,10 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .columnNumber(column(node))
   }
 
-  protected def methodRefNode(node: Node, name: String, fullName: String, typeFullName: String): NewMethodRef = {
+  protected def methodRefNode(node: Node, code: String, methodFullName: String, typeFullName: String): NewMethodRef = {
     NewMethodRef()
-      .code(name)
-      .methodFullName(fullName)
+      .code(code)
+      .methodFullName(methodFullName)
       .typeFullName(typeFullName)
       .lineNumber(line(node))
       .columnNumber(column(node))
