@@ -21,7 +21,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val identifierName = ident match {
       case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
       case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
-      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty => uniqueName("name", "", "")._1
+      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty => uniqueName("name", "", "", Some(ident))._1
       case _                                                       => nodeSignature(ident)
     }
     val variableOption = scope.lookupVariable(identifierName)
