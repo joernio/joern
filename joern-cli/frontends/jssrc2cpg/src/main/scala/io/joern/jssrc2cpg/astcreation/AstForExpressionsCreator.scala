@@ -6,8 +6,8 @@ import io.joern.jssrc2cpg.passes.{Defines, EcmaBuiltins, GlobalBuiltins}
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.x2cpg.utils.NodeBuilders.newLocalNode
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
 import scala.util.Try
 
@@ -104,7 +104,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast = {
     val dynamicTypeOption = typeHintForThisExpression(Option(thisExpr)).headOption
-    val thisNode = identifierNode(thisExpr, thisExpr.code, dynamicTypeOption.toList)
+    val thisNode          = identifierNode(thisExpr, thisExpr.code, dynamicTypeOption.toList)
     scope.addVariableReference(thisExpr.code, thisNode)
     Ast(thisNode)
   }
