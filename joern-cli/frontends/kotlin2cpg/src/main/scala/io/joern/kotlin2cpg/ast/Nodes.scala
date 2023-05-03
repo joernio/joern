@@ -3,11 +3,8 @@ package io.joern.kotlin2cpg.ast
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewCall,
-  NewClosureBinding,
   NewIdentifier,
   NewJumpTarget,
-  NewLiteral,
-  NewLocal,
   NewMethod,
   NewMethodParameterIn,
   NewModifier,
