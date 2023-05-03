@@ -216,18 +216,4 @@ object Nodes {
       .lineNumber(line)
       .columnNumber(column)
   }
-
-  def unknownNode(
-    code: String,
-    parserTypeName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewUnknown = {
-    NewUnknown()
-      .code(code)
-      .parserTypeName(parserTypeName)
-      .typeFullName("ANY")
-      .lineNumber(line)
-      .columnNumber(column)
-  }
 }
