@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newMethodReturnNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newMethodReturnNode, newClosureBindingNode}
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
@@ -547,8 +547,9 @@ trait KtPsiToAst {
       }
       .map { capturedNodeContext =>
         // TODO: remove the randomness here, two CPGs created from the same codebase should be the same
-        val closureBindingId   = randomUUID().toString
-        val closureBindingNode = closureBinding(closureBindingId, capturedNodeContext.name)
+        val closureBindingId = randomUUID().toString
+        val closureBindingNode =
+          newClosureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
         (closureBindingNode, capturedNodeContext)
       }
 

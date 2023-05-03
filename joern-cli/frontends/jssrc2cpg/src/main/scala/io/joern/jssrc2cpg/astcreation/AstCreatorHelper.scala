@@ -5,8 +5,9 @@ import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
@@ -278,7 +279,11 @@ trait AstCreatorHelper { this: AstCreator =>
                     val localNode =
                       createLocalNode(origin.variableName, Defines.Any, Option(closureBindingIdProperty))
                     diffGraph.addEdge(methodScopeNode, localNode, EdgeTypes.AST)
-                    val closureBindingNode = createClosureBindingNode(closureBindingIdProperty, origin.variableName)
+                    val closureBindingNode = newClosureBindingNode(
+                      closureBindingIdProperty,
+                      origin.variableName,
+                      EvaluationStrategies.BY_REFERENCE
+                    )
                     methodScope.capturingRefId.foreach(ref =>
                       diffGraph.addEdge(ref, closureBindingNode, EdgeTypes.CAPTURE)
                     )
