@@ -2,14 +2,13 @@ package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.datastructures.Scope
-import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.parser.BabelAst._
+import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
-import io.joern.x2cpg.{Ast, AstCreatorBase}
-import io.joern.x2cpg.{AstNodeBuilder => X2CpgAstNodeBuilder}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder => X2CpgAstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
@@ -111,6 +110,7 @@ class AstCreator(
 
     val thisParam =
       createParameterInNode("this", "this", 0, isVariadic = false, line = lineNumber, column = columnNumber)
+        .dynamicTypeHintFullName(typeHintForThisExpression())
 
     val methodChildren = astsForFile(astNodeInfo)
     setArgumentIndices(methodChildren)

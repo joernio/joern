@@ -853,14 +853,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case _ => persistType(x, symbolTable.get(x))
     }
 
-  protected def setTypeFromTypeHints(n: MethodParameterIn): Unit = {
-    val types = (n.typeFullName +: n.dynamicTypeHintFullName).filterNot(x => x == "ANY" || XTypeRecovery.isDummyType(x))
-    if (n.dynamicTypeHintFullName.nonEmpty) setTypes(n, types)
-  }
-
-  protected def setTypeFromTypeHints(n: MethodReturn): Unit = {
-    val types = (n.typeFullName +: n.dynamicTypeHintFullName).filterNot(x => x == "ANY" || XTypeRecovery.isDummyType(x))
-    if (n.dynamicTypeHintFullName.nonEmpty) setTypes(n, types)
+  protected def setTypeFromTypeHints(n: StoredNode): Unit = {
+    val nodeType         = n.property(PropertyNames.TYPE_FULL_NAME, "ANY")
+    val dynamicTypeHints = n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty[String])
+    val types            = (nodeType +: dynamicTypeHints).filterNot(x => x == "ANY" || XTypeRecovery.isDummyType(x))
+    if (dynamicTypeHints.nonEmpty) setTypes(n, types)
   }
 
   /** In the case this field access is a function pointer, we would want to make sure this has a method ref.

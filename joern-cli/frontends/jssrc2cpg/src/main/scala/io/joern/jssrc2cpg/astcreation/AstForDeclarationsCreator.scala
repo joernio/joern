@@ -429,7 +429,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     )
 
     val receiverNode = createIdentifierNode(RequireKeyword, nodeInfo)
-    val thisNode     = createIdentifierNode("this", nodeInfo)
+    val thisNode     = createIdentifierNode("this", nodeInfo).dynamicTypeHintFullName(typeHintForThisExpression())
     scope.addVariableReference(thisNode.name, thisNode)
     val cAst = callAst(
       sourceCall,

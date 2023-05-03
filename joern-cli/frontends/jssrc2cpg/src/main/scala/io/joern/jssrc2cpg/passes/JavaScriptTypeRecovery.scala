@@ -248,4 +248,13 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   ): Set[String] =
     super.visitIdentifierAssignedToTypeRef(i, t, Option("this"))
 
+  override protected def postSetTypeInformation(): Unit = {
+    // often there are "this" identifiers with type hints but this can be set to a type hint if they meet the criteria
+    cu.ast.isIdentifier
+      .nameExact("this")
+      .where(_.typeFullName("ANY"))
+      .filterNot(_.dynamicTypeHintFullName.isEmpty)
+      .foreach(setTypeFromTypeHints)
+  }
+
 }

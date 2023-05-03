@@ -5,8 +5,8 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.{Defines, EcmaBuiltins, GlobalBuiltins}
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
 import scala.util.Try
 
@@ -64,7 +64,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
           val base   = createBabelNodeInfo(callee.json("object"))
           val member = createBabelNodeInfo(callee.json("property"))
           base.node match {
-            case Identifier | ThisExpression =>
+            case ThisExpression =>
+              val receiverAst = astForNodeWithFunctionReference(callee.json)
+              val baseNode = createIdentifierNode(base.code, base)
+                .dynamicTypeHintFullName(this.rootTypeDecl.map(_.fullName).toSeq)
+              scope.addVariableReference(base.code, baseNode)
+              (receiverAst, baseNode, member.code)
+            case Identifier =>
               val receiverAst = astForNodeWithFunctionReference(callee.json)
               val baseNode    = createIdentifierNode(base.code, base)
               scope.addVariableReference(base.code, baseNode)
@@ -87,7 +93,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           }
         case _ =>
           val receiverAst = astForNodeWithFunctionReference(callee.json)
-          val thisNode    = createIdentifierNode("this", callee)
+          val thisNode    = createIdentifierNode("this", callee).dynamicTypeHintFullName(typeHintForThisExpression())
           scope.addVariableReference(thisNode.name, thisNode)
           (receiverAst, thisNode, calleeCode)
       }
@@ -96,16 +102,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast = {
-    val dynamicTypeOption = dynamicInstanceTypeStack.headOption match {
-      case Some(tpe) => Option(tpe)
-      case None =>
-        typeFor(thisExpr) match {
-          case t if t != Defines.Any => Option(t)
-          case _ if methodAstParentStack.collect { case n: nodes.NewMethod if n.name == ":program" => n }.nonEmpty =>
-            methodAstParentStack.collectFirst { case n: NewMethod if n.name == ":program" => n.fullName }
-          case _ => None
-        }
-    }
+    val dynamicTypeOption = typeHintForThisExpression(Option(thisExpr)).headOption
     val thisNode = createIdentifierNode(thisExpr.code, dynamicTypeOption, thisExpr.lineNumber, thisExpr.columnNumber)
     scope.addVariableReference(thisExpr.code, thisNode)
     Ast(thisNode)
