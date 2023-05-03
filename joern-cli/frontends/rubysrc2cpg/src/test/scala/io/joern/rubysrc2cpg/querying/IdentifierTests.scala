@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class IdentifierTests extends RubyCode2CpgFixture {
 
-  "Basic identifier test" should {
+  "should recognize method identifiers and literals in simple assignments" should {
     val cpg = code(
       """
         |# call instance methods
@@ -16,7 +16,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |c = a*b
         |puts "Multiplication is : #{c}"
         |""".stripMargin,
-      fileName = "basicidentifier.rb"
+      fileName = "simple_assignment.rb"
     )
 
     "identifier nodes present" in {
@@ -33,7 +33,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "Class test" should {
+  "should recognize identifiers and literals in class methods and members/locals" should {
     val cpg = code(
       """
         |class Person
@@ -74,7 +74,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "Function call test" should {
+  "should recognize identifiers and literals in a function call" should {
     val cpg = code(
       """
         |def add_three_numbers(num1, num2, num3)
@@ -88,7 +88,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |
         |sumOfThree = add_three_numbers( a, b, c )
         |""".stripMargin,
-      fileName = "sum.rb"
+      fileName = "function_test.rb"
     )
 
     "function test" in {
@@ -105,7 +105,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.size shouldBe 14
     }
 
-    "Expression test" should {
+    "should recognize identifiers in expressions of various types" should {
       val cpg = code(
         """
           |a = 1
@@ -125,7 +125,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |o = a ... b
           |p = ( a > b ) ? c : e
           |""".stripMargin,
-        fileName = "sum.rb"
+        fileName = "expressions.rb"
       )
 
       "expression test" in {
@@ -148,7 +148,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "BEGIN and END blocks test" should {
+    "should recognize identifiers and literals in BEGIN and END blocks test" should {
       val cpg = code(
         """
           |#!/usr/bin/env ruby
@@ -168,7 +168,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |  endbool = endvar > 23
           |}
           |""".stripMargin,
-        fileName = "beginning_of_the_end.rb"
+        fileName = "begin_and_end.rb"
       )
 
       "beginning_of_the_end test" in {
@@ -181,7 +181,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "Array iteration using a do block test" should {
+    "should recognize identifiers and literals in a doBlock iterating over a constant array" should {
       val cpg = code(
         """
           |[1, 2, "three"].each do |n|
@@ -199,7 +199,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "doblock over const array test" should {
+    "should recognize identifiers and literals in a doBlock iterating over a constant array and multiple params" should {
       val cpg = code(
         """
           |[1, 2, "three"].each do |n, m|
@@ -226,7 +226,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "The CPG generated for 2 colons" should {
+    "Tshould recognize identifiers and literals in when a namespace resolution is used " should {
       val cpg = code(
         """
           |Rails.application.configure do
@@ -234,10 +234,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |end
           |
           |""".stripMargin,
-        fileName = "2colon.rb"
+        fileName = "namespace.rb"
       )
 
-      "2 colon test" in {
+      "namespace resolution test" in {
         cpg.identifier.size shouldBe 5
         cpg.call.name("application").size shouldBe 1
         cpg.call.name("configure").size shouldBe 1
