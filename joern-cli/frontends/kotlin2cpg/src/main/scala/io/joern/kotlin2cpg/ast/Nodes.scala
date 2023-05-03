@@ -3,11 +3,8 @@ package io.joern.kotlin2cpg.ast
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewCall,
-  NewClosureBinding,
   NewIdentifier,
   NewJumpTarget,
-  NewLiteral,
-  NewLocal,
   NewMethod,
   NewMethodParameterIn,
   NewModifier,
@@ -63,35 +60,6 @@ object Nodes {
       .code(code)
       .name(name)
       .parserTypeName(parserTypeName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def localNode(
-    name: String,
-    typeFullName: String,
-    closureBindingId: Option[String] = None,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewLocal = {
-    NewLocal()
-      .code(name)
-      .name(name)
-      .typeFullName(typeFullName)
-      .closureBindingId(closureBindingId)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def literalNode(
-    code: String,
-    typeFullName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewLiteral = {
-    NewLiteral()
-      .code(code)
-      .typeFullName(typeFullName)
       .lineNumber(line)
       .columnNumber(column)
   }

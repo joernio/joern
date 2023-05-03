@@ -17,14 +17,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column(node))
   }
 
-  protected def newLiteralNode(node: IASTNode, code: String, typeFullName: String): NewLiteral = {
-    NewLiteral()
-      .typeFullName(typeFullName)
-      .code(code)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-  }
-
   protected def newCommentNode(node: IASTNode, code: String, filename: String): NewComment = {
     NewComment().code(code).filename(filename).lineNumber(line(node)).columnNumber(column(node))
   }
@@ -40,15 +32,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .importedAs(importedEntity)
       .lineNumber(line(include))
       .columnNumber(column(include))
-  }
-
-  protected def newLocalNode(node: IASTNode, name: String, code: String, typeFullName: String): NewLocal = {
-    NewLocal()
-      .code(code)
-      .name(name)
-      .typeFullName(typeFullName)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
   }
 
   protected def newNamespaceBlockNode(

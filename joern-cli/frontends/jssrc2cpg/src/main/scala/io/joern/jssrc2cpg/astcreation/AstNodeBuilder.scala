@@ -243,22 +243,12 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column)
   }
 
-  protected def createLiteralNode(
-    code: String,
-    dynamicTypeOption: Option[String],
-    line: Option[Integer],
-    column: Option[Integer]
-  ): NewLiteral = {
+  protected def literalNode(node: BabelNodeInfo, code: String, dynamicTypeOption: Option[String]): NewLiteral = {
     val typeFullName = dynamicTypeOption match {
       case Some(value) if Defines.JsTypes.contains(value) => value
       case _                                              => Defines.Any
     }
-    NewLiteral()
-      .code(code)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-      .dynamicTypeHintFullName(dynamicTypeOption.toList)
+    literalNode(node, code, typeFullName, dynamicTypeOption.toList)
   }
 
   protected def createEqualsCallAst(dest: Ast, source: Ast, line: Option[Integer], column: Option[Integer]): Ast = {
@@ -330,9 +320,6 @@ trait AstNodeBuilder { this: AstCreator =>
     .lineNumber(line)
     .columnNumber(column)
     .typeFullName(Defines.Any)
-
-  protected def createLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal =
-    NewLocal().code(name).name(name).typeFullName(typeFullName).closureBindingId(closureBindingId).order(0)
 
   protected def createTemplateDomNode(
     name: String,

@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newMethodReturnNode, newClosureBindingNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newClosureBindingNode, newLocalNode, newMethodReturnNode}
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
@@ -555,7 +555,7 @@ trait KtPsiToAst {
 
     val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
       val node =
-        localNode(capturedNodeContext.name, capturedNodeContext.typeFullName, closureBindingNode.closureBindingId)
+        newLocalNode(capturedNodeContext.name, capturedNodeContext.typeFullName, closureBindingNode.closureBindingId)
       scope.addToScope(capturedNodeContext.name, node)
       node
     }
@@ -695,7 +695,7 @@ trait KtPsiToAst {
     val destructuringEntries = nonUnderscoreDestructuringEntries(expr)
     val localsForEntries = destructuringEntries.map { entry =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      val node         = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
+      val node         = localNode(entry, entry.getName, entry.getName, typeFullName)
       scope.addToScope(node.name, node)
       Ast(node)
     }
@@ -706,7 +706,7 @@ trait KtPsiToAst {
     }
 
     val tmpName         = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
-    val localForTmpNode = localNode(tmpName, callRhsTypeFullName)
+    val localForTmpNode = newLocalNode(tmpName, callRhsTypeFullName)
     scope.addToScope(localForTmpNode.name, localForTmpNode)
     val localForTmpAst = Ast(localForTmpNode)
 
@@ -835,7 +835,7 @@ trait KtPsiToAst {
       }
     val localsForEntries = nonUnderscoreDestructuringEntries(expr).map { entry =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      val node         = localNode(entry.getName, typeFullName, None, line(entry), column(entry))
+      val node         = localNode(entry, entry.getName, entry.getName, typeFullName)
       scope.addToScope(node.name, node)
       Ast(node)
     }
@@ -879,7 +879,7 @@ trait KtPsiToAst {
       val node = operatorCallNode(Operators.formatString, expr.getText, Option(typeFullName), line(expr), column(expr))
       callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toIndexedSeq.toList)
     } else {
-      val node = literalNode(expr.getText, typeFullName, line(expr), column(expr))
+      val node = literalNode(expr, expr.getText, typeFullName)
       Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
     }
   }
@@ -1176,7 +1176,7 @@ trait KtPsiToAst {
   private def astForForWithSimpleVarLHS(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val loopRangeText         = expr.getLoopRange.getText
     val iteratorName          = s"${Constants.iteratorPrefix}${iteratorKeyPool.next()}"
-    val iteratorLocal         = localNode(iteratorName, TypeConstants.any)
+    val iteratorLocal         = newLocalNode(iteratorName, TypeConstants.any)
     val iteratorAssignmentLhs = identifierNode(iteratorName, TypeConstants.any)
     val iteratorLocalAst      = Ast(iteratorLocal).withRefEdge(iteratorAssignmentLhs, iteratorLocal)
 
@@ -1220,7 +1220,7 @@ trait KtPsiToAst {
       typeInfoProvider.typeFullName(expr.getLoopParameter, TypeConstants.any)
     )
     val loopParameterName  = expr.getLoopParameter.getText
-    val loopParameterLocal = localNode(loopParameterName, loopParameterTypeFullName)
+    val loopParameterLocal = newLocalNode(loopParameterName, loopParameterTypeFullName)
     scope.addToScope(loopParameterName, loopParameterLocal)
 
     val loopParameterIdentifier = identifierNode(loopParameterName, TypeConstants.any)
@@ -1276,7 +1276,7 @@ trait KtPsiToAst {
   private def astForForWithDestructuringLHS(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val loopRangeText         = expr.getLoopRange.getText
     val iteratorName          = s"${Constants.iteratorPrefix}${iteratorKeyPool.next()}"
-    val localForIterator      = localNode(iteratorName, TypeConstants.any)
+    val localForIterator      = newLocalNode(iteratorName, TypeConstants.any)
     val iteratorAssignmentLhs = identifierNode(iteratorName, TypeConstants.any)
     val iteratorLocalAst      = Ast(localForIterator).withRefEdge(iteratorAssignmentLhs, localForIterator)
 
@@ -1320,13 +1320,13 @@ trait KtPsiToAst {
     val localsForDestructuringVars = destructuringDeclEntries.asScala.map { entry =>
       val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
       val entryName         = entry.getText
-      val node              = localNode(entryName, entryTypeFullName, None, line(entry), column(entry))
+      val node              = localNode(entry, entryName, entryName, entryTypeFullName)
       scope.addToScope(entryName, node)
       Ast(node)
     }.toList
 
     val tmpName     = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
-    val localForTmp = localNode(tmpName, TypeConstants.any)
+    val localForTmp = newLocalNode(tmpName, TypeConstants.any)
     scope.addToScope(localForTmp.name, localForTmp)
     val localForTmpAst = Ast(localForTmp)
 
@@ -1450,7 +1450,7 @@ trait KtPsiToAst {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, Defines.UnresolvedNamespace))
     val tmpBlockNode = blockNode(expr, "", typeFullName)
     val tmpName      = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
-    val tmpLocalNode = localNode(tmpName, typeFullName)
+    val tmpLocalNode = newLocalNode(tmpName, typeFullName)
     scope.addToScope(tmpName, tmpLocalNode)
     val tmpLocalAst = Ast(tmpLocalNode)
 
@@ -1504,7 +1504,7 @@ trait KtPsiToAst {
     }
     if (hasRHSCtorCall) {
       val localTypeFullName = registerType(typeInfoProvider.propertyType(expr, explicitTypeName))
-      val local             = localNode(expr.getName, localTypeFullName, None, line(expr), column(expr))
+      val local             = localNode(expr, expr.getName, expr.getName, localTypeFullName)
       scope.addToScope(expr.getName, local)
       val localAst = Ast(local)
 
@@ -1554,7 +1554,7 @@ trait KtPsiToAst {
       val typeDeclAst      = typeDeclAsts.head
       val typeDeclFullName = typeDeclAst.root.get.asInstanceOf[NewTypeDecl].fullName
 
-      val node = localNode(expr.getName, typeDeclFullName, None, line(expr), column(expr))
+      val node = localNode(expr, expr.getName, expr.getName, typeDeclFullName)
       scope.addToScope(expr.getName, node)
       val localAst = Ast(node)
 
@@ -1588,7 +1588,7 @@ trait KtPsiToAst {
 
     } else {
       val typeFullName = registerType(typeInfoProvider.propertyType(expr, explicitTypeName))
-      val node         = localNode(expr.getName, typeFullName, None, line(expr), column(expr))
+      val node         = localNode(expr, expr.getName, expr.getName, typeFullName)
       scope.addToScope(expr.getName, node)
       val localAst = Ast(node)
 
@@ -1678,7 +1678,7 @@ trait KtPsiToAst {
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val node         = literalNode(expr.getText, typeFullName, line(expr), column(expr))
+    val node         = literalNode(expr, expr.getText, typeFullName)
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
   }
 
