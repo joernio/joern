@@ -54,8 +54,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |  end
         |end
         |
-        |Person p
-        |p.greet()
+        |p = Person. new
+        |p.greet
         |""".stripMargin,
       fileName = "classtest.rb"
     )
@@ -69,9 +69,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.call.name("initialize").size shouldBe 1
       cpg.call.name("greet").size shouldBe 2
       cpg.call.name("puts").size shouldBe 2
-      cpg.call.name("Person").size shouldBe 1
       cpg.call.name("have_birthday").size shouldBe 1
-      cpg.identifier.size shouldBe 12
+      cpg.identifier.size shouldBe 13
     }
   }
 
@@ -182,17 +181,17 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "The CPG generated for do block" should {
+    "The CPG generated for constant array iteration using a do block" should {
       val cpg = code(
         """
           |[1, 2, "three"].each do |n|
           | puts n
           |end
           |""".stripMargin,
-        fileName = "doblock.rb"
+        fileName = "const_iter.rb"
       )
 
-      "doblocktest" in {
+      "const_iter" in {
         cpg.identifier.name("n").l.size shouldBe 2
         cpg.call.name("each").size shouldBe 1
         cpg.call.name("puts").size shouldBe 1
