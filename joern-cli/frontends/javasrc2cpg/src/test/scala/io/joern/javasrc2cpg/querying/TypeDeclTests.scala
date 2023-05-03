@@ -109,7 +109,8 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
 }
 class TypeDeclTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code("""
+  val cpg = code(
+    """
       | package a.b.c.d;
       | class Bar extends Woo {
       |   int x;
@@ -144,7 +145,9 @@ class TypeDeclTests extends JavaSrcCode2CpgFixture {
       |
       |   public void enumMethod() {}
       | }
-      | """.stripMargin)
+      | """.stripMargin,
+    fileName = "Foo.java"
+  )
 
   "should create a default constructor if no constructor is defined" in {
     val typeFullName = "a.b.c.d.OuterClass$InnerClass$InnerClass2"
@@ -182,11 +185,7 @@ class TypeDeclTests extends JavaSrcCode2CpgFixture {
     x.inheritsFromTypeFullName should contain theSameElementsAs List("a.b.c.d.Woo")
     x.aliasTypeFullName shouldBe None
     x.order shouldBe 1
-    x.filename should (
-      startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:"   // Windows
-    )
-    x.filename.endsWith(".java") shouldBe true
+    x.filename shouldBe "Foo.java"
   }
 
   "should contain type decl for external type `int`" in {

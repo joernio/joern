@@ -24,15 +24,6 @@ class FileTests extends JavaSrcCode2CpgFixture {
     cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 1
   }
 
-  "should contain exactly one non-placeholder file with absolute path in `name`" in {
-    val List(u) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
-    u.name should (
-      startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:"   // Windows
-    )
-    u.hash.isDefined shouldBe false
-  }
-
   "should allow traversing from file to its namespace blocks" in {
     cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSetMutable shouldBe Set("a.b")
   }
@@ -50,7 +41,9 @@ class FileTests extends JavaSrcCode2CpgFixture {
   }
 
   "the filename should be the path relative to the project root" in {
-    val other = cpg
-    cpg.file.name(".*.java").name.l shouldBe List("a/b/Foo.java")
+    inside(cpg.file.nameNot(FileTraversal.UNKNOWN).l) { case List(foo) =>
+      foo.name shouldBe "a/b/Foo.java"
+      foo.hash.isDefined shouldBe false
+    }
   }
 }

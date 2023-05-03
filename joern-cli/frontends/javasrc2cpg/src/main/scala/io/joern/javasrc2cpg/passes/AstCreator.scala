@@ -308,6 +308,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         NewNamespaceBlock()
           .name(packageName)
           .fullName(fullName)
+          .filename(filename)
       case None =>
         globalNamespaceBlock()
     }
