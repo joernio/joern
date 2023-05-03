@@ -365,8 +365,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
       .closureOriginalName(Option(closureOriginalName))
 
-  protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
-
   protected def createTemplateDomNode(
     name: String,
     code: String,
@@ -410,7 +408,7 @@ trait AstNodeBuilder { this: AstCreator =>
     // Problem for https://github.com/ShiftLeftSecurity/codescience/issues/3626 here.
     // As the type (thus, the signature) of the function node is unknown (i.e., ANY*)
     // we can't generate the correct binding with signature.
-    val bindingNode = createBindingNode()
+    val bindingNode = NewBinding().name("").signature("")
     Ast(functionTypeDeclNode).withBindsEdge(functionTypeDeclNode, bindingNode).withRefEdge(bindingNode, methodNode)
   }
 

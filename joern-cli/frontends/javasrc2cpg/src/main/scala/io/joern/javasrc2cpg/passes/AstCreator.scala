@@ -91,6 +91,7 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.x2cpg.utils.NodeBuilders.{
   newAnnotationLiteralNode,
+  newBindingNode,
   newCallNode,
   newFieldIdentifierNode,
   newIdentifierNode,
@@ -129,7 +130,6 @@ import io.shiftleft.codepropertygraph.generated.{
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotation,
   NewArrayInitializer,
-  NewBinding,
   NewBlock,
   NewCall,
   NewClosureBinding,
@@ -419,10 +419,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       bindingTable.getEntries.toBuffer.sortBy((entry: BindingTableEntry) => s"${entry.name}${entry.signature}")
 
     sortedEntries.foreach { entry =>
-      val bindingNode = NewBinding()
-        .name(entry.name)
-        .signature(entry.signature)
-        .methodFullName(entry.implementingMethodFullName)
+      val bindingNode = newBindingNode(entry.name, entry.signature, entry.implementingMethodFullName)
 
       diffGraph.addNode(bindingNode)
       diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
@@ -2955,10 +2952,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     addClosureBindingsToDiffGraph(closureBindingsForCapturedVars, methodRef)
 
     val interfaceBinding = implementedInfo.implementedMethod.map { implementedMethod =>
-      NewBinding()
-        .name(implementedMethod.getName)
-        .methodFullName(lambdaMethodNode.fullName)
-        .signature(lambdaMethodNode.signature)
+      newBindingNode(implementedMethod.getName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
     }
 
     val bindingTable = getLambdaBindingTable(

@@ -6,6 +6,7 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
@@ -171,7 +172,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val memberNode = nodeInfo.node match {
       case TSDeclareMethod | TSDeclareFunction =>
         val function    = createMethodDefinitionNode(nodeInfo)
-        val bindingNode = createBindingNode()
+        val bindingNode = newBindingNode("", "", "")
         diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
         diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
         addModifier(function, nodeInfo.json)
@@ -179,7 +180,7 @@ trait AstForTypesCreator { this: AstCreator =>
         createMemberNode(function.name, nodeInfo, dynamicTypeHintFullName)
       case ClassMethod | ClassPrivateMethod =>
         val function    = createMethodAstAndNode(nodeInfo).methodNode
-        val bindingNode = createBindingNode()
+        val bindingNode = newBindingNode("", "", "")
         diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
         diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
         addModifier(function, nodeInfo.json)
@@ -479,7 +480,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val constructorNode = interfaceConstructor(typeName, tsInterface)
     diffGraph.addEdge(constructorNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
 
-    val constructorBindingNode = createBindingNode()
+    val constructorBindingNode = newBindingNode("", "", "")
     diffGraph.addEdge(typeDeclNode, constructorBindingNode, EdgeTypes.BINDS)
     diffGraph.addEdge(constructorBindingNode, constructorNode, EdgeTypes.REF)
 
@@ -490,7 +491,7 @@ trait AstForTypesCreator { this: AstCreator =>
       val memberNodes = nodeInfo.node match {
         case TSCallSignatureDeclaration =>
           val functionNode = createMethodDefinitionNode(nodeInfo)
-          val bindingNode  = createBindingNode()
+          val bindingNode  = newBindingNode("", "", "")
           diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
           diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
           addModifier(functionNode, nodeInfo.json)
