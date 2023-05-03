@@ -5,7 +5,7 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
@@ -51,18 +51,11 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column)
 
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
-    methodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
+    newMethodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
   }
 
   protected def setOrderExplicitly(ast: Ast, order: Int): Unit = {
     ast.root.foreach { case expr: ExpressionNew => expr.order = order }
-  }
-
-  protected def createReturnAst(returnNode: NewReturn, arguments: List[Ast] = List()): Ast = {
-    setArgumentIndices(arguments)
-    Ast(returnNode)
-      .withChildren(arguments)
-      .withArgEdges(returnNode, arguments.flatMap(_.root))
   }
 
   protected def createJumpTarget(switchCase: BabelNodeInfo): NewJumpTarget = {
@@ -125,13 +118,17 @@ trait AstNodeBuilder { this: AstCreator =>
   }
 
   protected def createMemberNode(name: String, node: BabelNodeInfo, dynamicTypeOption: Option[String]): NewMember = {
-    val tpe  = typeFor(node)
-    val code = node.code
+    val tpe    = typeFor(node)
+    val code   = node.code
+    val line   = node.lineNumber
+    val column = node.columnNumber
     NewMember()
       .code(code)
       .name(name)
       .typeFullName(tpe)
       .dynamicTypeHintFullName(dynamicTypeOption.toList)
+      .lineNumber(line)
+      .columnNumber(column)
   }
 
   protected def createMethodNode(methodName: String, methodFullName: String, func: BabelNodeInfo): NewMethod = {

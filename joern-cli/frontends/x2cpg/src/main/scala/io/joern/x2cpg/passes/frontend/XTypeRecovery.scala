@@ -306,7 +306,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Visits an identifier being assigned to the result of some operation.
     */
   protected def visitIdentifierAssignedToBlock(i: Identifier, b: Block): Set[String] = {
-    val blockTypes = visitStatementsInBlock(b)
+    val blockTypes = visitStatementsInBlock(b, Some(i))
     if (blockTypes.nonEmpty) associateTypes(i, blockTypes)
     else Set.empty
   }
@@ -320,10 +320,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Process each statement but only assign the type of the last statement to the identifier
     */
-  protected def visitStatementsInBlock(b: Block): Set[String] =
+  protected def visitStatementsInBlock(b: Block, assignmentTarget: Option[Identifier] = None): Set[String] =
     b.astChildren
       .map {
-        case x: Call if x.name.startsWith(Operators.assignment)            => visitAssignments(new Assignment(x))
+        case x: Call if x.name.startsWith(Operators.assignment) => visitAssignments(new Assignment(x))
+        case x: Call if x.name.startsWith("<operator>") && assignmentTarget.isDefined =>
+          visitIdentifierAssignedToOperator(assignmentTarget.get, x, x.name)
         case x: Identifier if symbolTable.contains(x)                      => symbolTable.get(x)
         case x: Call if symbolTable.contains(x)                            => symbolTable.get(x)
         case x: Call if x.argument.headOption.exists(symbolTable.contains) => setCallMethodFullNameFromBase(x)
@@ -382,6 +384,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** A heuristic method to determine if a call is a constructor or not.
     */
   protected def isConstructor(c: Call): Boolean
+
+  /** A heuristic method to determine if a call name is a constructor or not.
+    */
+  protected def isConstructor(name: String): Boolean
 
   /** A heuristic method to determine if an identifier may be a field or not. The result means that it would be stored
     * in the global symbol table. By default this checks if the identifier name matches a member name.
@@ -463,6 +469,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case Operators.alloc       => visitIdentifierAssignedToConstructor(i, c)
       case Operators.fieldAccess => visitIdentifierAssignedToFieldLoad(i, new FieldAccess(c))
       case Operators.indexAccess => visitIdentifierAssignedToIndexAcess(i, c)
+      case Operators.cast        => visitIdentifierAssignedToCast(i, c)
       case x                     => logger.debug(s"Unhandled operation $x (${c.code}) @ ${debugLocation(c)}"); Set.empty
     }
   }
@@ -720,7 +727,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           } else {
             val bufCopy = Array.from(buf)
             buf.clear()
-            bufCopy.foreach(t => buf.addOne(XTypeRecovery.dummyMemberType(t, segment, pathSep)))
+            bufCopy.foreach {
+              case t if isConstructor(segment) => buf.addOne(s"$t$pathSep$segment")
+              case t                           => buf.addOne(XTypeRecovery.dummyMemberType(t, segment, pathSep))
+            }
           }
         }
         associateTypes(i, buf.toSet)
@@ -737,11 +747,13 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Visits an identifier being assigned to the result of an index access operation.
     */
-  protected def visitIdentifierAssignedToIndexAcess(i: Identifier, c: Call): Set[String] = {
-    val iaTypes = getTypesFromCall(c)
-    if (iaTypes.nonEmpty) associateTypes(i, iaTypes)
-    else Set.empty
-  }
+  protected def visitIdentifierAssignedToIndexAcess(i: Identifier, c: Call): Set[String] =
+    associateTypes(i, getTypesFromCall(c))
+
+  /** Visits an identifier that is the target of a cast operation.
+    */
+  protected def visitIdentifierAssignedToCast(i: Identifier, c: Call): Set[String] =
+    associateTypes(i, (c.typeFullName +: c.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet)
 
   protected def getFieldBaseType(base: Identifier, fi: FieldIdentifier): Set[String] =
     getFieldBaseType(base.name, fi.canonicalName)

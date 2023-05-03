@@ -231,4 +231,65 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Type obtained via assignment from `require`" should {
+    lazy val cpg = code("""
+        |const google = require('googleapis');
+        |const driveObj = google.drive({ version: 'v3', auth });
+        |""".stripMargin)
+
+    "be propagated to `methodFullName` of call" in {
+      val List(methodFullName) = cpg.call.code("google.drive\\(.*").methodFullName.l
+      methodFullName shouldBe "googleapis:drive"
+      val List(typeFullName) = cpg.identifier.name("driveObj").typeFullName.l
+      typeFullName shouldBe "googleapis:drive:<returnValue>"
+    }
+
+  }
+
+  "Type obtained via assignment from `require` to {...}" should {
+    lazy val cpg = code("""
+        |const { google } = require('googleapis');
+        |const driveObj = google.drive({ version: 'v3', auth });
+        |""".stripMargin)
+
+    "be propagated to `methodFullName` of call" in {
+      val List(methodFullName) = cpg.call.code("google.drive\\(.*").methodFullName.l
+      methodFullName shouldBe "googleapis:drive"
+      val List(typeFullName) = cpg.identifier.name("driveObj").typeFullName.l
+      typeFullName shouldBe "googleapis:drive:<returnValue>"
+    }
+  }
+
+  "Type obtained via field access from 'require' derived identifier" should {
+    lazy val cpg = code("""
+        |import google from 'googleapis';
+        |export const authObj = new google.auth.GoogleAuth({
+        |  keyFile: 'path/to/your/credentials.json',
+        |  scopes: ['https://www.googleapis.com/auth/drive'],
+        |});
+        |""".stripMargin)
+
+    "be propagated to `methodFullName` of call" in {
+      val List(constructor) = cpg.call.code("new google.auth.GoogleAuth\\(.*").l
+      constructor.methodFullName shouldBe "googleapis:google:<member>(auth):GoogleAuth:<init>"
+      val Some(typeFullName) = cpg.identifier.name("authObj").typeFullName.headOption
+      typeFullName shouldBe "googleapis:google:<member>(auth):GoogleAuth"
+    }
+  }
+
+  "Type casts of an identifier and call receiver" should {
+    lazy val cpg = code("""
+        |let imgScr: string = <string>this.imageElement;
+        |this.imageElement = new HTMLImageElement();
+        |(<HTMLImageElement>this.imageElement).src = imgScr;
+        |""".stripMargin)
+
+    "succeed in propagating type cast identifiers" in {
+      val Some(imgSrc) = cpg.identifier("imgScr").headOption
+      imgSrc.typeFullName shouldBe "__ecma.String"
+      val Some(_tmp_0) = cpg.identifier("_tmp_0").headOption
+      _tmp_0.typeFullName shouldBe "__ecma.HTMLImageElement"
+    }
+  }
+
 }
