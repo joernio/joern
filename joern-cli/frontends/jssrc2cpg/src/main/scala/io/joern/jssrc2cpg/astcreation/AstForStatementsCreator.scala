@@ -296,7 +296,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
     val iteratorLocalNode = newLocalNode(iteratorName, Defines.Any).order(0)
-    val iteratorNode      = createIdentifierNode(iteratorName, forInOfStmt)
+    val iteratorNode      = identifierNode(forInOfStmt, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
 
@@ -326,7 +326,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
     val resultLocalNode = newLocalNode(resultName, Defines.Any).order(0)
-    val resultNode      = createIdentifierNode(resultName, forInOfStmt)
+    val resultNode      = identifierNode(forInOfStmt, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode)
 
@@ -334,7 +334,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val loopVariableName = idNodeInfo.code
 
     val loopVariableLocalNode = newLocalNode(loopVariableName, Defines.Any).order(0)
-    val loopVariableNode      = createIdentifierNode(loopVariableName, forInOfStmt)
+    val loopVariableNode      = identifierNode(forInOfStmt, loopVariableName)
     diffGraph.addEdge(localAstParentStack.head, loopVariableLocalNode, EdgeTypes.AST)
     scope.addVariableReference(loopVariableName, loopVariableNode)
 
@@ -358,7 +358,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       forInOfStmt.columnNumber
     )
 
-    val lhsNode = createIdentifierNode(resultName, forInOfStmt)
+    val lhsNode = identifierNode(forInOfStmt, resultName)
 
     val rhsNode = createCallNode(
       s"$iteratorName.next()",
@@ -368,14 +368,14 @@ trait AstForStatementsCreator { this: AstCreator =>
       forInOfStmt.columnNumber
     )
 
-    val nextBaseNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val nextBaseNode = identifierNode(forInOfStmt, iteratorName)
 
     val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
     val nextReceiverNode =
       createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
-    val thisNextNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val thisNextNode = identifierNode(forInOfStmt, iteratorName)
 
     val rhsArgs = List(Ast(thisNextNode))
     val rhsAst  = callAst(rhsNode, rhsArgs, receiver = Option(nextReceiverNode))
@@ -395,9 +395,9 @@ trait AstForStatementsCreator { this: AstCreator =>
     val whileLoopAst = Ast(whileLoopNode).withChild(testCallAst).withConditionEdge(whileLoopNode, testCallNode)
 
     // while loop variable assignment:
-    val whileLoopVariableNode = createIdentifierNode(loopVariableName, forInOfStmt)
+    val whileLoopVariableNode = identifierNode(forInOfStmt, loopVariableName)
 
-    val baseNode = createIdentifierNode(resultName, forInOfStmt)
+    val baseNode = identifierNode(forInOfStmt, resultName)
 
     val memberNode = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
@@ -459,7 +459,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
     val iteratorLocalNode = newLocalNode(iteratorName, Defines.Any).order(0)
-    val iteratorNode      = createIdentifierNode(iteratorName, forInOfStmt)
+    val iteratorNode      = identifierNode(forInOfStmt, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
 
@@ -489,7 +489,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
     val resultLocalNode = newLocalNode(resultName, Defines.Any).order(0)
-    val resultNode      = createIdentifierNode(resultName, forInOfStmt)
+    val resultNode      = identifierNode(forInOfStmt, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode)
 
@@ -497,7 +497,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val loopVariableNames = idNodeInfo.json("properties").arr.toList.map(code)
 
     val loopVariableLocalNodes = loopVariableNames.map(newLocalNode(_, Defines.Any).order(0))
-    val loopVariableNodes      = loopVariableNames.map(createIdentifierNode(_, forInOfStmt))
+    val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
     loopVariableLocalNodes.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
     loopVariableNames.zip(loopVariableNodes).foreach { case (loopVariableName, loopVariableNode) =>
       scope.addVariableReference(loopVariableName, loopVariableNode)
@@ -523,7 +523,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       forInOfStmt.columnNumber
     )
 
-    val lhsNode = createIdentifierNode(resultName, forInOfStmt)
+    val lhsNode = identifierNode(forInOfStmt, resultName)
 
     val rhsNode = createCallNode(
       s"$iteratorName.next()",
@@ -533,14 +533,14 @@ trait AstForStatementsCreator { this: AstCreator =>
       forInOfStmt.columnNumber
     )
 
-    val nextBaseNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val nextBaseNode = identifierNode(forInOfStmt, iteratorName)
 
     val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
     val nextReceiverNode =
       createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
-    val thisNextNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val thisNextNode = identifierNode(forInOfStmt, iteratorName)
 
     val rhsArgs = List(Ast(thisNextNode))
     val rhsAst  = callAst(rhsNode, rhsArgs, receiver = Option(nextReceiverNode))
@@ -561,8 +561,8 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // while loop variable assignment:
     val loopVariableAssignmentAsts = loopVariableNames.map { loopVariableName =>
-      val whileLoopVariableNode = createIdentifierNode(loopVariableName, forInOfStmt)
-      val baseNode              = createIdentifierNode(resultName, forInOfStmt)
+      val whileLoopVariableNode = identifierNode(forInOfStmt, loopVariableName)
+      val baseNode              = identifierNode(forInOfStmt, resultName)
       val memberNode            = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val variableMemberNode =
@@ -627,7 +627,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
     val iteratorLocalNode = newLocalNode(iteratorName, Defines.Any).order(0)
-    val iteratorNode      = createIdentifierNode(iteratorName, forInOfStmt)
+    val iteratorNode      = identifierNode(forInOfStmt, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
 
@@ -657,7 +657,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
     val resultLocalNode = newLocalNode(resultName, Defines.Any).order(0)
-    val resultNode      = createIdentifierNode(resultName, forInOfStmt)
+    val resultNode      = identifierNode(forInOfStmt, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode)
 
@@ -665,7 +665,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val loopVariableNames = idNodeInfo.json("elements").arr.toList.map(code)
 
     val loopVariableLocalNodes = loopVariableNames.map(newLocalNode(_, Defines.Any).order(0))
-    val loopVariableNodes      = loopVariableNames.map(createIdentifierNode(_, forInOfStmt))
+    val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
     loopVariableLocalNodes.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
     loopVariableNames.zip(loopVariableNodes).foreach { case (loopVariableName, loopVariableNode) =>
       scope.addVariableReference(loopVariableName, loopVariableNode)
@@ -691,7 +691,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       forInOfStmt.columnNumber
     )
 
-    val lhsNode = createIdentifierNode(resultName, forInOfStmt)
+    val lhsNode = identifierNode(forInOfStmt, resultName)
 
     val rhsNode = createCallNode(
       s"$iteratorName.next()",
@@ -701,14 +701,14 @@ trait AstForStatementsCreator { this: AstCreator =>
       forInOfStmt.columnNumber
     )
 
-    val nextBaseNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val nextBaseNode = identifierNode(forInOfStmt, iteratorName)
 
     val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
     val nextReceiverNode =
       createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
-    val thisNextNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val thisNextNode = identifierNode(forInOfStmt, iteratorName)
 
     val rhsArgs = List(Ast(thisNextNode))
     val rhsAst  = callAst(rhsNode, rhsArgs, receiver = Option(nextReceiverNode))
@@ -729,8 +729,8 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // while loop variable assignment:
     val loopVariableAssignmentAsts = loopVariableNames.zipWithIndex.map { case (loopVariableName, index) =>
-      val whileLoopVariableNode = createIdentifierNode(loopVariableName, forInOfStmt)
-      val baseNode              = createIdentifierNode(resultName, forInOfStmt)
+      val whileLoopVariableNode = identifierNode(forInOfStmt, loopVariableName)
+      val baseNode              = identifierNode(forInOfStmt, resultName)
       val memberNode            = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val variableMemberNode = literalNode(forInOfStmt, index.toString, dynamicTypeOption = Some(Defines.Number))

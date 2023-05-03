@@ -41,13 +41,11 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case None => typeFor(ident)
     }
 
-    val cpgIdentifier =
-      newIdentifierNode(ident, identifierName, nodeSignature(ident), registerType(cleanType(identifierTypeName)))
-
+    val node = identifierNode(ident, identifierName, nodeSignature(ident), registerType(cleanType(identifierTypeName)))
     variableOption match {
       case Some((variable, _)) =>
-        Ast(cpgIdentifier).withRefEdge(cpgIdentifier, variable)
-      case None => Ast(cpgIdentifier)
+        Ast(node).withRefEdge(node, variable)
+      case None => Ast(node)
     }
   }
 
