@@ -21,13 +21,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 
 object Nodes {
 
-  def bindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
-    NewBinding()
-      .name(name)
-      .methodFullName(methodFullName)
-      .signature(signature)
-  }
-
   def callNode(
     code: String,
     name: String,

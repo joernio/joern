@@ -3,6 +3,7 @@ package io.joern.x2cpg.utils
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotationLiteral,
+  NewBinding,
   NewCall,
   NewDependency,
   NewFieldIdentifier,
@@ -32,6 +33,13 @@ object NodeBuilders {
     NewAnnotationLiteral()
       .name(name)
       .code(name)
+
+  def newBindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
+    NewBinding()
+      .name(name)
+      .methodFullName(methodFullName)
+      .signature(signature)
+  }
 
   def newCallNode(
     methodName: String,
