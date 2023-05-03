@@ -448,8 +448,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       Ast()
     }
 
-    val ast = primaryAst.withChild(methodNameAst).withChildren(Seq[Ast](argsWithParenthesesAst, blockAst))
-    ast
+    primaryAst.withChild(methodNameAst).withChildren(Seq[Ast](argsWithParenthesesAst, blockAst))
   }
 
   def astForChainedInvocationWithoutArgumentsPrimaryContext(
@@ -1030,10 +1029,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       val argsAst     = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       val doBlockAst  = astForDoBlockContext(ctx.doBlock())
       val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier())
-      val blockNode   = NewBlock().typeFullName(Defines.Any)
-      argsAst
-      methodIdAst
-      doBlockAst
+      methodIdAst.withChild(argsAst).withChild(doBlockAst)
     case ctx: RubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
       val argsAst       = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       val doBlockAst    = astForDoBlockContext(ctx.doBlock())
