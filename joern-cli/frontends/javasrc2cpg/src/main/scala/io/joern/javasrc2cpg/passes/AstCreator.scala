@@ -308,10 +308,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         NewNamespaceBlock()
           .name(packageName)
           .fullName(fullName)
+          .filename(filename)
       case None =>
         globalNamespaceBlock()
     }
-    Ast(namespaceBlock.filename(absolutePath(filename)))
+    Ast(namespaceBlock)
   }
 
   private def tryWithSafeStackOverflow[T](expr: => T): Try[T] = {
