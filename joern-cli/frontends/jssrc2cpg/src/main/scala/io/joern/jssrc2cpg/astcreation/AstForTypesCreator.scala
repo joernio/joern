@@ -6,6 +6,7 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newLocalNode}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
@@ -144,9 +145,9 @@ trait AstForTypesCreator { this: AstCreator =>
     }
 
   private def astsForEnumMember(tsEnumMember: BabelNodeInfo): Seq[Ast] = {
-    val name       = code(tsEnumMember.json("id"))
-    val memberNode = createMemberNode(name, tsEnumMember, dynamicTypeOption = None)
-    addModifier(memberNode, tsEnumMember.json)
+    val name        = code(tsEnumMember.json("id"))
+    val memberNode_ = memberNode(tsEnumMember, name, tsEnumMember.code, typeFor(tsEnumMember))
+    addModifier(memberNode_, tsEnumMember.json)
 
     if (hasKey(tsEnumMember.json, "initializer")) {
       val lhsAst = astForNode(tsEnumMember.json("id"))
@@ -160,35 +161,34 @@ trait AstForTypesCreator { this: AstCreator =>
           tsEnumMember.columnNumber
         )
       val argAsts = List(lhsAst, rhsAst)
-      Seq(callAst(callNode, argAsts), Ast(memberNode))
+      Seq(callAst(callNode, argAsts), Ast(memberNode_))
     } else {
-      Seq(Ast(memberNode))
+      Seq(Ast(memberNode_))
     }
   }
 
   private def astForClassMember(classElement: Value, typeDeclNode: NewTypeDecl): Ast = {
-    val nodeInfo = createBabelNodeInfo(classElement)
-    val memberNode = nodeInfo.node match {
+    val nodeInfo     = createBabelNodeInfo(classElement)
+    val typeFullName = typeFor(nodeInfo)
+    val memberNode_ = nodeInfo.node match {
       case TSDeclareMethod | TSDeclareFunction =>
         val function    = createMethodDefinitionNode(nodeInfo)
-        val bindingNode = createBindingNode()
+        val bindingNode = newBindingNode("", "", "")
         diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
         diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
         addModifier(function, nodeInfo.json)
-        val dynamicTypeHintFullName = Option(function.fullName)
-        createMemberNode(function.name, nodeInfo, dynamicTypeHintFullName)
+        memberNode(nodeInfo, function.name, nodeInfo.code, typeFullName, Seq(function.fullName))
       case ClassMethod | ClassPrivateMethod =>
         val function    = createMethodAstAndNode(nodeInfo).methodNode
-        val bindingNode = createBindingNode()
+        val bindingNode = newBindingNode("", "", "")
         diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
         diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
         addModifier(function, nodeInfo.json)
-        val dynamicTypeHintFullName = Option(function.fullName)
-        createMemberNode(function.name, nodeInfo, dynamicTypeHintFullName)
+        memberNode(nodeInfo, function.name, nodeInfo.code, typeFullName, Seq(function.fullName))
       case ExpressionStatement if isInitializedMember(classElement) =>
         val memberNodeInfo = createBabelNodeInfo(nodeInfo.json("expression")("left")("property"))
         val name           = memberNodeInfo.code
-        createMemberNode(name, nodeInfo, dynamicTypeOption = None)
+        memberNode(nodeInfo, name, nodeInfo.code, typeFullName)
       case _ =>
         val name = nodeInfo.node match {
           case ClassProperty        => code(nodeInfo.json("key"))
@@ -196,14 +196,14 @@ trait AstForTypesCreator { this: AstCreator =>
           // TODO: name field most likely needs adjustment for other Babel AST types
           case _ => nodeInfo.code
         }
-        createMemberNode(name, nodeInfo, dynamicTypeOption = None)
+        memberNode(nodeInfo, name, nodeInfo.code, typeFullName)
     }
 
-    addModifier(memberNode, classElement)
-    diffGraph.addEdge(typeDeclNode, memberNode, EdgeTypes.AST)
+    addModifier(memberNode_, classElement)
+    diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
     astsForDecorators(nodeInfo).foreach { decoratorAst =>
       Ast.storeInDiffGraph(decoratorAst, diffGraph)
-      decoratorAst.root.foreach(diffGraph.addEdge(memberNode, _, EdgeTypes.AST))
+      decoratorAst.root.foreach(diffGraph.addEdge(memberNode_, _, EdgeTypes.AST))
     }
 
     if (hasKey(nodeInfo.json, "value") && !nodeInfo.json("value").isNull) {
@@ -382,9 +382,10 @@ trait AstForTypesCreator { this: AstCreator =>
       // the class definition assigned to its constructor
       val classIdNode =
         createIdentifierNode(typeName, Option(constructorNode.fullName), clazz.lineNumber, clazz.columnNumber)
-      val constructorRefNode = createMethodRefNode(constructorNode.code, constructorNode.fullName, clazz)
+      val constructorRefNode =
+        methodRefNode(clazz, constructorNode.code, constructorNode.fullName, constructorNode.fullName)
 
-      val idLocal = createLocalNode(typeName, Defines.Any)
+      val idLocal = newLocalNode(typeName, Defines.Any).order(0)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
       scope.addVariable(typeName, idLocal, BlockScope)
       scope.addVariableReference(typeName, classIdNode)
@@ -479,23 +480,23 @@ trait AstForTypesCreator { this: AstCreator =>
     val constructorNode = interfaceConstructor(typeName, tsInterface)
     diffGraph.addEdge(constructorNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
 
-    val constructorBindingNode = createBindingNode()
+    val constructorBindingNode = newBindingNode("", "", "")
     diffGraph.addEdge(typeDeclNode, constructorBindingNode, EdgeTypes.BINDS)
     diffGraph.addEdge(constructorBindingNode, constructorNode, EdgeTypes.REF)
 
     val interfaceBodyElements = classMembers(tsInterface, withConstructor = false)
 
     interfaceBodyElements.foreach { classElement =>
-      val nodeInfo = createBabelNodeInfo(classElement)
+      val nodeInfo     = createBabelNodeInfo(classElement)
+      val typeFullName = typeFor(nodeInfo)
       val memberNodes = nodeInfo.node match {
         case TSCallSignatureDeclaration =>
           val functionNode = createMethodDefinitionNode(nodeInfo)
-          val bindingNode  = createBindingNode()
+          val bindingNode  = newBindingNode("", "", "")
           diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
           diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
           addModifier(functionNode, nodeInfo.json)
-          val dynamicTypeHintFullName = Option(functionNode.fullName)
-          Seq(createMemberNode(functionNode.name, nodeInfo, dynamicTypeHintFullName))
+          Seq(memberNode(nodeInfo, functionNode.name, nodeInfo.code, typeFullName, Seq(functionNode.fullName)))
         case _ =>
           val names = nodeInfo.node match {
             case TSPropertySignature =>
@@ -508,7 +509,7 @@ trait AstForTypesCreator { this: AstCreator =>
             case _ => Seq(nodeInfo.code)
           }
           names.map { n =>
-            val node = createMemberNode(n, nodeInfo, dynamicTypeOption = None)
+            val node = memberNode(nodeInfo, n, nodeInfo.code, typeFullName)
             addModifier(node, nodeInfo.json)
             node
           }

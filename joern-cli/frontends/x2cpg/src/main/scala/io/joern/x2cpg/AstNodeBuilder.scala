@@ -4,6 +4,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewControlStructure,
   NewFieldIdentifier,
+  NewLiteral,
+  NewLocal,
+  NewMember,
   NewMethodRef,
   NewReturn,
   NewTypeRef,
@@ -24,11 +27,44 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .columnNumber(column(node))
   }
 
-  protected def methodRefNode(node: Node, name: String, fullName: String, typeFullName: String): NewMethodRef = {
+  protected def methodRefNode(node: Node, code: String, methodFullName: String, typeFullName: String): NewMethodRef = {
     NewMethodRef()
-      .code(name)
-      .methodFullName(fullName)
+      .code(code)
+      .methodFullName(methodFullName)
       .typeFullName(typeFullName)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
+
+  protected def memberNode(node: Node, name: String, code: String, typeFullName: String): NewMember =
+    memberNode(node, name, code, typeFullName, Seq())
+
+  protected def memberNode(
+    node: Node,
+    name: String,
+    code: String,
+    typeFullName: String,
+    dynamicTypeHints: Seq[String] = Seq()
+  ): NewMember = {
+    NewMember()
+      .code(code)
+      .name(name)
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHints)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
+
+  protected def literalNode(
+    node: Node,
+    code: String,
+    typeFullName: String,
+    dynamicTypeHints: Seq[String] = Seq()
+  ): NewLiteral = {
+    NewLiteral()
+      .code(code)
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
@@ -72,4 +108,19 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
+
+  protected def localNode(
+    node: Node,
+    name: String,
+    code: String,
+    typeFullName: String,
+    closureBindingId: Option[String] = None
+  ): NewLocal =
+    NewLocal()
+      .name(name)
+      .code(code)
+      .typeFullName(typeFullName)
+      .closureBindingId(closureBindingId)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
 }

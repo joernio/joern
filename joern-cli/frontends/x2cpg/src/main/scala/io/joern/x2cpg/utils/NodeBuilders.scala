@@ -3,10 +3,13 @@ package io.joern.x2cpg.utils
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotationLiteral,
+  NewBinding,
   NewCall,
+  NewClosureBinding,
   NewDependency,
   NewFieldIdentifier,
   NewIdentifier,
+  NewLocal,
   NewMethodParameterIn,
   NewMethodReturn,
   NewModifier
@@ -32,6 +35,32 @@ object NodeBuilders {
     NewAnnotationLiteral()
       .name(name)
       .code(name)
+
+  def newBindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
+    NewBinding()
+      .name(name)
+      .methodFullName(methodFullName)
+      .signature(signature)
+  }
+
+  def newLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal = {
+    NewLocal()
+      .code(name)
+      .name(name)
+      .typeFullName(typeFullName)
+      .closureBindingId(closureBindingId)
+  }
+
+  def newClosureBindingNode(
+    closureBindingId: String,
+    originalName: String,
+    evaluationStrategy: String
+  ): NewClosureBinding = {
+    NewClosureBinding()
+      .closureBindingId(closureBindingId)
+      .closureOriginalName(originalName)
+      .evaluationStrategy(evaluationStrategy)
+  }
 
   def newCallNode(
     methodName: String,

@@ -88,12 +88,25 @@ abstract class AstCreatorBase(filename: String) {
       .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))
 
-  def staticInitMethodAst(initAsts: List[Ast], fullName: String, signature: Option[String], returnType: String): Ast = {
+  def staticInitMethodAst(
+    initAsts: List[Ast],
+    fullName: String,
+    signature: Option[String],
+    returnType: String,
+    fileName: Option[String] = None,
+    lineNumber: Option[Integer] = None,
+    columnNumber: Option[Integer] = None
+  ): Ast = {
     val methodNode = NewMethod()
       .name(Defines.StaticInitMethodName)
       .fullName(fullName)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
     if (signature.isDefined) {
       methodNode.signature(signature.get)
+    }
+    if (fileName.isDefined) {
+      methodNode.filename(fileName.get)
     }
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
     val body           = blockAst(NewBlock(), initAsts)

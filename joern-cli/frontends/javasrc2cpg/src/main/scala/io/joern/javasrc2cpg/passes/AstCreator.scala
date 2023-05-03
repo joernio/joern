@@ -91,7 +91,9 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.x2cpg.utils.NodeBuilders.{
   newAnnotationLiteralNode,
+  newBindingNode,
   newCallNode,
+  newClosureBindingNode,
   newFieldIdentifierNode,
   newIdentifierNode,
   newMethodReturnNode,
@@ -111,12 +113,7 @@ import io.joern.javasrc2cpg.util.{
   Scope
 }
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
-import io.joern.javasrc2cpg.util.Util.{
-  composeMethodFullName,
-  composeMethodLikeSignature,
-  composeUnresolvedSignature,
-  memberNode
-}
+import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
@@ -129,7 +126,6 @@ import io.shiftleft.codepropertygraph.generated.{
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotation,
   NewArrayInitializer,
-  NewBinding,
   NewBlock,
   NewCall,
   NewClosureBinding,
@@ -419,10 +415,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       bindingTable.getEntries.toBuffer.sortBy((entry: BindingTableEntry) => s"${entry.name}${entry.signature}")
 
     sortedEntries.foreach { entry =>
-      val bindingNode = NewBinding()
-        .name(entry.name)
-        .signature(entry.signature)
-        .methodFullName(entry.implementingMethodFullName)
+      val bindingNode = newBindingNode(entry.name, entry.signature, entry.implementingMethodFullName)
 
       diffGraph.addNode(bindingNode)
       diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
@@ -712,7 +705,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val typeFullName =
       tryWithSafeStackOverflow(entry.resolve().getType).toOption.flatMap(typeInfoCalc.fullName)
 
-    val entryNode = memberNode(entry.getNameAsString, entry.toString, typeFullName, line(entry), column(entry))
+    val entryNode = memberNode(entry, entry.getNameAsString, entry.toString, typeFullName.getOrElse("ANY"))
 
     val name = s"${typeFullName.getOrElse(Defines.UnresolvedNamespace)}.${Defines.ConstructorMethodName}"
     val args = entry.getArguments.asScala.map { argument =>
@@ -759,7 +752,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(scopeStack.lookupVariableType(v.getTypeAsString, wildcardFallback = true))
         .getOrElse(s"${Defines.UnresolvedNamespace}.${v.getTypeAsString}")
     val name           = v.getName.toString
-    val node           = memberNode(name, s"$typeFullName $name", Some(typeFullName), line(v), column(v))
+    val node           = memberNode(v, name, s"$typeFullName $name", typeFullName)
     val memberAst      = Ast(node)
     val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
 
@@ -1329,14 +1322,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         iterableAsts.head
     }
 
-    val iterableName = nextIterableName()
-    val iterableLocalNode =
-      NewLocal()
-        .name(iterableName)
-        .code(iterableName)
-        .lineNumber(lineNo)
-    iterableType.foreach(iterableLocalNode.typeFullName(_))
-    val iterableLocalAst = Ast(iterableLocalNode)
+    val iterableName      = nextIterableName()
+    val iterableLocalNode = localNode(iterableExpression, iterableName, iterableName, iterableType.getOrElse("ANY"))
+    val iterableLocalAst  = Ast(iterableLocalNode)
 
     val iterableAssignNode =
       newOperatorCallNode(Operators.assignment, code = "", line = lineNo, typeFullName = iterableType)
@@ -2713,20 +2701,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     returnType.flatMap(typeInfoCalc.fullName)
   }
 
-  def closureBinding(closureBindingId: String, originalName: String): NewClosureBinding = {
-    NewClosureBinding()
-      .closureBindingId(closureBindingId)
-      .closureOriginalName(originalName)
-      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
-  }
-
   private def closureBindingsForCapturedNodes(
     captured: List[NodeTypeInfo],
     lambdaMethodName: String
   ): List[ClosureBindingEntry] = {
     captured.map { capturedNode =>
-      val closureBindingId   = s"$filename:$lambdaMethodName:${capturedNode.name}"
-      val closureBindingNode = closureBinding(closureBindingId, capturedNode.name)
+      val closureBindingId = s"$filename:$lambdaMethodName:${capturedNode.name}"
+      val closureBindingNode =
+        newClosureBindingNode(closureBindingId, capturedNode.name, EvaluationStrategies.BY_SHARING)
       ClosureBindingEntry(capturedNode, closureBindingNode)
     }
   }
@@ -2955,10 +2937,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     addClosureBindingsToDiffGraph(closureBindingsForCapturedVars, methodRef)
 
     val interfaceBinding = implementedInfo.implementedMethod.map { implementedMethod =>
-      NewBinding()
-        .name(implementedMethod.getName)
-        .methodFullName(lambdaMethodNode.fullName)
-        .signature(lambdaMethodNode.signature)
+      newBindingNode(implementedMethod.getName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
     }
 
     val bindingTable = getLambdaBindingTable(

@@ -34,6 +34,9 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         inside(color.astChildren.isMethod.l) { case List(clinit) =>
           clinit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
           clinit.fullName shouldBe s"color:${io.joern.x2cpg.Defines.StaticInitMethodName}"
+          clinit.lineNumber shouldBe Some(2)
+          clinit.columnNumber shouldBe Some(1)
+          clinit.filename shouldBe "Test0.cpp"
           inside(clinit.ast.isCall.l) { case List(greenInit) =>
             greenInit.code shouldBe "green = 20"
           }

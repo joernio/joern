@@ -2,31 +2,17 @@ package io.joern.kotlin2cpg.ast
 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBinding,
   NewCall,
-  NewClosureBinding,
   NewIdentifier,
   NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
   NewMethod,
   NewMethodParameterIn,
   NewModifier,
   NewNamespaceBlock,
-  NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
+  NewTypeDecl
 }
 
 object Nodes {
-
-  def bindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
-    NewBinding()
-      .name(name)
-      .methodFullName(methodFullName)
-      .signature(signature)
-  }
 
   def callNode(
     code: String,
@@ -47,13 +33,6 @@ object Nodes {
       .typeFullName(typeFullName)
       .lineNumber(line)
       .columnNumber(column)
-  }
-
-  def closureBinding(closureBindingId: String, originalName: String): NewClosureBinding = {
-    NewClosureBinding()
-      .closureBindingId(closureBindingId)
-      .closureOriginalName(originalName)
-      .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
   }
 
   def identifierNode(
@@ -81,35 +60,6 @@ object Nodes {
       .code(code)
       .name(name)
       .parserTypeName(parserTypeName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def localNode(
-    name: String,
-    typeFullName: String,
-    closureBindingId: Option[String] = None,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewLocal = {
-    NewLocal()
-      .code(name)
-      .name(name)
-      .typeFullName(typeFullName)
-      .closureBindingId(closureBindingId)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def literalNode(
-    code: String,
-    typeFullName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewLiteral = {
-    NewLiteral()
-      .code(code)
-      .typeFullName(typeFullName)
       .lineNumber(line)
       .columnNumber(column)
   }
@@ -150,20 +100,6 @@ object Nodes {
       .columnNumber(column)
       .lineNumberEnd(lineEnd)
       .columnNumberEnd(columnEnd)
-  }
-
-  def memberNode(
-    name: String,
-    typeFullName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewMember = {
-    NewMember()
-      .name(name)
-      .code(name)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
   }
 
   def modifierNode(_type: String): NewModifier = {
@@ -213,20 +149,6 @@ object Nodes {
       .inheritsFromTypeFullName(inheritsFromFullNames)
       .aliasTypeFullName(aliasTypeFullName)
       .isExternal(false)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def unknownNode(
-    code: String,
-    parserTypeName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewUnknown = {
-    NewUnknown()
-      .code(code)
-      .parserTypeName(parserTypeName)
-      .typeFullName("ANY")
       .lineNumber(line)
       .columnNumber(column)
   }
