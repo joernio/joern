@@ -311,7 +311,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case None =>
         globalNamespaceBlock()
     }
-    Ast(namespaceBlock.filename(absolutePath(filename)))
+    Ast(namespaceBlock)
   }
 
   private def tryWithSafeStackOverflow[T](expr: => T): Try[T] = {

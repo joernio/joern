@@ -10,10 +10,13 @@ import java.io.File
 
 class FileTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code("""
+  val cpg = code(
+    """
       | package a.b;
       | class Foo { int bar() { return 1; } }
-      |""".stripMargin)
+      |""".stripMargin,
+    fileName = "a/b/Foo.java"
+  )
 
   "should contain two file nodes in total with correct order" in {
     cpg.file.order.l shouldBe List(0, 0)
@@ -46,4 +49,8 @@ class FileTests extends JavaSrcCode2CpgFixture {
     cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSetMutable shouldBe Set("Foo")
   }
 
+  "the filename should be the path relative to the project root" in {
+    val other = cpg
+    cpg.file.name(".*.java").name.l shouldBe List("a/b/Foo.java")
+  }
 }
