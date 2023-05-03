@@ -44,7 +44,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   import AstCreatorHelper._
 
-  private var usedNames: Int = 0
+  private var usedVariablePostfix: Int = 0
 
   private val IncludeKeyword = "include"
 
@@ -57,15 +57,17 @@ trait AstCreatorHelper { this: AstCreator =>
     if (name.isEmpty && (fullName.isEmpty || fullName.endsWith("."))) {
       val fromFilename = node.map(fileName).getOrElse(filename)
       if (FileDefaults.isHeaderFile(fromFilename) && filename != fromFilename) {
-        val postfix = CGlobal.headerFileFullNameToPostfix.getOrElse(fromFilename, CGlobal.usedVariablePostfix.get())
-        val name    = s"anonymous_${target}_$postfix"
-        val resultingFullName = s"$fullName$name"
-        CGlobal.headerFileFullNameToPostfix.put(fromFilename, CGlobal.usedVariablePostfix.getAndIncrement())
-        (name, resultingFullName)
+        CGlobal.synchronized {
+          val postfix = CGlobal.headerFileFullNameToPostfix.getOrElse(fromFilename, CGlobal.usedVariablePostfix.get())
+          val name    = s"anonymous_${target}_$postfix"
+          val resultingFullName = s"$fullName$name"
+          CGlobal.headerFileFullNameToPostfix.put(fromFilename, CGlobal.usedVariablePostfix.getAndIncrement())
+          (name, resultingFullName)
+        }
       } else {
-        val name              = s"anonymous_${target}_$usedNames"
+        val name              = s"anonymous_${target}_$usedVariablePostfix"
         val resultingFullName = s"$fullName$name"
-        usedNames = usedNames + 1
+        usedVariablePostfix = usedVariablePostfix + 1
         (name, resultingFullName)
       }
     } else {
