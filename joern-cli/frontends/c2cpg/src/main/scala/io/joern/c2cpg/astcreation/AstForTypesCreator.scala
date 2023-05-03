@@ -77,19 +77,19 @@ trait AstForTypesCreator { this: AstCreator =>
         }
         Ast(memberNode(declarator, name, nodeSignature(declarator), tpe))
       case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
-        val tpe       = registerType(typeFor(declarator))
-        val codeTpe   = typeFor(declarator, stripKeywords = false)
-        val localNode = newLocalNode(declarator, name, s"$codeTpe $name", tpe)
-        scope.addToScope(name, (localNode, tpe))
-        Ast(localNode)
+        val tpe     = registerType(typeFor(declarator))
+        val codeTpe = typeFor(declarator, stripKeywords = false)
+        val node    = localNode(declarator, name, s"$codeTpe $name", tpe)
+        scope.addToScope(name, (node, tpe))
+        Ast(node)
       case _ =>
         val tpe = registerType(
           cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = true, index))
         )
-        val codeTpe   = typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = false, index)
-        val localNode = newLocalNode(declarator, name, s"$codeTpe $name", tpe)
-        scope.addToScope(name, (localNode, tpe))
-        Ast(localNode)
+        val codeTpe = typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = false, index)
+        val node    = localNode(declarator, name, s"$codeTpe $name", tpe)
+        scope.addToScope(name, (node, tpe))
+        Ast(node)
     }
 
   }

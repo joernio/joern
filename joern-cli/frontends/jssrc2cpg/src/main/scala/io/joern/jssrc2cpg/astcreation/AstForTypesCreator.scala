@@ -6,7 +6,7 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newLocalNode}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
@@ -385,7 +385,7 @@ trait AstForTypesCreator { this: AstCreator =>
       val constructorRefNode =
         methodRefNode(clazz, constructorNode.code, constructorNode.fullName, constructorNode.fullName)
 
-      val idLocal = createLocalNode(typeName, Defines.Any)
+      val idLocal = newLocalNode(typeName, Defines.Any).order(0)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
       scope.addVariable(typeName, idLocal, BlockScope)
       scope.addVariableReference(typeName, classIdNode)
