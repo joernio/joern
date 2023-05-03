@@ -83,19 +83,6 @@ object Nodes {
       .columnNumber(column)
   }
 
-  def literalNode(
-    code: String,
-    typeFullName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewLiteral = {
-    NewLiteral()
-      .code(code)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   def methodParameterNode(
     name: String,
     typeFullName: String,

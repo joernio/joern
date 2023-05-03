@@ -151,7 +151,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       .map { test =>
         astForNodeWithFunctionReference(Obj(test))
       }
-      .getOrElse(Ast(createLiteralNode("true", Option(Defines.Boolean), forStmt.lineNumber, forStmt.columnNumber)))
+      .getOrElse(Ast(literalNode(forStmt, "true", Option(Defines.Boolean))))
     val updateAst = safeObj(forStmt.json, "update")
       .map { update =>
         astForNodeWithFunctionReference(Obj(update))
@@ -732,12 +732,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       val baseNode              = createIdentifierNode(resultName, forInOfStmt)
       val memberNode            = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
-      val variableMemberNode = createLiteralNode(
-        index.toString,
-        dynamicTypeOption = Some(Defines.Number),
-        forInOfStmt.lineNumber,
-        forInOfStmt.columnNumber
-      )
+      val variableMemberNode = literalNode(forInOfStmt, index.toString, dynamicTypeOption = Some(Defines.Number))
       val variableAccessAst =
         createIndexAccessCallAst(accessAst, Ast(variableMemberNode), forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val loopVariableAssignmentNode = createCallNode(

@@ -879,7 +879,7 @@ trait KtPsiToAst {
       val node = operatorCallNode(Operators.formatString, expr.getText, Option(typeFullName), line(expr), column(expr))
       callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toIndexedSeq.toList)
     } else {
-      val node = literalNode(expr.getText, typeFullName, line(expr), column(expr))
+      val node = literalNode(expr, expr.getText, typeFullName)
       Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
     }
   }
@@ -1678,7 +1678,7 @@ trait KtPsiToAst {
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val node         = literalNode(expr.getText, typeFullName, line(expr), column(expr))
+    val node         = literalNode(expr, expr.getText, typeFullName)
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
   }
 

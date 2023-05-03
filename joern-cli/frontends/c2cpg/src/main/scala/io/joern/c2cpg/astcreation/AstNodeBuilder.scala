@@ -17,14 +17,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column(node))
   }
 
-  protected def newLiteralNode(node: IASTNode, code: String, typeFullName: String): NewLiteral = {
-    NewLiteral()
-      .typeFullName(typeFullName)
-      .code(code)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-  }
-
   protected def newCommentNode(node: IASTNode, code: String, filename: String): NewComment = {
     NewComment().code(code).filename(filename).lineNumber(line(node)).columnNumber(column(node))
   }

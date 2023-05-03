@@ -254,10 +254,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
       case t                                        => t
     }
     val lhsNode = castExpr.json("typeAnnotation")
-    val lhsAst = Ast(
-      createLiteralNode(code(lhsNode), None, line(lhsNode), column(lhsNode)).dynamicTypeHintFullName(Seq(typ))
-    )
-    val rhsAst = astForNodeWithFunctionReference(castExpr.json("expression"))
+    val lhsAst  = Ast(literalNode(castExpr, code(lhsNode), None).dynamicTypeHintFullName(Seq(typ)))
+    val rhsAst  = astForNodeWithFunctionReference(castExpr.json("expression"))
     val callNode =
       createCallNode(castExpr.code, op, DispatchTypes.STATIC_DISPATCH, castExpr.lineNumber, castExpr.columnNumber)
         .dynamicTypeHintFullName(Seq(typ))
