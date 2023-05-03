@@ -93,6 +93,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{
   newAnnotationLiteralNode,
   newBindingNode,
   newCallNode,
+  newClosureBindingNode,
   newFieldIdentifierNode,
   newIdentifierNode,
   newMethodReturnNode,
@@ -2710,20 +2711,14 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     returnType.flatMap(typeInfoCalc.fullName)
   }
 
-  def closureBinding(closureBindingId: String, originalName: String): NewClosureBinding = {
-    NewClosureBinding()
-      .closureBindingId(closureBindingId)
-      .closureOriginalName(originalName)
-      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
-  }
-
   private def closureBindingsForCapturedNodes(
     captured: List[NodeTypeInfo],
     lambdaMethodName: String
   ): List[ClosureBindingEntry] = {
     captured.map { capturedNode =>
-      val closureBindingId   = s"$filename:$lambdaMethodName:${capturedNode.name}"
-      val closureBindingNode = closureBinding(closureBindingId, capturedNode.name)
+      val closureBindingId = s"$filename:$lambdaMethodName:${capturedNode.name}"
+      val closureBindingNode =
+        newClosureBindingNode(closureBindingId, capturedNode.name, EvaluationStrategies.BY_SHARING)
       ClosureBindingEntry(capturedNode, closureBindingNode)
     }
   }

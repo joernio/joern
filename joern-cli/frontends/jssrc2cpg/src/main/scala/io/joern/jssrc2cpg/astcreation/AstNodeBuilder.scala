@@ -348,12 +348,6 @@ trait AstNodeBuilder { this: AstCreator =>
   protected def createLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal =
     NewLocal().code(name).name(name).typeFullName(typeFullName).closureBindingId(closureBindingId).order(0)
 
-  protected def createClosureBindingNode(closureBindingId: String, closureOriginalName: String): NewClosureBinding =
-    NewClosureBinding()
-      .closureBindingId(Option(closureBindingId))
-      .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
-      .closureOriginalName(Option(closureOriginalName))
-
   protected def createTemplateDomNode(
     name: String,
     code: String,

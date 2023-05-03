@@ -42,13 +42,6 @@ object Nodes {
       .columnNumber(column)
   }
 
-  def closureBinding(closureBindingId: String, originalName: String): NewClosureBinding = {
-    NewClosureBinding()
-      .closureBindingId(closureBindingId)
-      .closureOriginalName(originalName)
-      .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
-  }
-
   def identifierNode(
     name: String,
     typeFullName: String,

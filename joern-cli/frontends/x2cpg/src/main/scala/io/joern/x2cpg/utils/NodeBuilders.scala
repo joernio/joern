@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotationLiteral,
   NewBinding,
   NewCall,
+  NewClosureBinding,
   NewDependency,
   NewFieldIdentifier,
   NewIdentifier,
@@ -39,6 +40,17 @@ object NodeBuilders {
       .name(name)
       .methodFullName(methodFullName)
       .signature(signature)
+  }
+
+  def newClosureBindingNode(
+    closureBindingId: String,
+    originalName: String,
+    evaluationStrategy: String
+  ): NewClosureBinding = {
+    NewClosureBinding()
+      .closureBindingId(closureBindingId)
+      .closureOriginalName(originalName)
+      .evaluationStrategy(evaluationStrategy)
   }
 
   def newCallNode(
