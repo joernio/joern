@@ -110,16 +110,16 @@ primary
 // --------------------------------------------------------
 
 singleLeftHandSide
-    :   variableIdentifier                                                                                          # variableIdentifierOnly
-    |   primary LBRACK arguments? RBRACK                                                                            # primaryInsideBrackets
-    |   primary (DOT | COLON2) (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER)                                    # xdoty
-    |   COLON2 CONSTANT_IDENTIFIER                                                                                  # scopedConstantAccess
+    :   variableIdentifier                                                                                          # variableIdentifierOnlySingleLeftHandSide
+    |   primary LBRACK arguments? RBRACK                                                                            # primaryInsideBracketsSingleLeftHandSide
+    |   primary (DOT | COLON2) (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER)                                    # xdotySingleLeftHandSide
+    |   COLON2 CONSTANT_IDENTIFIER                                                                                  # scopedConstantAccessSingleLeftHandSide
     ;
 
 multipleLeftHandSide
-    :   (multipleLeftHandSideItem COMMA wsOrNl*)+ (multipleLeftHandSideItem | packingLeftHandSide)?                 # multipleLeftHandSideAndpackingLeftHandSide
-    |   packingLeftHandSide                                                                                         # packingLeftHandSideOnly
-    |   groupedLeftHandSide                                                                                         # groupedLeftHandSideOnly
+    :   (multipleLeftHandSideItem COMMA wsOrNl*)+ (multipleLeftHandSideItem | packingLeftHandSide)?                 # multipleLeftHandSideAndpackingLeftHandSideMultipleLeftHandSide
+    |   packingLeftHandSide                                                                                         # packingLeftHandSideOnlyMultipleLeftHandSide
+    |   groupedLeftHandSide                                                                                         # groupedLeftHandSideOnlyMultipleLeftHandSide
     ;
 
 multipleLeftHandSideItem

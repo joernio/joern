@@ -58,9 +58,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext, rhsRetType: String): Ast = ctx match {
-    case ctx: VariableIdentifierOnlyContext => astForVariableIdentifierContext(ctx.variableIdentifier(), rhsRetType)
-    case ctx: PrimaryInsideBracketsContext  => astForPrimaryContext(ctx.primary())
-    case ctx: XdotyContext =>
+    case ctx: VariableIdentifierOnlySingleLeftHandSideContext => astForVariableIdentifierContext(ctx.variableIdentifier(), rhsRetType)
+    case ctx: PrimaryInsideBracketsSingleLeftHandSideContext  => astForPrimaryContext(ctx.primary())
+    case ctx: XdotySingleLeftHandSideContext =>
       val xAst = astForPrimaryContext(ctx.primary())
       val yAst = {
         if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
@@ -90,7 +90,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         }
       }
       xAst.withChild(yAst)
-    case ctx: ScopedConstantAccessContext =>
+    case ctx: ScopedConstantAccessSingleLeftHandSideContext =>
       Ast()
     case _ =>
       logger.error("astForSingleLeftHandSideContext() All contexts mismatched.")
@@ -533,7 +533,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForMultipleLeftHandSideContext(ctx: MultipleLeftHandSideContext): Ast = ctx match {
-    case ctx: MultipleLeftHandSideAndpackingLeftHandSideContext =>
+    case ctx: MultipleLeftHandSideAndpackingLeftHandSideMultipleLeftHandSideContext =>
       val asts = ctx
         .multipleLeftHandSideItem()
         .asScala
@@ -547,8 +547,8 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         .toSeq
       val blockNode = NewBlock().typeFullName(Defines.Any)
       Ast(blockNode).withChildren(asts)
-    case ctx: PackingLeftHandSideOnlyContext => astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
-    case ctx: GroupedLeftHandSideOnlyContext => astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
+    case ctx: PackingLeftHandSideOnlyMultipleLeftHandSideContext => astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
+    case ctx: GroupedLeftHandSideOnlyMultipleLeftHandSideContext => astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
     case _ =>
       logger.error("astForMultipleLeftHandSideContext() All contexts mismatched.")
       Ast()
