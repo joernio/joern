@@ -65,6 +65,12 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("age").l.size shouldBe 2
       cpg.identifier.name("@name").l.size shouldBe 2
       cpg.identifier.name("@age").l.size shouldBe 4
+      cpg.call.name("attr_accessor").size shouldBe 1
+      cpg.call.name("initialize").size shouldBe 1
+      cpg.call.name("greet").size shouldBe 2
+      cpg.call.name("puts").size shouldBe 2
+      cpg.call.name("Person").size shouldBe 1
+      cpg.call.name("have_birthday").size shouldBe 1
       cpg.identifier.size shouldBe 12
     }
   }
@@ -95,8 +101,9 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("num2").l.size shouldBe 2
       cpg.identifier.name("num3").l.size shouldBe 2
       cpg.identifier.name("sum").l.size shouldBe 2
-      val lst = cpg.identifier.l
-      lst.size shouldBe 14
+      cpg.call.name("add_three_numbers").size shouldBe 2
+      cpg.call.name("num1").size shouldBe 1
+      cpg.identifier.size shouldBe 14
     }
 
     "The CPG generated for a expressions" should {
@@ -170,6 +177,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         cpg.identifier.name("endvar").l.size shouldBe 2
         cpg.identifier.name("beginbool").l.size shouldBe 1
         cpg.identifier.name("endbool").l.size shouldBe 1
+        cpg.call.name("puts").size shouldBe 1
         cpg.identifier.size shouldBe 6
       }
     }
@@ -186,11 +194,13 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
       "doblocktest" in {
         cpg.identifier.name("n").l.size shouldBe 2
+        cpg.call.name("each").size shouldBe 1
+        cpg.call.name("puts").size shouldBe 1
         cpg.identifier.size shouldBe 2
       }
     }
 
-    "The CPG generated for failing test" should {
+    "The CPG generated for doblock over const array" should {
       val cpg = code(
         """
           |[1, 2, "three"].each do |n, m|
@@ -201,17 +211,23 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |end
           |
           |""".stripMargin,
-        fileName = "dofailing.rb"
+        fileName = "doconst.rb"
       )
 
-      "dofailing" in {
+      "doblock over const array" in {
         cpg.identifier.name("n").l.size shouldBe 3
         cpg.identifier.name("m").l.size shouldBe 2
+        cpg.call.name("each").size shouldBe 1
+        cpg.call.name("someMethod").size shouldBe 2
+        cpg.call.name("expect").size shouldBe 1
+        cpg.call.name("to").size shouldBe 1
+        cpg.call.name("otherMethod").size shouldBe 1
+        cpg.call.name("by").size shouldBe 1
         cpg.identifier.size shouldBe 7
       }
     }
 
-    "The CPG generated for rails test" should {
+    "The CPG generated for 2 colons" should {
       val cpg = code(
         """
           |Rails.application.configure do
@@ -219,11 +235,14 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |end
           |
           |""".stripMargin,
-        fileName = "dofailing.rb"
+        fileName = "2colon.rb"
       )
 
-      "railstest" in {
+      "2 colon test" in {
         cpg.identifier.size shouldBe 5
+        cpg.call.name("application").size shouldBe 1
+        cpg.call.name("configure").size shouldBe 1
+        cpg.call.name("new").size shouldBe 1
       }
     }
   }
