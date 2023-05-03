@@ -58,10 +58,10 @@ trait AstCreatorHelper { this: AstCreator =>
       val fromFilename = node.map(fileName).getOrElse(filename)
       if (FileDefaults.isHeaderFile(fromFilename) && filename != fromFilename) {
         CGlobal.synchronized {
-          val postfix = CGlobal.headerFileFullNameToPostfix.getOrElse(fromFilename, CGlobal.usedVariablePostfix.get())
-          val name    = s"anonymous_${target}_$postfix"
+          val postfix           = CGlobal.headerFileFullNameToPostfix.getOrElse(fromFilename, 0)
+          val name              = s"anonymous_${target}_$postfix"
           val resultingFullName = s"$fullName$name"
-          CGlobal.headerFileFullNameToPostfix.put(fromFilename, CGlobal.usedVariablePostfix.getAndIncrement())
+          CGlobal.headerFileFullNameToPostfix.put(fromFilename, postfix + 1)
           (name, resultingFullName)
         }
       } else {

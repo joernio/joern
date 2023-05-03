@@ -370,6 +370,7 @@ trait AstForTypesCreator { this: AstCreator =>
     if (calls.isEmpty) {
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
+      logger.info(s"Generating static init: '$fullname' for file '$filename' from '${this.filename}'")
       val init = staticInitMethodAst(
         calls,
         s"$fullname:${io.joern.x2cpg.Defines.StaticInitMethodName}",
