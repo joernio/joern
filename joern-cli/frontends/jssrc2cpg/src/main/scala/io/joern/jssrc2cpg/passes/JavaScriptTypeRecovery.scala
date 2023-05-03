@@ -52,17 +52,21 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   override protected def isConstructor(name: String): Boolean =
     !name.isBlank && (name.charAt(0).isUpper || name.endsWith("factory"))
 
+  lazy private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
+
   override protected def visitImport(i: Import): Unit = for {
     rawEntity <- i.importedEntity.map(_.stripPrefix("./"))
     alias     <- i.importedAs
   } {
-    val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
-    val matcher     = pathPattern.matcher(rawEntity)
-    val sep         = Matcher.quoteReplacement(JFile.separator)
+    val matcher = pathPattern.matcher(rawEntity)
+    val sep     = Matcher.quoteReplacement(JFile.separator)
     val currentFile = codeRoot + (cu match {
       case x: File => x.name
       case _       => cu.file.name.headOption.getOrElse("")
     })
+    // We want to know if the import is local since if an external name is used to match internal methods we may have
+    // false paths.
+    val isLocalImport = i.importedEntity.exists(_.matches("^[.]*/?.*"))
     // TODO: At times there is an operation inside of a require, e.g. path.resolve(__dirname + "/../config/env/all.js")
     //  this tries to recover the string but does not perform string constant propagation
     val entity = if (matcher.find()) matcher.group(1) else rawEntity
@@ -74,9 +78,12 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     val isImportingModule = !entity.contains(":")
 
     def targetModule = Try(
-      cpg
-        .file(s"${Pattern.quote(resolvedPath)}\\.?.*")
-        .method
+      if (isLocalImport)
+        cpg
+          .file(s"${Pattern.quote(resolvedPath)}\\.?.*")
+          .method
+      else
+        Traversal.empty
     ) match {
       case Failure(_) =>
         logger.warn(s"Unable to resolve import due to irregular regex at '${i.importedEntity.getOrElse("")}'")
