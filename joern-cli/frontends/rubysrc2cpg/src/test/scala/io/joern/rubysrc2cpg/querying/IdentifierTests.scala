@@ -226,7 +226,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "Tshould recognize identifiers and literals in when a namespace resolution is used " should {
+    "should recognize identifiers and literals in when a namespace resolution is used " should {
       val cpg = code(
         """
           |Rails.application.configure do
