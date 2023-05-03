@@ -7,15 +7,18 @@ import org.scalatest.Ignore
 
 import java.io.{File => JFile}
 import java.io.File
+import java.nio.file.Paths
 
 class FileTests extends JavaSrcCode2CpgFixture {
+
+  private val fileName = Paths.get("a", "b", "Foo.java").toString
 
   val cpg = code(
     """
       | package a.b;
       | class Foo { int bar() { return 1; } }
       |""".stripMargin,
-    fileName = "a/b/Foo.java"
+    fileName = fileName
   )
 
   "should contain two file nodes in total with correct order" in {
@@ -42,7 +45,7 @@ class FileTests extends JavaSrcCode2CpgFixture {
 
   "the filename should be the path relative to the project root" in {
     inside(cpg.file.nameNot(FileTraversal.UNKNOWN).l) { case List(foo) =>
-      foo.name shouldBe "a/b/Foo.java"
+      foo.name shouldBe fileName
       foo.hash.isDefined shouldBe false
     }
   }
