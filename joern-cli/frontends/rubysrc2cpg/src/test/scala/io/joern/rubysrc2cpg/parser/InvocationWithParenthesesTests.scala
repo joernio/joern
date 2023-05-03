@@ -13,7 +13,7 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
           """InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | BlankArgsArgumentsWithParentheses
             |  (
             |  )""".stripMargin
       }
@@ -28,7 +28,7 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
           s"""InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | BlankArgsArgumentsWithParentheses
             |  (
             |  WsOrNl
             |  )""".stripMargin
@@ -41,9 +41,9 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
           """InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  Arguments
+            |  BlockExprAssocTypeArguments
             |   Expressions
             |    PrimaryExpression
             |     LiteralPrimary
@@ -61,9 +61,9 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
           s"""InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  Arguments
+            |  BlockExprAssocTypeArguments
             |   Associations
             |    Association
             |     PrimaryExpression
@@ -89,9 +89,9 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
           """InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  Arguments
+            |  BlockExprAssocTypeArguments
             |   Expressions
             |    PrimaryExpression
             |     LiteralPrimary
@@ -108,9 +108,9 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
           """InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  Arguments
+            |  BlockExprAssocTypeArguments
             |   Expressions
             |    PrimaryExpression
             |     LiteralPrimary

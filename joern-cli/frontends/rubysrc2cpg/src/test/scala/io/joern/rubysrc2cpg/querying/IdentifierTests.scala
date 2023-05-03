@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language._
 
 class IdentifierTests extends RubyCode2CpgFixture {
 
-  "The CPG generated for a multiplication example" should {
+  "Basic identifier test" should {
     val cpg = code(
       """
         |# call instance methods
@@ -16,7 +16,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |c = a*b
         |puts "Multiplication is : #{c}"
         |""".stripMargin,
-      fileName = "multiply.rb"
+      fileName = "basicidentifier.rb"
     )
 
     "identifier nodes present" in {
@@ -33,7 +33,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "The CPG generated for a class" should {
+  "Class test" should {
     val cpg = code(
       """
         |class Person
@@ -74,7 +74,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "The CPG generated for a multiplication example" should {
+  "Function call test" should {
     val cpg = code(
       """
         |def add_three_numbers(num1, num2, num3)
@@ -105,7 +105,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.size shouldBe 14
     }
 
-    "The CPG generated for a expressions" should {
+    "Expression test" should {
       val cpg = code(
         """
           |a = 1
@@ -148,7 +148,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "The CPG generated for begin and end blocks" should {
+    "BEGIN and END blocks test" should {
       val cpg = code(
         """
           |#!/usr/bin/env ruby
@@ -181,7 +181,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "The CPG generated for constant array iteration using a do block" should {
+    "Array iteration using a do block test" should {
       val cpg = code(
         """
           |[1, 2, "three"].each do |n|
@@ -199,7 +199,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "The CPG generated for doblock over const array" should {
+    "doblock over const array test" should {
       val cpg = code(
         """
           |[1, 2, "three"].each do |n, m|
