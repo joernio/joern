@@ -288,6 +288,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val thisNode =
       createParameterInNode("this", "this", 0, isVariadic = false, line = func.lineNumber, column = func.columnNumber)
+        .dynamicTypeHintFullName(typeHintForThisExpression())
 
     val paramNodes = if (hasKey(func.json, "parameters")) {
       handleParameters(func.json("parameters").arr.toSeq, mutable.ArrayBuffer.empty[Ast], createLocals = false)
@@ -374,6 +375,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val thisNode =
       createParameterInNode("this", "this", 0, isVariadic = false, line = func.lineNumber, column = func.columnNumber)
+        .dynamicTypeHintFullName(typeHintForThisExpression())
 
     val paramNodes = handleParameters(func.json("params").arr.toSeq, additionalBlockStatements)
 
