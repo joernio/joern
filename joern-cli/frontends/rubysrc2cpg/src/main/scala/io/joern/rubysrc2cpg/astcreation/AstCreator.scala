@@ -3,7 +3,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
+import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newIdentifierNode, newModifierNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -445,7 +445,8 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       Ast()
     }
 
-    primaryAst.withChild(methodNameAst).withChildren(Seq[Ast](argsWithParenthesesAst, blockAst))
+    val ast = primaryAst.withChild(methodNameAst).withChildren(Seq[Ast](argsWithParenthesesAst, blockAst))
+    ast
   }
 
   def astForChainedInvocationWithoutArgumentsPrimaryContext(
@@ -647,7 +648,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       val blockAst = astForBlockContext(ctx.block())
       methodIdAst.withChild(parenAst).withChild(blockAst)
     } else {
-      Ast()
+      methodIdAst.withChild(parenAst)
     }
   }
 
@@ -693,9 +694,35 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Ast = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      Ast() // TODO this should be made a method identifier
+      val localIdentifier = ctx.LOCAL_VARIABLE_IDENTIFIER()
+      val column          = localIdentifier.getSymbol().getCharPositionInLine()
+      val line            = localIdentifier.getSymbol().getLine()
+      val node = newCallNode(
+        localIdentifier.getText(),
+        None,
+        Defines.Any,
+        DispatchTypes.STATIC_DISPATCH,
+        Nil,
+        localIdentifier.getText(),
+        Some(line),
+        Some(column)
+      )
+      Ast(node)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      Ast() // TODO this should be made a method identifier
+      val localIdentifier = ctx.CONSTANT_IDENTIFIER()
+      val column          = localIdentifier.getSymbol().getCharPositionInLine()
+      val line            = localIdentifier.getSymbol().getLine()
+      val node = newCallNode(
+        localIdentifier.getText(),
+        None,
+        Defines.Any,
+        DispatchTypes.STATIC_DISPATCH,
+        Nil,
+        localIdentifier.getText(),
+        Some(line),
+        Some(column)
+      )
+      Ast(node)
     } else {
       Ast()
     }
@@ -703,9 +730,35 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
 
   def astForMethodIdentifierContext(ctx: MethodIdentifierContext): Ast = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      Ast() // TODO this should be made a method identifier
+      val localIdentifier = ctx.LOCAL_VARIABLE_IDENTIFIER()
+      val column          = localIdentifier.getSymbol().getCharPositionInLine()
+      val line            = localIdentifier.getSymbol().getLine()
+      val node = newCallNode(
+        localIdentifier.getText(),
+        None,
+        Defines.Any,
+        DispatchTypes.STATIC_DISPATCH,
+        Nil,
+        localIdentifier.getText(),
+        Some(line),
+        Some(column)
+      )
+      Ast(node)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      Ast() // TODO this should be made a method identifier
+      val localIdentifier = ctx.CONSTANT_IDENTIFIER()
+      val column          = localIdentifier.getSymbol().getCharPositionInLine()
+      val line            = localIdentifier.getSymbol().getLine()
+      val node = newCallNode(
+        localIdentifier.getText(),
+        None,
+        Defines.Any,
+        DispatchTypes.STATIC_DISPATCH,
+        Nil,
+        localIdentifier.getText(),
+        Some(line),
+        Some(column)
+      )
+      Ast(node)
     } else if (ctx.methodOnlyIdentifier() != null) {
       astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     } else {
