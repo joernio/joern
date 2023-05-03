@@ -112,12 +112,7 @@ import io.joern.javasrc2cpg.util.{
   Scope
 }
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
-import io.joern.javasrc2cpg.util.Util.{
-  composeMethodFullName,
-  composeMethodLikeSignature,
-  composeUnresolvedSignature,
-  memberNode
-}
+import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
@@ -709,7 +704,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val typeFullName =
       tryWithSafeStackOverflow(entry.resolve().getType).toOption.flatMap(typeInfoCalc.fullName)
 
-    val entryNode = memberNode(entry.getNameAsString, entry.toString, typeFullName, line(entry), column(entry))
+    val entryNode = memberNode(entry, entry.getNameAsString, entry.toString, typeFullName.getOrElse("ANY"))
 
     val name = s"${typeFullName.getOrElse(Defines.UnresolvedNamespace)}.${Defines.ConstructorMethodName}"
     val args = entry.getArguments.asScala.map { argument =>
@@ -756,7 +751,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         .orElse(scopeStack.lookupVariableType(v.getTypeAsString, wildcardFallback = true))
         .getOrElse(s"${Defines.UnresolvedNamespace}.${v.getTypeAsString}")
     val name           = v.getName.toString
-    val node           = memberNode(name, s"$typeFullName $name", Some(typeFullName), line(v), column(v))
+    val node           = memberNode(v, name, s"$typeFullName $name", typeFullName)
     val memberAst      = Ast(node)
     val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
 

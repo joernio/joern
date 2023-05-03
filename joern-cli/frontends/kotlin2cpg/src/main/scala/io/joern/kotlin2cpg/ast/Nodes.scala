@@ -2,21 +2,17 @@ package io.joern.kotlin2cpg.ast
 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBinding,
   NewCall,
   NewClosureBinding,
   NewIdentifier,
   NewJumpTarget,
   NewLiteral,
   NewLocal,
-  NewMember,
   NewMethod,
   NewMethodParameterIn,
   NewModifier,
   NewNamespaceBlock,
-  NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
+  NewTypeDecl
 }
 
 object Nodes {
@@ -143,20 +139,6 @@ object Nodes {
       .columnNumber(column)
       .lineNumberEnd(lineEnd)
       .columnNumberEnd(columnEnd)
-  }
-
-  def memberNode(
-    name: String,
-    typeFullName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewMember = {
-    NewMember()
-      .name(name)
-      .code(name)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
   }
 
   def modifierNode(_type: String): NewModifier = {

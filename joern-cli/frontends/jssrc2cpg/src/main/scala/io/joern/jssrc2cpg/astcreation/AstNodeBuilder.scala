@@ -106,20 +106,6 @@ trait AstNodeBuilder { this: AstCreator =>
     param
   }
 
-  protected def createMemberNode(name: String, node: BabelNodeInfo, dynamicTypeOption: Option[String]): NewMember = {
-    val tpe    = typeFor(node)
-    val code   = node.code
-    val line   = node.lineNumber
-    val column = node.columnNumber
-    NewMember()
-      .code(code)
-      .name(name)
-      .typeFullName(tpe)
-      .dynamicTypeHintFullName(dynamicTypeOption.toList)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   protected def createMethodNode(methodName: String, methodFullName: String, func: BabelNodeInfo): NewMethod = {
     val line      = func.lineNumber
     val column    = func.columnNumber

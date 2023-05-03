@@ -75,7 +75,7 @@ trait AstForTypesCreator { this: AstCreator =>
           case _: IASTArrayDeclarator => registerType(typeFor(declarator))
           case _                      => registerType(typeForDeclSpecifier(declaration.getDeclSpecifier))
         }
-        Ast(newMemberNode(declarator, name, nodeSignature(declarator), tpe))
+        Ast(memberNode(declarator, name, nodeSignature(declarator), tpe))
       case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
         val tpe       = registerType(typeFor(declarator))
         val codeTpe   = typeFor(declarator, stripKeywords = false)
@@ -315,7 +315,7 @@ trait AstForTypesCreator { this: AstCreator =>
         enumeration.getBaseType.toString
       case _ => typeFor(enumerator)
     }
-    val cpgMember = newMemberNode(
+    val cpgMember = memberNode(
       enumerator,
       ASTStringUtil.getSimpleName(enumerator.getName),
       nodeSignature(enumerator),

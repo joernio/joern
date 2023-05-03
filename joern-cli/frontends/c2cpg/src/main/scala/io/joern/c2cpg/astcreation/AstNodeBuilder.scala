@@ -51,15 +51,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column(node))
   }
 
-  protected def newMemberNode(node: IASTNode, name: String, code: String, typeFullName: String): NewMember = {
-    NewMember()
-      .code(code)
-      .name(name)
-      .typeFullName(typeFullName)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-  }
-
   protected def newNamespaceBlockNode(
     node: IASTNode,
     name: String,
