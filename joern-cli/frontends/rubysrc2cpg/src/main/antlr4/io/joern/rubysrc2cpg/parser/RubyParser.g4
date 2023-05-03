@@ -149,12 +149,12 @@ expressionOrCommands
 // --------------------------------------------------------
 
 invocationWithoutParentheses
-    :   command                                                                                                                 # singleCommandOnly
-    |   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlock
-    |   chainedCommandWithDoBlock (DOT | COLON2) methodName argumentsWithoutParentheses                                         # chainedCommandDoBlockDorCol2mNameArgs
-    |   RETURN WS arguments                                                                                                     # returnArgs
-    |   BREAK WS arguments                                                                                                      # breakArgs
-    |   NEXT WS arguments                                                                                                       # nextArgs
+    :   command                                                                                                                 # singleCommandOnlyInvocationWithoutParentheses
+    |   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlockInvocationWithoutParentheses
+    |   chainedCommandWithDoBlock (DOT | COLON2) methodName argumentsWithoutParentheses                                         # chainedCommandDoBlockDorCol2mNameArgsInvocationWithoutParentheses
+    |   RETURN WS arguments                                                                                                     # returnArgsInvocationWithoutParentheses
+    |   BREAK WS arguments                                                                                                      # breakArgsInvocationWithoutParentheses
+    |   NEXT WS arguments                                                                                                       # nextArgsInvocationWithoutParentheses
     ;
 
 command
@@ -169,9 +169,9 @@ chainedCommandWithDoBlock
     ;
 
 commandWithDoBlock
-    :   SUPER argumentsWithoutParentheses WS* doBlock                                                                           # argsAndDoBlock
-    |   methodIdentifier argumentsWithoutParentheses WS* doBlock                                                                # argsAndDoBlockAndMethodId
-    |   primary WS* (DOT | COLON2) methodName argumentsWithoutParentheses WS* doBlock                                           # primaryMethodArgsDoBlock
+    :   SUPER argumentsWithoutParentheses WS* doBlock                                                                           # argsAndDoBlockCommandWithDoBlock
+    |   methodIdentifier argumentsWithoutParentheses WS* doBlock                                                                # argsAndDoBlockAndMethodIdCommandWithDoBlock
+    |   primary WS* (DOT | COLON2) methodName argumentsWithoutParentheses WS* doBlock                                           # primaryMethodArgsDoBlockCommandWithDoBlock
     ;
 
 argumentsWithoutParentheses

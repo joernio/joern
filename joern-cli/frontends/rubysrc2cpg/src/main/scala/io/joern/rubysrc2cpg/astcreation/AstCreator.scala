@@ -58,8 +58,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext, rhsRetType: String): Ast = ctx match {
-    case ctx: VariableIdentifierOnlySingleLeftHandSideContext => astForVariableIdentifierContext(ctx.variableIdentifier(), rhsRetType)
-    case ctx: PrimaryInsideBracketsSingleLeftHandSideContext  => astForPrimaryContext(ctx.primary())
+    case ctx: VariableIdentifierOnlySingleLeftHandSideContext =>
+      astForVariableIdentifierContext(ctx.variableIdentifier(), rhsRetType)
+    case ctx: PrimaryInsideBracketsSingleLeftHandSideContext => astForPrimaryContext(ctx.primary())
     case ctx: XdotySingleLeftHandSideContext =>
       val xAst = astForPrimaryContext(ctx.primary())
       val yAst = {
@@ -547,8 +548,10 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
         .toSeq
       val blockNode = NewBlock().typeFullName(Defines.Any)
       Ast(blockNode).withChildren(asts)
-    case ctx: PackingLeftHandSideOnlyMultipleLeftHandSideContext => astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
-    case ctx: GroupedLeftHandSideOnlyMultipleLeftHandSideContext => astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
+    case ctx: PackingLeftHandSideOnlyMultipleLeftHandSideContext =>
+      astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
+    case ctx: GroupedLeftHandSideOnlyMultipleLeftHandSideContext =>
+      astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
     case _ =>
       logger.error("astForMultipleLeftHandSideContext() All contexts mismatched.")
       Ast()
@@ -625,16 +628,17 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForInvocationWithoutParenthesesContext(ctx: InvocationWithoutParenthesesContext): Ast = ctx match {
-    case ctx: SingleCommandOnlyContext     => astForCommandContext(ctx.command())
-    case ctx: ChainedCommandDoBlockContext => astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
-    case ctx: ChainedCommandDoBlockDorCol2mNameArgsContext =>
+    case ctx: SingleCommandOnlyInvocationWithoutParenthesesContext => astForCommandContext(ctx.command())
+    case ctx: ChainedCommandDoBlockInvocationWithoutParenthesesContext =>
+      astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
+    case ctx: ChainedCommandDoBlockDorCol2mNameArgsInvocationWithoutParenthesesContext =>
       val cmdDoBlockAst  = astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
       val methodNameAst  = astForMethodNameContext(ctx.methodName())
       val argsWOParenAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-      Ast()
-    case ctx: ReturnArgsContext => astForArgumentsContext(ctx.arguments())
-    case ctx: BreakArgsContext  => astForArgumentsContext(ctx.arguments())
-    case ctx: NextArgsContext   => astForArgumentsContext(ctx.arguments())
+      Ast() // TODO fix this
+    case ctx: ReturnArgsInvocationWithoutParenthesesContext => astForArgumentsContext(ctx.arguments())
+    case ctx: BreakArgsInvocationWithoutParenthesesContext  => astForArgumentsContext(ctx.arguments())
+    case ctx: NextArgsInvocationWithoutParenthesesContext   => astForArgumentsContext(ctx.arguments())
     case _ =>
       logger.error("astForInvocationWithoutParenthesesContext() All contexts mismatched.")
       Ast()
@@ -1018,11 +1022,11 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForCommandWithDoBlockContext(ctx: CommandWithDoBlockContext): Ast = ctx match {
-    case ctx: ArgsAndDoBlockContext =>
+    case ctx: ArgsAndDoBlockCommandWithDoBlockContext =>
       val argsAst    = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       val doBlockAst = astForDoBlockContext(ctx.doBlock())
       argsAst.withChild(doBlockAst)
-    case ctx: RubyParser.ArgsAndDoBlockAndMethodIdContext =>
+    case ctx: RubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
       val argsAst     = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       val doBlockAst  = astForDoBlockContext(ctx.doBlock())
       val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier())
@@ -1030,7 +1034,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       argsAst
       methodIdAst
       doBlockAst
-    case ctx: RubyParser.PrimaryMethodArgsDoBlockContext =>
+    case ctx: RubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
       val argsAst       = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       val doBlockAst    = astForDoBlockContext(ctx.doBlock())
       val methodNameAst = astForMethodNameContext(ctx.methodName())
