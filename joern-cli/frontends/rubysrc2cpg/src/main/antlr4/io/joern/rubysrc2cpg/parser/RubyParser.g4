@@ -179,11 +179,11 @@ argumentsWithoutParentheses
     ;
 
 arguments
-    :   blockArgument                                                                                                           # blockArgumentType
-    |   splattingArgument (COMMA wsOrNl* blockArgument)?                                                                        # blockSplattingType
-    |   expressions WS* COMMA wsOrNl* associations (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?    # blockSplattingExprAssocType
-    |   (expressions | associations) (WS* COMMA wsOrNl* blockArgument)?                                                         # blockExprAssocType
-    |   command                                                                                                                 # commandType
+    :   blockArgument                                                                                                           # blockArgumentTypeArguments
+    |   splattingArgument (COMMA wsOrNl* blockArgument)?                                                                        # blockSplattingTypeArguments
+    |   expressions WS* COMMA wsOrNl* associations (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?    # blockSplattingExprAssocTypeArguments
+    |   (expressions | associations) (WS* COMMA wsOrNl* blockArgument)?                                                         # blockExprAssocTypeArguments
+    |   command                                                                                                                 # commandTypeArguments
     ;
 
 blockArgument
@@ -199,18 +199,18 @@ splattingArgument
     ;
 
 indexingArguments
-    :   command                                                                                                                 # commandOnly
-    |   expressions (WS* COMMA wsOrNl*)?                                                                                        # expressionsOnly
-    |   expressions WS* COMMA wsOrNl* splattingArgument                                                                         # expressionsAndSplatting
-    |   associations (WS* COMMA wsOrNl*)?                                                                                       # associationsOnly
-    |   splattingArgument                                                                                                       # splattingOnly
+    :   command                                                                                                                 # commandOnlyIndexingArguments
+    |   expressions (WS* COMMA wsOrNl*)?                                                                                        # expressionsOnlyIndexingArguments
+    |   expressions WS* COMMA wsOrNl* splattingArgument                                                                         # expressionsAndSplattingIndexingArguments
+    |   associations (WS* COMMA wsOrNl*)?                                                                                       # associationsOnlyIndexingArguments
+    |   splattingArgument                                                                                                       # splattingOnlyIndexingArguments
     ;
 
 argumentsWithParentheses
-    :   LPAREN wsOrNl* RPAREN                                                                                                   # blankArgs
-    |   LPAREN wsOrNl* arguments (WS* COMMA)? wsOrNl* RPAREN                                                                    # argsOnly
-    |   LPAREN wsOrNl* expressions WS* COMMA wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN                                   # expressionsAndChainedCommandWithDoBlock
-    |   LPAREN wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN                                                                 # chainedCommandWithDoBlockOnly
+    :   LPAREN wsOrNl* RPAREN                                                                                                   # blankArgsArgumentsWithParentheses
+    |   LPAREN wsOrNl* arguments (WS* COMMA)? wsOrNl* RPAREN                                                                    # argsOnlyArgumentsWithParentheses
+    |   LPAREN wsOrNl* expressions WS* COMMA wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN                                   # expressionsAndChainedCommandWithDoBlockArgumentsWithParentheses
+    |   LPAREN wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN                                                                 # chainedCommandWithDoBlockOnlyArgumentsWithParentheses
     ;
 
 expressions

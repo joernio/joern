@@ -346,9 +346,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Ast = ctx match {
-    case ctx: RubyParser.CommandOnlyContext =>
+    case ctx: RubyParser.CommandOnlyIndexingArgumentsContext =>
       astForCommandContext(ctx.command())
-    case ctx: RubyParser.ExpressionsOnlyContext =>
+    case ctx: RubyParser.ExpressionsOnlyIndexingArgumentsContext =>
       val expAsts =
         ctx
           .expressions()
@@ -359,7 +359,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
           })
           .toSeq
       Ast().withChildren(expAsts)
-    case ctx: RubyParser.ExpressionsAndSplattingContext =>
+    case ctx: RubyParser.ExpressionsAndSplattingIndexingArgumentsContext =>
       val expAsts = ctx
         .expressions()
         .expression()
@@ -371,9 +371,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       val splatAst = astForSplattingArgumentContext(ctx.splattingArgument())
       Ast().withChildren(expAsts).merge(splatAst)
 
-    case ctx: AssociationsOnlyContext =>
+    case ctx: AssociationsOnlyIndexingArgumentsContext =>
       astForAssociationsContext(ctx.associations())
-    case ctx: RubyParser.SplattingOnlyContext =>
+    case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
       astForSplattingArgumentContext(ctx.splattingArgument())
     case _ =>
       logger.error("astForIndexingArgumentsContext() All contexts mismatched.")
@@ -1061,9 +1061,9 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
   }
 
   def astForArgumentsWithParenthesesContext(ctx: ArgumentsWithParenthesesContext): Ast = ctx match {
-    case ctx: BlankArgsContext => Ast()
-    case ctx: ArgsOnlyContext  => astForArgumentsContext(ctx.arguments())
-    case ctx: ExpressionsAndChainedCommandWithDoBlockContext =>
+    case ctx: BlankArgsArgumentsWithParenthesesContext => Ast()
+    case ctx: ArgsOnlyArgumentsWithParenthesesContext  => astForArgumentsContext(ctx.arguments())
+    case ctx: ExpressionsAndChainedCommandWithDoBlockArgumentsWithParenthesesContext =>
       val expAsts = ctx
         .expressions()
         .expression
@@ -1075,7 +1075,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
       val ccDoBlock = astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
       val blockNode = NewBlock().typeFullName(Defines.Any)
       Ast(blockNode).withChildren(expAsts).merge(ccDoBlock)
-    case ctx: ChainedCommandWithDoBlockOnlyContext =>
+    case ctx: ChainedCommandWithDoBlockOnlyArgumentsWithParenthesesContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
     case _ =>
       logger.error("astForArgumentsWithParenthesesContext() All contexts mismatched.")
@@ -1192,11 +1192,11 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     astForExpressionContext(ctx.expression())
   }
 
-  def astForBlockArgumentTypeContext(ctx: BlockArgumentTypeContext): Ast = {
+  def astForBlockArgumentTypeArgumentsContext(ctx: BlockArgumentTypeArgumentsContext): Ast = {
     astForBlockArgumentContext(ctx.blockArgument())
   }
 
-  def astForBlockSplattingTypeContext(ctx: BlockSplattingTypeContext): Ast = {
+  def astForBlockSplattingTypeArgumentsContext(ctx: BlockSplattingTypeArgumentsContext): Ast = {
     val blockArgAst = if (ctx.blockArgument() != null) {
       astForBlockArgumentContext(ctx.blockArgument())
     } else {
@@ -1224,7 +1224,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast().withChildren(asts)
   }
 
-  def astForBlockSplattingExprAssocTypeContext(ctx: BlockSplattingExprAssocTypeContext): Ast = {
+  def astForBlockSplattingExprAssocTypeArgumentsContext(ctx: BlockSplattingExprAssocTypeArgumentsContext): Ast = {
     val blockArgAst     = astForBlockArgumentContext(ctx.blockArgument())
     val splatAst        = astForSplattingArgumentContext(ctx.splattingArgument())
     val associationsAst = astForAssociationsContext(ctx.associations())
@@ -1236,7 +1236,7 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     Ast(blockNode).withChildren(Seq[Ast](blockArgAst, splatAst, associationsAst, expAst))
   }
 
-  def astForBlockExprAssocTypeContext(ctx: BlockExprAssocTypeContext): Ast = {
+  def astForBlockExprAssocTypeArgumentsContext(ctx: BlockExprAssocTypeArgumentsContext): Ast = {
     val blockArgAst = if (ctx.blockArgument() != null) {
       astForBlockArgumentContext(ctx.blockArgument())
     } else {
@@ -1278,16 +1278,16 @@ class AstCreator(filename: String, global: Global) extends AstCreatorBase(filena
     }
   }
 
-  def astForCommandTypeContext(ctx: CommandTypeContext): Ast = {
+  def astForCommandTypeArgumentsContext(ctx: CommandTypeArgumentsContext): Ast = {
     astForCommandContext(ctx.command())
   }
 
   def astForArgumentsContext(ctx: ArgumentsContext): Ast = ctx match {
-    case ctx: BlockArgumentTypeContext           => astForBlockArgumentTypeContext(ctx)
-    case ctx: BlockSplattingTypeContext          => astForBlockSplattingTypeContext(ctx)
-    case ctx: BlockSplattingExprAssocTypeContext => astForBlockSplattingExprAssocTypeContext(ctx)
-    case ctx: BlockExprAssocTypeContext          => astForBlockExprAssocTypeContext(ctx)
-    case ctx: CommandTypeContext                 => astForCommandTypeContext(ctx)
+    case ctx: BlockArgumentTypeArgumentsContext           => astForBlockArgumentTypeArgumentsContext(ctx)
+    case ctx: BlockSplattingTypeArgumentsContext          => astForBlockSplattingTypeArgumentsContext(ctx)
+    case ctx: BlockSplattingExprAssocTypeArgumentsContext => astForBlockSplattingExprAssocTypeArgumentsContext(ctx)
+    case ctx: BlockExprAssocTypeArgumentsContext          => astForBlockExprAssocTypeArgumentsContext(ctx)
+    case ctx: CommandTypeArgumentsContext                 => astForCommandTypeArgumentsContext(ctx)
     case _ =>
       logger.error("astForArgumentsContext() All contexts mismatched.")
       Ast()
