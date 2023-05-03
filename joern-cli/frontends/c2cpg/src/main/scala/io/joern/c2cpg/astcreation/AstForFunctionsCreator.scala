@@ -11,7 +11,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTFunctionDeclarator, C
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.datastructures.Stack._
 import org.apache.commons.lang.StringUtils
-import org.eclipse.cdt.internal.core.dom.parser.c.CASTDeclarator
 
 import scala.annotation.tailrec
 
