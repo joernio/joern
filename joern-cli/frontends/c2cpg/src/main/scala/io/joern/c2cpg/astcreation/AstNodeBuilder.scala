@@ -122,20 +122,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .astParentFullName(astParentFullName.getOrElse(Defines.empty))
   }
 
-  protected def newMethodRefNode(
-    code: String,
-    methodFullName: String,
-    typeFullName: String,
-    node: IASTNode
-  ): NewMethodRef = {
-    NewMethodRef()
-      .code(code)
-      .methodFullName(methodFullName)
-      .typeFullName(registerType(typeFullName))
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-  }
-
   protected def newCallNode(
     node: IASTNode,
     name: String,

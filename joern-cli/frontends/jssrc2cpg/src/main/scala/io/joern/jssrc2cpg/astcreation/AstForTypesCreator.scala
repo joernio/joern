@@ -383,7 +383,8 @@ trait AstForTypesCreator { this: AstCreator =>
       // the class definition assigned to its constructor
       val classIdNode =
         createIdentifierNode(typeName, Option(constructorNode.fullName), clazz.lineNumber, clazz.columnNumber)
-      val constructorRefNode = createMethodRefNode(constructorNode.code, constructorNode.fullName, clazz)
+      val constructorRefNode =
+        methodRefNode(clazz, constructorNode.code, constructorNode.fullName, constructorNode.fullName)
 
       val idLocal = createLocalNode(typeName, Defines.Any)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)

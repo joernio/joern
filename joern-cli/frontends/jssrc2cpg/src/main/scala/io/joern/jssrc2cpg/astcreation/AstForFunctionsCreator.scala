@@ -336,9 +336,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
     methodBlockContent: List[Ast] = List.empty
   ): MethodAst = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
-    val methodRefNode = if (!shouldCreateFunctionReference) {
+    val methodRefNode_ = if (!shouldCreateFunctionReference) {
       None
-    } else { Option(createMethodRefNode(methodName, methodFullName, func)) }
+    } else { Option(methodRefNode(func, methodName, methodFullName, methodFullName)) }
 
     val callAst = if (shouldCreateAssignmentCall && shouldCreateFunctionReference) {
       val idNode  = createIdentifierNode(methodName, func)
@@ -347,7 +347,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       scope.addVariable(methodName, idLocal, BlockScope)
       scope.addVariableReference(methodName, idNode)
       val code       = s"function $methodName = ${func.code}"
-      val assignment = createAssignmentCallAst(idNode, methodRefNode.get, code, func.lineNumber, func.columnNumber)
+      val assignment = createAssignmentCallAst(idNode, methodRefNode_.get, code, func.lineNumber, func.columnNumber)
       assignment
     } else {
       Ast()
@@ -365,7 +365,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val capturingRefNode =
       if (shouldCreateFunctionReference) {
-        methodRefNode
+        methodRefNode_
       } else {
         typeRefIdStack.headOption
       }
@@ -421,7 +421,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, methodNode, EdgeTypes.AST)
 
-    methodRefNode match {
+    methodRefNode_ match {
       case Some(ref) if callAst.nodes.isEmpty =>
         MethodAst(Ast(ref), methodNode, mAst)
       case _ =>
