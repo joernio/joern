@@ -61,10 +61,11 @@ trait AstCreatorHelper { this: AstCreator =>
           val lineNumber        = node.flatMap(line).getOrElse(-1)
           val columnNumber      = node.flatMap(column).getOrElse(-1)
           val location          = s"$fromFilename:$lineNumber:$columnNumber"
-          val postfix           = CGlobal.headerFileFullNameToPostfix.getOrElse(location, 0)
+          val postfix           = CGlobal.headerFileFullNameToPostfix.getOrElse(location, CGlobal.usedVariablePostfix)
           val name              = s"anonymous_${target}_$postfix"
           val resultingFullName = s"$fullName$name"
-          CGlobal.headerFileFullNameToPostfix.put(location, postfix + 1)
+          CGlobal.usedVariablePostfix = CGlobal.usedVariablePostfix + 1
+          CGlobal.headerFileFullNameToPostfix.put(location, postfix)
           (name, resultingFullName)
         }
       } else {

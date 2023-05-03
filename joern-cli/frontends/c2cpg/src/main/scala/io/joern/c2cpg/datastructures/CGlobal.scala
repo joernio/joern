@@ -17,6 +17,8 @@ object CGlobal extends Global {
   val headerFileFullNameToPostfix: mutable.HashMap[String, Int] =
     mutable.HashMap.empty
 
+  var usedVariablePostfix: Int = 0
+
   def headerFiles: Set[String] = headerAstCache.keySet.toSet
 
   def typesSeen(): List[String] = {
