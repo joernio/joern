@@ -55,12 +55,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val exportCallAst = if (name == DefaultsKey) {
       createIndexAccessCallAst(
         createIdentifierNode(exportName, declaration),
-        createLiteralNode(
-          s"\"$DefaultsKey\"",
-          Option(Defines.String),
-          declaration.lineNumber,
-          declaration.columnNumber
-        ),
+        literalNode(declaration, s"\"$DefaultsKey\"", Option(Defines.String)),
         declaration.lineNumber,
         declaration.columnNumber
       )
@@ -140,8 +135,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       scope.addVariableReference(id.code, id)
       diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 
-      val sourceCallArgNode =
-        createLiteralNode(s"\"${fromName.stripPrefix("_")}\"", None, declaration.lineNumber, declaration.columnNumber)
+      val sourceCallArgNode = literalNode(declaration, s"\"${fromName.stripPrefix("_")}\"", None)
       val sourceCall = createCallNode(
         s"$RequireKeyword(${sourceCallArgNode.code})",
         RequireKeyword,
@@ -419,7 +413,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 
     val destAst           = Ast(destNode)
-    val sourceCallArgNode = createLiteralNode(s"\"$from\"", None, nodeInfo.lineNumber, nodeInfo.columnNumber)
+    val sourceCallArgNode = literalNode(nodeInfo, s"\"$from\"", None)
     val sourceCall = createCallNode(
       s"$RequireKeyword(${sourceCallArgNode.code})",
       RequireKeyword,
@@ -559,8 +553,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     scope.addVariable(element.code, localNode, MethodScope)
 
     val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
-    val keyNode =
-      createLiteralNode(index.toString, Option(Defines.Number), element.lineNumber, element.columnNumber)
+    val keyNode            = literalNode(element, index.toString, Option(Defines.Number))
     val accessAst = createIndexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
     createAssignmentCallAst(
       valueAst,
@@ -590,8 +583,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
     val testAst = {
       val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
-      val keyNode =
-        createLiteralNode(index.toString, Option(Defines.Number), element.lineNumber, element.columnNumber)
+      val keyNode            = literalNode(element, index.toString, Option(Defines.Number))
       val accessAst =
         createIndexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
       val voidCallNode = createVoidCallNode(element.lineNumber, element.columnNumber)
@@ -599,8 +591,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
     val falseAst = {
       val fieldAccessTmpNode = createIdentifierNode(localTmpName, element)
-      val keyNode =
-        createLiteralNode(index.toString, Option(Defines.Number), element.lineNumber, element.columnNumber)
+      val keyNode            = literalNode(element, index.toString, Option(Defines.Number))
       createIndexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
     }
     val ternaryNodeAst =
@@ -735,8 +726,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
             nodeInfo.node match {
               case RestElement =>
                 val fieldAccessTmpNode = createIdentifierNode(localTmpName, nodeInfo)
-                val keyNode =
-                  createLiteralNode(index.toString, Option(Defines.Number), nodeInfo.lineNumber, nodeInfo.columnNumber)
+                val keyNode            = literalNode(nodeInfo, index.toString, Option(Defines.Number))
                 val accessAst =
                   createIndexAccessCallAst(fieldAccessTmpNode, keyNode, nodeInfo.lineNumber, nodeInfo.columnNumber)
                 astForSpreadOrRestElement(nodeInfo, Option(accessAst))

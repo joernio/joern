@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewControlStructure,
   NewFieldIdentifier,
   NewMember,
+  NewLiteral,
   NewMethodRef,
   NewReturn,
   NewTypeRef,
@@ -36,6 +37,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
 
   protected def memberNode(node: Node, name: String, code: String, typeFullName: String): NewMember =
     memberNode(node, name, code, typeFullName, Seq())
+
   protected def memberNode(
     node: Node,
     name: String,
@@ -46,6 +48,20 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     NewMember()
       .code(code)
       .name(name)
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHints)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
+
+  protected def literalNode(
+    node: Node,
+    code: String,
+    typeFullName: String,
+    dynamicTypeHints: Seq[String] = Seq()
+  ): NewLiteral = {
+    NewLiteral()
+      .code(code)
       .typeFullName(typeFullName)
       .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
