@@ -540,7 +540,15 @@ trait KtPsiToAst {
     }
     val parametersAsts = typeInfoProvider.implicitParameterName(expr) match {
       case Some(implicitParamName) =>
-        val node = methodParameterNode(implicitParamName, TypeConstants.any)
+        val node = parameterInNode(
+          expr,
+          implicitParamName,
+          implicitParamName,
+          0,
+          false,
+          EvaluationStrategies.BY_REFERENCE,
+          TypeConstants.any
+        )
         scope.addToScope(implicitParamName, node)
         Seq(Ast(node))
       case None =>
@@ -1825,7 +1833,8 @@ trait KtPsiToAst {
 
     val explicitTypeName = Option(param.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val typeFullName     = registerType(typeInfoProvider.parameterType(param, explicitTypeName))
-    val node             = methodParameterNode(name, typeFullName, line(param), column(param)).order(order)
+    val node =
+      parameterInNode(param, name, name, order, false, EvaluationStrategies.BY_VALUE, typeFullName)
     scope.addToScope(name, node)
 
     val annotations = param.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq

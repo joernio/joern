@@ -1,13 +1,7 @@
 package io.joern.kotlin2cpg.ast
 
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewCall,
-  NewJumpTarget,
-  NewMethodParameterIn,
-  NewModifier,
-  NewNamespaceBlock
-}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewJumpTarget, NewModifier, NewNamespaceBlock}
 
 object Nodes {
 
@@ -43,21 +37,6 @@ object Nodes {
       .code(code)
       .name(name)
       .parserTypeName(parserTypeName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def methodParameterNode(
-    name: String,
-    typeFullName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewMethodParameterIn = {
-    NewMethodParameterIn()
-      .name(name)
-      .code(name)
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .typeFullName(typeFullName)
       .lineNumber(line)
       .columnNumber(column)
   }
