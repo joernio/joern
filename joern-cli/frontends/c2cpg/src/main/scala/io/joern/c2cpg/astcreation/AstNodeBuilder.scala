@@ -45,26 +45,6 @@ trait AstNodeBuilder { this: AstCreator =>
     newMethodReturnNode_(typeFullName, None, line(node), column(node))
   }
 
-  protected def newParameterInNode(
-    node: IASTNode,
-    name: String,
-    code: String,
-    typeFullName: String,
-    index: Int,
-    evaluationStrategy: String,
-    isVariadic: Boolean
-  ): NewMethodParameterIn = {
-    NewMethodParameterIn()
-      .name(name)
-      .code(code)
-      .typeFullName(typeFullName)
-      .index(index)
-      .evaluationStrategy(evaluationStrategy)
-      .isVariadic(isVariadic)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-  }
-
   protected def newCallNode(
     node: IASTNode,
     name: String,

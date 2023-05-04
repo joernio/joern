@@ -58,29 +58,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column)
   }
 
-  protected def createParameterInNode(
-    name: String,
-    code: String,
-    index: Int,
-    isVariadic: Boolean,
-    line: Option[Integer],
-    column: Option[Integer],
-    tpe: Option[String] = None
-  ): NewMethodParameterIn = {
-    val param = NewMethodParameterIn()
-      .name(name)
-      .code(code)
-      .index(index)
-      .order(index)
-      .isVariadic(isVariadic)
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .lineNumber(line)
-      .columnNumber(column)
-      .typeFullName(tpe.getOrElse(Defines.Any))
-    scope.addVariable(name, param, MethodScope)
-    param
-  }
-
   protected def codeOf(node: NewNode): String = node match {
     case node: AstNodeNew => node.code
     case _                => ""

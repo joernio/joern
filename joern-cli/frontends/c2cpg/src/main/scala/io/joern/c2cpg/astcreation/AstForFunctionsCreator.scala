@@ -207,7 +207,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
 
     val parameterNode =
-      newParameterInNode(parameter, name, code, registerType(tpe), paramIndex, EvaluationStrategies.BY_VALUE, variadic)
+      parameterInNode(parameter, name, code, paramIndex, variadic, EvaluationStrategies.BY_VALUE, registerType(tpe))
     scope.addToScope(name, (parameterNode, tpe))
     parameterNode
   }

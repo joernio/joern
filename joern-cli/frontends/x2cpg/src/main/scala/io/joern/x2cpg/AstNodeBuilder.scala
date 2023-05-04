@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewLocal,
   NewMember,
   NewMethod,
+  NewMethodParameterIn,
   NewMethodRef,
   NewReturn,
   NewTypeDecl,
@@ -114,6 +115,38 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .aliasTypeFullName(alias)
       .lineNumber(line(node))
       .columnNumber(column(node))
+  }
+
+  protected def parameterInNode(
+    node: Node,
+    name: String,
+    code: String,
+    index: Int,
+    isVariadic: Boolean,
+    evaluationStrategy: String,
+    typeFullName: String
+  ): NewMethodParameterIn =
+    parameterInNode(node, name, code, index, isVariadic, evaluationStrategy, Some(typeFullName))
+
+  protected def parameterInNode(
+    node: Node,
+    name: String,
+    code: String,
+    index: Int,
+    isVariadic: Boolean,
+    evaluationStrategy: String,
+    typeFullName: Option[String] = None
+  ): NewMethodParameterIn = {
+    NewMethodParameterIn()
+      .name(name)
+      .code(code)
+      .index(index)
+      .order(index)
+      .isVariadic(isVariadic)
+      .evaluationStrategy(evaluationStrategy)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+      .typeFullName(typeFullName.getOrElse("ANY"))
   }
 
   protected def returnNode(node: Node, code: String): NewReturn = {
