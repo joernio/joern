@@ -74,7 +74,7 @@ trait AstForTypesCreator { this: AstCreator =>
       case d if isTypeDef(d) =>
         val filename = fileName(declaration)
         val tpe      = registerType(typeFor(declarator))
-        Ast(newTypeDeclNode(declarator, name, registerType(name), filename, nodeSignature(d), alias = Option(tpe)))
+        Ast(typeDeclNode(declarator, name, registerType(name), filename, nodeSignature(d), alias = Option(tpe)))
       case d if parentIsClassDef(d) =>
         val tpe = declarator match {
           case _: IASTArrayDeclarator => registerType(typeFor(declarator))
@@ -138,8 +138,8 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForAliasDeclaration(aliasDeclaration: ICPPASTAliasDeclaration): Ast = {
     val name       = aliasDeclaration.getAlias.toString
     val mappedName = registerType(typeFor(aliasDeclaration.getMappingTypeId))
-    val typeDeclNode =
-      newTypeDeclNode(
+    val typeDeclNode_ =
+      typeDeclNode(
         aliasDeclaration,
         name,
         registerType(name),
@@ -147,7 +147,7 @@ trait AstForTypesCreator { this: AstCreator =>
         nodeSignature(aliasDeclaration),
         alias = Option(mappedName)
       )
-    Ast(typeDeclNode)
+    Ast(typeDeclNode_)
   }
 
   protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(unknownNode(asm, nodeSignature(asm)))
@@ -177,9 +177,7 @@ trait AstForTypesCreator { this: AstCreator =>
           case spec: IASTNamedTypeSpecifier if declaration.getDeclarators.isEmpty =>
             val filename = fileName(spec)
             val name     = ASTStringUtil.getSimpleName(spec.getName)
-            Seq(
-              Ast(newTypeDeclNode(spec, name, registerType(name), filename, nodeSignature(spec), alias = Option(name)))
-            )
+            Seq(Ast(typeDeclNode(spec, name, registerType(name), filename, nodeSignature(spec), alias = Option(name))))
           case _ if declaration.getDeclarators.nonEmpty =>
             declaration.getDeclarators.toIndexedSeq.zipWithIndex.map {
               case (d: IASTFunctionDeclarator, _) =>
@@ -250,7 +248,7 @@ trait AstForTypesCreator { this: AstCreator =>
       case cppClass: ICPPASTCompositeTypeSpecifier =>
         val baseClassList =
           cppClass.getBaseSpecifiers.toSeq.map(s => registerType(s.getNameSpecifier.toString))
-        newTypeDeclNode(
+        typeDeclNode(
           typeSpecifier,
           name,
           fullname,
@@ -260,7 +258,7 @@ trait AstForTypesCreator { this: AstCreator =>
           alias = nameWithTemplateParams
         )
       case _ =>
-        newTypeDeclNode(typeSpecifier, name, fullname, filename, code, alias = nameWithTemplateParams)
+        typeDeclNode(typeSpecifier, name, fullname, filename, code, alias = nameWithTemplateParams)
     }
 
     methodAstParentStack.push(typeDecl)
@@ -302,7 +300,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val nameWithTemplateParams = templateParameters(typeSpecifier).map(t => registerType(s"$fullname$t"))
 
     val typeDecl =
-      newTypeDeclNode(
+      typeDeclNode(
         typeSpecifier,
         name,
         fullname,
@@ -355,7 +353,7 @@ trait AstForTypesCreator { this: AstCreator =>
         fullName(typeSpecifier),
         Some(typeSpecifier)
       )
-    val typeDecl = newTypeDeclNode(typeSpecifier, name, registerType(fullname), filename, nodeSignature(typeSpecifier))
+    val typeDecl = typeDeclNode(typeSpecifier, name, registerType(fullname), filename, nodeSignature(typeSpecifier))
 
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)

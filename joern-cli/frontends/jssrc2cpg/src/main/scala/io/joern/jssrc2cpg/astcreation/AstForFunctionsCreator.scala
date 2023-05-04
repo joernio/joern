@@ -302,6 +302,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val functionTypeAndTypeDeclAst =
       createFunctionTypeAndTypeDeclAst(
+        func,
         methodNode_,
         methodAstParentStack.head,
         methodName,
@@ -403,6 +404,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val functionTypeAndTypeDeclAst =
       createFunctionTypeAndTypeDeclAst(
+        func,
         methodNode_,
         methodAstParentStack.head,
         methodName,

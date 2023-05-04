@@ -6,8 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewJumpTarget,
   NewMethodParameterIn,
   NewModifier,
-  NewNamespaceBlock,
-  NewTypeDecl
+  NewNamespaceBlock
 }
 
 object Nodes {
@@ -89,27 +88,6 @@ object Nodes {
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(typeFullName.getOrElse("ANY"))
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  def typeDeclNode(
-    name: String,
-    fullName: String,
-    fileName: String,
-    inheritsFromFullNames: collection.Seq[String],
-    aliasTypeFullName: Option[String] = None,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewTypeDecl = {
-    NewTypeDecl()
-      .code(name)
-      .name(name)
-      .fullName(fullName)
-      .filename(fileName)
-      .inheritsFromTypeFullName(inheritsFromFullNames)
-      .aliasTypeFullName(aliasTypeFullName)
-      .isExternal(false)
       .lineNumber(line)
       .columnNumber(column)
   }

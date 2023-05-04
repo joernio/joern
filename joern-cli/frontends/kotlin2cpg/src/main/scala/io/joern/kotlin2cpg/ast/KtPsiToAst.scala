@@ -112,13 +112,12 @@ trait KtPsiToAst {
 
   def astForTypeAlias(typeAlias: KtTypeAlias)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val node = typeDeclNode(
+      typeAlias,
       typeAlias.getName,
       registerType(typeInfoProvider.fullName(typeAlias, TypeConstants.any)),
       relativizedPath,
       Seq(),
-      Option(registerType(typeInfoProvider.aliasTypeFullName(typeAlias, TypeConstants.any))),
-      line(typeAlias),
-      column(typeAlias)
+      Option(registerType(typeInfoProvider.aliasTypeFullName(typeAlias, TypeConstants.any)))
     )
     Ast(node)
   }
@@ -219,15 +218,7 @@ trait KtPsiToAst {
 
     val baseTypeFullNames    = typeInfoProvider.inheritanceTypes(ktClass, explicitBaseTypeFullNames)
     val outBaseTypeFullNames = Option(baseTypeFullNames).filter(_.nonEmpty).getOrElse(Seq(TypeConstants.javaLangObject))
-    val typeDecl = typeDeclNode(
-      className,
-      classFullName,
-      relativizedPath,
-      outBaseTypeFullNames,
-      None,
-      line(ktClass),
-      column(ktClass)
-    )
+    val typeDecl = typeDeclNode(ktClass, className, classFullName, relativizedPath, outBaseTypeFullNames, None)
     scope.pushNewScope(typeDecl)
 
     val primaryCtor       = ktClass.getPrimaryConstructor
@@ -588,10 +579,12 @@ trait KtPsiToAst {
       withArgumentIndex(methodRefNode(expr, expr.getText, fullName, lambdaTypeDeclFullName), argIdx)
 
     val lambdaTypeDecl = typeDeclNode(
+      expr,
       Constants.lambdaTypeDeclName,
       lambdaTypeDeclFullName,
       relativizedPath,
-      Seq(registerType(s"${TypeConstants.kotlinFunctionXPrefix}${expr.getValueParameters.size}"))
+      Seq(registerType(s"${TypeConstants.kotlinFunctionXPrefix}${expr.getValueParameters.size}")),
+      None
     )
 
     val lambdaBinding = newBindingNode(Constants.lambdaBindingName, signature, lambdaMethodNode.fullName)

@@ -29,7 +29,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
       val astParentType     = methodAstParentStack.head.label
       val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
-      val typeDeclNode = newTypeDeclNode(
+      val typeDeclNode_ = typeDeclNode(
         node,
         normalizedName,
         normalizedFullName,
@@ -38,8 +38,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
         astParentType,
         astParentFullName
       )
-      Ast.storeInDiffGraph(Ast(typeDeclNode), diffGraph)
-      typeDeclNode
+      Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
+      typeDeclNode_
     }
 
     method.astParentFullName = parentNode.fullName
