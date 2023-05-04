@@ -3,9 +3,7 @@ package io.joern.kotlin2cpg.ast
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewCall,
-  NewIdentifier,
   NewJumpTarget,
-  NewMethod,
   NewMethodParameterIn,
   NewModifier,
   NewNamespaceBlock,
@@ -63,29 +61,6 @@ object Nodes {
       .typeFullName(typeFullName)
       .lineNumber(line)
       .columnNumber(column)
-  }
-
-  def methodNode(
-    name: String,
-    fullName: String,
-    signature: String,
-    fileName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None,
-    lineEnd: Option[Integer] = None,
-    columnEnd: Option[Integer] = None
-  ): NewMethod = {
-    NewMethod()
-      .code(name)
-      .name(name)
-      .fullName(fullName)
-      .signature(signature)
-      .filename(fileName)
-      .isExternal(false)
-      .lineNumber(line)
-      .columnNumber(column)
-      .lineNumberEnd(lineEnd)
-      .columnNumberEnd(columnEnd)
   }
 
   def modifierNode(_type: String): NewModifier = {
