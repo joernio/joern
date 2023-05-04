@@ -661,4 +661,21 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     def snk = cpg.identifier("sink")
     snk.reachableByFlows(src) should have size 1
   }
+
+  "Flow from a module-level literal to a call captured by a closure" in {
+    val cpg = code("""
+        |import axios from 'axios';
+        |import { User } from './user';
+        |
+        |const API_Endpoint = "https://test-api-service.com";
+        |
+        |export const createUser = (user: User) => {
+        |  return axios.post(API_Endpoint + "/user", user);
+        |};
+        |""".stripMargin)
+
+    val source = cpg.literal(".*https://test-api-service.com.*").l
+    val sinks  = cpg.call.code("axios.post\\(.*").l
+    sinks.reachableBy(source).size shouldBe 1
+  }
 }

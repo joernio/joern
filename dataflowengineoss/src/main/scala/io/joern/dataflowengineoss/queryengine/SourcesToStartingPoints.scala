@@ -169,11 +169,13 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       .or(
         _.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"),
         // in language such as Python, where assignments for members can be directly under a type decl
-        _.method.typeDecl.where(_.member)
+        _.method.typeDecl
       )
       .target
       .flatMap {
-        case identifier: Identifier if lit.method.typeDecl.member.name.toSet.contains(identifier.name) =>
+        case identifier: Identifier
+            // If these are the same, then the parent method is the module-level type
+            if Option(identifier.method.fullName) == identifier.method.typeDecl.fullName.headOption =>
           List(identifier)
         case call: Call if call.name == Operators.fieldAccess => call.ast.isFieldIdentifier.l
         case _                                                => List[Expression]()
