@@ -66,7 +66,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     })
     // We want to know if the import is local since if an external name is used to match internal methods we may have
     // false paths.
-    val isLocalImport = i.importedEntity.exists(_.matches("^[.]+\\/?.*"))
+    val isLocalImport = i.importedEntity.exists(_.matches("^[.]+/?.*"))
     // TODO: At times there is an operation inside of a require, e.g. path.resolve(__dirname + "/../config/env/all.js")
     //  this tries to recover the string but does not perform string constant propagation
     val entity = if (matcher.find()) matcher.group(1) else rawEntity
