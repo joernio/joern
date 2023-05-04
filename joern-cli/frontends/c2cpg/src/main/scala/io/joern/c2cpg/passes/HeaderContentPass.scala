@@ -2,6 +2,7 @@ package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
+import io.joern.c2cpg.Config
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
@@ -13,10 +14,10 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import overflowdb.traversal.toNodeTraversal
 
-class HeaderContentPass(cpg: Cpg) extends CpgPass(cpg) {
+class HeaderContentPass(config: Config, cpg: Cpg) extends CpgPass(cpg) {
 
   private val systemIncludePaths =
-    IncludeAutoDiscovery.discoverIncludePathsC() ++ IncludeAutoDiscovery.discoverIncludePathsCPP()
+    IncludeAutoDiscovery.discoverIncludePathsC(config) ++ IncludeAutoDiscovery.discoverIncludePathsCPP(config)
 
   private val filename: String   = "<includes>"
   private val globalName: String = NamespaceTraversal.globalNamespaceName

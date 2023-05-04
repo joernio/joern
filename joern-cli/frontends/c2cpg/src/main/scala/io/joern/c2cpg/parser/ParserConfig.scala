@@ -12,8 +12,8 @@ object ParserConfig {
 
   def fromConfig(config: Config): ParserConfig = ParserConfig(
     config.includePaths.map(Paths.get(_).toAbsolutePath),
-    IncludeAutoDiscovery.discoverIncludePathsC(),
-    IncludeAutoDiscovery.discoverIncludePathsCPP(),
+    IncludeAutoDiscovery.discoverIncludePathsC(config),
+    IncludeAutoDiscovery.discoverIncludePathsCPP(config),
     config.defines.map {
       case define if define.contains("=") =>
         val s = define.split("=")

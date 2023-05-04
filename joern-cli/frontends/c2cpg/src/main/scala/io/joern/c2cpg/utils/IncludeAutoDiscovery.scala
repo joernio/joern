@@ -1,5 +1,6 @@
 package io.joern.c2cpg.utils
 
+import io.joern.c2cpg.Config
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Path, Paths}
@@ -63,10 +64,10 @@ object IncludeAutoDiscovery {
       Set.empty
   }
 
-  def discoverIncludePathsC(): Set[Path] = {
-    if (systemIncludePathsC.nonEmpty) {
+  def discoverIncludePathsC(config: Config): Set[Path] = {
+    if (config.includePathsAutoDiscovery && systemIncludePathsC.nonEmpty) {
       systemIncludePathsC
-    } else if (systemIncludePathsC.isEmpty && gccAvailable()) {
+    } else if (config.includePathsAutoDiscovery && systemIncludePathsC.isEmpty && gccAvailable()) {
       val includePathsC = discoverPaths(C_INCLUDE_COMMAND)
       if (includePathsC.nonEmpty) {
         logger.info(s"Using the following C system include paths:${includePathsC
@@ -79,10 +80,10 @@ object IncludeAutoDiscovery {
     }
   }
 
-  def discoverIncludePathsCPP(): Set[Path] = {
-    if (systemIncludePathsCPP.nonEmpty) {
+  def discoverIncludePathsCPP(config: Config): Set[Path] = {
+    if (config.includePathsAutoDiscovery && systemIncludePathsCPP.nonEmpty) {
       systemIncludePathsCPP
-    } else if (systemIncludePathsCPP.isEmpty && gccAvailable()) {
+    } else if (config.includePathsAutoDiscovery && systemIncludePathsCPP.isEmpty && gccAvailable()) {
       val includePathsCPP = discoverPaths(CPP_INCLUDE_COMMAND)
       if (includePathsCPP.nonEmpty) {
         logger.info(s"Using the following CPP system include paths:${includePathsCPP

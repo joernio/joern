@@ -19,7 +19,8 @@ final case class Config(
   includeComments: Boolean = false,
   logProblems: Boolean = false,
   logPreprocessor: Boolean = false,
-  printIfDefsOnly: Boolean = false
+  printIfDefsOnly: Boolean = false,
+  includePathsAutoDiscovery: Boolean = true
 ) extends X2CpgConfig[Config] {
 
   def createPathForIgnore(ignore: String): String = {
@@ -71,7 +72,7 @@ private object Frontend {
         .action((incl, c) => c.copy(includePaths = c.includePaths + incl)),
       opt[Unit]("no-include-auto-discovery")
         .text("disables auto discovery of system header include paths")
-        .hidden(),
+        .action((_, c) => c.copy(includePathsAutoDiscovery = false)),
       opt[Unit]("with-include-auto-discovery")
         .text("enables auto discovery of system header include paths")
         .hidden(), // deprecated, its the default
