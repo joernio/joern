@@ -7,13 +7,17 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Global
 
 import scala.collection.mutable
-
 import scala.jdk.CollectionConverters._
 
 object CGlobal extends Global {
 
   private val headerAstCache: mutable.HashMap[String, mutable.HashSet[(Int, Int)]] =
     mutable.HashMap.empty
+
+  val headerFileFullNameToPostfix: mutable.HashMap[String, Int] =
+    mutable.HashMap.empty
+
+  var usedVariablePostfix: Int = 0
 
   def headerFiles: Set[String] = headerAstCache.keySet.toSet
 
@@ -26,6 +30,7 @@ object CGlobal extends Global {
   def shouldBeCleared(): Boolean = {
     if (headerAstCache.nonEmpty) {
       headerAstCache.clear()
+      headerFileFullNameToPostfix.clear()
       true
     } else {
       false

@@ -35,8 +35,13 @@ trait AstForTypesCreator { this: AstCreator =>
 
   private def astForNamespaceDefinition(namespaceDefinition: ICPPASTNamespaceDefinition): Ast = {
     val (name, fullname) =
-      uniqueName("namespace", namespaceDefinition.getName.getLastName.toString, fullName(namespaceDefinition))
-    val code         = s"namespace $fullname"
+      uniqueName(
+        "namespace",
+        namespaceDefinition.getName.getLastName.toString,
+        fullName(namespaceDefinition),
+        Some(namespaceDefinition)
+      )
+    val code         = nodeSignature(namespaceDefinition)
     val cpgNamespace = newNamespaceBlockNode(namespaceDefinition, name, fullname, code, fileName(namespaceDefinition))
     scope.pushNewScope(cpgNamespace)
 
@@ -58,7 +63,7 @@ trait AstForTypesCreator { this: AstCreator =>
       usingDeclarationMappings.put(name, fullname)
     }
 
-    val code         = s"namespace $name = $fullname"
+    val code         = nodeSignature(namespaceAlias)
     val cpgNamespace = newNamespaceBlockNode(namespaceAlias, name, fullname, code, fileName(namespaceAlias))
     Ast(cpgNamespace)
   }
@@ -344,7 +349,12 @@ trait AstForTypesCreator { this: AstCreator =>
     val lineNumber   = line(typeSpecifier)
     val columnNumber = column(typeSpecifier)
     val (name, fullname) =
-      uniqueName("enum", ASTStringUtil.getSimpleName(typeSpecifier.getName), fullName(typeSpecifier))
+      uniqueName(
+        "enum",
+        ASTStringUtil.getSimpleName(typeSpecifier.getName),
+        fullName(typeSpecifier),
+        Some(typeSpecifier)
+      )
     val typeDecl = newTypeDeclNode(typeSpecifier, name, registerType(fullname), filename, nodeSignature(typeSpecifier))
 
     methodAstParentStack.push(typeDecl)

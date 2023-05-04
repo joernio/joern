@@ -1,6 +1,7 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.datastructures.CGlobal
+import io.joern.c2cpg.parser.FileDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
@@ -17,8 +18,6 @@ import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIdExpression, CPPFunction}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPEvaluation
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalCompositeAccess
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFieldReference
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
@@ -45,16 +44,36 @@ trait AstCreatorHelper { this: AstCreator =>
 
   import AstCreatorHelper._
 
-  private var usedNames: Int = 0
+  private var usedVariablePostfix: Int = 0
 
   private val IncludeKeyword = "include"
 
-  protected def uniqueName(target: String, name: String, fullName: String): (String, String) = {
+  protected def uniqueName(
+    target: String,
+    name: String,
+    fullName: String,
+    node: Option[IASTNode] = None
+  ): (String, String) = {
     if (name.isEmpty && (fullName.isEmpty || fullName.endsWith("."))) {
-      val newName     = s"anonymous_${target}_$usedNames"
-      val newFullName = s"${fullName}anonymous_${target}_$usedNames"
-      usedNames = usedNames + 1
-      (newName, newFullName)
+      val fromFilename = node.map(fileName).getOrElse(filename)
+      if (FileDefaults.isHeaderFile(fromFilename) && filename != fromFilename) {
+        CGlobal.synchronized {
+          val lineNumber        = node.flatMap(line).getOrElse(-1)
+          val columnNumber      = node.flatMap(column).getOrElse(-1)
+          val location          = s"$fromFilename:$lineNumber:$columnNumber"
+          val postfix           = CGlobal.headerFileFullNameToPostfix.getOrElse(location, CGlobal.usedVariablePostfix)
+          val name              = s"anonymous_${target}_$postfix"
+          val resultingFullName = s"$fullName$name"
+          CGlobal.usedVariablePostfix = CGlobal.usedVariablePostfix + 1
+          CGlobal.headerFileFullNameToPostfix.put(location, postfix)
+          (name, resultingFullName)
+        }
+      } else {
+        val name              = s"anonymous_${target}_$usedVariablePostfix"
+        val resultingFullName = s"$fullName$name"
+        usedVariablePostfix = usedVariablePostfix + 1
+        (name, resultingFullName)
+      }
     } else {
       (name, fullName)
     }
@@ -163,6 +182,8 @@ trait AstCreatorHelper { this: AstCreator =>
       }
     StringUtils.normalizeSpace(tpe) match {
       case "" => Defines.anyTypeName
+      case t if t.contains(" ->") && t.contains("}::") =>
+        fixQualifiedName(t.substring(t.indexOf("}::") + 3, t.indexOf(" ->")))
       case t if t.contains(" ->") =>
         fixQualifiedName(t.substring(0, t.indexOf(" ->")))
       case t if t.contains("?") => Defines.anyTypeName
@@ -305,7 +326,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).nonEmpty =>
         s"${fullName(namespace.getParent)}.${ASTStringUtil.getSimpleName(namespace.getName)}"
       case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).isEmpty =>
-        s"${fullName(namespace.getParent)}.${uniqueName("namespace", "", "")._1}"
+        s"${fullName(namespace.getParent)}.${uniqueName("namespace", "", "", Some(node))._1}"
       case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).nonEmpty =>
         s"${fullName(cppClass.getParent)}.${ASTStringUtil.getSimpleName(cppClass.getName)}"
       case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).isEmpty =>
@@ -313,8 +334,8 @@ trait AstCreatorHelper { this: AstCreator =>
           case decl: IASTSimpleDeclaration =>
             decl.getDeclarators.headOption
               .map(n => ASTStringUtil.getSimpleName(n.getName))
-              .getOrElse(uniqueName("composite_type", "", "")._1)
-          case _ => uniqueName("composite_type", "", "")._1
+              .getOrElse(uniqueName("composite_type", "", "", Some(node))._1)
+          case _ => uniqueName("composite_type", "", "", Some(node))._1
         }
         s"${fullName(cppClass.getParent)}.$name"
       case enumSpecifier: IASTEnumerationSpecifier =>

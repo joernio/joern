@@ -55,6 +55,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     case defn: IASTFunctionDefinition   => parameters(defn.getDeclarator)
     case lambdaExpression: ICPPASTLambdaExpression => parameters(lambdaExpression.getDeclarator)
     case knr: ICASTKnRFunctionDeclarator           => knr.getParameterDeclarations.toIndexedSeq
+    case _: IASTDeclarator                         => Seq.empty
     case other if other != null                    => notHandledYet(other); Seq.empty
     case null                                      => Seq.empty
   }
@@ -97,7 +98,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         }
       case null => Defines.anyTypeName
     }
-    val (name, fullname) = uniqueName("lambda", "", fullName(lambdaExpression))
+    val (name, fullname) = uniqueName("lambda", "", fullName(lambdaExpression), Some(lambdaExpression))
     val signature        = s"$returnType $fullname ${parameterListSignature(lambdaExpression)}"
     val code             = nodeSignature(lambdaExpression)
     val methodNode = newMethodNode(
@@ -208,7 +209,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         (
           s.getDeclarators.headOption
             .map(n => ASTStringUtil.getSimpleName(n.getName))
-            .getOrElse(uniqueName("parameter", "", "")._1),
+            .getOrElse(uniqueName("parameter", "", "", Some(parameter))._1),
           nodeSignature(s),
           cleanType(typeForDeclSpecifier(s)),
           false
