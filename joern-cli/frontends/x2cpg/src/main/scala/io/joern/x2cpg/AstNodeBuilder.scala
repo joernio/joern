@@ -8,11 +8,13 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewLiteral,
   NewLocal,
   NewMember,
+  NewMethod,
   NewMethodRef,
   NewReturn,
   NewTypeRef,
   NewUnknown
 }
+import org.apache.commons.lang.StringUtils
 
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def line(node: Node): Option[Integer]
@@ -139,5 +141,36 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
       .columnNumber(column(node))
+  }
+
+  def methodNode(node: Node, name: String, fullName: String, signature: String, fileName: String): NewMethod = {
+    methodNode(node, name, name, fullName, Some(signature), fileName)
+  }
+
+  protected def methodNode(
+    node: Node,
+    name: String,
+    code: String,
+    fullName: String,
+    signature: Option[String],
+    fileName: String,
+    astParentType: Option[String] = None,
+    astParentFullName: Option[String] = None
+  ): NewMethod = {
+    val node_ =
+      NewMethod()
+        .name(StringUtils.normalizeSpace(name))
+        .code(code)
+        .fullName(StringUtils.normalizeSpace(fullName))
+        .filename(fileName)
+        .astParentType(astParentType.getOrElse("<empty>"))
+        .astParentFullName(astParentFullName.getOrElse("<empty>"))
+        .isExternal(false)
+        .lineNumber(line(node))
+        .columnNumber(column(node))
+        .lineNumberEnd(lineEnd(node))
+        .columnNumberEnd(columnEnd(node))
+    signature.foreach { s => node_.signature(StringUtils.normalizeSpace(s)) }
+    node_
   }
 }

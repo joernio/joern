@@ -147,7 +147,7 @@ trait KtPsiToAst {
       val signature     = s"$typeFullName()"
       val fullName      = s"${typeDecl.fullName}.$componentName:$signature"
       methodAst(
-        methodNode(componentName, fullName, signature, relativizedPath),
+        methodNode(valueParam, componentName, fullName, signature, relativizedPath),
         Seq(Ast(thisParam)),
         methodBlockAst,
         newMethodReturnNode(typeFullName, None, None, None)
@@ -164,7 +164,7 @@ trait KtPsiToAst {
       val defaultFullName       = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
       val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ctor, (defaultFullName, defaultSignature))
       val secondaryCtorMethodNode =
-        methodNode(Constants.init, fullName, signature, relativizedPath, line(ctor), column(ctor))
+        methodNode(ctor, Constants.init, fullName, signature, relativizedPath)
       scope.pushNewScope(secondaryCtorMethodNode)
 
       val ctorThisParam = NodeBuilders.newThisParameterNode(classFullName, Seq(classFullName))
@@ -230,22 +230,15 @@ trait KtPsiToAst {
     )
     scope.pushNewScope(typeDecl)
 
+    val primaryCtor       = ktClass.getPrimaryConstructor
     val constructorParams = ktClass.getPrimaryConstructorParameters.asScala.toList
-    val defaultSignature = Option(ktClass.getPrimaryConstructor)
+    val defaultSignature = Option(primaryCtor)
       .map { _ => typeInfoProvider.anySignature(constructorParams) }
       .getOrElse(s"${TypeConstants.void}()")
-    val defaultFullName = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
-    val (fullName, signature) =
-      typeInfoProvider.fullNameWithSignature(ktClass.getPrimaryConstructor, (defaultFullName, defaultSignature))
-    val primaryCtorMethodNode = methodNode(
-      TypeConstants.initPrefix,
-      fullName,
-      signature,
-      relativizedPath,
-      line(ktClass.getPrimaryConstructor),
-      column(ktClass.getPrimaryConstructor)
-    )
-    val ctorThisParam = NodeBuilders.newThisParameterNode(classFullName, Seq(classFullName))
+    val defaultFullName       = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
+    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(primaryCtor, (defaultFullName, defaultSignature))
+    val primaryCtorMethodNode = methodNode(primaryCtor, TypeConstants.initPrefix, fullName, signature, relativizedPath)
+    val ctorThisParam         = NodeBuilders.newThisParameterNode(classFullName, Seq(classFullName))
     scope.addToScope(Constants.this_, ctorThisParam)
 
     val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++ withIndex(constructorParams) { (p, idx) =>
@@ -374,16 +367,7 @@ trait KtPsiToAst {
     implicit typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ktFn, ("", ""))
-    val _methodNode = methodNode(
-      ktFn.getName,
-      fullName,
-      signature,
-      relativizedPath,
-      line(ktFn),
-      column(ktFn),
-      lineEnd(ktFn),
-      columnEnd(ktFn)
-    )
+    val _methodNode           = methodNode(ktFn, ktFn.getName, fullName, signature, relativizedPath)
     scope.pushNewScope(_methodNode)
     methodAstParentStack.push(_methodNode)
 
@@ -539,8 +523,7 @@ trait KtPsiToAst {
 
   def astForLambda(expr: KtLambdaExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, lambdaKeyPool)
-    val lambdaMethodNode =
-      methodNode(Constants.lambdaName, fullName, signature, relativizedPath, line(expr), column(expr))
+    val lambdaMethodNode      = methodNode(expr, Constants.lambdaName, fullName, signature, relativizedPath)
 
     case class NodeContext(node: NewNode, name: String, typeFullName: String)
     val closureBindingEntriesForCaptured = scope

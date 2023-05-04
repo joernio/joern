@@ -65,28 +65,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column(node))
   }
 
-  protected def newMethodNode(
-    node: IASTNode,
-    name: String,
-    code: String,
-    fullName: String,
-    fileName: String,
-    astParentType: Option[String] = None,
-    astParentFullName: Option[String] = None
-  ): NewMethod = {
-    NewMethod()
-      .name(name)
-      .code(code)
-      .fullName(fullName)
-      .filename(fileName)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .lineNumberEnd(lineEnd(node))
-      .columnNumberEnd(columnEnd(node))
-      .astParentType(astParentType.getOrElse(Defines.empty))
-      .astParentFullName(astParentFullName.getOrElse(Defines.empty))
-  }
-
   protected def newCallNode(
     node: IASTNode,
     name: String,

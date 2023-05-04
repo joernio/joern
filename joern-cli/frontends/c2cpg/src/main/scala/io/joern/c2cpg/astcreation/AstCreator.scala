@@ -72,7 +72,7 @@ class AstCreator(
     methodAstParentStack.push(fakeGlobalTypeDecl)
 
     val fakeGlobalMethod =
-      newMethodNode(iASTTranslationUnit, name, name, fullName, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
+      methodNode(iASTTranslationUnit, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewScope(fakeGlobalMethod)
 

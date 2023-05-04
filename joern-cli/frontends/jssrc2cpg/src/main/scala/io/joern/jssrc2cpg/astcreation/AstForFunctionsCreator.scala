@@ -282,9 +282,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
     methodBlockContent: List[Ast] = List.empty
   ): NewMethod = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
-    val methodNode                   = createMethodNode(methodName, methodFullName, func)
-    val virtualModifierNode          = NewModifier().modifierType(ModifierTypes.VIRTUAL)
-    methodAstParentStack.push(methodNode)
+    val methodNode_         = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
+    val virtualModifierNode = NewModifier().modifierType(ModifierTypes.VIRTUAL)
+    methodAstParentStack.push(methodNode_)
 
     val thisNode =
       createParameterInNode("this", "this", 0, isVariadic = false, line = func.lineNumber, column = func.columnNumber)
@@ -302,7 +302,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val functionTypeAndTypeDeclAst =
       createFunctionTypeAndTypeDeclAst(
-        methodNode,
+        methodNode_,
         methodAstParentStack.head,
         methodName,
         methodFullName,
@@ -310,12 +310,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
       )
 
     val mAst = if (methodBlockContent.isEmpty) {
-      methodStubAst(methodNode, thisNode +: paramNodes, methodReturnNode, List(virtualModifierNode))
+      methodStubAst(methodNode_, thisNode +: paramNodes, methodReturnNode, List(virtualModifierNode))
     } else {
       setArgumentIndices(methodBlockContent)
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
       methodAstWithAnnotations(
-        methodNode,
+        methodNode_,
         (thisNode +: paramNodes).map(Ast(_)),
         bodyAst,
         methodReturnNode,
@@ -325,9 +325,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     Ast.storeInDiffGraph(mAst, diffGraph)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
-    diffGraph.addEdge(methodAstParentStack.head, methodNode, EdgeTypes.AST)
+    diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
 
-    methodNode
+    methodNode_
   }
 
   protected def createMethodAstAndNode(
@@ -354,10 +354,10 @@ trait AstForFunctionsCreator { this: AstCreator =>
       Ast()
     }
 
-    val methodNode          = createMethodNode(methodName, methodFullName, func)
+    val methodNode_         = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
     val virtualModifierNode = NewModifier().modifierType(ModifierTypes.VIRTUAL)
 
-    methodAstParentStack.push(methodNode)
+    methodAstParentStack.push(methodNode_)
 
     val bodyJson                  = func.json("body")
     val bodyNodeInfo              = createBabelNodeInfo(bodyJson)
@@ -403,7 +403,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val functionTypeAndTypeDeclAst =
       createFunctionTypeAndTypeDeclAst(
-        methodNode,
+        methodNode_,
         methodAstParentStack.head,
         methodName,
         methodFullName,
@@ -412,7 +412,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val mAst =
       methodAstWithAnnotations(
-        methodNode,
+        methodNode_,
         (thisNode +: paramNodes).map(Ast(_)),
         blockAst(blockNode, methodBlockChildren),
         methodReturnNode,
@@ -421,13 +421,13 @@ trait AstForFunctionsCreator { this: AstCreator =>
       )
     Ast.storeInDiffGraph(mAst, diffGraph)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
-    diffGraph.addEdge(methodAstParentStack.head, methodNode, EdgeTypes.AST)
+    diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
 
     methodRefNode_ match {
       case Some(ref) if callAst.nodes.isEmpty =>
-        MethodAst(Ast(ref), methodNode, mAst)
+        MethodAst(Ast(ref), methodNode_, mAst)
       case _ =>
-        MethodAst(callAst, methodNode, mAst)
+        MethodAst(callAst, methodNode_, mAst)
     }
   }
 
