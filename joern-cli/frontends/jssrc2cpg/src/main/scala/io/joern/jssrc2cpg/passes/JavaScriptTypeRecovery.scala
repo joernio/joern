@@ -3,8 +3,8 @@ package io.joern.jssrc2cpg.passes
 import io.joern.x2cpg.Defines.ConstructorMethodName
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -53,6 +53,32 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     !name.isBlank && (name.charAt(0).isUpper || name.endsWith("factory"))
 
   lazy private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
+
+  override protected def prepopulateSymbolTable(): Unit = {
+    super.prepopulateSymbolTable()
+    cu.ast.isMethod.foreach(f => symbolTable.put(CallAlias(f.name, Option("this")), Set(f.fullName)))
+    (cu.ast.isParameter.whereNot(_.nameExact("this")) ++ cu.ast.isMethod.methodReturn).filter(hasTypes).foreach { p =>
+      val resolvedHints = getTypes(p)
+        .flatMap { t =>
+          t.split("\\.").headOption match {
+            case Some(base) if symbolTable.contains(LocalVar(base)) =>
+              symbolTable.get(LocalVar(base)).map(x => x + t.stripPrefix(base))
+            case Some(base) => Set(base)
+            case None       => Set(t)
+          }
+        }
+        .map(_.replaceAll("\\.", pathSep.toString))
+      p match {
+        case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
+        case _: MethodReturn if resolvedHints.sizeIs == 1 =>
+          builder.setNodeProperty(p, PropertyNames.TYPE_FULL_NAME, resolvedHints.head)
+        case _: MethodReturn =>
+          builder.setNodeProperty(p, PropertyNames.TYPE_FULL_NAME, Defines.Any)
+          builder.setNodeProperty(p, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, resolvedHints)
+        case _ =>
+      }
+    }
+  }
 
   override protected def visitImport(i: Import): Unit = for {
     rawEntity <- i.importedEntity.map(_.stripPrefix("./"))
@@ -129,7 +155,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
               .isIdentifier
               .name(b.name)
               .flatMap(i => i.typeFullName +: i.dynamicTypeHintFullName)
-              .filterNot(_ == "ANY")
+              .filterNot(_ == Defines.Any)
               .toSet
             symbolTable.append(LocalVar(alias), typs)
           case ::(x: Call, ::(b: MethodRef, _)) =>
@@ -168,11 +194,6 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def isField(i: Identifier): Boolean =
     state.isFieldCache.getOrElseUpdate(i.id(), exportedIdentifiers.contains(i.name) || super.isField(i))
-
-  override protected def prepopulateSymbolTable(): Unit = {
-    super.prepopulateSymbolTable()
-    cu.ast.isMethod.foreach(f => symbolTable.put(CallAlias(f.name, Option("this")), Set(f.fullName)))
-  }
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {
@@ -252,7 +273,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     // often there are "this" identifiers with type hints but this can be set to a type hint if they meet the criteria
     cu.ast.isIdentifier
       .nameExact("this")
-      .where(_.typeFullName("ANY"))
+      .where(_.typeFullNameExact(Defines.Any))
       .filterNot(_.dynamicTypeHintFullName.isEmpty)
       .foreach(setTypeFromTypeHints)
   }
