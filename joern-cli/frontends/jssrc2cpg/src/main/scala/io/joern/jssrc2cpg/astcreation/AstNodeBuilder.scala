@@ -10,19 +10,6 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstNodeBuilder { this: AstCreator =>
-
-  protected def createAnnotationNode(annotation: BabelNodeInfo, name: String, fullName: String): NewAnnotation = {
-    val code         = annotation.code
-    val lineNumber   = annotation.lineNumber
-    val columnNumber = annotation.columnNumber
-    NewAnnotation()
-      .code(code)
-      .name(name)
-      .fullName(fullName)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
-  }
-
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
     newMethodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
   }

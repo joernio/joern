@@ -1,7 +1,7 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewAnnotation,
   NewBlock,
   NewCall,
   NewControlStructure,
@@ -30,6 +30,15 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     NewUnknown()
       .parserTypeName(node.getClass.getSimpleName)
       .code(code)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
+
+  protected def annotationNode(node: Node, code: String, name: String, fullName: String): NewAnnotation = {
+    NewAnnotation()
+      .code(code)
+      .name(name)
+      .fullName(fullName)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
