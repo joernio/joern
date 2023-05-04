@@ -11,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethod,
   NewMethodRef,
   NewReturn,
+  NewTypeDecl,
   NewTypeRef,
   NewUnknown
 }
@@ -76,6 +77,41 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     NewTypeRef()
       .code(code)
       .typeFullName(typeFullName)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
+
+  def typeDeclNode(
+    node: Node,
+    name: String,
+    fullName: String,
+    fileName: String,
+    inheritsFrom: Seq[String],
+    alias: Option[String]
+  ): NewTypeDecl =
+    typeDeclNode(node, name, fullName, fileName, name, "", "", inheritsFrom, alias)
+
+  protected def typeDeclNode(
+    node: Node,
+    name: String,
+    fullName: String,
+    filename: String,
+    code: String,
+    astParentType: String = "",
+    astParentFullName: String = "",
+    inherits: Seq[String] = Seq.empty,
+    alias: Option[String] = None
+  ): NewTypeDecl = {
+    NewTypeDecl()
+      .name(name)
+      .fullName(fullName)
+      .code(code)
+      .isExternal(false)
+      .filename(filename)
+      .astParentType(astParentType)
+      .astParentFullName(astParentFullName)
+      .inheritsFromTypeFullName(inherits)
+      .aliasTypeFullName(alias)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }

@@ -68,7 +68,7 @@ class AstCreator(
     val name     = NamespaceTraversal.globalNamespaceName
 
     val fakeGlobalTypeDecl =
-      newTypeDeclNode(iASTTranslationUnit, name, fullName, filename, name, NodeTypes.NAMESPACE_BLOCK, fullName)
+      typeDeclNode(iASTTranslationUnit, name, fullName, filename, name, NodeTypes.NAMESPACE_BLOCK, fullName)
     methodAstParentStack.push(fakeGlobalTypeDecl)
 
     val fakeGlobalMethod =

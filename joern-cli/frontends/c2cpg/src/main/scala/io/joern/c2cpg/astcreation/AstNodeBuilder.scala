@@ -98,30 +98,4 @@ trait AstNodeBuilder { this: AstCreator =>
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
-
-  protected def newTypeDeclNode(
-    node: IASTNode,
-    name: String,
-    fullName: String,
-    filename: String,
-    code: String,
-    astParentType: String = "",
-    astParentFullName: String = "",
-    inherits: Seq[String] = Seq.empty,
-    alias: Option[String] = None
-  ): NewTypeDecl = {
-    NewTypeDecl()
-      .name(name)
-      .fullName(fullName)
-      .code(code)
-      .isExternal(false)
-      .filename(filename)
-      .astParentType(astParentType)
-      .astParentFullName(astParentFullName)
-      .inheritsFromTypeFullName(inherits)
-      .aliasTypeFullName(alias)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-  }
-
 }
