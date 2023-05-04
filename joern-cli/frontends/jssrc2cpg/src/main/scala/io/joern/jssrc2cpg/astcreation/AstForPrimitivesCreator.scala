@@ -39,14 +39,9 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForSpreadOrRestElement(spreadElement: BabelNodeInfo, arg1Ast: Option[Ast] = None): Ast = {
     val ast = astForNodeWithFunctionReference(spreadElement.json("argument"))
-    val callNode = createCallNode(
-      spreadElement.code,
-      "<operator>.spread",
-      DispatchTypes.STATIC_DISPATCH,
-      spreadElement.lineNumber,
-      spreadElement.columnNumber
-    )
-    callAst(callNode, arg1Ast.toList :+ ast)
+    val callNode_ =
+      callNode(spreadElement, spreadElement.code, "<operator>.spread", DispatchTypes.STATIC_DISPATCH)
+    callAst(callNode_, arg1Ast.toList :+ ast)
   }
 
   protected def astForTemplateElement(templateElement: BabelNodeInfo): Ast =
@@ -87,14 +82,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       }
       val callCode = s"$callName${(argsCodes :+ s"\"${quasisTail("value")("raw").str}\"").mkString("(", ", ", ")")}"
       val templateCall =
-        createCallNode(
-          callCode,
-          callName,
-          DispatchTypes.STATIC_DISPATCH,
-          templateLiteral.lineNumber,
-          templateLiteral.columnNumber
-        )
-
+        callNode(templateLiteral, callCode, callName, DispatchTypes.STATIC_DISPATCH)
       val argumentAsts = expressions.zip(quasis).flatMap { case (expression, quasi) =>
         List(astForNodeWithFunctionReference(quasi), astForNodeWithFunctionReference(expression))
       }

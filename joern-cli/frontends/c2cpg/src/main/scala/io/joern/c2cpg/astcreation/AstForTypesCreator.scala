@@ -102,21 +102,23 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = init match {
     case i: IASTEqualsInitializer =>
       val operatorName = Operators.assignment
-      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
-      val left         = astForNode(declarator.getName)
-      val right        = astForNode(i.getInitializerClause)
-      callAst(callNode, List(left, right))
+      val callNode_ =
+        callNode(declarator, nodeSignature(declarator), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+      val left  = astForNode(declarator.getName)
+      val right = astForNode(i.getInitializerClause)
+      callAst(callNode_, List(left, right))
     case i: ICPPASTConstructorInitializer =>
-      val name     = ASTStringUtil.getSimpleName(declarator.getName)
-      val callNode = newCallNode(declarator, name, name, DispatchTypes.STATIC_DISPATCH)
-      val args     = i.getArguments.toList.map(x => astForNode(x))
-      callAst(callNode, args)
+      val name      = ASTStringUtil.getSimpleName(declarator.getName)
+      val callNode_ = callNode(declarator, nodeSignature(declarator), name, name, DispatchTypes.STATIC_DISPATCH)
+      val args      = i.getArguments.toList.map(x => astForNode(x))
+      callAst(callNode_, args)
     case i: IASTInitializerList =>
       val operatorName = Operators.assignment
-      val callNode     = newCallNode(declarator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
-      val left         = astForNode(declarator.getName)
-      val right        = astForNode(i)
-      callAst(callNode, List(left, right))
+      val callNode_ =
+        callNode(declarator, nodeSignature(declarator), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+      val left  = astForNode(declarator.getName)
+      val right = astForNode(i)
+      callAst(callNode_, List(left, right))
     case _ => astForNode(init)
   }
 
@@ -215,7 +217,7 @@ trait AstForTypesCreator { this: AstCreator =>
             astForInitializer(d, d.getInitializer)
           case arrayDecl: IASTArrayDeclarator =>
             val op           = Operators.arrayInitializer
-            val initCallNode = newCallNode(arrayDecl, op, op, DispatchTypes.STATIC_DISPATCH)
+            val initCallNode = callNode(arrayDecl, nodeSignature(arrayDecl), op, op, DispatchTypes.STATIC_DISPATCH)
             val initArgs =
               arrayDecl.getArrayModifiers.toList.filter(m => m.getConstantExpression != null).map(astForNode)
             callAst(initCallNode, initArgs)
@@ -327,15 +329,15 @@ trait AstForTypesCreator { this: AstCreator =>
 
     if (enumerator.getValue != null) {
       val operatorName = Operators.assignment
-      val callNode     = newCallNode(enumerator, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
-      val left         = astForNode(enumerator.getName)
-      val right        = astForNode(enumerator.getValue)
-      val ast          = callAst(callNode, List(left, right))
+      val callNode_ =
+        callNode(enumerator, nodeSignature(enumerator), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+      val left  = astForNode(enumerator.getName)
+      val right = astForNode(enumerator.getValue)
+      val ast   = callAst(callNode_, List(left, right))
       Seq(Ast(cpgMember), ast)
     } else {
       Seq(Ast(cpgMember))
     }
-
   }
 
   private def astsForEnum(typeSpecifier: IASTEnumerationSpecifier, decls: List[IASTDeclarator]): Seq[Ast] = {

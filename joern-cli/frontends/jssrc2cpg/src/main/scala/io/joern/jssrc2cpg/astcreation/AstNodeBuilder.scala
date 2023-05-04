@@ -1,6 +1,5 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.MethodScope
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg
@@ -8,7 +7,6 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstNodeBuilder { this: AstCreator =>
@@ -142,6 +140,13 @@ trait AstNodeBuilder { this: AstCreator =>
     val callNode  = createCallNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(testAst, trueAst, falseAst)
     callAst(callNode, arguments)
+  }
+
+  def callNode(node: BabelNodeInfo, code: String, name: String, dispatchType: String): NewCall = {
+    val fullName =
+      if (dispatchType == DispatchTypes.STATIC_DISPATCH) name
+      else x2cpg.Defines.DynamicCallUnknownFallName
+    callNode(node, code, name, fullName, dispatchType, None, Some(Defines.Any))
   }
 
   protected def createCallNode(

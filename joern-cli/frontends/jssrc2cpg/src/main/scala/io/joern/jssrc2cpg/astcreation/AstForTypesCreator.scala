@@ -153,16 +153,10 @@ trait AstForTypesCreator { this: AstCreator =>
     if (hasKey(tsEnumMember.json, "initializer")) {
       val lhsAst = astForNode(tsEnumMember.json("id"))
       val rhsAst = astForNodeWithFunctionReference(tsEnumMember.json("initializer"))
-      val callNode =
-        createCallNode(
-          tsEnumMember.code,
-          Operators.assignment,
-          DispatchTypes.STATIC_DISPATCH,
-          tsEnumMember.lineNumber,
-          tsEnumMember.columnNumber
-        )
+      val callNode_ =
+        callNode(tsEnumMember, tsEnumMember.code, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
       val argAsts = List(lhsAst, rhsAst)
-      Seq(callAst(callNode, argAsts), Ast(memberNode_))
+      Seq(callAst(callNode_, argAsts), Ast(memberNode_))
     } else {
       Seq(Ast(memberNode_))
     }
@@ -210,16 +204,10 @@ trait AstForTypesCreator { this: AstCreator =>
     if (hasKey(nodeInfo.json, "value") && !nodeInfo.json("value").isNull) {
       val lhsAst = astForNode(nodeInfo.json("key"))
       val rhsAst = astForNodeWithFunctionReference(nodeInfo.json("value"))
-      val callNode =
-        createCallNode(
-          nodeInfo.code,
-          Operators.assignment,
-          DispatchTypes.STATIC_DISPATCH,
-          nodeInfo.lineNumber,
-          nodeInfo.columnNumber
-        )
+      val callNode_ =
+        callNode(nodeInfo, nodeInfo.code, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
       val argAsts = List(lhsAst, rhsAst)
-      callAst(callNode, argAsts)
+      callAst(callNode_, argAsts)
     } else {
       Ast()
     }

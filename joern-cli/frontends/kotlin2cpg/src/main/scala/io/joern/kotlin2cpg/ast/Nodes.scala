@@ -5,27 +5,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewJumpTarget, N
 
 object Nodes {
 
-  def callNode(
-    code: String,
-    name: String,
-    methodFullName: String,
-    signature: String,
-    typeFullName: String,
-    dispatchType: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewCall = {
-    NewCall()
-      .code(code)
-      .name(name)
-      .methodFullName(methodFullName)
-      .signature(signature)
-      .dispatchType(dispatchType)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   def jumpTargetNode(
     code: String,
     name: String,
