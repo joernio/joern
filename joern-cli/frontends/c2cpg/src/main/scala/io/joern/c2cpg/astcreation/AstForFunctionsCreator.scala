@@ -98,7 +98,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         }
       case null => Defines.anyTypeName
     }
-    val (name, fullname) = uniqueName("lambda", "", fullName(lambdaExpression), Some(lambdaExpression))
+    val (name, fullname) = uniqueName("lambda", "", fullName(lambdaExpression))
     val signature        = s"$returnType $fullname ${parameterListSignature(lambdaExpression)}"
     val code             = nodeSignature(lambdaExpression)
     val methodNode = newMethodNode(
@@ -209,7 +209,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         (
           s.getDeclarators.headOption
             .map(n => ASTStringUtil.getSimpleName(n.getName))
-            .getOrElse(uniqueName("parameter", "", "", Some(parameter))._1),
+            .getOrElse(uniqueName("parameter", "", "")._1),
           nodeSignature(s),
           cleanType(typeForDeclSpecifier(s)),
           false

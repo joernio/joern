@@ -3,7 +3,6 @@ package io.joern.c2cpg.passes
 import better.files.File
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.AstCreator
-import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.joern.c2cpg.passes.AstCreationPass.InputFiles
 import io.joern.c2cpg.utils.{Report, TimeUtils}
@@ -39,11 +38,8 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
   private def sourceFiles: Set[String] =
     SourceFiles.determine(config.inputPath, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
 
-  private def headerFiles: Set[String] = {
-    val allHeaderFiles         = SourceFiles.determine(config.inputPath, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
-    val alreadySeenHeaderFiles = CGlobal.headerFiles.map(SourceFiles.toAbsolutePath(_, config.inputPath))
-    allHeaderFiles -- alreadySeenHeaderFiles
-  }
+  private def headerFiles: Set[String] =
+    SourceFiles.determine(config.inputPath, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
 
   private def isIgnoredByUserConfig(filePath: String): Boolean = {
     lazy val isInIgnoredFiles = config.ignoredFiles.exists {

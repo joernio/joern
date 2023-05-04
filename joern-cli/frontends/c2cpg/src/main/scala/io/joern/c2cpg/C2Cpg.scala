@@ -21,7 +21,7 @@ class C2Cpg extends X2CpgFrontend[Config] {
       new AstCreationPass(cpg, AstCreationPass.SourceFiles, config, report).createAndApply()
       new AstCreationPass(cpg, AstCreationPass.HeaderFiles, config, report).createAndApply()
       new TypeNodePass(CGlobal.typesSeen(), cpg).createAndApply()
-      new HeaderContentPass(cpg, config).createAndApply()
+      new HeaderContentPass(cpg).createAndApply()
       report.print()
     }
   }

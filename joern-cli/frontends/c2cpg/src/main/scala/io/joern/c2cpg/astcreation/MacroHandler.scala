@@ -122,10 +122,10 @@ trait MacroHandler { this: AstCreator =>
     * create a METHOD node with the correct location information.
     */
   private def fullName(macroDef: IASTPreprocessorMacroDefinition, argAsts: List[Ast]) = {
-    val name      = ASTStringUtil.getSimpleName(macroDef.getName)
-    val filename  = fileName(macroDef)
-    val lineNo    = line(macroDef).getOrElse(-1)
-    val lineNoEnd = lineEnd(macroDef).getOrElse(-1)
+    val name               = ASTStringUtil.getSimpleName(macroDef.getName)
+    val filename           = fileName(macroDef)
+    val lineNo: Integer    = line(macroDef).getOrElse(-1)
+    val lineNoEnd: Integer = lineEnd(macroDef).getOrElse(-1)
     s"$filename:$lineNo:$lineNoEnd:$name:${argAsts.size}"
   }
 

@@ -1,7 +1,6 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.datastructures.CGlobal
-import io.joern.c2cpg.parser.FileDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.Ast
@@ -48,32 +47,14 @@ trait AstCreatorHelper { this: AstCreator =>
 
   private val IncludeKeyword = "include"
 
-  protected def uniqueName(
-    target: String,
-    name: String,
-    fullName: String,
-    node: Option[IASTNode] = None
-  ): (String, String) = {
+  protected def isIncludedNode(node: IASTNode): Boolean = fileName(node) != filename
+
+  protected def uniqueName(target: String, name: String, fullName: String): (String, String) = {
     if (name.isEmpty && (fullName.isEmpty || fullName.endsWith("."))) {
-      val fromFilename = node.map(fileName).getOrElse(filename)
-      if (FileDefaults.isHeaderFile(fromFilename) && filename != fromFilename) {
-        CGlobal.synchronized {
-          val lineNumber        = node.flatMap(line).getOrElse(-1)
-          val columnNumber      = node.flatMap(column).getOrElse(-1)
-          val location          = s"$fromFilename:$lineNumber:$columnNumber"
-          val postfix           = CGlobal.headerFileFullNameToPostfix.getOrElse(location, CGlobal.usedVariablePostfix)
-          val name              = s"anonymous_${target}_$postfix"
-          val resultingFullName = s"$fullName$name"
-          CGlobal.usedVariablePostfix = CGlobal.usedVariablePostfix + 1
-          CGlobal.headerFileFullNameToPostfix.put(location, postfix)
-          (name, resultingFullName)
-        }
-      } else {
-        val name              = s"anonymous_${target}_$usedVariablePostfix"
-        val resultingFullName = s"$fullName$name"
-        usedVariablePostfix = usedVariablePostfix + 1
-        (name, resultingFullName)
-      }
+      val name              = s"anonymous_${target}_$usedVariablePostfix"
+      val resultingFullName = s"$fullName$name"
+      usedVariablePostfix = usedVariablePostfix + 1
+      (name, resultingFullName)
     } else {
       (name, fullName)
     }
@@ -195,6 +176,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case t if t.startsWith("[") && t.endsWith("]") => Defines.anyTypeName
       case t if t.contains(Defines.qualifiedNameSeparator) =>
         fixQualifiedName(t).split(".").lastOption.getOrElse(Defines.anyTypeName)
+      case t if t.startsWith("unsigned ")          => "unsigned " + t.substring(9).replace(" ", "")
       case t if t.contains("[") && t.contains("]") => t.replace(" ", "")
       case t if t.contains("*")                    => t.replace(" ", "")
       case someType                                => someType
@@ -326,7 +308,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).nonEmpty =>
         s"${fullName(namespace.getParent)}.${ASTStringUtil.getSimpleName(namespace.getName)}"
       case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).isEmpty =>
-        s"${fullName(namespace.getParent)}.${uniqueName("namespace", "", "", Some(node))._1}"
+        s"${fullName(namespace.getParent)}.${uniqueName("namespace", "", "")._1}"
       case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).nonEmpty =>
         s"${fullName(cppClass.getParent)}.${ASTStringUtil.getSimpleName(cppClass.getName)}"
       case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).isEmpty =>
@@ -334,8 +316,8 @@ trait AstCreatorHelper { this: AstCreator =>
           case decl: IASTSimpleDeclaration =>
             decl.getDeclarators.headOption
               .map(n => ASTStringUtil.getSimpleName(n.getName))
-              .getOrElse(uniqueName("composite_type", "", "", Some(node))._1)
-          case _ => uniqueName("composite_type", "", "", Some(node))._1
+              .getOrElse(uniqueName("composite_type", "", "")._1)
+          case _ => uniqueName("composite_type", "", "")._1
         }
         s"${fullName(cppClass.getParent)}.$name"
       case enumSpecifier: IASTEnumerationSpecifier =>
@@ -382,10 +364,6 @@ trait AstCreatorHelper { this: AstCreator =>
             .isEmpty && f.getDeclarator.getNestedDeclarator != null =>
         shortName(f.getDeclarator.getNestedDeclarator)
       case f: IASTFunctionDefinition => ASTStringUtil.getSimpleName(f.getDeclarator.getName)
-      case f: IASTFunctionDeclarator
-          if ASTStringUtil.getSimpleName(f.getName).isEmpty && f.getNestedDeclarator != null =>
-        shortName(f.getNestedDeclarator)
-      case f: IASTFunctionDeclarator => ASTStringUtil.getSimpleName(f.getName)
       case d: CPPASTIdExpression if d.getEvaluation.isInstanceOf[EvalBinding] =>
         val evaluation = d.getEvaluation.asInstanceOf[EvalBinding]
         evaluation.getBinding match {
@@ -419,7 +397,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def attachDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Unit = {
-    val allIncludes = iASTTranslationUnit.getIncludeDirectives.toIndexedSeq
+    val allIncludes = iASTTranslationUnit.getIncludeDirectives.toList.filterNot(isIncludedNode)
     allIncludes.foreach { include =>
       val name            = include.getName.toString
       val _dependencyNode = newDependencyNode(name, name, IncludeKeyword)
@@ -431,7 +409,8 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def astsForComments(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
     if (config.includeComments) {
-      val commentsAsts = iASTTranslationUnit.getComments.map(comment => astForComment(comment)).toIndexedSeq
+      val commentsAsts =
+        iASTTranslationUnit.getComments.toList.filterNot(isIncludedNode).map(comment => astForComment(comment))
       setArgumentIndices(commentsAsts)
       commentsAsts
     } else {

@@ -5,6 +5,8 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
+import scala.List
+
 class FileTests extends CCodeToCpgSuite {
 
   private val cpg = code("""
@@ -14,9 +16,9 @@ class FileTests extends CCodeToCpgSuite {
       |""".stripMargin)
 
   "should contain two file nodes in total, both with order=0" in {
-    cpg.file.order.l shouldBe List(0, 0)
+    cpg.file.nameNot("<includes>").order.l shouldBe List(0, 0)
     cpg.file.name(FileTraversal.UNKNOWN).size shouldBe 1
-    cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 1
+    cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").size shouldBe 1
   }
 
   "should contain exactly one placeholder file node with `name=\"<unknown>\"/order=0`" in {
@@ -44,7 +46,8 @@ class FileTests extends CCodeToCpgSuite {
       .typeDecl
       .nameNot(NamespaceTraversal.globalNamespaceName)
       .name
-      .toSetMutable shouldBe Set("my_struct")
+      .l
+      .sorted shouldBe List("ANY", "int", "my_struct", "void")
   }
 
   "should allow traversing to namespaces" in {

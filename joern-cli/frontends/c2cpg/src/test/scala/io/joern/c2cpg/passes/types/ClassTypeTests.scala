@@ -103,7 +103,7 @@ class ClassTypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
       x.inheritsFromTypeFullName shouldBe List()
       x.aliasTypeFullName shouldBe None
       x.order shouldBe -1
-      x.filename shouldBe FileTraversal.UNKNOWN
+      x.filename shouldBe "<includes>"
     }
 
     "should find exactly 1 internal type" in {

@@ -1,8 +1,6 @@
 package io.joern.c2cpg.passes
 
-import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.Defines
-import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -15,10 +13,10 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import overflowdb.traversal.toNodeTraversal
 
-class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
+class HeaderContentPass(cpg: Cpg) extends CpgPass(cpg) {
 
   private val systemIncludePaths =
-    IncludeAutoDiscovery.discoverIncludePathsC(config) ++ IncludeAutoDiscovery.discoverIncludePathsCPP(config)
+    IncludeAutoDiscovery.discoverIncludePathsC() ++ IncludeAutoDiscovery.discoverIncludePathsCPP()
 
   private val filename: String   = "<includes>"
   private val globalName: String = NamespaceTraversal.globalNamespaceName
@@ -26,7 +24,7 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
   private val typeDeclFullNames: Set[String] = cpg.typeDecl.fullName.toSetImmutable
 
-  private def createGlobalBlock(dstGraph: DiffGraphBuilder): NewBlock = {
+  private def createGlobalBlockAndAst(): (NewBlock, Ast) = {
     val includesFile = NewFile().name(filename)
 
     val namespaceBlock = NewNamespaceBlock()
@@ -53,8 +51,7 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
         .withChild(Ast(fakeGlobalIncludesMethod).withChild(Ast(blockNode)).withChild(Ast(methodReturn)))
     )
 
-    Ast.storeInDiffGraph(ast, dstGraph)
-    blockNode
+    (blockNode, ast)
   }
 
   private def setExternal(dstGraph: DiffGraphBuilder): Unit = {
@@ -71,11 +68,16 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
   }
 
   private def createMissingAstEdges(dstGraph: DiffGraphBuilder): Unit = {
-    val globalBlock = createGlobalBlock(dstGraph)
+    val (globalBlock, ast) = createGlobalBlockAndAst()
+    var hadMissingEdges    = false
     cpg.all.not(_.inE(EdgeTypes.AST)).foreach {
       case _ @(_: MetaData | _: Binding | _: Type | _: Dependency | _: Import) => // do nothing
-      case srcNode => dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
+      case namespaceBlock: NamespaceBlock if namespaceBlock.name == globalName => // do nothing
+      case srcNode =>
+        dstGraph.addEdge(globalBlock, srcNode, EdgeTypes.AST)
+        hadMissingEdges = true
     }
+    if (hadMissingEdges) Ast.storeInDiffGraph(ast, dstGraph)
   }
 
   private def typeNeedsTypeDeclStub(t: Type): Boolean =
@@ -96,11 +98,9 @@ class HeaderContentPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
   }
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
-    if (CGlobal.shouldBeCleared()) {
-      createMissingAstEdges(dstGraph)
-      createMissingTypeDecls(dstGraph)
-      setExternal(dstGraph)
-    }
+    createMissingAstEdges(dstGraph)
+    createMissingTypeDecls(dstGraph)
+    setExternal(dstGraph)
   }
 
 }
