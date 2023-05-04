@@ -114,13 +114,13 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     if (matchingExports.nonEmpty) {
       matchingExports.flatMap { exp =>
         exp.argument.l match {
-          case List(expCall: Call, b: Identifier)
+          case ::(expCall: Call, ::(b: Identifier, _))
               if expCall.code.startsWith("exports.") && targetModule.ast.isMethod.name(b.name).nonEmpty =>
             // Exported function with only the name of the function
             val methodPaths = targetModule.ast.isMethod.name(b.name).fullName.toSet
             symbolTable.append(CallAlias(alias, Option("this")), methodPaths)
             symbolTable.append(LocalVar(alias), methodPaths)
-          case List(_, b: Identifier) =>
+          case ::(_, ::(b: Identifier, _)) =>
             // Exported variable that we should find
             val typs = cpg
               .file(s"${Pattern.quote(resolvedPath)}\\.?.*")
@@ -132,13 +132,13 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
               .filterNot(_ == "ANY")
               .toSet
             symbolTable.append(LocalVar(alias), typs)
-          case List(x: Call, b: MethodRef) =>
+          case ::(x: Call, ::(b: MethodRef, _)) =>
             // Exported function with a method ref of the function
             val methodName = x.argumentOption(2).map(_.code).getOrElse(b.referencedMethod.name)
             if (methodName == "exports") symbolTable.append(CallAlias(alias, Option("this")), Set(b.methodFullName))
             else symbolTable.append(CallAlias(methodName, Option(alias)), Set(b.methodFullName))
             symbolTable.append(LocalVar(alias), b.referencedMethod.astParent.collectAll[Method].fullName.toSet)
-          case List(_, y: Call) =>
+          case ::(_, ::(y: Call, _)) =>
             // Exported closure with a method ref within the AST of the RHS
             y.ast.isMethodRef.flatMap { mRef =>
               val methodName = mRef.referencedMethod.name
@@ -247,5 +247,14 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     rec: Option[String] = None
   ): Set[String] =
     super.visitIdentifierAssignedToTypeRef(i, t, Option("this"))
+
+  override protected def postSetTypeInformation(): Unit = {
+    // often there are "this" identifiers with type hints but this can be set to a type hint if they meet the criteria
+    cu.ast.isIdentifier
+      .nameExact("this")
+      .where(_.typeFullName("ANY"))
+      .filterNot(_.dynamicTypeHintFullName.isEmpty)
+      .foreach(setTypeFromTypeHints)
+  }
 
 }

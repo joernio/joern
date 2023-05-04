@@ -215,7 +215,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x: Identifier        => symbolTable.put(x, getTypes(x))
-    case x: Call              => symbolTable.put(x, Set(x.methodFullName))
+    case x: Call              => symbolTable.put(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
     case x: Local             => symbolTable.put(x, getTypes(x))
     case x: MethodParameterIn => symbolTable.put(x, getTypes(x))
     case _                    =>
@@ -853,14 +853,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case _ => persistType(x, symbolTable.get(x))
     }
 
-  protected def setTypeFromTypeHints(n: MethodParameterIn): Unit = {
-    val types = (n.typeFullName +: n.dynamicTypeHintFullName).filterNot(x => x == "ANY" || XTypeRecovery.isDummyType(x))
-    if (n.dynamicTypeHintFullName.nonEmpty) setTypes(n, types)
-  }
-
-  protected def setTypeFromTypeHints(n: MethodReturn): Unit = {
-    val types = (n.typeFullName +: n.dynamicTypeHintFullName).filterNot(x => x == "ANY" || XTypeRecovery.isDummyType(x))
-    if (n.dynamicTypeHintFullName.nonEmpty) setTypes(n, types)
+  protected def setTypeFromTypeHints(n: StoredNode): Unit = {
+    val nodeType         = n.property(PropertyNames.TYPE_FULL_NAME, "ANY")
+    val dynamicTypeHints = n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty[String])
+    val types            = (nodeType +: dynamicTypeHints).filterNot(x => x == "ANY" || XTypeRecovery.isDummyType(x))
+    if (dynamicTypeHints.nonEmpty) setTypes(n, types)
   }
 
   /** In the case this field access is a function pointer, we would want to make sure this has a method ref.
@@ -990,7 +987,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def storeCallTypeInfo(c: Call, types: Seq[String]) =
     if (types.nonEmpty) {
       state.changesWereMade.compareAndSet(false, true)
-      builder.setNodeProperty(c, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+      builder.setNodeProperty(
+        c,
+        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+        (c.dynamicTypeHintFullName ++ types).distinct
+      )
     }
 
   protected def nodeExistingTypes(storedNode: StoredNode): Seq[String] = (storedNode.property(
@@ -1008,7 +1009,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
     if (types != nodeExistingTypes(n)) {
       state.changesWereMade.compareAndSet(false, true)
-      setTypes(n, types)
+      setTypes(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
     }
 
   /** If there is only 1 type hint then this is set to the `typeFullName` property and `dynamicTypeHintFullName` is
