@@ -238,13 +238,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val testAst = {
       val keyNode = identifierNode(element, codeOf(lhsAst.nodes.head))
-      val voidCallNode = createCallNode(
-        "void 0",
-        "<operator>.void",
-        DispatchTypes.STATIC_DISPATCH,
-        element.lineNumber,
-        element.columnNumber
-      )
+      val voidCallNode =
+        callNode(element, "void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH)
       val equalsCallAst = createEqualsCallAst(Ast(keyNode), Ast(voidCallNode), element.lineNumber, element.columnNumber)
       equalsCallAst
     }

@@ -1,7 +1,9 @@
 package io.joern.x2cpg
 
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
+  NewCall,
   NewControlStructure,
   NewFieldIdentifier,
   NewIdentifier,
@@ -147,6 +149,31 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .lineNumber(line(node))
       .columnNumber(column(node))
       .typeFullName(typeFullName.getOrElse("ANY"))
+  }
+
+  def callNode(node: Node, code: String, name: String, methodFullName: String, dispatchType: String): NewCall =
+    callNode(node, code, name, methodFullName, dispatchType, None, None)
+
+  def callNode(
+    node: Node,
+    code: String,
+    name: String,
+    methodFullName: String,
+    dispatchType: String,
+    signature: Option[String],
+    typeFullName: Option[String]
+  ): NewCall = {
+    val out =
+      NewCall()
+        .code(code)
+        .name(name)
+        .methodFullName(methodFullName)
+        .dispatchType(dispatchType)
+        .lineNumber(line(node))
+        .columnNumber(column(node))
+    signature.foreach { s => out.signature(s) }
+    typeFullName.foreach { t => out.typeFullName(t) }
+    out
   }
 
   protected def returnNode(node: Node, code: String): NewReturn = {
