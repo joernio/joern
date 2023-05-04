@@ -57,7 +57,23 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
       case List(cons: Method) =>
         cons.fullName shouldBe "Foo.<init>:void(int)"
         cons.signature shouldBe "void(int)"
-        cons.code shouldBe "Foo(int x)"
+        cons.code.trim shouldBe
+          """public void <init>(int)
+            |    {
+            |        int x;
+            |        Foo this;
+            |
+            |        this := @this: Foo;
+            |
+            |        x := @parameter0: int;
+            |
+            |        specialinvoke this.<java.lang.Object: void <init>()>();
+            |
+            |        this.<Foo: int x> = x;
+            |
+            |        return;
+            |    }
+            |""".stripMargin.trim
         cons.parameter.size shouldBe 2
         val objParam = cons.parameter.index(0).head
         objParam.name shouldBe "this"
@@ -76,14 +92,46 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
       case List(cons1: Method, cons2: Method) =>
         cons1.fullName shouldBe "Bar.<init>:void(int)"
         cons1.signature shouldBe "void(int)"
-        cons1.code shouldBe "Bar(int x)"
+        cons1.code.trim shouldBe
+          """public void <init>(int)
+            |    {
+            |        int x;
+            |        Bar this;
+            |
+            |        this := @this: Bar;
+            |
+            |        x := @parameter0: int;
+            |
+            |        specialinvoke this.<Foo: void <init>(int)>(x);
+            |
+            |        return;
+            |    }
+            |""".stripMargin.trim
         cons1.parameter.size shouldBe 2
         cons1.parameter.index(0).head.name shouldBe "this"
         cons1.parameter.index(1).head.name shouldBe "x"
 
         cons2.fullName shouldBe "Bar.<init>:void(int,int)"
         cons2.signature shouldBe "void(int,int)"
-        cons2.code shouldBe "Bar(int x, int y)"
+        cons2.code.trim shouldBe
+          """public void <init>(int, int)
+            |    {
+            |        Bar this;
+            |        int x, y, $stack3;
+            |
+            |        this := @this: Bar;
+            |
+            |        x := @parameter0: int;
+            |
+            |        y := @parameter1: int;
+            |
+            |        $stack3 = x + y;
+            |
+            |        specialinvoke this.<Bar: void <init>(int)>($stack3);
+            |
+            |        return;
+            |    }
+            |""".stripMargin.trim
         cons2.parameter.size shouldBe 3
         cons2.parameter.index(0).head.name shouldBe "this"
         cons2.parameter.index(1).head.name shouldBe "x"

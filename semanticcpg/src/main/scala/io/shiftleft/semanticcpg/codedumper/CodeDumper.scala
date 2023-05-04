@@ -7,9 +7,7 @@ import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object CodeDumper {
 
@@ -18,7 +16,7 @@ object CodeDumper {
   val arrow: CharSequence = "/* <=== */ "
 
   private val supportedLanguages =
-    Set(Languages.C, Languages.NEWC, Languages.GHIDRA, Languages.JAVASRC, Languages.JSSRC)
+    Set(Languages.C, Languages.NEWC, Languages.GHIDRA, Languages.JAVA, Languages.JAVASRC, Languages.JSSRC)
 
   private def toAbsolutePath(path: String, rootPath: String): String = {
     val absolutePath = Paths.get(path) match {
@@ -52,7 +50,7 @@ object CodeDumper {
         method
           .collect {
             case m: Method if m.lineNumber.isDefined && m.lineNumberEnd.isDefined =>
-              val rawCode = if (lang == Languages.GHIDRA) { m.code }
+              val rawCode = if (lang == Languages.GHIDRA || lang == Languages.JAVA) { m.code }
               else {
                 val filename = rootPath.map(toAbsolutePath(location.filename, _)).getOrElse(location.filename)
                 code(filename, m.lineNumber.get, m.lineNumberEnd.get, location.lineNumber)

@@ -15,23 +15,25 @@ class MethodTests extends JimpleCode2CpgFixture {
       | }
       |""".stripMargin).cpg
 
-  /* The equivalent Jimple code looks like
-    int foo(int, int)
-    {
-        int param1, param2;
-        Foo this;
-        this := @this: Foo;
-        param1 := @parameter0: int;
-        param2 := @parameter1: int;
-        return 1;
-    }
-   */
-
   "should contain exactly one non-stub method node with correct fields" in {
     val List(x) = cpg.method.nameNot(io.joern.x2cpg.Defines.ConstructorMethodName).isExternal(false).l
     x.name shouldBe "foo"
     x.fullName shouldBe "Foo.foo:int(int,int)"
-    x.code shouldBe "int foo(int param1, int param2)"
+    x.code shouldBe
+      """    int foo(int, int)
+        |    {
+        |        int param1, param2;
+        |        Foo this;
+        |
+        |        this := @this: Foo;
+        |
+        |        param1 := @parameter0: int;
+        |
+        |        param2 := @parameter1: int;
+        |
+        |        return 1;
+        |    }
+        |""".stripMargin
     x.signature shouldBe "int(int,int)"
     x.isExternal shouldBe false
     x.order shouldBe 1
