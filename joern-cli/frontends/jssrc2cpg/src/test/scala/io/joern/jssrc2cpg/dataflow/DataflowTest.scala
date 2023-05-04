@@ -640,7 +640,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
 
     val iSrc = cpg.method("foo").ast.isIdentifier.name("x").lineNumber(4).l
     iSrc.size shouldBe 1
-    sink1.reachableBy(iSrc).size shouldBe 1
+    sink1.reachableBy(iSrc).dedup.size shouldBe 1
 
     val lSrc = cpg.method("foo").ast.isLiteral.code("1").lineNumber(4).l
     lSrc.size shouldBe 1
@@ -662,7 +662,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
     snk.reachableByFlows(src) should have size 1
   }
 
-  "Flow from a module-level literal to a call captured by a closure" in {
+  "Flow from a module-level literal to a call captured by a closure" should {
     val cpg = code("""
         |import axios from 'axios';
         |import { User } from './user';
@@ -674,8 +674,26 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
         |};
         |""".stripMargin)
 
-    val source = cpg.literal(".*https://test-api-service.com.*").l
-    val sinks  = cpg.call.code("axios.post\\(.*").l
-    sinks.reachableBy(source).size shouldBe 1
+    val sink = cpg.call.code("axios.post\\(.*").l
+
+    "literal to captured closure" in {
+      val literalSource = cpg.literal.codeExact("\"https://test-api-service.com\"").l
+      literalSource.size shouldBe 1
+      sink.reachableBy(literalSource).size shouldBe 1
+    }
+
+    "identifiers to captured closure" in {
+      val identifierSource = cpg.identifier.nameExact("API_Endpoint").lineNumber(5).l
+      identifierSource.size shouldBe 1
+      sink.reachableBy(identifierSource).size shouldBe 1
+      sink.reachableByFlows(identifierSource).p.foreach(println)
+    }
+
+    "identifiers in the arg of the call" in {
+      val identifierSource = cpg.identifier.nameExact("API_Endpoint").lineNumber(8).l
+      identifierSource.size shouldBe 1
+      sink.reachableBy(identifierSource).size shouldBe 1
+      sink.reachableByFlows(identifierSource).p.foreach(println)
+    }
   }
 }

@@ -211,7 +211,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
     val iSrc = cpg.method("foo").ast.isIdentifier.name("x").lineNumber(4).l
     iSrc.size shouldBe 1
-    sink1.reachableBy(iSrc).size shouldBe 1
+    sink1.reachableBy(iSrc).dedup.size shouldBe 1
 
     val lSrc = cpg.method("foo").ast.isLiteral.code("1").lineNumber(4).l
     lSrc.size shouldBe 1

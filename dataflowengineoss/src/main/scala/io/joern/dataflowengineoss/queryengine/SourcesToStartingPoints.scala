@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{Operators, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
@@ -80,7 +80,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case x: Identifier =>
         withFieldAndIndexAccesses(
           List(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
-        )
+        ) ++ x.refsTo.capturedByMethodRef.referencedMethod.flatMap(m => usagesForName(x.name, m))
       case x => List(x).collect { case y: CfgNode => y }
     }
   }
