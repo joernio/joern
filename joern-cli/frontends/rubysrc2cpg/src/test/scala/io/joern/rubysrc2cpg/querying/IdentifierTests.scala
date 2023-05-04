@@ -31,8 +31,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
   }
 
   "CPG for code with class methods, members and locals in methods" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |class Person
         |  attr_accessor :name, :age
         |
@@ -53,9 +52,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |
         |p = Person. new
         |p.greet
-        |""".stripMargin,
-      fileName = "classtest.rb"
-    )
+        |""".stripMargin)
 
     "recognise all identifier and call nodes" in {
       cpg.identifier.name("name").l.size shouldBe 2
@@ -72,8 +69,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
   }
 
   "CPG for code with a function call and arguments" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |def add_three_numbers(num1, num2, num3)
         |  sum = num1 + num2 + num3
         |  return sum
@@ -84,9 +80,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |c = 3
         |
         |sumOfThree = add_three_numbers( a, b, c )
-        |""".stripMargin,
-      fileName = "function_test.rb"
-    )
+        |""".stripMargin)
 
     "recognise all identifier and call nodes" in {
       cpg.identifier.name("a").l.size shouldBe 2
@@ -103,8 +97,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
 
     "CPG for code with expressions of various types" should {
-      val cpg = code(
-        """
+      val cpg = code("""
           |a = 1
           |b = 2 if a > 1
           |b = !a
@@ -121,9 +114,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |n = a .. b
           |o = a ... b
           |p = ( a > b ) ? c : e
-          |""".stripMargin,
-        fileName = "expressions.rb"
-      )
+          |""".stripMargin)
 
       "recognise all identifier nodes" in {
         cpg.identifier.name("a").l.size shouldBe 16
@@ -146,8 +137,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
 
     "CPG for code with BEGIN and END blocks" should {
-      val cpg = code(
-        """
+      val cpg = code("""
           |#!/usr/bin/env ruby
           |
           |# This code block will be executed before the program begins
@@ -164,9 +154,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |  endvar = 67
           |  endbool = endvar > 23
           |}
-          |""".stripMargin,
-        fileName = "begin_and_end.rb"
-      )
+          |""".stripMargin)
 
       "recognise all identifier and call nodes" in {
         cpg.identifier.name("beginvar").l.size shouldBe 2
@@ -179,14 +167,11 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
 
     "CPG for code with doBlock iterating over a constant array" should {
-      val cpg = code(
-        """
+      val cpg = code("""
           |[1, 2, "three"].each do |n|
           | puts n
           |end
-          |""".stripMargin,
-        fileName = "const_iter.rb"
-      )
+          |""".stripMargin)
 
       "recognise all identifier nodes" in {
         cpg.identifier.name("n").l.size shouldBe 2
@@ -197,8 +182,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
 
     "CPG for code with doBlock iterating over a constant array and multiple params" should {
-      val cpg = code(
-        """
+      val cpg = code("""
           |[1, 2, "three"].each do |n, m|
           |  expect {
           |  someObject.someMethod(n)
@@ -206,9 +190,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |  }.to otherMethod(n).by(1)
           |end
           |
-          |""".stripMargin,
-        fileName = "doconst.rb"
-      )
+          |""".stripMargin)
 
       "recognise all identifier and call nodes" in {
         cpg.identifier.name("n").l.size shouldBe 3
@@ -224,15 +206,12 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
 
     "CPG for code with namespace resolution being used" should {
-      val cpg = code(
-        """
+      val cpg = code("""
           |Rails.application.configure do
           |  config.log_formatter = ::Logger::Formatter.new
           |end
           |
-          |""".stripMargin,
-        fileName = "namespace.rb"
-      )
+          |""".stripMargin)
 
       "recognise all identifier and call nodes" in {
         cpg.call.name("application").size shouldBe 1
