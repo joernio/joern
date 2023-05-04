@@ -175,7 +175,9 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       .flatMap {
         case identifier: Identifier
             // If these are the same, then the parent method is the module-level type
-            if Option(identifier.method.fullName) == identifier.method.typeDecl.fullName.headOption =>
+            if Option(identifier.method.fullName) == identifier.method.typeDecl.fullName.headOption ||
+              // If a member shares the name of the identifier then we consider this as a member
+              lit.method.typeDecl.member.name.toSet.contains(identifier.name) =>
           List(identifier)
         case call: Call if call.name == Operators.fieldAccess => call.ast.isFieldIdentifier.l
         case _                                                => List[Expression]()
