@@ -36,13 +36,14 @@ trait AstForTypesCreator { this: AstCreator =>
     val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
 
     val aliasTypeDeclNode =
-      createTypeDeclNode(aliasName, aliasFullName, parserResult.filename, alias.code, astParentType, astParentFullName)
+      typeDeclNode(alias, aliasName, aliasFullName, parserResult.filename, alias.code, astParentType, astParentFullName)
     seenAliasTypes.add(aliasTypeDeclNode)
 
     val typeDeclNodeAst =
       if (!Defines.JsTypes.contains(name) && !seenAliasTypes.exists(_.name == name)) {
         val (typeName, typeFullName) = calcTypeNameAndFullName(alias, Option(name))
-        val typeDeclNode = createTypeDeclNode(
+        val typeDeclNode_ = typeDeclNode(
+          alias,
           typeName,
           typeFullName,
           parserResult.filename,
@@ -52,7 +53,7 @@ trait AstForTypesCreator { this: AstCreator =>
           alias = Option(aliasFullName)
         )
         registerType(typeName, typeFullName)
-        Ast(typeDeclNode)
+        Ast(typeDeclNode_)
       } else {
         seenAliasTypes
           .collectFirst { case typeDecl if typeDecl.name == name => Ast(typeDecl.aliasTypeFullName(aliasFullName)) }
@@ -231,7 +232,8 @@ trait AstForTypesCreator { this: AstCreator =>
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
 
-    val typeDeclNode = createTypeDeclNode(
+    val typeDeclNode_ = typeDeclNode(
+      tsEnum,
       typeName,
       typeFullName,
       parserResult.filename,
@@ -239,16 +241,16 @@ trait AstForTypesCreator { this: AstCreator =>
       astParentType,
       astParentFullName
     )
-    seenAliasTypes.add(typeDeclNode)
+    seenAliasTypes.add(typeDeclNode_)
 
-    addModifier(typeDeclNode, tsEnum.json)
+    addModifier(typeDeclNode_, tsEnum.json)
 
     val typeRefNode_ = typeRefNode(tsEnum, s"enum $typeName", typeFullName)
 
-    methodAstParentStack.push(typeDeclNode)
+    methodAstParentStack.push(typeDeclNode_)
     dynamicInstanceTypeStack.push(typeFullName)
     typeRefIdStack.push(typeRefNode_)
-    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
+    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
     val memberAsts = tsEnum.json("members").arr.toList.flatMap(m => astsForEnumMember(createBabelNodeInfo(m)))
 
@@ -259,14 +261,14 @@ trait AstForTypesCreator { this: AstCreator =>
 
     val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
     if (calls.isEmpty) {
-      Ast.storeInDiffGraph(Ast(typeDeclNode).withChildren(member), diffGraph)
+      Ast.storeInDiffGraph(Ast(typeDeclNode_).withChildren(member), diffGraph)
     } else {
       val init =
         staticInitMethodAst(calls, s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}", None, Defines.Any)
-      Ast.storeInDiffGraph(Ast(typeDeclNode).withChildren(member).withChild(init), diffGraph)
+      Ast.storeInDiffGraph(Ast(typeDeclNode_).withChildren(member).withChild(init), diffGraph)
     }
 
-    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode, EdgeTypes.AST)
+    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
     Ast(typeRefNode_)
   }
 
@@ -308,7 +310,8 @@ trait AstForTypesCreator { this: AstCreator =>
     val implements = Try(clazz.json("implements").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
     val mixins     = Try(clazz.json("mixins").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
 
-    val typeDeclNode = createTypeDeclNode(
+    val typeDeclNode_ = typeDeclNode(
+      clazz,
       typeName,
       typeFullName,
       parserResult.filename,
@@ -317,30 +320,30 @@ trait AstForTypesCreator { this: AstCreator =>
       astParentFullName,
       inherits = superClass ++ implements ++ mixins
     )
-    seenAliasTypes.add(typeDeclNode)
+    seenAliasTypes.add(typeDeclNode_)
 
-    addModifier(typeDeclNode, clazz.json)
+    addModifier(typeDeclNode_, clazz.json)
     astsForDecorators(clazz).foreach { decoratorAst =>
       Ast.storeInDiffGraph(decoratorAst, diffGraph)
-      decoratorAst.root.foreach(diffGraph.addEdge(typeDeclNode, _, EdgeTypes.AST))
+      decoratorAst.root.foreach(diffGraph.addEdge(typeDeclNode_, _, EdgeTypes.AST))
     }
 
-    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode, EdgeTypes.AST)
+    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
 
     val typeRefNode_ = typeRefNode(clazz, s"class $typeName", typeFullName)
 
-    methodAstParentStack.push(typeDeclNode)
+    methodAstParentStack.push(typeDeclNode_)
     dynamicInstanceTypeStack.push(typeFullName)
     typeRefIdStack.push(typeRefNode_)
 
-    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
+    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
     val allClassMembers = classMembers(clazz, withConstructor = false).toList
 
     // adding all other members and retrieving their initialization calls
     val memberInitCalls = allClassMembers
       .filter(m => !isStaticMember(m) && isInitializedMember(m))
-      .map(m => astForClassMember(m, typeDeclNode))
+      .map(m => astForClassMember(m, typeDeclNode_))
 
     val constructor     = createClassConstructor(clazz, memberInitCalls)
     val constructorNode = constructor.methodNode
@@ -348,11 +351,11 @@ trait AstForTypesCreator { this: AstCreator =>
     // adding all class methods / functions and uninitialized, non-static members
     allClassMembers
       .filter(member => isClassMethodOrUninitializedMember(member) && !isStaticMember(member))
-      .map(m => astForClassMember(m, typeDeclNode))
+      .map(m => astForClassMember(m, typeDeclNode_))
 
     // adding all static members and retrieving their initialization calls
     val staticMemberInitCalls =
-      allClassMembers.filter(isStaticMember).map(m => astForClassMember(m, typeDeclNode))
+      allClassMembers.filter(isStaticMember).map(m => astForClassMember(m, typeDeclNode_))
 
     // retrieving initialization calls from the static initialization block if any
     val staticInitBlock = allClassMembers.find(isStaticInitBlock)
@@ -372,7 +375,7 @@ trait AstForTypesCreator { this: AstCreator =>
         Defines.Any
       )
       Ast.storeInDiffGraph(init, diffGraph)
-      diffGraph.addEdge(typeDeclNode, init.nodes.head, EdgeTypes.AST)
+      diffGraph.addEdge(typeDeclNode_, init.nodes.head, EdgeTypes.AST)
     }
 
     if (shouldCreateAssignmentCall) {
@@ -458,7 +461,8 @@ trait AstForTypesCreator { this: AstCreator =>
 
     val extendz = Try(tsInterface.json("extends").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
 
-    val typeDeclNode = createTypeDeclNode(
+    val typeDeclNode_ = typeDeclNode(
+      tsInterface,
       typeName,
       typeFullName,
       parserResult.filename,
@@ -467,20 +471,20 @@ trait AstForTypesCreator { this: AstCreator =>
       astParentFullName,
       inherits = extendz
     )
-    seenAliasTypes.add(typeDeclNode)
+    seenAliasTypes.add(typeDeclNode_)
 
-    addModifier(typeDeclNode, tsInterface.json)
+    addModifier(typeDeclNode_, tsInterface.json)
 
-    methodAstParentStack.push(typeDeclNode)
+    methodAstParentStack.push(typeDeclNode_)
     dynamicInstanceTypeStack.push(typeFullName)
 
-    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode, None)
+    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
     val constructorNode = interfaceConstructor(typeName, tsInterface)
     diffGraph.addEdge(constructorNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
 
     val constructorBindingNode = newBindingNode("", "", "")
-    diffGraph.addEdge(typeDeclNode, constructorBindingNode, EdgeTypes.BINDS)
+    diffGraph.addEdge(typeDeclNode_, constructorBindingNode, EdgeTypes.BINDS)
     diffGraph.addEdge(constructorBindingNode, constructorNode, EdgeTypes.REF)
 
     val interfaceBodyElements = classMembers(tsInterface, withConstructor = false)
@@ -492,7 +496,7 @@ trait AstForTypesCreator { this: AstCreator =>
         case TSCallSignatureDeclaration =>
           val functionNode = createMethodDefinitionNode(nodeInfo)
           val bindingNode  = newBindingNode("", "", "")
-          diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
+          diffGraph.addEdge(typeDeclNode_, bindingNode, EdgeTypes.BINDS)
           diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
           addModifier(functionNode, nodeInfo.json)
           Seq(memberNode(nodeInfo, functionNode.name, nodeInfo.code, typeFullName, Seq(functionNode.fullName)))
@@ -513,14 +517,14 @@ trait AstForTypesCreator { this: AstCreator =>
             node
           }
       }
-      memberNodes.foreach(diffGraph.addEdge(typeDeclNode, _, EdgeTypes.AST))
+      memberNodes.foreach(diffGraph.addEdge(typeDeclNode_, _, EdgeTypes.AST))
     }
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
     scope.popScope()
 
-    Ast(typeDeclNode)
+    Ast(typeDeclNode_)
   }
 
 }

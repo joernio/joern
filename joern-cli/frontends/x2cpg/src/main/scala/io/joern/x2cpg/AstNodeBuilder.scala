@@ -8,11 +8,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewLiteral,
   NewLocal,
   NewMember,
+  NewMethod,
   NewMethodRef,
   NewReturn,
+  NewTypeDecl,
   NewTypeRef,
   NewUnknown
 }
+import org.apache.commons.lang.StringUtils
 
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def line(node: Node): Option[Integer]
@@ -78,6 +81,41 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .columnNumber(column(node))
   }
 
+  def typeDeclNode(
+    node: Node,
+    name: String,
+    fullName: String,
+    fileName: String,
+    inheritsFrom: Seq[String],
+    alias: Option[String]
+  ): NewTypeDecl =
+    typeDeclNode(node, name, fullName, fileName, name, "", "", inheritsFrom, alias)
+
+  protected def typeDeclNode(
+    node: Node,
+    name: String,
+    fullName: String,
+    filename: String,
+    code: String,
+    astParentType: String = "",
+    astParentFullName: String = "",
+    inherits: Seq[String] = Seq.empty,
+    alias: Option[String] = None
+  ): NewTypeDecl = {
+    NewTypeDecl()
+      .name(name)
+      .fullName(fullName)
+      .code(code)
+      .isExternal(false)
+      .filename(filename)
+      .astParentType(astParentType)
+      .astParentFullName(astParentFullName)
+      .inheritsFromTypeFullName(inherits)
+      .aliasTypeFullName(alias)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
+
   protected def returnNode(node: Node, code: String): NewReturn = {
     NewReturn()
       .code(code)
@@ -139,5 +177,36 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
       .columnNumber(column(node))
+  }
+
+  def methodNode(node: Node, name: String, fullName: String, signature: String, fileName: String): NewMethod = {
+    methodNode(node, name, name, fullName, Some(signature), fileName)
+  }
+
+  protected def methodNode(
+    node: Node,
+    name: String,
+    code: String,
+    fullName: String,
+    signature: Option[String],
+    fileName: String,
+    astParentType: Option[String] = None,
+    astParentFullName: Option[String] = None
+  ): NewMethod = {
+    val node_ =
+      NewMethod()
+        .name(StringUtils.normalizeSpace(name))
+        .code(code)
+        .fullName(StringUtils.normalizeSpace(fullName))
+        .filename(fileName)
+        .astParentType(astParentType.getOrElse("<empty>"))
+        .astParentFullName(astParentFullName.getOrElse("<empty>"))
+        .isExternal(false)
+        .lineNumber(line(node))
+        .columnNumber(column(node))
+        .lineNumberEnd(lineEnd(node))
+        .columnNumberEnd(columnEnd(node))
+    signature.foreach { s => node_.signature(StringUtils.normalizeSpace(s)) }
+    node_
   }
 }

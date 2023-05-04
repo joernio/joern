@@ -65,28 +65,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column(node))
   }
 
-  protected def newMethodNode(
-    node: IASTNode,
-    name: String,
-    code: String,
-    fullName: String,
-    fileName: String,
-    astParentType: Option[String] = None,
-    astParentFullName: Option[String] = None
-  ): NewMethod = {
-    NewMethod()
-      .name(name)
-      .code(code)
-      .fullName(fullName)
-      .filename(fileName)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .lineNumberEnd(lineEnd(node))
-      .columnNumberEnd(columnEnd(node))
-      .astParentType(astParentType.getOrElse(Defines.empty))
-      .astParentFullName(astParentFullName.getOrElse(Defines.empty))
-  }
-
   protected def newCallNode(
     node: IASTNode,
     name: String,
@@ -120,30 +98,4 @@ trait AstNodeBuilder { this: AstCreator =>
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
-
-  protected def newTypeDeclNode(
-    node: IASTNode,
-    name: String,
-    fullName: String,
-    filename: String,
-    code: String,
-    astParentType: String = "",
-    astParentFullName: String = "",
-    inherits: Seq[String] = Seq.empty,
-    alias: Option[String] = None
-  ): NewTypeDecl = {
-    NewTypeDecl()
-      .name(name)
-      .fullName(fullName)
-      .code(code)
-      .isExternal(false)
-      .filename(filename)
-      .astParentType(astParentType)
-      .astParentFullName(astParentFullName)
-      .inheritsFromTypeFullName(inherits)
-      .aliasTypeFullName(alias)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-  }
-
 }

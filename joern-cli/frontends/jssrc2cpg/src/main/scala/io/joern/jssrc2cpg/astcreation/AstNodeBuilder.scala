@@ -25,31 +25,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(columnNumber)
   }
 
-  protected def createTypeDeclNode(
-    name: String,
-    fullName: String,
-    filename: String,
-    code: String,
-    astParentType: String = "",
-    astParentFullName: String = "",
-    inherits: Seq[String] = Seq.empty,
-    alias: Option[String] = None,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewTypeDecl =
-    NewTypeDecl()
-      .name(name)
-      .fullName(fullName)
-      .code(code)
-      .isExternal(false)
-      .filename(filename)
-      .astParentType(astParentType)
-      .astParentFullName(astParentFullName)
-      .inheritsFromTypeFullName(inherits)
-      .aliasTypeFullName(alias)
-      .lineNumber(line)
-      .columnNumber(column)
-
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
     newMethodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
   }
@@ -104,24 +79,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .typeFullName(tpe.getOrElse(Defines.Any))
     scope.addVariable(name, param, MethodScope)
     param
-  }
-
-  protected def createMethodNode(methodName: String, methodFullName: String, func: BabelNodeInfo): NewMethod = {
-    val line      = func.lineNumber
-    val column    = func.columnNumber
-    val lineEnd   = func.lineNumberEnd
-    val columnEnd = func.columnNumberEnd
-    val code      = func.code
-    NewMethod()
-      .name(methodName)
-      .filename(parserResult.filename)
-      .code(code)
-      .fullName(methodFullName)
-      .isExternal(false)
-      .lineNumber(line)
-      .columnNumber(column)
-      .lineNumberEnd(lineEnd)
-      .columnNumberEnd(columnEnd)
   }
 
   protected def codeOf(node: NewNode): String = node match {
@@ -332,6 +289,7 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(node.columnNumber)
 
   protected def createFunctionTypeAndTypeDeclAst(
+    node: BabelNodeInfo,
     methodNode: NewMethod,
     parentNode: NewNode,
     methodName: String,
@@ -343,14 +301,16 @@ trait AstNodeBuilder { this: AstCreator =>
     val astParentType     = parentNode.label
     val astParentFullName = parentNode.properties("FULL_NAME").toString
     val functionTypeDeclNode =
-      createTypeDeclNode(
+      typeDeclNode(
+        node,
         methodName,
         methodFullName,
         filename,
         methodName,
         astParentType = astParentType,
-        astParentFullName = astParentFullName
-      ).inheritsFromTypeFullName(List(Defines.Any))
+        astParentFullName = astParentFullName,
+        List(Defines.Any)
+      )
 
     // Problem for https://github.com/ShiftLeftSecurity/codescience/issues/3626 here.
     // As the type (thus, the signature) of the function node is unknown (i.e., ANY*)

@@ -221,15 +221,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     case _                    =>
   }
 
-  private def hasTypes(node: AstNode): Boolean = node match {
-    case x: Identifier =>
-      x.dynamicTypeHintFullName.nonEmpty || !x.typeFullName.toUpperCase.matches("(UNKNOWN|ANY)")
+  protected def hasTypes(node: AstNode): Boolean = node match {
     case x: Call if !x.methodFullName.startsWith("<operator>") =>
       !x.methodFullName.toLowerCase().matches("(<unknownfullname>|any)")
-    case x: Local => x.dynamicTypeHintFullName.nonEmpty || !x.typeFullName.toUpperCase.matches("(UNKNOWN|ANY)")
-    case x: MethodParameterIn =>
-      x.dynamicTypeHintFullName.nonEmpty || !x.typeFullName.toUpperCase.matches("(UNKNOWN|ANY)")
-    case _ => false
+    case x =>
+      x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
+        .nonEmpty || !x.property(PropertyNames.TYPE_FULL_NAME, "ANY").toUpperCase.matches("(UNKNOWN|ANY)")
   }
 
   protected def assignments: Traversal[Assignment] =
@@ -240,9 +237,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def importNodes: Traversal[Import] = cu.ast.isCall.referencedImports
 
   override def compute(): Boolean = try {
-    prepopulateSymbolTable()
     // Set known aliases that point to imports for local and external methods/modules
     importNodes.foreach(visitImport)
+    // Look at symbols with existing type info
+    prepopulateSymbolTable()
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // Populate local symbol table with assignments
