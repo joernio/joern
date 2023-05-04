@@ -5,9 +5,8 @@ import io.shiftleft.semanticcpg.language._
 
 class IdentifierTests extends RubyCode2CpgFixture {
 
-  "should recognize method identifiers and literals in simple assignments" should {
-    val cpg = code(
-      """
+  "CPG for code with method identifiers and literals in simple assignments" should {
+    val cpg = code("""
         |# call instance methods
         |a = 1
         |b = 2
@@ -15,17 +14,15 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |b = 4
         |c = a*b
         |puts "Multiplication is : #{c}"
-        |""".stripMargin,
-      fileName = "simple_assignment.rb"
-    )
+        |""".stripMargin)
 
-    "identifier nodes present" in {
+    "recognise all identifier nodes" in {
       cpg.identifier.name("a").l.size shouldBe 3
       cpg.identifier.name("b").l.size shouldBe 3
       cpg.identifier.name("c").l.size shouldBe 2
     }
 
-    "literal nodes present" in {
+    "recognise all literal nodes" in {
       cpg.literal.code("1").l.size shouldBe 1
       cpg.literal.code("2").l.size shouldBe 1
       cpg.literal.code("3").l.size shouldBe 1
@@ -33,7 +30,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "should recognize identifiers and literals in class methods and members/locals" should {
+  "CPG for code with class methods, members and locals in methods" should {
     val cpg = code(
       """
         |class Person
@@ -60,7 +57,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       fileName = "classtest.rb"
     )
 
-    "identifier nodes present" in {
+    "recognise all identifier and call nodes" in {
       cpg.identifier.name("name").l.size shouldBe 2
       cpg.identifier.name("age").l.size shouldBe 2
       cpg.identifier.name("@name").l.size shouldBe 2
@@ -74,7 +71,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "should recognize identifiers and literals in a function call" should {
+  "CPG for code with a function call and arguments" should {
     val cpg = code(
       """
         |def add_three_numbers(num1, num2, num3)
@@ -91,7 +88,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       fileName = "function_test.rb"
     )
 
-    "function test" in {
+    "recognise all identifier and call nodes" in {
       cpg.identifier.name("a").l.size shouldBe 2
       cpg.identifier.name("b").l.size shouldBe 2
       cpg.identifier.name("c").l.size shouldBe 2
@@ -105,7 +102,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.size shouldBe 14
     }
 
-    "should recognize identifiers in expressions of various types" should {
+    "CPG for code with expressions of various types" should {
       val cpg = code(
         """
           |a = 1
@@ -128,7 +125,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         fileName = "expressions.rb"
       )
 
-      "expression test" in {
+      "recognise all identifier nodes" in {
         cpg.identifier.name("a").l.size shouldBe 16
         cpg.identifier.name("b").l.size shouldBe 13 // unaryExpression
         cpg.identifier.name("c").l.size shouldBe 2  // unaryExpression
@@ -148,7 +145,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "should recognize identifiers and literals in BEGIN and END blocks test" should {
+    "CPG for code with BEGIN and END blocks" should {
       val cpg = code(
         """
           |#!/usr/bin/env ruby
@@ -171,7 +168,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         fileName = "begin_and_end.rb"
       )
 
-      "beginning_of_the_end test" in {
+      "recognise all identifier and call nodes" in {
         cpg.identifier.name("beginvar").l.size shouldBe 2
         cpg.identifier.name("endvar").l.size shouldBe 2
         cpg.identifier.name("beginbool").l.size shouldBe 1
@@ -181,7 +178,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "should recognize identifiers and literals in a doBlock iterating over a constant array" should {
+    "CPG for code with doBlock iterating over a constant array" should {
       val cpg = code(
         """
           |[1, 2, "three"].each do |n|
@@ -191,7 +188,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         fileName = "const_iter.rb"
       )
 
-      "const_iter" in {
+      "recognise all identifier nodes" in {
         cpg.identifier.name("n").l.size shouldBe 2
         cpg.call.name("each").size shouldBe 1
         cpg.call.name("puts").size shouldBe 1
@@ -199,7 +196,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "should recognize identifiers and literals in a doBlock iterating over a constant array and multiple params" should {
+    "CPG for code with doBlock iterating over a constant array and multiple params" should {
       val cpg = code(
         """
           |[1, 2, "three"].each do |n, m|
@@ -213,7 +210,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         fileName = "doconst.rb"
       )
 
-      "doblock over const array" in {
+      "recognise all identifier and call nodes" in {
         cpg.identifier.name("n").l.size shouldBe 3
         cpg.identifier.name("m").l.size shouldBe 2
         cpg.call.name("each").size shouldBe 1
@@ -226,7 +223,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       }
     }
 
-    "should recognize identifiers and literals in when a namespace resolution is used " should {
+    "CPG for code with namespace resolution being used" should {
       val cpg = code(
         """
           |Rails.application.configure do
@@ -237,11 +234,16 @@ class IdentifierTests extends RubyCode2CpgFixture {
         fileName = "namespace.rb"
       )
 
-      "namespace resolution test" in {
-        cpg.identifier.size shouldBe 5
+      "recognise all identifier and call nodes" in {
         cpg.call.name("application").size shouldBe 1
         cpg.call.name("configure").size shouldBe 1
         cpg.call.name("new").size shouldBe 1
+        cpg.identifier.name("Rails").l.size shouldBe 1
+        cpg.identifier.name("config").l.size shouldBe 1
+        cpg.identifier.name("Formatter").l.size shouldBe 1
+        cpg.identifier.name("Logger").l.size shouldBe 1
+        cpg.identifier.name("log_formatter").l.size shouldBe 1
+        cpg.identifier.size shouldBe 5
       }
     }
   }
