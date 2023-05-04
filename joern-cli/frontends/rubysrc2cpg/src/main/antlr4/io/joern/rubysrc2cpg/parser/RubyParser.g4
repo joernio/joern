@@ -110,16 +110,16 @@ primary
 // --------------------------------------------------------
 
 singleLeftHandSide
-    :   variableIdentifier
-    |   primary LBRACK arguments? RBRACK
-    |   primary (DOT | COLON2) (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER)
-    |   COLON2 CONSTANT_IDENTIFIER
+    :   variableIdentifier                                                                                          # variableIdentifierOnlySingleLeftHandSide
+    |   primary LBRACK arguments? RBRACK                                                                            # primaryInsideBracketsSingleLeftHandSide
+    |   primary (DOT | COLON2) (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER)                                    # xdotySingleLeftHandSide
+    |   COLON2 CONSTANT_IDENTIFIER                                                                                  # scopedConstantAccessSingleLeftHandSide
     ;
 
 multipleLeftHandSide
-    :   (multipleLeftHandSideItem COMMA wsOrNl*)+ (multipleLeftHandSideItem | packingLeftHandSide)?
-    |   packingLeftHandSide
-    |   groupedLeftHandSide
+    :   (multipleLeftHandSideItem COMMA wsOrNl*)+ (multipleLeftHandSideItem | packingLeftHandSide)?                 # multipleLeftHandSideAndpackingLeftHandSideMultipleLeftHandSide
+    |   packingLeftHandSide                                                                                         # packingLeftHandSideOnlyMultipleLeftHandSide
+    |   groupedLeftHandSide                                                                                         # groupedLeftHandSideOnlyMultipleLeftHandSide
     ;
 
 multipleLeftHandSideItem
@@ -149,12 +149,12 @@ expressionOrCommands
 // --------------------------------------------------------
 
 invocationWithoutParentheses
-    :   command
-    |   chainedCommandWithDoBlock
-    |   chainedCommandWithDoBlock (DOT | COLON2) methodName argumentsWithoutParentheses
-    |   RETURN WS arguments
-    |   BREAK WS arguments
-    |   NEXT WS arguments
+    :   command                                                                                                                 # singleCommandOnlyInvocationWithoutParentheses
+    |   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlockInvocationWithoutParentheses
+    |   chainedCommandWithDoBlock (DOT | COLON2) methodName argumentsWithoutParentheses                                         # chainedCommandDoBlockDorCol2mNameArgsInvocationWithoutParentheses
+    |   RETURN WS arguments                                                                                                     # returnArgsInvocationWithoutParentheses
+    |   BREAK WS arguments                                                                                                      # breakArgsInvocationWithoutParentheses
+    |   NEXT WS arguments                                                                                                       # nextArgsInvocationWithoutParentheses
     ;
 
 command
@@ -169,9 +169,9 @@ chainedCommandWithDoBlock
     ;
 
 commandWithDoBlock
-    :   SUPER argumentsWithoutParentheses WS* doBlock
-    |   methodIdentifier argumentsWithoutParentheses WS* doBlock
-    |   primary WS* (DOT | COLON2) methodName argumentsWithoutParentheses WS* doBlock
+    :   SUPER argumentsWithoutParentheses WS* doBlock                                                                           # argsAndDoBlockCommandWithDoBlock
+    |   methodIdentifier argumentsWithoutParentheses WS* doBlock                                                                # argsAndDoBlockAndMethodIdCommandWithDoBlock
+    |   primary WS* (DOT | COLON2) methodName argumentsWithoutParentheses WS* doBlock                                           # primaryMethodArgsDoBlockCommandWithDoBlock
     ;
 
 argumentsWithoutParentheses
@@ -179,11 +179,11 @@ argumentsWithoutParentheses
     ;
 
 arguments
-    :   blockArgument
-    |   splattingArgument (COMMA wsOrNl* blockArgument)?
-    |   expressions WS* COMMA wsOrNl* associations (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?
-    |   (expressions | associations) (WS* COMMA wsOrNl* blockArgument)?
-    |   command
+    :   blockArgument                                                                                                           # blockArgumentTypeArguments
+    |   splattingArgument (COMMA wsOrNl* blockArgument)?                                                                        # blockSplattingTypeArguments
+    |   expressions WS* COMMA wsOrNl* associations (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?    # blockSplattingExprAssocTypeArguments
+    |   (expressions | associations) (WS* COMMA wsOrNl* blockArgument)?                                                         # blockExprAssocTypeArguments
+    |   command                                                                                                                 # commandTypeArguments
     ;
 
 blockArgument
@@ -199,18 +199,18 @@ splattingArgument
     ;
 
 indexingArguments
-    :   command
-    |   expressions (WS* COMMA wsOrNl*)?
-    |   expressions WS* COMMA wsOrNl* splattingArgument
-    |   associations (WS* COMMA wsOrNl*)?
-    |   splattingArgument
+    :   command                                                                                                                 # commandOnlyIndexingArguments
+    |   expressions (WS* COMMA wsOrNl*)?                                                                                        # expressionsOnlyIndexingArguments
+    |   expressions WS* COMMA wsOrNl* splattingArgument                                                                         # expressionsAndSplattingIndexingArguments
+    |   associations (WS* COMMA wsOrNl*)?                                                                                       # associationsOnlyIndexingArguments
+    |   splattingArgument                                                                                                       # splattingOnlyIndexingArguments
     ;
 
 argumentsWithParentheses
-    :   LPAREN wsOrNl* RPAREN
-    |   LPAREN wsOrNl* arguments (WS* COMMA)? wsOrNl* RPAREN
-    |   LPAREN wsOrNl* expressions WS* COMMA wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN
-    |   LPAREN wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN
+    :   LPAREN wsOrNl* RPAREN                                                                                                   # blankArgsArgumentsWithParentheses
+    |   LPAREN wsOrNl* arguments (WS* COMMA)? wsOrNl* RPAREN                                                                    # argsOnlyArgumentsWithParentheses
+    |   LPAREN wsOrNl* expressions WS* COMMA wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN                                   # expressionsAndChainedCommandWithDoBlockArgumentsWithParentheses
+    |   LPAREN wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN                                                                 # chainedCommandWithDoBlockOnlyArgumentsWithParentheses
     ;
 
 expressions
