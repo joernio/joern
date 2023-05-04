@@ -292,4 +292,26 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Type hints for method parameters and returns" should {
+    lazy val cpg = code("""
+        |import google from 'googleapis';
+        |
+        |function foo(a: google.More, b: google.Money): google.Problems {
+        | a.bar();
+        | b.baz();
+        |}
+        |""".stripMargin)
+
+    "be propagated within the method full name reflecting the import `googleapis`" in {
+      val Some(bar) = cpg.call("bar").headOption
+      bar.methodFullName shouldBe "googleapis:google:More:bar"
+
+      val Some(baz) = cpg.call("baz").headOption
+      baz.methodFullName shouldBe "googleapis:google:Money:baz"
+
+      val Some(foo) = cpg.method("foo").methodReturn.headOption
+      foo.typeFullName shouldBe "googleapis:google:Problems"
+    }
+  }
+
 }
