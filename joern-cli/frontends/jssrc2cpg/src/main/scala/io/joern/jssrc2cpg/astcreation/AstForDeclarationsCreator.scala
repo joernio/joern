@@ -175,10 +175,10 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     exprNode.node match {
       case Identifier | MemberExpression =>
         val (name, fullName) = namesForDecoratorExpression(code(exprNode.json))
-        annotationAst(createAnnotationNode(decorator, name, fullName), List.empty)
+        annotationAst(annotationNode(decorator, decorator.code, name, fullName), List.empty)
       case CallExpression =>
         val (name, fullName) = namesForDecoratorExpression(code(exprNode.json("callee")))
-        val annotationNode   = createAnnotationNode(decorator, name, fullName)
+        val node             = annotationNode(decorator, decorator.code, name, fullName)
         val assignmentAsts = exprNode.json("arguments").arr.toList.map { arg =>
           createBabelNodeInfo(arg).node match {
             case AssignmentExpression =>
@@ -187,7 +187,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
               annotationAssignmentAst("value", code(arg), astForNodeWithFunctionReference(arg))
           }
         }
-        annotationAst(annotationNode, assignmentAsts)
+        annotationAst(node, assignmentAsts)
       case _ => Ast()
     }
   }
