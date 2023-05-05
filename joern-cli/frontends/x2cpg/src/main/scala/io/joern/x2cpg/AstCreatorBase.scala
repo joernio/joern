@@ -53,7 +53,7 @@ abstract class AstCreatorBase(filename: String) {
     methodReturn: NewMethodReturn,
     modifiers: Seq[NewModifier] = Nil
   ): Ast =
-    methodAstWithAnnotations(method, parameters, body, methodReturn, modifiers, annotations = Nil)
+    methodAstWithAnnotations(method, parameters, body, Ast(methodReturn), modifiers, annotations = Nil)
 
   /** Creates an AST that represents an entire method, including its content and with support for both method and
     * parameter annotations.
@@ -62,7 +62,7 @@ abstract class AstCreatorBase(filename: String) {
     method: NewMethod,
     parameters: Seq[Ast],
     body: Ast,
-    methodReturn: NewMethodReturn,
+    methodReturn: Ast,
     modifiers: Seq[NewModifier] = Nil,
     annotations: Seq[Ast] = Nil
   ): Ast =
@@ -71,7 +71,7 @@ abstract class AstCreatorBase(filename: String) {
       .withChild(body)
       .withChildren(modifiers.map(Ast(_)))
       .withChildren(annotations)
-      .withChild(Ast(methodReturn))
+      .withChild(methodReturn)
 
   /** Creates an AST that represents a method stub, containing information about the method, its parameters, and the
     * return type.
