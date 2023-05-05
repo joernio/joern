@@ -5,8 +5,6 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-import scala.List
-
 class FileTests extends CCodeToCpgSuite {
 
   private val cpg = code("""
