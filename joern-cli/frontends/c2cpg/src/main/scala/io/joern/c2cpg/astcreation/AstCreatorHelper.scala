@@ -420,7 +420,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   private def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op       = "<operator>.typeOf"
-    val cpgUnary = newCallNode(decl, op, op, DispatchTypes.STATIC_DISPATCH)
+    val cpgUnary = callNode(decl, nodeSignature(decl), op, op, DispatchTypes.STATIC_DISPATCH)
     val operand  = nullSafeAst(decl.getDecltypeExpression)
     callAst(cpgUnary, List(operand))
   }
@@ -430,10 +430,12 @@ trait AstCreatorHelper { this: AstCreator =>
     scope.pushNewScope(node)
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
-      val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
-      val left     = astForNode(des)
-      val right    = astForNode(d.getOperand)
-      callAst(callNode, List(left, right))
+      val callNode_ =
+        callNode(d, nodeSignature(d), op, op, DispatchTypes.STATIC_DISPATCH)
+          .argumentIndex(o)
+      val left  = astForNode(des)
+      val right = astForNode(d.getOperand)
+      callAst(callNode_, List(left, right))
     }
     scope.popScope()
     blockAst(node, calls.toList)
@@ -444,36 +446,39 @@ trait AstCreatorHelper { this: AstCreator =>
     scope.pushNewScope(node)
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
-      val callNode = newCallNode(d, op, op, DispatchTypes.STATIC_DISPATCH, o)
-      val left     = astForNode(des)
-      val right    = astForNode(d.getOperand)
-      callAst(callNode, List(left, right))
+      val callNode_ =
+        callNode(d, nodeSignature(d), op, op, DispatchTypes.STATIC_DISPATCH)
+          .argumentIndex(o)
+      val left  = astForNode(des)
+      val right = astForNode(d.getOperand)
+      callAst(callNode_, List(left, right))
     }
     scope.popScope()
     blockAst(node, calls.toList)
   }
 
   private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer): Ast = {
-    val name     = "<operator>.constructorInitializer"
-    val callNode = newCallNode(c, name, name, DispatchTypes.STATIC_DISPATCH)
-    val args     = c.getArguments.toList.map(a => astForNode(a))
-    callAst(callNode, args)
+    val name = "<operator>.constructorInitializer"
+    val callNode_ =
+      callNode(c, nodeSignature(c), name, name, DispatchTypes.STATIC_DISPATCH)
+    val args = c.getArguments.toList.map(a => astForNode(a))
+    callAst(callNode_, args)
   }
 
   private def astForCASTArrayRangeDesignator(des: CASTArrayRangeDesignator): Ast = {
     val op         = Operators.arrayInitializer
-    val callNode   = newCallNode(des, op, op, DispatchTypes.STATIC_DISPATCH)
+    val callNode_  = callNode(des, nodeSignature(des), op, op, DispatchTypes.STATIC_DISPATCH)
     val floorAst   = nullSafeAst(des.getRangeFloor)
     val ceilingAst = nullSafeAst(des.getRangeCeiling)
-    callAst(callNode, List(floorAst, ceilingAst))
+    callAst(callNode_, List(floorAst, ceilingAst))
   }
 
   private def astForCPPASTArrayRangeDesignator(des: CPPASTArrayRangeDesignator): Ast = {
     val op         = Operators.arrayInitializer
-    val callNode   = newCallNode(des, op, op, DispatchTypes.STATIC_DISPATCH)
+    val callNode_  = callNode(des, nodeSignature(des), op, op, DispatchTypes.STATIC_DISPATCH)
     val floorAst   = nullSafeAst(des.getRangeFloor)
     val ceilingAst = nullSafeAst(des.getRangeCeiling)
-    callAst(callNode, List(floorAst, ceilingAst))
+    callAst(callNode_, List(floorAst, ceilingAst))
   }
 
   protected def astForNode(node: IASTNode): Ast = {

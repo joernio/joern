@@ -1,6 +1,5 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.MethodScope
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg
@@ -8,23 +7,9 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstNodeBuilder { this: AstCreator =>
-
-  protected def createAnnotationNode(annotation: BabelNodeInfo, name: String, fullName: String): NewAnnotation = {
-    val code         = annotation.code
-    val lineNumber   = annotation.lineNumber
-    val columnNumber = annotation.columnNumber
-    NewAnnotation()
-      .code(code)
-      .name(name)
-      .fullName(fullName)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
-  }
-
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
     newMethodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
   }
@@ -56,29 +41,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .code(code)
       .lineNumber(line)
       .columnNumber(column)
-  }
-
-  protected def createParameterInNode(
-    name: String,
-    code: String,
-    index: Int,
-    isVariadic: Boolean,
-    line: Option[Integer],
-    column: Option[Integer],
-    tpe: Option[String] = None
-  ): NewMethodParameterIn = {
-    val param = NewMethodParameterIn()
-      .name(name)
-      .code(code)
-      .index(index)
-      .order(index)
-      .isVariadic(isVariadic)
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .lineNumber(line)
-      .columnNumber(column)
-      .typeFullName(tpe.getOrElse(Defines.Any))
-    scope.addVariable(name, param, MethodScope)
-    param
   }
 
   protected def codeOf(node: NewNode): String = node match {
@@ -165,6 +127,13 @@ trait AstNodeBuilder { this: AstCreator =>
     val callNode  = createCallNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(testAst, trueAst, falseAst)
     callAst(callNode, arguments)
+  }
+
+  def callNode(node: BabelNodeInfo, code: String, name: String, dispatchType: String): NewCall = {
+    val fullName =
+      if (dispatchType == DispatchTypes.STATIC_DISPATCH) name
+      else x2cpg.Defines.DynamicCallUnknownFallName
+    callNode(node, code, name, fullName, dispatchType, None, Some(Defines.Any))
   }
 
   protected def createCallNode(

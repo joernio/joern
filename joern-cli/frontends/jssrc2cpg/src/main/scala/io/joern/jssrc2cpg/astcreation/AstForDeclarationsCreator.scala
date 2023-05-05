@@ -135,13 +135,13 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
 
       val sourceCallArgNode = literalNode(declaration, s"\"${fromName.stripPrefix("_")}\"", None)
-      val sourceCall = createCallNode(
-        s"$RequireKeyword(${sourceCallArgNode.code})",
-        RequireKeyword,
-        DispatchTypes.STATIC_DISPATCH,
-        declaration.lineNumber,
-        declaration.columnNumber
-      )
+      val sourceCall =
+        callNode(
+          declaration,
+          s"$RequireKeyword(${sourceCallArgNode.code})",
+          RequireKeyword,
+          DispatchTypes.STATIC_DISPATCH
+        )
       val sourceAst =
         callAst(sourceCall, List(Ast(sourceCallArgNode)))
       val assignmentCallAst = createAssignmentCallAst(
@@ -175,10 +175,10 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     exprNode.node match {
       case Identifier | MemberExpression =>
         val (name, fullName) = namesForDecoratorExpression(code(exprNode.json))
-        annotationAst(createAnnotationNode(decorator, name, fullName), List.empty)
+        annotationAst(annotationNode(decorator, decorator.code, name, fullName), List.empty)
       case CallExpression =>
         val (name, fullName) = namesForDecoratorExpression(code(exprNode.json("callee")))
-        val annotationNode   = createAnnotationNode(decorator, name, fullName)
+        val node             = annotationNode(decorator, decorator.code, name, fullName)
         val assignmentAsts = exprNode.json("arguments").arr.toList.map { arg =>
           createBabelNodeInfo(arg).node match {
             case AssignmentExpression =>
@@ -187,7 +187,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
               annotationAssignmentAst("value", code(arg), astForNodeWithFunctionReference(arg))
           }
         }
-        annotationAst(annotationNode, assignmentAsts)
+        annotationAst(node, assignmentAsts)
       case _ => Ast()
     }
   }
@@ -413,13 +413,8 @@ trait AstForDeclarationsCreator { this: AstCreator =>
 
     val destAst           = Ast(destNode)
     val sourceCallArgNode = literalNode(nodeInfo, s"\"$from\"", None)
-    val sourceCall = createCallNode(
-      s"$RequireKeyword(${sourceCallArgNode.code})",
-      RequireKeyword,
-      DispatchTypes.DYNAMIC_DISPATCH,
-      nodeInfo.lineNumber,
-      nodeInfo.columnNumber
-    )
+    val sourceCall =
+      callNode(nodeInfo, s"$RequireKeyword(${sourceCallArgNode.code})", RequireKeyword, DispatchTypes.DYNAMIC_DISPATCH)
 
     val receiverNode = identifierNode(nodeInfo, RequireKeyword)
     val thisNode     = identifierNode(nodeInfo, "this").dynamicTypeHintFullName(typeHintForThisExpression())
@@ -649,13 +644,8 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     val testAst = {
       val lhsNode = identifierNode(pattern, keyName)
       scope.addVariableReference(keyName, lhsNode)
-      val rhsNode = createCallNode(
-        "void 0",
-        "<operator>.void",
-        DispatchTypes.STATIC_DISPATCH,
-        pattern.lineNumber,
-        pattern.columnNumber
-      )
+      val rhsNode =
+        callNode(pattern, "void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH)
       createEqualsCallAst(Ast(lhsNode), Ast(rhsNode), pattern.lineNumber, pattern.columnNumber)
     }
 

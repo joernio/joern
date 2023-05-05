@@ -8,7 +8,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newLocalNode}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier => _, _}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import ujson.Value
 
 import scala.collection.mutable
@@ -65,15 +65,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
             val localNode = newLocalNode(paramName, tpe).order(0)
             diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
           }
-          createParameterInNode(
-            paramName,
-            nodeInfo.code,
-            index,
-            isVariadic = true,
-            nodeInfo.lineNumber,
-            nodeInfo.columnNumber,
-            Option(tpe)
-          )
+          parameterInNode(nodeInfo, paramName, nodeInfo.code, index, true, EvaluationStrategies.BY_VALUE, Option(tpe))
         case AssignmentPattern =>
           val lhsElement  = nodeInfo.json("left")
           val rhsElement  = nodeInfo.json("right")
@@ -81,14 +73,16 @@ trait AstForFunctionsCreator { this: AstCreator =>
           lhsNodeInfo.node match {
             case ObjectPattern | ArrayPattern =>
               val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
-              val param = createParameterInNode(
+              val param = parameterInNode(
+                nodeInfo,
                 paramName,
                 nodeInfo.code,
                 index,
                 isVariadic = false,
-                nodeInfo.lineNumber,
-                nodeInfo.columnNumber
+                EvaluationStrategies.BY_VALUE
               )
+              scope.addVariable(paramName, param, MethodScope)
+
               val rhsAst = astForNodeWithFunctionReference(rhsElement)
               additionalBlockStatements.addOne(
                 astForDeconstruction(lhsNodeInfo, rhsAst, nodeInfo.code, Option(paramName))
@@ -97,26 +91,26 @@ trait AstForFunctionsCreator { this: AstCreator =>
             case _ =>
               additionalBlockStatements.addOne(convertParamWithDefault(nodeInfo))
               val tpe = typeFor(lhsNodeInfo)
-              createParameterInNode(
+              parameterInNode(
+                lhsNodeInfo,
                 lhsNodeInfo.code,
                 lhsNodeInfo.code,
                 index,
-                isVariadic = false,
-                lhsNodeInfo.lineNumber,
-                lhsNodeInfo.columnNumber,
+                false,
+                EvaluationStrategies.BY_VALUE,
                 Option(tpe)
               )
           }
         case ArrayPattern =>
           val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
           val tpe       = typeFor(nodeInfo)
-          val param = createParameterInNode(
+          val param = parameterInNode(
+            nodeInfo,
             paramName,
             nodeInfo.code,
             index,
             isVariadic = false,
-            nodeInfo.lineNumber,
-            nodeInfo.columnNumber,
+            EvaluationStrategies.BY_VALUE,
             Option(tpe)
           )
           additionalBlockStatements.addAll(nodeInfo.json("elements").arr.toList.map {
@@ -161,15 +155,17 @@ trait AstForFunctionsCreator { this: AstCreator =>
         case ObjectPattern =>
           val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
           val tpe       = typeFor(nodeInfo)
-          val param = createParameterInNode(
+          val param = parameterInNode(
+            nodeInfo,
             paramName,
             nodeInfo.code,
             index,
             isVariadic = false,
-            nodeInfo.lineNumber,
-            nodeInfo.columnNumber,
+            EvaluationStrategies.BY_VALUE,
             Option(tpe)
           )
+          scope.addVariable(paramName, param, MethodScope)
+
           additionalBlockStatements.addAll(nodeInfo.json("properties").arr.toList.map { element =>
             val elementNodeInfo = createBabelNodeInfo(element)
             elementNodeInfo.node match {
@@ -203,27 +199,26 @@ trait AstForFunctionsCreator { this: AstCreator =>
           })
           param
         case Identifier =>
-          val tpe = typeFor(nodeInfo)
-          createParameterInNode(
-            nodeInfo.json("name").str,
-            nodeInfo.code,
-            index,
-            isVariadic = false,
-            nodeInfo.lineNumber,
-            nodeInfo.columnNumber,
-            Option(tpe)
-          )
+          val tpe  = typeFor(nodeInfo)
+          val name = nodeInfo.json("name").str
+          val node =
+            parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))
+          scope.addVariable(name, node, MethodScope)
+          node
         case _ =>
           val tpe = typeFor(nodeInfo)
-          createParameterInNode(
-            nodeInfo.code,
-            nodeInfo.code,
-            index,
-            isVariadic = false,
-            nodeInfo.lineNumber,
-            nodeInfo.columnNumber,
-            Option(tpe)
-          )
+          val node =
+            parameterInNode(
+              nodeInfo,
+              nodeInfo.code,
+              nodeInfo.code,
+              index,
+              isVariadic = false,
+              EvaluationStrategies.BY_VALUE,
+              Option(tpe)
+            )
+          scope.addVariable(nodeInfo.code, node, MethodScope)
+          node
       }
       val decoratorAsts = astsForDecorators(nodeInfo)
       decoratorAsts.foreach { decoratorAst =>
@@ -243,13 +238,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val testAst = {
       val keyNode = identifierNode(element, codeOf(lhsAst.nodes.head))
-      val voidCallNode = createCallNode(
-        "void 0",
-        "<operator>.void",
-        DispatchTypes.STATIC_DISPATCH,
-        element.lineNumber,
-        element.columnNumber
-      )
+      val voidCallNode =
+        callNode(element, "void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH)
       val equalsCallAst = createEqualsCallAst(Ast(keyNode), Ast(voidCallNode), element.lineNumber, element.columnNumber)
       equalsCallAst
     }
@@ -287,8 +277,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
     methodAstParentStack.push(methodNode_)
 
     val thisNode =
-      createParameterInNode("this", "this", 0, isVariadic = false, line = func.lineNumber, column = func.columnNumber)
+      parameterInNode(func, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
         .dynamicTypeHintFullName(typeHintForThisExpression())
+    scope.addVariable("this", thisNode, MethodScope)
 
     val paramNodes = if (hasKey(func.json, "parameters")) {
       handleParameters(func.json("parameters").arr.toSeq, mutable.ArrayBuffer.empty[Ast], createLocals = false)
@@ -375,8 +366,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
     localAstParentStack.push(blockNode)
 
     val thisNode =
-      createParameterInNode("this", "this", 0, isVariadic = false, line = func.lineNumber, column = func.columnNumber)
+      parameterInNode(func, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
         .dynamicTypeHintFullName(typeHintForThisExpression())
+    scope.addVariable("this", thisNode, MethodScope)
 
     val paramNodes = handleParameters(func.json("params").arr.toSeq, additionalBlockStatements)
 

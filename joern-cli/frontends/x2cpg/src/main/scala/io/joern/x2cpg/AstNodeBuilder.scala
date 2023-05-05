@@ -1,7 +1,9 @@
 package io.joern.x2cpg
 
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewAnnotation,
   NewBlock,
+  NewCall,
   NewControlStructure,
   NewFieldIdentifier,
   NewIdentifier,
@@ -9,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewLocal,
   NewMember,
   NewMethod,
+  NewMethodParameterIn,
   NewMethodRef,
   NewReturn,
   NewTypeDecl,
@@ -27,6 +30,15 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     NewUnknown()
       .parserTypeName(node.getClass.getSimpleName)
       .code(code)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
+
+  protected def annotationNode(node: Node, code: String, name: String, fullName: String): NewAnnotation = {
+    NewAnnotation()
+      .code(code)
+      .name(name)
+      .fullName(fullName)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
@@ -114,6 +126,63 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .aliasTypeFullName(alias)
       .lineNumber(line(node))
       .columnNumber(column(node))
+  }
+
+  protected def parameterInNode(
+    node: Node,
+    name: String,
+    code: String,
+    index: Int,
+    isVariadic: Boolean,
+    evaluationStrategy: String,
+    typeFullName: String
+  ): NewMethodParameterIn =
+    parameterInNode(node, name, code, index, isVariadic, evaluationStrategy, Some(typeFullName))
+
+  protected def parameterInNode(
+    node: Node,
+    name: String,
+    code: String,
+    index: Int,
+    isVariadic: Boolean,
+    evaluationStrategy: String,
+    typeFullName: Option[String] = None
+  ): NewMethodParameterIn = {
+    NewMethodParameterIn()
+      .name(name)
+      .code(code)
+      .index(index)
+      .order(index)
+      .isVariadic(isVariadic)
+      .evaluationStrategy(evaluationStrategy)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+      .typeFullName(typeFullName.getOrElse("ANY"))
+  }
+
+  def callNode(node: Node, code: String, name: String, methodFullName: String, dispatchType: String): NewCall =
+    callNode(node, code, name, methodFullName, dispatchType, None, None)
+
+  def callNode(
+    node: Node,
+    code: String,
+    name: String,
+    methodFullName: String,
+    dispatchType: String,
+    signature: Option[String],
+    typeFullName: Option[String]
+  ): NewCall = {
+    val out =
+      NewCall()
+        .code(code)
+        .name(name)
+        .methodFullName(methodFullName)
+        .dispatchType(dispatchType)
+        .lineNumber(line(node))
+        .columnNumber(column(node))
+    signature.foreach { s => out.signature(s) }
+    typeFullName.foreach { t => out.typeFullName(t) }
+    out
   }
 
   protected def returnNode(node: Node, code: String): NewReturn = {

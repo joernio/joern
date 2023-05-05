@@ -921,22 +921,16 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .orElse(exprNameFromStack(expr))
   }
 
-  private def createAnnotationNode(annotationExpr: AnnotationExpr): NewAnnotation = {
-    val fallbackType = s"${Defines.UnresolvedNamespace}.${annotationExpr.getNameAsString}"
-    NewAnnotation()
-      .code(annotationExpr.toString)
-      .name(annotationExpr.getName.getIdentifier)
-      .fullName(expressionReturnTypeFullName(annotationExpr).getOrElse(fallbackType))
-      .lineNumber(line(annotationExpr))
-      .columnNumber(column(annotationExpr))
-  }
-
   private def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
+    val fallbackType = s"${Defines.UnresolvedNamespace}.${annotationExpr.getNameAsString}"
+    val fullName     = expressionReturnTypeFullName(annotationExpr).getOrElse(fallbackType)
+    val code         = annotationExpr.toString
+    val name         = annotationExpr.getName.getIdentifier
+    val node         = annotationNode(annotationExpr, code, name, fullName)
     annotationExpr match {
       case _: MarkerAnnotationExpr =>
-        annotationAst(createAnnotationNode(annotationExpr), List.empty)
+        annotationAst(node, List.empty)
       case normal: NormalAnnotationExpr =>
-        val annotationNode = createAnnotationNode(annotationExpr)
         val assignmentAsts = normal.getPairs.asScala.toList.map { pair =>
           annotationAssignmentAst(
             pair.getName.getIdentifier,
@@ -944,9 +938,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
             convertAnnotationValueExpr(pair.getValue).getOrElse(Ast())
           )
         }
-        annotationAst(annotationNode, assignmentAsts)
+        annotationAst(node, assignmentAsts)
       case single: SingleMemberAnnotationExpr =>
-        val annotationNode = createAnnotationNode(annotationExpr)
         val assignmentAsts = List(
           annotationAssignmentAst(
             "value",
@@ -954,7 +947,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
             convertAnnotationValueExpr(single.getMemberValue).getOrElse(Ast())
           )
         )
-        annotationAst(annotationNode, assignmentAsts)
+        annotationAst(node, assignmentAsts)
     }
   }
 

@@ -269,12 +269,13 @@ trait KtPsiToAst {
 
     val primaryCtorCall =
       callNode(
+        ktClass.getPrimaryConstructor,
         TypeConstants.initPrefix,
         primaryCtorMethodNode.name,
         primaryCtorMethodNode.fullName,
-        primaryCtorMethodNode.signature,
-        constructorMethodReturn.typeFullName,
-        DispatchTypes.STATIC_DISPATCH
+        DispatchTypes.STATIC_DISPATCH,
+        Some(primaryCtorMethodNode.signature),
+        Some(constructorMethodReturn.typeFullName)
       )
 
     val secondaryConstructorAsts =
@@ -500,14 +501,13 @@ trait KtPsiToAst {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, ("", "")) // TODO: fix the fallback names
     val typeFullName          = registerType(typeInfoProvider.expressionType(expr, TypeConstants.javaLangObject))
     val node = callNode(
+      expr,
       expr.getText,
       TypeConstants.classLiteralReplacementMethodName,
       fullName,
-      signature,
-      typeFullName,
       DispatchTypes.STATIC_DISPATCH,
-      line(expr),
-      column(expr)
+      Some(signature),
+      Some(typeFullName)
     )
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
   }
@@ -540,7 +540,15 @@ trait KtPsiToAst {
     }
     val parametersAsts = typeInfoProvider.implicitParameterName(expr) match {
       case Some(implicitParamName) =>
-        val node = methodParameterNode(implicitParamName, TypeConstants.any)
+        val node = parameterInNode(
+          expr,
+          implicitParamName,
+          implicitParamName,
+          0,
+          false,
+          EvaluationStrategies.BY_REFERENCE,
+          TypeConstants.any
+        )
         scope.addToScope(implicitParamName, node)
         Seq(Ast(node))
       case None =>
@@ -723,14 +731,13 @@ trait KtPsiToAst {
         val (fullName, signature) = typeInfoProvider.fullNameWithSignature(call, (TypeConstants.any, TypeConstants.any))
         registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
         val initCallNode = callNode(
+          expr,
           Constants.init,
           Constants.init,
           fullName,
-          signature,
-          TypeConstants.void,
           DispatchTypes.STATIC_DISPATCH,
-          line(expr),
-          column(expr)
+          Some(signature),
+          Some(TypeConstants.void)
         )
         Seq(callAst(initCallNode, argAsts, Some(initReceiverAst), None))
       case _ => Seq()
@@ -765,14 +772,13 @@ trait KtPsiToAst {
       typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
     val componentNCallCode = s"$componentNReceiverName.${Constants.componentNPrefix}$componentIdx()"
     val componentNCallNode = callNode(
+      entry,
       componentNCallCode,
       s"${Constants.componentNPrefix}$componentIdx",
       fullName,
-      signature,
-      entryTypeFullName,
       DispatchTypes.DYNAMIC_DISPATCH,
-      line(entry),
-      column(entry)
+      Some(signature),
+      Some(entryTypeFullName)
     )
 
     val componentNIdentifierAst = astWithRefEdgeMaybe(componentNIdentifierNode.name, componentNIdentifierNode)
@@ -894,14 +900,13 @@ trait KtPsiToAst {
     val node =
       withArgumentIndex(
         callNode(
+          expr,
           expr.getText,
           methodName,
           fullName,
-          signature,
-          retType,
           DispatchTypes.STATIC_DISPATCH,
-          line(expr),
-          column(expr)
+          Some(signature),
+          Some(retType)
         ),
         argIdx
       )
@@ -938,14 +943,13 @@ trait KtPsiToAst {
     val node =
       withArgumentIndex(
         callNode(
+          expr,
           expr.getText,
           methodName,
           fullName,
-          signature,
-          retType,
           DispatchTypes.STATIC_DISPATCH,
-          line(expr),
-          column(expr)
+          Some(signature),
+          Some(retType)
         ),
         argIdx
       )
@@ -967,7 +971,7 @@ trait KtPsiToAst {
     val dispatchType = DispatchTypes.STATIC_DISPATCH
 
     val node = withArgumentIndex(
-      callNode(expr.getText, methodName, fullName, signature, retType, dispatchType, line(expr), column(expr)),
+      callNode(expr, expr.getText, methodName, fullName, dispatchType, Some(signature), Some(retType)),
       argIdx
     )
     Ast(node)
@@ -1002,7 +1006,7 @@ trait KtPsiToAst {
     val methodName = expr.getSelectorExpression.getFirstChild.getText
 
     val node = withArgumentIndex(
-      callNode(expr.getText, methodName, fullName, signature, retType, dispatchType, line(expr), column(expr)),
+      callNode(expr, expr.getText, methodName, fullName, dispatchType, Some(signature), Some(retType)),
       argIdx
     )
     val receiverNode =
@@ -1166,12 +1170,13 @@ trait KtPsiToAst {
     val iteratorAssignmentRhsIdentifier = newIdentifierNode(loopRangeText, loopRangeExprTypeFullName)
       .argumentIndex(0)
     val iteratorAssignmentRhs = callNode(
+      expr.getLoopRange,
       s"$loopRangeText.${Constants.getIteratorMethodName}()",
       Constants.getIteratorMethodName,
       s"$loopRangeExprTypeFullName.${Constants.getIteratorMethodName}:${Constants.javaUtilIterator}()",
-      s"${Constants.javaUtilIterator}()",
-      Constants.javaUtilIterator,
-      DispatchTypes.DYNAMIC_DISPATCH
+      DispatchTypes.DYNAMIC_DISPATCH,
+      Some(s"${Constants.javaUtilIterator}()"),
+      Some(Constants.javaUtilIterator)
     )
 
     val iteratorAssignmentRhsAst =
@@ -1187,12 +1192,13 @@ trait KtPsiToAst {
     val hasNextFullName =
       s"${Constants.collectionsIteratorName}.${Constants.hasNextIteratorMethodName}:${TypeConstants.javaLangBoolean}()"
     val controlStructureCondition = callNode(
+      expr.getLoopRange,
       s"$iteratorName.${Constants.hasNextIteratorMethodName}()",
       Constants.hasNextIteratorMethodName,
       hasNextFullName,
-      s"${TypeConstants.javaLangBoolean}()",
-      TypeConstants.javaLangBoolean,
-      DispatchTypes.DYNAMIC_DISPATCH
+      DispatchTypes.DYNAMIC_DISPATCH,
+      Some(s"${TypeConstants.javaLangBoolean}()"),
+      Some(TypeConstants.javaLangBoolean)
     ).argumentIndex(0)
     val controlStructureConditionAst =
       callAst(controlStructureCondition, List(), Option(Ast(conditionIdentifier)))
@@ -1211,12 +1217,13 @@ trait KtPsiToAst {
     val iteratorNextIdentifierAst = Ast(iteratorNextIdentifier).withRefEdge(iteratorNextIdentifier, iteratorLocal)
 
     val iteratorNextCall = callNode(
+      expr.getLoopParameter,
       s"$iteratorName.${Constants.nextIteratorMethodName}()",
       Constants.nextIteratorMethodName,
       s"${Constants.collectionsIteratorName}.${Constants.nextIteratorMethodName}:${TypeConstants.javaLangObject}()",
-      s"${TypeConstants.javaLangObject}()",
-      TypeConstants.javaLangObject,
-      DispatchTypes.DYNAMIC_DISPATCH
+      DispatchTypes.DYNAMIC_DISPATCH,
+      Some(s"${TypeConstants.javaLangObject}()"),
+      Some(TypeConstants.javaLangObject)
     )
     val iteratorNextCallAst =
       callAst(iteratorNextCall, Seq(), Option(iteratorNextIdentifierAst))
@@ -1266,12 +1273,13 @@ trait KtPsiToAst {
     val iteratorAssignmentRhsIdentifier = newIdentifierNode(loopRangeText, loopRangeExprTypeFullName)
       .argumentIndex(0)
     val iteratorAssignmentRhs = callNode(
+      expr.getLoopRange,
       s"$loopRangeText.${Constants.getIteratorMethodName}()",
       Constants.getIteratorMethodName,
       s"$loopRangeExprTypeFullName.${Constants.getIteratorMethodName}:${Constants.javaUtilIterator}()",
-      s"${Constants.javaUtilIterator}()",
-      Constants.javaUtilIterator,
-      DispatchTypes.DYNAMIC_DISPATCH
+      DispatchTypes.DYNAMIC_DISPATCH,
+      Some(s"${Constants.javaUtilIterator}()"),
+      Some(Constants.javaUtilIterator)
     )
 
     val iteratorAssignmentRhsAst =
@@ -1287,12 +1295,13 @@ trait KtPsiToAst {
     val hasNextFullName =
       s"${Constants.collectionsIteratorName}.${Constants.hasNextIteratorMethodName}:${TypeConstants.javaLangBoolean}()"
     val controlStructureCondition = callNode(
+      expr.getLoopRange,
       s"$iteratorName.${Constants.hasNextIteratorMethodName}()",
       Constants.hasNextIteratorMethodName,
       hasNextFullName,
-      s"${TypeConstants.javaLangBoolean}()",
-      TypeConstants.javaLangBoolean,
-      DispatchTypes.DYNAMIC_DISPATCH
+      DispatchTypes.DYNAMIC_DISPATCH,
+      Some(s"${TypeConstants.javaLangBoolean}()"),
+      Some(TypeConstants.javaLangBoolean)
     ).argumentIndex(0)
     val controlStructureConditionAst =
       callAst(controlStructureCondition, List(), Option(Ast(conditionIdentifier)))
@@ -1317,12 +1326,13 @@ trait KtPsiToAst {
     val iteratorNextIdentifierAst = Ast(iteratorNextIdentifier).withRefEdge(iteratorNextIdentifier, localForIterator)
 
     val iteratorNextCall = callNode(
+      expr.getLoopRange,
       s"${iteratorNextIdentifier.code}.${Constants.nextIteratorMethodName}()",
       Constants.nextIteratorMethodName,
       s"${Constants.collectionsIteratorName}.${Constants.nextIteratorMethodName}:${TypeConstants.javaLangObject}()",
-      s"${TypeConstants.javaLangObject}()",
-      TypeConstants.javaLangObject,
-      DispatchTypes.DYNAMIC_DISPATCH
+      DispatchTypes.DYNAMIC_DISPATCH,
+      Some(s"${TypeConstants.javaLangObject}()"),
+      Some(TypeConstants.javaLangObject)
     )
 
     val iteratorNextCallAst =
@@ -1455,14 +1465,13 @@ trait KtPsiToAst {
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
     val initCallNode = callNode(
+      expr,
       expr.getText,
       Constants.init,
       fullName,
-      signature,
-      TypeConstants.void,
       DispatchTypes.STATIC_DISPATCH,
-      line(expr),
-      column(expr)
+      Some(signature),
+      Some(TypeConstants.void)
     )
     val initCallAst       = callAst(initCallNode, argAsts, Option(initReceiverAst))
     val lastIdentifier    = identifierNode(expr, tmpName, tmpName, typeFullName)
@@ -1504,14 +1513,13 @@ trait KtPsiToAst {
       val (fullName, signature) =
         typeInfoProvider.fullNameWithSignature(typedCall, (TypeConstants.any, TypeConstants.any))
       val initCallNode = callNode(
+        typedCall,
         typedCall.getText,
         Constants.init,
         fullName,
-        signature,
-        TypeConstants.void,
         DispatchTypes.STATIC_DISPATCH,
-        line(expr),
-        column(expr)
+        Some(signature),
+        Some(TypeConstants.void)
       )
       val initReceiverNode = identifierNode(expr, identifier.name, identifier.name, identifier.typeFullName)
       val initReceiverAst  = Ast(initReceiverNode).withRefEdge(initReceiverNode, local)
@@ -1552,14 +1560,13 @@ trait KtPsiToAst {
       val initSignature     = s"<${TypeConstants.void}>()"
       val initFullName      = s"$typeFullName${TypeConstants.initPrefix}:$initSignature"
       val initCallNode = callNode(
+        expr,
         Constants.init,
         Constants.init,
         initFullName,
-        initSignature,
-        TypeConstants.void,
         DispatchTypes.STATIC_DISPATCH,
-        line(expr),
-        column(expr)
+        Some(initSignature),
+        Some(TypeConstants.void)
       )
       val initReceiverNode = identifierNode(expr, identifier.name, identifier.name, identifier.typeFullName)
       val initReceiverAst  = Ast(initReceiverNode).withRefEdge(initReceiverNode, node)
@@ -1728,14 +1735,13 @@ trait KtPsiToAst {
       else if (expr.getChildren.toList.sizeIs >= 2) expr.getChildren.toList(1).getText
       else expr.getName
     val node = callNode(
+      expr,
       expr.getText,
       name,
       fullName,
-      finalSignature,
-      typeFullName,
       DispatchTypes.STATIC_DISPATCH,
-      line(expr),
-      column(expr)
+      Some(finalSignature),
+      Some(typeFullName)
     )
     val args = astsForExpression(expr.getLeft, None) ++ astsForExpression(expr.getRight, None)
     callAst(withArgumentIndex(node, argIdx), args.toList)
@@ -1787,14 +1793,13 @@ trait KtPsiToAst {
     // TODO: add test case to confirm whether the ANY fallback makes sense (could be void)
     val returnType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node = callNode(
+      expr,
       expr.getText,
       referencedName,
       fullName,
-      signature,
-      returnType,
       DispatchTypes.STATIC_DISPATCH,
-      line(expr),
-      column(expr)
+      Some(signature),
+      Some(returnType)
     )
     callAst(withArgumentIndex(node, argIdx), argAsts.toList)
   }
@@ -1825,7 +1830,8 @@ trait KtPsiToAst {
 
     val explicitTypeName = Option(param.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val typeFullName     = registerType(typeInfoProvider.parameterType(param, explicitTypeName))
-    val node             = methodParameterNode(name, typeFullName, line(param), column(param)).order(order)
+    val node =
+      parameterInNode(param, name, name, order, false, EvaluationStrategies.BY_VALUE, typeFullName)
     scope.addToScope(name, node)
 
     val annotations = param.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq

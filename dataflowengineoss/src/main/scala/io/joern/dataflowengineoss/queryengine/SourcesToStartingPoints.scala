@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{Operators, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
@@ -80,7 +80,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case x: Identifier =>
         withFieldAndIndexAccesses(
           List(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
-        )
+        ) ++ x.refsTo.capturedByMethodRef.referencedMethod.flatMap(m => usagesForName(x.name, m))
       case x => List(x).collect { case y: CfgNode => y }
     }
   }
@@ -169,11 +169,15 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       .or(
         _.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"),
         // in language such as Python, where assignments for members can be directly under a type decl
-        _.method.typeDecl.where(_.member)
+        _.method.typeDecl
       )
       .target
       .flatMap {
-        case identifier: Identifier if lit.method.typeDecl.member.name.toSet.contains(identifier.name) =>
+        case identifier: Identifier
+            // If these are the same, then the parent method is the module-level type
+            if Option(identifier.method.fullName) == identifier.method.typeDecl.fullName.headOption ||
+              // If a member shares the name of the identifier then we consider this as a member
+              lit.method.typeDecl.member.name.toSet.contains(identifier.name) =>
           List(identifier)
         case call: Call if call.name == Operators.fieldAccess => call.ast.isFieldIdentifier.l
         case _                                                => List[Expression]()

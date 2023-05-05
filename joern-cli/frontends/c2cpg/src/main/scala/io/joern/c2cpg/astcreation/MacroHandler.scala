@@ -1,7 +1,14 @@
 package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew, NewBlock, NewFieldIdentifier, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
+  ExpressionNew,
+  NewBlock,
+  NewCall,
+  NewFieldIdentifier,
+  NewNode
+}
 import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
@@ -108,13 +115,17 @@ trait MacroHandler { this: AstCreator =>
     val code    = node.getRawSignature.stripSuffix(";")
     val argAsts = argumentTrees(arguments, ast).map(_.getOrElse(Ast()))
 
-    val callNode = newCallNode(
-      node,
-      StringUtils.normalizeSpace(name),
-      StringUtils.normalizeSpace(fullName(macroDef, argAsts)),
-      DispatchTypes.INLINED
-    ).code(code).typeFullName(typeFor(node))
-
+    val callName     = StringUtils.normalizeSpace(name)
+    val callFullName = StringUtils.normalizeSpace(fullName(macroDef, argAsts))
+    val callNode =
+      NewCall()
+        .name(callName)
+        .dispatchType(DispatchTypes.INLINED)
+        .methodFullName(callFullName)
+        .code(code)
+        .typeFullName(typeFor(node))
+        .lineNumber(line(node))
+        .columnNumber(column(node))
     callAst(callNode, argAsts)
   }
 

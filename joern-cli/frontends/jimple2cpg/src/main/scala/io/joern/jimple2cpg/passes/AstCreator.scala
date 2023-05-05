@@ -188,7 +188,11 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
           Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++ withOrder(methodBody.getParameterLocals) {
             (p, order) => astForParameter(p, order, methodDeclaration, parameterAnnotations)
           }
-        Ast(methodNode.lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length))
+        Ast(
+          methodNode
+            .lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length)
+            .code(methodBody.toString)
+        )
           .withChildren(astsForModifiers(methodDeclaration))
           .withChildren(parameterAsts)
           .withChildren(astsForHostTags(methodDeclaration))
