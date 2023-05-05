@@ -615,6 +615,17 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     }
   }
 
+  def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
+    printBindingsForEntity(bindingContext, expr)
+    val render = for {
+      mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
+      variableDesc <- Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
+      render = TypeRenderer.render(variableDesc.getType)
+      if isValidRender(render)
+    } yield render
+    render.getOrElse(defaultValue)
+  }
+
   def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean = {
     expr.getParent.getParent match {
       case callExpr: KtCallExpression =>
@@ -639,7 +650,6 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val lambdaNum           = keyPool.next
     val astDerivedFullName  = s"$packageName:<lambda><f_${fileName}_no$lambdaNum>()"
     val astDerivedSignature = anySignature(expr.getValueParameters.asScala.toList)
-
     val render = for {
       mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
       typeInfo     <- Option(mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey))

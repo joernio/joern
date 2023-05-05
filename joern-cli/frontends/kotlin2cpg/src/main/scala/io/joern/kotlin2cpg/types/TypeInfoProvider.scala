@@ -42,6 +42,8 @@ trait TypeInfoProvider {
 
   def parameterType(expr: KtParameter, defaultValue: String): String
 
+  def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
+
   def propertyType(expr: KtProperty, defaultValue: String): String
 
   def fullName(expr: KtClassOrObject, defaultValue: String, ctx: Option[AnonymousObjectContext] = None): String
