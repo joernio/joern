@@ -616,7 +616,6 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
-    printBindingsForEntity(bindingContext, expr)
     val render = for {
       mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
       variableDesc <- Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
