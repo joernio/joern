@@ -150,6 +150,23 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
+  "CPG for code with a scope function lambda with implicit parameter" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f3(p: String): String {
+        |    val out = p.apply { println(this) }
+        |    return out
+        |}
+        ||""".stripMargin)
+
+    "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
+      val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
+      p.code shouldBe "this"
+      p.typeFullName shouldBe "ANY"
+      p.index shouldBe 1
+    }
+  }
+
   "CPG for code with a scope function lambda" should {
     val cpg = code("""
         |package mypkg
@@ -180,6 +197,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.code shouldBe "arg"
       p.typeFullName shouldBe "java.lang.String"
+      p.index shouldBe 1
     }
 
     "should contain a CALL node for `takeIf` with the correct properties set" in {

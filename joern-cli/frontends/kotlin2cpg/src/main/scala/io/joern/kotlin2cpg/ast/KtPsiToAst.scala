@@ -544,7 +544,7 @@ trait KtPsiToAst {
           expr,
           implicitParamName,
           implicitParamName,
-          0,
+          1,
           false,
           EvaluationStrategies.BY_REFERENCE,
           TypeConstants.any
