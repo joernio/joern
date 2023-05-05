@@ -553,8 +553,22 @@ trait KtPsiToAst {
         Seq(Ast(node))
       case None =>
         withIndex(expr.getValueParameters.asScala.toSeq) { (p, idx) =>
-          astForParameter(p, idx)
-        }
+          val destructuringEntries =
+            Option(p.getDestructuringDeclaration)
+              .map(_.getEntries.asScala)
+              .getOrElse(Seq())
+          if (destructuringEntries.nonEmpty)
+            destructuringEntries.zipWithIndex.map { case (entry, innerIdx) =>
+              val name             = entry.getName
+              val explicitTypeName = Option(entry.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
+              val typeFullName     = registerType(typeInfoProvider.destructuringEntryType(entry, explicitTypeName))
+              val node =
+                parameterInNode(entry, name, name, innerIdx + idx, false, EvaluationStrategies.BY_VALUE, typeFullName)
+              scope.addToScope(name, node)
+              Ast(node)
+            }
+          else Seq(astForParameter(p, idx))
+        }.flatten
     }
 
     val lastChildNotReturnExpression = !expr.getBodyExpression.getLastChild.isInstanceOf[KtReturnExpression]
