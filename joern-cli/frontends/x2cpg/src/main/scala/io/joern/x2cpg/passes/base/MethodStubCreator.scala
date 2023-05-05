@@ -54,7 +54,7 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
 
 object MethodStubCreator {
 
-  private def addLineNumberInfo(methodNode: NewMethod, fullName: String): NewMethod = {
+  private def addLineNumberInfo(methodNode: NewMethod, fullName: String): Unit = {
     val s = fullName.split(":")
     if (
       s.size == 5 && Try {
@@ -70,8 +70,6 @@ object MethodStubCreator {
         .filename(filename)
         .lineNumber(lineNumber)
         .lineNumberEnd(lineNumberEnd)
-    } else {
-      methodNode
     }
   }
 
@@ -86,18 +84,15 @@ object MethodStubCreator {
     *
     * @param stub
     *   the method stub.
-    * @return
-    *   the type declaration string, if successfully generated.
     */
-  private def addTypeDeclInfo(stub: NewMethod): Option[String] = {
+  private def addTypeDeclInfo(stub: NewMethod): Unit = {
     Try {
       val nameIdx = stub.fullName.indexOf(stub.name)
       stub.fullName.substring(0, nameIdx - 1)
     } match {
       case Success(typeFullName) if typeFullName != "" && !typeFullName.startsWith("<operator>") =>
         stub.astParentFullName(typeFullName).astParentType(NodeTypes.TYPE_DECL)
-        Some(typeFullName)
-      case _ => None
+      case _ => // do nothing
     }
   }
 
@@ -120,15 +115,17 @@ object MethodStubCreator {
       .order(0)
 
     addLineNumberInfo(methodNode, fullName)
-    addTypeDeclInfo(methodNode)
+
+    // We do not use this for synthetic method for macro calls tagged with DispatchTypes.INLINED
+    if (dispatchType != DispatchTypes.INLINED) {
+      addTypeDeclInfo(methodNode)
+    }
 
     dstGraph.addNode(methodNode)
 
     val firstParameterIndex = dispatchType match {
-      case DispatchTypes.DYNAMIC_DISPATCH =>
-        0
-      case _ =>
-        1
+      case DispatchTypes.DYNAMIC_DISPATCH => 0
+      case _                              => 1
     }
 
     (firstParameterIndex to parameterCount).foreach { parameterOrder =>
