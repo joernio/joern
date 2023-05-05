@@ -236,7 +236,7 @@ case class Ast(
         conditionEdges = newConditionEdges,
         refEdges = newRefEdges,
         bindsEdges = newBindsEdges,
-        receiverEdges = newReceiverEdges,
+        receiverEdges = newReceiverEdges
       )
       .withChildren(newChildren)
   }

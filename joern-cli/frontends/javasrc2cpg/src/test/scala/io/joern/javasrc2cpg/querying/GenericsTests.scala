@@ -73,9 +73,11 @@ class GenericsTests extends JavaSrcCode2CpgFixture {
       |public class Test extends Box<String> {}
       |""".stripMargin)
 
-  "it should create the correct generic typeDecl name" in {
+  "it should create the correct generic typeDecls, each with a simple name and one with the arguments" in {
     cpg.typeDecl.nameExact("Box").l match {
-      case decl :: Nil => decl.fullName shouldBe "Box"
+      case decl1 :: decl2 :: Nil =>
+        decl1.fullName shouldBe "Box"
+        decl2.fullName shouldBe "Box<java.lang.Object>"
 
       case res => fail(s"Expected typeDecl Box but got $res")
     }

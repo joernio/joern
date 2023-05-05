@@ -2,6 +2,7 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.joern.x2cpg.datastructures.TreeNode
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, TypeArgument}
 import io.shiftleft.semanticcpg.language._
@@ -268,9 +269,7 @@ class JavaTypeRecoveryPassTests extends JavaSrcCode2CpgFixture(enableTypeRecover
       val Some(totalStudents) = cpg.identifier.nameExact("totalStudents").headOption
       val List(list)          = totalStudents.evalTypeOut.l
       list.name shouldBe "List"
-      list.fullName shouldBe "java.util.List"
-      val List(long) = list.astOut.l
-      long.code shouldBe "java.lang.Long"
+      list.fullName shouldBe "java.util.List<java.lang.Long>"
     }
 
     "present (nested) type arguments to method returns" in {
@@ -280,12 +279,7 @@ class JavaTypeRecoveryPassTests extends JavaSrcCode2CpgFixture(enableTypeRecover
       val Some(fooReturn) = cpg.method("foo").methodReturn.headOption
       val List(list)      = fooReturn.evalTypeOut.l
       list.name shouldBe "List"
-      list.fullName shouldBe "java.util.List"
-      val List(map) = list.astOut.collectAll[TypeArgument].l
-      map.code shouldBe "java.util.Map"
-      val List(string, integer) = map._astOut.collectAll[TypeArgument].l
-      string.code shouldBe "java.lang.String"
-      integer.code shouldBe "java.lang.Integer"
+      list.fullName shouldBe "java.util.List<java.util.Map<java.lang.String, java.lang.Integer>>"
     }
   }
 

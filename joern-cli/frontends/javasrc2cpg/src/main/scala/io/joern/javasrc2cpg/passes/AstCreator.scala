@@ -148,12 +148,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewType,
   NewTypeArgument,
   NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
+  NewTypeRef
 }
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
-import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.passes.frontend.TypeNodePass
+import io.joern.x2cpg.datastructures.{Global, JavaTree, TreeNode}
 import io.joern.x2cpg.utils.AstPropertiesUtil._
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.AstNodeBuilder
@@ -701,7 +699,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val modifiers = List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
 
-    methodAstWithAnnotations(constructorNode, Seq(thisAst), bodyAst, Ast(returnNode), modifiers)
+    methodAstWithAnnotations(constructorNode, Seq(thisAst), bodyAst, returnNode, modifiers)
   }
 
   private def astForEnumEntry(entry: EnumConstantDeclaration): Ast = {
@@ -823,7 +821,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       constructorNode,
       thisAst :: parameterAsts,
       bodyAst,
-      Ast(methodReturn),
+      methodReturn,
       modifiers,
       annotationAsts
     )
@@ -1010,11 +1008,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         scopeStack.lookupVariableType(methodDeclaration.getTypeAsString.takeWhile(_ != '<'), wildcardFallback = true)
       )
       .orElse(Option(s"${Defines.UnresolvedNamespace}.${methodDeclaration.getTypeAsString}"))
-    val typeNode = methodDeclaration.getType match {
-      case x: ClassOrInterfaceType if x.getTypeArguments.isPresent =>
-        astForGenericType(x)
-      case _ => Ast() // This will be created by some TypePass
-    }
 
     scopeStack.pushNewScope(MethodScope(ExpectedType(returnTypeFullName, expectedReturnType)))
 
@@ -1047,9 +1040,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       line(methodDeclaration.getType),
       column(methodDeclaration.getType)
     )
-    val methodReturnAst = typeNode.root match {
-      case Some(t) => Ast(methodReturn).withEvalTypeEdge(methodReturn, t)
-      case None    => Ast(methodReturn)
+    methodDeclaration.getType match {
+      case x: ClassOrInterfaceType if x.getTypeArguments.isPresent =>
+        global.nodesWithGenericTypes.put(methodReturn, astForGenericType(x))
+      case _ =>
     }
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
@@ -1058,7 +1052,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     scopeStack.popScope()
 
-    methodAstWithAnnotations(methodNode, thisAst ++ parameterAsts, bodyAst, methodReturnAst, modifiers, annotationAsts)
+    methodAstWithAnnotations(methodNode, thisAst ++ parameterAsts, bodyAst, methodReturn, modifiers, annotationAsts)
   }
 
   private def constructorReturnNode(constructorDeclaration: ConstructorDeclaration): NewMethodReturn = {
@@ -2095,43 +2089,39 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def typeToTypeArgument(x: Type): Ast = {
+  private def typeToTypeArgument(x: Type): TreeNode = {
     val typeWithoutGeneric = x.asString().takeWhile(_ != '<')
     val typeFullName = typeInfoCalc
       .fullName(x)
       .orElse(scopeStack.lookupVariableType(typeWithoutGeneric))
       .orElse(scopeStack.lookupVariableType(typeWithoutGeneric, wildcardFallback = true))
-      .getOrElse(typeWithoutGeneric)
+      .getOrElse(s"${Defines.UnresolvedNamespace}.$typeWithoutGeneric")
     x match {
       case t: ClassOrInterfaceType if t.getTypeArguments.isPresent =>
-        Ast(NewTypeArgument().code(typeFullName).lineNumber(line(x)).columnNumber(column(x)))
+        TreeNode(typeFullName)
           .withChildren(astForTypeArgument(t.getTypeArguments.get().asScala.toList))
       case _ =>
-        Ast(NewTypeArgument().code(typeFullName).lineNumber(line(x)).columnNumber(column(x)))
+        TreeNode(typeFullName)
     }
   }
 
-  private def astForTypeArgument(xs: List[Type]): Seq[Ast] = xs match {
+  private def astForTypeArgument(xs: List[Type]): List[TreeNode] = xs match {
     case head :: next => typeToTypeArgument(head) +: astForTypeArgument(next)
-    case Nil          => Seq.empty
+    case Nil          => List.empty
   }
 
-  private def astForGenericType(x: ClassOrInterfaceType): Ast = {
+  private def astForGenericType(x: ClassOrInterfaceType): JavaTree = {
     val typeArguments =
       if (x.getTypeArguments.isPresent)
         astForTypeArgument(x.getTypeArguments.get().asScala.toList)
-      else Seq.empty
+      else List.empty
     val typeWithoutGeneric = x.asString().takeWhile(_ != '<')
     val typeFullName = typeInfoCalc
       .fullName(x)
       .orElse(scopeStack.lookupVariableType(typeWithoutGeneric))
       .orElse(scopeStack.lookupVariableType(typeWithoutGeneric, wildcardFallback = true))
-      .getOrElse(typeWithoutGeneric)
-    val typeName = typeFullName match {
-      case t if t.contains(".") && !t.endsWith(".") => t.substring(t.lastIndexOf('.') + 1)
-      case t                                        => t
-    }
-    Ast(NewType().name(typeName).fullName(typeFullName)).withChildren(typeArguments)
+      .getOrElse(s"${Defines.UnresolvedNamespace}.$typeWithoutGeneric")
+    new JavaTree(io.joern.x2cpg.datastructures.TreeNode(typeFullName).withChildren(typeArguments))
   }
 
   private def assignmentsForVarDecl(
@@ -2162,24 +2152,19 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
       val callNode = newOperatorCallNode(Operators.assignment, code, typeFullName, lineNumber, columnNumber)
 
-      val typeNode = variable.getType match {
-        case x: ClassOrInterfaceType if x.getTypeArguments.isPresent =>
-          astForGenericType(x)
-        case _ => Ast() // This will be created by the TypeUsagePass
-      }
-
       val targetAst = scopeStack.lookupVariable(name) match {
         case Some(nodeTypeInfo) if nodeTypeInfo.isField && !nodeTypeInfo.isStatic =>
           val thisType = scopeStack.getEnclosingTypeDecl.map(_.fullName)
           fieldAccessAst(NameConstants.This, thisType, name, typeFullName, line(variable), column(variable))
 
         case maybeCorrespNode =>
-          val identifier    = identifierNode(variable, name, name, typeFullName.getOrElse(TypeConstants.Any))
-          val identifierAst = Ast(identifier).withRefEdges(identifier, maybeCorrespNode.map(_.node).toList)
-          typeNode.root match {
-            case Some(t) => identifierAst.withEvalTypeEdge(identifier, t)
-            case None    => identifierAst
+          val identifier = identifierNode(variable, name, name, typeFullName.getOrElse(TypeConstants.Any))
+          variable.getType match {
+            case x: ClassOrInterfaceType if x.getTypeArguments.isPresent =>
+              global.nodesWithGenericTypes.put(identifier, astForGenericType(x))
+            case _ =>
           }
+          Ast(identifier).withRefEdges(identifier, maybeCorrespNode.map(_.node).toList)
       }
 
       // Since all partial constructors will be dealt with here, don't pass them up.
