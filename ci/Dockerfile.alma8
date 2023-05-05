@@ -1,7 +1,7 @@
 FROM almalinux/8-minimal:latest
 
 LABEL maintainer="joern" \
-      org.opencontainers.image.authors="Prabhu Subramanian <prabhu@appthreat.com>" \
+      org.opencontainers.image.authors="Team Joern" \
       org.opencontainers.image.source="https://github.com/joernio/joern" \
       org.opencontainers.image.url="https://github.com/joernio/joern" \
       org.opencontainers.image.version="1.1.1643" \
