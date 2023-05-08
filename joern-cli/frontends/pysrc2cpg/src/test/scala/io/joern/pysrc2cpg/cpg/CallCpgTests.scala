@@ -73,7 +73,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
       val namedArg = callNode.astChildren.order(3).isIdentifier.head
       namedArg.code shouldBe "c"
-      namedArg.argumentIndex shouldBe -1
+      namedArg.argumentIndex shouldBe 3
       namedArg.argumentName shouldBe Some("namedPar")
     }
   }
@@ -145,7 +145,7 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
       val namedArg = callNode.astChildren.order(4).isIdentifier.head
       namedArg.code shouldBe "c"
-      namedArg.argumentIndex shouldBe -1
+      namedArg.argumentIndex shouldBe 3
       namedArg.argumentName shouldBe Some("namedPar")
     }
   }
