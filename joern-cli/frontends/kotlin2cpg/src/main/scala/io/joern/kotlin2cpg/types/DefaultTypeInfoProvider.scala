@@ -653,6 +653,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val lambdaNum           = keyPool.next
     val astDerivedFullName  = s"$packageName:<lambda><f_${fileName}_no$lambdaNum>()"
     val astDerivedSignature = anySignature(expr.getValueParameters.asScala.toList)
+
     val render = for {
       mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
       typeInfo     <- Option(mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey))
@@ -661,11 +662,17 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       val constructorDesc = theType.getConstructor.getDeclarationDescriptor
       val constructorType = constructorDesc.getDefaultType
       val args            = constructorType.getArguments.asScala.drop(1)
+
+      val renderedRetType =
+        Option(mapForEntity.get(BindingContext.EXPECTED_EXPRESSION_TYPE.getKey))
+          .map(_.getArguments.asScala.last)
+          .map { t => TypeRenderer.render(t.getType) }
+          .getOrElse("ANY")
       val renderedArgs =
         if (args.isEmpty) ""
         else if (args.size == 1) TypeConstants.javaLangObject
         else s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (args.size - 1)}"
-      val signature = s"${TypeConstants.javaLangObject}($renderedArgs)"
+      val signature = s"${renderedRetType}($renderedArgs)"
       val fullName  = s"$packageName.<lambda><f_${fileName}_no${lambdaNum.toString}>:$signature"
       (fullName, signature)
     }
