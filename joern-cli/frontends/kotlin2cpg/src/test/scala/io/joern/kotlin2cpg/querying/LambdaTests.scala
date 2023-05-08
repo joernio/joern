@@ -120,6 +120,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a CALL node for `forEach` with the correct properties set" in {
       val List(c) = cpg.call.methodFullName(".*forEach.*").l
       c.methodFullName shouldBe "java.lang.Iterable.forEach:void(kotlin.Function1)"
+      c.signature shouldBe "void(java.lang.Object)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(4)
@@ -233,7 +234,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.typeFullName shouldBe "java.lang.String"
-      c.signature shouldBe "java.lang.Object(java.lang.Object,java.lang.Object)"
+      c.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
     "should contain a RETURN node around as the last child of the lambda's BLOCK" in {

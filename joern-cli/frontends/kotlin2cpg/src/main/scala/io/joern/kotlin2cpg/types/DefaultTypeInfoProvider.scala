@@ -555,7 +555,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val fullNameSignature = s"$renderedReturnType($renderedParameterTypes)"
         val signature =
           singleLambdaArgExprMaybe
-            .map(lambdaInvocationSignature)
+            .map(lambdaInvocationSignature(_, renderedReturnType))
             .getOrElse(fullNameSignature)
         (s"$renderedFqName:$fullNameSignature", signature)
       case None =>
@@ -584,12 +584,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     }
   }
 
-  def lambdaInvocationSignature(expr: KtLambdaExpression): String = {
+  def lambdaInvocationSignature(expr: KtLambdaExpression, returnType: String): String = {
+    val hasImplicitParameter = implicitParameterName(expr)
+    val params               = expr.getValueParameters
     val paramsString =
-      if (expr.getValueParameters.isEmpty) TypeConstants.javaLangObject
+      if (hasImplicitParameter.nonEmpty) TypeConstants.javaLangObject
+      else if (params.isEmpty) ""
+      else if (params.size() == 1) TypeConstants.javaLangObject
       else
-        s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * expr.getValueParameters.size()}"
-    s"${TypeConstants.javaLangObject}($paramsString)"
+        s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (expr.getValueParameters.size() - 1)}"
+    s"${returnType}($paramsString)"
   }
 
   def parameterType(parameter: KtParameter, defaultValue: String): String = {
