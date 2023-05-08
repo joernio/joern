@@ -55,7 +55,7 @@ jobs:
           sbom: true
 
       - name: Extract metadata (tags, labels) for Docker
-        id: meta
+        id: meta2
         uses: docker/metadata-action@v4
         with:
           images: |
@@ -68,8 +68,8 @@ jobs:
           file: ci/Dockerfile.alma8
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta2.outputs.tags }}
+          labels: ${{ steps.meta2.outputs.labels }}
           cache-from: type=gha,scope=joern-alma8
           cache-to: type=gha,mode=max,scope=joern-alma8
           provenance: true
