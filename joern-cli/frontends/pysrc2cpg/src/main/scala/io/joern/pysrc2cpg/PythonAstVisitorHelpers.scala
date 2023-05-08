@@ -265,7 +265,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
     keywordArguments.foreach { case (keyword: String, argumentNode) =>
       edgeBuilder.astEdge(argumentNode, callNode, order = index)
-      edgeBuilder.argumentEdge(argumentNode, callNode, argName = keyword)
+      edgeBuilder.argumentEdge(argumentNode, callNode, argName = keyword, argIndex = index)
       index += 1
     }
 
@@ -304,7 +304,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
     keywordArguments.foreach { case (keyword: String, argumentNode) =>
       edgeBuilder.astEdge(argumentNode, callNode, order = argIndex + 1)
-      edgeBuilder.argumentEdge(argumentNode, callNode, argName = keyword)
+      edgeBuilder.argumentEdge(argumentNode, callNode, argName = keyword, argIndex)
       argIndex += 1
     }
 
@@ -372,7 +372,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
     keywordArguments.foreach { case (keyword: String, argumentNode) =>
       edgeBuilder.astEdge(argumentNode, callNode, order = argIndex)
-      edgeBuilder.argumentEdge(argumentNode, callNode, argName = keyword)
+      edgeBuilder.argumentEdge(argumentNode, callNode, argName = keyword, argIndex = argIndex)
       argIndex += 1
     }
 

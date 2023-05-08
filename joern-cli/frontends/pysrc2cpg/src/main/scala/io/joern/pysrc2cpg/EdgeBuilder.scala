@@ -36,11 +36,11 @@ class EdgeBuilder(diffGraph: DiffGraphBuilder) {
     addArgumentIndex(dstNode, argIndex)
   }
 
-  def argumentEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode, argName: String): Unit = {
+  def argumentEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode, argName: String, argIndex: Int): Unit = {
     diffGraph.addEdge(srcNode, dstNode, EdgeTypes.ARGUMENT)
     // We need to fill something according to the CPG spec. But the spec also says that argument
-    // index is ignored if argument name is provided. So we just put -1.
-    addArgumentIndex(dstNode, -1)
+    // index is ignored if argument name is provided.
+    addArgumentIndex(dstNode, argIndex)
     addArgumentName(dstNode, argName)
   }
 
