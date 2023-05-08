@@ -666,7 +666,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       val renderedRetType =
         Option(mapForEntity.get(BindingContext.EXPECTED_EXPRESSION_TYPE.getKey))
           .map(_.getArguments.asScala.last)
-          .map{ t => TypeRenderer.render(t.getType) }
+          .map { t => TypeRenderer.render(t.getType) }
           .getOrElse("ANY")
       val renderedArgs =
         if (args.isEmpty) ""
