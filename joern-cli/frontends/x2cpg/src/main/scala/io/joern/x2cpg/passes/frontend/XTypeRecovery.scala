@@ -842,8 +842,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         Traversal.from(fieldAccess.astParent).isCall.headOption match {
           case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
             persistType(callFromFieldName, symbolTable.get(callFromFieldName))
-          case Some(callFromFieldName) if idHints.nonEmpty =>
-            persistType(callFromFieldName, idHints.map(it => createCallFromIdentifierTypeFullName(it, f.canonicalName)))
           case _ =>
         }
         // This field may be a function pointer
