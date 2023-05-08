@@ -555,7 +555,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val fullNameSignature = s"$renderedReturnType($renderedParameterTypes)"
         val signature =
           singleLambdaArgExprMaybe
-            .map(lambdaInvocationSignature)
+            .map(lambdaInvocationSignature(_, renderedReturnType))
             .getOrElse(fullNameSignature)
         (s"$renderedFqName:$fullNameSignature", signature)
       case None =>
@@ -584,12 +584,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     }
   }
 
-  def lambdaInvocationSignature(expr: KtLambdaExpression): String = {
+  def lambdaInvocationSignature(expr: KtLambdaExpression, returnType: String): String = {
+    val hasImplicitParameter = implicitParameterName(expr)
+    val params               = expr.getValueParameters
     val paramsString =
-      if (expr.getValueParameters.isEmpty) TypeConstants.javaLangObject
+      if (hasImplicitParameter.nonEmpty) TypeConstants.javaLangObject
+      else if (params.isEmpty) ""
+      else if (params.size() == 1) TypeConstants.javaLangObject
       else
-        s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * expr.getValueParameters.size()}"
-    s"${TypeConstants.javaLangObject}($paramsString)"
+        s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (expr.getValueParameters.size() - 1)}"
+    s"${returnType}($paramsString)"
   }
 
   def parameterType(parameter: KtParameter, defaultValue: String): String = {
@@ -613,6 +617,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       case Some(aValue) => aValue
       case None         => defaultValue
     }
+  }
+
+  def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
+    val render = for {
+      mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
+      variableDesc <- Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
+      render = TypeRenderer.render(variableDesc.getType)
+      if isValidRender(render)
+    } yield render
+    render.getOrElse(defaultValue)
   }
 
   def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean = {
@@ -639,7 +653,6 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val lambdaNum           = keyPool.next
     val astDerivedFullName  = s"$packageName:<lambda><f_${fileName}_no$lambdaNum>()"
     val astDerivedSignature = anySignature(expr.getValueParameters.asScala.toList)
-
     val render = for {
       mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
       typeInfo     <- Option(mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey))
