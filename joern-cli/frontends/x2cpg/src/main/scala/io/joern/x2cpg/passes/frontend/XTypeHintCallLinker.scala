@@ -105,36 +105,44 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       if (methodName.contains(pathSep) && methodName.length > methodName.lastIndexOf(pathSep) + 1)
         methodName.substring(methodName.lastIndexOf(pathSep) + 1)
       else methodName
-    val stub = MethodStubCreator
-      .createMethodStub(
-        name,
-        methodName,
-        "",
-        DispatchTypes.DYNAMIC_DISPATCH.name(),
-        call.argumentOut.size,
-        builder,
-        isExternal,
-        astParentFullName = XTypeHintCallLinker.namespace
-      )
-    addTypeDeclInfo(stub, builder)
+    createMethodStub(name, methodName, call.argumentOut.size, isExternal, builder)
   }
 
   /** Try to extract a type full name from the method full name, if one exists in the CPG then we are lucky and we use
     * it, else we ignore for now.
     */
-  protected def addTypeDeclInfo(stub: NewMethod, builder: DiffGraphBuilder): NewMethod = {
-    val nameIdx = stub.fullName.lastIndexOf(stub.name)
-    if (!stub.fullName.isBlank && !stub.fullName.startsWith("<operator") && nameIdx > 0) {
-      cpg.typeDecl.fullNameExact(stub.fullName.substring(0, nameIdx - 1)).headOption.foreach { typeDecl =>
-        stub
-          .astParentFullName(typeDecl.fullName)
-          .astParentType(NodeTypes.TYPE_DECL)
-        builder.addEdge(typeDecl, stub, EdgeTypes.AST)
+  protected def createMethodStub(
+    name: String,
+    fullName: String,
+    argSize: Int,
+    isExternal: Boolean,
+    builder: DiffGraphBuilder
+  ): NewMethod = {
+    val nameIdx = fullName.lastIndexOf(name)
+    val default = (NodeTypes.NAMESPACE_BLOCK, XTypeHintCallLinker.namespace)
+    val (astParentType, astParentFullName) =
+      if (!fullName.isBlank && !fullName.startsWith("<operator") && nameIdx > 0) {
+        cpg.typeDecl
+          .fullNameExact(fullName.substring(0, nameIdx - 1))
+          .map(t => t.label -> t.fullName)
+          .headOption
+          .getOrElse(default)
+      } else {
+        default
       }
-      stub
-    } else {
-      stub
-    }
+
+    MethodStubCreator
+      .createMethodStub(
+        name,
+        fullName,
+        "",
+        DispatchTypes.DYNAMIC_DISPATCH.name(),
+        argSize,
+        builder,
+        isExternal,
+        astParentType,
+        astParentFullName
+      )
   }
 
   /** Once we have connected methods that were speculatively generated and managed to correctly link to methods already
