@@ -31,6 +31,10 @@ class AstCreator(filename: String, global: Global)
     val Symbol: String  = "symbol"
   }
 
+  object MethodFullNames {
+    val UnknownFullName = "<unknwownfullname>"
+  }
+
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
@@ -693,31 +697,29 @@ class AstCreator(filename: String, global: Global)
       val localIdentifier = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val column          = localIdentifier.getSymbol().getCharPositionInLine()
       val line            = localIdentifier.getSymbol().getLine()
-      val node = newCallNode(
-        localIdentifier.getText(),
-        None,
-        Defines.Any,
-        DispatchTypes.STATIC_DISPATCH,
-        Nil,
-        localIdentifier.getText(),
-        Some(line),
-        Some(column)
-      )
+      val node = NewCall()
+        .name(localIdentifier.getText())
+        .methodFullName(MethodFullNames.UnknownFullName)
+        .signature(localIdentifier.getText())
+        .typeFullName(MethodFullNames.UnknownFullName)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .code(localIdentifier.getText())
+        .lineNumber(line)
+        .columnNumber(column)
       Ast(node)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localIdentifier = ctx.CONSTANT_IDENTIFIER()
       val column          = localIdentifier.getSymbol().getCharPositionInLine()
       val line            = localIdentifier.getSymbol().getLine()
-      val node = newCallNode(
-        localIdentifier.getText(),
-        None,
-        Defines.Any,
-        DispatchTypes.STATIC_DISPATCH,
-        Nil,
-        localIdentifier.getText(),
-        Some(line),
-        Some(column)
-      )
+      val node = NewCall()
+        .name(localIdentifier.getText())
+        .methodFullName(MethodFullNames.UnknownFullName)
+        .signature(localIdentifier.getText())
+        .typeFullName(MethodFullNames.UnknownFullName)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .code(localIdentifier.getText())
+        .lineNumber(line)
+        .columnNumber(column)
       Ast(node)
     } else {
       Ast()
@@ -729,31 +731,29 @@ class AstCreator(filename: String, global: Global)
       val localIdentifier = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val column          = localIdentifier.getSymbol().getCharPositionInLine()
       val line            = localIdentifier.getSymbol().getLine()
-      val node = newCallNode(
-        localIdentifier.getText(),
-        None,
-        Defines.Any,
-        DispatchTypes.STATIC_DISPATCH,
-        Nil,
-        localIdentifier.getText(),
-        Some(line),
-        Some(column)
-      )
+      val node = NewCall()
+        .name(localIdentifier.getText())
+        .methodFullName(MethodFullNames.UnknownFullName)
+        .signature(localIdentifier.getText())
+        .typeFullName(MethodFullNames.UnknownFullName)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .code(localIdentifier.getText())
+        .lineNumber(line)
+        .columnNumber(column)
       Ast(node)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localIdentifier = ctx.CONSTANT_IDENTIFIER()
       val column          = localIdentifier.getSymbol().getCharPositionInLine()
       val line            = localIdentifier.getSymbol().getLine()
-      val node = newCallNode(
-        localIdentifier.getText(),
-        None,
-        Defines.Any,
-        DispatchTypes.STATIC_DISPATCH,
-        Nil,
-        localIdentifier.getText(),
-        Some(line),
-        Some(column)
-      )
+      val node = NewCall()
+        .name(localIdentifier.getText())
+        .methodFullName(MethodFullNames.UnknownFullName)
+        .signature(localIdentifier.getText())
+        .typeFullName(MethodFullNames.UnknownFullName)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .code(localIdentifier.getText())
+        .lineNumber(line)
+        .columnNumber(column)
       Ast(node)
     } else if (ctx.methodOnlyIdentifier() != null) {
       astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
