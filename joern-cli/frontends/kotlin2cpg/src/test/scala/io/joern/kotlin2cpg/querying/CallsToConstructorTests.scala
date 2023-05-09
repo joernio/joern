@@ -238,4 +238,54 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       secondInitArg.code shouldBe "\"err\""
     }
   }
+
+  "CPG for code with ctor call as argument of another call" should {
+    lazy val cpg = code("""|fun main() {
+         |    val l = listOf(java.lang.Error("err"))
+         |    println(l)
+         |}
+         |""".stripMargin)
+
+    "contain a correctly lowered representation" in {
+      val List(c: Call) = cpg.call.code("listOf.*").l
+      c.methodFullName shouldBe "kotlin.collections.listOf:java.util.List(java.lang.Object)"
+
+      val List(b: Block)                                                                     = c.argument.l
+      val List(l: Local, allocAssignment: Call, init: Call, returningIdentifier: Identifier) = b.astChildren.l
+      l.name shouldBe "tmp"
+      l.typeFullName shouldBe "java.lang.Error"
+
+      allocAssignment.code shouldBe "tmp = <operator>.alloc"
+      allocAssignment.signature shouldBe ""
+      allocAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(assignmentLhs: Identifier, assignmentRhs: Call) = allocAssignment.argument.l
+      assignmentLhs.argumentIndex shouldBe 1
+      assignmentLhs.code shouldBe "tmp"
+      assignmentLhs.name shouldBe "tmp"
+      l.referencingIdentifiers.id.l.contains(assignmentLhs.id) shouldBe true
+      assignmentRhs.typeFullName shouldBe "java.lang.Error"
+      assignmentRhs.code shouldBe Operators.alloc
+      assignmentRhs.methodFullName shouldBe Operators.alloc
+      assignmentRhs.argumentIndex shouldBe 2
+
+      init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+      init.code shouldBe "Error(\"err\")"
+      init.methodFullName shouldBe "java.lang.Error.<init>:void(java.lang.String)"
+      init.signature shouldBe "void(java.lang.String)"
+      init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      init.typeFullName shouldBe "void"
+
+      val List(firstInitArg: Identifier, secondInitArg: Literal) = init.argument.l
+      firstInitArg.name shouldBe "tmp"
+      firstInitArg.refsTo.size shouldBe 1
+      l.referencingIdentifiers.id.l.contains(firstInitArg.id) shouldBe true
+      secondInitArg.code shouldBe "\"err\""
+
+      returningIdentifier.name shouldBe "tmp"
+      returningIdentifier.typeFullName shouldBe "java.lang.Error"
+      l.referencingIdentifiers.id.l.contains(returningIdentifier.id) shouldBe true
+    }
+  }
+
 }
