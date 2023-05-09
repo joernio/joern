@@ -907,8 +907,8 @@ class AstCreator(filename: String, global: Global)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
-      .lineNumber(-1)
-      .columnNumber(-1)
+      .lineNumber(ctx.EQ().getSymbol().getLine())
+      .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
     callAst(callNode).withChildren(Seq[Ast](lhsAst, rhsAst))
   }
 
@@ -937,8 +937,8 @@ class AstCreator(filename: String, global: Global)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
-      .lineNumber(-1)
-      .columnNumber(-1)
+      .lineNumber(ctx.op.getLine())
+      .columnNumber(ctx.op.getCharPositionInLine())
     callAst(callNode).withChildren(Seq[Ast](lhsAst, rhsAst))
   }
 
