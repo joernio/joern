@@ -383,13 +383,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
     bindingTableCache.getOrElseUpdate(
       fullName,
-      createBindingTable[ResolvedReferenceTypeDeclaration](
+      createBindingTable(
         fullName,
         typeDecl,
         getBindingTable,
-        methodSignature,
         new BindingTableAdapterForJavaparser(methodSignature),
-        (parentDecl, thisDecl) => thisDecl.getQualifiedName == parentDecl.getQualifiedName
       )
     )
   }
@@ -399,13 +397,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     bindingTableCache.getOrElseUpdate(
       fullName,
-      createBindingTable[LambdaBindingInfo](
+      createBindingTable(
         fullName,
         lambdaBindingInfo,
         getBindingTable,
-        methodSignature,
-        new BindingTableAdapterForLambdas(),
-        (parentDecl, thisInfo) => parentDecl.getQualifiedName == thisInfo.fullName
+        new BindingTableAdapterForLambdas(methodSignature),
       )
     )
   }

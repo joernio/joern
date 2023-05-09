@@ -1,17 +1,6 @@
 package io.joern.javasrc2cpg.util
 
-import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration, ResolvedReferenceTypeDeclaration}
-import com.github.javaparser.resolution.types.ResolvedReferenceType
-import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
-import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserAnnotationDeclaration
-import com.github.javaparser.symbolsolver.javassistmodel.JavassistAnnotationDeclaration
-import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionAnnotationDeclaration
-import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, getAllParents, safeGetAncestors}
-import io.shiftleft.codepropertygraph.generated.nodes.NewBinding
-
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
-import scala.jdk.OptionConverters.RichOptional
 
 case class BindingTableEntry(name: String, signature: String, implementingMethodFullName: String)
 
@@ -27,110 +16,34 @@ class BindingTable() {
   }
 }
 
-trait BindingTableAdapter[T] {
-  def directParents(typeDecl: T): collection.Seq[ResolvedReferenceTypeDeclaration]
+trait BindingTableAdapter[InputTypeDecl, AstTypeDecl, AstMethodDecl, TypeMap] {
+  def directParents(typeDecl: InputTypeDecl): collection.Seq[AstTypeDecl]
 
-  def allParentsWithTypeMap(typeDecl: T): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)]
+  def allParentsWithTypeMap(typeDecl: InputTypeDecl): collection.Seq[(AstTypeDecl, TypeMap)]
 
-  def directBindingTableEntries(typeDeclFullName: String, typeDecl: T): collection.Seq[BindingTableEntry]
-}
+  def directBindingTableEntries(typeDeclFullName: String, typeDecl: InputTypeDecl): collection.Seq[BindingTableEntry]
 
-class BindingTableAdapterForJavaparser(
-  methodSignature: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String
-) extends BindingTableAdapter[ResolvedReferenceTypeDeclaration] {
+  def getDeclaredMethods(typeDecl: AstTypeDecl): Iterable[(String, AstMethodDecl)]
 
-  override def directParents(
-    typeDecl: ResolvedReferenceTypeDeclaration
-  ): collection.Seq[ResolvedReferenceTypeDeclaration] = {
-    safeGetAncestors(typeDecl).map(_.getTypeDeclaration.get)
-  }
+  def getMethodSignature(methodDecl: AstMethodDecl, typeMap: TypeMap): String
 
-  override def allParentsWithTypeMap(
-    typeDecl: ResolvedReferenceTypeDeclaration
-  ): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)] = {
-    getAllParents(typeDecl).map { parentType =>
-      (parentType.getTypeDeclaration.get, parentType.typeParametersMap())
-    }
-  }
+  def getMethodSignatureForEmptyTypeMap(methodDecl: AstMethodDecl): String
 
-  override def directBindingTableEntries(
-    typeDeclFullName: String,
-    typeDecl: ResolvedReferenceTypeDeclaration
-  ): collection.Seq[BindingTableEntry] = {
-    BindingTable
-      .getDeclaredMethods(typeDecl)
-      .filter(methodDecl => !methodDecl.isStatic)
-      .map { methodDecl =>
-        val signature = methodSignature(methodDecl, ResolvedTypeParametersMap.empty())
-        BindingTableEntry.apply(
-          methodDecl.getName,
-          signature,
-          composeMethodFullName(typeDeclFullName, methodDecl.getName, signature)
-        )
-      }
-      .toBuffer
-  }
-}
-
-case class LambdaBindingInfo(
-  fullName: String,
-  implementedType: Option[ResolvedReferenceType],
-  directBinding: Option[NewBinding]
-)
-
-class BindingTableAdapterForLambdas(
-) extends BindingTableAdapter[LambdaBindingInfo] {
-
-  override def directParents(lambdaBindingInfo: LambdaBindingInfo): collection.Seq[ResolvedReferenceTypeDeclaration] = {
-    lambdaBindingInfo.implementedType.flatMap(_.getTypeDeclaration.toScala).toList
-  }
-
-  override def allParentsWithTypeMap(
-    lambdaBindingInfo: LambdaBindingInfo
-  ): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)] = {
-    val nonDirectParents =
-      lambdaBindingInfo.implementedType.flatMap(_.getTypeDeclaration.toScala).toList.flatMap(getAllParents)
-    (lambdaBindingInfo.implementedType.toList ++ nonDirectParents).map { typ =>
-      (typ.getTypeDeclaration.get, typ.typeParametersMap())
-    }
-  }
-
-  override def directBindingTableEntries(
-    typeDeclFullName: String,
-    lambdaBindingInfo: LambdaBindingInfo
-  ): collection.Seq[BindingTableEntry] = {
-    lambdaBindingInfo.directBinding.map { binding =>
-      BindingTableEntry(binding.name, binding.signature, binding.methodFullName)
-    }.toList
-  }
+  def typeDeclEquals(astTypeDecl: AstTypeDecl, inputTypeDecl: InputTypeDecl): Boolean
 }
 
 object BindingTable {
 
-  def getDeclaredMethods(typeDecl: ResolvedReferenceTypeDeclaration): Iterable[ResolvedMethodDeclaration] = {
-    typeDecl match {
-      // Attempting to get declared methods for annotations throws an UnsupportedOperationException.
-      // See https://github.com/javaparser/javaparser/issues/1838 for details.
-      case _: JavaParserAnnotationDeclaration => Set.empty
-      case _: ReflectionAnnotationDeclaration => Set.empty
-      case _: JavassistAnnotationDeclaration  => Set.empty
-
-      case _ => typeDecl.getDeclaredMethods.asScala
-    }
-  }
-
-  def createBindingTable[T](
+  def createBindingTable[InputTypeDecl, AstTypeDecl, AstMethodDecl, TypeMap](
     typeDeclFullName: String,
-    typeDecl: T,
-    getBindingTable: ResolvedReferenceTypeDeclaration => BindingTable,
-    methodSignature: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String,
-    adapter: BindingTableAdapter[T],
-    typeEqualsDecl: (ResolvedReferenceTypeDeclaration, T) => Boolean
+    typeDecl: InputTypeDecl,
+    getBindingTable: AstTypeDecl => BindingTable,
+    adapter: BindingTableAdapter[InputTypeDecl, AstTypeDecl, AstMethodDecl, TypeMap],
   ): BindingTable = {
     val bindingTable = new BindingTable()
 
     // Take over all binding table entries for parent class/interface binding tables.
-    adapter.directParents(typeDecl).filterNot(typeEqualsDecl(_, typeDecl)).foreach { parentTypeDecl =>
+    adapter.directParents(typeDecl).filterNot(adapter.typeDeclEquals(_, typeDecl)).foreach { parentTypeDecl =>
       val parentBindingTable = getBindingTable(parentTypeDecl)
       parentBindingTable.getEntries.foreach { entry =>
         bindingTable.add(entry)
@@ -155,12 +68,12 @@ object BindingTable {
     // This become necessary because calls in the JVM executed via erased signatures.
     adapter.allParentsWithTypeMap(typeDecl).foreach { case (parentTypeDecl, typeParameterInDerivedContext) =>
       directTableEntries.foreach { directTableEntry =>
-        val parentMethods = getDeclaredMethods(parentTypeDecl)
-        parentMethods.foreach { parentMethodDecl =>
-          if (directTableEntry.name == parentMethodDecl.getName) {
-            val parentSigInDerivedContext = methodSignature(parentMethodDecl, typeParameterInDerivedContext)
+        val parentMethods = adapter.getDeclaredMethods(parentTypeDecl)
+        parentMethods.foreach { case (parentName, parentMethodDecl) =>
+          if (directTableEntry.name == parentName) {
+            val parentSigInDerivedContext = adapter.getMethodSignature(parentMethodDecl, typeParameterInDerivedContext)
             if (directTableEntry.signature == parentSigInDerivedContext) {
-              val erasedParentMethodSig = methodSignature(parentMethodDecl, ResolvedTypeParametersMap.empty())
+              val erasedParentMethodSig = adapter.getMethodSignatureForEmptyTypeMap(parentMethodDecl)
               val tableEntry = BindingTableEntry
                 .apply(directTableEntry.name, erasedParentMethodSig, directTableEntry.implementingMethodFullName)
               bindingTable.add(tableEntry)
