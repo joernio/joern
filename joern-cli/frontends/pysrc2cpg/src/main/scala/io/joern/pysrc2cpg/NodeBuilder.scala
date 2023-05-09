@@ -145,7 +145,6 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
     index.foreach(idx => methodParameterNode.index(idx))
-    methodParameterNode.dynamicTypeHintFullName(extractTypesFromHint(typeHint))
     addNodeToDiff(methodParameterNode)
   }
 
