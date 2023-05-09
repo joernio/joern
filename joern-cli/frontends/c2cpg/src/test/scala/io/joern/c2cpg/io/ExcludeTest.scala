@@ -53,7 +53,7 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
     val cpg   = c2cpg.createCpg(finalConfig).get
 
     X2Cpg.applyDefaultOverlays(cpg)
-    cpg.file.nameNot(FileTraversal.UNKNOWN).name.l should contain theSameElementsAs expectedFiles.map(
+    cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.l should contain theSameElementsAs expectedFiles.map(
       _.replace("/", java.io.File.separator)
     )
   }
