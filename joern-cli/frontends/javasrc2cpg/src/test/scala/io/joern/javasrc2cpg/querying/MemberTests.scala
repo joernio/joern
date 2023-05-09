@@ -7,6 +7,34 @@ import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
 
 class NewMemberTests extends JavaSrcCode2CpgFixture {
+  "members with anonymous classes should not result in subtrees to the member node" in {
+    val cpg = code("""
+        |class Foo {
+        |  Foo x = new Foo() {
+        |    @Override
+        |    void foo() {}
+        |  }
+        |
+        |  void foo() {}
+        |}""".stripMargin)
+    cpg.member.name("x").astChildren.size shouldBe 0
+  }
+
+  "enum entries with anonymous classes should not result in subtrees to the member node" in {
+    val cpg = code("""
+        |enum Foo {
+        |  X(12) {
+        |    @Override
+        |    void foo() {}
+        |  }
+        |
+        |  private Foo(int x) {}
+        |
+        |  void foo() {}
+        |}""".stripMargin)
+    cpg.member.name("x").astChildren.size shouldBe 0
+  }
+
   "non-static member initializers" should {
     "only be added once per constructor" in {
       val cpg = code("""
