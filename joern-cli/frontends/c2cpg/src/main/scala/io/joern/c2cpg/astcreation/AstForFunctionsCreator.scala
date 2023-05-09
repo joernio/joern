@@ -13,8 +13,11 @@ import io.joern.x2cpg.datastructures.Stack._
 import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 trait AstForFunctionsCreator { this: AstCreator =>
+
+  private val seenFunctionSignatures = mutable.HashSet.empty[String]
 
   private def createFunctionTypeAndTypeDecl(
     node: IASTNode,
@@ -120,28 +123,33 @@ trait AstForFunctionsCreator { this: AstCreator =>
   }
 
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
-    val filename       = fileName(funcDecl)
     val returnType     = typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
-    val name           = shortName(funcDecl)
     val fullname       = fullName(funcDecl)
     val templateParams = templateParameters(funcDecl).getOrElse("")
     val signature =
       s"$returnType $fullname$templateParams ${parameterListSignature(funcDecl)}"
-    val code        = nodeSignature(funcDecl.getParent)
-    val methodNode_ = methodNode(funcDecl, name, code, fullname, Some(signature), filename)
 
-    scope.pushNewScope(methodNode_)
+    if (seenFunctionSignatures.add(signature)) {
+      val name        = shortName(funcDecl)
+      val code        = nodeSignature(funcDecl.getParent)
+      val filename    = fileName(funcDecl)
+      val methodNode_ = methodNode(funcDecl, name, code, fullname, Some(signature), filename)
 
-    val parameterNodes = withIndex(parameters(funcDecl)) { (p, i) =>
-      parameterNode(p, i)
+      scope.pushNewScope(methodNode_)
+
+      val parameterNodes = withIndex(parameters(funcDecl)) { (p, i) =>
+        parameterNode(p, i)
+      }
+      setVariadic(parameterNodes, funcDecl)
+
+      scope.popScope()
+
+      val stubAst = methodStubAst(methodNode_, parameterNodes, newMethodReturnNode(funcDecl, registerType(returnType)))
+      val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, name, fullname, signature)
+      stubAst.merge(typeDeclAst)
+    } else {
+      Ast()
     }
-    setVariadic(parameterNodes, funcDecl)
-
-    scope.popScope()
-
-    val stubAst = methodStubAst(methodNode_, parameterNodes, newMethodReturnNode(funcDecl, registerType(returnType)))
-    val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, name, fullname, signature)
-    stubAst.merge(typeDeclAst)
   }
 
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
@@ -150,8 +158,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val name           = shortName(funcDef)
     val fullname       = fullName(funcDef)
     val templateParams = templateParameters(funcDef).getOrElse("")
+
     val signature =
       s"$returnType $fullname$templateParams ${parameterListSignature(funcDef)}"
+    seenFunctionSignatures.add(signature)
+
     val code        = nodeSignature(funcDef)
     val methodNode_ = methodNode(funcDef, name, code, fullname, Some(signature), filename)
 

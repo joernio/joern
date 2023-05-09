@@ -249,4 +249,25 @@ class MethodTests extends CCodeToCpgSuite {
     }
   }
 
+  "MethodTest9" should {
+    val cpg = code(
+      """
+        |int main(char **argv, int argc) {
+        |  return abs(argc);
+        |}
+        |
+        |int abs(int j);
+        |int abs(int j);
+        |int abs(int j);
+        |""".stripMargin,
+      "test.cpp"
+    )
+
+    "deduplicate method forward declarations correctly" in {
+      cpg.method.fullName("abs").size shouldBe 1
+      cpg.call.name("abs").callee(NoResolve).size shouldBe 1
+    }
+
+  }
+
 }
