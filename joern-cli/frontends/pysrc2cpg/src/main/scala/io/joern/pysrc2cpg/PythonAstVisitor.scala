@@ -4,7 +4,7 @@ import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
 import io.joern.pythonparser.ast
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -363,7 +363,8 @@ class PythonAstVisitor(
       edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
     }
 
-    val methodReturnNode = nodeBuilder.methodReturnNode(returnTypeHint, lineAndColumn)
+    val methodReturnNode =
+      nodeBuilder.methodReturnNode(nodeBuilder.extractTypesFromHint(returns), returnTypeHint, lineAndColumn)
     edgeBuilder.astEdge(methodReturnNode, methodNode, 2)
 
     val bodyOrder = new AutoIncIndex(1)
