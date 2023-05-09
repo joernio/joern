@@ -11,7 +11,7 @@ import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
-import scala.util.{Success, Try}
+import scala.util.Try
 
 case class CallSummary(name: String, signature: String, fullName: String, dispatchType: String)
 
@@ -75,32 +75,6 @@ object MethodStubCreator {
     }
   }
 
-  /** Will attempt to link the method stub to a type declaration if one exists. This uses the `name` and `fullName`
-    * properties of the stub to determine the type declaration.
-    *
-    * Method full names take 2 designs in the CPG. This approach works for both.
-    *
-    * 1: Dynamic languages do `filename`:`some_path`.`call_name`.`optional_info`
-    *
-    * 2: Static languages do `namespace`.`type_name`.`call_name`:`signature`
-    *
-    * @param stub
-    *   the method stub.
-    * @return
-    *   the type declaration string, if successfully generated.
-    */
-  private def addTypeDeclInfo(stub: NewMethod): Option[String] = {
-    Try {
-      val nameIdx = stub.fullName.indexOf(stub.name)
-      stub.fullName.substring(0, nameIdx - 1)
-    } match {
-      case Success(typeFullName) if typeFullName != "" && !typeFullName.startsWith("<operator>") =>
-        stub.astParentFullName(typeFullName).astParentType(NodeTypes.TYPE_DECL)
-        Some(typeFullName)
-      case _ => None
-    }
-  }
-
   def createMethodStub(
     name: String,
     fullName: String,
@@ -108,19 +82,20 @@ object MethodStubCreator {
     dispatchType: String,
     parameterCount: Int,
     dstGraph: DiffGraphBuilder,
-    isExternal: Boolean = true
+    isExternal: Boolean = true,
+    astParentType: String = NodeTypes.NAMESPACE_BLOCK,
+    astParentFullName: String = "<global>"
   ): NewMethod = {
     val methodNode = NewMethod()
       .name(name)
       .fullName(fullName)
       .isExternal(isExternal)
       .signature(signature)
-      .astParentType(NodeTypes.NAMESPACE_BLOCK)
-      .astParentFullName("<global>")
+      .astParentType(astParentType)
+      .astParentFullName(astParentFullName)
       .order(0)
 
     addLineNumberInfo(methodNode, fullName)
-    addTypeDeclInfo(methodNode)
 
     dstGraph.addNode(methodNode)
 

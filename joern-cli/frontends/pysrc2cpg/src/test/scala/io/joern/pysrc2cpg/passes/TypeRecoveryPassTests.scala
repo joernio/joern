@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg.passes
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
+import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
@@ -35,9 +36,10 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "resolve 'z' identifier calls conservatively" in {
-      // TODO: These should have callee entries but the method stubs are not present here
       val List(zAppend) = cpg.call("append").l
       zAppend.methodFullName shouldBe "<unknownFullName>"
+      // Since we don't have method nodes with this full name, this should belong to the call linker namespace
+      zAppend.callee.astParentFullName.headOption shouldBe Some(XTypeHintCallLinker.namespace)
       zAppend.dynamicTypeHintFullName shouldBe Seq(
         "__builtin.dict.append",
         "__builtin.list.append",
