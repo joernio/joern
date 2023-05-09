@@ -32,7 +32,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   object MethodFullNames {
-    val UnknownFullName = "<unknwownfullname>"
+    val UnknownFullName = "<unknownfullname>"
   }
 
   private val logger = LoggerFactory.getLogger(this.getClass)
