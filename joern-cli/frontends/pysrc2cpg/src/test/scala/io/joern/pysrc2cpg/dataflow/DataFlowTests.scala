@@ -337,7 +337,8 @@ class RegexDefinedFlowsDataFlowTests
           .from(
             "requests.py:<module>.post",
             List((0, 0), (1, 1), ("url", -1), ("body", -1), ("url", "url"), ("body", "body"))
-          )
+          ),
+        FlowSemantic.from("cross_taint.py:<module>.go", List((0, 0), (1, 1), ("a", "b")))
       )
     ) {
 
@@ -423,6 +424,25 @@ class RegexDefinedFlowsDataFlowTests
       val sink   = cpg.call("post")
 
       sink.reachableBy(source).size shouldBe 2
+    }
+  }
+
+  "flows across named parameterized arguments" should {
+    val cpg = code("""
+        |import cross_taint
+        |
+        |def foo():
+        |    source = "Mysource"
+        |    transport = 2
+        |    cross_taint.go(a=source, b=transport)
+        |    sink(transport)
+        |""".stripMargin)
+
+    "have passed taint from one parameter to the next" in {
+      val source = cpg.literal("\"Mysource\"")
+      val sink   = cpg.call("sink")
+
+      sink.reachableBy(source).size shouldBe 1
     }
   }
 

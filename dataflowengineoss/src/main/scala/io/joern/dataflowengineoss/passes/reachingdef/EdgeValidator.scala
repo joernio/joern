@@ -39,7 +39,10 @@ object EdgeValidator {
     parentNode match {
       case call: Call =>
         val sem = semantics.forMethod(call.methodFullName)
-        sem.isDefined && !sem.get.mappings.exists { case ParamMapping(_, PosArg(dst)) => dst == -1 }
+        sem.isDefined && !sem.get.mappings.exists {
+          case ParamMapping(_, PosArg(dst)) => dst == -1
+          case _                            => false
+        }
       case _ =>
         false
     }
