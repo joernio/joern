@@ -13,10 +13,9 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
           """InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | BlankArgsArgumentsWithParentheses
             |  (
-            |  )
-            |""".stripMargin
+            |  )""".stripMargin
       }
 
       "it contains no arguments but has newline in between" in {
@@ -29,13 +28,10 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
           s"""InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | BlankArgsArgumentsWithParentheses
             |  (
             |  WsOrNl
-${"   " /* accounting for the Nl */}
-${"" /* accounting for the Ws, which is none */}
-            |  )
-            |""".stripMargin
+            |  )""".stripMargin
       }
 
       "it contains a single numeric literal positional argument" in {
@@ -45,9 +41,9 @@ ${"" /* accounting for the Ws, which is none */}
           """InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  Arguments
+            |  BlockExprAssocTypeArguments
             |   Expressions
             |    PrimaryExpression
             |     LiteralPrimary
@@ -55,8 +51,7 @@ ${"" /* accounting for the Ws, which is none */}
             |       NumericLiteral
             |        UnsignedNumericLiteral
             |         1
-            |  )
-            |""".stripMargin
+            |  )""".stripMargin
       }
 
       "it contains a single numeric literal keyword argument" in {
@@ -66,9 +61,9 @@ ${"" /* accounting for the Ws, which is none */}
           s"""InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  Arguments
+            |  BlockExprAssocTypeArguments
             |   Associations
             |    Association
             |     PrimaryExpression
@@ -78,15 +73,13 @@ ${"" /* accounting for the Ws, which is none */}
             |         region
             |     :
             |     WsOrNl
-${"       "}
             |     PrimaryExpression
             |      LiteralPrimary
             |       Literal
             |        NumericLiteral
             |         UnsignedNumericLiteral
             |          1
-            |  )
-            |""".stripMargin
+            |  )""".stripMargin
       }
 
       "it contains a single symbol literal positional argument" in {
@@ -96,17 +89,16 @@ ${"       "}
           """InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  Arguments
+            |  BlockExprAssocTypeArguments
             |   Expressions
             |    PrimaryExpression
             |     LiteralPrimary
             |      Literal
             |       Symbol
             |        :region
-            |  )
-            |""".stripMargin
+            |  )""".stripMargin
       }
 
       "it contains a single symbol literal positional argument and trailing comma" in {
@@ -116,9 +108,9 @@ ${"       "}
           """InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
-            | ArgumentsWithParentheses
+            | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  Arguments
+            |  BlockExprAssocTypeArguments
             |   Expressions
             |    PrimaryExpression
             |     LiteralPrimary
@@ -126,8 +118,7 @@ ${"       "}
             |       Symbol
             |        :region
             |  ,
-            |  )
-            |""".stripMargin
+            |  )""".stripMargin
       }
     }
   }

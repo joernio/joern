@@ -42,25 +42,6 @@ object Util {
     result
   }
 
-  /** Creates an AST that represents a single member node
-    */
-  def memberNode(
-    name: String,
-    code: String,
-    maybeTypeFullName: Option[String],
-    lineNo: Option[Integer],
-    columnNo: Option[Integer]
-  ): NewMember = {
-    val typeFullName = maybeTypeFullName.getOrElse("ANY")
-    val memberNode = NewMember()
-      .name(name)
-      .code(code)
-      .lineNumber(lineNo)
-      .columnNumber(columnNo)
-      .typeFullName(typeFullName)
-    memberNode
-  }
-
   def composeMethodLikeSignature(returnType: String, parameterTypes: collection.Seq[String]): String = {
     s"$returnType(${parameterTypes.mkString(",")})"
   }

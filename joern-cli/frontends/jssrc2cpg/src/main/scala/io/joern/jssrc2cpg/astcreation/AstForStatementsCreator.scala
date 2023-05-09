@@ -5,6 +5,7 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.NodeBuilders.newLocalNode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
@@ -63,7 +64,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     safeObj(ret.json, "argument")
       .map { argument =>
         val argAst = astForNodeWithFunctionReference(Obj(argument))
-        createReturnAst(retNode, List(argAst))
+        returnAst(retNode, List(argAst))
       }
       .getOrElse(Ast(retNode))
   }
@@ -151,7 +152,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       .map { test =>
         astForNodeWithFunctionReference(Obj(test))
       }
-      .getOrElse(Ast(createLiteralNode("true", Option(Defines.Boolean), forStmt.lineNumber, forStmt.columnNumber)))
+      .getOrElse(Ast(literalNode(forStmt, "true", Option(Defines.Boolean))))
     val updateAst = safeObj(forStmt.json, "update")
       .map { update =>
         astForNodeWithFunctionReference(Obj(update))
@@ -231,13 +232,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   protected def astForThrowStatement(throwStmt: BabelNodeInfo): Ast = {
     val argumentAst = astForNodeWithFunctionReference(throwStmt.json("argument"))
     val throwCallNode =
-      createCallNode(
-        throwStmt.code,
-        "<operator>.throw",
-        DispatchTypes.STATIC_DISPATCH,
-        throwStmt.lineNumber,
-        throwStmt.columnNumber
-      )
+      callNode(throwStmt, throwStmt.code, "<operator>.throw", DispatchTypes.STATIC_DISPATCH)
     val argAsts = List(argumentAst)
     callAst(throwCallNode, argAsts)
   }
@@ -294,29 +289,29 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
-    val iteratorLocalNode = createLocalNode(iteratorName, Defines.Any)
-    val iteratorNode      = createIdentifierNode(iteratorName, forInOfStmt)
+    val iteratorLocalNode = newLocalNode(iteratorName, Defines.Any).order(0)
+    val iteratorNode      = identifierNode(forInOfStmt, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
 
-    val iteratorCall = createCallNode(
-      s"<operator>.iterator($collectionName)",
-      "<operator>.iterator", // TODO: add to schema
-      DispatchTypes.STATIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
-    )
+    val iteratorCall =
+      // TODO: add operator to schema
+      callNode(
+        forInOfStmt,
+        s"<operator>.iterator($collectionName)",
+        "<operator>.iterator",
+        DispatchTypes.STATIC_DISPATCH
+      )
 
     val objectKeysCallArgs = List(astForNodeWithFunctionReference(collection))
     val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
 
     val iteratorAssignmentNode =
-      createCallNode(
+      callNode(
+        forInOfStmt,
         s"$iteratorName = <operator>.iterator($collectionName)",
         Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH,
-        forInOfStmt.lineNumber,
-        forInOfStmt.columnNumber
+        DispatchTypes.STATIC_DISPATCH
       )
 
     val iteratorAssignmentArgs = List(Ast(iteratorNode), objectKeysCallAst)
@@ -324,16 +319,16 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
-    val resultLocalNode = createLocalNode(resultName, Defines.Any)
-    val resultNode      = createIdentifierNode(resultName, forInOfStmt)
+    val resultLocalNode = newLocalNode(resultName, Defines.Any).order(0)
+    val resultNode      = identifierNode(forInOfStmt, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode)
 
     // loop variable:
     val loopVariableName = idNodeInfo.code
 
-    val loopVariableLocalNode = createLocalNode(loopVariableName, Defines.Any)
-    val loopVariableNode      = createIdentifierNode(loopVariableName, forInOfStmt)
+    val loopVariableLocalNode = newLocalNode(loopVariableName, Defines.Any).order(0)
+    val loopVariableNode      = identifierNode(forInOfStmt, loopVariableName)
     diffGraph.addEdge(localAstParentStack.head, loopVariableLocalNode, EdgeTypes.AST)
     scope.addVariableReference(loopVariableName, loopVariableNode)
 
@@ -341,40 +336,29 @@ trait AstForStatementsCreator { this: AstCreator =>
     val whileLoopNode = createControlStructureNode(forInOfStmt, ControlStructureTypes.WHILE)
 
     // while loop test:
-    val testCallNode = createCallNode(
-      s"!($resultName = $iteratorName.next()).done",
-      Operators.not,
-      DispatchTypes.STATIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
-    )
+    val testCallNode =
+      callNode(forInOfStmt, s"!($resultName = $iteratorName.next()).done", Operators.not, DispatchTypes.STATIC_DISPATCH)
 
-    val doneBaseNode = createCallNode(
-      s"($resultName = $iteratorName.next())",
-      Operators.assignment,
-      DispatchTypes.STATIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
-    )
+    val doneBaseNode =
+      callNode(
+        forInOfStmt,
+        s"($resultName = $iteratorName.next())",
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH
+      )
 
-    val lhsNode = createIdentifierNode(resultName, forInOfStmt)
+    val lhsNode = identifierNode(forInOfStmt, resultName)
 
-    val rhsNode = createCallNode(
-      s"$iteratorName.next()",
-      "next",
-      DispatchTypes.DYNAMIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
-    )
+    val rhsNode = callNode(forInOfStmt, s"$iteratorName.next()", "next", DispatchTypes.DYNAMIC_DISPATCH)
 
-    val nextBaseNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val nextBaseNode = identifierNode(forInOfStmt, iteratorName)
 
     val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
     val nextReceiverNode =
       createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
-    val thisNextNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val thisNextNode = identifierNode(forInOfStmt, iteratorName)
 
     val rhsArgs = List(Ast(thisNextNode))
     val rhsAst  = callAst(rhsNode, rhsArgs, receiver = Option(nextReceiverNode))
@@ -394,20 +378,19 @@ trait AstForStatementsCreator { this: AstCreator =>
     val whileLoopAst = Ast(whileLoopNode).withChild(testCallAst).withConditionEdge(whileLoopNode, testCallNode)
 
     // while loop variable assignment:
-    val whileLoopVariableNode = createIdentifierNode(loopVariableName, forInOfStmt)
+    val whileLoopVariableNode = identifierNode(forInOfStmt, loopVariableName)
 
-    val baseNode = createIdentifierNode(resultName, forInOfStmt)
+    val baseNode = identifierNode(forInOfStmt, resultName)
 
     val memberNode = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
     val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
-    val loopVariableAssignmentNode = createCallNode(
+    val loopVariableAssignmentNode = callNode(
+      forInOfStmt,
       s"$loopVariableName = $resultName.value",
       Operators.assignment,
-      DispatchTypes.STATIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
+      DispatchTypes.STATIC_DISPATCH
     )
 
     val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), accessAst)
@@ -457,29 +440,28 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
-    val iteratorLocalNode = createLocalNode(iteratorName, Defines.Any)
-    val iteratorNode      = createIdentifierNode(iteratorName, forInOfStmt)
+    val iteratorLocalNode = newLocalNode(iteratorName, Defines.Any).order(0)
+    val iteratorNode      = identifierNode(forInOfStmt, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
-
-    val iteratorCall = createCallNode(
-      s"<operator>.iterator($collectionName)",
-      "<operator>.iterator", // TODO: add to schema
-      DispatchTypes.STATIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
-    )
+    // TODO: add operator to schema
+    val iteratorCall =
+      callNode(
+        forInOfStmt,
+        s"<operator>.iterator($collectionName)",
+        "<operator>.iterator",
+        DispatchTypes.STATIC_DISPATCH
+      )
 
     val objectKeysCallArgs = List(astForNodeWithFunctionReference(collection))
     val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
 
     val iteratorAssignmentNode =
-      createCallNode(
+      callNode(
+        forInOfStmt,
         s"$iteratorName = <operator>.iterator($collectionName)",
         Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH,
-        forInOfStmt.lineNumber,
-        forInOfStmt.columnNumber
+        DispatchTypes.STATIC_DISPATCH
       )
 
     val iteratorAssignmentArgs = List(Ast(iteratorNode), objectKeysCallAst)
@@ -487,16 +469,16 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
-    val resultLocalNode = createLocalNode(resultName, Defines.Any)
-    val resultNode      = createIdentifierNode(resultName, forInOfStmt)
+    val resultLocalNode = newLocalNode(resultName, Defines.Any).order(0)
+    val resultNode      = identifierNode(forInOfStmt, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode)
 
     // loop variable:
     val loopVariableNames = idNodeInfo.json("properties").arr.toList.map(code)
 
-    val loopVariableLocalNodes = loopVariableNames.map(createLocalNode(_, Defines.Any))
-    val loopVariableNodes      = loopVariableNames.map(createIdentifierNode(_, forInOfStmt))
+    val loopVariableLocalNodes = loopVariableNames.map(newLocalNode(_, Defines.Any).order(0))
+    val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
     loopVariableLocalNodes.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
     loopVariableNames.zip(loopVariableNodes).foreach { case (loopVariableName, loopVariableNode) =>
       scope.addVariableReference(loopVariableName, loopVariableNode)
@@ -506,40 +488,28 @@ trait AstForStatementsCreator { this: AstCreator =>
     val whileLoopNode = createControlStructureNode(forInOfStmt, ControlStructureTypes.WHILE)
 
     // while loop test:
-    val testCallNode = createCallNode(
-      s"!($resultName = $iteratorName.next()).done",
-      Operators.not,
-      DispatchTypes.STATIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
-    )
+    val testCallNode =
+      callNode(forInOfStmt, s"!($resultName = $iteratorName.next()).done", Operators.not, DispatchTypes.STATIC_DISPATCH)
 
-    val doneBaseNode = createCallNode(
+    val doneBaseNode = callNode(
+      forInOfStmt,
       s"($resultName = $iteratorName.next())",
       Operators.assignment,
-      DispatchTypes.STATIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
+      DispatchTypes.STATIC_DISPATCH
     )
 
-    val lhsNode = createIdentifierNode(resultName, forInOfStmt)
+    val lhsNode = identifierNode(forInOfStmt, resultName)
 
-    val rhsNode = createCallNode(
-      s"$iteratorName.next()",
-      "next",
-      DispatchTypes.DYNAMIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
-    )
+    val rhsNode = callNode(forInOfStmt, s"$iteratorName.next()", "next", DispatchTypes.DYNAMIC_DISPATCH)
 
-    val nextBaseNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val nextBaseNode = identifierNode(forInOfStmt, iteratorName)
 
     val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
     val nextReceiverNode =
       createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
-    val thisNextNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val thisNextNode = identifierNode(forInOfStmt, iteratorName)
 
     val rhsArgs = List(Ast(thisNextNode))
     val rhsAst  = callAst(rhsNode, rhsArgs, receiver = Option(nextReceiverNode))
@@ -560,20 +530,19 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // while loop variable assignment:
     val loopVariableAssignmentAsts = loopVariableNames.map { loopVariableName =>
-      val whileLoopVariableNode = createIdentifierNode(loopVariableName, forInOfStmt)
-      val baseNode              = createIdentifierNode(resultName, forInOfStmt)
+      val whileLoopVariableNode = identifierNode(forInOfStmt, loopVariableName)
+      val baseNode              = identifierNode(forInOfStmt, resultName)
       val memberNode            = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val variableMemberNode =
         createFieldIdentifierNode(loopVariableName, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val variableAccessAst =
         createFieldAccessCallAst(accessAst, variableMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
-      val loopVariableAssignmentNode = createCallNode(
+      val loopVariableAssignmentNode = callNode(
+        forInOfStmt,
         s"$loopVariableName = $resultName.value.$loopVariableName",
         Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH,
-        forInOfStmt.lineNumber,
-        forInOfStmt.columnNumber
+        DispatchTypes.STATIC_DISPATCH
       )
       val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), variableAccessAst)
       callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
@@ -625,29 +594,27 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
-    val iteratorLocalNode = createLocalNode(iteratorName, Defines.Any)
-    val iteratorNode      = createIdentifierNode(iteratorName, forInOfStmt)
+    val iteratorLocalNode = newLocalNode(iteratorName, Defines.Any).order(0)
+    val iteratorNode      = identifierNode(forInOfStmt, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
 
-    val iteratorCall = createCallNode(
+    val iteratorCall = callNode(
+      forInOfStmt,
       s"<operator>.iterator($collectionName)",
-      "<operator>.iterator", // TODO: add to schema
-      DispatchTypes.STATIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
+      "<operator>.iterator",
+      DispatchTypes.STATIC_DISPATCH
     )
 
     val objectKeysCallArgs = List(astForNodeWithFunctionReference(collection))
     val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
 
     val iteratorAssignmentNode =
-      createCallNode(
+      callNode(
+        forInOfStmt,
         s"$iteratorName = <operator>.iterator($collectionName)",
         Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH,
-        forInOfStmt.lineNumber,
-        forInOfStmt.columnNumber
+        DispatchTypes.STATIC_DISPATCH
       )
 
     val iteratorAssignmentArgs = List(Ast(iteratorNode), objectKeysCallAst)
@@ -655,16 +622,16 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
-    val resultLocalNode = createLocalNode(resultName, Defines.Any)
-    val resultNode      = createIdentifierNode(resultName, forInOfStmt)
+    val resultLocalNode = newLocalNode(resultName, Defines.Any).order(0)
+    val resultNode      = identifierNode(forInOfStmt, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode)
 
     // loop variable:
     val loopVariableNames = idNodeInfo.json("elements").arr.toList.map(code)
 
-    val loopVariableLocalNodes = loopVariableNames.map(createLocalNode(_, Defines.Any))
-    val loopVariableNodes      = loopVariableNames.map(createIdentifierNode(_, forInOfStmt))
+    val loopVariableLocalNodes = loopVariableNames.map(newLocalNode(_, Defines.Any).order(0))
+    val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
     loopVariableLocalNodes.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
     loopVariableNames.zip(loopVariableNodes).foreach { case (loopVariableName, loopVariableNode) =>
       scope.addVariableReference(loopVariableName, loopVariableNode)
@@ -674,40 +641,28 @@ trait AstForStatementsCreator { this: AstCreator =>
     val whileLoopNode = createControlStructureNode(forInOfStmt, ControlStructureTypes.WHILE)
 
     // while loop test:
-    val testCallNode = createCallNode(
-      s"!($resultName = $iteratorName.next()).done",
-      Operators.not,
-      DispatchTypes.STATIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
-    )
+    val testCallNode =
+      callNode(forInOfStmt, s"!($resultName = $iteratorName.next()).done", Operators.not, DispatchTypes.STATIC_DISPATCH)
 
-    val doneBaseNode = createCallNode(
+    val doneBaseNode = callNode(
+      forInOfStmt,
       s"($resultName = $iteratorName.next())",
       Operators.assignment,
-      DispatchTypes.STATIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
+      DispatchTypes.STATIC_DISPATCH
     )
 
-    val lhsNode = createIdentifierNode(resultName, forInOfStmt)
+    val lhsNode = identifierNode(forInOfStmt, resultName)
 
-    val rhsNode = createCallNode(
-      s"$iteratorName.next()",
-      "next",
-      DispatchTypes.DYNAMIC_DISPATCH,
-      forInOfStmt.lineNumber,
-      forInOfStmt.columnNumber
-    )
+    val rhsNode = callNode(forInOfStmt, s"$iteratorName.next()", "next", DispatchTypes.DYNAMIC_DISPATCH)
 
-    val nextBaseNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val nextBaseNode = identifierNode(forInOfStmt, iteratorName)
 
     val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
     val nextReceiverNode =
       createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
-    val thisNextNode = createIdentifierNode(iteratorName, forInOfStmt)
+    val thisNextNode = identifierNode(forInOfStmt, iteratorName)
 
     val rhsArgs = List(Ast(thisNextNode))
     val rhsAst  = callAst(rhsNode, rhsArgs, receiver = Option(nextReceiverNode))
@@ -728,24 +683,18 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // while loop variable assignment:
     val loopVariableAssignmentAsts = loopVariableNames.zipWithIndex.map { case (loopVariableName, index) =>
-      val whileLoopVariableNode = createIdentifierNode(loopVariableName, forInOfStmt)
-      val baseNode              = createIdentifierNode(resultName, forInOfStmt)
+      val whileLoopVariableNode = identifierNode(forInOfStmt, loopVariableName)
+      val baseNode              = identifierNode(forInOfStmt, resultName)
       val memberNode            = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
-      val variableMemberNode = createLiteralNode(
-        index.toString,
-        dynamicTypeOption = Some(Defines.Number),
-        forInOfStmt.lineNumber,
-        forInOfStmt.columnNumber
-      )
+      val variableMemberNode = literalNode(forInOfStmt, index.toString, dynamicTypeOption = Some(Defines.Number))
       val variableAccessAst =
         createIndexAccessCallAst(accessAst, Ast(variableMemberNode), forInOfStmt.lineNumber, forInOfStmt.columnNumber)
-      val loopVariableAssignmentNode = createCallNode(
+      val loopVariableAssignmentNode = callNode(
+        forInOfStmt,
         s"$loopVariableName = $resultName.value[$index]",
         Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH,
-        forInOfStmt.lineNumber,
-        forInOfStmt.columnNumber
+        DispatchTypes.STATIC_DISPATCH
       )
       val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), variableAccessAst)
       callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)

@@ -19,11 +19,11 @@ class ExternalCommandTest extends AnyWordSpec with Matchers {
   "ExternalCommand.runMultiple" should {
     "be able to run multiple `ls` invocations successfully" in {
       File.usingTemporaryDirectory("sample") { sourceDir =>
-        File.usingTemporaryFile(parent = Some(sourceDir)) { tempFile =>
+        File.usingTemporaryFile(parent = Some(sourceDir)) { _ =>
           val cmd    = "ls " + sourceDir.pathAsString + " && " + "ls " + sourceDir.pathAsString
           val result = ExternalCommand.runMultiple(cmd, sourceDir.pathAsString)
           result match {
-            case Success(value) => value.split("\n").size shouldBe 2
+            case Success(value) => value.split("\n").length shouldBe 2
             case Failure(_)     => false shouldBe true
           }
         }

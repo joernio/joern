@@ -210,8 +210,8 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   override def isConstructor(c: Call): Boolean =
     isConstructor(c.name) && c.code.endsWith(")")
 
-  private def isConstructor(callName: String): Boolean =
-    callName.nonEmpty && callName.charAt(0).isUpper
+  override protected def isConstructor(name: String): Boolean =
+    name.nonEmpty && name.charAt(0).isUpper
 
   /** If the parent method is module then it can be used as a field.
     */

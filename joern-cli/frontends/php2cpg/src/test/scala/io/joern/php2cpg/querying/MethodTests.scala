@@ -2,7 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local}
 import io.shiftleft.semanticcpg.language._
 
@@ -102,5 +102,35 @@ class MethodTests extends PhpCode2CpgFixture {
 
     cpg.file.method.name.l shouldBe List("foo")
     cpg.assignment.code.l shouldBe List("$x = \"\\\\xFF\"")
+  }
+
+  "explicit constructors should have the constructor modifier set" in {
+    val cpg = code("""<?php
+        |class Foo {
+        |  function __construct() {}
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
+      constructor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
+    }
+
+    cpg.method.name("__construct").size shouldBe cpg.method.isConstructor.size
+  }
+
+  "default constructors should have the constructor modifier set" in {
+    val cpg = code("""<?php
+        |class Foo { }
+        |""".stripMargin)
+
+    inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
+      constructor.modifier.modifierType.toSet shouldBe Set(
+        ModifierTypes.CONSTRUCTOR,
+        ModifierTypes.PUBLIC,
+        ModifierTypes.VIRTUAL
+      )
+    }
+
+    cpg.method.name("__construct").size shouldBe cpg.method.isConstructor.size
   }
 }

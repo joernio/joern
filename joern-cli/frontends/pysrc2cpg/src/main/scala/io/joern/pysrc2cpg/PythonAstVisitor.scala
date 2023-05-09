@@ -1337,7 +1337,7 @@ class PythonAstVisitor(
         case ast.Mod    => ("%", Operators.modulo)
         case ast.Pow    => ("**", Operators.exponentiation)
         case ast.LShift => ("<<", Operators.shiftLeft)
-        case ast.RShift => ("<<", Operators.arithmeticShiftRight)
+        case ast.RShift => (">>", Operators.arithmeticShiftRight)
         case ast.BitOr  => ("|", Operators.or)
         case ast.BitXor => ("^", Operators.xor)
         case ast.BitAnd => ("&", Operators.and)

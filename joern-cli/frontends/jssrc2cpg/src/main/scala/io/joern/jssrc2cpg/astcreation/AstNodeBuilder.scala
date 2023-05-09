@@ -1,68 +1,21 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.MethodScope
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstNodeBuilder { this: AstCreator =>
-
-  protected def createAnnotationNode(annotation: BabelNodeInfo, name: String, fullName: String): NewAnnotation = {
-    val code         = annotation.code
-    val lineNumber   = annotation.lineNumber
-    val columnNumber = annotation.columnNumber
-    NewAnnotation()
-      .code(code)
-      .name(name)
-      .fullName(fullName)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
-  }
-
-  protected def createTypeDeclNode(
-    name: String,
-    fullName: String,
-    filename: String,
-    code: String,
-    astParentType: String = "",
-    astParentFullName: String = "",
-    inherits: Seq[String] = Seq.empty,
-    alias: Option[String] = None,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewTypeDecl =
-    NewTypeDecl()
-      .name(name)
-      .fullName(fullName)
-      .code(code)
-      .isExternal(false)
-      .filename(filename)
-      .astParentType(astParentType)
-      .astParentFullName(astParentFullName)
-      .inheritsFromTypeFullName(inherits)
-      .aliasTypeFullName(alias)
-      .lineNumber(line)
-      .columnNumber(column)
-
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
-    methodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
+    newMethodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
   }
 
   protected def setOrderExplicitly(ast: Ast, order: Int): Unit = {
     ast.root.foreach { case expr: ExpressionNew => expr.order = order }
-  }
-
-  protected def createReturnAst(returnNode: NewReturn, arguments: List[Ast] = List()): Ast = {
-    setArgumentIndices(arguments)
-    Ast(returnNode)
-      .withChildren(arguments)
-      .withArgEdges(returnNode, arguments.flatMap(_.root))
   }
 
   protected def createJumpTarget(switchCase: BabelNodeInfo): NewJumpTarget = {
@@ -88,68 +41,6 @@ trait AstNodeBuilder { this: AstCreator =>
       .code(code)
       .lineNumber(line)
       .columnNumber(column)
-  }
-
-  protected def createParameterInNode(
-    name: String,
-    code: String,
-    index: Int,
-    isVariadic: Boolean,
-    line: Option[Integer],
-    column: Option[Integer],
-    tpe: Option[String] = None
-  ): NewMethodParameterIn = {
-    val param = NewMethodParameterIn()
-      .name(name)
-      .code(code)
-      .index(index)
-      .order(index)
-      .isVariadic(isVariadic)
-      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
-      .lineNumber(line)
-      .columnNumber(column)
-      .typeFullName(tpe.getOrElse(Defines.Any))
-    scope.addVariable(name, param, MethodScope)
-    param
-  }
-
-  protected def createMethodRefNode(code: String, methodFullName: String, func: BabelNodeInfo): NewMethodRef = {
-    val line   = func.lineNumber
-    val column = func.columnNumber
-    NewMethodRef()
-      .code(code)
-      .methodFullName(methodFullName)
-      .typeFullName(methodFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
-  protected def createMemberNode(name: String, node: BabelNodeInfo, dynamicTypeOption: Option[String]): NewMember = {
-    val tpe  = typeFor(node)
-    val code = node.code
-    NewMember()
-      .code(code)
-      .name(name)
-      .typeFullName(tpe)
-      .dynamicTypeHintFullName(dynamicTypeOption.toList)
-  }
-
-  protected def createMethodNode(methodName: String, methodFullName: String, func: BabelNodeInfo): NewMethod = {
-    val line      = func.lineNumber
-    val column    = func.columnNumber
-    val lineEnd   = func.lineNumberEnd
-    val columnEnd = func.columnNumberEnd
-    val code      = func.code
-    NewMethod()
-      .name(methodName)
-      .filename(parserResult.filename)
-      .code(code)
-      .fullName(methodFullName)
-      .isExternal(false)
-      .lineNumber(line)
-      .columnNumber(column)
-      .lineNumberEnd(lineEnd)
-      .columnNumberEnd(columnEnd)
   }
 
   protected def codeOf(node: NewNode): String = node match {
@@ -238,6 +129,13 @@ trait AstNodeBuilder { this: AstCreator =>
     callAst(callNode, arguments)
   }
 
+  def callNode(node: BabelNodeInfo, code: String, name: String, dispatchType: String): NewCall = {
+    val fullName =
+      if (dispatchType == DispatchTypes.STATIC_DISPATCH) name
+      else x2cpg.Defines.DynamicCallUnknownFallName
+    callNode(node, code, name, fullName, dispatchType, None, Some(Defines.Any))
+  }
+
   protected def createCallNode(
     code: String,
     callName: String,
@@ -271,22 +169,12 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column)
   }
 
-  protected def createLiteralNode(
-    code: String,
-    dynamicTypeOption: Option[String],
-    line: Option[Integer],
-    column: Option[Integer]
-  ): NewLiteral = {
+  protected def literalNode(node: BabelNodeInfo, code: String, dynamicTypeOption: Option[String]): NewLiteral = {
     val typeFullName = dynamicTypeOption match {
       case Some(value) if Defines.JsTypes.contains(value) => value
       case _                                              => Defines.Any
     }
-    NewLiteral()
-      .code(code)
-      .typeFullName(typeFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-      .dynamicTypeHintFullName(dynamicTypeOption.toList)
+    literalNode(node, code, typeFullName, dynamicTypeOption.toList)
   }
 
   protected def createEqualsCallAst(dest: Ast, source: Ast, line: Option[Integer], column: Option[Integer]): Ast = {
@@ -320,28 +208,19 @@ trait AstNodeBuilder { this: AstCreator =>
     callAst(callNode, arguments)
   }
 
-  protected def createIdentifierNode(name: String, node: BabelNodeInfo): NewIdentifier = {
+  protected def identifierNode(node: BabelNodeInfo, name: String): NewIdentifier = {
     val dynamicInstanceTypeOption = name match {
-      case "this"    => dynamicInstanceTypeStack.headOption
+      case "this"    => typeHintForThisExpression(Option(node)).headOption
       case "console" => Option(Defines.Console)
       case "Math"    => Option(Defines.Math)
       case _         => None
     }
-    createIdentifierNode(name, dynamicInstanceTypeOption, node.lineNumber, node.columnNumber)
+    identifierNode(node, name, name, Defines.Any, dynamicInstanceTypeOption.toList)
   }
 
-  protected def createIdentifierNode(
-    name: String,
-    dynamicTypeOption: Option[String],
-    line: Option[Integer],
-    column: Option[Integer]
-  ): NewIdentifier = NewIdentifier()
-    .name(name)
-    .code(name)
-    .lineNumber(line)
-    .columnNumber(column)
-    .typeFullName(Defines.Any)
-    .dynamicTypeHintFullName(dynamicTypeOption.toList)
+  protected def identifierNode(node: BabelNodeInfo, name: String, dynamicTypeHints: Seq[String]): NewIdentifier = {
+    identifierNode(node, name, name, Defines.Any, dynamicTypeHints)
+  }
 
   protected def createStaticCallNode(
     code: String,
@@ -358,17 +237,6 @@ trait AstNodeBuilder { this: AstCreator =>
     .lineNumber(line)
     .columnNumber(column)
     .typeFullName(Defines.Any)
-
-  protected def createLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal =
-    NewLocal().code(name).name(name).typeFullName(typeFullName).closureBindingId(closureBindingId).order(0)
-
-  protected def createClosureBindingNode(closureBindingId: String, closureOriginalName: String): NewClosureBinding =
-    NewClosureBinding()
-      .closureBindingId(Option(closureBindingId))
-      .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
-      .closureOriginalName(Option(closureOriginalName))
-
-  protected def createBindingNode(): NewBinding = NewBinding().name("").signature("")
 
   protected def createTemplateDomNode(
     name: String,
@@ -390,6 +258,7 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(node.columnNumber)
 
   protected def createFunctionTypeAndTypeDeclAst(
+    node: BabelNodeInfo,
     methodNode: NewMethod,
     parentNode: NewNode,
     methodName: String,
@@ -401,19 +270,21 @@ trait AstNodeBuilder { this: AstCreator =>
     val astParentType     = parentNode.label
     val astParentFullName = parentNode.properties("FULL_NAME").toString
     val functionTypeDeclNode =
-      createTypeDeclNode(
+      typeDeclNode(
+        node,
         methodName,
         methodFullName,
         filename,
         methodName,
         astParentType = astParentType,
-        astParentFullName = astParentFullName
-      ).inheritsFromTypeFullName(List(Defines.Any))
+        astParentFullName = astParentFullName,
+        List(Defines.Any)
+      )
 
     // Problem for https://github.com/ShiftLeftSecurity/codescience/issues/3626 here.
     // As the type (thus, the signature) of the function node is unknown (i.e., ANY*)
     // we can't generate the correct binding with signature.
-    val bindingNode = createBindingNode()
+    val bindingNode = NewBinding().name("").signature("")
     Ast(functionTypeDeclNode).withBindsEdge(functionTypeDeclNode, bindingNode).withRefEdge(bindingNode, methodNode)
   }
 

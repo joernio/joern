@@ -12,7 +12,7 @@ class MethodReturnTests extends CCodeToCpgSuite {
         |""".stripMargin)
 
     "should have METHOD_RETURN node with correct fields" in {
-      val List(x, _) = cpg.methodReturn.l
+      val List(x, _, _) = cpg.methodReturn.l
       x.code shouldBe "RET"
       x.typeFullName shouldBe "int*"
       x.lineNumber shouldBe Option(2)
@@ -24,7 +24,11 @@ class MethodReturnTests extends CCodeToCpgSuite {
     }
 
     "should allow traversing to method" in {
-      cpg.methodReturn.method.name.l shouldBe List("foo", NamespaceTraversal.globalNamespaceName)
+      cpg.methodReturn.method.name.l shouldBe List(
+        "foo",
+        NamespaceTraversal.globalNamespaceName,
+        NamespaceTraversal.globalNamespaceName
+      )
     }
 
   }

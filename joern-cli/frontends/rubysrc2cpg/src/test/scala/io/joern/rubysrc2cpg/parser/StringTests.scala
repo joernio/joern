@@ -11,8 +11,7 @@ class StringTests extends RubyParserAbstractTest {
         printAst(_.primary(), code) shouldEqual
           """LiteralPrimary
             | Literal
-            |  ''
-            |""".stripMargin
+            |  ''""".stripMargin
       }
     }
   }
@@ -27,8 +26,7 @@ class StringTests extends RubyParserAbstractTest {
           """LiteralPrimary
             | Literal
             |  "
-            |  "
-            |""".stripMargin
+            |  """".stripMargin
       }
     }
 
@@ -54,8 +52,7 @@ class StringTests extends RubyParserAbstractTest {
             |           UnsignedNumericLiteral
             |            1
             |   }
-            |  "
-            |""".stripMargin
+            |  """".stripMargin
       }
     }
 
@@ -93,8 +90,7 @@ class StringTests extends RubyParserAbstractTest {
             |           UnsignedNumericLiteral
             |            2
             |   }
-            |  "
-            |""".stripMargin
+            |  """".stripMargin
       }
     }
   }

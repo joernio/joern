@@ -70,7 +70,7 @@ class TemplateTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EX
        |template<class T, class U>
        |void y(T a, U b);
        |""".stripMargin)
-      inside(cpg.method.internal.l) { case List(_, x, y) =>
+      inside(cpg.method.nameNot("<global>").internal.l) { case List(x, y) =>
         x.name shouldBe "x"
         x.fullName shouldBe "x"
         x.signature shouldBe "void x<T,U> (T,U)"
