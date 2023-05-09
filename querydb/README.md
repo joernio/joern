@@ -1,7 +1,7 @@
 # Joern Query Database ("Joern-Scan")
 
 This is the central query database for the open-source code analysis
-platform [Joern](https://github.com/ShiftLeftSecurity/joern). It has
+platform [Joern](https://github.com/joernio/joern). It has
 two purposes:
 
 * It provides the batteries required to turn Joern into a ready-to-run code scanning tool.
@@ -136,7 +136,7 @@ follows:
 sbt test
 ```
 
-You can test newly developed queries 
+You can test newly developed queries
 
 If you want to test newly created queries with `joern-scan` as follows:
 

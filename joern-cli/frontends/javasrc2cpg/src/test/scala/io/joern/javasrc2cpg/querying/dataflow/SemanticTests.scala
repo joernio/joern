@@ -13,10 +13,10 @@ import io.joern.x2cpg.Defines
 class SemanticTests
     extends JavaDataflowFixture(extraFlows =
       List(
-        FlowSemantic("Test.sanitize:java.lang.String(java.lang.String)", List((0, 0), (1, 1))),
-        FlowSemantic(s"ext.Library.killParam:${Defines.UnresolvedSignature}(1)", List.empty),
-        FlowSemantic("^ext\\.Library\\.taintNone:.*", List((0, 0), (1, 1)), regex = true),
-        FlowSemantic("^ext\\.Library\\.taint1to2:.*", List((1, 2)), regex = true)
+        FlowSemantic.from("Test.sanitize:java.lang.String(java.lang.String)", List((0, 0), (1, 1))),
+        FlowSemantic.from(s"ext.Library.killParam:${Defines.UnresolvedSignature}(1)", List.empty),
+        FlowSemantic.from("^ext\\.Library\\.taintNone:.*", List((0, 0), (1, 1)), regex = true),
+        FlowSemantic.from("^ext\\.Library\\.taint1to2:.*", List((1, 2)), regex = true)
       )
     ) {
   behavior of "Dataflow through custom semantics"

@@ -1,7 +1,6 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.datastructures.CGlobal
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -64,7 +63,7 @@ class AstCreator(
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
     */
   private def astInFakeMethod(fullName: String, path: String, iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val allDecls = iASTTranslationUnit.getDeclarations.toList
+    val allDecls = iASTTranslationUnit.getDeclarations.toList.filterNot(isIncludedNode)
     val name     = NamespaceTraversal.globalNamespaceName
 
     val fakeGlobalTypeDecl =
@@ -78,16 +77,7 @@ class AstCreator(
 
     val blockNode_ = blockNode(iASTTranslationUnit, Defines.empty, registerType(Defines.anyTypeName))
 
-    val declsAsts = allDecls.flatMap { stmt =>
-      CGlobal.getAstsFromAstCache(
-        diffGraph,
-        fileName(stmt),
-        filename,
-        line(stmt),
-        column(stmt),
-        astsForDeclaration(stmt)
-      )
-    }
+    val declsAsts = allDecls.flatMap(astsForDeclaration)
     setArgumentIndices(declsAsts)
 
     val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName)

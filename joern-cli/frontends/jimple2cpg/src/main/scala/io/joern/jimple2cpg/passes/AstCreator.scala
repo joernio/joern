@@ -715,7 +715,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
 
   private def createThisNode(method: SootMethodRef, builder: NewNode): Ast = {
     if (!method.isStatic || method.isConstructor) {
-      val parentType = registerType(method.getDeclaringClass.getType.toQuotedString)
+      val parentType = registerType(Try(method.getDeclaringClass.getType.toQuotedString).getOrElse("ANY"))
       Ast(builder match {
         case x: NewIdentifier =>
           x.name("this")
@@ -724,8 +724,8 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
             .order(0)
             .argumentIndex(0)
             .dynamicTypeHintFullName(Seq(parentType))
-        case x: NewMethodParameterIn =>
-          NodeBuilders.newThisParameterNode(parentType, Seq(parentType), line(method.tryResolve()))
+        case _: NewMethodParameterIn =>
+          NodeBuilders.newThisParameterNode(parentType, Seq(parentType), line(Try(method.tryResolve()).getOrElse(null)))
         case x => x
       })
     } else {
