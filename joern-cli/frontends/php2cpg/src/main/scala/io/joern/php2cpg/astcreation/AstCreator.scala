@@ -2,6 +2,7 @@ package io.joern.php2cpg.astcreation
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.{ArrayIndexTracker, Scope}
+import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
 import io.joern.php2cpg.parser.Domain._
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
@@ -191,7 +192,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
   private def astForMethodDecl(
     decl: PhpMethodDecl,
     bodyPrefixAsts: List[Ast] = Nil,
-    fullNameOverride: Option[String] = None
+    fullNameOverride: Option[String] = None,
+    isConstructor: Boolean = false
   ): Ast = {
     val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
     val thisParam = if (decl.isClassMethod && !isStatic) {
@@ -207,7 +209,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
 
     val parameters = thisParam.toList ++ setParamIndices(decl.params.map(astForParam))
 
-    val modifiers = decl.modifiers.map(newModifierNode)
+    val constructorModifier   = Option.when(isConstructor)(ModifierTypes.CONSTRUCTOR)
+    val defaultAccessModifier = Option.unless(containsAccessModifier(decl.modifiers))(ModifierTypes.PUBLIC)
+
+    val allModifiers = constructorModifier ++: defaultAccessModifier ++: decl.modifiers
+    val modifiers    = allModifiers.map(newModifierNode)
     val modifierString = decl.modifiers match {
       case Nil  => ""
       case mods => s"${mods.mkString(" ")} "
@@ -806,7 +812,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
 
       case Some(constructorDecl) =>
         val fieldInits = scope.getFieldInits
-        Option(astForMethodDecl(constructorDecl, fieldInits))
+        Option(astForMethodDecl(constructorDecl, fieldInits, isConstructor = true))
 
       case _ => None
     }

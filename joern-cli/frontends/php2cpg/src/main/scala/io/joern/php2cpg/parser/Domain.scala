@@ -102,6 +102,12 @@ object Domain {
       (64, ModifierTypes.READONLY)
     )
 
+    private val AccessModifiers: Set[String] = Set(ModifierTypes.PUBLIC, ModifierTypes.PROTECTED, ModifierTypes.PRIVATE)
+
+    def containsAccessModifier(modifiers: List[String]): Boolean = {
+      modifiers.toSet.intersect(AccessModifiers).nonEmpty
+    }
+
     def getModifierSet(json: Value, modifierString: String = "flags"): List[String] = {
       val flags = json.objOpt.flatMap(_.get(modifierString)).map(_.num.toInt).getOrElse(0)
       ModifierMasks.collect {
