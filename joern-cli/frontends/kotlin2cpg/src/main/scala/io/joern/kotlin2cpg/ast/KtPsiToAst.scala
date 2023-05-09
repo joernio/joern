@@ -1499,20 +1499,32 @@ trait KtPsiToAst {
     val elem             = expr.getIdentifyingElement
 
     val hasRHSCtorCall = expr.getDelegateExpressionOrInitializer match {
-      case typed: KtCallExpression => typeInfoProvider.isConstructorCall(typed).getOrElse(false)
-      case _                       => false
+      case typed: KtExpression => typeInfoProvider.isConstructorCall(typed).getOrElse(false)
+      case _                   => false
     }
+    val ctorCallExprMaybe =
+      if (hasRHSCtorCall) {
+        expr.getDelegateExpressionOrInitializer match {
+          case c: KtCallExpression => Some(c)
+          case q: KtQualifiedExpression =>
+            q.getSelectorExpression match {
+              case qc: KtCallExpression => Some(qc)
+              case _                    => None
+            }
+          case _ => None
+        }
+      } else None
     val hasRHSObjectLiteral = expr.getDelegateExpressionOrInitializer match {
       case _: KtObjectLiteralExpression => true
       case _                            => false
     }
-    if (hasRHSCtorCall) {
+    if (ctorCallExprMaybe.nonEmpty) {
+      val callExpr          = ctorCallExprMaybe.get
       val localTypeFullName = registerType(typeInfoProvider.propertyType(expr, explicitTypeName))
       val local             = localNode(expr, expr.getName, expr.getName, localTypeFullName)
       scope.addToScope(expr.getName, local)
       val localAst = Ast(local)
 
-      val typedCall = expr.getDelegateExpressionOrInitializer.asInstanceOf[KtCallExpression]
       val typeFullName = registerType(
         typeInfoProvider.expressionType(expr.getDelegateExpressionOrInitializer, Defines.UnresolvedNamespace)
       )
@@ -1525,10 +1537,10 @@ trait KtPsiToAst {
       val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
 
       val (fullName, signature) =
-        typeInfoProvider.fullNameWithSignature(typedCall, (TypeConstants.any, TypeConstants.any))
+        typeInfoProvider.fullNameWithSignature(callExpr, (TypeConstants.any, TypeConstants.any))
       val initCallNode = callNode(
-        typedCall,
-        typedCall.getText,
+        callExpr,
+        callExpr.getText,
         Constants.init,
         fullName,
         DispatchTypes.STATIC_DISPATCH,
@@ -1538,7 +1550,7 @@ trait KtPsiToAst {
       val initReceiverNode = identifierNode(expr, identifier.name, identifier.name, identifier.typeFullName)
       val initReceiverAst  = Ast(initReceiverNode).withRefEdge(initReceiverNode, local)
 
-      val argAsts = withIndex(typedCall.getValueArguments.asScala.toSeq) { case (arg, idx) =>
+      val argAsts = withIndex(callExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
         val argNameOpt = if (arg.isNamed) Option(arg.getArgumentName.getAsName.toString) else None
         astsForExpression(arg.getArgumentExpression, Option(idx), argNameOpt)
       }.flatten

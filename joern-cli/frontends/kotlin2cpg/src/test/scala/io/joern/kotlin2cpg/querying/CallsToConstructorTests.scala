@@ -199,4 +199,43 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       c.signature shouldBe "java.lang.String(java.lang.String)"
     }
   }
+
+  "CPG for code with ctor call from java stdlib inside val assignment" should {
+    lazy val cpg = code("""|fun main() {
+         |    val a = java.lang.Error("err")
+         |    println(a.message)
+         |}
+         |""".stripMargin)
+
+    "contain a correctly lowered representation" in {
+      val List(l: Local, allocAssignment: Call, init: Call, _: Call) = cpg.method.nameExact("main").block.astChildren.l
+      l.name shouldBe "a"
+      l.typeFullName shouldBe "java.lang.Error"
+
+      allocAssignment.signature shouldBe ""
+      allocAssignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(assignmentLhs: Identifier, assignmentRhs: Call) = allocAssignment.argument.l
+      assignmentLhs.argumentIndex shouldBe 1
+      assignmentLhs.code shouldBe "a"
+      assignmentLhs.name shouldBe "a"
+      l.referencingIdentifiers.id.l.contains(assignmentLhs.id) shouldBe true
+      assignmentRhs.typeFullName shouldBe "java.lang.Error"
+      assignmentRhs.code shouldBe Operators.alloc
+      assignmentRhs.methodFullName shouldBe Operators.alloc
+      assignmentRhs.argumentIndex shouldBe 2
+
+      init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+      init.code shouldBe "Error(\"err\")"
+      init.methodFullName shouldBe "java.lang.Error.<init>:void(java.lang.String)"
+      init.signature shouldBe "void(java.lang.String)"
+      init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      init.typeFullName shouldBe "void"
+
+      val List(firstInitArg: Identifier, secondInitArg: Literal) = init.argument.l
+      firstInitArg.name shouldBe "a"
+      firstInitArg.refsTo.size shouldBe 1
+      secondInitArg.code shouldBe "\"err\""
+    }
+  }
 }
