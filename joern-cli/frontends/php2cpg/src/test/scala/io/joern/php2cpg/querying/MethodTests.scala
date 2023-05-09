@@ -104,33 +104,58 @@ class MethodTests extends PhpCode2CpgFixture {
     cpg.assignment.code.l shouldBe List("$x = \"\\\\xFF\"")
   }
 
-  "explicit constructors should have the constructor modifier set" in {
-    val cpg = code("""<?php
+  "explicit constructors" should {
+    val cpg = code(
+      """<?php
         |class Foo {
         |  function __construct() {}
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      fileName = "foo.php"
+    )
 
-    inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
-      constructor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
+    "have the constructor modifier set" in {
+      inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
+        constructor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
+      }
+
+      cpg.method.name("__construct").size shouldBe cpg.method.isConstructor.size
     }
 
-    cpg.method.name("__construct").size shouldBe cpg.method.isConstructor.size
+    "have a filename set with traversal to the file" in {
+      inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
+        constructor.filename shouldBe "foo.php"
+        constructor.file.name.l shouldBe List("foo.php")
+      }
+    }
   }
 
-  "default constructors should have the constructor modifier set" in {
-    val cpg = code("""<?php
+  "default constructors" should {
+    val cpg = code(
+      """<?php
         |class Foo { }
-        |""".stripMargin)
+        |""".stripMargin,
+      fileName = "foo.php"
+    )
 
-    inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
-      constructor.modifier.modifierType.toSet shouldBe Set(
-        ModifierTypes.CONSTRUCTOR,
-        ModifierTypes.PUBLIC,
-        ModifierTypes.VIRTUAL
-      )
+    "have the constructor modifier set" in {
+      inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
+        constructor.modifier.modifierType.toSet shouldBe Set(
+          ModifierTypes.CONSTRUCTOR,
+          ModifierTypes.PUBLIC,
+          ModifierTypes.VIRTUAL
+        )
+      }
+
+      cpg.method.name("__construct").size shouldBe cpg.method.isConstructor.size
     }
 
-    cpg.method.name("__construct").size shouldBe cpg.method.isConstructor.size
+    "have a filename set with traversal to the file" in {
+      inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
+        constructor.filename shouldBe "foo.php"
+        constructor.file.name.l shouldBe List("foo.php")
+      }
+    }
   }
+
 }

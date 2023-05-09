@@ -66,6 +66,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
       .fullName(globalTypeDecl.fullName)
       .astParentFullName(globalTypeDecl.fullName)
       .code(globalTypeDecl.code)
+      .filename(filename)
 
     scope.pushNewScope(globalMethod)
 
@@ -846,6 +847,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
       .signature(signature)
       .isExternal(false)
       .code(fullName)
+      .filename(filename)
 
     val methodBody = blockAst(NewBlock(), scope.getFieldInits)
 
