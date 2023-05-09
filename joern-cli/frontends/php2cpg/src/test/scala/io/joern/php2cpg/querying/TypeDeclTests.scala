@@ -189,12 +189,15 @@ class TypeDeclTests extends PhpCode2CpgFixture {
   }
 
   "enums with cases with values should have the correct initializers" in {
-    val cpg = code("""<?php
+    val cpg = code(
+      """<?php
         |enum Foo {
         |  case A = "A";
         |  case B = "B";
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      fileName = "foo.php"
+    )
 
     inside(cpg.typeDecl.name("Foo").l) { case List(fooDecl) =>
       fooDecl.fullName shouldBe "Foo"
@@ -214,6 +217,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         clinitMethod.name shouldBe Defines.StaticInitMethodName
         clinitMethod.fullName shouldBe s"Foo::${Defines.StaticInitMethodName}"
         clinitMethod.signature shouldBe "void()"
+        clinitMethod.filename shouldBe "foo.php"
+        clinitMethod.file.name.l shouldBe List("foo.php")
 
         inside(clinitMethod.body.astChildren.l) { case List(aAssign: Call, bAssign: Call) =>
           aAssign.code shouldBe "A = \"A\""

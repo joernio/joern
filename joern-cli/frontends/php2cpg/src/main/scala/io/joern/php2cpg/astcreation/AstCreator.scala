@@ -773,7 +773,13 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
       case inits =>
         val signature = s"${TypeConstants.Void}()"
         val fullName  = composeMethodFullName(StaticInitMethodName, isStatic = true)
-        val ast       = staticInitMethodAst(inits, fullName, Option(signature), registerType(TypeConstants.Void))
+        val ast = staticInitMethodAst(
+          inits,
+          fullName,
+          Option(signature),
+          registerType(TypeConstants.Void),
+          fileName = Some(filename)
+        )
         Option(ast)
     }
 
