@@ -3,7 +3,6 @@ import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newIdentifierNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -697,7 +696,7 @@ class AstCreator(filename: String, global: Global)
       val localIdentifier = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val column          = localIdentifier.getSymbol().getCharPositionInLine()
       val line            = localIdentifier.getSymbol().getLine()
-      val node = NewCall()
+      val callNode = NewCall()
         .name(localIdentifier.getText())
         .methodFullName(MethodFullNames.UnknownFullName)
         .signature(localIdentifier.getText())
@@ -706,12 +705,12 @@ class AstCreator(filename: String, global: Global)
         .code(localIdentifier.getText())
         .lineNumber(line)
         .columnNumber(column)
-      Ast(node)
+      callAst(callNode)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localIdentifier = ctx.CONSTANT_IDENTIFIER()
       val column          = localIdentifier.getSymbol().getCharPositionInLine()
       val line            = localIdentifier.getSymbol().getLine()
-      val node = NewCall()
+      val callNode = NewCall()
         .name(localIdentifier.getText())
         .methodFullName(MethodFullNames.UnknownFullName)
         .signature(localIdentifier.getText())
@@ -720,7 +719,7 @@ class AstCreator(filename: String, global: Global)
         .code(localIdentifier.getText())
         .lineNumber(line)
         .columnNumber(column)
-      Ast(node)
+      callAst(callNode)
     } else {
       Ast()
     }
@@ -731,7 +730,7 @@ class AstCreator(filename: String, global: Global)
       val localIdentifier = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val column          = localIdentifier.getSymbol().getCharPositionInLine()
       val line            = localIdentifier.getSymbol().getLine()
-      val node = NewCall()
+      val callNode = NewCall()
         .name(localIdentifier.getText())
         .methodFullName(MethodFullNames.UnknownFullName)
         .signature(localIdentifier.getText())
@@ -740,12 +739,12 @@ class AstCreator(filename: String, global: Global)
         .code(localIdentifier.getText())
         .lineNumber(line)
         .columnNumber(column)
-      Ast(node)
+      callAst(callNode)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localIdentifier = ctx.CONSTANT_IDENTIFIER()
       val column          = localIdentifier.getSymbol().getCharPositionInLine()
       val line            = localIdentifier.getSymbol().getLine()
-      val node = NewCall()
+      val callNode = NewCall()
         .name(localIdentifier.getText())
         .methodFullName(MethodFullNames.UnknownFullName)
         .signature(localIdentifier.getText())
@@ -754,7 +753,7 @@ class AstCreator(filename: String, global: Global)
         .code(localIdentifier.getText())
         .lineNumber(line)
         .columnNumber(column)
-      Ast(node)
+      callAst(callNode)
     } else if (ctx.methodOnlyIdentifier() != null) {
       astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     } else {
