@@ -691,71 +691,40 @@ class AstCreator(filename: String, global: Global)
     astForDefinedMethodNameContext(ctx.definedMethodName())
   }
 
+  def astForCallNode(localIdentifier: TerminalNode): Ast = {
+    val column = localIdentifier.getSymbol().getCharPositionInLine()
+    val line   = localIdentifier.getSymbol().getLine()
+    val callNode = NewCall()
+      .name(localIdentifier.getText())
+      .methodFullName(MethodFullNames.UnknownFullName)
+      .signature(localIdentifier.getText())
+      .typeFullName(MethodFullNames.UnknownFullName)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(localIdentifier.getText())
+      .lineNumber(line)
+      .columnNumber(column)
+    callAst(callNode)
+  }
+
   def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Ast = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      val localIdentifier = ctx.LOCAL_VARIABLE_IDENTIFIER()
-      val column          = localIdentifier.getSymbol().getCharPositionInLine()
-      val line            = localIdentifier.getSymbol().getLine()
-      val callNode = NewCall()
-        .name(localIdentifier.getText())
-        .methodFullName(MethodFullNames.UnknownFullName)
-        .signature(localIdentifier.getText())
-        .typeFullName(MethodFullNames.UnknownFullName)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .code(localIdentifier.getText())
-        .lineNumber(line)
-        .columnNumber(column)
-      callAst(callNode)
+      astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER())
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val localIdentifier = ctx.CONSTANT_IDENTIFIER()
-      val column          = localIdentifier.getSymbol().getCharPositionInLine()
-      val line            = localIdentifier.getSymbol().getLine()
-      val callNode = NewCall()
-        .name(localIdentifier.getText())
-        .methodFullName(MethodFullNames.UnknownFullName)
-        .signature(localIdentifier.getText())
-        .typeFullName(MethodFullNames.UnknownFullName)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .code(localIdentifier.getText())
-        .lineNumber(line)
-        .columnNumber(column)
-      callAst(callNode)
+      astForCallNode(ctx.CONSTANT_IDENTIFIER())
     } else {
       Ast()
     }
   }
 
-  def astForMethodIdentifierContext(ctx: MethodIdentifierContext): Ast = {
+  def astForMethodIdentifierContext(
+    ctx: MethodIdentifierContext,
+    astMethodParam: Ast = null,
+    astBody: Ast = null
+  ): Ast = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      val localIdentifier = ctx.LOCAL_VARIABLE_IDENTIFIER()
-      val column          = localIdentifier.getSymbol().getCharPositionInLine()
-      val line            = localIdentifier.getSymbol().getLine()
-      val callNode = NewCall()
-        .name(localIdentifier.getText())
-        .methodFullName(MethodFullNames.UnknownFullName)
-        .signature(localIdentifier.getText())
-        .typeFullName(MethodFullNames.UnknownFullName)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .code(localIdentifier.getText())
-        .lineNumber(line)
-        .columnNumber(column)
-      callAst(callNode)
+      astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER())
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val localIdentifier = ctx.CONSTANT_IDENTIFIER()
-      val column          = localIdentifier.getSymbol().getCharPositionInLine()
-      val line            = localIdentifier.getSymbol().getLine()
-      val callNode = NewCall()
-        .name(localIdentifier.getText())
-        .methodFullName(MethodFullNames.UnknownFullName)
-        .signature(localIdentifier.getText())
-        .typeFullName(MethodFullNames.UnknownFullName)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .code(localIdentifier.getText())
-        .lineNumber(line)
-        .columnNumber(column)
-      callAst(callNode)
-    } else if (ctx.methodOnlyIdentifier() != null) {
-      astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
+      astForCallNode(ctx.CONSTANT_IDENTIFIER())
     } else {
       Ast()
     }
