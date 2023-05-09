@@ -330,9 +330,15 @@ class RegexDefinedFlowsDataFlowTests
     extends PySrc2CpgFixture(
       withOssDataflow = true,
       extraFlows = List(
-        FlowSemantic("^path.*<module>\\.sanitizer$", List((0, 0), (1, 1)), regex = true),
-        FlowSemantic("^foo.*<module>\\.sanitizer.*", List((0, 0), (1, 1)), regex = true),
-        FlowSemantic("^foo.*\\.create_sanitizer\\.<returnValue>\\.sanitize", List((0, 0), (1, 1)), regex = true)
+        FlowSemantic.from("^path.*<module>\\.sanitizer$", List((0, 0), (1, 1)), regex = true),
+        FlowSemantic.from("^foo.*<module>\\.sanitizer.*", List((0, 0), (1, 1)), regex = true),
+        FlowSemantic.from("^foo.*\\.create_sanitizer\\.<returnValue>\\.sanitize", List((0, 0), (1, 1)), regex = true),
+        FlowSemantic
+          .from(
+            "requests.py:<module>.post",
+            List((0, 0), (1, 1), ("url", -1), ("body", -1), ("url", "url"), ("body", "body"))
+          ),
+        FlowSemantic.from("cross_taint.py:<module>.go", List((0, 0), (1, 1), ("a", "b")))
       )
     ) {
 
@@ -399,6 +405,45 @@ class RegexDefinedFlowsDataFlowTests
       sink.reachableBy(source).size shouldBe 0
     }
 
+  }
+
+  "flows to parameterized arguments" should {
+    val cpg = code("""
+        |import requests
+        |def foo():
+        |    orderId = "Mysource"
+        |    item = orderId
+        |    response = requests.post(
+        |            url="https://rest.marketingcloudapis.com/data/v1/async",
+        |            body=item
+        |        )
+        |""".stripMargin)
+
+    "have summarized flows accurately pass parameterized argument behaviour" in {
+      val source = cpg.identifier("orderId")
+      val sink   = cpg.call("post")
+
+      sink.reachableBy(source).size shouldBe 2
+    }
+  }
+
+  "flows across named parameterized arguments" should {
+    val cpg = code("""
+        |import cross_taint
+        |
+        |def foo():
+        |    source = "Mysource"
+        |    transport = 2
+        |    cross_taint.go(a=source, b=transport)
+        |    sink(transport)
+        |""".stripMargin)
+
+    "have passed taint from one parameter to the next" in {
+      val source = cpg.literal("\"Mysource\"")
+      val sink   = cpg.call("sink")
+
+      sink.reachableBy(source).size shouldBe 1
+    }
   }
 
 }

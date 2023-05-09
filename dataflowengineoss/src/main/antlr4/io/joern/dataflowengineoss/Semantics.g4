@@ -6,8 +6,10 @@ methodName : QUOTE name QUOTE;
 name : ~(NEWLINE|QUOTE)*?;
 
 mapping: src '->' dst;
-src: NUMBER;
-dst: NUMBER;
+argName: QUOTE name QUOTE;
+argIdx: NUMBER;
+src: argName | argIdx;
+dst: argName | argIdx;
 
 // Lexing
 

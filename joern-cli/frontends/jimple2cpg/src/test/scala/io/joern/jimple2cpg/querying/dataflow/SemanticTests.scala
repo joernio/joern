@@ -8,8 +8,8 @@ import io.joern.x2cpg.Defines
 class SemanticTests
     extends JimpleDataFlowCodeToCpgSuite(extraFlows =
       List(
-        FlowSemantic("Test.sanitize:java.lang.String(java.lang.String)", List((0, 0), (1, 1))),
-        FlowSemantic("java.nio.file.Paths.get:.*\\(java.lang.String,.*\\)", List.empty, regex = true)
+        FlowSemantic.from("Test.sanitize:java.lang.String(java.lang.String)", List((0, 0), (1, 1))),
+        FlowSemantic.from("java.nio.file.Paths.get:.*\\(java.lang.String,.*\\)", List.empty, regex = true)
       )
     ) {
 
