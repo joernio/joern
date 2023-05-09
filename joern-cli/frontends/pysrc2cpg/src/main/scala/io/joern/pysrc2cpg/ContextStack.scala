@@ -100,7 +100,14 @@ class ContextStack {
     val isClassBodyMethod = stack.headOption.exists(_.isInstanceOf[ClassContext])
 
     val methodContext =
-      new MethodContext(scopeName, methodNode, new AutoIncIndex(1), isClassBodyMethod, Some(methodBlockNode), methodRefNode)
+      new MethodContext(
+        scopeName,
+        methodNode,
+        new AutoIncIndex(1),
+        isClassBodyMethod,
+        Some(methodBlockNode),
+        methodRefNode
+      )
     if (moduleMethodContext.isEmpty) {
       moduleMethodContext = Some(methodContext)
     }
@@ -408,7 +415,7 @@ class ContextStack {
   def isClassContext: Boolean = {
     stack.nonEmpty && (stack.head match {
       case methodContext: MethodContext if methodContext.isClassBodyMethod => true
-      case _ => false
+      case _                                                               => false
     })
   }
 

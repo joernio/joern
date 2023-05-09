@@ -288,10 +288,11 @@ class PythonAstVisitor(
     parameters: ast.Arguments,
     isStatic: Boolean
   ): () => MethodParameters = {
-    val startIndex = if (contextStack.isClassContext && !isStatic)
-      0
-    else
-      1
+    val startIndex =
+      if (contextStack.isClassContext && !isStatic)
+        0
+      else
+        1
 
     () => new MethodParameters(startIndex, convert(parameters, startIndex))
   }
@@ -304,7 +305,7 @@ class PythonAstVisitor(
     bodyProvider: () => Iterable[nodes.NewNode],
     returns: Option[ast.iexpr],
     isAsync: Boolean,
-    lineAndColumn: LineAndColumn,
+    lineAndColumn: LineAndColumn
   ): (nodes.NewMethod, nodes.NewMethodRef) = {
     val methodFullName = calculateFullNameFromContext(methodName)
 
@@ -322,7 +323,7 @@ class PythonAstVisitor(
         isAsync = true,
         Some(methodRefNode),
         returnTypeHint = None,
-        lineAndColumn,
+        lineAndColumn
       )
 
     (methodNode, methodRefNode)
@@ -341,7 +342,7 @@ class PythonAstVisitor(
     isAsync: Boolean,
     methodRefNode: Option[nodes.NewMethodRef],
     returnTypeHint: Option[String],
-    lineAndColumn: LineAndColumn,
+    lineAndColumn: LineAndColumn
   ): nodes.NewMethod = {
     val methodNode = nodeBuilder.methodNode(name, fullName, absFileName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
@@ -451,7 +452,7 @@ class PythonAstVisitor(
       bodyProvider = () => classDef.body.map(convert),
       None,
       isAsync = false,
-      lineAndColOf(classDef),
+      lineAndColOf(classDef)
     )
 
     contextStack.pop()
@@ -1383,7 +1384,7 @@ class PythonAstVisitor(
       () => Iterable.single(convert(new ast.Return(lambda.body, lambda.attributeProvider))),
       returns = None,
       isAsync = false,
-      lineAndColOf(lambda),
+      lineAndColOf(lambda)
     )
     methodRefNode
   }

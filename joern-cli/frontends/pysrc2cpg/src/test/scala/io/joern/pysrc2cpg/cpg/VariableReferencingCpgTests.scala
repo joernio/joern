@@ -276,7 +276,6 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
       val fLocal = cpg.method.fullName("test.py:<module>.MyClass.f").local.name("x").head
       fLocal.closureBindingId shouldBe Some("test.py:<module>.MyClass.f:x")
 
-
     }
   }
 
