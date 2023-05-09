@@ -162,11 +162,14 @@ trait AstCreatorHelper { this: AstCreator =>
         rawType
       }
     StringUtils.normalizeSpace(tpe) match {
-      case "" => Defines.anyTypeName
+      case ""                                                                      => Defines.anyTypeName
+      case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") => Defines.anyTypeName
       case t if t.contains(" ->") && t.contains("}::") =>
         fixQualifiedName(t.substring(t.indexOf("}::") + 3, t.indexOf(" ->")))
       case t if t.contains(" ->") =>
         fixQualifiedName(t.substring(0, t.indexOf(" ->")))
+      case t if t.contains("( ") =>
+        fixQualifiedName(t.substring(0, t.indexOf("( ")))
       case t if t.contains("?") => Defines.anyTypeName
       case t if t.contains("#") => Defines.anyTypeName
       case t if t.contains("{") && t.contains("}") =>

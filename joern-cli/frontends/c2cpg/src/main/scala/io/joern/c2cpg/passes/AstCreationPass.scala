@@ -4,7 +4,6 @@ import better.files.File
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.AstCreator
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
-import io.joern.c2cpg.passes.AstCreationPass.InputFiles
 import io.joern.c2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
@@ -15,31 +14,14 @@ import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 import scala.util.matching.Regex
 
-object AstCreationPass {
-
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  sealed trait InputFiles
-  object HeaderFiles extends InputFiles
-  object SourceFiles extends InputFiles
-
-}
-
-class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Report = new Report())
+class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
     extends ConcurrentWriterCpgPass[String](cpg) {
 
-  import io.joern.c2cpg.passes.AstCreationPass.logger
-
+  private val logger                                                  = LoggerFactory.getLogger(getClass)
   private val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] = new ConcurrentHashMap()
   private val parser: CdtParser                                       = new CdtParser(config)
   private val DefaultIgnoredFolders: List[Regex] =
     List("\\..*".r, "(.*[/\\\\])?tests?[/\\\\].*".r)
-
-  private def sourceFiles: Set[String] =
-    SourceFiles.determine(config.inputPath, FileDefaults.SOURCE_FILE_EXTENSIONS).toSet
-
-  private def headerFiles: Set[String] =
-    SourceFiles.determine(config.inputPath, FileDefaults.HEADER_FILE_EXTENSIONS).toSet
 
   private def isIgnoredByUserConfig(filePath: String): Boolean = {
     lazy val isInIgnoredFiles = config.ignoredFiles.exists {
@@ -71,10 +53,11 @@ class AstCreationPass(cpg: Cpg, forFiles: InputFiles, config: Config, report: Re
     case _                                           => true
   }
 
-  override def generateParts(): Array[String] = filterFiles(forFiles match {
-    case AstCreationPass.HeaderFiles => headerFiles
-    case AstCreationPass.SourceFiles => sourceFiles
-  }).toArray
+  override def generateParts(): Array[String] = filterFiles(
+    SourceFiles
+      .determine(config.inputPath, FileDefaults.SOURCE_FILE_EXTENSIONS ++ FileDefaults.HEADER_FILE_EXTENSIONS)
+      .toSet
+  ).toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val path    = Paths.get(filename).toAbsolutePath

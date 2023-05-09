@@ -49,7 +49,14 @@ class FileTests extends CCodeToCpgSuite {
   }
 
   "should allow traversing to namespaces" in {
-    cpg.file.namespace.name(NamespaceTraversal.globalNamespaceName).l.size shouldBe 2
+    val List(ns1, ns2, ns3) = cpg.file.namespaceBlock.l
+    ns1.filename shouldBe "<includes>"
+    ns1.fullName shouldBe "<includes>:<global>"
+    ns2.filename shouldBe "<unknown>"
+    ns2.fullName shouldBe "<global>"
+    ns3.filename shouldBe "Test0.c"
+    ns3.fullName shouldBe "Test0.c:<global>"
+    cpg.file.namespace.name(NamespaceTraversal.globalNamespaceName).l.size shouldBe 3
   }
 
 }
