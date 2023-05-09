@@ -21,7 +21,7 @@ class ParserTests extends AnyWordSpec with Matchers {
       semantics match {
         case List(x) =>
           x.methodFullName shouldBe "foo"
-          x.mappings shouldBe List((1, -1), (2, 3))
+          x.mappings shouldBe List(ParamMapping(PosArg(1), PosArg(-1)), ParamMapping(PosArg(2), PosArg(3)))
         case _ => fail()
       }
     }
@@ -44,6 +44,17 @@ class ParserTests extends AnyWordSpec with Matchers {
           y.methodFullName shouldBe "bar"
         case _ => fail()
       }
+    }
+
+    "parse named argument parameters" in new Fixture() {
+      private val semantics = parser.parse("\"foo\" \"param1\"->2 3->\"param2\"")
+      semantics.size shouldBe 1
+      semantics shouldBe List(
+        FlowSemantic(
+          "foo",
+          List(ParamMapping(NamedArg("param1"), PosArg(2)), ParamMapping(PosArg(3), NamedArg("param2")))
+        )
+      )
     }
   }
 

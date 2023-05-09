@@ -330,9 +330,14 @@ class RegexDefinedFlowsDataFlowTests
     extends PySrc2CpgFixture(
       withOssDataflow = true,
       extraFlows = List(
-        FlowSemantic("^path.*<module>\\.sanitizer$", List((0, 0), (1, 1)), regex = true),
-        FlowSemantic("^foo.*<module>\\.sanitizer.*", List((0, 0), (1, 1)), regex = true),
-        FlowSemantic("^foo.*\\.create_sanitizer\\.<returnValue>\\.sanitize", List((0, 0), (1, 1)), regex = true)
+        FlowSemantic.from("^path.*<module>\\.sanitizer$", List((0, 0), (1, 1)), regex = true),
+        FlowSemantic.from("^foo.*<module>\\.sanitizer.*", List((0, 0), (1, 1)), regex = true),
+        FlowSemantic.from("^foo.*\\.create_sanitizer\\.<returnValue>\\.sanitize", List((0, 0), (1, 1)), regex = true),
+        FlowSemantic
+          .from(
+            "requests.py:<module>.post",
+            List((0, 0), (1, 1), ("url", -1), ("body", -1), ("url", "url"), ("body", "body"))
+          )
       )
     ) {
 
@@ -399,6 +404,26 @@ class RegexDefinedFlowsDataFlowTests
       sink.reachableBy(source).size shouldBe 0
     }
 
+  }
+
+  "flows to parameterized arguments" should {
+    val cpg = code("""
+        |import requests
+        |def foo():
+        |    orderId = "Mysource"
+        |    item = orderId
+        |    response = requests.post(
+        |            url="https://rest.marketingcloudapis.com/data/v1/async",
+        |            body=item
+        |        )
+        |""".stripMargin)
+
+    "have summarized flows accurately pass parameterized argument behaviour" in {
+      val source = cpg.identifier("orderId")
+      val sink   = cpg.call("post")
+
+      sink.reachableBy(source).size shouldBe 2
+    }
   }
 
 }
