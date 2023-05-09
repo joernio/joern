@@ -169,9 +169,18 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     }
   }
 
-  def methodReturnNode(staticTypeHint: Option[String], dynamicTypeHintFullName: Option[String], lineAndColumn: LineAndColumn): nodes.NewMethodReturn = {
+  def methodReturnNode(
+    staticTypeHint: Option[String],
+    dynamicTypeHintFullName: Option[String],
+    lineAndColumn: LineAndColumn
+  ): nodes.NewMethodReturn = {
     val methodReturnNode = NodeBuilders
-      .methodReturnNode(staticTypeHint.getOrElse(Constants.ANY), dynamicTypeHintFullName, Some(lineAndColumn.line), Some(lineAndColumn.column))
+      .methodReturnNode(
+        staticTypeHint.getOrElse(Constants.ANY),
+        dynamicTypeHintFullName,
+        Some(lineAndColumn.line),
+        Some(lineAndColumn.column)
+      )
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
     addNodeToDiff(methodReturnNode)

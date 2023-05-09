@@ -41,7 +41,7 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
     }
 
     for {
-      param   <- cpg.parameter.filter(x => x.dynamicTypeHintFullName.nonEmpty)
+      param   <- cpg.parameter.filter(x => x.typeFullName != Constants.ANY)
       file    <- param.file
       imports <- fileToImports.get(file.name)
     } {
