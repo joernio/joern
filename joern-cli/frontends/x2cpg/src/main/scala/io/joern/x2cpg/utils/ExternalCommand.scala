@@ -1,29 +1,40 @@
 package io.joern.x2cpg.utils
 
-import java.util.concurrent.ConcurrentLinkedQueue
 import org.apache.commons.lang.StringUtils
+
+import java.util.concurrent.ConcurrentLinkedQueue
+import scala.jdk.CollectionConverters._
 import scala.sys.process.{Process, ProcessLogger}
 import scala.util.{Failure, Success, Try}
-import scala.jdk.CollectionConverters._
 
 object ExternalCommand {
 
   private val IS_WIN: Boolean =
     scala.util.Properties.isWin
 
+  private val USER_DIR: String = System.getProperty("user.dir")
+
   private val shellPrefix: Seq[String] =
     if (IS_WIN) "cmd" :: "/c" :: Nil else "sh" :: "-c" :: Nil
 
-  def run(command: String, cwd: String, separateStdErr: Boolean = false): Try[Seq[String]] = {
+  def run(command: String, cwd: String = USER_DIR, separateStdErr: Boolean = false): Try[Seq[String]] = {
     val stdOutOutput  = new ConcurrentLinkedQueue[String]
     val stdErrOutput  = if (separateStdErr) new ConcurrentLinkedQueue[String] else stdOutOutput
     val processLogger = ProcessLogger(stdOutOutput.add, stdErrOutput.add)
 
-    Process(shellPrefix :+ command, new java.io.File(cwd)).!(processLogger) match {
+    startProcess(command, cwd, Option(processLogger)).exitValue() match {
       case 0 =>
         Success(stdOutOutput.asScala.toSeq)
       case _ =>
         Failure(new RuntimeException(stdErrOutput.asScala.mkString(System.lineSeparator())))
+    }
+  }
+
+  def startProcess(command: String, cwd: String = USER_DIR, processLogger: Option[ProcessLogger] = None): Process = {
+    val process = Process(shellPrefix :+ command, new java.io.File(cwd))
+    processLogger match {
+      case Some(logger) => process.run(logger)
+      case None         => process.run()
     }
   }
 

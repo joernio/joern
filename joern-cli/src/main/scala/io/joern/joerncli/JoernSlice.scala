@@ -1,10 +1,17 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.circe.generic.auto._
-import io.circe.syntax.EncoderOps
 import io.joern.joerncli.JoernParse.ParserConfig
-import io.joern.joerncli.slicing._
+import io.joern.slicing.{
+  DataFlowSlice,
+  DataFlowSlicing,
+  ProgramSlice,
+  SliceConfig,
+  SliceMode,
+  UsageSlicing,
+  ProgramDataFlowSlice,
+  ProgramUsageSlice
+}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
 
@@ -12,30 +19,12 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.language.postfixOps
 import scala.util.{Try, Using}
 
-/** The kind of mode to use for slicing.
-  */
-object SliceMode extends Enumeration {
-  type SliceModes = Value
-  val DataFlow, Usages = Value
-}
-
 object JoernSlice {
 
-  import io.joern.joerncli.SliceMode._
+  import io.joern.slicing.SliceMode._
 
   implicit val sliceModeRead: scopt.Read[SliceModes] =
     scopt.Read.reads(SliceMode withName)
-
-  case class Config(
-    inputPath: File = File("cpg.bin"),
-    outFile: File = File("slices"),
-    sliceMode: SliceModes = DataFlow,
-    sourceFile: Option[String] = None,
-    sliceDepth: Int = 20,
-    minNumCalls: Int = 1,
-    typeRecoveryDummyTypes: Boolean = false,
-    excludeOperatorCalls: Boolean = false
-  )
 
   def main(args: Array[String]): Unit = {
     parseConfig(args).foreach { config =>
@@ -52,7 +41,7 @@ object JoernSlice {
     }
   }
 
-  private def generateTempCpg(config: Config): String = {
+  private def generateTempCpg(config: SliceConfig): String = {
     val tmpFile = File.newTemporaryFile("joern-slice", ".bin")
     println(s"Generating CPG from code at ${config.inputPath.pathAsString}")
     (JoernParse.run(
@@ -69,8 +58,8 @@ object JoernSlice {
     }
   }
 
-  private def parseConfig(args: Array[String]): Option[Config] =
-    new scopt.OptionParser[Config]("joern-slice") {
+  private def parseConfig(args: Array[String]): Option[SliceConfig] =
+    new scopt.OptionParser[SliceConfig]("joern-slice") {
       head("Extract intra-procedural slices from the CPG.")
       help("help")
       arg[String]("cpg")
@@ -104,7 +93,7 @@ object JoernSlice {
         .text(s"excludes operator calls in the slices - defaults to false.")
         .action((x, c) => c.copy(excludeOperatorCalls = x))
 
-    }.parse(args, Config())
+    }.parse(args, SliceConfig())
 
   private def storeSliceInNewCpg(outFile: File, programSlice: ProgramSlice): Unit = {
 
@@ -141,7 +130,7 @@ object JoernSlice {
         sliceCpg.pathAsString
       case programUsageSlice: ProgramUsageSlice =>
         val sliceCpg = File(normalizePath(outFile.pathAsString, ".json")).createFileIfNotExists()
-        sliceCpg.write(programUsageSlice.asJson.spaces2)
+        sliceCpg.write(programUsageSlice.toJsonPretty)
         sliceCpg.pathAsString
     }
     println(s"Slices have been successfully generated and written to $finalOutputPath")

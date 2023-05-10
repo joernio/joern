@@ -1,4 +1,4 @@
-import sbt._
+import sbt.*
 
 object Projects {
   val frontendsRoot = file("joern-cli/frontends")
@@ -9,6 +9,7 @@ object Projects {
   lazy val dataflowengineoss = project.in(file("dataflowengineoss"))
   lazy val macros            = project.in(file("macros"))
   lazy val semanticcpg       = project.in(file("semanticcpg"))
+  lazy val slicing           = project.in(file("slicing"))
   lazy val benchmarks        = project.in(file("benchmarks"))
 
   lazy val c2cpg       = project.in(frontendsRoot / "c2cpg")

@@ -1,6 +1,6 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.joern.x2cpg.Defines
+import io.joern.x2cpg.{Defines, JoernTI}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
@@ -22,8 +22,10 @@ import scala.collection.mutable
   *   the number of iterations to run.
   * @param enabledDummyTypes
   *   whether to enable placeholder dummy values for partially resolved types.
+  * @param joernti
+  *   the JoernTI type inference interface.
   */
-case class XTypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true)
+case class XTypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true, joernti: Option[JoernTI] = None)
 
 /** @param config
   *   the user defined config.
@@ -205,6 +207,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     (cu.ast.isIdentifier ++ cu.ast.isCall ++ cu.ast.isLocal ++ cu.ast.isParameter)
       .filter(hasTypes)
       .foreach(prepopulateSymbolTableEntry)
+    state.config.joernti.foreach { joernti => }
   }
 
   protected def getTypes(node: AstNode): Set[String] =

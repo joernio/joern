@@ -1,7 +1,7 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.joerncli.slicing.{DefComponent, ProgramUsageSlice, UsageSlicing}
+import io.joern.slicing._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{Languages, Operators}
 import org.scalatest.matchers.should.Matchers
@@ -15,7 +15,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
   ) { case (cpg: Cpg, _) =>
     val programSlice =
       UsageSlicing
-        .calculateUsageSlice(cpg, JoernSlice.Config(excludeOperatorCalls = true))
+        .calculateUsageSlice(cpg, SliceConfig(excludeOperatorCalls = true))
         .asInstanceOf[ProgramUsageSlice]
 
     "extract 'express.js' slice" in {

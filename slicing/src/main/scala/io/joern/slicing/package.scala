@@ -1,14 +1,47 @@
-package io.joern.joerncli
+package io.joern
 
+import better.files.File
+import io.circe.Decoder
+import io.joern.slicing.SliceMode.{DataFlow, SliceModes}
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 import overflowdb.Edge
 
 package object slicing {
 
+  import io.circe.generic.auto._
+  import io.circe.syntax.EncoderOps
+
+  /** The kind of mode to use for slicing.
+    */
+  object SliceMode extends Enumeration {
+    type SliceModes = Value
+    val DataFlow, Usages = Value
+  }
+
+  case class SliceConfig(
+    inputPath: File = File("cpg.bin"),
+    outFile: File = File("slices"),
+    sliceMode: SliceModes = DataFlow,
+    sourceFile: Option[String] = None,
+    sliceDepth: Int = 20,
+    minNumCalls: Int = 1,
+    typeRecoveryDummyTypes: Boolean = false,
+    excludeOperatorCalls: Boolean = false
+  )
+
   /** A trait for all objects that represent a 1:1 relationship between the CPG and all the slices extracted.
     */
-  sealed trait ProgramSlice
+  sealed trait ProgramSlice {
+
+    import io.circe.Encoder._
+    import io.circe.generic.auto._
+
+    def toJson: String = this.asJson.spaces2
+
+    def toJsonPretty: String = this.asJson.spaces2
+
+  }
 
   /** A data-flow slice vector for a given backwards intraprocedural path.
     *
@@ -135,4 +168,7 @@ package object slicing {
     userDefinedTypes: List[UserDefinedType]
   ) extends ProgramSlice
 
+  /** The inference response from the server.
+    */
+  case class InferenceResult(target_identifier: String, `type`: String, confidence: Float)
 }

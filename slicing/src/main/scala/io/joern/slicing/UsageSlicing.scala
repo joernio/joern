@@ -1,11 +1,11 @@
-package io.joern.joerncli.slicing
+package io.joern.slicing
 
-import io.joern.joerncli.JoernSlice.Config
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.semanticcpg.language.NoResolve
 import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language._
 
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{ForkJoinPool, RecursiveTask}
@@ -26,7 +26,7 @@ object UsageSlicing {
     * @return
     *   a set of object slices.
     */
-  def calculateUsageSlice(cpg: Cpg, config: Config): ProgramSlice = {
+  def calculateUsageSlice(cpg: Cpg, config: SliceConfig): ProgramSlice = {
     excludeOperatorCalls.set(config.excludeOperatorCalls)
 
     def getAssignmentDecl: Traversal[Declaration] = (config.sourceFile match {

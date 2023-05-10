@@ -2,7 +2,7 @@ name := "dataflowengineoss"
 
 crossScalaVersions := Seq("2.13.8", "3.2.2")
 
-dependsOn(Projects.semanticcpg, Projects.x2cpg)
+dependsOn(Projects.semanticcpg)
 
 libraryDependencies ++= Seq(
   "org.antlr"               % "antlr4-runtime"             % Versions.antlr,

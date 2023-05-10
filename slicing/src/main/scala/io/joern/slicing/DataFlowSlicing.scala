@@ -1,15 +1,14 @@
-package io.joern.joerncli.slicing
+package io.joern.slicing
 
 import io.joern.dataflowengineoss.language._
-import io.joern.joerncli.JoernSlice.Config
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Method}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
 object DataFlowSlicing {
 
-  def calculateDataFlowSlice(cpg: Cpg, config: Config): ProgramDataFlowSlice = {
+  def calculateDataFlowSlice(cpg: Cpg, config: SliceConfig): ProgramDataFlowSlice = {
     val sliceMapping = (config.sourceFile match {
       case Some(fileName) => cpg.file.nameExact(fileName).ast.isCall
       case None           => cpg.call
