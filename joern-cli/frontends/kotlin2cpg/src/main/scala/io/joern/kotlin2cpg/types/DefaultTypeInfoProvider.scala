@@ -519,15 +519,6 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     resolvedCallDescriptor(expr) match {
       case Some(fnDescriptor) =>
         val originalDesc = fnDescriptor.getOriginal
-        val relevantDesc = originalDesc match {
-          case typedDesc: TypeAliasConstructorDescriptorImpl =>
-            typedDesc.getUnderlyingConstructorDescriptor
-          case typedDesc: FunctionDescriptor if !typedDesc.isActual =>
-            val overwriddenDescriptors = typedDesc.getOverriddenDescriptors.asScala.toList
-            if (overwriddenDescriptors.nonEmpty) overwriddenDescriptors.head
-            else typedDesc
-          case _ => originalDesc
-        }
 
         val renderedFqNameForDesc = TypeRenderer.renderFqNameForDesc(originalDesc)
         val renderedFqNameMaybe = for {
@@ -561,7 +552,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val renderedReturnType =
           if (isConstructorDescriptor(originalDesc)) TypeConstants.void
           else if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) TypeConstants.javaLangObject
-          else TypeRenderer.render(relevantDesc.getReturnType)
+          else TypeRenderer.render(originalDesc.getReturnType)
 
         val singleLambdaArgExprMaybe = expr.getSelectorExpression match {
           case c: KtCallExpression if c.getLambdaArguments.size() == 1 =>
