@@ -154,7 +154,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func1")
         .parameter
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("__builtin.int")
     }
@@ -163,7 +163,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func2")
         .parameter
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("typing.Optional")
     }
@@ -172,7 +172,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func1")
         .methodReturn
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("__builtin.float")
     }
@@ -181,7 +181,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func2")
         .methodReturn
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("typing.List")
     }
@@ -190,7 +190,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func3")
         .parameter
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("abc.Def")
     }

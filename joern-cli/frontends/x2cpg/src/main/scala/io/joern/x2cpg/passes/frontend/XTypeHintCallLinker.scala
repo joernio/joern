@@ -2,8 +2,8 @@ package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.passes.base.MethodStubCreator
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, MethodBase, NewMethod}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
@@ -40,6 +40,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     val callerAndCallees = calls.map(call => (call, calleeNames(call))).toList
     val methodMap        = mapMethods(callerAndCallees, builder)
     linkCallsToCallees(callerAndCallees, methodMap, builder)
+    linkSpeculativeNamespaceNodes(methodMap.view.values.collectAll[NewMethod], builder)
   }
 
   protected def mapMethods(
@@ -104,16 +105,66 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       if (methodName.contains(pathSep) && methodName.length > methodName.lastIndexOf(pathSep) + 1)
         methodName.substring(methodName.lastIndexOf(pathSep) + 1)
       else methodName
+    createMethodStub(name, methodName, call.argumentOut.size, isExternal, builder)
+  }
+
+  /** Try to extract a type full name from the method full name, if one exists in the CPG then we are lucky and we use
+    * it, else we ignore for now.
+    */
+  protected def createMethodStub(
+    name: String,
+    fullName: String,
+    argSize: Int,
+    isExternal: Boolean,
+    builder: DiffGraphBuilder
+  ): NewMethod = {
+    val nameIdx = fullName.lastIndexOf(name)
+    val default = (NodeTypes.NAMESPACE_BLOCK, XTypeHintCallLinker.namespace)
+    val (astParentType, astParentFullName) =
+      if (!fullName.isBlank && !fullName.startsWith("<operator") && nameIdx > 0) {
+        cpg.typeDecl
+          .fullNameExact(fullName.substring(0, nameIdx - 1))
+          .map(t => t.label -> t.fullName)
+          .headOption
+          .getOrElse(default)
+      } else {
+        default
+      }
+
     MethodStubCreator
       .createMethodStub(
         name,
-        methodName,
+        fullName,
         "",
         DispatchTypes.DYNAMIC_DISPATCH.name(),
-        call.argumentOut.size,
+        argSize,
         builder,
-        isExternal
+        isExternal,
+        astParentType,
+        astParentFullName
       )
   }
+
+  /** Once we have connected methods that were speculatively generated and managed to correctly link to methods already
+    * in the CPG, we link the rest to the "speculativeMethods" namespace as a way to show that these may not actually
+    * exist.
+    */
+  protected def linkSpeculativeNamespaceNodes(newMethods: IterableOnce[NewMethod], builder: DiffGraphBuilder): Unit = {
+    val speculativeNamespace =
+      NewNamespaceBlock().name(XTypeHintCallLinker.namespace).fullName(XTypeHintCallLinker.namespace)
+
+    builder.addNode(speculativeNamespace)
+    newMethods
+      .filter(_.astParentFullName == XTypeHintCallLinker.namespace)
+      .foreach(m => builder.addEdge(speculativeNamespace, m, EdgeTypes.AST))
+  }
+}
+
+object XTypeHintCallLinker {
+
+  /** The shared namespace for all methods generated from the type recovery that may not exist with this exact full name
+    * in reality.
+    */
+  val namespace: String = "<speculatedMethods>"
 
 }

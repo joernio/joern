@@ -709,20 +709,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val entryNode = memberNode(entry, entry.getNameAsString, entry.toString, typeFullName.getOrElse("ANY"))
 
     val name = s"${typeFullName.getOrElse(Defines.UnresolvedNamespace)}.${Defines.ConstructorMethodName}"
-    val args = entry.getArguments.asScala.map { argument =>
-      val children = astsForExpression(argument, ExpectedType.empty)
-      val callNode =
-        NewCall()
-          .name(name)
-          .methodFullName(name)
-          .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          .code(entry.toString)
-          .lineNumber(line(entry))
-          .columnNumber(column(entry))
-      callAst(callNode, children)
-    }
 
-    Ast(entryNode).withChildren(args)
+    Ast(entryNode)
   }
 
   private def modifiersForFieldDeclaration(decl: FieldDeclaration): Seq[Ast] = {
