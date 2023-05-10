@@ -978,9 +978,16 @@ class AstCreator(filename: String, global: Global)
   def astForBinaryExpression(lhs: ExpressionContext, rhs: ExpressionContext, operatorToken: Token): Ast = {
     val lhsExpressionAst = astForExpressionContext(lhs)
     val rhsExpressionAst = astForExpressionContext(rhs)
-    // TODO create a method Ast
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    Ast(blockNode).withChildren(Seq[Ast](lhsExpressionAst, rhsExpressionAst))
+    val callNode = NewCall()
+      .name(operatorToken.getText)
+      .code(operatorToken.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + operatorToken.getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(operatorToken.getLine())
+      .columnNumber(operatorToken.getCharPositionInLine())
+    callAst(callNode).withChildren(Seq[Ast](lhsExpressionAst, rhsExpressionAst))
   }
 
   def astForSimpleScopedConstantReferencePrimaryContext(ctx: SimpleScopedConstantReferencePrimaryContext): Ast = {
