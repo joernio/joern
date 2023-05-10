@@ -958,9 +958,16 @@ class AstCreator(filename: String, global: Global)
     val expressions           = ctx.expression()
     val baseExpressionAst     = astForExpressionContext(expressions.get(0))
     val exponentExpressionAst = astForExpressionContext(expressions.get(1))
-    // TODO create a method Ast
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    Ast(blockNode).withChildren(Seq[Ast](baseExpressionAst, exponentExpressionAst))
+    val callNode = NewCall()
+      .name(ctx.STAR2().getText)
+      .code(ctx.STAR2().getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.STAR2().getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.STAR2().getSymbol().getLine())
+      .columnNumber(ctx.STAR2().getSymbol().getCharPositionInLine())
+    callAst(callNode).withChildren(Seq[Ast](baseExpressionAst, exponentExpressionAst))
   }
 
   def astForRangeExpressionContext(ctx: RangeExpressionContext): Ast = {
@@ -1119,14 +1126,30 @@ class AstCreator(filename: String, global: Global)
   }
   def astForUnaryExpressionContext(ctx: UnaryExpressionContext): Ast = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    val operatorToken = ctx.op
-    // TODO create a method Ast
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    Ast(blockNode).withChild(expressionAst)
+    val callNode = NewCall()
+      .name(ctx.op.getText)
+      .code(ctx.op.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.op.getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.op.getLine())
+      .columnNumber(ctx.op.getCharPositionInLine())
+    callAst(callNode).withChild(expressionAst)
   }
 
   def astForUnaryMinusExpressionContext(ctx: UnaryMinusExpressionContext): Ast = {
-    astForExpressionContext(ctx.expression())
+    val expressionAst = astForExpressionContext(ctx.expression())
+    val callNode = NewCall()
+      .name(ctx.MINUS().getText)
+      .code(ctx.MINUS().getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.MINUS().getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.MINUS().getSymbol().getLine())
+      .columnNumber(ctx.MINUS().getSymbol().getCharPositionInLine())
+    callAst(callNode).withChild(expressionAst)
   }
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Ast = {
