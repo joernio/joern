@@ -106,7 +106,7 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
 
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "void(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 
@@ -140,7 +140,7 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
 
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "void(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 
@@ -174,7 +174,7 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
 
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "void(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 

@@ -69,6 +69,23 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
+  "CPG for code with a call with a call to `map` on a list of string" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f2(p: String) {
+        |    val m = listOf(p, "ls", "ps")
+        |    val o = m.map { i -> i + "_cmd" }
+        |    o.forEach { i  -> println(i) }
+        |}
+        |""".stripMargin)
+
+    "should contain a METHOD node for the lambda the correct props set" in {
+      val List(m) = cpg.method.fullName(".*lambda.*1.*").l
+      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+    }
+  }
+
   "CPG for code with a list iterator lambda" should {
     val cpg = code("""
         |package mypkg
@@ -90,8 +107,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:void(java.lang.Object)"
-      m.signature shouldBe "void(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
       m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(14)
     }
@@ -138,11 +155,11 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       Option(td.astParent).isDefined shouldBe true
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:void(java.lang.Object)"
+      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
-      b.signature shouldBe "void(java.lang.Object)"
+      b.signature shouldBe "java.lang.Object(java.lang.Object)"
       b.name shouldBe Constants.lambdaBindingName
     }
 
@@ -181,8 +198,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:void(java.lang.Object)"
-      m.signature shouldBe "void(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
     "should contain METHOD_PARAMETER_IN nodes for the lambda with the correct properties set" in {
@@ -207,8 +224,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:boolean(java.lang.Object)"
-      m.signature shouldBe "boolean(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
     "should contain a METHOD node for the lambda with a corresponding METHOD_RETURN which has the correct props set" in {
@@ -253,11 +270,11 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       Option(td.astParent).isDefined shouldBe true
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:boolean(java.lang.Object)"
+      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
-      b.signature shouldBe "boolean(java.lang.Object)"
+      b.signature shouldBe "java.lang.Object(java.lang.Object)"
       b.name shouldBe Constants.lambdaBindingName
     }
 
@@ -280,9 +297,9 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
         |""".stripMargin)
 
     "should contain a METHOD node for the lambda the correct props set" in {
-      val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.String(java.lang.Object)"
-      m.signature shouldBe "java.lang.String(java.lang.Object)"
+      val List(m) = cpg.method.fullName(".*lambda.*1.*").l
+      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
       m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(28)
     }
@@ -320,11 +337,11 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       td.code shouldBe "LAMBDA_TYPE_DECL"
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.String(java.lang.Object)"
+      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
       bm.name shouldBe Constants.lambdaName
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
-      b.signature shouldBe "java.lang.String(java.lang.Object)"
+      b.signature shouldBe "java.lang.Object(java.lang.Object)"
       b.name shouldBe Constants.lambdaBindingName
     }
 
@@ -368,7 +385,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a METHOD node for the lambda with the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "void(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
 
@@ -392,7 +409,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a METHOD node for the second lambda with the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*2.*").l
-      m.signature shouldBe "void(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
     "should contain METHOD_REF nodes with the correct props set" in {
