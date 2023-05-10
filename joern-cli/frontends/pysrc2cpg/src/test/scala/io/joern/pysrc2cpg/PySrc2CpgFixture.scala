@@ -35,7 +35,7 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
     new ImportsPass(this).createAndApply()
-    new InheritanceFullNamePass(this).createAndApply()
+    new PythonInheritanceNamePass(this).createAndApply()
     new DynamicTypeHintFullNamePass(this).createAndApply()
     new PythonTypeRecoveryPass(this).createAndApply()
     new PythonTypeHintCallLinker(this).createAndApply()
