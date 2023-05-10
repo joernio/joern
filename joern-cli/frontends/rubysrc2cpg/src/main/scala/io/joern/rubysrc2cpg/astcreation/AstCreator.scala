@@ -32,6 +32,7 @@ class AstCreator(filename: String, global: Global)
 
   object MethodFullNames {
     val UnknownFullName = "<unknownfullname>"
+    val OperatorPrefix  = "<operator>."
   }
 
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -332,14 +333,15 @@ class AstCreator(filename: String, global: Global)
     if (ctx == null) return Ast()
 
     val blockNode = NewBlock().typeFullName(Defines.Any)
-    val asts      = mutable.ArrayBuffer.empty[Ast]
-    ctx
+    val asts = ctx
       .statement()
-      .forEach(st => {
-        asts.addOne(astForStatementContext(st))
+      .asScala
+      .map(st => {
+        astForStatementContext(st)
       })
+      .toSeq
 
-    Ast(blockNode).withChildren(asts.toSeq)
+    Ast(blockNode).withChildren(asts)
   }
 
   def astForAdditiveExpressionContext(ctx: AdditiveExpressionContext): Ast = {
@@ -762,6 +764,7 @@ class AstCreator(filename: String, global: Global)
     val callNode = NewCall()
       .name(ctx.getText)
       .code(ctx.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.getText)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
@@ -904,6 +907,7 @@ class AstCreator(filename: String, global: Global)
     val callNode = NewCall()
       .name(ctx.EQ().getText)
       .code(ctx.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.EQ().getText)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
@@ -934,6 +938,7 @@ class AstCreator(filename: String, global: Global)
     val callNode = NewCall()
       .name(ctx.op.getText)
       .code(ctx.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.op.getText)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
