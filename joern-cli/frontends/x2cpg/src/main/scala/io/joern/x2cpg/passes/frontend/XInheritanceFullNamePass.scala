@@ -48,8 +48,14 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
       .flatMap {
         case x: Call if x.isCallForImportOut.nonEmpty =>
           x.isCallForImportOut.importedEntity.map {
-            case imp if imp.matches("^[.]+/?.*") => Paths.get(imp).normalize().toString
-            case imp                             => imp
+            case imp if imp.matches("^[.]+/?.*") =>
+              imp.split(pathSep).toList match {
+                case ::(head, next) =>
+                  (Paths.get(head).normalize().toString +: next).mkString(pathSep.toString)
+                case Nil =>
+                  Paths.get(imp).normalize().toString
+              }
+            case imp => imp
           }
         case x: TypeDecl if typeDeclMap.contains(x.fullName) => Option(x.fullName)
         case _                                               => None
