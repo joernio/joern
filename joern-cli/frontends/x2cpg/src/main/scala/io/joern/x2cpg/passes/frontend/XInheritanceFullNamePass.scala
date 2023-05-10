@@ -1,33 +1,35 @@
-package io.joern.pysrc2cpg
+package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.passes.base.TypeDeclStubCreator
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, TypeBase, TypeDecl, TypeDeclBase}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
+import java.nio.file.Paths
 import java.util.regex.{Matcher, Pattern}
 import scala.collection.mutable
 
 /** Using some basic heuristics, will try to resolve type full names from types found within the CPG. Requires
   * ImportPass as a pre-requisite.
   */
-class InheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
+abstract class XInheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
 
-  private val typeDeclMap =
-    mutable.HashMap.from[String, TypeDeclBase](cpg.typeDecl.where(_.nameNot(".*<.*>$")).map(t => t.fullName -> t))
-  private val typeMap =
-    mutable.HashMap.from[String, TypeBase](cpg.typ.where(_.nameNot(".*<.*>$")).map(t => t.fullName -> t))
+  protected val pathSep: Char       = '.'
+  protected val fileModuleSep: Char = ':'
+  protected val moduleName: String
+  protected val fileExt: String
+
+  protected val typeDeclMap =
+    mutable.HashMap.from[String, TypeDeclBase](cpg.typeDecl.map(t => t.fullName -> t))
+  protected val typeMap =
+    mutable.HashMap.from[String, TypeBase](cpg.typ.map(t => t.fullName -> t))
 
   override def run(builder: DiffGraphBuilder): Unit = {
     cpg.typeDecl
-      .filterNot(t =>
-        t.inheritsFromTypeFullName == Seq("ANY") || t.inheritsFromTypeFullName == Seq(
-          "object"
-        ) || t.inheritsFromTypeFullName.isEmpty
-      )
+      .filterNot(t => inheritsNothingOfInterest(t.inheritsFromTypeFullName))
       .foreach { t =>
         val resolvedTypeDecls = resolveInheritedTypeFullName(t, builder)
         if (resolvedTypeDecls.nonEmpty) {
@@ -38,18 +40,25 @@ class InheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
       }
   }
 
-  private def resolveInheritedTypeFullName(td: TypeDecl, builder: DiffGraphBuilder): Seq[TypeDeclBase] = {
+  protected def inheritsNothingOfInterest(inheritedTypes: Seq[String]): Boolean =
+    inheritedTypes == Seq("ANY") || inheritedTypes == Seq("object") || inheritedTypes.isEmpty
+
+  protected def resolveInheritedTypeFullName(td: TypeDecl, builder: DiffGraphBuilder): Seq[TypeDeclBase] = {
     val qualifiedNamesInScope = td.file.ast
       .flatMap {
-        case x: Call if x.isCallForImportOut.nonEmpty        => x.isCallForImportOut.importedEntity
+        case x: Call if x.isCallForImportOut.nonEmpty =>
+          x.isCallForImportOut.importedEntity.map {
+            case imp if imp.matches("^[.]+/?.*") => Paths.get(imp).normalize().toString
+            case imp                             => imp
+          }
         case x: TypeDecl if typeDeclMap.contains(x.fullName) => Option(x.fullName)
         case _                                               => None
       }
-      .filterNot(_.endsWith("<module>"))
+      .filterNot(_.endsWith(moduleName))
       .l
     val matchersInScope = qualifiedNamesInScope.map {
-      case x if x.contains(".") =>
-        val splitName = x.split("\\.")
+      case x if x.contains(pathSep) =>
+        val splitName = x.split(pathSep)
         s".*${Pattern.quote(splitName.head)}.*${Pattern.quote(splitName.last)}"
       case x => s".*${Pattern.quote(x)}"
     }.distinct
@@ -64,22 +73,22 @@ class InheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
             case None       => None
           }
         }
-        .map { case (qualifiedName, inheritedNames) => pythonicTypeFullName(qualifiedName, inheritedNames) }
-        .map { case (name, fullName) =>
-          typeDeclMap.get(fullName) match {
-            case Some(typeDecl) => typeDecl
-            case None =>
-              val typeDecl = TypeDeclStubCreator.createTypeDeclStub(name, fullName)
-              builder.addNode(typeDecl)
-              typeDeclMap.put(fullName, typeDecl)
-              typeDecl
-          }
-
-        }
+        .map { case (qualifiedName, inheritedNames) => xTypeFullName(qualifiedName, inheritedNames) }
+        .map { case (name, fullName) => createTypeStub(name, fullName, builder) }
     } else {
       filteredTypes
     }
   }
+
+  private def createTypeStub(name: String, fullName: String, builder: DiffGraphBuilder): TypeDeclBase =
+    typeDeclMap.get(fullName) match {
+      case Some(typeDecl) => typeDecl
+      case None =>
+        val typeDecl = TypeDeclStubCreator.createTypeDeclStub(name, fullName)
+        builder.addNode(typeDecl)
+        typeDeclMap.put(fullName, typeDecl)
+        typeDecl
+    }
 
   private def namesIntersect(a: String, b: String): Boolean = {
     val (as, bs, intersect) = splitAndIntersect(a, b)
@@ -87,15 +96,15 @@ class InheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   private def splitAndIntersect(a: String, b: String): (Seq[String], Seq[String], Seq[String]) = {
-    val as = a.split("\\.")
-    val bs = b.split("\\.")
+    val as = a.split(pathSep)
+    val bs = b.split(pathSep)
     (as, bs, as.intersect(bs))
   }
 
-  /** Converts types in the form `foo.bar.Baz` to `foo/bar.py:<module>.Baz` and will result in a tuple of name and full
+  /** Converts types in the form `foo.bar.Baz` to `foo/bar.js::program:Baz` and will result in a tuple of name and full
     * name.
     */
-  private def pythonicTypeFullName(importedType: String, importedPath: String): (String, String) = {
+  protected def xTypeFullName(importedType: String, importedPath: String): (String, String) = {
     val (a, b) =
       if (importedType.length > importedPath.length)
         (importedType, importedPath)
@@ -103,19 +112,19 @@ class InheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
         (importedPath, importedType)
     val (as, bs, intersect) = splitAndIntersect(a, b)
     val combinedPath =
-      if (a == importedPath) bs.diff(intersect).concat(as).mkString(".")
-      else as.diff(intersect).concat(bs).mkString(".")
-    combinedPath.split("\\.").lastOption match {
+      if (a == importedPath) bs.diff(intersect).concat(as).mkString(pathSep.toString)
+      else as.diff(intersect).concat(bs).mkString(pathSep.toString)
+    combinedPath.split(pathSep).lastOption match {
       case Some(tName) =>
         (
           tName,
           combinedPath
-            .stripSuffix(s".$tName")
-            .replaceAll("\\.", Matcher.quoteReplacement(File.separator)) + s".py:<module>.$tName"
+            .stripSuffix(s"$pathSep$tName")
+            .replaceAll(s"${Pattern.quote(pathSep.toString)}", Matcher.quoteReplacement(File.separator)) +
+            Seq(s"$fileExt$fileModuleSep$moduleName", tName).mkString(pathSep.toString)
         )
       case None => (combinedPath, combinedPath)
     }
 
   }
-
 }
