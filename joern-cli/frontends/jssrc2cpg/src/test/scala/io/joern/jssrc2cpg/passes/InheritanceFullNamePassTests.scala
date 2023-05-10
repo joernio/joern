@@ -40,9 +40,13 @@ class InheritanceFullNamePassTests extends DataFlowCodeToCpgSuite {
     "resolve the type being inherited fully" in {
       val Some(tgtType) = cpg.typeDecl.nameExact("MusicWithLyrics").headOption
       tgtType.fullName shouldBe "inheritance.js::program:MusicWithLyrics"
-      cpg.typeDecl("Musician").fullName.headOption shouldBe Some("domain/music.js::program:Musician")
+      cpg.typeDecl("Musician").fullName.headOption shouldBe Some(
+        Seq("domain", "music.js::program:Musician").mkString(File.separator)
+      )
 
-      tgtType.inheritsFromTypeFullName.headOption shouldBe Some("domain/music.js::program:Musician")
+      tgtType.inheritsFromTypeFullName.headOption shouldBe Some(
+        Seq("domain", "music.js::program:Musician").mkString(File.separator)
+      )
     }
   }
 
