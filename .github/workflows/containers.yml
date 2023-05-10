@@ -1,14 +1,9 @@
 name: Upload Container image
 
 on:
-  schedule:
-  - cron: "0 */12 * * *"
   push:
-    branches:
-     - master
     tags:
       - 'v*'
-  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
