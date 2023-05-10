@@ -123,9 +123,16 @@ class AstCreator(filename: String, global: Global)
   def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Ast = {
     val (rightAst, rhsRetType) = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     val leftAst                = astForSingleLeftHandSideContext(ctx.singleLeftHandSide(), rhsRetType)
-    val seqAsts                = Seq[Ast](leftAst, rightAst)
-    val blockNode              = NewBlock().typeFullName(Defines.Any)
-    Ast(blockNode).withChildren(seqAsts)
+    val callNode = NewCall()
+      .name(ctx.op.getText)
+      .code(ctx.op.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.op.getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.op.getLine())
+      .columnNumber(ctx.op.getCharPositionInLine())
+    callAst(callNode).withChildren(Seq[Ast](leftAst, rightAst))
   }
 
   def astForStringInterpolationPrimaryContext(ctx: StringInterpolationPrimaryContext): Ast = {

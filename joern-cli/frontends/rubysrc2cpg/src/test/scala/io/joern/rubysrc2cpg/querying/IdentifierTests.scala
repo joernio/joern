@@ -249,10 +249,11 @@ class IdentifierTests extends RubyCode2CpgFixture {
       "recognise all identifier and call nodes" in {
         cpg.call.name("\\[]").size shouldBe 1
         cpg.call.name("\\[]=").size shouldBe 1
+        cpg.call.name("=").size shouldBe 3
         cpg.call.name("initialize").size shouldBe 1
         cpg.call.name("to_s").size shouldBe 1
         cpg.call.name("new").size shouldBe 1
-        cpg.call.size shouldBe 5
+        cpg.call.size shouldBe 8
         cpg.identifier.name("@my_hash").size shouldBe 3
         cpg.identifier.name("key").size shouldBe 3
         cpg.identifier.name("value").size shouldBe 2
