@@ -18,6 +18,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeRef,
   NewUnknown
 }
+import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
 import org.apache.commons.lang.StringUtils
 
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
@@ -199,6 +200,10 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .code(code)
       .lineNumber(line(node))
       .columnNumber(column(node))
+  }
+
+  protected def blockNode(node: Node): NewBlock = {
+    blockNode(node, BlockDefaults.Code, BlockDefaults.TypeFullName)
   }
 
   protected def blockNode(node: Node, code: String, typeFullName: String): NewBlock = {
