@@ -136,7 +136,8 @@ case class AccessPath(elements: Elements, exclusions: Seq[Elements]) {
       (elements.elements(idx), other.elements(idx)) match {
         case (VariableAccess, VariableAccess) | (_: ConstantAccess, VariableAccess) |
             (VariableAccess, _: ConstantAccess) | (VariablePointerShift, VariablePointerShift) |
-            (_: PointerShift, VariablePointerShift) | (VariablePointerShift, _: PointerShift) =>
+            (_: PointerShift, VariablePointerShift) | (VariablePointerShift, _: PointerShift) |
+      (VariableAccess, IndirectionAccess) | (IndirectionAccess, VariableAccess) =>
           overTainted = true
         case (thisElem, otherElem) =>
           if (thisElem != otherElem)

@@ -69,7 +69,6 @@ class AccessPathTests extends AnyWordSpec {
     AccessPath(E("a"), Seq()).matchAndDiff(E("b", V)) shouldBe (NO_MATCH, E())
     AccessPath(E("a", V, "b"), Seq()).matchAndDiff(E("b", V, "a")) shouldBe (NO_MATCH, E())
     AccessPath(E("a", I), Seq()).matchAndDiff(E(I)) shouldBe (NO_MATCH, E())
-    AccessPath(E("a", I), Seq()).matchAndDiff(E("a", V)) shouldBe (NO_MATCH, E())
 
     AccessPath(E("a", "b"), Seq()).matchAndDiff(E("a")) shouldBe (PREFIX_MATCH, E("b"))
     AccessPath(E("a", V), Seq()).matchAndDiff(E("a")) shouldBe (PREFIX_MATCH, E(V))
@@ -81,6 +80,7 @@ class AccessPathTests extends AnyWordSpec {
 
     AccessPath(E("a"), Seq()).matchAndDiff(E(V)) shouldBe (VARIABLE_EXACT_MATCH, E())
     AccessPath(E(V), Seq()).matchAndDiff(E("a")) shouldBe (VARIABLE_EXACT_MATCH, E())
+    AccessPath(E(V), Seq()).matchAndDiff(E(I)) shouldBe (VARIABLE_EXACT_MATCH, E())
     AccessPath(E("a", "b"), Seq()).matchAndDiff(E("a", V)) shouldBe (VARIABLE_EXACT_MATCH, E())
     AccessPath(E(V, "b"), Seq()).matchAndDiff(E(V, "b")) shouldBe (VARIABLE_EXACT_MATCH, E())
     AccessPath(E("a", V), Seq()).matchAndDiff(E(V, V)) shouldBe (VARIABLE_EXACT_MATCH, E())
