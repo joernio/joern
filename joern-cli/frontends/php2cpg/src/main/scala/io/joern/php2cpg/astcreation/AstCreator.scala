@@ -1102,7 +1102,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
       case None =>
         // With variable variables, it's possible to use a valid variable without having an obvious assignment to it.
         // If a name is unknown at this point, assume it's a local that had a value assigned in some way at some point.
-        val local = NewLocal().name(identifier.name).code(s"$$${identifier.code}").typeFullName(identifier.typeFullName)
+
+        val local = localNode(expr, identifier.name, s"$$${identifier.code}", identifier.typeFullName)
         scope.addToScope(local.name, local)
         diffGraph.addEdge(identifier, local, EdgeTypes.REF)
     }
@@ -1110,19 +1111,63 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     Ast(identifier)
   }
 
+  /** This is used to rewrite the short form $xs[] = <value_expr> as array_push($xs, <value_expr>) to avoid having to
+    * handle the empty array access operator as a special case in the dataflow engine.
+    *
+    * This representation is technically wrong in the case where the shorthand is used to initialise a new array (since
+    * PHP expects the first argument to array_push to be an existing array). This shouldn't affect dataflow, however.
+    */
+  private def astForEmptyArrayDimAssign(assignment: PhpAssignment, arrayDimFetch: PhpArrayDimFetchExpr): Ast = {
+    val attrs         = assignment.attributes
+    val arrayPushArgs = List(arrayDimFetch.variable, assignment.source).map(PhpArg(_))
+    val arrayPushCall = PhpCallExpr(
+      target = None,
+      methodName = PhpNameExpr("array_push", attrs),
+      args = arrayPushArgs,
+      isNullSafe = false,
+      isStatic = true,
+      attributes = attrs
+    )
+    val arrayPushAst = astForCall(arrayPushCall)
+    arrayPushAst.root.collect { case astRoot: NewCall =>
+      val args =
+        arrayPushAst.argEdges
+          .filter(_.src == astRoot)
+          .map(_.dst)
+          .collect { case arg: ExpressionNew => arg }
+          .sortBy(_.argumentIndex)
+
+      if (args.size != 2) {
+        val position = s"${line(assignment).getOrElse("")}:${filename}"
+        logger.warn(s"Expected 2 call args for emptyArrayDimAssign. Not resetting code: ${position}")
+      } else {
+        val codeOverride = s"${args.head.code}[] = ${args.last.code}"
+        astRoot.code(codeOverride)
+      }
+    }
+    arrayPushAst
+  }
+
   private def astForAssignment(assignment: PhpAssignment): Ast = {
-    val operatorName = assignment.assignOp
+    assignment.target match {
+      case arrayDimFetch: PhpArrayDimFetchExpr if arrayDimFetch.dimension.isEmpty =>
+        // Rewrite `$xs[] = <value_expr>` as `array_push($xs, <value_expr>)` to simplify finding dataflows.
+        astForEmptyArrayDimAssign(assignment, arrayDimFetch)
 
-    val targetAst = astForExpr(assignment.target)
-    val sourceAst = astForExpr(assignment.source)
+      case _ =>
+        val operatorName = assignment.assignOp
 
-    // TODO Handle ref assigns properly (if needed).
-    val refSymbol = if (assignment.isRefAssign) "&" else ""
-    val symbol    = operatorSymbols.getOrElse(assignment.assignOp, assignment.assignOp)
-    val code      = s"${targetAst.rootCodeOrEmpty} $symbol $refSymbol${sourceAst.rootCodeOrEmpty}"
+        val targetAst = astForExpr(assignment.target)
+        val sourceAst = astForExpr(assignment.source)
 
-    val callNode = newOperatorCallNode(operatorName, code, line = line(assignment))
-    callAst(callNode, List(targetAst, sourceAst))
+        // TODO Handle ref assigns properly (if needed).
+        val refSymbol = if (assignment.isRefAssign) "&" else ""
+        val symbol    = operatorSymbols.getOrElse(assignment.assignOp, assignment.assignOp)
+        val code      = s"${targetAst.rootCodeOrEmpty} $symbol $refSymbol${sourceAst.rootCodeOrEmpty}"
+
+        val callNode = newOperatorCallNode(operatorName, code, line = line(assignment))
+        callAst(callNode, List(targetAst, sourceAst))
+    }
   }
 
   private def astForScalar(scalar: PhpScalar): Ast = {
@@ -1661,8 +1706,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
         callAst(accessNode, variableAst :: dimensionAst :: Nil)
 
       case None =>
-        val accessNode = newOperatorCallNode(PhpOperators.emptyArrayIdx, s"$variableCode[]", line = line(expr))
-        callAst(accessNode, variableAst :: Nil)
+        val errorPosition = s"${variableCode}:${line(expr).getOrElse("")}:${filename}"
+        logger.error(s"ArrayDimFetchExpr without dimensions should be handled in assignment: ${errorPosition}")
+        Ast()
     }
   }
 
