@@ -74,7 +74,14 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       methodNames
         .flatMap(methodMap.get)
         .filter(m => call.callee(NoResolve).fullNameExact(m.fullName).isEmpty)
-        .foreach { m => builder.addEdge(call, m, EdgeTypes.CALL) }
+        .foreach { m =>
+          builder.addEdge(call, m, EdgeTypes.CALL)
+          m match {
+            case method: Method =>
+              builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, method.methodReturn.typeFullName)
+            case _ =>
+          }
+        }
       setCallees(call, methodNames, builder)
     }
   }
