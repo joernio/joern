@@ -1054,12 +1054,13 @@ object Domain {
     if (!json.obj.contains("name")) {
       logger.error(s"Variable did not contain name: $json")
     }
+    val varAttrs = PhpAttributes(json)
     val name = json("name") match {
-      case Str(value) => readName(value)
+      case Str(value) => readName(value).copy(attributes = varAttrs)
       case Obj(_)     => readNameOrExpr(json, "name")
       case value      => readExpr(value)
     }
-    PhpVariable(name, PhpAttributes(json))
+    PhpVariable(name, varAttrs)
   }
 
   private def readIsset(json: Value): PhpIsset = {
