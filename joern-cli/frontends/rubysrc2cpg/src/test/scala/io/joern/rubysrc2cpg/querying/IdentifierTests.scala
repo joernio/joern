@@ -225,5 +225,47 @@ class IdentifierTests extends RubyCode2CpgFixture {
         cpg.identifier.size shouldBe 5
       }
     }
+
+    "CPG for code with square brackets as methods" should {
+      val cpg = code("""
+          |class MyClass
+          |  def initialize
+          |    @my_hash = {}
+          |  end
+          |
+          |  def [](key)
+          |    @my_hash[key.to_s]
+          |  end
+          |
+          |  def []=(key, value)
+          |    @my_hash[key.to_s] = value
+          |  end
+          |end
+          |
+          |my_object = MyClass.new
+          |
+          |""".stripMargin)
+
+      "recognise all identifier and call nodes" in {
+        cpg.call.name("\\[]").size shouldBe 1
+        cpg.call.name("\\[]=").size shouldBe 1
+        cpg.call.name("=").size shouldBe 3
+        cpg.call.name("initialize").size shouldBe 1
+        cpg.call.name("to_s").size shouldBe 1
+        cpg.call.name("new").size shouldBe 1
+        cpg.call.size shouldBe 8
+        cpg.identifier.name("@my_hash").size shouldBe 3
+        cpg.identifier.name("key").size shouldBe 3
+        cpg.identifier.name("value").size shouldBe 2
+        cpg.identifier.name("my_object").size shouldBe 1
+        /*
+         * FIXME
+         *  def []=(key, value) gets parsed incorrectly with parser error "no viable alternative at input 'def []=(key, value)'"
+         *  This needs a fix in the parser and update to this UT after the fix
+         * FIXME
+         *  MyClass is identified as a variableIdentifier and so an identifier. This needs to be fixed
+         */
+      }
+    }
   }
 }
