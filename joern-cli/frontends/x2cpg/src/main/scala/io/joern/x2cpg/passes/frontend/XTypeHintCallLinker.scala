@@ -1,6 +1,7 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.passes.base.MethodStubCreator
+import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
@@ -74,19 +75,22 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       methodNames
         .flatMap(methodMap.get)
         .filter(m => call.callee(NoResolve).fullNameExact(m.fullName).isEmpty)
-        .foreach { m =>
-          builder.addEdge(call, m, EdgeTypes.CALL)
-          m match {
-            case method: Method =>
-              builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, method.methodReturn.typeFullName)
-            case _ =>
-          }
-        }
+        .foreach { m => linkCallToCallee(call, m, builder) }
       setCallees(call, methodNames, builder)
     }
   }
 
+  def linkCallToCallee(call: Call, method: MethodBase, builder: DiffGraphBuilder): Unit = {
+    builder.addEdge(call, method, EdgeTypes.CALL)
+    method match {
+      case method: Method =>
+        builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, method.methodReturn.typeFullName)
+      case _ =>
+    }
+  }
+
   protected def setCallees(call: Call, methodNames: Seq[String], builder: DiffGraphBuilder): Unit = {
+    val nonDummyTypes = methodNames.filterNot(isDummyType)
     if (methodNames.sizeIs == 1) {
       builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
       builder.setNodeProperty(
@@ -94,6 +98,8 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
         PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
         call.dynamicTypeHintFullName.diff(methodNames)
       )
+    } else if (methodNames.sizeIs > 1 && methodNames != nonDummyTypes) {
+      setCallees(call, nonDummyTypes, builder)
     }
   }
 
