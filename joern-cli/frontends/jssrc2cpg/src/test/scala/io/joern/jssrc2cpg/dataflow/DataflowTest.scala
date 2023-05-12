@@ -686,14 +686,12 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
       val identifierSource = cpg.identifier.nameExact("API_Endpoint").lineNumber(5).l
       identifierSource.size shouldBe 1
       sink.reachableBy(identifierSource).size shouldBe 1
-      sink.reachableByFlows(identifierSource).p.foreach(println)
     }
 
     "identifiers in the arg of the call" in {
       val identifierSource = cpg.identifier.nameExact("API_Endpoint").lineNumber(8).l
       identifierSource.size shouldBe 1
       sink.reachableBy(identifierSource).size shouldBe 1
-      sink.reachableByFlows(identifierSource).p.foreach(println)
     }
   }
 }

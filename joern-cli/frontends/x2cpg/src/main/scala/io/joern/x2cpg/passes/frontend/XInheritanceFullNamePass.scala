@@ -22,9 +22,9 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
   protected val moduleName: String
   protected val fileExt: String
 
-  protected val typeDeclMap =
+  protected val typeDeclMap: mutable.Map[String, TypeDeclBase] =
     mutable.HashMap.from[String, TypeDeclBase](cpg.typeDecl.map(t => t.fullName -> t))
-  protected val typeMap =
+  protected val typeMap: mutable.Map[String, TypeBase] =
     mutable.HashMap.from[String, TypeBase](cpg.typ.map(t => t.fullName -> t))
 
   override def run(builder: DiffGraphBuilder): Unit = {
@@ -102,8 +102,8 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   private def splitAndIntersect(a: String, b: String): (Seq[String], Seq[String], Seq[String]) = {
-    val as = a.split(pathSep)
-    val bs = b.split(pathSep)
+    val as = a.split(pathSep).toIndexedSeq
+    val bs = b.split(pathSep).toIndexedSeq
     (as, bs, as.intersect(bs))
   }
 

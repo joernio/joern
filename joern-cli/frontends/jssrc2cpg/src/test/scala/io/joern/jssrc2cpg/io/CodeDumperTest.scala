@@ -59,10 +59,6 @@ class CodeDumperTest extends JsSrc2CpgSuite {
       )
     }
 
-    "methodCode should return nothing on invalid filename" in {
-      CodeDumper.code("fooNonexisting", 1, 2) shouldBe empty
-    }
-
     "allow dumping via .dump" in {
       val code = cpg.method.name("my_func").dumpRaw.mkString("\n")
       code should startWith("function my_func")

@@ -1007,7 +1007,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
   }
 
-  protected def storeCallTypeInfo(c: Call, types: Seq[String]) =
+  protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
       state.changesWereMade.compareAndSet(false, true)
       builder.setNodeProperty(
