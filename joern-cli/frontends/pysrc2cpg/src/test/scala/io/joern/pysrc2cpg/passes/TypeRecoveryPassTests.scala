@@ -884,9 +884,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "be able to use field accesses as type hints" in {
       val Some(c) = cpg.identifier("c").headOption
-      c.typeFullName shouldBe "lib/connector.py:<module>.Connector"
+      c.typeFullName shouldBe Seq("lib", "connector.py:<module>.Connector").mkString(File.separator)
       val Some(getBotoClient) = cpg.call.nameExact("getBotoClient").headOption
-      getBotoClient.methodFullName shouldBe "lib/connector.py:<module>.Connector.getBotoClient"
+      getBotoClient.methodFullName shouldBe Seq("lib", "connector.py:<module>.Connector.getBotoClient").mkString(
+        File.separator
+      )
       val Some(getS3Object) = cpg.call.nameExact("getS3Object").headOption
       getS3Object.methodFullName shouldBe "boto.<returnValue>.getS3Object"
     }
