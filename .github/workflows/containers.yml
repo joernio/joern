@@ -1,14 +1,9 @@
 name: Upload Container image
 
 on:
-  schedule:
-  - cron: "0 */12 * * *"
   push:
-    branches:
-     - master
     tags:
       - 'v*'
-  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -55,6 +50,27 @@ jobs:
           sbom: true
 
       - name: Extract metadata (tags, labels) for Docker
+        id: meta3
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ghcr.io/joernio/joern-slim
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ci/Dockerfile.slim
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta3.outputs.tags }}
+          labels: ${{ steps.meta3.outputs.labels }}
+          cache-from: type=gha,scope=joern-slim
+          cache-to: type=gha,mode=max,scope=joern-slim
+          provenance: true
+          sbom: true
+
+      - name: Extract metadata (tags, labels) for Docker
         id: meta2
         uses: docker/metadata-action@v4
         with:
@@ -66,7 +82,7 @@ jobs:
         with:
           context: .
           file: ci/Dockerfile.alma8
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta2.outputs.tags }}
           labels: ${{ steps.meta2.outputs.labels }}

@@ -1,8 +1,8 @@
 name: release
 on:
-  push:
-    branches: [master, main]
-    tags: ["*"]
+  schedule:
+    - cron: "0 7 * * *" # run once daily
+  workflow_dispatch:    # allow to manually trigger this workflow
 jobs:
   release:
     concurrency: release

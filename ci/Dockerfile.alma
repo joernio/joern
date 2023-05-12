@@ -21,8 +21,6 @@ ENV JOERN_HOME=/usr/local/bin \
     CLASSPATH=$CLASSPATH:/usr/local/bin: \
     PATH=${PATH}:/opt/joern/joern-cli:/opt/joern/joern-cli/bin:${GOPATH}/bin:/usr/local/go/bin:/usr/local/bin:/root/.local/bin:${JAVA_HOME}/bin:
 
-COPY . /usr/local/src/
-
 RUN microdnf install -y gcc git-core php php-cli python3 python3-devel pcre2 which tar zip unzip sudo \
         java-17-openjdk-headless ncurses jq zlib graphviz glibc-common glibc-all-langpacks \
     && curl -LO https://github.com/joernio/joern/releases/latest/download/joern-install.sh \

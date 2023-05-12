@@ -3,7 +3,6 @@ package io.joern.kotlin2cpg.types
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.passes.KeyPool
-import kotlin.reflect.jvm.internal.impl.descriptors.impl.LazyClassReceiverParameterDescriptor
 import kotlin.reflect.jvm.internal.impl.load.java.descriptors.JavaClassConstructorDescriptor
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
@@ -34,7 +33,6 @@ import org.jetbrains.kotlin.psi.{
   KtElement,
   KtExpression,
   KtFile,
-  KtImportDirective,
   KtLambdaExpression,
   KtNameReferenceExpression,
   KtNamedFunction,
@@ -53,7 +51,7 @@ import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorToSourceUtils, De
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
-import org.jetbrains.kotlin.types.UnresolvedType
+import org.jetbrains.kotlin.types.{UnresolvedType}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -521,15 +519,6 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     resolvedCallDescriptor(expr) match {
       case Some(fnDescriptor) =>
         val originalDesc = fnDescriptor.getOriginal
-        val relevantDesc = originalDesc match {
-          case typedDesc: TypeAliasConstructorDescriptorImpl =>
-            typedDesc.getUnderlyingConstructorDescriptor
-          case typedDesc: FunctionDescriptor if !typedDesc.isActual =>
-            val overwriddenDescriptors = typedDesc.getOverriddenDescriptors.asScala.toList
-            if (overwriddenDescriptors.nonEmpty) overwriddenDescriptors.head
-            else typedDesc
-          case _ => originalDesc
-        }
 
         val renderedFqNameForDesc = TypeRenderer.renderFqNameForDesc(originalDesc)
         val renderedFqNameMaybe = for {
@@ -563,7 +552,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val renderedReturnType =
           if (isConstructorDescriptor(originalDesc)) TypeConstants.void
           else if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) TypeConstants.javaLangObject
-          else TypeRenderer.render(relevantDesc.getReturnType)
+          else TypeRenderer.render(originalDesc.getReturnType)
 
         val singleLambdaArgExprMaybe = expr.getSelectorExpression match {
           case c: KtCallExpression if c.getLambdaArguments.size() == 1 =>
@@ -682,10 +671,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       val args            = constructorType.getArguments.asScala.drop(1)
 
       val renderedRetType =
-        Option(mapForEntity.get(BindingContext.EXPECTED_EXPRESSION_TYPE.getKey))
-          .map(_.getArguments.asScala.last)
+        args.lastOption
           .map { t => TypeRenderer.render(t.getType) }
-          .getOrElse("ANY")
+          .getOrElse(TypeConstants.any)
       val renderedArgs =
         if (args.isEmpty) ""
         else if (args.size == 1) TypeConstants.javaLangObject
