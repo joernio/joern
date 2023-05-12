@@ -290,20 +290,18 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def visitAssignments(a: Assignment): Set[String] = {
     a.argumentOut.l match {
-      case List(i: Identifier, b: Block) =>
-        visitIdentifierAssignedToBlock(i, b)
+      case List(i: Identifier, b: Block)                             => visitIdentifierAssignedToBlock(i, b)
       case List(i: Identifier, c: Call)                              => visitIdentifierAssignedToCall(i, c)
       case List(x: Identifier, y: Identifier)                        => visitIdentifierAssignedToIdentifier(x, y)
       case List(i: Identifier, l: Literal) if state.isFirstIteration => visitIdentifierAssignedToLiteral(i, l)
       case List(i: Identifier, m: MethodRef)                         => visitIdentifierAssignedToMethodRef(i, m)
       case List(i: Identifier, t: TypeRef)                           => visitIdentifierAssignedToTypeRef(i, t)
       case List(c: Call, i: Identifier)                              => visitCallAssignedToIdentifier(c, i)
-      case List(x: Call, y: Call) =>
-        visitCallAssignedToCall(x, y)
-      case List(c: Call, l: Literal) if state.isFirstIteration => visitCallAssignedToLiteral(c, l)
-      case List(c: Call, m: MethodRef)                         => visitCallAssignedToMethodRef(c, m)
-      case List(c: Call, b: Block)                             => visitCallAssignedToBlock(c, b)
-      case _                                                   => Set.empty
+      case List(x: Call, y: Call)                                    => visitCallAssignedToCall(x, y)
+      case List(c: Call, l: Literal) if state.isFirstIteration       => visitCallAssignedToLiteral(c, l)
+      case List(c: Call, m: MethodRef)                               => visitCallAssignedToMethodRef(c, m)
+      case List(c: Call, b: Block)                                   => visitCallAssignedToBlock(c, b)
+      case _                                                         => Set.empty
     }
   }
 
@@ -779,6 +777,21 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     ret.astChildren.l match {
       case ::(head: Literal, Nil) if head.typeFullName != "ANY" =>
         existingTypes.addOne(head.typeFullName)
+      case ::(head: Call, Nil) if head.name == Operators.fieldAccess =>
+        val fieldAccess = new FieldAccess(head)
+        val (sym, ts)   = getSymbolFromCall(fieldAccess)
+        val cpgTypes = cpg.typeDecl
+          .fullNameExact(ts.map(_.compUnitFullName).toSeq: _*)
+          .member
+          .nameExact(sym.identifier)
+          .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
+          .filterNot(_ == "ANY")
+          .toSet
+        if (cpgTypes.nonEmpty) {
+          existingTypes.addAll(cpgTypes)
+        } else {
+          existingTypes.addAll(symbolTable.get(sym))
+        }
       case ::(head: Call, Nil) if symbolTable.contains(head) =>
         existingTypes.addAll(symbolTable.get(head))
       case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
