@@ -18,7 +18,6 @@ object UsageSlicing {
   private val resolver               = NoResolve
   private val constructorTypeMatcher = Pattern.compile(".*new (\\w+)\\(.*")
   private val excludeOperatorCalls   = new AtomicBoolean(false)
-  private lazy val typeMap           = TrieMap.from(cpg.typeDecl.map(f => (f.name, f.fullName)).toMap)
 
   /** Generates object slices from the given CPG.
     *
@@ -42,21 +41,23 @@ object UsageSlicing {
 
     def getDeclIdentifiers: Traversal[Declaration] = getAssignmentDecl ++ getParameterDecl
 
+    lazy val typeMap = TrieMap.from(cpg.typeDecl.map(f => (f.name, f.fullName)).toMap)
+
     val fjp = ForkJoinPool.commonPool()
 
     try {
-      ProgramUsageSlice(usageSlices(fjp, () => getDeclIdentifiers), userDefinedTypes(cpg))
+      ProgramUsageSlice(usageSlices(fjp, () => getDeclIdentifiers, typeMap, config.minNumCalls), userDefinedTypes(cpg))
     } finally {
       fjp.shutdown()
     }
   }
 
-  def calculateUsageSlice(rootNode: AstNode, config: SliceConfig): ProgramSlice = {
+  def calculateUsageSlice(cpg: Cpg, rootNode: AstNode, config: SliceConfig): ProgramSlice = {
     excludeOperatorCalls.set(config.excludeOperatorCalls)
 
     def getAssignmentDecl: Traversal[Declaration] = (config.sourceFile match {
       case Some(fileName) => rootNode.ast.isFile.nameExact(fileName).assignment
-      case None           => rootNode.ast.isAssignment
+      case None           => rootNode.ast.isCall.name(Operators.assignment + ".*")
     }).argument(1).isIdentifier.refsTo
 
     def getParameterDecl: Traversal[MethodParameterIn] = config.sourceFile match {
@@ -66,18 +67,25 @@ object UsageSlicing {
 
     def getDeclIdentifiers: Traversal[Declaration] = getAssignmentDecl ++ getParameterDecl
 
+    lazy val typeMap = TrieMap.from(cpg.typeDecl.map(f => (f.name, f.fullName)).toMap)
+
     val fjp = ForkJoinPool.commonPool()
 
     try {
-      ProgramUsageSlice(usageSlices(fjp, () => getDeclIdentifiers), userDefinedTypes(cpg))
+      ProgramUsageSlice(usageSlices(fjp, () => getDeclIdentifiers, typeMap, config.minNumCalls), userDefinedTypes(cpg))
     } finally {
       fjp.shutdown()
     }
   }
 
-  def usageSlices(fjp: ForkJoinPool, getDeclIdentifiers: () => Traversal[Declaration]) = getDeclIdentifiers
+  def usageSlices(
+    fjp: ForkJoinPool,
+    getDeclIdentifiers: () => Traversal[Declaration],
+    typeMap: TrieMap[String, String],
+    minNumCalls: Int = 1
+  ) = getDeclIdentifiers()
     .to(LazyList)
-    .filter(a => atLeastNCalls(a, config.minNumCalls) && !a.name.startsWith("_tmp_"))
+    .filter(a => atLeastNCalls(a, minNumCalls) && !a.name.startsWith("_tmp_"))
     .map(a => fjp.submit(new TrackUsageTask(a, typeMap)))
     .flatMap(_.get())
     .groupBy { case (scope, _) => scope }

@@ -2,6 +2,7 @@ package io.joern
 
 import better.files.File
 import io.circe.Decoder
+import io.circe.Encoder
 import io.joern.slicing.SliceMode.{DataFlow, SliceModes}
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -90,9 +91,9 @@ package object slicing {
   }
 
   implicit val decodeObjectUsageSlice: Decoder[ObjectUsageSlice] =
-    Decoder.forProduct3("targetObj", "definedBy", "invokedCalls", "argToCalls")(ObjectUsageSlice.apply)
-  implicit val encodeObjectUsageSlice: Encoder[DefComponent] =
-    Encoder.forProduct3("targetObj", "definedBy", "invokedCalls", "argToCalls")(x =>
+    Decoder.forProduct4("targetObj", "definedBy", "invokedCalls", "argToCalls")(ObjectUsageSlice.apply)
+  implicit val encodeObjectUsageSlice: Encoder[ObjectUsageSlice] =
+    Encoder.forProduct4("targetObj", "definedBy", "invokedCalls", "argToCalls")(x =>
       (x.targetObj, x.definedBy, x.invokedCalls, x.argToCalls)
     )
 
@@ -201,9 +202,9 @@ package object slicing {
   }
 
   implicit val decodeProgramUsageSlice: Decoder[ProgramUsageSlice] =
-    Decoder.forProduct3("objectSlices", "userDefinedTypes")(ProgramUsageSlice.apply)
+    Decoder.forProduct2("objectSlices", "userDefinedTypes")(ProgramUsageSlice.apply)
   implicit val encodeProgramUsageSlice: Encoder[ProgramUsageSlice] =
-    Encoder.forProduct3("objectSlices", "userDefinedTypes")(x => (x.objectSlices, x.userDefinedTypes))
+    Encoder.forProduct2("objectSlices", "userDefinedTypes")(x => (x.objectSlices, x.userDefinedTypes))
 
   /** The inference response from the server.
     */

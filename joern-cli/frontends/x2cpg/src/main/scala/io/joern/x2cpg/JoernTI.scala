@@ -2,6 +2,7 @@ package io.joern.x2cpg
 
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
+import io.joern.slicing._
 
 import java.io.{InputStreamReader, OutputStreamWriter}
 import java.net.Socket
@@ -71,7 +72,9 @@ final class JoernTI(val hostname: String = "localhost", val port: Int = 1337, sp
     val buf = new Array[Char](1024)
     val sb  = new mutable.StringBuilder()
     retry(3) { while (in.read(buf) != -1) sb.append(buf) }
-    sb.toString().as[List[InferenceResult]]
+    // TODO: Convert properly
+//    sb.toString().asInstanceOf[List[InferenceResult]]
+    List.empty
   }
 
   override def close(): Unit = {

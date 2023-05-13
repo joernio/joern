@@ -12,7 +12,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
-
+import io.joern.slicing._
 import java.util.concurrent.RecursiveTask
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
@@ -279,7 +279,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     symbolTable.append(CallAlias(alias), Set(entity))
   }
 
-  lazy val sliceConfig = SliceConfig(sliceMode = SliceModes.Usages)
+  lazy val sliceConfig = SliceConfig(sliceMode = SliceMode.Usages)
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
@@ -287,7 +287,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def postVisitImports(): Unit = {
     state.config.joernti.foreach { joernti =>
-      val slice = UsageSlicing.calculateUsageSlice(cu, sliceConfig)
+      val slice = UsageSlicing.calculateUsageSlice(cpg, cu, sliceConfig).asInstanceOf[ProgramUsageSlice]
       joernti.infer(slice) match {
         case Failure(exception) =>
           logger.warn("Unable to enrich compilation unit type information with joernti, continuing...", exception)
@@ -296,10 +296,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             val k = LocalVar(res.targetIdentifier)
             if (symbolTable.contains(k)) {
               if (symbolTable.get(k).forall(XTypeRecovery.isDummyType)) {
-                symbolTable.append(k, res.typ)
+                symbolTable.append(k, Set(res.typ))
               }
             } else {
-              symbolTable.append(k, res.typ)
+              symbolTable.append(k, Set(res.typ))
             }
           }
       }
