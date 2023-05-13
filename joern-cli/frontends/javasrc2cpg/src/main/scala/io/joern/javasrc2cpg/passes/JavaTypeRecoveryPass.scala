@@ -63,7 +63,7 @@ private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder
     super.storeIdentifierTypeInfo(i, types)
   }
 
-  override protected def storeCallTypeInfo(c: Call, types: Seq[String]) =
+  override protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
       state.changesWereMade.compareAndSet(false, true)
       val signedTypes = types.map {

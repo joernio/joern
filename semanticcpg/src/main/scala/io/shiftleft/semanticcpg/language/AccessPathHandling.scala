@@ -91,6 +91,11 @@ object AccessPathHandling {
       case Some(literal: Literal) => ConstantAccess(literal.code)
       case Some(fieldIdentifier: FieldIdentifier) =>
         ConstantAccess(fieldIdentifier.canonicalName)
+      case Some(identifier: Identifier) =>
+        // TODO remove this case.
+        // This is handling a very old CPG format version where IDENTIFIER was used instead of FIELD_IDENTIFIER.
+        // Sadly we need this for now to support a GO cpg.
+        ConstantAccess(identifier.name)
       case _ => VariableAccess
     }
   }

@@ -1,14 +1,9 @@
 name: Upload Container image
 
 on:
-  schedule:
-  - cron: "0 */12 * * *"
   push:
-    branches:
-     - master
     tags:
       - 'v*'
-  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -66,7 +61,7 @@ jobs:
         with:
           context: .
           file: ci/Dockerfile.slim
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta3.outputs.tags }}
           labels: ${{ steps.meta3.outputs.labels }}
@@ -87,7 +82,7 @@ jobs:
         with:
           context: .
           file: ci/Dockerfile.alma8
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta2.outputs.tags }}
           labels: ${{ steps.meta2.outputs.labels }}

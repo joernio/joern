@@ -314,4 +314,54 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Recovered values that are returned in methods" should {
+    lazy val cpg = code(
+      """
+        |const axios = require("axios");
+        |
+        |exports.literalFunction = function() { return 2; };
+        |
+        |const axiosInstance = axios.create({
+        |  baseURL: 'https://api.example.com',
+        |  timeout: 5000,
+        |  headers: {  'Content-Type': 'application/json' }
+        |});
+        |
+        |exports.get = (url: string, config?: any) => {
+        |  return axiosInstance.get(url, config);
+        |};
+        |
+        |""".stripMargin,
+      "foo.js"
+    ).moreCode(
+      """
+        |const foo = require("./foo");
+        |
+        |const x = foo.literalFunction();
+        |const y = foo.get();
+        |""".stripMargin,
+      "bar.js"
+    )
+
+    "propagate literal types to the method return" in {
+      val Some(literalMethod) = cpg.method.nameExact("literalFunction").headOption
+      literalMethod.methodReturn.typeFullName shouldBe "__ecma.Number"
+      val Some(x) = cpg.identifier("x").headOption
+      x.typeFullName shouldBe "__ecma.Number"
+
+      val Some(literalCall) = cpg.call.nameExact("literalFunction").headOption
+      literalCall.typeFullName shouldBe "__ecma.Number"
+    }
+
+    "propagate complex types to the method return" in {
+      val Some(getMethod) = cpg.method.nameExact("get").headOption
+      getMethod.methodReturn.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
+      val Some(y) = cpg.identifier("y").headOption
+      y.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
+
+      val Some(getCall) = cpg.call.nameExact("get").headOption
+      getCall.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
+    }
+  }
+
 }

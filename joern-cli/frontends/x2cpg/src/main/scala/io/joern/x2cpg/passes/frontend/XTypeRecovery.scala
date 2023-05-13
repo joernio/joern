@@ -15,6 +15,7 @@ import overflowdb.traversal.Traversal
 
 import java.util.concurrent.RecursiveTask
 import java.util.concurrent.atomic.AtomicBoolean
+import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.util.{Failure, Success}
@@ -236,6 +237,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def members: Traversal[Member] = cu.ast.isMember
 
+  protected def returns: Traversal[Return] = cu.ast.isReturn
+
   protected def importNodes: Traversal[Import] = cu.ast.isCall.referencedImports
 
   override def compute(): Boolean = try {
@@ -247,6 +250,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     postVisitImports()
     // Populate local symbol table with assignments
     assignments.foreach(visitAssignments)
+    // See if any new information are in the parameters of methods
+    returns.foreach(visitReturns)
     // Persist findings
     setTypeInformation()
     // Entrypoint for any final changes
@@ -787,6 +792,48 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
       .toSet
 
+  protected def visitReturns(ret: Return): Unit = {
+    val m = ret.method
+    val existingTypes = mutable.HashSet.from(
+      (m.methodReturn.typeFullName +: m.methodReturn.dynamicTypeHintFullName)
+        .filterNot(_ == "ANY")
+    )
+    @tailrec
+    def extractTypes(xs: List[CfgNode]): Set[String] = xs match {
+      case ::(head: Literal, Nil) if head.typeFullName != "ANY" =>
+        Set(head.typeFullName)
+      case ::(head: Call, Nil) if head.name == Operators.fieldAccess =>
+        val fieldAccess = new FieldAccess(head)
+        val (sym, ts)   = getSymbolFromCall(fieldAccess)
+        val cpgTypes = cpg.typeDecl
+          .fullNameExact(ts.map(_.compUnitFullName).toSeq: _*)
+          .member
+          .nameExact(sym.identifier)
+          .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
+          .filterNot(_ == "ANY")
+          .toSet
+        if (cpgTypes.nonEmpty) cpgTypes
+        else symbolTable.get(sym)
+      case ::(head: Call, Nil) if symbolTable.contains(head) =>
+        val callPaths    = symbolTable.get(head)
+        val returnValues = methodReturnValues(callPaths.toSeq)
+        if (returnValues.isEmpty)
+          callPaths.map(_.concat(pathSep + XTypeRecovery.DummyReturnType))
+        else
+          returnValues
+      case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
+        symbolTable
+          .get(head.argumentOut.head)
+          .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
+      case ::(head: Call, Nil) =>
+        extractTypes(head.argument.l)
+      case _ => Set.empty
+    }
+    val returnTypes = extractTypes(ret.argumentOut.l)
+    existingTypes.addAll(returnTypes)
+    builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
+  }
+
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.
     */
   protected def setTypeInformation(): Unit = {
@@ -1003,7 +1050,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
   }
 
-  protected def storeCallTypeInfo(c: Call, types: Seq[String]) =
+  protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
       state.changesWereMade.compareAndSet(false, true)
       builder.setNodeProperty(

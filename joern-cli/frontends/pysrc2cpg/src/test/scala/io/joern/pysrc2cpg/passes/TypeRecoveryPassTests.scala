@@ -855,4 +855,43 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "Recovered values that are returned in methods" should {
+    lazy val cpg = code(
+      """
+        |class Connector:
+        |
+        |	botoClient = boto("s3")
+        |
+        |	def makeDbCall():
+        |		pass
+        |
+        |	def getBotoClient(self):
+        |		return self.botoClient
+        |
+        |""".stripMargin,
+      Seq("lib", "connector.py").mkString(File.separator)
+    ).moreCode(
+      """
+        |from lib.connector import Connector
+        |
+        |class Impl:
+        |
+        |	c = Connector()
+        |	c.getBotoClient().getS3Object()
+        |""".stripMargin,
+      "impl.py"
+    )
+
+    "be able to use field accesses as type hints" in {
+      val Some(c) = cpg.identifier("c").headOption
+      c.typeFullName shouldBe Seq("lib", "connector.py:<module>.Connector").mkString(File.separator)
+      val Some(getBotoClient) = cpg.call.nameExact("getBotoClient").headOption
+      getBotoClient.methodFullName shouldBe Seq("lib", "connector.py:<module>.Connector.getBotoClient").mkString(
+        File.separator
+      )
+      val Some(getS3Object) = cpg.call.nameExact("getS3Object").headOption
+      getS3Object.methodFullName shouldBe "boto.<returnValue>.getS3Object"
+    }
+  }
+
 }

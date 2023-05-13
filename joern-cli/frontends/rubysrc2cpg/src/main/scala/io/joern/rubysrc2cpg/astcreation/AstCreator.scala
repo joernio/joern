@@ -3,7 +3,6 @@ import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newIdentifierNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -29,6 +28,11 @@ class AstCreator(filename: String, global: Global)
     val Hash: String    = "hash"
     val Array: String   = "array"
     val Symbol: String  = "symbol"
+  }
+
+  object MethodFullNames {
+    val UnknownFullName = "<unknownfullname>"
+    val OperatorPrefix  = "<operator>."
   }
 
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -105,18 +109,30 @@ class AstCreator(filename: String, global: Global)
   def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): (Ast, String) = {
     if (ctx == null) return (Ast(), Defines.Any)
 
-    val exprAst      = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
     val splattingAst = astForSplattingArgumentContext(ctx.splattingArgument())
-    val seqAsts      = Seq[Ast](exprAst, splattingAst)
-    (Ast().withChildren(seqAsts), Defines.Any)
+
+    if (ctx.expressionOrCommands() != null) {
+      val exprAst = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
+      val seqAsts = Seq[Ast](exprAst, splattingAst)
+      (Ast().withChildren(seqAsts), Defines.Any)
+    } else {
+      (splattingAst, Defines.Any)
+    }
   }
 
   def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Ast = {
     val (rightAst, rhsRetType) = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     val leftAst                = astForSingleLeftHandSideContext(ctx.singleLeftHandSide(), rhsRetType)
-    val seqAsts                = Seq[Ast](leftAst, rightAst)
-    val blockNode              = NewBlock().typeFullName(Defines.Any)
-    Ast(blockNode).withChildren(seqAsts)
+    val callNode = NewCall()
+      .name(ctx.op.getText)
+      .code(ctx.op.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.op.getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.op.getLine())
+      .columnNumber(ctx.op.getCharPositionInLine())
+    callAst(callNode).withChildren(Seq[Ast](leftAst, rightAst))
   }
 
   def astForStringInterpolationPrimaryContext(ctx: StringInterpolationPrimaryContext): Ast = {
@@ -324,14 +340,15 @@ class AstCreator(filename: String, global: Global)
     if (ctx == null) return Ast()
 
     val blockNode = NewBlock().typeFullName(Defines.Any)
-    val asts      = mutable.ArrayBuffer.empty[Ast]
-    ctx
+    val asts = ctx
       .statement()
-      .forEach(st => {
-        asts.addOne(astForStatementContext(st))
+      .asScala
+      .map(st => {
+        astForStatementContext(st)
       })
+      .toSeq
 
-    Ast(blockNode).withChildren(asts.toSeq)
+    Ast(blockNode).withChildren(asts)
   }
 
   def astForAdditiveExpressionContext(ctx: AdditiveExpressionContext): Ast = {
@@ -560,6 +577,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForHashConstructorPrimaryContext(ctx: HashConstructorPrimaryContext): Ast = {
+    if (ctx.hashConstructor().associations() == null) return Ast()
     astForAssociationsContext(ctx.hashConstructor().associations())
   }
 
@@ -682,86 +700,91 @@ class AstCreator(filename: String, global: Global)
     astForDefinedMethodNameContext(ctx.definedMethodName())
   }
 
+  def astForCallNode(localIdentifier: TerminalNode): Ast = {
+    val column = localIdentifier.getSymbol().getCharPositionInLine()
+    val line   = localIdentifier.getSymbol().getLine()
+    val callNode = NewCall()
+      .name(localIdentifier.getText())
+      .methodFullName(MethodFullNames.UnknownFullName)
+      .signature(localIdentifier.getText())
+      .typeFullName(MethodFullNames.UnknownFullName)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(localIdentifier.getText())
+      .lineNumber(line)
+      .columnNumber(column)
+    callAst(callNode)
+  }
+
   def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Ast = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      val localIdentifier = ctx.LOCAL_VARIABLE_IDENTIFIER()
-      val column          = localIdentifier.getSymbol().getCharPositionInLine()
-      val line            = localIdentifier.getSymbol().getLine()
-      val node = newCallNode(
-        localIdentifier.getText(),
-        None,
-        Defines.Any,
-        DispatchTypes.STATIC_DISPATCH,
-        Nil,
-        localIdentifier.getText(),
-        Some(line),
-        Some(column)
-      )
-      Ast(node)
+      astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER())
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val localIdentifier = ctx.CONSTANT_IDENTIFIER()
-      val column          = localIdentifier.getSymbol().getCharPositionInLine()
-      val line            = localIdentifier.getSymbol().getLine()
-      val node = newCallNode(
-        localIdentifier.getText(),
-        None,
-        Defines.Any,
-        DispatchTypes.STATIC_DISPATCH,
-        Nil,
-        localIdentifier.getText(),
-        Some(line),
-        Some(column)
-      )
-      Ast(node)
+      astForCallNode(ctx.CONSTANT_IDENTIFIER())
     } else {
       Ast()
     }
   }
 
-  def astForMethodIdentifierContext(ctx: MethodIdentifierContext): Ast = {
+  def astForMethodIdentifierContext(
+    ctx: MethodIdentifierContext,
+    astMethodParam: Ast = null,
+    astBody: Ast = null
+  ): Ast = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      val localIdentifier = ctx.LOCAL_VARIABLE_IDENTIFIER()
-      val column          = localIdentifier.getSymbol().getCharPositionInLine()
-      val line            = localIdentifier.getSymbol().getLine()
-      val node = newCallNode(
-        localIdentifier.getText(),
-        None,
-        Defines.Any,
-        DispatchTypes.STATIC_DISPATCH,
-        Nil,
-        localIdentifier.getText(),
-        Some(line),
-        Some(column)
-      )
-      Ast(node)
+      astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER())
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val localIdentifier = ctx.CONSTANT_IDENTIFIER()
-      val column          = localIdentifier.getSymbol().getCharPositionInLine()
-      val line            = localIdentifier.getSymbol().getLine()
-      val node = newCallNode(
-        localIdentifier.getText(),
-        None,
-        Defines.Any,
-        DispatchTypes.STATIC_DISPATCH,
-        Nil,
-        localIdentifier.getText(),
-        Some(line),
-        Some(column)
-      )
-      Ast(node)
-    } else if (ctx.methodOnlyIdentifier() != null) {
-      astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
+      astForCallNode(ctx.CONSTANT_IDENTIFIER())
     } else {
       Ast()
     }
+  }
+
+  def astForOperatorMethodNameContext(ctx: OperatorMethodNameContext): Ast = {
+
+    val terminalNode =
+      if (ctx.CARET() != null) ctx.CARET()
+      else if (ctx.AMP() != null) ctx.AMP()
+      else if (ctx.BAR() != null) ctx.BAR()
+      else if (ctx.LTEQGT() != null) ctx.LTEQGT()
+      else if (ctx.EQ2() != null) ctx.EQ2()
+      else if (ctx.EQ3() != null) ctx.EQ3()
+      else if (ctx.EQTILDE() != null) ctx.EQTILDE()
+      else if (ctx.GT() != null) ctx.GT()
+      else if (ctx.GTEQ() != null) ctx.GTEQ()
+      else if (ctx.LT() != null) ctx.LT()
+      else if (ctx.LTEQ() != null) ctx.LTEQ()
+      else if (ctx.LT2() != null) ctx.LT2()
+      else if (ctx.GT2() != null) ctx.GT2()
+      else if (ctx.PLUS() != null) ctx.PLUS()
+      else if (ctx.MINUS() != null) ctx.MINUS()
+      else if (ctx.STAR() != null) ctx.STAR()
+      else if (ctx.SLASH() != null) ctx.SLASH()
+      else if (ctx.PERCENT() != null) ctx.PERCENT()
+      else if (ctx.STAR2() != null) ctx.STAR2()
+      else if (ctx.TILDE() != null) ctx.TILDE()
+      else if (ctx.PLUSAT() != null) ctx.PLUSAT()
+      else if (ctx.MINUSAT() != null) ctx.MINUSAT()
+      else if (ctx.LBRACK() != null && ctx.RBRACK() != null) ctx.LBRACK()
+      else if (ctx.LBRACK() != null && ctx.RBRACK() != null && ctx.EQ() != null) ctx.LBRACK()
+      else return Ast()
+
+    val callNode = NewCall()
+      .name(ctx.getText)
+      .code(ctx.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(terminalNode.getSymbol().getLine())
+      .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
+    callAst(callNode)
   }
 
   def astForMethodNameContext(ctx: MethodNameContext): Ast = {
     if (ctx.methodIdentifier() != null) {
       astForMethodIdentifierContext(ctx.methodIdentifier())
     } else if (ctx.operatorMethodName() != null) {
-      Ast()
-
+      astForOperatorMethodNameContext(ctx.operatorMethodName())
     } else if (ctx.keyword() != null) {
       Ast()
     } else {
@@ -891,11 +914,12 @@ class AstCreator(filename: String, global: Global)
     val callNode = NewCall()
       .name(ctx.EQ().getText)
       .code(ctx.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.EQ().getText)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
-      .lineNumber(-1)
-      .columnNumber(-1)
+      .lineNumber(ctx.EQ().getSymbol().getLine())
+      .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
     callAst(callNode).withChildren(Seq[Ast](lhsAst, rhsAst))
   }
 
@@ -921,11 +945,12 @@ class AstCreator(filename: String, global: Global)
     val callNode = NewCall()
       .name(ctx.op.getText)
       .code(ctx.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.op.getText)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
-      .lineNumber(-1)
-      .columnNumber(-1)
+      .lineNumber(ctx.op.getLine())
+      .columnNumber(ctx.op.getCharPositionInLine())
     callAst(callNode).withChildren(Seq[Ast](lhsAst, rhsAst))
   }
 
@@ -933,9 +958,16 @@ class AstCreator(filename: String, global: Global)
     val expressions           = ctx.expression()
     val baseExpressionAst     = astForExpressionContext(expressions.get(0))
     val exponentExpressionAst = astForExpressionContext(expressions.get(1))
-    // TODO create a method Ast
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    Ast(blockNode).withChildren(Seq[Ast](baseExpressionAst, exponentExpressionAst))
+    val callNode = NewCall()
+      .name(ctx.STAR2().getText)
+      .code(ctx.STAR2().getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.STAR2().getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.STAR2().getSymbol().getLine())
+      .columnNumber(ctx.STAR2().getSymbol().getCharPositionInLine())
+    callAst(callNode).withChildren(Seq[Ast](baseExpressionAst, exponentExpressionAst))
   }
 
   def astForRangeExpressionContext(ctx: RangeExpressionContext): Ast = {
@@ -953,9 +985,16 @@ class AstCreator(filename: String, global: Global)
   def astForBinaryExpression(lhs: ExpressionContext, rhs: ExpressionContext, operatorToken: Token): Ast = {
     val lhsExpressionAst = astForExpressionContext(lhs)
     val rhsExpressionAst = astForExpressionContext(rhs)
-    // TODO create a method Ast
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    Ast(blockNode).withChildren(Seq[Ast](lhsExpressionAst, rhsExpressionAst))
+    val callNode = NewCall()
+      .name(operatorToken.getText)
+      .code(operatorToken.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + operatorToken.getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(operatorToken.getLine())
+      .columnNumber(operatorToken.getCharPositionInLine())
+    callAst(callNode).withChildren(Seq[Ast](lhsExpressionAst, rhsExpressionAst))
   }
 
   def astForSimpleScopedConstantReferencePrimaryContext(ctx: SimpleScopedConstantReferencePrimaryContext): Ast = {
@@ -1087,14 +1126,30 @@ class AstCreator(filename: String, global: Global)
   }
   def astForUnaryExpressionContext(ctx: UnaryExpressionContext): Ast = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    val operatorToken = ctx.op
-    // TODO create a method Ast
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    Ast(blockNode).withChild(expressionAst)
+    val callNode = NewCall()
+      .name(ctx.op.getText)
+      .code(ctx.op.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.op.getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.op.getLine())
+      .columnNumber(ctx.op.getCharPositionInLine())
+    callAst(callNode).withChild(expressionAst)
   }
 
   def astForUnaryMinusExpressionContext(ctx: UnaryMinusExpressionContext): Ast = {
-    astForExpressionContext(ctx.expression())
+    val expressionAst = astForExpressionContext(ctx.expression())
+    val callNode = NewCall()
+      .name(ctx.MINUS().getText)
+      .code(ctx.MINUS().getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.MINUS().getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.MINUS().getSymbol().getLine())
+      .columnNumber(ctx.MINUS().getSymbol().getCharPositionInLine())
+    callAst(callNode).withChild(expressionAst)
   }
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Ast = {

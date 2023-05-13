@@ -76,6 +76,9 @@ Almalinux 9 requires the CPU to support SSE4.2. For kvm64 VM use the Almalinux 8
 docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/joern-alma8 joern
 ```
 
+## Releases
+A new release is [created automatically](.github/workflows/release.yml) once per day. Contributers can also manually run the [release workflow](https://github.com/joernio/joern/actions/workflows/release.yml) if they need the release sooner. 
+
 ## Developers: IDE setup
 
 ### Intellij IDEA

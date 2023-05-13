@@ -376,10 +376,16 @@ trait KtPsiToAst {
     val bodyAsts = Option(ktFn.getBodyBlockExpression) match {
       case Some(bodyBlockExpression) => astsForBlock(bodyBlockExpression, None)
       case None =>
-        val bodyBlock = blockNode(ktFn.getBodyExpression, "", "")
         Option(ktFn.getBodyExpression)
-          .map { expr => Seq(blockAst(bodyBlock, astsForExpression(expr, None).toList)) }
-          .getOrElse(Seq(blockAst(bodyBlock, List())))
+          .map { expr =>
+            val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.any)
+            val returnAst_ = returnAst(returnNode(expr, Constants.retCode), astsForExpression(expr, Some(1)))
+            Seq(blockAst(bodyBlock, List(returnAst_)))
+          }
+          .getOrElse {
+            val bodyBlock = blockNode(ktFn, "<empty>", TypeConstants.any)
+            Seq(blockAst(bodyBlock, List[Ast]()))
+          }
     }
     methodAstParentStack.pop()
     scope.popScope()
