@@ -1,6 +1,5 @@
 package io.joern.x2cpg
 
-import io.joern.slicing._
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
@@ -8,6 +7,7 @@ import java.io.{InputStreamReader, OutputStreamWriter}
 import java.net.Socket
 import java.nio.charset.StandardCharsets
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.sys.process.Process
 import scala.util.{Failure, Success, Try}
 
@@ -61,15 +61,17 @@ final class JoernTI(val hostname: String = "localhost", val port: Int = 1337, sp
   }
 
   private def acquireSocket: Try[Socket] =
-    retry(3) { Try(new Socket(hostname, port)) }
+    Try(retry(3) { new Socket(hostname, port) })
 
   private def isJoernTIAvailable: Boolean =
     ExternalCommand.run("joernti version").isSuccess
 
-  def infer(slice: ProgramUsageSlice): List[String] = {
-    out.write(slice.toJson)
-    in.read()
-    List.empty
+  def infer(slice: ProgramUsageSlice): Try[List[InferenceResult]] = Try {
+    retry(3) { Try(out.write(slice.toJson)) }
+    val buf = new Array[Char](1024)
+    val sb  = new mutable.StringBuilder()
+    retry(3) { while (in.read(buf) != -1) sb.append(buf) }
+    sb.toString().as[List[InferenceResult]]
   }
 
   override def close(): Unit = {

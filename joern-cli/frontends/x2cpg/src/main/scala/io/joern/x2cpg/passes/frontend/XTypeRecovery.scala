@@ -17,6 +17,7 @@ import java.util.concurrent.RecursiveTask
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
+import scala.util.{Failure, Success}
 
 /** @param iterations
   *   the number of iterations to run.
@@ -203,12 +204,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Provides an entrypoint to add known symbols and their possible types.
     */
-  protected def prepopulateSymbolTable(): Unit = {
+  protected def prepopulateSymbolTable(): Unit =
     (cu.ast.isIdentifier ++ cu.ast.isCall ++ cu.ast.isLocal ++ cu.ast.isParameter)
       .filter(hasTypes)
       .foreach(prepopulateSymbolTableEntry)
-    state.config.joernti.foreach { joernti => }
-  }
 
   protected def getTypes(node: AstNode): Set[String] =
     (node.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) :+ node.property(
@@ -275,11 +274,32 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     symbolTable.append(CallAlias(alias), Set(entity))
   }
 
+  lazy val sliceConfig = SliceConfig(sliceMode = SliceModes.Usages)
+
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
     * types or methods.
     */
-  protected def postVisitImports(): Unit = {}
+  protected def postVisitImports(): Unit = {
+    state.config.joernti.foreach { joernti =>
+      val slice = UsageSlicing.calculateUsageSlice(cu, sliceConfig)
+      joernti.infer(slice) match {
+        case Failure(exception) =>
+          logger.warn("Unable to enrich compilation unit type information with joernti, continuing...", exception)
+        case Success(inferenceResults) =>
+          inferenceResults.filter(_.confidence > 0.8).foreach { res =>
+            val k = LocalVar(res.targetIdentifier)
+            if (symbolTable.contains(k)) {
+              if (symbolTable.get(k).forall(XTypeRecovery.isDummyType)) {
+                symbolTable.append(k, res.typ)
+              }
+            } else {
+              symbolTable.append(k, res.typ)
+            }
+          }
+      }
+    }
+  }
 
   /** Using assignment and import information (in the global symbol table), will propagate these types in the symbol
     * table.

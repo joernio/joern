@@ -202,6 +202,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
         symbolTable.put(k, symbolTable(k).filterNot(_.contains("__init__.py")))
       }
     }
+    super.postVisitImports()
   }
 
   /** Determines if a function call is a constructor by following the heuristic that Python classes are typically

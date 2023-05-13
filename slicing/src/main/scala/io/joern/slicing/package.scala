@@ -37,9 +37,9 @@ package object slicing {
     import io.circe.Encoder._
     import io.circe.generic.auto._
 
-    def toJson: String = this.asJson.spaces2
+    def toJson: String
 
-    def toJsonPretty: String = this.asJson.spaces2
+    def toJsonPretty: String
 
   }
 
@@ -57,7 +57,13 @@ package object slicing {
     * @param dataFlowSlices
     *   the mapped slices.
     */
-  case class ProgramDataFlowSlice(dataFlowSlices: Map[String, Set[DataFlowSlice]]) extends ProgramSlice
+  case class ProgramDataFlowSlice(dataFlowSlices: Map[String, Set[DataFlowSlice]]) extends ProgramSlice {
+
+    def toJson: String = ???
+
+    def toJsonPretty: String = ???
+
+  }
 
   /** A usage slice of an object at the start of its definition until its final usage.
     *
@@ -83,6 +89,13 @@ package object slicing {
         s"}"
   }
 
+  implicit val decodeObjectUsageSlice: Decoder[ObjectUsageSlice] =
+    Decoder.forProduct3("targetObj", "definedBy", "invokedCalls", "argToCalls")(ObjectUsageSlice.apply)
+  implicit val encodeObjectUsageSlice: Encoder[DefComponent] =
+    Encoder.forProduct3("targetObj", "definedBy", "invokedCalls", "argToCalls")(x =>
+      (x.targetObj, x.definedBy, x.invokedCalls, x.argToCalls)
+    )
+
   /** Represents a component that carries data. This could be an identifier of a variable or method and supplementary
     * type information, if available.
     *
@@ -98,6 +111,11 @@ package object slicing {
       (if (typeFullName.nonEmpty) s": $typeFullName" else "") +
       (if (literal) " [LITERAL]" else "")
   }
+
+  implicit val decodeDefComponent: Decoder[DefComponent] =
+    Decoder.forProduct3("name", "typeFullName", "literal")(DefComponent.apply)
+  implicit val encodeDefComponent: Encoder[DefComponent] =
+    Encoder.forProduct3("name", "typeFullName", "literal")(x => (x.name, x.typeFullName, x.literal))
 
   object DefComponent {
 
@@ -145,6 +163,11 @@ package object slicing {
       s"$callName(${paramTypes.mkString(",")}):$returnType"
   }
 
+  implicit val decodeObservedCall: Decoder[ObservedCall] =
+    Decoder.forProduct3("callName", "paramTypes", "returnType")(ObservedCall.apply)
+  implicit val encodeObservedCall: Encoder[ObservedCall] =
+    Encoder.forProduct3("callName", "paramTypes", "returnType")(x => (x.callName, x.paramTypes, x.returnType))
+
   /** Describes types defined within the application.
     *
     * @param name
@@ -156,6 +179,11 @@ package object slicing {
     */
   case class UserDefinedType(name: String, fields: List[DefComponent], procedures: List[ObservedCall])
 
+  implicit val decodeUserDefinedType: Decoder[UserDefinedType] =
+    Decoder.forProduct3("name", "fields", "procedures")(UserDefinedType.apply)
+  implicit val encodeUserDefinedType: Encoder[UserDefinedType] =
+    Encoder.forProduct3("name", "fields", "procedures")(x => (x.name, x.fields, x.procedures))
+
   /** The program usage slices and UDTs.
     *
     * @param objectSlices
@@ -166,9 +194,22 @@ package object slicing {
   case class ProgramUsageSlice(
     objectSlices: Map[String, Set[ObjectUsageSlice]],
     userDefinedTypes: List[UserDefinedType]
-  ) extends ProgramSlice
+  ) extends ProgramSlice {
+    def toJson: String = this.asJson.toString
+
+    def toJsonPretty: String = this.asJson.spaces2
+  }
+
+  implicit val decodeProgramUsageSlice: Decoder[ProgramUsageSlice] =
+    Decoder.forProduct3("objectSlices", "userDefinedTypes")(ProgramUsageSlice.apply)
+  implicit val encodeProgramUsageSlice: Encoder[ProgramUsageSlice] =
+    Encoder.forProduct3("objectSlices", "userDefinedTypes")(x => (x.objectSlices, x.userDefinedTypes))
 
   /** The inference response from the server.
     */
-  case class InferenceResult(target_identifier: String, `type`: String, confidence: Float)
+  case class InferenceResult(targetIdentifier: String, typ: String, confidence: Float)
+
+  implicit val decodeInferenceResult: Decoder[InferenceResult] =
+    Decoder.forProduct3("target_identifier", "type", "confidence")(InferenceResult.apply)
+
 }
