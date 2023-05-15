@@ -116,9 +116,12 @@ object Domain {
     }
   }
 
-  final case class PhpFile(children: Seq[PhpStmt])
   sealed abstract class PhpNode {
     def attributes: PhpAttributes
+  }
+
+  final case class PhpFile(children: Seq[PhpStmt]) extends PhpNode {
+    override val attributes: PhpAttributes = PhpAttributes.Empty
   }
 
   final case class PhpParam(
@@ -149,6 +152,9 @@ object Domain {
   final case class PhpVariadicPlaceholder(attributes: Domain.PhpAttributes) extends PhpArgument
 
   sealed abstract class PhpStmt extends PhpNode
+  sealed abstract class PhpStmtWithBody extends PhpStmt {
+    def stmts: List[PhpStmt]
+  }
 
   // In the PhpParser output, comments are included as an attribute to the first statement following the comment. If
   // no such statement exists, a Nop statement (which does not exist in PHP) is added as a sort of comment container.
@@ -156,41 +162,41 @@ object Domain {
   final case class PhpEchoStmt(exprs: Seq[PhpExpr], attributes: PhpAttributes)                  extends PhpStmt
   final case class PhpBreakStmt(num: Option[Int], attributes: PhpAttributes)                    extends PhpStmt
   final case class PhpContinueStmt(num: Option[Int], attributes: PhpAttributes)                 extends PhpStmt
-  final case class PhpWhileStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
-  final case class PhpDoStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes)    extends PhpStmt
+  final case class PhpWhileStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmtWithBody
+  final case class PhpDoStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes)    extends PhpStmtWithBody
   final case class PhpForStmt(
     inits: List[PhpExpr],
     conditions: List[PhpExpr],
     loopExprs: List[PhpExpr],
-    bodyStmts: List[PhpStmt],
+    stmts: List[PhpStmt],
     attributes: PhpAttributes
-  ) extends PhpStmt
+  ) extends PhpStmtWithBody
   final case class PhpIfStmt(
     cond: PhpExpr,
     stmts: List[PhpStmt],
     elseIfs: List[PhpElseIfStmt],
     elseStmt: Option[PhpElseStmt],
     attributes: PhpAttributes
-  ) extends PhpStmt
-  final case class PhpElseIfStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
-  final case class PhpElseStmt(stmts: List[PhpStmt], attributes: PhpAttributes)                  extends PhpStmt
+  ) extends PhpStmtWithBody
+  final case class PhpElseIfStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmtWithBody
+  final case class PhpElseStmt(stmts: List[PhpStmt], attributes: PhpAttributes)                  extends PhpStmtWithBody
   final case class PhpSwitchStmt(condition: PhpExpr, cases: List[PhpCaseStmt], attributes: PhpAttributes)
       extends PhpStmt
   final case class PhpCaseStmt(condition: Option[PhpExpr], stmts: List[PhpStmt], attributes: PhpAttributes)
-      extends PhpStmt
+      extends PhpStmtWithBody
   final case class PhpTryStmt(
     stmts: List[PhpStmt],
     catches: List[PhpCatchStmt],
     finallyStmt: Option[PhpFinallyStmt],
     attributes: PhpAttributes
-  ) extends PhpStmt
+  ) extends PhpStmtWithBody
   final case class PhpCatchStmt(
     types: List[PhpNameExpr],
     variable: Option[PhpExpr],
     stmts: List[PhpStmt],
     attributes: PhpAttributes
-  ) extends PhpStmt
-  final case class PhpFinallyStmt(stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
+  ) extends PhpStmtWithBody
+  final case class PhpFinallyStmt(stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmtWithBody
   final case class PhpReturnStmt(expr: Option[PhpExpr], attributes: PhpAttributes) extends PhpStmt
 
   final case class PhpMethodDecl(
@@ -198,13 +204,13 @@ object Domain {
     params: Seq[PhpParam],
     modifiers: List[String],
     returnType: Option[PhpNameExpr],
-    stmts: Seq[PhpStmt],
+    stmts: List[PhpStmt],
     returnByRef: Boolean,
     // TODO attributeGroups: Seq[PhpAttributeGroup],
     namespacedName: Option[PhpNameExpr],
     isClassMethod: Boolean,
     attributes: PhpAttributes
-  ) extends PhpStmt
+  ) extends PhpStmtWithBody
 
   final case class PhpClassLikeStmt(
     name: Option[PhpNameExpr],
@@ -216,7 +222,7 @@ object Domain {
     // Optionally used for enums with values
     scalarType: Option[PhpNameExpr],
     attributes: PhpAttributes
-  ) extends PhpStmt
+  ) extends PhpStmtWithBody
   object ClassLikeTypes {
     val Class: String     = "class"
     val Trait: String     = "trait"
@@ -251,7 +257,7 @@ object Domain {
   ) extends PhpStmt
 
   final case class PhpNamespaceStmt(name: Option[PhpNameExpr], stmts: List[PhpStmt], attributes: PhpAttributes)
-      extends PhpStmt
+      extends PhpStmtWithBody
 
   final case class PhpDeclareStmt(
     declares: Seq[PhpDeclareItem],
@@ -307,7 +313,7 @@ object Domain {
     assignByRef: Boolean,
     stmts: List[PhpStmt],
     attributes: PhpAttributes
-  ) extends PhpStmt
+  ) extends PhpStmtWithBody
   final case class PhpTraitUseStmt(
     traits: List[PhpNameExpr],
     adaptations: List[PhpTraitUseAdaptation],
