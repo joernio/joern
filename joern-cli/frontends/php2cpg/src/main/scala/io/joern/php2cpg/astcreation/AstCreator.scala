@@ -1412,9 +1412,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
   }
 
   private def astForClosureExpr(closureExpr: PhpClosureExpr): Ast = {
-    val methodName     = getNewTmpName("__closure")
-    val methodFullName = composeMethodFullName(methodName, isStatic = false)
-    val methodRef      = methodRefNode(closureExpr, methodFullName, methodFullName, TypeConstants.Any)
+    val methodName = scope.getScopedClosureName
+    val methodRef  = methodRefNode(closureExpr, methodName, methodName, TypeConstants.Any)
 
     val localsForUses = closureExpr.uses.flatMap { closureUse =>
       val variableAst = astForExpr(closureUse.variable)
@@ -1470,7 +1469,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
       isClassMethod = closureExpr.isStatic,
       closureExpr.attributes
     )
-    val methodAst = astForMethodDecl(methodDecl, localsForUses.map(Ast(_)), Option(methodFullName))
+    val methodAst = astForMethodDecl(methodDecl, localsForUses.map(Ast(_)), Option(methodName))
 
     val usesCode = localsForUses match {
       case Nil    => ""
@@ -1738,6 +1737,7 @@ object AstCreator {
     val HaltCompiler: String = "__halt_compiler"
     val This: String         = "this"
     val Unknown: String      = "UNKNOWN"
+    val Closure: String      = "__closure"
   }
 
   val operatorSymbols: Map[String, String] = Map(

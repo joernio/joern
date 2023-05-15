@@ -1,6 +1,7 @@
 package io.joern.php2cpg.datastructures
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
+import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{Scope => X2CpgScope}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
@@ -9,7 +10,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class Scope extends X2CpgScope[String, NewNode, NewNode] {
+class Scope extends X2CpgScope[String, NewNode, PhpScopeElement] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -18,29 +19,29 @@ class Scope extends X2CpgScope[String, NewNode, NewNode] {
   private var fieldInits: List[mutable.ArrayBuffer[Ast]]          = Nil
   private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
 
-  override def pushNewScope(scopeNode: NewNode): Unit = {
+  def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
-      case _: NewMethod =>
+      case method: NewMethod =>
         localStack = mutable.ArrayBuffer[NewLocal]() :: localStack
-        super.pushNewScope(scopeNode)
+        super.pushNewScope(PhpScopeElement(method))
 
-      case _: NewTypeDecl =>
+      case typeDecl: NewTypeDecl =>
         constAndStaticInits = mutable.ArrayBuffer[Ast]() :: constAndStaticInits
         fieldInits = mutable.ArrayBuffer[Ast]() :: fieldInits
-        super.pushNewScope(scopeNode)
+        super.pushNewScope(PhpScopeElement(typeDecl))
 
-      case _: NewNamespaceBlock =>
-        super.pushNewScope(scopeNode)
+      case namespace: NewNamespaceBlock =>
+        super.pushNewScope(PhpScopeElement(namespace))
 
       case invalid =>
         logger.warn(s"pushNewScope called with invalid node $invalid. Ignoring!")
     }
   }
 
-  override def popScope(): Option[NewNode] = {
-    val poppedScope = super.popScope()
+  override def popScope(): Option[PhpScopeElement] = {
+    val scopeNode = super.popScope()
 
-    poppedScope match {
+    scopeNode.map(_.node) match {
       case Some(_: NewMethod) =>
         // TODO This is unsafe to catch errors for now.
         localStack = localStack.tail
@@ -53,10 +54,10 @@ class Scope extends X2CpgScope[String, NewNode, NewNode] {
       case _ => // Nothing to do here
     }
 
-    poppedScope
+    scopeNode
   }
 
-  override def addToScope(identifier: String, variable: NewNode): NewNode = {
+  override def addToScope(identifier: String, variable: NewNode): PhpScopeElement = {
     variable match {
       case local: NewLocal =>
         // TODO This is unsafe to catch errors for now.
@@ -75,10 +76,10 @@ class Scope extends X2CpgScope[String, NewNode, NewNode] {
   }
 
   def getEnclosingNamespaceNames: List[String] =
-    stack.map(_.scopeNode).collect { case ns: NewNamespaceBlock => ns.name }.reverse
+    stack.map(_.scopeNode.node).collect { case ns: NewNamespaceBlock => ns.name }.reverse
 
   def getEnclosingTypeDeclTypeName: Option[String] =
-    stack.map(_.scopeNode).collectFirst { case td: NewTypeDecl => td }.map(_.name)
+    stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.map(_.name)
 
   def getLocalsInScope: List[NewLocal] = localStack.headOption.map(_.toList).toList.flatten
 
@@ -95,6 +96,17 @@ class Scope extends X2CpgScope[String, NewNode, NewNode] {
 
   def getFieldInits: List[Ast] = {
     getInits(fieldInits)
+  }
+
+  def getScopedClosureName: String = {
+    stack.headOption match {
+      case Some(scopeElement) =>
+        scopeElement.scopeNode.getClosureMethodName
+
+      case None =>
+        logger.warn("BUG: Attempting to get scopedClosureName, but no scope has been push. Defaulting to unscoped")
+        NameConstants.Closure
+    }
   }
 
   private def addInitToScope(ast: Ast, initList: List[mutable.ArrayBuffer[Ast]]): Unit = {
