@@ -774,6 +774,8 @@ class AstCreator(filename: String, global: Global)
       astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER())
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       astForCallNode(ctx.CONSTANT_IDENTIFIER())
+    } else if (ctx.methodOnlyIdentifier() != null) {
+      astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     } else {
       Ast()
     }
