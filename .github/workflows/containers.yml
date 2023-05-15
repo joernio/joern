@@ -3,7 +3,7 @@ name: Upload Container image
 on:
   push:
     tags:
-      - 'v*'
+      - '**'
 
 env:
   REGISTRY: ghcr.io
