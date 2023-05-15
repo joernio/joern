@@ -26,33 +26,35 @@ object Shared {
   }
 }
 
-class BindingTableAdapterForJavaparser(methodSignatureImpl: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String)
-  extends BindingTableAdapter[
-    ResolvedReferenceTypeDeclaration,
-    ResolvedReferenceTypeDeclaration,
-    ResolvedMethodDeclaration,
-  ResolvedTypeParametersMap] {
+class BindingTableAdapterForJavaparser(
+  methodSignatureImpl: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String
+) extends BindingTableAdapter[
+      ResolvedReferenceTypeDeclaration,
+      ResolvedReferenceTypeDeclaration,
+      ResolvedMethodDeclaration,
+      ResolvedTypeParametersMap
+    ] {
 
   override def directParents(
-                              typeDecl: ResolvedReferenceTypeDeclaration
-                            ): collection.Seq[ResolvedReferenceTypeDeclaration] = {
+    typeDecl: ResolvedReferenceTypeDeclaration
+  ): collection.Seq[ResolvedReferenceTypeDeclaration] = {
     safeGetAncestors(typeDecl).map(_.getTypeDeclaration.get)
   }
 
   override def allParentsWithTypeMap(
-                                      typeDecl: ResolvedReferenceTypeDeclaration
-                                    ): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)] = {
+    typeDecl: ResolvedReferenceTypeDeclaration
+  ): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)] = {
     getAllParents(typeDecl).map { parentType =>
       (parentType.getTypeDeclaration.get, parentType.typeParametersMap())
     }
   }
 
   override def directBindingTableEntries(
-                                          typeDeclFullName: String,
-                                          typeDecl: ResolvedReferenceTypeDeclaration
-                                        ): collection.Seq[BindingTableEntry] = {
+    typeDeclFullName: String,
+    typeDecl: ResolvedReferenceTypeDeclaration
+  ): collection.Seq[BindingTableEntry] = {
     getDeclaredMethods(typeDecl)
-      .filter { case (_, methodDecl) => !methodDecl.isStatic}
+      .filter { case (_, methodDecl) => !methodDecl.isStatic }
       .map { case (_, methodDecl) =>
         val signature = getMethodSignature(methodDecl, ResolvedTypeParametersMap.empty())
         BindingTableEntry.apply(
@@ -64,7 +66,9 @@ class BindingTableAdapterForJavaparser(methodSignatureImpl: (ResolvedMethodDecla
       .toBuffer
   }
 
-  override def getDeclaredMethods(typeDecl: ResolvedReferenceTypeDeclaration): Iterable[(String, ResolvedMethodDeclaration)] = {
+  override def getDeclaredMethods(
+    typeDecl: ResolvedReferenceTypeDeclaration
+  ): Iterable[(String, ResolvedMethodDeclaration)] = {
     Shared.getDeclaredMethods(typeDecl).map(method => (method.getName, method))
   }
 
@@ -76,30 +80,36 @@ class BindingTableAdapterForJavaparser(methodSignatureImpl: (ResolvedMethodDecla
     methodSignatureImpl(methodDecl, ResolvedTypeParametersMap.empty())
   }
 
-  override def typeDeclEquals(astTypeDecl: ResolvedReferenceTypeDeclaration, inputTypeDecl: ResolvedReferenceTypeDeclaration): Boolean = {
-     astTypeDecl.getQualifiedName == inputTypeDecl.getQualifiedName
+  override def typeDeclEquals(
+    astTypeDecl: ResolvedReferenceTypeDeclaration,
+    inputTypeDecl: ResolvedReferenceTypeDeclaration
+  ): Boolean = {
+    astTypeDecl.getQualifiedName == inputTypeDecl.getQualifiedName
   }
 }
 
-case class LambdaBindingInfo(fullName: String,
-                             implementedType: Option[ResolvedReferenceType],
-                             directBinding: Option[NewBinding])
+case class LambdaBindingInfo(
+  fullName: String,
+  implementedType: Option[ResolvedReferenceType],
+  directBinding: Option[NewBinding]
+)
 
-
-class BindingTableAdapterForLambdas(methodSignatureImpl: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String)
-  extends BindingTableAdapter[
-    LambdaBindingInfo,
-    ResolvedReferenceTypeDeclaration,
-    ResolvedMethodDeclaration,
-    ResolvedTypeParametersMap] {
+class BindingTableAdapterForLambdas(
+  methodSignatureImpl: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String
+) extends BindingTableAdapter[
+      LambdaBindingInfo,
+      ResolvedReferenceTypeDeclaration,
+      ResolvedMethodDeclaration,
+      ResolvedTypeParametersMap
+    ] {
 
   override def directParents(lambdaBindingInfo: LambdaBindingInfo): collection.Seq[ResolvedReferenceTypeDeclaration] = {
     lambdaBindingInfo.implementedType.flatMap(_.getTypeDeclaration.toScala).toList
   }
 
   override def allParentsWithTypeMap(
-                                      lambdaBindingInfo: LambdaBindingInfo
-                                    ): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)] = {
+    lambdaBindingInfo: LambdaBindingInfo
+  ): collection.Seq[(ResolvedReferenceTypeDeclaration, ResolvedTypeParametersMap)] = {
     val nonDirectParents =
       lambdaBindingInfo.implementedType.flatMap(_.getTypeDeclaration.toScala).toList.flatMap(getAllParents)
     (lambdaBindingInfo.implementedType.toList ++ nonDirectParents).map { typ =>
@@ -108,15 +118,17 @@ class BindingTableAdapterForLambdas(methodSignatureImpl: (ResolvedMethodDeclarat
   }
 
   override def directBindingTableEntries(
-                                          typeDeclFullName: String,
-                                          lambdaBindingInfo: LambdaBindingInfo
-                                        ): collection.Seq[BindingTableEntry] = {
+    typeDeclFullName: String,
+    lambdaBindingInfo: LambdaBindingInfo
+  ): collection.Seq[BindingTableEntry] = {
     lambdaBindingInfo.directBinding.map { binding =>
       BindingTableEntry(binding.name, binding.signature, binding.methodFullName)
     }.toList
   }
 
-  override def getDeclaredMethods(typeDecl: ResolvedReferenceTypeDeclaration): Iterable[(String, ResolvedMethodDeclaration)] = {
+  override def getDeclaredMethods(
+    typeDecl: ResolvedReferenceTypeDeclaration
+  ): Iterable[(String, ResolvedMethodDeclaration)] = {
     Shared.getDeclaredMethods(typeDecl).map(method => (method.getName, method))
   }
 
@@ -128,8 +140,10 @@ class BindingTableAdapterForLambdas(methodSignatureImpl: (ResolvedMethodDeclarat
     methodSignatureImpl(methodDecl, ResolvedTypeParametersMap.empty())
   }
 
-  override def typeDeclEquals(astTypeDecl: ResolvedReferenceTypeDeclaration, inputTypeDecl: LambdaBindingInfo): Boolean = {
+  override def typeDeclEquals(
+    astTypeDecl: ResolvedReferenceTypeDeclaration,
+    inputTypeDecl: LambdaBindingInfo
+  ): Boolean = {
     astTypeDecl.getQualifiedName == inputTypeDecl.fullName
   }
 }
-

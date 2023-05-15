@@ -38,7 +38,7 @@ object BindingTable {
     typeDeclFullName: String,
     typeDecl: InputTypeDecl,
     getBindingTable: AstTypeDecl => BindingTable,
-    adapter: BindingTableAdapter[InputTypeDecl, AstTypeDecl, AstMethodDecl, TypeMap],
+    adapter: BindingTableAdapter[InputTypeDecl, AstTypeDecl, AstMethodDecl, TypeMap]
   ): BindingTable = {
     val bindingTable = new BindingTable()
 

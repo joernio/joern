@@ -383,12 +383,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
     bindingTableCache.getOrElseUpdate(
       fullName,
-      createBindingTable(
-        fullName,
-        typeDecl,
-        getBindingTable,
-        new BindingTableAdapterForJavaparser(methodSignature),
-      )
+      createBindingTable(fullName, typeDecl, getBindingTable, new BindingTableAdapterForJavaparser(methodSignature))
     )
   }
 
@@ -401,7 +396,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         fullName,
         lambdaBindingInfo,
         getBindingTable,
-        new BindingTableAdapterForLambdas(methodSignature),
+        new BindingTableAdapterForLambdas(methodSignature)
       )
     )
   }
