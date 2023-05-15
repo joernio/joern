@@ -60,10 +60,11 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("@name").l.size shouldBe 2
       cpg.identifier.name("@age").l.size shouldBe 4
       cpg.call.name("attr_accessor").size shouldBe 1
-      cpg.call.name("initialize").size shouldBe 1
-      cpg.call.name("greet").size shouldBe 2
+      cpg.call.name("greet").size shouldBe 1
+      cpg.method.name("initialize").size shouldBe 1
+      cpg.method.name("greet").size shouldBe 1
       cpg.call.name("puts").size shouldBe 2
-      cpg.call.name("have_birthday").size shouldBe 1
+      cpg.method.name("have_birthday").size shouldBe 1
       cpg.identifier.size shouldBe 13
     }
   }
@@ -91,7 +92,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("num2").l.size shouldBe 2
       cpg.identifier.name("num3").l.size shouldBe 2
       cpg.identifier.name("sum").l.size shouldBe 2
-      cpg.call.name("add_three_numbers").size shouldBe 2
+      cpg.call.name("add_three_numbers").size shouldBe 1
       cpg.call.name("num1").size shouldBe 1
       cpg.identifier.size shouldBe 14
     }
@@ -247,13 +248,13 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       "recognise all identifier and call nodes" in {
-        cpg.call.name("\\[]").size shouldBe 1
-        cpg.call.name("\\[]=").size shouldBe 1
+        cpg.method.name("\\[]").size shouldBe 1
+        cpg.method.name("\\[]=").size shouldBe 1
         cpg.call.name("=").size shouldBe 3
-        cpg.call.name("initialize").size shouldBe 1
+        cpg.method.name("initialize").size shouldBe 1
         cpg.call.name("to_s").size shouldBe 1
         cpg.call.name("new").size shouldBe 1
-        cpg.call.size shouldBe 8
+        cpg.call.size shouldBe 5
         cpg.identifier.name("@my_hash").size shouldBe 3
         cpg.identifier.name("key").size shouldBe 3
         cpg.identifier.name("value").size shouldBe 2

@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, Token}
@@ -36,6 +36,9 @@ class AstCreator(filename: String, global: Global)
   }
 
   private val logger = LoggerFactory.getLogger(this.getClass)
+
+  // TODO convert to stack
+  private var currentMethodReturn: NewMethodReturn = null
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val charStream  = CharStreams.fromFileName(filename)
@@ -505,7 +508,7 @@ class AstCreator(filename: String, global: Global)
     if (ctx.scopedConstantReference() != null) {
       astForScopedConstantReferenceContext(ctx.scopedConstantReference())
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      //TODO class name comes here
+      // TODO class name comes here
       Ast()
     } else {
       Ast()
@@ -645,9 +648,15 @@ class AstCreator(filename: String, global: Global)
       val methodNameAst  = astForMethodNameContext(ctx.methodName())
       val argsWOParenAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       cmdDoBlockAst.withChild(methodNameAst).withChild(argsWOParenAst)
-    case ctx: ReturnArgsInvocationWithoutParenthesesContext => astForArgumentsContext(ctx.arguments())
-    case ctx: BreakArgsInvocationWithoutParenthesesContext  => astForArgumentsContext(ctx.arguments())
-    case ctx: NextArgsInvocationWithoutParenthesesContext   => astForArgumentsContext(ctx.arguments())
+    case ctx: ReturnArgsInvocationWithoutParenthesesContext =>
+      currentMethodReturn = NewMethodReturn()
+        .code(ctx.getText)
+        .lineNumber(ctx.RETURN().getSymbol().getLine)
+        .columnNumber(ctx.RETURN().getSymbol().getCharPositionInLine)
+        .typeFullName(Defines.Any)
+      astForArgumentsContext(ctx.arguments())
+    case ctx: BreakArgsInvocationWithoutParenthesesContext => astForArgumentsContext(ctx.arguments())
+    case ctx: NextArgsInvocationWithoutParenthesesContext  => astForArgumentsContext(ctx.arguments())
     case _ =>
       logger.error("astForInvocationWithoutParenthesesContext() All contexts mismatched.")
       Ast()
@@ -680,8 +689,23 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Ast = {
-    // TODO to be implemented
-    Ast()
+    if (ctx.jumpExpression().RETURN() != null) {
+      val node = NewMethodReturn()
+        .code(ctx.getText)
+        .lineNumber(ctx.jumpExpression().RETURN().getSymbol().getLine)
+        .columnNumber(ctx.jumpExpression().RETURN().getSymbol().getCharPositionInLine)
+      Ast(node)
+    } else if (ctx.jumpExpression().BREAK() != null) {
+      Ast() // TODO implement this
+    } else if (ctx.jumpExpression().NEXT() != null) {
+      Ast() // TODO implement this
+    } else if (ctx.jumpExpression().REDO() != null) {
+      Ast() // TODO implement this
+    } else if (ctx.jumpExpression().RETRY() != null) {
+      Ast() // TODO implement this
+    } else {
+      Ast()
+    }
   }
 
   def astForLiteralPrimaryContext(ctx: LiteralPrimaryContext): Ast = {
@@ -744,11 +768,7 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForMethodIdentifierContext(
-    ctx: MethodIdentifierContext,
-    astMethodParam: Ast = null,
-    astBody: Ast = null
-  ): Ast = {
+  def astForMethodIdentifierContext(ctx: MethodIdentifierContext): Ast = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER())
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
@@ -900,20 +920,53 @@ class AstCreator(filename: String, global: Global)
       })
       .toSeq
 
-    Ast(seqNodes)
+    val seqMethodPar = localVarList
+      .map(localVar => {
+        val varSymbol = localVar.getSymbol()
+        NewMethodParameterIn()
+          .name(varSymbol.getText)
+          .code(varSymbol.getText)
+          .lineNumber(varSymbol.getLine)
+          .columnNumber(varSymbol.getCharPositionInLine)
+      })
+      .toSeq
+
+    Ast(seqMethodPar).withChild(Ast(seqNodes))
   }
 
   def astForBodyStatementContext(ctx: BodyStatementContext): Ast = {
     astForStatementsContext(ctx.compoundStatement().statements())
+    // TODO rescue else and ensure to be implemented
   }
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Ast = {
     val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
     val astMethodParam = astForMethodParameterPartContext(ctx.methodParameterPart())
     val astBody        = astForBodyStatementContext(ctx.bodyStatement())
+    val callNode       = astMethodName.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+    // there can be only one call node
 
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    blockAst(blockNode, List[Ast](astMethodName, astMethodParam, astBody))
+    val methodNode = NewMethod()
+      .code(callNode.code)
+      .name(callNode.name)
+      .fullName(callNode.methodFullName)
+      .order(1)
+      .columnNumber(callNode.columnNumber)
+      .lineNumber(callNode.lineNumber)
+      .filename(filename)
+
+    val methodRet = if (currentMethodReturn != null) {
+      currentMethodReturn
+    } else {
+      NewMethodReturn()
+        .code("")
+        .typeFullName(Defines.Any)
+    }
+    currentMethodReturn = null
+    val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
+    // TODO find out from where the correct modifier could be obtained
+
+    methodAst(methodNode, Seq[Ast](astMethodParam), astBody, methodRet, Seq[NewModifier](publicModifier))
   }
 
   def astForMethodOnlyIdentifierPrimaryContext(ctx: MethodOnlyIdentifierPrimaryContext): Ast = {
