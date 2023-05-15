@@ -209,7 +209,6 @@ object UsageSlicing {
         case c if c.name.startsWith(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
         case c if excludeOperatorCalls.get() && c.name.startsWith("<operator>")                          => None
         case c                                                                                           => Some(c)
-        case _                                                                                           => None
       }
       .dedup
       .toList

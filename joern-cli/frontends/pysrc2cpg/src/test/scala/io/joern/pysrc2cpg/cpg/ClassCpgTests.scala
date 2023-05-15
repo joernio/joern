@@ -71,6 +71,42 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       xParameter.name shouldBe "x"
 
     }
+
+    "have correct full name for func1 method in class" in {
+      val cpg = code("""class Foo:
+                       |  def func1(self):
+                       |    pass
+                       |""".stripMargin)
+
+      val func1 = cpg.method.name("func1").head
+      func1.fullName shouldBe "Test0.py:<module>.Foo.func1"
+    }
+
+    "have correct full name for <body> method in class" in {
+      val cpg = code("""class Foo:
+                       |  pass
+                       |""".stripMargin)
+
+      val func1 = cpg.method.name("<body>").head
+      func1.fullName shouldBe "Test0.py:<module>.Foo.<body>"
+    }
+
+    "have correct parameter index for method in class" in {
+      val cpg = code("""class Foo:
+                       |  def method(self):
+                       |    pass
+                       |""".stripMargin)
+      cpg.method.name("method").parameter.name("self").index.head shouldBe 0
+    }
+
+    "have correct parameter index for static method in class" in {
+      val cpg = code("""class Foo:
+                       |  @staticmethod
+                       |  def method(x):
+                       |    pass
+                       |""".stripMargin)
+      cpg.method.name("method").parameter.name("x").index.head shouldBe 1
+    }
   }
 
 }

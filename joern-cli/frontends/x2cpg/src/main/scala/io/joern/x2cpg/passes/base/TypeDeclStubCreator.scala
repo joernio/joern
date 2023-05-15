@@ -37,15 +37,22 @@ class TypeDeclStubCreator(cpg: Cpg) extends CpgPass(cpg) {
 
 object TypeDeclStubCreator {
 
-  def createTypeDeclStub(name: String, fullName: String): NewTypeDecl = {
+  def createTypeDeclStub(
+    name: String,
+    fullName: String,
+    isExternal: Boolean = true,
+    astParentType: String = NodeTypes.NAMESPACE_BLOCK,
+    astParentFullName: String = NamespaceTraversal.globalNamespaceName,
+    fileName: String = FileTraversal.UNKNOWN
+  ): NewTypeDecl = {
     NewTypeDecl()
       .name(name)
       .fullName(fullName)
-      .isExternal(true)
+      .isExternal(isExternal)
       .inheritsFromTypeFullName(IndexedSeq.empty)
-      .astParentType(NodeTypes.NAMESPACE_BLOCK)
-      .astParentFullName(NamespaceTraversal.globalNamespaceName)
-      .filename(FileTraversal.UNKNOWN)
+      .astParentType(astParentType)
+      .astParentFullName(astParentFullName)
+      .filename(fileName)
   }
 
 }

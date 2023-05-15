@@ -186,7 +186,7 @@ class AccessPathUsageTests extends AnyWordSpec {
           genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
         )
 
-      toTrackedAccessPath(call) shouldBe E(C("b"), V)
+      toTrackedAccessPath(call) shouldBe E(C("b"), C("a"))
     }
   }
 
@@ -224,7 +224,7 @@ class AccessPathUsageTests extends AnyWordSpec {
           genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
         )
 
-      toTrackedAccessPath(call) shouldBe E(C("b"), I, V)
+      toTrackedAccessPath(call) shouldBe E(C("b"), I, C("a"))
     }
   }
 
@@ -262,7 +262,7 @@ class AccessPathUsageTests extends AnyWordSpec {
           genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
         )
 
-      toTrackedAccessPath(call) shouldBe E(C("b"), V)
+      toTrackedAccessPath(call) shouldBe E(C("b"), C("a"))
     }
   }
 
@@ -402,7 +402,7 @@ class AccessPathUsageTests extends AnyWordSpec {
           genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
         )
 
-      toTrackedAccessPath(call) shouldBe E(C("b"), I, V, A)
+      toTrackedAccessPath(call) shouldBe E(C("b"), I, C("a"), A)
     }
   }
 

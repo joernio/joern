@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg.passes
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
+import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
@@ -35,9 +36,10 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "resolve 'z' identifier calls conservatively" in {
-      // TODO: These should have callee entries but the method stubs are not present here
       val List(zAppend) = cpg.call("append").l
       zAppend.methodFullName shouldBe "<unknownFullName>"
+      // Since we don't have method nodes with this full name, this should belong to the call linker namespace
+      zAppend.callee.astParentFullName.headOption shouldBe Some(XTypeHintCallLinker.namespace)
       zAppend.dynamicTypeHintFullName shouldBe Seq(
         "__builtin.dict.append",
         "__builtin.list.append",
@@ -824,6 +826,71 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       cpg.method("class_method").parameter.name("cls").typeFullName.headOption shouldBe Some(
         "Test0.py:<module>.MyClass"
       )
+    }
+  }
+
+  "calls from imported class fields" should {
+    lazy val cpg = code(
+      """
+        |from .models import Profile
+        |
+        |def profile(request):
+        |    profile = Profile.objects.filter(user=request.user).order_by('-id')[0]
+        |""".stripMargin,
+      "views.py"
+    ).moreCode(
+      """
+        |from django.db import models
+        |
+        |class Profile(models.Model):
+        |    user = models.CharField(max_length=20)
+        |    name = models.CharField(max_length=50)
+        |""".stripMargin,
+      "models.py"
+    )
+
+    "resolve the `filter` call" in {
+      val Some(call) = cpg.call.nameExact("filter").headOption
+      call.methodFullName shouldBe "models.py:<module>.Profile.<member>(objects).filter"
+    }
+  }
+
+  "Recovered values that are returned in methods" should {
+    lazy val cpg = code(
+      """
+        |class Connector:
+        |
+        |	botoClient = boto("s3")
+        |
+        |	def makeDbCall():
+        |		pass
+        |
+        |	def getBotoClient(self):
+        |		return self.botoClient
+        |
+        |""".stripMargin,
+      Seq("lib", "connector.py").mkString(File.separator)
+    ).moreCode(
+      """
+        |from lib.connector import Connector
+        |
+        |class Impl:
+        |
+        |	c = Connector()
+        |	c.getBotoClient().getS3Object()
+        |""".stripMargin,
+      "impl.py"
+    )
+
+    "be able to use field accesses as type hints" in {
+      val Some(c) = cpg.identifier("c").headOption
+      c.typeFullName shouldBe Seq("lib", "connector.py:<module>.Connector").mkString(File.separator)
+      val Some(getBotoClient) = cpg.call.nameExact("getBotoClient").headOption
+      getBotoClient.methodFullName shouldBe Seq("lib", "connector.py:<module>.Connector.getBotoClient").mkString(
+        File.separator
+      )
+      val Some(getS3Object) = cpg.call.nameExact("getS3Object").headOption
+      getS3Object.methodFullName shouldBe "boto.<returnValue>.getS3Object"
     }
   }
 

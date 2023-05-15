@@ -3,16 +3,23 @@ package io.joern.x2cpg.utils
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotationLiteral,
+  NewBinding,
   NewCall,
+  NewClosureBinding,
   NewDependency,
   NewFieldIdentifier,
   NewIdentifier,
+  NewLocal,
   NewMethodParameterIn,
   NewMethodReturn,
   NewModifier
 }
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 
+/** NodeBuilders helps with node creation and is intended to be used when functions from `x2cpg.AstCreatorBase` are not
+  * appropriate; for example, in cases in which the node's line and column are _not_ set from the base ASTNode type of a
+  * specific frontend.
+  */
 object NodeBuilders {
 
   private def composeCallSignature(returnType: String, argumentTypes: Iterable[String]): String = {
@@ -24,12 +31,38 @@ object NodeBuilders {
     s"$typeDeclPrefix$name:$signature"
   }
 
-  def annotationLiteralNode(name: String): NewAnnotationLiteral =
+  def newAnnotationLiteralNode(name: String): NewAnnotationLiteral =
     NewAnnotationLiteral()
       .name(name)
       .code(name)
 
-  def callNode(
+  def newBindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
+    NewBinding()
+      .name(name)
+      .methodFullName(methodFullName)
+      .signature(signature)
+  }
+
+  def newLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal = {
+    NewLocal()
+      .code(name)
+      .name(name)
+      .typeFullName(typeFullName)
+      .closureBindingId(closureBindingId)
+  }
+
+  def newClosureBindingNode(
+    closureBindingId: String,
+    originalName: String,
+    evaluationStrategy: String
+  ): NewClosureBinding = {
+    NewClosureBinding()
+      .closureBindingId(closureBindingId)
+      .closureOriginalName(originalName)
+      .evaluationStrategy(evaluationStrategy)
+  }
+
+  def newCallNode(
     methodName: String,
     typeDeclFullName: Option[String],
     returnTypeFullName: String,
@@ -52,13 +85,13 @@ object NodeBuilders {
       .columnNumber(columnNumber)
   }
 
-  def dependencyNode(name: String, groupId: String, version: String): NewDependency =
+  def newDependencyNode(name: String, groupId: String, version: String): NewDependency =
     NewDependency()
       .name(name)
       .dependencyGroupId(groupId)
       .version(version)
 
-  def fieldIdentifierNode(
+  def newFieldIdentifierNode(
     name: String,
     line: Option[Integer] = None,
     column: Option[Integer] = None
@@ -70,27 +103,27 @@ object NodeBuilders {
       .columnNumber(column)
   }
 
-  def identifierNode(
-    name: String,
-    typeFullName: Option[String],
-    line: Option[Integer] = None,
-    column: Option[Integer] = None,
-    dynamicTypeHintFullName: Seq[String] = Seq.empty
-  ): NewIdentifier = {
-    val identifier = NewIdentifier()
-      .name(name)
-      .code(name)
-      .lineNumber(line)
-      .columnNumber(column)
-      .dynamicTypeHintFullName(dynamicTypeHintFullName)
+  def newModifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
 
-    typeFullName.map(identifier.typeFullName(_))
-    identifier
+  def newIdentifierNode(name: String, typeFullName: String, dynamicTypeHints: Seq[String] = Seq()): NewIdentifier = {
+    newIdentifierNode(name, typeFullName, dynamicTypeHints, None)
   }
 
-  def modifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
+  def newIdentifierNode(
+    name: String,
+    typeFullName: String,
+    dynamicTypeHints: Seq[String],
+    line: Option[Integer]
+  ): NewIdentifier = {
+    NewIdentifier()
+      .code(name)
+      .name(name)
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHints)
+      .lineNumber(line)
+  }
 
-  def operatorCallNode(
+  def newOperatorCallNode(
     name: String,
     code: String,
     typeFullName: Option[String] = None,
@@ -103,12 +136,12 @@ object NodeBuilders {
       .code(code)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(typeFullName.getOrElse(PropertyDefaults.TypeFullName))
+      .typeFullName(typeFullName.getOrElse("ANY"))
       .lineNumber(line)
       .columnNumber(column)
   }
 
-  def thisParameterNode(
+  def newThisParameterNode(
     typeFullName: String,
     dynamicTypeHintFullName: Seq[String] = Seq.empty,
     line: Option[Integer] = None,
@@ -128,7 +161,7 @@ object NodeBuilders {
 
   /** Create a method return node
     */
-  def methodReturnNode(
+  def newMethodReturnNode(
     typeFullName: String,
     dynamicTypeHintFullName: Option[String] = None,
     line: Option[Integer],

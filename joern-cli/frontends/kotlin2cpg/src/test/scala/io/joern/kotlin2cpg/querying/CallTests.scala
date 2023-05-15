@@ -116,7 +116,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.signature shouldBe "void()"
       c.code shouldBe "Foo()"
-      c.columnNumber shouldBe Some(6)
+      c.columnNumber shouldBe Some(10)
       c.lineNumber shouldBe Some(12)
     }
 

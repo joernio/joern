@@ -62,17 +62,9 @@ class EnumTests extends JavaSrcCode2CpgFixture {
     l.code shouldBe "java.lang.String label"
 
     r.code shouldBe "RED(\"Red\")"
-    r.astChildren.isCall.size shouldBe 1
-    val call = r.astChildren.isCall.head
-    call.name shouldBe s"Color.${io.joern.x2cpg.Defines.ConstructorMethodName}"
-    call.methodFullName shouldBe s"Color.${io.joern.x2cpg.Defines.ConstructorMethodName}"
-    call.order shouldBe 1
-    call.astChildren.size shouldBe 1
-    call.astChildren.head shouldBe a[Literal]
-    call.astChildren.head.code shouldBe "\"Red\""
+    r.astChildren.size shouldBe 0
 
     b.code shouldBe "BLUE(\"Blue\")"
-    b.astChildren.astChildren.size shouldBe 1
-    b.astChildren.astChildren.head.code shouldBe "\"Blue\""
+    b.astChildren.astChildren.size shouldBe 0
   }
 }

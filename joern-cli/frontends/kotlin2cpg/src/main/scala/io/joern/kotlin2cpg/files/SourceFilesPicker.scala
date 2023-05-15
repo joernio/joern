@@ -39,7 +39,7 @@ object SourceFilesPicker {
     val containsSrcTest    = fileName.contains("src/test")
     val isSettingsXml      = fileName.endsWith("strings.xml") // some projects contain many i18n files
     val containsBenchmarks = fileName.contains("benchmarks")
-    val isBuildGradle      = fileName.endsWith("build.gradle")
+    val isBuildGradle      = fileName.endsWith("build.gradle") || fileName.endsWith("build.gradle.kts")
 
     (containsUnwantedSubstring && !isBuildGradle) ||
     hasUnwantedExt ||
@@ -59,7 +59,7 @@ object SourceFilesPicker {
   }
 
   protected def isGradleFile(fileName: String): Boolean = {
-    val gradleRelatedFiles = Seq("build.gradle", "settings.gradle", "gradle.properties")
+    val gradleRelatedFiles = Seq("build.gradle", "settings.gradle", "gradle.properties", "build.gradle.kts")
     gradleRelatedFiles.exists(fileName.endsWith)
   }
 

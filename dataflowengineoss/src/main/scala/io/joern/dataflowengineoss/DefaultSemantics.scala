@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss
 
+import io.joern.dataflowengineoss.DefaultSemantics.F
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.Operators
 
@@ -15,7 +16,7 @@ object DefaultSemantics {
     Semantics.fromList(list)
   }
 
-  private def F = FlowSemantic
+  private def F = (x: String, y: List[(Int, Int)]) => FlowSemantic.from(x, y)
 
   def operatorFlows: List[FlowSemantic] = List(
     F(Operators.addition, List((1, -1), (2, -1))),
@@ -55,7 +56,7 @@ object DefaultSemantics {
     F(Operators.postIncrement, List((1, 1), (1, -1))),
     F(Operators.preDecrement, List((1, 1), (1, -1))),
     F(Operators.preIncrement, List((1, 1), (1, -1))),
-    F(Operators.sizeOf, List()),
+    F(Operators.sizeOf, List.empty[(Int, Int)]),
 
     //  some of those operators have duplicate mappings due to a typo
     //  - see https://github.com/ShiftLeftSecurity/codepropertygraph/pull/1630
@@ -67,7 +68,8 @@ object DefaultSemantics {
     F("<operators>.assignmentArithmeticShiftRight", List((2, 1), (1, 1))),
     F("<operators>.assignmentAnd", List((2, 1), (1, 1))),
     F("<operators>.assignmentOr", List((2, 1), (1, 1))),
-    F("<operators>.assignmentXor", List((2, 1), (1, 1)))
+    F("<operators>.assignmentXor", List((2, 1), (1, 1))),
+    F("<operator>.tupleLiteral", List((1, 1), (2, 2), (3, 3), (4, 4), (1, -1), (2, -1), (3, -1), (4, -1)))
   )
 
   /** Semantic summaries for common external C/C++ calls.
@@ -78,7 +80,7 @@ object DefaultSemantics {
     */
   def cFlows: List[FlowSemantic] = List(
     F("abs", List((1, 1), (1, -1))),
-    F("abort", List()),
+    F("abort", List.empty[(Int, Int)]),
     F("asctime", List((1, 1), (1, -1))),
     F("asctime_r", List((1, 1), (1, -1))),
     F("atof", List((1, 1), (1, -1))),
@@ -86,7 +88,7 @@ object DefaultSemantics {
     F("atol", List((1, 1), (1, -1))),
     F("calloc", List((1, -1), (2, -1))),
     F("ceil", List((1, 1), (1, 1))),
-    F("clock", List()),
+    F("clock", List.empty[(Int, Int)]),
     F("ctime", List((1, -1))),
     F("ctime64", List((1, -1))),
     F("ctime_r", List((1, -1))),

@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.types
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.passes.KeyPool
-import kotlin.reflect.jvm.internal.impl.descriptors.impl.LazyClassReceiverParameterDescriptor
+import kotlin.reflect.jvm.internal.impl.load.java.descriptors.JavaClassConstructorDescriptor
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
   KotlinToJVMBytecodeCompiler,
@@ -33,7 +33,6 @@ import org.jetbrains.kotlin.psi.{
   KtElement,
   KtExpression,
   KtFile,
-  KtImportDirective,
   KtLambdaExpression,
   KtNameReferenceExpression,
   KtNamedFunction,
@@ -52,7 +51,7 @@ import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorToSourceUtils, De
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
-import org.jetbrains.kotlin.types.UnresolvedType
+import org.jetbrains.kotlin.types.{UnresolvedType}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -370,20 +369,27 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     descMaybe.collect { case desc: FunctionDescriptor => desc }
   }
 
+  def isConstructorDescriptor(desc: FunctionDescriptor): Boolean = {
+    desc match {
+      case _: JavaClassConstructorDescriptor     => true
+      case _: ClassConstructorDescriptorImpl     => true
+      case _: TypeAliasConstructorDescriptorImpl => true
+      case _                                     => false
+    }
+  }
+
   def isConstructorCall(expr: KtExpression): Option[Boolean] = {
     expr match {
-      case call: KtCallExpression =>
-        resolvedCallDescriptor(call).collect {
-          case _: ClassConstructorDescriptorImpl     => Some(true)
-          case _: TypeAliasConstructorDescriptorImpl => Some(true)
-          case _                                     => Some(false)
-        }.flatten
+      case _: KtCallExpression | _: KtQualifiedExpression =>
+        resolvedCallDescriptor(expr) match {
+          case Some(desc) if isConstructorDescriptor(desc) => Some(true)
+          case _                                           => Some(false)
+        }
       case _ => Some(false)
     }
   }
 
   def fullNameWithSignature(expr: KtCallExpression, defaultValue: (String, String)): (String, String) = {
-
     resolvedCallDescriptor(expr) match {
       case Some(desc) =>
         val originalDesc = desc.getOriginal
@@ -512,9 +518,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   def fullNameWithSignature(expr: KtQualifiedExpression, defaultValue: (String, String)): (String, String) = {
     resolvedCallDescriptor(expr) match {
       case Some(fnDescriptor) =>
-        val originalDesc          = fnDescriptor.getOriginal
-        val renderedFqNameForDesc = TypeRenderer.renderFqNameForDesc(originalDesc)
+        val originalDesc = fnDescriptor.getOriginal
 
+        val renderedFqNameForDesc = TypeRenderer.renderFqNameForDesc(originalDesc)
         val renderedFqNameMaybe = for {
           extensionReceiverParam <- Option(originalDesc.getExtensionReceiverParameter)
           erpType = extensionReceiverParam.getType
@@ -544,7 +550,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           .map { valueParam => TypeRenderer.render(valueParam.getType) }
           .mkString(",")
         val renderedReturnType =
-          if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) TypeConstants.javaLangObject
+          if (isConstructorDescriptor(originalDesc)) TypeConstants.void
+          else if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) TypeConstants.javaLangObject
           else TypeRenderer.render(originalDesc.getReturnType)
 
         val singleLambdaArgExprMaybe = expr.getSelectorExpression match {
@@ -555,7 +562,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val fullNameSignature = s"$renderedReturnType($renderedParameterTypes)"
         val signature =
           singleLambdaArgExprMaybe
-            .map(lambdaInvocationSignature)
+            .map(lambdaInvocationSignature(_, renderedReturnType))
             .getOrElse(fullNameSignature)
         (s"$renderedFqName:$fullNameSignature", signature)
       case None =>
@@ -584,12 +591,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     }
   }
 
-  def lambdaInvocationSignature(expr: KtLambdaExpression): String = {
+  def lambdaInvocationSignature(expr: KtLambdaExpression, returnType: String): String = {
+    val hasImplicitParameter = implicitParameterName(expr)
+    val params               = expr.getValueParameters
     val paramsString =
-      if (expr.getValueParameters.isEmpty) TypeConstants.javaLangObject
+      if (hasImplicitParameter.nonEmpty) TypeConstants.javaLangObject
+      else if (params.isEmpty) ""
+      else if (params.size() == 1) TypeConstants.javaLangObject
       else
-        s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * expr.getValueParameters.size()}"
-    s"${TypeConstants.javaLangObject}($paramsString)"
+        s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (expr.getValueParameters.size() - 1)}"
+    s"${returnType}($paramsString)"
   }
 
   def parameterType(parameter: KtParameter, defaultValue: String): String = {
@@ -613,6 +624,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       case Some(aValue) => aValue
       case None         => defaultValue
     }
+  }
+
+  def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
+    val render = for {
+      mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
+      variableDesc <- Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
+      render = TypeRenderer.render(variableDesc.getType)
+      if isValidRender(render)
+    } yield render
+    render.getOrElse(defaultValue)
   }
 
   def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean = {
@@ -648,11 +669,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       val constructorDesc = theType.getConstructor.getDeclarationDescriptor
       val constructorType = constructorDesc.getDefaultType
       val args            = constructorType.getArguments.asScala.drop(1)
+
+      val renderedRetType =
+        args.lastOption
+          .map { t => TypeRenderer.render(t.getType) }
+          .getOrElse(TypeConstants.any)
       val renderedArgs =
         if (args.isEmpty) ""
         else if (args.size == 1) TypeConstants.javaLangObject
         else s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (args.size - 1)}"
-      val signature = s"${TypeConstants.javaLangObject}($renderedArgs)"
+      val signature = s"${renderedRetType}($renderedArgs)"
       val fullName  = s"$packageName.<lambda><f_${fileName}_no${lambdaNum.toString}>:$signature"
       (fullName, signature)
     }

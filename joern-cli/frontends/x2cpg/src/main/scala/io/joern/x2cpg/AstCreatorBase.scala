@@ -1,7 +1,7 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -88,16 +88,29 @@ abstract class AstCreatorBase(filename: String) {
       .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))
 
-  def staticInitMethodAst(initAsts: List[Ast], fullName: String, signature: Option[String], returnType: String): Ast = {
+  def staticInitMethodAst(
+    initAsts: List[Ast],
+    fullName: String,
+    signature: Option[String],
+    returnType: String,
+    fileName: Option[String] = None,
+    lineNumber: Option[Integer] = None,
+    columnNumber: Option[Integer] = None
+  ): Ast = {
     val methodNode = NewMethod()
       .name(Defines.StaticInitMethodName)
       .fullName(fullName)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
     if (signature.isDefined) {
       methodNode.signature(signature.get)
     }
+    if (fileName.isDefined) {
+      methodNode.filename(fileName.get)
+    }
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
     val body           = blockAst(NewBlock(), initAsts)
-    val methodReturn   = methodReturnNode(returnType, None, None, None)
+    val methodReturn   = newMethodReturnNode(returnType, None, None, None)
     methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
   }
 

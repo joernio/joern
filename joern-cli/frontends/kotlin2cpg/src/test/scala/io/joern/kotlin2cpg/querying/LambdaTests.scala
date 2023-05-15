@@ -71,6 +71,23 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
+  "CPG for code with a call with a call to `map` on a list of string" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f2(p: String) {
+        |    val m = listOf(p, "ls", "ps")
+        |    val o = m.map { i -> i + "_cmd" }
+        |    o.forEach { i  -> println(i) }
+        |}
+        |""".stripMargin)
+
+    "should contain a METHOD node for the lambda the correct props set" in {
+      val List(m) = cpg.method.fullName(".*lambda.*1.*").l
+      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+    }
+  }
+
   "CPG for code with a list iterator lambda" should {
     val cpg = code("""
         |package mypkg
@@ -122,6 +139,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a CALL node for `forEach` with the correct properties set" in {
       val List(c) = cpg.call.methodFullName(".*forEach.*").l
       c.methodFullName shouldBe "java.lang.Iterable.forEach:void(kotlin.Function1)"
+      c.signature shouldBe "void(java.lang.Object)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(4)
@@ -152,12 +170,57 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
+  "CPG for code with a scope function lambda with implicit parameter" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f3(p: String): String {
+        |    val out = p.apply { println(this) }
+        |    return out
+        |}
+        ||""".stripMargin)
+
+    "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
+      val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
+      p.code shouldBe "this"
+      p.typeFullName shouldBe "ANY"
+      p.index shouldBe 1
+    }
+  }
+
+  "CPG for code containing a lambda with parameter destructuring" should {
+    val cpg = code("""|package mypkg
+        |
+        |fun f1(p: String) {
+        |    val m = mapOf(p to 1, "two" to 2, "three" to 3)
+        |    m.forEach { (k, v) ->
+        |        println(k)
+        |    }
+        |}
+        |""".stripMargin)
+
+    "should contain a METHOD node for the lambda the correct props set" in {
+      val List(m) = cpg.method.fullName(".*lambda.*").l
+      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+    }
+
+    "should contain METHOD_PARAMETER_IN nodes for the lambda with the correct properties set" in {
+      val List(p1, p2) = cpg.method.fullName(".*lambda.*").parameter.l
+      p1.code shouldBe "k"
+      p1.index shouldBe 1
+      p1.typeFullName shouldBe "java.lang.String"
+      p2.code shouldBe "v"
+      p2.index shouldBe 2
+      p2.typeFullName shouldBe "int"
+    }
+  }
+
   "CPG for code with a scope function lambda" should {
     val cpg = code("""
         |package mypkg
         |
         |fun throughTakeIf(x: String) {
-        |  x.takeIf { arg -> arg.length > 1}
+        |  x.takeIf { arg -> arg.length > 1 }
         |}
         |""".stripMargin)
 
@@ -182,6 +245,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.code shouldBe "arg"
       p.typeFullName shouldBe "java.lang.String"
+      p.index shouldBe 1
     }
 
     "should contain a CALL node for `takeIf` with the correct properties set" in {
@@ -189,7 +253,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.typeFullName shouldBe "java.lang.String"
-      c.signature shouldBe "java.lang.Object(java.lang.Object,java.lang.Object)"
+      c.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
     "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
@@ -235,7 +299,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
         |""".stripMargin)
 
     "should contain a METHOD node for the lambda the correct props set" in {
-      val List(m) = cpg.method.fullName(".*lambda.*").l
+      val List(m) = cpg.method.fullName(".*lambda.*1.*").l
       m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
       m.lineNumber shouldBe Some(6)

@@ -158,9 +158,9 @@ if [ $NO_DOWNLOAD = true ]; then
     sbt clean
 else
   if [ "$JOERN_VERSION" = "" ]; then
-    curl -L "https://github.com/ShiftLeftSecurity/joern/releases/latest/download/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
+    curl -L "https://github.com/joernio/joern/releases/latest/download/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
   else
-    curl -L "https://github.com/ShiftLeftSecurity/joern/releases/download/$JOERN_VERSION/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
+    curl -L "https://github.com/joernio/joern/releases/download/$JOERN_VERSION/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
   fi
 fi
 

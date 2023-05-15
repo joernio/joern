@@ -38,8 +38,11 @@ private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder
     case _                                                      => SBKey.fromNodeToLocalKey(n)
   }
 
-  override protected val symbolTable                     = new SymbolTable[LocalKey](javaNodeToLocalKey)
-  override protected def isConstructor(c: Call): Boolean = !c.name.isBlank && c.name.charAt(0).isUpper
+  override protected val symbolTable = new SymbolTable[LocalKey](javaNodeToLocalKey)
+
+  override protected def isConstructor(c: Call): Boolean = isConstructor(c.name)
+
+  override protected def isConstructor(name: String): Boolean = !name.isBlank && name.charAt(0).isUpper
 
   override protected def postVisitImports(): Unit = {
     symbolTable.view.foreach { case (k, ts) =>
@@ -60,7 +63,7 @@ private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder
     super.storeIdentifierTypeInfo(i, types)
   }
 
-  override protected def storeCallTypeInfo(c: Call, types: Seq[String]) =
+  override protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
       state.changesWereMade.compareAndSet(false, true)
       val signedTypes = types.map {

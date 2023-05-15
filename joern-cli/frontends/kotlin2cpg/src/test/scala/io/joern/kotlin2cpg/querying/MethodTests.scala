@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Return}
 import io.shiftleft.semanticcpg.language._
 
 class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
@@ -108,6 +109,20 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a METHOD node with one expression in its corresponding BLOCK" in {
       cpg.method.nameExact("printX").block.expressionDown.size shouldBe 1
+    }
+  }
+
+  "CPG for code with method with single-expression body" should {
+    val cpg = code("""
+        |package main
+        |class AClass(var x: String)
+        |fun f1(p: String): AClass = AClass(p ?: "message")
+        ||""".stripMargin)
+
+    "should contain a RETURN node as the child of the METHOD's BLOCK" in {
+      val List(m)         = cpg.method.nameExact("f1").l
+      val List(r: Return) = m.block.astChildren.l
+      val List(_: Block)  = r.astChildren.l
     }
   }
 }

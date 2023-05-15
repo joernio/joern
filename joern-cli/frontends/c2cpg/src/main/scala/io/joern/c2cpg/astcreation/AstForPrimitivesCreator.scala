@@ -12,9 +12,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     Ast(newCommentNode(comment, nodeSignature(comment), fileName(comment)))
 
   protected def astForLiteral(lit: IASTLiteralExpression): Ast = {
-    val tpe         = cleanType(ASTTypeUtil.getType(lit.getExpressionType))
-    val literalNode = newLiteralNode(lit, nodeSignature(lit), registerType(tpe))
-    Ast(literalNode)
+    val tpe = cleanType(ASTTypeUtil.getType(lit.getExpressionType))
+    Ast(literalNode(lit, nodeSignature(lit), registerType(tpe)))
   }
 
   protected def astForIdentifier(ident: IASTNode): Ast = {
@@ -42,19 +41,17 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case None => typeFor(ident)
     }
 
-    val cpgIdentifier =
-      newIdentifierNode(ident, identifierName, nodeSignature(ident), registerType(cleanType(identifierTypeName)))
-
+    val node = identifierNode(ident, identifierName, nodeSignature(ident), registerType(cleanType(identifierTypeName)))
     variableOption match {
       case Some((variable, _)) =>
-        Ast(cpgIdentifier).withRefEdge(cpgIdentifier, variable)
-      case None => Ast(cpgIdentifier)
+        Ast(node).withRefEdge(node, variable)
+      case None => Ast(node)
     }
   }
 
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
     val op     = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
-    val ma     = newCallNode(fieldRef, op, op, DispatchTypes.STATIC_DISPATCH)
+    val ma     = callNode(fieldRef, nodeSignature(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH)
     val owner  = astForExpression(fieldRef.getFieldOwner)
     val member = fieldIdentifierNode(fieldRef, fieldRef.getFieldName.toString, fieldRef.getFieldName.toString)
     callAst(ma, List(owner, Ast(member)))
@@ -65,7 +62,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForInitializerList(l: IASTInitializerList): Ast = {
     val op           = Operators.arrayInitializer
-    val initCallNode = newCallNode(l, op, op, DispatchTypes.STATIC_DISPATCH)
+    val initCallNode = callNode(l, nodeSignature(l), op, op, DispatchTypes.STATIC_DISPATCH)
 
     val MAX_INITIALIZERS = 1000
     val clauses          = l.getClauses.slice(0, MAX_INITIALIZERS)
@@ -75,7 +72,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val ast = callAst(initCallNode, args)
     if (l.getClauses.length > MAX_INITIALIZERS) {
       val placeholder =
-        newLiteralNode(l, "<too-many-initializers>", Defines.anyTypeName).argumentIndex(MAX_INITIALIZERS)
+        literalNode(l, "<too-many-initializers>", Defines.anyTypeName).argumentIndex(MAX_INITIALIZERS)
       ast.withChild(Ast(placeholder)).withArgEdge(initCallNode, placeholder)
     } else {
       ast
@@ -84,19 +81,21 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForQualifiedName(qualId: CPPASTQualifiedName): Ast = {
     val op = Operators.fieldAccess
-    val ma = newCallNode(qualId, op, op, DispatchTypes.STATIC_DISPATCH)
+    val ma = callNode(qualId, nodeSignature(qualId), op, op, DispatchTypes.STATIC_DISPATCH)
 
     def fieldAccesses(names: List[IASTNode], argIndex: Int = -1): Ast = names match {
       case Nil => Ast()
       case head :: Nil =>
         astForNode(head)
       case head :: tail =>
-        val code     = s"${nodeSignature(head)}::${tail.map(nodeSignature).mkString("::")}"
-        val callNode = newCallNode(head, op, op, DispatchTypes.STATIC_DISPATCH, argIndex)
-        callNode.code = code
+        val code = s"${nodeSignature(head)}::${tail.map(nodeSignature).mkString("::")}"
+        val callNode_ =
+          callNode(head, nodeSignature(head), op, op, DispatchTypes.STATIC_DISPATCH)
+            .argumentIndex(argIndex)
+        callNode_.code = code
         val arg1 = astForNode(head)
         val arg2 = fieldAccesses(tail)
-        callAst(callNode, List(arg1, arg2))
+        callAst(callNode_, List(arg1, arg2))
     }
 
     val qualifier = fieldAccesses(qualId.getQualifier.toIndexedSeq.toList)
@@ -104,7 +103,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val owner = if (qualifier != Ast()) {
       qualifier
     } else {
-      Ast(newLiteralNode(qualId.getLastName, "<global>", Defines.anyTypeName))
+      Ast(literalNode(qualId.getLastName, "<global>", Defines.anyTypeName))
     }
 
     val member = fieldIdentifierNode(

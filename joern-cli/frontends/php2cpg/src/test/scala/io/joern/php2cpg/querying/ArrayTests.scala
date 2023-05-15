@@ -46,19 +46,19 @@ class ArrayTests extends PhpCode2CpgFixture {
     }
   }
 
-  "array accesses without keys should be represented as emptyArrayIdx calls" in {
-    val cpg = code("<?php\n$array[]")
+  "assignments using the empty array dimension fetch syntax should be rewritten as array_push" in {
+    val cpg = code("""<?php
+        |function foo($val) {
+        |  $xs[] = $val;
+        |}
+        |""".stripMargin)
 
-    inside(cpg.call.l) { case List(access) =>
-      access.name shouldBe PhpOperators.emptyArrayIdx
-      access.code shouldBe "$array[]"
-      access.lineNumber shouldBe Some(2)
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(xsLocal: Local, arrayPush: Call) =>
+      xsLocal.name shouldBe "xs"
+      xsLocal.lineNumber shouldBe Some(3)
 
-      inside(access.argument.l) { case List(array: Identifier) =>
-        array.name shouldBe "array"
-        array.code shouldBe "$array"
-        array.lineNumber shouldBe Some(2)
-      }
+      arrayPush.name shouldBe "array_push"
+      arrayPush.code shouldBe "$xs[] = $val"
     }
   }
 
