@@ -690,11 +690,12 @@ class AstCreator(filename: String, global: Global)
 
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Ast = {
     if (ctx.jumpExpression().RETURN() != null) {
-      val node = NewMethodReturn()
+      currentMethodReturn = NewMethodReturn()
         .code(ctx.getText)
         .lineNumber(ctx.jumpExpression().RETURN().getSymbol().getLine)
         .columnNumber(ctx.jumpExpression().RETURN().getSymbol().getCharPositionInLine)
-      Ast(node)
+        .typeFullName(Defines.Any)
+      Ast()
     } else if (ctx.jumpExpression().BREAK() != null) {
       Ast() // TODO implement this
     } else if (ctx.jumpExpression().NEXT() != null) {
@@ -931,7 +932,9 @@ class AstCreator(filename: String, global: Global)
       })
       .toSeq
 
-    Ast(seqMethodPar).withChild(Ast(seqNodes))
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    val ast       = Ast(seqMethodPar).withChild(Ast(seqNodes))
+    blockAst(blockNode, List[Ast](ast))
   }
 
   def astForBodyStatementContext(ctx: BodyStatementContext): Ast = {

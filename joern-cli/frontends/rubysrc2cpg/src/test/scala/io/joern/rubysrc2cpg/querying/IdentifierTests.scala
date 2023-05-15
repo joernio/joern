@@ -268,5 +268,18 @@ class IdentifierTests extends RubyCode2CpgFixture {
          */
       }
     }
+
+    "CPG for code with return having a jump statement" should {
+      val cpg = code("""
+          |  def check_captcha
+          |    return if verify_recaptcha
+          |  end
+          |
+          |""".stripMargin)
+
+      "recognise identifier nodes in the jump statement" in {
+        cpg.identifier.name("verify_recaptcha").size shouldBe 1
+      }
+    }
   }
 }
