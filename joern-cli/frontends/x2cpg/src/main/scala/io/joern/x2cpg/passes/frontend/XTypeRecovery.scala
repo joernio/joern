@@ -287,6 +287,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def postVisitImports(): Unit = {
     state.config.joernti.foreach { joernti =>
+      // TODO: Slice within infer and filter out symbols we have non-dummy values for in the slice
       val slice = UsageSlicing.calculateUsageSlice(cpg, cu, sliceConfig).asInstanceOf[ProgramUsageSlice]
       joernti.infer(slice) match {
         case Failure(exception) =>

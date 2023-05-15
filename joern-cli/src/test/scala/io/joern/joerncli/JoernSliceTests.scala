@@ -78,7 +78,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
   ) { case (cpg: Cpg, _) =>
     val programSlice =
       UsageSlicing
-        .calculateUsageSlice(cpg, JoernSlice.Config())
+        .calculateUsageSlice(cpg, SliceConfig())
         .asInstanceOf[ProgramUsageSlice]
 
     "extract 'name' parameter slice from 'startScene'" in {
