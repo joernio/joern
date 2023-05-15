@@ -224,22 +224,22 @@ class TypeTests extends JavaSrcCode2CpgFixture {
   }
 
   "should allow traversing from member's TYPE to member" in {
-    val List(x) = cpg.typ("java.lang.Long").memberOfType.l
+    val List(x) = cpg.typ("Long").memberOfType.l
     x.name shouldBe "x"
   }
 
   "should allow traversing from return params TYPE to return param" in {
-    val List(x) = cpg.typ("java.lang.Integer").methodReturnOfType.l
+    val List(x) = cpg.typ("Integer").methodReturnOfType.l
     x.typeFullName shouldBe "java.lang.Integer"
   }
 
   "should allow traversing from params TYPE to param" in {
-    val List(x) = cpg.typ("java.lang.Object").parameterOfType.l
+    val List(x) = cpg.typ("Object").parameterOfType.l
     x.name shouldBe "param"
   }
 
   "should allow traversing from local's TYPE to local" in {
-    val List(x) = cpg.typ("java.lang.Double").localOfType.l
+    val List(x) = cpg.typ("Double").localOfType.l
     x.name shouldBe "y"
   }
 

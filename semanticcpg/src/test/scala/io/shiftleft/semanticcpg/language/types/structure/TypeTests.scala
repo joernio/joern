@@ -42,7 +42,7 @@ class TypeTests extends AnyWordSpec with Matchers {
 
     "more than 0 members found by regex" in {
       def queryResult: List[Member] =
-        cpg.typeDecl.member.name(".*").toList
+        cpg.typ.member.name(".*").toList
 
       queryResult.size should be > 0
     }
