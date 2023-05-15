@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, Token}
@@ -966,6 +966,9 @@ class AstCreator(filename: String, global: Global)
     val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
     // TODO find out from where the correct modifier could be obtained
 
+    astMethodParam.nodes.foreach(node => {
+      diffGraph.addEdge(methodNode, node, EdgeTypes.AST)
+    })
     methodAst(methodNode, Seq[Ast](astMethodParam), astBody, methodRet, Seq[NewModifier](publicModifier))
   }
 
