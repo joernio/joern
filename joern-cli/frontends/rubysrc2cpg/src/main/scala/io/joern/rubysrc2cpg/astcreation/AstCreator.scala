@@ -39,6 +39,7 @@ class AstCreator(filename: String, global: Global)
 
   private var currentMethodName = Defines.Any
   private val methodToReturnSet = mutable.HashMap[String, mutable.ListBuffer[NewMethodReturn]]()
+  private val classStack        = mutable.Stack[String]()
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val charStream  = CharStreams.fromFileName(filename)
@@ -52,6 +53,7 @@ class AstCreator(filename: String, global: Global)
     val fileNode       = NewFile().name(filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
     val ast            = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(statementAst))
+    val lst            = ast.nodes.filter(node => node.isInstanceOf[NewMethod]).toList
     storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
@@ -516,7 +518,7 @@ class AstCreator(filename: String, global: Global)
     if (ctx.scopedConstantReference() != null) {
       astForScopedConstantReferenceContext(ctx.scopedConstantReference())
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      // TODO class name comes here
+      classStack.push(ctx.CONSTANT_IDENTIFIER().getText)
       Ast()
     } else {
       Ast()
@@ -527,7 +529,7 @@ class AstCreator(filename: String, global: Global)
     val astClassOrModuleRef = astForClassOrModuleReferenceContext(ctx.classDefinition().classOrModuleReference())
     val astExprOfCommand    = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
     val astBodyStatement    = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
-
+    classStack.pop()
     Ast().withChildren(Seq[Ast](astClassOrModuleRef, astExprOfCommand, astBodyStatement))
   }
 
@@ -963,14 +965,16 @@ class AstCreator(filename: String, global: Global)
     val callNode      = astMethodName.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     // there can be only one call node
 
+    val classPath = classStack.toList.mkString(".") + "."
     val methodNode = NewMethod()
       .code(callNode.code)
       .name(callNode.name)
-      .fullName(callNode.methodFullName)
+      .fullName(classPath + callNode.name)
       .order(1)
       .columnNumber(callNode.columnNumber)
       .lineNumber(callNode.lineNumber)
       .filename(filename)
+    callNode.methodFullName(classPath + callNode.name)
     val prevMethodName = currentMethodName
     currentMethodName = callNode.name
 
