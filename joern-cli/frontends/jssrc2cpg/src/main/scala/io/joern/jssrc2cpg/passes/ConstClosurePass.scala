@@ -15,8 +15,8 @@ class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
   // Keeps track of how many times an identifier has been on the LHS of an assignment, by name
   protected lazy val identifiersAssignedCount: scala.collection.Map[String, Int] = {
     val tmp = mutable.HashMap[String, Int]()
-    cpg.assignment.target.collectAll[Identifier].name.foreach{ name =>
-      tmp.updateWith(name){ old => Some(old.getOrElse(0) + 1)}
+    cpg.assignment.target.collectAll[Identifier].name.foreach { name =>
+      tmp.updateWith(name) { old => Some(old.getOrElse(0) + 1) }
     }
     tmp
   }

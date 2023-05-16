@@ -52,7 +52,6 @@ object UsageSlicing {
       .mapValues(_.toList.map { case (_, slice) => slice }.toSet)
       .toMap
 
-
     val fjp = ForkJoinPool.commonPool()
 
     try {

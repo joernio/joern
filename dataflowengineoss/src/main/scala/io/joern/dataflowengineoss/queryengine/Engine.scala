@@ -240,11 +240,7 @@ object Engine {
   def isOutputArgOfInternalMethod(arg: Expression)(implicit semantics: Semantics): Boolean = {
     arg.inCall.l match {
       case List(call) =>
-        methodsForCall(call)
-          .iterator
-          .internal
-          .isNotStub
-          .nonEmpty && semanticsForCall(call).isEmpty
+        methodsForCall(call).iterator.internal.isNotStub.nonEmpty && semanticsForCall(call).isEmpty
       case _ =>
         false
     }
@@ -271,9 +267,7 @@ object Engine {
   }
 
   def argToOutputParams(arg: Expression): Traversal[MethodParameterOut] = {
-    argToMethods(arg)
-      .iterator
-      .parameter
+    argToMethods(arg).iterator.parameter
       .index(arg.argumentIndex)
       .asOutput
   }
@@ -289,10 +283,7 @@ object Engine {
   }
 
   def isCallToInternalMethod(call: Call): Boolean = {
-    methodsForCall(call)
-      .iterator
-      .internal
-      .nonEmpty
+    methodsForCall(call).iterator.internal.nonEmpty
   }
   def isCallToInternalMethodWithoutSemantic(call: Call)(implicit semantics: Semantics): Boolean = {
     isCallToInternalMethod(call) && semanticsForCall(call).isEmpty

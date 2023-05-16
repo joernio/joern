@@ -471,8 +471,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     */
   protected def cfgForTryStatement(node: ControlStructure): Cfg = {
     val maybeTryBlock =
-      node.start
-        .astChildren
+      node.start.astChildren
         .where(_.order(1))
         .where(_.astChildren) // Filter out empty `try` bodies
         .headOption
@@ -480,8 +479,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val tryBodyCfg: Cfg = maybeTryBlock.map(cfgFor).getOrElse(Cfg.empty)
 
     val catchBodyCfgs: List[Cfg] =
-      node.start
-        .astChildren
+      node.start.astChildren
         .where(_.order(2))
         .toList match {
         case Nil  => List(Cfg.empty)
@@ -489,8 +487,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       }
 
     val maybeFinallyBodyCfg: List[Cfg] =
-      node.start
-        .astChildren
+      node.start.astChildren
         .where(_.order(3))
         .map(cfgFor)
         .headOption // Assume there can only be one

@@ -15,6 +15,7 @@ package object dataflowengineoss {
   def identifiersFromCapturedScopes(i: Declaration): List[Identifier] =
     i.capturedByMethodRef.referencedMethod.ast.isIdentifier
       .nameExact(i.name)
-      .sortBy(x => (x.lineNumber, x.columnNumber)).toList
+      .sortBy(x => (x.lineNumber, x.columnNumber))
+      .toList
 
 }

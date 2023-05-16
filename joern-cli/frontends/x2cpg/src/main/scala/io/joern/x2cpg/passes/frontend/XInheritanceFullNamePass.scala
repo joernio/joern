@@ -68,8 +68,9 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
         s".*${Pattern.quote(splitName.head)}.*${Pattern.quote(splitName.last)}"
       case x => s".*${Pattern.quote(x)}"
     }.distinct
-    val validTypeDecls = typeDeclMap.filter { case (name, _) => matchersInScope.exists(m => name.matches(m)) }.values.toList
-    val filteredTypes  = validTypeDecls.filter(vt => td.inheritsFromTypeFullName.contains(vt.name))
+    val validTypeDecls =
+      typeDeclMap.filter { case (name, _) => matchersInScope.exists(m => name.matches(m)) }.values.toList
+    val filteredTypes = validTypeDecls.filter(vt => td.inheritsFromTypeFullName.contains(vt.name))
     if (filteredTypes.isEmpty) {
       // Usually in the case of inheriting external types
       qualifiedNamesInScope

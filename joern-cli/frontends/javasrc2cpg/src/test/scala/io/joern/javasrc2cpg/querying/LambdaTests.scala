@@ -119,14 +119,14 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
           fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
 
-          fallbackClosureBinding.outE.asScala.collectAll[Ref].map(_.inNode()).l match {
+          fallbackClosureBinding._refOut.l match {
             case List(capturedParam: MethodParameterIn) =>
               capturedParam.name shouldBe "fallback"
               capturedParam.method.fullName shouldBe "Foo.test1:void(java.lang.String,java.lang.String)"
             case result => fail(s"Expected single capturedParam but got $result")
           }
 
-          fallbackClosureBinding.inE.asScala.collectAll[Capture].map(_.outNode()).l match {
+          fallbackClosureBinding._captureIn.l match {
             case List(outMethod: MethodRef) =>
               outMethod.methodFullName shouldBe "Foo.lambda$0:java.lang.String(java.lang.String)"
             case result => fail(s"Expected single METHOD_REF but got $result")
@@ -552,14 +552,14 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           val capturedLocal = cpg.method.name(".*lambda.*").local.name("captured").head
           capturedClosureBinding.closureBindingId shouldBe capturedLocal.closureBindingId
 
-          capturedClosureBinding.outE.asScala.collectAll[Ref].map(_.inNode()).l match {
+          capturedClosureBinding._refOut.l match {
             case List(capturedParam: MethodParameterIn) =>
               capturedParam.name shouldBe "captured"
               capturedParam.method.fullName shouldBe "TestClass.test:Foo(java.lang.String)"
             case result => fail(s"Expected single capturedParam but got $result")
           }
 
-          capturedClosureBinding.inE.asScala.collectAll[Capture].map(_.outNode()).l match {
+          capturedClosureBinding._captureIn.l match {
             case List(outMethod: MethodRef) =>
               outMethod.methodFullName shouldBe "TestClass.lambda$0:java.lang.String(java.lang.Integer,java.lang.Integer)"
             case result => fail(s"Expected single out METHOD_REF but got $result")

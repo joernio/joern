@@ -3,6 +3,7 @@ package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
+
 /** An expression (base type)
   */
 class ExpressionTraversal[NodeType <: Expression](val traversal: Traversal[NodeType]) extends AnyVal {

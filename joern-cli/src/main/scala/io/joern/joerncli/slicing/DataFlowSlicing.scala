@@ -12,7 +12,7 @@ object DataFlowSlicing {
     val sliceMapping = (config.sourceFile match {
       case Some(fileName) => cpg.file.nameExact(fileName).ast.isCall
       case None           => cpg.call
-    }).toBuffer.groupBy[Method]{_.method}.map { case (m: Method, calls: Traversal[Call] @unchecked )=>
+    }).toBuffer.groupBy[Method] { _.method }.map { case (m: Method, calls: Traversal[Call] @unchecked) =>
       m.fullName -> calls.map { c =>
         val sinks = c.argument.l
 

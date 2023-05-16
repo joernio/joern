@@ -284,10 +284,11 @@ trait KtPsiToAst {
         componentNMethodAsts(typeDecl, ktClass.getPrimaryConstructor.getValueParameters.asScala.toSeq)
       case _ => Seq()
     }
-    val componentNBindingsInfo = _componentNMethodAsts.flatMap(_.root.iterator.collectAll[NewMethod]).map { methodNode =>
-      val node = newBindingNode(methodNode.name, methodNode.signature, methodNode.fullName)
-      BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
-    }
+    val componentNBindingsInfo =
+      _componentNMethodAsts.flatMap(_.root.iterator.collectAll[NewMethod]).map { methodNode =>
+        val node = newBindingNode(methodNode.name, methodNode.signature, methodNode.fullName)
+        BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
+      }
 
     val classDeclarations = Option(ktClass.getBody)
       .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))

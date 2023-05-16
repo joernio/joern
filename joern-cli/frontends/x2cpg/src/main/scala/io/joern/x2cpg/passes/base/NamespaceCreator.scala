@@ -16,8 +16,8 @@ class NamespaceCreator(cpg: Cpg) extends CpgPass(cpg) {
     */
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     cpg.namespaceBlock.toBuffer
-      .groupBy[String]{_.name}
-      .foreach { case (name: String, blocks:Iterable[nodes.NamespaceBlock]) =>
+      .groupBy[String] { _.name }
+      .foreach { case (name: String, blocks: Iterable[nodes.NamespaceBlock]) =>
         val namespace = nodes.NewNamespace().name(name)
         dstGraph.addNode(namespace)
         blocks.foreach(block => dstGraph.addEdge(block, namespace, EdgeTypes.REF))
