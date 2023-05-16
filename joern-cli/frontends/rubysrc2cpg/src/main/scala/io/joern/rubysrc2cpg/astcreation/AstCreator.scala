@@ -12,9 +12,8 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import java.util
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters._
 
 class AstCreator(filename: String, global: Global)
     extends AstCreatorBase(filename)
@@ -61,6 +60,12 @@ class AstCreator(filename: String, global: Global)
   protected def lineEnd(node: TerminalNode): Option[Integer]   = None
   protected def columnEnd(node: TerminalNode): Option[Integer] = None
 
+  private def registerType(typ: String): String = {
+    if (typ != Defines.Any) {
+      global.usedTypes.putIfAbsent(typ, true)
+    }
+    typ
+  }
   def astForVariableIdentifierContext(ctx: VariableIdentifierContext, varType: String): Ast = {
     val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
     val token        = terminalNode.getSymbol
@@ -495,13 +500,13 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): Ast = {
-    val localVar   = ctx.CONSTANT_IDENTIFIER()
-    val varSymbol  = localVar.getSymbol()
-    val node       = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+    val localVar  = ctx.CONSTANT_IDENTIFIER()
+    val varSymbol = localVar.getSymbol()
+    val node      = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
 
-    if(ctx.primary() != null) {
+    if (ctx.primary() != null) {
       astForPrimaryContext(ctx.primary()).withChild(Ast(node))
-    }else{
+    } else {
       Ast(node)
     }
   }
@@ -720,6 +725,7 @@ class AstCreator(filename: String, global: Global)
         .code(text)
         .typeFullName(Defines.Number)
         .dynamicTypeHintFullName(List(Defines.Number))
+      registerType(Defines.Number)
       blockAst.withChild(Ast(node))
     } else if (ctx.literal().SINGLE_QUOTED_STRING_LITERAL() != null) {
       val text = ctx.getText
@@ -734,6 +740,7 @@ class AstCreator(filename: String, global: Global)
         .code(text)
         .typeFullName(Defines.String)
         .dynamicTypeHintFullName(List(Defines.String))
+      registerType(Defines.String)
       blockAst.withChild(Ast(node))
     } else if (ctx.literal().symbol() != null) {
       astForSymbolContext(ctx.literal().symbol())
