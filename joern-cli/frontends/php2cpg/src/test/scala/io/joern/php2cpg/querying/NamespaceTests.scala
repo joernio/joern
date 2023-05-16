@@ -2,6 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 
 class NamespaceTests extends PhpCode2CpgFixture {
   "namespaces should be able to contain statements as top-level AST children" in {
@@ -143,5 +144,20 @@ class NamespaceTests extends PhpCode2CpgFixture {
       "bar.php:<global>",
       "foo.php:<global>"
     )
+  }
+
+  "global variables should have AST in edges from the enclosing global method" in {
+    val cpg = code("""<?php $a = 1;""", fileName = "foo.php")
+
+    inside(cpg.local.l) { case List(aLocal) =>
+      aLocal.name shouldBe "a"
+      aLocal.code shouldBe "$a"
+      aLocal.lineNumber shouldBe Some(1)
+
+      inside(aLocal.method) { case List(globalMethod) =>
+        globalMethod.name shouldBe "<global>"
+        globalMethod.fullName shouldBe "foo.php:<global>"
+      }
+    }
   }
 }

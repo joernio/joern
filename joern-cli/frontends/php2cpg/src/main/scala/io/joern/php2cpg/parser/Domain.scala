@@ -120,7 +120,7 @@ object Domain {
     def attributes: PhpAttributes
   }
 
-  final case class PhpFile(children: Seq[PhpStmt]) extends PhpNode {
+  final case class PhpFile(children: List[PhpStmt]) extends PhpNode {
     override val attributes: PhpAttributes = PhpAttributes.Empty
   }
 
@@ -221,6 +221,7 @@ object Domain {
     classLikeType: String,
     // Optionally used for enums with values
     scalarType: Option[PhpNameExpr],
+    hasConstructor: Boolean,
     attributes: PhpAttributes
   ) extends PhpStmtWithBody
   object ClassLikeTypes {
@@ -565,7 +566,7 @@ object Domain {
   private def readFile(json: Value): PhpFile = {
     json match {
       case arr: Arr =>
-        val children = arr.value.map(readStmt).toSeq
+        val children = arr.value.map(readStmt).toList
         PhpFile(children)
       case unhandled =>
         logger.error(s"Found unhandled type in readFile: ${unhandled.getClass} with value $unhandled")
@@ -906,9 +907,21 @@ object Domain {
 
     val scalarType = json.obj.get("scalarType").flatMap(typ => Option.unless(typ.isNull)(readName(typ)))
 
+    val hasConstructor = classLikeType == ClassLikeTypes.Class
+
     val attributes = PhpAttributes(json)
 
-    PhpClassLikeStmt(name, modifiers, extendsNames, implements, stmts, classLikeType, scalarType, attributes)
+    PhpClassLikeStmt(
+      name,
+      modifiers,
+      extendsNames,
+      implements,
+      stmts,
+      classLikeType,
+      scalarType,
+      hasConstructor,
+      attributes
+    )
   }
 
   private def readEnumCase(json: Value): PhpEnumCaseStmt = {

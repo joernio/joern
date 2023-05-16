@@ -23,14 +23,16 @@ import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
+import io.joern.x2cpg.passes.frontend.MetaDataPass
 
 class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[PhpNode, AstCreator] {
 
-  private val logger     = LoggerFactory.getLogger(AstCreator.getClass)
-  private val scope      = new Scope()
-  private val tmpKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+  private val logger          = LoggerFactory.getLogger(AstCreator.getClass)
+  private val scope           = new Scope()
+  private val tmpKeyPool      = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+  private val globalNamespace = globalNamespaceBlock()
 
   private def getNewTmpName(prefix: String = "tmp"): String = s"$prefix${tmpKeyPool.next.toString}"
 
@@ -47,60 +49,67 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     typ
   }
 
-  private def astForPhpFile(file: PhpFile): Ast = {
-    val namespaceBlock = globalNamespaceBlock()
+  private def flattenGlobalNamespaceStmt(stmt: PhpStmt): List[PhpStmt] = {
+    stmt match {
+      case namespace: PhpNamespaceStmt if namespace.name.isEmpty =>
+        namespace.stmts
 
-    scope.pushNewScope(namespaceBlock)
+      case _ => stmt :: Nil
+    }
+  }
 
-    val globalTypeDecl = typeDeclNode(
+  private def globalTypeDeclNode(file: PhpFile, globalNamespace: NewNamespaceBlock): NewTypeDecl = {
+    typeDeclNode(
       file,
-      namespaceBlock.name,
-      namespaceBlock.fullName,
+      globalNamespace.name,
+      globalNamespace.fullName,
       filename,
-      namespaceBlock.code,
+      globalNamespace.code,
       NodeTypes.NAMESPACE_BLOCK,
-      namespaceBlock.fullName
+      globalNamespace.fullName
+    )
+  }
+
+  private def globalMethodDeclStmt(file: PhpFile, bodyStmts: List[PhpStmt]): PhpMethodDecl = {
+    val modifiersList = List(ModifierTypes.VIRTUAL, ModifierTypes.PUBLIC, ModifierTypes.STATIC)
+    PhpMethodDecl(
+      name = PhpNameExpr(NamespaceTraversal.globalNamespaceName, file.attributes),
+      params = Nil,
+      modifiers = modifiersList,
+      returnType = None,
+      stmts = bodyStmts,
+      returnByRef = false,
+      namespacedName = None,
+      isClassMethod = false,
+      attributes = file.attributes
+    )
+  }
+
+  private def astForPhpFile(file: PhpFile): Ast = {
+    scope.pushNewScope(globalNamespace)
+
+    val (globalDeclStmts, globalMethodStmts) =
+      file.children.flatMap(flattenGlobalNamespaceStmt).partition(_.isInstanceOf[PhpConstStmt])
+
+    val globalMethodStmt = globalMethodDeclStmt(file, globalMethodStmts)
+
+    val globalTypeDeclStmt = PhpClassLikeStmt(
+      name = Some(PhpNameExpr(globalNamespace.name, file.attributes)),
+      modifiers = Nil,
+      extendsNames = Nil,
+      implementedInterfaces = Nil,
+      stmts = globalDeclStmts.appended(globalMethodStmt),
+      classLikeType = ClassLikeTypes.Class,
+      scalarType = None,
+      hasConstructor = false,
+      attributes = file.attributes
     )
 
-    scope.pushNewScope(globalTypeDecl)
+    val globalTypeDeclAst = astForClassLikeStmt(globalTypeDeclStmt)
 
-    val globalMethod =
-      methodNode(file, globalTypeDecl.name, globalTypeDecl.fullName, s"${TypeConstants.Void}()", filename)
+    scope.popScope() // globalNamespace
 
-    scope.pushNewScope(globalMethod)
-
-    val (fileConsts, otherStmts) = file.children.partition(_.isInstanceOf[PhpConstStmt])
-    val constAsts                = fileConsts.flatMap(fc => astsForConstStmt(fc.asInstanceOf[PhpConstStmt]))
-    val globalMethodChildren = otherStmts.flatMap {
-      case const: PhpConstStmt => astsForConstStmt(const)
-
-      case ns: PhpNamespaceStmt if ns.name.isEmpty =>
-        // Empty NS name means this is the global namespace, so don't create
-        // another namespace block
-        ns.stmts.map(astForStmt)
-
-      case stmt => astForStmt(stmt) :: Nil
-    }
-    val clinitAst         = astForStaticAndConstInits
-    val closureMethodAsts = scope.getAndClearAnonymousMethods
-
-    scope.popScope() // Global method
-    scope.popScope() // Global typeDecl
-    scope.popScope() // Global namespace
-
-    val globalMethodAst =
-      Ast(globalMethod)
-        .withChild(Ast(blockNode(file)).withChildren(globalMethodChildren))
-        .withChild(Ast(NewMethodReturn()))
-
-    val globalTypeDeclAst =
-      Ast(globalTypeDecl)
-        .withChildren(constAsts)
-        .withChildren(clinitAst.toList)
-        .withChildren(closureMethodAsts)
-        .withChild(globalMethodAst)
-
-    Ast(namespaceBlock).withChild(globalTypeDeclAst)
+    Ast(globalNamespace).withChild(globalTypeDeclAst)
   }
 
   private def astForStmt(stmt: PhpStmt): Ast = {
@@ -184,12 +193,16 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
   }
 
   private def composeMethodFullName(methodName: String, isStatic: Boolean): String = {
-    val className       = getTypeDeclPrefix
-    val methodDelimiter = if (isStatic) StaticMethodDelimiter else InstanceMethodDelimiter
+    if (methodName == NamespaceTraversal.globalNamespaceName) {
+      globalNamespace.fullName
+    } else {
+      val className       = getTypeDeclPrefix
+      val methodDelimiter = if (isStatic) StaticMethodDelimiter else InstanceMethodDelimiter
 
-    val nameWithClass = List(className, Some(methodName)).flatten.mkString(methodDelimiter)
+      val nameWithClass = List(className, Some(methodName)).flatten.mkString(methodDelimiter)
 
-    prependNamespacePrefix(nameWithClass)
+      prependNamespacePrefix(nameWithClass)
+    }
   }
 
   private def astForMethodDecl(
@@ -722,11 +735,12 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
     val code         = codeForClassStmt(stmt, name)
 
-    val fullName = prependNamespacePrefix(name.name)
+    val includeGlobalNamespacePrefix = name.name == NamespaceTraversal.globalNamespaceName
+    val fullName                     = prependNamespacePrefix(name.name, includeGlobalNamespacePrefix)
 
     val typeDecl = typeDeclNode(stmt, name.name, fullName, filename, code, inherits = inheritsFrom)
 
-    val createDefaultConstructor = stmt.classLikeType == ClassLikeTypes.Class
+    val createDefaultConstructor = stmt.hasConstructor
 
     scope.pushNewScope(typeDecl)
     val bodyStmts = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor)
@@ -793,12 +807,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     astForMethodDecl(constructorDecl, fieldInits, isConstructor = true)
   }
 
-  private def prependNamespacePrefix(name: String): String = {
+  private def prependNamespacePrefix(name: String, includeGlobalFullName: Boolean = false): String = {
     scope.getEnclosingNamespaceNames.filterNot(_ == NamespaceTraversal.globalNamespaceName) match {
       case Nil   => name
       case names => names.appended(name).mkString(NamespaceDelimiter)
     }
-
   }
 
   private def getTypeDeclPrefix: Option[String] = {
