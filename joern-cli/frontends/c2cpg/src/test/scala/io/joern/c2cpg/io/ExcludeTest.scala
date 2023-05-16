@@ -27,7 +27,10 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
       "folder/c.c",
       "foo.bar/d.c",
       "a.c",
-      "index.c"
+      "index.c",
+      "sub/CMakeFiles/foo.c",
+      "CMakeFiles/foo.c",
+      "CMakeFiles/sub/foo.c"
     )
 
   private val projectUnderTest: File = {
