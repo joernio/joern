@@ -495,13 +495,15 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): Ast = {
-    val primaryAst = astForPrimaryContext(ctx.primary())
     val localVar   = ctx.CONSTANT_IDENTIFIER()
     val varSymbol  = localVar.getSymbol()
     val node       = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
-    Ast(node)
-    primaryAst
-    // TODO put a proper impementation here
+
+    if(ctx.primary() != null) {
+      astForPrimaryContext(ctx.primary()).withChild(Ast(node))
+    }else{
+      Ast(node)
+    }
   }
 
   def astForClassOrModuleReferenceContext(ctx: ClassOrModuleReferenceContext): Ast = {
