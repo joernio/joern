@@ -154,7 +154,7 @@ class NamespaceTests extends PhpCode2CpgFixture {
       aLocal.code shouldBe "$a"
       aLocal.lineNumber shouldBe Some(1)
 
-      inside(aLocal.method) { case List(globalMethod) =>
+      inside(aLocal.method.l) { case List(globalMethod) =>
         globalMethod.name shouldBe "<global>"
         globalMethod.fullName shouldBe "foo.php:<global>"
       }
