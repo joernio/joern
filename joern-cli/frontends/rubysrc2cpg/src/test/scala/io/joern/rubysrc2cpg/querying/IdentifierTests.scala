@@ -69,10 +69,16 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "CPG for code with a function call and arguments" should {
+  "CPG for code with a function call, arguments and function called from function " should {
     val cpg = code("""
+        |
+        |def extrareturn()
+        |  ret = 6
+        |  return ret
+        |end
+        |
         |def add_three_numbers(num1, num2, num3)
-        |  sum = num1 + num2 + num3
+        |  sum = num1 + num2 + num3 + extrareturn()
         |  return sum
         |end
         |
@@ -92,9 +98,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("num2").l.size shouldBe 2
       cpg.identifier.name("num3").l.size shouldBe 2
       cpg.identifier.name("sum").l.size shouldBe 2
+      cpg.identifier.name("ret").l.size shouldBe 2
       cpg.call.name("add_three_numbers").size shouldBe 1
       cpg.call.name("num1").size shouldBe 1
-      cpg.identifier.size shouldBe 14
+      cpg.identifier.size shouldBe 16
     }
 
     "CPG for code with expressions of various types" should {
@@ -281,5 +288,6 @@ class IdentifierTests extends RubyCode2CpgFixture {
         cpg.identifier.name("verify_recaptcha").size shouldBe 1
       }
     }
+
   }
 }

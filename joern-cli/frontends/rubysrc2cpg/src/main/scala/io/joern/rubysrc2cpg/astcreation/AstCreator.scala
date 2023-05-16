@@ -971,6 +971,7 @@ class AstCreator(filename: String, global: Global)
       .columnNumber(callNode.columnNumber)
       .lineNumber(callNode.lineNumber)
       .filename(filename)
+    val prevMethodName = currentMethodName
     currentMethodName = callNode.name
 
     val astMethodParam = astForMethodParameterPartContext(ctx.methodParameterPart())
@@ -988,7 +989,7 @@ class AstCreator(filename: String, global: Global)
       .toList
 
     methodToReturnSet.remove(currentMethodName)
-    currentMethodName = Defines.Any
+    currentMethodName = prevMethodName
 
     val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
     // TODO find out from where the correct modifier could be obtained
