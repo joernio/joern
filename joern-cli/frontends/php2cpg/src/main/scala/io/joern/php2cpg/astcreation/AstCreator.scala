@@ -735,8 +735,12 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
     val code         = codeForClassStmt(stmt, name)
 
-    val includeGlobalNamespacePrefix = name.name == NamespaceTraversal.globalNamespaceName
-    val fullName                     = prependNamespacePrefix(name.name, includeGlobalNamespacePrefix)
+    val fullName =
+      if (name.name == NamespaceTraversal.globalNamespaceName)
+        globalNamespace.fullName
+      else {
+        prependNamespacePrefix(name.name)
+      }
 
     val typeDecl = typeDeclNode(stmt, name.name, fullName, filename, code, inherits = inheritsFrom)
 
@@ -807,7 +811,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     astForMethodDecl(constructorDecl, fieldInits, isConstructor = true)
   }
 
-  private def prependNamespacePrefix(name: String, includeGlobalFullName: Boolean = false): String = {
+  private def prependNamespacePrefix(name: String): String = {
     scope.getEnclosingNamespaceNames.filterNot(_ == NamespaceTraversal.globalNamespaceName) match {
       case Nil   => name
       case names => names.appended(name).mkString(NamespaceDelimiter)
