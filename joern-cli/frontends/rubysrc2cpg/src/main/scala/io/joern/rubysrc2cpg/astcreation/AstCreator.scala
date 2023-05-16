@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import java.util
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
@@ -36,8 +37,8 @@ class AstCreator(filename: String, global: Global)
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  // TODO convert to stack
-  private var currentMethodReturn: NewMethodReturn = null
+  private var currentMethodName = Defines.Any
+  private val methodToReturnSet = mutable.HashMap[String, mutable.ListBuffer[NewMethodReturn]]()
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val charStream  = CharStreams.fromFileName(filename)
@@ -656,11 +657,13 @@ class AstCreator(filename: String, global: Global)
       val argsWOParenAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       cmdDoBlockAst.withChild(methodNameAst).withChild(argsWOParenAst)
     case ctx: ReturnArgsInvocationWithoutParenthesesContext =>
-      currentMethodReturn = NewMethodReturn()
+      val methodRetNode = NewMethodReturn()
         .code(ctx.getText)
         .lineNumber(ctx.RETURN().getSymbol().getLine)
         .columnNumber(ctx.RETURN().getSymbol().getCharPositionInLine)
         .typeFullName(Defines.Any)
+      val retList = methodToReturnSet.getOrElseUpdate(currentMethodName, mutable.ListBuffer[NewMethodReturn]())
+      retList.addOne(methodRetNode)
       astForArgumentsContext(ctx.arguments())
     case ctx: BreakArgsInvocationWithoutParenthesesContext => astForArgumentsContext(ctx.arguments())
     case ctx: NextArgsInvocationWithoutParenthesesContext  => astForArgumentsContext(ctx.arguments())
@@ -697,11 +700,13 @@ class AstCreator(filename: String, global: Global)
 
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Ast = {
     if (ctx.jumpExpression().RETURN() != null) {
-      currentMethodReturn = NewMethodReturn()
+      val methodRetNode = NewMethodReturn()
         .code(ctx.getText)
         .lineNumber(ctx.jumpExpression().RETURN().getSymbol().getLine)
         .columnNumber(ctx.jumpExpression().RETURN().getSymbol().getCharPositionInLine)
         .typeFullName(Defines.Any)
+      val retList = methodToReturnSet.getOrElseUpdate(currentMethodName, mutable.ListBuffer[NewMethodReturn]())
+      retList.addOne(methodRetNode)
       Ast()
     } else if (ctx.jumpExpression().BREAK() != null) {
       Ast() // TODO implement this
@@ -954,10 +959,8 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Ast = {
-    val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
-    val astMethodParam = astForMethodParameterPartContext(ctx.methodParameterPart())
-    val astBody        = astForBodyStatementContext(ctx.bodyStatement())
-    val callNode       = astMethodName.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+    val astMethodName = astForMethodNamePartContext(ctx.methodNamePart())
+    val callNode      = astMethodName.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     // there can be only one call node
 
     val methodNode = NewMethod()
@@ -968,22 +971,33 @@ class AstCreator(filename: String, global: Global)
       .columnNumber(callNode.columnNumber)
       .lineNumber(callNode.lineNumber)
       .filename(filename)
+    currentMethodName = callNode.name
 
-    val methodRet = if (currentMethodReturn != null) {
-      currentMethodReturn
-    } else {
-      NewMethodReturn()
-        .code("")
-        .typeFullName(Defines.Any)
-    }
-    currentMethodReturn = null
+    val astMethodParam = astForMethodParameterPartContext(ctx.methodParameterPart())
+    val astBody        = astForBodyStatementContext(ctx.bodyStatement())
+
+    val retList = methodToReturnSet
+      .getOrElse(
+        currentMethodName,
+        ListBuffer[NewMethodReturn](
+          NewMethodReturn()
+            .code("")
+            .typeFullName(Defines.Any)
+        )
+      )
+      .toList
+
+    methodToReturnSet.remove(currentMethodName)
+    currentMethodName = Defines.Any
+
     val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
     // TODO find out from where the correct modifier could be obtained
 
     astMethodParam.nodes.foreach(node => {
       diffGraph.addEdge(methodNode, node, EdgeTypes.AST)
     })
-    methodAst(methodNode, Seq[Ast](astMethodParam), astBody, methodRet, Seq[NewModifier](publicModifier))
+    methodAst(methodNode, Seq[Ast](astMethodParam), astBody, retList.head, Seq[NewModifier](publicModifier))
+    // TODO figure out what is to be done if there are multiple method return nodes
   }
 
   def astForMethodOnlyIdentifierPrimaryContext(ctx: MethodOnlyIdentifierPrimaryContext): Ast = {
