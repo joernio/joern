@@ -240,4 +240,10 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "the global type decl should have the correct name" in {
+    val cpg = code("<?php echo 0;", fileName = "foo.php")
+
+    cpg.typeDecl.nameExact("<global>").fullName.l shouldBe List("foo.php:<global>")
+  }
 }
