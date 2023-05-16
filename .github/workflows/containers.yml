@@ -1,9 +1,8 @@
 name: Upload Container image
 
 on:
-  push:
-    tags:
-      - '**'
+  release:
+    types: [published]
 
 env:
   REGISTRY: ghcr.io
