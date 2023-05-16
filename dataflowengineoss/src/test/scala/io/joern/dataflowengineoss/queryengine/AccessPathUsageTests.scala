@@ -262,7 +262,7 @@ class AccessPathUsageTests extends AnyWordSpec {
           genCALL(g, Operators.computedMemberAccess, genLit(g, "b"), genCALL(g, "foo"))
         )
 
-      toTrackedAccessPath(call) shouldBe E(C("b"), C("a"))
+      toTrackedAccessPath(call) shouldBe E(C("b"), V)
     }
   }
 
