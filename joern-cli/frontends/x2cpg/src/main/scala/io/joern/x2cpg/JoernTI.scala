@@ -1,16 +1,16 @@
 package io.joern.x2cpg
 
+import io.circe.parser._
+import io.joern.slicing._
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
-import io.joern.slicing._
 
-import java.io.{InputStreamReader, OutputStreamWriter}
+import java.io.{InputStream, OutputStreamWriter}
 import java.net.Socket
 import java.nio.charset.StandardCharsets
 import scala.annotation.tailrec
-import scala.collection.mutable
 import scala.sys.process.Process
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 /** Interface class with the Joern type inference project.
   *
@@ -19,33 +19,24 @@ import scala.util.{Failure, Success, Try}
   * @throws RuntimeException
   *   if JoernTI is not installed (with spawnProcess = true) or if one cannot connect to the JoernTI socket.
   */
-final class JoernTI(val hostname: String = "localhost", val port: Int = 1337, spawnProcess: Boolean = false)
-    extends AutoCloseable {
+final class JoernTI(
+  val hostname: String = "localhost",
+  val port: Int = 1337,
+  spawnProcess: Boolean = false,
+  pathToCheckpoints: String = "./data/model_checkpoints/default"
+) extends AutoCloseable {
 
   private val log = LoggerFactory.getLogger(classOf[JoernTI])
 
   private val server: Option[Process] = if (spawnProcess) {
     if (isJoernTIAvailable) {
-      Option(ExternalCommand.startProcess("joernti server"))
+      Option(ExternalCommand.startProcess(s"joernti ml $pathToCheckpoints --run-as-server --port 1337"))
     } else {
       throw new RuntimeException("Unable to spawn the JoernTI process as the `joernti` executable cannot be found!")
     }
   } else {
     None
   }
-
-  server match {
-    case Some(proc) if !proc.isAlive() => throw new RuntimeException("Could not spawn the JoernTI server!")
-    case _                             => log.info("Server started successfully")
-  }
-
-  private val socket: Socket = acquireSocket match {
-    case Failure(exception) => throw new RuntimeException("Unable to connect to JoernTI server!", exception)
-    case Success(conn)      => conn
-  }
-
-  private val out: OutputStreamWriter = new OutputStreamWriter(socket.getOutputStream, StandardCharsets.UTF_8)
-  private val in: InputStreamReader   = new InputStreamReader(socket.getInputStream, StandardCharsets.UTF_8)
 
   /** Allows us to try an operation n times before propagating the exception.
     */
@@ -68,20 +59,48 @@ final class JoernTI(val hostname: String = "localhost", val port: Int = 1337, sp
     ExternalCommand.run("joernti version").isSuccess
 
   def infer(slice: ProgramUsageSlice): Try[List[InferenceResult]] = Try {
-    retry(3) { Try(out.write(slice.toJson)) }
-    val buf = new Array[Char](1024)
-    val sb  = new mutable.StringBuilder()
-    retry(3) { while (in.read(buf) != -1) sb.append(buf) }
-    // TODO: Convert properly
-//    sb.toString().asInstanceOf[List[InferenceResult]]
-    List.empty
+    if (slice.objectSlices.sizeIs == 0) return Try(List.empty[InferenceResult])
+    val payload = slice.toJson
+    acquireSocket match {
+      case Failure(exception) =>
+        throw new RuntimeException("Unable to connect to JoernTI server!", exception)
+      case Success(value) =>
+        Using.resource(value) { socket =>
+          val out = new OutputStreamWriter(socket.getOutputStream, StandardCharsets.UTF_8)
+          val response = retry(3) {
+            out.write(s"$payload\r\r")
+            out.flush()
+            bytes(socket.getInputStream).map(_.toChar).mkString
+          }
+          if (response.isBlank)
+            List.empty[InferenceResult]
+          else
+            decode[List[InferenceResult]](response) match {
+              case Left(exception) =>
+                log.error("Unable to read type inference response!", exception)
+                List.empty[InferenceResult]
+              case Right(res) =>
+                res
+            }
+        }
+    }
+
   }
 
-  override def close(): Unit = {
-    Try(in.close())
-    Try(out.close())
-    Try(socket.close())
-    server.foreach(_.destroy())
+  def bytes(in: InputStream, initSize: Int = 8192): Array[Byte] = {
+    var buf    = new Array[Byte](initSize)
+    val step   = initSize
+    var pos, n = 0
+    while ({
+      if (pos + step > buf.length) buf = java.util.Arrays.copyOf(buf, buf.length << 1)
+      n = in.read(buf, pos, step)
+      n != -1
+    }) pos += n
+    if (pos != buf.length) buf = java.util.Arrays.copyOf(buf, pos)
+    buf
   }
+
+  override def close(): Unit =
+    server.foreach(_.destroy())
 
 }

@@ -1,8 +1,7 @@
 package io.joern
 
 import better.files.File
-import io.circe.Decoder
-import io.circe.Encoder
+import io.circe.{Decoder, Encoder, HCursor, Json}
 import io.joern.slicing.SliceMode.{DataFlow, SliceModes}
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -34,9 +33,6 @@ package object slicing {
   /** A trait for all objects that represent a 1:1 relationship between the CPG and all the slices extracted.
     */
   sealed trait ProgramSlice {
-
-    import io.circe.Encoder._
-    import io.circe.generic.auto._
 
     def toJson: String
 
@@ -91,11 +87,19 @@ package object slicing {
   }
 
   implicit val decodeObjectUsageSlice: Decoder[ObjectUsageSlice] =
-    Decoder.forProduct4("targetObj", "definedBy", "invokedCalls", "argToCalls")(ObjectUsageSlice.apply)
+    (c: HCursor) =>
+      for {
+        x <- c.downField("targetObj").as[DefComponent]
+        p <- c.downField("definedBy").as[Option[DefComponent]]
+        r <- c.downField("invokedCalls").as[List[ObservedCall]]
+        a <- c.downField("argToCalls").as[List[(ObservedCall, Int)]]
+      } yield {
+        ObjectUsageSlice(x, p, r, a)
+      }
   implicit val encodeObjectUsageSlice: Encoder[ObjectUsageSlice] =
-    Encoder.forProduct4("targetObj", "definedBy", "invokedCalls", "argToCalls")(x =>
-      (x.targetObj, x.definedBy, x.invokedCalls, x.argToCalls)
-    )
+    Encoder.instance { case ObjectUsageSlice(c, p, r, a) =>
+      Json.obj("targetObj" -> c.asJson, "definedBy" -> p.asJson, "invokedCalls" -> r.asJson, "argToCalls" -> a.asJson)
+    }
 
   /** Represents a component that carries data. This could be an identifier of a variable or method and supplementary
     * type information, if available.
@@ -114,9 +118,18 @@ package object slicing {
   }
 
   implicit val decodeDefComponent: Decoder[DefComponent] =
-    Decoder.forProduct3("name", "typeFullName", "literal")(DefComponent.apply)
+    (c: HCursor) =>
+      for {
+        x <- c.downField("name").as[String]
+        p <- c.downField("typeFullName").as[String]
+        r <- c.downField("literal").as[Boolean]
+      } yield {
+        DefComponent(x, p, r)
+      }
   implicit val encodeDefComponent: Encoder[DefComponent] =
-    Encoder.forProduct3("name", "typeFullName", "literal")(x => (x.name, x.typeFullName, x.literal))
+    Encoder.instance { case DefComponent(c, p, r) =>
+      Json.obj("name" -> c.asJson, "typeFullName" -> p.asJson, "literal" -> r.asJson)
+    }
 
   object DefComponent {
 
@@ -165,9 +178,18 @@ package object slicing {
   }
 
   implicit val decodeObservedCall: Decoder[ObservedCall] =
-    Decoder.forProduct3("callName", "paramTypes", "returnType")(ObservedCall.apply)
+    (c: HCursor) =>
+      for {
+        x <- c.downField("callName").as[String]
+        p <- c.downField("paramTypes").as[List[String]]
+        r <- c.downField("returnType").as[String]
+      } yield {
+        ObservedCall(x, p, r)
+      }
   implicit val encodeObservedCall: Encoder[ObservedCall] =
-    Encoder.forProduct3("callName", "paramTypes", "returnType")(x => (x.callName, x.paramTypes, x.returnType))
+    Encoder.instance { case ObservedCall(c, p, r) =>
+      Json.obj("callName" -> c.asJson, "paramTypes" -> p.asJson, "returnType" -> r.asJson)
+    }
 
   /** Describes types defined within the application.
     *
@@ -181,9 +203,18 @@ package object slicing {
   case class UserDefinedType(name: String, fields: List[DefComponent], procedures: List[ObservedCall])
 
   implicit val decodeUserDefinedType: Decoder[UserDefinedType] =
-    Decoder.forProduct3("name", "fields", "procedures")(UserDefinedType.apply)
+    (c: HCursor) =>
+      for {
+        n <- c.downField("name").as[String]
+        f <- c.downField("fields").as[List[DefComponent]]
+        p <- c.downField("procedures").as[List[ObservedCall]]
+      } yield {
+        UserDefinedType(n, f, p)
+      }
   implicit val encodeUserDefinedType: Encoder[UserDefinedType] =
-    Encoder.forProduct3("name", "fields", "procedures")(x => (x.name, x.fields, x.procedures))
+    Encoder.instance { case UserDefinedType(n, f, p) =>
+      Json.obj("name" -> n.asJson, "fields" -> f.asJson, "procedures" -> p.asJson)
+    }
 
   /** The program usage slices and UDTs.
     *
@@ -196,21 +227,44 @@ package object slicing {
     objectSlices: Map[String, Set[ObjectUsageSlice]],
     userDefinedTypes: List[UserDefinedType]
   ) extends ProgramSlice {
-    def toJson: String = this.asJson.toString
+
+    def toJson: String = this.asJson.toString()
 
     def toJsonPretty: String = this.asJson.spaces2
   }
 
   implicit val decodeProgramUsageSlice: Decoder[ProgramUsageSlice] =
-    Decoder.forProduct2("objectSlices", "userDefinedTypes")(ProgramUsageSlice.apply)
-  implicit val encodeProgramUsageSlice: Encoder[ProgramUsageSlice] =
-    Encoder.forProduct2("objectSlices", "userDefinedTypes")(x => (x.objectSlices, x.userDefinedTypes))
+    (c: HCursor) =>
+      for {
+        o <- c.downField("objectSlices").as[Map[String, Set[ObjectUsageSlice]]]
+        u <- c.downField("userDefinedTypes").as[List[UserDefinedType]]
+      } yield {
+        ProgramUsageSlice(o, u)
+      }
+  implicit val encodeProgramUsageSlice: Encoder[ProgramUsageSlice] = Encoder.instance {
+    case ProgramUsageSlice(os, udts) => Json.obj("objectSlices" -> os.asJson, "userDefinedTypes" -> udts.asJson)
+  }
 
   /** The inference response from the server.
     */
   case class InferenceResult(targetIdentifier: String, typ: String, confidence: Float)
 
-  implicit val decodeInferenceResult: Decoder[InferenceResult] =
-    Decoder.forProduct3("target_identifier", "type", "confidence")(InferenceResult.apply)
+  implicit val decodeInferenceResult: Decoder[InferenceResult] = (c: HCursor) =>
+    for {
+      targetIdentifier <- c.downField("target_identifier").as[String]
+      typ              <- c.downField("type").as[String]
+      confidence       <- c.downField("confidence").as[Float]
+    } yield {
+      InferenceResult(targetIdentifier, typ, confidence)
+    }
+
+  implicit val encodeInferenceResult: Encoder[InferenceResult] = Encoder.instance {
+    case InferenceResult(targetIdentifier, typ, confidence) =>
+      Json.obj(
+        "objectSlices"     -> targetIdentifier.asJson,
+        "userDefinedTypes" -> typ.asJson,
+        "confidence"       -> confidence.asJson
+      )
+  }
 
 }

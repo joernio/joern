@@ -1,6 +1,6 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.joern.x2cpg.{Defines, JoernTI}
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
@@ -12,22 +12,19 @@ import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
-import io.joern.slicing._
+
 import java.util.concurrent.RecursiveTask
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
-import scala.util.{Failure, Success}
 
 /** @param iterations
   *   the number of iterations to run.
   * @param enabledDummyTypes
   *   whether to enable placeholder dummy values for partially resolved types.
-  * @param joernti
-  *   the JoernTI type inference interface.
   */
-case class XTypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true, joernti: Option[JoernTI] = None)
+case class XTypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true)
 
 /** @param config
   *   the user defined config.
@@ -279,33 +276,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     symbolTable.append(CallAlias(alias), Set(entity))
   }
 
-  lazy val sliceConfig = SliceConfig(sliceMode = SliceMode.Usages)
-
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
     * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
     * types or methods.
     */
-  protected def postVisitImports(): Unit = {
-    state.config.joernti.foreach { joernti =>
-      // TODO: Slice within infer and filter out symbols we have non-dummy values for in the slice
-      val slice = UsageSlicing.calculateUsageSlice(cpg, cu, sliceConfig).asInstanceOf[ProgramUsageSlice]
-      joernti.infer(slice) match {
-        case Failure(exception) =>
-          logger.warn("Unable to enrich compilation unit type information with joernti, continuing...", exception)
-        case Success(inferenceResults) =>
-          inferenceResults.filter(_.confidence > 0.8).foreach { res =>
-            val k = LocalVar(res.targetIdentifier)
-            if (symbolTable.contains(k)) {
-              if (symbolTable.get(k).forall(XTypeRecovery.isDummyType)) {
-                symbolTable.append(k, Set(res.typ))
-              }
-            } else {
-              symbolTable.append(k, Set(res.typ))
-            }
-          }
-      }
-    }
-  }
+  protected def postVisitImports(): Unit = {}
 
   /** Using assignment and import information (in the global symbol table), will propagate these types in the symbol
     * table.
