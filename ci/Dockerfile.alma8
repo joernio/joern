@@ -11,7 +11,7 @@ LABEL maintainer="joern" \
       org.opencontainers.image.description="Joern is a platform for analyzing source code, bytecode, and binary executables" \
       org.opencontainers.docker.cmd="docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/joern-alma8 joern"
 
-ENV JOERN_HOME=/usr/local/bin \
+ENV JOERN_HOME=/opt/joern/joern-cli \
     LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8 \

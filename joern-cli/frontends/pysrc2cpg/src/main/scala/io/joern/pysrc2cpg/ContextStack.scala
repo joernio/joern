@@ -33,7 +33,7 @@ class ContextStack {
   }
 
   private class MethodContext(
-    val scopeName: Option[String],
+    val name: String,
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val isClassBodyMethod: Boolean = false,
@@ -46,7 +46,7 @@ class ContextStack {
   ) extends Context {}
 
   private class ClassContext(
-    val scopeName: Option[String],
+    val name: String,
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
@@ -92,7 +92,7 @@ class ContextStack {
   }
 
   def pushMethod(
-    scopeName: Option[String],
+    name: String,
     methodNode: nodes.NewMethod,
     methodBlockNode: nodes.NewBlock,
     methodRefNode: Option[nodes.NewMethodRef]
@@ -100,22 +100,15 @@ class ContextStack {
     val isClassBodyMethod = stack.headOption.exists(_.isInstanceOf[ClassContext])
 
     val methodContext =
-      new MethodContext(
-        scopeName,
-        methodNode,
-        new AutoIncIndex(1),
-        isClassBodyMethod,
-        Some(methodBlockNode),
-        methodRefNode
-      )
+      new MethodContext(name, methodNode, new AutoIncIndex(1), isClassBodyMethod, Some(methodBlockNode), methodRefNode)
     if (moduleMethodContext.isEmpty) {
       moduleMethodContext = Some(methodContext)
     }
     push(methodContext)
   }
 
-  def pushClass(scopeName: Option[String], classNode: nodes.NewTypeDecl): Unit = {
-    push(new ClassContext(scopeName, classNode, new AutoIncIndex(1)))
+  def pushClass(name: String, classNode: nodes.NewTypeDecl): Unit = {
+    push(new ClassContext(name, classNode, new AutoIncIndex(1)))
   }
 
   def pushSpecialContext(): Unit = {
@@ -250,7 +243,7 @@ class ContextStack {
     */
   def considerAsGlobalVariable(lhs: NewNode): Unit = {
     lhs match {
-      case n: NewIdentifier if findEnclosingMethodContext(stack).scopeName.contains("<module>") =>
+      case n: NewIdentifier if findEnclosingMethodContext(stack).name == "<module>" =>
         addGlobalVariable(n.name)
       case _ =>
     }
@@ -383,12 +376,13 @@ class ContextStack {
   def qualName: String = {
     stack
       .flatMap {
-        case methodContext: MethodContext =>
-          methodContext.scopeName
+        case methodContext: MethodContext if !methodContext.isClassBodyMethod =>
+          Some(methodContext.name)
         case specialBlockContext: SpecialBlockContext =>
           None
         case classContext: ClassContext =>
-          classContext.scopeName
+          Some(classContext.name)
+        case _: MethodContext => None
       }
       .reverse
       .mkString(".")
@@ -413,9 +407,10 @@ class ContextStack {
   }
 
   def isClassContext: Boolean = {
-    stack.nonEmpty && (stack.head match {
-      case methodContext: MethodContext if methodContext.isClassBodyMethod => true
-      case _                                                               => false
+    val stackTail = stack.tail
+    stackTail.nonEmpty && (stackTail.headOption match {
+      case Some(_: ClassContext) => true
+      case _                     => false
     })
   }
 
