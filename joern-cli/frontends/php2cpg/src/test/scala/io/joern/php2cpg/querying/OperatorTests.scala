@@ -587,7 +587,7 @@ class OperatorTests extends PhpCode2CpgFixture {
   "declare calls with non-empty statement lists should have the correct block structure" in {
     val cpg = code("""<?php
         |declare(ticks=1) {
-        |  echo $x;
+        |  echo "Hello, world!";
         |}
         |""".stripMargin)
 
@@ -600,7 +600,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
     inside(declareBlock.astChildren.l) { case List(declareCall: Call, echoCall: Call) =>
       declareCall.code shouldBe "declare(ticks=1)"
-      echoCall.code shouldBe "echo $x"
+      echoCall.code shouldBe "echo \"Hello, world!\""
     }
   }
 

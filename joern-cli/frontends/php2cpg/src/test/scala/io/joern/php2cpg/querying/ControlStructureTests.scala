@@ -1069,7 +1069,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         valId.argumentIndex shouldBe 1
 
         currentCall.name shouldBe "current"
-        currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
+        currentCall.methodFullName shouldBe s"Iterator.current"
         currentCall.code shouldBe "$iter_tmp0->current()"
         inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"
@@ -1087,7 +1087,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     inside(updateAsts.astChildren.l) { case List(nextCall: Call, valAssign: Call) =>
       nextCall.name shouldBe "next"
-      nextCall.methodFullName shouldBe "Iterator.next:void()"
+      nextCall.methodFullName shouldBe "Iterator.next"
       nextCall.code shouldBe "$iter_tmp0->next()"
       inside(nextCall.argument(0).l) { case List(iterTmp: Identifier) =>
         iterTmp.name shouldBe "iter_tmp0"
@@ -1141,7 +1141,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
         inside(addressOfCall.argument.l) { case List(currentCall: Call) =>
           currentCall.name shouldBe "current"
-          currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
+          currentCall.methodFullName shouldBe s"Iterator.current"
           currentCall.code shouldBe "$iter_tmp0->current()"
           inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
             iterRecv.name shouldBe "iter_tmp0"
@@ -1198,7 +1198,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         }
 
         currentCall.name shouldBe "current"
-        currentCall.methodFullName shouldBe s"Iterator.current:${Defines.UnresolvedSignature}(0)"
+        currentCall.methodFullName shouldBe s"Iterator.current"
         currentCall.code shouldBe "$iter_tmp0->current()"
         inside(currentCall.argument(0).l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"

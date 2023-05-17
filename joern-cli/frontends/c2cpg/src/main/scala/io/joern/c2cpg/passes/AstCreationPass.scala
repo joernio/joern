@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
+import java.util.regex.Pattern
 import scala.util.matching.Regex
 
 class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
@@ -20,8 +21,13 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
   private val logger                                                  = LoggerFactory.getLogger(getClass)
   private val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] = new ConcurrentHashMap()
   private val parser: CdtParser                                       = new CdtParser(config)
-  private val DefaultIgnoredFolders: List[Regex] =
-    List("\\..*".r, "(.*[/\\\\])?tests?[/\\\\].*".r)
+
+  private val EscapedFileSeparator = Pattern.quote(java.io.File.separator)
+  private val DefaultIgnoredFolders: List[Regex] = List(
+    "\\..*".r,
+    s"(.*[$EscapedFileSeparator])?tests?[$EscapedFileSeparator].*".r,
+    s"(.*[$EscapedFileSeparator])?CMakeFiles[$EscapedFileSeparator].*".r
+  )
 
   private def isIgnoredByUserConfig(filePath: String): Boolean = {
     lazy val isInIgnoredFiles = config.ignoredFiles.exists {
