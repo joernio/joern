@@ -37,9 +37,7 @@ class AstCreator(filename: String, global: Global)
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private var currentMethodName = Defines.Any
-  private val methodToReturnSet = mutable.HashMap[String, mutable.ListBuffer[NewReturn]]()
-  private val classStack        = mutable.Stack[String]()
+  private val classStack = mutable.Stack[String]()
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val charStream  = CharStreams.fromFileName(filename)
@@ -661,9 +659,8 @@ class AstCreator(filename: String, global: Global)
         .code(ctx.getText)
         .lineNumber(ctx.RETURN().getSymbol().getLine)
         .columnNumber(ctx.RETURN().getSymbol().getCharPositionInLine)
-      val retList = methodToReturnSet.getOrElseUpdate(currentMethodName, mutable.ListBuffer[NewReturn]())
-      retList.addOne(retNode)
-      astForArgumentsContext(ctx.arguments())
+      val argAst = astForArgumentsContext(ctx.arguments())
+      returnAst(retNode, Seq[Ast](argAst))
     case ctx: BreakArgsInvocationWithoutParenthesesContext => astForArgumentsContext(ctx.arguments())
     case ctx: NextArgsInvocationWithoutParenthesesContext  => astForArgumentsContext(ctx.arguments())
     case _ =>
@@ -703,9 +700,7 @@ class AstCreator(filename: String, global: Global)
         .code(ctx.getText)
         .lineNumber(ctx.jumpExpression().RETURN().getSymbol().getLine)
         .columnNumber(ctx.jumpExpression().RETURN().getSymbol().getCharPositionInLine)
-      val retList = methodToReturnSet.getOrElseUpdate(currentMethodName, mutable.ListBuffer[NewReturn]())
-      retList.addOne(retNode)
-      Ast()
+      returnAst(retNode, Seq[Ast]())
     } else if (ctx.jumpExpression().BREAK() != null) {
       Ast() // TODO implement this
     } else if (ctx.jumpExpression().NEXT() != null) {
@@ -971,27 +966,8 @@ class AstCreator(filename: String, global: Global)
       .lineNumber(callNode.lineNumber)
       .filename(filename)
     callNode.methodFullName(classPath + callNode.name)
-    val prevMethodName = currentMethodName
-    currentMethodName = callNode.name
-
     val astMethodParam = astForMethodParameterPartContext(ctx.methodParameterPart())
     val astBody        = astForBodyStatementContext(ctx.bodyStatement())
-
-    val retNodeList = methodToReturnSet
-      .getOrElse(
-        currentMethodName,
-        ListBuffer[NewReturn](
-          NewReturn()
-            .lineNumber(None)
-            .columnNumber(None)
-        )
-      )
-      .toList
-
-      //TODO figure out how to use this
-
-    methodToReturnSet.remove(currentMethodName)
-    currentMethodName = prevMethodName
 
     val methodRetNode = NewMethodReturn()
       .lineNumber(None)
@@ -1004,7 +980,7 @@ class AstCreator(filename: String, global: Global)
     astMethodParam.nodes.foreach(node => {
       diffGraph.addEdge(methodNode, node, EdgeTypes.AST)
     })
-    methodAst(methodNode, Seq[Ast](astMethodParam), astBody,methodRetNode, Seq[NewModifier](publicModifier))
+    methodAst(methodNode, Seq[Ast](astMethodParam), astBody, methodRetNode, Seq[NewModifier](publicModifier))
     // TODO figure out what is to be done if there are multiple method return nodes
   }
 
