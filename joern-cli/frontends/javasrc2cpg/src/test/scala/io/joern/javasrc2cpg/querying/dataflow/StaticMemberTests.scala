@@ -64,7 +64,7 @@ class StaticMemberTests extends JavaDataflowFixture {
     if (sources.size <= 0) {
       fail("Could not find any sources")
     }
-   sources.iterator
+    sources.iterator
   }
 
   it should "find a path for `MALICIOUS` data from different class via a variable" in {

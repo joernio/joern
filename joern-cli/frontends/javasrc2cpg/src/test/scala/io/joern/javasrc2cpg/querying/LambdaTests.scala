@@ -3,7 +3,16 @@ package io.joern.javasrc2cpg.querying
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Call, ClosureBinding, Identifier, Local, MethodParameterIn, MethodRef, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Binding,
+  Call,
+  ClosureBinding,
+  Identifier,
+  Local,
+  MethodParameterIn,
+  MethodRef,
+  Return
+}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
