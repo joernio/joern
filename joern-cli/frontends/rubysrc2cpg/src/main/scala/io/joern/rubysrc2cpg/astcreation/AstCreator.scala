@@ -66,17 +66,17 @@ class AstCreator(filename: String, global: Global)
     }
     typ
   }
-  def astForVariableIdentifierContext(ctx: VariableIdentifierContext, varType: String): Ast = {
+  def astForVariableIdentifierContext(ctx: VariableIdentifierContext): Ast = {
     val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
     val token        = terminalNode.getSymbol
     val variableName = token.getText
-    val node         = identifierNode(terminalNode, variableName, variableName, varType, List(varType))
+    val node         = identifierNode(terminalNode, variableName, variableName, Defines.Any, List[String]())
     Ast(node)
   }
 
-  def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext, rhsRetType: String): Ast = ctx match {
+  def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext): Ast = ctx match {
     case ctx: VariableIdentifierOnlySingleLeftHandSideContext =>
-      astForVariableIdentifierContext(ctx.variableIdentifier(), rhsRetType)
+      astForVariableIdentifierContext(ctx.variableIdentifier())
     case ctx: PrimaryInsideBracketsSingleLeftHandSideContext => astForPrimaryContext(ctx.primary())
     case ctx: XdotySingleLeftHandSideContext =>
       val xAst = astForPrimaryContext(ctx.primary())
@@ -114,23 +114,23 @@ class AstCreator(filename: String, global: Global)
     astForExpressionOrCommandContext(ctx.expressionOrCommand())
   }
 
-  def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): (Ast, String) = {
-    if (ctx == null) return (Ast(), Defines.Any)
+  def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Ast = {
+    if (ctx == null) return Ast()
 
     val splattingAst = astForSplattingArgumentContext(ctx.splattingArgument())
 
     if (ctx.expressionOrCommands() != null) {
       val exprAst = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
       val seqAsts = Seq[Ast](exprAst, splattingAst)
-      (Ast().withChildren(seqAsts), Defines.Any)
+      Ast().withChildren(seqAsts)
     } else {
-      (splattingAst, Defines.Any)
+      splattingAst
     }
   }
 
   def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Ast = {
-    val (rightAst, rhsRetType) = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
-    val leftAst                = astForSingleLeftHandSideContext(ctx.singleLeftHandSide(), rhsRetType)
+    val rightAst = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
+    val leftAst  = astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
     val callNode = NewCall()
       .name(ctx.op.getText)
       .code(ctx.op.getText)
@@ -546,7 +546,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForPackingLeftHandSideContext(ctx: PackingLeftHandSideContext): Ast = {
-    astForSingleLeftHandSideContext(ctx.singleLeftHandSide(), Defines.Any)
+    astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
   }
 
   def astForMultipleLeftHandSideContext(ctx: MultipleLeftHandSideContext): Ast = ctx match {
@@ -556,7 +556,7 @@ class AstCreator(filename: String, global: Global)
         .asScala
         .map(item => {
           if (item.singleLeftHandSide() != null) {
-            astForSingleLeftHandSideContext(item.singleLeftHandSide(), Defines.Any)
+            astForSingleLeftHandSideContext(item.singleLeftHandSide())
           } else {
             astForGroupedLeftHandSideContext(item.groupedLeftHandSide())
           }
@@ -575,7 +575,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForForVariableContext(ctx: ForVariableContext): Ast = {
     if (ctx.singleLeftHandSide() != null) {
-      astForSingleLeftHandSideContext(ctx.singleLeftHandSide(), Defines.Any)
+      astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
     } else if (ctx.multipleLeftHandSide() != null) {
       astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
     } else {
@@ -865,7 +865,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForSingletonObjextContext(ctx: SingletonObjectContext): Ast = {
     if (ctx.variableIdentifier() != null) {
-      astForVariableIdentifierContext(ctx.variableIdentifier(), Defines.Any)
+      astForVariableIdentifierContext(ctx.variableIdentifier())
     } else if (ctx.pseudoVariableIdentifier() != null) {
       Ast()
     } else if (ctx.expressionOrCommand() != null) {
@@ -997,8 +997,8 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForMultipleAssignmentExpressionContext(ctx: MultipleAssignmentExpressionContext): Ast = {
-    val lhsAst            = astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
-    val (rhsAst, rhsType) = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
+    val lhsAst   = astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
+    val (rhsAst) = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     // TODO use rhsType
     val callNode = NewCall()
       .name(ctx.EQ().getText)
@@ -1164,7 +1164,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForBlockParametersContext(ctx: BlockParametersContext): Ast = {
     if (ctx.singleLeftHandSide() != null) {
-      astForSingleLeftHandSideContext(ctx.singleLeftHandSide(), Defines.Any)
+      astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
     } else if (ctx.multipleLeftHandSide() != null) {
       astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
     } else {
@@ -1271,7 +1271,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForVariableRefenceContext(ctx: RubyParser.VariableReferenceContext): Ast = {
     val ast = if (ctx.variableIdentifier() != null) {
-      astForVariableIdentifierContext(ctx.variableIdentifier(), Defines.Any)
+      astForVariableIdentifierContext(ctx.variableIdentifier())
     } else {
       astForPseudoVariableIdentifierContext(ctx.pseudoVariableIdentifier())
     }
