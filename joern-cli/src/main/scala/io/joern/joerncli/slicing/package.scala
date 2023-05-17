@@ -1,14 +1,44 @@
-package io.joern.joerncli
+package io.joern
 
+import better.files.File
+import io.circe.{Decoder, Encoder, HCursor, Json}
+import io.joern.slicing.SliceMode.{DataFlow, SliceModes}
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 import overflowdb.Edge
 
 package object slicing {
 
+  import io.circe.generic.auto._
+  import io.circe.syntax.EncoderOps
+
+  /** The kind of mode to use for slicing.
+    */
+  object SliceMode extends Enumeration {
+    type SliceModes = Value
+    val DataFlow, Usages = Value
+  }
+
+  case class SliceConfig(
+    inputPath: File = File("cpg.bin"),
+    outFile: File = File("slices"),
+    sliceMode: SliceModes = DataFlow,
+    sourceFile: Option[String] = None,
+    sliceDepth: Int = 20,
+    minNumCalls: Int = 1,
+    typeRecoveryDummyTypes: Boolean = false,
+    excludeOperatorCalls: Boolean = false
+  )
+
   /** A trait for all objects that represent a 1:1 relationship between the CPG and all the slices extracted.
     */
-  sealed trait ProgramSlice
+  sealed trait ProgramSlice {
+
+    def toJson: String
+
+    def toJsonPretty: String
+
+  }
 
   /** A data-flow slice vector for a given backwards intraprocedural path.
     *
@@ -24,7 +54,13 @@ package object slicing {
     * @param dataFlowSlices
     *   the mapped slices.
     */
-  case class ProgramDataFlowSlice(dataFlowSlices: Map[String, Set[DataFlowSlice]]) extends ProgramSlice
+  case class ProgramDataFlowSlice(dataFlowSlices: Map[String, Set[DataFlowSlice]]) extends ProgramSlice {
+
+    def toJson: String = ???
+
+    def toJsonPretty: String = ???
+
+  }
 
   /** A usage slice of an object at the start of its definition until its final usage.
     *
@@ -50,6 +86,21 @@ package object slicing {
         s"}"
   }
 
+  implicit val decodeObjectUsageSlice: Decoder[ObjectUsageSlice] =
+    (c: HCursor) =>
+      for {
+        x <- c.downField("targetObj").as[DefComponent]
+        p <- c.downField("definedBy").as[Option[DefComponent]]
+        r <- c.downField("invokedCalls").as[List[ObservedCall]]
+        a <- c.downField("argToCalls").as[List[(ObservedCall, Int)]]
+      } yield {
+        ObjectUsageSlice(x, p, r, a)
+      }
+  implicit val encodeObjectUsageSlice: Encoder[ObjectUsageSlice] =
+    Encoder.instance { case ObjectUsageSlice(c, p, r, a) =>
+      Json.obj("targetObj" -> c.asJson, "definedBy" -> p.asJson, "invokedCalls" -> r.asJson, "argToCalls" -> a.asJson)
+    }
+
   /** Represents a component that carries data. This could be an identifier of a variable or method and supplementary
     * type information, if available.
     *
@@ -65,6 +116,20 @@ package object slicing {
       (if (typeFullName.nonEmpty) s": $typeFullName" else "") +
       (if (literal) " [LITERAL]" else "")
   }
+
+  implicit val decodeDefComponent: Decoder[DefComponent] =
+    (c: HCursor) =>
+      for {
+        x <- c.downField("name").as[String]
+        p <- c.downField("typeFullName").as[String]
+        r <- c.downField("literal").as[Boolean]
+      } yield {
+        DefComponent(x, p, r)
+      }
+  implicit val encodeDefComponent: Encoder[DefComponent] =
+    Encoder.instance { case DefComponent(c, p, r) =>
+      Json.obj("name" -> c.asJson, "typeFullName" -> p.asJson, "literal" -> r.asJson)
+    }
 
   object DefComponent {
 
@@ -112,6 +177,20 @@ package object slicing {
       s"$callName(${paramTypes.mkString(",")}):$returnType"
   }
 
+  implicit val decodeObservedCall: Decoder[ObservedCall] =
+    (c: HCursor) =>
+      for {
+        x <- c.downField("callName").as[String]
+        p <- c.downField("paramTypes").as[List[String]]
+        r <- c.downField("returnType").as[String]
+      } yield {
+        ObservedCall(x, p, r)
+      }
+  implicit val encodeObservedCall: Encoder[ObservedCall] =
+    Encoder.instance { case ObservedCall(c, p, r) =>
+      Json.obj("callName" -> c.asJson, "paramTypes" -> p.asJson, "returnType" -> r.asJson)
+    }
+
   /** Describes types defined within the application.
     *
     * @param name
@@ -123,6 +202,20 @@ package object slicing {
     */
   case class UserDefinedType(name: String, fields: List[DefComponent], procedures: List[ObservedCall])
 
+  implicit val decodeUserDefinedType: Decoder[UserDefinedType] =
+    (c: HCursor) =>
+      for {
+        n <- c.downField("name").as[String]
+        f <- c.downField("fields").as[List[DefComponent]]
+        p <- c.downField("procedures").as[List[ObservedCall]]
+      } yield {
+        UserDefinedType(n, f, p)
+      }
+  implicit val encodeUserDefinedType: Encoder[UserDefinedType] =
+    Encoder.instance { case UserDefinedType(n, f, p) =>
+      Json.obj("name" -> n.asJson, "fields" -> f.asJson, "procedures" -> p.asJson)
+    }
+
   /** The program usage slices and UDTs.
     *
     * @param objectSlices
@@ -133,6 +226,23 @@ package object slicing {
   case class ProgramUsageSlice(
     objectSlices: Map[String, Set[ObjectUsageSlice]],
     userDefinedTypes: List[UserDefinedType]
-  ) extends ProgramSlice
+  ) extends ProgramSlice {
+
+    def toJson: String = this.asJson.toString()
+
+    def toJsonPretty: String = this.asJson.spaces2
+  }
+
+  implicit val decodeProgramUsageSlice: Decoder[ProgramUsageSlice] =
+    (c: HCursor) =>
+      for {
+        o <- c.downField("objectSlices").as[Map[String, Set[ObjectUsageSlice]]]
+        u <- c.downField("userDefinedTypes").as[List[UserDefinedType]]
+      } yield {
+        ProgramUsageSlice(o, u)
+      }
+  implicit val encodeProgramUsageSlice: Encoder[ProgramUsageSlice] = Encoder.instance {
+    case ProgramUsageSlice(os, udts) => Json.obj("objectSlices" -> os.asJson, "userDefinedTypes" -> udts.asJson)
+  }
 
 }

@@ -12,6 +12,9 @@ import java.util.regex.Pattern
 import scala.collection.concurrent.TrieMap
 import scala.util.Try
 
+/** A utility for slicing based off of usage references for identifiers and parameters. This is mainly tested around
+  * JavaScript CPGs.
+  */
 object UsageSlicing {
 
   private val resolver               = NoResolve
