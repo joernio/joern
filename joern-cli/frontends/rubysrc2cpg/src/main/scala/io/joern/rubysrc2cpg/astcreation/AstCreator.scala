@@ -51,7 +51,6 @@ class AstCreator(filename: String, global: Global)
     val fileNode       = NewFile().name(filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
     val ast            = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(statementAst))
-    val lst            = ast.nodes.filter(node => node.isInstanceOf[NewMethod]).toList
     storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
