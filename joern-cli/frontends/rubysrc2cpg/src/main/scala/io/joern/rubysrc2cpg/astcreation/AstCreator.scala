@@ -974,13 +974,16 @@ class AstCreator(filename: String, global: Global)
       .typeFullName(Defines.Any)
 
     val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
-    // TODO find out from where the correct modifier could be obtained
+    /*
+     * TODO find out from where the correct modifier could be obtained since the modifier comes
+     *  as variableIdentifier in parser o/p.
+     * This problem needs to be solved only if it matters
+     */
 
     astMethodParam.nodes.foreach(node => {
       diffGraph.addEdge(methodNode, node, EdgeTypes.AST)
     })
     methodAst(methodNode, Seq[Ast](astMethodParam), astBody, methodRetNode, Seq[NewModifier](publicModifier))
-    // TODO figure out what is to be done if there are multiple method return nodes
   }
 
   def astForMethodOnlyIdentifierPrimaryContext(ctx: MethodOnlyIdentifierPrimaryContext): Ast = {
