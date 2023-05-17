@@ -76,9 +76,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           }
 
           initCall.name shouldBe "__construct"
-          initCall.methodFullName shouldBe s"Foo.__construct:${Defines.UnresolvedSignature}(1)"
+          initCall.methodFullName shouldBe s"Foo->__construct"
           initCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
-          initCall.code shouldBe "Foo.__construct(42)"
+          initCall.code shouldBe "Foo->__construct(42)"
           inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
             tmpIdentifier.name shouldBe "tmp0"
             tmpIdentifier.code shouldBe "$tmp0"
@@ -239,5 +239,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         }
       }
     }
+  }
+
+  "the global type decl should have the correct name" in {
+    val cpg = code("<?php echo 0;", fileName = "foo.php")
+
+    cpg.typeDecl.nameExact("<global>").fullName.l shouldBe List("foo.php:<global>")
   }
 }

@@ -15,6 +15,7 @@ import overflowdb.traversal.Traversal
 
 import java.util.concurrent.RecursiveTask
 import java.util.concurrent.atomic.AtomicBoolean
+import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 
@@ -290,20 +291,18 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def visitAssignments(a: Assignment): Set[String] = {
     a.argumentOut.l match {
-      case List(i: Identifier, b: Block) =>
-        visitIdentifierAssignedToBlock(i, b)
+      case List(i: Identifier, b: Block)                             => visitIdentifierAssignedToBlock(i, b)
       case List(i: Identifier, c: Call)                              => visitIdentifierAssignedToCall(i, c)
       case List(x: Identifier, y: Identifier)                        => visitIdentifierAssignedToIdentifier(x, y)
       case List(i: Identifier, l: Literal) if state.isFirstIteration => visitIdentifierAssignedToLiteral(i, l)
       case List(i: Identifier, m: MethodRef)                         => visitIdentifierAssignedToMethodRef(i, m)
       case List(i: Identifier, t: TypeRef)                           => visitIdentifierAssignedToTypeRef(i, t)
       case List(c: Call, i: Identifier)                              => visitCallAssignedToIdentifier(c, i)
-      case List(x: Call, y: Call) =>
-        visitCallAssignedToCall(x, y)
-      case List(c: Call, l: Literal) if state.isFirstIteration => visitCallAssignedToLiteral(c, l)
-      case List(c: Call, m: MethodRef)                         => visitCallAssignedToMethodRef(c, m)
-      case List(c: Call, b: Block)                             => visitCallAssignedToBlock(c, b)
-      case _                                                   => Set.empty
+      case List(x: Call, y: Call)                                    => visitCallAssignedToCall(x, y)
+      case List(c: Call, l: Literal) if state.isFirstIteration       => visitCallAssignedToLiteral(c, l)
+      case List(c: Call, m: MethodRef)                               => visitCallAssignedToMethodRef(c, m)
+      case List(c: Call, b: Block)                                   => visitCallAssignedToBlock(c, b)
+      case _                                                         => Set.empty
     }
   }
 
@@ -776,18 +775,39 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       (m.methodReturn.typeFullName +: m.methodReturn.dynamicTypeHintFullName)
         .filterNot(_ == "ANY")
     )
-    ret.astChildren.l match {
+    @tailrec
+    def extractTypes(xs: List[CfgNode]): Set[String] = xs match {
       case ::(head: Literal, Nil) if head.typeFullName != "ANY" =>
-        existingTypes.addOne(head.typeFullName)
+        Set(head.typeFullName)
+      case ::(head: Call, Nil) if head.name == Operators.fieldAccess =>
+        val fieldAccess = new FieldAccess(head)
+        val (sym, ts)   = getSymbolFromCall(fieldAccess)
+        val cpgTypes = cpg.typeDecl
+          .fullNameExact(ts.map(_.compUnitFullName).toSeq: _*)
+          .member
+          .nameExact(sym.identifier)
+          .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
+          .filterNot(_ == "ANY")
+          .toSet
+        if (cpgTypes.nonEmpty) cpgTypes
+        else symbolTable.get(sym)
       case ::(head: Call, Nil) if symbolTable.contains(head) =>
-        existingTypes.addAll(symbolTable.get(head))
+        val callPaths    = symbolTable.get(head)
+        val returnValues = methodReturnValues(callPaths.toSeq)
+        if (returnValues.isEmpty)
+          callPaths.map(_.concat(pathSep + XTypeRecovery.DummyReturnType))
+        else
+          returnValues
       case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
-        val speculatedCallTypes = symbolTable
+        symbolTable
           .get(head.argumentOut.head)
           .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
-        existingTypes.addAll(speculatedCallTypes)
-      case _ =>
+      case ::(head: Call, Nil) =>
+        extractTypes(head.argument.l)
+      case _ => Set.empty
     }
+    val returnTypes = extractTypes(ret.argumentOut.l)
+    existingTypes.addAll(returnTypes)
     builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
   }
 

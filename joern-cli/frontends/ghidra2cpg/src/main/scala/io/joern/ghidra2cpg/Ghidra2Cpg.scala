@@ -3,6 +3,7 @@ package io.joern.ghidra2cpg
 import ghidra.GhidraJarApplicationLayout
 import ghidra.app.plugin.core.analysis.AutoAnalysisManager
 import ghidra.app.util.importer.{AutoImporter, MessageLog}
+import ghidra.app.util.opinion.{Loaded, LoadResults}
 import ghidra.framework.model.{Project, ProjectLocator}
 import ghidra.framework.project.{DefaultProject, DefaultProjectManager}
 import ghidra.framework.protocol.ghidra.{GhidraURLConnection, Handler}
@@ -49,8 +50,18 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
         try {
           val projectManager = new HeadlessGhidraProjectManager
           project = projectManager.createProject(locator, null, false)
-          program = AutoImporter.importByUsingBestGuess(inputFile, null, this, new MessageLog, TaskMonitor.DUMMY)
-          addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
+          val programResults = AutoImporter.importByUsingBestGuess(
+            inputFile,
+            null,
+            tempWorkingDir.path.toAbsolutePath.toString,
+            this,
+            new MessageLog,
+            TaskMonitor.DUMMY
+          )
+          if (programResults != null && programResults.size() > 0) {
+            program = programResults.getPrimary().getDomainObject();
+            addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
+          }
         } catch {
           case e: Exception =>
             e.printStackTrace()
@@ -86,7 +97,7 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
       autoAnalysisManager.initializeOptions()
       autoAnalysisManager.reAnalyzeAll(null)
       autoAnalysisManager.startAnalysis(TaskMonitor.DUMMY)
-      GhidraProgramUtilities.setAnalyzedFlag(program, true)
+      GhidraProgramUtilities.markProgramAnalyzed(program)
       handleProgram(program, fileAbsolutePath, cpg)
     } catch {
       case e: Exception =>

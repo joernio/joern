@@ -1,5 +1,6 @@
 package io.joern.ghidra2cpg.utils
 
+import ghidra.app.util.template.TemplateSimplifier
 import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction}
 import ghidra.program.model.pcode.PcodeOp._
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, PcodeOpAST, Varnode}
@@ -41,7 +42,8 @@ class PCodeMapper(
       true,
       true,
       true,
-      true
+      true,
+      new TemplateSimplifier()
     )
   )
 
