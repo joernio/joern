@@ -8,6 +8,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator
 import scala.annotation.nowarn
 import scala.collection.mutable
+import io.joern.x2cpg.X2CpgConfig
 
 // Lazily populated test CPG which is created upon first access to the underlying graph.
 // The trait LanguageFrontend is mixed in and not property/field of this class in order
@@ -16,6 +17,7 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
   private var _graph            = Option.empty[Graph]
   private val codeFileNamePairs = mutable.ArrayBuffer.empty[(String, Path)]
   private var fileNameCounter   = 0
+  private var _config           = Option.empty[X2CpgConfig[_]]
 
   @nowarn
   protected def codeFilePreProcessing(codeFile: Path): Unit = {}
@@ -32,6 +34,22 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
     checkGraphEmpty()
     codeFileNamePairs.append((code, Paths.get(fileName)))
     this
+  }
+
+  def config[T <: X2CpgConfig[_]](newConfig: T): this.type = {
+    checkConfigEmpty()
+    this._config = Some(newConfig)
+    this
+  }
+
+  private def checkConfigEmpty(): Unit = {
+    val messages = List(
+      Option.when(_graph.isDefined)("Modifying test config is not allowed after accessing graph."),
+      Option.when(_config.isDefined)("Test config may only be added once")
+    ).flatten
+    if (messages.nonEmpty) {
+      throw new RuntimeException(messages.mkString("\n"))
+    }
   }
 
   private def checkGraphEmpty(): Unit = {
@@ -65,7 +83,9 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
     if (_graph.isEmpty) {
       val codeDir = codeToFileSystem()
       try {
-        _graph = Option(execute(codeDir.toFile).graph)
+        _graph = _config
+          .map(execute(codeDir.toFile, _).graph)
+          .orElse(Option(execute(codeDir.toFile).graph))
         applyPasses()
       } finally {
         deleteDir(codeDir)
