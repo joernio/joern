@@ -249,25 +249,21 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForSymbolContext(ctx: SymbolContext): Ast = {
-    val blockNode = NewBlock().typeFullName(Defines.Any)
+    val text =
+      if (ctx.SYMBOL_LITERAL() != null) {
+        ctx.getText
+      } else if (ctx.SINGLE_QUOTED_STRING_LITERAL() != null) {
+        ctx.getText
+      } else {
+        return Ast()
+      }
 
-    if (ctx.SYMBOL_LITERAL() != null) {
-      val text = ctx.getText
-      val node = NewLiteral()
-        .code(text)
-        .typeFullName(Defines.String)
-        .dynamicTypeHintFullName(List(Defines.String))
-      blockAst(blockNode, List[Ast](Ast(node)))
-    } else if (ctx.SINGLE_QUOTED_STRING_LITERAL() != null) {
-      val text = ctx.getText
-      val node = NewLiteral()
-        .code(text)
-        .typeFullName(Defines.String)
-        .dynamicTypeHintFullName(List(Defines.String))
-      blockAst(blockNode, List[Ast](Ast(node)))
-    } else {
-      Ast()
-    }
+    val node = NewLiteral()
+      .code(text)
+      .typeFullName(Defines.String)
+      .dynamicTypeHintFullName(List(Defines.String))
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    blockAst(blockNode, List[Ast](Ast(node)))
   }
 
   def astForDefinedMethodNameOrSymbolContext(ctx: DefinedMethodNameOrSymbolContext): Ast = {
@@ -529,7 +525,9 @@ class AstCreator(filename: String, global: Global)
     val astClassOrModuleRef = astForClassOrModuleReferenceContext(ctx.classDefinition().classOrModuleReference())
     val astExprOfCommand    = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
     val astBodyStatement    = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
-    classStack.pop()
+    if (classStack.size > 0) {
+      classStack.pop()
+    }
     Ast().withChildren(Seq[Ast](astClassOrModuleRef, astExprOfCommand, astBodyStatement))
   }
 
