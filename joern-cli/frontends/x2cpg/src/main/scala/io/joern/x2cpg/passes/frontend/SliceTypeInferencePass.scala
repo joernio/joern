@@ -25,7 +25,8 @@ class SliceTypeInferencePass(cpg: Cpg, joernti: Option[JoernTI] = None, pathSep:
     nodeLabel: String,
     target: String,
     oldType: String,
-    newType: String
+    newType: String,
+    confidence: Float
   )
 
   private def location(n: CfgNode): String =
@@ -48,7 +49,16 @@ class SliceTypeInferencePass(cpg: Cpg, joernti: Option[JoernTI] = None, pathSep:
                   .foreach { tgt =>
                     builder.setNodeProperty(tgt, PropertyNames.TYPE_FULL_NAME, res.typ)
                     changes
-                      .addOne(InferredChange(location(tgt), tgt.label, res.targetIdentifier, tgt.typeFullName, res.typ))
+                      .addOne(
+                        InferredChange(
+                          location(tgt),
+                          tgt.label,
+                          res.targetIdentifier,
+                          tgt.typeFullName,
+                          res.typ,
+                          res.confidence
+                        )
+                      )
                     // If there is a call where the identifier is the receiver then this also needs to be updated
                     if (tgt.argumentIndex <= 1 && tgt.astSiblings.isCall.exists(_.argumentIndex >= 2)) {
                       tgt.astSiblings.isCall.nameNot("<operator.*").find(onlyDummyOrAnyType).foreach { call =>
@@ -61,7 +71,8 @@ class SliceTypeInferencePass(cpg: Cpg, joernti: Option[JoernTI] = None, pathSep:
                               call.label,
                               res.targetIdentifier,
                               call.methodFullName,
-                              res.typ
+                              res.typ,
+                              res.confidence
                             )
                           )
                       }
@@ -73,7 +84,7 @@ class SliceTypeInferencePass(cpg: Cpg, joernti: Option[JoernTI] = None, pathSep:
         }
       }
       val f = File("./type_inference.csv")
-      f.write("Location,Label,Target,Old,New\n")
+      f.write("Location,Label,Target,Old,New,Confidence\n")
       changes.foreach { change => f.write(change.productIterator.mkString(",") + "\n")(OpenOptions.append) }
     }
   }
