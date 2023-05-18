@@ -5,6 +5,8 @@ import io.shiftleft.semanticcpg.language._
 
 class IdentifierTests extends RubyCode2CpgFixture {
 
+  
+
   "CPG for code with method identifiers and literals in simple assignments" should {
     val cpg = code("""
         |# call instance methods
