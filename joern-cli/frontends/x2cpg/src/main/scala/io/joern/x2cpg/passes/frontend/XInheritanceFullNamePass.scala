@@ -16,11 +16,11 @@ import scala.collection.mutable
   * ImportPass as a pre-requisite.
   */
 abstract class XInheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
-
   protected val pathSep: Char       = '.'
   protected val fileModuleSep: Char = ':'
   protected val moduleName: String
   protected val fileExt: String
+  protected var visitedFiles: List[String] = List.empty[String]
 
   protected val typeDeclMap: mutable.Map[String, TypeDeclBase] =
     mutable.HashMap.from[String, TypeDeclBase](cpg.typeDecl.map(t => t.fullName -> t))
@@ -31,11 +31,18 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
     cpg.typeDecl
       .filterNot(t => inheritsNothingOfInterest(t.inheritsFromTypeFullName))
       .foreach { t =>
-        val resolvedTypeDecls = resolveInheritedTypeFullName(t, builder)
-        if (resolvedTypeDecls.nonEmpty) {
-          val fullNames = resolvedTypeDecls.map(_.fullName)
-          builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, fullNames)
-          fullNames.flatMap(typeMap.get).foreach(tgt => builder.addEdge(t, tgt, EdgeTypes.INHERITS_FROM))
+        t.file.foreach { tf =>
+          {
+            if (visitedFiles.contains(tf.name) == false) {
+              val resolvedTypeDecls = resolveInheritedTypeFullName(t, builder)
+              if (resolvedTypeDecls.nonEmpty) {
+                val fullNames = resolvedTypeDecls.map(_.fullName)
+                builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, fullNames)
+                fullNames.flatMap(typeMap.get).foreach(tgt => builder.addEdge(t, tgt, EdgeTypes.INHERITS_FROM))
+              }
+              visitedFiles ::= tf.name
+            }
+          }
         }
       }
   }
