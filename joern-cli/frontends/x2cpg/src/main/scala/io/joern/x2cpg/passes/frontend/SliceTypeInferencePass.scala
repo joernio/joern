@@ -29,7 +29,7 @@ class SliceTypeInferencePass(cpg: Cpg, joernti: Option[JoernTI] = None, pathSep:
   )
 
   private def location(n: CfgNode): String =
-    s"${n.file.name}#L${n.lineNumber}"
+    s"${n.file.name.headOption.getOrElse("Unknown")}#L${n.lineNumber.getOrElse(-1)}"
 
   override def run(builder: DiffGraphBuilder): Unit = {
     joernti.foreach { ti =>
@@ -51,7 +51,7 @@ class SliceTypeInferencePass(cpg: Cpg, joernti: Option[JoernTI] = None, pathSep:
                       .addOne(InferredChange(location(tgt), tgt.label, res.targetIdentifier, tgt.typeFullName, res.typ))
                     // If there is a call where the identifier is the receiver then this also needs to be updated
                     if (tgt.argumentIndex <= 1 && tgt.astSiblings.isCall.exists(_.argumentIndex >= 2)) {
-                      tgt.astSiblings.isCall.find(onlyDummyOrAnyType).foreach { call =>
+                      tgt.astSiblings.isCall.nameNot("<operator.*").find(onlyDummyOrAnyType).foreach { call =>
                         val inferredMethodCall = Seq(res.typ, call.name).mkString(pathSep)
                         builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, inferredMethodCall)
                         changes
