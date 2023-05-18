@@ -19,7 +19,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       val astCreationPass = new AstCreationPass(config.inputPath, cpg)
       astCreationPass.createAndApply()
-      new TypeNodePass(astCreationPass.allUsedTypes, cpg).createAndApply()
+      new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
     }
   }
 }
