@@ -14,9 +14,12 @@ import org.slf4j.LoggerFactory
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success, Using}
 
-class SliceTypeInferencePass(cpg: Cpg, joernti: Option[JoernTI] = None, pathSep: String = ":") extends CpgPass(cpg) {
+/**
+ * Makes use of statistical techniques to infer the type of a target object based on a CPG slice.
+ */
+class SliceBasedTypeInferencePass(cpg: Cpg, joernti: Option[JoernTI] = None, pathSep: String = ":") extends CpgPass(cpg) {
 
-  private lazy val logger      = LoggerFactory.getLogger(classOf[SliceTypeInferencePass])
+  private lazy val logger      = LoggerFactory.getLogger(classOf[SliceBasedTypeInferencePass])
   private lazy val sliceConfig = SliceConfig(sliceMode = SliceMode.Usages)
   private val changes          = ArrayBuffer.empty[InferredChange]
 
