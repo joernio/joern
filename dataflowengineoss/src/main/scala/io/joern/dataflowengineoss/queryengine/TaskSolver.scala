@@ -68,20 +68,20 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     * @param callSiteStack
     *   This stack holds all call sites we expanded to arrive at the generation of the current task
     */
-  private def results[NodeType <: CfgNode](
+  private def results(
     sink: CfgNode,
     path: Vector[PathElement],
     table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]],
     callSiteStack: List[Call]
   )(implicit semantics: Semantics): Vector[ReachableByResult] = {
 
-    val curNode = path.head.node
+    val curNode = path.head.node.asInstanceOf[CfgNode]
 
     /** For each parent of the current node, determined via `expandIn`, check if results are available in the result
       * table. If not, determine results recursively.
       */
     def computeResultsForParents() = {
-      deduplicateWithinTask(expandIn(curNode.asInstanceOf[CfgNode], path, callSiteStack).iterator.flatMap { parent =>
+      deduplicateWithinTask(expandIn(curNode, path, callSiteStack).iterator.flatMap { parent =>
         createResultsFromCacheOrCompute(parent, path)
       }.toVector)
     }
@@ -163,7 +163,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       */
     val res = curNode match {
       // Case 1: we have reached a source => return result and continue traversing (expand into parents)
-      case x if sources.contains(x.asInstanceOf[NodeType]) =>
+      case x if sources.contains(x) =>
         if (x.isInstanceOf[MethodParameterIn]) {
           Vector(
             ReachableByResult(task.taskStack, path),
@@ -172,16 +172,17 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
         } else {
           Vector(ReachableByResult(task.taskStack, path)) ++ computeResultsForParents()
         }
-      // Case 2: we have reached a method parameter (that isn't a source) => return partial result and stop traversing
+      // Case 2: we have reached a method parameter (that isn't a source)
+      // => return partial result and stop traversing
       case _: MethodParameterIn =>
         Vector(ReachableByResult(task.taskStack, path, partial = true))
-      // Case 3: we have reached a call to an internal method without semantic (return value) and
-      // this isn't the start node => return partial result and stop traversing
+      // Case 3: we have reached a call to an internal method without semantic (return value)
+      // => return partial result and stop traversing
       case call: Call if isCallToInternalMethodWithoutSemantic(call) =>
         createPartialResultForOutputArgOrRet()
 
-      // Case 4: we have reached an argument to an internal method without semantic (output argument) and
-      // this isn't the start node nor is it the argument for the parameter we just expanded => return partial result and stop traversing
+      // Case 4: we have reached an argument to an internal method without semantic (output argument) and this isn't the start node
+      // => return partial result and stop traversing
       case arg: Expression
           if path.size > 1
             && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c)) =>
@@ -190,7 +191,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       // All other cases: expand into parents
       case _ => computeResultsForParents()
     }
-    val key = TaskFingerprint(curNode.asInstanceOf[CfgNode], task.callSiteStack, task.callDepth)
+    val key = TaskFingerprint(curNode, task.callSiteStack, task.callDepth)
     table.updateWith(key) {
       case Some(existingValue) => Some(existingValue ++ res)
       case None                => Some(res)
