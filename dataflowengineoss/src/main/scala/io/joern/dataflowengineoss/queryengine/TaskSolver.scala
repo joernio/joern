@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods}
+import io.shiftleft.semanticcpg.language.toExpressionMethods
 
 import java.util.concurrent.Callable
 import scala.collection.mutable
@@ -33,7 +33,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()
     results(task.sink, path, table, task.callSiteStack)
     // TODO why do we update the call depth here?
-    val finalResults = table.get(task.fingerprint).get.map { r =>
+    val finalResults = table(task.fingerprint).map { r =>
       r.copy(
         taskStack = r.taskStack.dropRight(1) :+ r.fingerprint.copy(callDepth = task.callDepth),
         path = r.path ++ task.initialPath
@@ -117,14 +117,14 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     }
 
     def createResultsFromCacheOrCompute(elemToPrepend: PathElement, path: Vector[PathElement]) = {
-      val cachedResult = createFromTable(table, elemToPrepend, task.callSiteStack, path, task.callDepth)
-      if (cachedResult.isDefined) {
-        QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
-        cachedResult.get
-      } else {
-        QueryEngineStatistics.incrementBy(PATH_CACHE_MISSES, 1L)
-        val newPath = elemToPrepend +: path
-        results(sink, newPath, table, callSiteStack)
+      createFromTable(table, elemToPrepend, task.callSiteStack, path, task.callDepth) match {
+        case Some(result) =>
+          QueryEngineStatistics.incrementBy(PATH_CACHE_HITS, 1L)
+          result
+        case None =>
+          QueryEngineStatistics.incrementBy(PATH_CACHE_MISSES, 1L)
+          val newPath = elemToPrepend +: path
+          results(sink, newPath, table, callSiteStack)
       }
     }
 
@@ -177,22 +177,18 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
         Vector(ReachableByResult(task.taskStack, path, partial = true))
       // Case 3: we have reached a call to an internal method without semantic (return value) and
       // this isn't the start node => return partial result and stop traversing
-      case call: Call
-          if isCallToInternalMethodWithoutSemantic(call)
-            && !isArgOrRetOfMethodWeCameFrom(call, path) =>
+      case call: Call if isCallToInternalMethodWithoutSemantic(call) =>
         createPartialResultForOutputArgOrRet()
 
       // Case 4: we have reached an argument to an internal method without semantic (output argument) and
       // this isn't the start node nor is it the argument for the parameter we just expanded => return partial result and stop traversing
       case arg: Expression
           if path.size > 1
-            && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c))
-            && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
+            && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c)) =>
         createPartialResultForOutputArgOrRet()
 
       // All other cases: expand into parents
-      case _ =>
-        computeResultsForParents()
+      case _ => computeResultsForParents()
     }
     val key = TaskFingerprint(curNode.asInstanceOf[CfgNode], task.callSiteStack, task.callDepth)
     table.updateWith(key) {
@@ -201,12 +197,5 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     }
     res
   }
-
-  private def isArgOrRetOfMethodWeCameFrom(call: Call, path: Vector[PathElement]): Boolean =
-    path match {
-      case Vector(_, PathElement(x: MethodReturn, _, _, _, _), _*)      => methodsForCall(call).contains(x.method)
-      case Vector(_, PathElement(x: MethodParameterIn, _, _, _, _), _*) => methodsForCall(call).contains(x.method)
-      case _                                                            => false
-    }
 
 }
