@@ -151,12 +151,6 @@ class Console[T <: Project](
     }
   }
 
-  // Provide `.l` on iterators, specifically so
-  // that `cpgs.flatMap($query).l` is possible
-  implicit class ItExtend[X](it: Iterator[X]) {
-    def l: List[X] = it.toList
-  }
-
   @Doc(
     info = "Open project by name",
     longInfo = """
@@ -390,7 +384,7 @@ class Console[T <: Project](
   }
 
   def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    new io.joern.console.cpgcreation.CpgGeneratorFactory(_config).forLanguage(cpg.metaData.language.l.head) match {
+    new io.joern.console.cpgcreation.CpgGeneratorFactory(_config).forLanguage(cpg.metaData.language.head) match {
       case Some(frontend) => frontend.applyPostProcessingPasses(cpg)
       case None           => cpg
     }
