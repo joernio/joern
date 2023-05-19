@@ -21,8 +21,8 @@ class Php2Cpg extends X2CpgFrontend[Config] {
     val result = ExternalCommand.run("php --version", ".")
     result match {
       case Success(listString) =>
-        val phpVersionStr = listString.head
-        logger.info(s"Found PHP: $phpVersionStr")
+        val phpVersionStr = listString.headOption.getOrElse("")
+        logger.info(s"Checking PHP installation: $phpVersionStr")
         val matchResult = phpVersionRegex.findFirstIn(phpVersionStr)
         matchResult.isDefined
       case Failure(exception) =>
