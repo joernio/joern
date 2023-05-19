@@ -23,7 +23,7 @@ class FileTests extends PhpCode2CpgFixture {
 
   private def getCpg(): TestCpg = {
     val cpg = code("", fileName = testFiles.head)
-    testFiles.tail.foreach(path => cpg.moreCode("", fileName = PathFilter.correctPath(path)))
+    testFiles.tail.foreach(path => cpg.moreCode("", fileName = PathFilter.standardisePath(path)))
     cpg
   }
 
@@ -31,7 +31,7 @@ class FileTests extends PhpCode2CpgFixture {
     val cpg = getCpg()
 
     cpg.file.name.toSet shouldBe Set("a.php", "src/b.php", "src/sub/c.php", "misc/g.php", "nottests/j.php", "<unknown>")
-      .map(PathFilter.correctPath)
+      .map(PathFilter.standardisePath)
   }
 
   "custom excludes should exclude the correct directories" in {
@@ -49,6 +49,6 @@ class FileTests extends PhpCode2CpgFixture {
       "sub/tests/i.php",
       "nottests/j.php",
       "<unknown>"
-    )
+    ).map(PathFilter.standardisePath)
   }
 }

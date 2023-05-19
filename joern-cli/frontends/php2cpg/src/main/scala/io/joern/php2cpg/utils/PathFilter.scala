@@ -1,6 +1,6 @@
 package io.joern.php2cpg.utils
 
-import io.joern.php2cpg.utils.PathFilter.correctPath
+import io.joern.php2cpg.utils.PathFilter.standardisePath
 import org.slf4j.LoggerFactory
 
 import java.io.File
@@ -15,7 +15,15 @@ class PathFilter(excludeOverrides: Option[List[String]]) {
   private val anyDirSuffix = s"$sep.*"
 
   def dirExclude(dirName: String): Regex = {
-    s"${startOrSep}${correctPath(dirName)}${anyDirSuffix}".r
+    val path = escapeSeparators(standardisePath(dirName))
+    s"${startOrSep}$path${anyDirSuffix}".r
+  }
+
+  private def escapeSeparators(filename: String): String = {
+    if (File.separator == "/")
+      filename
+    else
+      filename.replaceAll(raw"\\", raw"\\\\")
   }
 
   private val excludeRegexes = {
@@ -35,12 +43,15 @@ object PathFilter {
     ".git"
   )
 
-  def correctPath(filename: String): String = {
-    val nameParts = filename.split("/")
-    Paths.get(nameParts.head, nameParts.tail: _*).toString
+  def standardisePath(filename: String): String = {
+    // Synthetic filename, so don't correct
+    if (filename.contains("<"))
+      filename
+    else
+      Paths.get(filename).toString
   }
 
-  def apply(excludes: Option[List[String]]) = {
+  def apply(excludes: Option[List[String]]): PathFilter = {
     new PathFilter(excludes)
   }
 }
