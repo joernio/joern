@@ -167,7 +167,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtBinaryExpressionWithTypeRHS =>
         Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxOpt, argNameOpt))
       case typedExpr: KtBreakExpression          => Seq(astForBreak(typedExpr))
-      case typedExpr: KtCallExpression           => Seq(astForCall(typedExpr, argIdxOpt))
+      case typedExpr: KtCallExpression           => astsForCall(typedExpr, argIdxOpt)
       case typedExpr: KtConstantExpression       => Seq(astForLiteral(typedExpr, argIdxOpt, argNameOpt))
       case typedExpr: KtClass                    => astsForClassOrObject(typedExpr)
       case typedExpr: KtClassLiteralExpression   => Seq(astForClassLiteral(typedExpr, argIdxOpt, argNameOpt))
