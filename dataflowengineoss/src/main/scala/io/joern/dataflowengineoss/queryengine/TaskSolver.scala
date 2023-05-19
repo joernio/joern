@@ -180,14 +180,12 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       // => return partial result and stop traversing
       case call: Call if isCallToInternalMethodWithoutSemantic(call) =>
         createPartialResultForOutputArgOrRet()
-
       // Case 4: we have reached an argument to an internal method without semantic (output argument) and this isn't the start node
       // => return partial result and stop traversing
       case arg: Expression
           if path.size > 1
             && arg.inCall.toList.exists(c => isCallToInternalMethodWithoutSemantic(c)) =>
         createPartialResultForOutputArgOrRet()
-
       // All other cases: expand into parents
       case _ => computeResultsForParents()
     }
