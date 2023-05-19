@@ -1,8 +1,9 @@
 name: Upload Container image
 
 on:
-  release:
-    types: [published]
+  schedule:
+    - cron: "0 8 * * *" # run once daily
+  workflow_dispatch:    # allow to manually trigger this workflow
 
 env:
   REGISTRY: ghcr.io

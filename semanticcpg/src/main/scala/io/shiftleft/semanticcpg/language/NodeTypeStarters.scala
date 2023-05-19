@@ -276,7 +276,7 @@ class NodeTypeStarters(cpg: Cpg) extends TraversalSource(cpg.graph) {
     */
   @Doc(info = "All used types with given name")
   def typ(name: String): Traversal[Type] =
-    typ.fullName(name)
+    typ.name(name)
 
   /** Traverse to all declarations, e.g., Set<T>
     */
