@@ -48,12 +48,13 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
     val cpgOutFile = File.newTemporaryFile("c2cpg.bin")
     cpgOutFile.deleteOnExit()
 
-    val config = Config(inputPath = projectUnderTest.toString, outputPath = cpgOutFile.toString)
-    val finalConfig =
-      config.copy(ignoredFiles = exclude.map(config.createPathForIgnore), ignoredFilesRegex = excludeRegex.r)
-
+    val config = Config()
+      .withInputPath(projectUnderTest.toString)
+      .withOutputPath(cpgOutFile.toString)
+      .withIgnoredFiles(exclude)
+      .withIgnoredFilesRegex(excludeRegex)
     val c2cpg = new C2Cpg()
-    val cpg   = c2cpg.createCpg(finalConfig).get
+    val cpg   = c2cpg.createCpg(config).get
 
     X2Cpg.applyDefaultOverlays(cpg)
     cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.l should contain theSameElementsAs expectedFiles.map(

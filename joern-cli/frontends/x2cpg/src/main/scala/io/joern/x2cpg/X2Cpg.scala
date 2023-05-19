@@ -11,15 +11,52 @@ import scopt.OParser
 
 import java.io.PrintWriter
 import java.nio.file.Files
+import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
+import scala.util.matching.Regex
 
 object X2CpgConfig {
   def defaultOutputPath: String = "cpg.bin"
 }
 
 trait X2CpgConfig[R] {
-  def withInputPath(inputPath: String): R
-  def withOutputPath(x: String): R
+  var inputPath: String  = ""
+  var outputPath: String = X2CpgConfig.defaultOutputPath
+
+  def withInputPath(inputPath: String): R = {
+    this.inputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString
+    this.asInstanceOf[R]
+  }
+
+  def withOutputPath(x: String): R = {
+    this.outputPath = x
+    this.asInstanceOf[R]
+  }
+
+  var defaultIgnoredFilesRegex: Seq[Regex] = Seq.empty
+  var ignoredFilesRegex: Regex             = "".r
+  var ignoredFiles: Seq[String]            = Seq.empty
+
+  def withDefaultIgnoredFilesRegex(x: Seq[Regex]): R = {
+    this.defaultIgnoredFilesRegex = x
+    this.asInstanceOf[R]
+  }
+
+  def withIgnoredFilesRegex(x: String): R = {
+    this.ignoredFilesRegex = x.r
+    this.asInstanceOf[R]
+  }
+
+  def withIgnoredFiles(x: Seq[String]): R = {
+    this.ignoredFiles = x.map(createPathForIgnore)
+    this.asInstanceOf[R]
+  }
+
+  def createPathForIgnore(ignore: String): String = {
+    val path = Paths.get(ignore)
+    if (path.isAbsolute) { path.toString }
+    else { Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString }
+  }
 }
 
 /** Base class for `Main` classes of CPG frontends.
@@ -159,6 +196,19 @@ object X2Cpg {
         .action { (x, c) =>
           c.withOutputPath(x)
         },
+      opt[Seq[String]]("exclude")
+        .valueName("<file1>,<file2>,...")
+        .action { (x, c) =>
+          c.ignoredFiles = c.ignoredFiles ++ x.map(c.createPathForIgnore)
+          c
+        }
+        .text("files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)"),
+      opt[String]("exclude-regex")
+        .action { (x, c) =>
+          c.ignoredFilesRegex = x.r
+          c
+        }
+        .text("a regex specifying files to exclude during CPG generation (the absolute file path is matched)"),
       help("help").text("display this help message"),
       frontendSpecific
     )

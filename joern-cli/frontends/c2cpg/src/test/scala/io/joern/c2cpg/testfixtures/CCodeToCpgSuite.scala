@@ -12,8 +12,9 @@ trait C2CpgFrontend extends LanguageFrontend {
     val cpgOutFile = File.newTemporaryFile("c2cpg.bin")
     cpgOutFile.deleteOnExit()
     val c2cpg = new C2Cpg()
-    val config =
-      Config(inputPath = sourceCodePath.getAbsolutePath, outputPath = cpgOutFile.pathAsString, includeComments = true)
+    val config = Config(includeComments = true)
+      .withInputPath(sourceCodePath.getAbsolutePath)
+      .withOutputPath(cpgOutFile.pathAsString)
     c2cpg.createCpg(config).get
   }
 }
