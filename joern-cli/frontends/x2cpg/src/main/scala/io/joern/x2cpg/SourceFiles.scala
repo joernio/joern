@@ -26,7 +26,7 @@ object SourceFiles {
   private def isIgnoredByDefault(filePath: String, config: X2CpgConfig[_]): Boolean = {
     val relPath = toRelativePath(filePath, config.inputPath)
     if (config.defaultIgnoredFilesRegex.exists(_.matches(relPath))) {
-      logger.debug(s"'$filePath' ignored by default")
+      logger.debug(s"'$relPath' ignored by default")
       true
     } else {
       false
@@ -34,9 +34,10 @@ object SourceFiles {
   }
 
   private def isIgnoredByRegex(filePath: String, config: X2CpgConfig[_]): Boolean = {
-    val isInIgnoredFilesRegex = config.ignoredFilesRegex.matches(filePath)
+    val relPath               = toRelativePath(filePath, config.inputPath)
+    val isInIgnoredFilesRegex = config.ignoredFilesRegex.matches(relPath)
     if (isInIgnoredFilesRegex) {
-      logger.debug(s"'$filePath' ignored (--exclude-regex)")
+      logger.debug(s"'$relPath' ignored (--exclude-regex)")
       true
     } else {
       false

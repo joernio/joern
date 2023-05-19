@@ -126,7 +126,7 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
       (
         "exclude a complete folder with --exclude-regex",
         Seq.empty,
-        s".*${Pattern.quote(java.io.File.separator)}folder${Pattern.quote(java.io.File.separator)}.*",
+        s".*${Pattern.quote(java.io.File.separator)}?folder${Pattern.quote(java.io.File.separator)}.*",
         Set("index.c", "a.c", "foo.bar/d.c")
       ),
       // --

@@ -208,7 +208,7 @@ object X2Cpg {
           c.ignoredFilesRegex = x.r
           c
         }
-        .text("a regex specifying files to exclude during CPG generation (the absolute file path is matched)"),
+        .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
       help("help").text("display this help message"),
       frontendSpecific
     )

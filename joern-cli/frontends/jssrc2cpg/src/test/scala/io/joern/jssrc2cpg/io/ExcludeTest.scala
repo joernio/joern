@@ -50,8 +50,8 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
         .withOutputPath(tmpDir.toString)
         .withIgnoredFiles(exclude)
         .withIgnoredFilesRegex(excludeRegex)
-      val astgenResult = new AstGenRunner(config).execute(tmpDir)
-      new AstCreationPass(cpg, astgenResult, config).createAndApply()
+      val astGenResult = new AstGenRunner(config).execute(tmpDir)
+      new AstCreationPass(cpg, astGenResult, config).createAndApply()
       cpg.file.name.l should contain theSameElementsAs expectedFiles.map(_.replace("/", java.io.File.separator))
     }
   }
@@ -125,7 +125,7 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
       (
         "exclude a complete folder with --exclude-regex",
         Seq.empty,
-        s".*${Pattern.quote(java.io.File.separator)}folder${Pattern.quote(java.io.File.separator)}.*",
+        s".*${Pattern.quote(java.io.File.separator)}?folder${Pattern.quote(java.io.File.separator)}.*",
         Set("index.js", "a.js", "foo.bar/d.js")
       ),
       // --
