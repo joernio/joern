@@ -2,16 +2,66 @@ package io.joern.x2cpg
 
 import better.files.File.VisitOptions
 import better.files._
+import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
-import scala.util.Using
 
 object SourceFiles {
+
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  private def isIgnoredByFileList(filePath: String, config: X2CpgConfig[_]): Boolean = {
+    val isInIgnoredFiles = config.ignoredFiles.exists {
+      case ignorePath if File(ignorePath).isDirectory => filePath.startsWith(ignorePath)
+      case ignorePath                                 => filePath == ignorePath
+    }
+    if (isInIgnoredFiles) {
+      logger.debug(s"'$filePath' ignored (--exclude)")
+      true
+    } else {
+      false
+    }
+  }
+
+  private def isIgnoredByDefault(filePath: String, config: X2CpgConfig[_]): Boolean = {
+    val relPath = toRelativePath(filePath, config.inputPath)
+    if (config.defaultIgnoredFilesRegex.exists(_.matches(relPath))) {
+      logger.debug(s"'$relPath' ignored by default")
+      true
+    } else {
+      false
+    }
+  }
+
+  private def isIgnoredByRegex(filePath: String, config: X2CpgConfig[_]): Boolean = {
+    val relPath               = toRelativePath(filePath, config.inputPath)
+    val isInIgnoredFilesRegex = config.ignoredFilesRegex.matches(relPath)
+    if (isInIgnoredFilesRegex) {
+      logger.debug(s"'$relPath' ignored (--exclude-regex)")
+      true
+    } else {
+      false
+    }
+  }
+
+  private def filterFiles(files: List[String], config: X2CpgConfig[_]): List[String] = files.filter {
+    case filePath if isIgnoredByDefault(filePath, config)  => false
+    case filePath if isIgnoredByFileList(filePath, config) => false
+    case filePath if isIgnoredByRegex(filePath, config)    => false
+    case _                                                 => true
+  }
 
   /** For a given input path, determine all source files by inspecting filename extensions.
     */
   def determine(inputPath: String, sourceFileExtensions: Set[String]): List[String] = {
     determine(Set(inputPath), sourceFileExtensions)
+  }
+
+  /** For a given input path, determine all source files by inspecting filename extensions and filter the result
+    * according to the given config (by its ignoredFilesRegex and ignoredFiles).
+    */
+  def determine(inputPath: String, sourceFileExtensions: Set[String], config: X2CpgConfig[_]): List[String] = {
+    filterFiles(determine(Set(inputPath), sourceFileExtensions), config)
   }
 
   /** For a given array of input paths, determine all source files by inspecting filename extensions.
@@ -31,35 +81,6 @@ object SourceFiles {
       .map(_.pathAsString)
 
     (matchingFiles ++ matchingFilesFromDirs).toList.sorted
-  }
-
-  /** For the given file at `filePath` determine the line separator used.
-    *
-    * Note: the current systems line separator (returned by System.getProperty("line.separator")) can not be used as the
-    * file could have been written by another app on another operating system.
-    *
-    * We only read until the first occurrence of a line break as that is sufficient and should not hinder performance
-    * too much.
-    */
-  def retrieveLineSeparator(filePath: String): String = {
-    val file          = new java.io.File(filePath)
-    var currentChar   = '\u0000'
-    var lineSeparator = ""
-    Using(new java.io.FileInputStream(file)) { inputStream =>
-      while ({ inputStream.available > 0 && lineSeparator.isEmpty }) {
-        currentChar = inputStream.read.asInstanceOf[Char]
-        if ((currentChar == '\n') || (currentChar == '\r')) {
-          lineSeparator += currentChar
-          if (inputStream.available > 0) {
-            val next = inputStream.read.asInstanceOf[Char]
-            if ((next != currentChar) && ((next == '\r') || (next == '\n'))) {
-              lineSeparator += next
-            }
-          }
-        }
-      }
-      if (lineSeparator.isEmpty) "\n" else lineSeparator
-    }.getOrElse("\n")
   }
 
   /** Constructs an absolute path against rootPath. If the given path is already absolute this path is returned

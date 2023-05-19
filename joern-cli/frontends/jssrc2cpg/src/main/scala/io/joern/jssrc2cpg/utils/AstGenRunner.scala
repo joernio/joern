@@ -114,8 +114,8 @@ class AstGenRunner(config: Config) {
 
   private val executableArgs = if (!config.tsTypes) " --no-tsTypes" else ""
 
-  private def skippedFiles(in: File, astgenOut: List[String]): List[String] = {
-    val skipped = astgenOut.collect {
+  private def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
+    val skipped = astGenOut.collect {
       case out if !out.startsWith("Converted") && !out.startsWith("Retrieving") =>
         val filename = out.substring(0, out.indexOf(" "))
         val reason   = out.substring(out.indexOf(" ") + 1)
