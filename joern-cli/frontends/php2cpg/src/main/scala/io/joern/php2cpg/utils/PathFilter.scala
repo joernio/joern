@@ -10,8 +10,9 @@ import scala.util.matching.Regex
 class PathFilter(excludeOverrides: Option[List[String]]) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private val startOrSep   = s"^([^${File.separator}]+${File.separator})*"
-  private val anyDirSuffix = s"${File.separator}.*"
+  private val sep          = if (File.separator == "/") File.separator else "\\\\"
+  private val startOrSep   = s"^([^$sep]+$sep)*"
+  private val anyDirSuffix = s"$sep.*"
 
   def dirExclude(dirName: String): Regex = {
     s"${startOrSep}${correctPath(dirName)}${anyDirSuffix}".r
