@@ -3,7 +3,6 @@ package io.joern.dataflowengineoss.language.nodemethods
 import io.joern.dataflowengineoss.semanticsloader._
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, Method}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
 
 class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyVal {
 
@@ -40,7 +39,7 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     *   true if these nodes are arguments to the same call, false if otherwise.
     */
   def isArgToSameCallWith(other: Expression): Boolean =
-    node.astParent.collectAll[Call].headOption.equals(other.astParent.collectAll[Call].headOption)
+    node.astParent.start.collectAll[Call].headOption.equals(other.astParent.start.collectAll[Call].headOption)
 
   /** Determines if this node has a flow to the given target node in the defined semantics.
     * @param tgt

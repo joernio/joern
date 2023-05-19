@@ -3,7 +3,6 @@ package io.joern.javasrc2cpg.querying.dataflow
 import io.joern.javasrc2cpg.testfixtures.JavaDataflowFixture
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
 
 /** These tests are added as a wishlist for static member accesses. These results are consistent with static members in
   * C++ using c2cgp, however. For practical reasons, only handling `final` static members is probably the way to go, so
@@ -65,7 +64,7 @@ class StaticMemberTests extends JavaDataflowFixture {
     if (sources.size <= 0) {
       fail("Could not find any sources")
     }
-    Traversal.from(sources)
+    sources.iterator
   }
 
   it should "find a path for `MALICIOUS` data from different class via a variable" in {

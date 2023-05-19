@@ -1,9 +1,3 @@
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
-
 @main def main(): List[Call] = {
   cpg
     .call("malloc")

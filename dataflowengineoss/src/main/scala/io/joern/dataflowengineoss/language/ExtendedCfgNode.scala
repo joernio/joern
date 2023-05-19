@@ -13,7 +13,6 @@ import io.joern.dataflowengineoss.queryengine.{
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
 import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters._
 
@@ -39,7 +38,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     val sources = sourceTravsToStartingPoints(sourceTravs: _*)
     val reachedSources =
       reachableByInternal(sources).map(_.path.head.node)
-    Traversal.from(reachedSources).cast[NodeType]
+    reachedSources.iterator.cast[NodeType]
   }
 
   def reachableByFlows[A](sourceTravs: Traversal[A]*)(implicit context: EngineContext): Traversal[Path] = {
@@ -59,10 +58,10 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
         }
       }
       .filter(_.isDefined)
-      .dedup
+      .distinct
       .flatten
       .toVector
-    paths.to(Traversal)
+    paths.iterator
   }
 
   def reachableByDetailed[NodeType](

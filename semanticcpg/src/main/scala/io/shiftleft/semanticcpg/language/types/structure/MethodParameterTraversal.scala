@@ -32,7 +32,7 @@ class MethodParameterTraversal(val traversal: Traversal[MethodParameterIn]) exte
     for {
       paramIn <- traversal
       call    <- callResolver.getMethodCallsites(paramIn.method)
-      arg     <- Traversal.from(call._argumentOut).collectAll[Expression]
+      arg     <- call._argumentOut.collectAll[Expression]
       if arg.argumentIndex == paramIn.index
     } yield arg
 
