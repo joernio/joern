@@ -203,7 +203,11 @@ trait KtPsiToAst {
   def astsForClassOrObject(ktClass: KtClassOrObject, ctx: Option[AnonymousObjectContext] = None)(implicit
     typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
-    val className = ktClass.getName
+    val className = ctx match {
+      case Some(c) => "anonymous_obj"
+      case None    => ktClass.getName
+    }
+
     val explicitFullName = {
       val fqName = ktClass.getContainingKtFile.getPackageFqName.toString
       s"$fqName.$className"
@@ -1848,21 +1852,85 @@ trait KtPsiToAst {
     callAst(withArgumentIndex(node, argIdx), args.toList)
   }
 
-  def astForCall(expr: KtCallExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astsForCall(expr: KtCallExpression, argIdx: Option[Int])(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Seq[Ast] = {
     val isCtorCall = typeInfoProvider.isConstructorCall(expr)
-    if (isCtorCall.getOrElse(false)) astForCtorCall(expr, argIdx)
-    else astForNonCtorCall(expr, argIdx)
+    if (isCtorCall.getOrElse(false)) Seq(astForCtorCall(expr, argIdx))
+    else astsForNonCtorCall(expr, argIdx)
   }
 
-  private def astForNonCtorCall(expr: KtCallExpression, argIdx: Option[Int])(implicit
+  private def astsForNonCtorCall(expr: KtCallExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  ): Seq[Ast] = {
     val declFullNameOption = typeInfoProvider.containingDeclFullName(expr)
     declFullNameOption.foreach(registerType)
 
+    val objectLiteralExpressionAsts =
+      expr.getValueArguments.asScala
+        .map(_.getArgumentExpression)
+        .collect { case expr: KtObjectLiteralExpression => expr }
+        .zipWithIndex
+        .map { case (objectLiteral, idx) =>
+          val ctx =
+            Option(expr.getParent)
+              .map(_.getParent)
+              .collect { case namedFn: KtNamedFunction => namedFn }
+              .map(AnonymousObjectContext(_))
+          val typeDeclAsts     = astsForClassOrObject(objectLiteral.getObjectDeclaration, ctx)
+          val typeDeclAst      = typeDeclAsts.head
+          val typeDeclFullName = typeDeclAst.root.get.asInstanceOf[NewTypeDecl].fullName
+
+          val tmpName = s"tmp_obj_${idx + 1}"
+          val node    = localNode(objectLiteral, tmpName, tmpName, typeDeclFullName, None)
+          scope.addToScope(tmpName, node)
+          val localAst = Ast(node)
+
+          val typeFullName = registerType(typeInfoProvider.expressionType(objectLiteral, Defines.UnresolvedNamespace))
+          val rhsAst       = Ast(operatorCallNode(Operators.alloc, Operators.alloc, Option(typeFullName)))
+
+          val identifier    = identifierNode(objectLiteral, node.name, node.code, node.typeFullName)
+          val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
+
+          val assignmentNode =
+            operatorCallNode(Operators.assignment, s"${identifier.name} = <alloc>", None, line(expr), column(expr))
+          val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
+          val initSignature     = s"<${TypeConstants.void}>()"
+          val initFullName      = s"$typeFullName${TypeConstants.initPrefix}:$initSignature"
+          val initCallNode = callNode(
+            objectLiteral,
+            Constants.init,
+            Constants.init,
+            initFullName,
+            DispatchTypes.STATIC_DISPATCH,
+            Some(initSignature),
+            Some(TypeConstants.void)
+          )
+
+          val initReceiverNode =
+            identifierNode(objectLiteral, identifier.name, identifier.code, identifier.typeFullName)
+          val initReceiverAst = Ast(initReceiverNode).withRefEdge(initReceiverNode, node)
+
+          val initAst = callAst(initCallNode, Seq(), Option(initReceiverAst))
+          Seq(typeDeclAst, localAst, assignmentCallAst, initAst)
+        }
+        .flatten
+        .toList
+
+    var objLiteralExpressionIdxCounter = 1
     val argAsts = withIndex(expr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
       val argNameOpt = if (arg.isNamed) Option(arg.getArgumentName.getAsName.toString) else None
-      astsForExpression(arg.getArgumentExpression, Option(idx), argNameOpt)
+
+      arg match {
+        case _ if arg.getArgumentExpression.isInstanceOf[KtObjectLiteralExpression] =>
+          val tmpName       = s"tmp_obj_$objLiteralExpressionIdxCounter"
+          val identifier    = identifierNode(expr, tmpName, tmpName, TypeConstants.any)
+          val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
+          objLiteralExpressionIdxCounter += 1
+          Seq(identifierAst)
+        case _ =>
+          astsForExpression(arg.getArgumentExpression, Option(idx), argNameOpt)
+      }
     }.flatten
 
     // TODO: add tests for the empty `referencedName` here
@@ -1902,7 +1970,7 @@ trait KtPsiToAst {
       Some(signature),
       Some(returnType)
     )
-    callAst(withArgumentIndex(node, argIdx), argAsts.toList)
+    objectLiteralExpressionAsts ++ List(callAst(withArgumentIndex(node, argIdx), argAsts.toList))
   }
 
   def astForMember(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Ast = {

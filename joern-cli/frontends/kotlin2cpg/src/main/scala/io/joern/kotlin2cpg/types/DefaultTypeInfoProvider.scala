@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg.types
 
+import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.passes.KeyPool
@@ -9,6 +10,7 @@ import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinToJVMBytecodeCompiler,
   NoScopeRecordCliBindingTrace
 }
+import org.jetbrains.kotlin.com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
 import org.jetbrains.kotlin.descriptors.impl.{
@@ -21,6 +23,7 @@ import org.jetbrains.kotlin.descriptors.impl.{
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.load.java.sources.JavaSourceElement
 import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
+import org.jetbrains.kotlin.psi.psiUtil.PsiUtilsKt
 import org.jetbrains.kotlin.psi.{
   KtAnnotationEntry,
   KtArrayAccessExpression,
@@ -51,7 +54,7 @@ import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorToSourceUtils, De
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
-import org.jetbrains.kotlin.types.{UnresolvedType}
+import org.jetbrains.kotlin.types.UnresolvedType
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -243,19 +246,29 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .map { objectDesc =>
         val parentDesc = objectDesc.getContainingDeclaration
         val parentPsi  = DescriptorToSourceUtils.getSourceFromDescriptor(parentDesc)
+
         parentPsi match {
           case t: KtNamedFunction =>
             val anonymousObjects = {
-              t.getBodyBlockExpression.getStatements.asScala.toSeq.collect { case pt: KtProperty =>
-                pt.getDelegateExpressionOrInitializer match {
-                  case ol: KtObjectLiteralExpression => ol.getObjectDeclaration
-                  case _                             => None
-                }
-              }
+              t.getBodyBlockExpression.getStatements.asScala.toSeq.collect {
+                case pt: KtProperty =>
+                  pt.getDelegateExpressionOrInitializer match {
+                    case ol: KtObjectLiteralExpression => Seq(ol.getObjectDeclaration)
+                    case _                             => Seq()
+                  }
+                case c: KtCallExpression =>
+                  c.getValueArguments.asScala.map(_.getArgumentExpression).collect {
+                    case ol: KtObjectLiteralExpression => ol.getObjectDeclaration
+                    case _                             => Seq()
+                  }
+                case _ => Seq()
+              }.flatten
             }
             var outIdx: Option[Int] = None
-            anonymousObjects.zip(1 to anonymousObjects.size).foreach { case (elem: KtElement, idx) =>
-              if (elem == obj) outIdx = Some(idx)
+            anonymousObjects.zip(1 to anonymousObjects.size).foreach {
+              case (elem: KtElement, idx) =>
+                if (elem == obj) outIdx = Some(idx)
+              case _ =>
             }
             outIdx
           case _ => None

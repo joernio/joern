@@ -57,4 +57,33 @@ class ObjectExpressionsAndDeclarationsTests extends KotlinCode2CpgFixture(withOs
     }
   }
 
+  "CPG for code with object declaration as argument of call" should {
+    val cpg = code("""
+        |interface AnInterface { fun doSomething(x: String) }
+        |fun does(x: AnInterface, p: String) {
+        |    x.doSomething(p)
+        |}
+        |fun f1(p: String) {
+        |    does(object : AnInterface { override fun doSomething(x: String) { println(x) }}, p)
+        |}
+        |""".stripMargin)
+
+    "should find a flow through an assignment call of its member" in {
+      val source = cpg.method.name("f1").parameter
+      val sink   = cpg.method.name("println").callIn.argument
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSet shouldBe
+        Set(
+          List(
+            ("f1(p)", Some(6)),
+            ("does(object : AnInterface { override fun doSomething(x: String) { println(x) }}, p)", Some(7)),
+            ("does(x, p)", Some(3)),
+            ("x.doSomething(p)", Some(4)),
+            ("doSomething(this, x)", Some(7)),
+            ("println(x)", Some(7))
+          )
+        )
+    }
+  }
+
 }
