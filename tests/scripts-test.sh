@@ -28,7 +28,7 @@ declare -A code=(
 )
 
 for script in "${scripts[@]}"; do
-  $JOERN --script "$JOERN_SCRIPTS_DIR/$script" --params inputPath="$TESTCODE_ROOT/${code[$script]}"
+  $JOERN --script "$JOERN_SCRIPTS_DIR/$script" --param inputPath="$TESTCODE_ROOT/${code[$script]}"
   JOERN_EXIT_CODE=$?
 
   if [ $JOERN_EXIT_CODE != 0 ]; then
