@@ -4,7 +4,13 @@ import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{
+  DispatchTypes,
+  EdgeTypes,
+  EvaluationStrategies,
+  ModifierTypes,
+  NodeTypes
+}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, Token}
@@ -347,6 +353,7 @@ class AstCreator(filename: String, global: Global)
   def astForStatementsContext(ctx: StatementsContext): Ast = {
     if (ctx == null) return Ast()
 
+    val blockNode = NewBlock().typeFullName(Defines.Any)
     val asts = ctx
       .statement()
       .asScala
@@ -355,7 +362,7 @@ class AstCreator(filename: String, global: Global)
       })
       .toList
 
-    Ast().withChildren(asts)
+    blockAst(blockNode, asts)
   }
 
   def astForAdditiveExpressionContext(ctx: AdditiveExpressionContext): Ast = {
