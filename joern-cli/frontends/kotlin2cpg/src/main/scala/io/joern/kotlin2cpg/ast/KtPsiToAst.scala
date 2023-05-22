@@ -204,7 +204,7 @@ trait KtPsiToAst {
     typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     val className = ctx match {
-      case Some(c) => "anonymous_obj"
+      case Some(_) => "anonymous_obj"
       case None    => ktClass.getName
     }
 
@@ -1655,7 +1655,7 @@ trait KtPsiToAst {
       val typeFullName = registerType(
         typeInfoProvider.expressionType(expr.getDelegateExpressionOrInitializer, Defines.UnresolvedNamespace)
       )
-      val rhsAst = Ast(operatorCallNode(Operators.alloc, Operators.alloc, Option(typeFullName)))
+      val rhsAst = Ast(operatorCallNode(Operators.alloc, Operators.alloc, None))
 
       val identifier    = identifierNode(elem, elem.getText, elem.getText, node.typeFullName)
       val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
@@ -1887,7 +1887,7 @@ trait KtPsiToAst {
           val localAst = Ast(node)
 
           val typeFullName = registerType(typeInfoProvider.expressionType(objectLiteral, Defines.UnresolvedNamespace))
-          val rhsAst       = Ast(operatorCallNode(Operators.alloc, Operators.alloc, Option(typeFullName)))
+          val rhsAst       = Ast(operatorCallNode(Operators.alloc, Operators.alloc, None))
 
           val identifier    = identifierNode(objectLiteral, node.name, node.code, node.typeFullName)
           val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
@@ -1923,8 +1923,12 @@ trait KtPsiToAst {
 
       arg match {
         case _ if arg.getArgumentExpression.isInstanceOf[KtObjectLiteralExpression] =>
-          val tmpName       = s"tmp_obj_$objLiteralExpressionIdxCounter"
-          val identifier    = identifierNode(expr, tmpName, tmpName, TypeConstants.any)
+          val tmpName = s"tmp_obj_$objLiteralExpressionIdxCounter"
+          val typeFullName = scope.lookupVariable(tmpName) match {
+            case Some(l: NewLocal) => l.typeFullName
+            case _                 => TypeConstants.any
+          }
+          val identifier    = identifierNode(expr, tmpName, tmpName, typeFullName)
           val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
           objLiteralExpressionIdxCounter += 1
           Seq(identifierAst)

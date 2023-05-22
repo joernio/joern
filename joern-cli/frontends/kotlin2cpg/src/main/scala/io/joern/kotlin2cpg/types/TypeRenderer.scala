@@ -8,7 +8,15 @@ import org.jetbrains.kotlin.resolve.{DescriptorToSourceUtils, DescriptorUtils}
 import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, TypeUtils, UnresolvedType}
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.{KtClassOrObject, KtElement, KtNamedFunction, KtObjectLiteralExpression, KtProperty}
+import org.jetbrains.kotlin.psi.{
+  KtCallExpression,
+  KtClassOrObject,
+  KtElement,
+  KtNamedFunction,
+  KtObjectDeclaration,
+  KtObjectLiteralExpression,
+  KtProperty
+}
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.types.typeUtil.TypeUtilsKt
@@ -57,27 +65,11 @@ object TypeRenderer {
 
           val psiElement        = DescriptorToSourceUtils.getSourceFromDescriptor(tc)
           val psiContainingDecl = DescriptorToSourceUtils.getSourceFromDescriptor(tc.getContainingDeclaration)
-
-          val objectIdxMaybe =
-            psiContainingDecl match {
-              case t: KtNamedFunction =>
-                val anonymousObjects = {
-                  t.getBodyBlockExpression.getStatements.asScala.toSeq.collect { case pt: KtProperty =>
-                    pt.getDelegateExpressionOrInitializer match {
-                      case ol: KtObjectLiteralExpression => ol.getObjectDeclaration
-                      case _                             => None
-                    }
-                  }
-                }
-                var outIdx: Option[Int] = None
-                anonymousObjects.zip(1 to anonymousObjects.size).foreach { case (elem: KtElement, idx) =>
-                  if (elem == psiElement) outIdx = Some(idx)
-                }
-                outIdx
-              case _ => None
-            }
-          val objectIdx = objectIdxMaybe.getOrElse("nan")
-          val out       = rendered.replaceFirst("\\.$", "\\$object\\$" + s"$objectIdx")
+          val objectIdx =
+            PsiUtils
+              .objectIdxMaybe(psiElement, psiContainingDecl)
+              .getOrElse("nan")
+          val out = rendered.replaceFirst("\\.$", "\\$object\\$" + s"$objectIdx")
           out
         case _ => or
       }
