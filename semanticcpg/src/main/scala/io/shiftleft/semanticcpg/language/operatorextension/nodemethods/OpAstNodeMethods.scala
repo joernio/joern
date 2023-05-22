@@ -13,35 +13,35 @@ import io.shiftleft.semanticcpg.language.operatorextension.{
 class OpAstNodeMethods[A <: AstNode](val node: A) extends AnyVal {
 
   def assignment: Traversal[OpNodes.Assignment] =
-    astDown(allAssignmentTypes).map(new OpNodes.Assignment(_))
+    astDown(allAssignmentTypes).cast[OpNodes.Assignment]
 
   def arithmetic: Traversal[OpNodes.Arithmetic] =
-    astDown(allArithmeticTypes).map(new OpNodes.Arithmetic(_))
+    astDown(allArithmeticTypes).cast[OpNodes.Arithmetic]
 
   def arrayAccess: Traversal[OpNodes.ArrayAccess] =
-    astDown(allArrayAccessTypes).map(new OpNodes.ArrayAccess(_))
+    astDown(allArrayAccessTypes).cast[OpNodes.ArrayAccess]
 
   def fieldAccess: Traversal[OpNodes.FieldAccess] =
-    astDown(allFieldAccessTypes).map(new OpNodes.FieldAccess(_))
+    astDown(allFieldAccessTypes).cast[OpNodes.FieldAccess]
 
   private def astDown(callNames: Set[String]): Traversal[Call] =
     node.ast.isCall.filter(x => callNames.contains(x.name))
 
   def inAssignment: Traversal[OpNodes.Assignment] =
     astUp(allAssignmentTypes)
-      .map(new OpNodes.Assignment(_))
+      .cast[OpNodes.Assignment]
 
   def inArithmetic: Traversal[OpNodes.Arithmetic] =
     astUp(allArithmeticTypes)
-      .map(new OpNodes.Arithmetic(_))
+      .cast[OpNodes.Arithmetic]
 
   def inArrayAccess: Traversal[OpNodes.ArrayAccess] =
     astUp(allArrayAccessTypes)
-      .map(new OpNodes.ArrayAccess(_))
+      .cast[OpNodes.ArrayAccess]
 
   def inFieldAccess: Traversal[OpNodes.FieldAccess] =
     astUp(allFieldAccessTypes)
-      .map(new OpNodes.FieldAccess(_))
+      .cast[OpNodes.FieldAccess]
 
   private def astUp(strings: Set[String]): Traversal[Call] =
     node.inAstMinusLeaf.isCall

@@ -9,8 +9,9 @@ class TargetMethods(val expr: Expression) extends AnyVal {
 
   def arrayAccess: Option[OpNodes.ArrayAccess] =
     expr.ast.isCall
+      .cast[OpNodes.ArrayAccess]
       .collectFirst { case x if allArrayAccessTypes.contains(x.name) => x }
-      .map(new OpNodes.ArrayAccess(_))
+
 
   def pointer: Option[Expression] =
     Option(expr).collect {

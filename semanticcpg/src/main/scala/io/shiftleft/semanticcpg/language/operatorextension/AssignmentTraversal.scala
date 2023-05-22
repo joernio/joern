@@ -1,11 +1,11 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
-import io.shiftleft.codepropertygraph.generated.nodes.Expression
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.help.Doc
 import overflowdb.traversal.help
 
-@help.Traversal(elementType = classOf[OpNodes.Assignment])
+@help.Traversal(elementType = classOf[Call])
 class AssignmentTraversal(val traversal: Traversal[OpNodes.Assignment]) extends AnyVal {
 
   @Doc(info = "Left-hand sides of assignments")

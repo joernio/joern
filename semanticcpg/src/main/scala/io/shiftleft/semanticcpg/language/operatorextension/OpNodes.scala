@@ -1,10 +1,14 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, StaticType}
 
+trait AssignmentT
+trait ArithmeticT
+trait ArrayAccessT
+trait FieldAccessT
 object OpNodes {
-  class Assignment(call: Call)  extends Call(call.graph, call.id)
-  class Arithmetic(call: Call)  extends Call(call.graph, call.id)
-  class ArrayAccess(call: Call) extends Call(call.graph, call.id)
-  class FieldAccess(call: Call) extends Call(call.graph, call.id)
+  type Assignment = Call with StaticType[AssignmentT]
+  type Arithmetic = Call with StaticType[ArithmeticT]
+  type ArrayAccess = Call with StaticType[ArrayAccessT]
+  type FieldAccess = Call with StaticType[FieldAccessT]
 }

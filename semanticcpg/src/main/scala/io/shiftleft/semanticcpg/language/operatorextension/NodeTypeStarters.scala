@@ -12,22 +12,22 @@ class NodeTypeStarters(cpg: Cpg) {
   @Doc(info = "All assignments, including shorthand assignments that perform arithmetic (e.g., '+=')")
   def assignment: Traversal[OpNodes.Assignment] =
     callsWithNameIn(allAssignmentTypes)
-      .map(new OpNodes.Assignment(_))
+      .cast[OpNodes.Assignment]
 
   @Doc(info = "All arithmetic operations, including shorthand assignments that perform arithmetic (e.g., '+=')")
   def arithmetic: Traversal[OpNodes.Arithmetic] =
     callsWithNameIn(allArithmeticTypes)
-      .map(new OpNodes.Arithmetic(_))
+      .cast[OpNodes.Arithmetic]
 
   @Doc(info = "All array accesses")
   def arrayAccess: Traversal[OpNodes.ArrayAccess] =
     callsWithNameIn(allArrayAccessTypes)
-      .map(new OpNodes.ArrayAccess(_))
+      .cast[OpNodes.ArrayAccess]
 
   @Doc(info = "Field accesses, both direct and indirect")
   def fieldAccess: Traversal[OpNodes.FieldAccess] =
     callsWithNameIn(allFieldAccessTypes)
-      .map(new OpNodes.FieldAccess(_))
+      .cast[OpNodes.FieldAccess]
 
   private def callsWithNameIn(set: Set[String]) =
     cpg.call.filter(x => set.contains(x.name))

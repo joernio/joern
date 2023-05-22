@@ -228,7 +228,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   protected def assignments: Traversal[Assignment] =
-    cu.ast.isCall.nameExact(Operators.assignment).map(new OpNodes.Assignment(_))
+    cu.ast.isCall.nameExact(Operators.assignment).cast[OpNodes.Assignment]
 
   protected def members: Traversal[Member] = cu.ast.isMember
 
@@ -323,7 +323,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def visitStatementsInBlock(b: Block, assignmentTarget: Option[Identifier] = None): Set[String] =
     b.astChildren
       .map {
-        case x: Call if x.name.startsWith(Operators.assignment) => visitAssignments(new Assignment(x))
+        case x: Call if x.name.startsWith(Operators.assignment) => visitAssignments(x.asInstanceOf[Assignment])
         case x: Call if x.name.startsWith("<operator>") && assignmentTarget.isDefined =>
           visitIdentifierAssignedToOperator(assignmentTarget.get, x, x.name)
         case x: Identifier if symbolTable.contains(x)                      => symbolTable.get(x)
@@ -467,7 +467,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
       case Operators.alloc       => visitIdentifierAssignedToConstructor(i, c)
-      case Operators.fieldAccess => visitIdentifierAssignedToFieldLoad(i, new FieldAccess(c))
+      case Operators.fieldAccess => visitIdentifierAssignedToFieldLoad(i, c.asInstanceOf[FieldAccess])
       case Operators.indexAccess => visitIdentifierAssignedToIndexAcess(i, c)
       case Operators.cast        => visitIdentifierAssignedToCast(i, c)
       case x                     => logger.debug(s"Unhandled operation $x (${c.code}) @ ${debugLocation(c)}"); Set.empty
@@ -552,7 +552,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Given a call operation, will attempt to retrieve types from it.
     */
   protected def getTypesFromCall(c: Call): Set[String] = c.name match {
-    case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(new FieldAccess(c))))
+    case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(c.asInstanceOf[FieldAccess])))
     case _ if symbolTable.contains(c) => symbolTable.get(c)
     case Operators.indexAccess        => getIndexAccessTypes(c)
     case n =>
@@ -598,7 +598,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def getSymbolFromCall(c: Call): (LocalKey, Set[FieldPath]) = c.name match {
     case Operators.fieldAccess =>
-      val fa        = new FieldAccess(c)
+      val fa        = c.asInstanceOf[FieldAccess]
       val fieldName = getFieldName(fa)
       (LocalVar(fieldName), getFieldParents(fa).map(fp => FieldPath(fp, fieldName)))
     case Operators.indexAccess => (indexAccessToCollectionVar(c).getOrElse(LocalVar(c.name)), Set.empty)
@@ -622,12 +622,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case ::(i: Identifier, ::(f: FieldIdentifier, _)) if i.name.matches("(self|this)") => wrapName(f.canonicalName)
       case ::(i: Identifier, ::(f: FieldIdentifier, _)) => wrapName(s"${i.name}$pathSep${f.canonicalName}")
       case ::(c: Call, ::(f: FieldIdentifier, _)) if c.name.equals(Operators.fieldAccess) =>
-        wrapName(getFieldName(new FieldAccess(c), suffix = f.canonicalName))
+        wrapName(getFieldName(c.asInstanceOf[FieldAccess], suffix = f.canonicalName))
       case ::(c: Call, ::(f: FieldIdentifier, _)) if getTypesFromCall(c).nonEmpty =>
         // TODO: Handle this case better
         wrapName(s"${getTypesFromCall(c).head}$pathSep${f.canonicalName}")
       case ::(f: FieldIdentifier, ::(c: Call, _)) if c.name.equals(Operators.fieldAccess) =>
-        wrapName(getFieldName(new FieldAccess(c), prefix = f.canonicalName))
+        wrapName(getFieldName(c.asInstanceOf[FieldAccess], prefix = f.canonicalName))
       case ::(c: Call, ::(f: FieldIdentifier, _)) =>
         // TODO: Handle this case better
         val callCode = if (c.code.contains("(")) c.code.substring(c.code.indexOf("(")) else c.code
@@ -658,7 +658,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           Set.empty
       }
     } else if (c.name.equals(Operators.fieldAccess)) {
-      val fa        = new FieldAccess(c)
+      val fa        =  c.asInstanceOf[FieldAccess]
       val fieldName = getFieldName(fa)
       associateTypes(LocalVar(fieldName), fa, getLiteralType(l))
     } else {
@@ -677,7 +677,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def indexAccessToCollectionVar(c: Call): Option[CollectionVar] = {
     def callName(x: Call) =
       if (x.name.equals(Operators.fieldAccess))
-        getFieldName(new FieldAccess(x))
+        getFieldName(x.asInstanceOf[FieldAccess])
       else if (x.name.equals(Operators.indexAccess))
         indexAccessToCollectionVar(x)
           .map(cv => s"${cv.identifier}[${cv.idx}]")
@@ -712,7 +712,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val dummyTypes = Set(s"$fieldName$pathSep${XTypeRecovery.DummyReturnType}")
         associateInterproceduralTypes(i, base, fi, fieldName, dummyTypes)
       case ::(c: Call, ::(fi: FieldIdentifier, _)) if c.name.equals(Operators.fieldAccess) =>
-        val baseName = getFieldName(new FieldAccess(c))
+        val baseName = getFieldName(c.asInstanceOf[FieldAccess])
         // Build type regardless of length
         // TODO: This is more prone to giving dummy values as it does not do global look-ups
         //  but this is okay for now
@@ -777,7 +777,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case ::(head: Literal, Nil) if head.typeFullName != "ANY" =>
         Set(head.typeFullName)
       case ::(head: Call, Nil) if head.name == Operators.fieldAccess =>
-        val fieldAccess = new FieldAccess(head)
+        val fieldAccess = head.asInstanceOf[FieldAccess]
         val (sym, ts)   = getSymbolFromCall(fieldAccess)
         val cpgTypes = cpg.typeDecl
           .fullNameExact(ts.map(_.compUnitFullName).toSeq: _*)

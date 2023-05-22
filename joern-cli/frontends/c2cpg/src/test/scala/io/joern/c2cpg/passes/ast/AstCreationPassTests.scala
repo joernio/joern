@@ -525,7 +525,7 @@ class AstCreationPassTests extends AbstractPassTest {
       val localZ = cpg.local.order(3)
       localZ.name.l shouldBe List("z")
 
-      inside(cpg.method.name("method").ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_)).l) {
+      inside(cpg.method.name("method").ast.isCall.name(Operators.assignment).cast[OpNodes.Assignment].l) {
         case List(assignment) =>
           assignment.target.code shouldBe "x"
           assignment.source.start.isCall.name.l shouldBe List(Operators.addition)
