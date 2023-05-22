@@ -28,7 +28,7 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ConcurrentWriterCpgPas
   protected val typeMap: mutable.Map[String, TypeBase] =
     mutable.HashMap.from[String, TypeBase](cpg.typ.map(t => t.fullName -> t))
 
-  // Regex matching is expensive...
+  // Regex matching is expensive, so we cache pattern strings to their compiled pattern objects
   private val typeRegexCache: TrieMap[String, Pattern] = TrieMap.empty[String, Pattern]
   private val relativePathPattern                      = Pattern.compile("^[.]+/?.*$")
 

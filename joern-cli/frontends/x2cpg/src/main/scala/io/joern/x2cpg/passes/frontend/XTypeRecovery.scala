@@ -75,7 +75,8 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
         i <- 0 until config.iterations
         if !stopEarly.get()
       ) {
-        generateRecoveryPass(state.copy(currentIteration = i)).createAndApply()
+        val newState = state.copy(currentIteration = i)
+        generateRecoveryPass(newState).createAndApply()
       }
       // If dummy values are enabled and we are stopping early, we need one more round to propagate these dummy values
       if (stopEarly.get() && config.enabledDummyTypes)
@@ -117,10 +118,10 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
   protected def changeTracker: ArrayBuffer[Boolean] = mutable.ArrayBuffer.empty[Boolean]
 
   override def finish(): Unit = {
-    val changesWereMade = changeTracker
+    val changesMade = changeTracker
       .reduceOption((a, b) => a || b)
       .getOrElse(false)
-    if (!changesWereMade) state.stopEarly.set(true)
+    if (!changesMade) state.stopEarly.set(true)
   }
 
 }

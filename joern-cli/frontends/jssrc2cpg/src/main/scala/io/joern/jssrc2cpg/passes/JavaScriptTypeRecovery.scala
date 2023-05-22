@@ -20,19 +20,12 @@ class JavaScriptTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRe
 }
 
 private class JavaScriptTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
-  override def generateParts: Array[File] = cpg.file.toArray
+  override def generateParts(): Array[File] = cpg.file.toArray
 
-  override def runOnPart(builder: DiffGraphBuilder, unit: File): Unit =
-    changeTracker.addOne(
-      new RecoverForJavaScriptFile(
-        cpg,
-        unit,
-        builder,
-        state.copy(config =
-          state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-        )
-      ).compute()
-    )
+  override def runOnPart(builder: DiffGraphBuilder, unit: File): Unit = {
+    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
+    changeTracker.addOne(new RecoverForJavaScriptFile(cpg, unit, builder, state.copy(config = newConfig)).compute())
+  }
 
 }
 

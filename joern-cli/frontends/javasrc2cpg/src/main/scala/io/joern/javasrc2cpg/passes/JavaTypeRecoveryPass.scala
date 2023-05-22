@@ -16,19 +16,12 @@ class JavaTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecovery
 
 private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[Method](cpg, state) {
 
-  override def generateParts: Array[Method] = cpg.method.isExternal(false).toArray
+  override def generateParts(): Array[Method] = cpg.method.isExternal(false).toArray
 
-  override def runOnPart(builder: DiffGraphBuilder, unit: Method): Unit =
-    changeTracker.addOne(
-      new RecoverForJavaFile(
-        cpg,
-        unit,
-        builder,
-        state.copy(config =
-          state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-        )
-      ).compute()
-    )
+  override def runOnPart(builder: DiffGraphBuilder, unit: Method): Unit = {
+    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
+    changeTracker.addOne(new RecoverForJavaFile(cpg, unit, builder, state.copy(config = newConfig)).compute())
+  }
 }
 
 private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder, state: XTypeRecoveryState)
