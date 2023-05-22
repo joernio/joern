@@ -30,7 +30,7 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ConcurrentWriterCpgPas
 
   // Regex matching is expensive...
   private val typeRegexCache: TrieMap[String, Pattern] = TrieMap.empty[String, Pattern]
-  private val relativePathPattern                      = Pattern.compile("^[.]+/?.*")
+  private val relativePathPattern                      = Pattern.compile("^[.]+/?.*$")
 
   override def generateParts(): Array[TypeDecl] =
     cpg.typeDecl
@@ -70,8 +70,8 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ConcurrentWriterCpgPas
       n match {
         case x if x.contains(pathSep) =>
           val splitName = x.split(pathSep)
-          Pattern.compile(s".*${Pattern.quote(splitName.head)}.*${Pattern.quote(splitName.last)}$$")
-        case x => Pattern.compile(s".*${Pattern.quote(x)}$$")
+          Pattern.compile(s"^.*${Pattern.quote(splitName.head)}.*${Pattern.quote(splitName.last)}$$")
+        case x => Pattern.compile(s"^.*${Pattern.quote(x)}$$")
       }
     }
   )

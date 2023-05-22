@@ -23,19 +23,18 @@ class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecove
 
 private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
 
-  override def compilationUnit: Traversal[File] = cpg.file
+  override def generateParts: Array[File] = cpg.file.toArray
 
-  override def generateRecoveryForCompilationUnitTask(
-    unit: File,
-    builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[File] =
-    new RecoverForPythonFile(
-      cpg,
-      unit,
-      builder,
-      state.copy(config =
-        state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-      )
+  override def runOnPart(builder: DiffGraphBuilder, unit: File): Unit =
+    changeTracker.addOne(
+      new RecoverForPythonFile(
+        cpg,
+        unit,
+        builder,
+        state.copy(config =
+          state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
+        )
+      ).compute()
     )
 
 }

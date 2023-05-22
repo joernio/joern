@@ -4,7 +4,7 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
-import io.shiftleft.passes.CpgPass
+import io.shiftleft.passes.{ConcurrentWriterCpgPass, CpgPass}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /** @param iterations
   *   the number of iterations to run.
@@ -110,34 +111,17 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
   * @tparam CompilationUnitType
   *   the AstNode type used to represent a compilation unit of the language.
   */
-abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XTypeRecoveryState) extends CpgPass(cpg) {
+abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XTypeRecoveryState)
+    extends ConcurrentWriterCpgPass[CompilationUnitType](cpg) {
 
-  override def run(builder: DiffGraphBuilder): Unit = {
-    val changesWereMade = compilationUnit
-      .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
-      .map(_.get())
+  protected def changeTracker: ArrayBuffer[Boolean] = mutable.ArrayBuffer.empty[Boolean]
+
+  override def finish(): Unit = {
+    val changesWereMade = changeTracker
       .reduceOption((a, b) => a || b)
       .getOrElse(false)
     if (!changesWereMade) state.stopEarly.set(true)
   }
-
-  /** @return
-    *   the compilation units as per how the language is compiled. e.g. file.
-    */
-  def compilationUnit: Traversal[CompilationUnitType]
-
-  /** A factory method to generate a [[RecoverForXCompilationUnit]] task with the given parameters.
-    * @param unit
-    *   the compilation unit.
-    * @param builder
-    *   the graph builder.
-    * @return
-    *   a forkable [[RecoverForXCompilationUnit]] task.
-    */
-  def generateRecoveryForCompilationUnitTask(
-    unit: CompilationUnitType,
-    builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[CompilationUnitType]
 
 }
 
@@ -795,7 +779,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val callPaths    = symbolTable.get(head)
         val returnValues = methodReturnValues(callPaths.toSeq)
         if (returnValues.isEmpty)
-          callPaths.map(_.concat(pathSep + XTypeRecovery.DummyReturnType))
+          callPaths.map(c => s"$c$pathSep${XTypeRecovery.DummyReturnType}")
         else
           returnValues
       case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
