@@ -1,6 +1,7 @@
 package io.shiftleft.semanticcpg.language.android
 
 import io.shiftleft.codepropertygraph.generated.nodes
+import overflowdb.traversal._
 import io.shiftleft.semanticcpg.language._
 
 class MethodTraversal(val traversal: Traversal[nodes.Method]) extends AnyVal {

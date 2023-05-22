@@ -11,7 +11,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
     "create methods for const exports" in TsAstFixture(
       "export const getApiA = (req: Request) => { const user = req.user as UserDocument; }"
     ) { cpg =>
-      cpg.method.name.sorted shouldBe List(":program", "anonymous")
+      cpg.method.name.sorted.l shouldBe List(":program", "anonymous")
       cpg.assignment.code.l shouldBe List(
         "const user = req.user as UserDocument",
         "const getApiA = (req: Request) => { const user = req.user as UserDocument; }",

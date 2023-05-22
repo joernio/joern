@@ -886,7 +886,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val callTypes = symbolTable.get(fieldAccess)
         persistType(i, idHints)
         persistType(fieldAccess, callTypes)
-        fieldAccess.astParent.start.isCall.headOption match {
+        Traversal.from(fieldAccess.astParent).isCall.headOption match {
           case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
             persistType(callFromFieldName, symbolTable.get(callFromFieldName))
           case _ =>
@@ -913,7 +913,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   ): Unit = {
     // Sometimes the function identifier is an argument to the call itself as a "base". In this case we don't need
     // a method ref. This happens in jssrc2cpg
-    if (funcPtr.astParent.start.collectAll[Call].exists(_.name == funcName)) return
+    if (funcPtr.astParent.collectAll[Call].exists(_.name == funcName)) return
 
     baseTypes
       .map(t => if (t.endsWith(funcName)) t else s"$t$pathSep$funcName")

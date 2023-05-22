@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
 import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, Declaration, MethodRef, TypeRef}
-import overflowdb.traversal._
+import overflowdb.traversal.{Traversal, help, jIteratortoTraversal}
 
 /** A declaration, such as a local or parameter.
   */
