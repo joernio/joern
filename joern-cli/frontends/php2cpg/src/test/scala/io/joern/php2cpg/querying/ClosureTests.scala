@@ -153,7 +153,7 @@ class ClosureTests extends PhpCode2CpgFixture {
      |}
      |""".stripMargin)
 
-    inside(cpg.method.name(".*closure.*").fullName.sorted.toList) { case List(bar0, bar1, foo0, foo1) =>
+    inside(cpg.method.name(".*closure.*").fullName.sorted.l) { case List(bar0, bar1, foo0, foo1) =>
       bar0 shouldBe "Bar->bar->__closure0"
       bar1 shouldBe "Bar->bar->__closure1"
       foo0 shouldBe "foo->__closure0"

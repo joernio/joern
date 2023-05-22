@@ -9,8 +9,7 @@ import org.json4s._
 import org.json4s.native.JsonMethods.parse
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import scala.jdk.CollectionConverters.IteratorHasAsScala
+import overflowdb.traversal.Traversal
 
 class StepsTest extends AnyWordSpec with Matchers {
 
@@ -40,7 +39,7 @@ class StepsTest extends AnyWordSpec with Matchers {
 
     "filter with traversal on cpg type" in {
       def allMethods    = cpg.method.l
-      val publicMethods = allMethods.iterator.where(_.isPublic)
+      val publicMethods = allMethods.to(Traversal).where(_.isPublic)
       allMethods.size should be > publicMethods.toList.size
     }
 
@@ -146,7 +145,7 @@ class StepsTest extends AnyWordSpec with Matchers {
 
     "use default `toString` if nothing else applies" in {
       case class Foo(i: Int)
-      val steps: Steps[Foo] = new Steps(Iterator.single(Foo(42)))
+      val steps: Steps[Foo] = new Steps(Traversal.fromSingle(Foo(42)))
       steps.p.head shouldBe "Foo(42)"
     }
 
@@ -205,13 +204,13 @@ class StepsTest extends AnyWordSpec with Matchers {
     "provides generic help" when {
       "using verbose mode" when {
         "traversing nodes" in {
-          val methodTraversal = Iterator.empty[Method]
+          val methodTraversal = Traversal.empty[Method]
           methodTraversal.helpVerbose should include(".l")
           methodTraversal.helpVerbose should include(".label")
         }
 
         "traversing non-nodes" in {
-          val stringTraversal = Iterator.empty[String]
+          val stringTraversal = Traversal.empty[String]
           stringTraversal.helpVerbose should include(".l")
           stringTraversal.helpVerbose should not include ".label"
         }
@@ -269,7 +268,6 @@ class StepsTest extends AnyWordSpec with Matchers {
     def methodParameterOut =
       cpg.graph
         .nodes(NodeTypes.METHOD_PARAMETER_OUT)
-        .asScala
         .cast[MethodParameterOut]
         .name("param1")
     methodParameterOut.typ.name.head shouldBe "paramtype"
@@ -291,7 +289,7 @@ class StepsTest extends AnyWordSpec with Matchers {
     file.typeDecl.name.head shouldBe "AClass"
     file.head.typeDecl.name.head shouldBe "AClass"
 
-    def block = cpg.graph.nodes(NodeTypes.BLOCK).asScala.cast[Block].typeFullName("int")
+    def block = cpg.graph.nodes(NodeTypes.BLOCK).cast[Block].typeFullName("int")
     block.local.name.size shouldBe 1
     block.flatMap(_.local.name).size shouldBe 1
 

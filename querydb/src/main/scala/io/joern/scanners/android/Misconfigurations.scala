@@ -5,6 +5,7 @@ import io.joern.console._
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.Traversal
 import io.joern.dataflowengineoss.language._
 
 object Misconfigurations extends QueryBundle {
@@ -221,7 +222,7 @@ object Misconfigurations extends QueryBundle {
         )
           satisfiesConfig
         else
-          Iterator.empty
+          Traversal.empty
       }),
       tags = List(QueryTags.android, QueryTags.cryptography, QueryTags.misconfiguration)
     )

@@ -17,7 +17,7 @@ class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtens
     // return type to CallRepr would lead to a break in the API aka
     // the DSL steps which are subsequently allowed to be called. Before
     // we addressed this we can only return Call instances.
-    callsites.iterator.collectAll[Call]
+    callsites.collectAll[Call]
   }
 
   def typ: Traversal[Type] = node.evalTypeOut

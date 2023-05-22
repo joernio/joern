@@ -138,7 +138,7 @@ object AccessPathHandling {
   }
 
   def lastExpressionInBlock(block: Block): Option[Expression] =
-    block._astOut
+    block._astOut.asScala
       .collect {
         case node: Expression if !node.isInstanceOf[Local] && !node.isInstanceOf[Method] => node
       }

@@ -8,8 +8,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Block, ClosureBi
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
-import scala.jdk.CollectionConverters.IteratorHasAsScala
-
 class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
   "CPG for code with a simple lambda which captures a method parameter" should {
     val cpg = code("fun f1(p: String) { 1.let { println(p) } }")
@@ -30,7 +28,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
-      cb.outE.asScala.collectAll[Ref].size shouldBe 1
+      cb.outE.collectAll[Ref].size shouldBe 1
     }
 
     "should contain a CALL node with the signature of the lambda" in {
@@ -67,7 +65,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
-      cb.outE.asScala.collectAll[Ref].size shouldBe 1
+      cb.outE.collectAll[Ref].size shouldBe 1
     }
   }
 

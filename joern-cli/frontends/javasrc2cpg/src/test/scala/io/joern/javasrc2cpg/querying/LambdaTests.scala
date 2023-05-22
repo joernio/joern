@@ -16,8 +16,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
-import scala.jdk.CollectionConverters.IteratorHasAsScala
-
 class LambdaTests extends JavaSrcCode2CpgFixture {
   "nested lambdas" should {
     val cpg = code("""
@@ -128,14 +126,14 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
           fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
 
-          fallbackClosureBinding._refOut.l match {
+          fallbackClosureBinding.outE.collectAll[Ref].map(_.inNode()).l match {
             case List(capturedParam: MethodParameterIn) =>
               capturedParam.name shouldBe "fallback"
               capturedParam.method.fullName shouldBe "Foo.test1:void(java.lang.String,java.lang.String)"
             case result => fail(s"Expected single capturedParam but got $result")
           }
 
-          fallbackClosureBinding._captureIn.l match {
+          fallbackClosureBinding.inE.collectAll[Capture].map(_.outNode()).l match {
             case List(outMethod: MethodRef) =>
               outMethod.methodFullName shouldBe "Foo.lambda$0:java.lang.String(java.lang.String)"
             case result => fail(s"Expected single METHOD_REF but got $result")
@@ -561,14 +559,14 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           val capturedLocal = cpg.method.name(".*lambda.*").local.name("captured").head
           capturedClosureBinding.closureBindingId shouldBe capturedLocal.closureBindingId
 
-          capturedClosureBinding._refOut.l match {
+          capturedClosureBinding.outE.collectAll[Ref].map(_.inNode()).l match {
             case List(capturedParam: MethodParameterIn) =>
               capturedParam.name shouldBe "captured"
               capturedParam.method.fullName shouldBe "TestClass.test:Foo(java.lang.String)"
             case result => fail(s"Expected single capturedParam but got $result")
           }
 
-          capturedClosureBinding._captureIn.l match {
+          capturedClosureBinding.inE.collectAll[Capture].map(_.outNode()).l match {
             case List(outMethod: MethodRef) =>
               outMethod.methodFullName shouldBe "TestClass.lambda$0:java.lang.String(java.lang.Integer,java.lang.Integer)"
             case result => fail(s"Expected single out METHOD_REF but got $result")

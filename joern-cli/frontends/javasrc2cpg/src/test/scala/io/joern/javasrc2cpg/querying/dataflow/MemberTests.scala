@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
 import io.joern.javasrc2cpg.testfixtures.{JavaDataflowFixture, JavaSrcCode2CpgFixture}
+import overflowdb.traversal._
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
 

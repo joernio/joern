@@ -5,6 +5,7 @@ import io.joern.dataflowengineoss.queryengine.Engine.isOutputArgOfInternalMethod
 import io.joern.dataflowengineoss.semanticsloader.{ParamMapping, PosArg, Semantics}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, StoredNode}
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal._
 
 object EdgeValidator {
 
