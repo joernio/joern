@@ -296,8 +296,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
 
     "foo" should {
-      val cpg = code(
-        """
+      val cpg = code("""
           |def add_three_numbers(num1, num2, num3)
           |sum = num1 + num2 + num3
           |return sum
@@ -305,9 +304,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       "bar" in {
-        implicit val viewer: ImageViewer = (pathStr: String) => Try {
-          Process(Seq("xdg-open", pathStr)).!!
-        }
+        implicit val viewer: ImageViewer = (pathStr: String) =>
+          Try {
+            Process(Seq("xdg-open", pathStr)).!!
+          }
 
         cpg.call.code("\\+").plotDotAst
         cpg.method.name("add_three_numbers").plotDotAst
