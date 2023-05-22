@@ -3,12 +3,10 @@ package io.joern.pysrc2cpg
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{CpgDiffGraphBuilder, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
-import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
 import java.nio.file.Paths
@@ -42,7 +40,7 @@ private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XT
 
 /** Performs type recovery from the root of a compilation unit level
   */
-private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
+private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: CpgDiffGraphBuilder, state: XTypeRecoveryState)
     extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
 
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this

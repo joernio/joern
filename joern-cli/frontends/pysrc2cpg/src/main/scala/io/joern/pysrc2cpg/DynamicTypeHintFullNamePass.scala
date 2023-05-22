@@ -1,11 +1,10 @@
 package io.joern.pysrc2cpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.{CpgDiffGraphBuilder, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
 
 import java.io.File
 import java.util.regex.{Matcher, Pattern}
@@ -14,7 +13,7 @@ import java.util.regex.{Matcher, Pattern}
   * dynamic type hint and adjusting the dynamic type hint full name field accordingly.
   */
 class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
-  override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(diffGraph: DiffGraphBuilder): Unit = {
     val fileToImports = cpg.imports.l
       .flatMap { imp =>
         imp.call.file.l.map { f => f.name -> imp }
@@ -57,7 +56,7 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   private def setTypeHints(
-    diffGraph: BatchedUpdate.DiffGraphBuilder,
+    diffGraph: CpgDiffGraphBuilder,
     node: StoredNode,
     typeHint: String,
     alias: String,
