@@ -2,10 +2,9 @@ package io.joern
 
 import better.files.File
 import io.circe.{Decoder, Encoder, HCursor, Json}
-import io.joern.slicing.SliceMode.{DataFlow, SliceModes}
+import io.joern.slicing.SliceMode.SliceModes
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
-import overflowdb.Edge
 
 package object slicing {
 
@@ -22,7 +21,7 @@ package object slicing {
   case class SliceConfig(
     inputPath: File = File("cpg.bin"),
     outFile: File = File("slices"),
-    sliceMode: SliceModes = DataFlow,
+    sliceMode: SliceModes = SliceMode.DataFlow,
     sourceFile: Option[String] = None,
     sliceDepth: Int = 20,
     minNumCalls: Int = 1,
@@ -46,8 +45,44 @@ package object slicing {
     *   the nodes in the slice.
     * @param edges
     *   a map linking nodes with their edges.
+    * @param methodToChildNode
+    *   a mapping between method names and which nodes fall under them.
     */
-  case class DataFlowSlice(nodes: List[CfgNode], edges: Map[CfgNode, List[Edge]])
+  case class DataFlowSlice(nodes: Set[SliceNode], edges: Set[SliceEdge], methodToChildNode: Map[String, Set[Long]])
+
+  implicit val encodeDataFlowSlice: Encoder[DataFlowSlice] = Encoder.instance {
+    case DataFlowSlice(nodes, edges, methodToChildNode) =>
+      Json.obj("nodes" -> nodes.asJson, "edges" -> edges.asJson, "methodToChildNode" -> methodToChildNode.asJson)
+  }
+
+  case class SliceNode(
+    id: Long,
+    label: String,
+    name: String = "",
+    code: String,
+    typeFullName: String = "",
+    lineNumber: Integer = -1,
+    columnNumber: Integer = -1
+  )
+
+  implicit val encodeSliceNode: Encoder[SliceNode] = Encoder.instance {
+    case SliceNode(id, label, name, code, typeFullName, lineNumber, columnNumber) =>
+      Json.obj(
+        "id"           -> id.asJson,
+        "label"        -> label.asJson,
+        "name"         -> name.asJson,
+        "code"         -> code.asJson,
+        "typeFullName" -> typeFullName.asJson,
+        "lineNumber"   -> lineNumber.asJson,
+        "columnNumber" -> columnNumber.asJson
+      )
+  }
+
+  case class SliceEdge(src: Long, dst: Long, label: String)
+
+  implicit val encodeSliceEdge: Encoder[SliceEdge] = Encoder.instance { case SliceEdge(src, dst, label) =>
+    Json.obj("src" -> src.asJson, "dst" -> dst.asJson, "label" -> label.asJson)
+  }
 
   /** The data-flow slices for the program grouped by procedure.
     *
@@ -56,9 +91,9 @@ package object slicing {
     */
   case class ProgramDataFlowSlice(dataFlowSlices: Map[String, Set[DataFlowSlice]]) extends ProgramSlice {
 
-    def toJson: String = ???
+    def toJson: String = this.asJson.toString()
 
-    def toJsonPretty: String = ???
+    def toJsonPretty: String = this.asJson.spaces2
 
   }
 

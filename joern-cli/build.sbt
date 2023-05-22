@@ -1,13 +1,17 @@
 name := "joern-cli"
 
-dependsOn(Projects.console, Projects.console % "test->test", Projects.dataflowengineoss, Projects.x2cpg)
+dependsOn(
+  Projects.console,
+  Projects.console % "test->test",
+  Projects.dataflowengineoss,
+  Projects.x2cpg,
+  Projects.slicing
+)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"     %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"      %% "requests"          % "0.7.1",
   "com.github.scopt" %% "scopt"             % "4.1.0",
-  "io.circe"         %% "circe-core"        % "0.14.5",
-  "io.circe"         %% "circe-generic"     % "0.14.5",
   "org.reflections"   % "reflections"       % "0.10.2",
   "org.scalatest"    %% "scalatest"         % Versions.scalatest % Test
 )
