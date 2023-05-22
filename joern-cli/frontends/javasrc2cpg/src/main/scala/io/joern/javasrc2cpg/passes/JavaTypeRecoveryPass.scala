@@ -3,11 +3,9 @@ package io.joern.javasrc2cpg.passes
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.{CpgDiffGraphBuilder, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.traversal.Traversal
 
 class JavaTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[Method](cpg, config) {
@@ -30,7 +28,7 @@ private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTyp
   )
 }
 
-private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder, state: XTypeRecoveryState)
+private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: CpgDiffGraphBuilder, state: XTypeRecoveryState)
     extends RecoverForXCompilationUnit[Method](cpg, cu, builder, state) {
 
   private def javaNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {

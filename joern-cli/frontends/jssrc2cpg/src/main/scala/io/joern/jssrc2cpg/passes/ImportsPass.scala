@@ -4,7 +4,6 @@ import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPass
-import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 
 /** This pass creates `IMPORT` nodes by looking for calls to `require`. `IMPORT` nodes are linked to existing dependency
@@ -17,7 +16,7 @@ import io.shiftleft.semanticcpg.language._
   */
 class ImportsPass(cpg: Cpg) extends CpgPass(cpg) {
 
-  override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(diffGraph: DiffGraphBuilder): Unit = {
     cpg
       .call("require")
       .flatMap { x => x.inAssignment.codeNot("var .*").map(y => (x, y)) }

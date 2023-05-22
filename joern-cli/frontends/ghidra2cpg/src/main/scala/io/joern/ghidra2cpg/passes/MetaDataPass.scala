@@ -3,11 +3,10 @@ package io.joern.ghidra2cpg.passes
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{Languages, nodes}
 import io.shiftleft.passes.CpgPass
-import overflowdb.BatchedUpdate
 
 class MetaDataPass(filename: String, cpg: Cpg) extends CpgPass(cpg) {
 
-  override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(diffGraph: DiffGraphBuilder): Unit = {
     diffGraph.addNode(
       nodes
         .NewTypeDecl()

@@ -3,15 +3,12 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{CpgDiffGraphBuilder, EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate
-import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.traversal.Traversal
 
 import java.util.concurrent.RecursiveTask
 import java.util.concurrent.atomic.AtomicBoolean
@@ -66,7 +63,7 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
   config: XTypeRecoveryConfig = XTypeRecoveryConfig()
 ) extends CpgPass(cpg) {
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(builder: DiffGraphBuilder): Unit = {
     val stopEarly = new AtomicBoolean(false)
     val state     = XTypeRecoveryState(config, stopEarly = stopEarly)
     try {
@@ -171,7 +168,7 @@ object XTypeRecovery {
 abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   cpg: Cpg,
   cu: CompilationUnitType,
-  builder: DiffGraphBuilder,
+  builder: CpgDiffGraphBuilder,
   state: XTypeRecoveryState
 ) extends RecursiveTask[Boolean] {
 

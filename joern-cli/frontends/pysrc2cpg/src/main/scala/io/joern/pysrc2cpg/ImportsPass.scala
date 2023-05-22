@@ -4,11 +4,10 @@ import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.passes.CpgPass
-import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 
 class ImportsPass(cpg: Cpg) extends CpgPass(cpg) {
-  override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(diffGraph: DiffGraphBuilder): Unit = {
     val importsAndAssignments = cpg
       .call("import")
       .flatMap { x =>

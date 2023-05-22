@@ -4,7 +4,6 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.PropertyDefaults
 import io.shiftleft.passes.CpgPass
-import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 
 /** Old CPGs use the `order` field to indicate the parameter index while newer CPGs use the `parameterIndex` field. This
@@ -12,7 +11,7 @@ import io.shiftleft.semanticcpg.language._
   */
 class ParameterIndexCompatPass(cpg: Cpg) extends CpgPass(cpg) {
 
-  override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(diffGraph: DiffGraphBuilder): Unit = {
     cpg.parameter.foreach { param =>
       if (param.index == PropertyDefaults.Index) {
         diffGraph.setNodeProperty(param, PropertyNames.INDEX, param.order)
