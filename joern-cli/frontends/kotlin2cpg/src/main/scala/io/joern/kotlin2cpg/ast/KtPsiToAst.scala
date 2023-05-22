@@ -22,7 +22,8 @@ import io.joern.x2cpg.utils.NodeBuilders.{
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
-import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.iterableToTraversal
+
 import scala.annotation.unused
 import scala.jdk.CollectionConverters._
 
@@ -36,7 +37,7 @@ trait KtPsiToAst {
     val importAsts       = importDirectives.toList.map(astForImportDirective)
     val namespaceBlocksForImports =
       for {
-        node <- importAsts.flatMap(_.root.iterator.collectAll[NewImport])
+        node <- importAsts.flatMap(_.root.collectAll[NewImport])
         name = getName(node)
       } yield Ast(namespaceBlockNode(name, name, relativizedPath))
 
@@ -289,18 +290,17 @@ trait KtPsiToAst {
         componentNMethodAsts(typeDecl, ktClass.getPrimaryConstructor.getValueParameters.asScala.toSeq)
       case _ => Seq()
     }
-    val componentNBindingsInfo =
-      _componentNMethodAsts.flatMap(_.root.iterator.collectAll[NewMethod]).map { methodNode =>
-        val node = newBindingNode(methodNode.name, methodNode.signature, methodNode.fullName)
-        BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
-      }
+    val componentNBindingsInfo = _componentNMethodAsts.flatMap(_.root.collectAll[NewMethod]).map { methodNode =>
+      val node = newBindingNode(methodNode.name, methodNode.signature, methodNode.fullName)
+      BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
+    }
 
     val classDeclarations = Option(ktClass.getBody)
       .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))
       .getOrElse(List())
     val memberAsts = classDeclarations.toSeq.map(astForMember)
     val innerTypeDeclAsts =
-      classDeclarations.iterator
+      classDeclarations.toSeq
         .collectAll[KtClassOrObject]
         .filterNot(typeInfoProvider.isCompanionObject)
         .map(astsForDeclaration(_))
@@ -312,7 +312,7 @@ trait KtPsiToAst {
     val methodAsts = classFunctions.toSeq.flatMap { classFn =>
       astsForMethod(classFn, needsThisParameter = true, withVirtualModifier = true)
     }
-    val bindingsInfo = methodAsts.flatMap(_.root.iterator.collectAll[NewMethod]).map { _methodNode =>
+    val bindingsInfo = methodAsts.flatMap(_.root.collectAll[NewMethod]).map { _methodNode =>
       val node = newBindingNode(_methodNode.name, _methodNode.signature, _methodNode.fullName)
       BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, _methodNode, EdgeTypes.REF)))
     }

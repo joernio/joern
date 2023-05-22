@@ -317,7 +317,7 @@ class TsDecoratorAstCreationPassTest extends AbstractPassTest {
     "create methods for const exports" in TsAstFixture(
       "export const getApiA = (req: Request) => { const user = req.user as UserDocument; }"
     ) { cpg =>
-      cpg.method.name.sorted shouldBe List(":program", "anonymous")
+      cpg.method.name.sorted.l shouldBe List(":program", "anonymous")
       cpg.assignment.code.l shouldBe List(
         "const user = req.user as UserDocument",
         "const getApiA = (req: Request) => { const user = req.user as UserDocument; }",
@@ -474,7 +474,7 @@ class TsDecoratorAstCreationPassTest extends AbstractPassTest {
         |interface A {};
         |interface B {};
         |""".stripMargin) { cpg =>
-      cpg.method.fullName.sorted shouldBe List(
+      cpg.method.fullName.sorted.l shouldBe List(
         "code.ts::program",
         s"code.ts::program:A:${io.joern.x2cpg.Defines.ConstructorMethodName}",
         s"code.ts::program:B:${io.joern.x2cpg.Defines.ConstructorMethodName}"

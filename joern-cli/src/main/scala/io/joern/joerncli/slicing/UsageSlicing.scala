@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.Traversal
 
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{ForkJoinPool, RecursiveTask}
@@ -49,7 +50,9 @@ object UsageSlicing {
       .flatMap(_.get())
       .groupBy { case (scope, _) => scope }
       .view
-      .mapValues(_.toList.map { case (_, slice) => slice }.toSet)
+      .mapValues(_.l.map { case (_, slice) => slice }.toSet)
+      .toMap
+      .l
       .toMap
 
     val fjp = ForkJoinPool.commonPool()
@@ -99,7 +102,7 @@ object UsageSlicing {
                           .nameExact("<operator>.new")
                           .lastOption
                           .map(_.argument)
-                          .getOrElse(Iterator.empty)
+                          .getOrElse(Traversal.empty)
                       else baseCall.argument)
           .collect { case n: Expression if n.argumentIndex > 0 => n }
           .flatMap {

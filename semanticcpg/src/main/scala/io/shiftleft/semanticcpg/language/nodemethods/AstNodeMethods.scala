@@ -1,11 +1,12 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.Implicits.IterableOnceDeco
+import io.shiftleft.Implicits.JavaIteratorDeco
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.nodemethods.AstNodeMethods.lastExpressionInBlock
 import io.shiftleft.semanticcpg.utils.MemberAccess
+import overflowdb.traversal.Traversal
 
 class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
 
@@ -80,7 +81,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
   /** Nodes of the AST rooted in this node, including the node itself.
     */
   def ast: Traversal[AstNode] =
-    node.start.ast
+    Traversal.fromSingle(node).ast
 
   /** Textual representation of AST node
     */
@@ -132,7 +133,7 @@ object AstNodeMethods {
 
   import scala.jdk.CollectionConverters._
   private def lastExpressionInBlock(block: Block): Option[Expression] =
-    block._astOut
+    block._astOut.asScala
       .collect {
         case node: Expression if !node.isInstanceOf[Local] && !node.isInstanceOf[Method] => node
       }

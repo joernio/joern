@@ -7,7 +7,7 @@ object DotTypeHierarchyGenerator {
 
   def dotTypeHierarchy(cpg: Cpg): Traversal[String] = {
     val typeHierarchy = new TypeHierarchyGenerator().generate(cpg)
-    Iterator.single(DotSerializer.dotGraph(None, typeHierarchy))
+    Traversal(DotSerializer.dotGraph(None, typeHierarchy))
   }
 
 }

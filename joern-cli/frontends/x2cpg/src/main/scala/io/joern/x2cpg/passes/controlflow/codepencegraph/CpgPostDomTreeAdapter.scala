@@ -2,6 +2,7 @@ package io.joern.x2cpg.passes.controlflow.codepencegraph
 
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.joern.x2cpg.passes.controlflow.cfgdominator.DomTreeAdapter
+import overflowdb.traversal._
 
 class CpgPostDomTreeAdapter extends DomTreeAdapter[StoredNode] {
 
