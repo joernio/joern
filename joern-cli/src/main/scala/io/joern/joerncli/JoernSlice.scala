@@ -4,6 +4,7 @@ import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.joerncli.JoernParse.ParserConfig
 import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.layers.Base
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -56,11 +57,11 @@ object JoernSlice {
   private def checkAndApplyOverlays(cpg: Cpg): Unit = {
     import io.shiftleft.semanticcpg.language._
 
-    if (!cpg.metaData.overlays.contains("base")) {
+    if (!cpg.metaData.overlays.exists(_ == Base.overlayName)) {
       println("Default overlays are not detected, applying defaults now")
       X2Cpg.applyDefaultOverlays(cpg)
     }
-    if (!cpg.metaData.overlays.contains("dataflowOss")) {
+    if (!cpg.metaData.overlays.exists(_ == OssDataFlow.overlayName)) {
       println("Data-flow overlay is not detected, applying now")
       new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
     }
