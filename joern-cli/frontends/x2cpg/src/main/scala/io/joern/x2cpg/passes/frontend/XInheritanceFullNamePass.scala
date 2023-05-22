@@ -30,7 +30,7 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ConcurrentWriterCpgPas
 
   // Regex matching is expensive, so we cache pattern strings to their compiled pattern objects
   private val typeRegexCache: TrieMap[String, Pattern] = TrieMap.empty[String, Pattern]
-  private val relativePathPattern                      = Pattern.compile("^[.]+/?.*$")
+  private val relativePathPattern                      = Pattern.compile("^[.]+/?.*")
 
   override def generateParts(): Array[TypeDecl] =
     cpg.typeDecl
@@ -44,6 +44,12 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ConcurrentWriterCpgPas
       builder.setNodeProperty(source, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, fullNames)
       fullNames.flatMap(typeMap.get).foreach(tgt => builder.addEdge(source, tgt, EdgeTypes.INHERITS_FROM))
     }
+  }
+
+  override def finish(): Unit = {
+    typeDeclMap.clear()
+    typeMap.clear()
+    typeRegexCache.clear()
   }
 
   protected def inheritsNothingOfInterest(inheritedTypes: Seq[String]): Boolean =
@@ -70,8 +76,8 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ConcurrentWriterCpgPas
       n match {
         case x if x.contains(pathSep) =>
           val splitName = x.split(pathSep)
-          Pattern.compile(s"^.*${Pattern.quote(splitName.head)}.*${Pattern.quote(splitName.last)}$$")
-        case x => Pattern.compile(s"^.*${Pattern.quote(x)}$$")
+          Pattern.compile(s".*${Pattern.quote(splitName.head)}.*${Pattern.quote(splitName.last)}$$")
+        case x => Pattern.compile(s".*${Pattern.quote(x)}$$")
       }
     }
   )
