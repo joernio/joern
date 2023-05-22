@@ -11,7 +11,7 @@ class CdgGenerator extends CfgGenerator {
   override val edgeType: String = EdgeTypes.CDG
 
   override def expand(v: StoredNode): Iterator[Edge] = {
-    v._cdgOut.asScala
+    v._cdgOut
       .filter(_.isInstanceOf[StoredNode])
       .map(node => Edge(v, node, edgeType = edgeType))
   }

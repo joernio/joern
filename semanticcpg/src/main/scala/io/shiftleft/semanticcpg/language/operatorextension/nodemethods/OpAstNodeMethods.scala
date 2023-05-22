@@ -9,7 +9,6 @@ import io.shiftleft.semanticcpg.language.operatorextension.{
   allAssignmentTypes,
   allFieldAccessTypes
 }
-import overflowdb.traversal.Traversal
 
 class OpAstNodeMethods[A <: AstNode](val node: A) extends AnyVal {
 

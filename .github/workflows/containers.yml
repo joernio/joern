@@ -10,7 +10,7 @@ env:
 
 jobs:
   deploy:
-
+    if: github.repository_owner == 'joernio'
     runs-on: ubuntu-latest
     permissions:
       contents: write

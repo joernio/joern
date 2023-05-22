@@ -5,15 +5,21 @@ import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Method, MethodRef}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
+
+import scala.collection.mutable
 
 /** A pass that identifies assignments of closures to constants and updates `METHOD` nodes accordingly.
   */
 class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
 
   // Keeps track of how many times an identifier has been on the LHS of an assignment, by name
-  protected lazy val identifiersAssignedCount: Map[String, Int] =
-    cpg.assignment.target.collectAll[Identifier].name.groupCount
+  protected lazy val identifiersAssignedCount: scala.collection.Map[String, Int] = {
+    val tmp = mutable.HashMap[String, Int]()
+    cpg.assignment.target.collectAll[Identifier].name.foreach { name =>
+      tmp.updateWith(name) { old => Some(old.getOrElse(0) + 1) }
+    }
+    tmp
+  }
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     handleConstClosures(diffGraph)

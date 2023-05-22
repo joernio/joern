@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated._
 import io.joern.console._
 import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
 
 object CertificateChecks extends QueryBundle {
 
@@ -42,7 +41,7 @@ object CertificateChecks extends QueryBundle {
           case _ => false
         }
         def skipPrologue(node: nodes.CfgNode): Traversal[nodes.CfgNode] =
-          Traversal.fromSingle(node).repeat(_.cfgNext)(_.until(_.filter(!isPrologue(_))))
+          node.start.repeat(_.cfgNext)(_.until(_.filter(!isPrologue(_))))
 
         cpg.method
           .nameExact(validators.keys.toSeq: _*)

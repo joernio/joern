@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.Implicits.JavaIteratorDeco
+import io.shiftleft.Implicits.IterableOnceDeco
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.NodeExtension
@@ -49,21 +49,21 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
   }
 
   def isArgument: Traversal[Expression] = {
-    if (node._argumentIn.hasNext) Traversal(node)
-    else Traversal.empty
+    if (node._argumentIn.hasNext) Iterator.single(node)
+    else Iterator.empty
   }
 
   def inCall: Traversal[Call] =
     node._argumentIn.headOption match {
-      case Some(c: Call) => Traversal(c)
-      case _             => Traversal.empty
+      case Some(c: Call) => Iterator.single(c)
+      case _             => Iterator.empty
     }
 
   def parameter(implicit callResolver: ICallResolver): Traversal[MethodParameterIn] =
     for {
-      call          <- node._argumentIn.asScala
+      call          <- node._argumentIn
       calledMethods <- callResolver.getCalledMethods(call.asInstanceOf[CallRepr])
-      paramIn       <- calledMethods._astOut.asScala.collectAll[MethodParameterIn]
+      paramIn       <- calledMethods._astOut.collectAll[MethodParameterIn]
       if paramIn.index == node.argumentIndex
     } yield paramIn
 
