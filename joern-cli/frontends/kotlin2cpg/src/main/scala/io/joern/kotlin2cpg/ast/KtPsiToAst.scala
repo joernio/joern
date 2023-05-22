@@ -1886,8 +1886,7 @@ trait KtPsiToAst {
           scope.addToScope(tmpName, node)
           val localAst = Ast(node)
 
-          val typeFullName = registerType(typeInfoProvider.expressionType(objectLiteral, Defines.UnresolvedNamespace))
-          val rhsAst       = Ast(operatorCallNode(Operators.alloc, Operators.alloc, None))
+          val rhsAst = Ast(operatorCallNode(Operators.alloc, Operators.alloc, None))
 
           val identifier    = identifierNode(objectLiteral, node.name, node.code, node.typeFullName)
           val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
@@ -1896,7 +1895,7 @@ trait KtPsiToAst {
             operatorCallNode(Operators.assignment, s"${identifier.name} = <alloc>", None, line(expr), column(expr))
           val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
           val initSignature     = s"<${TypeConstants.void}>()"
-          val initFullName      = s"$typeFullName${TypeConstants.initPrefix}:$initSignature"
+          val initFullName      = s"$typeDeclFullName.<init>:$initSignature"
           val initCallNode = callNode(
             objectLiteral,
             Constants.init,
