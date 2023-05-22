@@ -76,8 +76,8 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ConcurrentWriterCpgPas
       n match {
         case x if x.contains(pathSep) =>
           val splitName = x.split(pathSep)
-          Pattern.compile(s".*${Pattern.quote(splitName.head)}.*${Pattern.quote(splitName.last)}$$")
-        case x => Pattern.compile(s".*${Pattern.quote(x)}$$")
+          Pattern.compile(s".*${Pattern.quote(splitName.head)}.*${Pattern.quote(splitName.last)}")
+        case x => Pattern.compile(s".*${Pattern.quote(x)}")
       }
     }
   )
