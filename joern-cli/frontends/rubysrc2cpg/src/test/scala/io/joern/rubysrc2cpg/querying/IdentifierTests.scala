@@ -2,6 +2,10 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
+
+import scala.sys.process.Process
+import scala.util.Try
 
 class IdentifierTests extends RubyCode2CpgFixture {
 
@@ -288,6 +292,25 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
       "recognise identifier nodes in the jump statement" in {
         cpg.identifier.name("verify_recaptcha").size shouldBe 1
+      }
+    }
+
+    "foo" should {
+      val cpg = code(
+        """
+          |def add_three_numbers(num1, num2, num3)
+          |sum = num1 + num2 + num3
+          |return sum
+          |end
+          |""".stripMargin)
+
+      "bar" in {
+        implicit val viewer: ImageViewer = (pathStr: String) => Try {
+          Process(Seq("xdg-open", pathStr)).!!
+        }
+
+        cpg.call.code("\\+").plotDotAst
+        cpg.method.name("add_three_numbers").plotDotAst
       }
     }
 
