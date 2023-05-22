@@ -347,7 +347,6 @@ class AstCreator(filename: String, global: Global)
   def astForStatementsContext(ctx: StatementsContext): Ast = {
     if (ctx == null) return Ast()
 
-    val blockNode = NewBlock().typeFullName(Defines.Any)
     val asts = ctx
       .statement()
       .asScala
@@ -356,7 +355,7 @@ class AstCreator(filename: String, global: Global)
       })
       .toList
 
-    blockAst(blockNode, asts)
+    Ast().withChildren(asts)
   }
 
   def astForAdditiveExpressionContext(ctx: AdditiveExpressionContext): Ast = {
