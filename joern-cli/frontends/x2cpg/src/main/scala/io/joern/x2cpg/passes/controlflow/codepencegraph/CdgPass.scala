@@ -28,7 +28,7 @@ class CdgPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
     val dominanceFrontier = new CfgDominatorFrontier(new ReverseCpgCfgAdapter, new CpgPostDomTreeAdapter)
 
-    val cfgNodes         = method._containsOut.asScala.toList
+    val cfgNodes         = method._containsOut.toList
     val postDomFrontiers = dominanceFrontier.calculate(method :: cfgNodes)
 
     postDomFrontiers.foreach { case (node, postDomFrontierNodes) =>
@@ -49,7 +49,7 @@ class CdgPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
                     case m: Method => m.fullName;
                     case other     => other.label
                   }}" +
-                s" number of outgoing CFG edges from $nodeLabel node: ${postDomFrontierNode._cfgOut.asScala.size}"
+                s" number of outgoing CFG edges from $nodeLabel node: ${postDomFrontierNode._cfgOut.size}"
             )
           }
       }
