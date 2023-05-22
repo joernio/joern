@@ -1,6 +1,6 @@
 package io.joern.php2cpg
 
-import io.joern.php2cpg.passes.AstCreationPass
+import io.joern.php2cpg.passes.{AstCreationPass, LocalCreationPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
@@ -38,6 +38,8 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         val astCreationPass = new AstCreationPass(config, cpg)
         astCreationPass.createAndApply()
         new TypeNodePass(astCreationPass.allUsedTypes, cpg).createAndApply()
+        LocalCreationPass.allLocalCreationPasses(cpg).foreach(_.createAndApply())
+
       }
     } else {
       logger.error(

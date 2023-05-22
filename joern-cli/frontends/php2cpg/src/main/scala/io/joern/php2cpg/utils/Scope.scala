@@ -4,7 +4,7 @@ import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{Scope => X2CpgScope}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
@@ -14,7 +14,6 @@ class Scope extends X2CpgScope[String, NewNode, PhpScopeElement] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private var localStack: List[mutable.ArrayBuffer[NewLocal]]     = Nil
   private var constAndStaticInits: List[mutable.ArrayBuffer[Ast]] = Nil
   private var fieldInits: List[mutable.ArrayBuffer[Ast]]          = Nil
   private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
@@ -22,7 +21,6 @@ class Scope extends X2CpgScope[String, NewNode, PhpScopeElement] {
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
       case method: NewMethod =>
-        localStack = mutable.ArrayBuffer[NewLocal]() :: localStack
         super.pushNewScope(PhpScopeElement(method))
 
       case typeDecl: NewTypeDecl =>
@@ -42,10 +40,6 @@ class Scope extends X2CpgScope[String, NewNode, PhpScopeElement] {
     val scopeNode = super.popScope()
 
     scopeNode.map(_.node) match {
-      case Some(_: NewMethod) =>
-        // TODO This is unsafe to catch errors for now.
-        localStack = localStack.tail
-
       case Some(_: NewTypeDecl) =>
         // TODO This is unsafe to catch errors for now
         constAndStaticInits = constAndStaticInits.tail
@@ -58,12 +52,6 @@ class Scope extends X2CpgScope[String, NewNode, PhpScopeElement] {
   }
 
   override def addToScope(identifier: String, variable: NewNode): PhpScopeElement = {
-    variable match {
-      case local: NewLocal =>
-        // TODO This is unsafe to catch errors for now.
-        localStack.head.addOne(local)
-      case _ => // Nothing to do here
-    }
     super.addToScope(identifier, variable)
   }
 
@@ -80,8 +68,6 @@ class Scope extends X2CpgScope[String, NewNode, PhpScopeElement] {
 
   def getEnclosingTypeDeclTypeName: Option[String] =
     stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.map(_.name)
-
-  def getLocalsInScope: List[NewLocal] = localStack.headOption.map(_.toList).toList.flatten
 
   def addConstOrStaticInitToScope(ast: Ast): Unit = {
     addInitToScope(ast, constAndStaticInits)

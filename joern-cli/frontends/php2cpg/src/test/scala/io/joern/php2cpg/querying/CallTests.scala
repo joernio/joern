@@ -78,8 +78,8 @@ class CallTests extends PhpCode2CpgFixture {
     }
 
     "not create an identifier for the class target" in {
-      inside (cpg.identifier.l) {
-        case List(xArg) => xArg.name shouldBe "x"
+      inside(cpg.identifier.l) { case List(xArg) =>
+        xArg.name shouldBe "x"
       }
     }
   }
