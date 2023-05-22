@@ -20,6 +20,6 @@ package object language {
     new DdgNodeDot(traversal)
 
   implicit def toDdgNodeDotSingle(method: Method): DdgNodeDot =
-    new DdgNodeDot(Traversal.fromSingle(method))
+    new DdgNodeDot(method.start)
 
 }

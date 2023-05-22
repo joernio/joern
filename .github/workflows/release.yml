@@ -5,6 +5,7 @@ on:
   workflow_dispatch:    # allow to manually trigger this workflow
 jobs:
   release:
+    if: github.repository_owner == 'joernio'
     concurrency: release
     runs-on: ubuntu-22.04
     steps:

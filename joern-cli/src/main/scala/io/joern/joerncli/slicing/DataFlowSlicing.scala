@@ -5,7 +5,6 @@ import io.joern.joerncli.JoernSlice.Config
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
 
 object DataFlowSlicing {
 
@@ -13,11 +12,11 @@ object DataFlowSlicing {
     val sliceMapping = (config.sourceFile match {
       case Some(fileName) => cpg.file.nameExact(fileName).ast.isCall
       case None           => cpg.call
-    }).groupBy(_.method).map { case (m: Method, calls: Traversal[Call]) =>
+    }).toBuffer.groupBy[Method] { _.method }.map { case (m: Method, calls: Traversal[Call] @unchecked) =>
       m.fullName -> calls.map { c =>
         val sinks = c.argument.l
 
-        val sliceNodes = sinks.repeat(_.ddgIn)(_.maxDepth(config.sliceDepth).emit).dedup.l
+        val sliceNodes = sinks.iterator.repeat(_.ddgIn)(_.maxDepth(config.sliceDepth).emit).dedup.l
         val sliceEdges = sliceNodes
           .flatMap(_.outE)
           .filter(x => sliceNodes.contains(x.inNode()))

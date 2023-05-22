@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, MethodParameterIn, MethodParameterOut, Return}
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.{NodeOps, Traversal}
 
 /** Creation of new tasks from results of completed tasks.
   */
@@ -25,7 +24,7 @@ class TaskCreator(context: EngineContext) {
       tasks.filter(_.callDepth <= context.config.maxCallDepth)
     }
     tasksWithValidCallDepth.filter { t =>
-      t.taskStack.dedup.size == t.taskStack.size
+      t.taskStack.distinct.size == t.taskStack.size
     }
   }
 
@@ -72,7 +71,7 @@ class TaskCreator(context: EngineContext) {
   private def paramToArgsOfCallers(param: MethodParameterIn): List[Expression] =
     NoResolve
       .getMethodCallsites(param.method)
-      .to(Traversal)
+      .iterator
       .collectAll[Call]
       .argument(param.index)
       .l
@@ -99,10 +98,9 @@ class TaskCreator(context: EngineContext) {
 
       val methodReturns = outCall.toList
         .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
-        .to(Traversal)
 
       methodReturns.flatMap { case (call, methodReturn) =>
-        val method           = methodReturn.method.head
+        val method           = methodReturn.method
         val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
         if (method.isExternal || method.start.isStub.nonEmpty) {
           val newPath = path

@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg.types
 
+import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.passes.KeyPool
@@ -36,7 +37,6 @@ import org.jetbrains.kotlin.psi.{
   KtLambdaExpression,
   KtNameReferenceExpression,
   KtNamedFunction,
-  KtObjectLiteralExpression,
   KtParameter,
   KtPrimaryConstructor,
   KtProperty,
@@ -51,7 +51,7 @@ import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorToSourceUtils, De
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
-import org.jetbrains.kotlin.types.{UnresolvedType}
+import org.jetbrains.kotlin.types.UnresolvedType
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -243,23 +243,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .map { objectDesc =>
         val parentDesc = objectDesc.getContainingDeclaration
         val parentPsi  = DescriptorToSourceUtils.getSourceFromDescriptor(parentDesc)
-        parentPsi match {
-          case t: KtNamedFunction =>
-            val anonymousObjects = {
-              t.getBodyBlockExpression.getStatements.asScala.toSeq.collect { case pt: KtProperty =>
-                pt.getDelegateExpressionOrInitializer match {
-                  case ol: KtObjectLiteralExpression => ol.getObjectDeclaration
-                  case _                             => None
-                }
-              }
-            }
-            var outIdx: Option[Int] = None
-            anonymousObjects.zip(1 to anonymousObjects.size).foreach { case (elem: KtElement, idx) =>
-              if (elem == obj) outIdx = Some(idx)
-            }
-            outIdx
-          case _ => None
-        }
+        PsiUtils.objectIdxMaybe(obj, parentPsi)
       }
       .getOrElse(None)
   }
