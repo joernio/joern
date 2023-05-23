@@ -1461,7 +1461,9 @@ trait KtPsiToAst {
     else astForForWithSimpleVarLHS(expr)
   }
 
-  def astForWhen(expr: KtWhenExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForWhenAsStatement(expr: KtWhenExpression, argIdx: Option[Int])(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
     val astForSubject = astsForExpression(expr.getSubjectExpression, Some(1)).headOption.getOrElse(Ast())
     val finalAstForSubject = expr.getSubjectExpression match {
       case p: KtProperty =>
@@ -1469,9 +1471,10 @@ trait KtPsiToAst {
         blockAst(block, List(astForSubject))
       case _ => astForSubject
     }
-    val astsForEntries = withIndex(expr.getEntries.asScala.toList) { (e, idx) =>
-      astsForWhenEntry(e, idx)
-    }.flatten
+    val astsForEntries =
+      withIndex(expr.getEntries.asScala.toList) { (e, idx) =>
+        astsForWhenEntry(e, idx)
+      }.flatten
 
     val switchBlockNode =
       blockNode(expr, expr.getEntries.asScala.map(_.getText).mkString("\n"), TypeConstants.any)
@@ -1489,7 +1492,40 @@ trait KtPsiToAst {
     }
   }
 
-  def astsForWhenEntry(entry: KtWhenEntry, argIdx: Int)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+  def astForWhenAsExpression(expr: KtWhenExpression, argIdx: Option[Int])(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
+    val callNode = withArgumentIndex(operatorCallNode("<operator>.when", "<operator>.when", None), argIdx)
+
+    val subjectExpressionAsts = astsForExpression(expr.getSubjectExpression, None)
+    val subjectBlock          = blockNode(expr.getSubjectExpression, "", "")
+    val subjectBlockAst       = blockAst(subjectBlock, subjectExpressionAsts.toList)
+
+    val argAsts = expr.getEntries.asScala.toList.map { e =>
+      val block = blockNode(e, "", "")
+      val conditionAsts =
+        e.getConditions
+          .flatMap(_.getChildren)
+          .collect { case e: KtExpression => e }
+          .map(astsForExpression(_, None))
+          .toList
+          .flatten
+      val bodyAsts = astsForExpression(e.getExpression, None)
+      blockAst(block, conditionAsts ++ bodyAsts)
+    }
+    callAst(callNode, List(subjectBlockAst) ++ argAsts)
+  }
+
+  def astForWhen(expr: KtWhenExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+    typeInfoProvider.usedAsExpression(expr) match {
+      case Some(true) => astForWhenAsExpression(expr, argIdx)
+      case _          => astForWhenAsStatement(expr, argIdx)
+    }
+  }
+
+  private def astsForWhenEntry(entry: KtWhenEntry, argIdx: Int)(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Seq[Ast] = {
     // TODO: get all conditions with entry.getConditions()
     val name =
       if (entry.getElseKeyword == null) Constants.defaultCaseNode

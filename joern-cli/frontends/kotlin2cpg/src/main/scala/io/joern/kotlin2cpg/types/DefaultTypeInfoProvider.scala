@@ -91,6 +91,11 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     s"${TypeConstants.any}($argsSignature)"
   }
 
+  def usedAsExpression(expr: KtExpression): Option[Boolean] = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    Option(mapForEntity.get(BindingContext.USED_AS_EXPRESSION.getKey))
+  }
+
   def fullName(expr: KtTypeAlias, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.TYPE_ALIAS.getKey))
