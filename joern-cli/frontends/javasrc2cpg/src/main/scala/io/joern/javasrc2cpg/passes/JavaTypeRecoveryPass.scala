@@ -16,7 +16,7 @@ class JavaTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecovery
 
 private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[Method](cpg, state) {
 
-  override def compilationUnit: Traversal[Method] = cpg.method.isExternal(false)
+  override def compilationUnit: Iterator[Method] = cpg.method.isExternal(false).iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: Method,
