@@ -1,8 +1,7 @@
-package io.joern.slicing
+package io.joern.joerncli
 
 import better.files.File
-import io.joern.joerncli.AbstractJoernCliTest
-import io.joern.slicing.{DefComponent, ProgramUsageSlice, UsageSlicing, SliceConfig}
+import io.joern.dataflowengineoss.slicing.{SliceConfig, DefComponent, ProgramUsageSlice, UsageSlicing}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{Languages, Operators}
 import org.scalatest.matchers.should.Matchers

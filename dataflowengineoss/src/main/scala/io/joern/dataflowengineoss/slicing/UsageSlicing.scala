@@ -1,4 +1,4 @@
-package io.joern.slicing
+package io.joern.dataflowengineoss.slicing
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._

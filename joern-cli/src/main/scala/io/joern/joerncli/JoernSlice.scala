@@ -13,8 +13,8 @@ import scala.util.Using
 
 object JoernSlice {
 
-  import io.joern.slicing.SliceMode._
-  import io.joern.slicing._
+  import io.joern.dataflowengineoss.slicing.SliceMode._
+  import io.joern.dataflowengineoss.slicing._
 
   implicit val sliceModeRead: scopt.Read[SliceModes] =
     scopt.Read.reads(SliceMode withName)

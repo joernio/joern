@@ -1,4 +1,4 @@
-package io.joern.slicing
+package io.joern.dataflowengineoss.slicing
 
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.codepropertygraph.Cpg
