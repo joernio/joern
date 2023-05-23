@@ -771,15 +771,31 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForMethodIdentifierContext(ctx: MethodIdentifierContext): Ast = {
-    if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER())
-    } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      astForCallNode(ctx.CONSTANT_IDENTIFIER())
-    } else if (ctx.methodOnlyIdentifier() != null) {
-      astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
+  def astForMethodIdentifierContext(ctx: MethodIdentifierContext, isIdentiferNode: Boolean = false): Ast = {
+    if (isIdentiferNode) {
+      if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
+        val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
+        val varSymbol = localVar.getSymbol()
+        val node      = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+        Ast(node)
+      } else if (ctx.CONSTANT_IDENTIFIER() != null) {
+        val localVar  = ctx.CONSTANT_IDENTIFIER()
+        val varSymbol = localVar.getSymbol()
+        val node      = identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+        Ast(node)
+      } else {
+        Ast()
+      }
     } else {
-      Ast()
+      if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
+        astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER())
+      } else if (ctx.CONSTANT_IDENTIFIER() != null) {
+        astForCallNode(ctx.CONSTANT_IDENTIFIER())
+      } else if (ctx.methodOnlyIdentifier() != null) {
+        astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
+      } else {
+        Ast()
+      }
     }
   }
 
@@ -1353,7 +1369,7 @@ class AstCreator(filename: String, global: Global)
     } else if (ctx.YIELD() != null) {
       Ast().withChild(argumentsWithoutParenAst)
     } else if (ctx.methodIdentifier() != null) {
-      val methodIdentifierAst = astForMethodIdentifierContext(ctx.methodIdentifier())
+      val methodIdentifierAst = astForMethodIdentifierContext(ctx.methodIdentifier(), true)
       Ast().withChildren(List[Ast](argumentsWithoutParenAst, methodIdentifierAst))
     } else if (ctx.primary() != null) {
       val primaryAst    = astForPrimaryContext(ctx.primary())
