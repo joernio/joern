@@ -19,11 +19,9 @@ class DdgGenerator {
   private val edgeCache = mutable.Map[StoredNode, List[Edge]]()
 
   def generate(methodNode: Method)(implicit semantics: Semantics = DefaultSemantics()): Graph = {
-    val entryNode                  = methodNode
     val paramNodes                 = methodNode.parameter.l
     val allOtherNodes              = methodNode.cfgNode.l
-    val exitNode                   = methodNode.methodReturn
-    val allNodes: List[StoredNode] = List(entryNode, exitNode) ++ paramNodes ++ allOtherNodes
+    val allNodes: List[StoredNode] = paramNodes ++ allOtherNodes
     val visibleNodes               = allNodes.filter(shouldBeDisplayed)
 
     val edges = visibleNodes.map { dstNode =>

@@ -136,7 +136,7 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
       .not(_.hasLabel(NodeTypes.LOCAL))
       .cast[Expression]
 
-  @Doc(info = "Control flow graph nodes")
+  @Doc(info = "Control flow graph nodes. This include the method itself as entry and the method return node as exit.")
   def cfgNode: Traversal[CfgNode] =
     traversal.flatMap(_.cfgNode)
 
