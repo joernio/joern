@@ -41,7 +41,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     val callerAndCallees = calls.map(call => (call, calleeNames(call))).toList
     val methodMap        = mapMethods(callerAndCallees, builder)
     linkCallsToCallees(callerAndCallees, methodMap, builder)
-    linkSpeculativeNamespaceNodes(methodMap.view.values.iterator.collectAll[NewMethod], builder)
+    linkSpeculativeNamespaceNodes(methodMap.view.values.collectAll[NewMethod], builder)
   }
 
   protected def mapMethods(

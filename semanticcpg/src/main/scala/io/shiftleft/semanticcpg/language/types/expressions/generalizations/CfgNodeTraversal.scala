@@ -3,8 +3,9 @@ package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal._
 import overflowdb.traversal.help.Doc
-import overflowdb.traversal.help
+
 @help.Traversal(elementType = classOf[CfgNode])
 class CfgNodeTraversal[A <: CfgNode](val traversal: Traversal[A]) extends AnyVal {
 

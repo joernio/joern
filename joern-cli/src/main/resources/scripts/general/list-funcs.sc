@@ -13,6 +13,9 @@
    -------------
    List("<operator>.indirectMemberAccess", "<operator>.assignment", "free_list", "free", "<operator>.notEquals")
  */
+
+import io.shiftleft.semanticcpg.language._
+
 @main def main(): List[String] = {
   cpg.method.name.l
 }

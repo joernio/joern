@@ -7,7 +7,7 @@ object DotCallGraphGenerator {
 
   def dotCallGraph(cpg: Cpg): Traversal[String] = {
     val callGraph = new CallGraphGenerator().generate(cpg)
-    Iterator.single(DotSerializer.dotGraph(None, callGraph))
+    Traversal(DotSerializer.dotGraph(None, callGraph))
   }
 
 }

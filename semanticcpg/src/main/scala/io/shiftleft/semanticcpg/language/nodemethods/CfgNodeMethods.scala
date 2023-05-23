@@ -1,9 +1,10 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.Implicits.IterableOnceDeco
+import io.shiftleft.Implicits.JavaIteratorDeco
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.Traversal
 
 import scala.jdk.CollectionConverters._
 
@@ -12,34 +13,34 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
   /** Successors in the CFG
     */
   def cfgNext: Traversal[CfgNode] = {
-    Iterator.single(node).cfgNext
+    Traversal.fromSingle(node).cfgNext
   }
 
   /** Maps each node in the traversal to a traversal returning its n successors.
     */
   def cfgNext(n: Int): Traversal[CfgNode] = n match {
-    case 0 => Iterator.empty
+    case 0 => Traversal()
     case _ => cfgNext.flatMap(x => List(x) ++ x.cfgNext(n - 1))
   }
 
   /** Maps each node in the traversal to a traversal returning its n predecessors.
     */
   def cfgPrev(n: Int): Traversal[CfgNode] = n match {
-    case 0 => Iterator.empty
+    case 0 => Traversal()
     case _ => cfgPrev.flatMap(x => List(x) ++ x.cfgPrev(n - 1))
   }
 
   /** Predecessors in the CFG
     */
   def cfgPrev: Traversal[CfgNode] = {
-    Iterator.single(node).cfgPrev
+    Traversal.fromSingle(node).cfgPrev
   }
 
   /** Recursively determine all nodes on which this CFG node is control-dependent.
     */
   def controlledBy: Traversal[CfgNode] = {
     expandExhaustively { v =>
-      v._cdgIn
+      v._cdgIn.asScala
     }
   }
 
@@ -47,7 +48,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     */
   def controls: Traversal[CfgNode] = {
     expandExhaustively { v =>
-      v._cdgOut
+      v._cdgOut.asScala
     }
   }
 
@@ -55,7 +56,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     */
   def dominatedBy: Traversal[CfgNode] = {
     expandExhaustively { v =>
-      v._dominateIn
+      v._dominateIn.asScala
     }
   }
 
@@ -63,7 +64,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     */
   def dominates: Traversal[CfgNode] = {
     expandExhaustively { v =>
-      v._dominateOut
+      v._dominateOut.asScala
     }
   }
 
@@ -71,7 +72,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     */
   def postDominatedBy: Traversal[CfgNode] = {
     expandExhaustively { v =>
-      v._postDominateIn
+      v._postDominateIn.asScala
     }
   }
 
@@ -79,7 +80,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     */
   def postDominates: Traversal[CfgNode] = {
     expandExhaustively { v =>
-      v._postDominateOut
+      v._postDominateOut.asScala
     }
   }
 
@@ -91,7 +92,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     *   the traversal of this node if it passes through the included set.
     */
   def passes(included: Set[CfgNode]): Traversal[CfgNode] =
-    node.start.filter(_.postDominatedBy.exists(included.contains))
+    Traversal.fromSingle(node).filter(_.postDominatedBy.exists(included.contains))
 
   /** Using the post dominator tree, will determine if this node passes through the excluded set of nodes and filter it
     * out.
@@ -101,7 +102,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     *   the traversal of this node if it does not pass through the excluded set.
     */
   def passesNot(excluded: Set[CfgNode]): Traversal[CfgNode] =
-    node.start.filterNot(_.postDominatedBy.exists(excluded.contains))
+    Traversal.fromSingle(node).filterNot(_.postDominatedBy.exists(excluded.contains))
 
   private def expandExhaustively(expand: CfgNode => Iterator[StoredNode]): Traversal[CfgNode] = {
     var controllingNodes = List.empty[CfgNode]
@@ -120,7 +121,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
         }
       }
     }
-    controllingNodes
+    Traversal.from(controllingNodes)
   }
 
   def method: Method = node match {
