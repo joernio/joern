@@ -6,9 +6,9 @@ import io.joern.jssrc2cpg.JsSrc2Cpg.postProcessingPasses
 import io.joern.jssrc2cpg.passes._
 import io.joern.jssrc2cpg.utils.{AstGenRunner, Report}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.{JoernTI, X2CpgFrontend}
 import io.joern.x2cpg.passes.frontend.{SliceBasedTypeInferencePass, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.HashUtil
+import io.joern.x2cpg.{JoernTI, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -59,8 +59,12 @@ object JsSrc2Cpg {
     List(
       new JavaScriptInheritanceNamePass(cpg),
       new ConstClosurePass(cpg),
-      new JavaScriptTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes))),
+      new JavaScriptTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = false)),
       new SliceBasedTypeInferencePass(cpg, Try(new JoernTI(spawnProcess = false)).toOption),
+      new JavaScriptTypeRecoveryPass(
+        cpg,
+        XTypeRecoveryConfig(iterations = 1, enabledDummyTypes = !config.exists(_.disableDummyTypes))
+      ),
       new JavaScriptTypeHintCallLinker(cpg)
     )
   }
