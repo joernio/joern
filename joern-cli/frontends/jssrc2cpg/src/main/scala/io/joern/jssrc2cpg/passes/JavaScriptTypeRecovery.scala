@@ -25,9 +25,9 @@ private class JavaScriptTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extend
   override def compilationUnit: Traversal[File] = cpg.file
 
   override def generateRecoveryForCompilationUnitTask(
-    unit: Method,
+    unit: File,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[Method] = {
+  ): RecoverForXCompilationUnit[File] = {
     val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
     new RecoverForJavaScriptFile(cpg, unit, builder, state.copy(config = newConfig))
   }
@@ -197,10 +197,9 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {
       def newChildren = c.inAssignment.astSiblings.isCall.nameExact("<operator>.new").astChildren
       val possibleImportIdentifier = newChildren.isIdentifier.headOption match {
-        case Some(i) if GlobalBuiltins.builtins.contains(i.name) =>
-          Set(s"__ecma.${i.name}")
-        case Some(i) => symbolTable.get(i)
-        case None    => Set.empty[String]
+        case Some(i) if GlobalBuiltins.builtins.contains(i.name) => Set(s"__ecma.${i.name}")
+        case Some(i)                                             => symbolTable.get(i)
+        case None                                                => Set.empty[String]
       }
       val possibleConstructorPointer =
         newChildren.astChildren.isFieldIdentifier.map(f => CallAlias(f.canonicalName, Some("this"))).headOption match {
