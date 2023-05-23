@@ -1,6 +1,5 @@
-package io.joern.joerncli.slicing
+package io.joern.dataflowengineoss.slicing
 
-import io.joern.joerncli.JoernSlice.Config
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
@@ -13,6 +12,9 @@ import java.util.regex.Pattern
 import scala.collection.concurrent.TrieMap
 import scala.util.Try
 
+/** A utility for slicing based off of usage references for identifiers and parameters. This is mainly tested around
+  * JavaScript CPGs.
+  */
 object UsageSlicing {
 
   private val resolver               = NoResolve
@@ -26,7 +28,7 @@ object UsageSlicing {
     * @return
     *   a set of object slices.
     */
-  def calculateUsageSlice(cpg: Cpg, config: Config): ProgramSlice = {
+  def calculateUsageSlice(cpg: Cpg, config: SliceConfig): ProgramSlice = {
     excludeOperatorCalls.set(config.excludeOperatorCalls)
 
     def getAssignmentDecl: Traversal[Declaration] = (config.sourceFile match {
@@ -211,7 +213,6 @@ object UsageSlicing {
         case c if c.name.startsWith(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
         case c if excludeOperatorCalls.get() && c.name.startsWith("<operator>")                          => None
         case c                                                                                           => Some(c)
-        case _                                                                                           => None
       }
       .dedup
       .toList

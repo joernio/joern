@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
@@ -101,7 +101,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   private def usages(pairs: List[(TypeDecl, AstNode)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, astNode) =>
-      val nonConstructorMethods = methodsRecursively(typeDecl)
+      val nonConstructorMethods = methodsRecursively(typeDecl).iterator
         .whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"))
         .l
 
