@@ -4,7 +4,7 @@ import io.joern.x2cpg.passes.base.TypeDeclStubCreator
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
@@ -16,7 +16,7 @@ import scala.collection.mutable
 /** Using some basic heuristics, will try to resolve type full names from types found within the CPG. Requires
   * ImportPass as a pre-requisite.
   */
-abstract class XInheritanceFullNamePass(cpg: Cpg) extends ConcurrentWriterCpgPass[TypeDecl](cpg) {
+abstract class XInheritanceFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPass[TypeDecl](cpg) {
 
   protected val pathSep: Char       = '.'
   protected val fileModuleSep: Char = ':'

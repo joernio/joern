@@ -20,11 +20,15 @@ class JavaScriptTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRe
 }
 
 private class JavaScriptTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
-  override def generateParts(): Array[File] = cpg.file.toArray
 
-  override def runOnPart(builder: DiffGraphBuilder, unit: File): Unit = {
+  override def compilationUnit: Traversal[File] = cpg.file
+
+  override def generateRecoveryForCompilationUnitTask(
+    unit: Method,
+    builder: DiffGraphBuilder
+  ): RecoverForXCompilationUnit[Method] = {
     val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    changeTracker.addOne(new RecoverForJavaScriptFile(cpg, unit, builder, state.copy(config = newConfig)).compute())
+    new RecoverForJavaScriptFile(cpg, unit, builder, state.copy(config = newConfig))
   }
 
 }
@@ -50,15 +54,17 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     cu.ast.isMethod.foreach(f => symbolTable.put(CallAlias(f.name, Option("this")), Set(f.fullName)))
     (cu.ast.isParameter.whereNot(_.nameExact("this")) ++ cu.ast.isMethod.methodReturn).filter(hasTypes).foreach { p =>
       val resolvedHints = getTypes(p)
-        .flatMap { t =>
+        .map { t =>
           t.split("\\.").headOption match {
             case Some(base) if symbolTable.contains(LocalVar(base)) =>
-              symbolTable.get(LocalVar(base)).map(x => x + t.stripPrefix(base))
-            case Some(base) => Set(base)
-            case None       => Set(t)
+              (t, symbolTable.get(LocalVar(base)).map(x => x + t.stripPrefix(base)))
+            case _ => (t, Set(t))
           }
         }
-        .map(_.replaceAll("\\.", pathSep.toString))
+        .flatMap {
+          case (t, ts) if Set(t) == ts => Set(t)
+          case (_, ts)                 => ts.map(_.replaceAll("\\.", pathSep.toString))
+        }
       p match {
         case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
         case _: MethodReturn if resolvedHints.sizeIs == 1 =>
@@ -190,9 +196,10 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {
       def newChildren = c.inAssignment.astSiblings.isCall.nameExact("<operator>.new").astChildren
       val possibleImportIdentifier = newChildren.isIdentifier.headOption match {
-        case Some(i) if GlobalBuiltins.builtins.contains(i.name) => Set(s"__ecma.${i.name}")
-        case Some(i)                                             => symbolTable.get(i)
-        case None                                                => Set.empty[String]
+        case Some(i) if GlobalBuiltins.builtins.contains(i.name) =>
+          Set(s"__ecma.${i.name}")
+        case Some(i) => symbolTable.get(i)
+        case None    => Set.empty[String]
       }
       val possibleConstructorPointer =
         newChildren.astChildren.isFieldIdentifier.map(f => CallAlias(f.canonicalName, Some("this"))).headOption match {
