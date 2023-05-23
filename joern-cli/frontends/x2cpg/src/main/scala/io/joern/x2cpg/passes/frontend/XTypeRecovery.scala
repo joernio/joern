@@ -70,11 +70,9 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
     val stopEarly = new AtomicBoolean(false)
     val state     = XTypeRecoveryState(config, stopEarly = stopEarly)
     try {
-      for (
-        i <- 0 until config.iterations
-        if !stopEarly.get()
-      ) {
-        generateRecoveryPass(state.copy(currentIteration = i)).createAndApply()
+      Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
+        val newState = state.copy(currentIteration = i)
+        generateRecoveryPass(newState).createAndApply()
       }
       // If dummy values are enabled and we are stopping early, we need one more round to propagate these dummy values
       if (stopEarly.get() && config.enabledDummyTypes)
@@ -124,9 +122,10 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
   /** @return
     *   the compilation units as per how the language is compiled. e.g. file.
     */
-  def compilationUnit: Traversal[CompilationUnitType]
+  def compilationUnit: Iterator[CompilationUnitType]
 
   /** A factory method to generate a [[RecoverForXCompilationUnit]] task with the given parameters.
+    *
     * @param unit
     *   the compilation unit.
     * @param builder
@@ -795,7 +794,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val callPaths    = symbolTable.get(head)
         val returnValues = methodReturnValues(callPaths.toSeq)
         if (returnValues.isEmpty)
-          callPaths.map(_.concat(pathSep + XTypeRecovery.DummyReturnType))
+          callPaths.map(c => s"$c$pathSep${XTypeRecovery.DummyReturnType}")
         else
           returnValues
       case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
