@@ -85,12 +85,12 @@ public abstract class RubyLexerBase extends Lexer {
         }
     }
 
-    /** To be invoked when in `DEFAULT_MODE`, to check if this is part of a string interpolation. */
+    /** To be invoked when in `DEFAULT_MODE`, to check if we are in the context of a string interpolation. */
     protected boolean isInStringInterpolationMode() {
         return _modeStack.size() > 1 && _modeStack.peek() == DOUBLE_QUOTED_STRING_MODE;
     }
 
-    /** To be invoked when in `DEFAULT_MODE`, to check if this is part of a regular expression interpolation. */
+    /** To be invoked when in `DEFAULT_MODE`, to check if we are in the context of a regular expression interpolation. */
     protected boolean isInRegularExpressionInterpolationMode() {
         return _modeStack.size() > 1 && _modeStack.peek() == REGULAR_EXPRESSION_MODE;
     }

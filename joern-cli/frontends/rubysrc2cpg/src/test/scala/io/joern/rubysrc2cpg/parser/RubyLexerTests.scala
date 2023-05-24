@@ -246,52 +246,27 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
 
   "Regex literals without metacharacters" should "be recognized as such" in {
     val eg = Seq("/regexp/", "/a regexp/")
-    all(eg.map(tokenize)) shouldBe Seq(
-      REGULAR_EXPRESSION_START,
-      REGULAR_EXPRESSION_BODY,
-      REGULAR_EXPRESSION_END,
-      EOF
-    )
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
   }
 
   "Regex literals with metacharacters" should "be recognized as such" in {
     val eg = Seq("/(us|eu)/", "/[a-z]/", "/[A-Z]*/", "/(us|eu)?/", "/[0-9]+/")
-    all(eg.map(tokenize)) shouldBe Seq(
-      REGULAR_EXPRESSION_START,
-      REGULAR_EXPRESSION_BODY,
-      REGULAR_EXPRESSION_END,
-      EOF
-    )
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
   }
 
   "Regex literals with character classes" should "be recognized as such" in {
     val eg = Seq("/\\w/", "/\\W/", "/\\S/")
-    all(eg.map(tokenize)) shouldBe Seq(
-      REGULAR_EXPRESSION_START,
-      REGULAR_EXPRESSION_BODY,
-      REGULAR_EXPRESSION_END,
-      EOF
-    )
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
   }
 
   "Regex literals with groups" should "be recognized as such" in {
     val eg = Seq("/[aeiou]\\w{2}/", "/(\\d{2}:\\d{2}) (\\w+) (.*)/", "/(?<name>\\w+) (?<age>\\d+)/")
-    all(eg.map(tokenize)) shouldBe Seq(
-      REGULAR_EXPRESSION_START,
-      REGULAR_EXPRESSION_BODY,
-      REGULAR_EXPRESSION_END,
-      EOF
-    )
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
   }
 
   "Regex literals with options" should "be recognized as such" in {
     val eg = Seq("/./m", "/./i", "/./x", "/./o")
-    all(eg.map(tokenize)) shouldBe Seq(
-      REGULAR_EXPRESSION_START,
-      REGULAR_EXPRESSION_BODY,
-      REGULAR_EXPRESSION_END,
-      EOF
-    )
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
   }
 
   "Interpolated (with a local variable) regex literal" should "be recognized as such" in {
