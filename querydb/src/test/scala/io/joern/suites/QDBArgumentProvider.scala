@@ -1,6 +1,6 @@
 package io.joern.suites
 
-import io.joern.console.DefaultArgumentProvider
+import io.joern.querydb.DefaultArgumentProvider
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 

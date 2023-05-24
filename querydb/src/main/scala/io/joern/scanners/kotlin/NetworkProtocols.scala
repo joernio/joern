@@ -3,6 +3,7 @@ package io.joern.scanners.kotlin
 import io.joern.scanners.{Crew, QueryTags}
 import io.shiftleft.codepropertygraph.generated._
 import io.joern.console._
+import io.joern.querydb._
 import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal

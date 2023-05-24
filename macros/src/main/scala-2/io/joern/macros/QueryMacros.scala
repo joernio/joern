@@ -2,7 +2,7 @@ package io.joern.macros
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
-import io.joern.console.TraversalWithStrRep
+import io.joern.querydb.TraversalWithStrRep
 import overflowdb.traversal.Traversal
 
 import scala.language.experimental.macros

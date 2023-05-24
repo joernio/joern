@@ -1,6 +1,7 @@
 package io.joern.scanners.php
 
 import io.joern.console._
+import io.joern.querydb._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.macros.QueryMacros._

@@ -2,6 +2,7 @@ package io.joern.scanners.kotlin
 
 import io.joern.scanners._
 import io.joern.console._
+import io.joern.querydb._
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.dataflowengineoss.language._

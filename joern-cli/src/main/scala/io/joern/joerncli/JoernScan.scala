@@ -2,7 +2,8 @@ package io.joern.joerncli
 
 import better.files._
 import io.joern.console.scan.{ScanPass, outputFindings}
-import io.joern.console.{BridgeBase, DefaultArgumentProvider, JoernProduct, Query, QueryDatabase}
+import io.joern.console.{BridgeBase, JoernProduct}
+import io.joern.querydb.{DefaultArgumentProvider, Query, QueryDatabase}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.joerncli.JoernScan.getQueriesFromQueryDb

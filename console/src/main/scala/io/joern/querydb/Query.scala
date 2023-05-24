@@ -1,4 +1,4 @@
-package io.joern.console
+package io.joern.querydb
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode

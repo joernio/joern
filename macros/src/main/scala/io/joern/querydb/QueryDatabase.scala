@@ -1,4 +1,4 @@
-package io.joern.console
+package io.joern.querydb
 
 import org.reflections8.Reflections
 import org.reflections8.util.{ClasspathHelper, ConfigurationBuilder}

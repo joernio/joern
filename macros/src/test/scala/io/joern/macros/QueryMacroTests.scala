@@ -5,6 +5,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import io.joern.macros.QueryMacros.withStrRep
 import io.joern.console._
+import io.joern.querydb._
 import io.shiftleft.semanticcpg.language._
 
 class QueryMacroTests extends AnyWordSpec with Matchers {

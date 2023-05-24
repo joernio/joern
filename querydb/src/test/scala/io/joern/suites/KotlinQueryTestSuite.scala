@@ -1,7 +1,7 @@
 package io.joern.suites
 
 import io.joern.util.QueryUtil
-import io.joern.console.{CodeSnippet, Query, QueryBundle}
+import io.joern.querydb.{CodeSnippet, Query, QueryBundle}
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.codepropertygraph.Cpg
