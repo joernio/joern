@@ -280,4 +280,29 @@ package object slicing {
     case ProgramUsageSlice(os, udts) => Json.obj("objectSlices" -> os.asJson, "userDefinedTypes" -> udts.asJson)
   }
 
+  /** The inference response from the server.
+   */
+  case class InferenceResult(targetIdentifier: String, typ: String, confidence: Float, scope: String)
+
+  implicit val decodeInferenceResult: Decoder[InferenceResult] = (c: HCursor) =>
+    for {
+      targetIdentifier <- c.downField("target_identifier").as[String]
+      typ <- c.downField("type").as[String]
+      confidence <- c.downField("confidence").as[Float]
+      scope <- c.downField("scope").as[String]
+    } yield {
+      InferenceResult(targetIdentifier, typ, confidence, scope)
+    }
+
+  implicit val encodeInferenceResult: Encoder[InferenceResult] = Encoder.instance {
+    case InferenceResult(targetIdentifier, typ, confidence, scope) =>
+      Json.obj(
+        "objectSlices" -> targetIdentifier.asJson,
+        "userDefinedTypes" -> typ.asJson,
+        "confidence" -> confidence.asJson,
+        "scope" -> scope.asJson
+      )
+  }
+
+
 }

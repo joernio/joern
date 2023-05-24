@@ -2,13 +2,14 @@ package io.joern.jssrc2cpg
 
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.dataflowengineoss.slicing.{JoernTI, SliceBasedTypeInferencePass}
 import io.joern.jssrc2cpg.JsSrc2Cpg.postProcessingPasses
 import io.joern.jssrc2cpg.passes._
 import io.joern.jssrc2cpg.utils.{AstGenRunner, Report}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.passes.frontend.{SliceBasedTypeInferencePass, XTypeRecoveryConfig}
+import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.HashUtil
-import io.joern.x2cpg.{JoernTI, X2CpgFrontend}
+import io.joern.x2cpg.X2CpgFrontend
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext

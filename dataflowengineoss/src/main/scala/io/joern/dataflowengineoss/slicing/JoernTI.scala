@@ -1,8 +1,5 @@
-package io.joern.x2cpg
+package io.joern.dataflowengineoss.slicing
 
-import io.circe.parser._
-import io.joern.slicing._
-import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.io.{InputStream, OutputStreamWriter}
@@ -11,6 +8,10 @@ import java.nio.charset.StandardCharsets
 import scala.annotation.tailrec
 import scala.sys.process.Process
 import scala.util.{Failure, Success, Try, Using}
+import io.circe.parser._
+import io.joern.x2cpg.passes.frontend.XTypeRecovery
+import io.joern.x2cpg.utils.ExternalCommand
+import io.joern.dataflowengineoss.slicing._
 
 /** Interface class with the Joern type inference project.
   *
@@ -30,7 +31,7 @@ final class JoernTI(
 
   private val server: Option[Process] = if (spawnProcess) {
     if (isJoernTIAvailable) {
-      Option(ExternalCommand.startProcess(s"joernti ml $pathToCheckpoints --run-as-server --port 1337"))
+      Option(ExternalCommand.startProcess(s"joernti ml $pathToCheckpoints --run-as-server --port $port"))
     } else {
       throw new RuntimeException("Unable to spawn the JoernTI process as the `joernti` executable cannot be found!")
     }

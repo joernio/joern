@@ -1,14 +1,13 @@
-package io.joern.x2cpg.passes.frontend
+package io.joern.dataflowengineoss.slicing
 
 import better.files.File
 import better.files.File.OpenOptions
-import io.joern.slicing.{ProgramUsageSlice, SliceConfig, SliceMode, UsageSlicing}
-import io.joern.x2cpg.JoernTI
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
+import io.joern.x2cpg.passes.frontend.XTypeRecovery
 import org.slf4j.LoggerFactory
 
 import java.util.regex.Pattern
