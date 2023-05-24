@@ -1,4 +1,4 @@
-package io.joern.slicing
+package io.joern.dataflowengineoss.slicing
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
@@ -245,7 +245,6 @@ object UsageSlicing {
         case c if c.name.startsWith(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
         case c if excludeOperatorCalls.get() && c.name.startsWith("<operator>")                          => None
         case c                                                                                           => Some(c)
-        case _                                                                                           => None
       }
       .dedup
       .toList
