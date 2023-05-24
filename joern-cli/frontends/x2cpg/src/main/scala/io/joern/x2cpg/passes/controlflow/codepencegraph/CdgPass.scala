@@ -17,7 +17,6 @@ import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.controlflow.cfgdominator.{CfgDominatorFrontier, ReverseCpgCfgAdapter}
 import org.slf4j.{Logger, LoggerFactory}
 
-
 /** This pass has ContainsEdgePass and CfgDominatorPass as prerequisites.
   */
 class CdgPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
