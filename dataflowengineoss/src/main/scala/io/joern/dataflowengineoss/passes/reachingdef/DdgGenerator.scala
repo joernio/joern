@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyN
 import io.shiftleft.semanticcpg.accesspath.MatchResult
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import overflowdb.traversal.Traversal
 
 import scala.collection.{Set, mutable}
 
@@ -112,7 +113,7 @@ class DdgGenerator(semantics: Semantics) {
     def addEdgesToReturn(ret: Return): Unit = {
       // This handles `return new Bar()`, which is lowered to
       // `return {Bar tmp = Bar.alloc(); tmp.init(); tmp}`
-      usageAnalyzer.uses(ret).iterator.collectAll[Block].foreach(block => addEdgeForBlock(block, ret))
+      usageAnalyzer.uses(ret).collectAll[Block].foreach(block => addEdgeForBlock(block, ret))
       usageAnalyzer.usedIncomingDefs(ret).foreach { case (use: CfgNode, inElements) =>
         addEdge(use, ret, use.code)
         inElements

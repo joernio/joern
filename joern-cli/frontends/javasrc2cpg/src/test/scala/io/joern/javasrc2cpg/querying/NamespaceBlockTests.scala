@@ -2,6 +2,7 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal._
 
 class NamespaceBlockTests extends JavaSrcCode2CpgFixture {
 

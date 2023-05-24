@@ -5,9 +5,6 @@ enablePlugins(JavaAppPackaging)
 dependsOn(
   Projects.console,
   Projects.macros,
-  Projects.ghidra2cpg,
-  Projects.javasrc2cpg,
-  Projects.kotlin2cpg,
   Projects.ghidra2cpg  % "test->test",
   Projects.javasrc2cpg % "test->test",
   Projects.kotlin2cpg  % "test->test",
@@ -16,9 +13,6 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
-  "com.lihaoyi"      %% "sourcecode" % "0.3.0",
-  "com.lihaoyi"      %% "upickle"    % "1.6.0",
-  "com.github.scopt" %% "scopt"      % "4.1.0",
   "org.scalatest"    %% "scalatest"  % Versions.scalatest % Test
 )
 

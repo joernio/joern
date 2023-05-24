@@ -118,7 +118,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
 
       val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
       val sources = sourceEntries.filterNot { entry =>
-        config.ignoredFiles.exists { pathToIgnore =>
+        config.ignorePaths.exists { pathToIgnore =>
           val parent = Paths.get(pathToIgnore).toAbsolutePath
           val child  = Paths.get(entry.filename)
           child.startsWith(parent)

@@ -7,7 +7,6 @@ import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.traversal.Traversal
 
 class JavaTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[Method](cpg, config) {
@@ -17,17 +16,15 @@ class JavaTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecovery
 
 private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[Method](cpg, state) {
 
-  override def compilationUnit: Traversal[Method] = cpg.method.isExternal(false)
+  override def compilationUnit: Iterator[Method] = cpg.method.isExternal(false).iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: Method,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[Method] = new RecoverForJavaFile(
-    cpg,
-    unit,
-    builder,
-    state.copy(config = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes))
-  )
+  ): RecoverForXCompilationUnit[Method] = {
+    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
+    new RecoverForJavaFile(cpg, unit, builder, state.copy(config = newConfig))
+  }
 }
 
 private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder, state: XTypeRecoveryState)

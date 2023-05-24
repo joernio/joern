@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
+import overflowdb.traversal.{NodeOps, Traversal}
 import java.util.concurrent._
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -220,7 +221,7 @@ object Engine {
             val sameCallSite   = parentNode.inCall.l == childNode.start.inCall.l
             val visible = if (sameCallSite) {
               val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
-              val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).iterator.internal
+              val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).to(Traversal).internal
               (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
             } else {
               parentNode.isDefined
@@ -240,7 +241,11 @@ object Engine {
   def isOutputArgOfInternalMethod(arg: Expression)(implicit semantics: Semantics): Boolean = {
     arg.inCall.l match {
       case List(call) =>
-        methodsForCall(call).iterator.internal.isNotStub.nonEmpty && semanticsForCall(call).isEmpty
+        methodsForCall(call)
+          .to(Traversal)
+          .internal
+          .isNotStub
+          .nonEmpty && semanticsForCall(call).isEmpty
       case _ =>
         false
     }
@@ -267,7 +272,9 @@ object Engine {
   }
 
   def argToOutputParams(arg: Expression): Traversal[MethodParameterOut] = {
-    argToMethods(arg).iterator.parameter
+    argToMethods(arg)
+      .to(Traversal)
+      .parameter
       .index(arg.argumentIndex)
       .asOutput
   }
@@ -283,7 +290,10 @@ object Engine {
   }
 
   def isCallToInternalMethod(call: Call): Boolean = {
-    methodsForCall(call).iterator.internal.nonEmpty
+    methodsForCall(call)
+      .to(Traversal)
+      .internal
+      .nonEmpty
   }
   def isCallToInternalMethodWithoutSemantic(call: Call)(implicit semantics: Semantics): Boolean = {
     isCallToInternalMethod(call) && semanticsForCall(call).isEmpty

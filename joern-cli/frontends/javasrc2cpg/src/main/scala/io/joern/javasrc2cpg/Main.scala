@@ -7,6 +7,8 @@ import scopt.OParser
 /** Command line configuration parameters
   */
 final case class Config(
+  inputPath: String = "",
+  outputPath: String = X2CpgConfig.defaultOutputPath,
   inferenceJarPaths: Set[String] = Set.empty,
   fetchDependencies: Boolean = false,
   javaFeatureSetVersion: Option[String] = None,
@@ -16,16 +18,9 @@ final case class Config(
   disableDummyTypes: Boolean = false
 ) extends X2CpgConfig[Config] {
 
-  override def withInputPath(inputPath: String): Config = {
-    this.inputPath = inputPath
-    this
-  }
-
-  override def withOutputPath(x: String): Config = {
-    this.outputPath = x
-    this
-  }
-
+  override def withInputPath(inputPath: String): Config =
+    copy(inputPath = inputPath)
+  override def withOutputPath(x: String): Config = copy(outputPath = x)
 }
 
 private object Frontend {

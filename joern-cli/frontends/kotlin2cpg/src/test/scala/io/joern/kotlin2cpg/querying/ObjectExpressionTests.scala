@@ -103,6 +103,11 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       firstAssignmentRHS.methodFullName shouldBe "<operator>.alloc"
     }
 
+    "contain a CALL node for an <init> on the temp identifier" in {
+      val List(c: Call) = cpg.call.nameExact("<init>").l
+      c.methodFullName shouldBe "mypkg.foo$object$1.<init>:<void>()"
+    }
+
     "contain an IDENTIFIER node for the argument representing the object literal" in {
       val List(firstArg: Identifier, _: Identifier) = cpg.call.code("does.*").argument.l
       firstArg.name shouldBe "tmp_obj_1"

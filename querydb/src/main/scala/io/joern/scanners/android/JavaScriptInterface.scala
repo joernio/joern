@@ -36,7 +36,7 @@ object JavaScriptInterface extends QueryBundle {
         val appUsesCleartextTraffic = cpg.appManifest.usesCleartextTraffic.nonEmpty
         def exposedJavaScriptInterfaceObjects =
           if (appUsesCleartextTraffic) webViewsWithInsecureLoadUrlCalls.addJavascriptInterfaceCalls.argument(1)
-          else Iterator.empty
+          else Traversal.empty
         val exposedJavaScriptInterfaceObjectNames = exposedJavaScriptInterfaceObjects.collect {
           case ident: Identifier => ident.typeFullName
           case call: Call        => call.typeFullName
