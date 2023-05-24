@@ -2,9 +2,10 @@ name := "joern-cli"
 
 dependsOn(
   Projects.console,
-  Projects.console % "test->test",
+  Projects.macros,
   Projects.dataflowengineoss,
-  Projects.x2cpg
+  Projects.x2cpg,
+  Projects.console % "test->test"
 )
 
 libraryDependencies ++= Seq(
