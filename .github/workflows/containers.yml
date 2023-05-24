@@ -1,16 +1,18 @@
 name: Upload Container image
 
 on:
-  release:
-    types: [published]
+  schedule:
+    - cron: "0 8 * * *" # run once daily
+  workflow_dispatch:    # allow to manually trigger this workflow
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
   deploy:
-
+    if: github.repository_owner == 'joernio'
     runs-on: ubuntu-latest
+    continue-on-error: true
     permissions:
       contents: write
       packages: write
@@ -45,8 +47,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=joern
           cache-to: type=gha,mode=max,scope=joern
-          provenance: true
-          sbom: true
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta3
@@ -66,8 +66,6 @@ jobs:
           labels: ${{ steps.meta3.outputs.labels }}
           cache-from: type=gha,scope=joern-slim
           cache-to: type=gha,mode=max,scope=joern-slim
-          provenance: true
-          sbom: true
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta2
@@ -87,5 +85,3 @@ jobs:
           labels: ${{ steps.meta2.outputs.labels }}
           cache-from: type=gha,scope=joern-alma8
           cache-to: type=gha,mode=max,scope=joern-alma8
-          provenance: true
-          sbom: true

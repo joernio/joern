@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
 import java.util.regex.{Matcher, Pattern}
@@ -21,20 +20,16 @@ class JavaScriptTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRe
 }
 
 private class JavaScriptTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
-  override def compilationUnit: Traversal[File] = cpg.file
+
+  override def compilationUnit: Iterator[File] = cpg.file.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[File] =
-    new RecoverForJavaScriptFile(
-      cpg,
-      unit,
-      builder,
-      state.copy(config =
-        state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-      )
-    )
+  ): RecoverForXCompilationUnit[File] = {
+    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
+    new RecoverForJavaScriptFile(cpg, unit, builder, state.copy(config = newConfig))
+  }
 
 }
 
@@ -59,15 +54,17 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     cu.ast.isMethod.foreach(f => symbolTable.put(CallAlias(f.name, Option("this")), Set(f.fullName)))
     (cu.ast.isParameter.whereNot(_.nameExact("this")) ++ cu.ast.isMethod.methodReturn).filter(hasTypes).foreach { p =>
       val resolvedHints = getTypes(p)
-        .flatMap { t =>
+        .map { t =>
           t.split("\\.").headOption match {
             case Some(base) if symbolTable.contains(LocalVar(base)) =>
-              symbolTable.get(LocalVar(base)).map(x => x + t.stripPrefix(base))
-            case Some(base) => Set(base)
-            case None       => Set(t)
+              (t, symbolTable.get(LocalVar(base)).map(x => x + t.stripPrefix(base)))
+            case _ => (t, Set(t))
           }
         }
-        .map(_.replaceAll("\\.", pathSep.toString))
+        .flatMap {
+          case (t, ts) if Set(t) == ts => Set(t)
+          case (_, ts)                 => ts.map(_.replaceAll("\\.", pathSep.toString))
+        }
       p match {
         case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
         case _: MethodReturn if resolvedHints.sizeIs == 1 =>
@@ -109,11 +106,11 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
           .file(s"${Pattern.quote(resolvedPath)}\\.?.*")
           .method
       else
-        Traversal.empty
+        Iterator.empty
     ) match {
       case Failure(_) =>
         logger.warn(s"Unable to resolve import due to irregular regex at '${i.importedEntity.getOrElse("")}'")
-        Traversal.empty
+        Iterator.empty
       case Success(modules) => modules
     }
 
@@ -163,7 +160,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
             val methodName = x.argumentOption(2).map(_.code).getOrElse(b.referencedMethod.name)
             if (methodName == "exports") symbolTable.append(CallAlias(alias, Option("this")), Set(b.methodFullName))
             else symbolTable.append(CallAlias(methodName, Option(alias)), Set(b.methodFullName))
-            symbolTable.append(LocalVar(alias), b.referencedMethod.astParent.collectAll[Method].fullName.toSet)
+            symbolTable.append(LocalVar(alias), b.referencedMethod.astParent.iterator.collectAll[Method].fullName.toSet)
           case ::(_, ::(y: Call, _)) =>
             // Exported closure with a method ref within the AST of the RHS
             y.ast.isMethodRef.flatMap { mRef =>
