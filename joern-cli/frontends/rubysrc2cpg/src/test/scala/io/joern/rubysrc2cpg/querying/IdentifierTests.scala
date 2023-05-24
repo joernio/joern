@@ -310,10 +310,9 @@ class IdentifierTests extends RubyCode2CpgFixture {
           Process(Seq("xdg-open", pathStr)).!!
         }
 
-      cpg.identifier.name("num1").l.size shouldBe 2
+      cpg.identifier.name("num1").l.size shouldBe 1
       cpg.call.code("\\+").plotDotAst
-      cpg.method.name("add_three_numbers").dotAst.l
-      // cpg.method.name("add_three_numbers").plotDotAst
+      cpg.method.name("add_three_numbers").plotDotAst
     }
   }
 }

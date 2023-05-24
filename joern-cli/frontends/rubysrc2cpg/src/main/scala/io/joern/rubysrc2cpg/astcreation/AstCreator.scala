@@ -4,7 +4,13 @@ import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{
+  DispatchTypes,
+  EdgeTypes,
+  EvaluationStrategies,
+  ModifierTypes,
+  NodeTypes
+}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, Token}
@@ -39,8 +45,8 @@ class AstCreator(filename: String, global: Global)
 
   private val classStack = mutable.Stack[String]()
 
-  //Queue of variable identifiers incorrectly identified as method identifiers
-  private val methodIdentiferQ =  mutable.Queue[Ast]()
+  // Queue of variable identifiers incorrectly identified as method identifiers
+  private val methodIdentiferQ = mutable.Queue[Ast]()
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val charStream  = CharStreams.fromFileName(filename)
@@ -109,7 +115,11 @@ class AstCreator(filename: String, global: Global)
 
   def astForExpressionOrCommandsContext(ctx: ExpressionOrCommandsContext): Ast = {
     val asts = ctx.expressionOrCommand().asScala.map(astForExpressionOrCommandContext)
-    Ast().withChildren(asts.toSeq)
+    if (asts.size == 1) {
+      asts.head
+    } else {
+      Ast().withChildren(asts.toSeq)
+    }
   }
 
   def astForSplattingArgumentContext(ctx: SplattingArgumentContext): Ast = {
@@ -930,13 +940,6 @@ class AstCreator(filename: String, global: Global)
       localVarList.addOne(procParameter.LOCAL_VARIABLE_IDENTIFIER())
     }
 
-    val seqNodes = localVarList
-      .map(localVar => {
-        val varSymbol = localVar.getSymbol()
-        identifierNode(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
-      })
-      .toSeq
-
     val seqMethodPar = localVarList
       .map(localVar => {
         val varSymbol = localVar.getSymbol()
@@ -948,7 +951,7 @@ class AstCreator(filename: String, global: Global)
       })
       .toSeq
 
-    val ast = Ast(seqMethodPar).withChild(Ast(seqNodes))
+    val ast = Ast(seqMethodPar)
     Ast().withChildren(List[Ast](ast))
   }
 
@@ -1214,11 +1217,11 @@ class AstCreator(filename: String, global: Global)
   }
   def astForUnaryExpressionContext(ctx: UnaryExpressionContext): Ast = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    if( ctx.op.getText == "+" && methodIdentiferQ.size > 0 ) {
+    if (ctx.op.getText == "+" && methodIdentiferQ.size > 0) {
       /*
-      * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
-      * PLUS is to be interpreted as a binary operator
-      */
+       * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
+       * PLUS is to be interpreted as a binary operator
+       */
       val callNode = NewCall()
         .name(ctx.op.getText)
         .code(ctx.op.getText)
@@ -1246,11 +1249,11 @@ class AstCreator(filename: String, global: Global)
 
   def astForUnaryMinusExpressionContext(ctx: UnaryMinusExpressionContext): Ast = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    if ( methodIdentiferQ.size > 0) {
+    if (methodIdentiferQ.size > 0) {
       /*
-      * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
-      * PLUS is to be interpreted as a binary operator
-      */
+       * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
+       * PLUS is to be interpreted as a binary operator
+       */
       val callNode = NewCall()
         .name(ctx.MINUS().getText)
         .code(ctx.MINUS().getText)
@@ -1406,8 +1409,8 @@ class AstCreator(filename: String, global: Global)
       astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
     } else if (ctx.primary() != null) {
       val argumentsWithoutParenAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-      val primaryAst    = astForPrimaryContext(ctx.primary())
-      val methodNameAst = astForMethodNameContext(ctx.methodName())
+      val primaryAst               = astForPrimaryContext(ctx.primary())
+      val methodNameAst            = astForMethodNameContext(ctx.methodName())
       Ast().withChildren(List[Ast](primaryAst, methodNameAst, argumentsWithoutParenAst))
     } else {
       Ast()
