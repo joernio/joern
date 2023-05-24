@@ -29,7 +29,7 @@ object ExternalStorage extends QueryBundle {
         def externalStorageReads =
           if (cpg.appManifest.hasReadExternalStoragePermission.nonEmpty)
             cpg.getExternalStorageDir
-          else Iterator.empty
+          else Traversal.empty
         def dexClassLoadersWithExternalStorageInit =
           cpg.dexClassLoader
             .where(

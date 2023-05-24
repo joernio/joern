@@ -6,6 +6,9 @@ dependsOn(Projects.semanticcpg, Projects.x2cpg)
 
 libraryDependencies ++= Seq(
   "org.antlr"               % "antlr4-runtime"             % Versions.antlr,
+  "io.circe"               %% "circe-core"                 % Versions.circe,
+  "io.circe"               %% "circe-generic"              % Versions.circe,
+  "io.circe"               %% "circe-parser"               % Versions.circe,
   "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test,
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
 )

@@ -20,8 +20,8 @@ class DataFlowProblem[Node, V](
 trait FlowGraph[Node] {
   val allNodesReversePostOrder: List[Node]
   val allNodesPostOrder: List[Node]
-  def succ(node: Node): Iterator[Node]
-  def pred(node: Node): Iterator[Node]
+  def succ(node: Node): IterableOnce[Node]
+  def pred(node: Node): IterableOnce[Node]
 }
 
 /** This is actually a function family consisting of one transfer function for each node of the flow graph. Each
