@@ -2,6 +2,7 @@ package io.joern.dataflowengineoss.slicing
 
 import better.files.File
 import better.files.File.OpenOptions
+import io.joern.x2cpg.passes.frontend.XTypeRecovery
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode}
