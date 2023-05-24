@@ -10,7 +10,7 @@ libraryDependencies ++= Seq(
   "io.joern" % "javaparser-symbol-solver-core" % "3.24.3-SL3", // custom build of our fork, sources at https://github.com/mpollmeier/javaparser
   "org.gradle"              % "gradle-tooling-api"         % Versions.gradleTooling,
   "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test,
-  "org.projectlombok"       % "lombok"                     % "1.18.26",
+  "org.projectlombok"       % "lombok"                     % "1.18.28",
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
   "org.scala-lang.modules" %% "scala-parser-combinators"   % "2.2.0",
   "net.lingala.zip4j"       % "zip4j"                      % "2.11.5"
