@@ -1,6 +1,7 @@
 package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
+import io.joern.dataflowengineoss.slicing.{JoernTI, SliceBasedTypeInferencePass}
 import io.joern.pysrc2cpg._
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
@@ -29,8 +30,12 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
     new ImportsPass(cpg).createAndApply()
     new DynamicTypeHintFullNamePass(cpg).createAndApply()
     new PythonInheritanceNamePass(cpg).createAndApply()
-    new PythonTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !pyConfig.forall(_.disableDummyTypes)))
-      .createAndApply()
+    new PythonTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = false)).createAndApply()
+    new SliceBasedTypeInferencePass(cpg, Try(new JoernTI(spawnProcess = false)).toOption, ".").createAndApply()
+    new PythonTypeRecoveryPass(
+      cpg,
+      XTypeRecoveryConfig(iterations = 1, enabledDummyTypes = !pyConfig.forall(_.disableDummyTypes))
+    ).createAndApply()
     new PythonTypeHintCallLinker(cpg).createAndApply()
     new PythonNaiveCallLinker(cpg).createAndApply()
 

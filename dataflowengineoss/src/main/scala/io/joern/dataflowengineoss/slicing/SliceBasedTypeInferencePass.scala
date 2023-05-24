@@ -7,7 +7,6 @@ import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
-import io.joern.x2cpg.passes.frontend.XTypeRecovery
 import org.slf4j.LoggerFactory
 
 import java.util.regex.Pattern
@@ -31,8 +30,8 @@ class SliceBasedTypeInferencePass(
     location: String,
     nodeLabel: String,
     target: String,
-    oldType: String,
-    newType: String,
+    oldType: Seq[String],
+    newType: Seq[String],
     confidence: Float
   )
 
@@ -54,43 +53,39 @@ class SliceBasedTypeInferencePass(
               .filterNot(res => pathPattern.matcher(res.typ).matches())
               .groupBy(_.scope)
               .foreach { case (scope, results) =>
+                val methodIdentifiers = cpg.method
+                  .fullNameExact(scope)
+                  .ast
+                  .isIdentifier
+                  .l
                 // Set the type of targets which only have dummy types or have no types
                 results.filter(_.confidence > minConfidence).foreach { res =>
-                  cpg.method
-                    .fullNameExact(scope)
-                    .ast
-                    .isIdentifier
+                  methodIdentifiers
                     .nameExact(res.targetIdentifier)
                     .filter(onlyDummyOrAnyType) // We only want to write to nodes that need type info
                     .foreach { tgt =>
                       builder.setNodeProperty(tgt, PropertyNames.TYPE_FULL_NAME, res.typ)
-                      changes
-                        .addOne(
-                          InferredChange(
-                            location(tgt),
-                            tgt.label,
-                            res.targetIdentifier,
-                            tgt.typeFullName,
-                            res.typ,
-                            res.confidence
-                          )
-                        )
+                      logChange(
+                        location(tgt),
+                        tgt.label,
+                        res.targetIdentifier,
+                        tgt.typeFullName +: tgt.dynamicTypeHintFullName,
+                        res.alternatives.map(_.typ),
+                        res.confidence
+                      )
                       // If there is a call where the identifier is the receiver then this also needs to be updated
                       if (tgt.argumentIndex <= 1 && tgt.astSiblings.isCall.exists(_.argumentIndex >= 2)) {
                         tgt.astSiblings.isCall.nameNot("<operator.*").find(onlyDummyOrAnyType).foreach { call =>
                           val inferredMethodCall = Seq(res.typ, call.name).mkString(pathSep)
                           builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, inferredMethodCall)
-                          changes
-                            .addOne(
-                              InferredChange(
-                                location(call),
-                                call.label,
-                                res.targetIdentifier,
-                                call.methodFullName,
-                                res.typ,
-                                res.confidence
-                              )
-                            )
+                          logChange(
+                            location(call),
+                            call.label,
+                            res.targetIdentifier,
+                            call.methodFullName +: call.dynamicTypeHintFullName,
+                            res.alternatives.map(_.typ),
+                            res.confidence
+                          )
                         }
                       }
                     }
@@ -100,9 +95,30 @@ class SliceBasedTypeInferencePass(
         }
       }
       val f = File("./type_inference.csv")
-      f.write("Location,Label,Target,Old,New,Confidence\n")
-      changes.foreach { change => f.write(change.productIterator.mkString(",") + "\n")(OpenOptions.append) }
+      f.write("Location,Label,Target,OldTypes,SuggestedTypes,Confidence\n")
+      changes.foreach { change =>
+        f.write(
+          change.productIterator
+            .map {
+              case x: Seq[_] => "[" + x.mkString("|") + "]"
+              case x         => x.toString
+            }
+            .mkString(",") + "\n"
+        )(OpenOptions.append)
+      }
     }
+  }
+
+  private def logChange(
+    location: String,
+    label: String,
+    name: String,
+    existingTypes: Seq[String],
+    inferredTypes: Seq[String],
+    confidence: Float
+  ): Unit = {
+    changes
+      .addOne(InferredChange(location, label, name, existingTypes, inferredTypes, confidence))
   }
 
   /** Determines if the node type information is made from dummy types or the "ANY" type.
