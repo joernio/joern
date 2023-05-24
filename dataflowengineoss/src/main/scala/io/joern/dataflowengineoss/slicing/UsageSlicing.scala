@@ -93,9 +93,9 @@ object UsageSlicing {
     .flatMap(_.get())
     .groupBy { case (scope, _) => scope }
     .view
-    .mapValues(_.l.map { case (_, slice) => slice }.toSet)
+    .mapValues(_.iterator.map { case (_, slice) => slice }.toSet)
     .toMap
-    .l
+    .iterator
     .toMap
 
   private class TrackUsageTask(tgt: Declaration, typeMap: TrieMap[String, String])
@@ -136,7 +136,7 @@ object UsageSlicing {
                           .nameExact("<operator>.new")
                           .lastOption
                           .map(_.argument)
-                          .getOrElse(Traversal.empty)
+                          .getOrElse(Iterator.empty)
                       else baseCall.argument)
           .collect { case n: Expression if n.argumentIndex > 0 => n }
           .flatMap {
