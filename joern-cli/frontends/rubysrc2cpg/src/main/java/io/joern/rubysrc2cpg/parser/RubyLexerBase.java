@@ -3,7 +3,6 @@ package io.joern.rubysrc2cpg.parser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.Token;
-import static io.joern.rubysrc2cpg.parser.RubyLexer.*;
 
 /** Aggregates auxiliary features to RubyLexer in a single place. */
 public abstract class RubyLexerBase extends Lexer {
@@ -31,7 +30,7 @@ public abstract class RubyLexerBase extends Lexer {
 
     /** To be invoked when encountering `/`, deciding if it should emit a
      * `REGULAR_EXPRESSION_START` token. */
-    protected boolean couldBeRegexStart(){
+    protected boolean isStartOfRegex(){
         // When '/' is the first token in the stream.
         if (previousToken == null) {
             return true;
@@ -49,36 +48,36 @@ public abstract class RubyLexerBase extends Lexer {
     /** Is the given token found in the "Operators" category? */
     private boolean isOperator(Token token) {
         switch (token.getType()){
-            case EMARK:
-            case EMARKEQ:
-            case EMARKTILDE:
-            case AMP:
-            case AMP2:
-            case AMPDOT:
-            case BAR:
-            case BAR2:
-            case EQ:
-            case EQ2:
-            case EQ3:
-            case CARET:
-            case LTEQGT:
-            case EQTILDE:
-            case GT:
-            case GTEQ:
-            case LT:
-            case LTEQ:
-            case LT2:
-            case GT2:
-            case PLUS:
-            case MINUS:
-            case STAR:
-            case STAR2:
-            case SLASH:
-            case PERCENT:
-            case TILDE:
-            case PLUSAT:
-            case MINUSAT:
-            case ASSIGNMENT_OPERATOR:
+            case RubyLexer.EMARK:
+            case RubyLexer.EMARKEQ:
+            case RubyLexer.EMARKTILDE:
+            case RubyLexer.AMP:
+            case RubyLexer.AMP2:
+            case RubyLexer.AMPDOT:
+            case RubyLexer.BAR:
+            case RubyLexer.BAR2:
+            case RubyLexer.EQ:
+            case RubyLexer.EQ2:
+            case RubyLexer.EQ3:
+            case RubyLexer.CARET:
+            case RubyLexer.LTEQGT:
+            case RubyLexer.EQTILDE:
+            case RubyLexer.GT:
+            case RubyLexer.GTEQ:
+            case RubyLexer.LT:
+            case RubyLexer.LTEQ:
+            case RubyLexer.LT2:
+            case RubyLexer.GT2:
+            case RubyLexer.PLUS:
+            case RubyLexer.MINUS:
+            case RubyLexer.STAR:
+            case RubyLexer.STAR2:
+            case RubyLexer.SLASH:
+            case RubyLexer.PERCENT:
+            case RubyLexer.TILDE:
+            case RubyLexer.PLUSAT:
+            case RubyLexer.MINUSAT:
+            case RubyLexer.ASSIGNMENT_OPERATOR:
                 return true;
             default:
                 return false;
@@ -87,12 +86,12 @@ public abstract class RubyLexerBase extends Lexer {
 
     /** To be invoked when in `DEFAULT_MODE`, to check if we are in the context of a string interpolation. */
     protected boolean isInStringInterpolationMode() {
-        return _modeStack.size() > 1 && _modeStack.peek() == DOUBLE_QUOTED_STRING_MODE;
+        return _modeStack.size() > 1 && _modeStack.peek() == RubyLexer.DOUBLE_QUOTED_STRING_MODE;
     }
 
     /** To be invoked when in `DEFAULT_MODE`, to check if we are in the context of a regular expression interpolation. */
     protected boolean isInRegularExpressionInterpolationMode() {
-        return _modeStack.size() > 1 && _modeStack.peek() == REGULAR_EXPRESSION_MODE;
+        return _modeStack.size() > 1 && _modeStack.peek() == RubyLexer.REGULAR_EXPRESSION_MODE;
     }
 
 }
