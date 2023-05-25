@@ -2,6 +2,7 @@ package io.joern.jssrc2cpg.passes
 
 import io.joern.x2cpg.Defines.ConstructorMethodName
 import io.joern.x2cpg.passes.frontend._
+import io.joern.x2cpg.{Defines => XDefines}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
@@ -48,6 +49,21 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     !name.isBlank && (name.charAt(0).isUpper || name.endsWith("factory"))
 
   lazy private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
+
+  override protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
+    case x @ (_: Identifier | _: Local | _: MethodParameterIn)
+        if x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any) != Defines.Any =>
+      val typeFullName = x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any)
+      val typeHints    = symbolTable.get(LocalVar(x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any))) - typeFullName
+      lazy val cpgTypeFullName = cpg.typeDecl.nameExact(typeFullName).fullName.toSet
+      if (typeHints.nonEmpty) symbolTable.put(x, typeHints)
+      else if (cpgTypeFullName.nonEmpty) symbolTable.put(x, cpgTypeFullName)
+      else symbolTable.put(x, getTypes(x))
+    case x @ (_: Identifier | _: Local | _: MethodParameterIn) =>
+      symbolTable.put(x, getTypes(x))
+    case x: Call => symbolTable.put(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
+    case _       =>
+  }
 
   override protected def prepopulateSymbolTable(): Unit = {
     super.prepopulateSymbolTable()
@@ -128,8 +144,8 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     } else {
       // If we are importing a specific entity, then we look for it here
       targetAssignments
-        .code("exports\\..*")
-        .where(_.argument.code(s"exports\\.$alias.*"))
+        .code("^(module.)?exports.*")
+        .where(_.argument.codeExact(alias))
         .dedup
         .l
     }
@@ -137,15 +153,12 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     if (matchingExports.nonEmpty) {
       matchingExports.flatMap { exp =>
         exp.argument.l match {
-          case ::(expCall: Call, ::(b: Identifier, _))
-              if expCall.code.startsWith("exports.") && targetModule.ast.isMethod.name(b.name).nonEmpty =>
-            // Exported function with only the name of the function
-            val methodPaths = targetModule.ast.isMethod.name(b.name).fullName.toSet
-            symbolTable.append(CallAlias(alias, Option("this")), methodPaths)
-            symbolTable.append(LocalVar(alias), methodPaths)
-          case ::(_, ::(b: Identifier, _)) =>
-            // Exported variable that we should find
-            val typs = cpg
+          case ::(expCall: Call, ::(b: Identifier, _)) if expCall.code.matches("^(module.)?exports[.]?.*") =>
+            val moduleMethods      = targetModule.ast.isMethod.l
+            lazy val methodMatches = moduleMethods.name(b.name).l
+            lazy val constructorMatches =
+              moduleMethods.fullName(s".*${b.name}$pathSep${XDefines.ConstructorMethodName}$$").l
+            lazy val variableMatches = cpg
               .file(s"${Pattern.quote(resolvedPath)}\\.?.*")
               .method
               .ast
@@ -154,7 +167,16 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
               .flatMap(i => i.typeFullName +: i.dynamicTypeHintFullName)
               .filterNot(_ == Defines.Any)
               .toSet
-            symbolTable.append(LocalVar(alias), typs)
+            // Exported function with only the name of the function
+            val methodPaths =
+              if (methodMatches.nonEmpty) methodMatches.fullName.toSet
+              else constructorMatches.fullName.toSet
+            if (methodPaths.nonEmpty) {
+              symbolTable.append(CallAlias(alias, Option("this")), methodPaths)
+              symbolTable.append(LocalVar(alias), methodPaths)
+            } else {
+              symbolTable.append(LocalVar(alias), variableMatches)
+            }
           case ::(x: Call, ::(b: MethodRef, _)) =>
             // Exported function with a method ref of the function
             val methodName = x.argumentOption(2).map(_.code).getOrElse(b.referencedMethod.name)
@@ -274,5 +296,11 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
       .filterNot(_.dynamicTypeHintFullName.isEmpty)
       .foreach(setTypeFromTypeHints)
   }
+
+  protected override def storeIdentifierTypeInfo(i: Identifier, types: Seq[String]): Unit =
+    super.storeIdentifierTypeInfo(i, types.map(_.stripSuffix(s"$pathSep${XDefines.ConstructorMethodName}")))
+
+  protected override def storeLocalTypeInfo(i: Local, types: Seq[String]): Unit =
+    super.storeLocalTypeInfo(i, types.map(_.stripSuffix(s"$pathSep${XDefines.ConstructorMethodName}")))
 
 }
