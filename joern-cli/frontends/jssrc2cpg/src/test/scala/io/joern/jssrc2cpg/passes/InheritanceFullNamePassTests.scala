@@ -55,7 +55,7 @@ class InheritanceFullNamePassTests extends DataFlowCodeToCpgSuite {
     "identifiers instantiated from these types should have their fully resolved types" in {
       val Some(musician)           = cpg.identifier.nameExact("myMusician").headOption
       val Some(musicianWithLyrics) = cpg.identifier.nameExact("myMusicWithLyrics").headOption
-      musician.typeFullName shouldBe "domain/music.js::program:Musician"
+      musician.typeFullName shouldBe Seq("domain", "music.js::program:Musician").mkString(File.separator)
       musicianWithLyrics.typeFullName shouldBe "inheritance.js::program:MusicWithLyrics"
     }
   }
