@@ -5,6 +5,7 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
   DispatchTypes,
   EdgeTypes,
   EvaluationStrategies,
@@ -1219,12 +1220,21 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForDoBlockContext(ctx: DoBlockContext): Ast = {
-    val stmtAst = astForStatementsContext(ctx.compoundStatement().statements())
+    val doWhileNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.DO)
+      .code(ctx.getText)
+      .lineNumber(ctx.DO().getSymbol.getLine)
+      .columnNumber(ctx.DO().getSymbol.getCharPositionInLine)
+
+    val bodyAst = astForStatementsContext(ctx.compoundStatement().statements())
+
     if (ctx.blockParameter() != null) {
-      val bpAst = astForBlockParameterContext(ctx.blockParameter())
-      Ast().withChild(bpAst).withChild(stmtAst)
+      val bpAst         = astForBlockParameterContext(ctx.blockParameter())
+      val blockNode     = NewBlock().typeFullName(Defines.Any)
+      val blockParamAst = blockAst(blockNode, List[Ast](bpAst))
+      controlStructureAst(doWhileNode, Some(Ast()), Seq[Ast](blockParamAst, bodyAst))
     } else {
-      stmtAst
+      controlStructureAst(doWhileNode, Some(Ast()), Seq[Ast](bodyAst))
     }
   }
 
