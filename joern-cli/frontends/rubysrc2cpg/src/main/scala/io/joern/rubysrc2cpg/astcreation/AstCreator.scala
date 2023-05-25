@@ -718,9 +718,19 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Ast = {
-    val primaryAst = astForPrimaryContext(ctx.primary())
-    val argsAst    = astForIndexingArgumentsContext(ctx.indexingArguments())
-    primaryAst.withChild(argsAst)
+    val lhsExpressionAst = astForPrimaryContext(ctx.primary())
+    val rhsExpressionAst = astForIndexingArgumentsContext(ctx.indexingArguments())
+    val callNode = NewCall()
+      .name(ctx.LBRACK().getText + ctx.RBRACK().getText)
+      .code(ctx.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.LBRACK().getText + ctx.RBRACK().getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.LBRACK().getSymbol.getLine())
+      .columnNumber(ctx.LBRACK().getSymbol.getCharPositionInLine())
+    callAst(callNode, Seq[Ast](lhsExpressionAst, rhsExpressionAst))
+
   }
 
   def astForInvocationExpressionOrCommandContext(ctx: InvocationExpressionOrCommandContext): Ast = {
@@ -1466,19 +1476,21 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForBlockExprAssocTypeArgumentsContext(ctx: BlockExprAssocTypeArgumentsContext): Ast = {
-    val blockArgAst = if (ctx.blockArgument() != null) {
-      astForBlockArgumentContext(ctx.blockArgument())
-    } else {
-      Ast()
-    }
-    val assocOrExpAst = if (ctx.associations() != null) {
-      astForAssociationsContext(ctx.associations())
-    } else {
-      val asts = ctx.expressions().expression().asScala.map(exp => astForExpressionContext(exp)).toSeq
-      Ast().withChildren(asts)
+    val listAsts = ListBuffer[Ast]()
+
+    if (ctx.blockArgument() != null) {
+      listAsts.addOne(astForBlockArgumentContext(ctx.blockArgument()))
     }
 
-    Ast().withChildren(List[Ast](blockArgAst, assocOrExpAst))
+    if (ctx.associations() != null) {
+      listAsts.addOne(astForAssociationsContext(ctx.associations()))
+    } else {
+      val exprAsts = ctx.expressions().expression().asScala.map(exp => astForExpressionContext(exp)).toList
+      listAsts.addAll(exprAsts)
+    }
+
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    blockAst(blockNode, listAsts.toList)
   }
 
   def astForArgumentsWithoutParenthesesContext(ctx: ArgumentsWithoutParenthesesContext): Ast = {

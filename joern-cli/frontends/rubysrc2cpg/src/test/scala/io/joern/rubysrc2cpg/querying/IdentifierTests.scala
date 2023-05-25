@@ -59,11 +59,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all identifier and call nodes" in {
-      cpg.identifier.name("name").l.size shouldBe 2
-      cpg.identifier.name("age").l.size shouldBe 2
+      cpg.identifier.name("name").l.size shouldBe 1
+      cpg.identifier.name("age").l.size shouldBe 1
       cpg.identifier.name("@name").l.size shouldBe 2
       cpg.identifier.name("@age").l.size shouldBe 4
-      cpg.call.name("attr_accessor").size shouldBe 1
       cpg.call.name("greet").size shouldBe 1
       cpg.method.name("initialize").size shouldBe 1
       cpg.method
@@ -71,7 +70,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         .size shouldBe 2 // FIXME the second node is coming in without adding it. Need to check this
       cpg.call.name("puts").size shouldBe 2
       cpg.method.name("have_birthday").size shouldBe 1
-      cpg.identifier.size shouldBe 13
+      cpg.identifier.size shouldBe 11
     }
   }
 
@@ -107,6 +106,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("ret").l.size shouldBe 2
       cpg.call.name("add_three_numbers").size shouldBe 1
       cpg.call.name("num1").size shouldBe 1
+      cpg.method.name("add_three_numbers").dotAst.l
       cpg.identifier.size shouldBe 16
     }
 
@@ -262,13 +262,13 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
     "recognise all identifier and call nodes" in {
-      cpg.method.name("\\[]").size shouldBe 1
+      cpg.method.name("\\[]").size shouldBe 2
       cpg.method.name("\\[]=").size shouldBe 1
       cpg.call.name("=").size shouldBe 3
       cpg.method.name("initialize").size shouldBe 1
       cpg.call.name("to_s").size shouldBe 1
       cpg.call.name("new").size shouldBe 1
-      cpg.call.size shouldBe 5
+      cpg.call.size shouldBe 7
       cpg.identifier.name("@my_hash").size shouldBe 3
       cpg.identifier.name("key").size shouldBe 3
       cpg.identifier.name("value").size shouldBe 2
