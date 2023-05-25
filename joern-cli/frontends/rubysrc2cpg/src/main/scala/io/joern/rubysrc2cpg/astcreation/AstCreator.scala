@@ -55,11 +55,44 @@ class AstCreator(filename: String, global: Global)
     val parser      = new RubyParser(tokenStream)
     val programCtx  = parser.program()
 
-    val statementCtx   = programCtx.compoundStatement().statements()
-    val statementAst   = astForStatementsContext(statementCtx)
+    val statementCtx = programCtx.compoundStatement().statements()
+    val statementAst = astForStatementsContext(statementCtx)
+
+    val name = ":program"
+    val programMethod =
+      NewMethod()
+        .order(1)
+        .name(name)
+        .code(name)
+        .fullName(filename)
+        .filename(filename)
+        .lineNumber(0)
+        .lineNumberEnd(-1)
+        .columnNumber(0)
+        .columnNumberEnd(-1)
+        .astParentType(NodeTypes.TYPE_DECL)
+        .astParentFullName(filename)
+
+    val thisParam = NewMethodParameterIn()
+      .name("this")
+      .code("this")
+      .lineNumber(0)
+      .columnNumber(0)
+    val thisParamAst = Ast(thisParam)
+
+    val methodRetNode = NewMethodReturn()
+      .lineNumber(None)
+      .columnNumber(None)
+      .typeFullName(Defines.Any)
+
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    val programAst =
+      methodAst(programMethod, Seq[Ast](thisParamAst), blockAst(blockNode, List[Ast](statementAst)), methodRetNode)
+
     val fileNode       = NewFile().name(filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
-    val ast            = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(statementAst))
+    val ast            = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(programAst))
+
     storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
