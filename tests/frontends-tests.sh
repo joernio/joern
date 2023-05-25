@@ -33,7 +33,7 @@ declare -A expectedMethod=(
 
 for frontend in "${frontends[@]}"; do
   rm -rf workspace
-  $JOERN --script tests/frontends-testscript.sc --params inputPath=tests/code/$frontend,minMethodCount=${minMethodCount[$frontend]},expectedMethod=${expectedMethod[$frontend]},frontend=$frontend
+  $JOERN --script tests/frontends-testscript.sc --param inputPath=tests/code/$frontend --param minMethodCount=${minMethodCount[$frontend]} --param expectedMethod=${expectedMethod[$frontend]} --param frontend=$frontend
 
   JOERN_EXIT_CODE=$?
   if [ $JOERN_EXIT_CODE != 0 ]; then

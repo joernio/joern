@@ -61,7 +61,7 @@ createDistribution := {
   dstArchive.toJava
 }
 
-Compile / scalacOptions ++= Seq("-Xfatal-warnings", "-feature", "-deprecation", "-language:implicitConversions")
+Compile / scalacOptions ++= Seq("-Xfatal-warnings", "-feature", "-language:implicitConversions")
 
 fork := true
 

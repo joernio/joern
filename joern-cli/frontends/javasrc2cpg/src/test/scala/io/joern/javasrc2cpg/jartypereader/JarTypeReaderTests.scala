@@ -230,7 +230,7 @@ class JarTypeReaderTests extends AnyFreeSpec with Matchers {
   }
 
   private def getTypes(name: String): List[ResolvedTypeDecl] = {
-    val path = Paths.get("joern-cli", "frontends", "javasrc2cpg", "target", "scala-2.13", "test-classes", s"$name.jar")
+    val path      = Paths.get("joern-cli", "frontends", "javasrc2cpg", "target", "testjars", s"$name.jar")
     val inputPath = ProjectRoot.relativise(path.toString)
     JarTypeReader.getTypes(inputPath)
   }

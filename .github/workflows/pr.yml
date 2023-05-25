@@ -36,7 +36,7 @@ jobs:
           distribution: 'temurin'
           java-version: '19'
       - name: Check formatting
-        run: sbt ++2.13.8 scalafmtCheck test:scalafmtCheck
+        run: sbt scalafmtCheck Test/scalafmtCheck
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
         if: ${{ failure() }}
   test-scripts:
