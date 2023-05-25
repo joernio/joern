@@ -87,6 +87,8 @@ class AstCreator(filename: String, global: Global)
       .columnNumber(None)
       .typeFullName(Defines.Any)
 
+    diffGraph.addEdge(programMethod, thisParam, EdgeTypes.AST)
+
     val blockNode = NewBlock().typeFullName(Defines.Any)
     val programAst =
       methodAst(programMethod, Seq[Ast](thisParamAst), blockAst(blockNode, List[Ast](statementAst)), methodRetNode)
