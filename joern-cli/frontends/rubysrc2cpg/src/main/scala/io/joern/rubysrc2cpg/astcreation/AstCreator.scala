@@ -430,7 +430,16 @@ class AstCreator(filename: String, global: Global)
             astForExpressionContext(exp)
           })
           .toSeq
-      Ast().withChildren(expAsts)
+      val callNode = NewCall()
+        .name(Operators.arrayInitializer)
+        .methodFullName(Operators.arrayInitializer)
+        .signature(Operators.arrayInitializer)
+        .typeFullName(MethodFullNames.UnknownFullName)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .code(ctx.getText)
+        .lineNumber(-1)
+        .columnNumber(-1)
+      callAst(callNode, expAsts)
     case ctx: RubyParser.ExpressionsAndSplattingIndexingArgumentsContext =>
       val expAsts = ctx
         .expressions()
@@ -441,8 +450,16 @@ class AstCreator(filename: String, global: Global)
         })
         .toSeq
       val splatAst = astForSplattingArgumentContext(ctx.splattingArgument())
-      Ast().withChildren(expAsts).merge(splatAst)
-
+      val callNode = NewCall()
+        .name(ctx.COMMA().getText)
+        .methodFullName(Operators.arrayInitializer)
+        .signature(Operators.arrayInitializer)
+        .typeFullName(MethodFullNames.UnknownFullName)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .code(ctx.getText)
+        .lineNumber(ctx.COMMA().getSymbol.getLine)
+        .columnNumber(ctx.COMMA().getSymbol.getCharPositionInLine)
+      callAst(callNode, expAsts ++ Seq[Ast](splatAst))
     case ctx: AssociationsOnlyIndexingArgumentsContext =>
       astForAssociationsContext(ctx.associations())
     case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
@@ -601,7 +618,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForMultipleLeftHandSideContext(ctx: MultipleLeftHandSideContext): Ast = ctx match {
     case ctx: MultipleLeftHandSideAndpackingLeftHandSideMultipleLeftHandSideContext =>
-      val asts = ctx
+      val multipleLHSAsts = ctx
         .multipleLeftHandSideItem()
         .asScala
         .map(item => {
@@ -612,7 +629,26 @@ class AstCreator(filename: String, global: Global)
           }
         })
         .toList
-      Ast().withChildren(asts)
+
+      val paramAsts =
+        if (ctx.packingLeftHandSide() != null) {
+          val packingLHSAst = astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
+          Seq[Ast](packingLHSAst) ++ multipleLHSAsts
+        } else {
+          multipleLHSAsts
+        }
+
+      val callNode = NewCall()
+        .name(Operators.arrayInitializer)
+        .code(ctx.getText)
+        .methodFullName(Operators.arrayInitializer)
+        .signature("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(-1)
+        .columnNumber(-1)
+      callAst(callNode, paramAsts)
+
     case ctx: PackingLeftHandSideOnlyMultipleLeftHandSideContext =>
       astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
     case ctx: GroupedLeftHandSideOnlyMultipleLeftHandSideContext =>
