@@ -2,9 +2,10 @@ package io.joern.jssrc2cpg.passes
 
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
-
 import java.io.File
+import scala.annotation.nowarn
 
+@nowarn // otherwise scalac warns about interpolated expressions
 class InheritanceFullNamePassTests extends DataFlowCodeToCpgSuite {
 
   "inherited type full names" should {
