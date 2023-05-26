@@ -421,4 +421,33 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name(":program").dotAst.l
     }
   }
+
+  "CPG for code with modules" should {
+    val cpg = code("""
+        |module Module1
+        |   def method1_1
+        |   end
+        |   def method1_2
+        |   end
+        |end
+        |
+        |module Module2
+        |   def method2_1
+        |   end
+        |   def method2_2
+        |   end
+        |end
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.method.name("method1_1").l.size shouldBe 1
+      cpg.method.name("method1_2").l.size shouldBe 1
+      cpg.method.name("method2_1").l.size shouldBe 1
+      cpg.method.name("method2_2").l.size shouldBe 1
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
 }

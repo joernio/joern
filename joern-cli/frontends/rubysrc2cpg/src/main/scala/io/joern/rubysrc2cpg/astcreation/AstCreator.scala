@@ -1209,6 +1209,9 @@ class AstCreator(filename: String, global: Global)
   def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Ast = {
     val referenceAst = astForClassOrModuleReferenceContext(ctx.moduleDefinition().classOrModuleReference())
     val bodyStmtAst  = astForBodyStatementContext(ctx.moduleDefinition().bodyStatement())
+    if (classStack.size > 0) {
+      classStack.pop()
+    }
     referenceAst.withChild(bodyStmtAst)
   }
 
