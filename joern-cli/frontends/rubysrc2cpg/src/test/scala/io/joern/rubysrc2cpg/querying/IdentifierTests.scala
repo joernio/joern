@@ -305,7 +305,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name("initialize").size shouldBe 1
       cpg.call.name("to_s").size shouldBe 2
       cpg.call.name("new").size shouldBe 1
-      cpg.call.size shouldBe 9
+      cpg.call.size shouldBe 12
       cpg.identifier.name("@my_hash").size shouldBe 3
       cpg.identifier.name("key").size shouldBe 2
       cpg.identifier.name("value").size shouldBe 1
@@ -383,6 +383,38 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.literal.code("Result 2: ").l.size shouldBe 1
       cpg.literal.code("Result 3: ").l.size shouldBe 1
       cpg.literal.code("Result 4: ").l.size shouldBe 1
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
+
+  "CPG for code with multiple assignments" should {
+    val cpg = code("""
+        |a, b, c = [1, 2, 3]
+        |a, b, c = b, c, a
+        |str1, str2 = ["hello", "world"]
+        |""".stripMargin)
+
+    "recognise all identifier nodes" in {
+      cpg.identifier.name("a").l.size shouldBe 3
+      cpg.identifier.name("b").l.size shouldBe 3
+      cpg.identifier.name("c").l.size shouldBe 3
+      cpg.identifier.name("str1").l.size shouldBe 1
+      cpg.identifier.name("str2").l.size shouldBe 1
+    }
+
+    "recognise all literal nodes" in {
+      cpg.literal.code("1").l.size shouldBe 1
+      cpg.literal.code("2").l.size shouldBe 1
+      cpg.literal.code("3").l.size shouldBe 1
+      cpg.literal.code("hello").l.size shouldBe 1
+      cpg.literal.code("world").l.size shouldBe 1
+    }
+
+    "recognise all call nodes" in {
+      cpg.call.name("=").l.size shouldBe 3
     }
 
     "successfully plot ASTs" in {

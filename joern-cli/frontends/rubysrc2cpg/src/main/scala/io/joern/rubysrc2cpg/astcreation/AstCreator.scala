@@ -215,13 +215,8 @@ class AstCreator(filename: String, global: Global)
 
   }
 
-  def astForExpressionOrCommandsContext(ctx: ExpressionOrCommandsContext): Ast = {
-    val asts = ctx.expressionOrCommand().asScala.map(astForExpressionOrCommandContext)
-    if (asts.size == 1) {
-      asts.head
-    } else {
-      Ast().withChildren(asts.toSeq)
-    }
+  def astForExpressionOrCommandsContext(ctx: ExpressionOrCommandsContext): Seq[Ast] = {
+    ctx.expressionOrCommand().asScala.map(astForExpressionOrCommandContext).toSeq
   }
 
   def astForSplattingArgumentContext(ctx: SplattingArgumentContext): Ast = {
@@ -229,22 +224,33 @@ class AstCreator(filename: String, global: Global)
     astForExpressionOrCommandContext(ctx.expressionOrCommand())
   }
 
-  def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Seq[Ast] = {
-    if (ctx == null) return Seq[Ast](Ast())
+  def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Ast = {
+    if (ctx == null) return Ast()
 
-    val splattingAst = astForSplattingArgumentContext(ctx.splattingArgument())
+    val exprAsts = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
 
-    if (ctx.expressionOrCommands() != null) {
-      val exprAst = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
-      Seq[Ast](exprAst) ++ Seq[Ast](splattingAst)
+    val paramAsts = if (ctx.splattingArgument() != null) {
+      val splattingAst = astForSplattingArgumentContext(ctx.splattingArgument())
+      exprAsts ++ Seq[Ast](splattingAst)
     } else {
-      Seq[Ast](splattingAst)
+      exprAsts
     }
+
+    val callNode = NewCall()
+      .name(Operators.arrayInitializer)
+      .code(ctx.getText)
+      .methodFullName(Operators.arrayInitializer)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(-1)
+      .columnNumber(-1)
+    callAst(callNode, paramAsts)
   }
 
   def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Ast = {
-    val rightAsts = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
-    val leftAst   = astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
+    val rightAst = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
+    val leftAst  = astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
     val callNode = NewCall()
       .name(ctx.op.getText)
       .code(ctx.op.getText)
@@ -254,7 +260,7 @@ class AstCreator(filename: String, global: Global)
       .typeFullName(Defines.Any)
       .lineNumber(ctx.op.getLine())
       .columnNumber(ctx.op.getCharPositionInLine())
-    callAst(callNode, Seq[Ast](leftAst) ++ rightAsts)
+    callAst(callNode, Seq[Ast](leftAst) ++ Seq[Ast](rightAst))
   }
 
   def astForStringInterpolationPrimaryContext(ctx: StringInterpolationPrimaryContext): Ast = {
@@ -1194,9 +1200,8 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForMultipleAssignmentExpressionContext(ctx: MultipleAssignmentExpressionContext): Ast = {
-    val lhsAst  = astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
-    val rhsAsts = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
-    // TODO use rhsType
+    val lhsAst = astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
+    val rhsAst = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     val callNode = NewCall()
       .name(ctx.EQ().getText)
       .code(ctx.getText)
@@ -1206,7 +1211,7 @@ class AstCreator(filename: String, global: Global)
       .typeFullName(Defines.Any)
       .lineNumber(ctx.EQ().getSymbol().getLine())
       .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
-    callAst(callNode, Seq[Ast](lhsAst) ++ rhsAsts)
+    callAst(callNode, Seq[Ast](lhsAst) ++ Seq[Ast](rhsAst))
   }
 
   def astForMultiplicativeExpressionContext(ctx: MultiplicativeExpressionContext): Ast = {
