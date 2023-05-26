@@ -32,6 +32,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.literal.code("3").l.size shouldBe 1
       cpg.literal.code("4").l.size shouldBe 1
     }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
   }
 
   "CPG for code with class methods, members and locals in methods" should {
@@ -72,6 +76,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name("have_birthday").size shouldBe 1
       cpg.identifier.size shouldBe 11
     }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
   }
 
   "CPG for code with a function call, arguments and function called from function " should {
@@ -109,6 +117,9 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.size shouldBe 14
     }
 
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
   }
   "CPG for code with expressions of various types" should {
     val cpg = code("""
@@ -148,6 +159,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("p").l.size shouldBe 1  // conditionalOperatorExpression
       cpg.identifier.size shouldBe 44
     }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
   }
 
   "CPG for code with BEGIN and END blocks" should {
@@ -178,6 +193,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.call.name("puts").size shouldBe 1
       cpg.identifier.size shouldBe 6
     }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
   }
 
   "CPG for code with doBlock iterating over a constant array" should {
@@ -192,6 +211,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.call.name("each").size shouldBe 1
       cpg.call.name("puts").size shouldBe 1
       cpg.identifier.size shouldBe 2
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
     }
   }
 
@@ -217,6 +240,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.call.name("by").size shouldBe 1
       cpg.identifier.size shouldBe 7
     }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
   }
 
   "CPG for code with namespace resolution being used" should {
@@ -237,6 +264,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("Logger").l.size shouldBe 1
       cpg.identifier.name("log_formatter").l.size shouldBe 1
       cpg.identifier.size shouldBe 5
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
     }
   }
 
@@ -280,6 +311,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
        *  MyClass is identified as a variableIdentifier and so an identifier. This needs to be fixed
        */
     }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
   }
 
   "CPG for code with return having a jump statement" should {
@@ -292,6 +327,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
     "recognise identifier nodes in the jump statement" in {
       cpg.identifier.name("verify_recaptcha").size shouldBe 1
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
     }
   }
 
@@ -312,6 +351,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("num1").l.size shouldBe 1
       cpg.call.code("\\+").plotDotAst
       cpg.method.name("add_three_numbers").plotDotAst
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
     }
   }
 }
