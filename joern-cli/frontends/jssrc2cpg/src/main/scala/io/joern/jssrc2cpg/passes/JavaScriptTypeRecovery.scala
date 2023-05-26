@@ -79,7 +79,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         }
         .flatMap {
           case (t, ts) if Set(t) == ts => Set(t)
-          case (_, ts)                 => ts.map(_.replaceAll("\\.", pathSep.toString))
+          case (_, ts)                 => ts.map(_.replaceAll("\\.(?!js::program)", pathSep.toString))
         }
       p match {
         case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
