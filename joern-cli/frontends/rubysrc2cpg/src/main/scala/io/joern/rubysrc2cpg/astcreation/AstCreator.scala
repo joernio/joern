@@ -1521,7 +1521,24 @@ class AstCreator(filename: String, global: Global)
     } else if (ctx.methodIdentifier() != null) {
       val methodIdentifierAst = astForMethodIdentifierContext(ctx.methodIdentifier(), true)
       methodIdentiferQ.enqueue(methodIdentifierAst)
-      astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+
+      // FIXME NewIdentifier below needs to be fixed to NewCall after correct call node identification
+      val callNodes = methodIdentifierAst.nodes.filter(node => node.isInstanceOf[NewIdentifier])
+      if (callNodes.size > 0) {
+        val callNode = callNodes.head.asInstanceOf[NewIdentifier]
+        if (
+          callNode.name == "require" ||
+          callNode.name == "require_once" ||
+          callNode.name == "load"
+        ) {
+          val importedFile =
+            argsAst.nodes.filter(node => node.isInstanceOf[NewLiteral]).head.asInstanceOf[NewLiteral].code
+          println(s"Creating AST for imported file ${importedFile}")
+        }
+      }
+
+      argsAst
     } else if (ctx.primary() != null) {
       val argumentsWithoutParenAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       val primaryAst               = astForPrimaryContext(ctx.primary())
