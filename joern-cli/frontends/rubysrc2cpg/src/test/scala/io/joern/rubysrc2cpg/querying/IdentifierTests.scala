@@ -79,6 +79,9 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
+      cpg.method.name("initialize").dotAst.l
+      cpg.method.name("greet").dotAst.l
+      cpg.method.name("have_birthday").dotAst.l
     }
   }
 
@@ -314,6 +317,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
+      cpg.method.name("\\[]=").dotAst.l
+      cpg.method.name("\\[]=").dotAst.l
     }
   }
 
@@ -331,6 +336,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
+      cpg.method.name("check_captcha").dotAst.l
     }
   }
 
