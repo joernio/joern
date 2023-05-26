@@ -1683,6 +1683,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForYieldWithOptionalArgumentContext(ctx: YieldWithOptionalArgumentContext): Ast = {
+    if (ctx.arguments() == null) return Ast()
     astForArgumentsContext(ctx.arguments())
   }
 

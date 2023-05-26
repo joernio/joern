@@ -450,4 +450,26 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name(":program").dotAst.l
     }
   }
+
+  "CPG for code with yield" should {
+    val cpg = code("""
+        |def yield_with_args_method
+        |   yield 2*3
+        |   yield 100
+        |   yield
+        |end
+        |
+        |yield_with_args_method {|i| puts "arg is #{i}"}
+        |
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.method.name("yield_with_args_method").l.size shouldBe 2
+      // TODO need to figure out how yield block should be connected to the method
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
 }
