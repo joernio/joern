@@ -664,13 +664,26 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForClassDefinitionPrimaryContext(ctx: ClassDefinitionPrimaryContext): Ast = {
-    val astClassOrModuleRef = astForClassOrModuleReferenceContext(ctx.classDefinition().classOrModuleReference())
-    val astExprOfCommand    = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
-    val astBodyStatement    = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
-    if (classStack.size > 0) {
-      classStack.pop()
+    if (ctx.classDefinition().classOrModuleReference() != null) {
+      val astClassOrModuleRef = astForClassOrModuleReferenceContext(ctx.classDefinition().classOrModuleReference())
+      val astBodyStatement    = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
+      if (classStack.size > 0) {
+        classStack.pop()
+      }
+
+      if (ctx.classDefinition().expressionOrCommand() != null) {
+        val astExprOfCommand = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
+        // TODO test for this is pending due to lack of understanding to generate an example
+        astClassOrModuleRef.withChildren(Seq[Ast](astExprOfCommand, astBodyStatement))
+      } else {
+        astClassOrModuleRef.withChild(astBodyStatement)
+      }
+    } else {
+      // TODO test for this is pending due to lack of understanding to generate an example
+      val astExprOfCommand = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
+      val astBodyStatement = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
+      Ast().withChildren(Seq[Ast](astExprOfCommand, astBodyStatement))
     }
-    Ast().withChildren(Seq[Ast](astClassOrModuleRef, astExprOfCommand, astBodyStatement))
   }
 
   def astForConditionalOperatorExpressionContext(ctx: ConditionalOperatorExpressionContext): Ast = {
