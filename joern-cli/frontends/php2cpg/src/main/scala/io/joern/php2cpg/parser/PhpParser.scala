@@ -32,7 +32,7 @@ object PhpParser {
   }
 
   private lazy val DefaultPhpIni: String = {
-    val iniContents = Source.fromResource("php.ini").getLines.mkString(System.lineSeparator())
+    val iniContents = Source.fromResource("php.ini").getLines().mkString(System.lineSeparator())
 
     val tmpIni = File.newTemporaryFile(suffix = "-php.ini").deleteOnExit()
     tmpIni.writeText(iniContents)
