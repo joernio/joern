@@ -2,10 +2,6 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
-
-import scala.sys.process.Process
-import scala.util.Try
 
 class IdentifierTests extends RubyCode2CpgFixture {
 
@@ -122,6 +118,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
+      cpg.method.name("add_three_numbers").dotAst.l
+      cpg.method.name("extrareturn").dotAst.l
     }
   }
   "CPG for code with expressions of various types" should {
@@ -346,23 +344,45 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "foo" should {
+  "CPG for code with defined? keyword" should {
     val cpg = code("""
-          |def add_three_numbers(num1, num2, num3)
-          |sum = num1 + num2 + num3
-          |return sum
-          |end
-          |""".stripMargin)
+        |radius = 2
+        |
+        |area = 3.14 * radius * radius
+        |
+        |# Checking if the variable is defined or not
+        |# Using defined? keyword
+        |res1 = defined? radius
+        |res2 = defined? height
+        |res3 = defined? area
+        |res4 = defined? Math::PI
+        |
+        |# Displaying results
+        |puts "Result 1: #{res1}"
+        |puts "Result 2: #{res2}"
+        |puts "Result 3: #{res3}"
+        |puts "Result 4: #{res4}"
+        |""".stripMargin)
 
-    "bar" in {
-      implicit val viewer: ImageViewer = (pathStr: String) =>
-        Try {
-          Process(Seq("xdg-open", pathStr)).!!
-        }
+    "recognise all identifier nodes" in {
+      cpg.identifier.name("radius").l.size shouldBe 4
+      cpg.identifier.name("area").l.size shouldBe 2
+      cpg.identifier.name("height").l.size shouldBe 1
+      cpg.identifier.name("res1").l.size shouldBe 2
+      cpg.identifier.name("res2").l.size shouldBe 2
+      cpg.identifier.name("res3").l.size shouldBe 2
+      cpg.identifier.name("res4").l.size shouldBe 2
+      cpg.identifier.name("Math").l.size shouldBe 1
+      cpg.identifier.name("PI").l.size shouldBe 1
+    }
 
-      cpg.identifier.name("num1").l.size shouldBe 1
-      cpg.call.code("\\+").plotDotAst
-      cpg.method.name("add_three_numbers").plotDotAst
+    "recognise all literal nodes" in {
+      cpg.literal.code("3.14").l.size shouldBe 1
+      cpg.literal.code("2").l.size shouldBe 1
+      cpg.literal.code("Result 1: ").l.size shouldBe 1
+      cpg.literal.code("Result 2: ").l.size shouldBe 1
+      cpg.literal.code("Result 3: ").l.size shouldBe 1
+      cpg.literal.code("Result 4: ").l.size shouldBe 1
     }
 
     "successfully plot ASTs" in {

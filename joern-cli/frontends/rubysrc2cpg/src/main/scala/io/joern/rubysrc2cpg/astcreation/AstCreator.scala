@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, Node}
 
 import java.util
+import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
@@ -620,7 +621,17 @@ class AstCreator(filename: String, global: Global)
     val varSymbol  = localVar.getSymbol()
     val node = createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
     val constAst = Ast(node)
-    primaryAst.withChild(constAst)
+
+    val callNode = NewCall()
+      .name(ctx.COLON2().getText)
+      .code(ctx.COLON2().getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.COLON2().getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.COLON2().getSymbol().getLine())
+      .columnNumber(ctx.COLON2().getSymbol().getCharPositionInLine())
+    callAst(callNode, Seq[Ast](primaryAst, constAst))
   }
 
   def astForScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): Ast = {
@@ -852,7 +863,17 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForIsDefinedExpressionContext(ctx: IsDefinedExpressionContext): Ast = {
-    astForExpressionContext(ctx.expression())
+    val exprAst = astForExpressionContext(ctx.expression())
+    val callNode = NewCall()
+      .name(ctx.IS_DEFINED().getText)
+      .code(ctx.IS_DEFINED().getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.IS_DEFINED().getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.IS_DEFINED().getSymbol().getLine())
+      .columnNumber(ctx.IS_DEFINED().getSymbol().getCharPositionInLine())
+    callAst(callNode, Seq[Ast](exprAst))
   }
 
   def astForIsDefinedPrimaryContext(ctx: IsDefinedPrimaryContext): Ast = {
