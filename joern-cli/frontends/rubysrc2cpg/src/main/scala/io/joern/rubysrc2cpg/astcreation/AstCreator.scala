@@ -123,7 +123,19 @@ class AstCreator(filename: String, global: Global)
   def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext): Ast = ctx match {
     case ctx: VariableIdentifierOnlySingleLeftHandSideContext =>
       astForVariableIdentifierContext(ctx.variableIdentifier())
-    case ctx: PrimaryInsideBracketsSingleLeftHandSideContext => astForPrimaryContext(ctx.primary())
+    case ctx: PrimaryInsideBracketsSingleLeftHandSideContext =>
+      val primaryAst = astForPrimaryContext(ctx.primary())
+      val argsAst    = astForArgumentsContext(ctx.arguments())
+      val callNode = NewCall()
+        .name(Operators.indexAccess)
+        .code(Operators.indexAccess)
+        .methodFullName(Operators.indexAccess)
+        .signature("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(ctx.LBRACK().getSymbol.getLine)
+        .columnNumber(ctx.LBRACK().getSymbol.getCharPositionInLine())
+      callAst(callNode, Seq[Ast](primaryAst, argsAst))
     case ctx: XdotySingleLeftHandSideContext =>
       val xAst = astForPrimaryContext(ctx.primary())
       val localVar = {

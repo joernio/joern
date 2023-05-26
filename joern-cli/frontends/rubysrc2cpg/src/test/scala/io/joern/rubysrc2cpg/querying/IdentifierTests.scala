@@ -100,14 +100,13 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("c").l.size shouldBe 2
       cpg.identifier.name("sumOfThree").l.size shouldBe 1
       cpg.identifier.name("num1").l.size shouldBe 1
-      cpg.identifier.name("num2").l.size shouldBe 2
-      cpg.identifier.name("num3").l.size shouldBe 2
+      cpg.identifier.name("num2").l.size shouldBe 1
+      cpg.identifier.name("num3").l.size shouldBe 1
       cpg.identifier.name("sum").l.size shouldBe 2
       cpg.identifier.name("ret").l.size shouldBe 2
       cpg.call.name("add_three_numbers").size shouldBe 1
-      cpg.call.name("num1").size shouldBe 1
       cpg.method.name("add_three_numbers").dotAst.l
-      cpg.identifier.size shouldBe 16
+      cpg.identifier.size shouldBe 14
     }
 
   }
@@ -266,12 +265,12 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name("\\[]=").size shouldBe 1
       cpg.call.name("=").size shouldBe 3
       cpg.method.name("initialize").size shouldBe 1
-      cpg.call.name("to_s").size shouldBe 1
+      cpg.call.name("to_s").size shouldBe 2
       cpg.call.name("new").size shouldBe 1
-      cpg.call.size shouldBe 7
+      cpg.call.size shouldBe 9
       cpg.identifier.name("@my_hash").size shouldBe 3
-      cpg.identifier.name("key").size shouldBe 3
-      cpg.identifier.name("value").size shouldBe 2
+      cpg.identifier.name("key").size shouldBe 2
+      cpg.identifier.name("value").size shouldBe 1
       cpg.identifier.name("my_object").size shouldBe 1
       /*
        * FIXME
