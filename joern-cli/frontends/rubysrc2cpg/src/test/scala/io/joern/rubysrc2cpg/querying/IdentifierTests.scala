@@ -142,6 +142,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |n = a .. b
           |o = a ... b
           |p = ( a > b ) ? c : e
+          |q = not p
           |""".stripMargin)
 
     "recognise all identifier nodes" in {
@@ -159,8 +160,9 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("m").l.size shouldBe 1  // operator or Expression
       cpg.identifier.name("n").l.size shouldBe 1  // inclusive range Expression
       cpg.identifier.name("o").l.size shouldBe 1  // exclusive range Expression
-      cpg.identifier.name("p").l.size shouldBe 1  // conditionalOperatorExpression
-      cpg.identifier.size shouldBe 44
+      cpg.identifier.name("p").l.size shouldBe 2  // conditionalOperatorExpression
+      cpg.identifier.name("q").l.size shouldBe 1  // notExpressionOrCommand
+      cpg.identifier.size shouldBe 46
     }
 
     "successfully plot ASTs" in {

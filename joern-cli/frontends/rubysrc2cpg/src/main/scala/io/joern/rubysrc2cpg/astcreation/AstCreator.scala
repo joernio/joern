@@ -793,7 +793,21 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForInvocationExpressionOrCommandContext(ctx: InvocationExpressionOrCommandContext): Ast = {
-    astForInvocationWithoutParenthesesContext(ctx.invocationWithoutParentheses())
+    if (ctx.EMARK() != null) {
+      val invocWOParenAst = astForInvocationWithoutParenthesesContext(ctx.invocationWithoutParentheses())
+      val callNode = NewCall()
+        .name(ctx.EMARK().getText)
+        .code(ctx.EMARK().getText)
+        .methodFullName(MethodFullNames.OperatorPrefix + ctx.EMARK().getText)
+        .signature("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(ctx.EMARK().getSymbol().getLine())
+        .columnNumber(ctx.EMARK().getSymbol().getCharPositionInLine())
+      callAst(callNode, Seq[Ast](invocWOParenAst))
+    } else {
+      astForInvocationWithoutParenthesesContext(ctx.invocationWithoutParentheses())
+    }
   }
 
   def astForInvocationWithoutParenthesesContext(ctx: InvocationWithoutParenthesesContext): Ast = ctx match {
@@ -1179,7 +1193,17 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForNotExpressionOrCommandContext(ctx: NotExpressionOrCommandContext): Ast = {
-    astForExpressionOrCommandContext(ctx.expressionOrCommand())
+    val expAst = astForExpressionOrCommandContext(ctx.expressionOrCommand())
+    val callNode = NewCall()
+      .name(ctx.NOT().getText)
+      .code(ctx.NOT().getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + ctx.NOT().getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.NOT().getSymbol().getLine())
+      .columnNumber(ctx.NOT().getSymbol().getCharPositionInLine())
+    callAst(callNode, Seq[Ast](expAst))
   }
 
   def astForOperatorAndExpressionContext(ctx: OperatorAndExpressionContext): Ast = {
