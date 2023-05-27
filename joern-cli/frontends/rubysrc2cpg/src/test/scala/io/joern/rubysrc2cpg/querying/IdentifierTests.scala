@@ -504,4 +504,32 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name(":program").dotAst.l
     }
   }
+  "CPG for code with unless condition" should {
+    val cpg = code(
+      """
+        |x = 1
+        |unless x > 2
+        |   puts "x is less than or equal to 2"
+        |else
+        |   puts "x is greater than 2"
+        |end
+        |
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.identifier.name("x").l.size shouldBe 2
+      cpg.literal.code("2").l.size shouldBe 1
+      cpg.literal.code("x is less than or equal to 2").l.size shouldBe 1
+      cpg.literal.code("x is greater than 2").l.size shouldBe 1
+    }
+
+    "recognise all call nodes" in {
+      cpg.call.name("puts").l.size shouldBe 2
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
+
 }

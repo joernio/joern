@@ -1552,10 +1552,22 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Ast = {
-    val unlessAst = astForExpressionOrCommandContext(ctx.unlessExpression().expressionOrCommand())
-    val thenAsts  = astForThenClauseContext(ctx.unlessExpression().thenClause())
-    val elseAst   = astForElseClauseContext(ctx.unlessExpression().elseClause())
-    unlessAst.withChildren(thenAsts ++ List[Ast](elseAst))
+    val conditionAst = astForExpressionOrCommandContext(ctx.unlessExpression().expressionOrCommand())
+    val thenAsts = astForThenClauseContext(ctx.unlessExpression().thenClause())
+    val elseAst = astForElseClauseContext(ctx.unlessExpression().elseClause())
+
+    //unless will be modelled as IF since there is no difference from a static analysis POV
+    val unlessNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.IF)
+      .code(ctx.getText)
+      .lineNumber(ctx.unlessExpression().UNLESS().getSymbol.getLine)
+      .columnNumber(ctx.unlessExpression().UNLESS().getSymbol.getCharPositionInLine)
+
+    Ast(unlessNode)
+      .withChild(conditionAst)
+      .withConditionEdge(unlessNode, conditionAst.nodes.head)
+      .withChildren(thenAsts)
+      .withChild(elseAst)
   }
 
   def astForUntilExpressionPrimaryContext(ctx: UntilExpressionPrimaryContext): Ast = {
