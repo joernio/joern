@@ -741,11 +741,18 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForClassOrModuleReferenceContext(ctx: ClassOrModuleReferenceContext): Ast = {
+  def astForClassOrModuleReferenceContext(
+    ctx: ClassOrModuleReferenceContext,
+    baseClassName: Option[String] = None
+  ): Ast = {
     if (ctx.scopedConstantReference() != null) {
       astForScopedConstantReferenceContext(ctx.scopedConstantReference())
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      classStack.push(ctx.CONSTANT_IDENTIFIER().getText)
+      val className = baseClassName match {
+        case Some(value) => value + "." + ctx.CONSTANT_IDENTIFIER().getText
+        case None        => ctx.CONSTANT_IDENTIFIER().getText
+      }
+      classStack.push(className)
       Ast()
     } else {
       Ast()
@@ -754,19 +761,25 @@ class AstCreator(filename: String, global: Global)
 
   def astForClassDefinitionPrimaryContext(ctx: ClassDefinitionPrimaryContext): Ast = {
     if (ctx.classDefinition().classOrModuleReference() != null) {
-      val astClassOrModuleRef = astForClassOrModuleReferenceContext(ctx.classDefinition().classOrModuleReference())
-      val astBodyStatement    = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
+      val baseClassName = if (ctx.classDefinition().expressionOrCommand() != null) {
+        val parentClassNameAst = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
+        val nameNode = parentClassNameAst.nodes
+          .filter(node => node.isInstanceOf[NewIdentifier])
+          .head
+          .asInstanceOf[NewIdentifier]
+        Some(nameNode.name)
+      } else {
+        None
+      }
+
+      val classOrModuleRefAst =
+        astForClassOrModuleReferenceContext(ctx.classDefinition().classOrModuleReference(), baseClassName)
+      val bodyAst = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
+
       if (classStack.size > 0) {
         classStack.pop()
       }
-
-      if (ctx.classDefinition().expressionOrCommand() != null) {
-        val astExprOfCommand = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
-        // TODO test for this is pending due to lack of understanding to generate an example
-        astClassOrModuleRef.withChildren(Seq[Ast](astExprOfCommand, astBodyStatement))
-      } else {
-        astClassOrModuleRef.withChild(astBodyStatement)
-      }
+      classOrModuleRefAst.withChild(bodyAst)
     } else {
       // TODO test for this is pending due to lack of understanding to generate an example
       val astExprOfCommand = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
@@ -1767,7 +1780,21 @@ class AstCreator(filename: String, global: Global)
   def astForAssociationContext(ctx: AssociationContext): Ast = {
     val expr1Ast = astForExpressionContext(ctx.expression().get(0))
     val expr2Ast = astForExpressionContext(ctx.expression().get(1))
-    Ast().withChildren(Seq[Ast](expr1Ast, expr2Ast))
+
+    val terminalNode =
+      if (ctx.COLON() != null) ctx.COLON()
+      else ctx.EQGT()
+
+    val callNode = NewCall()
+      .name(terminalNode.getText)
+      .code(ctx.getText)
+      .methodFullName(MethodFullNames.OperatorPrefix + terminalNode.getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(-1)
+      .columnNumber(-1)
+    callAst(callNode, Seq[Ast](expr1Ast, expr2Ast))
   }
 
   def astForAssociationsContext(ctx: AssociationsContext) = {

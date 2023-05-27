@@ -280,7 +280,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
   "CPG for code with square brackets as methods" should {
     val cpg = code("""
-          |class MyClass
+          |class MyClass < MyBaseClass
           |  def initialize
           |    @my_hash = {}
           |  end
