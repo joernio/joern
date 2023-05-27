@@ -820,9 +820,9 @@ class AstCreator(filename: String, global: Global)
       .code(ctx.getText())
       .lineNumber(ctx.ELSE().getSymbol.getLine)
       .columnNumber(ctx.ELSE().getSymbol.getCharPositionInLine)
-    val stmtsAst = astForStatementsContext(ctx.compoundStatement().statements())
+    val stmtsAsts = astsForStatementsContext(ctx.compoundStatement().statements())
     Ast(elseNode)
-      .withChild(stmtsAst)
+      .withChildren(stmtsAsts)
   }
 
   def astForIfExpressionContext(ctx: IfExpressionContext): Ast = {
