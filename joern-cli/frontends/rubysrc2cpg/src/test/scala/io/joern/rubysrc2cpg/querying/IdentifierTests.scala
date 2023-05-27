@@ -737,8 +737,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
   }
 
   "CPG for code with association statements" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |class Employee < EmployeeBase
         |    has_many :teams, foreign_key: "team_id", class_name: "Team"
         |    has_many :worklocations, foreign_key: "location_id", class_name: "WorkLocation"
