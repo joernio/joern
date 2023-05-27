@@ -1185,32 +1185,11 @@ class AstCreator(filename: String, global: Global)
 
   def astForOperatorMethodNameContext(ctx: OperatorMethodNameContext): Ast = {
 
-    val terminalNode =
-      if (ctx.CARET() != null) ctx.CARET()
-      else if (ctx.AMP() != null) ctx.AMP()
-      else if (ctx.BAR() != null) ctx.BAR()
-      else if (ctx.LTEQGT() != null) ctx.LTEQGT()
-      else if (ctx.EQ2() != null) ctx.EQ2()
-      else if (ctx.EQ3() != null) ctx.EQ3()
-      else if (ctx.EQTILDE() != null) ctx.EQTILDE()
-      else if (ctx.GT() != null) ctx.GT()
-      else if (ctx.GTEQ() != null) ctx.GTEQ()
-      else if (ctx.LT() != null) ctx.LT()
-      else if (ctx.LTEQ() != null) ctx.LTEQ()
-      else if (ctx.LT2() != null) ctx.LT2()
-      else if (ctx.GT2() != null) ctx.GT2()
-      else if (ctx.PLUS() != null) ctx.PLUS()
-      else if (ctx.MINUS() != null) ctx.MINUS()
-      else if (ctx.STAR() != null) ctx.STAR()
-      else if (ctx.SLASH() != null) ctx.SLASH()
-      else if (ctx.PERCENT() != null) ctx.PERCENT()
-      else if (ctx.STAR2() != null) ctx.STAR2()
-      else if (ctx.TILDE() != null) ctx.TILDE()
-      else if (ctx.PLUSAT() != null) ctx.PLUSAT()
-      else if (ctx.MINUSAT() != null) ctx.MINUSAT()
-      else if (ctx.LBRACK() != null && ctx.RBRACK() != null) ctx.LBRACK()
-      else if (ctx.LBRACK() != null && ctx.RBRACK() != null && ctx.EQ() != null) ctx.LBRACK()
-      else return Ast()
+    val terminalNode = ctx
+      .children
+      .asScala
+      .head
+      .asInstanceOf[TerminalNode]
 
     val callNode = NewCall()
       .name(ctx.getText)
