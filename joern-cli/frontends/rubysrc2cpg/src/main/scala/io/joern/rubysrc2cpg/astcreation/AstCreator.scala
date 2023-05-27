@@ -692,8 +692,29 @@ class AstCreator(filename: String, global: Global)
       argList.addOne(astForBlockContext(ctx.block()))
     }
 
-    val callNode = methodNameAst.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
-    callAst(callNode, argList.toSeq)
+    val identifierNodes = methodNameAst.nodes.filter(node => node.isInstanceOf[NewIdentifier])
+    if(identifierNodes.size > 0){
+      //this is a object.member access. The methodNameAst contains the object whose member is being accessed
+      val terminalNode = if(ctx.COLON2() != null){
+        ctx.COLON2()
+      }else{
+        ctx.DOT()
+      }
+      val callNode = NewCall()
+        .name(terminalNode.getText)
+        .code(terminalNode.getText)
+        .methodFullName(MethodFullNames.OperatorPrefix + terminalNode.getText)
+        .signature("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(terminalNode.getSymbol().getLine())
+        .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
+        callAst(callNode, Seq[Ast](methodNameAst) ++ argList.toSeq)
+    }else {
+      //this is a object.method(args) access
+      val callNode = methodNameAst.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+      callAst(callNode, argList.toSeq)
+    }
   }
 
   def astForChainedInvocationWithoutArgumentsPrimaryContext(
