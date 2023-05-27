@@ -470,6 +470,38 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
+      cpg.method.name("yield_with_args_method").dotAst.l
+    }
+  }
+
+  "CPG for code with if/else condition" should {
+    val cpg = code("""
+        |x = 1
+        |if x > 2
+        |   puts "x is greater than 2"
+        |elsif x <= 2 and x!=0
+        |   puts "x is 1"
+        |else
+        |   puts "I can't guess the number"
+        |end
+        |
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.identifier.name("x").l.size shouldBe 4
+      cpg.literal.code("1").l.size shouldBe 1
+      cpg.literal.code("2").l.size shouldBe 2
+      cpg.literal.code("0").l.size shouldBe 1
+      cpg.literal.code("x is 1").l.size shouldBe 1
+      cpg.literal.code("I can't guess the number").l.size shouldBe 1
+    }
+
+    "recognise all call nodes" in {
+      cpg.call.name("puts").l.size shouldBe 3
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
     }
   }
 }
