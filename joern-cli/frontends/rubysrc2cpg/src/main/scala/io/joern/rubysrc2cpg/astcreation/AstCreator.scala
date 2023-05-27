@@ -1230,7 +1230,21 @@ class AstCreator(filename: String, global: Global)
     } else if (ctx.operatorMethodName() != null) {
       astForOperatorMethodNameContext(ctx.operatorMethodName())
     } else if (ctx.keyword() != null) {
-      Ast()
+      val terminalNode = ctx.keyword()
+        .children
+        .asScala
+        .head
+        .asInstanceOf[TerminalNode]
+      val callNode = NewCall()
+        .name(terminalNode.getText)
+        .code(ctx.getText)
+        .methodFullName(MethodFullNames.OperatorPrefix + terminalNode.getText)
+        .signature("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(terminalNode.getSymbol().getLine())
+        .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
+      callAst(callNode)
     } else {
       Ast()
     }

@@ -767,4 +767,19 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name(":program").dotAst.l
     }
   }
+
+  "CPG for code with keyword" should {
+    val cpg = code("""
+        |class User
+        |  def attributes
+        |    self.class.attributes
+        |  end
+        |end
+        |
+        |""".stripMargin)
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
 }
