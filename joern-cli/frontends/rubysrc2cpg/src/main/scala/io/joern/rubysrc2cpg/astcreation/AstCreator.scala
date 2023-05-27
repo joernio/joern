@@ -303,9 +303,9 @@ class AstCreator(filename: String, global: Global)
     case ctx: IfExpressionPrimaryContext              => astForIfExpressionPrimaryContext(ctx)
     case ctx: UnlessExpressionPrimaryContext          => astForUnlessExpressionPrimaryContext(ctx)
     case ctx: CaseExpressionPrimaryContext            => astForCaseExpressionPrimaryContext(ctx)
-    case ctx: WhileExpressionPrimaryContext           => astForWhileExpressionPrimaryContext(ctx.whileExpression())
-    case ctx: UntilExpressionPrimaryContext           => astForUntilExpressionPrimaryContext(ctx.untilExpression())
-    case ctx: ForExpressionPrimaryContext             => astForForExpressionPrimaryContext(ctx)
+    case ctx: WhileExpressionPrimaryContext           => astForWhileExpressionContext(ctx.whileExpression())
+    case ctx: UntilExpressionPrimaryContext           => astForUntilExpressionContext(ctx.untilExpression())
+    case ctx: ForExpressionPrimaryContext             => astForForExpressionContext(ctx.forExpression())
     case ctx: JumpExpressionPrimaryContext            => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext           => astForBeginExpressionPrimaryContext(ctx)
     case ctx: GroupingExpressionPrimaryContext        => astForGroupingExpressionPrimaryContext(ctx)
@@ -808,11 +808,22 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForForExpressionPrimaryContext(ctx: ForExpressionPrimaryContext): Ast = {
-    val forVarAst   = astForForVariableContext(ctx.forExpression().forVariable())
-    val exprCmdAst  = astForExpressionOrCommandContext(ctx.forExpression().expressionOrCommand())
-    val doClauseAst = astForDoClauseContext(ctx.forExpression().doClause())
-    Ast().withChildren(List[Ast](forVarAst, exprCmdAst)).withChild(doClauseAst)
+  def astForForExpressionContext(ctx: ForExpressionContext): Ast = {
+    val forVarAst  = astForForVariableContext(ctx.forVariable())
+    val forCondAst = astForExpressionOrCommandContext(ctx.expressionOrCommand())
+
+    val forNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.FOR)
+      .code(ctx.getText)
+      .lineNumber(ctx.FOR().getSymbol.getLine)
+      .columnNumber(ctx.FOR().getSymbol.getCharPositionInLine)
+    val doClauseAst = astForDoClauseContext(ctx.doClause())
+
+    Ast(forNode)
+      .withChild(forVarAst)
+      .withChild(forCondAst)
+      .withConditionEdge(forNode, forCondAst.nodes.head)
+      .withChild(doClauseAst)
   }
 
   def astForGroupingExpressionPrimaryContext(ctx: GroupingExpressionPrimaryContext): Ast = {
@@ -1606,7 +1617,7 @@ class AstCreator(filename: String, global: Global)
       .withChild(elseAst)
   }
 
-  def astForUntilExpressionPrimaryContext(ctx: UntilExpressionContext): Ast = {
+  def astForUntilExpressionContext(ctx: UntilExpressionContext): Ast = {
     // until will be modelled as a while
     val untilNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.WHILE)
@@ -1655,7 +1666,7 @@ class AstCreator(filename: String, global: Global)
     astForStatementsContext(ctx.compoundStatement().statements())
   }
 
-  def astForWhileExpressionPrimaryContext(ctx: WhileExpressionContext): Ast = {
+  def astForWhileExpressionContext(ctx: WhileExpressionContext): Ast = {
     val whileNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.WHILE)
       .code(ctx.getText)

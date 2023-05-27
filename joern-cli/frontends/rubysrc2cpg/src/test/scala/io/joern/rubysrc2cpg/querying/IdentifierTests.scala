@@ -658,4 +658,30 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name(":program").dotAst.l
     }
   }
+
+  "CPG for code with a for loop" should {
+    val cpg = code("""
+        |for x in 1..10 do
+        |  puts x
+        |end
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.identifier
+        .name("x")
+        .l
+        .size shouldBe 2
+      cpg.literal.code("1").l.size shouldBe 1
+      cpg.literal.code("10").l.size shouldBe 1
+
+    }
+
+    "recognise all call nodes" in {
+      cpg.call.name("puts").l.size shouldBe 1
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
 }
