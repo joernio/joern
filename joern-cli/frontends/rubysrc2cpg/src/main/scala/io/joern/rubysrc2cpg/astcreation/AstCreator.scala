@@ -101,7 +101,7 @@ class AstCreator(filename: String, global: Global)
 
     val statementCtx = programCtx.compoundStatement().statements()
     pushScope()
-    val statementAst = astForStatementsContext(statementCtx)
+    val statementAsts = astsForStatementsContext(statementCtx)
     popScope()
 
     val name = ":program"
@@ -135,7 +135,7 @@ class AstCreator(filename: String, global: Global)
 
     val blockNode = NewBlock().typeFullName(Defines.Any)
     val programAst =
-      methodAst(programMethod, Seq[Ast](thisParamAst), blockAst(blockNode, List[Ast](statementAst)), methodRetNode)
+      methodAst(programMethod, Seq[Ast](thisParamAst), blockAst(blockNode, statementAsts), methodRetNode)
 
     val fileNode       = NewFile().name(filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
@@ -419,13 +419,15 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForBeginStatementContext(ctx: BeginStatementContext): Ast = {
-    val astStmts = astForStatementsContext(ctx.statements())
-    Ast().withChild(astStmts)
+    val astStmts  = astsForStatementsContext(ctx.statements())
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    blockAst(blockNode, astStmts)
   }
 
   def astForEndStatementContext(ctx: EndStatementContext): Ast = {
-    val astStmts = astForStatementsContext(ctx.statements())
-    Ast().withChild(astStmts)
+    val astStmts  = astsForStatementsContext(ctx.statements())
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    blockAst(blockNode, astStmts)
   }
 
   def astForModifierStatementContext(ctx: ModifierStatementContext): Ast = {
@@ -468,15 +470,18 @@ class AstCreator(filename: String, global: Global)
     if (ctx == null) return Ast()
 
     val blockNode = NewBlock().typeFullName(Defines.Any)
-    val asts = ctx
+    val asts      = astsForStatementsContext(ctx)
+    blockAst(blockNode, asts)
+  }
+
+  def astsForStatementsContext(ctx: StatementsContext): List[Ast] = {
+    ctx
       .statement()
       .asScala
       .map(st => {
         astForStatementContext(st)
       })
       .toList
-
-    blockAst(blockNode, asts)
   }
 
   def astForAdditiveExpressionContext(ctx: AdditiveExpressionContext): Ast = {
@@ -579,9 +584,9 @@ class AstCreator(filename: String, global: Global)
       .whenClause()
       .asScala
       .map(wh => {
-        val thenAst = astForThenClauseContext(wh.thenClause())
-        val whenAst = astForWhenArgumentContext(wh.whenArgument())
-        whenAst.withChild(thenAst)
+        val thenAsts = astForThenClauseContext(wh.thenClause())
+        val whenAst  = astForWhenArgumentContext(wh.whenArgument())
+        whenAst.withChildren(thenAsts)
       })
       .toSeq
 
@@ -773,8 +778,8 @@ class AstCreator(filename: String, global: Global)
     astForAssociationsContext(ctx.hashConstructor().associations())
   }
 
-  def astForThenClauseContext(ctx: ThenClauseContext): Ast = {
-    astForStatementsContext(ctx.compoundStatement().statements())
+  def astForThenClauseContext(ctx: ThenClauseContext): List[Ast] = {
+    astsForStatementsContext(ctx.compoundStatement().statements())
   }
 
   def astForElsifClauseContext(ctx: util.List[ElsifClauseContext]): Seq[Ast] = {
@@ -789,11 +794,11 @@ class AstCreator(filename: String, global: Global)
           .columnNumber(elif.ELSIF().getSymbol.getCharPositionInLine)
 
         val conditionAst = astForExpressionOrCommandContext(elif.expressionOrCommand())
-        val thenAst      = astForThenClauseContext(elif.thenClause())
+        val thenAsts     = astForThenClauseContext(elif.thenClause())
         Ast(elifNode)
           .withChild(conditionAst)
           .withConditionEdge(elifNode, conditionAst.nodes.head)
-          .withChild(thenAst)
+          .withChildren(thenAsts)
       })
       .toSeq
 
@@ -813,7 +818,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForIfExpressionContext(ctx: IfExpressionContext): Ast = {
     val conditionAst = astForExpressionOrCommandContext(ctx.expressionOrCommand())
-    val thenAst      = astForThenClauseContext(ctx.thenClause())
+    val thenAsts     = astForThenClauseContext(ctx.thenClause())
     val elseifAsts   = astForElsifClauseContext(ctx.elsifClause())
     val elseAst      = astForElseClauseContext(ctx.elseClause())
 
@@ -826,7 +831,7 @@ class AstCreator(filename: String, global: Global)
     Ast(ifNode)
       .withChild(conditionAst)
       .withConditionEdge(ifNode, conditionAst.nodes.head)
-      .withChild(thenAst)
+      .withChildren(thenAsts)
       .withChild(elseAst)
       .withChildren(elseifAsts)
   }
@@ -1454,13 +1459,13 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForBlock(ctxStmt: StatementsContext, ctxParam: BlockParameterContext): Ast = {
-    val stmtAst = astForStatementsContext(ctxStmt)
+    val stmtAsts  = astsForStatementsContext(ctxStmt)
+    val blockNode = NewBlock().typeFullName(Defines.Any)
     if (ctxParam != null) {
-      val bpAst     = astForBlockParameterContext(ctxParam)
-      val blockNode = NewBlock().typeFullName(Defines.Any)
-      blockAst(blockNode, List[Ast](bpAst, stmtAst))
+      val bpAst = astForBlockParameterContext(ctxParam)
+      blockAst(blockNode, List[Ast](bpAst) ++ stmtAsts)
     } else {
-      stmtAst
+      blockAst(blockNode, stmtAsts)
     }
   }
 
@@ -1539,9 +1544,9 @@ class AstCreator(filename: String, global: Global)
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Ast = {
     val unlessAst = astForExpressionOrCommandContext(ctx.unlessExpression().expressionOrCommand())
-    val thenAst   = astForThenClauseContext(ctx.unlessExpression().thenClause())
+    val thenAsts  = astForThenClauseContext(ctx.unlessExpression().thenClause())
     val elseAst   = astForElseClauseContext(ctx.unlessExpression().elseClause())
-    unlessAst.withChildren(Seq[Ast](thenAst, elseAst))
+    unlessAst.withChildren(thenAsts ++ List[Ast](elseAst))
   }
 
   def astForUntilExpressionPrimaryContext(ctx: UntilExpressionPrimaryContext): Ast = {
