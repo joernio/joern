@@ -49,7 +49,7 @@ class AstCreator(filename: String, global: Global)
   private val classStack = mutable.Stack[String]()
 
   // Queue of variable identifiers incorrectly identified as method identifiers
-  private val methodIdentiferQ = mutable.Queue[Ast]()
+  private val methodNameAsIdentiferQ = mutable.Queue[Ast]()
 
   class ScopeIdentifiers {
     val varToIdentiferMap             = mutable.HashMap[String, NewIdentifier]()
@@ -303,7 +303,7 @@ class AstCreator(filename: String, global: Global)
     case ctx: IfExpressionPrimaryContext              => astForIfExpressionPrimaryContext(ctx)
     case ctx: UnlessExpressionPrimaryContext          => astForUnlessExpressionPrimaryContext(ctx)
     case ctx: CaseExpressionPrimaryContext            => astForCaseExpressionPrimaryContext(ctx)
-    case ctx: WhileExpressionPrimaryContext           => astForWhileExpressionPrimaryContext(ctx)
+    case ctx: WhileExpressionPrimaryContext           => astForWhileExpressionPrimaryContext(ctx.whileExpression())
     case ctx: UntilExpressionPrimaryContext           => astForUntilExpressionPrimaryContext(ctx)
     case ctx: ForExpressionPrimaryContext             => astForForExpressionPrimaryContext(ctx)
     case ctx: JumpExpressionPrimaryContext            => astForJumpExpressionPrimaryContext(ctx)
@@ -1525,7 +1525,7 @@ class AstCreator(filename: String, global: Global)
   }
   def astForUnaryExpressionContext(ctx: UnaryExpressionContext): Ast = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    if (ctx.op.getText == "+" && methodIdentiferQ.size > 0) {
+    if (ctx.op.getText == "+" && methodNameAsIdentiferQ.size > 0) {
       /*
        * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
        * PLUS is to be interpreted as a binary operator
@@ -1539,7 +1539,7 @@ class AstCreator(filename: String, global: Global)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.op.getLine())
         .columnNumber(ctx.op.getCharPositionInLine())
-      val lhsAst = methodIdentiferQ.dequeue()
+      val lhsAst = methodNameAsIdentiferQ.dequeue()
       callAst(callNode, Seq[Ast](lhsAst, expressionAst))
     } else {
       val callNode = NewCall()
@@ -1557,7 +1557,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForUnaryMinusExpressionContext(ctx: UnaryMinusExpressionContext): Ast = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    if (methodIdentiferQ.size > 0) {
+    if (methodNameAsIdentiferQ.size > 0) {
       /*
        * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
        * PLUS is to be interpreted as a binary operator
@@ -1571,7 +1571,7 @@ class AstCreator(filename: String, global: Global)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.MINUS().getSymbol.getLine())
         .columnNumber(ctx.MINUS().getSymbol.getCharPositionInLine())
-      val lhsAst = methodIdentiferQ.dequeue()
+      val lhsAst = methodNameAsIdentiferQ.dequeue()
       callAst(callNode, Seq[Ast](lhsAst, expressionAst))
     } else {
       val callNode = NewCall()
@@ -1643,10 +1643,20 @@ class AstCreator(filename: String, global: Global)
     astForStatementsContext(ctx.compoundStatement().statements())
   }
 
-  def astForWhileExpressionPrimaryContext(ctx: WhileExpressionPrimaryContext): Ast = {
-    val exprCmdAst  = astForExpressionOrCommandContext(ctx.whileExpression().expressionOrCommand())
-    val doClauseAst = astForDoClauseContext(ctx.whileExpression().doClause())
-    exprCmdAst.withChild(doClauseAst)
+  def astForWhileExpressionPrimaryContext(ctx: WhileExpressionContext): Ast = {
+    val whileNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.WHILE)
+      .code(ctx.getText)
+      .lineNumber(ctx.WHILE().getSymbol.getLine)
+      .columnNumber(ctx.WHILE().getSymbol.getCharPositionInLine)
+
+    val whileCondAst = astForExpressionOrCommandContext(ctx.expressionOrCommand())
+    val doClauseAst  = astForDoClauseContext(ctx.doClause())
+
+    Ast(whileNode)
+      .withChild(whileCondAst)
+      .withConditionEdge(whileNode, whileCondAst.nodes.head)
+      .withChild(doClauseAst)
   }
 
   def astForBlockArgumentContext(ctx: BlockArgumentContext): Ast = {
@@ -1727,7 +1737,7 @@ class AstCreator(filename: String, global: Global)
       Ast().withChild(argumentsWithoutParenAst)
     } else if (ctx.methodIdentifier() != null) {
       val methodIdentifierAst = astForMethodIdentifierContext(ctx.methodIdentifier())
-      methodIdentiferQ.enqueue(methodIdentifierAst)
+      methodNameAsIdentiferQ.enqueue(methodIdentifierAst)
       val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
 
       val callNodes = methodIdentifierAst.nodes.filter(node => node.isInstanceOf[NewCall])

@@ -606,4 +606,27 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name(":program").dotAst.l
     }
   }
+
+  "CPG for code with a while loop" should {
+    val cpg = code("""
+        |x = 10
+        |while x >= 1
+        |  x = x - 1
+        |  puts "In the loop"
+        |end
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.identifier.name("x").l.size shouldBe 4
+      // cpg.literal.code("In the loop").l.size shouldBe 1
+    }
+
+    "recognise all call nodes" in {
+      // cpg.call.name("puts").l.size shouldBe 1
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
 }
