@@ -30,13 +30,16 @@ class AstCreator(filename: String, global: Global)
     with AstNodeBuilder[TerminalNode, AstCreator] {
 
   object Defines {
-    val Any: String     = "ANY"
-    val Number: String  = "number"
-    val String: String  = "string"
-    val Boolean: String = "boolean"
-    val Hash: String    = "hash"
-    val Array: String   = "array"
-    val Symbol: String  = "symbol"
+    val Any: String           = "ANY"
+    val Number: String        = "number"
+    val String: String        = "string"
+    val Boolean: String       = "boolean"
+    val Hash: String          = "hash"
+    val Array: String         = "array"
+    val Symbol: String        = "symbol"
+    val ModifierRedo: String  = "redo"
+    val ModifierRetry: String = "retry"
+    var ModifierNext: String  = "next"
   }
 
   object MethodFullNames {
@@ -436,27 +439,66 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForModifierStatementContext(ctx: ModifierStatementContext): Ast = {
-    Ast()
-
     if (ctx.statement().size() != 2) {
-      // unsupported or invalid modifer statement
-      Ast()
-    }
-    val leftAst        = astForStatementContext(ctx.statement(0))
-    val statementRight = ctx.statement(1)
-
-    val modifierToken = ctx.mod
-
-    // Separating the cases so that each could be handled differently if needed
-    val rightAst = modifierToken.getType() match {
-      case IF     => astForStatementContext(statementRight)
-      case UNLESS => astForStatementContext(statementRight)
-      case WHILE  => astForStatementContext(statementRight)
-      case UNTIL  => astForStatementContext(statementRight)
-      case RESCUE => astForStatementContext(statementRight)
+      // unsupported or invalid modifier statement
+      return Ast()
     }
 
-    leftAst.withChild(rightAst)
+    val rightAst        = astForStatementContext(ctx.statement(1))
+    val leftAst         = astForStatementContext(ctx.statement(0))
+    val ctrlStructNodes = leftAst.nodes.filter(node => node.isInstanceOf[NewControlStructure])
+
+    if (ctrlStructNodes.size > 1) {
+      return Ast() // there cannot be multiple of these. some issue with the code or the parser
+    }
+
+    if (ctrlStructNodes.size == 1) {
+      /*
+       * This is
+       * next <stmt> OR
+       * redo <stmt> OR
+       * retry <stmt>
+       * These control structures came from the LHS
+       * Left is keyword and right is the expression.
+       * Right depends on left and so right is a child of the left
+       * Left AST already has a control structure
+       */
+
+      val ctrlContinue = ctrlStructNodes.head.asInstanceOf[NewControlStructure]
+      val node = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.IF)
+        .lineNumber(ctrlContinue.lineNumber)
+        .columnNumber(ctrlContinue.columnNumber)
+        .code(ctx.getText)
+      Ast(node)
+        .withConditionEdge(node, rightAst.nodes.head)
+        .withChild(rightAst)
+    } else {
+      /*
+       * This is <stmt> if/unless/while/until/rescue <stmt>
+       * Left is evaluated on the basic of the right and so left
+       * depends on the right
+       * Thus, left is a child of the right
+       *
+       */
+      val ctrlStructType = ctx.mod.getType() match {
+        case IF     => ControlStructureTypes.IF
+        case UNLESS => ControlStructureTypes.IF
+        case WHILE  => ControlStructureTypes.WHILE
+        case UNTIL  => ControlStructureTypes.WHILE
+        case RESCUE => ControlStructureTypes.THROW
+      }
+
+      val node = NewControlStructure()
+        .controlStructureType(ctrlStructType)
+        .lineNumber(ctx.mod.getLine)
+        .columnNumber(ctx.mod.getCharPositionInLine)
+        .code(ctx.getText)
+      Ast(node)
+        .withConditionEdge(node, rightAst.nodes.head)
+        .withChild(rightAst)
+        .withChild(leftAst)
+    }
   }
 
   def astForStatementContext(ctx: StatementContext): Ast = ctx match {
@@ -997,13 +1039,33 @@ class AstCreator(filename: String, global: Global)
         .columnNumber(ctx.jumpExpression().RETURN().getSymbol().getCharPositionInLine)
       returnAst(retNode, Seq[Ast]())
     } else if (ctx.jumpExpression().BREAK() != null) {
-      Ast() // TODO implement this
+      val node = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.BREAK)
+        .lineNumber(ctx.jumpExpression().BREAK().getSymbol.getLine)
+        .columnNumber(ctx.jumpExpression().BREAK().getSymbol.getCharPositionInLine)
+        .code(ctx.getText)
+      Ast(node)
     } else if (ctx.jumpExpression().NEXT() != null) {
-      Ast() // TODO implement this
+      val node = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.CONTINUE)
+        .lineNumber(ctx.jumpExpression().NEXT().getSymbol.getLine)
+        .columnNumber(ctx.jumpExpression().NEXT().getSymbol.getCharPositionInLine)
+        .code(Defines.ModifierNext)
+      Ast(node)
     } else if (ctx.jumpExpression().REDO() != null) {
-      Ast() // TODO implement this
+      val node = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.CONTINUE)
+        .lineNumber(ctx.jumpExpression().REDO().getSymbol.getLine)
+        .columnNumber(ctx.jumpExpression().REDO().getSymbol.getCharPositionInLine)
+        .code(Defines.ModifierRedo)
+      Ast(node)
     } else if (ctx.jumpExpression().RETRY() != null) {
-      Ast() // TODO implement this
+      val node = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.CONTINUE)
+        .lineNumber(ctx.jumpExpression().RETRY().getSymbol.getLine)
+        .columnNumber(ctx.jumpExpression().RETRY().getSymbol.getCharPositionInLine)
+        .code(Defines.ModifierRetry)
+      Ast(node)
     } else {
       Ast()
     }

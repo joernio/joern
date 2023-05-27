@@ -684,4 +684,55 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name(":program").dotAst.l
     }
   }
+
+  "CPG for code with a modifier statements" should {
+    val cpg = code("""
+        |for i in 1..10
+        |  next if i % 2 == 0
+        |  redo if i > 8
+        |  retry if i > 7
+        |  puts i if i == 9
+        |  i += 4 unless i > 5
+        |
+        |  value1 = 0
+        |  value1 += 1 while value1 < 100
+        |
+        |  value2 = 0
+        |  value2 += 1 until value2 >= 100
+        |end
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.identifier
+        .name("i")
+        .l
+        .size shouldBe 8
+      cpg.identifier
+        .name("value1")
+        .l
+        .size shouldBe 3
+      cpg.identifier
+        .name("value2")
+        .l
+        .size shouldBe 3
+      cpg.literal.code("1").l.size shouldBe 3
+      cpg.literal.code("2").l.size shouldBe 1
+      cpg.literal.code("8").l.size shouldBe 1
+      cpg.literal.code("7").l.size shouldBe 1
+      cpg.literal.code("9").l.size shouldBe 1
+      cpg.literal.code("5").l.size shouldBe 1
+      cpg.literal.code("0").l.size shouldBe 3
+      cpg.literal.code("1").l.size shouldBe 3
+      cpg.literal.code("10").l.size shouldBe 1
+      cpg.literal.code("100").l.size shouldBe 2
+    }
+
+    "recognise all call nodes" in {
+      cpg.call.name("puts").l.size shouldBe 1
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
 }
