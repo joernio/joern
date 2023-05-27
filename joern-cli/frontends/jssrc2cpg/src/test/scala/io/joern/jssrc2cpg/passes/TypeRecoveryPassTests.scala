@@ -189,4 +189,179 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
   }
 
+  "Importing an anonymous function" should {
+    lazy val cpg = code(
+      """
+        |var refThis = this;
+        |
+        |exports.getIncrementalInteger = (function() {
+        |	var count = 0;
+        |	return function() {
+        |		count++;
+        |		return count;
+        |	};
+        |})();
+        |
+        |refThis.getIncrementalInteger();
+        |""".stripMargin,
+      "util.js"
+    ).moreCode(
+      """
+        |var util = require("./util.js");
+        |
+        |util.getIncrementalInteger()
+        |""".stripMargin,
+      "foo.js"
+    )
+
+    "resolve the method full name off of an aliased 'this'" in {
+      val Some(x) = cpg.file("util.js").ast.isCall.nameExact("getIncrementalInteger").headOption
+      x.methodFullName shouldBe "util.js::program:getIncrementalInteger"
+    }
+
+    "resolve the method full name off of the imported 'util'" in {
+      val Some(x) = cpg.file("foo.js").ast.isCall.nameExact("getIncrementalInteger").headOption
+      x.methodFullName shouldBe "util.js::program:getIncrementalInteger"
+    }
+
+    "resolve the full name of the currying from the closure" in {
+      val Some(x) = cpg.file("util.js").ast.isCall.lineNumber(4).lastOption
+      x.name shouldBe "anonymous"
+      x.methodFullName shouldBe "util.js::program:anonymous"
+    }
+  }
+
+  "Type obtained via assignment from `require`" should {
+    lazy val cpg = code("""
+        |const google = require('googleapis');
+        |const driveObj = google.drive({ version: 'v3', auth });
+        |""".stripMargin)
+
+    "be propagated to `methodFullName` of call" in {
+      val List(methodFullName) = cpg.call.code("google.drive\\(.*").methodFullName.l
+      methodFullName shouldBe "googleapis:drive"
+      val List(typeFullName) = cpg.identifier.name("driveObj").typeFullName.l
+      typeFullName shouldBe "googleapis:drive:<returnValue>"
+    }
+
+  }
+
+  "Type obtained via assignment from `require` to {...}" should {
+    lazy val cpg = code("""
+        |const { google } = require('googleapis');
+        |const driveObj = google.drive({ version: 'v3', auth });
+        |""".stripMargin)
+
+    "be propagated to `methodFullName` of call" in {
+      val List(methodFullName) = cpg.call.code("google.drive\\(.*").methodFullName.l
+      methodFullName shouldBe "googleapis:drive"
+      val List(typeFullName) = cpg.identifier.name("driveObj").typeFullName.l
+      typeFullName shouldBe "googleapis:drive:<returnValue>"
+    }
+  }
+
+  "Type obtained via field access from 'require' derived identifier" should {
+    lazy val cpg = code("""
+        |import google from 'googleapis';
+        |export const authObj = new google.auth.GoogleAuth({
+        |  keyFile: 'path/to/your/credentials.json',
+        |  scopes: ['https://www.googleapis.com/auth/drive'],
+        |});
+        |""".stripMargin)
+
+    "be propagated to `methodFullName` of call" in {
+      val List(constructor) = cpg.call.code("new google.auth.GoogleAuth\\(.*").l
+      constructor.methodFullName shouldBe "googleapis:google:<member>(auth):GoogleAuth:<init>"
+      val Some(typeFullName) = cpg.identifier.name("authObj").typeFullName.headOption
+      typeFullName shouldBe "googleapis:google:<member>(auth):GoogleAuth"
+    }
+  }
+
+  "Type casts of an identifier and call receiver" should {
+    lazy val cpg = code("""
+        |let imgScr: string = <string>this.imageElement;
+        |this.imageElement = new HTMLImageElement();
+        |(<HTMLImageElement>this.imageElement).src = imgScr;
+        |""".stripMargin)
+
+    "succeed in propagating type cast identifiers" in {
+      val Some(imgSrc) = cpg.identifier("imgScr").headOption
+      imgSrc.typeFullName shouldBe "__ecma.String"
+      val Some(_tmp_0) = cpg.identifier("_tmp_0").headOption
+      _tmp_0.typeFullName shouldBe "__ecma.HTMLImageElement"
+    }
+  }
+
+  "Type hints for method parameters and returns" should {
+    lazy val cpg = code("""
+        |import google from 'googleapis';
+        |
+        |function foo(a: google.More, b: google.Money): google.Problems {
+        | a.bar();
+        | b.baz();
+        |}
+        |""".stripMargin)
+
+    "be propagated within the method full name reflecting the import `googleapis`" in {
+      val Some(bar) = cpg.call("bar").headOption
+      bar.methodFullName shouldBe "googleapis:google:More:bar"
+
+      val Some(baz) = cpg.call("baz").headOption
+      baz.methodFullName shouldBe "googleapis:google:Money:baz"
+
+      val Some(foo) = cpg.method("foo").methodReturn.headOption
+      foo.typeFullName shouldBe "googleapis:google:Problems"
+    }
+  }
+
+  "Recovered values that are returned in methods" should {
+    lazy val cpg = code(
+      """
+        |const axios = require("axios");
+        |
+        |exports.literalFunction = function() { return 2; };
+        |
+        |const axiosInstance = axios.create({
+        |  baseURL: 'https://api.example.com',
+        |  timeout: 5000,
+        |  headers: {  'Content-Type': 'application/json' }
+        |});
+        |
+        |exports.get = (url: string, config?: any) => {
+        |  return axiosInstance.get(url, config);
+        |};
+        |
+        |""".stripMargin,
+      "foo.js"
+    ).moreCode(
+      """
+        |const foo = require("./foo");
+        |
+        |const x = foo.literalFunction();
+        |const y = foo.get();
+        |""".stripMargin,
+      "bar.js"
+    )
+
+    "propagate literal types to the method return" in {
+      val Some(literalMethod) = cpg.method.nameExact("literalFunction").headOption
+      literalMethod.methodReturn.typeFullName shouldBe "__ecma.Number"
+      val Some(x) = cpg.identifier("x").headOption
+      x.typeFullName shouldBe "__ecma.Number"
+
+      val Some(literalCall) = cpg.call.nameExact("literalFunction").headOption
+      literalCall.typeFullName shouldBe "__ecma.Number"
+    }
+
+    "propagate complex types to the method return" in {
+      val Some(getMethod) = cpg.method.nameExact("get").headOption
+      getMethod.methodReturn.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
+      val Some(y) = cpg.identifier("y").headOption
+      y.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
+
+      val Some(getCall) = cpg.call.nameExact("get").headOption
+      getCall.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
+    }
+  }
+
 }

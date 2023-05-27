@@ -19,6 +19,7 @@ import better.files.File
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.Cpg
 import io.joern.javasrc2cpg.passes.{AstCreationPass => JavaSrcAstCreationPass}
+import java.nio.file.Paths
 
 object JavasrcInterop {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -87,11 +88,8 @@ object JavasrcInterop {
     val typesSources    = getSourcesFromDir(sourceDirectories.typesSourceDir)
 
     val analysisAstsMap = analysisSources.par.flatMap { sourceFilename =>
-      val originalFilename = sourceFilename.replaceAll(
-        // Pattern.quote used to escape Windows paths
-        escapeBackslash(sourceDirectories.analysisSourceDir),
-        escapeBackslash(inputPath)
-      )
+      val originalFilename =
+        Paths.get(sourceDirectories.analysisSourceDir).relativize(Paths.get(sourceFilename)).toString
       val sourceFileInfo  = SourceFileInfo(sourceFilename, originalFilename)
       val maybeParsedFile = parseFile(sourceFilename)
 

@@ -30,7 +30,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 		 |""".stripMargin)
 
     inside(cpg.method.name("foo").l) { case List(fooMethod) =>
-      fooMethod.fullName shouldBe s"Foo.foo:${Defines.UnresolvedSignature}(1)"
+      fooMethod.fullName shouldBe s"Foo->foo"
       fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
       fooMethod.modifier.map(_.modifierType).toSet shouldBe Set(ModifierTypes.FINAL, ModifierTypes.PUBLIC)
       fooMethod.methodReturn.typeFullName shouldBe "int"
@@ -75,10 +75,10 @@ class TypeDeclTests extends PhpCode2CpgFixture {
             allocCall.code shouldBe "Foo.<alloc>()"
           }
 
-          initCall.name shouldBe "<init>"
-          initCall.methodFullName shouldBe s"Foo.<init>:${Defines.UnresolvedSignature}(1)"
+          initCall.name shouldBe "__construct"
+          initCall.methodFullName shouldBe s"Foo->__construct"
           initCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
-          initCall.code shouldBe "Foo.<init>(42)"
+          initCall.code shouldBe "Foo->__construct(42)"
           inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
             tmpIdentifier.name shouldBe "tmp0"
             tmpIdentifier.code shouldBe "$tmp0"
@@ -123,7 +123,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
       inside(fooDecl.astChildren.l) { case List(fooMethod: Method) =>
         fooMethod.name shouldBe "foo"
-        fooMethod.fullName shouldBe s"Foo.foo:${Defines.UnresolvedSignature}(0)"
+        fooMethod.fullName shouldBe s"Foo->foo"
+        fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
   }
@@ -157,7 +158,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
       inside(fooDecl.astChildren.l) { case List(fooMethod: Method) =>
         fooMethod.name shouldBe "foo"
-        fooMethod.fullName shouldBe s"Foo.foo:${Defines.UnresolvedSignature}(0)"
+        fooMethod.fullName shouldBe s"Foo->foo"
+        fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
   }
@@ -187,12 +189,15 @@ class TypeDeclTests extends PhpCode2CpgFixture {
   }
 
   "enums with cases with values should have the correct initializers" in {
-    val cpg = code("""<?php
+    val cpg = code(
+      """<?php
         |enum Foo {
         |  case A = "A";
         |  case B = "B";
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      fileName = "foo.php"
+    )
 
     inside(cpg.typeDecl.name("Foo").l) { case List(fooDecl) =>
       fooDecl.fullName shouldBe "Foo"
@@ -210,8 +215,10 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
       inside(fooDecl.method.l) { case List(clinitMethod: Method) =>
         clinitMethod.name shouldBe Defines.StaticInitMethodName
-        clinitMethod.fullName shouldBe s"Foo.${Defines.StaticInitMethodName}:void()"
+        clinitMethod.fullName shouldBe s"Foo::${Defines.StaticInitMethodName}"
         clinitMethod.signature shouldBe "void()"
+        clinitMethod.filename shouldBe "foo.php"
+        clinitMethod.file.name.l shouldBe List("foo.php")
 
         inside(clinitMethod.body.astChildren.l) { case List(aAssign: Call, bAssign: Call) =>
           aAssign.code shouldBe "A = \"A\""
@@ -232,5 +239,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         }
       }
     }
+  }
+
+  "the global type decl should have the correct name" in {
+    val cpg = code("<?php echo 0;", fileName = "foo.php")
+
+    cpg.typeDecl.nameExact("<global>").fullName.l shouldBe List("foo.php:<global>")
   }
 }

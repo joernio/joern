@@ -226,6 +226,7 @@ object BabelAst {
   object TSPropertySignature             extends BabelNode
   object TSQualifiedName                 extends BabelNode
   object TSRestType                      extends TSType
+  object TSSatisfiesExpression           extends BabelNode
   object TSStringKeyword                 extends TSType
   object TSSymbolKeyword                 extends TSType
   object TSThisType                      extends TSType

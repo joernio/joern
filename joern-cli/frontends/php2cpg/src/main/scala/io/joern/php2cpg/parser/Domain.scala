@@ -39,17 +39,17 @@ object Domain {
     val global      = "global"
 
     // These are handled as special cases for builtins since they have separate AST nodes in the PHP-parser output.
-    val issetFunc = s"${PhpBuiltins.Prefix}.isset"
-    val printFunc = s"${PhpBuiltins.Prefix}.print"
-    val cloneFunc = s"${PhpBuiltins.Prefix}.clone"
-    val emptyFunc = s"${PhpBuiltins.Prefix}.empty"
-    val evalFunc  = s"${PhpBuiltins.Prefix}.eval"
-    val exitFunc  = s"${PhpBuiltins.Prefix}.exit"
+    val issetFunc = s"isset"
+    val printFunc = s"print"
+    val cloneFunc = s"clone"
+    val emptyFunc = s"empty"
+    val evalFunc  = s"eval"
+    val exitFunc  = s"exit"
     // Used for multiple assignments for example `list($a, $b) = $someArray`
-    val listFunc  = s"${PhpBuiltins.Prefix}.list"
-    val isNull    = s"${PhpBuiltins.Prefix}.is_null"
-    val unset     = s"${PhpBuiltins.Prefix}.unset"
-    val shellExec = s"${PhpBuiltins.Prefix}.shell_exec"
+    val listFunc  = s"list"
+    val isNull    = s"is_null"
+    val unset     = s"unset"
+    val shellExec = s"shell_exec"
   }
 
   object PhpDomainTypeConstants {
@@ -62,9 +62,12 @@ object Domain {
     val unset  = "unset"
   }
 
-  private val logger                      = LoggerFactory.getLogger(Domain.getClass)
-  private val NamespaceDelimiter          = "\\"
-  private val FullyQualifiedNameDelimiter = "\\"
+  private val logger          = LoggerFactory.getLogger(Domain.getClass)
+  val NamespaceDelimiter      = "\\"
+  val StaticMethodDelimiter   = "::"
+  val InstanceMethodDelimiter = "->"
+  // Used for creating the default constructor.
+  val ConstructorMethodName = "__construct"
 
   final case class PhpAttributes(lineNumber: Option[Integer], kind: Option[Int])
   object PhpAttributes {
@@ -99,6 +102,12 @@ object Domain {
       (64, ModifierTypes.READONLY)
     )
 
+    private val AccessModifiers: Set[String] = Set(ModifierTypes.PUBLIC, ModifierTypes.PROTECTED, ModifierTypes.PRIVATE)
+
+    def containsAccessModifier(modifiers: List[String]): Boolean = {
+      modifiers.toSet.intersect(AccessModifiers).nonEmpty
+    }
+
     def getModifierSet(json: Value, modifierString: String = "flags"): List[String] = {
       val flags = json.objOpt.flatMap(_.get(modifierString)).map(_.num.toInt).getOrElse(0)
       ModifierMasks.collect {
@@ -107,9 +116,12 @@ object Domain {
     }
   }
 
-  final case class PhpFile(children: Seq[PhpStmt])
   sealed abstract class PhpNode {
     def attributes: PhpAttributes
+  }
+
+  final case class PhpFile(children: List[PhpStmt]) extends PhpNode {
+    override val attributes: PhpAttributes = PhpAttributes.Empty
   }
 
   final case class PhpParam(
@@ -140,6 +152,9 @@ object Domain {
   final case class PhpVariadicPlaceholder(attributes: Domain.PhpAttributes) extends PhpArgument
 
   sealed abstract class PhpStmt extends PhpNode
+  sealed abstract class PhpStmtWithBody extends PhpStmt {
+    def stmts: List[PhpStmt]
+  }
 
   // In the PhpParser output, comments are included as an attribute to the first statement following the comment. If
   // no such statement exists, a Nop statement (which does not exist in PHP) is added as a sort of comment container.
@@ -147,41 +162,41 @@ object Domain {
   final case class PhpEchoStmt(exprs: Seq[PhpExpr], attributes: PhpAttributes)                  extends PhpStmt
   final case class PhpBreakStmt(num: Option[Int], attributes: PhpAttributes)                    extends PhpStmt
   final case class PhpContinueStmt(num: Option[Int], attributes: PhpAttributes)                 extends PhpStmt
-  final case class PhpWhileStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
-  final case class PhpDoStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes)    extends PhpStmt
+  final case class PhpWhileStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmtWithBody
+  final case class PhpDoStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes)    extends PhpStmtWithBody
   final case class PhpForStmt(
     inits: List[PhpExpr],
     conditions: List[PhpExpr],
     loopExprs: List[PhpExpr],
-    bodyStmts: List[PhpStmt],
+    stmts: List[PhpStmt],
     attributes: PhpAttributes
-  ) extends PhpStmt
+  ) extends PhpStmtWithBody
   final case class PhpIfStmt(
     cond: PhpExpr,
     stmts: List[PhpStmt],
     elseIfs: List[PhpElseIfStmt],
     elseStmt: Option[PhpElseStmt],
     attributes: PhpAttributes
-  ) extends PhpStmt
-  final case class PhpElseIfStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
-  final case class PhpElseStmt(stmts: List[PhpStmt], attributes: PhpAttributes)                  extends PhpStmt
+  ) extends PhpStmtWithBody
+  final case class PhpElseIfStmt(cond: PhpExpr, stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmtWithBody
+  final case class PhpElseStmt(stmts: List[PhpStmt], attributes: PhpAttributes)                  extends PhpStmtWithBody
   final case class PhpSwitchStmt(condition: PhpExpr, cases: List[PhpCaseStmt], attributes: PhpAttributes)
       extends PhpStmt
   final case class PhpCaseStmt(condition: Option[PhpExpr], stmts: List[PhpStmt], attributes: PhpAttributes)
-      extends PhpStmt
+      extends PhpStmtWithBody
   final case class PhpTryStmt(
     stmts: List[PhpStmt],
     catches: List[PhpCatchStmt],
     finallyStmt: Option[PhpFinallyStmt],
     attributes: PhpAttributes
-  ) extends PhpStmt
+  ) extends PhpStmtWithBody
   final case class PhpCatchStmt(
     types: List[PhpNameExpr],
     variable: Option[PhpExpr],
     stmts: List[PhpStmt],
     attributes: PhpAttributes
-  ) extends PhpStmt
-  final case class PhpFinallyStmt(stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmt
+  ) extends PhpStmtWithBody
+  final case class PhpFinallyStmt(stmts: List[PhpStmt], attributes: PhpAttributes) extends PhpStmtWithBody
   final case class PhpReturnStmt(expr: Option[PhpExpr], attributes: PhpAttributes) extends PhpStmt
 
   final case class PhpMethodDecl(
@@ -189,13 +204,13 @@ object Domain {
     params: Seq[PhpParam],
     modifiers: List[String],
     returnType: Option[PhpNameExpr],
-    stmts: Seq[PhpStmt],
+    stmts: List[PhpStmt],
     returnByRef: Boolean,
     // TODO attributeGroups: Seq[PhpAttributeGroup],
     namespacedName: Option[PhpNameExpr],
     isClassMethod: Boolean,
     attributes: PhpAttributes
-  ) extends PhpStmt
+  ) extends PhpStmtWithBody
 
   final case class PhpClassLikeStmt(
     name: Option[PhpNameExpr],
@@ -206,8 +221,9 @@ object Domain {
     classLikeType: String,
     // Optionally used for enums with values
     scalarType: Option[PhpNameExpr],
+    hasConstructor: Boolean,
     attributes: PhpAttributes
-  ) extends PhpStmt
+  ) extends PhpStmtWithBody
   object ClassLikeTypes {
     val Class: String     = "class"
     val Trait: String     = "trait"
@@ -242,7 +258,7 @@ object Domain {
   ) extends PhpStmt
 
   final case class PhpNamespaceStmt(name: Option[PhpNameExpr], stmts: List[PhpStmt], attributes: PhpAttributes)
-      extends PhpStmt
+      extends PhpStmtWithBody
 
   final case class PhpDeclareStmt(
     declares: Seq[PhpDeclareItem],
@@ -298,7 +314,7 @@ object Domain {
     assignByRef: Boolean,
     stmts: List[PhpStmt],
     attributes: PhpAttributes
-  ) extends PhpStmt
+  ) extends PhpStmtWithBody
   final case class PhpTraitUseStmt(
     traits: List[PhpNameExpr],
     adaptations: List[PhpTraitUseAdaptation],
@@ -550,7 +566,7 @@ object Domain {
   private def readFile(json: Value): PhpFile = {
     json match {
       case arr: Arr =>
-        val children = arr.value.map(readStmt).toSeq
+        val children = arr.value.map(readStmt).toList
         PhpFile(children)
       case unhandled =>
         logger.error(s"Found unhandled type in readFile: ${unhandled.getClass} with value $unhandled")
@@ -891,9 +907,21 @@ object Domain {
 
     val scalarType = json.obj.get("scalarType").flatMap(typ => Option.unless(typ.isNull)(readName(typ)))
 
+    val hasConstructor = classLikeType == ClassLikeTypes.Class
+
     val attributes = PhpAttributes(json)
 
-    PhpClassLikeStmt(name, modifiers, extendsNames, implements, stmts, classLikeType, scalarType, attributes)
+    PhpClassLikeStmt(
+      name,
+      modifiers,
+      extendsNames,
+      implements,
+      stmts,
+      classLikeType,
+      scalarType,
+      hasConstructor,
+      attributes
+    )
   }
 
   private def readEnumCase(json: Value): PhpEnumCaseStmt = {
@@ -1045,12 +1073,13 @@ object Domain {
     if (!json.obj.contains("name")) {
       logger.error(s"Variable did not contain name: $json")
     }
+    val varAttrs = PhpAttributes(json)
     val name = json("name") match {
-      case Str(value) => readName(value)
+      case Str(value) => readName(value).copy(attributes = varAttrs)
       case Obj(_)     => readNameOrExpr(json, "name")
       case value      => readExpr(value)
     }
-    PhpVariable(name, PhpAttributes(json))
+    PhpVariable(name, varAttrs)
   }
 
   private def readIsset(json: Value): PhpIsset = {
@@ -1333,30 +1362,26 @@ object Domain {
     )
   }
 
-  private def correctConstructor(originalName: String): String = {
-    originalName.replaceAll("__construct", Defines.ConstructorMethodName)
-  }
-
   private def readName(json: Value): PhpNameExpr = {
     json match {
-      case Str(name) => PhpNameExpr(correctConstructor(name), PhpAttributes.Empty)
+      case Str(name) => PhpNameExpr(name, PhpAttributes.Empty)
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name_FullyQualified") =>
-        val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
-        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+        val name = value("parts").arr.map(_.str).mkString(NamespaceDelimiter)
+        PhpNameExpr(name, PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Name") =>
         // TODO Can this case just be merged with Name_FullyQualified?
-        val name = value("parts").arr.map(_.str).mkString(FullyQualifiedNameDelimiter)
-        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+        val name = value("parts").arr.map(_.str).mkString(NamespaceDelimiter)
+        PhpNameExpr(name, PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("Identifier") =>
         val name = value("name").str
-        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+        PhpNameExpr(name, PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("VarLikeIdentifier") =>
         val name = value("name").str
-        PhpNameExpr(correctConstructor(name), PhpAttributes(json))
+        PhpNameExpr(name, PhpAttributes(json))
 
       case unhandled =>
         logger.error(s"Found unhandled name type $unhandled: $json")

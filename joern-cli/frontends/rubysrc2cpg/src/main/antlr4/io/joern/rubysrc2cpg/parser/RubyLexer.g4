@@ -1,11 +1,17 @@
 lexer grammar RubyLexer;
 
 // --------------------------------------------------------
-// Auxiliary tokens
+// Auxiliary tokens and features
 // --------------------------------------------------------
 
 tokens {
-    STRING_INTERPOLATION_END
+    STRING_INTERPOLATION_END,
+    REGULAR_EXPRESSION_INTERPOLATION_END,
+    REGULAR_EXPRESSION_START
+}
+
+options {
+    superClass = RubyLexerBase;
 }
 
 // --------------------------------------------------------
@@ -109,9 +115,12 @@ RPAREN: ')';
 LCURLY: '{';
 RCURLY: '}'
     {
-        if (_modeStack.size() > 1 && _modeStack.peek() == DOUBLE_QUOTED_STRING_MODE) {
+        if (isInStringInterpolationMode()) {
             popMode();
             setType(STRING_INTERPOLATION_END);
+        } else if (isInRegularExpressionInterpolationMode()) {
+            popMode();
+            setType(REGULAR_EXPRESSION_INTERPOLATION_END);
         }
     }
 ;
@@ -170,7 +179,14 @@ PLUS: '+';
 MINUS: '-';
 STAR: '*';
 STAR2: '**';
-SLASH: '/';
+SLASH: '/'
+    {
+        if (isStartOfRegex()) {
+            setType(REGULAR_EXPRESSION_START);
+            pushMode(REGULAR_EXPRESSION_MODE);
+        }
+    }
+;
 PERCENT: '%';
 TILDE: '~';
 PLUSAT: '+@';
@@ -246,16 +262,15 @@ fragment SINGLE_QUOTED_ESCAPE_SEQUENCE
     ;
 
 fragment SINGLE_ESCAPE_CHARACTER_SEQUENCE
-    :   '\'' SINGLE_QUOTED_STRING_META_CHARACTER
+    :   '\\' SINGLE_QUOTED_STRING_META_CHARACTER
     ;
 
 fragment SINGLE_QUOTED_STRING_META_CHARACTER
-    :   '\''
-    |   '\\'
+    :   ['\\]
     ;
 
 fragment SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER_SEQUENCE
-    :   '\'' SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER
+    :   '\\' SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER
     ;
 
 DOUBLE_QUOTED_STRING_START
@@ -550,6 +565,51 @@ fragment SIMPLE_ESCAPE_SEQUENCE
 
 fragment DOUBLE_ESCAPED_CHARACTER
     :   [ntrfvaebs]
+    ;
+
+// --------------------------------------------------------
+// Regex literal mode
+// --------------------------------------------------------
+
+mode REGULAR_EXPRESSION_MODE;
+
+REGULAR_EXPRESSION_END
+    :   '/' REGULAR_EXPRESSION_OPTION*
+        -> popMode
+    ;
+
+REGULAR_EXPRESSION_BODY
+    :   REGULAR_EXPRESSION_CHARACTER+
+    ;
+
+REGULAR_EXPRESSION_INTERPOLATION_BEGIN
+    :   '#{' {pushMode(DEFAULT_MODE);}
+    ;
+
+fragment REGULAR_EXPRESSION_OPTION
+    :   [imxo]
+    ;
+
+fragment REGULAR_EXPRESSION_CHARACTER
+    :   ~[/#\\]
+    |   '#' {_input.LA(1) != '$' && _input.LA(1) != '@' && _input.LA(1) != '{'}?
+    |   REGULAR_EXPRESSION_NON_ESCAPED_SEQUENCE
+    |   REGULAR_EXPRESSION_ESCAPE_SEQUENCE
+    |   LINE_TERMINATOR_ESCAPE_SEQUENCE
+    |   INTERPOLATED_CHARACTER_SEQUENCE
+    ;
+
+fragment REGULAR_EXPRESSION_NON_ESCAPED_SEQUENCE
+    :   '\\' REGULAR_EXPRESSION_NON_ESCAPED_CHARACTER
+    ;
+
+fragment REGULAR_EXPRESSION_NON_ESCAPED_CHARACTER
+    :   ~[\r\n]
+    |   '\n' {_input.LA(1) != '\r'}?
+    ;
+
+fragment REGULAR_EXPRESSION_ESCAPE_SEQUENCE
+    :   '\\' '/'
     ;
 
 // --------------------------------------------------------

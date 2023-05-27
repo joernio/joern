@@ -35,7 +35,8 @@ class CallTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.l) { case List(fooCall) =>
       fooCall.name shouldBe "foo"
-      fooCall.methodFullName shouldBe s"foo:${Defines.UnresolvedSignature}(1)"
+      fooCall.methodFullName shouldBe s"foo"
+      fooCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
       fooCall.receiver.isEmpty shouldBe true
       fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)

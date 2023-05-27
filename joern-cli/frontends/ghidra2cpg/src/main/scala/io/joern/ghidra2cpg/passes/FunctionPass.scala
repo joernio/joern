@@ -1,5 +1,6 @@
 package io.joern.ghidra2cpg.passes
 
+import ghidra.app.util.template.TemplateSimplifier
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Program}
@@ -52,7 +53,8 @@ abstract class FunctionPass(
       true,
       true,
       true,
-      true
+      true,
+      new TemplateSimplifier()
     )
   )
 

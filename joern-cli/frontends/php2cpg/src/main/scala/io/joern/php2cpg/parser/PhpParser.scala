@@ -6,29 +6,71 @@ import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
+import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 object PhpParser {
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private val PhpParserBinEnvVar = "PHP_PARSER_BIN"
+  private val logger             = LoggerFactory.getLogger(this.getClass)
 
   private val ExecutablePath: String = {
-    val dir = Paths.get(PhpParser.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
-    val fixedDir = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
-    Paths.get(fixedDir, "php2cpg", "bin", "vendor", "bin", "php-parse").toAbsolutePath.toString
+    Option(System.getenv(PhpParserBinEnvVar)) match {
+      case Some(phpParserPath) if phpParserPath.nonEmpty =>
+        logger.debug(s"Using php-parser path from $PhpParserBinEnvVar envvar: ${phpParserPath}")
+        phpParserPath
+
+      case _ =>
+        val dir =
+          Paths.get(PhpParser.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
+        val fixedDir = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
+        val phpParserPath =
+          Paths.get(fixedDir, "php2cpg", "bin", "php-parser.phar").toAbsolutePath.toString
+        logger.debug(s"$PhpParserBinEnvVar not set. Using default php-parser location: ${phpParserPath}")
+        phpParserPath
+    }
   }
 
-  private def phpParseCommand(filename: String): String = {
-    s"$ExecutablePath --with-recovery --resolve-names --json-dump $filename"
+  private lazy val DefaultPhpIni: String = {
+    val iniContents = Source.fromResource("php.ini").getLines().mkString(System.lineSeparator())
+
+    val tmpIni = File.newTemporaryFile(suffix = "-php.ini").deleteOnExit()
+    tmpIni.writeText(iniContents)
+    tmpIni.canonicalPath
   }
 
-  def parseFile(inputPath: String): Option[PhpFile] = {
+  private def phpParseCommand(filename: String, phpIniPath: String): String = {
+    s"php --php-ini $phpIniPath $ExecutablePath --with-recovery --resolve-names --json-dump $filename"
+  }
+
+  private def getPhpIniPath(phpIniOverride: Option[String]): String = {
+    phpIniOverride match {
+      case None =>
+        logger.debug(s"No php.ini override path provided. Using default instead.")
+        DefaultPhpIni
+
+      case Some(path) =>
+        val overrideFile = File(path)
+        val overridePath = overrideFile.path.toAbsolutePath.toString
+
+        if (overrideFile.exists && overrideFile.isRegularFile) {
+          logger.debug(s"Found custom php.ini to be used at $overridePath")
+          overridePath
+        } else {
+          logger.warn(s"Could not find php.ini file at $overridePath. Using default instead.")
+          DefaultPhpIni
+        }
+    }
+  }
+
+  def parseFile(inputPath: String, phpIniOverride: Option[String]): Option[PhpFile] = {
     val inputFile      = File(inputPath)
+    val inputFilePath  = inputFile.canonicalPath
     val inputDirectory = inputFile.parent.canonicalPath
-    val filename       = inputFile.name
+    val phpIniPath     = getPhpIniPath(phpIniOverride)
 
-    ExternalCommand.run(phpParseCommand(filename), inputDirectory, separateStdErr = true) match {
-      case Success(outputLines) => processParserOutput(outputLines, inputFile.canonicalPath)
+    ExternalCommand.run(phpParseCommand(inputFilePath, phpIniPath), inputDirectory, separateStdErr = true) match {
+      case Success(outputLines) => processParserOutput(outputLines, inputFilePath)
 
       case Failure(exception) =>
         logger.error(s"php-parser failed to parse input file $inputPath", exception)

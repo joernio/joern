@@ -23,4 +23,5 @@ class NamespaceCreator(cpg: Cpg) extends CpgPass(cpg) {
         blocks.foreach(block => dstGraph.addEdge(block, namespace, EdgeTypes.REF))
       }
   }
+
 }

@@ -1,8 +1,16 @@
 package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew, NewBlock, NewFieldIdentifier, NewNode}
-import io.joern.x2cpg.Ast
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
+  ExpressionNew,
+  NewBlock,
+  NewCall,
+  NewFieldIdentifier,
+  NewNode
+}
+import io.joern.x2cpg.{Ast, AstEdge}
+import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
 import org.eclipse.cdt.core.dom.ast.IASTBinaryExpression
@@ -28,11 +36,13 @@ trait MacroHandler { this: AstCreator =>
     * invocation and attach `ast` as its child.
     */
   def asChildOfMacroCall(node: IASTNode, ast: Ast): Ast = {
+    if (ast.nodes.size == 1 && ast.root.exists(_.isInstanceOf[NewLocal])) return ast
     val matchingMacro = extractMatchingMacro(node)
     val macroCallAst  = matchingMacro.map { case (mac, args) => createMacroCallAst(ast, node, mac, args) }
     macroCallAst match {
       case Some(callAst) =>
-        val newAst = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], argIndex = 1)
+        val lostLocals = ast.refEdges.collect { case AstEdge(_, dst: NewLocal) => Ast(dst) }.toList
+        val newAst     = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], argIndex = 1)
         // We need to wrap the copied AST as it may contain CPG nodes not being allowed
         // to be connected via AST edges under a CALL. E.g., LOCALs but only if its not already a BLOCK.
         val childAst = newAst.root match {
@@ -42,7 +52,7 @@ trait MacroHandler { this: AstCreator =>
             val b = NewBlock().argumentIndex(1).typeFullName(registerType(Defines.voidTypeName))
             blockAst(b, List(newAst))
         }
-        callAst.withChild(childAst)
+        callAst.withChildren(lostLocals).withChild(childAst)
       case None => ast
     }
   }
@@ -108,13 +118,17 @@ trait MacroHandler { this: AstCreator =>
     val code    = node.getRawSignature.stripSuffix(";")
     val argAsts = argumentTrees(arguments, ast).map(_.getOrElse(Ast()))
 
-    val callNode = newCallNode(
-      node,
-      StringUtils.normalizeSpace(name),
-      StringUtils.normalizeSpace(fullName(macroDef, argAsts)),
-      DispatchTypes.INLINED
-    ).code(code).typeFullName(typeFor(node))
-
+    val callName     = StringUtils.normalizeSpace(name)
+    val callFullName = StringUtils.normalizeSpace(fullName(macroDef, argAsts))
+    val callNode =
+      NewCall()
+        .name(callName)
+        .dispatchType(DispatchTypes.INLINED)
+        .methodFullName(callFullName)
+        .code(code)
+        .typeFullName(typeFor(node))
+        .lineNumber(line(node))
+        .columnNumber(column(node))
     callAst(callNode, argAsts)
   }
 
@@ -122,10 +136,10 @@ trait MacroHandler { this: AstCreator =>
     * create a METHOD node with the correct location information.
     */
   private def fullName(macroDef: IASTPreprocessorMacroDefinition, argAsts: List[Ast]) = {
-    val name      = ASTStringUtil.getSimpleName(macroDef.getName)
-    val filename  = fileName(macroDef)
-    val lineNo    = line(macroDef).getOrElse(-1)
-    val lineNoEnd = lineEnd(macroDef).getOrElse(-1)
+    val name               = ASTStringUtil.getSimpleName(macroDef.getName)
+    val filename           = fileName(macroDef)
+    val lineNo: Integer    = line(macroDef).getOrElse(-1)
+    val lineNoEnd: Integer = lineEnd(macroDef).getOrElse(-1)
     s"$filename:$lineNo:$lineNoEnd:$name:${argAsts.size}"
   }
 
@@ -135,7 +149,7 @@ trait MacroHandler { this: AstCreator =>
   @nowarn
   def nodeSignature(node: IASTNode): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
-    if (isExpandedFromMacro(node)) {
+    val sig = if (isExpandedFromMacro(node)) {
       val sig = getNodeSignature(node)
       if (sig.isEmpty) {
         node.getRawSignature
@@ -145,6 +159,7 @@ trait MacroHandler { this: AstCreator =>
     } else {
       node.getRawSignature
     }
+    shortenCode(sig)
   }
 
   private def isExpandedFromMacro(node: IASTNode): Boolean = expandedFromMacro(node).nonEmpty

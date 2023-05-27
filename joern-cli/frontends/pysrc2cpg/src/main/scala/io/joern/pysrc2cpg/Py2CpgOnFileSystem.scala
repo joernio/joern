@@ -14,7 +14,8 @@ case class Py2CpgOnFileSystemConfig(
   inputDir: Path = null,
   venvDir: Path = Paths.get(".venv"),
   ignoreVenvDir: Boolean = true,
-  disableDummyTypes: Boolean = false
+  disableDummyTypes: Boolean = false,
+  requirementsTxt: String = "requirements.txt"
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig] {
   override def withInputPath(inputPath: String): Py2CpgOnFileSystemConfig = {
     copy(inputDir = Paths.get(inputPath))
@@ -42,23 +43,33 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
         } else {
           Nil
         }
-      val inputFiles = collectInputFiles(config.inputDir, ignorePrefixes)
-      val inputProviders = inputFiles.map { inputFile => () =>
+      val inputFiles = collectInputFiles(config.inputDir, ignorePrefixes, config.requirementsTxt)
+      val inputProviders = inputFiles._1.map { inputFile => () =>
         {
           val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
           Py2Cpg.InputPair(content, inputFile.toString, config.inputDir.relativize(inputFile).toString)
         }
       }
-
-      val py2Cpg = new Py2Cpg(inputProviders, cpg)
+      val configInputProviders =
+        inputFiles._2.map { inputFile => () =>
+          {
+            val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
+            Py2Cpg.InputPair(content, inputFile.toString, config.inputDir.relativize(inputFile).toString)
+          }
+        }
+      val py2Cpg = new Py2Cpg(inputProviders, configInputProviders, cpg)
       py2Cpg.buildCpg()
     }
   }
 
-  private def collectInputFiles(inputDir: Path, ignorePrefixes: Iterable[Path]): Iterable[Path] = {
+  private def collectInputFiles(
+    inputDir: Path,
+    ignorePrefixes: Iterable[Path],
+    requirementsTxtFileName: String
+  ): (Iterable[Path], Option[Path]) = {
     if (!Files.exists(inputDir)) {
       logger.error(s"Cannot find $inputDir")
-      return Iterable.empty
+      return (Iterable.empty, None)
     }
 
     val inputFiles = mutable.ArrayBuffer.empty[Path]
@@ -80,7 +91,21 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
       }
     )
 
-    inputFiles
+    var requirementsTxtMaybe: Option[Path] = None
+    Files.walkFileTree(
+      inputDir,
+      new SimpleFileVisitor[Path] {
+        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+          val relativeFile    = inputDir.relativize(file)
+          val relativeFileStr = relativeFile.toString
+          if (relativeFileStr.endsWith(requirementsTxtFileName)) {
+            requirementsTxtMaybe = Some(file)
+          }
+          FileVisitResult.CONTINUE
+        }
+      }
+    )
+    (inputFiles, requirementsTxtMaybe)
   }
 
   private def logConfiguration(config: Py2CpgOnFileSystemConfig): Unit = {

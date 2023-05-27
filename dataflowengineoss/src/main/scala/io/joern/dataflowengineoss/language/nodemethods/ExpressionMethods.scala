@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.language.nodemethods
 
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
+import io.joern.dataflowengineoss.semanticsloader._
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, Method}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
@@ -11,7 +11,12 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     */
   def isUsed(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg
-    s.isEmpty || s.exists(_.mappings.exists { case (srcIndex, _) => srcIndex == node.argumentIndex })
+    s.isEmpty || s.exists(_.mappings.exists {
+      case ParamMapping(NamedArg(srcName), _) if node.argumentName.isDefined =>
+        srcName == node.argumentName.get
+      case ParamMapping(PosArg(srcIndex), _) => srcIndex == node.argumentIndex
+      case _                                 => false
+    })
   }
 
   /** Determine whether evaluation of the call this argument is a part of results in definition of this argument.
@@ -19,8 +24,11 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
   def isDefined(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg.l
     s.isEmpty || s.exists { semantic =>
-      semantic.mappings.exists { case (_, dstIndex) =>
-        dstIndex == node.argumentIndex
+      semantic.mappings.exists {
+        case ParamMapping(_, NamedArg(dstName)) if node.argumentName.isDefined =>
+          dstName == node.argumentName.get
+        case ParamMapping(_, PosArg(dstIndex)) => dstIndex == node.argumentIndex
+        case _                                 => false
       }
     }
   }
@@ -45,8 +53,17 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
   def hasDefinedFlowTo(tgt: Expression)(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg.l
     s.isEmpty || s.exists { semantic =>
-      semantic.mappings.exists { case (srcIndex, dstIndex) =>
-        srcIndex == node.argumentIndex && dstIndex == tgt.argumentIndex
+      semantic.mappings.exists {
+        case ParamMapping(NamedArg(srcName), NamedArg(dstName))
+            if node.argumentName.isDefined && tgt.argumentName.isDefined =>
+          srcName == node.argumentName.get && dstName == tgt.argumentName.get
+        case ParamMapping(NamedArg(srcName), PosArg(dstIndex)) if node.argumentName.isDefined =>
+          srcName == node.argumentName.get && dstIndex == tgt.argumentIndex
+        case ParamMapping(PosArg(srcIndex), NamedArg(dstName)) if tgt.argumentName.isDefined =>
+          srcIndex == node.argumentIndex && dstName == tgt.argumentName.get
+        case ParamMapping(PosArg(srcIndex), PosArg(dstIndex)) =>
+          srcIndex == node.argumentIndex && dstIndex == tgt.argumentIndex
+        case _ => false
       }
     }
   }

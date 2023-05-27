@@ -1,9 +1,9 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.joerncli.slicing.{DefComponent, ProgramUsageSlice, UsageSlicing}
+import io.joern.dataflowengineoss.slicing.{SliceConfig, DefComponent, ProgramUsageSlice, UsageSlicing}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.{Languages, Operators}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -14,7 +14,9 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
     Languages.JSSRC
   ) { case (cpg: Cpg, _) =>
     val programSlice =
-      UsageSlicing.calculateUsageSlice(cpg, JoernSlice.Config()).asInstanceOf[ProgramUsageSlice]
+      UsageSlicing
+        .calculateUsageSlice(cpg, SliceConfig(excludeOperatorCalls = true))
+        .asInstanceOf[ProgramUsageSlice]
 
     "extract 'express.js' slice" in {
       val Some(slice) = programSlice.objectSlices.get("main.js::program").flatMap(_.headOption)
@@ -75,17 +77,19 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
     Languages.JSSRC
   ) { case (cpg: Cpg, _) =>
     val programSlice =
-      UsageSlicing.calculateUsageSlice(cpg, JoernSlice.Config()).asInstanceOf[ProgramUsageSlice]
+      UsageSlicing
+        .calculateUsageSlice(cpg, SliceConfig())
+        .asInstanceOf[ProgramUsageSlice]
 
     "extract 'name' parameter slice from 'startScene'" in {
       val Some(slice) = programSlice.objectSlices.get("main.ts::program:Game:startScene").flatMap(_.headOption)
       slice.definedBy shouldBe Some(DefComponent("name", "__ecma.String"))
       slice.targetObj shouldBe DefComponent("name", "__ecma.String")
 
-      val List((arg1, pos1)) = slice.argToCalls
+      val List(_, _, (arg1, pos1)) = slice.argToCalls
 
       pos1 shouldBe 2
-      arg1.callName shouldBe "__Runtime.TO_STRING"
+      arg1.callName shouldBe Operators.formatString
       arg1.paramTypes shouldBe List("__ecma.String", "__ecma.String", "__ecma.String")
       arg1.returnType shouldBe "ANY"
     }

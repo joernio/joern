@@ -2,11 +2,11 @@ package io.joern.benchmarks.testfixtures
 
 import io.joern.benchmarks.BenchmarkTags._
 import io.joern.console.cpgcreation.guessLanguage
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
-import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.javasrc2cpg.{JavaSrc2Cpg, Config => JavaSrcConfig}
 import io.joern.jimple2cpg.{Jimple2Cpg, Config => JimpleConfig}
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
@@ -139,8 +139,10 @@ class BenchmarkCpgContext {
     val cpg = guessLanguage(inputPath) match {
       case Some(language: String) =>
         language match {
-          case Languages.JAVASRC => JavaSrc2Cpg().createCpgWithOverlays(JavaSrcConfig(inputPath, cpgPath))
-          case Languages.JAVA    => Jimple2Cpg().createCpgWithOverlays(JimpleConfig(inputPath, cpgPath))
+          case Languages.JAVASRC =>
+            JavaSrc2Cpg().createCpgWithOverlays(JavaSrcConfig().withInputPath(inputPath).withOutputPath(cpgPath))
+          case Languages.JAVA =>
+            Jimple2Cpg().createCpgWithOverlays(JimpleConfig().withInputPath(inputPath).withOutputPath(cpgPath))
           case _ => Failure(new RuntimeException(s"No supported language frontend for the benchmark at '$inputPath'"))
         }
       case None =>

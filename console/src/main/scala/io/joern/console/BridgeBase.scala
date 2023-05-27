@@ -5,6 +5,7 @@ import ammonite.util.{Colors, Res}
 import better.files._
 import io.joern.console.cpgqlserver.CPGQLServer
 import io.joern.console.embammonite.EmbeddedAmmonite
+import io.shiftleft.codepropertygraph.generated.Languages
 import os.{pwd, Path}
 
 case class Config(
@@ -334,12 +335,11 @@ trait PluginHandling {
     config.language.getOrElse(
       io.joern.console.cpgcreation
         .guessLanguage(src)
-        .map { x =>
-          val lang = x.toLowerCase
-          lang match {
-            case "newc" => "c"
-            case _      => lang
-          }
+        .map {
+          case Languages.C | Languages.NEWC => "c"
+          case Languages.JAVA               => "jvm"
+          case Languages.JAVASRC            => "java"
+          case lang                         => lang.toLowerCase
         }
         .getOrElse("c")
     )

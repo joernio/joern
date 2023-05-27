@@ -29,8 +29,7 @@ null
 **/astgen-macos
 **/astgen-macos-arm
 **/astgen-linux
-**/php2cpg/bin/vendor/
-**/php2cpg/bin/composer*
+**/php2cpg/bin
 /foo.c
 /woo.c
 /cpg_*.bin.zip

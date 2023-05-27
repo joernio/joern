@@ -1,0 +1,37 @@
+FROM almalinux/9-minimal:latest
+
+LABEL maintainer="joern" \
+      org.opencontainers.image.authors="Team Joern" \
+      org.opencontainers.image.source="https://github.com/joernio/joern" \
+      org.opencontainers.image.url="https://github.com/joernio/joern" \
+      org.opencontainers.image.version="1.1.1643" \
+      org.opencontainers.image.vendor="Joern" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.title="joern" \
+      org.opencontainers.image.description="Joern is a platform for analyzing source code, bytecode, and binary executables" \
+      org.opencontainers.docker.cmd="docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/joern joern"
+
+ENV JOERN_HOME=/opt/joern/joern-cli \
+    LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    JAVA_HOME="/etc/alternatives/jre_17" \
+    JAVA_17_HOME="/etc/alternatives/jre_17" \
+    JOERN_DATAFLOW_TRACKED_WIDTH=128 \
+    CLASSPATH=$CLASSPATH:/usr/local/bin: \
+    PATH=${PATH}:/opt/joern/joern-cli:/opt/joern/joern-cli/bin:${GOPATH}/bin:/usr/local/go/bin:/usr/local/bin:/root/.local/bin:${JAVA_HOME}/bin:
+
+RUN microdnf install -y gcc git-core php php-cli python3 python3-devel pcre2 which tar zip unzip sudo \
+        java-17-openjdk-headless ncurses jq zlib graphviz glibc-common glibc-all-langpacks \
+    && curl -LO https://github.com/joernio/joern/releases/latest/download/joern-install.sh \
+    && chmod +x ./joern-install.sh \
+    && ./joern-install.sh \
+    && useradd -ms /bin/bash joern \
+    && chown -R joern:joern /opt/joern \
+    && rm /joern-cli.zip /joern-install.sh \
+    && rm -rf /var/cache/yum \
+    && microdnf clean all
+
+WORKDIR /app
+
+CMD [ "joern" ]

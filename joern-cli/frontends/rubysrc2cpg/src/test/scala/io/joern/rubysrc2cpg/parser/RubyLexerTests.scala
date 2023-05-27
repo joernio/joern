@@ -1,18 +1,38 @@
 package io.joern.rubysrc2cpg.parser
 
+import io.joern.rubysrc2cpg.parser.RubyLexer._
+import org.antlr.v4.runtime.Token.EOF
+import org.antlr.v4.runtime._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import io.joern.rubysrc2cpg.parser.RubyLexer._
-import org.antlr.v4.runtime.{CharStreams, CommonTokenStream}
-import org.antlr.v4.runtime.Token.EOF
 
 class RubyLexerTests extends AnyFlatSpec with Matchers {
 
+  class RubySyntaxErrorListener extends BaseErrorListener {
+    var errors = 0
+    override def syntaxError(
+      recognizer: Recognizer[_, _],
+      offendingSymbol: Any,
+      line: Int,
+      charPositionInLine: Int,
+      msg: String,
+      e: RecognitionException
+    ): Unit =
+      errors += 1
+  }
+
   def tokenize(code: String): Iterable[Int] = {
-    import scala.jdk.CollectionConverters.CollectionHasAsScala
-    val stream =  new CommonTokenStream(new RubyLexer(CharStreams.fromString(code)))
+    val lexer               = new RubyLexer(CharStreams.fromString(code))
+    val syntaxErrorListener = new RubySyntaxErrorListener
+    lexer.addErrorListener(syntaxErrorListener)
+    val stream = new CommonTokenStream(lexer)
     stream.fill() // Run the lexer
-    stream.getTokens.asScala.map(_.getType)
+    if (syntaxErrorListener.errors > 0) {
+      Seq()
+    } else {
+      import scala.jdk.CollectionConverters.CollectionHasAsScala
+      stream.getTokens.asScala.map(_.getType)
+    }
   }
 
   "Single-line comments" should "be discarded" in {
@@ -135,7 +155,12 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
 
   "Non-interpolated, non-escaped double-quoted string literals" should "be recognized as such" in {
     val eg = Seq("\"something\"", "\"x\n\"")
-    all(eg.map(tokenize)) shouldBe Seq(DOUBLE_QUOTED_STRING_START, DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE, DOUBLE_QUOTED_STRING_END, EOF)
+    all(eg.map(tokenize)) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      DOUBLE_QUOTED_STRING_END,
+      EOF
+    )
   }
 
   "Double-quoted string literals containing identifier interpolations" should "be recognized as such" in {
@@ -145,7 +170,8 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
       INTERPOLATED_CHARACTER_SEQUENCE,
       DOUBLE_QUOTED_STRING_END,
-      EOF)
+      EOF
+    )
   }
 
   "Double-quoted string literals containing escaped `#` characters" should "not be mistaken for interpolations" in {
@@ -160,7 +186,12 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
 
   "Double-quoted string literals containing `#`" should "not be mistaken for interpolations" in {
     val code = "\"x = #\""
-    tokenize(code) shouldBe Seq(DOUBLE_QUOTED_STRING_START, DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE, DOUBLE_QUOTED_STRING_END, EOF)
+    tokenize(code) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      DOUBLE_QUOTED_STRING_END,
+      EOF
+    )
   }
 
   "Interpolated double-quoted string literal" should "be recognized as such" in {
@@ -174,7 +205,8 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       DECIMAL_INTEGER_LITERAL,
       STRING_INTERPOLATION_END,
       DOUBLE_QUOTED_STRING_END,
-      EOF)
+      EOF
+    )
   }
 
   "Recursively interpolated double-quoted string literal" should "be recognized as such" in {
@@ -193,13 +225,84 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       STRING_INTERPOLATION_END,
       DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
       DOUBLE_QUOTED_STRING_END,
-      EOF)
+      EOF
+    )
   }
 
   "Escaped `\"` in double-quoted string literal" should "not be mistaken for end of string" in {
     val code = "\"x is \\\"4\\\"\""
-    tokenize(code) shouldBe Seq(DOUBLE_QUOTED_STRING_START, DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE, DOUBLE_QUOTED_STRING_END, EOF)
+    tokenize(code) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      DOUBLE_QUOTED_STRING_END,
+      EOF
+    )
   }
 
+  "Empty regex literal" should "be recognized as such" in {
+    val code = "//"
+    tokenize(code) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_END, EOF)
+  }
 
+  "Regex literals without metacharacters" should "be recognized as such" in {
+    val eg = Seq("/regexp/", "/a regexp/")
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
+  }
+
+  "Regex literals with metacharacters" should "be recognized as such" in {
+    val eg = Seq("/(us|eu)/", "/[a-z]/", "/[A-Z]*/", "/(us|eu)?/", "/[0-9]+/")
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
+  }
+
+  "Regex literals with character classes" should "be recognized as such" in {
+    val eg = Seq("/\\w/", "/\\W/", "/\\S/")
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
+  }
+
+  "Regex literals with groups" should "be recognized as such" in {
+    val eg = Seq("/[aeiou]\\w{2}/", "/(\\d{2}:\\d{2}) (\\w+) (.*)/", "/(?<name>\\w+) (?<age>\\d+)/")
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
+  }
+
+  "Regex literals with options" should "be recognized as such" in {
+    val eg = Seq("/./m", "/./i", "/./x", "/./o")
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
+  }
+
+  "Interpolated (with a local variable) regex literal" should "be recognized as such" in {
+    val code = "/#{foo}/"
+    tokenize(code) shouldBe Seq(
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_INTERPOLATION_BEGIN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      REGULAR_EXPRESSION_INTERPOLATION_END,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
+  "Interpolated (with a numeric expression) regex literal" should "be recognized as such" in {
+    val code = "/#{1+1}/"
+    tokenize(code) shouldBe Seq(
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      PLUS,
+      DECIMAL_INTEGER_LITERAL,
+      REGULAR_EXPRESSION_INTERPOLATION_END,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
+  "Vacuously interpolated regex literal" should "be recognized as such" in {
+    val code = "/#{}/"
+    tokenize(code) shouldBe Seq(
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_INTERPOLATION_BEGIN,
+      REGULAR_EXPRESSION_INTERPOLATION_END,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
 }

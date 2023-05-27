@@ -20,7 +20,7 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         val file = dir / fileName
         file.write(code)
         val config = Config(inputPath = dir.toString, outputPath = dir.toString())
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, config).createAndApply()
+        new AstCreationPass(cpg, config).createAndApply()
         f(cpg)
         file.delete()
       }
@@ -32,7 +32,7 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         val file = dir / "file.c"
         file.write(code)
         val config = Config(inputPath = dir.toString, outputPath = dir.toString())
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, config).createAndApply()
+        new AstCreationPass(cpg, config).createAndApply()
       }
       cpg
     }

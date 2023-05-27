@@ -2,25 +2,31 @@ package io.joern.javasrc2cpg
 
 import better.files.File
 import com.github.javaparser.ParserConfiguration.LanguageLevel
-import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver
-import io.joern.javasrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, TypeInferencePass}
+import com.github.javaparser.{JavaParser, ParserConfiguration}
+import io.joern.javasrc2cpg.passes.{
+  AstCreationPass,
+  ConfigFileCreationPass,
+  JavaTypeHintCallLinker,
+  JavaTypeRecoveryPass,
+  TypeInferencePass
+}
 import io.joern.javasrc2cpg.typesolvers.{CachingReflectionTypeSolver, EagerSourceTypeSolver, SimpleCombinedTypeSolver}
-import io.joern.javasrc2cpg.util.{Delombok, SourceRootFinder}
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
+import io.joern.javasrc2cpg.util.{Delombok, SourceRootFinder}
+import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
+import io.joern.x2cpg.utils.dependency.DependencyResolver
+import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
-import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.utils.dependency.DependencyResolver
+import io.shiftleft.passes.CpgPassBase
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
-import java.util.regex.Pattern
 import scala.collection.parallel.CollectionConverters._
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
@@ -52,6 +58,13 @@ object JavaSrc2Cpg {
       logger.info("dependency resolving disabled")
       Seq()
     }
+  }
+
+  def typeRecoveryPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
+    List(
+      new JavaTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes))),
+      new JavaTypeHintCallLinker(cpg)
+    )
   }
 }
 
@@ -124,11 +137,8 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
     val typesSources    = getSourcesFromDir(sourceDirectories.typesSourceDir)
 
     val analysisAstsMap = analysisSources.par.flatMap { sourceFilename =>
-      val originalFilename = sourceFilename.replaceAll(
-        // Pattern.quote used to escape Windows paths
-        escapeBackslash(sourceDirectories.analysisSourceDir),
-        escapeBackslash(config.inputPath)
-      )
+      val originalFilename =
+        Paths.get(sourceDirectories.analysisSourceDir).relativize(Paths.get(sourceFilename)).toString
       val sourceFileInfo  = SourceFileInfo(sourceFilename, originalFilename)
       val maybeParsedFile = parseFile(sourceFilename)
 
@@ -152,7 +162,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
     val dependencies        = getDependencyList(config)
     val delombokMode        = getDelombokMode(config)
     val hasLombokDependency = dependencies.exists(_.contains("lombok"))
-    val originalSourcesDir  = config.inputPath
+    val originalSourcesDir  = File(config.inputPath).canonicalPath
     lazy val delombokDir    = Delombok.run(originalSourcesDir, config.delombokJavaHome)
 
     delombokMode match {

@@ -47,7 +47,7 @@ class AstCreationPassTests extends AbstractPassTest {
           x.order shouldBe 1
           args.name shouldBe "args"
           args.code shouldBe "int*... args"
-          args.typeFullName shouldBe "int"
+          args.typeFullName shouldBe "int*"
           args.isVariadic shouldBe true
           args.order shouldBe 2
         }
@@ -86,11 +86,11 @@ class AstCreationPassTests extends AbstractPassTest {
         inside(m.parameter.l) { case List(x, y) =>
           x.name shouldBe "x"
           x.code shouldBe "int *x;"
-          x.typeFullName shouldBe "int"
+          x.typeFullName shouldBe "int*"
           x.order shouldBe 1
           y.name shouldBe "y"
           y.code shouldBe "int *y;"
-          y.typeFullName shouldBe "int"
+          y.typeFullName shouldBe "int*"
           y.order shouldBe 2
         }
       }
@@ -128,13 +128,13 @@ class AstCreationPassTests extends AbstractPassTest {
 
       inside(cpg.method.fullNameExact(lambda1FullName).l) { case List(l1) =>
         l1.name shouldBe lambda1FullName
-        l1.code shouldBe "int anonymous_lambda_0 (int a,int b)"
+        l1.code should startWith("[] (int a, int b) -> int")
         l1.signature shouldBe "int anonymous_lambda_0 (int,int)"
       }
 
       inside(cpg.method.fullNameExact(lambda2FullName).l) { case List(l2) =>
         l2.name shouldBe lambda2FullName
-        l2.code shouldBe "string anonymous_lambda_1 (string a,string b)"
+        l2.code should startWith("[] (string a, string b) -> string")
         l2.signature shouldBe "string anonymous_lambda_1 (string,string)"
       }
 
@@ -183,7 +183,7 @@ class AstCreationPassTests extends AbstractPassTest {
 
       inside(cpg.method.fullNameExact(lambdaFullName).l) { case List(l1) =>
         l1.name shouldBe lambdaName
-        l1.code shouldBe "int anonymous_lambda_0 (int a,int b)"
+        l1.code should startWith("[] (int a, int b) -> int")
         l1.signature shouldBe signature
       }
 
@@ -225,7 +225,7 @@ class AstCreationPassTests extends AbstractPassTest {
 
       inside(cpg.method.fullNameExact(lambdaFullName).l) { case List(l1) =>
         l1.name shouldBe lambdaName
-        l1.code shouldBe "int anonymous_lambda_0 (int a,int b)"
+        l1.code should startWith("[] (int a, int b) -> int")
         l1.signature shouldBe signature
       }
 
@@ -275,7 +275,7 @@ class AstCreationPassTests extends AbstractPassTest {
 
       inside(cpg.method.fullNameExact(lambda1Name).l) { case List(l1) =>
         l1.name shouldBe lambda1Name
-        l1.code shouldBe "int anonymous_lambda_0 (int n)"
+        l1.code should startWith("[](int n) -> int")
         l1.signature shouldBe signature1
       }
 
@@ -316,13 +316,13 @@ class AstCreationPassTests extends AbstractPassTest {
         // TODO: lambda2call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
         inside(lambda2call.astChildren.l) { case List(ref: MethodRef, lit: Literal) =>
           ref.methodFullName shouldBe lambda2Name
-          ref.code shouldBe "int anonymous_lambda_1 (int n)"
+          ref.code should startWith("[](int n) -> int")
           lit.code shouldBe "10"
         }
 
         inside(lambda2call.argument.l) { case List(ref: MethodRef, lit: Literal) =>
           ref.methodFullName shouldBe lambda2Name
-          ref.code shouldBe "int anonymous_lambda_1 (int n)"
+          ref.code should startWith("[](int n) -> int")
           lit.code shouldBe "10"
         }
       }
@@ -345,7 +345,7 @@ class AstCreationPassTests extends AbstractPassTest {
         |}
         |""".stripMargin) { cpg =>
       inside(cpg.method.name("method").parameter.l) { case List(param: MethodParameterIn) =>
-        param.typeFullName shouldBe "a_struct_type"
+        param.typeFullName shouldBe "a_struct_type*"
         param.name shouldBe "a_struct"
         param.code shouldBe "a_struct_type *a_struct"
       }
@@ -360,7 +360,7 @@ class AstCreationPassTests extends AbstractPassTest {
        |""".stripMargin) { cpg =>
       inside(cpg.method.name("method").parameter.l) { case List(param: MethodParameterIn) =>
         param.code shouldBe "struct date *date"
-        param.typeFullName shouldBe "date"
+        param.typeFullName shouldBe "date*"
         param.name shouldBe "date"
       }
     }
@@ -761,6 +761,24 @@ class AstCreationPassTests extends AbstractPassTest {
       arg1.code shouldBe "__sync_synchronize()"
       val List(arg2) = expressionListCall.argument(2).collectAll[Call].l
       arg2.code shouldBe "foo(x)"
+    }
+
+    "not create an expression list for comma operator" in AstFixture("""
+        |int something(void);
+        |void a() {
+        |  int b;
+        |  int c;
+        |  for (; b = something(), b > c;) {}
+        |}
+      """.stripMargin) { cpg =>
+      val List(forLoop)        = cpg.controlStructure.l
+      val List(conditionBlock) = forLoop.condition.collectAll[Block].l
+      conditionBlock.argumentIndex shouldBe 2
+      val List(assignmentCall, greaterCall) = conditionBlock.astChildren.collectAll[Call].l
+      assignmentCall.argumentIndex shouldBe 1
+      assignmentCall.code shouldBe "b = something()"
+      greaterCall.argumentIndex shouldBe 2
+      greaterCall.code shouldBe "b > c"
     }
 
     "be correct for call expression" in AstFixture("""
@@ -1357,6 +1375,26 @@ class AstCreationPassTests extends AbstractPassTest {
       cpg.call.name("<operator>.new").code("new int\\[n\\]").argument.code("int").size shouldBe 1
     }
 
+    "be correct for 'new' with explicit identifier" in AstFixture(
+      """
+        |void a() {
+        |  char buf[80];
+        |  new (buf) string("hi");
+        |}
+        |""".stripMargin,
+      "file.cpp"
+    ) { cpg =>
+      // TODO: "<operator>.new" is not part of Operators
+      val List(newCall)         = cpg.call.name("<operator>.new").l
+      val List(string, hi, buf) = newCall.argument.l
+      string.argumentIndex shouldBe 1
+      string.code shouldBe "string"
+      hi.argumentIndex shouldBe 2
+      hi.code shouldBe "\"hi\""
+      buf.argumentIndex shouldBe 3
+      buf.code shouldBe "buf"
+    }
+
     // for: https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1526
     "be correct for array size" in AstFixture("""
         |int main() {
@@ -1624,14 +1662,11 @@ class AstCreationPassTests extends AbstractPassTest {
     ) { cpg =>
       cpg.call.name(Operators.cast).codeExact("reinterpret_cast<int>(n)").argument.code.l shouldBe List("int", "n")
     }
-  }
-
-  "AST" should {
 
     "be correct for designated initializers in plain C" in AstFixture("""
-       |void foo() {
-       |  int a[3] = { [1] = 5, [2] = 10, [3 ... 9] = 15 };
-       |};
+        |void foo() {
+        |  int a[3] = { [1] = 5, [2] = 10, [3 ... 9] = 15 };
+        |};
       """.stripMargin) { cpg =>
       inside(cpg.assignment.head.astChildren.l) { case List(ident: Identifier, call: Call) =>
         ident.typeFullName shouldBe "int[3]"
@@ -1733,16 +1768,16 @@ class AstCreationPassTests extends AbstractPassTest {
 
     "be correct for designated struct initializers in C++" in AstFixture(
       """
-       |class Point3D {
-       | public:
-       |  int x;
-       |  int y;
-       |  int z;
-       |};
-       |
-       |void foo() {
-       |  Point3D point3D { .x = 1, .y = 2, .z = 3 };
-       |};
+        |class Point3D {
+        | public:
+        |  int x;
+        |  int y;
+        |  int z;
+        |};
+        |
+        |void foo() {
+        |  Point3D point3D { .x = 1, .y = 2, .z = 3 };
+        |};
       """.stripMargin,
       "test.cpp"
     ) { cpg =>
@@ -1776,9 +1811,9 @@ class AstCreationPassTests extends AbstractPassTest {
 
     "be correct for call with pack expansion" in AstFixture(
       """
-       |void foo(int x, int*... args) {
-       |  foo(x, args...);
-       |};
+        |void foo(int x, int*... args) {
+        |  foo(x, args...);
+        |};
       """.stripMargin,
       "test.cpp"
     ) { cpg =>
@@ -1806,12 +1841,12 @@ class AstCreationPassTests extends AbstractPassTest {
     }
 
     "be correct for embedded ASM calls" in AstFixture("""
-       |void foo() {
-       |  asm("paddh %0, %1, %2\n\t"
-       |	  : "=f" (x)
-       |	  : "f" (y), "f" (z)
-       |	);
-       |}
+        |void foo() {
+        |  asm("paddh %0, %1, %2\n\t"
+        |	  : "=f" (x)
+        |	  : "f" (y), "f" (z)
+        |	);
+        |}
       """.stripMargin) { cpg =>
       inside(cpg.method("foo").ast.filter(_.label == NodeTypes.UNKNOWN).l) { case List(asm: Unknown) =>
         asm.code should startWith("asm(")
@@ -1840,14 +1875,14 @@ class AstCreationPassTests extends AbstractPassTest {
     }
 
     "have correct line number for method content" in AstFixture("""
-       |
-       |
-       |
-       |
-       | void method(int x) {
-       |
-       |   x = 1;
-       | }
+        |
+        |
+        |
+        |
+        | void method(int x) {
+        |
+        |   x = 1;
+        | }
       """.stripMargin) { cpg =>
       cpg.method.name("method").lineNumber.l shouldBe List(6)
       cpg.method.name("method").block.assignment.lineNumber.l shouldBe List(8)
@@ -1855,12 +1890,12 @@ class AstCreationPassTests extends AbstractPassTest {
 
     // for https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1321
     "have correct line numbers example 1" in AstFixture("""
-       |int main() {
-       |int a = 0;
-       |statementthatdoesnothing();
-       |int b = 0;
-       |int c = 0;
-       |}
+        |int main() {
+        |int a = 0;
+        |statementthatdoesnothing();
+        |int b = 0;
+        |int c = 0;
+        |}
       """.stripMargin) { cpg =>
       inside(cpg.identifier.l) { case List(a, b, c) =>
         a.lineNumber shouldBe Option(3)
@@ -1915,6 +1950,40 @@ class AstCreationPassTests extends AbstractPassTest {
       macFixture.close()
       linuxFixture.close()
     }
+
   }
 
+  "AST with types" should {
+
+    "be correct for function edge case" in AstFixture("class Foo { char (*(*x())[5])() }", "test.cpp") { cpg =>
+      val List(method) = cpg.method.nameNot("<global>").l
+      method.name shouldBe "x"
+      method.fullName shouldBe "Foo.x"
+      method.code shouldBe "char (*(*x())[5])()"
+      method.signature shouldBe "char Foo.x ()"
+    }
+
+    "be consistent with pointer types" in AstFixture("""
+        |struct x { char * z; };
+        |char *a(char *y) {
+        |  char *x;
+        |}
+      """.stripMargin) { cpg =>
+      cpg.member.name("z").typeFullName.head shouldBe "char*"
+      cpg.parameter.name("y").typeFullName.head shouldBe "char*"
+      cpg.local.name("x").typeFullName.head shouldBe "char*"
+      cpg.method.name("a").methodReturn.typeFullName.head shouldBe "char*"
+    }
+
+    "be consistent with array types" in AstFixture("""
+        |struct x { char z[1]; };
+        |void a(char y[1]) {
+        |  char x[1];
+        |}
+      """.stripMargin) { cpg =>
+      cpg.member.name("z").typeFullName.head shouldBe "char[1]"
+      cpg.parameter.name("y").typeFullName.head shouldBe "char[1]"
+      cpg.local.name("x").typeFullName.head shouldBe "char[1]"
+    }
+  }
 }

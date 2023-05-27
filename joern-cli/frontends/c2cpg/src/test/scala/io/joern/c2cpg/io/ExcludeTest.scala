@@ -27,7 +27,10 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
       "folder/c.c",
       "foo.bar/d.c",
       "a.c",
-      "index.c"
+      "index.c",
+      "sub/CMakeFiles/foo.c",
+      "CMakeFiles/foo.c",
+      "CMakeFiles/sub/foo.c"
     )
 
   private val projectUnderTest: File = {
@@ -53,7 +56,7 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
     val cpg   = c2cpg.createCpg(finalConfig).get
 
     X2Cpg.applyDefaultOverlays(cpg)
-    cpg.file.nameNot(FileTraversal.UNKNOWN).name.l should contain theSameElementsAs expectedFiles.map(
+    cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.l should contain theSameElementsAs expectedFiles.map(
       _.replace("/", java.io.File.separator)
     )
   }

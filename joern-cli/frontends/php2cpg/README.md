@@ -10,7 +10,6 @@ A PHP to CPG converter based on `php-parse`.
 
 ```
 sudo apt install php
-sh ./installdeps.sh
 ```
 
 # How it works

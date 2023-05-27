@@ -1,0 +1,97 @@
+package io.joern.rubysrc2cpg.parser
+
+class StringTests extends RubyParserAbstractTest {
+
+  "A single-quoted string literal" when {
+
+    "empty" should {
+      val code = "''"
+
+      "be parsed as a primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """LiteralPrimary
+            | Literal
+            |  ''""".stripMargin
+      }
+    }
+  }
+
+  "A double-quoted string literal" when {
+
+    "empty" should {
+      val code = "\"\""
+
+      "be parsed as a primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """LiteralPrimary
+            | Literal
+            |  "
+            |  """".stripMargin
+      }
+    }
+
+    "containing text and a numeric literal interpolation" should {
+      val code = """"text=#{1}""""
+
+      "be parsed as primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """StringInterpolationPrimary
+            | StringInterpolation
+            |  "
+            |  text=
+            |  Interpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         Literal
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            1
+            |   }
+            |  """".stripMargin
+      }
+    }
+
+    "containing two numeric literal interpolations" should {
+      val code = """"#{1}#{2}""""
+
+      "be parsed as primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """StringInterpolationPrimary
+            | StringInterpolation
+            |  "
+            |  Interpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         Literal
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            1
+            |   }
+            |  Interpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         Literal
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            2
+            |   }
+            |  """".stripMargin
+      }
+    }
+  }
+}

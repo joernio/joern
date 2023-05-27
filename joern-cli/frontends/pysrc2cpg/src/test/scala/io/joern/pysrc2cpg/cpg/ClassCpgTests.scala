@@ -22,13 +22,6 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       typeDecl.astParent.head shouldBe cpg.method.name("<module>").head
     }
 
-    "have correct class body type and typeDecl" in {
-      cpg.typ.name("Foo<body>").fullName.head shouldBe "Test0.py:<module>.Foo.Foo<body>"
-      val typeDecl = cpg.typeDecl.name("Foo<body>").head
-      typeDecl.fullName shouldBe "Test0.py:<module>.Foo.Foo<body>"
-      typeDecl.astParent.head shouldBe cpg.typeDecl.name("Foo<meta>").head
-    }
-
     "have correct meta class call handler type and typeDecl" in {
       cpg.typ.name("<metaClassCallHandler>").fullName.head shouldBe
         "Test0.py:<module>.Foo.<metaClassCallHandler>"

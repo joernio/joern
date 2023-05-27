@@ -376,12 +376,13 @@ class ContextStack {
   def qualName: String = {
     stack
       .flatMap {
-        case methodContext: MethodContext =>
+        case methodContext: MethodContext if !methodContext.isClassBodyMethod =>
           Some(methodContext.name)
         case specialBlockContext: SpecialBlockContext =>
           None
         case classContext: ClassContext =>
           Some(classContext.name)
+        case _: MethodContext => None
       }
       .reverse
       .mkString(".")
@@ -408,9 +409,8 @@ class ContextStack {
   def isClassContext: Boolean = {
     val stackTail = stack.tail
     stackTail.nonEmpty && (stackTail.headOption match {
-      case Some(_: ClassContext)  => true
-      case Some(x: MethodContext) => x.name.endsWith("<body>")
-      case _                      => false
+      case Some(_: ClassContext) => true
+      case _                     => false
     })
   }
 

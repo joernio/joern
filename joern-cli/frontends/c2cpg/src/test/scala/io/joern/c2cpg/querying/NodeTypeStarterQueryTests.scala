@@ -28,7 +28,11 @@ class NodeTypeStarterQueryTests extends CCodeToCpgSuite {
     * `cpg.method.external`.
     */
   "should allow retrieving methods" in {
-    cpg.method.internal.name.l shouldBe List(NamespaceTraversal.globalNamespaceName, "main")
+    cpg.method.internal.name.l.sorted shouldBe List(
+      NamespaceTraversal.globalNamespaceName,
+      NamespaceTraversal.globalNamespaceName,
+      "main"
+    )
     cpg.method.external.name.l shouldBe List("libfunc")
   }
 
@@ -65,7 +69,7 @@ class NodeTypeStarterQueryTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving (used) types" in {
-    cpg.typ.name.toSetMutable shouldBe Set("int", "void", "char", "ANY", "foo")
+    cpg.typ.name.toSetMutable shouldBe Set("int", "void", "char**", "ANY", "foo")
   }
 
   "should allow retrieving namespaces" in {
@@ -77,7 +81,7 @@ class NodeTypeStarterQueryTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving of method returns" in {
-    cpg.methodReturn.l.size shouldBe 3
+    cpg.methodReturn.l.size shouldBe 4
   }
 
   "should allow retrieving of meta data" in {

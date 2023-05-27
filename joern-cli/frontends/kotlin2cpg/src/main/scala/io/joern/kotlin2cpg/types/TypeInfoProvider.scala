@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg.types
 
 import io.shiftleft.passes.KeyPool
 import org.jetbrains.kotlin.psi.{
+  KtAnnotationEntry,
   KtBinaryExpression,
   KtCallExpression,
   KtClassLiteralExpression,
@@ -22,7 +23,11 @@ import org.jetbrains.kotlin.psi.{
   KtTypeReference
 }
 
+case class AnonymousObjectContext(declaration: KtNamedFunction)
+
 trait TypeInfoProvider {
+  def usedAsExpression(expr: KtExpression): Option[Boolean]
+
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String
 
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
@@ -39,9 +44,11 @@ trait TypeInfoProvider {
 
   def parameterType(expr: KtParameter, defaultValue: String): String
 
+  def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
+
   def propertyType(expr: KtProperty, defaultValue: String): String
 
-  def fullName(expr: KtClassOrObject, defaultValue: String): String
+  def fullName(expr: KtClassOrObject, defaultValue: String, ctx: Option[AnonymousObjectContext] = None): String
 
   def fullName(expr: KtTypeAlias, defaultValue: String): String
 
@@ -54,6 +61,8 @@ trait TypeInfoProvider {
   def referenceTargetTypeFullName(expr: KtNameReferenceExpression, defaultValue: String): String
 
   def typeFullName(expr: KtBinaryExpression, defaultValue: String): String
+
+  def typeFullName(expr: KtAnnotationEntry, defaultValue: String): String
 
   def isReferenceToClass(expr: KtNameReferenceExpression): Boolean
 

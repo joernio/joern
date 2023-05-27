@@ -13,7 +13,7 @@ class TSTypesTest extends AbstractPassTest {
   ) { cpg =>
     val List(t) = cpg.identifier("this").l
     t.typeFullName shouldBe Defines.Any
-    t.dynamicTypeHintFullName shouldBe List()
+    t.dynamicTypeHintFullName shouldBe List("code.js::program")
   }
 
   "have correct types for this with proper surrounding type" in AstFixture(
@@ -47,7 +47,7 @@ class TSTypesTest extends AbstractPassTest {
     args.name shouldBe "args"
     args.code shouldBe "...args"
     args.isVariadic shouldBe true
-    args.typeFullName shouldBe Defines.Any
+    args.typeFullName shouldBe s"${Defines.Any}[]"
   }
 
   "have return types for arrow functions" in AstFixture("const foo = () => 42;", tsTypes = true) { cpg =>
