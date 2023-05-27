@@ -504,9 +504,9 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name(":program").dotAst.l
     }
   }
+
   "CPG for code with unless condition" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |x = 1
         |unless x > 2
         |   puts "x is less than or equal to 2"
@@ -532,4 +532,78 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
+  "CPG for code with case statement and case argument" should {
+    val cpg = code("""
+        |choice = "5"
+        |case choice
+        |when "1","2"
+        |        puts "1 or 2"
+        |when "3","4"
+        |        puts "3 or 4"
+        |when "5","6"
+        |        puts "5 or 6"
+        |when "7","8"
+        |        puts "7 or 8"
+        |else
+        |    "No match"
+        |end
+        |
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.identifier.name("choice").l.size shouldBe 2
+      cpg.literal.code("1").l.size shouldBe 1
+      cpg.literal.code("2").l.size shouldBe 1
+      cpg.literal.code("3").l.size shouldBe 1
+      cpg.literal.code("4").l.size shouldBe 1
+      cpg.literal.code("5").l.size shouldBe 2
+      cpg.literal.code("6").l.size shouldBe 1
+      cpg.literal.code("7").l.size shouldBe 1
+      cpg.literal.code("8").l.size shouldBe 1
+      cpg.literal.code("1 or 2").l.size shouldBe 1
+      cpg.literal.code("3 or 4").l.size shouldBe 1
+      cpg.literal.code("5 or 6").l.size shouldBe 1
+      cpg.literal.code("7 or 8").l.size shouldBe 1
+    }
+
+    "recognise all call nodes" in {
+      cpg.call.name("puts").l.size shouldBe 4
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
+
+  "CPG for code with case statement and no case" should {
+    val cpg = code("""
+        |str = "some_string"
+        |
+        |case
+        |when str.match('/\d/')
+        |    puts 'String contains numbers'
+        |when str.match('/[a-zA-Z]/')
+        |    puts 'String contains letters'
+        |else
+        |    puts 'String does not contain numbers & letters'
+        |end
+        |
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.identifier.name("str").l.size shouldBe 3
+      cpg.literal.code("some_string").l.size shouldBe 1
+      cpg.literal.code("'String contains numbers'").l.size shouldBe 1
+      cpg.literal.code("'String contains letters'").l.size shouldBe 1
+      cpg.literal.code("'String does not contain numbers & letters'").l.size shouldBe 1
+    }
+
+    "recognise all call nodes" in {
+      cpg.call.name("puts").l.size shouldBe 3
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
 }
