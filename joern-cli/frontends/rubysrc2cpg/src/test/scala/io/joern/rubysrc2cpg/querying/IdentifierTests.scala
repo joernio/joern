@@ -305,7 +305,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name("initialize").size shouldBe 1
       cpg.call.name("to_s").size shouldBe 2
       cpg.call.name("new").size shouldBe 1
-      cpg.call.size shouldBe 12
+      cpg.call.size shouldBe 9
       cpg.identifier.name("@my_hash").size shouldBe 3
       cpg.identifier.name("key").size shouldBe 2
       cpg.identifier.name("value").size shouldBe 1

@@ -236,16 +236,21 @@ class AstCreator(filename: String, global: Global)
       exprAsts
     }
 
-    val callNode = NewCall()
-      .name(Operators.arrayInitializer)
-      .code(ctx.getText)
-      .methodFullName(Operators.arrayInitializer)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(-1)
-      .columnNumber(-1)
-    callAst(callNode, paramAsts)
+    if (paramAsts.size > 1) {
+
+      val callNode = NewCall()
+        .name(Operators.arrayInitializer)
+        .code(ctx.getText)
+        .methodFullName(Operators.arrayInitializer)
+        .signature("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(-1)
+        .columnNumber(-1)
+      callAst(callNode, paramAsts)
+    } else {
+      paramAsts.head
+    }
   }
 
   def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Ast = {
@@ -732,16 +737,20 @@ class AstCreator(filename: String, global: Global)
           multipleLHSAsts
         }
 
-      val callNode = NewCall()
-        .name(Operators.arrayInitializer)
-        .code(ctx.getText)
-        .methodFullName(Operators.arrayInitializer)
-        .signature("")
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-        .lineNumber(-1)
-        .columnNumber(-1)
-      callAst(callNode, paramAsts)
+      if (paramAsts.size > 1) {
+        val callNode = NewCall()
+          .name(Operators.arrayInitializer)
+          .code(ctx.getText)
+          .methodFullName(Operators.arrayInitializer)
+          .signature("")
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .typeFullName(Defines.Any)
+          .lineNumber(-1)
+          .columnNumber(-1)
+        callAst(callNode, paramAsts)
+      } else {
+        paramAsts.head
+      }
 
     case ctx: PackingLeftHandSideOnlyMultipleLeftHandSideContext =>
       astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
