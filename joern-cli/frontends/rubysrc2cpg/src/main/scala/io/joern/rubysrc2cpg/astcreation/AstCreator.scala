@@ -304,7 +304,7 @@ class AstCreator(filename: String, global: Global)
     case ctx: UnlessExpressionPrimaryContext          => astForUnlessExpressionPrimaryContext(ctx)
     case ctx: CaseExpressionPrimaryContext            => astForCaseExpressionPrimaryContext(ctx)
     case ctx: WhileExpressionPrimaryContext           => astForWhileExpressionPrimaryContext(ctx.whileExpression())
-    case ctx: UntilExpressionPrimaryContext           => astForUntilExpressionPrimaryContext(ctx)
+    case ctx: UntilExpressionPrimaryContext           => astForUntilExpressionPrimaryContext(ctx.untilExpression())
     case ctx: ForExpressionPrimaryContext             => astForForExpressionPrimaryContext(ctx)
     case ctx: JumpExpressionPrimaryContext            => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext           => astForBeginExpressionPrimaryContext(ctx)
@@ -1606,9 +1606,21 @@ class AstCreator(filename: String, global: Global)
       .withChild(elseAst)
   }
 
-  def astForUntilExpressionPrimaryContext(ctx: UntilExpressionPrimaryContext): Ast = {
-    astForExpressionOrCommandContext(ctx.untilExpression().expressionOrCommand())
-      .withChild(astForDoClauseContext(ctx.untilExpression().doClause()))
+  def astForUntilExpressionPrimaryContext(ctx: UntilExpressionContext): Ast = {
+    // until will be modelled as a while
+    val untilNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.WHILE)
+      .code(ctx.UNTIL().getText)
+      .lineNumber(ctx.UNTIL().getSymbol.getLine)
+      .columnNumber(ctx.UNTIL().getSymbol.getCharPositionInLine)
+
+    val untilCondAst = astForExpressionOrCommandContext(ctx.expressionOrCommand())
+    val doClauseAst  = astForDoClauseContext(ctx.doClause())
+
+    Ast(untilNode)
+      .withChild(untilCondAst)
+      .withConditionEdge(untilNode, untilCondAst.nodes.head)
+      .withChild(doClauseAst)
   }
 
   def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Ast = {

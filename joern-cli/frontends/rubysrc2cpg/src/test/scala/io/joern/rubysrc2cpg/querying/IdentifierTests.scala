@@ -617,7 +617,36 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all method nodes" in {
-      cpg.identifier.name("x").l.size shouldBe 4 //FIXME this shows as 3 when the puts is the first loop statemnt. Find why
+      cpg.identifier
+        .name("x")
+        .l
+        .size shouldBe 4 // FIXME this shows as 3 when the puts is the first loop statemnt. Find why
+      cpg.literal.code("In the loop").l.size shouldBe 1
+    }
+
+    "recognise all call nodes" in {
+      // cpg.call.name("puts").l.size shouldBe 1
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
+
+  "CPG for code with a until loop" should {
+    val cpg = code("""
+        |x = 10
+        |until x == 0
+        |  x = x - 1
+        |  puts "In the loop"
+        |end
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.identifier
+        .name("x")
+        .l
+        .size shouldBe 4 // FIXME this shows as 3 when the puts is the first loop statemnt. Find why
       cpg.literal.code("In the loop").l.size shouldBe 1
     }
 
