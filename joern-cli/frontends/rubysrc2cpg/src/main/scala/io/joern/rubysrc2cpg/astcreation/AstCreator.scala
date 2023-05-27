@@ -1871,10 +1871,19 @@ class AstCreator(filename: String, global: Global)
         argsAst
       }
     } else if (ctx.primary() != null) {
-      val argumentsWithoutParenAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-      val primaryAst               = astForPrimaryContext(ctx.primary())
-      val methodNameAst            = astForMethodNameContext(ctx.methodName())
-      Ast().withChildren(List[Ast](primaryAst, methodNameAst, argumentsWithoutParenAst))
+      val argsAst        = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val primaryAst     = astForPrimaryContext(ctx.primary())
+      val methodCallNode = astForMethodNameContext(ctx.methodName()).nodes.head.asInstanceOf[NewCall]
+      val callNode = NewCall()
+        .name(methodCallNode.name)
+        .code(ctx.getText)
+        .methodFullName(MethodFullNames.UnknownFullName)
+        .signature("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(methodCallNode.lineNumber)
+        .columnNumber(methodCallNode.columnNumber)
+      callAst(callNode, Seq[Ast](primaryAst, argsAst))
     } else {
       Ast()
     }
