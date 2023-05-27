@@ -200,6 +200,12 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     }
   }
 
+  override def postVisitImports(): Unit = {
+    symbolTable.view.foreach { case (k, typs) =>
+      symbolTable.put(k, typs.filterNot(_ == "this"))
+    }
+  }
+
   private lazy val exportedIdentifiers = cu.method
     .nameExact(":program")
     .ast

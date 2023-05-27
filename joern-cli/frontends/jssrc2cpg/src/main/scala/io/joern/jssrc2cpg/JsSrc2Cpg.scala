@@ -61,15 +61,18 @@ object JsSrc2Cpg {
     List(
       new JavaScriptInheritanceNamePass(cpg),
       new ConstClosurePass(cpg),
-      new JavaScriptTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = false)),
-      new SliceBasedTypeInferencePass(cpg, Try(new JoernTI(spawnProcess = false)).toOption),
-      new JavaScriptTypeRecoveryPass(
-        cpg,
-        XTypeRecoveryConfig(iterations = 1, enabledDummyTypes = !config.exists(_.disableDummyTypes))
-      ),
-      new JavaScriptTypeHintCallLinker(cpg),
-      new NaiveCallLinker(cpg)
-    )
+      new JavaScriptTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes)))
+    ) ++
+      (if (config.exists(_.joernti))
+         List(
+           new SliceBasedTypeInferencePass(cpg, Try(new JoernTI(spawnProcess = false)).toOption),
+           new JavaScriptTypeRecoveryPass(
+             cpg,
+             XTypeRecoveryConfig(iterations = 1, enabledDummyTypes = !config.exists(_.disableDummyTypes))
+           )
+         )
+       else List.empty) ++
+      List(new JavaScriptTypeHintCallLinker(cpg), new NaiveCallLinker(cpg))
   }
 
 }

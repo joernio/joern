@@ -14,7 +14,8 @@ final case class Config(
   ignoredFilesRegex: Regex = "".r,
   ignoredFiles: Seq[String] = Seq.empty,
   tsTypes: Boolean = true,
-  disableDummyTypes: Boolean = false
+  disableDummyTypes: Boolean = false,
+  joernti: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   def createPathForIgnore(ignore: String): String = {
@@ -53,7 +54,11 @@ object Frontend {
       opt[Unit]("no-dummyTypes")
         .hidden()
         .action((_, c) => c.copy(disableDummyTypes = true))
-        .text("disable generation of dummy types during type recovery")
+        .text("disable generation of dummy types during type recovery"),
+      opt[Unit]("joernti")
+        .hidden()
+        .action((_, c) => c.copy(joernti = true))
+        .text("enable the use of JoernTI for neural type inference")
     )
   }
 

@@ -1,11 +1,10 @@
 package io.joern.dataflowengineoss.slicing
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language.NoResolve
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.semanticcpg.language.{NoResolve, _}
 import overflowdb.traversal.Traversal
-import io.shiftleft.semanticcpg.language._
 
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{ForkJoinPool, RecursiveTask}
@@ -55,52 +54,28 @@ object UsageSlicing {
     }
   }
 
-  def calculateUsageSlice(cpg: Cpg, rootNode: AstNode, config: SliceConfig): ProgramSlice = {
-    excludeOperatorCalls.set(config.excludeOperatorCalls)
-
-    def getAssignmentDecl: Traversal[Declaration] = (config.sourceFile match {
-      case Some(fileName) => rootNode.ast.isFile.nameExact(fileName).assignment
-      case None           => rootNode.ast.isCall.name(Operators.assignment + ".*")
-    }).argument(1).isIdentifier.refsTo
-
-    def getParameterDecl: Traversal[MethodParameterIn] = config.sourceFile match {
-      case Some(fileName) => rootNode.ast.isFile.nameExact(fileName).ast.isParameter
-      case None           => rootNode.ast.isParameter
-    }
-
-    def getDeclIdentifiers: Traversal[Declaration] = getAssignmentDecl ++ getParameterDecl
-
-    lazy val typeMap = TrieMap.from(cpg.typeDecl.map(f => (f.name, f.fullName)).toMap)
-
-    val fjp = ForkJoinPool.commonPool()
-
-    try {
-      ProgramUsageSlice(usageSlices(fjp, () => getDeclIdentifiers, typeMap, config.minNumCalls), userDefinedTypes(cpg))
-    } finally {
-      fjp.shutdown()
-    }
-  }
-
   def usageSlices(
     fjp: ForkJoinPool,
     getDeclIdentifiers: () => Traversal[Declaration],
     typeMap: TrieMap[String, String],
     minNumCalls: Int = 1
-  ) = getDeclIdentifiers()
+  ): Map[String, MethodUsageSlice] = getDeclIdentifiers()
     .to(LazyList)
     .filter(a => atLeastNCalls(a, minNumCalls) && !a.name.startsWith("_tmp_"))
     .map(a => fjp.submit(new TrackUsageTask(a, typeMap)))
     .flatMap(_.get())
     .groupBy { case (scope, _) => scope }
     .view
-    .mapValues(_.iterator.map { case (_, slice) => slice }.toSet)
+    .map { case (method, slices) =>
+      method.fullName -> MethodUsageSlice(method.code, slices.iterator.map(_._2).toSet)
+    }
     .toMap
     .iterator
     .toMap
 
   private class TrackUsageTask(tgt: Declaration, typeMap: TrieMap[String, String])
-      extends RecursiveTask[Option[(String, ObjectUsageSlice)]] {
-    override def compute(): Option[(String, ObjectUsageSlice)] = {
+      extends RecursiveTask[Option[(Method, ObjectUsageSlice)]] {
+    override def compute(): Option[(Method, ObjectUsageSlice)] = {
 
       /** Will attempt to get the API call from the expression if this is a procedure call.
         *
@@ -204,7 +179,7 @@ object UsageSlicing {
             if !genCall.name.matches("(require|import)") =>
           Option(
             (
-              local.method.fullName.head,
+              local.method.head,
               ObjectUsageSlice(
                 targetObj = createDefComponent(local),
                 definedBy = Option(createDefComponent(genCall)),
@@ -217,7 +192,7 @@ object UsageSlicing {
         case (param: MethodParameterIn, _, (invokedCalls, argToCalls)) if !param.name.matches("(this|self)") =>
           Option(
             (
-              param.method.fullName,
+              param.method,
               ObjectUsageSlice(
                 targetObj = createDefComponent(param),
                 definedBy = Option(createDefComponent(param)),
