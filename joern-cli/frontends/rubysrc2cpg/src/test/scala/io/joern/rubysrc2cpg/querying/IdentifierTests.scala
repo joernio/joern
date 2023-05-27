@@ -617,8 +617,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all method nodes" in {
-      cpg.identifier.name("x").l.size shouldBe 4
-      // cpg.literal.code("In the loop").l.size shouldBe 1
+      cpg.identifier.name("x").l.size shouldBe 4 //FIXME this shows as 3 when the puts is the first loop statemnt. Find why
+      cpg.literal.code("In the loop").l.size shouldBe 1
     }
 
     "recognise all call nodes" in {
