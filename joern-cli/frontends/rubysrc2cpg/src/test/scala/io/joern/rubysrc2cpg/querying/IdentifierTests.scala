@@ -685,7 +685,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "CPG for code with a modifier statements" should {
+  "CPG for code with modifier statements" should {
     val cpg = code("""
         |for i in 1..10
         |  next if i % 2 == 0
@@ -729,6 +729,31 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
     "recognise all call nodes" in {
       cpg.call.name("puts").l.size shouldBe 1
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
+
+  "CPG for code with association statements" should {
+    val cpg = code(
+      """
+        |class Employee < EmployeeBase
+        |    has_many :teams, foreign_key: "team_id", class_name: "Team"
+        |    has_many :worklocations, foreign_key: "location_id", class_name: "WorkLocation"
+        |end
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.literal
+        .code("team_id")
+        .l
+        .size shouldBe 1
+      cpg.literal
+        .code("location_id")
+        .l
+        .size shouldBe 1
     }
 
     "successfully plot ASTs" in {
