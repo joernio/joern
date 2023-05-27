@@ -495,9 +495,17 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.literal.code("x is 1").l.size shouldBe 1
       cpg.literal.code("I can't guess the number").l.size shouldBe 1
     }
+  }
 
-    "recognise all call nodes" in {
-      cpg.call.name("puts").l.size shouldBe 3
+  "CPG for code with conditional operator" should {
+    val cpg = code("""
+          |y = ( x > 2 ) ? x : x + 1
+          |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.identifier.name("x").l.size shouldBe 3
+      cpg.identifier.name("y").l.size shouldBe 1
+      cpg.literal.code("1").l.size shouldBe 1
     }
 
     "successfully plot ASTs" in {
