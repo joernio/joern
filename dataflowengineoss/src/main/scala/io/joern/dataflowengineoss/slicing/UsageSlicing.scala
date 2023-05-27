@@ -73,21 +73,21 @@ object UsageSlicing {
     .iterator
     .toMap
 
-  private def unpackCode(x: AstNode): String =
-    x.astChildren
-      .collect {
-        case x: TypeDecl                                             => x.code
-        case x: Method                                               => x.code
-        case x: Call if x.astChildren.collectAll[MethodRef].nonEmpty => ""
-        case x: Call if x.astChildren.collectAll[TypeRef].nonEmpty   => ""
-        case x: Call                                                 => x.code
-        case x: Block                                                => unpackCode(x)
-      }
-      .mkString("\n")
+  private def unpackCode(n: AstNode): String =
+    n match {
+      case x: TypeDecl => x.code + " {\n" + x.astChildren.map(unpackCode).mkString("\n") + "\n}"
+      case x: Member   => x.code
+      case x: Method   => x.code
+      case x: Block    => x.astChildren.map(unpackCode).filterNot(_.isBlank).mkString("\n")
+      case x: Call if x.astChildren.collectAll[MethodRef].nonEmpty => ""
+      case x: Call if x.astChildren.collectAll[TypeRef].nonEmpty   => ""
+      case x: Call                                                 => x.code
+      case _                                                       => ""
+    }
 
   def methodCode(method: Method): String =
     if (method.code == ":program" || method.name == "<module>") {
-      unpackCode(method)
+      method.astChildren.map(unpackCode).filterNot(_.isBlank).mkString("\n")
     } else {
       method.code
     }
