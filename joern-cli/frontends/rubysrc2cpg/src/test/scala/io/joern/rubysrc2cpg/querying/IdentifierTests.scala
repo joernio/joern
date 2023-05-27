@@ -625,7 +625,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
 
     "recognise all call nodes" in {
-      // cpg.call.name("puts").l.size shouldBe 1
+      cpg.call.name("puts").l.size shouldBe 1
     }
 
     "successfully plot ASTs" in {
@@ -651,7 +651,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
 
     "recognise all call nodes" in {
-      // cpg.call.name("puts").l.size shouldBe 1
+      cpg.call.name("puts").l.size shouldBe 1
     }
 
     "successfully plot ASTs" in {
