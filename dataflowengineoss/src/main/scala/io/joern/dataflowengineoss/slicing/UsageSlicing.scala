@@ -67,11 +67,30 @@ object UsageSlicing {
     .groupBy { case (scope, _) => scope }
     .view
     .map { case (method, slices) =>
-      method.fullName -> MethodUsageSlice(method.code, slices.iterator.map(_._2).toSet)
+      method.fullName -> MethodUsageSlice(methodCode(method), slices.iterator.map(_._2).toSet)
     }
     .toMap
     .iterator
     .toMap
+
+  private def unpackCode(x: AstNode): String =
+    x.astChildren
+      .collect {
+        case x: TypeDecl                                             => x.code
+        case x: Method                                               => x.code
+        case x: Call if x.astChildren.collectAll[MethodRef].nonEmpty => ""
+        case x: Call if x.astChildren.collectAll[TypeRef].nonEmpty   => ""
+        case x: Call                                                 => x.code
+        case x: Block                                                => unpackCode(x)
+      }
+      .mkString("\n")
+
+  def methodCode(method: Method): String =
+    if (method.code == ":program" || method.name == "<module>") {
+      unpackCode(method)
+    } else {
+      method.code
+    }
 
   private class TrackUsageTask(tgt: Declaration, typeMap: TrieMap[String, String])
       extends RecursiveTask[Option[(Method, ObjectUsageSlice)]] {
