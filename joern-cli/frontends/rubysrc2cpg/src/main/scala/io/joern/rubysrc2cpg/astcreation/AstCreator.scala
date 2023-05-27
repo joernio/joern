@@ -789,10 +789,21 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForConditionalOperatorExpressionContext(ctx: ConditionalOperatorExpressionContext): Ast = {
-    val ifConditionAst = astForExpressionContext(ctx.expression().get(0))
-    val thenAst        = astForExpressionContext(ctx.expression().get(1))
-    val elseAst        = astForExpressionContext(ctx.expression().get(2))
-    Ast().withChildren(List[Ast](ifConditionAst, thenAst, elseAst))
+    val conditionAst = astForExpressionContext(ctx.expression().get(0))
+    val thenAst      = astForExpressionContext(ctx.expression().get(1))
+    val elseAst      = astForExpressionContext(ctx.expression().get(2))
+
+    val ifNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.IF)
+      .code(ctx.getText)
+      .lineNumber(ctx.QMARK().getSymbol.getLine)
+      .columnNumber(ctx.QMARK().getSymbol.getCharPositionInLine)
+
+    Ast(ifNode)
+      .withChild(conditionAst)
+      .withConditionEdge(ifNode, conditionAst.nodes.head)
+      .withChild(thenAst)
+      .withChild(elseAst)
   }
 
   def astForEqualityExpressionContext(ctx: EqualityExpressionContext): Ast = {
