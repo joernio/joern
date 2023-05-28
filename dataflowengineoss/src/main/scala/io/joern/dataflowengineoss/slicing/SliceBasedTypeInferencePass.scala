@@ -71,7 +71,7 @@ class SliceBasedTypeInferencePass(
                         tgt.label,
                         res.targetIdentifier,
                         tgt.typeFullName +: tgt.dynamicTypeHintFullName,
-                        res.alternatives.map(_.typ),
+                        res.alternatives.map(_.typ) :+ res.typ,
                         res.confidence
                       )
                       // If there is a call where the identifier is the receiver then this also needs to be updated
@@ -84,7 +84,7 @@ class SliceBasedTypeInferencePass(
                             call.label,
                             res.targetIdentifier,
                             call.methodFullName +: call.dynamicTypeHintFullName,
-                            res.alternatives.map(_.typ),
+                            res.alternatives.map(_.typ) :+ inferredMethodCall,
                             res.confidence
                           )
                         }
