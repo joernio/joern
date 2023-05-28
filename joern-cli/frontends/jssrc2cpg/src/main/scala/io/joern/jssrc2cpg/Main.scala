@@ -57,6 +57,14 @@ object Frontend {
         .hidden()
         .action((_, c) => c.copy(disableDummyTypes = true))
         .text("disable generation of dummy types during type recovery"),
+      opt[Int]("maxCodeLength")
+        .hidden()
+        .action((x, c) => c.copy(maxCodeLength = x))
+        .text("the maximum number of chars in the .code property for AST nodes (Default 50000)"),
+      opt[Int]("minCodeLength")
+        .hidden()
+        .action((x, c) => c.copy(minCodeLength = x))
+        .text("the minimum number of chars a .code property may be shortened to (Default 50)"),
       opt[Unit]("joernti")
         .hidden()
         .action((_, c) => c.copy(joernti = true))
