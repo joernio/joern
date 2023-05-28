@@ -24,8 +24,8 @@ import scala.util.Try
 trait AstCreatorHelper { this: AstCreator =>
 
   // maximum length of code fields in number of characters
-  private val MaxCodeLength: Int = 1000
-  private val MinCodeLength: Int = 50
+  protected val MaxCodeLength: Int
+  protected val MinCodeLength: Int
 
   protected def createBabelNodeInfo(json: Value): BabelNodeInfo = {
     val c     = shortenCode(code(json))

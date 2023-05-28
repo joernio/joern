@@ -15,6 +15,8 @@ final case class Config(
   ignoredFiles: Seq[String] = Seq.empty,
   tsTypes: Boolean = true,
   disableDummyTypes: Boolean = false,
+  maxCodeLength: Int = 50000,
+  minCodeLength: Int = 50,
   joernti: Boolean = false
 ) extends X2CpgConfig[Config] {
 
