@@ -211,6 +211,7 @@ class AstCreator(filename: String, global: Global)
         .columnNumber(localVar.getSymbol.getCharPositionInLine())
       callAst(callNode, Seq[Ast](xAst, yAst))
     case ctx: ScopedConstantAccessSingleLeftHandSideContext =>
+      // TODO to be implemented
       Ast()
     case _ =>
       logger.error("astForSingleLeftHandSideContext() All contexts mismatched.")
@@ -693,11 +694,11 @@ class AstCreator(filename: String, global: Global)
     }
 
     val identifierNodes = methodNameAst.nodes.filter(node => node.isInstanceOf[NewIdentifier])
-    if(identifierNodes.size > 0){
-      //this is a object.member access. The methodNameAst contains the object whose member is being accessed
-      val terminalNode = if(ctx.COLON2() != null){
+    if (identifierNodes.size > 0) {
+      // this is a object.member access. The methodNameAst contains the object whose member is being accessed
+      val terminalNode = if (ctx.COLON2() != null) {
         ctx.COLON2()
-      }else{
+      } else {
         ctx.DOT()
       }
       val callNode = NewCall()
@@ -709,9 +710,9 @@ class AstCreator(filename: String, global: Global)
         .typeFullName(Defines.Any)
         .lineNumber(terminalNode.getSymbol().getLine())
         .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
-        callAst(callNode, Seq[Ast](methodNameAst) ++ argList.toSeq)
-    }else {
-      //this is a object.method(args) access
+      callAst(callNode, Seq[Ast](methodNameAst) ++ argList.toSeq)
+    } else {
+      // this is a object.method(args) access
       val callNode = methodNameAst.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
       callAst(callNode, argList.toSeq)
     }
@@ -750,15 +751,19 @@ class AstCreator(filename: String, global: Global)
     callAst(callNode, Seq[Ast](primaryAst, constAst))
   }
 
-  def astForScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): Ast = {
-    val localVar  = ctx.CONSTANT_IDENTIFIER()
-    val varSymbol = localVar.getSymbol()
-    val node = createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+  private def getClassNameScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): String = {
+    val classTerminalNode = ctx.CONSTANT_IDENTIFIER()
 
     if (ctx.primary() != null) {
-      astForPrimaryContext(ctx.primary()).withChild(Ast(node))
+      val primaryAst = astForPrimaryContext(ctx.primary())
+      val moduleNameNode = primaryAst.nodes
+        .filter(node => node.isInstanceOf[NewIdentifier])
+        .head
+        .asInstanceOf[NewIdentifier]
+      val moduleName = moduleNameNode.name
+      moduleName + "." + classTerminalNode.getText
     } else {
-      Ast(node)
+      classTerminalNode.getText
     }
   }
 
@@ -766,18 +771,21 @@ class AstCreator(filename: String, global: Global)
     ctx: ClassOrModuleReferenceContext,
     baseClassName: Option[String] = None
   ): Ast = {
-    if (ctx.scopedConstantReference() != null) {
-      astForScopedConstantReferenceContext(ctx.scopedConstantReference())
+    val className = if (ctx.scopedConstantReference() != null) {
+      getClassNameScopedConstantReferenceContext(ctx.scopedConstantReference())
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val className = baseClassName match {
+      baseClassName match {
         case Some(value) => value + "." + ctx.CONSTANT_IDENTIFIER().getText
         case None        => ctx.CONSTANT_IDENTIFIER().getText
       }
-      classStack.push(className)
-      Ast()
     } else {
-      Ast()
+      Defines.Any
     }
+
+    if (className != Defines.Any) {
+      classStack.push(className)
+    }
+    Ast()
   }
 
   def astForClassDefinitionPrimaryContext(ctx: ClassDefinitionPrimaryContext): Ast = {
@@ -1206,10 +1214,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForOperatorMethodNameContext(ctx: OperatorMethodNameContext): Ast = {
 
-    val terminalNode = ctx
-      .children
-      .asScala
-      .head
+    val terminalNode = ctx.children.asScala.head
       .asInstanceOf[TerminalNode]
 
     val callNode = NewCall()
@@ -1230,7 +1235,8 @@ class AstCreator(filename: String, global: Global)
     } else if (ctx.operatorMethodName() != null) {
       astForOperatorMethodNameContext(ctx.operatorMethodName())
     } else if (ctx.keyword() != null) {
-      val terminalNode = ctx.keyword()
+      val terminalNode = ctx
+        .keyword()
         .children
         .asScala
         .head

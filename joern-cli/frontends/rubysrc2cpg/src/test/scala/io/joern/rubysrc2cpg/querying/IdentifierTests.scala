@@ -487,7 +487,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |
         |""".stripMargin)
 
-    "recognise all method nodes" in {
+    "recognise all literal and identifier nodes" in {
       cpg.identifier.name("x").l.size shouldBe 4
       cpg.literal.code("1").l.size shouldBe 1
       cpg.literal.code("2").l.size shouldBe 2
@@ -502,7 +502,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |y = ( x > 2 ) ? x : x + 1
           |""".stripMargin)
 
-    "recognise all method nodes" in {
+    "recognise all literal and identifier nodes" in {
       cpg.identifier.name("x").l.size shouldBe 3
       cpg.identifier.name("y").l.size shouldBe 1
       cpg.literal.code("1").l.size shouldBe 1
@@ -524,7 +524,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |
         |""".stripMargin)
 
-    "recognise all method nodes" in {
+    "recognise all literal nodes" in {
       cpg.identifier.name("x").l.size shouldBe 2
       cpg.literal.code("2").l.size shouldBe 1
       cpg.literal.code("x is less than or equal to 2").l.size shouldBe 1
@@ -558,7 +558,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |
         |""".stripMargin)
 
-    "recognise all method nodes" in {
+    "recognise all literal nodes" in {
       cpg.identifier.name("choice").l.size shouldBe 2
       cpg.literal.code("1").l.size shouldBe 1
       cpg.literal.code("2").l.size shouldBe 1
@@ -598,7 +598,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |
         |""".stripMargin)
 
-    "recognise all method nodes" in {
+    "recognise all literal nodes" in {
       cpg.identifier.name("str").l.size shouldBe 3
       cpg.literal.code("some_string").l.size shouldBe 1
       cpg.literal.code("'String contains numbers'").l.size shouldBe 1
@@ -674,7 +674,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    "recognise all method nodes" in {
+    "recognise all literal nodes" in {
       cpg.identifier
         .name("x")
         .l
@@ -710,7 +710,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    "recognise all method nodes" in {
+    "recognise all literal nodes" in {
       cpg.identifier
         .name("i")
         .l
@@ -752,7 +752,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    "recognise all method nodes" in {
+    "recognise all literal nodes" in {
       cpg.literal
         .code("team_id")
         .l
@@ -783,16 +783,49 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "CPG for code with test" should {
-    val cpg = code(
-      """
+  "CPG for code with object's property being accessed" should {
+    val cpg = code("""
         |def some_method(param)
-        |      if obj.param == account_number
+        |      if obj.param == some_value
         |        return "Inside is"
         |      end
         |end
         |
         |""".stripMargin)
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
+
+  "CPG for code with class having a scoped constant reference" should {
+    val cpg = code("""
+        |class ModuleName::ClassName
+        |  def some_method
+        |    puts "Inside the method"
+        |  end
+        |end
+        |""".stripMargin)
+
+    "recognise all literal nodes" in {
+      cpg.literal
+        .code("Inside the method")
+        .l
+        .size shouldBe 1
+    }
+
+    "recognise all method nodes" in {
+      cpg.method
+        .name("some_method")
+        .l
+        .size shouldBe 1
+    }
+    "recognise all call nodes" in {
+      cpg.method
+        .name("puts")
+        .l
+        .size shouldBe 1
+    }
 
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
