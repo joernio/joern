@@ -104,7 +104,11 @@ class AstCreator(filename: String, global: Global)
 
     val statementCtx = programCtx.compoundStatement().statements()
     pushScope()
-    val statementAsts = astsForStatementsContext(statementCtx)
+    val statementAsts = if (statementCtx != null) {
+      astsForStatementsContext(statementCtx)
+    } else {
+      List[Ast](Ast())
+    }
     popScope()
 
     val name = ":program"
@@ -1813,14 +1817,14 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForBlockSplattingTypeArgumentsContext(ctx: BlockSplattingTypeArgumentsContext): Ast = {
-    val blockArgAst = if (ctx.blockArgument() != null) {
-      astForBlockArgumentContext(ctx.blockArgument())
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    val splatAst  = astForSplattingArgumentContext(ctx.splattingArgument())
+    if (ctx.blockArgument() != null) {
+      val blockArgAst = astForBlockArgumentContext(ctx.blockArgument())
+      blockAst(blockNode, List[Ast](blockArgAst, splatAst))
     } else {
-      Ast()
+      blockAst(blockNode, List[Ast](splatAst))
     }
-
-    val splatAst = astForSplattingArgumentContext(ctx.splattingArgument())
-    Ast().withChildren(Seq[Ast](blockArgAst, splatAst))
   }
 
   def astForAssociationContext(ctx: AssociationContext): Ast = {
@@ -1844,24 +1848,27 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForAssociationsContext(ctx: AssociationsContext) = {
-    val asts = ctx
+    Ast().withChildren(astsForAssociationsContext(ctx))
+  }
+
+  def astsForAssociationsContext(ctx: AssociationsContext): Seq[Ast] = {
+    ctx
       .association()
       .asScala
       .map(assoc => {
         astForAssociationContext(assoc)
       })
       .toSeq
-    Ast().withChildren(asts)
   }
 
   def astForBlockSplattingExprAssocTypeArgumentsContext(ctx: BlockSplattingExprAssocTypeArgumentsContext): Ast = {
-    val blockArgAst     = astForBlockArgumentContext(ctx.blockArgument())
-    val splatAst        = astForSplattingArgumentContext(ctx.splattingArgument())
-    val associationsAst = astForAssociationsContext(ctx.associations())
-    val expAsts         = ctx.expressions().expression().asScala.map(exp => astForExpressionContext(exp)).toSeq
-    val expAst          = Ast().withChildren(expAsts)
-
-    Ast().withChildren(List[Ast](blockArgAst, splatAst, associationsAst, expAst))
+    val blockArgAst      = astForBlockArgumentContext(ctx.blockArgument())
+    val splatAst         = astForSplattingArgumentContext(ctx.splattingArgument())
+    val associationsAsts = astsForAssociationsContext(ctx.associations())
+    val expAsts          = ctx.expressions().expression().asScala.map(exp => astForExpressionContext(exp)).toSeq
+    val asts             = Seq[Ast](blockArgAst, splatAst) ++ associationsAsts ++ expAsts
+    val blockNode        = NewBlock().typeFullName(Defines.Any)
+    blockAst(blockNode, asts.toList)
   }
 
   def astForBlockExprAssocTypeArgumentsContext(ctx: BlockExprAssocTypeArgumentsContext): Ast = {

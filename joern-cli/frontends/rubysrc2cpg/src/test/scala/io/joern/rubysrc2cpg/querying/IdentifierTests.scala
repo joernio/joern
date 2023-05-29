@@ -832,17 +832,14 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  /*
-  "CPG for code with test" should {
-    val cpg = code(
-      """
-        |params.require.permit(:date, :doctor_id, :patient_id, :image, :slot_id,
-        |        notes_attributes: [:id, :description, :user_id, :_destroy])
+  "CPG for code with block splatting expression associations" should {
+    val cpg = code("""
+        |object.require(:appointment).permit(:param1, :param2, :param3, :param4, :param4,
+        |        another_object: [:id, :description, :record_id, :_some_method])
         |""".stripMargin)
 
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
     }
   }
-   */
 }
