@@ -326,21 +326,25 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "CPG for code with return having a jump statement" should {
+  "CPG for code with return having a if statement" should {
     val cpg = code("""
-          |  def check_captcha
-          |    return if verify_recaptcha
-          |  end
+          |def some_method
+          |  return if some_var
+          |end
           |
           |""".stripMargin)
 
+    /*
+     * This code used jumpExpression. This validated t
+     */
     "recognise identifier nodes in the jump statement" in {
-      cpg.identifier.name("verify_recaptcha").size shouldBe 1
+      cpg.identifier.name("some_var").size shouldBe 1
+      cpg.controlStructure.code("return if some_var").size shouldBe 1
     }
 
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
-      cpg.method.name("check_captcha").dotAst.l
+      cpg.method.name("some_method").dotAst.l
     }
   }
 
