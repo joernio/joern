@@ -1412,9 +1412,8 @@ class AstCreator(filename: String, global: Global)
 
     val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
     /*
-     * TODO find out from where the correct modifier could be obtained since the modifier comes
-     *  as variableIdentifier in parser o/p.
-     * This problem needs to be solved only if it matters
+     * public/private/protected modifiers are in a separate statement
+     * TODO find out how they should be used. Need to do this iff it adds any value
      */
 
     val paramSeq = astMethodParam.nodes
