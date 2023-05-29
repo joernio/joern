@@ -831,4 +831,18 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name(":program").dotAst.l
     }
   }
+
+  /*
+  "CPG for code with test" should {
+    val cpg = code(
+      """
+        |params.require.permit(:date, :doctor_id, :patient_id, :image, :slot_id,
+        |        notes_attributes: [:id, :description, :user_id, :_destroy])
+        |""".stripMargin)
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
+   */
 }

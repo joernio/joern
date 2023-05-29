@@ -388,7 +388,7 @@ class AstCreator(filename: String, global: Global)
       .code(text)
       .typeFullName(Defines.String)
       .dynamicTypeHintFullName(List(Defines.String))
-    Ast().withChildren(List[Ast](Ast(node)))
+    Ast(node)
   }
 
   def astForDefinedMethodNameOrSymbolContext(ctx: DefinedMethodNameOrSymbolContext): Ast = {
@@ -1041,8 +1041,23 @@ class AstCreator(filename: String, global: Global)
         .columnNumber(ctx.RETURN().getSymbol().getCharPositionInLine)
       val argAst = astForArgumentsContext(ctx.arguments())
       returnAst(retNode, Seq[Ast](argAst))
-    case ctx: BreakArgsInvocationWithoutParenthesesContext => astForArgumentsContext(ctx.arguments())
-    case ctx: NextArgsInvocationWithoutParenthesesContext  => astForArgumentsContext(ctx.arguments())
+    case ctx: BreakArgsInvocationWithoutParenthesesContext =>
+      val node = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.BREAK)
+        .lineNumber(ctx.BREAK().getSymbol.getLine)
+        .columnNumber(ctx.BREAK().getSymbol.getCharPositionInLine)
+        .code(ctx.getText)
+      Ast(node)
+        .withChild(astForArgumentsContext(ctx.arguments()))
+    case ctx: NextArgsInvocationWithoutParenthesesContext =>
+      astForArgumentsContext(ctx.arguments())
+      val node = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.CONTINUE)
+        .lineNumber(ctx.NEXT().getSymbol.getLine)
+        .columnNumber(ctx.NEXT().getSymbol.getCharPositionInLine)
+        .code(Defines.ModifierNext)
+      Ast(node)
+        .withChild(astForArgumentsContext(ctx.arguments()))
     case _ =>
       logger.error("astForInvocationWithoutParenthesesContext() All contexts mismatched.")
       Ast()
@@ -1893,11 +1908,10 @@ class AstCreator(filename: String, global: Global)
         ) {
           val importedFile =
             argsAst.nodes.filter(node => node.isInstanceOf[NewLiteral]).head.asInstanceOf[NewLiteral].code
-          println(s"Creating AST for imported file ${importedFile}")
-          Ast()
-        } else {
-          callAst(callNode, Seq[Ast](argsAst))
+          println(s"AST to be created for imported file ${importedFile}")
+
         }
+        callAst(callNode, Seq[Ast](argsAst))
       } else {
         argsAst
       }
