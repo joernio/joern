@@ -842,4 +842,48 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name(":program").dotAst.l
     }
   }
+
+  "CPG for code with alias" should {
+    val cpg = code("""
+        |def some_method(arg)
+        |puts arg
+        |end
+        |alias :alias_name :some_method
+        |""".stripMargin)
+
+    "recognise all call nodes" in {
+      cpg.call.name("puts").l.size shouldBe 1
+      cpg.call.name("some_method").l.size shouldBe 1
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
+
+  "CPG for code with alias1" should {
+    val cpg = code("""
+        |def some_method(arg)
+        |puts arg
+        |end
+        |alias :alias_name :some_method
+        |alias_name("some param")
+        |""".stripMargin)
+
+    "recognise all call nodes" in {
+      cpg.call
+        .name("puts")
+        .l
+        .size shouldBe 1
+      cpg.call
+        .name("some_method")
+        .l
+        .size shouldBe 1
+    }
+    "successfully plot ASTs" in {
+      cpg.method.name(":some_method").dotAst.l
+      cpg.method.name(":program").dotAst.l
+    }
+  }
+
 }

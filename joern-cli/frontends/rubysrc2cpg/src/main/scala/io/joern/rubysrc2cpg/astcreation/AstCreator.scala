@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
   EdgeTypes,
-  EvaluationStrategies,
   ModifierTypes,
   NodeTypes,
   Operators
@@ -54,6 +53,8 @@ class AstCreator(filename: String, global: Global)
   // Queue of variable identifiers incorrectly identified as method identifiers
   private val methodNameAsIdentiferQ = mutable.Queue[Ast]()
 
+  private val methodAliases = mutable.HashMap[String, String]()
+
   class ScopeIdentifiers {
     val varToIdentiferMap             = mutable.HashMap[String, NewIdentifier]()
     var parentScope: ScopeIdentifiers = null
@@ -95,6 +96,9 @@ class AstCreator(filename: String, global: Global)
     newNode
   }
 
+  private def getActualMethodName(name: String): String = {
+    methodAliases.getOrElse(name, name)
+  }
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val charStream  = CharStreams.fromFileName(filename)
     val lexer       = new RubyLexer(charStream)
@@ -137,8 +141,6 @@ class AstCreator(filename: String, global: Global)
       .lineNumber(None)
       .columnNumber(None)
       .typeFullName(Defines.Any)
-
-    diffGraph.addEdge(programMethod, thisParam, EdgeTypes.AST)
 
     val blockNode = NewBlock().typeFullName(Defines.Any)
     val programAst =
@@ -398,32 +400,34 @@ class AstCreator(filename: String, global: Global)
   def astForDefinedMethodNameOrSymbolContext(ctx: DefinedMethodNameOrSymbolContext): Ast = {
     if (ctx == null) return Ast()
 
-    val definedMethodNameCtx = ctx.definedMethodName()
-    val symbolCtx            = ctx.symbol()
-
-    val asts = ListBuffer[Ast]()
-    if (definedMethodNameCtx != null) {
-      asts.addOne(astForDefinedMethodNameContext(definedMethodNameCtx))
+    if (ctx.definedMethodName() != null) {
+      astForDefinedMethodNameContext(ctx.definedMethodName())
+    } else {
+      astForSymbolContext(ctx.symbol())
     }
-
-    if (symbolCtx != null) {
-      asts.addOne(astForSymbolContext(symbolCtx))
-    }
-
-    Ast().withChildren(asts)
   }
 
   def astForAliasStatementContext(ctx: AliasStatementContext): Ast = {
-    if (ctx == null) return Ast()
+    val aliasName = astForDefinedMethodNameOrSymbolContext(
+      ctx
+        .definedMethodNameOrSymbol()
+        .get(0)
+    ).nodes.head
+      .asInstanceOf[NewLiteral]
+      .code
+      .substring(1)
 
-    val asts = ListBuffer[Ast]()
-    ctx
-      .definedMethodNameOrSymbol()
-      .forEach(dms => {
-        asts.addOne(astForDefinedMethodNameOrSymbolContext(dms))
-      })
+    val methodName = astForDefinedMethodNameOrSymbolContext(
+      ctx
+        .definedMethodNameOrSymbol()
+        .get(1)
+    ).nodes.head
+      .asInstanceOf[NewLiteral]
+      .code
+      .substring(1)
 
-    Ast().withChildren(asts)
+    methodAliases.addOne(aliasName, methodName)
+    Ast()
   }
 
   def astForUndefStatementContext(ctx: UndefStatementContext): Ast = {
@@ -1076,12 +1080,14 @@ class AstCreator(filename: String, global: Global)
   def astForInvocationWithParenthesesPrimaryContext(ctx: InvocationWithParenthesesPrimaryContext): Ast = {
     val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier())
     val parenAst    = astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
+    val callNode    = methodIdAst.nodes.filter(_.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+    callNode.name(getActualMethodName(callNode.name))
 
     if (ctx.block() != null) {
       val blockAst = astForBlockContext(ctx.block())
-      methodIdAst.withChild(parenAst).withChild(blockAst)
+      callAst(callNode, Seq[Ast](parenAst, blockAst))
     } else {
-      methodIdAst.withChild(parenAst)
+      callAst(callNode, Seq[Ast](parenAst))
     }
   }
 
@@ -1182,7 +1188,7 @@ class AstCreator(filename: String, global: Global)
     val column = localIdentifier.getSymbol().getCharPositionInLine()
     val line   = localIdentifier.getSymbol().getLine()
     val callNode = NewCall()
-      .name(localIdentifier.getText())
+      .name(getActualMethodName(localIdentifier.getText))
       .methodFullName(MethodFullNames.UnknownFullName)
       .signature(localIdentifier.getText())
       .typeFullName(MethodFullNames.UnknownFullName)
@@ -1411,10 +1417,12 @@ class AstCreator(filename: String, global: Global)
      * This problem needs to be solved only if it matters
      */
 
-    astMethodParam.nodes.foreach(node => {
-      diffGraph.addEdge(methodNode, node, EdgeTypes.AST)
-    })
-    methodAst(methodNode, Seq[Ast](astMethodParam), astBody, methodRetNode, Seq[NewModifier](publicModifier))
+    val paramSeq = astMethodParam.nodes
+      .map(node => {
+        Ast(node)
+      })
+      .toSeq
+    methodAst(methodNode, paramSeq, astBody, methodRetNode, Seq[NewModifier](publicModifier))
   }
 
   def astForMethodOnlyIdentifierPrimaryContext(ctx: MethodOnlyIdentifierPrimaryContext): Ast = {
@@ -1927,7 +1935,7 @@ class AstCreator(filename: String, global: Global)
       val primaryAst     = astForPrimaryContext(ctx.primary())
       val methodCallNode = astForMethodNameContext(ctx.methodName()).nodes.head.asInstanceOf[NewCall]
       val callNode = NewCall()
-        .name(methodCallNode.name)
+        .name(getActualMethodName(methodCallNode.name))
         .code(ctx.getText)
         .methodFullName(MethodFullNames.UnknownFullName)
         .signature("")
