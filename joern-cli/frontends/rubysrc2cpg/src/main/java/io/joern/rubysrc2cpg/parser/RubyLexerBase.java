@@ -3,6 +3,9 @@ package io.joern.rubysrc2cpg.parser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.Token;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /** Aggregates auxiliary features to RubyLexer in a single place. */
 public abstract class RubyLexerBase extends Lexer {
@@ -14,16 +17,60 @@ public abstract class RubyLexerBase extends Lexer {
      * a regular expression delimiter (e.g. `/(eu|us)/`) occurrence. Our approach is to look at the
      * previously emitted token and decide accordingly.
      */
+    private final Set<Integer> regexTogglingTokens = new HashSet<>(Arrays.asList(
+            // When '/' is the first token in the stream.
+            null,
+            
+            // When '/' occurs after an opening parenthesis, brace or bracket.
+            RubyLexer.LPAREN,
+            RubyLexer.LCURLY,
+            RubyLexer.LBRACK,
+            
+            // When '/' occurs after a NL.
+            RubyLexer.NL,
+            
+            // When '/' occurs after an operator.
+            RubyLexer.EMARK,
+            RubyLexer.EMARKEQ,
+            RubyLexer.EMARKTILDE,
+            RubyLexer.AMP,
+            RubyLexer.AMP2,
+            RubyLexer.AMPDOT,
+            RubyLexer.BAR,
+            RubyLexer.BAR2,
+            RubyLexer.EQ,
+            RubyLexer.EQ2,
+            RubyLexer.EQ3,
+            RubyLexer.CARET,
+            RubyLexer.LTEQGT,
+            RubyLexer.EQTILDE,
+            RubyLexer.GT,
+            RubyLexer.GTEQ,
+            RubyLexer.LT,
+            RubyLexer.LTEQ,
+            RubyLexer.LT2,
+            RubyLexer.GT2,
+            RubyLexer.PLUS,
+            RubyLexer.MINUS,
+            RubyLexer.STAR,
+            RubyLexer.STAR2,
+            RubyLexer.SLASH,
+            RubyLexer.PERCENT,
+            RubyLexer.TILDE,
+            RubyLexer.PLUSAT,
+            RubyLexer.MINUSAT,
+            RubyLexer.ASSIGNMENT_OPERATOR
+    ));
 
-    /** The previously emitted token (in DEFAULT_CHANNEL.) */
-    private Token previousToken = null;
+    /** The previously (non-WS) emitted token (in DEFAULT_CHANNEL.) */
+    private Token previousNonWsToken = null;
 
-    // Same original behaviour, just updating `previousToken`.
+    // Same original behaviour, just updating `previousNonWsToken`.
     @Override
     public Token nextToken() {
         Token token = super.nextToken();
-        if (token.getChannel() == Token.DEFAULT_CHANNEL){
-            previousToken = token;
+        if (token.getChannel() == Token.DEFAULT_CHANNEL && token.getType() != RubyLexer.WS){
+            previousNonWsToken = token;
         }
         return token;
     }
@@ -31,57 +78,8 @@ public abstract class RubyLexerBase extends Lexer {
     /** To be invoked when encountering `/`, deciding if it should emit a
      * `REGULAR_EXPRESSION_START` token. */
     protected boolean isStartOfRegex(){
-        // When '/' is the first token in the stream.
-        if (previousToken == null) {
-            return true;
-        }
-
-        // When '/' occurs after an operator.
-        if (isOperator(previousToken)) {
-            return true;
-        }
-
-        // Everywhere else: it's the division operator.
-        return false;
-    }
-
-    /** Is the given token found in the "Operators" category? */
-    private boolean isOperator(Token token) {
-        switch (token.getType()){
-            case RubyLexer.EMARK:
-            case RubyLexer.EMARKEQ:
-            case RubyLexer.EMARKTILDE:
-            case RubyLexer.AMP:
-            case RubyLexer.AMP2:
-            case RubyLexer.AMPDOT:
-            case RubyLexer.BAR:
-            case RubyLexer.BAR2:
-            case RubyLexer.EQ:
-            case RubyLexer.EQ2:
-            case RubyLexer.EQ3:
-            case RubyLexer.CARET:
-            case RubyLexer.LTEQGT:
-            case RubyLexer.EQTILDE:
-            case RubyLexer.GT:
-            case RubyLexer.GTEQ:
-            case RubyLexer.LT:
-            case RubyLexer.LTEQ:
-            case RubyLexer.LT2:
-            case RubyLexer.GT2:
-            case RubyLexer.PLUS:
-            case RubyLexer.MINUS:
-            case RubyLexer.STAR:
-            case RubyLexer.STAR2:
-            case RubyLexer.SLASH:
-            case RubyLexer.PERCENT:
-            case RubyLexer.TILDE:
-            case RubyLexer.PLUSAT:
-            case RubyLexer.MINUSAT:
-            case RubyLexer.ASSIGNMENT_OPERATOR:
-                return true;
-            default:
-                return false;
-        }
+        Integer previousNonWsTokenType = previousNonWsToken == null ? null : previousNonWsToken.getType();
+        return regexTogglingTokens.contains(previousNonWsTokenType);
     }
 
     /** To be invoked when in `DEFAULT_MODE`, to check if we are in the context of a string interpolation. */

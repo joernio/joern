@@ -244,6 +244,20 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     tokenize(code) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_END, EOF)
   }
 
+  "Empty regex literal on the RHS of an assignment" should "be recognized as such" in {
+    // This test exists to check if RubyLexer properly decided between SLASH and REGULAR_EXPRESSION_START
+    val code = "x = //"
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      WS,
+      EQ,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
   "Regex literals without metacharacters" should "be recognized as such" in {
     val eg = Seq("/regexp/", "/a regexp/")
     all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
@@ -290,6 +304,20 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       PLUS,
       DECIMAL_INTEGER_LITERAL,
       REGULAR_EXPRESSION_INTERPOLATION_END,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
+  "Interpolated (with a local variable) regex literal containing also textual body elements" should "be recognized as such" in {
+    val code = "/x\\.#{foo}\\./"
+    tokenize(code) shouldBe Seq(
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_INTERPOLATION_BEGIN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      REGULAR_EXPRESSION_INTERPOLATION_END,
+      REGULAR_EXPRESSION_BODY,
       REGULAR_EXPRESSION_END,
       EOF
     )
