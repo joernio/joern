@@ -802,11 +802,25 @@ class AstCreator(filename: String, global: Global)
       val classOrModuleRefAst =
         astForClassOrModuleReferenceContext(ctx.classDefinition().classOrModuleReference(), baseClassName)
       val bodyAst = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
+      val bodyAstSansModifiers = bodyAst
+        .filterNot(ast => {
+          val nodes = ast.nodes
+            .filter(_.isInstanceOf[NewIdentifier])
+
+          if (nodes.size == 1) {
+            val varName = nodes
+              .map(_.asInstanceOf[NewIdentifier].name)
+              .head
+            varName == "public" || varName == "protected" || varName == "private"
+          } else {
+            false
+          }
+        })
 
       if (classStack.size > 0) {
         classStack.pop()
       }
-      Seq(classOrModuleRefAst.head.withChildren(bodyAst))
+      Seq(classOrModuleRefAst.head.withChildren(bodyAstSansModifiers))
     } else {
       // TODO test for this is pending due to lack of understanding to generate an example
       val astExprOfCommand = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
