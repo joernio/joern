@@ -39,7 +39,7 @@ class StringTests extends RubyParserAbstractTest {
             | StringInterpolation
             |  "
             |  text=
-            |  Interpolation
+            |  InterpolatedStringSequence
             |   #{
             |   CompoundStatement
             |    Statements
@@ -64,7 +64,7 @@ class StringTests extends RubyParserAbstractTest {
           """StringInterpolationPrimary
             | StringInterpolation
             |  "
-            |  Interpolation
+            |  InterpolatedStringSequence
             |   #{
             |   CompoundStatement
             |    Statements
@@ -77,7 +77,7 @@ class StringTests extends RubyParserAbstractTest {
             |           UnsignedNumericLiteral
             |            1
             |   }
-            |  Interpolation
+            |  InterpolatedStringSequence
             |   #{
             |   CompoundStatement
             |    Statements
