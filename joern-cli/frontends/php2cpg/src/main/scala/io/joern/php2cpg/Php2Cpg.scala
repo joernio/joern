@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Try, Success}
 import scala.util.matching.Regex
+import io.joern.php2cpg.passes.ClosureRefPass
 
 class Php2Cpg extends X2CpgFrontend[Config] {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -39,7 +40,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         astCreationPass.createAndApply()
         new TypeNodePass(astCreationPass.allUsedTypes, cpg).createAndApply()
         LocalCreationPass.allLocalCreationPasses(cpg).foreach(_.createAndApply())
-
+        new ClosureRefPass(cpg).createAndApply()
       }
     } else {
       logger.error(

@@ -18,6 +18,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{
 }
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.nodes.Local.{PropertyDefaults => LocalDefaults}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -1429,19 +1430,18 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
 
     // Add closure bindings to diffgraph
     localsForUses.foreach { local =>
-      scope.lookupVariable(local.name).map { capturedNode =>
-        val closureBindingId = s"$filename:$methodName:${local.name}"
-        val closureBindingNode = NewClosureBinding()
-          .closureBindingId(closureBindingId)
-          .closureOriginalName(local.name)
-          .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      val closureBindingId = s"$filename:$methodName:${local.name}"
+      local.closureBindingId(closureBindingId)
+      scope.addToScope(local.name, local)
 
-        local.closureBindingId(closureBindingId)
+      val closureBindingNode = NewClosureBinding()
+        .closureBindingId(closureBindingId)
+        .closureOriginalName(local.name)
+        .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
-        diffGraph.addNode(closureBindingNode)
-        diffGraph.addEdge(closureBindingNode, capturedNode, EdgeTypes.REF)
-        diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
-      }
+      // The ref edge to the captured local is added in the ClosureRefPass
+      diffGraph.addNode(closureBindingNode)
+      diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
     }
 
     // Create method for closure
