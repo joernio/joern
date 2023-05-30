@@ -15,17 +15,26 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
+import java.util.concurrent.TimeUnit
 import scala.util.Try
 
 class JsSrc2Cpg extends X2CpgFrontend[Config] {
 
   private val report: Report = new Report()
 
+  private def nanoToMinutesAndSeconds(nanoTime: Long): (Long, Long) = {
+    val min = TimeUnit.MINUTES.convert(nanoTime, TimeUnit.NANOSECONDS)
+    val sec =
+      TimeUnit.SECONDS.convert(nanoTime - TimeUnit.NANOSECONDS.convert(min, TimeUnit.MINUTES), TimeUnit.NANOSECONDS)
+    (min, sec)
+  }
+
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
-        val astgenResult = new AstGenRunner(config).execute(tmpDir)
-        val hash         = HashUtil.sha256(astgenResult.parsedFiles.map { case (_, file) => File(file).path })
+        val baseTimeStart = System.nanoTime()
+        val astgenResult  = new AstGenRunner(config).execute(tmpDir)
+        val hash          = HashUtil.sha256(astgenResult.parsedFiles.map { case (_, file) => File(file).path })
 
         val astCreationPass = new AstCreationPass(cpg, astgenResult, config, report)
         astCreationPass.createAndApply()
@@ -37,7 +46,8 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
         new ConfigPass(cpg, config, report).createAndApply()
         new PrivateKeyFilePass(cpg, config, report).createAndApply()
         new ImportsPass(cpg).createAndApply()
-
+        val (minutes, seconds) = nanoToMinutesAndSeconds(System.nanoTime() - baseTimeStart)
+        println(s"Base JS pass ran for ${minutes}m and ${seconds}s")
         report.print()
       }
     }
