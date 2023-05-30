@@ -507,6 +507,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForStatementsContext(ctx: StatementsContext): Seq[Ast] = {
+    if (ctx == null) return Seq(Ast())
     ctx
       .statement()
       .asScala
