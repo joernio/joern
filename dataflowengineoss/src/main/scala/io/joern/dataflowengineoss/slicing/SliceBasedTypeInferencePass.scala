@@ -20,7 +20,8 @@ class SliceBasedTypeInferencePass(
   cpg: Cpg,
   joernti: Option[JoernTI] = None,
   pathSep: String = ":",
-  minConfidence: Float = 0.8f
+  minConfidence: Float = 0.8f,
+  typesNotToInfer: Set[String] = Set("object", "unk", "void")
 ) extends CpgPass(cpg) {
 
   private lazy val logger      = LoggerFactory.getLogger(classOf[SliceBasedTypeInferencePass])
@@ -31,9 +32,8 @@ class SliceBasedTypeInferencePass(
     location: String,
     nodeLabel: String,
     target: String,
-    oldType: Seq[String],
-    newType: Seq[String],
-    confidence: Float
+    oldType: String,
+    newType: String
   )
 
   private def location(n: CfgNode): String =
@@ -60,43 +60,38 @@ class SliceBasedTypeInferencePass(
                   .isIdentifier
                   .l
                 // Set the type of targets which only have dummy types or have no types
-                results.filter(_.confidence > minConfidence).foreach { res =>
-                  methodIdentifiers
-                    .nameExact(res.targetIdentifier)
-                    .filter(onlyDummyOrAnyType) // We only want to write to nodes that need type info
-                    .foreach { tgt =>
-                      builder.setNodeProperty(tgt, PropertyNames.TYPE_FULL_NAME, res.typ)
-                      logChange(
-                        location(tgt),
-                        tgt.label,
-                        res.targetIdentifier,
-                        tgt.typeFullName +: tgt.dynamicTypeHintFullName,
-                        res.alternatives.map(_.typ) :+ res.typ,
-                        res.confidence
-                      )
-                      // If there is a call where the identifier is the receiver then this also needs to be updated
-                      if (tgt.argumentIndex <= 1 && tgt.astSiblings.isCall.exists(_.argumentIndex >= 2)) {
-                        tgt.astSiblings.isCall.nameNot("<operator.*").find(onlyDummyOrAnyType).foreach { call =>
-                          val inferredMethodCall = Seq(res.typ, call.name).mkString(pathSep)
-                          builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, inferredMethodCall)
-                          logChange(
-                            location(call),
-                            call.label,
-                            res.targetIdentifier,
-                            call.methodFullName +: call.dynamicTypeHintFullName,
-                            res.alternatives.map(_.typ) :+ inferredMethodCall,
-                            res.confidence
-                          )
+                results
+                  .filter(_.confidence > minConfidence)
+                  .filterNot(res => typesNotToInfer.contains(res.typ.toLowerCase))
+                  .foreach { res =>
+                    methodIdentifiers
+                      .nameExact(res.targetIdentifier)
+                      .filter(onlyDummyOrAnyType) // We only want to write to nodes that need type info
+                      .foreach { tgt =>
+                        builder.setNodeProperty(tgt, PropertyNames.TYPE_FULL_NAME, res.typ)
+                        logChange(location(tgt), tgt.label, res.targetIdentifier, tgt.typeFullName, res.typ)
+                        // If there is a call where the identifier is the receiver then this also needs to be updated
+                        if (tgt.argumentIndex <= 1 && tgt.astSiblings.isCall.exists(_.argumentIndex >= 2)) {
+                          tgt.astSiblings.isCall.nameNot("<operator.*").find(onlyDummyOrAnyType).foreach { call =>
+                            val inferredMethodCall = Seq(res.typ, call.name).mkString(pathSep)
+                            builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, inferredMethodCall)
+                            logChange(
+                              location(call),
+                              call.label,
+                              res.targetIdentifier,
+                              call.methodFullName,
+                              inferredMethodCall
+                            )
+                          }
                         }
                       }
-                    }
-                  res.targetIdentifier
-                }
+                    res.targetIdentifier
+                  }
               }
         }
       }
       val f = File("./type_inference.csv")
-      f.write("Location,Label,Target,OldTypes,SuggestedTypes,Confidence\n")
+      f.write("Location,Label,Target,OldType,NewType\n")
       changes.foreach { change =>
         f.write(
           change.productIterator
@@ -114,12 +109,11 @@ class SliceBasedTypeInferencePass(
     location: String,
     label: String,
     name: String,
-    existingTypes: Seq[String],
-    inferredTypes: Seq[String],
-    confidence: Float
+    existingTypes: String,
+    inferredTypes: String
   ): Unit = {
     changes
-      .addOne(InferredChange(location, label, name, existingTypes, inferredTypes, confidence))
+      .addOne(InferredChange(location, label, name, existingTypes, inferredTypes))
   }
 
   /** Determines if the node type information is made from dummy types or the "ANY" type.
