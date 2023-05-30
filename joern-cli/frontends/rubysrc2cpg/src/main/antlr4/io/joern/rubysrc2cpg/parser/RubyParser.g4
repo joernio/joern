@@ -532,11 +532,11 @@ symbol
 
 stringInterpolation
     :   DOUBLE_QUOTED_STRING_START
-        (DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE | interpolation)+
+        (DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE | interpolatedStringSequence)+
         DOUBLE_QUOTED_STRING_END
     ;
 
-interpolation
+interpolatedStringSequence
     :   STRING_INTERPOLATION_BEGIN compoundStatement STRING_INTERPOLATION_END
     ;
 

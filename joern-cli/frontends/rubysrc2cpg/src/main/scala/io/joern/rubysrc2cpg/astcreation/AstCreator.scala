@@ -138,7 +138,7 @@ class AstCreator(filename: String, global: Global)
   def astForStringInterpolationPrimaryContext(ctx: StringInterpolationPrimaryContext): Ast = {
     val varAsts = ctx
       .stringInterpolation()
-      .interpolation()
+      .interpolatedStringSequence()
       .asScala
       .map(inter => {
         astForStatementsContext(inter.compoundStatement().statements())
