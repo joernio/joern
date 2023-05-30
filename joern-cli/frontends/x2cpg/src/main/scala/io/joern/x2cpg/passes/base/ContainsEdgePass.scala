@@ -22,7 +22,7 @@ class ContainsEdgePass(cpg: Cpg) extends ConcurrentWriterCpgPass[AstNode](cpg) {
     val queue = mutable.ArrayDeque[StoredNode](source)
     while (queue.nonEmpty) {
       val parent = queue.removeHead()
-      for (nextNode <- parent._astOut.asScala) {
+      for (nextNode <- parent._astOut) {
         if (isDestinationType(nextNode)) dstGraph.addEdge(source, nextNode, EdgeTypes.CONTAINS)
         if (!isSourceType(nextNode)) queue.append(nextNode)
       }

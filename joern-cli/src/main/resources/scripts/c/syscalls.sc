@@ -1,7 +1,3 @@
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.semanticcpg.language._
-
 // Up-to-date as of Kernel version 4.11
 private val linuxSyscalls: Set[String] = Set(
   "_llseek",

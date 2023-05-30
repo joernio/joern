@@ -57,7 +57,7 @@ trait LinkingUtil {
   ): Unit = {
     var loggedDeprecationWarning = false
     val dereference              = Dereference(cpg)
-    Traversal(cpg.graph.nodes(srcLabels: _*)).foreach { srcNode =>
+    cpg.graph.nodes(srcLabels: _*).foreach { srcNode =>
       // If the source node does not have any outgoing edges of this type
       // This check is just required for backward compatibility
       if (srcNode.outE(edgeType).isEmpty) {
@@ -116,7 +116,7 @@ trait LinkingUtil {
   ): Unit = {
     var loggedDeprecationWarning = false
     val dereference              = Dereference(cpg)
-    Traversal(cpg.graph.nodes(srcLabels: _*)).cast[SRC_NODE_TYPE].foreach { srcNode =>
+    cpg.graph.nodes(srcLabels: _*).asScala.cast[SRC_NODE_TYPE].foreach { srcNode =>
       if (!srcNode.outE(edgeType).hasNext) {
         getDstFullNames(srcNode).foreach { dstFullName =>
           val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)

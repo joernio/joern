@@ -14,7 +14,7 @@ package object scan {
 
   implicit class ScannerStarters(val cpg: Cpg) extends AnyVal {
     def finding: Traversal[Finding] =
-      cpg.graph.nodes(NodeTypes.FINDING).cast[Finding]
+      overflowdb.traversal.InitialTraversal.from[Finding](cpg.graph, NodeTypes.FINDING)
   }
 
   implicit class QueryWrapper(q: Query) {

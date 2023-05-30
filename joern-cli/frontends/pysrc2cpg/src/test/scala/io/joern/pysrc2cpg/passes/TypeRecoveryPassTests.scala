@@ -136,7 +136,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'User' field types" in {
       val List(id, firstname, age, address) =
-        cpg.identifier.nameExact("id", "firstname", "age", "address").takeRight(4).l
+        cpg.identifier.nameExact("id", "firstname", "age", "address").l.takeRight(4)
       id.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
       firstname.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
       age.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"

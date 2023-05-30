@@ -32,7 +32,7 @@ object CryptographyMisuse extends QueryBundle {
         def sink =
           cpg.method.fullName("java.security.MessageDigest.getInstance.*").parameter
 
-        sink.reachableBy(source).l
+        sink.reachableBy(source).l.iterator
       }),
       tags = List(QueryTags.cryptography, QueryTags.default),
       codeExamples = CodeExamples(
@@ -70,7 +70,7 @@ object CryptographyMisuse extends QueryBundle {
         def sink =
           cpg.method.fullName("javax.crypto.spec.PBEKeySpec.<init>.*").parameter
 
-        sink.reachableBy(source).dedup.filter(f => Integer.parseInt(f.code) < 1000).l
+        sink.reachableBy(source).dedup.filter(f => Integer.parseInt(f.code) < 1000).l.iterator
       }),
       tags = List(QueryTags.cryptography, QueryTags.default),
       codeExamples = CodeExamples(

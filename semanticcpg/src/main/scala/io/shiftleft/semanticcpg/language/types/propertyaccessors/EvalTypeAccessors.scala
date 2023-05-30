@@ -14,7 +14,7 @@ class EvalTypeAccessors[A <: AstNode](val traversal: Traversal[A]) extends AnyVa
   }
 
   def evalType(regexes: String*): Traversal[A] =
-    if (regexes.isEmpty) Traversal.empty
+    if (regexes.isEmpty) Iterator.empty
     else {
       val regexes0 = regexes.map(_.r).toSet
       traversal.where(evalType(_).filter(value => regexes0.exists(_.matches(value))))
@@ -24,7 +24,7 @@ class EvalTypeAccessors[A <: AstNode](val traversal: Traversal[A]) extends AnyVa
     traversal.where(evalType(_).filter(_ == value))
 
   def evalTypeExact(values: String*): Traversal[A] =
-    if (values.isEmpty) Traversal.empty
+    if (values.isEmpty) Iterator.empty
     else {
       val valuesSet = values.to(Set)
       traversal.where(evalType(_).filter(valuesSet.contains))
@@ -34,7 +34,7 @@ class EvalTypeAccessors[A <: AstNode](val traversal: Traversal[A]) extends AnyVa
     traversal.where(evalType(_).filterNot(_.matches(regex)))
 
   def evalTypeNot(regexes: String*): Traversal[A] =
-    if (regexes.isEmpty) Traversal.empty
+    if (regexes.isEmpty) Iterator.empty
     else {
       val regexes0 = regexes.map(_.r).toSet
       traversal.where(evalType(_).filter(value => !regexes0.exists(_.matches(value))))

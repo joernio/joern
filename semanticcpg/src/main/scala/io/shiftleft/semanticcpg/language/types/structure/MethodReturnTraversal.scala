@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.language.types.structure
 
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
+import overflowdb.traversal.help
 import overflowdb.traversal.help.Doc
 
 @help.Traversal(elementType = classOf[MethodReturn])

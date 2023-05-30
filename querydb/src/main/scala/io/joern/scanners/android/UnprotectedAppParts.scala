@@ -31,7 +31,7 @@ object UnprotectedAppParts extends QueryBundle {
             def sink               = startActivityCalls.whereNot(_.controlledBy.astParent.isControlStructure).argument
             sink.reachableByFlows(c).nonEmpty
           }
-          .l
+          .l.iterator
       }),
       tags = List(QueryTags.android),
       codeExamples = CodeExamples(

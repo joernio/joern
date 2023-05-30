@@ -19,7 +19,7 @@ class MethodTests extends PhpCode2CpgFixture {
       fooMethod.lineNumber shouldBe Some(2)
       fooMethod.code shouldBe "function foo()"
 
-      inside(fooMethod.methodReturn.l) { case List(methodReturn) =>
+      inside(fooMethod.methodReturn.start.l) { case List(methodReturn) =>
         methodReturn.typeFullName shouldBe "int"
         methodReturn.code shouldBe "RET"
         methodReturn.lineNumber shouldBe Some(2)

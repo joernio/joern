@@ -37,7 +37,7 @@ object HeapBasedOverflow extends QueryBundle {
             .where(_.inAssignment.target.codeExact(memcpyCall.argument(1).code))
             .whereNot(_.argument(1).codeExact(memcpyCall.argument(3).code))
             .hasNext
-        }
+        }.iterator
       }),
       tags = List(QueryTags.integers, QueryTags.default),
       codeExamples = CodeExamples(
