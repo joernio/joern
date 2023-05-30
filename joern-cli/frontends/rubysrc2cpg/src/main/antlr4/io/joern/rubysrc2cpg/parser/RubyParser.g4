@@ -95,6 +95,7 @@ primary
     |   hashConstructor                                                                                             # hashConstructorPrimary
     |   literal                                                                                                     # literalPrimary
     |   stringInterpolation                                                                                         # stringInterpolationPrimary
+    |   regexInterpolation                                                                                          # regexInterpolationPrimary
     |   IS_DEFINED LPAREN expressionOrCommand RPAREN                                                                # isDefinedPrimary
     |   SUPER argumentsWithParentheses? block?                                                                      # superExpressionPrimary
     |   primary LBRACK WS* indexingArguments? WS* RBRACK                                                            # indexingExpressionPrimary
@@ -519,6 +520,7 @@ literal
     |   symbol
     |   SINGLE_QUOTED_STRING_LITERAL
     |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END
+    |   REGULAR_EXPRESSION_START REGULAR_EXPRESSION_BODY? REGULAR_EXPRESSION_END
     ;
 
 symbol
@@ -538,6 +540,20 @@ stringInterpolation
 
 interpolatedStringSequence
     :   STRING_INTERPOLATION_BEGIN compoundStatement STRING_INTERPOLATION_END
+    ;
+
+// --------------------------------------------------------
+// Regex interpolation
+// --------------------------------------------------------
+
+regexInterpolation
+    :   REGULAR_EXPRESSION_START
+        (REGULAR_EXPRESSION_BODY | interpolatedRegexSequence)+
+        REGULAR_EXPRESSION_END
+    ;
+
+interpolatedRegexSequence
+    :   REGULAR_EXPRESSION_INTERPOLATION_BEGIN compoundStatement REGULAR_EXPRESSION_INTERPOLATION_END
     ;
 
 
