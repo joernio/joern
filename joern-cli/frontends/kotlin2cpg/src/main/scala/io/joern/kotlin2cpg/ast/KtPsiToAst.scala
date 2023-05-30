@@ -1930,7 +1930,7 @@ trait KtPsiToAst {
           val assignmentNode =
             operatorCallNode(Operators.assignment, s"${identifier.name} = <alloc>", None, line(expr), column(expr))
           val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
-          val initSignature     = s"<${TypeConstants.void}>()"
+          val initSignature     = s"${TypeConstants.void}()"
           val initFullName      = s"$typeDeclFullName.<init>:$initSignature"
           val initCallNode = callNode(
             objectLiteral,
