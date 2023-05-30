@@ -7,7 +7,6 @@ import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
-  EdgeTypes,
   ModifierTypes,
   NodeTypes,
   Operators
@@ -223,7 +222,7 @@ class AstCreator(filename: String, global: Global)
     ctx
       .expressionOrCommand()
       .asScala
-      .flatMap(astForExpressionOrCommandContext)
+      .flatMap(ec => astForExpressionOrCommandContext(ec))
       .toSeq
   }
 
@@ -243,7 +242,19 @@ class AstCreator(filename: String, global: Global)
     } else {
       exprAsts
     }
-    paramAsts
+
+    if (paramAsts.size > 1) {
+      val callNode = NewCall()
+        .name(Operators.arrayInitializer)
+        .code(ctx.getText)
+        .methodFullName(Operators.arrayInitializer)
+        .signature("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+      Seq(callAst(callNode, paramAsts))
+    } else {
+      paramAsts
+    }
   }
 
   def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Seq[Ast] = {
@@ -262,16 +273,14 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForStringInterpolationPrimaryContext(ctx: StringInterpolationPrimaryContext): Seq[Ast] = {
-    val varAstsList = ListBuffer[Ast]()
-    ctx
+    val varAsts = ctx
       .stringInterpolation()
       .interpolation()
       .asScala
-      .foreach(inter => {
-        varAstsList.addAll(astForStatementsContext(inter.compoundStatement().statements()))
+      .flatMap(inter => {
+        astForStatementsContext(inter.compoundStatement().statements())
       })
-
-
+      .toSeq
 
     val nodes = ctx
       .stringInterpolation()
@@ -286,7 +295,7 @@ class AstCreator(filename: String, global: Global)
         }
       }
       .toSeq
-    varAstsList.toSeq ++ Seq(Ast(nodes))
+    varAsts ++ Seq(Ast(nodes))
   }
 
   def astForPrimaryContext(ctx: PrimaryContext): Seq[Ast] = ctx match {
@@ -463,9 +472,11 @@ class AstCreator(filename: String, global: Global)
         .lineNumber(ctrlContinue.lineNumber)
         .columnNumber(ctrlContinue.columnNumber)
         .code(ctx.getText)
-      Seq(Ast(node)
-        .withConditionEdge(node, rightAst.head.nodes.head)
-        .withChildren(rightAst))
+      Seq(
+        Ast(node)
+          .withConditionEdge(node, rightAst.head.nodes.head)
+          .withChildren(rightAst)
+      )
     } else {
       /*
        * This is <stmt> if/unless/while/until/rescue <stmt>
@@ -487,10 +498,12 @@ class AstCreator(filename: String, global: Global)
         .lineNumber(ctx.mod.getLine)
         .columnNumber(ctx.mod.getCharPositionInLine)
         .code(ctx.getText)
-      Seq(Ast(node)
-        .withConditionEdge(node, rightAst.head.nodes.head)
-        .withChildren(rightAst)
-        .withChildren(leftAst))
+      Seq(
+        Ast(node)
+          .withConditionEdge(node, rightAst.head.nodes.head)
+          .withChildren(rightAst)
+          .withChildren(leftAst)
+      )
     }
   }
 
@@ -512,7 +525,8 @@ class AstCreator(filename: String, global: Global)
       .statement()
       .asScala
       .flatMap(st => {
-        astForStatementContext(st)
+        val asts = astForStatementContext(st)
+        asts
       })
       .toSeq
   }
@@ -626,7 +640,7 @@ class AstCreator(filename: String, global: Global)
           .columnNumber(wh.WHEN().getSymbol.getCharPositionInLine)
 
         val whenACondAsts = astForWhenArgumentContext(wh.whenArgument())
-        val thenAsts     = astForThenClauseContext(wh.thenClause())
+        val thenAsts      = astForThenClauseContext(wh.thenClause())
         Ast(whenNode)
           .withChildren(whenACondAsts)
           .withConditionEdge(whenNode, whenACondAsts.head.nodes.head)
@@ -676,9 +690,7 @@ class AstCreator(filename: String, global: Global)
       argList.addAll(astForBlockContext(ctx.block()))
     }
 
-    val identifierNodes = methodNameAst
-      .head
-      .nodes
+    val identifierNodes = methodNameAst.head.nodes
       .filter(node => node.isInstanceOf[NewIdentifier])
     if (identifierNodes.size > 0) {
       // this is a object.member access. The methodNameAst contains the object whose member is being accessed
@@ -716,7 +728,9 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForChainedScopedConstantReferencePrimaryContext(ctx: ChainedScopedConstantReferencePrimaryContext): Seq[Ast] = {
+  def astForChainedScopedConstantReferencePrimaryContext(
+    ctx: ChainedScopedConstantReferencePrimaryContext
+  ): Seq[Ast] = {
     val primaryAst = astForPrimaryContext(ctx.primary())
     val localVar   = ctx.CONSTANT_IDENTIFIER()
     val varSymbol  = localVar.getSymbol()
@@ -740,8 +754,7 @@ class AstCreator(filename: String, global: Global)
 
     if (ctx.primary() != null) {
       val primaryAst = astForPrimaryContext(ctx.primary())
-      val moduleNameNode = primaryAst
-        .head.nodes
+      val moduleNameNode = primaryAst.head.nodes
         .filter(node => node.isInstanceOf[NewIdentifier])
         .head
         .asInstanceOf[NewIdentifier]
@@ -777,8 +790,7 @@ class AstCreator(filename: String, global: Global)
     if (ctx.classDefinition().classOrModuleReference() != null) {
       val baseClassName = if (ctx.classDefinition().expressionOrCommand() != null) {
         val parentClassNameAst = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
-        val nameNode = parentClassNameAst
-          .head.nodes
+        val nameNode = parentClassNameAst.head.nodes
           .filter(node => node.isInstanceOf[NewIdentifier])
           .head
           .asInstanceOf[NewIdentifier]
@@ -814,11 +826,12 @@ class AstCreator(filename: String, global: Global)
       .lineNumber(ctx.QMARK().getSymbol.getLine)
       .columnNumber(ctx.QMARK().getSymbol.getCharPositionInLine)
 
-    Seq(Ast(ifNode)
-      .withChildren(conditionAst)
-      .withConditionEdge(ifNode, conditionAst.head.nodes.head)
-      .withChildren(thenAst)
-      .withChildren(elseAst)
+    Seq(
+      Ast(ifNode)
+        .withChildren(conditionAst)
+        .withConditionEdge(ifNode, conditionAst.head.nodes.head)
+        .withChildren(thenAst)
+        .withChildren(elseAst)
     )
   }
 
@@ -855,7 +868,20 @@ class AstCreator(filename: String, global: Global)
         } else {
           multipleLHSAsts
         }
-      paramAsts
+
+      if (paramAsts.size > 1) {
+        val callNode = NewCall()
+          .name(Operators.arrayInitializer)
+          .code(ctx.getText)
+          .methodFullName(Operators.arrayInitializer)
+          .signature("")
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .typeFullName(Defines.Any)
+        Seq(callAst(callNode, paramAsts))
+      } else {
+        paramAsts
+      }
+
     case ctx: PackingLeftHandSideOnlyMultipleLeftHandSideContext =>
       astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
     case ctx: GroupedLeftHandSideOnlyMultipleLeftHandSideContext =>
@@ -886,11 +912,12 @@ class AstCreator(filename: String, global: Global)
       .columnNumber(ctx.FOR().getSymbol.getCharPositionInLine)
     val doClauseAst = astForDoClauseContext(ctx.doClause())
 
-    Seq(Ast(forNode)
-      .withChildren(forVarAst)
-      .withChildren(forCondAst)
-      .withConditionEdge(forNode, forCondAst.head.nodes.head)
-      .withChildren(doClauseAst)
+    Seq(
+      Ast(forNode)
+        .withChildren(forVarAst)
+        .withChildren(forCondAst)
+        .withConditionEdge(forNode, forCondAst.head.nodes.head)
+        .withChildren(doClauseAst)
     )
   }
 
@@ -936,16 +963,17 @@ class AstCreator(filename: String, global: Global)
       .lineNumber(ctx.ELSE().getSymbol.getLine)
       .columnNumber(ctx.ELSE().getSymbol.getCharPositionInLine)
     val stmtsAsts = astForStatementsContext(ctx.compoundStatement().statements())
-    Seq(Ast(elseNode)
-      .withChildren(stmtsAsts)
+    Seq(
+      Ast(elseNode)
+        .withChildren(stmtsAsts)
     )
   }
 
   def astForIfExpressionContext(ctx: IfExpressionContext): Seq[Ast] = {
     val conditionAsts = astForExpressionOrCommandContext(ctx.expressionOrCommand())
-    val thenAsts     = astForThenClauseContext(ctx.thenClause())
-    val elseifAsts   = astForElsifClauseContext(ctx.elsifClause())
-    val elseAst      = astForElseClauseContext(ctx.elseClause())
+    val thenAsts      = astForThenClauseContext(ctx.thenClause())
+    val elseifAsts    = astForElsifClauseContext(ctx.elsifClause())
+    val elseAst       = astForElseClauseContext(ctx.elseClause())
 
     val ifNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.IF)
@@ -953,12 +981,13 @@ class AstCreator(filename: String, global: Global)
       .lineNumber(ctx.IF().getSymbol.getLine)
       .columnNumber(ctx.IF().getSymbol.getCharPositionInLine)
 
-    Seq(Ast(ifNode)
-      .withChildren(conditionAsts)
-      .withConditionEdge(ifNode, conditionAsts.head.nodes.head)
-      .withChildren(thenAsts)
-      .withChildren(elseAst)
-      .withChildren(elseifAsts)
+    Seq(
+      Ast(ifNode)
+        .withChildren(conditionAsts)
+        .withConditionEdge(ifNode, conditionAsts.head.nodes.head)
+        .withChildren(thenAsts)
+        .withChildren(elseAst)
+        .withChildren(elseifAsts)
     )
   }
 
@@ -1022,8 +1051,10 @@ class AstCreator(filename: String, global: Global)
         .lineNumber(ctx.BREAK().getSymbol.getLine)
         .columnNumber(ctx.BREAK().getSymbol.getCharPositionInLine)
         .code(ctx.getText)
-      Seq(Ast(node)
-        .withChildren(astForArgumentsContext(ctx.arguments())))
+      Seq(
+        Ast(node)
+          .withChildren(astForArgumentsContext(ctx.arguments()))
+      )
     case ctx: NextArgsInvocationWithoutParenthesesContext =>
       astForArgumentsContext(ctx.arguments())
       val node = NewControlStructure()
@@ -1031,8 +1062,10 @@ class AstCreator(filename: String, global: Global)
         .lineNumber(ctx.NEXT().getSymbol.getLine)
         .columnNumber(ctx.NEXT().getSymbol.getCharPositionInLine)
         .code(Defines.ModifierNext)
-      Seq(Ast(node)
-        .withChildren(astForArgumentsContext(ctx.arguments())))
+      Seq(
+        Ast(node)
+          .withChildren(astForArgumentsContext(ctx.arguments()))
+      )
     case _ =>
       logger.error("astForInvocationWithoutParenthesesContext() All contexts mismatched.")
       Seq(Ast())
@@ -1381,14 +1414,22 @@ class AstCreator(filename: String, global: Global)
      * TODO find out how they should be used. Need to do this iff it adds any value
      */
 
-    val paramSeq = astMethodParam
-      .head
-      .nodes
+    val paramSeq = astMethodParam.head.nodes
       .map(node => {
         Ast(node)
       })
       .toSeq
-    Seq(methodAst(methodNode, paramSeq, astBody.head, methodRetNode, Seq[NewModifier](publicModifier)))
+
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    Seq(
+      methodAst(
+        methodNode,
+        paramSeq,
+        blockAst(blockNode, astBody.toList),
+        methodRetNode,
+        Seq[NewModifier](publicModifier)
+      )
+    )
   }
 
   def astForMethodOnlyIdentifierPrimaryContext(ctx: MethodOnlyIdentifierPrimaryContext): Seq[Ast] = {
@@ -1461,7 +1502,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForPowerExpressionContext(ctx: PowerExpressionContext): Seq[Ast] = {
-    val expressions           = ctx.expression()
+    val expressions            = ctx.expression()
     val baseExpressionAsts     = astForExpressionContext(expressions.get(0))
     val exponentExpressionAsts = astForExpressionContext(expressions.get(1))
     val callNode = NewCall()
@@ -1533,7 +1574,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForCommandWithDoBlockContext(ctx: CommandWithDoBlockContext): Seq[Ast] = ctx match {
     case ctx: ArgsAndDoBlockCommandWithDoBlockContext =>
-      val argsAsts    = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val argsAsts   = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       val doBlockAst = astForDoBlockContext(ctx.doBlock())
       argsAsts ++ doBlockAst
     case ctx: RubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
@@ -1553,7 +1594,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForChainedCommandWithDoBlockContext(ctx: ChainedCommandWithDoBlockContext): Seq[Ast] = {
-    val cmdAsts    = astForCommandWithDoBlockContext(ctx.commandWithDoBlock())
+    val cmdAsts   = astForCommandWithDoBlockContext(ctx.commandWithDoBlock())
     val mNameAsts = ctx.methodName().asScala.flatMap(mName => astForMethodNameContext(mName)).toSeq
     val apAsts = ctx
       .argumentsWithParentheses()
@@ -1617,7 +1658,7 @@ class AstCreator(filename: String, global: Global)
     val blockNode = NewBlock().typeFullName(Defines.Any)
     val retAst = if (ctxParam != null) {
       val bpAsts = astForBlockParameterContext(ctxParam)
-      blockAst(blockNode, (bpAsts  ++ stmtAsts).toList)
+      blockAst(blockNode, (bpAsts ++ stmtAsts).toList)
     } else {
       blockAst(blockNode, stmtAsts.toList)
     }
@@ -1693,14 +1734,14 @@ class AstCreator(filename: String, global: Global)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.MINUS().getSymbol().getLine())
         .columnNumber(ctx.MINUS().getSymbol().getCharPositionInLine())
-      Seq(callAst(callNode,expressionAst))
+      Seq(callAst(callNode, expressionAst))
     }
   }
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
     val conditionAsts = astForExpressionOrCommandContext(ctx.unlessExpression().expressionOrCommand())
-    val thenAsts     = astForThenClauseContext(ctx.unlessExpression().thenClause())
-    val elseAst      = astForElseClauseContext(ctx.unlessExpression().elseClause())
+    val thenAsts      = astForThenClauseContext(ctx.unlessExpression().thenClause())
+    val elseAst       = astForElseClauseContext(ctx.unlessExpression().elseClause())
 
     // unless will be modelled as IF since there is no difference from a static analysis POV
     val unlessNode = NewControlStructure()
@@ -1709,11 +1750,12 @@ class AstCreator(filename: String, global: Global)
       .lineNumber(ctx.unlessExpression().UNLESS().getSymbol.getLine)
       .columnNumber(ctx.unlessExpression().UNLESS().getSymbol.getCharPositionInLine)
 
-    Seq(Ast(unlessNode)
-      .withChild(conditionAsts.head)
-      .withConditionEdge(unlessNode, conditionAsts.head.nodes.head)
-      .withChildren(thenAsts)
-      .withChildren(elseAst)
+    Seq(
+      Ast(unlessNode)
+        .withChild(conditionAsts.head)
+        .withConditionEdge(unlessNode, conditionAsts.head.nodes.head)
+        .withChildren(thenAsts)
+        .withChildren(elseAst)
     )
   }
 
@@ -1726,12 +1768,14 @@ class AstCreator(filename: String, global: Global)
       .columnNumber(ctx.UNTIL().getSymbol.getCharPositionInLine)
 
     val untilCondAsts = astForExpressionOrCommandContext(ctx.expressionOrCommand())
-    val doClauseAst  = astForDoClauseContext(ctx.doClause())
+    val doClauseAst   = astForDoClauseContext(ctx.doClause())
 
-    Seq(Ast(untilNode)
-      .withChildren(untilCondAsts)
-      .withConditionEdge(untilNode, untilCondAsts.head.nodes.head)
-      .withChildren(doClauseAst))
+    Seq(
+      Ast(untilNode)
+        .withChildren(untilCondAsts)
+        .withConditionEdge(untilNode, untilCondAsts.head.nodes.head)
+        .withChildren(doClauseAst)
+    )
   }
 
   def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Seq[Ast] = {
@@ -1776,10 +1820,12 @@ class AstCreator(filename: String, global: Global)
     val whileCondAsts = astForExpressionOrCommandContext(ctx.expressionOrCommand())
     val doClauseAsts  = astForDoClauseContext(ctx.doClause())
 
-    Seq(Ast(whileNode)
-      .withChildren(whileCondAsts)
-      .withConditionEdge(whileNode, whileCondAsts.head.nodes.head)
-      .withChildren(doClauseAsts))
+    Seq(
+      Ast(whileNode)
+        .withChildren(whileCondAsts)
+        .withConditionEdge(whileNode, whileCondAsts.head.nodes.head)
+        .withChildren(doClauseAsts)
+    )
   }
 
   def astForBlockArgumentContext(ctx: BlockArgumentContext): Seq[Ast] = {
@@ -1831,8 +1877,8 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForBlockSplattingExprAssocTypeArgumentsContext(ctx: BlockSplattingExprAssocTypeArgumentsContext): Seq[Ast] = {
-    val blockArgAsts      = astForBlockArgumentContext(ctx.blockArgument())
-    val splatAsts         = astForSplattingArgumentContext(ctx.splattingArgument())
+    val blockArgAsts     = astForBlockArgumentContext(ctx.blockArgument())
+    val splatAsts        = astForSplattingArgumentContext(ctx.splattingArgument())
     val associationsAsts = astForAssociationsContext(ctx.associations())
     val expAsts          = ctx.expressions().expression().asScala.flatMap(exp => astForExpressionContext(exp)).toSeq
     blockArgAsts ++ splatAsts ++ associationsAsts ++ expAsts
@@ -1878,9 +1924,7 @@ class AstCreator(filename: String, global: Global)
           callNode.name == "load"
         ) {
           val importedFile =
-            argsAsts
-              .head
-              .nodes
+            argsAsts.head.nodes
               .filter(node => node.isInstanceOf[NewLiteral])
               .head
               .asInstanceOf[NewLiteral]
@@ -1893,12 +1937,9 @@ class AstCreator(filename: String, global: Global)
         argsAsts
       }
     } else if (ctx.primary() != null) {
-      val argsAst        = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-      val primaryAst     = astForPrimaryContext(ctx.primary())
-      val methodCallNode = astForMethodNameContext(ctx.methodName())
-        .head
-        .nodes
-        .head
+      val argsAst    = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val primaryAst = astForPrimaryContext(ctx.primary())
+      val methodCallNode = astForMethodNameContext(ctx.methodName()).head.nodes.head
         .asInstanceOf[NewCall]
       val callNode = NewCall()
         .name(getActualMethodName(methodCallNode.name))
