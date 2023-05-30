@@ -7,6 +7,7 @@ import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.TrueEdge
 import io.joern.x2cpg.testfixtures.CfgTestFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.semanticcpg.language._
 
 class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) {
 
@@ -429,71 +430,78 @@ class MixedCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) 
   "CFG generation for default parameters" should {
     "be correct for method parameter with default" in {
       implicit val cpg: Cpg = code("function foo(a = 1) { }")
+      cpg.method.nameExact("foo").parameter.code.l shouldBe List("this", "a = 1")
+
       succOf("foo", NodeTypes.METHOD) shouldBe expected(("a", AlwaysEdge))
-      succOf("a", NodeTypes.IDENTIFIER) shouldBe expected(("a", 2, AlwaysEdge))
-      succOf("a", 2) shouldBe expected(("void 0", AlwaysEdge))
+      succOf("a", NodeTypes.IDENTIFIER) shouldBe expected(("a", 1, AlwaysEdge))
+      succOf("a", 1) shouldBe expected(("void 0", AlwaysEdge))
       succOf("void 0") shouldBe expected(("a === void 0", AlwaysEdge))
       succOf("a === void 0") shouldBe expected(("1", TrueEdge), ("a", 2, FalseEdge))
       succOf("1") shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
-      succOf("a", 3) shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
+      succOf("a", 2) shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
       succOf("a === void 0 ? 1 : a") shouldBe expected(("a = a === void 0 ? 1 : a", AlwaysEdge))
       succOf("a = a === void 0 ? 1 : a") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for multiple method parameters with default" in {
       implicit val cpg: Cpg = code("function foo(a = 1, b = 2) { }")
+      cpg.method.nameExact("foo").parameter.code.l shouldBe List("this", "a = 1", "b = 2")
+
       succOf("foo", NodeTypes.METHOD) shouldBe expected(("a", AlwaysEdge))
       succOf("a", NodeTypes.IDENTIFIER) shouldBe expected(("a", 1, AlwaysEdge))
-      succOf("a", 2) shouldBe expected(("void 0", AlwaysEdge))
+      succOf("a", 1) shouldBe expected(("void 0", AlwaysEdge))
       succOf("void 0") shouldBe expected(("a === void 0", AlwaysEdge))
       succOf("a === void 0") shouldBe expected(("1", TrueEdge), ("a", 2, FalseEdge))
       succOf("1") shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
-      succOf("a", 3) shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
+      succOf("a", 2) shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
       succOf("a === void 0 ? 1 : a") shouldBe expected(("a = a === void 0 ? 1 : a", AlwaysEdge))
       succOf("a = a === void 0 ? 1 : a") shouldBe expected(("b", AlwaysEdge))
 
       succOf("b", NodeTypes.IDENTIFIER) shouldBe expected(("b", 1, AlwaysEdge))
-      succOf("b", 2) shouldBe expected(("void 0", 1, AlwaysEdge))
+      succOf("b", 1) shouldBe expected(("void 0", 1, AlwaysEdge))
       succOf("void 0", 1) shouldBe expected(("b === void 0", AlwaysEdge))
       succOf("b === void 0") shouldBe expected(("2", TrueEdge), ("b", 2, FalseEdge))
       succOf("2") shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
-      succOf("b", 3) shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
+      succOf("b", 2) shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
       succOf("b === void 0 ? 2 : b") shouldBe expected(("b = b === void 0 ? 2 : b", AlwaysEdge))
       succOf("b = b === void 0 ? 2 : b") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for method mixed parameters with default" in {
       implicit val cpg: Cpg = code("function foo(a, b = 1) { }")
+      cpg.method.nameExact("foo").parameter.code.l shouldBe List("this", "a", "b = 1")
+
       succOf("foo", NodeTypes.METHOD) shouldBe expected(("b", AlwaysEdge))
-      succOf("b", 1) shouldBe expected(("b", 2, AlwaysEdge))
-      succOf("b", 2) shouldBe expected(("void 0", AlwaysEdge))
+      succOf("b") shouldBe expected(("b", 1, AlwaysEdge))
+      succOf("b", 1) shouldBe expected(("void 0", AlwaysEdge))
       succOf("void 0") shouldBe expected(("b === void 0", AlwaysEdge))
-      succOf("b === void 0") shouldBe expected(("1", TrueEdge), ("b", 3, FalseEdge))
+      succOf("b === void 0") shouldBe expected(("1", TrueEdge), ("b", 2, FalseEdge))
       succOf("1") shouldBe expected(("b === void 0 ? 1 : b", AlwaysEdge))
-      succOf("b", 3) shouldBe expected(("b === void 0 ? 1 : b", AlwaysEdge))
+      succOf("b", 2) shouldBe expected(("b === void 0 ? 1 : b", AlwaysEdge))
       succOf("b === void 0 ? 1 : b") shouldBe expected(("b = b === void 0 ? 1 : b", AlwaysEdge))
       succOf("b = b === void 0 ? 1 : b") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for multiple method mixed parameters with default" in {
       implicit val cpg: Cpg = code("function foo(x, a = 1, b = 2) { }")
+      cpg.method.nameExact("foo").parameter.code.l shouldBe List("this", "x", "a = 1", "b = 2")
 
       succOf("foo", NodeTypes.METHOD) shouldBe expected(("a", AlwaysEdge))
-      succOf("a", 1) shouldBe expected(("a", 2, AlwaysEdge))
-      succOf("a", 2) shouldBe expected(("void 0", AlwaysEdge))
+      succOf("a") shouldBe expected(("a", 1, AlwaysEdge))
+      succOf("a", 1) shouldBe expected(("void 0", AlwaysEdge))
       succOf("void 0") shouldBe expected(("a === void 0", AlwaysEdge))
-      succOf("a === void 0") shouldBe expected(("1", TrueEdge), ("a", 3, FalseEdge))
+      succOf("a === void 0") shouldBe expected(("1", TrueEdge), ("a", 2, FalseEdge))
       succOf("1") shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
-      succOf("a", 3) shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
+      succOf("a", 2) shouldBe expected(("a === void 0 ? 1 : a", AlwaysEdge))
       succOf("a === void 0 ? 1 : a") shouldBe expected(("a = a === void 0 ? 1 : a", AlwaysEdge))
       succOf("a = a === void 0 ? 1 : a") shouldBe expected(("b", AlwaysEdge))
 
-      succOf("b", 1) shouldBe expected(("b", 2, AlwaysEdge))
-      succOf("b", 2) shouldBe expected(("void 0", 1, AlwaysEdge))
+      succOf("b") shouldBe expected(("b", 1, AlwaysEdge))
+      succOf("b", 1) shouldBe expected(("void 0", 1, AlwaysEdge))
       succOf("void 0", 1) shouldBe expected(("b === void 0", AlwaysEdge))
-      succOf("b === void 0") shouldBe expected(("2", TrueEdge), ("b", 3, FalseEdge))
+      succOf("b === void 0") shouldBe expected(("2", TrueEdge), ("b", 2, FalseEdge))
       succOf("2") shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
-      succOf("b", 3) shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
+      succOf("b", 2) shouldBe expected(("b === void 0 ? 2 : b", AlwaysEdge))
       succOf("b === void 0 ? 2 : b") shouldBe expected(("b = b === void 0 ? 2 : b", AlwaysEdge))
       succOf("b = b === void 0 ? 2 : b") shouldBe expected(("RET", AlwaysEdge))
     }
