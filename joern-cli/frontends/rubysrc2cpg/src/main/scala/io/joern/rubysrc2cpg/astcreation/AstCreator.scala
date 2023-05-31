@@ -1789,21 +1789,17 @@ class AstCreator(filename: String, global: Global)
 
   def astForUntilExpressionContext(ctx: UntilExpressionContext): Seq[Ast] = {
     // until will be modelled as a while
-    val untilNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.WHILE)
-      .code(ctx.UNTIL().getText)
-      .lineNumber(ctx.UNTIL().getSymbol.getLine)
-      .columnNumber(ctx.UNTIL().getSymbol.getCharPositionInLine)
+    val untilCondAst = astForExpressionOrCommandContext(ctx.expressionOrCommand()).headOption
+    val doClauseAsts = astForDoClauseContext(ctx.doClause())
 
-    val untilCondAsts = astForExpressionOrCommandContext(ctx.expressionOrCommand())
-    val doClauseAst   = astForDoClauseContext(ctx.doClause())
-
-    Seq(
-      Ast(untilNode)
-        .withChildren(untilCondAsts)
-        .withConditionEdge(untilNode, untilCondAsts.head.nodes.head)
-        .withChildren(doClauseAst)
+    val ast = whileAst(
+      untilCondAst,
+      doClauseAsts,
+      Some(getCodeForTerminalNode(ctx.UNTIL())),
+      Some(ctx.UNTIL().getSymbol.getLine),
+      Some(ctx.UNTIL().getSymbol.getCharPositionInLine)
     )
+    Seq(ast)
   }
 
   def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Seq[Ast] = {
@@ -1839,21 +1835,17 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForWhileExpressionContext(ctx: WhileExpressionContext): Seq[Ast] = {
-    val whileNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.WHILE)
-      .code(ctx.getText)
-      .lineNumber(ctx.WHILE().getSymbol.getLine)
-      .columnNumber(ctx.WHILE().getSymbol.getCharPositionInLine)
+    val whileCondAst = astForExpressionOrCommandContext(ctx.expressionOrCommand()).headOption
+    val doClauseAsts = astForDoClauseContext(ctx.doClause())
 
-    val whileCondAsts = astForExpressionOrCommandContext(ctx.expressionOrCommand())
-    val doClauseAsts  = astForDoClauseContext(ctx.doClause())
-
-    Seq(
-      Ast(whileNode)
-        .withChildren(whileCondAsts)
-        .withConditionEdge(whileNode, whileCondAsts.head.nodes.head)
-        .withChildren(doClauseAsts)
+    val ast = whileAst(
+      whileCondAst,
+      doClauseAsts,
+      Some(getCodeForTerminalNode(ctx.WHILE())),
+      Some(ctx.WHILE().getSymbol.getLine),
+      Some(ctx.WHILE().getSymbol.getCharPositionInLine)
     )
+    Seq(ast)
   }
 
   def astForBlockArgumentContext(ctx: BlockArgumentContext): Seq[Ast] = {
