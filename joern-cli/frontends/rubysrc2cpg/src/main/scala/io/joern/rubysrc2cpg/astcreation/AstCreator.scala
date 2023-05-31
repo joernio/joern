@@ -15,7 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, Token}
 import org.slf4j.LoggerFactory
-import overflowdb.{BatchedUpdate}
+import overflowdb.BatchedUpdate
 
 import java.util
 import scala.collection.mutable
@@ -926,13 +926,8 @@ class AstCreator(filename: String, global: Global)
       .columnNumber(ctx.FOR().getSymbol.getCharPositionInLine)
     val doClauseAst = astForDoClauseContext(ctx.doClause())
 
-    Seq(
-      Ast(forNode)
-        .withChildren(forVarAst)
-        .withChildren(forCondAst)
-        .withConditionEdge(forNode, forCondAst.head.nodes.head)
-        .withChildren(doClauseAst)
-    )
+    val ast = forAst(forNode, Seq(), forVarAst, forCondAst, Seq(), doClauseAst)
+    Seq(ast)
   }
 
   def astForGroupingExpressionPrimaryContext(ctx: GroupingExpressionPrimaryContext): Seq[Ast] = {
