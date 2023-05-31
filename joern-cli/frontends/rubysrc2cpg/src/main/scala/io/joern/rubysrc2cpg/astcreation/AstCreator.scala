@@ -85,14 +85,16 @@ class AstCreator(filename: String, global: Global)
     scopeStack.top.varToIdentiferMap.contains(name)
   }
 
+  private def getCodeForTerminalNode(node: TerminalNode): String = {
+    fileContent.getOrElse(node.getSymbol.getLine, "")
+  }
   private def createIdentiferWithScope(
     node: TerminalNode,
     name: String,
     typeFullName: String,
     dynamicTypeHints: Seq[String]
   ): NewIdentifier = {
-    val lineContent = fileContent.getOrElse(node.getSymbol.getLine, "")
-    val newNode     = identifierNode(node, name, lineContent, typeFullName, dynamicTypeHints)
+    val newNode = identifierNode(node, name, getCodeForTerminalNode(node), typeFullName, dynamicTypeHints)
     setIdentiferInScope(newNode)
     newNode
   }
@@ -187,7 +189,7 @@ class AstCreator(filename: String, global: Global)
       val argsAsts    = astForArgumentsContext(ctx.arguments())
       val callNode = NewCall()
         .name(Operators.indexAccess)
-        .code(Operators.indexAccess)
+        .code(getCodeForTerminalNode(ctx.LBRACK()))
         .methodFullName(Operators.indexAccess)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -213,7 +215,7 @@ class AstCreator(filename: String, global: Global)
 
       val callNode = NewCall()
         .name(Operators.fieldAccess)
-        .code(Operators.fieldAccess)
+        .code(getCodeForTerminalNode(localVar))
         .methodFullName(Operators.fieldAccess)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1219,7 +1221,7 @@ class AstCreator(filename: String, global: Global)
       .signature(localIdentifier.getText())
       .typeFullName(MethodFullNames.UnknownFullName)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(localIdentifier.getText())
+      .code(getCodeForTerminalNode(localIdentifier))
       .lineNumber(line)
       .columnNumber(column)
     Seq(callAst(callNode))
