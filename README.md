@@ -21,6 +21,10 @@ Documentation: https://docs.joern.io/
 
 Specification: https://cpg.joern.io
 
+## News / Changelog
+We maintain a [dedicated page](NEWS.md) for news on API-breaking changes.
+
+
 ## Requirements
 
 - JDK 19 (other versions _might_ work, but have not been properly tested)

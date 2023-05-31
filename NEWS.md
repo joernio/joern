@@ -1,5 +1,6 @@
 # News
-## The great Traversal removal
+
+## The great Traversal removal (June 2023)
 ### Summary
 We remove the `overflowdb.traversa.Traversal` class, and replace it with a type alias `type Traversal[+T] = scala.collection.Iterator[T]`.
 In tandem, we improve consistency between the types of quasi-Iterators that appear in common APIs. 
@@ -19,7 +20,7 @@ hence we often end up with a Traversal that wraps a scala Iterator that wraps a 
 In addition to the directly provided features by `Traversal`, like the pervasively used shorthand `.l` for `.toList`, or complex query-language
 features like path-tracking or logic like `.where` or even graph-search (breadth-first or depth-first) with `.repeat`, `Traversal` mixes in scala's
 `IterableOps`. This provides pervasively used methods like `.head` alongside not-so-pervasively used methods like `.view` -- the latter being an 
-example that silently misbehave on `Traversal`, since `IterableOps` is designed for stateless collections that can be traversed multiple times.
+example that silently misbehaves on `Traversal`, since the mixin `IterableOps` is designed for stateless collections that can be traversed multiple times.
 
 ### New model
 `Traversal` is replaced by scala `Iterator`. Most functionality from `Traversal` is implemented as extension methods to `IterableOnce` (which is a
@@ -27,7 +28,7 @@ superclass of `Iterator`) that yield `Iterator`. Many old APIs that used to retu
 
 ### Migration guide
 The following is a list of examples of common fixes that were needed to adapt the joern codebase to this change, together with an explanation and
-the compiler errors.
+the compiler errors. 
 
 #### Superfluous `.asScala`
 ```
@@ -53,7 +54,7 @@ the superfluous `.asScala` call:
       .map(node => Edge(v, node, edgeType = edgeType))
   }
 ```
-Occurences of this issue in joern: 7
+This issue affected 10 files in joern.
 
 ### Missing `.asScala`
 ```
@@ -72,8 +73,7 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
     cpg.graph.nodes.asScala.cast[StoredNode]
 
 ```
-Occurences: 1
-
+This issue affected 4 files in joern.
 
 #### Access to the `Traversal` companion object
 ```
@@ -107,7 +107,7 @@ Almost the same issue can occur, and is fixed similarly, with `PathAwareTraversa
 [error] joern/semanticcpg/src/main/scala/io/shiftleft/semanticcpg/language/callgraphextension/MethodTraversal.scala:18:7: not found: value PathAwareTraversal
 [error]       PathAwareTraversal.empty
 ```
-Occurences: 15
+This issue affected 36 files in joern.
 
 #### Reliance on implicit conversion to Traversal
 ```
@@ -126,13 +126,13 @@ The `sortBy` method on Traversal returns a `Seq`. This code used to work because
 
 In this specific case, we need to make the conversion explicit, by using
 ```
-  private def tagged[A <: StoredNode: ClassTag]: Traversal[A] =
+private def tagged[A <: StoredNode: ClassTag]: Traversal[A] =
     traversal.in(EdgeTypes.TAGGED_BY).collectAll[A].sortBy(_.id).iterator
 ```
 
 NB. It is advantageous to improve this line further, using the mode modern API:
 ```
-  private def tagged[A <: StoredNode: ClassTag]: Traversal[A] =
+private def tagged[A <: StoredNode: ClassTag]: Traversal[A] =
     traversal._taggedByIn.collectAll[A].sortBy(_.id).iterator
 ```
 
@@ -188,9 +188,7 @@ This code used to work due to an implicit conversion from `IterableOnce` to `Tra
 This is an important design pattern in our extensions methods: We accept `IterableOnce` for our extensions, in order to avoid users
 having to type `.iterator` everywhere in their code, and we always produce `Iterator`, in order to make it easy to reason about the semantics.
 
-
-Occurences: 2
-
+This issue affected 27 files in joern.
 
 #### Use of the `count` step
 ```
@@ -208,8 +206,7 @@ the traversal step to `countTrav`, and the code should now read
 ```
       .repeat(_.in(edgeType))(_.until(_.in(edgeType).countTrav.filter(_ == 0)))
 ```
-
-Occurences: 1
+This issue affected 1 file in joern.
 
 #### Double import of Traversal and implicits
 ```
@@ -225,7 +222,7 @@ from working due to ambiguity problems. Now, many more things stop working with 
 
 The fix is to remove the offending `import overflowdb.traversal._`.
 
-Occurences: 11
+This issue affected 37 files in joern.
 
 #### Missing import of traversal extensions
 ```
@@ -236,3 +233,44 @@ Occurences: 11
 ```
 Some operations on Traversal where implemented as member methods, as opposed to extension methods. These operations used to work without any imports of implicit conversions / extensions.
 These operations now need `import io.shiftleft.semanticcpg.language._` in order to work.
+
+This issue affected 7 files in joern.
+
+### Stylistic Changes
+
+There are some stylistic changes in which APIs are used that we wish to encourage in the userbase.
+
+Historically speaking, the first versions of joern used a more "property graph database"-style model.
+
+Such a model suggests writing parametrized queries in a domain-specific language, comparable to e.g. SQL. Then the parametrized query is sent to the database server, parsed, checked against the database schema, optimized, and cached as a prepared query. Later uses refer to the prepared query, and fill in the details. Since the query preparation is amortized over all its calls, and since any database access over any kind of network is always very expensive (measured in milliseconds or microseconds, as opposed to nanoseconds), there is no great pressure to internalize the schema.
+
+Instead of using some raw DSL, it is common to provide a fluent query-builder API. This is how much joern code looks like:
+```
+ def topLevelExpressions: Traversal[Expression] =
+     traversal
+      .out(EdgeTypes.AST)
+      .hasLabel(NodeTypes.BLOCK)
+      .out(EdgeTypes.AST)
+      .not(_.hasLabel(NodeTypes.LOCAL))
+```
+
+However, this was never how joern actually worked: As we can see in the above snipped, `topLevelExpressions` is defined as a function, not a `lazy val`. In other words, function calls like `.out`, and all the string handling, were never in practice amortized over multiple uses of the expression; nobody ever wrote a query optimizer / compiler; and it was never possible to reasonably use joern with a remote database, due to the involved latencies (joern code expects access latencies counted in nanoseconds, not milliseconds).
+
+Early versions of joern used Tinkerpop as a graph database. Tinkerpop internally represents nodes as individual hashtables. As such, the above was actually the "close to the metal" representation of how to e.g. follow the out-edges of type "AST".
+
+This is incredibly wasteful in terms of memory: The relevant keys are known at compile time. Hence, overflowdb uses generated domain-specific classes, together with functions to access the relevant fields, like e.g.
+```
+ def topLevelExpressions: Traversal[Expression] =
+     traversal
+      ._astOut
+      .collectAll[Block]
+      ._astOut
+      .not(_._collectAll[Local])
+```
+The old APIs still exist for compat reasons. However, using a string to select a property, node-type, or edge-label is akin to using java reflection to access a field: It is to be done only when in great need, and is definitely a code-smell. In most cases, there are better ways available.
+
+There is a common pattern in java, if one must use reflection: One reflectively constructs a VarHandle or MethodHandle, and stores it in a static (i.e. effectively global) variable. Hence, the reflection is done at class-loading time, not at actual runtime. The JVM is actually quite adept at making such use of reflection fast. (note the parallel to prepared queries in databases!)
+
+The way to hoist the overhead from string-based lookups in joern is to add the required functions in overflowdb-codegen (like e.g. the `_astOut` instead of `.out("AST")`).
+
+This issue affects many files in joern; the commit that includes this message fixes 7 of them.
