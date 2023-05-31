@@ -133,7 +133,7 @@ private def tagged[A <: StoredNode: ClassTag]: Traversal[A] =
     traversal.in(EdgeTypes.TAGGED_BY).collectAll[A].sortBy(_.id).iterator
 ```
 
-NB. It is advantageous to improve this line further, using the mode modern API:
+NB. It is advantageous to improve this line further, using the (domain specific) CPG API:
 ```
 private def tagged[A <: StoredNode: ClassTag]: Traversal[A] =
     traversal._taggedByIn.collectAll[A].sortBy(_.id).iterator
