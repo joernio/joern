@@ -7,6 +7,7 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.Block
 
 class CallTests extends PhpCode2CpgFixture {
   "halt_compiler calls should be created correctly" in {
@@ -49,20 +50,36 @@ class CallTests extends PhpCode2CpgFixture {
     }
   }
 
-  "static method calls with simple names should be correct" in {
+  "static method calls with simple names" should {
     val cpg = code("<?php\nFoo::foo($x);")
 
-    inside(cpg.call.l) { case List(fooCall) =>
-      fooCall.name shouldBe "foo"
-      fooCall.methodFullName shouldBe s"Foo.foo:${Defines.UnresolvedSignature}(1)"
-      fooCall.receiver.isEmpty shouldBe true
-      fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      fooCall.lineNumber shouldBe Some(2)
-      fooCall.code shouldBe "Foo::foo($x)"
+    "have the correct method node defined" in {
+      inside(cpg.call.l) { case List(fooCall) =>
+        fooCall.name shouldBe "foo"
+        fooCall.methodFullName shouldBe s"Foo::foo"
+        fooCall.receiver.isEmpty shouldBe true
+        fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        fooCall.lineNumber shouldBe Some(2)
+        fooCall.code shouldBe "Foo::foo($x)"
+      }
+    }
 
-      inside(fooCall.argument.l) { case List(xArg: Identifier) =>
+    "have the correct arguments" in {
+      inside(cpg.call.argument.l) { case List(xArg: Identifier) =>
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
+      }
+    }
+
+    "have the correct child nodes" in {
+      inside(cpg.call.astChildren.l) { case List(arg: Identifier) =>
+        arg.name shouldBe "x"
+      }
+    }
+
+    "not create an identifier for the class target" in {
+      inside(cpg.identifier.l) { case List(xArg) =>
+        xArg.name shouldBe "x"
       }
     }
   }

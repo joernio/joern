@@ -16,6 +16,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Local
 }
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+
+import scala.util.Try
 
 class ControlStructureTests extends PhpCode2CpgFixture {
   "switch statements" should {
@@ -1022,6 +1025,12 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         }
       }
     }
+  }
+
+  "foreach statements should not create parentless identifiers" in {
+    val cpg = code("""<?php foreach($GLOBALS as $x) {}""")
+
+    cpg.all.collectAll[Identifier].filter(node => Try(node.astParent).isFailure).toList shouldBe Nil
   }
 
   "foreach statements with only simple values should be represented as a for" in {

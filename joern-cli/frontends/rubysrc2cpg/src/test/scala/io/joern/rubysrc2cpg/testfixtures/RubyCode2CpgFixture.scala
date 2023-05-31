@@ -17,9 +17,9 @@ trait RubyFrontend extends LanguageFrontend {
   }
 }
 
-class DefaultTestCpgWithPhp extends DefaultTestCpg with RubyFrontend
+class DefaultTestCpgWithRuby extends DefaultTestCpg with RubyFrontend
 
-class RubyCode2CpgFixture extends Code2CpgFixture(() => new DefaultTestCpgWithPhp) {
+class RubyCode2CpgFixture extends Code2CpgFixture(() => new DefaultTestCpgWithRuby) {
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
 }
