@@ -257,7 +257,7 @@ Instead of using some raw DSL, it is common to provide a fluent query-builder AP
       .not(_.hasLabel(NodeTypes.LOCAL))
 ```
 
-However, this was never how joern actually worked: As we can see in the above snipped, `topLevelExpressions` is defined as a function, not a `lazy val`. In other words, function calls like `.out`, and all the string handling, were never in practice amortized over multiple uses of the expression; nobody ever wrote a query optimizer / compiler; and it was never possible to reasonably use joern with a remote database, due to the involved latencies (joern code expects access latencies counted in nanoseconds, not milliseconds).
+However, this was never how joern actually worked: As we can see in the above snippet, `topLevelExpressions` is defined as a function, not a `lazy val`. In other words, function calls like `.out`, and all the string handling, were never in practice amortized over multiple uses of the expression; nobody ever wrote a query optimizer / compiler; and it was never possible to reasonably use joern with a remote database, due to the involved latencies (joern code expects access latencies counted in nanoseconds, not milliseconds).
 
 Early versions of joern used Tinkerpop as a graph database. Tinkerpop internally represents nodes as individual hashtables. As such, the above was actually the "close to the metal" representation of how to e.g. follow the out-edges of type "AST".
 
