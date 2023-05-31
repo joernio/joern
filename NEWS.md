@@ -259,7 +259,7 @@ Instead of using some raw DSL, it is common to provide a fluent query-builder AP
 
 However, this was never how joern actually worked: As we can see in the above snippet, `topLevelExpressions` is defined as a function, not a `lazy val`. In other words, function calls like `.out`, and all the string handling, were never in practice amortized over multiple uses of the expression; nobody ever wrote a query optimizer / compiler; and it was never possible to reasonably use joern with a remote database, due to the involved latencies (joern code expects access latencies counted in nanoseconds, not milliseconds).
 
-Early versions of joern used Tinkerpop as a graph database. Tinkerpop internally represents nodes as individual hashtables. As such, the above was actually the "close to the metal" representation of how to e.g. follow the out-edges of type "AST".
+Early versions of joern used TinkerGraph as a graph database. TinkerGraph internally represents nodes as individual hashtables. As such, the above was actually the "close to the metal" representation of how to e.g. follow the out-edges of type "AST".
 
 This is incredibly wasteful in terms of memory: The relevant keys are known at compile time. Hence, overflowdb uses generated domain-specific classes, together with functions to access the relevant fields, like e.g.
 ```
