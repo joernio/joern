@@ -51,10 +51,11 @@ class ClosureRefPass(cpg: Cpg) extends ConcurrentWriterCpgPass[ClosureBinding](c
 
       case Some(method) =>
         closureBinding.closureOriginalName.foreach { name =>
+          lazy val locals = method.repeat(_.astChildren.filterNot(_.isMethod))(_.emit(_.isLocal)).collectAll[Local]
           val maybeCaptured =
             method.parameter
               .find(_.name == name)
-              .orElse(method.ast.collectAll[Local].find(_.name == name))
+              .orElse(locals.find(_.name == name))
 
           maybeCaptured.foreach { captured =>
             diffGraph.addEdge(closureBinding, captured, EdgeTypes.REF)
