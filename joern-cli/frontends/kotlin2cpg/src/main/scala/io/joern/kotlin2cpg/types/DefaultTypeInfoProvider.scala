@@ -201,22 +201,18 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def propertyType(expr: KtProperty, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
-    val render =
-      Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
-        .map(_.getType)
-        .filterNot(_.isInstanceOf[ErrorType])
-        .map(TypeRenderer.render(_))
-        .filter(isValidRender)
-
-    render match {
-      case Some(aValue) => aValue
-      case None =>
+    Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
+      .map(_.getType)
+      .filterNot(_.isInstanceOf[ErrorType])
+      .map(TypeRenderer.render(_))
+      .filter(isValidRender)
+      .getOrElse(
         Option(expr.getTypeReference)
           .map { typeRef =>
             typeFromImports(typeRef.getText, expr.getContainingKtFile).getOrElse(typeRef.getText)
           }
           .getOrElse(defaultValue)
-    }
+      )
   }
 
   def typeFullName(expr: KtClassOrObject, defaultValue: String): String = {
@@ -603,15 +599,13 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       if isValidRender(render) && !variableDesc.getType.isInstanceOf[ErrorType]
     } yield render
 
-    render match {
-      case Some(aValue) => aValue
-      case None =>
-        Option(parameter.getTypeReference)
-          .map { typeRef =>
-            typeFromImports(typeRef.getText, parameter.getContainingKtFile).getOrElse(typeRef.getText)
-          }
-          .getOrElse(defaultValue)
-    }
+    render.getOrElse(
+      Option(parameter.getTypeReference)
+        .map { typeRef =>
+          typeFromImports(typeRef.getText, parameter.getContainingKtFile).getOrElse(typeRef.getText)
+        }
+        .getOrElse(defaultValue)
+    )
   }
 
   def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
