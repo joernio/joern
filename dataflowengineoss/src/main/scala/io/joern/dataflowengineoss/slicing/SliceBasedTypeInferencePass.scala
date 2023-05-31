@@ -5,11 +5,13 @@ import better.files.File.OpenOptions
 import io.joern.x2cpg.passes.frontend.XTypeRecovery
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success, Using}
@@ -24,9 +26,20 @@ class SliceBasedTypeInferencePass(
   typesNotToInfer: Set[String] = Set("object", "unk", "void")
 ) extends CpgPass(cpg) {
 
-  private lazy val logger      = LoggerFactory.getLogger(classOf[SliceBasedTypeInferencePass])
-  private lazy val sliceConfig = SliceConfig(sliceMode = SliceMode.Usages)
-  private val changes          = ArrayBuffer.empty[InferredChange]
+  private lazy val logger         = LoggerFactory.getLogger(classOf[SliceBasedTypeInferencePass])
+  private lazy val sliceConfig    = SliceConfig(sliceMode = SliceMode.Usages)
+  private val changes             = ArrayBuffer.empty[InferredChange]
+  private lazy val timeOfAnalysis = DateTimeFormatter.ofPattern("yyyy-MM-dd__HH_mm").format(LocalDateTime.now)
+
+  private val typeInferenceFile = cpg.metaData.root.map(File(_)).headOption match {
+    case Some(project) => File(s"./${project.name}_type_inference_$timeOfAnalysis.csv")
+    case None          => File(s"./type_inference_$timeOfAnalysis.csv")
+  }
+
+  private val yieldFile = cpg.metaData.root.map(File(_)).headOption match {
+    case Some(project) => File(s"./${project.name}_inference_yield_$timeOfAnalysis.csv")
+    case None          => File(s"./inference_yield_$timeOfAnalysis.csv")
+  }
 
   private case class InferredChange(
     location: String,
@@ -39,6 +52,9 @@ class SliceBasedTypeInferencePass(
   private def location(n: CfgNode): String =
     s"${n.file.name.headOption.getOrElse("Unknown")}#L${n.lineNumber.getOrElse(-1)}"
 
+  private def location(n: Local): String =
+    s"${n.file.name.headOption.getOrElse("Unknown")}#L${n.lineNumber.getOrElse(-1)}"
+
   lazy private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
 
   override def run(builder: DiffGraphBuilder): Unit = {
@@ -49,51 +65,67 @@ class SliceBasedTypeInferencePass(
           case Failure(exception) =>
             logger.warn("Unable to enrich compilation unit type information with joernti, continuing...", exception)
           case Success(inferenceResults) =>
-            inferenceResults
-              // avoid using inferences that look like local paths
+            val filteredResults = inferenceResults
+              .filter(_.confidence > minConfidence)
               .filterNot(res => pathPattern.matcher(res.typ).matches())
+              .filterNot(res => typesNotToInfer.contains(res.typ.toLowerCase))
+            filteredResults
               .groupBy(_.scope)
               .foreach { case (scope, results) =>
-                val methodIdentifiers = cpg.method
+                val method = cpg.method
                   .fullNameExact(scope)
-                  .ast
-                  .isIdentifier
                   .l
+                lazy val methodLocals      = method.ast.isLocal.l
+                lazy val methodIdentifiers = method.ast.isIdentifier.l
                 // Set the type of targets which only have dummy types or have no types
-                results
-                  .filter(_.confidence > minConfidence)
-                  .filterNot(res => typesNotToInfer.contains(res.typ.toLowerCase))
-                  .foreach { res =>
-                    methodIdentifiers
-                      .nameExact(res.targetIdentifier)
-                      .filter(onlyDummyOrAnyType) // We only want to write to nodes that need type info
-                      .foreach { tgt =>
-                        builder.setNodeProperty(tgt, PropertyNames.TYPE_FULL_NAME, res.typ)
-                        logChange(location(tgt), tgt.label, res.targetIdentifier, tgt.typeFullName, res.typ)
-                        // If there is a call where the identifier is the receiver then this also needs to be updated
-                        if (tgt.argumentIndex <= 1 && tgt.astSiblings.isCall.exists(_.argumentIndex >= 2)) {
-                          tgt.astSiblings.isCall.nameNot("<operator.*").find(onlyDummyOrAnyType).foreach { call =>
-                            val inferredMethodCall = Seq(res.typ, call.name).mkString(pathSep)
-                            builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, inferredMethodCall)
-                            logChange(
-                              location(call),
-                              call.label,
-                              res.targetIdentifier,
-                              call.methodFullName,
-                              inferredMethodCall
-                            )
-                          }
+                results.foreach { res =>
+                  // Handle locals
+                  methodLocals.nameExact(res.targetIdentifier).filter(onlyDummyOrAnyType).foreach { tgt =>
+                    builder.setNodeProperty(tgt, PropertyNames.TYPE_FULL_NAME, res.typ)
+                    logChange(location(tgt), tgt.label, res.targetIdentifier, tgt.typeFullName, res.typ)
+                  }
+                  // Handle identifiers
+                  methodIdentifiers
+                    .nameExact(res.targetIdentifier)
+                    .filter(onlyDummyOrAnyType) // We only want to write to nodes that need type info
+                    .foreach { tgt =>
+                      builder.setNodeProperty(tgt, PropertyNames.TYPE_FULL_NAME, res.typ)
+                      logChange(location(tgt), tgt.label, res.targetIdentifier, tgt.typeFullName, res.typ)
+                      // If there is a call where the identifier is the receiver then this also needs to be updated
+                      if (tgt.argumentIndex <= 1 && tgt.astSiblings.isCall.exists(_.argumentIndex >= 2)) {
+                        tgt.astSiblings.isCall.nameNot("<operator.*").find(onlyDummyOrAnyType).foreach { call =>
+                          val inferredMethodCall = Seq(res.typ, call.name).mkString(pathSep)
+                          builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, inferredMethodCall)
+                          logChange(
+                            location(call),
+                            call.label,
+                            res.targetIdentifier,
+                            call.methodFullName,
+                            inferredMethodCall
+                          )
                         }
                       }
-                    res.targetIdentifier
-                  }
+                    }
+                  res.targetIdentifier
+                }
+                // Get yield
+                val targetNodes = cpg.graph
+                  .nodes("LOCAL", "IDENTIFIER", "CALL")
+                  .cast[AstNode]
+                  .l
+                val untypedNodes = targetNodes.count(onlyDummyOrAnyType) - changes.size
+                val typedNodes   = targetNodes.size - untypedNodes
+                yieldFile.write("LABEL,COUNT\n")
+                yieldFile.write(s"NUM_NODES,${targetNodes.size}\n")(OpenOptions.append)
+                yieldFile.write(s"UNTYPED,$untypedNodes\n")(OpenOptions.append)
+                yieldFile.write(s"TYPED,$typedNodes\n")(OpenOptions.append)
+                yieldFile.write(s"INFERRED,${changes.size}\n")(OpenOptions.append)
               }
         }
       }
-      val f = File("./type_inference.csv")
-      f.write("Location,Label,Target,OldType,NewType\n")
+      typeInferenceFile.write("Location,Label,Target,OldType,NewType\n")
       changes.foreach { change =>
-        f.write(
+        typeInferenceFile.write(
           change.productIterator
             .map {
               case x: Seq[_] => "[" + x.mkString("|") + "]"
