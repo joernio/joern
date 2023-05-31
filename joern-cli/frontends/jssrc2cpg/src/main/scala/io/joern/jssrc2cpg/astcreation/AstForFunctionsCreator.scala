@@ -94,7 +94,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
               parameterInNode(
                 lhsNodeInfo,
                 lhsNodeInfo.code,
-                lhsNodeInfo.code,
+                nodeInfo.code,
                 index,
                 false,
                 EvaluationStrategies.BY_VALUE,

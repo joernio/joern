@@ -52,7 +52,7 @@ class MethodTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").body.astChildren.l) { case List(xLocal: Local, yLocal: Local, xAssign: Call) =>
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(xLocal: Local, xAssign: Call, yLocal: Local) =>
       xLocal.name shouldBe "x"
       xLocal.code shouldBe "static $x"
       xLocal.lineNumber shouldBe Some(3)

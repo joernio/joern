@@ -8,7 +8,6 @@ import io.joern.jssrc2cpg.passes._
 import io.joern.jssrc2cpg.utils.{AstGenRunner, Report}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
-import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.HashUtil
 import io.shiftleft.codepropertygraph.Cpg
