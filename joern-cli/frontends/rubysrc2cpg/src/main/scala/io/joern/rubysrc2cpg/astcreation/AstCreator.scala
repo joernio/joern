@@ -949,7 +949,7 @@ class AstCreator(filename: String, global: Global)
     ctx.asScala
       .map(elif => {
         val elifNode = NewControlStructure()
-          .controlStructureType(ControlStructureTypes.ELSE)
+          .controlStructureType(ControlStructureTypes.IF)
           .code(elif.getText())
           .lineNumber(elif.ELSIF().getSymbol.getLine)
           .columnNumber(elif.ELSIF().getSymbol.getCharPositionInLine)
