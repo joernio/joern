@@ -54,8 +54,6 @@ class AstCreator(filename: String, global: Global)
 
   private val methodAliases = mutable.HashMap[String, String]()
 
-  private val fileContent = mutable.HashMap[Int, String]()
-
   class ScopeIdentifiers {
     val varToIdentiferMap             = mutable.HashMap[String, NewIdentifier]()
     var parentScope: ScopeIdentifiers = null
@@ -85,28 +83,18 @@ class AstCreator(filename: String, global: Global)
     scopeStack.top.varToIdentiferMap.contains(name)
   }
 
-  private def getCodeForTerminalNode(node: TerminalNode): String = {
-    fileContent.getOrElse(node.getSymbol.getLine, "")
-  }
   private def createIdentiferWithScope(
     node: TerminalNode,
     name: String,
+    code: String,
     typeFullName: String,
     dynamicTypeHints: Seq[String]
   ): NewIdentifier = {
-    val newNode = identifierNode(node, name, getCodeForTerminalNode(node), typeFullName, dynamicTypeHints)
+    val newNode = identifierNode(node, name, code, typeFullName, dynamicTypeHints)
     setIdentiferInScope(newNode)
     newNode
   }
 
-  private def readFile(): Unit = {
-    var lineNum = 1
-    for (line <- Source.fromFile(filename).getLines()) {
-      val code = line.stripLeading().stripTrailing()
-      fileContent.addOne(lineNum, code)
-      lineNum += 1
-    }
-  }
   private def getActualMethodName(name: String): String = {
     methodAliases.getOrElse(name, name)
   }
@@ -116,8 +104,6 @@ class AstCreator(filename: String, global: Global)
     val tokenStream = new CommonTokenStream(lexer)
     val parser      = new RubyParser(tokenStream)
     val programCtx  = parser.program()
-
-    readFile()
 
     val statementCtx = programCtx.compoundStatement().statements()
     pushScope()
@@ -176,7 +162,7 @@ class AstCreator(filename: String, global: Global)
     val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
     val token        = terminalNode.getSymbol
     val variableName = token.getText
-    val node         = createIdentiferWithScope(terminalNode, variableName, Defines.Any, List[String]())
+    val node         = createIdentiferWithScope(terminalNode, variableName, variableName, Defines.Any, List[String]())
     setIdentiferInScope(node)
     Seq(Ast(node))
   }
@@ -189,7 +175,7 @@ class AstCreator(filename: String, global: Global)
       val argsAsts    = astForArgumentsContext(ctx.arguments())
       val callNode = NewCall()
         .name(Operators.indexAccess)
-        .code(getCodeForTerminalNode(ctx.LBRACK()))
+        .code(Operators.indexAccess)
         .methodFullName(Operators.indexAccess)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -210,12 +196,12 @@ class AstCreator(filename: String, global: Global)
       }
       val varSymbol = localVar.getSymbol()
       val node =
-        createIdentiferWithScope(localVar, varSymbol.getText, Defines.Any, List(Defines.Any))
+        createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       val yAst = Ast(node)
 
       val callNode = NewCall()
         .name(Operators.fieldAccess)
-        .code(getCodeForTerminalNode(localVar))
+        .code(Operators.fieldAccess)
         .methodFullName(Operators.fieldAccess)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -748,8 +734,8 @@ class AstCreator(filename: String, global: Global)
     val primaryAst = astForPrimaryContext(ctx.primary())
     val localVar   = ctx.CONSTANT_IDENTIFIER()
     val varSymbol  = localVar.getSymbol()
-    val node       = createIdentiferWithScope(localVar, varSymbol.getText, Defines.Any, List(Defines.Any))
-    val constAst   = Ast(node)
+    val node = createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+    val constAst = Ast(node)
 
     val callNode = NewCall()
       .name(ctx.COLON2().getText)
@@ -1221,7 +1207,7 @@ class AstCreator(filename: String, global: Global)
       .signature(localIdentifier.getText())
       .typeFullName(MethodFullNames.UnknownFullName)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(getCodeForTerminalNode(localIdentifier))
+      .code(localIdentifier.getText())
       .lineNumber(line)
       .columnNumber(column)
     Seq(callAst(callNode))
@@ -1245,7 +1231,7 @@ class AstCreator(filename: String, global: Global)
       val varSymbol = localVar.getSymbol()
       if (lookupIdentiferInScope(varSymbol.getText)) {
         val node =
-          createIdentiferWithScope(localVar, varSymbol.getText, Defines.Any, List(Defines.Any))
+          createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
       } else {
         astForCallNode(localVar)
@@ -1255,7 +1241,7 @@ class AstCreator(filename: String, global: Global)
       val varSymbol = localVar.getSymbol()
       if (lookupIdentiferInScope(varSymbol.getText)) {
         val node =
-          createIdentiferWithScope(localVar, varSymbol.getText, Defines.Any, List(Defines.Any))
+          createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
       } else {
         astForCallNode(localVar)
@@ -1315,13 +1301,13 @@ class AstCreator(filename: String, global: Global)
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
       val node =
-        createIdentiferWithScope(localVar, varSymbol.getText, Defines.Any, List(Defines.Any))
+        createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localVar  = ctx.CONSTANT_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
       val node =
-        createIdentiferWithScope(localVar, varSymbol.getText, Defines.Any, List(Defines.Any))
+        createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     } else {
       Seq(Ast())
@@ -1396,7 +1382,7 @@ class AstCreator(filename: String, global: Global)
     localVarList
       .map(localVar => {
         val varSymbol = localVar.getSymbol()
-        createIdentiferWithScope(localVar, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
+        createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
         val param = NewMethodParameterIn()
           .name(varSymbol.getText)
           .code(varSymbol.getText)
@@ -1575,7 +1561,7 @@ class AstCreator(filename: String, global: Global)
   def astForSimpleScopedConstantReferencePrimaryContext(ctx: SimpleScopedConstantReferencePrimaryContext): Seq[Ast] = {
     val localVar  = ctx.CONSTANT_IDENTIFIER()
     val varSymbol = localVar.getSymbol()
-    val node      = createIdentiferWithScope(localVar, varSymbol.getText, Defines.Any, List(Defines.Any))
+    val node = createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
 
     val callNode = NewCall()
       .name(ctx.COLON2().getText)
@@ -1795,7 +1781,7 @@ class AstCreator(filename: String, global: Global)
     val ast = whileAst(
       untilCondAst,
       doClauseAsts,
-      Some(getCodeForTerminalNode(ctx.UNTIL())),
+      None,
       Some(ctx.UNTIL().getSymbol.getLine),
       Some(ctx.UNTIL().getSymbol.getCharPositionInLine)
     )
@@ -1814,7 +1800,7 @@ class AstCreator(filename: String, global: Global)
       else return Seq(Ast())
     }
 
-    val astNode = createIdentiferWithScope(node, ctx.getText, Defines.Any, List(Defines.Any))
+    val astNode = createIdentiferWithScope(node, ctx.getText, ctx.getText, Defines.Any, List(Defines.Any))
     Seq(Ast(astNode))
   }
 
@@ -1841,7 +1827,7 @@ class AstCreator(filename: String, global: Global)
     val ast = whileAst(
       whileCondAst,
       doClauseAsts,
-      Some(getCodeForTerminalNode(ctx.WHILE())),
+      None,
       Some(ctx.WHILE().getSymbol.getLine),
       Some(ctx.WHILE().getSymbol.getCharPositionInLine)
     )

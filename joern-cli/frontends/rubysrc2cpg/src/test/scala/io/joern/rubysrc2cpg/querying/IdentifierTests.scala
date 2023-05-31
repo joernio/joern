@@ -890,7 +890,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         .l
         .size shouldBe 1
       cpg.method
-        .name("method2")
+        .name("method1")
         .l
         .size shouldBe 1
       cpg.method
@@ -901,6 +901,9 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
+      cpg.method.name("method1").dotAst.l
+      cpg.method.name("method2").dotAst.l
+      cpg.method.name("method3").dotAst.l
     }
   }
 }
