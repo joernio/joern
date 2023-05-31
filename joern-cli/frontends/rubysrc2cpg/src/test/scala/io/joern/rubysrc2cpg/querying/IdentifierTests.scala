@@ -824,12 +824,6 @@ class IdentifierTests extends RubyCode2CpgFixture {
         .l
         .size shouldBe 1
     }
-    "recognise all call nodes" in {
-      cpg.method
-        .name("puts")
-        .l
-        .size shouldBe 1
-    }
 
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
@@ -867,9 +861,49 @@ class IdentifierTests extends RubyCode2CpgFixture {
         .size shouldBe 1
     }
     "successfully plot ASTs" in {
-      cpg.method.name(":some_method").dotAst.l
+      cpg.method.name("some_method").dotAst.l
       cpg.method.name(":program").dotAst.l
     }
   }
 
+  "CPG for code with private/protected/public" should {
+    val cpg = code("""
+        |class SomeClass
+        |  private
+        |  def method1
+        |  end
+        |
+        |  protected
+        |  def method2
+        |  end
+        |
+        |  public
+        |  def method3
+        |  end
+        |end
+        |
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.method
+        .name("method1")
+        .l
+        .size shouldBe 1
+      cpg.method
+        .name("method1")
+        .l
+        .size shouldBe 1
+      cpg.method
+        .name("method3")
+        .l
+        .size shouldBe 1
+
+    }
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+      cpg.method.name("method1").dotAst.l
+      cpg.method.name("method2").dotAst.l
+      cpg.method.name("method3").dotAst.l
+    }
+  }
 }

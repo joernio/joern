@@ -15,12 +15,12 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, Token}
 import org.slf4j.LoggerFactory
-import overflowdb.{BatchedUpdate, Node}
+import overflowdb.{BatchedUpdate}
 
 import java.util
-import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.io.Source
 import scala.jdk.CollectionConverters._
 
 class AstCreator(filename: String, global: Global)
@@ -802,11 +802,25 @@ class AstCreator(filename: String, global: Global)
       val classOrModuleRefAst =
         astForClassOrModuleReferenceContext(ctx.classDefinition().classOrModuleReference(), baseClassName)
       val bodyAst = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
+      val bodyAstSansModifiers = bodyAst
+        .filterNot(ast => {
+          val nodes = ast.nodes
+            .filter(_.isInstanceOf[NewIdentifier])
+
+          if (nodes.size == 1) {
+            val varName = nodes
+              .map(_.asInstanceOf[NewIdentifier].name)
+              .head
+            varName == "public" || varName == "protected" || varName == "private"
+          } else {
+            false
+          }
+        })
 
       if (classStack.size > 0) {
         classStack.pop()
       }
-      Seq(classOrModuleRefAst.head.withChildren(bodyAst))
+      Seq(classOrModuleRefAst.head.withChildren(bodyAstSansModifiers))
     } else {
       // TODO test for this is pending due to lack of understanding to generate an example
       val astExprOfCommand = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
@@ -1761,21 +1775,17 @@ class AstCreator(filename: String, global: Global)
 
   def astForUntilExpressionContext(ctx: UntilExpressionContext): Seq[Ast] = {
     // until will be modelled as a while
-    val untilNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.WHILE)
-      .code(ctx.UNTIL().getText)
-      .lineNumber(ctx.UNTIL().getSymbol.getLine)
-      .columnNumber(ctx.UNTIL().getSymbol.getCharPositionInLine)
+    val untilCondAst = astForExpressionOrCommandContext(ctx.expressionOrCommand()).headOption
+    val doClauseAsts = astForDoClauseContext(ctx.doClause())
 
-    val untilCondAsts = astForExpressionOrCommandContext(ctx.expressionOrCommand())
-    val doClauseAst   = astForDoClauseContext(ctx.doClause())
-
-    Seq(
-      Ast(untilNode)
-        .withChildren(untilCondAsts)
-        .withConditionEdge(untilNode, untilCondAsts.head.nodes.head)
-        .withChildren(doClauseAst)
+    val ast = whileAst(
+      untilCondAst,
+      doClauseAsts,
+      None,
+      Some(ctx.UNTIL().getSymbol.getLine),
+      Some(ctx.UNTIL().getSymbol.getCharPositionInLine)
     )
+    Seq(ast)
   }
 
   def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Seq[Ast] = {
@@ -1811,21 +1821,17 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForWhileExpressionContext(ctx: WhileExpressionContext): Seq[Ast] = {
-    val whileNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.WHILE)
-      .code(ctx.getText)
-      .lineNumber(ctx.WHILE().getSymbol.getLine)
-      .columnNumber(ctx.WHILE().getSymbol.getCharPositionInLine)
+    val whileCondAst = astForExpressionOrCommandContext(ctx.expressionOrCommand()).headOption
+    val doClauseAsts = astForDoClauseContext(ctx.doClause())
 
-    val whileCondAsts = astForExpressionOrCommandContext(ctx.expressionOrCommand())
-    val doClauseAsts  = astForDoClauseContext(ctx.doClause())
-
-    Seq(
-      Ast(whileNode)
-        .withChildren(whileCondAsts)
-        .withConditionEdge(whileNode, whileCondAsts.head.nodes.head)
-        .withChildren(doClauseAsts)
+    val ast = whileAst(
+      whileCondAst,
+      doClauseAsts,
+      None,
+      Some(ctx.WHILE().getSymbol.getLine),
+      Some(ctx.WHILE().getSymbol.getCharPositionInLine)
     )
+    Seq(ast)
   }
 
   def astForBlockArgumentContext(ctx: BlockArgumentContext): Seq[Ast] = {
@@ -1838,8 +1844,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForBlockSplattingTypeArgumentsContext(ctx: BlockSplattingTypeArgumentsContext): Seq[Ast] = {
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    val splatAst  = astForSplattingArgumentContext(ctx.splattingArgument())
+    val splatAst = astForSplattingArgumentContext(ctx.splattingArgument())
     if (ctx.blockArgument() != null) {
       val blockArgAst = astForBlockArgumentContext(ctx.blockArgument())
       blockArgAst ++ splatAst
