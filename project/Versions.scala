@@ -5,7 +5,7 @@ object Versions {
   // causes problems upstreams.
   val antlr         = "4.7"
   val scalatest     = "3.2.16"
-  val cats          = "3.4.11"
+  val cats          = "3.5.0"
   val json4s        = "4.0.6"
   val gradleTooling = "7.6.1"
   val circe         = "0.14.5"
