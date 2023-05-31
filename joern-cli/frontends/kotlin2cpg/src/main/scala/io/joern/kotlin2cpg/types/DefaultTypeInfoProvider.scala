@@ -51,7 +51,7 @@ import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorToSourceUtils, De
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
-import org.jetbrains.kotlin.types.UnresolvedType
+import org.jetbrains.kotlin.types.ErrorType
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -185,6 +185,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.TYPE_ALIAS.getKey))
       .map(_.getExpandedType)
+      .filterNot(_.isInstanceOf[ErrorType])
       .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
@@ -203,20 +204,19 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val render =
       Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
         .map(_.getType)
+        .filterNot(_.isInstanceOf[ErrorType])
         .map(TypeRenderer.render(_))
         .filter(isValidRender)
 
     render match {
-      case Some(value) if value == Defines.UnresolvedNamespace =>
+      case Some(aValue) => aValue
+      case None =>
         Option(expr.getTypeReference)
           .map { typeRef =>
             typeFromImports(typeRef.getText, expr.getContainingKtFile).getOrElse(typeRef.getText)
           }
           .getOrElse(defaultValue)
-      case Some(aValue) => aValue
-      case None         => defaultValue
     }
-
   }
 
   def typeFullName(expr: KtClassOrObject, defaultValue: String): String = {
@@ -514,7 +514,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           extensionReceiverParam <- Option(originalDesc.getExtensionReceiverParameter)
           erpType = extensionReceiverParam.getType
         } yield {
-          if (erpType.isInstanceOf[UnresolvedType]) {
+          if (erpType.isInstanceOf[ErrorType]) {
             s"${Defines.UnresolvedNamespace}.${expr.getName}"
           } else {
             val rendered =
@@ -600,18 +600,17 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       mapForEntity <- Option(bindingsForEntity(bindingContext, parameter))
       variableDesc <- Option(mapForEntity.get(BindingContext.VALUE_PARAMETER.getKey))
       render = TypeRenderer.render(variableDesc.getType)
-      if isValidRender(render)
+      if isValidRender(render) && !variableDesc.getType.isInstanceOf[ErrorType]
     } yield render
 
     render match {
-      case Some(value) if value == Defines.UnresolvedNamespace =>
+      case Some(aValue) => aValue
+      case None =>
         Option(parameter.getTypeReference)
           .map { typeRef =>
             typeFromImports(typeRef.getText, parameter.getContainingKtFile).getOrElse(typeRef.getText)
           }
           .getOrElse(defaultValue)
-      case Some(aValue) => aValue
-      case None         => defaultValue
     }
   }
 
@@ -620,7 +619,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
       variableDesc <- Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
       render = TypeRenderer.render(variableDesc.getType)
-      if isValidRender(render)
+      if isValidRender(render) && !variableDesc.getType.isInstanceOf[ErrorType]
     } yield render
     render.getOrElse(defaultValue)
   }
@@ -756,7 +755,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       extensionReceiverParam <- Option(fnDesc.getExtensionReceiverParameter)
       erpType = extensionReceiverParam.getType
     } yield {
-      if (erpType.isInstanceOf[UnresolvedType]) {
+      if (erpType.isInstanceOf[ErrorType]) {
         s"${Defines.UnresolvedNamespace}.${expr.getName}"
       } else {
         val theType      = fnDescMaybe.get.getExtensionReceiverParameter.getType
