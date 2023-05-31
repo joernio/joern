@@ -22,8 +22,8 @@ Documentation: https://docs.joern.io/
 Specification: https://cpg.joern.io
 
 ## News / Changelog
-We maintain a [dedicated page](NEWS.md) for news on API-breaking changes.
 
+- Joern v2.0.0 removes the `overflowdb.traversal.Traversal` class. This change is not completely backwards compatible. See [here](changelog/traversal_removal.md) for a detailed writeup.
 
 ## Requirements
 

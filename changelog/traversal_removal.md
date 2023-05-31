@@ -1,16 +1,14 @@
-# News
-
-## The great Traversal removal (v2.0.0; June 2023)
+# The great Traversal removal (v2.0.0; June 2023)
 PR: https://github.com/joernio/joern/pull/2784
-### Summary
-We remove the `overflowdb.traversal.Traversal` class, and replace it with a type alias `type Traversal[+T] = scala.collection.Iterator[T]`.
-In tandem, we improve consistency between the types of quasi-Iterators that appear in common APIs. 
+## Summary
+We removed the `overflowdb.traversal.Traversal` class, and replaced it with a type alias `type Traversal[+T] = scala.collection.Iterator[T]`.
+In tandem, we improved consistency between the types of quasi-Iterators that appear in common APIs. 
 
 This improved consistency comes at a price -- this change is not backwards compatible. The needed adaptations are typically very superficial,
 often simply a change in imports. On the upside, this change is extremely unlikely to introduce bugs / semantic changes. Instead, it will cause
 compile errors. Unfortunately the compiler error messages are not always helpful in fixing the issue, so we have a handy migration guide.
 
-### Old model
+## Old model
 In the old world, our APIs returned a mix of `scala.collection.Iterator`, `java.util.Iterator` and `overflowdb.traversal.Traversal`. These three
 types are semantically equivalent -- they all are lazy with respect to operations like `.map` and side-effects, they are stateful, i.e. are 
 mutated in-place when advancing, and are not reusable.
@@ -23,17 +21,17 @@ features like path-tracking or logic like `.where` or even graph-search (breadth
 `IterableOps`. This provides pervasively used methods like `.head` alongside not-so-pervasively used methods like `.view` -- the latter being an 
 example that silently misbehaves on `Traversal`, since the mixin `IterableOps` is designed for stateless collections that can be traversed multiple times.
 
-### New model
+## New model
 `Traversal` is replaced by scala `Iterator`. Most functionality from `Traversal` is implemented as extension methods to `IterableOnce` (which is a
 superclass of `Iterator`) that yield `Iterator`. Many old APIs that used to return java iterators now return scala iterators.
 
-### Migration guide
+## Migration guide
 The following is a list of examples of common fixes that were needed to adapt the joern codebase to this change, together with an explanation and
-the compiler errors. Downstream usages of joern likely have the same usage patterns, so this should help with the migration. 
+the compiler errors. Downstream users of joern likely have similar usage patterns, so this should help with the migration. 
 
 You can see the entire diff [here](https://github.com/joernio/joern/pull/2784/files)
 
-#### Superfluous `.asScala`
+### Superfluous `.asScala`
 ```
 [error] joern/semanticcpg/src/main/scala/io/shiftleft/semanticcpg/dotgenerator/CdgGenerator.scala:14:15: value asScala is not a member of Iterator[io.shiftleft.codepropertygraph.generated.nodes.StoredNode]
 [error]     v._cdgOut.asScala
@@ -78,7 +76,9 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 ```
 This issue affected 4 files in joern.
 
-#### Access to the `Traversal` companion object
+Technically speaking, this category can be considered a sub-class of [Reliance on implicit conversion to Traversal](#reliance-on-implicit-conversion-to-traversal).
+
+### Access to the `Traversal` companion object
 ```
 [error] joern/semanticcpg/src/main/scala/io/shiftleft/semanticcpg/dotgenerator/DotCallGraphGenerator.scala:10:5: not found: value Traversal
 [error]     Traversal(DotSerializer.dotGraph(None, callGraph))
@@ -90,7 +90,7 @@ The offending code was
     Traversal(DotSerializer.dotGraph(None, callGraph))
   }
 ```
-This snippet used to call `Traversal:apply` as a factory function to produce a `Traversal` over a 
+This snippet used to call `Traversal:apply` on the `Traversal` companion object as a factory function to produce a `Traversal` over a 
 single element. The return type of `dotCallGraph` does not require adjustment due to the type-alias that replaces the old Traversal class.
 Unfortunately the type-alias cannot redirect access to the old companion object (which does not exist anymore). Hence the fix is to use the
 `Iterator` companion object instead:
@@ -112,7 +112,7 @@ Almost the same issue can occur, and is fixed similarly, with `PathAwareTraversa
 ```
 This issue affected 36 files in joern.
 
-#### Reliance on implicit conversion to Traversal
+### Reliance on implicit conversion to Traversal
 ```
 [error] joern/semanticcpg/src/main/scala/io/shiftleft/semanticcpg/language/TagTraversal.scala:22:59: type mismatch;
 [error]  found   : Seq[A]
@@ -193,7 +193,7 @@ having to type `.iterator` everywhere in their code, and we always produce `Iter
 
 This issue affected 27 files in joern.
 
-#### Use of the `count` step
+### Use of the `count` step
 ```
 [error] joern/semanticcpg/src/main/scala/io/shiftleft/semanticcpg/language/NodeSteps.scala:90:54: missing argument list for method count in trait IterableOnceOps
 [error] Unapplied methods are only converted to functions when a function type is expected.
@@ -211,7 +211,7 @@ the traversal step to `countTrav`, and the code should now read
 ```
 This issue affected 1 file in joern.
 
-#### Double import of Traversal and implicits
+### Double import of Traversal and implicits
 ```
 [error] joern/semanticcpg/src/main/scala/io/shiftleft/semanticcpg/language/nodemethods/StoredNodeMethods.scala:11:12: reference to Traversal is ambiguous;
 [error] it is imported twice in the same scope by
@@ -227,7 +227,7 @@ The fix is to remove the offending `import overflowdb.traversal._`.
 
 This issue affected 37 files in joern.
 
-#### Missing import of traversal extensions
+### Missing import of traversal extensions
 ```
 [error] joern/semanticcpg/src/main/scala/io/shiftleft/semanticcpg/language/types/structure/AnnotationParameterAssignTraversal.scala:21:8: value cast is not a member of Iterator[io.shiftleft.codepropertygraph.generated.nodes.AstNode]
 [error] did you mean wait?
@@ -276,4 +276,4 @@ There is a common pattern in java, if one must use reflection: One reflectively 
 
 The way to hoist the overhead from string-based lookups in joern is to add the required functions in overflowdb-codegen (like e.g. the `_astOut` instead of `.out("AST")`).
 
-This issue affects many files in joern; the commit that includes this message fixes 7 of them.
+This issue affects many files in joern; https://github.com/joernio/joern/pull/2784 includes fixes for 7 of them.
