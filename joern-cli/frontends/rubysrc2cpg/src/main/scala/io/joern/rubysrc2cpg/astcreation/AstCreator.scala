@@ -1866,8 +1866,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForBlockSplattingTypeArgumentsContext(ctx: BlockSplattingTypeArgumentsContext): Seq[Ast] = {
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    val splatAst  = astForSplattingArgumentContext(ctx.splattingArgument())
+    val splatAst = astForSplattingArgumentContext(ctx.splattingArgument())
     if (ctx.blockArgument() != null) {
       val blockArgAst = astForBlockArgumentContext(ctx.blockArgument())
       blockArgAst ++ splatAst
