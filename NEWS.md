@@ -203,7 +203,7 @@ This issue affected 27 files in joern.
 There used to be a step `count: Traversal[Int]` that turns a traversal into a new traversal with a single integer element that contains the number of items in
 the original traversal.
 
-Unfortunately there is a nameclash with an existing `count` method on `IterableOnceOps`. The old code had no problem with that, since a direct 
+Unfortunately there is a name clash with an existing `count` method on `IterableOnceOps`. The old code had no problem with that, since a direct 
 member function shadows the mixin. Since we now use extension methods on vanilla iterators, we cannot shadow the mixin. We therefore renamed 
 the traversal step to `countTrav`, and the code should now read
 ```
