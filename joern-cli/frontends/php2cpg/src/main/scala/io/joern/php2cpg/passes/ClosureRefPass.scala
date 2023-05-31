@@ -36,12 +36,8 @@ class ClosureRefPass(cpg: Cpg) extends ConcurrentWriterCpgPass[ClosureBinding](c
     }
   }
 
-  private def hasMethod(in: Traversal[AstNode]): Traversal[AstNode] = {
-    in.where(_.collectAll[Method])
-  }
-
   private def getMethod(methodRef: MethodRef): Option[Method] = {
-    methodRef.repeat(_.astParent)(_.until(hasMethod).emit(hasMethod)).collectAll[Method].headOption
+    methodRef.repeat(_.astParent)(_.until(_.isMethod).emit(_.isMethod)).isMethod.headOption
   }
 
   private def addRefToCapturedNode(
