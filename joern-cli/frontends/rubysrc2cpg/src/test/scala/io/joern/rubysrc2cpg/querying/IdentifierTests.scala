@@ -867,8 +867,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
   }
 
   "CPG for code with private/protected/public" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |class SomeClass
         |  private
         |  def method1
