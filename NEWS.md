@@ -29,7 +29,9 @@ superclass of `Iterator`) that yield `Iterator`. Many old APIs that used to retu
 
 ### Migration guide
 The following is a list of examples of common fixes that were needed to adapt the joern codebase to this change, together with an explanation and
-the compiler errors. 
+the compiler errors. Downstream usages of joern likely have the same usage patterns, so this should help with the migration. 
+
+You can see the entire diff [here](https://github.com/joernio/joern/pull/2784/files)
 
 #### Superfluous `.asScala`
 ```
