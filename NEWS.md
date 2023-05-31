@@ -2,7 +2,7 @@
 
 ## The great Traversal removal (June 2023)
 ### Summary
-We remove the `overflowdb.traversa.Traversal` class, and replace it with a type alias `type Traversal[+T] = scala.collection.Iterator[T]`.
+We remove the `overflowdb.traversal.Traversal` class, and replace it with a type alias `type Traversal[+T] = scala.collection.Iterator[T]`.
 In tandem, we improve consistency between the types of quasi-Iterators that appear in common APIs. 
 
 This improved consistency comes at a price -- this change is not backwards compatible. The needed adaptations are typically very superficial,
