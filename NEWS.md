@@ -90,7 +90,7 @@ The offending code was
     Traversal(DotSerializer.dotGraph(None, callGraph))
   }
 ```
-This snipped used to call the apply-function of the `Traversal` companion object, as a factory function to produce a `Traversal` over a 
+This snippet used to call `Traversal:apply` as a factory function to produce a `Traversal` over a 
 single element. The return type of `dotCallGraph` does not require adjustment due to the type-alias that replaces the old Traversal class.
 Unfortunately the type-alias cannot redirect access to the old companion object (which does not exist anymore). Hence the fix is to use the
 `Iterator` companion object instead:
