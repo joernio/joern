@@ -179,7 +179,7 @@ Another example happened in the following snippets:
 //...
 class DdgNodeDot(val traversal: Traversal[Method]) extends AnyVal {
 //...
-    ```
+```
 This code used to work due to an implicit conversion from `IterableOnce` to `Traversal`. We do not have this implicit conversion anymore, and the code should instead read:
 ```
   implicit def toDdgNodeDot(traversal: IterableOnce[Method]): DdgNodeDot =
