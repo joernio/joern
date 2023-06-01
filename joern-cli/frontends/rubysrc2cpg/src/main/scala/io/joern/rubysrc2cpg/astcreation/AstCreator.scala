@@ -15,7 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, Token}
 import org.slf4j.LoggerFactory
-import overflowdb.{BatchedUpdate}
+import overflowdb.BatchedUpdate
 
 import java.util
 import scala.collection.mutable
@@ -472,11 +472,7 @@ class AstCreator(filename: String, global: Global)
         .lineNumber(ctrlContinue.lineNumber)
         .columnNumber(ctrlContinue.columnNumber)
         .code(ctx.getText)
-      Seq(
-        Ast(node)
-          .withConditionEdge(node, rightAst.head.nodes.head)
-          .withChildren(rightAst)
-      )
+      Seq(controlStructureAst(node, rightAst.headOption, Seq()))
     } else {
       /*
        * This is <stmt> if/unless/while/until/rescue <stmt>
@@ -485,25 +481,46 @@ class AstCreator(filename: String, global: Global)
        * Thus, left is a child of the right
        *
        */
-      val ctrlStructType = ctx.mod.getType() match {
-        case IF     => ControlStructureTypes.IF
-        case UNLESS => ControlStructureTypes.IF
-        case WHILE  => ControlStructureTypes.WHILE
-        case UNTIL  => ControlStructureTypes.WHILE
-        case RESCUE => ControlStructureTypes.THROW
+      val ast = ctx.mod.getType() match {
+        case IF =>
+          val ifNode = NewControlStructure()
+            .controlStructureType(ControlStructureTypes.IF)
+            .code(ctx.getText)
+            .lineNumber(ctx.IF().getSymbol.getLine)
+            .columnNumber(ctx.IF().getSymbol.getCharPositionInLine)
+          controlStructureAst(ifNode, rightAst.headOption, leftAst.toList)
+        case UNLESS =>
+          val ifNode = NewControlStructure()
+            .controlStructureType(ControlStructureTypes.IF)
+            .code(ctx.getText)
+            .lineNumber(ctx.UNLESS().getSymbol.getLine)
+            .columnNumber(ctx.UNLESS().getSymbol.getCharPositionInLine)
+          controlStructureAst(ifNode, rightAst.headOption, leftAst.toList)
+        case WHILE =>
+          whileAst(
+            rightAst.headOption,
+            leftAst,
+            Some(ctx.getText),
+            Some(ctx.WHILE().getSymbol.getLine),
+            Some(ctx.WHILE().getSymbol.getCharPositionInLine)
+          )
+        case UNTIL =>
+          whileAst(
+            rightAst.headOption,
+            leftAst,
+            Some(ctx.getText),
+            Some(ctx.UNTIL().getSymbol.getLine),
+            Some(ctx.UNTIL().getSymbol.getCharPositionInLine)
+          )
+        case RESCUE =>
+          val node = NewControlStructure()
+            .controlStructureType(ControlStructureTypes.THROW)
+            .lineNumber(ctx.mod.getLine)
+            .columnNumber(ctx.mod.getCharPositionInLine)
+            .code(ctx.getText)
+          controlStructureAst(node, rightAst.headOption, leftAst)
       }
-
-      val node = NewControlStructure()
-        .controlStructureType(ctrlStructType)
-        .lineNumber(ctx.mod.getLine)
-        .columnNumber(ctx.mod.getCharPositionInLine)
-        .code(ctx.getText)
-      Seq(
-        Ast(node)
-          .withConditionEdge(node, rightAst.head.nodes.head)
-          .withChildren(rightAst)
-          .withChildren(leftAst)
-      )
+      Seq(ast)
     }
   }
 
@@ -634,7 +651,7 @@ class AstCreator(filename: String, global: Global)
       .asScala
       .map(wh => {
         val whenNode = NewControlStructure()
-          .controlStructureType(ControlStructureTypes.ELSE)
+          .controlStructureType(ControlStructureTypes.IF)
           .code(wh.getText())
           .lineNumber(wh.WHEN().getSymbol.getLine)
           .columnNumber(wh.WHEN().getSymbol.getCharPositionInLine)
@@ -654,26 +671,23 @@ class AstCreator(filename: String, global: Global)
       .lineNumber(ctx.caseExpression().CASE().getSymbol.getLine)
       .columnNumber(ctx.caseExpression().CASE().getSymbol.getCharPositionInLine)
 
-    val baseAst =
-      Ast(caseNode)
-
     val condAst = {
       if (ctx.caseExpression().expressionOrCommand() != null) {
-        val caseExpressionAsts = astForExpressionOrCommandContext(ctx.caseExpression().expressionOrCommand())
-        baseAst
-          .withChildren(caseExpressionAsts)
-          .withConditionEdge(caseNode, caseExpressionAsts.head.nodes.head)
+        astForExpressionOrCommandContext(ctx.caseExpression().expressionOrCommand()).headOption
       } else {
-        baseAst
+        None
       }
     }
 
-    if (ctx.caseExpression().elseClause() != null) {
-      val elseAst = astForElseClauseContext(ctx.caseExpression().elseClause())
-      Seq(condAst.withChildren(whenThenAstsList).withChildren(elseAst))
-    } else {
-      Seq(condAst.withChildren(whenThenAstsList))
-    }
+    val caseAsts =
+      if (ctx.caseExpression().elseClause() != null) {
+        val elseAst = astForElseClauseContext(ctx.caseExpression().elseClause())
+        whenThenAstsList ++ elseAst
+      } else {
+        whenThenAstsList
+      }
+
+    Seq(controlStructureAst(caseNode, condAst, caseAsts))
   }
 
   def astForChainedInvocationPrimaryContext(ctx: ChainedInvocationPrimaryContext): Seq[Ast] = {
@@ -840,13 +854,7 @@ class AstCreator(filename: String, global: Global)
       .lineNumber(ctx.QMARK().getSymbol.getLine)
       .columnNumber(ctx.QMARK().getSymbol.getCharPositionInLine)
 
-    Seq(
-      Ast(ifNode)
-        .withChildren(conditionAst)
-        .withConditionEdge(ifNode, conditionAst.head.nodes.head)
-        .withChildren(thenAst)
-        .withChildren(elseAst)
-    )
+    Seq(controlStructureAst(ifNode, conditionAst.headOption, List(thenAst ++ elseAst).flatten))
   }
 
   def astForEqualityExpressionContext(ctx: EqualityExpressionContext): Seq[Ast] = {
@@ -926,13 +934,8 @@ class AstCreator(filename: String, global: Global)
       .columnNumber(ctx.FOR().getSymbol.getCharPositionInLine)
     val doClauseAst = astForDoClauseContext(ctx.doClause())
 
-    Seq(
-      Ast(forNode)
-        .withChildren(forVarAst)
-        .withChildren(forCondAst)
-        .withConditionEdge(forNode, forCondAst.head.nodes.head)
-        .withChildren(doClauseAst)
-    )
+    val ast = forAst(forNode, Seq(), forVarAst, forCondAst, Seq(), doClauseAst)
+    Seq(ast)
   }
 
   def astForGroupingExpressionPrimaryContext(ctx: GroupingExpressionPrimaryContext): Seq[Ast] = {
@@ -954,17 +957,14 @@ class AstCreator(filename: String, global: Global)
     ctx.asScala
       .map(elif => {
         val elifNode = NewControlStructure()
-          .controlStructureType(ControlStructureTypes.ELSE)
+          .controlStructureType(ControlStructureTypes.IF)
           .code(elif.getText())
           .lineNumber(elif.ELSIF().getSymbol.getLine)
           .columnNumber(elif.ELSIF().getSymbol.getCharPositionInLine)
 
         val conditionAst = astForExpressionOrCommandContext(elif.expressionOrCommand())
         val thenAsts     = astForThenClauseContext(elif.thenClause())
-        Ast(elifNode)
-          .withChildren(conditionAst)
-          .withConditionEdge(elifNode, conditionAst.head.nodes.head)
-          .withChildren(thenAsts)
+        controlStructureAst(elifNode, conditionAst.headOption, thenAsts)
       })
       .toSeq
   }
@@ -995,14 +995,7 @@ class AstCreator(filename: String, global: Global)
       .lineNumber(ctx.IF().getSymbol.getLine)
       .columnNumber(ctx.IF().getSymbol.getCharPositionInLine)
 
-    Seq(
-      Ast(ifNode)
-        .withChildren(conditionAsts)
-        .withConditionEdge(ifNode, conditionAsts.head.nodes.head)
-        .withChildren(thenAsts)
-        .withChildren(elseAst)
-        .withChildren(elseifAsts)
-    )
+    Seq(controlStructureAst(ifNode, conditionAsts.headOption, List(thenAsts ++ elseifAsts ++ elseAst).flatten))
   }
 
   def astForIfExpressionPrimaryContext(ctx: IfExpressionPrimaryContext): Seq[Ast] = {
@@ -1755,7 +1748,7 @@ class AstCreator(filename: String, global: Global)
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
     val conditionAsts = astForExpressionOrCommandContext(ctx.unlessExpression().expressionOrCommand())
     val thenAsts      = astForThenClauseContext(ctx.unlessExpression().thenClause())
-    val elseAst       = astForElseClauseContext(ctx.unlessExpression().elseClause())
+    val elseAsts      = astForElseClauseContext(ctx.unlessExpression().elseClause())
 
     // unless will be modelled as IF since there is no difference from a static analysis POV
     val unlessNode = NewControlStructure()
@@ -1764,13 +1757,7 @@ class AstCreator(filename: String, global: Global)
       .lineNumber(ctx.unlessExpression().UNLESS().getSymbol.getLine)
       .columnNumber(ctx.unlessExpression().UNLESS().getSymbol.getCharPositionInLine)
 
-    Seq(
-      Ast(unlessNode)
-        .withChild(conditionAsts.head)
-        .withConditionEdge(unlessNode, conditionAsts.head.nodes.head)
-        .withChildren(thenAsts)
-        .withChildren(elseAst)
-    )
+    Seq(controlStructureAst(unlessNode, conditionAsts.headOption, List(thenAsts ++ elseAsts).flatten))
   }
 
   def astForUntilExpressionContext(ctx: UntilExpressionContext): Seq[Ast] = {
@@ -1781,7 +1768,7 @@ class AstCreator(filename: String, global: Global)
     val ast = whileAst(
       untilCondAst,
       doClauseAsts,
-      None,
+      Some(ctx.getText),
       Some(ctx.UNTIL().getSymbol.getLine),
       Some(ctx.UNTIL().getSymbol.getCharPositionInLine)
     )
@@ -1827,7 +1814,7 @@ class AstCreator(filename: String, global: Global)
     val ast = whileAst(
       whileCondAst,
       doClauseAsts,
-      None,
+      Some(ctx.getText),
       Some(ctx.WHILE().getSymbol.getLine),
       Some(ctx.WHILE().getSymbol.getCharPositionInLine)
     )
