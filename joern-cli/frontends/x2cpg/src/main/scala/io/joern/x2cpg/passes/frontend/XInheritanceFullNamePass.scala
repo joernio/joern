@@ -95,7 +95,7 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPas
       // Usually in the case of inheriting external types
       qualifiedNamesInScope
         .flatMap { qn =>
-          td.inheritsFromTypeFullName.find(t => namesIntersect(qn, t)) match {
+          td.inheritsFromTypeFullName.find(t => ImportStringHandling.namesIntersect(qn, t, pathSep)) match {
             case Some(path) => Option((qn, path))
             case None       => None
           }
@@ -117,30 +117,11 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPas
         typeDecl
     }
 
-  private def namesIntersect(a: String, b: String): Boolean = {
-    val (as, bs, intersect) = splitAndIntersect(a, b)
-    intersect.nonEmpty && (as.endsWith(intersect) || bs.endsWith(intersect))
-  }
-
-  private def splitAndIntersect(a: String, b: String): (Seq[String], Seq[String], Seq[String]) = {
-    val as = a.split(pathSep).toIndexedSeq
-    val bs = b.split(pathSep).toIndexedSeq
-    (as, bs, as.intersect(bs))
-  }
-
   /** Converts types in the form `foo.bar.Baz` to `foo/bar.js::program:Baz` and will result in a tuple of name and full
     * name.
     */
   protected def xTypeFullName(importedType: String, importedPath: String): (String, String) = {
-    val (a, b) =
-      if (importedType.length > importedPath.length)
-        (importedType, importedPath)
-      else
-        (importedPath, importedType)
-    val (as, bs, intersect) = splitAndIntersect(a, b)
-    val combinedPath =
-      if (a == importedPath) bs.diff(intersect).concat(as).mkString(pathSep.toString)
-      else as.diff(intersect).concat(bs).mkString(pathSep.toString)
+    val combinedPath = ImportStringHandling.combinedPath(importedType, importedPath, pathSep)
     combinedPath.split(pathSep).lastOption match {
       case Some(tName) =>
         (
@@ -153,5 +134,30 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPas
       case None => (combinedPath, combinedPath)
     }
 
+  }
+}
+
+object ImportStringHandling {
+  def namesIntersect(a: String, b: String, pathSep: Char = '.'): Boolean = {
+    val (as, bs, intersect) = splitAndIntersect(a, b, pathSep)
+    intersect.nonEmpty && (as.endsWith(intersect) || bs.endsWith(intersect))
+  }
+
+  private def splitAndIntersect(a: String, b: String, pathSep: Char = '.'): (Seq[String], Seq[String], Seq[String]) = {
+    val as = a.split(pathSep).toIndexedSeq
+    val bs = b.split(pathSep).toIndexedSeq
+    (as, bs, as.intersect(bs))
+  }
+
+  def combinedPath(importedType: String, importedPath: String, pathSep: Char = '.'): String = {
+    val (a, b) =
+      if (importedType.length > importedPath.length)
+        (importedType, importedPath)
+      else
+        (importedPath, importedType)
+    val (as, bs, intersect) = splitAndIntersect(a, b, pathSep)
+
+    if (a == importedPath) bs.diff(intersect).concat(as).mkString(pathSep.toString)
+    else as.diff(intersect).concat(bs).mkString(pathSep.toString)
   }
 }

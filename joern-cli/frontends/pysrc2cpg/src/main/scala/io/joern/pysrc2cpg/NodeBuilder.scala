@@ -158,7 +158,9 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
           case attr: ast.Attribute =>
             extractTypesFromHint(Some(attr.value)).map { x => x + "." + attr.attr }
           case n: ast.Subscript if n.value.isInstanceOf[ast.Name] => Option(n.value.asInstanceOf[ast.Name].id)
-          case _                                                  => None
+          case n: ast.Constant if n.value.isInstanceOf[ast.StringConstant] =>
+            Option(n.value.asInstanceOf[ast.StringConstant].value)
+          case _ => None
         }
         nameSequence.map { typeName =>
           if (allBuiltinClasses.contains(typeName)) s"$builtinPrefix$typeName"
