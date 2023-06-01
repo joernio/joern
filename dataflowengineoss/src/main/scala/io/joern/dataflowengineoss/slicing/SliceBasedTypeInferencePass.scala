@@ -36,6 +36,11 @@ class SliceBasedTypeInferencePass(
     case None          => File(s"./type_inference_$timeOfAnalysis.csv")
   }
 
+  private val labellingFile = cpg.metaData.root.map(File(_)).headOption match {
+    case Some(project) => File(s"./${project.name}_labelling_file_$timeOfAnalysis.csv")
+    case None          => File(s"./type_inference_$timeOfAnalysis.csv")
+  }
+
   private val yieldFile = cpg.metaData.root.map(File(_)).headOption match {
     case Some(project) => File(s"./${project.name}_inference_yield_$timeOfAnalysis.csv")
     case None          => File(s"./inference_yield_$timeOfAnalysis.csv")
@@ -49,11 +54,8 @@ class SliceBasedTypeInferencePass(
     newType: String
   )
 
-  private def location(n: CfgNode): String =
-    s"${n.file.name.headOption.getOrElse("Unknown")}#L${n.lineNumber.getOrElse(-1)}"
-
-  private def location(n: Local): String =
-    s"${n.file.name.headOption.getOrElse("Unknown")}#L${n.lineNumber.getOrElse(-1)}"
+  private def location(n: StoredNode): String =
+    s"${n.file.name.headOption.getOrElse("Unknown")}#L${n.property(PropertyNames.LINE_NUMBER, None).getOrElse(-1)}"
 
   lazy private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
 
@@ -75,14 +77,23 @@ class SliceBasedTypeInferencePass(
                 val method = cpg.method
                   .fullNameExact(scope)
                   .l
-                lazy val methodLocals      = method.ast.isLocal.l
+                lazy val methodDeclarations = method.ast.collect {
+                  case n: Local             => n
+                  case n: MethodParameterIn => n
+                }.l
                 lazy val methodIdentifiers = method.ast.isIdentifier.l
                 // Set the type of targets which only have dummy types or have no types
                 results.foreach { res =>
                   // Handle locals
-                  methodLocals.nameExact(res.targetIdentifier).filter(onlyDummyOrAnyType).foreach { tgt =>
+                  methodDeclarations.nameExact(res.targetIdentifier).filter(onlyDummyOrAnyType).foreach { tgt =>
                     builder.setNodeProperty(tgt, PropertyNames.TYPE_FULL_NAME, res.typ)
-                    logChange(location(tgt), tgt.label, res.targetIdentifier, tgt.typeFullName, res.typ)
+                    logChange(
+                      location(tgt),
+                      tgt.label,
+                      res.targetIdentifier,
+                      tgt.property(PropertyNames.TYPE_FULL_NAME, "<unknown>"),
+                      res.typ
+                    )
                   }
                   // Handle identifiers
                   methodIdentifiers
@@ -110,7 +121,7 @@ class SliceBasedTypeInferencePass(
                 }
                 // Get yield
                 val targetNodes = cpg.graph
-                  .nodes("LOCAL", "IDENTIFIER", "CALL")
+                  .nodes("LOCAL", "IDENTIFIER", "CALL", "METHOD_PARAMETER_IN")
                   .cast[AstNode]
                   .l
                 val untypedNodes = targetNodes.count(onlyDummyOrAnyType) - changes.size
@@ -123,17 +134,23 @@ class SliceBasedTypeInferencePass(
               }
         }
       }
-      typeInferenceFile.write("Location,Label,Target,OldType,NewType\n")
-      changes.foreach { change =>
-        typeInferenceFile.write(
-          change.productIterator
-            .map {
-              case x: Seq[_] => "[" + x.mkString("|") + "]"
-              case x         => x.toString
-            }
-            .mkString(",") + "\n"
-        )(OpenOptions.append)
-      }
+      captureTypeInferenceChanges()
+    }
+  }
+
+  private def captureTypeInferenceChanges(): Unit = {
+    typeInferenceFile.write("Location,Label,Target,OldType,NewType\n")
+    labellingFile.write("Location,Label,Target,OldType,NewType,Outcome,TypeCategory,Notes\n")
+    changes.sortBy(_.location).foreach { change =>
+      val line = change.productIterator
+        .map {
+          case x: Seq[_] => "[" + x.mkString("|") + "]"
+          case x         => x.toString
+        }
+        .mkString(",")
+      typeInferenceFile.write(s"$line\n")(OpenOptions.append)
+      if (change.nodeLabel == "LOCAL" || change.nodeLabel == "METHOD_PARAMETER_IN")
+        labellingFile.write(s"$line,_OUTCOME_,BUILTIN-UDT,_NOTES_\n")(OpenOptions.append)
     }
   }
 
