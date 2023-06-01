@@ -29,6 +29,7 @@ class SliceBasedTypeInferencePass(
   private lazy val logger         = LoggerFactory.getLogger(classOf[SliceBasedTypeInferencePass])
   private lazy val sliceConfig    = SliceConfig(sliceMode = SliceMode.Usages)
   private val changes             = ArrayBuffer.empty[InferredChange]
+  private val ecmaPrefix          = "__ecma."
   private lazy val timeOfAnalysis = DateTimeFormatter.ofPattern("yyyy-MM-dd__HH_mm").format(LocalDateTime.now)
 
   private val typeInferenceFile = cpg.metaData.root.map(File(_)).headOption match {
@@ -71,6 +72,7 @@ class SliceBasedTypeInferencePass(
               .filter(_.confidence > minConfidence)
               .filterNot(res => pathPattern.matcher(res.typ).matches())
               .filterNot(res => typesNotToInfer.contains(res.typ.toLowerCase))
+              .map(builtinTypes)
             filteredResults
               .groupBy(_.scope)
               .foreach { case (scope, results) =>
@@ -149,8 +151,10 @@ class SliceBasedTypeInferencePass(
         }
         .mkString(",")
       typeInferenceFile.write(s"$line\n")(OpenOptions.append)
-      if (change.nodeLabel == "LOCAL" || change.nodeLabel == "METHOD_PARAMETER_IN")
-        labellingFile.write(s"$line,_OUTCOME_,BUILTIN-UDT,_NOTES_\n")(OpenOptions.append)
+      if (change.nodeLabel == "LOCAL" || change.nodeLabel == "METHOD_PARAMETER_IN") {
+        val typeCategory = if (change.newType.startsWith(ecmaPrefix)) "BUILTIN" else "UDT"
+        labellingFile.write(s"$line,_OUTCOME_,$typeCategory,_NOTES_\n")(OpenOptions.append)
+      }
     }
   }
 
@@ -165,6 +169,12 @@ class SliceBasedTypeInferencePass(
       .addOne(InferredChange(location, label, name, existingTypes, inferredTypes))
   }
 
+  private def builtinTypes(res: InferenceResult): InferenceResult =
+    res.typ match {
+      case x if x.charAt(0).isLower && builtins.contains(x.capitalize) => res.copy(typ = s"$ecmaPrefix${x.capitalize}")
+      case _                                                           => res
+    }
+
   /** Determines if the node type information is made from dummy types or the "ANY" type.
     */
   private def onlyDummyOrAnyType(node: StoredNode): Boolean = {
@@ -175,5 +185,64 @@ class SliceBasedTypeInferencePass(
       .filterNot(_ == "ANY")
       .forall(XTypeRecovery.isDummyType)
   }
+
+  val builtins: Set[String] = Set(
+    "AggregateError",
+    "Array",
+    "ArrayBuffer",
+    "AsyncFunction",
+    "AsyncGenerator",
+    "AsyncGeneratorFunction",
+    "Atomics",
+    "BigInt",
+    "BigInt64Array",
+    "BigUint64Array",
+    "Boolean",
+    "Buffer.from",
+    "DataView",
+    "Date",
+    "Error",
+    "EvalError",
+    "FinalizationRegistry",
+    "Float32Array",
+    "Float64Array",
+    "Function",
+    "Generator",
+    "GeneratorFunction",
+    "HTMLImageElement",
+    "Infinity",
+    "Int16Array",
+    "Int32Array",
+    "Int8Array",
+    "InternalError",
+    "Intl",
+    "JSON",
+    "Map",
+    "Math",
+    "NaN",
+    "Number",
+    "Object",
+    "Promise",
+    "Proxy",
+    "RangeError",
+    "ReferenceError",
+    "Reflect",
+    "RegExp",
+    "Set",
+    "SharedArrayBuffer",
+    "String",
+    "Symbol",
+    "SyntaxError",
+    "TypeError",
+    "TypedArray",
+    "URIError",
+    "Uint16Array",
+    "Uint32Array",
+    "Uint8Array",
+    "Uint8ClampedArray",
+    "WeakMap",
+    "WeakRef",
+    "WeakSet"
+  )
 
 }
