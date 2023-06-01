@@ -500,7 +500,7 @@ class AstCreator(filename: String, global: Global)
           whileAst(
             rightAst.headOption,
             leftAst,
-            None,
+            Some(ctx.getText),
             Some(ctx.WHILE().getSymbol.getLine),
             Some(ctx.WHILE().getSymbol.getCharPositionInLine)
           )
@@ -508,7 +508,7 @@ class AstCreator(filename: String, global: Global)
           whileAst(
             rightAst.headOption,
             leftAst,
-            None,
+            Some(ctx.getText),
             Some(ctx.UNTIL().getSymbol.getLine),
             Some(ctx.UNTIL().getSymbol.getCharPositionInLine)
           )
@@ -1768,7 +1768,7 @@ class AstCreator(filename: String, global: Global)
     val ast = whileAst(
       untilCondAst,
       doClauseAsts,
-      None,
+      Some(ctx.getText),
       Some(ctx.UNTIL().getSymbol.getLine),
       Some(ctx.UNTIL().getSymbol.getCharPositionInLine)
     )
@@ -1814,7 +1814,7 @@ class AstCreator(filename: String, global: Global)
     val ast = whileAst(
       whileCondAst,
       doClauseAsts,
-      None,
+      Some(ctx.getText),
       Some(ctx.WHILE().getSymbol.getLine),
       Some(ctx.WHILE().getSymbol.getCharPositionInLine)
     )
