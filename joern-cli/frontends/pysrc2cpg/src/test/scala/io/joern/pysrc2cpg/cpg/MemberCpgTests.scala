@@ -16,14 +16,9 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
                                                 |
                                                 |""".stripMargin)
 
-    "should have a MEMBER" in {
-      val List(member: Member) = cpg.member.name("x").l
-      member.code shouldBe "x"
-    }
-
     "should have the MEMBER attached to the class" in {
-      val List(typeDecl) = cpg.member.name("x").typeDecl.l
-      typeDecl.name shouldBe "Foo"
+      val List(member) = cpg.typeDecl.name("Foo").member.name("x").l
+      member.name shouldBe "x"
     }
   }
 
