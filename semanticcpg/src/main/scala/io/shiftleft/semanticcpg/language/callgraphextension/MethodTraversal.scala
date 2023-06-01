@@ -19,8 +19,7 @@ class MethodTraversal(val traversal: Traversal[Method]) extends AnyVal {
     } else {
       sinkMethods
         .repeat(
-          _.flatMap(callResolver.getMethodCallsitesAsTraversal)
-            ._containsIn // expand to method
+          _.flatMap(callResolver.getMethodCallsitesAsTraversal)._containsIn // expand to method
         )(_.dedup.emit(_.collect {
           case method: Method if sourceMethods.contains(method) => method
         }))

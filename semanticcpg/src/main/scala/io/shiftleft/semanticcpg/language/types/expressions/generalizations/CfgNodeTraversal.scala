@@ -25,16 +25,16 @@ class CfgNodeTraversal[A <: CfgNode](val traversal: Traversal[A]) extends AnyVal
 
   @Doc(info = "Nodes directly reachable via outgoing CFG edges")
   def cfgNext: Traversal[CfgNode] =
-    traversal
-      ._cfgOut.filterNot(_.isInstanceOf[MethodReturn])
+    traversal._cfgOut
+      .filterNot(_.isInstanceOf[MethodReturn])
       .cast[CfgNode]
 
   /** Traverse to previous expression in CFG.
     */
   @Doc(info = "Nodes directly reachable via incoming CFG edges")
   def cfgPrev: Traversal[CfgNode] =
-    traversal
-      ._cfgIn.filterNot(_.isInstanceOf[MethodReturn])
+    traversal._cfgIn
+      .filterNot(_.isInstanceOf[MethodReturn])
       .cast[CfgNode]
 
   /** All nodes reachable in the CFG by up to n forward expansions

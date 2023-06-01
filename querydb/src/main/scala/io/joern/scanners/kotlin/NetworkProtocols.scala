@@ -26,7 +26,8 @@ object NetworkProtocols extends QueryBundle {
           .fullNameExact("java.net.URL.<init>:void(java.lang.String)")
           .callIn
           .where(_.argument.isLiteral.code("^[^h]*http:.*"))
-          .l.iterator
+          .l
+          .iterator
       }),
       tags = List(QueryTags.insecureNetworkTraffic, QueryTags.android),
       codeExamples = CodeExamples(

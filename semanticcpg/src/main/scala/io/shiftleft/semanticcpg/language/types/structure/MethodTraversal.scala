@@ -77,7 +77,7 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
   @Doc(info = "Type this method is defined in")
   def definingTypeDecl: Traversal[TypeDecl] =
     traversal
-      .repeat(_._astIn)(_.until(_.collectAll[TypeDecl] ))
+      .repeat(_._astIn)(_.until(_.collectAll[TypeDecl]))
       .cast[TypeDecl]
 
   /** The type declaration associated with this method, e.g., the class it is defined in. Alias for 'definingTypeDecl'
@@ -129,8 +129,7 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   @Doc(info = "Top level expressions (\"Statements\")")
   def topLevelExpressions: Traversal[Expression] =
-    traversal
-      ._astOut
+    traversal._astOut
       .collectAll[Block]
       ._astOut
       .not(_.collectAll[Local])
@@ -160,8 +159,8 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
   /** Traverse to namespace block */
   @Doc(info = "Namespace block this method is declared in")
   def namespaceBlock: Traversal[NamespaceBlock] = {
-    traversal.flatMap{
-      m => m.astIn.headOption match {
+    traversal.flatMap { m =>
+      m.astIn.headOption match {
         // some language frontends don't have a TYPE_DECL for a METHOD
         case Some(namespaceBlock: NamespaceBlock) => namespaceBlock.start
         // other language frontends always embed their method in a TYPE_DECL

@@ -59,8 +59,7 @@ class ExpressionTraversal[NodeType <: Expression](val traversal: Traversal[NodeT
   /** Traverse to enclosing method
     */
   def method: Traversal[Method] =
-    traversal
-      ._containsIn
+    traversal._containsIn
       .flatMap {
         case x: Method   => x.start
         case x: TypeDecl => x.astParent

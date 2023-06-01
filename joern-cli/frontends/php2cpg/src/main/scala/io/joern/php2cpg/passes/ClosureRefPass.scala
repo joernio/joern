@@ -50,7 +50,8 @@ class ClosureRefPass(cpg: Cpg) extends ConcurrentWriterCpgPass[ClosureBinding](c
 
       case Some(method) =>
         closureBinding.closureOriginalName.foreach { name =>
-          lazy val locals = method.start.repeat(_.astChildren.filterNot(_.isMethod))(_.emit(_.isLocal)).collectAll[Local]
+          lazy val locals =
+            method.start.repeat(_.astChildren.filterNot(_.isMethod))(_.emit(_.isLocal)).collectAll[Local]
           val maybeCaptured =
             method.parameter
               .find(_.name == name)
