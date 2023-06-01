@@ -32,19 +32,13 @@ class SliceBasedTypeInferencePass(
   private val ecmaPrefix          = "__ecma."
   private lazy val timeOfAnalysis = DateTimeFormatter.ofPattern("yyyy-MM-dd__HH_mm").format(LocalDateTime.now)
 
-  private val typeInferenceFile = cpg.metaData.root.map(File(_)).headOption match {
-    case Some(project) => File(s"./${project.name}_type_inference_$timeOfAnalysis.csv")
-    case None          => File(s"./type_inference_$timeOfAnalysis.csv")
-  }
+  private val typeInferenceFile = generateLoggingFile("type_inference")
+  private val labellingFile     = generateLoggingFile("labelling_file")
+  private val yieldFile         = generateLoggingFile("inference_yield")
 
-  private val labellingFile = cpg.metaData.root.map(File(_)).headOption match {
-    case Some(project) => File(s"./${project.name}_labelling_file_$timeOfAnalysis.csv")
-    case None          => File(s"./type_inference_$timeOfAnalysis.csv")
-  }
-
-  private val yieldFile = cpg.metaData.root.map(File(_)).headOption match {
-    case Some(project) => File(s"./${project.name}_inference_yield_$timeOfAnalysis.csv")
-    case None          => File(s"./inference_yield_$timeOfAnalysis.csv")
+  private def generateLoggingFile(name: String): File = cpg.metaData.root.map(File(_)).headOption match {
+    case Some(project) => File(s"./${project.name}_${name}_$timeOfAnalysis.csv")
+    case None          => File(s"./${name}_$timeOfAnalysis.csv")
   }
 
   private case class InferredChange(
