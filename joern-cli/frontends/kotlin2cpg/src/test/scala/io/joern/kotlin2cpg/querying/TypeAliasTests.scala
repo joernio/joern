@@ -46,7 +46,7 @@ class TypeAliasTests extends KotlinCode2CpgFixture(withOssDataflow = false, with
       x.fullName shouldBe "mypkg.Id"
       x.isExternal shouldBe false
       x.inheritsFromTypeFullName shouldBe List()
-      x.aliasTypeFullName shouldBe Some(Defines.UnresolvedNamespace)
+      x.aliasTypeFullName shouldBe Some("ANY")
     }
   }
 
