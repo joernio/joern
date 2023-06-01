@@ -481,20 +481,46 @@ class AstCreator(filename: String, global: Global)
        * Thus, left is a child of the right
        *
        */
-      val ctrlStructType = ctx.mod.getType() match {
-        case IF     => ControlStructureTypes.IF
-        case UNLESS => ControlStructureTypes.IF
-        case WHILE  => ControlStructureTypes.WHILE
-        case UNTIL  => ControlStructureTypes.WHILE
-        case RESCUE => ControlStructureTypes.THROW
+      val ast = ctx.mod.getType() match {
+        case IF =>
+          val ifNode = NewControlStructure()
+            .controlStructureType(ControlStructureTypes.IF)
+            .code(ctx.getText)
+            .lineNumber(ctx.IF().getSymbol.getLine)
+            .columnNumber(ctx.IF().getSymbol.getCharPositionInLine)
+          controlStructureAst(ifNode, rightAst.headOption, leftAst.toList)
+        case UNLESS =>
+          val ifNode = NewControlStructure()
+            .controlStructureType(ControlStructureTypes.IF)
+            .code(ctx.getText)
+            .lineNumber(ctx.UNLESS().getSymbol.getLine)
+            .columnNumber(ctx.UNLESS().getSymbol.getCharPositionInLine)
+          controlStructureAst(ifNode, rightAst.headOption, leftAst.toList)
+        case WHILE =>
+          whileAst(
+            rightAst.headOption,
+            leftAst,
+            None,
+            Some(ctx.WHILE().getSymbol.getLine),
+            Some(ctx.WHILE().getSymbol.getCharPositionInLine)
+          )
+        case UNTIL =>
+          whileAst(
+            rightAst.headOption,
+            leftAst,
+            None,
+            Some(ctx.UNTIL().getSymbol.getLine),
+            Some(ctx.UNTIL().getSymbol.getCharPositionInLine)
+          )
+        case RESCUE =>
+          val node = NewControlStructure()
+            .controlStructureType(ControlStructureTypes.THROW)
+            .lineNumber(ctx.mod.getLine)
+            .columnNumber(ctx.mod.getCharPositionInLine)
+            .code(ctx.getText)
+          controlStructureAst(node, rightAst.headOption, leftAst)
       }
-
-      val node = NewControlStructure()
-        .controlStructureType(ctrlStructType)
-        .lineNumber(ctx.mod.getLine)
-        .columnNumber(ctx.mod.getCharPositionInLine)
-        .code(ctx.getText)
-      Seq(controlStructureAst(node, rightAst.headOption, leftAst))
+      Seq(ast)
     }
   }
 
@@ -1722,7 +1748,7 @@ class AstCreator(filename: String, global: Global)
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
     val conditionAsts = astForExpressionOrCommandContext(ctx.unlessExpression().expressionOrCommand())
     val thenAsts      = astForThenClauseContext(ctx.unlessExpression().thenClause())
-    val elseAsts       = astForElseClauseContext(ctx.unlessExpression().elseClause())
+    val elseAsts      = astForElseClauseContext(ctx.unlessExpression().elseClause())
 
     // unless will be modelled as IF since there is no difference from a static analysis POV
     val unlessNode = NewControlStructure()
