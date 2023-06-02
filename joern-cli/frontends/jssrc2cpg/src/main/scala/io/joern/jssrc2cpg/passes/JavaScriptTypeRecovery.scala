@@ -222,7 +222,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         case Some(i)                                             => symbolTable.get(i)
         case None                                                => Set.empty[String]
       }
-      val possibleConstructorPointer =
+      lazy val possibleConstructorPointer =
         newChildren.astChildren.isFieldIdentifier.map(f => CallAlias(f.canonicalName, Some("this"))).headOption match {
           case Some(fi) => symbolTable.get(fi)
           case None     => Set.empty[String]
@@ -257,10 +257,12 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     globalTypes: Set[String],
     baseTypes: Set[String]
   ): Set[String] = {
-    if (symbolTable.contains(LocalVar(fieldName))) symbolTable.get(LocalVar(fieldName))
-    else if (symbolTable.contains(CallAlias(fieldName, Option("this"))))
+    if (symbolTable.contains(LocalVar(fieldName))) {
+      val fieldTypes = symbolTable.get(LocalVar(fieldName))
+      symbolTable.append(i, fieldTypes)
+    } else if (symbolTable.contains(CallAlias(fieldName, Option("this")))) {
       symbolTable.get(CallAlias(fieldName, Option("this")))
-    else
+    } else {
       super.associateInterproceduralTypes(
         i: Identifier,
         fieldFullName: String,
@@ -268,6 +270,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         globalTypes: Set[String],
         baseTypes: Set[String]
       )
+    }
   }
 
   override protected def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] =

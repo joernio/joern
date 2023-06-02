@@ -364,4 +364,30 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Temporary variables inserted to produce a three-address code structure" should {
+
+    lazy val cpg = code(
+      """
+        |import { HttpClient } from '@angular/common/http';
+        |
+        |@Injectable({
+        |  providedIn: 'root',
+        |})
+        |export class SharedService {
+        |  private http: HttpClient = new HttpClient();
+        |  saveUserFeedback(payload) {
+        |    return this.http.post('https://google.com', payload);
+        |  }
+        |}
+        |""".stripMargin,
+      "foo.ts"
+    )
+
+    "have their calls from a field access structure successfully recovered" in {
+      cpg.identifier("_tmp_2").typeFullName.headOption shouldBe Some("@angular/common/http:HttpClient")
+      cpg.call("post").methodFullName.headOption shouldBe Some("@angular/common/http:HttpClient:post")
+    }
+
+  }
+
 }
