@@ -490,7 +490,7 @@ trait AstForTypesCreator { this: AstCreator =>
           Seq(memberNode(nodeInfo, functionNode.name, nodeInfo.code, typeFullName, Seq(functionNode.fullName)))
         case _ =>
           val names = nodeInfo.node match {
-            case TSPropertySignature =>
+            case TSPropertySignature | TSMethodSignature =>
               if (hasKey(nodeInfo.json("key"), "value")) {
                 Seq(safeStr(nodeInfo.json("key"), "value").getOrElse(code(nodeInfo.json("key")("value"))))
               } else Seq(code(nodeInfo.json("key")))
