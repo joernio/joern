@@ -160,6 +160,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |  [propName: string]: any;
         |  "foo": string;
         |  (source: string, subString: string): boolean;
+        |  toString(): string;
         |}
         |""".stripMargin) { cpg =>
       inside(cpg.typeDecl("Greeter").l) { case List(greeter) =>
@@ -168,7 +169,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         greeter.fullName shouldBe "code.ts::program:Greeter"
         greeter.filename shouldBe "code.ts"
         greeter.file.name.head shouldBe "code.ts"
-        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo, anon) =>
+        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo, anon, toString) =>
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
           name.name shouldBe "name"
@@ -180,8 +181,10 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
           anon.name shouldBe "anonymous"
           anon.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Greeter:anonymous")
           anon.code shouldBe "(source: string, subString: string): boolean;"
+          toString.name shouldBe "toString"
+          toString.code shouldBe "toString(): string;"
         }
-        inside(cpg.typeDecl("Greeter").method.l) { case List(constructor, anon) =>
+        inside(cpg.typeDecl("Greeter").method.l) { case List(constructor, anon, toString) =>
           constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
           constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
           constructor.code shouldBe "new: Greeter"
@@ -191,6 +194,8 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
           anon.code shouldBe "(source: string, subString: string): boolean;"
           anon.parameter.name.l shouldBe List("this", "source", "subString")
           anon.parameter.code.l shouldBe List("this", "source: string", "subString: string")
+          toString.name shouldBe "toString"
+          toString.code shouldBe "toString(): string;"
         }
       }
     }

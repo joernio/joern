@@ -481,7 +481,7 @@ trait AstForTypesCreator { this: AstCreator =>
       val nodeInfo     = createBabelNodeInfo(classElement)
       val typeFullName = typeFor(nodeInfo)
       val memberNodes = nodeInfo.node match {
-        case TSCallSignatureDeclaration =>
+        case TSCallSignatureDeclaration | TSMethodSignature =>
           val functionNode = createMethodDefinitionNode(nodeInfo)
           val bindingNode  = newBindingNode("", "", "")
           diffGraph.addEdge(typeDeclNode_, bindingNode, EdgeTypes.BINDS)
