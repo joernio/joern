@@ -25,7 +25,7 @@ object UserInputIntoDangerousFunctions extends QueryBundle {
         def source =
           cpg.call.methodFullName("getenv").cfgNext.isCall.argument(2)
         def sink = cpg.method.fullName("strcpy").parameter.index(2)
-        sink.reachableBy(source).l
+        sink.reachableBy(source).l.iterator
       }),
       tags = List(QueryTags.badfn)
     )

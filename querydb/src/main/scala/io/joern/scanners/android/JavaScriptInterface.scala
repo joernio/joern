@@ -36,7 +36,7 @@ object JavaScriptInterface extends QueryBundle {
         val appUsesCleartextTraffic = cpg.appManifest.usesCleartextTraffic.nonEmpty
         def exposedJavaScriptInterfaceObjects =
           if (appUsesCleartextTraffic) webViewsWithInsecureLoadUrlCalls.addJavascriptInterfaceCalls.argument(1)
-          else Traversal.empty
+          else Iterator.empty
         val exposedJavaScriptInterfaceObjectNames = exposedJavaScriptInterfaceObjects.collect {
           case ident: Identifier => ident.typeFullName
           case call: Call        => call.typeFullName
@@ -46,7 +46,7 @@ object JavaScriptInterface extends QueryBundle {
             .where(_.typeDecl.filter { node => exposedJavaScriptInterfaceObjectNames.exists(_ == node.fullName) })
         def runtimeExecCalls =
           cpg.call.name("exec").typeFullName("java.lang.Process")
-        runtimeExecCalls.where(_.argument.reachableBy(exposedJavaScriptInterfaceMethods.parameter)).l
+        runtimeExecCalls.where(_.argument.reachableBy(exposedJavaScriptInterfaceMethods.parameter)).l.iterator
       }),
       tags = List(QueryTags.android),
       multiFileCodeExamples = MultiFileCodeExamples(

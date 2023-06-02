@@ -12,14 +12,14 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       cpg.typ.name("Foo").fullName.head shouldBe "Test0.py:<module>.Foo"
       val typeDecl = cpg.typeDecl.name("Foo").head
       typeDecl.fullName shouldBe "Test0.py:<module>.Foo"
-      typeDecl.astParent.head shouldBe cpg.method.name("<module>").head
+      typeDecl.astParent shouldBe cpg.method.name("<module>").head
     }
 
     "have correct meta class type and typeDecl" in {
       cpg.typ.name("Foo<meta>").fullName.head shouldBe "Test0.py:<module>.Foo<meta>"
       val typeDecl = cpg.typeDecl.name("Foo<meta>").head
       typeDecl.fullName shouldBe "Test0.py:<module>.Foo<meta>"
-      typeDecl.astParent.head shouldBe cpg.method.name("<module>").head
+      typeDecl.astParent shouldBe cpg.method.name("<module>").head
     }
 
     "have correct meta class call handler type and typeDecl" in {
@@ -27,7 +27,7 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
         "Test0.py:<module>.Foo.<metaClassCallHandler>"
       val typeDecl = cpg.typeDecl.name("<metaClassCallHandler>").head
       typeDecl.fullName shouldBe "Test0.py:<module>.Foo.<metaClassCallHandler>"
-      typeDecl.astParent.head shouldBe cpg.typeDecl.name("Foo<meta>").head
+      typeDecl.astParent shouldBe cpg.typeDecl.name("Foo<meta>").head
     }
 
     "have correct fake new type and typeDecl" in {
@@ -35,7 +35,7 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
         "Test0.py:<module>.Foo.<fakeNew>"
       val typeDecl = cpg.typeDecl.name("<fakeNew>").head
       typeDecl.fullName shouldBe "Test0.py:<module>.Foo.<fakeNew>"
-      typeDecl.astParent.head shouldBe cpg.typeDecl.name("Foo<meta>").head
+      typeDecl.astParent shouldBe cpg.typeDecl.name("Foo<meta>").head
     }
   }
 

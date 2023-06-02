@@ -6,8 +6,7 @@ import io.joern.dataflowengineoss.dotgenerator.{DotCpg14Generator, DotDdgGenerat
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language.dotextension.{ImageViewer, Shared}
-import overflowdb.traversal.Traversal
-
+import io.shiftleft.semanticcpg.language._
 class DdgNodeDot(val traversal: Traversal[Method]) extends AnyVal {
 
   def dotDdg(implicit semantics: Semantics = DefaultSemantics()): Traversal[String] =

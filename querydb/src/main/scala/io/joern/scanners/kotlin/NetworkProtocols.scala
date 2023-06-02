@@ -27,6 +27,7 @@ object NetworkProtocols extends QueryBundle {
           .callIn
           .where(_.argument.isLiteral.code("^[^h]*http:.*"))
           .l
+          .iterator
       }),
       tags = List(QueryTags.insecureNetworkTraffic, QueryTags.android),
       codeExamples = CodeExamples(

@@ -10,7 +10,7 @@ import overflowdb.traversal.{Traversal, help, toElementTraversal, toNodeTraversa
 /** A method, function, or procedure
   */
 @help.Traversal(elementType = classOf[Method])
-class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
+class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   /** Traverse to annotations of method
     */
@@ -77,7 +77,7 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
   @Doc(info = "Type this method is defined in")
   def definingTypeDecl: Traversal[TypeDecl] =
     traversal
-      .repeat(_.in(EdgeTypes.AST))(_.until(_.hasLabel(NodeTypes.TYPE_DECL)))
+      .repeat(_._astIn)(_.until(_.collectAll[TypeDecl]))
       .cast[TypeDecl]
 
   /** The type declaration associated with this method, e.g., the class it is defined in. Alias for 'definingTypeDecl'
@@ -90,18 +90,18 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
   @Doc(info = "Method this method is defined in")
   def definingMethod: Traversal[Method] =
     traversal
-      .repeat(_.in(EdgeTypes.AST))(_.until(_.hasLabel(NodeTypes.METHOD)))
+      .repeat(_._astIn)(_.until(_.collectAll[Method]))
       .cast[Method]
 
   /** Traverse only to methods that are stubs, e.g., their code is not available or the method body is empty.
     */
   def isStub: Traversal[Method] =
-    traversal.where(_.not(_.out(EdgeTypes.CFG).not(_.hasLabel(NodeTypes.METHOD_RETURN))))
+    traversal.where(_.not(_._cfgOut.not(_.collectAll[MethodReturn])))
 
   /** Traverse only to methods that are not stubs.
     */
   def isNotStub: Traversal[Method] =
-    traversal.where(_.out(EdgeTypes.CFG).not(_.hasLabel(NodeTypes.METHOD_RETURN)))
+    traversal.where(_._cfgOut.not(_.collectAll[MethodReturn]))
 
   /** Traverse only to methods that accept variadic arguments.
     */
@@ -129,11 +129,10 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
 
   @Doc(info = "Top level expressions (\"Statements\")")
   def topLevelExpressions: Traversal[Expression] =
-    traversal
-      .out(EdgeTypes.AST)
-      .hasLabel(NodeTypes.BLOCK)
-      .out(EdgeTypes.AST)
-      .not(_.hasLabel(NodeTypes.LOCAL))
+    traversal._astOut
+      .collectAll[Block]
+      ._astOut
+      .not(_.collectAll[Local])
       .cast[Expression]
 
   @Doc(info = "Control flow graph nodes")
@@ -154,30 +153,22 @@ class MethodTraversal(val iterableOnce: IterableOnce[Method]) extends AnyVal {
   /** Traverse to namespace */
   @Doc(info = "Namespace this method is declared in")
   def namespace: Traversal[Namespace] = {
-    traversal.choose(_.astParentType) {
-      case NamespaceBlock.Label =>
-        // some language frontends don't have a TYPE_DECL for a METHOD
-        _.astParent.collectAll[NamespaceBlock].namespace
-      case _ =>
-        // other language frontends always embed their method in a TYPE_DECL
-        _.definingTypeDecl.namespace
-    }
+    traversal.namespaceBlock.namespace
   }
 
   /** Traverse to namespace block */
   @Doc(info = "Namespace block this method is declared in")
   def namespaceBlock: Traversal[NamespaceBlock] = {
-    traversal.choose(_.astParentType) {
-      case NamespaceBlock.Label =>
+    traversal.flatMap { m =>
+      m.astIn.headOption match {
         // some language frontends don't have a TYPE_DECL for a METHOD
-        _.astParent.collectAll[NamespaceBlock]
-      case _ =>
+        case Some(namespaceBlock: NamespaceBlock) => namespaceBlock.start
         // other language frontends always embed their method in a TYPE_DECL
-        _.definingTypeDecl.namespaceBlock
+        case _ => m.definingTypeDecl.namespaceBlock
+      }
     }
   }
 
   def numberOfLines: Traversal[Int] = traversal.map(_.numberOfLines)
 
-  private def traversal = Traversal.from(iterableOnce)
 }

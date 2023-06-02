@@ -102,7 +102,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       alloc.name shouldBe Operators.alloc
       alloc.methodFullName shouldBe Operators.alloc
       alloc.code shouldBe "$x.<alloc>()"
-      inside(alloc.argument(0).l) { case List(xIdentifier: Identifier) =>
+      inside(alloc.argument(0).start.l) { case List(xIdentifier: Identifier) =>
         xIdentifier.name shouldBe "x"
         xIdentifier.code shouldBe "$x"
       }

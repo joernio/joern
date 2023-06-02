@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.slicing
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
-import io.shiftleft.semanticcpg.language.{NoResolve, _}
+import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
 import java.util.concurrent.atomic.AtomicBoolean

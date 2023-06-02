@@ -29,7 +29,7 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
       methodFullNameToNode.put(method.fullName, method)
     }
 
-    for (call <- cpg.call if call.methodFullName != Defines.DynamicCallUnknownFallName) {
+    for (call <- cpg.call if call.methodFullName != Defines.DynamicCallUnknownFullName) {
       methodToParameterCount.put(
         CallSummary(call.name, call.signature, call.methodFullName, call.dispatchType),
         call.argument.size

@@ -19,5 +19,5 @@ class TagTraversal(val traversal: Traversal[Tag]) extends AnyVal {
   def file: Traversal[File]                       = tagged[File]
 
   private def tagged[A <: StoredNode: ClassTag]: Traversal[A] =
-    traversal.in(EdgeTypes.TAGGED_BY).collectAll[A].sortBy(_.id)
+    traversal._taggedByIn.collectAll[A].sortBy(_.id).iterator
 }

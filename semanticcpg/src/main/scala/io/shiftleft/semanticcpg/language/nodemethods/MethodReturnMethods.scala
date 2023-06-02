@@ -3,7 +3,6 @@ package io.shiftleft.semanticcpg.language.nodemethods
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodReturn, NewLocation, Type}
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.{HasLocation, LocationCreator, _}
-import overflowdb.traversal.{Traversal, iterableToTraversal}
 
 class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtension with HasLocation {
   override def location: NewLocation = {

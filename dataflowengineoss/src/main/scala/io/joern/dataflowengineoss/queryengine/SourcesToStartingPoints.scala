@@ -20,7 +20,7 @@ object SourcesToStartingPoints {
 
   private val log = LoggerFactory.getLogger(SourcesToStartingPoints.getClass)
 
-  def sourceTravsToStartingPoints[NodeType](sourceTravs: Traversal[NodeType]*): List[StartingPointWithSource] = {
+  def sourceTravsToStartingPoints[NodeType](sourceTravs: IterableOnce[NodeType]*): List[StartingPointWithSource] = {
     val fjp = ForkJoinPool.commonPool()
     try {
       fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*)).distinct
@@ -34,16 +34,15 @@ object SourcesToStartingPoints {
 
 }
 
-class SourceTravsToStartingPointsTask[NodeType](sourceTravs: Traversal[NodeType]*)
+class SourceTravsToStartingPointsTask[NodeType](sourceTravs: IterableOnce[NodeType]*)
     extends RecursiveTask[List[StartingPointWithSource]] {
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
   override def compute(): List[StartingPointWithSource] = {
     val sources: List[StoredNode] = sourceTravs
-      .flatMap(_.toList)
+      .flatMap(_.iterator.toList)
       .collect { case n: StoredNode => n }
-      .iterator
       .dedup
       .toList
       .sortBy(_.id)
@@ -77,10 +76,10 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case member: Member =>
         usages(targetsToClassIdentifierPair(List(member)))
       case x: Declaration =>
-        x.iterator.collectAll[CfgNode].toList
+        List(x).collectAll[CfgNode].toList
       case x: Identifier =>
         withFieldAndIndexAccesses(
-          x.iterator.collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
+          List(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
         ) ++ x.refsTo.capturedByMethodRef.referencedMethod.flatMap(m => usagesForName(x.name, m))
       case x: Call =>
         (x._receiverIn.l :+ x).collect { case y: CfgNode => y }
@@ -120,7 +119,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
                 x.argument(2).isFieldIdentifier.canonicalNameExact(identifier.name)
               case fieldIdentifier: FieldIdentifier =>
                 x.argument(2).isFieldIdentifier.canonicalNameExact(fieldIdentifier.canonicalName)
-              case _ => List()
+              case _ => Iterator.empty
             }
           }
           .takeWhile(notLeftHandOfAssignment)
@@ -139,7 +138,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case identifier: Identifier =>
         usagesForName(identifier.name, m)
       case fieldIdentifier: FieldIdentifier =>
-        val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).iterator
+        val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
         fieldIdentifiers
           .canonicalNameExact(fieldIdentifier.canonicalName)
           .inFieldAccess
@@ -152,9 +151,9 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   private def usagesForName(name: String, m: Method): List[Expression] = {
-    val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).iterator
+    val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
-    val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).iterator
+    val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
       .inFieldAccess
@@ -198,7 +197,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   private def isTargetInAssignment(identifier: Identifier): List[Identifier] = {
-    identifier.iterator.argumentIndex(1).where(_.inAssignment).l
+    identifier.start.argumentIndex(1).where(_.inAssignment).l
   }
 
   private def notLeftHandOfAssignment(x: Expression): Boolean = {

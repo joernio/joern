@@ -14,12 +14,12 @@ package object language {
     new ExpressionMethods(node)
 
   implicit def toExtendedCfgNode[NodeType <: CfgNode](traversal: IterableOnce[NodeType]): ExtendedCfgNode =
-    new ExtendedCfgNode(traversal)
+    new ExtendedCfgNode(traversal.iterator)
 
   implicit def toDdgNodeDot(traversal: IterableOnce[Method]): DdgNodeDot =
-    new DdgNodeDot(traversal)
+    new DdgNodeDot(traversal.iterator)
 
   implicit def toDdgNodeDotSingle(method: Method): DdgNodeDot =
-    new DdgNodeDot(Traversal.fromSingle(method))
+    new DdgNodeDot(method.start)
 
 }
