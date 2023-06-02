@@ -40,6 +40,14 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       y.filename.endsWith(".kt") shouldBe true
     }
 
+    "should contain MODIFIER nodes attached to the METHOD nodes" in {
+      val List(mod1) = cpg.method.nameExact("double").modifier.l
+      mod1.modifierType shouldBe "PUBLIC"
+
+      val List(mod2) = cpg.method.nameExact("main").modifier.l
+      mod2.modifierType shouldBe "PUBLIC"
+    }
+
     "should allow traversing to parameters" in {
       cpg.method.name("double").isExternal(false).parameter.name.toSet shouldBe Set("x")
       cpg.method.name("main").isExternal(false).parameter.name.toSet shouldBe Set("args")

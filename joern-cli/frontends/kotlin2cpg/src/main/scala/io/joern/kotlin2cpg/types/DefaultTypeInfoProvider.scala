@@ -11,7 +11,13 @@ import org.jetbrains.kotlin.cli.jvm.compiler.{
   NoScopeRecordCliBindingTrace
 }
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
-import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
+import org.jetbrains.kotlin.descriptors.{
+  DeclarationDescriptor,
+  DescriptorVisibilities,
+  DescriptorVisibility,
+  FunctionDescriptor,
+  ValueDescriptor
+}
 import org.jetbrains.kotlin.descriptors.impl.{
   ClassConstructorDescriptorImpl,
   EnumEntrySyntheticClassDescriptor,
@@ -102,6 +108,12 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .map(TypeRenderer.renderFqNameForDesc)
       .filter(isValidRender)
       .getOrElse(defaultValue)
+  }
+
+  def visibility(fn: KtNamedFunction): Option[DescriptorVisibility] = {
+    val mapForEntity = bindingsForEntity(bindingContext, fn)
+    Option(mapForEntity.get(BindingContext.FUNCTION.getKey))
+      .map(_.getVisibility)
   }
 
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String = {
