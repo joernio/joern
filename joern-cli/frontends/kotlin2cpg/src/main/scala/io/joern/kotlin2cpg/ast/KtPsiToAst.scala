@@ -357,7 +357,20 @@ trait KtPsiToAst {
         .lineNumber(line(entry))
         .columnNumber(column(entry))
         .fullName(typeFullName)
-    annotationAst(node, List())
+
+    val children =
+      entry.getValueArguments.asScala.flatMap { varg =>
+        varg.getArgumentExpression match {
+          case ste: KtStringTemplateExpression if ste.getEntries.size == 1 =>
+            val node = NewAnnotationLiteral().code(ste.getText)
+            Some(Ast(node))
+          case ce: KtConstantExpression =>
+            val node = NewAnnotationLiteral().code(ce.getText)
+            Some(Ast(node))
+          case _ => None
+        }
+      }.toList
+    annotationAst(node, children)
   }
 
   def astsForMethod(ktFn: KtNamedFunction, needsThisParameter: Boolean = false, withVirtualModifier: Boolean = false)(
