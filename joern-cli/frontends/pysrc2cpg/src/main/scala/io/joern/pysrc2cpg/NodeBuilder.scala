@@ -19,7 +19,7 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .NewCall()
       .code(code)
       .name(name)
-      .methodFullName(if (dispatchType == DispatchTypes.STATIC_DISPATCH) name else Defines.DynamicCallUnknownFallName)
+      .methodFullName(if (dispatchType == DispatchTypes.STATIC_DISPATCH) name else Defines.DynamicCallUnknownFullName)
       .dispatchType(dispatchType)
       .typeFullName(Constants.ANY)
       .lineNumber(lineAndColumn.line)

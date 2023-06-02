@@ -132,7 +132,7 @@ trait AstNodeBuilder { this: AstCreator =>
   def callNode(node: BabelNodeInfo, code: String, name: String, dispatchType: String): NewCall = {
     val fullName =
       if (dispatchType == DispatchTypes.STATIC_DISPATCH) name
-      else x2cpg.Defines.DynamicCallUnknownFallName
+      else x2cpg.Defines.DynamicCallUnknownFullName
     callNode(node, code, name, fullName, dispatchType, None, Some(Defines.Any))
   }
 
@@ -146,7 +146,7 @@ trait AstNodeBuilder { this: AstCreator =>
     .code(code)
     .name(callName)
     .methodFullName(
-      if (dispatchType == DispatchTypes.STATIC_DISPATCH) callName else x2cpg.Defines.DynamicCallUnknownFallName
+      if (dispatchType == DispatchTypes.STATIC_DISPATCH) callName else x2cpg.Defines.DynamicCallUnknownFullName
     )
     .dispatchType(dispatchType)
     .lineNumber(line)
