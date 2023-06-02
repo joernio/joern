@@ -848,18 +848,18 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   private def setTypeInformationForRecCall(x: AstNode, n: Option[Call], ms: List[AstNode]): Unit = {
     (n, ms) match {
       // Case 1: 'call' is an assignment from some dynamic dispatch call
-      case (Some(call: Call), List(i: Identifier, c: Call)) if call.name.equals(Operators.assignment) =>
+      case (Some(call: Call), ::(i: Identifier, ::(c: Call, _))) if call.name == Operators.assignment =>
         setTypeForIdentifierAssignedToCall(call, i, c)
       // Case 1: 'call' is an assignment from some other data structure
-      case (Some(call: Call), ::(i: Identifier, _)) if call.name.equals(Operators.assignment) =>
+      case (Some(call: Call), ::(i: Identifier, _)) if call.name == Operators.assignment =>
         setTypeForIdentifierAssignedToDefault(call, i)
       // Case 2: 'i' is the receiver of 'call'
-      case (Some(call: Call), ::(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
+      case (Some(call: Call), ::(i: Identifier, _)) if call.name != Operators.fieldAccess =>
         setTypeForDynamicDispatchCall(call, i)
       // Case 3: 'i' is the receiver for a field access on member 'f'
-      case (Some(fieldAccess: Call), List(i: Identifier, f: FieldIdentifier))
-          if fieldAccess.name.equals(Operators.fieldAccess) =>
-        setTypeForFieldAccess(fieldAccess, i, f)
+      case (Some(fieldAccess: Call), ::(i: Identifier, ::(f: FieldIdentifier, _)))
+          if fieldAccess.name == Operators.fieldAccess =>
+        setTypeForFieldAccess(new FieldAccess(fieldAccess), i, f)
       case _ =>
     }
     // Handle the node itself
