@@ -15,12 +15,11 @@ class MethodTraversal(val traversal: Traversal[Method]) extends AnyVal {
     val sinkMethods   = traversal.dedup
 
     if (sourceMethods.isEmpty || sinkMethods.isEmpty) {
-      PathAwareTraversal.empty
+      Iterator.empty[Method].enablePathTracking
     } else {
       sinkMethods
         .repeat(
-          _.flatMap(callResolver.getMethodCallsitesAsTraversal)
-            .in(EdgeTypes.CONTAINS) // expand to method
+          _.flatMap(callResolver.getMethodCallsitesAsTraversal)._containsIn // expand to method
         )(_.dedup.emit(_.collect {
           case method: Method if sourceMethods.contains(method) => method
         }))

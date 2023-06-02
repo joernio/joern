@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, Method, M
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.codepropertygraph.generated.nodes.Local
@@ -37,7 +36,7 @@ class ClosureRefPass(cpg: Cpg) extends ConcurrentWriterCpgPass[ClosureBinding](c
   }
 
   private def getMethod(methodRef: MethodRef): Option[Method] = {
-    methodRef.repeat(_.astParent)(_.until(_.isMethod).emit(_.isMethod)).isMethod.headOption
+    methodRef.start.repeat(_.astParent)(_.until(_.isMethod).emit(_.isMethod)).isMethod.headOption
   }
 
   private def addRefToCapturedNode(
@@ -51,7 +50,8 @@ class ClosureRefPass(cpg: Cpg) extends ConcurrentWriterCpgPass[ClosureBinding](c
 
       case Some(method) =>
         closureBinding.closureOriginalName.foreach { name =>
-          lazy val locals = method.repeat(_.astChildren.filterNot(_.isMethod))(_.emit(_.isLocal)).collectAll[Local]
+          lazy val locals =
+            method.start.repeat(_.astChildren.filterNot(_.isMethod))(_.emit(_.isLocal)).collectAll[Local]
           val maybeCaptured =
             method.parameter
               .find(_.name == name)

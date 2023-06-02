@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
 import io.shiftleft.codepropertygraph.generated.nodes._
-import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language._
 
 /** An annotation parameter-assignment, e.g., `foo=value` in @Test(foo=value)
   */

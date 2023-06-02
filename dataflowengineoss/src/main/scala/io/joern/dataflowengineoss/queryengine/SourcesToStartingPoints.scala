@@ -20,7 +20,7 @@ object SourcesToStartingPoints {
 
   private val log = LoggerFactory.getLogger(SourcesToStartingPoints.getClass)
 
-  def sourceTravsToStartingPoints[NodeType](sourceTravs: Traversal[NodeType]*): List[StartingPointWithSource] = {
+  def sourceTravsToStartingPoints[NodeType](sourceTravs: IterableOnce[NodeType]*): List[StartingPointWithSource] = {
     val fjp = ForkJoinPool.commonPool()
     try {
       fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*)).distinct
@@ -34,14 +34,14 @@ object SourcesToStartingPoints {
 
 }
 
-class SourceTravsToStartingPointsTask[NodeType](sourceTravs: Traversal[NodeType]*)
+class SourceTravsToStartingPointsTask[NodeType](sourceTravs: IterableOnce[NodeType]*)
     extends RecursiveTask[List[StartingPointWithSource]] {
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
   override def compute(): List[StartingPointWithSource] = {
     val sources: List[StoredNode] = sourceTravs
-      .flatMap(_.toList)
+      .flatMap(_.iterator.toList)
       .collect { case n: StoredNode => n }
       .dedup
       .toList
@@ -119,7 +119,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
                 x.argument(2).isFieldIdentifier.canonicalNameExact(identifier.name)
               case fieldIdentifier: FieldIdentifier =>
                 x.argument(2).isFieldIdentifier.canonicalNameExact(fieldIdentifier.canonicalName)
-              case _ => List()
+              case _ => Iterator.empty
             }
           }
           .takeWhile(notLeftHandOfAssignment)
@@ -197,7 +197,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   private def isTargetInAssignment(identifier: Identifier): List[Identifier] = {
-    Traversal(identifier).argumentIndex(1).where(_.inAssignment).l
+    identifier.start.argumentIndex(1).where(_.inAssignment).l
   }
 
   private def notLeftHandOfAssignment(x: Expression): Boolean = {

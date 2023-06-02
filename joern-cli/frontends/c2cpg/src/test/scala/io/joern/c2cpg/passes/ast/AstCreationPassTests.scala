@@ -757,9 +757,9 @@ class AstCreationPassTests extends AbstractPassTest {
       val List(expressionListCall)   = bracketedPrimaryCall.argument.isCall.l
       expressionListCall.name shouldBe "<operator>.expressionList"
 
-      val List(arg1) = expressionListCall.argument(1).collectAll[Call].l
+      val List(arg1) = expressionListCall.argument(1).start.collectAll[Call].l
       arg1.code shouldBe "__sync_synchronize()"
-      val List(arg2) = expressionListCall.argument(2).collectAll[Call].l
+      val List(arg2) = expressionListCall.argument(2).start.collectAll[Call].l
       arg2.code shouldBe "foo(x)"
     }
 
@@ -1688,8 +1688,8 @@ class AstCreationPassTests extends AbstractPassTest {
           call2.argument.code.l shouldBe List("2", "10")
           call3.code shouldBe "[3 ... 9] = 15"
           call3.name shouldBe Operators.assignment
-          val List(desCall) = call3.argument(1).collectAll[Call].l
-          val List(value)   = call3.argument(2).collectAll[Literal].l
+          val List(desCall) = call3.argument(1).start.collectAll[Call].l
+          val List(value)   = call3.argument(2).start.collectAll[Literal].l
           value.code shouldBe "15"
           desCall.name shouldBe Operators.arrayInitializer
           desCall.code shouldBe "[3 ... 9]"
@@ -1727,8 +1727,8 @@ class AstCreationPassTests extends AbstractPassTest {
           call2.argument.code.l shouldBe List("2", "10")
           call3.code shouldBe "[3 ... 9] = 15"
           call3.name shouldBe Operators.assignment
-          val List(desCall) = call3.argument(1).collectAll[Call].l
-          val List(value)   = call3.argument(2).collectAll[Literal].l
+          val List(desCall) = call3.argument(1).start.collectAll[Call].l
+          val List(value)   = call3.argument(2).start.collectAll[Literal].l
           value.code shouldBe "15"
           desCall.name shouldBe Operators.arrayInitializer
           desCall.code shouldBe "[3 ... 9]"

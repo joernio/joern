@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.Implicits.JavaIteratorDeco
+import io.shiftleft.Implicits.IterableOnceDeco
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language._
@@ -71,7 +71,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
   /** Direct children of node in the AST. Siblings are ordered by their `order` fields
     */
   def astChildren: Traversal[AstNode] =
-    node._astOut.cast[AstNode].sortBy(_.order)
+    node._astOut.cast[AstNode].sortBy(_.order).iterator
 
   /** Siblings of this node in the AST, ordered by their `order` fields
     */
@@ -81,7 +81,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
   /** Nodes of the AST rooted in this node, including the node itself.
     */
   def ast: Traversal[AstNode] =
-    Traversal.fromSingle(node).ast
+    Iterator.single(node).ast
 
   /** Textual representation of AST node
     */
@@ -133,7 +133,7 @@ object AstNodeMethods {
 
   import scala.jdk.CollectionConverters._
   private def lastExpressionInBlock(block: Block): Option[Expression] =
-    block._astOut.asScala
+    block._astOut
       .collect {
         case node: Expression if !node.isInstanceOf[Local] && !node.isInstanceOf[Method] => node
       }

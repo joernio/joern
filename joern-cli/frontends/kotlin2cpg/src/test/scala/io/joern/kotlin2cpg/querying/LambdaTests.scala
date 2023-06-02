@@ -28,7 +28,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
-      cb.outE.collectAll[Ref].size shouldBe 1
+      cb._refOut.size shouldBe 1
     }
 
     "should contain a CALL node with the signature of the lambda" in {
@@ -65,7 +65,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
-      cb.outE.collectAll[Ref].size shouldBe 1
+      cb._refOut.size shouldBe 1
     }
   }
 

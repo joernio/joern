@@ -8,6 +8,7 @@ import io.joern.kotlin2cpg.types.{AnonymousObjectContext, CallKinds, TypeConstan
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.x2cpg.utils.NodeBuilders
@@ -22,7 +23,6 @@ import io.joern.x2cpg.utils.NodeBuilders.{
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
-import overflowdb.traversal.iterableToTraversal
 
 import scala.annotation.unused
 import scala.jdk.CollectionConverters._

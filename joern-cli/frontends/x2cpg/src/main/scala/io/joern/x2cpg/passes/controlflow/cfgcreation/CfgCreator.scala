@@ -379,7 +379,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     */
   protected def cfgForDoStatement(node: ControlStructure): Cfg = {
     val bodyCfg      = node.astChildren.where(_.order(1)).headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val conditionCfg = node.condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
     val innerCfg     = bodyCfg ++ conditionCfg
 
     val diffGraphs =
@@ -403,9 +403,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * are optional.
     */
   protected def cfgForWhileStatement(node: ControlStructure): Cfg = {
-    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val trueCfg      = Traversal.fromSingle(node).whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val falseCfg     = Traversal.fromSingle(node).whenFalse.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val conditionCfg = node.condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val trueCfg      = node.whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val falseCfg     = node.whenFalse.headOption.map(cfgFor).getOrElse(Cfg.empty)
 
     val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode) ++
       edgesFromFringeTo(trueCfg, falseCfg.entryNode) ++
@@ -427,8 +427,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   /** CFG creation for switch statements of the form `switch { case condition: ... }`.
     */
   protected def cfgForSwitchStatement(node: ControlStructure): Cfg = {
-    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val bodyCfg      = Traversal.fromSingle(node).whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val conditionCfg = node.condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val bodyCfg      = node.whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
 
     cfgForSwitchLike(conditionCfg, bodyCfg :: Nil)
   }
@@ -436,9 +436,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   /** CFG creation for if statements of the form `if(condition) body`, optionally followed by `else body2`.
     */
   protected def cfgForIfStatement(node: ControlStructure): Cfg = {
-    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val trueCfg      = Traversal.fromSingle(node).whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val falseCfg     = Traversal.fromSingle(node).whenFalse.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val conditionCfg = node.condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val trueCfg      = node.whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val falseCfg     = node.whenFalse.headOption.map(cfgFor).getOrElse(Cfg.empty)
 
     val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode) ++
       edgesFromFringeTo(conditionCfg, falseCfg.entryNode)
@@ -472,9 +472,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     */
   protected def cfgForTryStatement(node: ControlStructure): Cfg = {
     val maybeTryBlock =
-      Traversal
-        .fromSingle(node)
-        .astChildren
+      node.astChildren
         .where(_.order(1))
         .where(_.astChildren) // Filter out empty `try` bodies
         .headOption
@@ -482,9 +480,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val tryBodyCfg: Cfg = maybeTryBlock.map(cfgFor).getOrElse(Cfg.empty)
 
     val catchBodyCfgs: List[Cfg] =
-      Traversal
-        .fromSingle(node)
-        .astChildren
+      node.astChildren
         .where(_.order(2))
         .toList match {
         case Nil  => List(Cfg.empty)
@@ -492,9 +488,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       }
 
     val maybeFinallyBodyCfg: List[Cfg] =
-      Traversal
-        .fromSingle(node)
-        .astChildren
+      node.astChildren
         .where(_.order(3))
         .map(cfgFor)
         .headOption // Assume there can only be one
@@ -563,8 +557,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   /** CFG creation for match expressions of the form `match { case condition: expr ... }`
     */
   protected def cfgForMatchExpression(node: ControlStructure): Cfg = {
-    val conditionCfg = Traversal.fromSingle(node).condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
-    val bodyCfgs     = Traversal.fromSingle(node).whenTrue.headOption.map(cfgsForMatchCases).getOrElse(Nil)
+    val conditionCfg = node.condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
+    val bodyCfgs     = node.whenTrue.headOption.map(cfgsForMatchCases).getOrElse(Nil)
 
     cfgForSwitchLike(conditionCfg, bodyCfgs)
   }
