@@ -1,0 +1,26 @@
+name: master
+on:
+  workflow_dispatch:    # allow to manually trigger this workflow
+  push:
+    branches: [master, main]
+    tags: ["*"]
+jobs:
+  test:
+    concurrency: master
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: coursier/cache-action@v6
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '19'
+      - run: sbt scalafmtCheck +test
+      - run: ./testDistro.sh
+      - run: |
+          cd joern-cli/target/universal/stage
+          ./schema-extender/test.sh
+          cd -
