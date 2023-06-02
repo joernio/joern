@@ -726,10 +726,20 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def astForFieldVariable(v: VariableDeclarator, fieldDeclaration: FieldDeclaration): Ast = {
     // TODO: Should be able to find expected type here
     val annotations = fieldDeclaration.getAnnotations
+
+    // variable can be declared with generic type, so we need to get rid of the <> part of it
+    // Ex - private Consumer<String, Integer> consumer;
+    // From Consumer<String, Integer> we need to get to Consumer so splitting it by '<'
+
     val typeFullName =
       typeInfoCalc
         .fullName(v.getType)
-        .orElse(scopeStack.lookupVariableType(v.getTypeAsString, wildcardFallback = true))
+        .orElse(
+          scopeStack.lookupVariableType(
+            v.getTypeAsString.split("<").headOption.getOrElse(v.getTypeAsString),
+            wildcardFallback = true
+          )
+        )
         .getOrElse(s"${Defines.UnresolvedNamespace}.${v.getTypeAsString}")
     val name           = v.getName.toString
     val node           = memberNode(v, name, s"$typeFullName $name", typeFullName)
