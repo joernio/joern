@@ -1,4 +1,4 @@
-# The great Traversal removal (v2.0.0; June 2023)
+# The great Traversal removal (v1.2.0; June 2023)
 PR: https://github.com/joernio/joern/pull/2784
 ## Summary
 We removed the `overflowdb.traversal.Traversal` class, and replaced it with a type alias `type Traversal[+T] = scala.collection.Iterator[T]`.
