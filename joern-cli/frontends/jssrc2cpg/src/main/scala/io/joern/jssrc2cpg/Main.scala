@@ -7,7 +7,15 @@ import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config(tsTypes: Boolean = true, disableDummyTypes: Boolean = false) extends X2CpgConfig[Config]
+final case class Config(tsTypes: Boolean = true, disableDummyTypes: Boolean = false) extends X2CpgConfig[Config] {
+  def withTsTypes(value: Boolean): Config = {
+    copy(tsTypes = value).withInheritedFields(this)
+  }
+
+  def withDisableDummyTypes(value: Boolean): Config = {
+    copy(disableDummyTypes = value).withInheritedFields(this)
+  }
+}
 
 object Frontend {
   implicit val defaultConfig: Config = Config()
@@ -19,11 +27,11 @@ object Frontend {
       programName("jssrc2cpg"),
       opt[Unit]("no-tsTypes")
         .hidden()
-        .action((_, c) => c.copy(tsTypes = false))
+        .action((_, c) => c.withTsTypes(false))
         .text("disable generation of types via Typescript"),
       opt[Unit]("no-dummyTypes")
         .hidden()
-        .action((_, c) => c.copy(disableDummyTypes = true))
+        .action((_, c) => c.withDisableDummyTypes(true))
         .text("disable generation of dummy types during type recovery")
     )
   }

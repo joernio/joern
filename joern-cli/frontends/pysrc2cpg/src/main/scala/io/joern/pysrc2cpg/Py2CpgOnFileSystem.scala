@@ -15,17 +15,21 @@ case class Py2CpgOnFileSystemConfig(
   disableDummyTypes: Boolean = false,
   requirementsTxt: String = "requirements.txt"
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig] {
-
-  override def withInputPath(inputPath: String): Py2CpgOnFileSystemConfig = {
-    this.inputPath = inputPath
-    this
+  def withVenvDir(venvDir: Path): Py2CpgOnFileSystemConfig = {
+    copy(venvDir = venvDir).withInheritedFields(this)
   }
 
-  override def withOutputPath(x: String): Py2CpgOnFileSystemConfig = {
-    this.outputPath = x
-    this
+  def withIgnoreVenvDir(value: Boolean): Py2CpgOnFileSystemConfig = {
+    copy(ignoreVenvDir = value).withInheritedFields(this)
   }
 
+  def withDisableDummyTypes(value: Boolean): Py2CpgOnFileSystemConfig = {
+    copy(disableDummyTypes = value).withInheritedFields(this)
+  }
+
+  def withRequirementsTxt(text: String): Py2CpgOnFileSystemConfig = {
+    copy(requirementsTxt = text).withInheritedFields(this)
+  }
 }
 
 class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {

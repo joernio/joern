@@ -19,7 +19,7 @@ object X2CpgConfig {
   def defaultOutputPath: String = "cpg.bin"
 }
 
-trait X2CpgConfig[R] {
+trait X2CpgConfig[R <: X2CpgConfig[R]] {
   var inputPath: String  = ""
   var outputPath: String = X2CpgConfig.defaultOutputPath
 
@@ -57,6 +57,15 @@ trait X2CpgConfig[R] {
     if (path.isAbsolute) { path.toString }
     else { Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString }
   }
+
+  def withInheritedFields(config: R): R = {
+    this.inputPath = config.inputPath
+    this.outputPath = config.outputPath
+    this.defaultIgnoredFilesRegex = config.defaultIgnoredFilesRegex
+    this.ignoredFilesRegex = config.ignoredFilesRegex
+    this.ignoredFiles = config.ignoredFiles
+    this.asInstanceOf[R]
+  }
 }
 
 /** Base class for `Main` classes of CPG frontends.
@@ -70,7 +79,7 @@ trait X2CpgConfig[R] {
   * @param frontend
   *   the frontend to use for CPG creation
   */
-abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](cmdLineParser: OParser[Unit, T], frontend: X)(
+abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](val cmdLineParser: OParser[Unit, T], frontend: X)(
   implicit defaultConfig: T
 ) {
 

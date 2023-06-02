@@ -4,19 +4,7 @@ import io.joern.rubysrc2cpg.Frontend._
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-final case class Config() extends X2CpgConfig[Config] {
-
-  override def withInputPath(inputPath: String): Config = {
-    this.inputPath = inputPath
-    this
-  }
-
-  override def withOutputPath(x: String): Config = {
-    this.outputPath = x
-    this
-  }
-
-}
+final case class Config() extends X2CpgConfig[Config]
 
 private object Frontend {
 
