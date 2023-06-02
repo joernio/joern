@@ -8,6 +8,7 @@ import io.joern.kotlin2cpg.types.{AnonymousObjectContext, CallKinds, TypeConstan
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.datastructures.Stack._
 import io.joern.x2cpg.utils.NodeBuilders
@@ -18,11 +19,12 @@ import io.joern.x2cpg.utils.NodeBuilders.{
   newLocalNode,
   newMethodReturnNode
 }
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
-import overflowdb.traversal.iterableToTraversal
 
 import scala.annotation.unused
 import scala.jdk.CollectionConverters._
@@ -401,16 +403,39 @@ trait KtPsiToAst {
     val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
     val _methodReturnNode = newMethodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
 
+    val visibility = typeInfoProvider.visibility(ktFn)
+    val visibilityModifierType =
+      modifierTypeForVisibility(visibility.getOrElse(DescriptorVisibilities.UNKNOWN))
+    val visibilityModifier = modifierNode(visibilityModifierType)
+
     val modifierNodes =
       if (withVirtualModifier) Seq(modifierNode(ModifierTypes.VIRTUAL))
       else Seq()
 
     val annotationEntries = ktFn.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
     Seq(
-      methodAst(_methodNode, thisParameterAsts ++ methodParametersAsts, bodyAst, _methodReturnNode, modifierNodes)
+      methodAst(
+        _methodNode,
+        thisParameterAsts ++ methodParametersAsts,
+        bodyAst,
+        _methodReturnNode,
+        List(visibilityModifier) ++ modifierNodes
+      )
         .withChildren(otherBodyAsts)
         .withChildren(annotationEntries)
     )
+  }
+
+  private def modifierTypeForVisibility(visibility: DescriptorVisibility): String = {
+    if (visibility.toString == DescriptorVisibilities.PUBLIC.toString)
+      ModifierTypes.PUBLIC
+    else if (visibility.toString == DescriptorVisibilities.PRIVATE.toString)
+      ModifierTypes.PRIVATE
+    else if (visibility.toString == DescriptorVisibilities.PROTECTED.toString)
+      ModifierTypes.PROTECTED
+    else if (visibility.toString == DescriptorVisibilities.INTERNAL.toString)
+      ModifierTypes.INTERNAL
+    else "UNKNOWN"
   }
 
   def astsForBlock(
@@ -1698,7 +1723,7 @@ trait KtPsiToAst {
 
       val assignmentNode    = operatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
       val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
-      val initSignature     = s"<${TypeConstants.void}>()"
+      val initSignature     = s"${TypeConstants.void}()"
       val initFullName      = s"$typeFullName${TypeConstants.initPrefix}:$initSignature"
       val initCallNode = callNode(
         expr,
@@ -1930,7 +1955,7 @@ trait KtPsiToAst {
           val assignmentNode =
             operatorCallNode(Operators.assignment, s"${identifier.name} = <alloc>", None, line(expr), column(expr))
           val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
-          val initSignature     = s"<${TypeConstants.void}>()"
+          val initSignature     = s"${TypeConstants.void}()"
           val initFullName      = s"$typeDeclFullName.<init>:$initSignature"
           val initCallNode = callNode(
             objectLiteral,

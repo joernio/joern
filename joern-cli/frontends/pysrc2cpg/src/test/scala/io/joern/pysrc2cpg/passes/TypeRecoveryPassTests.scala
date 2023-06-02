@@ -136,7 +136,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'User' field types" in {
       val List(id, firstname, age, address) =
-        cpg.identifier.nameExact("id", "firstname", "age", "address").takeRight(4).l
+        cpg.identifier.nameExact("id", "firstname", "age", "address").l.takeRight(4)
       id.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
       firstname.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
       age.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.Column"
@@ -891,6 +891,67 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       )
       val Some(getS3Object) = cpg.call.nameExact("getS3Object").headOption
       getS3Object.methodFullName shouldBe "boto.<returnValue>.getS3Object"
+    }
+  }
+
+  "Static class calls from imported types" should {
+    lazy val cpg = code(
+      """
+        |from db.redis import RedisDB
+        |
+        |class FooServer():
+        |
+        | async def callback(self):
+        |   await RedisDB.instance().set("apiuserscache", json.dumps(resp), expires=1800)
+        |
+        |   redis = await RedisDB.instance().get_redis()
+        |   await redis.publish_json(123, {})
+        |""".stripMargin,
+      "fooserver.py"
+    ).moreCode(
+      """
+        |import aioredis
+        |
+        |class RedisDB(object):
+        |    _instance = None
+        |
+        |    @classmethod
+        |    def instance(cls) -> 'RedisDB':
+        |        if cls._instance is None:
+        |            cls._instance = cls.__new__(cls)
+        |            cls.redis = None
+        |        return cls._instance
+        |
+        |    @classmethod
+        |    async def get_redis(cls) -> aioredis.Redis:
+        |       pass
+        |
+        |    async def set(self, key: str, value: str, expires: int = 0):
+        |        redis = await self.get_redis()
+        |        await redis.set(key, value, expire=expires)
+        |""".stripMargin,
+      Seq("db", "redis.py").mkString(File.separator)
+    )
+
+    "assert the method properties in RedisDB, especially quoted type hints" in {
+      val Some(redisDB)                    = cpg.typeDecl.nameExact("RedisDB").method.nameExact("<body>").headOption
+      val List(instanceM, getRedisM, setM) = redisDB.astOut.isMethod.nameExact("instance", "get_redis", "set").l
+
+      instanceM.methodReturn.typeFullName shouldBe Seq("db", "redis.py:<module>.RedisDB").mkString(File.separator)
+      getRedisM.methodReturn.typeFullName shouldBe "aioredis.py:<module>.Redis"
+      setM.methodReturn.typeFullName shouldBe "ANY"
+    }
+
+    "be able to generate an appropriate dummy value" in {
+      val Some(redisSet) = cpg.call.code(".*set.*apiuserscache.*").headOption
+      redisSet.methodFullName shouldBe Seq("db", "redis.py:<module>.RedisDB.set").mkString(File.separator)
+    }
+
+    "be able to handle a simple call off an alias" in {
+      val Some(redisGet) = cpg.call.nameExact("publish_json").headOption
+      redisGet.methodFullName shouldBe Seq("db", "redis.py:<module>.RedisDB.get_redis.publish_json").mkString(
+        File.separator
+      )
     }
   }
 

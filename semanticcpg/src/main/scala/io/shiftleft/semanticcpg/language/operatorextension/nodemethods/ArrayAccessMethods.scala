@@ -24,8 +24,8 @@ class ArrayAccessMethods(val arrayAccess: OpNodes.ArrayAccess) extends AnyVal {
 
   def simpleName: Traversal[String] = {
     arrayAccess.array match {
-      case id: Identifier => Traversal(id.name)
-      case _              => Traversal()
+      case id: Identifier => Iterator.single(id.name)
+      case _              => Iterator.empty
     }
   }
 

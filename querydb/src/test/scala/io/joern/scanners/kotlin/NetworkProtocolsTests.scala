@@ -3,8 +3,7 @@ package io.joern.scanners.kotlin
 import io.joern.console.scan._
 import io.joern.suites.KotlinQueryTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes.Call
-import overflowdb.traversal.iterableToTraversal
-
+import io.shiftleft.semanticcpg.language._
 class NetworkProtocolsTests extends KotlinQueryTestSuite(NetworkProtocols) {
 
   "should find calls relevant to insecure network protocol usage" in {

@@ -18,6 +18,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{
 }
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.nodes.Local.{PropertyDefaults => LocalDefaults}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -250,8 +251,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     }
     val methodReturn = newMethodReturnNode(returnType, line = line(decl), column = None)
 
-    val declLocals = scope.getLocalsInScope.map(Ast(_))
-    val methodBody = blockAst(blockNode(decl), declLocals ++ methodBodyStmts)
+    val methodBody = blockAst(blockNode(decl), methodBodyStmts)
 
     scope.popScope()
     methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers)
@@ -563,8 +563,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
   }
 
   private def astForForeachStmt(stmt: PhpForeachStmt): Ast = {
-    val iteratorAst   = astForExpr(stmt.iterExpr)
-    val iteratorLocal = getTmpLocal(stmt, maybeTypeFullName = None, lineNumber = line(stmt), prefix = "iter_")
+    val iteratorAst    = astForExpr(stmt.iterExpr)
+    val iterIdentifier = getTmpIdentifier(stmt, maybeTypeFullName = None, prefix = "iter_")
 
     val assignItemTargetAst = stmt.keyVar match {
       case Some(key) => astForKeyValPair(key, stmt.valueVar, line(stmt))
@@ -573,12 +573,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
 
     // Initializer asts
     // - Iterator assign
-    val iterIdent         = identifierAstFromLocal(iteratorLocal, line(stmt))
     val iterValue         = astForExpr(stmt.iterExpr)
-    val iteratorAssignAst = simpleAssignAst(iterIdent, iterValue, line(stmt))
+    val iteratorAssignAst = simpleAssignAst(Ast(iterIdentifier), iterValue, line(stmt))
 
     // - Assigned item assign
-    val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iteratorLocal)
+    val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iterIdentifier.copy)
 
     // Condition ast
     val isNullName = PhpOperators.isNull
@@ -591,7 +590,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     val conditionAst = callAst(notIsNull, isNullAst :: Nil)
 
     // Update asts
-    val nextIterIdent = identifierAstFromLocal(iteratorLocal, line(stmt))
+    val nextIterIdent = Ast(iterIdentifier.copy)
     val nextSignature = "void()"
     val nextCallCode  = s"${nextIterIdent.rootCodeOrEmpty}->next()"
     val nextCallNode = callNode(
@@ -627,9 +626,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
   private def getItemAssignAstForForeach(
     stmt: PhpForeachStmt,
     assignItemTargetAst: Ast,
-    iteratorLocal: NewLocal
+    iteratorIdentifier: NewIdentifier
   ): Ast = {
-    val iteratorIdentifierAst = identifierAstFromLocal(iteratorLocal, line(stmt))
+    val iteratorIdentifierAst = Ast(iteratorIdentifier)
     val currentCallSignature  = s"$UnresolvedSignature(0)"
     val currentCallCode       = s"${iteratorIdentifierAst.rootCodeOrEmpty}->current()"
     val currentCallNode = callNode(
@@ -695,10 +694,11 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
         case _                               => code
       }
 
-      // Local will be added to the method via magic later. Just fix the code and line here.
-      scope.lookupVariable(name).collect { case local: NewLocal => local }.foreach { local =>
-        local.code(s"static ${local.code}")
-        local.lineNumber(line(stmt))
+      val local = localNode(stmt, name, s"static $code", variableAst.rootType.getOrElse(TypeConstants.Any))
+      scope.addToScope(local.name, local)
+
+      variableAst.root.collect { case identifier: NewIdentifier =>
+        diffGraph.addEdge(identifier, local, EdgeTypes.REF)
       }
 
       val defaultAssignAst = maybeValueAst.map { valueAst =>
@@ -707,7 +707,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
         callAst(assignNode, variableAst :: valueAst :: Nil)
       }
 
-      defaultAssignAst.toList
+      Ast(local) :: defaultAssignAst.toList
     }
   }
 
@@ -953,9 +953,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
   private def astForCall(call: PhpCallExpr): Ast = {
     val arguments = call.args.map(astForCallArg)
 
-    val isMethodCall = call.target.isDefined && !call.isStatic
-
-    val targetAst = Option.when(isMethodCall)(call.target.map(astForExpr)).flatten
+    val targetAst = Option.unless(call.isStatic)(call.target.map(astForExpr)).flatten
 
     val nameAst = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
     val name =
@@ -971,7 +969,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     val argsCode = arguments.map(_.rootCodeOrEmpty).mkString(",")
 
     val codePrefix =
-      if (isMethodCall && targetAst.isDefined)
+      if (!call.isStatic && targetAst.isDefined)
         codeForMethodCall(call, targetAst.get, name)
       else if (call.isStatic)
         codeForStaticMethodCall(call, name)
@@ -989,7 +987,7 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     val fullName = call.target match {
       // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
-        s"${nameExpr.name}.$name:$UnresolvedSignature(${arguments.size})"
+        s"${nameExpr.name}${StaticMethodDelimiter}$name"
 
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
@@ -1048,17 +1046,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
   private def astForNameExpr(expr: PhpNameExpr): Ast = {
     val identifier = identifierNode(expr, expr.name, expr.name, TypeConstants.Any)
 
-    scope.lookupVariable(identifier.name) match {
-      case Some(declaringNode) =>
-        diffGraph.addEdge(identifier, declaringNode, EdgeTypes.REF)
-
-      case None =>
-        // With variable variables, it's possible to use a valid variable without having an obvious assignment to it.
-        // If a name is unknown at this point, assume it's a local that had a value assigned in some way at some point.
-
-        val local = localNode(expr, identifier.name, s"$$${identifier.code}", identifier.typeFullName)
-        scope.addToScope(local.name, local)
-        diffGraph.addEdge(identifier, local, EdgeTypes.REF)
+    scope.lookupVariable(identifier.name).foreach { declaringNode =>
+      diffGraph.addEdge(identifier, declaringNode, EdgeTypes.REF)
     }
 
     Ast(identifier)
@@ -1288,38 +1277,24 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     callAst(callNode, args.toList)
   }
 
-  private def getTmpLocal(
+  private def getTmpIdentifier(
     originNode: PhpNode,
     maybeTypeFullName: Option[String],
-    lineNumber: Option[Integer],
     prefix: String = ""
-  ): NewLocal = {
-    val name = s"$prefix${getNewTmpName()}"
-
+  ): NewIdentifier = {
+    val name         = s"$prefix${getNewTmpName()}"
     val typeFullName = maybeTypeFullName.map(registerType).getOrElse(TypeConstants.Any)
-
-    val local = localNode(originNode, name, s"$$$name", typeFullName)
-
-    scope.addToScope(name, local)
-
-    local
-  }
-
-  private def identifierAstFromLocal(local: NewLocal, lineNumber: Option[Integer] = None): Ast = {
-    val typeFullName = Option(local.typeFullName).map(registerType)
-    val identifier = newIdentifierNode(local.name, typeFullName.getOrElse("ANY"), Seq(), lineNumber)
-      .code(s"$$${local.name}")
-    Ast(identifier).withRefEdge(identifier, local)
+    identifierNode(originNode, name, s"$$$name", typeFullName)
   }
 
   private def astForArrayExpr(expr: PhpArrayExpr): Ast = {
     val idxTracker   = new ArrayIndexTracker
     val typeFullName = registerType(TypeConstants.Array)
 
-    val tmpLocal = getTmpLocal(expr, Some(typeFullName), line(expr))
+    val tmpIdentifier = getTmpIdentifier(expr, Some(typeFullName))
 
     val itemAssignments = expr.items.flatMap {
-      case Some(item) => Option(assignForArrayItem(item, tmpLocal, idxTracker))
+      case Some(item) => Option(assignForArrayItem(item, tmpIdentifier.name, idxTracker))
       case None =>
         idxTracker.next // Skip an index
         None
@@ -1327,9 +1302,8 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     val arrayBlock = blockNode(expr)
 
     Ast(arrayBlock)
-      .withChild(Ast(tmpLocal))
       .withChildren(itemAssignments)
-      .withChild(identifierAstFromLocal(tmpLocal))
+      .withChild(Ast(tmpIdentifier))
   }
 
   private def astForListExpr(expr: PhpListExpr): Ast = {
@@ -1456,19 +1430,18 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
 
     // Add closure bindings to diffgraph
     localsForUses.foreach { local =>
-      scope.lookupVariable(local.name).map { capturedNode =>
-        val closureBindingId = s"$filename:$methodName:${local.name}"
-        val closureBindingNode = NewClosureBinding()
-          .closureBindingId(closureBindingId)
-          .closureOriginalName(local.name)
-          .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      val closureBindingId = s"$filename:$methodName:${local.name}"
+      local.closureBindingId(closureBindingId)
+      scope.addToScope(local.name, local)
 
-        local.closureBindingId(closureBindingId)
+      val closureBindingNode = NewClosureBinding()
+        .closureBindingId(closureBindingId)
+        .closureOriginalName(local.name)
+        .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
-        diffGraph.addNode(closureBindingNode)
-        diffGraph.addEdge(closureBindingNode, capturedNode, EdgeTypes.REF)
-        diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
-      }
+      // The ref edge to the captured local is added in the ClosureRefPass
+      diffGraph.addNode(closureBindingNode)
+      diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
     }
 
     // Create method for closure
@@ -1532,16 +1505,15 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
         (Option(ast), name)
     }
 
-    val tmpLocal = getTmpLocal(expr, Option(className), line(expr))
+    val tmpIdentifier = getTmpIdentifier(expr, Option(className))
 
     // Alloc assign
     val allocCode       = s"$className.<alloc>()"
     val allocNode       = newOperatorCallNode(Operators.alloc, allocCode, Option(className), line(expr))
     val allocAst        = callAst(allocNode, base = maybeNameAst)
-    val allocAssignCode = s"${tmpLocal.code} = ${allocAst.rootCodeOrEmpty}"
+    val allocAssignCode = s"${tmpIdentifier.code} = ${allocAst.rootCodeOrEmpty}"
     val allocAssignNode = newOperatorCallNode(Operators.assignment, allocAssignCode, Option(className), line(expr))
-    val allocAssignIdentifier = identifierAstFromLocal(tmpLocal, line(expr))
-    val allocAssignAst        = callAst(allocAssignNode, allocAssignIdentifier :: allocAst :: Nil)
+    val allocAssignAst  = callAst(allocAssignNode, Ast(tmpIdentifier) :: allocAst :: Nil)
 
     // Init node
     val initArgs      = expr.args.map(astForCallArg)
@@ -1557,14 +1529,13 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
       Some(initSignature),
       Some(TypeConstants.Any)
     )
-    val initReceiver = identifierAstFromLocal(tmpLocal, line(expr))
+    val initReceiver = Ast(tmpIdentifier.copy)
     val initCallAst  = callAst(initCallNode, initArgs, base = Option(initReceiver))
 
     // Return identifier
-    val returnIdentifierAst = identifierAstFromLocal(tmpLocal, line(expr))
+    val returnIdentifierAst = Ast(tmpIdentifier.copy)
 
     Ast(blockNode(expr, "", TypeConstants.Any))
-      .withChild(Ast(tmpLocal))
       .withChild(allocAssignAst)
       .withChild(initCallAst)
       .withChild(returnIdentifierAst)
@@ -1590,9 +1561,9 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
         scalar
     }
   }
-  private def assignForArrayItem(item: PhpArrayItem, arrayLocal: NewLocal, idxTracker: ArrayIndexTracker): Ast = {
+  private def assignForArrayItem(item: PhpArrayItem, name: String, idxTracker: ArrayIndexTracker): Ast = {
     // It's perhaps a bit clumsy to reconstruct PhpExpr nodes here, but reuse astForArrayDimExpr for consistency
-    val variable = PhpVariable(PhpNameExpr(arrayLocal.name, item.attributes), item.attributes)
+    val variable = PhpVariable(PhpNameExpr(name, item.attributes), item.attributes)
 
     val dimension = item.key match {
       case Some(key: PhpSimpleScalar) => dimensionFromSimpleScalar(key, idxTracker)

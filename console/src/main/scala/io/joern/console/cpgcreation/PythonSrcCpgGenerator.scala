@@ -4,6 +4,7 @@ import io.joern.console.FrontendConfig
 import io.joern.pysrc2cpg._
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
+import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.shiftleft.codepropertygraph.Cpg
 
@@ -32,7 +33,7 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
     new PythonTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !pyConfig.forall(_.disableDummyTypes)))
       .createAndApply()
     new PythonTypeHintCallLinker(cpg).createAndApply()
-    new PythonNaiveCallLinker(cpg).createAndApply()
+    new NaiveCallLinker(cpg).createAndApply()
 
     // Some of passes above create new methods, so, we
     // need to run the ASTLinkerPass one more time

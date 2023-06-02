@@ -1,7 +1,3 @@
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.semanticcpg.language._
-
 // Find more information at http://www.makelinux.net/ldd3/ (Chapter 3)
 // and https://www.kernel.org/doc/html/latest/core-api/mm-api.html
 private val calls: Set[String] = Set(

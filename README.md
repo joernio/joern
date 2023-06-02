@@ -21,6 +21,10 @@ Documentation: https://docs.joern.io/
 
 Specification: https://cpg.joern.io
 
+## News / Changelog
+
+- Joern v1.2.0 removes the `overflowdb.traversal.Traversal` class. This change is not completely backwards compatible. See [here](changelog/traversal_removal.md) for a detailed writeup.
+
 ## Requirements
 
 - JDK 19 (other versions _might_ work, but have not been properly tested)

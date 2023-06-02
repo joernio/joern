@@ -2,11 +2,10 @@ package io.joern
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Declaration, Expression, Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
 
 package object dataflowengineoss {
 
-  def globalFromLiteral(lit: Literal): Traversal[Expression] = lit
+  def globalFromLiteral(lit: Literal): Traversal[Expression] = lit.start
     .where(_.inAssignment.method.nameExact("<module>", ":package"))
     .inAssignment
     .argument(1)

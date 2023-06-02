@@ -19,7 +19,7 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .NewCall()
       .code(code)
       .name(name)
-      .methodFullName(if (dispatchType == DispatchTypes.STATIC_DISPATCH) name else Defines.DynamicCallUnknownFallName)
+      .methodFullName(if (dispatchType == DispatchTypes.STATIC_DISPATCH) name else Defines.DynamicCallUnknownFullName)
       .dispatchType(dispatchType)
       .typeFullName(Constants.ANY)
       .lineNumber(lineAndColumn.line)
@@ -140,40 +140,49 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .name(name)
       .code(name)
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
-      .typeFullName(Constants.ANY)
+      .typeFullName(extractTypesFromHint(typeHint).getOrElse(Constants.ANY))
       .isVariadic(isVariadic)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
     index.foreach(idx => methodParameterNode.index(idx))
-    methodParameterNode.dynamicTypeHintFullName(extractTypesFromHint(typeHint))
     addNodeToDiff(methodParameterNode)
   }
 
-  def extractTypesFromHint(typeHint: Option[ast.iexpr] = None): Seq[String] = {
+  def extractTypesFromHint(typeHint: Option[ast.iexpr] = None): Option[String] = {
     typeHint match {
       case Some(hint) =>
         val nameSequence = hint match {
-          case n: ast.Name => Seq(n.id)
+          case n: ast.Name => Option(n.id)
           // TODO: Definitely a place for follow up handling of generics - currently only take the polymorphic type
           //  without type args. To see the type arguments, see ast.Subscript.slice
           case attr: ast.Attribute =>
             extractTypesFromHint(Some(attr.value)).map { x => x + "." + attr.attr }
-          case n: ast.Subscript if n.value.isInstanceOf[ast.Name] => Seq(n.value.asInstanceOf[ast.Name].id)
-          case _                                                  => Seq[String]()
+          case n: ast.Subscript if n.value.isInstanceOf[ast.Name] => Option(n.value.asInstanceOf[ast.Name].id)
+          case n: ast.Constant if n.value.isInstanceOf[ast.StringConstant] =>
+            Option(n.value.asInstanceOf[ast.StringConstant].value)
+          case _ => None
         }
         nameSequence.map { typeName =>
           if (allBuiltinClasses.contains(typeName)) s"$builtinPrefix$typeName"
           else if (typingClassesV3.contains(typeName)) s"$typingPrefix$typeName"
           else typeName
         }
-      case _ =>
-        Seq()
+      case _ => None
     }
   }
 
-  def methodReturnNode(dynamicTypeHintFullName: Option[String], lineAndColumn: LineAndColumn): nodes.NewMethodReturn = {
+  def methodReturnNode(
+    staticTypeHint: Option[String],
+    dynamicTypeHintFullName: Option[String],
+    lineAndColumn: LineAndColumn
+  ): nodes.NewMethodReturn = {
     val methodReturnNode = NodeBuilders
-      .newMethodReturnNode(Constants.ANY, dynamicTypeHintFullName, Some(lineAndColumn.line), Some(lineAndColumn.column))
+      .newMethodReturnNode(
+        staticTypeHint.getOrElse(Constants.ANY),
+        dynamicTypeHintFullName,
+        Some(lineAndColumn.line),
+        Some(lineAndColumn.column)
+      )
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
     addNodeToDiff(methodReturnNode)

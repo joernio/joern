@@ -5,6 +5,7 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local, Member, Method}
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.Block
 
 class TypeDeclTests extends PhpCode2CpgFixture {
 
@@ -55,38 +56,37 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").body.astChildren.isBlock.l) { case List(constructorBlock) =>
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(tmpLocal: Local, constructorBlock: Block) =>
+      tmpLocal.name shouldBe "tmp0"
+      tmpLocal.code shouldBe "$tmp0"
+
       constructorBlock.lineNumber shouldBe Some(3)
 
-      inside(constructorBlock.astChildren.l) {
-        case List(tmpLocal: Local, allocAssign: Call, initCall: Call, tmpVar: Identifier) =>
-          tmpLocal.name shouldBe "tmp0"
-          tmpLocal.code shouldBe "$tmp0"
+      inside(constructorBlock.astChildren.l) { case List(allocAssign: Call, initCall: Call, tmpVar: Identifier) =>
+        allocAssign.methodFullName shouldBe Operators.assignment
+        inside(allocAssign.astChildren.l) { case List(tmpIdentifier: Identifier, allocCall: Call) =>
+          tmpIdentifier.name shouldBe "tmp0"
+          tmpIdentifier.code shouldBe "$tmp0"
+          tmpIdentifier._localViaRefOut should contain(tmpLocal)
 
-          allocAssign.methodFullName shouldBe Operators.assignment
-          inside(allocAssign.astChildren.l) { case List(tmpIdentifier: Identifier, allocCall: Call) =>
-            tmpIdentifier.name shouldBe "tmp0"
-            tmpIdentifier.code shouldBe "$tmp0"
-            tmpIdentifier._localViaRefOut should contain(tmpLocal)
+          allocCall.name shouldBe Operators.alloc
+          allocCall.methodFullName shouldBe Operators.alloc
+          allocCall.lineNumber shouldBe Some(3)
+          allocCall.code shouldBe "Foo.<alloc>()"
+        }
 
-            allocCall.name shouldBe Operators.alloc
-            allocCall.methodFullName shouldBe Operators.alloc
-            allocCall.lineNumber shouldBe Some(3)
-            allocCall.code shouldBe "Foo.<alloc>()"
-          }
-
-          initCall.name shouldBe "__construct"
-          initCall.methodFullName shouldBe s"Foo->__construct"
-          initCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
-          initCall.code shouldBe "Foo->__construct(42)"
-          inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
-            tmpIdentifier.name shouldBe "tmp0"
-            tmpIdentifier.code shouldBe "$tmp0"
-            tmpIdentifier.argumentIndex shouldBe 0
-            tmpIdentifier._localViaRefOut should contain(tmpLocal)
-            literal.code shouldBe "42"
-            literal.argumentIndex shouldBe 1
-          }
+        initCall.name shouldBe "__construct"
+        initCall.methodFullName shouldBe s"Foo->__construct"
+        initCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
+        initCall.code shouldBe "Foo->__construct(42)"
+        inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
+          tmpIdentifier.name shouldBe "tmp0"
+          tmpIdentifier.code shouldBe "$tmp0"
+          tmpIdentifier.argumentIndex shouldBe 0
+          tmpIdentifier._localViaRefOut should contain(tmpLocal)
+          literal.code shouldBe "42"
+          literal.argumentIndex shouldBe 1
+        }
       }
     }
   }
@@ -102,7 +102,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       alloc.name shouldBe Operators.alloc
       alloc.methodFullName shouldBe Operators.alloc
       alloc.code shouldBe "$x.<alloc>()"
-      inside(alloc.argument(0).l) { case List(xIdentifier: Identifier) =>
+      inside(alloc.argument(0).start.l) { case List(xIdentifier: Identifier) =>
         xIdentifier.name shouldBe "x"
         xIdentifier.code shouldBe "$x"
       }

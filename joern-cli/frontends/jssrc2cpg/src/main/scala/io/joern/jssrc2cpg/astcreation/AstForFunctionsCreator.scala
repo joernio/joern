@@ -94,7 +94,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
               parameterInNode(
                 lhsNodeInfo,
                 lhsNodeInfo.code,
-                lhsNodeInfo.code,
+                nodeInfo.code,
                 index,
                 false,
                 EvaluationStrategies.BY_VALUE,
@@ -201,6 +201,14 @@ trait AstForFunctionsCreator { this: AstCreator =>
         case Identifier =>
           val tpe  = typeFor(nodeInfo)
           val name = nodeInfo.json("name").str
+          val node =
+            parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))
+          scope.addVariable(name, node, MethodScope)
+          node
+        case TSParameterProperty =>
+          val unpackedParam = createBabelNodeInfo(nodeInfo.json("parameter"))
+          val tpe           = typeFor(unpackedParam)
+          val name          = unpackedParam.json("name").str
           val node =
             parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))
           scope.addVariable(name, node, MethodScope)

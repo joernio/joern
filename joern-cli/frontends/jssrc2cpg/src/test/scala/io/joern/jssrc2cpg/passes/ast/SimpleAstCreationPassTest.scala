@@ -1538,11 +1538,11 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     val List(call) = node.astChildren.isCall.codeExact(s"_tmp_0.$keyName = $assignedValue").l
     call.methodFullName shouldBe Operators.assignment
 
-    val List(tmpAccess) = call.argument(1).l.isCall.l
+    val List(tmpAccess) = call.argument(1).start.isCall.l
     tmpAccess.code shouldBe s"_tmp_0.$keyName"
     tmpAccess.methodFullName shouldBe Operators.fieldAccess
     tmpAccess.argumentIndex shouldBe 1
-    val List(value) = call.argument(2).l
+    val List(value) = call.argument(2).start.l
     value.code shouldBe assignedValue
 
     val List(leftHandSideTmpId) = tmpAccess.astChildren.isIdentifier.nameExact("_tmp_0").l

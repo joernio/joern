@@ -3,7 +3,7 @@ package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
+import overflowdb.traversal.{help}
 import overflowdb.traversal.help.Doc
 
 @help.Traversal(elementType = classOf[CfgNode])
@@ -25,18 +25,16 @@ class CfgNodeTraversal[A <: CfgNode](val traversal: Traversal[A]) extends AnyVal
 
   @Doc(info = "Nodes directly reachable via outgoing CFG edges")
   def cfgNext: Traversal[CfgNode] =
-    traversal
-      .out(EdgeTypes.CFG)
-      .not(_.hasLabel(NodeTypes.METHOD_RETURN))
+    traversal._cfgOut
+      .filterNot(_.isInstanceOf[MethodReturn])
       .cast[CfgNode]
 
   /** Traverse to previous expression in CFG.
     */
   @Doc(info = "Nodes directly reachable via incoming CFG edges")
   def cfgPrev: Traversal[CfgNode] =
-    traversal
-      .in(EdgeTypes.CFG)
-      .not(_.hasLabel(NodeTypes.METHOD))
+    traversal._cfgIn
+      .filterNot(_.isInstanceOf[MethodReturn])
       .cast[CfgNode]
 
   /** All nodes reachable in the CFG by up to n forward expansions

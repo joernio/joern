@@ -44,7 +44,7 @@ class CfgGenerator {
   }
 
   protected def expand(v: StoredNode): Iterator[Edge] = {
-    v._cfgOut.asScala
+    v._cfgOut
       .filter(_.isInstanceOf[StoredNode])
       .map(node => Edge(v, node, edgeType = edgeType))
   }

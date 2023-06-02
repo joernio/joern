@@ -32,7 +32,7 @@ object SQLInjection extends QueryBundle {
 
         def sink = cpg.call.name("query").filter(_.receiver.nonEmpty).argument
 
-        sink.reachableBy(source).l
+        sink.reachableBy(source).l.iterator
       }),
       tags = List(QueryTags.remoteCodeExecution, QueryTags.default)
     )

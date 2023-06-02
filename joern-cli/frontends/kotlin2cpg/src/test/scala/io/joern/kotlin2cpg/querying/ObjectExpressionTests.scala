@@ -105,7 +105,7 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "contain a CALL node for an <init> on the temp identifier" in {
       val List(c: Call) = cpg.call.nameExact("<init>").l
-      c.methodFullName shouldBe "mypkg.foo$object$1.<init>:<void>()"
+      c.methodFullName shouldBe "mypkg.foo$object$1.<init>:void()"
     }
 
     "contain an IDENTIFIER node for the argument representing the object literal" in {
