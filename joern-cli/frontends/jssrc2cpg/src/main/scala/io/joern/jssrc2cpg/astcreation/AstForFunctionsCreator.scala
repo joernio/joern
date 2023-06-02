@@ -205,6 +205,14 @@ trait AstForFunctionsCreator { this: AstCreator =>
             parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))
           scope.addVariable(name, node, MethodScope)
           node
+        case TSParameterProperty =>
+          val unpackedParam = createBabelNodeInfo(nodeInfo.json("parameter"))
+          val tpe           = typeFor(unpackedParam)
+          val name          = unpackedParam.json("name").str
+          val node =
+            parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))
+          scope.addVariable(name, node, MethodScope)
+          node
         case _ =>
           val tpe = typeFor(nodeInfo)
           val node =

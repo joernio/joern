@@ -56,9 +56,12 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
       val typeFullName = x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any)
       val typeHints    = symbolTable.get(LocalVar(x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any))) - typeFullName
       lazy val cpgTypeFullName = cpg.typeDecl.nameExact(typeFullName).fullName.toSet
-      if (typeHints.nonEmpty) symbolTable.put(x, typeHints)
-      else if (cpgTypeFullName.nonEmpty) symbolTable.put(x, cpgTypeFullName)
-      else symbolTable.put(x, getTypes(x))
+      val resolvedTypeHints =
+        if (typeHints.nonEmpty) symbolTable.put(x, typeHints)
+        else if (cpgTypeFullName.nonEmpty) symbolTable.put(x, cpgTypeFullName)
+        else symbolTable.put(x, getTypes(x))
+      if (!resolvedTypeHints.contains(typeFullName) && resolvedTypeHints.sizeIs == 1)
+        builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, resolvedTypeHints.head)
     case x @ (_: Identifier | _: Local | _: MethodParameterIn) =>
       symbolTable.put(x, getTypes(x))
     case x: Call => symbolTable.put(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
@@ -194,7 +197,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         }
       }.toSet
     } else {
-      val default = Set(entity).map(_.replaceAll("/", sep))
+      val default = Set(entity)
       symbolTable.append(LocalVar(alias), default)
       symbolTable.append(CallAlias(alias, Option("this")), default)
     }
@@ -228,7 +231,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         case Some(i)                                             => symbolTable.get(i)
         case None                                                => Set.empty[String]
       }
-      val possibleConstructorPointer =
+      lazy val possibleConstructorPointer =
         newChildren.astChildren.isFieldIdentifier.map(f => CallAlias(f.canonicalName, Some("this"))).headOption match {
           case Some(fi) => symbolTable.get(fi)
           case None     => Set.empty[String]
@@ -263,10 +266,12 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     globalTypes: Set[String],
     baseTypes: Set[String]
   ): Set[String] = {
-    if (symbolTable.contains(LocalVar(fieldName))) symbolTable.get(LocalVar(fieldName))
-    else if (symbolTable.contains(CallAlias(fieldName, Option("this"))))
+    if (symbolTable.contains(LocalVar(fieldName))) {
+      val fieldTypes = symbolTable.get(LocalVar(fieldName))
+      symbolTable.append(i, fieldTypes)
+    } else if (symbolTable.contains(CallAlias(fieldName, Option("this")))) {
       symbolTable.get(CallAlias(fieldName, Option("this")))
-    else
+    } else {
       super.associateInterproceduralTypes(
         i: Identifier,
         fieldFullName: String,
@@ -274,6 +279,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         globalTypes: Set[String],
         baseTypes: Set[String]
       )
+    }
   }
 
   override protected def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] =
