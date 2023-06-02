@@ -194,7 +194,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         }
       }.toSet
     } else {
-      val default = Set(entity).map(_.replaceAll("/", sep))
+      val default = Set(entity)
       symbolTable.append(LocalVar(alias), default)
       symbolTable.append(CallAlias(alias, Option("this")), default)
     }
