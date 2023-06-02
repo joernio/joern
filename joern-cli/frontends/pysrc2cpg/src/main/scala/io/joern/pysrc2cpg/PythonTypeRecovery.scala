@@ -78,10 +78,10 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     i.importedAs match {
       case Some(alias) =>
         symbolTable.put(CallAlias(alias), calleeNames)
-        symbolTable.put(LocalVar(alias), calleeNames)
+        symbolTable.put(LocalVar(alias), calleeNames.map(_.stripSuffix(s"${pathSep}__init__")))
       case None =>
         symbolTable.put(CallAlias(entityName), calleeNames)
-        symbolTable.put(LocalVar(entityName), calleeNames)
+        symbolTable.put(LocalVar(entityName), calleeNames.map(_.stripSuffix(s"${pathSep}__init__")))
     }
   }
 
@@ -320,5 +320,11 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     }
     super.prepopulateSymbolTable()
   }
+
+  override protected def visitIdentifierAssignedToTypeRef(i: Identifier, t: TypeRef, rec: Option[String]): Set[String] =
+    t.typ.referencedTypeDecl.astSiblings
+      .collectFirst { case td: TypeDecl => td }
+      .map(td => symbolTable.append(CallAlias(i.name, rec), Set(td.fullName)))
+      .getOrElse(super.visitIdentifierAssignedToTypeRef(i, t, rec))
 
 }

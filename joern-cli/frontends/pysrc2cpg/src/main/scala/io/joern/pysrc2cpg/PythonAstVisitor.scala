@@ -4,7 +4,7 @@ import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop._
 import io.joern.pythonparser.ast
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -97,6 +97,7 @@ class PythonAstVisitor(
       createMethod(
         "<module>",
         methodFullName,
+        Some("<module>"),
         parameterProvider = () => MethodParameters.empty(),
         bodyProvider = () => createBuiltinIdentifiers(memOpCalculator.names) ++ module.stmts.map(convert),
         returns = None,
@@ -215,6 +216,7 @@ class PythonAstVisitor(
       createIdentifierNode(functionDef.name, Store, lineAndColOf(functionDef))
     val (methodNode, methodRefNode) = createMethodAndMethodRef(
       functionDef.name,
+      Some(functionDef.name),
       createParameterProcessingFunction(functionDef.args, isStaticMethod(functionDef.decorator_list)),
       () => functionDef.body.map(convert),
       functionDef.returns,
@@ -253,6 +255,7 @@ class PythonAstVisitor(
       createIdentifierNode(functionDef.name, Store, lineAndColOf(functionDef))
     val (methodNode, methodRefNode) = createMethodAndMethodRef(
       functionDef.name,
+      Some(functionDef.name),
       createParameterProcessingFunction(functionDef.args, isStaticMethod(functionDef.decorator_list)),
       () => functionDef.body.map(convert),
       functionDef.returns,
@@ -285,44 +288,27 @@ class PythonAstVisitor(
     parameters: ast.Arguments,
     isStatic: Boolean
   ): () => MethodParameters = {
-    val startIndex = if (contextStack.isClassContext && !isStatic) 0 else 1
+    val startIndex =
+      if (contextStack.isClassContext && !isStatic)
+        0
+      else
+        1
 
     () => new MethodParameters(startIndex, convert(parameters, startIndex))
-  }
-
-  private def createMethodAndMethodRef(
-    methodName: String,
-    parameterProvider: () => MethodParameters,
-    bodyProvider: () => Iterable[nodes.NewNode],
-    returns: Option[ast.iexpr],
-    isAsync: Boolean,
-    lineAndColumn: LineAndColumn,
-    instanceTypeDecl: Option[nodes.NewTypeDecl] = None
-  ): (nodes.NewMethod, nodes.NewMethodRef) = {
-    val methodFullName = calculateFullNameFromContext(methodName)
-    createMethodAndMethodRef(
-      methodName,
-      methodFullName,
-      parameterProvider,
-      bodyProvider,
-      returns,
-      isAsync,
-      lineAndColumn,
-      instanceTypeDecl
-    )
   }
 
   // TODO handle returns
   private def createMethodAndMethodRef(
     methodName: String,
-    methodFullName: String,
+    scopeName: Option[String],
     parameterProvider: () => MethodParameters,
     bodyProvider: () => Iterable[nodes.NewNode],
     returns: Option[ast.iexpr],
     isAsync: Boolean,
-    lineAndColumn: LineAndColumn,
-    instanceTypeDecl: Option[nodes.NewTypeDecl]
+    lineAndColumn: LineAndColumn
   ): (nodes.NewMethod, nodes.NewMethodRef) = {
+    val methodFullName = calculateFullNameFromContext(methodName)
+
     val methodRefNode =
       nodeBuilder.methodRefNode("def " + methodName + "(...)", methodFullName, lineAndColumn)
 
@@ -330,14 +316,14 @@ class PythonAstVisitor(
       createMethod(
         methodName,
         methodFullName,
+        scopeName,
         parameterProvider,
         bodyProvider,
         returns,
         isAsync = true,
         Some(methodRefNode),
         returnTypeHint = None,
-        lineAndColumn,
-        instanceTypeDecl
+        lineAndColumn
       )
 
     (methodNode, methodRefNode)
@@ -349,14 +335,14 @@ class PythonAstVisitor(
   private def createMethod(
     name: String,
     fullName: String,
+    scopeName: Option[String],
     parameterProvider: () => MethodParameters,
     bodyProvider: () => Iterable[nodes.NewNode],
     returns: Option[ast.iexpr],
     isAsync: Boolean,
     methodRefNode: Option[nodes.NewMethodRef],
     returnTypeHint: Option[String],
-    lineAndColumn: LineAndColumn,
-    instanceTypeDecl: Option[NewTypeDecl] = None
+    lineAndColumn: LineAndColumn
   ): nodes.NewMethod = {
     val methodNode = nodeBuilder.methodNode(name, fullName, absFileName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
@@ -364,7 +350,7 @@ class PythonAstVisitor(
     val blockNode = nodeBuilder.blockNode("", lineAndColumn)
     edgeBuilder.astEdge(blockNode, methodNode, 1)
 
-    contextStack.pushMethod(name, methodNode, blockNode, methodRefNode)
+    contextStack.pushMethod(scopeName, methodNode, blockNode, methodRefNode)
 
     val virtualModifierNode = nodeBuilder.modifierNode(ModifierTypes.VIRTUAL)
     edgeBuilder.astEdge(virtualModifierNode, methodNode, 0)
@@ -377,8 +363,8 @@ class PythonAstVisitor(
       edgeBuilder.astEdge(parameterNode, methodNode, parameterOrder.getAndInc)
     }
 
-    val methodReturnNode = nodeBuilder.methodReturnNode(returnTypeHint, lineAndColumn)
-    methodReturnNode.dynamicTypeHintFullName(nodeBuilder.extractTypesFromHint(returns))
+    val methodReturnNode =
+      nodeBuilder.methodReturnNode(nodeBuilder.extractTypesFromHint(returns), returnTypeHint, lineAndColumn)
     edgeBuilder.astEdge(methodReturnNode, methodNode, 2)
 
     val bodyOrder = new AutoIncIndex(1)
@@ -388,22 +374,16 @@ class PythonAstVisitor(
 
     // For every method we create a corresponding TYPE and TYPE_DECL and
     // a binding for the method into TYPE_DECL.
-    val typeDeclNode = instanceTypeDecl match {
-      case Some(x) => x
-      case None =>
-        nodeBuilder.typeNode(name, fullName)
-        nodeBuilder.typeDeclNode(name, fullName, absFileName, Seq(Constants.ANY), lineAndColumn)
-    }
+    val typeNode     = nodeBuilder.typeNode(name, fullName)
+    val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, absFileName, Seq(Constants.ANY), lineAndColumn)
 
     // For every method that is a module, the local variables can be imported by other modules. This behaviour is
     // much like fields so they are to be linked as fields to this method type
     if (name == "<module>") contextStack.createMemberLinks(typeDeclNode, edgeBuilder.astEdge)
 
     contextStack.pop()
-    if (instanceTypeDecl.isEmpty) {
-      edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
-      createBinding(methodNode, typeDeclNode)
-    }
+    edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
+    createBinding(methodNode, typeDeclNode)
 
     methodNode
   }
@@ -464,17 +444,21 @@ class PythonAstVisitor(
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create <body> function which contains the code defining the class
-    contextStack.pushClass(classDef.name, instanceTypeDecl)
+    contextStack.pushClass(Some(classDef.name), instanceTypeDecl)
+    val classBodyFunctionName = "<body>"
     val (_, methodRefNode) = createMethodAndMethodRef(
-      instanceTypeDeclName,
-      instanceTypeDeclFullName,
+      classBodyFunctionName,
+      scopeName = None,
       parameterProvider = () => MethodParameters.empty(),
       bodyProvider = () => classDef.body.map(convert),
       None,
       isAsync = false,
-      lineAndColOf(classDef),
-      Option(instanceTypeDecl)
+      lineAndColOf(classDef)
     )
+
+    contextStack.pop()
+
+    contextStack.pushClass(Some(classDef.name), metaTypeDeclNode)
 
     // Create meta class call handling method and bind it to meta class type.
     val functions = classDef.body.collect { case func: ast.FunctionDef => func }
@@ -494,6 +478,20 @@ class PythonAstVisitor(
         defaults = mutable.Seq.empty[ast.iexpr]
       )
     }
+
+    val metaClassCallHandlerMethod =
+      createMetaClassCallHandlerMethod(initParameters, metaTypeDeclName, metaTypeDeclFullName, instanceTypeDeclFullName)
+
+    createBinding(metaClassCallHandlerMethod, metaTypeDeclNode)
+
+    // Create fake __new__ regardless whether there is an actual implementation in the code.
+    // We do this to model the __init__ call in a visible way for the data flow tracker.
+    // This is done because very often the __init__ call is hidden in a super().__new__ call
+    // and we cant yet handle super().
+    val fakeNewMethod = createFakeNewMethod(initParameters)
+
+    val fakeNewMember = nodeBuilder.memberNode("<fakeNew>", fakeNewMethod.fullName)
+    edgeBuilder.astEdge(fakeNewMember, metaTypeDeclNode, contextStack.order.getAndInc)
 
     // Create binding into class instance type for each method.
     // Also create bindings into meta class type to enable calls like "MyClass.func(obj, p1)".
@@ -522,24 +520,6 @@ class PythonAstVisitor(
       case _ =>
       // All other body statements are currently ignored.
     }
-
-    contextStack.pop()
-
-    contextStack.pushClass(classDef.name, metaTypeDeclNode)
-
-    val metaClassCallHandlerMethod =
-      createMetaClassCallHandlerMethod(initParameters, metaTypeDeclName, metaTypeDeclFullName, instanceTypeDeclFullName)
-
-    createBinding(metaClassCallHandlerMethod, metaTypeDeclNode)
-
-    // Create fake __new__ regardless whether there is an actual implementation in the code.
-    // We do this to model the __init__ call in a visible way for the data flow tracker.
-    // This is done because very often the __init__ call is hidden in a super().__new__ call
-    // and we cant yet handle super().
-    val fakeNewMethod = createFakeNewMethod(initParameters)
-
-    val fakeNewMember = nodeBuilder.memberNode("<fakeNew>", fakeNewMethod.fullName)
-    edgeBuilder.astEdge(fakeNewMember, metaTypeDeclNode, contextStack.order.getAndInc)
 
     contextStack.pop()
 
@@ -605,6 +585,7 @@ class PythonAstVisitor(
     createMethod(
       adapterMethodName,
       adapterMethodFullName,
+      Some(adaptedMethodName),
       parameterProvider = () => {
         MethodParameters(
           0,
@@ -695,6 +676,7 @@ class PythonAstVisitor(
     createMethod(
       methodName,
       methodFullName,
+      Some(methodName),
       parameterProvider = () => {
         MethodParameters(1, convert(parametersWithoutSelf, 1))
       },
@@ -744,6 +726,7 @@ class PythonAstVisitor(
     createMethod(
       newMethodName,
       newMethodStubFullName,
+      Some(newMethodName),
       parameterProvider = () => {
         MethodParameters(
           0,
@@ -1394,14 +1377,15 @@ class PythonAstVisitor(
         lambdaCounter.toString
       }
 
+    val name = "<lambda>" + lambdaNumberSuffix
     val (_, methodRefNode) = createMethodAndMethodRef(
-      "<lambda>" + lambdaNumberSuffix,
+      name,
+      Some(name),
       createParameterProcessingFunction(lambda.args, isStatic = false),
       () => Iterable.single(convert(new ast.Return(lambda.body, lambda.attributeProvider))),
       returns = None,
       isAsync = false,
-      lineAndColOf(lambda),
-      instanceTypeDecl = None
+      lineAndColOf(lambda)
     )
     methodRefNode
   }
@@ -1882,10 +1866,8 @@ class PythonAstVisitor(
   def convert(name: ast.Name): nodes.NewNode = {
     val memoryOperation = memOpMap.get(name).get
     val identifier      = createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
-    contextStack.astParent match {
-      case _: NewMethod if contextStack.isClassContext && memoryOperation == Store =>
-        createAndRegisterMember(identifier.name, lineAndColOf(name))
-      case _ =>
+    if (contextStack.isClassContext && memoryOperation == Store) {
+      createAndRegisterMember(identifier.name, lineAndColOf(name))
     }
     identifier
   }
