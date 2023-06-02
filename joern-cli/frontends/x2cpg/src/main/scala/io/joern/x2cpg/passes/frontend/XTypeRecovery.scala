@@ -834,9 +834,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
         case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
           setTypeInformationForRecCall(x, Option(x), x.argument.l)
-//        case x: Call if x.receiver.isCall.exists(_.name == Operators.fieldAccess) =>
-//          setTypeForFieldAccess(new FieldAccess(x), new Assignment(rec), f)
-//          println(x.code)
         case _ =>
       }
     // Set types in an atomic way
@@ -849,7 +846,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Sets type information for a receiver/call pattern.
     */
   private def setTypeInformationForRecCall(x: AstNode, n: Option[Call], ms: List[AstNode]): Unit = {
-//    println(x.code, n.map(_.code), ms.map(_.code))
     (n, ms) match {
       // Case 1: 'call' is an assignment from some dynamic dispatch call
       case (Some(call: Call), ::(i: Identifier, ::(c: Call, _))) if call.name == Operators.assignment =>
@@ -864,12 +860,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case (Some(fieldAccess: Call), ::(i: Identifier, ::(f: FieldIdentifier, _)))
           if fieldAccess.name == Operators.fieldAccess =>
         setTypeForFieldAccess(new FieldAccess(fieldAccess), i, f)
-      // Case 4: 'rec' is the receiver for a field access on member 'f' where `rec` is some field down a deeper access
-      // path and, in some languages, this is set to a temp variable first to conform to 3-address code
-      case (Some(fieldAccess: Call), ::(rec: Call, ::(f: FieldIdentifier, _)))
-          if fieldAccess.name == Operators.fieldAccess // && rec.name == Operators.assignment
-          =>
-        setTypeForFieldAccess(new FieldAccess(fieldAccess), new Assignment(rec), f)
       case _ =>
     }
     // Handle the node itself
@@ -891,24 +881,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
     // This field may be a function pointer
     handlePotentialFunctionPointer(fieldAccess, idHints, f.canonicalName, Option(i.name))
-  }
-
-  protected def setTypeForFieldAccess(
-    fieldAccess: FieldAccess,
-    recFieldAccess: Assignment,
-    f: FieldIdentifier
-  ): Unit = {
-    val idHints =
-      if (symbolTable.contains(recFieldAccess)) symbolTable.get(recFieldAccess)
-      else symbolTable.get(CallAlias(recFieldAccess.name))
-    val callTypes = symbolTable.get(fieldAccess)
-//    persistType(recFieldAccess, idHints)
-    persistType(fieldAccess, callTypes)
-    fieldAccess.astParent.iterator.isCall.headOption match {
-      case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
-        persistType(callFromFieldName, symbolTable.get(callFromFieldName))
-      case _ =>
-    }
   }
 
   protected def setTypeForDynamicDispatchCall(call: Call, i: Identifier): Unit = {
