@@ -19,6 +19,8 @@ import io.joern.x2cpg.utils.NodeBuilders.{
   newLocalNode,
   newMethodReturnNode
 }
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
@@ -401,16 +403,39 @@ trait KtPsiToAst {
     val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
     val _methodReturnNode = newMethodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
 
+    val visibility = typeInfoProvider.visibility(ktFn)
+    val visibilityModifierType =
+      modifierTypeForVisibility(visibility.getOrElse(DescriptorVisibilities.UNKNOWN))
+    val visibilityModifier = modifierNode(visibilityModifierType)
+
     val modifierNodes =
       if (withVirtualModifier) Seq(modifierNode(ModifierTypes.VIRTUAL))
       else Seq()
 
     val annotationEntries = ktFn.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
     Seq(
-      methodAst(_methodNode, thisParameterAsts ++ methodParametersAsts, bodyAst, _methodReturnNode, modifierNodes)
+      methodAst(
+        _methodNode,
+        thisParameterAsts ++ methodParametersAsts,
+        bodyAst,
+        _methodReturnNode,
+        List(visibilityModifier) ++ modifierNodes
+      )
         .withChildren(otherBodyAsts)
         .withChildren(annotationEntries)
     )
+  }
+
+  private def modifierTypeForVisibility(visibility: DescriptorVisibility): String = {
+    if (visibility.toString == DescriptorVisibilities.PUBLIC.toString)
+      ModifierTypes.PUBLIC
+    else if (visibility.toString == DescriptorVisibilities.PRIVATE.toString)
+      ModifierTypes.PRIVATE
+    else if (visibility.toString == DescriptorVisibilities.PROTECTED.toString)
+      ModifierTypes.PROTECTED
+    else if (visibility.toString == DescriptorVisibilities.INTERNAL.toString)
+      ModifierTypes.INTERNAL
+    else "UNKNOWN"
   }
 
   def astsForBlock(
