@@ -33,11 +33,19 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
         |}""".stripMargin)
 
     "have a resolved typeFullName" in {
-      cpg.member.name("consumer").typeFullName.head shouldBe "org.apache.kafka.clients.consumer.Consumer"
+      cpg.member
+        .name("consumer")
+        .typeFullName
+        .head shouldBe "org.apache.kafka.clients.consumer.Consumer<String,Integer>"
     }
 
     "have a resolved package name in methodFullName" in {
-      cpg.call("poll").methodFullName.head.split(":").head shouldBe "org.apache.kafka.clients.consumer.Consumer.poll"
+      cpg
+        .call("poll")
+        .methodFullName
+        .head
+        .split(":")
+        .head shouldBe "org.apache.kafka.clients.consumer.Consumer<String,Integer>.poll"
     }
   }
 
