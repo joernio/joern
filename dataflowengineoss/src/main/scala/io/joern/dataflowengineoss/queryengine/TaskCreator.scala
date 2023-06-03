@@ -24,7 +24,7 @@ class TaskCreator(context: EngineContext) {
       tasks.filter(_.callDepth <= context.config.maxCallDepth)
     }
     tasksWithValidCallDepth.filter { t =>
-      t.taskStack.distinct.size == t.taskStack.size
+      t.taskStack.dedup.size == t.taskStack.size
     }
   }
 
@@ -71,7 +71,6 @@ class TaskCreator(context: EngineContext) {
   private def paramToArgsOfCallers(param: MethodParameterIn): List[Expression] =
     NoResolve
       .getMethodCallsites(param.method)
-      .iterator
       .collectAll[Call]
       .argument(param.index)
       .l
@@ -98,6 +97,7 @@ class TaskCreator(context: EngineContext) {
 
       val methodReturns = outCall.toList
         .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
+        .iterator
 
       methodReturns.flatMap { case (call, methodReturn) =>
         val method           = methodReturn.method

@@ -9,6 +9,7 @@ import org.json4s._
 import org.json4s.native.JsonMethods.parse
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import overflowdb.traversal.Traversal
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -40,7 +41,7 @@ class StepsTest extends AnyWordSpec with Matchers {
 
     "filter with traversal on cpg type" in {
       def allMethods    = cpg.method.l
-      val publicMethods = allMethods.iterator.where(_.isPublic)
+      val publicMethods = allMethods.where(_.isPublic)
       allMethods.size should be > publicMethods.toList.size
     }
 

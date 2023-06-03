@@ -3,7 +3,7 @@ package io.shiftleft.semanticcpg.language.nodemethods
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.jIteratortoTraversal
+import overflowdb.traversal.{Traversal, jIteratortoTraversal}
 
 class MethodMethods(val method: Method) extends AnyVal with NodeExtension with HasLocation {
 
@@ -39,14 +39,14 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
     */
   def reversePostOrder: Traversal[CfgNode] = {
     def expand(x: CfgNode) = { x.cfgNext.iterator }
-    NodeOrdering.reverseNodeList(NodeOrdering.postOrderNumbering(method, expand).toList)
+    NodeOrdering.reverseNodeList(NodeOrdering.postOrderNumbering(method, expand).toList).iterator
   }
 
   /** List of CFG nodes in post order
     */
   def postOrder: Traversal[CfgNode] = {
     def expand(x: CfgNode) = { x.cfgNext.iterator }
-    NodeOrdering.nodeList(NodeOrdering.postOrderNumbering(method, expand).toList)
+    NodeOrdering.nodeList(NodeOrdering.postOrderNumbering(method, expand).toList).iterator
   }
 
   /** The type declaration associated with this method, e.g., the class it is defined in.

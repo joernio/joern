@@ -31,7 +31,7 @@ final case class Config(
   override def withOutputPath(x: String): Config = copy(outputPath = x)
 }
 
-private object Frontend {
+object Frontend {
   implicit val defaultConfig: Config = Config()
 
   val cmdLineParser: OParser[Unit, Config] = {

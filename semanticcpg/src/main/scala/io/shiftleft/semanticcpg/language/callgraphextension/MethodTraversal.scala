@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.help.Doc
-import overflowdb.traversal.PathAwareTraversal
+import overflowdb.traversal.{PathAwareTraversal, Traversal, toNodeTraversal}
 
 class MethodTraversal(val traversal: Traversal[Method]) extends AnyVal {
 
@@ -15,12 +15,11 @@ class MethodTraversal(val traversal: Traversal[Method]) extends AnyVal {
     val sinkMethods   = traversal.dedup
 
     if (sourceMethods.isEmpty || sinkMethods.isEmpty) {
-      new PathAwareTraversal(Iterator.empty)
+      Iterator.empty[Method].enablePathTracking
     } else {
       sinkMethods
         .repeat(
-          _.flatMap(callResolver.getMethodCallsitesAsTraversal)
-            .in(EdgeTypes.CONTAINS) // expand to method
+          _.flatMap(callResolver.getMethodCallsitesAsTraversal)._containsIn // expand to method
         )(_.dedup.emit(_.collect {
           case method: Method if sourceMethods.contains(method) => method
         }))

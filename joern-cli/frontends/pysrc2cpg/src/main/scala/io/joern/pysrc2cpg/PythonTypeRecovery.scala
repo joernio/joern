@@ -8,7 +8,6 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.traversal.Traversal
 
 import java.io.{File => JFile}
 import java.nio.file.Paths
@@ -23,20 +22,15 @@ class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecove
 
 private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
 
-  override def compilationUnit: Traversal[File] = cpg.file
+  override def compilationUnit: Iterator[File] = cpg.file.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[File] =
-    new RecoverForPythonFile(
-      cpg,
-      unit,
-      builder,
-      state.copy(config =
-        state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-      )
-    )
+  ): RecoverForXCompilationUnit[File] = {
+    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
+    new RecoverForPythonFile(cpg, unit, builder, state.copy(config = newConfig))
+  }
 
 }
 
@@ -84,10 +78,10 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     i.importedAs match {
       case Some(alias) =>
         symbolTable.put(CallAlias(alias), calleeNames)
-        symbolTable.put(LocalVar(alias), calleeNames)
+        symbolTable.put(LocalVar(alias), calleeNames.map(_.stripSuffix(s"${pathSep}__init__")))
       case None =>
         symbolTable.put(CallAlias(entityName), calleeNames)
-        symbolTable.put(LocalVar(entityName), calleeNames)
+        symbolTable.put(LocalVar(entityName), calleeNames.map(_.stripSuffix(s"${pathSep}__init__")))
     }
   }
 
@@ -305,7 +299,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       .map(t => t -> t.inheritsFromTypeFullName.partition(itf => symbolTable.contains(LocalVar(itf))))
       .foreach { case (t, (identifierTypes, otherTypes)) =>
         val existingTypes = (identifierTypes ++ otherTypes).distinct
-        val resolvedTypes = identifierTypes.map(LocalVar).flatMap(symbolTable.get)
+        val resolvedTypes = identifierTypes.map(LocalVar.apply).flatMap(symbolTable.get)
         if (existingTypes != resolvedTypes && resolvedTypes.nonEmpty) {
           state.changesWereMade.compareAndExchange(false, true)
           builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, resolvedTypes)
@@ -326,5 +320,11 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     }
     super.prepopulateSymbolTable()
   }
+
+  override protected def visitIdentifierAssignedToTypeRef(i: Identifier, t: TypeRef, rec: Option[String]): Set[String] =
+    t.typ.referencedTypeDecl.astSiblings
+      .collectFirst { case td: TypeDecl => td }
+      .map(td => symbolTable.append(CallAlias(i.name, rec), Set(td.fullName)))
+      .getOrElse(super.visitIdentifierAssignedToTypeRef(i, t, rec))
 
 }

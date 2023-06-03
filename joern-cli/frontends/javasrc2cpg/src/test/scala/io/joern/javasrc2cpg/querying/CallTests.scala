@@ -8,8 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Id
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
-
-import scala.jdk.CollectionConverters.IteratorHasAsScala
+import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
 
@@ -100,7 +99,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         .argument(0)
         .l match {
         case List(thisNode: Identifier) =>
-          thisNode.outE.asScala.collectAll[Ref].map(_.inNode).l match {
+          thisNode._refOut.l match {
             case List(paramNode: MethodParameterIn) =>
               paramNode.name shouldBe "this"
               paramNode.method.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"

@@ -2,23 +2,19 @@ package io.joern.kotlin2cpg.types
 
 import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.x2cpg.Defines
-import kotlin.reflect.jvm.internal.impl.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.{ClassDescriptor, DeclarationDescriptor, SimpleFunctionDescriptor}
 import org.jetbrains.kotlin.resolve.{DescriptorToSourceUtils, DescriptorUtils}
-import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, TypeUtils, UnresolvedType}
+import org.jetbrains.kotlin.types.{ErrorUtils, ErrorType, KotlinType, TypeProjection, TypeUtils}
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.{KtClassOrObject, KtElement, KtNamedFunction, KtObjectLiteralExpression, KtProperty}
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
-import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.types.typeUtil.TypeUtilsKt
 import org.jetbrains.kotlin.resolve.jvm.JvmPrimitiveType
 
-import scala.jdk.CollectionConverters._
-
 object TypeRenderer {
 
-  private val cpgUnresolvedType = ErrorUtils.createUnresolvedType(Defines.UnresolvedNamespace, List().asJava)
+  private val cpgUnresolvedType =
+    ErrorUtils.createUnresolvedType(Defines.UnresolvedNamespace, new java.util.ArrayList[TypeProjection]())
 
   val primitiveArrayMappings: Map[String, String] = Map[String, String](
     "kotlin.BooleanArray" -> "boolean[]",
@@ -36,9 +32,8 @@ object TypeRenderer {
     opts.setParameterNamesInFunctionalTypes(false)
     opts.setInformativeErrorType(false)
     opts.setTypeNormalizer {
-      case _: UnresolvedType => cpgUnresolvedType
-      case _: ErrorType      => cpgUnresolvedType
-      case t                 => t
+      case _: ErrorType => cpgUnresolvedType
+      case t            => t
     }
     new DescriptorRendererImpl(opts)
   }
@@ -57,27 +52,11 @@ object TypeRenderer {
 
           val psiElement        = DescriptorToSourceUtils.getSourceFromDescriptor(tc)
           val psiContainingDecl = DescriptorToSourceUtils.getSourceFromDescriptor(tc.getContainingDeclaration)
-
-          val objectIdxMaybe =
-            psiContainingDecl match {
-              case t: KtNamedFunction =>
-                val anonymousObjects = {
-                  t.getBodyBlockExpression.getStatements.asScala.toSeq.collect { case pt: KtProperty =>
-                    pt.getDelegateExpressionOrInitializer match {
-                      case ol: KtObjectLiteralExpression => ol.getObjectDeclaration
-                      case _                             => None
-                    }
-                  }
-                }
-                var outIdx: Option[Int] = None
-                anonymousObjects.zip(1 to anonymousObjects.size).foreach { case (elem: KtElement, idx) =>
-                  if (elem == psiElement) outIdx = Some(idx)
-                }
-                outIdx
-              case _ => None
-            }
-          val objectIdx = objectIdxMaybe.getOrElse("nan")
-          val out       = rendered.replaceFirst("\\.$", "\\$object\\$" + s"$objectIdx")
+          val objectIdx =
+            PsiUtils
+              .objectIdxMaybe(psiElement, psiContainingDecl)
+              .getOrElse("nan")
+          val out = rendered.replaceFirst("\\.$", "\\$object\\$" + s"$objectIdx")
           out
         case _ => or
       }

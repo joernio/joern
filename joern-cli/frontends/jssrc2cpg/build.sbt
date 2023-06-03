@@ -5,7 +5,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 
 name               := "jssrc2cpg"
 scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.2.2")
+crossScalaVersions := Seq("2.13.8", "3.3.0")
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
@@ -22,7 +22,7 @@ astGenVersion := appProperties.value.getString("jssrc2cpg.astgen_version")
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"               %% "upickle"           % "2.0.0",
-  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.14.2",
+  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.1",
   "com.typesafe"               % "config"            % "1.4.2",
   "com.michaelpollmeier"       % "versionsort"       % "1.0.11",
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test

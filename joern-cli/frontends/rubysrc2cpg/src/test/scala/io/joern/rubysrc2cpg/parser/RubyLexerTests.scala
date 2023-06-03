@@ -239,4 +239,98 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "Empty regex literal" should "be recognized as such" in {
+    val code = "//"
+    tokenize(code) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_END, EOF)
+  }
+
+  "Empty regex literal on the RHS of an assignment" should "be recognized as such" in {
+    // This test exists to check if RubyLexer properly decided between SLASH and REGULAR_EXPRESSION_START
+    val code = "x = //"
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      WS,
+      EQ,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
+  "Regex literals without metacharacters" should "be recognized as such" in {
+    val eg = Seq("/regexp/", "/a regexp/")
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
+  }
+
+  "Regex literals with metacharacters" should "be recognized as such" in {
+    val eg = Seq("/(us|eu)/", "/[a-z]/", "/[A-Z]*/", "/(us|eu)?/", "/[0-9]+/")
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
+  }
+
+  "Regex literals with character classes" should "be recognized as such" in {
+    val eg = Seq("/\\w/", "/\\W/", "/\\S/")
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
+  }
+
+  "Regex literals with groups" should "be recognized as such" in {
+    val eg = Seq("/[aeiou]\\w{2}/", "/(\\d{2}:\\d{2}) (\\w+) (.*)/", "/(?<name>\\w+) (?<age>\\d+)/")
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
+  }
+
+  "Regex literals with options" should "be recognized as such" in {
+    val eg = Seq("/./m", "/./i", "/./x", "/./o")
+    all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
+  }
+
+  "Interpolated (with a local variable) regex literal" should "be recognized as such" in {
+    val code = "/#{foo}/"
+    tokenize(code) shouldBe Seq(
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_INTERPOLATION_BEGIN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      REGULAR_EXPRESSION_INTERPOLATION_END,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
+  "Interpolated (with a numeric expression) regex literal" should "be recognized as such" in {
+    val code = "/#{1+1}/"
+    tokenize(code) shouldBe Seq(
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      PLUS,
+      DECIMAL_INTEGER_LITERAL,
+      REGULAR_EXPRESSION_INTERPOLATION_END,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
+  "Interpolated (with a local variable) regex literal containing also textual body elements" should "be recognized as such" in {
+    val code = "/x\\.#{foo}\\./"
+    tokenize(code) shouldBe Seq(
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_INTERPOLATION_BEGIN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      REGULAR_EXPRESSION_INTERPOLATION_END,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
+  "Vacuously interpolated regex literal" should "be recognized as such" in {
+    val code = "/#{}/"
+    tokenize(code) shouldBe Seq(
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_INTERPOLATION_BEGIN,
+      REGULAR_EXPRESSION_INTERPOLATION_END,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
 }

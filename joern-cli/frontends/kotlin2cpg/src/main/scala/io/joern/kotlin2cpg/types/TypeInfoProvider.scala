@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.types
 
 import io.shiftleft.passes.KeyPool
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.psi.{
   KtAnnotationEntry,
   KtBinaryExpression,
@@ -26,9 +27,13 @@ import org.jetbrains.kotlin.psi.{
 case class AnonymousObjectContext(declaration: KtNamedFunction)
 
 trait TypeInfoProvider {
+  def usedAsExpression(expr: KtExpression): Option[Boolean]
+
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String
 
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
+
+  def visibility(fn: KtNamedFunction): Option[DescriptorVisibility]
 
   def returnType(elem: KtNamedFunction, defaultValue: String): String
 

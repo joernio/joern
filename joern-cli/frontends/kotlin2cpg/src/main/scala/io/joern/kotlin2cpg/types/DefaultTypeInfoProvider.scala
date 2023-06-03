@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg.types
 
+import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.passes.KeyPool
@@ -10,7 +11,13 @@ import org.jetbrains.kotlin.cli.jvm.compiler.{
   NoScopeRecordCliBindingTrace
 }
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
-import org.jetbrains.kotlin.descriptors.{DeclarationDescriptor, FunctionDescriptor, ValueDescriptor}
+import org.jetbrains.kotlin.descriptors.{
+  DeclarationDescriptor,
+  DescriptorVisibilities,
+  DescriptorVisibility,
+  FunctionDescriptor,
+  ValueDescriptor
+}
 import org.jetbrains.kotlin.descriptors.impl.{
   ClassConstructorDescriptorImpl,
   EnumEntrySyntheticClassDescriptor,
@@ -36,7 +43,6 @@ import org.jetbrains.kotlin.psi.{
   KtLambdaExpression,
   KtNameReferenceExpression,
   KtNamedFunction,
-  KtObjectLiteralExpression,
   KtParameter,
   KtPrimaryConstructor,
   KtProperty,
@@ -51,7 +57,7 @@ import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorToSourceUtils, De
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
-import org.jetbrains.kotlin.types.{UnresolvedType}
+import org.jetbrains.kotlin.types.ErrorType
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -91,12 +97,23 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     s"${TypeConstants.any}($argsSignature)"
   }
 
+  def usedAsExpression(expr: KtExpression): Option[Boolean] = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    Option(mapForEntity.get(BindingContext.USED_AS_EXPRESSION.getKey))
+  }
+
   def fullName(expr: KtTypeAlias, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.TYPE_ALIAS.getKey))
       .map(TypeRenderer.renderFqNameForDesc)
       .filter(isValidRender)
       .getOrElse(defaultValue)
+  }
+
+  def visibility(fn: KtNamedFunction): Option[DescriptorVisibility] = {
+    val mapForEntity = bindingsForEntity(bindingContext, fn)
+    Option(mapForEntity.get(BindingContext.FUNCTION.getKey))
+      .map(_.getVisibility)
   }
 
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String = {
@@ -180,6 +197,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.TYPE_ALIAS.getKey))
       .map(_.getExpandedType)
+      .filterNot(_.isInstanceOf[ErrorType])
       .map(TypeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
@@ -195,23 +213,18 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def propertyType(expr: KtProperty, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
-    val render =
-      Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
-        .map(_.getType)
-        .map(TypeRenderer.render(_))
-        .filter(isValidRender)
-
-    render match {
-      case Some(value) if value == Defines.UnresolvedNamespace =>
+    Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
+      .map(_.getType)
+      .filterNot(_.isInstanceOf[ErrorType])
+      .map(TypeRenderer.render(_))
+      .filter(isValidRender)
+      .getOrElse(
         Option(expr.getTypeReference)
           .map { typeRef =>
             typeFromImports(typeRef.getText, expr.getContainingKtFile).getOrElse(typeRef.getText)
           }
           .getOrElse(defaultValue)
-      case Some(aValue) => aValue
-      case None         => defaultValue
-    }
-
+      )
   }
 
   def typeFullName(expr: KtClassOrObject, defaultValue: String): String = {
@@ -243,23 +256,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .map { objectDesc =>
         val parentDesc = objectDesc.getContainingDeclaration
         val parentPsi  = DescriptorToSourceUtils.getSourceFromDescriptor(parentDesc)
-        parentPsi match {
-          case t: KtNamedFunction =>
-            val anonymousObjects = {
-              t.getBodyBlockExpression.getStatements.asScala.toSeq.collect { case pt: KtProperty =>
-                pt.getDelegateExpressionOrInitializer match {
-                  case ol: KtObjectLiteralExpression => ol.getObjectDeclaration
-                  case _                             => None
-                }
-              }
-            }
-            var outIdx: Option[Int] = None
-            anonymousObjects.zip(1 to anonymousObjects.size).foreach { case (elem: KtElement, idx) =>
-              if (elem == obj) outIdx = Some(idx)
-            }
-            outIdx
-          case _ => None
-        }
+        PsiUtils.objectIdxMaybe(obj, parentPsi)
       }
       .getOrElse(None)
   }
@@ -525,7 +522,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           extensionReceiverParam <- Option(originalDesc.getExtensionReceiverParameter)
           erpType = extensionReceiverParam.getType
         } yield {
-          if (erpType.isInstanceOf[UnresolvedType]) {
+          if (erpType.isInstanceOf[ErrorType]) {
             s"${Defines.UnresolvedNamespace}.${expr.getName}"
           } else {
             val rendered =
@@ -611,19 +608,16 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       mapForEntity <- Option(bindingsForEntity(bindingContext, parameter))
       variableDesc <- Option(mapForEntity.get(BindingContext.VALUE_PARAMETER.getKey))
       render = TypeRenderer.render(variableDesc.getType)
-      if isValidRender(render)
+      if isValidRender(render) && !variableDesc.getType.isInstanceOf[ErrorType]
     } yield render
 
-    render match {
-      case Some(value) if value == Defines.UnresolvedNamespace =>
-        Option(parameter.getTypeReference)
-          .map { typeRef =>
-            typeFromImports(typeRef.getText, parameter.getContainingKtFile).getOrElse(typeRef.getText)
-          }
-          .getOrElse(defaultValue)
-      case Some(aValue) => aValue
-      case None         => defaultValue
-    }
+    render.getOrElse(
+      Option(parameter.getTypeReference)
+        .map { typeRef =>
+          typeFromImports(typeRef.getText, parameter.getContainingKtFile).getOrElse(typeRef.getText)
+        }
+        .getOrElse(defaultValue)
+    )
   }
 
   def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
@@ -631,7 +625,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
       variableDesc <- Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
       render = TypeRenderer.render(variableDesc.getType)
-      if isValidRender(render)
+      if isValidRender(render) && !variableDesc.getType.isInstanceOf[ErrorType]
     } yield render
     render.getOrElse(defaultValue)
   }
@@ -767,7 +761,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       extensionReceiverParam <- Option(fnDesc.getExtensionReceiverParameter)
       erpType = extensionReceiverParam.getType
     } yield {
-      if (erpType.isInstanceOf[UnresolvedType]) {
+      if (erpType.isInstanceOf[ErrorType]) {
         s"${Defines.UnresolvedNamespace}.${expr.getName}"
       } else {
         val theType      = fnDescMaybe.get.getExtensionReceiverParameter.getType

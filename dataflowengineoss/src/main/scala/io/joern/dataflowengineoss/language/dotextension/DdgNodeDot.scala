@@ -7,7 +7,6 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language.dotextension.{ImageViewer, Shared}
 import io.shiftleft.semanticcpg.language._
-
 class DdgNodeDot(val traversal: Traversal[Method]) extends AnyVal {
 
   def dotDdg(implicit semantics: Semantics = DefaultSemantics()): Traversal[String] =

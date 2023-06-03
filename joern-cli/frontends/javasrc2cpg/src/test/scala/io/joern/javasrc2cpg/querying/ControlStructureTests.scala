@@ -602,7 +602,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       iteratorCall.order shouldBe 2
       iteratorCall.argumentIndex shouldBe 2
 
-      iteratorCall.argument(0) :: Nil match {
+      iteratorCall.argument(0).start.l match {
         case List(items: Identifier) =>
           items.name shouldBe "items"
           items.typeFullName shouldBe "java.util.List"
@@ -631,7 +631,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       conditionCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       conditionCall.order shouldBe 1
 
-      conditionCall.argument(0) :: Nil match {
+      conditionCall.argument(0).start.l match {
         case List(receiver: Identifier) =>
           receiver.name shouldBe "$iterLocal0"
           receiver.typeFullName shouldBe "java.util.Iterator"
@@ -688,7 +688,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       assignSource.typeFullName shouldBe "java.lang.Object"
       assignSource.order shouldBe 2
       assignSource.argumentIndex shouldBe 2
-      assignSource.argument(0) :: Nil match {
+      assignSource.argument(0).start.l match {
         case List(iterIdent: Identifier) =>
           iterIdent.name shouldBe "$iterLocal0"
           iterIdent.typeFullName shouldBe "java.util.Iterator"

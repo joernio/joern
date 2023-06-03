@@ -2,9 +2,10 @@ package io.joern.jssrc2cpg.passes
 
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
-
 import java.io.File
+import scala.annotation.nowarn
 
+@nowarn // otherwise scalac warns about interpolated expressions
 class InheritanceFullNamePassTests extends DataFlowCodeToCpgSuite {
 
   "inherited type full names" should {
@@ -18,6 +19,9 @@ class InheritanceFullNamePassTests extends DataFlowCodeToCpgSuite {
         |    this.lyrics = lyrics;
         |  }
         |}
+        |
+        |const myMusician = new Musician('Rafi', 'song1');
+        |const myMusicWithLyrics = new MusicWithLyrics('Fido', 'song1', 'lyrics');
         |""".stripMargin,
       "inheritance.js"
     ).moreCode(
@@ -47,6 +51,13 @@ class InheritanceFullNamePassTests extends DataFlowCodeToCpgSuite {
       tgtType.inheritsFromTypeFullName.headOption shouldBe Some(
         Seq("domain", "music.js::program:Musician").mkString(File.separator)
       )
+    }
+
+    "identifiers instantiated from these types should have their fully resolved types" in {
+      val Some(musician)           = cpg.identifier.nameExact("myMusician").headOption
+      val Some(musicianWithLyrics) = cpg.identifier.nameExact("myMusicWithLyrics").headOption
+      musician.typeFullName shouldBe Seq("domain", "music.js::program:Musician").mkString(File.separator)
+      musicianWithLyrics.typeFullName shouldBe "inheritance.js::program:MusicWithLyrics"
     }
   }
 

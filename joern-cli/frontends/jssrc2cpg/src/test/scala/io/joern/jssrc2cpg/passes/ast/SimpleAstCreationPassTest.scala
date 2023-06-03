@@ -549,7 +549,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     }
 
     "be correct for lambdas returning lambdas" in AstFixture("() => async () => { }") { cpg =>
-      cpg.method.fullName.sorted shouldBe List(
+      cpg.method.fullName.sorted.l shouldBe List(
         "code.js::program",
         "code.js::program:anonymous",
         "code.js::program:anonymous:anonymous"
@@ -1542,7 +1542,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     tmpAccess.code shouldBe s"_tmp_0.$keyName"
     tmpAccess.methodFullName shouldBe Operators.fieldAccess
     tmpAccess.argumentIndex shouldBe 1
-    val value = call.argument(2)
+    val List(value) = call.argument(2).start.l
     value.code shouldBe assignedValue
 
     val List(leftHandSideTmpId) = tmpAccess.astChildren.isIdentifier.nameExact("_tmp_0").l

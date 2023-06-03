@@ -70,11 +70,9 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
     val stopEarly = new AtomicBoolean(false)
     val state     = XTypeRecoveryState(config, stopEarly = stopEarly)
     try {
-      for (
-        i <- 0 until config.iterations
-        if !stopEarly.get()
-      ) {
-        generateRecoveryPass(state.copy(currentIteration = i)).createAndApply()
+      Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
+        val newState = state.copy(currentIteration = i)
+        generateRecoveryPass(newState).createAndApply()
       }
       // If dummy values are enabled and we are stopping early, we need one more round to propagate these dummy values
       if (stopEarly.get() && config.enabledDummyTypes)
@@ -124,9 +122,10 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
   /** @return
     *   the compilation units as per how the language is compiled. e.g. file.
     */
-  def compilationUnit: Traversal[CompilationUnitType]
+  def compilationUnit: Iterator[CompilationUnitType]
 
   /** A factory method to generate a [[RecoverForXCompilationUnit]] task with the given parameters.
+    *
     * @param unit
     *   the compilation unit.
     * @param builder
@@ -215,11 +214,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     )).filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
 
   protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
-    case x: Identifier        => symbolTable.put(x, getTypes(x))
-    case x: Call              => symbolTable.put(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
-    case x: Local             => symbolTable.put(x, getTypes(x))
-    case x: MethodParameterIn => symbolTable.put(x, getTypes(x))
-    case _                    =>
+    case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.put(x, getTypes(x))
+    case x: Call => symbolTable.put(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
+    case _       =>
   }
 
   protected def hasTypes(node: AstNode): Boolean = node match {
@@ -795,7 +792,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val callPaths    = symbolTable.get(head)
         val returnValues = methodReturnValues(callPaths.toSeq)
         if (returnValues.isEmpty)
-          callPaths.map(_.concat(pathSep + XTypeRecovery.DummyReturnType))
+          callPaths.map(c => s"$c$pathSep${XTypeRecovery.DummyReturnType}")
         else
           returnValues
       case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
@@ -827,16 +824,16 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case x: MethodParameterIn                => setTypeFromTypeHints(x)
         case x: MethodReturn                     => setTypeFromTypeHints(x)
         case x: Identifier if symbolTable.contains(x) =>
-          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
         case x: Call if symbolTable.contains(x) =>
           val typs =
             if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
             else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
           storeCallTypeInfo(x, typs)
         case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
-          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
         case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
-          setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.take(2).l)
+          setTypeInformationForRecCall(x, Option(x), x.argument.l)
         case _ =>
       }
     // Set types in an atomic way
@@ -846,55 +843,77 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def createCallFromIdentifierTypeFullName(typeFullName: String, callName: String): String =
     s"$typeFullName$pathSep$callName"
 
-  /** TODO: Cleaning up using visitor patten
+  /** Sets type information for a receiver/call pattern.
     */
-  private def setTypeInformationForRecCall(x: AstNode, n: Option[Call], ms: List[AstNode]): Unit =
+  private def setTypeInformationForRecCall(x: AstNode, n: Option[Call], ms: List[AstNode]): Unit = {
     (n, ms) match {
       // Case 1: 'call' is an assignment from some dynamic dispatch call
-      case (Some(call: Call), List(i: Identifier, c: Call)) if call.name.equals(Operators.assignment) =>
-        val idTypes   = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
-        val callTypes = symbolTable.get(c)
-        persistType(call, callTypes)
-        if (idTypes.nonEmpty || callTypes.nonEmpty) {
-          if (idTypes.equals(callTypes))
-            // Case 1.1: This is a function pointer or constructor
-            persistType(i, callTypes)
-          else
-            // Case 1.2: This is the return value of the function
-            persistType(i, idTypes)
-        }
+      case (Some(call: Call), ::(i: Identifier, ::(c: Call, _))) if call.name == Operators.assignment =>
+        setTypeForIdentifierAssignedToCall(call, i, c)
       // Case 1: 'call' is an assignment from some other data structure
-      case (Some(call: Call), ::(i: Identifier, _)) if call.name.equals(Operators.assignment) =>
-        val idHints = symbolTable.get(i)
-        persistType(i, idHints)
-        persistType(call, idHints)
+      case (Some(call: Call), ::(i: Identifier, _)) if call.name == Operators.assignment =>
+        setTypeForIdentifierAssignedToDefault(call, i)
       // Case 2: 'i' is the receiver of 'call'
-      case (Some(call: Call), ::(i: Identifier, _)) if !call.name.equals(Operators.fieldAccess) =>
-        val idHints   = symbolTable.get(i)
-        val callTypes = symbolTable.get(call)
-        persistType(i, idHints)
-        if (callTypes.isEmpty && !call.name.startsWith("<operator>"))
-          // For now, calls are treated as function pointers and thus the type should point to the method
-          persistType(call, idHints.map(t => createCallFromIdentifierTypeFullName(t, call.name)))
-        else {
-          persistType(call, callTypes)
-        }
+      case (Some(call: Call), ::(i: Identifier, _)) if call.name != Operators.fieldAccess =>
+        setTypeForDynamicDispatchCall(call, i)
       // Case 3: 'i' is the receiver for a field access on member 'f'
-      case (Some(fieldAccess: Call), List(i: Identifier, f: FieldIdentifier))
-          if fieldAccess.name.equals(Operators.fieldAccess) =>
-        val idHints   = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
-        val callTypes = symbolTable.get(fieldAccess)
-        persistType(i, idHints)
-        persistType(fieldAccess, callTypes)
-        fieldAccess.astParent.start.isCall.headOption match {
-          case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
-            persistType(callFromFieldName, symbolTable.get(callFromFieldName))
-          case _ =>
-        }
-        // This field may be a function pointer
-        handlePotentialFunctionPointer(fieldAccess, idHints, f.canonicalName, Option(i.name))
-      case _ => persistType(x, symbolTable.get(x))
+      case (Some(fieldAccess: Call), ::(i: Identifier, ::(f: FieldIdentifier, _)))
+          if fieldAccess.name == Operators.fieldAccess =>
+        setTypeForFieldAccess(new FieldAccess(fieldAccess), i, f)
+      case _ =>
     }
+    // Handle the node itself
+    x match {
+      case c: Call if c.name.startsWith("<operator") =>
+      case _                                         => persistType(x, symbolTable.get(x))
+    }
+  }
+
+  protected def setTypeForFieldAccess(fieldAccess: Call, i: Identifier, f: FieldIdentifier): Unit = {
+    val idHints   = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
+    val callTypes = symbolTable.get(fieldAccess)
+    persistType(i, idHints)
+    persistType(fieldAccess, callTypes)
+    fieldAccess.astParent.iterator.isCall.headOption match {
+      case Some(callFromFieldName) if symbolTable.contains(callFromFieldName) =>
+        persistType(callFromFieldName, symbolTable.get(callFromFieldName))
+      case _ =>
+    }
+    // This field may be a function pointer
+    handlePotentialFunctionPointer(fieldAccess, idHints, f.canonicalName, Option(i.name))
+  }
+
+  protected def setTypeForDynamicDispatchCall(call: Call, i: Identifier): Unit = {
+    val idHints   = symbolTable.get(i)
+    val callTypes = symbolTable.get(call)
+    persistType(i, idHints)
+    if (callTypes.isEmpty && !call.name.startsWith("<operator>"))
+      // For now, calls are treated as function pointers and thus the type should point to the method
+      persistType(call, idHints.map(t => createCallFromIdentifierTypeFullName(t, call.name)))
+    else {
+      persistType(call, callTypes)
+    }
+  }
+
+  protected def setTypeForIdentifierAssignedToDefault(call: Call, i: Identifier): Unit = {
+    val idHints = symbolTable.get(i)
+    persistType(i, idHints)
+    persistType(call, idHints)
+  }
+
+  protected def setTypeForIdentifierAssignedToCall(call: Call, i: Identifier, c: Call): Unit = {
+    val idTypes   = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
+    val callTypes = symbolTable.get(c)
+    persistType(call, callTypes)
+    if (idTypes.nonEmpty || callTypes.nonEmpty) {
+      if (idTypes.equals(callTypes))
+        // Case 1.1: This is a function pointer or constructor
+        persistType(i, callTypes)
+      else
+        // Case 1.2: This is the return value of the function
+        persistType(i, idTypes)
+    }
+  }
 
   protected def setTypeFromTypeHints(n: StoredNode): Unit = {
     val nodeType         = n.property(PropertyNames.TYPE_FULL_NAME, "ANY")
@@ -913,7 +932,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   ): Unit = {
     // Sometimes the function identifier is an argument to the call itself as a "base". In this case we don't need
     // a method ref. This happens in jssrc2cpg
-    if (funcPtr.astParent.start.collectAll[Call].exists(_.name == funcName)) return
+    if (funcPtr.astParent.iterator.collectAll[Call].exists(_.name == funcName)) return
 
     baseTypes
       .map(t => if (t.endsWith(funcName)) t else s"$t$pathSep$funcName")

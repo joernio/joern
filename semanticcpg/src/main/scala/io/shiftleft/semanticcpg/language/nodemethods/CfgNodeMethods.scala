@@ -4,6 +4,7 @@ import io.shiftleft.Implicits.IterableOnceDeco
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language._
+import overflowdb.traversal.Traversal
 
 import scala.jdk.CollectionConverters._
 
@@ -91,7 +92,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     *   the traversal of this node if it passes through the included set.
     */
   def passes(included: Set[CfgNode]): Traversal[CfgNode] =
-    node.start.filter(_.postDominatedBy.exists(included.contains))
+    Iterator.single(node).filter(_.postDominatedBy.exists(included.contains))
 
   /** Using the post dominator tree, will determine if this node passes through the excluded set of nodes and filter it
     * out.
@@ -101,7 +102,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     *   the traversal of this node if it does not pass through the excluded set.
     */
   def passesNot(excluded: Set[CfgNode]): Traversal[CfgNode] =
-    node.start.filterNot(_.postDominatedBy.exists(excluded.contains))
+    Iterator.single(node).filterNot(_.postDominatedBy.exists(excluded.contains))
 
   private def expandExhaustively(expand: CfgNode => Iterator[StoredNode]): Traversal[CfgNode] = {
     var controllingNodes = List.empty[CfgNode]
@@ -120,7 +121,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
         }
       }
     }
-    controllingNodes
+    controllingNodes.iterator
   }
 
   def method: Method = node match {

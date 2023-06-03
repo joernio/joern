@@ -3,7 +3,6 @@ package io.shiftleft.semanticcpg.language.nodemethods
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodReturn, NewLocation, Type}
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.{HasLocation, LocationCreator, _}
-import overflowdb.traversal.{Traversal, iterableToTraversal}
 
 class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtension with HasLocation {
   override def location: NewLocation = {
@@ -17,7 +16,7 @@ class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtens
     // return type to CallRepr would lead to a break in the API aka
     // the DSL steps which are subsequently allowed to be called. Before
     // we addressed this we can only return Call instances.
-    callsites.iterator.collectAll[Call]
+    callsites.collectAll[Call]
   }
 
   def typ: Traversal[Type] = node.evalTypeOut

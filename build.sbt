@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "2.13.8"
 
-val cpgVersion = "1.3.601"
+val cpgVersion = "1.3.612"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -104,6 +104,6 @@ publish / skip := true // don't publish the root project
 // Avoids running root tasks on the benchmarks project
 lazy val root = project
   .in(file("."))
-  .aggregate(aggregatedProjects: _*)
+  .aggregate(aggregatedProjects *)
 
 ThisBuild / Test / packageBin / publishArtifact := true

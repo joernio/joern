@@ -3,12 +3,13 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
 import org.slf4j.LoggerFactory
+import overflowdb.traversal.Traversal
 
 import java.util.concurrent.{ForkJoinPool, ForkJoinTask, RecursiveTask, RejectedExecutionException}
 import scala.util.{Failure, Success, Try}
@@ -19,7 +20,7 @@ object SourcesToStartingPoints {
 
   private val log = LoggerFactory.getLogger(SourcesToStartingPoints.getClass)
 
-  def sourceTravsToStartingPoints[NodeType](sourceTravs: Traversal[NodeType]*): List[StartingPointWithSource] = {
+  def sourceTravsToStartingPoints[NodeType](sourceTravs: IterableOnce[NodeType]*): List[StartingPointWithSource] = {
     val fjp = ForkJoinPool.commonPool()
     try {
       fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*)).distinct
@@ -33,16 +34,16 @@ object SourcesToStartingPoints {
 
 }
 
-class SourceTravsToStartingPointsTask[NodeType](sourceTravs: Traversal[NodeType]*)
+class SourceTravsToStartingPointsTask[NodeType](sourceTravs: IterableOnce[NodeType]*)
     extends RecursiveTask[List[StartingPointWithSource]] {
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
   override def compute(): List[StartingPointWithSource] = {
     val sources: List[StoredNode] = sourceTravs
-      .flatMap(_.toList)
+      .flatMap(_.iterator.toList)
       .collect { case n: StoredNode => n }
-      .distinct
+      .dedup
       .toList
       .sortBy(_.id)
     val tasks = sources.map(src => (src, new SourceToStartingPoints(src).fork()))
@@ -75,11 +76,13 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case member: Member =>
         usages(targetsToClassIdentifierPair(List(member)))
       case x: Declaration =>
-        List(x).iterator.collectAll[CfgNode].toList
+        List(x).collectAll[CfgNode].toList
       case x: Identifier =>
         withFieldAndIndexAccesses(
-          Iterator(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
+          List(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
         ) ++ x.refsTo.capturedByMethodRef.referencedMethod.flatMap(m => usagesForName(x.name, m))
+      case x: Call =>
+        (x._receiverIn.l :+ x).collect { case y: CfgNode => y }
       case x => List(x).collect { case y: CfgNode => y }
     }
   }
@@ -116,7 +119,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
                 x.argument(2).isFieldIdentifier.canonicalNameExact(identifier.name)
               case fieldIdentifier: FieldIdentifier =>
                 x.argument(2).isFieldIdentifier.canonicalNameExact(fieldIdentifier.canonicalName)
-              case _ => List()
+              case _ => Iterator.empty
             }
           }
           .takeWhile(notLeftHandOfAssignment)
@@ -135,7 +138,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case identifier: Identifier =>
         usagesForName(identifier.name, m)
       case fieldIdentifier: FieldIdentifier =>
-        val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber))
+        val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
         fieldIdentifiers
           .canonicalNameExact(fieldIdentifier.canonicalName)
           .inFieldAccess
@@ -148,9 +151,9 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   private def usagesForName(name: String, m: Method): List[Expression] = {
-    val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber))
+    val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
-    val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber))
+    val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
       .inFieldAccess

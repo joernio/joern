@@ -16,6 +16,6 @@ package object dataflowengineoss {
     i.capturedByMethodRef.referencedMethod.ast.isIdentifier
       .nameExact(i.name)
       .sortBy(x => (x.lineNumber, x.columnNumber))
-      .toList
+      .l
 
 }

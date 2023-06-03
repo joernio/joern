@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 import io.shiftleft.semanticcpg.language._
 import org.json4s.DefaultFormats
 import org.json4s.native.Serialization
+import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._

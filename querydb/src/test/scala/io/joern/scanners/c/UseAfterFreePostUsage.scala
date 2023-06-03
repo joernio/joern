@@ -11,7 +11,6 @@ class UseAfterFreePostUsage extends CQueryTestSuite(UseAfterFree) {
     val x = queryBundle.freePostDominatesUsage()
     x(cpg)
       .flatMap(_.evidence)
-      .iterator
       .cast[nodes.Identifier]
       .method
       .name

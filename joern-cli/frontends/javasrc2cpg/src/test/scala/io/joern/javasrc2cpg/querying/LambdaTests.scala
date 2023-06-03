@@ -16,8 +16,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
-import scala.jdk.CollectionConverters.IteratorHasAsScala
-
 class LambdaTests extends JavaSrcCode2CpgFixture {
   "nested lambdas" should {
     val cpg = code("""

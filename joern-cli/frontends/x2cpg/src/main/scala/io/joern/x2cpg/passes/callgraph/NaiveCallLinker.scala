@@ -1,4 +1,4 @@
-package io.joern.pysrc2cpg
+package io.joern.x2cpg.passes.callgraph
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
@@ -6,11 +6,11 @@ import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
-/** Link remaining unlinked Python calls to methods only by their name (not full name)
+/** Link remaining unlinked calls to methods only by their name (not full name)
   * @param cpg
   *   the target code property graph.
   */
-class PythonNaiveCallLinker(cpg: Cpg) extends CpgPass(cpg) {
+class NaiveCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     val methodNameToNode = cpg.method.toList.groupBy(_.name)
