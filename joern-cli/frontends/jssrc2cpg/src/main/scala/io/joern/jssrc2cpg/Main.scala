@@ -17,7 +17,8 @@ final case class Config(
   disableDummyTypes: Boolean = false,
   maxCodeLength: Int = 50000,
   minCodeLength: Int = 50,
-  joernti: Boolean = false
+  joernti: Boolean = false,
+  typeDeclarationDir: Option[String] = None
 ) extends X2CpgConfig[Config] {
 
   def createPathForIgnore(ignore: String): String = {
@@ -68,7 +69,11 @@ object Frontend {
       opt[Unit]("joernti")
         .hidden()
         .action((_, c) => c.copy(joernti = true))
-        .text("enable the use of JoernTI for neural type inference")
+        .text("enable the use of JoernTI for neural type inference"),
+      opt[String]("typeDeclDir")
+        .hidden()
+        .action((x, c) => c.copy(typeDeclarationDir = Option(x)))
+        .text("the TypeScript type declaration files to improve type info of the analysis")
     )
   }
 
