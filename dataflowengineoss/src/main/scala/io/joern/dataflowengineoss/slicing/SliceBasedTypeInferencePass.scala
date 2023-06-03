@@ -24,7 +24,8 @@ class SliceBasedTypeInferencePass(
   joernti: Option[JoernTI] = None,
   pathSep: String = ":",
   minConfidence: Float = 0.8f,
-  typesNotToInfer: Set[String] = Set("object", "unk", "void")
+  typesNotToInfer: Set[String] = Set("object", "unk", "void"),
+  logValues: Boolean = true
 ) extends CpgPass(cpg) {
 
   private lazy val logger         = LoggerFactory.getLogger(classOf[SliceBasedTypeInferencePass])
@@ -51,8 +52,13 @@ class SliceBasedTypeInferencePass(
     newType: String
   )
 
-  private def location(n: StoredNode): String =
-    s"${n.file.name.headOption.getOrElse("Unknown")}#L${n.property(PropertyNames.LINE_NUMBER, -1)}"
+  private def location(n: StoredNode): String = {
+    val lineNumber = n match {
+      case x: Local => x.referencingIdentifiers.sortBy(_.lineNumber).headOption.flatMap(_.lineNumber).getOrElse(-1)
+      case _        => n.property(PropertyNames.LINE_NUMBER, -1)
+    }
+    s"${n.file.name.headOption.getOrElse("Unknown")}#L$lineNumber"
+  }
 
   lazy private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
 
@@ -98,13 +104,14 @@ class SliceBasedTypeInferencePass(
                       .filter(onlyDummyOrAnyType)
                       .foreach { tgt =>
                         builder.setNodeProperty(tgt, PropertyNames.TYPE_FULL_NAME, res.typ)
-                        logChange(
-                          location(tgt),
-                          tgt.label,
-                          res.targetIdentifier,
-                          tgt.property(PropertyNames.TYPE_FULL_NAME, "<unknown>"),
-                          res.typ
-                        )
+                        if (logValues)
+                          logChange(
+                            location(tgt),
+                            tgt.label,
+                            res.targetIdentifier,
+                            tgt.property(PropertyNames.TYPE_FULL_NAME, "<unknown>"),
+                            res.typ
+                          )
                       }
                     // Handle identifiers
                     methodIdentifiers
@@ -118,41 +125,44 @@ class SliceBasedTypeInferencePass(
                           tgt.astSiblings.isCall.nameNot("<operator.*").find(onlyDummyOrAnyType).foreach { call =>
                             val inferredMethodCall = Seq(res.typ, call.name).mkString(pathSep)
                             builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, inferredMethodCall)
-                            logChange(
-                              location(call),
-                              call.label,
-                              res.targetIdentifier,
-                              call.methodFullName,
-                              inferredMethodCall
-                            )
+                            if (logValues)
+                              logChange(
+                                location(call),
+                                call.label,
+                                res.targetIdentifier,
+                                call.methodFullName,
+                                inferredMethodCall
+                              )
                           }
                         }
                       }
                     res.targetIdentifier
                   }
                 // Get yield
-                val targetNodes = cpg.graph
-                  .nodes("LOCAL", "IDENTIFIER", "CALL", "METHOD_PARAMETER_IN")
-                  .collect { case n: AstNode => n }
-                  .l
+                if (logValues) {
+                  val targetNodes = cpg.graph
+                    .nodes("LOCAL", "IDENTIFIER", "CALL", "METHOD_PARAMETER_IN")
+                    .collect { case n: AstNode => n }
+                    .l
 
-                val untypedNodes = targetNodes.count(onlyDummyOrAnyType) - changes.size
-                val typedNodes   = targetNodes.size - untypedNodes
-                yieldFile.write("LABEL,COUNT\n")
-                yieldFile.write(s"NUM_NODES,${targetNodes.size}\n")(OpenOptions.append)
-                yieldFile.write(s"UNTYPED,$untypedNodes\n")(OpenOptions.append)
-                yieldFile.write(s"TYPED,$typedNodes\n")(OpenOptions.append)
-                yieldFile.write(s"INFERRED,${changes.size}\n")(OpenOptions.append)
-                yieldFile.write(s"TYPE_VIOLATIONS,${violatingInferenceResults.count(_._2)}\n")(OpenOptions.append)
+                  val untypedNodes = targetNodes.count(onlyDummyOrAnyType) - changes.size
+                  val typedNodes   = targetNodes.size - untypedNodes
+                  yieldFile.write("LABEL,COUNT\n")
+                  yieldFile.write(s"NUM_NODES,${targetNodes.size}\n")(OpenOptions.append)
+                  yieldFile.write(s"UNTYPED,$untypedNodes\n")(OpenOptions.append)
+                  yieldFile.write(s"TYPED,$typedNodes\n")(OpenOptions.append)
+                  yieldFile.write(s"INFERRED,${changes.size}\n")(OpenOptions.append)
+                  yieldFile.write(s"TYPE_VIOLATIONS,${violatingInferenceResults.count(_._2)}\n")(OpenOptions.append)
 
-                invalidInferences.write("Scope,Target,InferredType\n")
-                violatingInferenceResults.sortBy(_._1.scope).filter(_._2).foreach { case (res, _) =>
-                  invalidInferences.write(s"${res.scope},${res.targetIdentifier},${res.typ}\n")(OpenOptions.append)
+                  invalidInferences.write("Scope,Target,InferredType\n")
+                  violatingInferenceResults.sortBy(_._1.scope).filter(_._2).foreach { case (res, _) =>
+                    invalidInferences.write(s"${res.scope},${res.targetIdentifier},${res.typ}\n")(OpenOptions.append)
+                  }
                 }
               }
         }
       }
-      captureTypeInferenceChanges()
+      if (logValues) captureTypeInferenceChanges()
     }
   }
 
@@ -230,7 +240,8 @@ class SliceBasedTypeInferencePass(
             val differingCalls = invokedCalls.diff(memberNames)
             if (differingCalls.nonEmpty) {
               // If there are calls not associated with the type, then we have a constraint violation
-              println(s"""
+              if (logValues)
+                println(s"""
                    |Inference of $capitalizedType for ${res.scope}:${res.targetIdentifier} violates existing type definition:
                    | - Specified members $memberNames
                    | - Actual calls in slice $invokedCalls

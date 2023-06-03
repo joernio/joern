@@ -85,7 +85,11 @@ object JsSrc2Cpg {
     ) ++
       (if (config.exists(_.joernti)) {
          List(
-           new SliceBasedTypeInferencePass(cpg, Try(new JoernTI(spawnProcess = false)).toOption),
+           new SliceBasedTypeInferencePass(
+             cpg,
+             Try(new JoernTI(spawnProcess = false)).toOption,
+             logValues = config.exists(_.logTypeInference)
+           ),
            new JavaScriptTypeRecoveryPass(cpg, typeRecConfig.copy(iterations = 1))
          )
        } else {

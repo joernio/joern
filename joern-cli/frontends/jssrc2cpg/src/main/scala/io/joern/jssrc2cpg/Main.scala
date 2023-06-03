@@ -18,7 +18,8 @@ final case class Config(
   maxCodeLength: Int = 50000,
   minCodeLength: Int = 50,
   joernti: Boolean = false,
-  typeDeclarationDir: Option[String] = None
+  typeDeclarationDir: Option[String] = None,
+  logTypeInference: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   def createPathForIgnore(ignore: String): String = {
@@ -73,7 +74,11 @@ object Frontend {
       opt[String]("typeDeclDir")
         .hidden()
         .action((x, c) => c.copy(typeDeclarationDir = Option(x)))
-        .text("the TypeScript type declaration files to improve type info of the analysis")
+        .text("the TypeScript type declaration files to improve type info of the analysis"),
+      opt[Unit]("logTypeInference")
+        .hidden()
+        .action((_, c) => c.copy(logTypeInference = true))
+        .text("log the slice based type inference results (Default false for performance)")
     )
   }
 
