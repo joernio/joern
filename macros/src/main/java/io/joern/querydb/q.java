@@ -1,4 +1,4 @@
-package io.joern.console;
+package io.joern.querydb;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

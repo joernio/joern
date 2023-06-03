@@ -1,6 +1,6 @@
 package io.joern.macros
 
-import io.joern.console.TraversalWithStrRep
+import io.joern.querydb.TraversalWithStrRep
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import overflowdb.traversal.Traversal

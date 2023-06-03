@@ -1,5 +1,6 @@
 package io.joern.scanners.c
 
+import io.joern.querydb._
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal

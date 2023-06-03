@@ -3,6 +3,7 @@ package io.joern.scanners.java
 import io.joern.scanners._
 import io.shiftleft.semanticcpg.language._
 import io.joern.console._
+import io.joern.querydb._
 import io.joern.macros.QueryMacros._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext

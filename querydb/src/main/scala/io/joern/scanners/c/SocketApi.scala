@@ -2,6 +2,7 @@ package io.joern.scanners.c
 
 import io.joern.scanners.{Crew, QueryTags}
 import io.joern.console._
+import io.joern.querydb._
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.macros.QueryMacros._
 import io.shiftleft.semanticcpg.language._

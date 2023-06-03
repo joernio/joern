@@ -1,6 +1,6 @@
 package io.joern.console
 
-import io.joern.console.Query
+import io.joern.querydb.Query
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes._

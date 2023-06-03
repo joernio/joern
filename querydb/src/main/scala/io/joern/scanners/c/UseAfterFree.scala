@@ -4,6 +4,7 @@ import io.joern.scanners.{Crew, QueryTags}
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.joern.console._
+import io.joern.querydb._
 import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext

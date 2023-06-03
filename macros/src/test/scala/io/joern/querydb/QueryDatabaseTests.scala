@@ -1,4 +1,4 @@
-package io.joern.console
+package io.joern.querydb
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
@@ -36,13 +36,13 @@ object InvalidBundle extends QueryBundle {
 class QueryDatabaseTests extends AnyWordSpec with should.Matchers {
   "QueryDatabase" should {
     "contain Metrics bundle" in {
-      new QueryDatabase(namespace = "io.joern.console").allBundles.count { bundle =>
+      new QueryDatabase(namespace = "io.joern.querydb").allBundles.count { bundle =>
         bundle.getName.endsWith("TestBundle$")
       } shouldBe 1
     }
 
     "contain `foo` query" in {
-      val qdb = new QueryDatabase(namespace = "io.joern.console")
+      val qdb = new QueryDatabase(namespace = "io.joern.querydb")
       val testBundles = qdb.allBundles.filter { bundle =>
         bundle.getName.endsWith("TestBundle$")
       }
@@ -67,7 +67,7 @@ class QueryDatabaseTests extends AnyWordSpec with should.Matchers {
     }
 
     "throw exception when trying to fetch queries from invalid bundle" in {
-      val qdb = new QueryDatabase(namespace = "io.joern.console")
+      val qdb = new QueryDatabase(namespace = "io.joern.querydb")
       val testBundles = qdb.allBundles.filter { bundle =>
         bundle.getName.endsWith("InvalidBundle$")
       }
