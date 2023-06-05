@@ -1538,7 +1538,12 @@ class AstCreator(filename: String, global: Global)
     astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
-  def astForBinaryExpression(lhs: ExpressionContext, rhs: ExpressionContext, operatorToken: Token, code: String): Seq[Ast] = {
+  def astForBinaryExpression(
+    lhs: ExpressionContext,
+    rhs: ExpressionContext,
+    operatorToken: Token,
+    code: String
+  ): Seq[Ast] = {
     val lhsExpressionAsts = astForExpressionContext(lhs)
     val rhsExpressionAsts = astForExpressionContext(rhs)
     val callNode = NewCall()
