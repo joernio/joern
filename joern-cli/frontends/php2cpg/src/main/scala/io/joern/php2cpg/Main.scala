@@ -9,7 +9,8 @@ import scopt.OParser
 final case class Config(
   inputPath: String = "",
   outputPath: String = X2CpgConfig.defaultOutputPath,
-  phpIni: Option[String] = None
+  phpIni: Option[String] = None,
+  excludeOverrides: Option[List[String]] = None
 ) extends X2CpgConfig[Config] {
 
   override def withInputPath(inputPath: String): Config =
@@ -28,7 +29,11 @@ private object Frontend {
       programName("php2cpg"),
       opt[String]("php-ini")
         .action((x, c) => c.copy(phpIni = Some(x)))
-        .text("php.ini path used by php-parser. Defaults to php.ini shipped with Joern.")
+        .text("php.ini path used by php-parser. Defaults to php.ini shipped with Joern."),
+      opt[Seq[String]]("exclude-overrides")
+        .valueName("regex1,regex2,...")
+        .action((x, c) => c.copy(excludeOverrides = Some(x.toList)))
+        .text("Comma separated list of regexes where matches exclude files or directories. Overrides default list.")
     )
   }
 }

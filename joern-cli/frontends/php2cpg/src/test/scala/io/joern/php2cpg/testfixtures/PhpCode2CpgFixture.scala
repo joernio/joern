@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 
 import java.io.File
+import io.joern.x2cpg.X2CpgConfig
 
 trait PhpFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".php"
@@ -14,6 +15,15 @@ trait PhpFrontend extends LanguageFrontend {
   override def execute(sourceCodeFile: File): Cpg = {
     implicit val defaultConfig: Config = Config()
     new Php2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
+  }
+
+  override def execute[T <: X2CpgConfig[_]](sourceCodeFile: File, config: T): Cpg = {
+    config match {
+      case phpConfig: Config =>
+        new Php2Cpg().createCpg(sourceCodeFile.getAbsolutePath)(phpConfig).get
+      case _ =>
+        throw new RuntimeException(s"Cannot invoke php2cpg with config type ${config.getClass().getCanonicalName()}")
+    }
   }
 }
 
