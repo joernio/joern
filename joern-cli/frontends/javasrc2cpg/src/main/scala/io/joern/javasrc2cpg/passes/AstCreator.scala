@@ -726,11 +726,33 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def astForFieldVariable(v: VariableDeclarator, fieldDeclaration: FieldDeclaration): Ast = {
     // TODO: Should be able to find expected type here
     val annotations = fieldDeclaration.getAnnotations
-    val typeFullName =
-      typeInfoCalc
-        .fullName(v.getType)
-        .orElse(scopeStack.lookupVariableType(v.getTypeAsString, wildcardFallback = true))
-        .getOrElse(s"${Defines.UnresolvedNamespace}.${v.getTypeAsString}")
+
+    // variable can be declared with generic type, so we need to get rid of the <> part of it to get the package information
+    // and append the <> when forming the typeFullName again
+    // Ex - private Consumer<String, Integer> consumer;
+    // From Consumer<String, Integer> we need to get to Consumer so splitting it by '<' and then combining with '<' to
+    // form typeFullName as Consumer<String, Integer>
+
+    val typeFullNameWithoutGenericSplit = typeInfoCalc
+      .fullName(v.getType)
+      .orElse(scopeStack.lookupVariableType(v.getTypeAsString, wildcardFallback = true))
+      .getOrElse(s"${Defines.UnresolvedNamespace}.${v.getTypeAsString}")
+    val typeFullName = {
+      // Check if the typeFullName is unresolved and if it has generic information to resolve the typeFullName
+      if (
+        typeFullNameWithoutGenericSplit
+          .contains(Defines.UnresolvedNamespace) && v.getTypeAsString.contains(Defines.LeftAngularBracket)
+      ) {
+        val splitByLeftAngular = v.getTypeAsString.split(Defines.LeftAngularBracket)
+        scopeStack.lookupVariableType(splitByLeftAngular.head, wildcardFallback = true) match {
+          case Some(fullName) =>
+            fullName + splitByLeftAngular
+              .slice(1, splitByLeftAngular.size)
+              .mkString(Defines.LeftAngularBracket, Defines.LeftAngularBracket, "")
+          case None => typeFullNameWithoutGenericSplit
+        }
+      } else typeFullNameWithoutGenericSplit
+    }
     val name           = v.getName.toString
     val node           = memberNode(v, name, s"$typeFullName $name", typeFullName)
     val memberAst      = Ast(node)

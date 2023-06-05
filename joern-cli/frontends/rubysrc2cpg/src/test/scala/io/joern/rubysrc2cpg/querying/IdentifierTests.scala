@@ -67,7 +67,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name("initialize").size shouldBe 1
       cpg.method
         .name("greet")
-        .size shouldBe 2 // FIXME the second node is coming in without adding it. Need to check this
+        .size shouldBe 1
       cpg.call.name("puts").size shouldBe 2
       cpg.method.name("have_birthday").size shouldBe 1
       cpg.identifier.size shouldBe 11
@@ -468,7 +468,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all method nodes" in {
-      cpg.method.name("yield_with_args_method").l.size shouldBe 2
+      cpg.method.name("yield_with_args_method").l.size shouldBe 1
       // TODO need to figure out how yield block should be connected to the method
     }
 
