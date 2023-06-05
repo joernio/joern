@@ -19,7 +19,7 @@ val javaCCTask = taskKey[Seq[File]]("Generate compiler code with JavaCC")
 javaCCTask / fileInputs += baseDirectory.value.toGlob / "pythonGrammar.jj"
 javaCCTask := {
   import org.javacc.parser.{Main => JavaCCMain}
-  val outputDir = (Compile / sourceManaged).value / "io" / "joern" / "pythonparser"
+  val outputDir       = (Compile / sourceManaged).value / "io" / "joern" / "pythonparser"
   val inputFileOption = javaCCTask.inputFiles.head
   if (
     !outputDir.exists() ||
