@@ -1192,12 +1192,13 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForCallNode(localIdentifier: TerminalNode): Seq[Ast] = {
-    val column = localIdentifier.getSymbol().getCharPositionInLine()
-    val line   = localIdentifier.getSymbol().getLine()
-    val name   = getActualMethodName(localIdentifier.getText)
+    val column         = localIdentifier.getSymbol().getCharPositionInLine()
+    val line           = localIdentifier.getSymbol().getLine()
+    val name           = getActualMethodName(localIdentifier.getText)
+    val methodFullName = s"$filename:$name"
     val callNode = NewCall()
       .name(name)
-      .methodFullName(name)
+      .methodFullName(methodFullName)
       .signature(localIdentifier.getText())
       .typeFullName(MethodFullNames.UnknownFullName)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1401,11 +1402,13 @@ class AstCreator(filename: String, global: Global)
     val astBody = astForBodyStatementContext(ctx.bodyStatement())
     popScope()
 
+    // TODO why is there a `callNode` here?
+
     val classPath = classStack.toList.mkString(".") + "."
     val methodNode = NewMethod()
       .code(callNode.code)
       .name(callNode.name)
-      .fullName(classPath + callNode.name)
+      .fullName(s"$filename:${callNode.name}")
       .columnNumber(callNode.columnNumber)
       .lineNumber(callNode.lineNumber)
       .filename(filename)

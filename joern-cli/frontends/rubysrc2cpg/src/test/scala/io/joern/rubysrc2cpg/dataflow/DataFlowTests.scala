@@ -31,4 +31,25 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       sink.reachableByFlows(source).l.size shouldBe 2
     }
   }
+
+  "Flow via call" should {
+    val cpg = code("""
+      |def print(content)
+      |puts content
+      |end
+      |
+      |def main
+      |n = 1
+      |print( n )
+      |end
+      |""".stripMargin)
+
+    "be found" in {
+      implicit val resolver: ICallResolver = NoResolve
+      val src                              = cpg.identifier.name("n").where(_.inCall.name("print")).l
+      val sink                             = cpg.method.name("puts").callIn.argument(1).l
+      sink.reachableByFlows(src).size shouldBe 1
+    }
+  }
+
 }
