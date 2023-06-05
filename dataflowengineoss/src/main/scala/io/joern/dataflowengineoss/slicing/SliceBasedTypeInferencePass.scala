@@ -141,17 +141,18 @@ class SliceBasedTypeInferencePass(
                 // Get yield
                 if (logValues) {
                   val targetNodes = cpg.graph
-                    .nodes("LOCAL", "IDENTIFIER", "CALL", "METHOD_PARAMETER_IN")
+                    .nodes("LOCAL", "IDENTIFIER", "METHOD_PARAMETER_IN")
                     .collect { case n: AstNode => n }
                     .l
+                  val inferredTypes = changes.count(_.nodeLabel != "CALL")
 
-                  val untypedNodes = targetNodes.count(onlyDummyOrAnyType) - changes.size
+                  val untypedNodes = targetNodes.count(onlyDummyOrAnyType) - inferredTypes
                   val typedNodes   = targetNodes.size - untypedNodes
                   yieldFile.write("LABEL,COUNT\n")
                   yieldFile.write(s"NUM_NODES,${targetNodes.size}\n")(OpenOptions.append)
                   yieldFile.write(s"UNTYPED,$untypedNodes\n")(OpenOptions.append)
                   yieldFile.write(s"TYPED,$typedNodes\n")(OpenOptions.append)
-                  yieldFile.write(s"INFERRED,${changes.size}\n")(OpenOptions.append)
+                  yieldFile.write(s"INFERRED,$inferredTypes\n")(OpenOptions.append)
                   yieldFile.write(s"TYPE_VIOLATIONS,${violatingInferenceResults.count(_._2)}\n")(OpenOptions.append)
 
                   invalidInferences.write("Scope,Target,InferredType\n")
