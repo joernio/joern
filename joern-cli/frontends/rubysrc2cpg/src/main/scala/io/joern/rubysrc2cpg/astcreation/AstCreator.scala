@@ -175,7 +175,7 @@ class AstCreator(filename: String, global: Global)
       val argsAsts    = astForArgumentsContext(ctx.arguments())
       val callNode = NewCall()
         .name(Operators.indexAccess)
-        .code(Operators.indexAccess)
+        .code(ctx.getText)
         .methodFullName(Operators.indexAccess)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1191,7 +1191,7 @@ class AstCreator(filename: String, global: Global)
     astForDefinedMethodNameContext(ctx.definedMethodName())
   }
 
-  def astForCallNode(localIdentifier: TerminalNode): Seq[Ast] = {
+  def astForCallNode(localIdentifier: TerminalNode, code: String): Seq[Ast] = {
     val column = localIdentifier.getSymbol().getCharPositionInLine()
     val line   = localIdentifier.getSymbol().getLine()
     val name   = getActualMethodName(localIdentifier.getText)
@@ -1204,14 +1204,15 @@ class AstCreator(filename: String, global: Global)
       .code(localIdentifier.getText())
       .lineNumber(line)
       .columnNumber(column)
+      .code(code)
     Seq(callAst(callNode))
   }
 
   def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Seq[Ast] = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER())
+      astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER(), ctx.getText)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      astForCallNode(ctx.CONSTANT_IDENTIFIER())
+      astForCallNode(ctx.CONSTANT_IDENTIFIER(), ctx.getText)
     } else {
       Seq(Ast())
     }
@@ -1228,7 +1229,7 @@ class AstCreator(filename: String, global: Global)
           createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
       } else {
-        astForCallNode(localVar)
+        astForCallNode(localVar, ctx.getText)
       }
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localVar  = ctx.CONSTANT_IDENTIFIER()
@@ -1238,7 +1239,7 @@ class AstCreator(filename: String, global: Global)
           createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
       } else {
-        astForCallNode(localVar)
+        astForCallNode(localVar, ctx.getText)
       }
     } else {
       Seq(Ast())
@@ -1476,7 +1477,7 @@ class AstCreator(filename: String, global: Global)
     val expAsts = astForExpressionOrCommandContext(ctx.expressionOrCommand())
     val callNode = NewCall()
       .name(ctx.NOT().getText)
-      .code(ctx.NOT().getText)
+      .code(ctx.getText)
       .methodFullName(MethodFullNames.OperatorPrefix + ctx.NOT().getText)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1515,7 +1516,7 @@ class AstCreator(filename: String, global: Global)
     val exponentExpressionAsts = astForExpressionContext(expressions.get(1))
     val callNode = NewCall()
       .name(ctx.STAR2().getText)
-      .code(ctx.STAR2().getText)
+      .code(ctx.getText)
       .methodFullName(MethodFullNames.OperatorPrefix + ctx.STAR2().getText)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1691,7 +1692,7 @@ class AstCreator(filename: String, global: Global)
        */
       val callNode = NewCall()
         .name(ctx.op.getText)
-        .code(ctx.op.getText)
+        .code(ctx.getText)
         .methodFullName(MethodFullNames.OperatorPrefix + ctx.op.getText)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1703,7 +1704,7 @@ class AstCreator(filename: String, global: Global)
     } else {
       val callNode = NewCall()
         .name(ctx.op.getText)
-        .code(ctx.op.getText)
+        .code(ctx.getText)
         .methodFullName(MethodFullNames.OperatorPrefix + ctx.op.getText)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1723,7 +1724,7 @@ class AstCreator(filename: String, global: Global)
        */
       val callNode = NewCall()
         .name(ctx.MINUS().getText)
-        .code(ctx.MINUS().getText)
+        .code(ctx.getText)
         .methodFullName(MethodFullNames.OperatorPrefix + ctx.MINUS().getText)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1735,7 +1736,7 @@ class AstCreator(filename: String, global: Global)
     } else {
       val callNode = NewCall()
         .name(ctx.MINUS().getText)
-        .code(ctx.MINUS().getText)
+        .code(ctx.getText)
         .methodFullName(MethodFullNames.OperatorPrefix + ctx.MINUS().getText)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
