@@ -3,7 +3,7 @@ name := "rubysrc2cpg"
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "com.michaelpollmeier"  %% "codepropertygraph" % Versions.cpg,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
   "org.antlr"      % "antlr4-runtime"    % Versions.antlr
 )
