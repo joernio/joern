@@ -21,8 +21,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       arg.lineNumber shouldBe Some(1)
       arg.columnNumber shouldBe Some(5)
     }
-
-    // TODO: Should have type Defines.Integer
+    
     "have correct structure for an unsigned, decimal integer literal" ignore {
       val cpg           = code("123")
       val List(literal) = cpg.literal.l
@@ -32,7 +31,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.columnNumber shouldBe Some(1)
     }
 
-    // TODO: Should have type Defines.Integer
     "have correct structure for a +integer, decimal literal" ignore {
       val cpg           = code("+1")
       val List(literal) = cpg.literal.l
@@ -42,7 +40,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.columnNumber shouldBe Some(1)
     }
 
-    // TODO: Should have type Defines.Integer
     "have correct structure for a -integer, decimal literal" ignore {
       val cpg           = code("-1")
       val List(literal) = cpg.literal.l
