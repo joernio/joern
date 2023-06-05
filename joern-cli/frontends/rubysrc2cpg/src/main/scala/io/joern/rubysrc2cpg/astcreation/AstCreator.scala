@@ -549,7 +549,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForAdditiveExpressionContext(ctx: AdditiveExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Seq[Ast] = ctx match {
@@ -611,15 +611,15 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForBitwiseAndExpressionContext(ctx: BitwiseAndExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForBitwiseOrExpressionContext(ctx: BitwiseOrExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForBitwiseShiftExpressionContext(ctx: BitwiseShiftExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForWhenArgumentContext(ctx: WhenArgumentContext): Seq[Ast] = {
@@ -858,7 +858,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForEqualityExpressionContext(ctx: EqualityExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForGroupedLeftHandSideContext(ctx: GroupedLeftHandSideContext): Seq[Ast] = {
@@ -1470,7 +1470,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForMultiplicativeExpressionContext(ctx: MultiplicativeExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForNotExpressionOrCommandContext(ctx: NotExpressionOrCommandContext): Seq[Ast] = {
@@ -1488,11 +1488,11 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForOperatorAndExpressionContext(ctx: OperatorAndExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForOperatorOrExpressionContext(ctx: OperatorOrExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForOrAndExpressionOrCommandContext(ctx: OrAndExpressionOrCommandContext): Seq[Ast] = {
@@ -1528,17 +1528,17 @@ class AstCreator(filename: String, global: Global)
 
   def astForRangeExpressionContext(ctx: RangeExpressionContext): Seq[Ast] = {
     if (ctx.expression().size() == 2) {
-      astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+      astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
     } else {
       Seq(Ast())
     }
   }
 
   def astForRelationalExpressionContext(ctx: RelationalExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
-  def astForBinaryExpression(lhs: ExpressionContext, rhs: ExpressionContext, operatorToken: Token): Seq[Ast] = {
+  def astForBinaryExpression(lhs: ExpressionContext, rhs: ExpressionContext, operatorToken: Token, code: String): Seq[Ast] = {
     val lhsExpressionAsts = astForExpressionContext(lhs)
     val rhsExpressionAsts = astForExpressionContext(rhs)
     val callNode = NewCall()
