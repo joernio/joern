@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.passes
 
-import com.github.javaparser.ast.`type`.TypeParameter
+import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, Type, TypeParameter}
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
 import com.github.javaparser.ast.body.{
   AnnotationDeclaration,
@@ -145,12 +145,13 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewNamespaceBlock,
   NewNode,
   NewReturn,
+  NewType,
+  NewTypeArgument,
   NewTypeDecl,
   NewTypeRef
 }
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
-import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.passes.frontend.TypeNodePass
+import io.joern.x2cpg.datastructures.{Global, JavaTree, TreeNode}
 import io.joern.x2cpg.utils.AstPropertiesUtil._
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.AstNodeBuilder
@@ -982,7 +983,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     val expectedReturnType = Try(symbolSolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])).toOption
     val returnTypeFullName = expectedReturnType
       .flatMap(typeInfoCalc.fullName)
-      .orElse(scopeStack.lookupVariableType(methodDeclaration.getTypeAsString, wildcardFallback = true))
+      .orElse(
+        scopeStack.lookupVariableType(methodDeclaration.getTypeAsString.takeWhile(_ != '<'), wildcardFallback = true)
+      )
+      .orElse(Option(s"${Defines.UnresolvedNamespace}.${methodDeclaration.getTypeAsString}"))
 
     scopeStack.pushNewScope(MethodScope(ExpectedType(returnTypeFullName, expectedReturnType)))
 
@@ -1015,6 +1019,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       line(methodDeclaration.getType),
       column(methodDeclaration.getType)
     )
+    methodDeclaration.getType match {
+      case x: ClassOrInterfaceType if x.getTypeArguments.isPresent =>
+        global.nodesWithGenericTypes.put(methodReturn, astForGenericType(x))
+      case _ =>
+    }
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
 
@@ -2059,6 +2068,41 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
+  private def typeToTypeArgument(x: Type): TreeNode = {
+    val typeWithoutGeneric = x.asString().takeWhile(_ != '<')
+    val typeFullName = typeInfoCalc
+      .fullName(x)
+      .orElse(scopeStack.lookupVariableType(typeWithoutGeneric))
+      .orElse(scopeStack.lookupVariableType(typeWithoutGeneric, wildcardFallback = true))
+      .getOrElse(s"${Defines.UnresolvedNamespace}.$typeWithoutGeneric")
+    x match {
+      case t: ClassOrInterfaceType if t.getTypeArguments.isPresent =>
+        TreeNode(typeFullName)
+          .withChildren(astForTypeArgument(t.getTypeArguments.get().asScala.toList))
+      case _ =>
+        TreeNode(typeFullName)
+    }
+  }
+
+  private def astForTypeArgument(xs: List[Type]): List[TreeNode] = xs match {
+    case head :: next => typeToTypeArgument(head) +: astForTypeArgument(next)
+    case Nil          => List.empty
+  }
+
+  private def astForGenericType(x: ClassOrInterfaceType): JavaTree = {
+    val typeArguments =
+      if (x.getTypeArguments.isPresent)
+        astForTypeArgument(x.getTypeArguments.get().asScala.toList)
+      else List.empty
+    val typeWithoutGeneric = x.asString().takeWhile(_ != '<')
+    val typeFullName = typeInfoCalc
+      .fullName(x)
+      .orElse(scopeStack.lookupVariableType(typeWithoutGeneric))
+      .orElse(scopeStack.lookupVariableType(typeWithoutGeneric, wildcardFallback = true))
+      .getOrElse(s"${Defines.UnresolvedNamespace}.$typeWithoutGeneric")
+    new JavaTree(io.joern.x2cpg.datastructures.TreeNode(typeFullName).withChildren(typeArguments))
+  }
+
   private def assignmentsForVarDecl(
     variables: Iterable[VariableDeclarator],
     lineNumber: Option[Integer],
@@ -2083,11 +2127,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       // Need the actual resolvedType here for when the RHS is a lambda expression.
       val resolvedExpectedType = Try(symbolSolver.toResolvedType(variable.getType, classOf[ResolvedType])).toOption
       val initializerAsts      = astsForExpression(initializer, ExpectedType(typeFullName, resolvedExpectedType))
-
-      val typeName = typeFullName
-        .map(TypeNodePass.fullToShortName)
-        .getOrElse(s"${Defines.UnresolvedNamespace}.${variable.getTypeAsString}")
-      val code = s"$typeName $name = ${initializerAsts.rootCodeOrEmpty}"
+      val code                 = s"${variable.getTypeAsString} $name = ${initializerAsts.rootCodeOrEmpty}"
 
       val callNode = newOperatorCallNode(Operators.assignment, code, typeFullName, lineNumber, columnNumber)
 
@@ -2098,6 +2138,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
         case maybeCorrespNode =>
           val identifier = identifierNode(variable, name, name, typeFullName.getOrElse(TypeConstants.Any))
+          variable.getType match {
+            case x: ClassOrInterfaceType if x.getTypeArguments.isPresent =>
+              global.nodesWithGenericTypes.put(identifier, astForGenericType(x))
+            case _ =>
+          }
           Ast(identifier).withRefEdges(identifier, maybeCorrespNode.map(_.node).toList)
       }
 

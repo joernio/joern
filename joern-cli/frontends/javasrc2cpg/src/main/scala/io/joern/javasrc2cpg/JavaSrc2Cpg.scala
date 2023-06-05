@@ -7,13 +7,7 @@ import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver
 import com.github.javaparser.{JavaParser, ParserConfiguration}
-import io.joern.javasrc2cpg.passes.{
-  AstCreationPass,
-  ConfigFileCreationPass,
-  JavaTypeHintCallLinker,
-  JavaTypeRecoveryPass,
-  TypeInferencePass
-}
+import io.joern.javasrc2cpg.passes._
 import io.joern.javasrc2cpg.typesolvers.{CachingReflectionTypeSolver, EagerSourceTypeSolver, SimpleCombinedTypeSolver}
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.joern.javasrc2cpg.util.{Delombok, SourceRootFinder}
@@ -85,7 +79,11 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       val astCreationPass = new AstCreationPass(javaparserAsts.analysisAsts, config, cpg, symbolSolver)
       astCreationPass.createAndApply()
       new ConfigFileCreationPass(config.inputPath, cpg).createAndApply()
-      new TypeNodePass(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
+      new TypeNodePass(
+        astCreationPass.global.usedTypes.keys().asScala.toList,
+        cpg,
+        nodesWithGenericTypes = astCreationPass.global.nodesWithGenericTypes.asScala.toMap
+      ).createAndApply()
       new TypeInferencePass(cpg).createAndApply()
     }
   }

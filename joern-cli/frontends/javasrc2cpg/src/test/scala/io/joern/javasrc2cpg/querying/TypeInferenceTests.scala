@@ -2,8 +2,9 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.joern.x2cpg.datastructures.TreeNode
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, TypeArgument}
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
@@ -210,6 +211,10 @@ class JavaTypeRecoveryPassTests extends JavaSrcCode2CpgFixture(enableTypeRecover
         |package net.javaguides.hibernate;
         |
         |import java.util.List;
+        |import java.util.Map;
+        |import java.lang.Integer;
+        |import java.lang.Long;
+        |import java.lang.String;
         |
         |import org.hibernate.Session;
         |import org.hibernate.Transaction;
@@ -235,8 +240,11 @@ class JavaTypeRecoveryPassTests extends JavaSrcCode2CpgFixture(enableTypeRecover
         |				transaction.rollback();
         |			}
         |		}
-        |
         |	}
+        |
+        | public List<Map<String, Integer>> foo() {
+        |   return new List<>();
+        | }
         |}
         |""".stripMargin,
       Seq("net", "javaguides", "hibernate", "NamedQueryExample.java").mkString(File.separator)
@@ -253,6 +261,25 @@ class JavaTypeRecoveryPassTests extends JavaSrcCode2CpgFixture(enableTypeRecover
       val Some(transaction) = cpg.identifier("transaction").headOption
       transaction.typeFullName shouldBe "org.hibernate.Transaction"
       transaction.dynamicTypeHintFullName.contains("null")
+    }
+
+    "present type arguments to generic types if known" in {
+      //    List
+      //     | Long
+      val Some(totalStudents) = cpg.identifier.nameExact("totalStudents").headOption
+      val List(list)          = totalStudents.evalTypeOut.l
+      list.name shouldBe "List"
+      list.fullName shouldBe "java.util.List<java.lang.Long>"
+    }
+
+    "present (nested) type arguments to method returns" in {
+      //    List
+      //     | Map
+      //       | String | Integer
+      val Some(fooReturn) = cpg.method("foo").methodReturn.headOption
+      val List(list)      = fooReturn.evalTypeOut.l
+      list.name shouldBe "List"
+      list.fullName shouldBe "java.util.List<java.util.Map<java.lang.String, java.lang.Integer>>"
     }
   }
 
