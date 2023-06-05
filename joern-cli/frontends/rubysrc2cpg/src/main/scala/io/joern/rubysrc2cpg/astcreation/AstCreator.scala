@@ -3,6 +3,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -20,7 +21,6 @@ import overflowdb.BatchedUpdate
 import java.util
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.io.Source
 import scala.jdk.CollectionConverters._
 
 class AstCreator(filename: String, global: Global)
@@ -41,8 +41,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   object MethodFullNames {
-    val UnknownFullName = "<unknownfullname>"
-    val OperatorPrefix  = "<operator>."
+    val OperatorPrefix = "<operator>."
   }
 
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -569,7 +568,7 @@ class AstCreator(filename: String, global: Global)
         .name(Operators.arrayInitializer)
         .methodFullName(Operators.arrayInitializer)
         .signature(Operators.arrayInitializer)
-        .typeFullName(MethodFullNames.UnknownFullName)
+        .typeFullName(DynamicCallUnknownFullName)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .code(ctx.getText)
       Seq(callAst(callNode, expAsts))
@@ -587,7 +586,7 @@ class AstCreator(filename: String, global: Global)
         .name(ctx.COMMA().getText)
         .methodFullName(Operators.arrayInitializer)
         .signature(Operators.arrayInitializer)
-        .typeFullName(MethodFullNames.UnknownFullName)
+        .typeFullName(DynamicCallUnknownFullName)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .code(ctx.getText)
         .lineNumber(ctx.COMMA().getSymbol.getLine)
@@ -1199,7 +1198,7 @@ class AstCreator(filename: String, global: Global)
       .name(name)
       .methodFullName(name)
       .signature(localIdentifier.getText())
-      .typeFullName(MethodFullNames.UnknownFullName)
+      .typeFullName(DynamicCallUnknownFullName)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(localIdentifier.getText())
       .lineNumber(line)
@@ -1937,7 +1936,7 @@ class AstCreator(filename: String, global: Global)
       val callNode = NewCall()
         .name(getActualMethodName(methodCallNode.name))
         .code(ctx.getText)
-        .methodFullName(MethodFullNames.UnknownFullName)
+        .methodFullName(DynamicCallUnknownFullName)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
