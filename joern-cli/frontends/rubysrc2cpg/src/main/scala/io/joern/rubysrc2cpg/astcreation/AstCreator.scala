@@ -2,19 +2,13 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
+import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  ModifierTypes,
-  NodeTypes,
-  Operators
-}
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated._
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, Token}
+import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, Token}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
@@ -25,7 +19,7 @@ import scala.jdk.CollectionConverters._
 
 class AstCreator(filename: String, global: Global)
     extends AstCreatorBase(filename)
-    with AstNodeBuilder[TerminalNode, AstCreator] {
+    with AstNodeBuilder[ParserRuleContext, AstCreator] {
 
   object Defines {
     val Any: String           = "ANY"
@@ -83,13 +77,13 @@ class AstCreator(filename: String, global: Global)
   }
 
   private def createIdentiferWithScope(
-    node: TerminalNode,
-    name: String,
-    code: String,
-    typeFullName: String,
-    dynamicTypeHints: Seq[String]
+                                        ctx: ParserRuleContext,
+                                        name: String,
+                                        code: String,
+                                        typeFullName: String,
+                                        dynamicTypeHints: Seq[String]
   ): NewIdentifier = {
-    val newNode = identifierNode(node, name, code, typeFullName, dynamicTypeHints)
+    val newNode = identifierNode(ctx, name, code, typeFullName, dynamicTypeHints)
     setIdentiferInScope(newNode)
     newNode
   }
@@ -146,10 +140,10 @@ class AstCreator(filename: String, global: Global)
     diffGraph
   }
 
-  protected def line(node: TerminalNode): Option[Integer]      = Option(node.getSymbol.getLine)
-  protected def column(node: TerminalNode): Option[Integer]    = Option(node.getSymbol.getCharPositionInLine)
-  protected def lineEnd(node: TerminalNode): Option[Integer]   = None
-  protected def columnEnd(node: TerminalNode): Option[Integer] = None
+  protected def line(ctx: ParserRuleContext): Option[Integer]      = Option(ctx.getStart.getLine)
+  protected def column(ctx: ParserRuleContext): Option[Integer]    = Option(ctx.getStart.getCharPositionInLine)
+  protected def lineEnd(ctx: ParserRuleContext): Option[Integer]   = Option(ctx.getStop.getLine)
+  protected def columnEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getCharPositionInLine)
 
   private def registerType(typ: String): String = {
     if (typ != Defines.Any) {
@@ -161,7 +155,7 @@ class AstCreator(filename: String, global: Global)
     val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
     val token        = terminalNode.getSymbol
     val variableName = token.getText
-    val node         = createIdentiferWithScope(terminalNode, variableName, variableName, Defines.Any, List[String]())
+    val node         = createIdentiferWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
     setIdentiferInScope(node)
     Seq(Ast(node))
   }
@@ -195,7 +189,7 @@ class AstCreator(filename: String, global: Global)
       }
       val varSymbol = localVar.getSymbol()
       val node =
-        createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+        createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       val yAst = Ast(node)
 
       val callNode = NewCall()
@@ -747,8 +741,8 @@ class AstCreator(filename: String, global: Global)
     val primaryAst = astForPrimaryContext(ctx.primary())
     val localVar   = ctx.CONSTANT_IDENTIFIER()
     val varSymbol  = localVar.getSymbol()
-    val node = createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
-    val constAst = Ast(node)
+    val node       = createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+    val constAst   = Ast(node)
 
     val callNode = NewCall()
       .name(ctx.COLON2().getText)
@@ -1225,7 +1219,7 @@ class AstCreator(filename: String, global: Global)
       val varSymbol = localVar.getSymbol()
       if (lookupIdentiferInScope(varSymbol.getText)) {
         val node =
-          createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+          createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
       } else {
         astForCallNode(localVar)
@@ -1235,7 +1229,7 @@ class AstCreator(filename: String, global: Global)
       val varSymbol = localVar.getSymbol()
       if (lookupIdentiferInScope(varSymbol.getText)) {
         val node =
-          createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+          createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
       } else {
         astForCallNode(localVar)
@@ -1295,13 +1289,13 @@ class AstCreator(filename: String, global: Global)
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
       val node =
-        createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+        createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localVar  = ctx.CONSTANT_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
       val node =
-        createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+        createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     } else {
       Seq(Ast())
@@ -1376,7 +1370,7 @@ class AstCreator(filename: String, global: Global)
     localVarList
       .map(localVar => {
         val varSymbol = localVar.getSymbol()
-        createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
+        createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
         val param = NewMethodParameterIn()
           .name(varSymbol.getText)
           .code(varSymbol.getText)
@@ -1557,7 +1551,7 @@ class AstCreator(filename: String, global: Global)
   def astForSimpleScopedConstantReferencePrimaryContext(ctx: SimpleScopedConstantReferencePrimaryContext): Seq[Ast] = {
     val localVar  = ctx.CONSTANT_IDENTIFIER()
     val varSymbol = localVar.getSymbol()
-    val node = createIdentiferWithScope(localVar, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+    val node      = createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
 
     val callNode = NewCall()
       .name(ctx.COLON2().getText)
@@ -1790,7 +1784,7 @@ class AstCreator(filename: String, global: Global)
       else return Seq(Ast())
     }
 
-    val astNode = createIdentiferWithScope(node, ctx.getText, ctx.getText, Defines.Any, List(Defines.Any))
+    val astNode = createIdentiferWithScope(ctx, ctx.getText, ctx.getText, Defines.Any, List(Defines.Any))
     Seq(Ast(astNode))
   }
 
