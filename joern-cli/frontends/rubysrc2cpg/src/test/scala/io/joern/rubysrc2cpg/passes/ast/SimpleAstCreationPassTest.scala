@@ -115,7 +115,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
   "Code field for simple fragments" should {
 
-    "have correct code for a single command call" in {
+    "have correct code for a single left had side call" in {
       val cpg            = code("array[n] = 10")
       val List(callNode) = cpg.call.name("<operator>.indexAccess").l
       callNode.code shouldBe "array[n]"
