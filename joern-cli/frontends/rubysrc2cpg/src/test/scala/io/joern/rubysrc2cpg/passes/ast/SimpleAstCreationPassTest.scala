@@ -112,4 +112,15 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       encoding.columnNumber shouldBe Some(5)
     }
   }
+
+  "Code field for simple fragments" should {
+
+    "have correct structure for a single command call" in {
+      val cpg                   = code("array[n] = 10")
+      val List(indexAccessCall) = cpg.call.name("<operator>.indexAccess").l
+      indexAccessCall.code shouldBe "array[n]"
+      indexAccessCall.lineNumber shouldBe Some(1)
+      indexAccessCall.columnNumber shouldBe Some(5)
+    }
+  }
 }
