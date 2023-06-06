@@ -425,10 +425,10 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.columnNumber shouldBe Some(2)
     }
 
-    "have correct code for a shift left expression" in {
-      val cpg            = code("x << y")
-      val List(callNode) = cpg.call.name(Operators.shiftLeft).l
-      callNode.code shouldBe "x << y"
+    "have correct code for a compare expression" in {
+      val cpg            = code("x <=> y")
+      val List(callNode) = cpg.call.name(Operators.compare).l
+      callNode.code shouldBe "x <=> y"
       callNode.lineNumber shouldBe Some(1)
       callNode.columnNumber shouldBe Some(2)
     }
