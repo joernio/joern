@@ -10,7 +10,7 @@ class StringTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
           """LiteralPrimary
-            | Literal
+            | SingleQuotedStringLiteral
             |  ''""".stripMargin
       }
     }
@@ -24,7 +24,7 @@ class StringTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
           """LiteralPrimary
-            | Literal
+            | DoubleQuotedStringLiteral
             |  "
             |  """".stripMargin
       }
@@ -47,7 +47,7 @@ class StringTests extends RubyParserAbstractTest {
             |      ExpressionExpressionOrCommand
             |       PrimaryExpression
             |        LiteralPrimary
-            |         Literal
+            |         NumericLiteralLiteral
             |          NumericLiteral
             |           UnsignedNumericLiteral
             |            1
@@ -72,7 +72,7 @@ class StringTests extends RubyParserAbstractTest {
             |      ExpressionExpressionOrCommand
             |       PrimaryExpression
             |        LiteralPrimary
-            |         Literal
+            |         NumericLiteralLiteral
             |          NumericLiteral
             |           UnsignedNumericLiteral
             |            1
@@ -85,7 +85,7 @@ class StringTests extends RubyParserAbstractTest {
             |      ExpressionExpressionOrCommand
             |       PrimaryExpression
             |        LiteralPrimary
-            |         Literal
+            |         NumericLiteralLiteral
             |          NumericLiteral
             |           UnsignedNumericLiteral
             |            2
