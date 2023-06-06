@@ -49,6 +49,60 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.columnNumber shouldBe Some(1)
     }
 
+    "have correct structure for an unsigned, hexadecimal integer literal" in {
+      val cpg = code("0xabc")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "0xabc"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an unsigned, binary integer literal" in {
+      val cpg = code("0b01")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "0b01"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a -integer, binary literal" in {
+      val cpg = code("-0b01")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "-0b01"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a +integer, binary literal" in {
+      val cpg = code("+0b01")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "+0b01"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a -integer, hexadecimal literal" in {
+      val cpg = code("-0xa")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "-0xa"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a +integer, hexadecimal literal" in {
+      val cpg = code("+0xa")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "+0xa"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
     "have correct structure for `nil` literal" in {
       val cpg           = code("puts nil")
       val List(literal) = cpg.literal.l
@@ -111,6 +165,52 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       encoding.lineNumber shouldBe Some(1)
       encoding.columnNumber shouldBe Some(5)
     }
+
+    "have correct structure for a single-line double-quoted string literal" in {
+      val cpg = code("\"hello\"")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.String
+      literal.code shouldBe "\"hello\""
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a single-line single-quoted string literal" in {
+      val cpg = code("'hello'")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.String
+      literal.code shouldBe "'hello'"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an identifier symbol literal" in {
+      val cpg = code(":someSymbolName")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Symbol
+      literal.code shouldBe ":someSymbolName"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a single-quoted-string symbol literal" in {
+      val cpg = code(":'someSymbolName'")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Symbol
+      literal.code shouldBe ":'someSymbolName'"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a single-line regular expression literal" in {
+      val cpg = code("/(eu|us)/")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Regexp
+      literal.code shouldBe "/(eu|us)/"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
   }
 
   "Code field for simple fragments" should {
