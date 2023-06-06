@@ -19,7 +19,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
-class AstCreator(filename: String, global: Global)
+class AstCreator(filename: String, global: Global, packageContext: PackageContext)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator {
@@ -1907,11 +1907,11 @@ class AstCreator(filename: String, global: Global)
           callNode.name == "load"
         ) {
           val importedNode =
-            argsAst.nodes.filter(node => node.isInstanceOf[NewLiteral]).head.asInstanceOf[NewLiteral]
+            argsAsts.head.nodes.filter(node => node.isInstanceOf[NewLiteral]).head.asInstanceOf[NewLiteral]
           println(s"AST to be created for imported file ${importedNode.code}")
-          callAst(callNode.code(importedNode.code), Seq(Ast(importedNode)))
+          Seq(callAst(callNode.code(importedNode.code), Seq(Ast(importedNode))))
         } else {
-          Seq(callAst(callNode, Seq(argsAst)))
+          Seq(callAst(callNode, argsAsts))
         }
       } else {
         argsAsts
