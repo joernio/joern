@@ -1140,11 +1140,11 @@ class AstCreator(filename: String, global: Global)
 
   def astForLiteralPrimaryContext(ctx: LiteralPrimaryContext): Ast =
     ctx.literal() match {
-      case ctx: NumericLiteralLiteralContext => astForNumericLiteral(ctx.numericLiteral)
-      case ctx: SymbolLiteralContext => astForSymbolLiteral(ctx.symbol())
+      case ctx: NumericLiteralLiteralContext     => astForNumericLiteral(ctx.numericLiteral)
+      case ctx: SymbolLiteralContext             => astForSymbolLiteral(ctx.symbol())
       case ctx: SingleQuotedStringLiteralContext => astForSingleQuotedStringLiteral(ctx)
       case ctx: DoubleQuotedStringLiteralContext => astForDoubleQuotedStringLiteral(ctx)
-      case ctx: RegularExpressionLiteralContext => astForRegularExpressionLiteral(ctx)
+      case ctx: RegularExpressionLiteralContext  => astForRegularExpressionLiteral(ctx)
     }
 
   def astForSimpleMethodNamePartContext(ctx: SimpleMethodNamePartContext): Seq[Ast] = {
