@@ -122,5 +122,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       indexAccessCall.lineNumber shouldBe Some(1)
       indexAccessCall.columnNumber shouldBe Some(5)
     }
+
+    "have correct structure for a binary expression" in {
+      val cpg = code("x+y")
+      val List(additionCall) = cpg.call.l
+      additionCall.code shouldBe "x+y"
+      additionCall.lineNumber shouldBe Some(1)
+      additionCall.columnNumber shouldBe Some(1)
+    }
   }
 }
