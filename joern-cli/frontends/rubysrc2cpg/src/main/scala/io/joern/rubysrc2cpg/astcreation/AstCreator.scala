@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.Global
@@ -1404,6 +1405,8 @@ class AstCreator(filename: String, global: Global)
       .filename(filename)
     callNode.methodFullName(classPath + callNode.name)
 
+    packageContext.packageTable.add(packageContext.moduleName, callNode.name, classPath)
+
     val methodRetNode = NewMethodReturn()
       .lineNumber(None)
       .columnNumber(None)
@@ -1903,16 +1906,13 @@ class AstCreator(filename: String, global: Global)
           callNode.name == "require_once" ||
           callNode.name == "load"
         ) {
-          val importedFile =
-            argsAsts.head.nodes
-              .filter(node => node.isInstanceOf[NewLiteral])
-              .head
-              .asInstanceOf[NewLiteral]
-              .code
-          println(s"AST to be created for imported file ${importedFile}")
-
+          val importedNode =
+            argsAst.nodes.filter(node => node.isInstanceOf[NewLiteral]).head.asInstanceOf[NewLiteral]
+          println(s"AST to be created for imported file ${importedNode.code}")
+          callAst(callNode.code(importedNode.code), Seq(Ast(importedNode)))
+        } else {
+          Seq(callAst(callNode, Seq(argsAst)))
         }
-        Seq(callAst(callNode, argsAsts))
       } else {
         argsAsts
       }
