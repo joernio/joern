@@ -50,7 +50,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for an unsigned, decimal float literal" in {
-      val cpg = code("3.14")
+      val cpg           = code("3.14")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Float
       literal.code shouldBe "3.14"
@@ -59,7 +59,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a +float, decimal literal" in {
-      val cpg = code("+3.14")
+      val cpg           = code("+3.14")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Float
       literal.code shouldBe "+3.14"
@@ -68,7 +68,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a -float, decimal literal" in {
-      val cpg = code("-3.14")
+      val cpg           = code("-3.14")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Float
       literal.code shouldBe "-3.14"
@@ -77,7 +77,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for an unsigned, decimal float literal with unsigned exponent" in {
-      val cpg = code("3e10")
+      val cpg           = code("3e10")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Float
       literal.code shouldBe "3e10"
@@ -86,7 +86,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for an unsigned, decimal float literal with -exponent" in {
-      val cpg = code("12e-10")
+      val cpg           = code("12e-10")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Float
       literal.code shouldBe "12e-10"
@@ -95,7 +95,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for an unsigned, binary integer literal" in {
-      val cpg = code("0b01")
+      val cpg           = code("0b01")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "0b01"
@@ -104,7 +104,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a -integer, binary literal" in {
-      val cpg = code("-0b01")
+      val cpg           = code("-0b01")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "-0b01"
@@ -113,7 +113,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a +integer, binary literal" in {
-      val cpg = code("+0b01")
+      val cpg           = code("+0b01")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "+0b01"
@@ -122,7 +122,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for an unsigned, hexadecimal integer literal" in {
-      val cpg = code("0xabc")
+      val cpg           = code("0xabc")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "0xabc"
@@ -131,7 +131,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a -integer, hexadecimal literal" in {
-      val cpg = code("-0xa")
+      val cpg           = code("-0xa")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "-0xa"
@@ -140,7 +140,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a +integer, hexadecimal literal" in {
-      val cpg = code("+0xa")
+      val cpg           = code("+0xa")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "+0xa"
@@ -212,7 +212,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a single-line double-quoted string literal" in {
-      val cpg = code("\"hello\"")
+      val cpg           = code("\"hello\"")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.String
       literal.code shouldBe "\"hello\""
@@ -221,7 +221,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a single-line single-quoted string literal" in {
-      val cpg = code("'hello'")
+      val cpg           = code("'hello'")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.String
       literal.code shouldBe "'hello'"
@@ -230,7 +230,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for an identifier symbol literal" in {
-      val cpg = code(":someSymbolName")
+      val cpg           = code(":someSymbolName")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Symbol
       literal.code shouldBe ":someSymbolName"
@@ -239,7 +239,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a single-quoted-string symbol literal" in {
-      val cpg = code(":'someSymbolName'")
+      val cpg           = code(":'someSymbolName'")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Symbol
       literal.code shouldBe ":'someSymbolName'"
@@ -248,7 +248,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a single-line regular expression literal" in {
-      val cpg = code("/(eu|us)/")
+      val cpg           = code("/(eu|us)/")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Regexp
       literal.code shouldBe "/(eu|us)/"
