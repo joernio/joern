@@ -497,13 +497,13 @@ variableIdentifier
     ;
 
 pseudoVariableIdentifier
-    :   NIL
-    |   TRUE
-    |   FALSE
-    |   SELF
-    |   FILE__
-    |   LINE__
-    |   ENCODING__
+    :   NIL                                                                                                         # nilPseudoVariableIdentifier
+    |   TRUE                                                                                                        # truePseudoVariableIdentifier
+    |   FALSE                                                                                                       # falsePseudoVariableIdentifier
+    |   SELF                                                                                                        # selfPseudoVariableIdentifier
+    |   FILE__                                                                                                      # filePseudoVariableIdentifier
+    |   LINE__                                                                                                      # linePseudoVariableIdentifier
+    |   ENCODING__                                                                                                  # encodingPseudoVariableIdentifier
     ;
 
 scopedConstantReference

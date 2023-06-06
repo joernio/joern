@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
+import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.Global
@@ -19,20 +20,8 @@ import scala.jdk.CollectionConverters._
 
 class AstCreator(filename: String, global: Global)
     extends AstCreatorBase(filename)
-    with AstNodeBuilder[ParserRuleContext, AstCreator] {
-
-  object Defines {
-    val Any: String           = "ANY"
-    val Number: String        = "number"
-    val String: String        = "string"
-    val Boolean: String       = "boolean"
-    val Hash: String          = "hash"
-    val Array: String         = "array"
-    val Symbol: String        = "symbol"
-    val ModifierRedo: String  = "redo"
-    val ModifierRetry: String = "retry"
-    var ModifierNext: String  = "next"
-  }
+    with AstNodeBuilder[ParserRuleContext, AstCreator]
+    with AstForPrimitivesCreator {
 
   object MethodFullNames {
     val OperatorPrefix = "<operator>."
@@ -76,12 +65,12 @@ class AstCreator(filename: String, global: Global)
     scopeStack.top.varToIdentiferMap.contains(name)
   }
 
-  private def createIdentiferWithScope(
+  protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
     name: String,
     code: String,
     typeFullName: String,
-    dynamicTypeHints: Seq[String]
+    dynamicTypeHints: Seq[String] = Seq()
   ): NewIdentifier = {
     val newNode = identifierNode(ctx, name, code, typeFullName, dynamicTypeHints)
     setIdentiferInScope(newNode)
@@ -155,7 +144,7 @@ class AstCreator(filename: String, global: Global)
     val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
     val token        = terminalNode.getSymbol
     val variableName = token.getText
-    val node         = createIdentiferWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
+    val node         = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
     setIdentiferInScope(node)
     Seq(Ast(node))
   }
@@ -189,7 +178,7 @@ class AstCreator(filename: String, global: Global)
       }
       val varSymbol = localVar.getSymbol()
       val node =
-        createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+        createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       val yAst = Ast(node)
 
       val callNode = NewCall()
@@ -741,8 +730,8 @@ class AstCreator(filename: String, global: Global)
     val primaryAst = astForPrimaryContext(ctx.primary())
     val localVar   = ctx.CONSTANT_IDENTIFIER()
     val varSymbol  = localVar.getSymbol()
-    val node       = createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
-    val constAst   = Ast(node)
+    val node     = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+    val constAst = Ast(node)
 
     val callNode = NewCall()
       .name(ctx.COLON2().getText)
@@ -1158,9 +1147,9 @@ class AstCreator(filename: String, global: Global)
         .code(text)
         .lineNumber(lineStart)
         .columnNumber(columnStart)
-        .typeFullName(Defines.Number)
-        .dynamicTypeHintFullName(List(Defines.Number))
-      registerType(Defines.Number)
+        .typeFullName(Defines.Numeric)
+        .dynamicTypeHintFullName(List(Defines.Numeric))
+      registerType(Defines.Numeric)
       Seq(Ast(node))
     } else if (ctx.literal().SINGLE_QUOTED_STRING_LITERAL() != null) {
       val text = ctx.getText
@@ -1229,7 +1218,7 @@ class AstCreator(filename: String, global: Global)
       val varSymbol = localVar.getSymbol()
       if (lookupIdentiferInScope(varSymbol.getText)) {
         val node =
-          createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+          createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
       } else {
         astForCallNode(localVar, code)
@@ -1239,7 +1228,7 @@ class AstCreator(filename: String, global: Global)
       val varSymbol = localVar.getSymbol()
       if (lookupIdentiferInScope(varSymbol.getText)) {
         val node =
-          createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+          createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
       } else {
         astForCallNode(localVar, code)
@@ -1299,13 +1288,13 @@ class AstCreator(filename: String, global: Global)
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
       val node =
-        createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+        createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localVar  = ctx.CONSTANT_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
       val node =
-        createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+        createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     } else {
       Seq(Ast())
@@ -1380,7 +1369,7 @@ class AstCreator(filename: String, global: Global)
     localVarList
       .map(localVar => {
         val varSymbol = localVar.getSymbol()
-        createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
+        createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
         val param = NewMethodParameterIn()
           .name(varSymbol.getText)
           .code(varSymbol.getText)
@@ -1566,7 +1555,7 @@ class AstCreator(filename: String, global: Global)
   def astForSimpleScopedConstantReferencePrimaryContext(ctx: SimpleScopedConstantReferencePrimaryContext): Seq[Ast] = {
     val localVar  = ctx.CONSTANT_IDENTIFIER()
     val varSymbol = localVar.getSymbol()
-    val node      = createIdentiferWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+    val node      = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
 
     val callNode = NewCall()
       .name(ctx.COLON2().getText)
@@ -1787,27 +1776,21 @@ class AstCreator(filename: String, global: Global)
     Seq(ast)
   }
 
-  def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Seq[Ast] = {
-    val node = {
-      if (ctx.TRUE() != null) { ctx.TRUE() }
-      else if (ctx.NIL() != null) { ctx.NIL() }
-      else if (ctx.FALSE() != null) { ctx.FALSE() }
-      else if (ctx.SELF() != null) { ctx.SELF() }
-      else if (ctx.FILE__() != null) { ctx.FILE__() }
-      else if (ctx.LINE__() != null) { ctx.LINE__() }
-      else if (ctx.ENCODING__() != null) { ctx.ENCODING__() }
-      else return Seq(Ast())
-    }
-
-    val astNode = createIdentiferWithScope(ctx, ctx.getText, ctx.getText, Defines.Any, List(Defines.Any))
-    Seq(Ast(astNode))
+  private def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Ast = ctx match {
+    case ctx: NilPseudoVariableIdentifierContext      => astForNilLiteral(ctx)
+    case ctx: TruePseudoVariableIdentifierContext     => astForTrueLiteral(ctx)
+    case ctx: FalsePseudoVariableIdentifierContext    => astForFalseLiteral(ctx)
+    case ctx: SelfPseudoVariableIdentifierContext     => astForSelfPseudoIdentifier(ctx)
+    case ctx: FilePseudoVariableIdentifierContext     => astForFilePseudoIdentifier(ctx)
+    case ctx: LinePseudoVariableIdentifierContext     => astForLinePseudoIdentifier(ctx)
+    case ctx: EncodingPseudoVariableIdentifierContext => astForEncodingPseudoIdentifier(ctx)
   }
 
   def astForVariableRefenceContext(ctx: RubyParser.VariableReferenceContext): Seq[Ast] = {
     if (ctx.variableIdentifier() != null) {
       astForVariableIdentifierContext(ctx.variableIdentifier())
     } else {
-      astForPseudoVariableIdentifierContext(ctx.pseudoVariableIdentifier())
+      Seq(astForPseudoVariableIdentifierContext(ctx.pseudoVariableIdentifier()))
     }
   }
 
