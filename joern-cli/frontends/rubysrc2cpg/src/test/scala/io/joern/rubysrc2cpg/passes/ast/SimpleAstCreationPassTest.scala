@@ -352,5 +352,45 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.lineNumber shouldBe Some(1)
       callNode.columnNumber shouldBe Some(0)
     }
+
+    "have correct code for a logical and expression" in {
+      val cpg            = code("x & y")
+      val List(callNode) = cpg.call.name(Operators.logicalAnd).l
+      callNode.code shouldBe "x & y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct code for a logical or with bar expression" in {
+      val cpg            = code("x | y")
+      val List(callNode) = cpg.call.name(Operators.logicalOr).l
+      callNode.code shouldBe "x | y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct code for a logical or with carat expression" in {
+      val cpg            = code("x ^ y")
+      val List(callNode) = cpg.call.name(Operators.logicalOr).l
+      callNode.code shouldBe "x ^ y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct code for an assignment expression" in {
+      val cpg            = code("x = y")
+      val List(callNode) = cpg.call.name(Operators.assignment).l
+      callNode.code shouldBe "="
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct code for an equals expression" in {
+      val cpg            = code("x == y")
+      val List(callNode) = cpg.call.name(Operators.equals).l
+      callNode.code shouldBe "x == y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
   }
 }
