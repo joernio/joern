@@ -129,6 +129,11 @@ class AstCreator(filename: String, global: Global)
     diffGraph
   }
 
+  object RubyOperators {
+    val none            = "<operator>.none"
+    val patternMatch    = "<operator>.patternMatch"
+    val notPatternMatch = "<operator>.notPatternMatch"
+  }
   private def getOperatorName(token: Token): String = token.getType match {
     case AMP                 => Operators.logicalAnd
     case AMP2                => Operators.and
@@ -140,11 +145,11 @@ class AstCreator(filename: String, global: Global)
     case DOT3                => Operators.range
     case EMARK               => Operators.not
     case EMARKEQ             => Operators.notEquals
-    case EMARKTILDE          => "!~" // TODO pattern match
+    case EMARKTILDE          => RubyOperators.notPatternMatch
     case EQ                  => Operators.assignment
     case EQ2                 => Operators.equals
     case EQ3                 => Operators.is
-    case EQTILDE             => "=~" // TODO string to regex match
+    case EQTILDE             => RubyOperators.patternMatch
     case GT                  => Operators.greaterThan
     case GT2                 => Operators.logicalShiftRight
     case GTEQ                => Operators.greaterEqualsThan
@@ -160,7 +165,7 @@ class AstCreator(filename: String, global: Global)
     case TILDE               => Operators.not
     case NOT                 => Operators.not
     case STAR2               => Operators.exponentiation
-    case _                   => Operators.arrayInitializer
+    case _                   => RubyOperators.none
   }
 
   protected def line(ctx: ParserRuleContext): Option[Integer]      = Option(ctx.getStart.getLine)
