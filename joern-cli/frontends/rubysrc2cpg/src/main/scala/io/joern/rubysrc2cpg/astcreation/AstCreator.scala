@@ -336,7 +336,7 @@ class AstCreator(filename: String, global: Global)
       astForChainedScopedConstantReferencePrimaryContext(ctx)
     case ctx: ArrayConstructorPrimaryContext          => astForArrayConstructorPrimaryContext(ctx)
     case ctx: HashConstructorPrimaryContext           => astForHashConstructorPrimaryContext(ctx)
-    case ctx: LiteralPrimaryContext                   => astForLiteralPrimaryContext(ctx)
+    case ctx: LiteralPrimaryContext                   => Seq(astForLiteralPrimaryContext(ctx))
     case ctx: StringInterpolationPrimaryContext       => astForStringInterpolationPrimaryContext(ctx)
     case ctx: IsDefinedPrimaryContext                 => astForIsDefinedPrimaryContext(ctx)
     case ctx: SuperExpressionPrimaryContext           => astForSuperExpressionPrimaryContext(ctx)
@@ -1173,44 +1173,14 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForLiteralPrimaryContext(ctx: LiteralPrimaryContext): Seq[Ast] = {
-    val lineStart   = line(ctx.literal())
-    val columnStart = column(ctx.literal())
-    if (ctx.literal().numericLiteral() != null) {
-      val text = ctx.getText
-      val node = NewLiteral()
-        .code(text)
-        .lineNumber(lineStart)
-        .columnNumber(columnStart)
-        .typeFullName(Defines.Numeric)
-        .dynamicTypeHintFullName(List(Defines.Numeric))
-      registerType(Defines.Numeric)
-      Seq(Ast(node))
-    } else if (ctx.literal().SINGLE_QUOTED_STRING_LITERAL() != null) {
-      val text = ctx.getText
-      val node = NewLiteral()
-        .code(text)
-        .lineNumber(lineStart)
-        .columnNumber(columnStart)
-        .typeFullName(Defines.String)
-        .dynamicTypeHintFullName(List(Defines.String))
-      Seq(Ast(node))
-    } else if (ctx.literal().DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE() != null) {
-      val text = ctx.literal().DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE().getText
-      val node = NewLiteral()
-        .code(text)
-        .lineNumber(lineStart)
-        .columnNumber(columnStart)
-        .typeFullName(Defines.String)
-        .dynamicTypeHintFullName(List(Defines.String))
-      registerType(Defines.String)
-      Seq(Ast(node))
-    } else if (ctx.literal().symbol() != null) {
-      astForSymbolContext(ctx.literal().symbol())
-    } else {
-      Seq(Ast())
+  def astForLiteralPrimaryContext(ctx: LiteralPrimaryContext): Ast =
+    ctx.literal() match {
+      case ctx: NumericLiteralLiteralContext     => astForNumericLiteral(ctx.numericLiteral)
+      case ctx: SymbolLiteralContext             => astForSymbolLiteral(ctx.symbol())
+      case ctx: SingleQuotedStringLiteralContext => astForSingleQuotedStringLiteral(ctx)
+      case ctx: DoubleQuotedStringLiteralContext => astForDoubleQuotedStringLiteral(ctx)
+      case ctx: RegularExpressionLiteralContext  => astForRegularExpressionLiteral(ctx)
     }
-  }
 
   def astForSimpleMethodNamePartContext(ctx: SimpleMethodNamePartContext): Seq[Ast] = {
     astForDefinedMethodNameContext(ctx.definedMethodName())

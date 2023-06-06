@@ -47,7 +47,7 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |   Expressions
             |    PrimaryExpression
             |     LiteralPrimary
-            |      Literal
+            |      NumericLiteralLiteral
             |       NumericLiteral
             |        UnsignedNumericLiteral
             |         1
@@ -75,7 +75,7 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |     WsOrNl
             |     PrimaryExpression
             |      LiteralPrimary
-            |       Literal
+            |       NumericLiteralLiteral
             |        NumericLiteral
             |         UnsignedNumericLiteral
             |          1
@@ -95,7 +95,7 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |   Expressions
             |    PrimaryExpression
             |     LiteralPrimary
-            |      Literal
+            |      SymbolLiteral
             |       Symbol
             |        :region
             |  )""".stripMargin
@@ -114,7 +114,7 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |   Expressions
             |    PrimaryExpression
             |     LiteralPrimary
-            |      Literal
+            |      SymbolLiteral
             |       Symbol
             |        :region
             |  ,

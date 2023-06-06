@@ -19,6 +19,7 @@ object Defines {
   val Hash: String  = "Hash"
 
   val Encoding: String = "Encoding"
+  val Regexp: String   = "Regexp"
 
   // TODO: The following shall be moved out eventually.
   val ModifierRedo: String  = "redo"

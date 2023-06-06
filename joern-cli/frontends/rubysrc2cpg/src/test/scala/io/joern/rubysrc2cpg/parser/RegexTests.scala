@@ -10,7 +10,7 @@ class RegexTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
           """LiteralPrimary
-            | Literal
+            | RegularExpressionLiteral
             |  /
             |  /""".stripMargin
       }
@@ -33,7 +33,7 @@ class RegexTests extends RubyParserAbstractTest {
             |    ExpressionExpressionOrCommand
             |     PrimaryExpression
             |      LiteralPrimary
-            |       Literal
+            |       RegularExpressionLiteral
             |        /
             |        /""".stripMargin
       }
@@ -78,7 +78,7 @@ class RegexTests extends RubyParserAbstractTest {
             |     Expressions
             |      PrimaryExpression
             |       LiteralPrimary
-            |        Literal
+            |        RegularExpressionLiteral
             |         /
             |         /
             |    )""".stripMargin
@@ -94,7 +94,7 @@ class RegexTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
           """LiteralPrimary
-            | Literal
+            | RegularExpressionLiteral
             |  /
             |  (eu|us)
             |  /""".stripMargin
@@ -118,7 +118,7 @@ class RegexTests extends RubyParserAbstractTest {
             |    ExpressionExpressionOrCommand
             |     PrimaryExpression
             |      LiteralPrimary
-            |       Literal
+            |       RegularExpressionLiteral
             |        /
             |        (eu|us)
             |        /""".stripMargin
@@ -165,7 +165,7 @@ class RegexTests extends RubyParserAbstractTest {
             |     Expressions
             |      PrimaryExpression
             |       LiteralPrimary
-            |        Literal
+            |        RegularExpressionLiteral
             |         /
             |         (eu|us)
             |         /
@@ -193,7 +193,7 @@ class RegexTests extends RubyParserAbstractTest {
               |      ExpressionExpressionOrCommand
               |       PrimaryExpression
               |        LiteralPrimary
-              |         Literal
+              |         NumericLiteralLiteral
               |          NumericLiteral
               |           UnsignedNumericLiteral
               |            1
@@ -231,7 +231,7 @@ class RegexTests extends RubyParserAbstractTest {
             |            ExpressionExpressionOrCommand
             |             PrimaryExpression
             |              LiteralPrimary
-            |               Literal
+            |               NumericLiteralLiteral
             |                NumericLiteral
             |                 UnsignedNumericLiteral
             |                  1
@@ -306,7 +306,7 @@ class RegexTests extends RubyParserAbstractTest {
             |             ExpressionExpressionOrCommand
             |              PrimaryExpression
             |               LiteralPrimary
-            |                Literal
+            |                NumericLiteralLiteral
             |                 NumericLiteral
             |                  UnsignedNumericLiteral
             |                   1
