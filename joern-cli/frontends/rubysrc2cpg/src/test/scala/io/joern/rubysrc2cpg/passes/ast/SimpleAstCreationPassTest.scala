@@ -112,9 +112,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       encoding.lineNumber shouldBe Some(1)
       encoding.columnNumber shouldBe Some(5)
     }
-  }
-
-  "Code field for simple fragments" should {
 
     "have correct code for a single left had side call" in {
       val cpg            = code("array[n] = 10")
