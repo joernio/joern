@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
 class IdentifierTests extends RubyCode2CpgFixture {
@@ -301,7 +302,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     "recognise all identifier and call nodes" in {
       cpg.method.name("\\[]").size shouldBe 2
       cpg.method.name("\\[]=").size shouldBe 1
-      cpg.call.name("<operator>.assignment").size shouldBe 3
+      cpg.call.name(Operators.assignment).size shouldBe 3
       cpg.method.name("initialize").size shouldBe 1
       cpg.call.name("to_s").size shouldBe 2
       cpg.call.name("new").size shouldBe 1
@@ -418,7 +419,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
 
     "recognise all call nodes" in {
-      cpg.call.name("<operator>.assignment").l.size shouldBe 3
+      cpg.call.name(Operators.assignment).l.size shouldBe 3
     }
 
     "successfully plot ASTs" in {
