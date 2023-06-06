@@ -377,7 +377,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.columnNumber shouldBe Some(2)
     }
 
-    "have correct code for an assignment expression" in {
+    "have correct code for a assignment expression" in {
       val cpg            = code("x = y")
       val List(callNode) = cpg.call.name(Operators.assignment).l
       callNode.code shouldBe "="
@@ -385,10 +385,50 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.columnNumber shouldBe Some(2)
     }
 
-    "have correct code for an equals expression" in {
+    "have correct code for a equals expression" in {
       val cpg            = code("x == y")
       val List(callNode) = cpg.call.name(Operators.equals).l
       callNode.code shouldBe "x == y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct code for a division expression" in {
+      val cpg            = code("x / y")
+      val List(callNode) = cpg.call.name(Operators.division).l
+      callNode.code shouldBe "x / y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct code for a modulo expression" in {
+      val cpg            = code("x % y")
+      val List(callNode) = cpg.call.name(Operators.modulo).l
+      callNode.code shouldBe "x % y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct code for a shift right expression" in {
+      val cpg            = code("x >> y")
+      val List(callNode) = cpg.call.name(Operators.logicalShiftRight).l
+      callNode.code shouldBe "x >> y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct code for a shift left expression" in {
+      val cpg            = code("x << y")
+      val List(callNode) = cpg.call.name(Operators.shiftLeft).l
+      callNode.code shouldBe "x << y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct code for a shift left expression" in {
+      val cpg            = code("x << y")
+      val List(callNode) = cpg.call.name(Operators.shiftLeft).l
+      callNode.code shouldBe "x << y"
       callNode.lineNumber shouldBe Some(1)
       callNode.columnNumber shouldBe Some(2)
     }
