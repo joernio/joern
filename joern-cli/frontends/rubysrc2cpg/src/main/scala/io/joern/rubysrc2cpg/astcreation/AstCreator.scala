@@ -129,6 +129,39 @@ class AstCreator(filename: String, global: Global)
     diffGraph
   }
 
+  private def getOperatorName(token: Token): String = token.getType match {
+    case AMP                 => Operators.logicalAnd
+    case AMP2                => Operators.and
+    case ASSIGNMENT_OPERATOR => Operators.assignment
+    case BAR                 => Operators.logicalOr
+    case BAR2                => Operators.or
+    case CARET               => Operators.logicalOr
+    case DOT2                => Operators.range
+    case DOT3                => Operators.range
+    case EMARK               => Operators.not
+    case EMARKEQ             => Operators.notEquals
+    case EMARKTILDE          => "!~" // TODO pattern match
+    case EQ                  => Operators.assignment
+    case EQ2                 => Operators.equals
+    case EQ3                 => Operators.is
+    case EQTILDE             => "=~" // TODO string to regex match
+    case GT                  => Operators.greaterThan
+    case GT2                 => Operators.logicalShiftRight
+    case GTEQ                => Operators.greaterEqualsThan
+    case LT                  => Operators.lessThan
+    case LT2                 => Operators.shiftLeft
+    case LTEQ                => Operators.lessEqualsThan
+    case LTEQGT              => Operators.compare
+    case MINUS               => Operators.minus
+    case PERCENT             => Operators.modulo
+    case PLUS                => Operators.plus
+    case SLASH               => Operators.division
+    case STAR                => Operators.multiplication
+    case TILDE               => Operators.not
+    case NOT                 => Operators.not
+    case _                   => Operators.arrayInitializer
+  }
+
   protected def line(ctx: ParserRuleContext): Option[Integer]      = Option(ctx.getStart.getLine)
   protected def column(ctx: ParserRuleContext): Option[Integer]    = Option(ctx.getStart.getCharPositionInLine)
   protected def lineEnd(ctx: ParserRuleContext): Option[Integer]   = Option(ctx.getStop.getLine)
@@ -1541,7 +1574,7 @@ class AstCreator(filename: String, global: Global)
     val lhsExpressionAsts = astForExpressionContext(lhs)
     val rhsExpressionAsts = astForExpressionContext(rhs)
     val callNode = NewCall()
-      .name(operatorToken.getText)
+      .name(getOperatorName(operatorToken))
       .code(code)
       .methodFullName(MethodFullNames.OperatorPrefix + operatorToken.getText)
       .signature("")
