@@ -6,15 +6,10 @@ import scopt.OParser
 
 /** Command line configuration parameters
   */
-final case class Config(
-  inputPath: String = "",
-  outputPath: String = X2CpgConfig.defaultOutputPath,
-  phpIni: Option[String] = None
-) extends X2CpgConfig[Config] {
-
-  override def withInputPath(inputPath: String): Config =
-    copy(inputPath = inputPath)
-  override def withOutputPath(x: String): Config = copy(outputPath = x)
+final case class Config(phpIni: Option[String] = None) extends X2CpgConfig[Config] {
+  def withPhpIni(phpIni: String): Config = {
+    copy(phpIni = Some(phpIni)).withInheritedFields(this)
+  }
 }
 
 private object Frontend {
@@ -27,7 +22,7 @@ private object Frontend {
     OParser.sequence(
       programName("php2cpg"),
       opt[String]("php-ini")
-        .action((x, c) => c.copy(phpIni = Some(x)))
+        .action((x, c) => c.withPhpIni(x))
         .text("php.ini path used by php-parser. Defaults to php.ini shipped with Joern.")
     )
   }

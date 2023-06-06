@@ -10,19 +10,25 @@ import scala.collection.mutable
 import scala.util.Try
 
 case class Py2CpgOnFileSystemConfig(
-  outputFile: Path = Paths.get(X2CpgConfig.defaultOutputPath),
-  inputDir: Path = null,
   venvDir: Path = Paths.get(".venv"),
   ignoreVenvDir: Boolean = true,
   disableDummyTypes: Boolean = false,
   requirementsTxt: String = "requirements.txt"
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig] {
-  override def withInputPath(inputPath: String): Py2CpgOnFileSystemConfig = {
-    copy(inputDir = Paths.get(inputPath))
+  def withVenvDir(venvDir: Path): Py2CpgOnFileSystemConfig = {
+    copy(venvDir = venvDir).withInheritedFields(this)
   }
 
-  override def withOutputPath(x: String): Py2CpgOnFileSystemConfig = {
-    copy(outputFile = Paths.get(x))
+  def withIgnoreVenvDir(value: Boolean): Py2CpgOnFileSystemConfig = {
+    copy(ignoreVenvDir = value).withInheritedFields(this)
+  }
+
+  def withDisableDummyTypes(value: Boolean): Py2CpgOnFileSystemConfig = {
+    copy(disableDummyTypes = value).withInheritedFields(this)
+  }
+
+  def withRequirementsTxt(text: String): Py2CpgOnFileSystemConfig = {
+    copy(requirementsTxt = text).withInheritedFields(this)
   }
 }
 
@@ -36,25 +42,25 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
   override def createCpg(config: Py2CpgOnFileSystemConfig): Try[Cpg] = {
     logConfiguration(config)
 
-    X2Cpg.withNewEmptyCpg(config.outputFile.toString, config) { (cpg, _) =>
+    X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
       val ignorePrefixes =
         if (config.ignoreVenvDir) {
           config.venvDir :: Nil
         } else {
           Nil
         }
-      val inputFiles = collectInputFiles(config.inputDir, ignorePrefixes, config.requirementsTxt)
+      val inputFiles = collectInputFiles(Paths.get(config.inputPath), ignorePrefixes, config.requirementsTxt)
       val inputProviders = inputFiles._1.map { inputFile => () =>
         {
           val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
-          Py2Cpg.InputPair(content, inputFile.toString, config.inputDir.relativize(inputFile).toString)
+          Py2Cpg.InputPair(content, inputFile.toString, Paths.get(config.inputPath).relativize(inputFile).toString)
         }
       }
       val configInputProviders =
         inputFiles._2.map { inputFile => () =>
           {
             val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
-            Py2Cpg.InputPair(content, inputFile.toString, config.inputDir.relativize(inputFile).toString)
+            Py2Cpg.InputPair(content, inputFile.toString, Paths.get(config.inputPath).relativize(inputFile).toString)
           }
         }
       val py2Cpg = new Py2Cpg(inputProviders, configInputProviders, cpg)
@@ -109,8 +115,8 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
   }
 
   private def logConfiguration(config: Py2CpgOnFileSystemConfig): Unit = {
-    logger.info(s"Output file: ${config.outputFile}")
-    logger.info(s"Input directory: ${config.inputDir}")
+    logger.info(s"Output file: ${config.outputPath}")
+    logger.info(s"Input directory: ${config.inputPath}")
     logger.info(s"Venv directory: ${config.venvDir}")
     logger.info(s"IgnoreVenvDir: ${config.ignoreVenvDir}")
     logger.info(s"No dummy types: ${config.disableDummyTypes}")
