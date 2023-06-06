@@ -301,7 +301,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     "recognise all identifier and call nodes" in {
       cpg.method.name("\\[]").size shouldBe 2
       cpg.method.name("\\[]=").size shouldBe 1
-      cpg.call.name("=").size shouldBe 3
+      cpg.call.name("<operator>.assignment").size shouldBe 3
       cpg.method.name("initialize").size shouldBe 1
       cpg.call.name("to_s").size shouldBe 2
       cpg.call.name("new").size shouldBe 1
@@ -418,7 +418,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
 
     "recognise all call nodes" in {
-      cpg.call.name("=").l.size shouldBe 3
+      cpg.call.name("<operator>.assignment").l.size shouldBe 3
     }
 
     "successfully plot ASTs" in {
