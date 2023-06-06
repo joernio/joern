@@ -157,7 +157,7 @@ class AstCreator(filename: String, global: Global)
       val argsAsts    = astForArgumentsContext(ctx.arguments())
       val callNode = NewCall()
         .name(Operators.indexAccess)
-        .code(Operators.indexAccess)
+        .code(ctx.getText)
         .methodFullName(Operators.indexAccess)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -531,7 +531,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForAdditiveExpressionContext(ctx: AdditiveExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Seq[Ast] = ctx match {
@@ -593,15 +593,15 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForBitwiseAndExpressionContext(ctx: BitwiseAndExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForBitwiseOrExpressionContext(ctx: BitwiseOrExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForBitwiseShiftExpressionContext(ctx: BitwiseShiftExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForWhenArgumentContext(ctx: WhenArgumentContext): Seq[Ast] = {
@@ -840,7 +840,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForEqualityExpressionContext(ctx: EqualityExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForGroupedLeftHandSideContext(ctx: GroupedLeftHandSideContext): Seq[Ast] = {
@@ -1186,6 +1186,7 @@ class AstCreator(filename: String, global: Global)
     val line           = localIdentifier.getSymbol().getLine()
     val name           = getActualMethodName(localIdentifier.getText)
     val methodFullName = s"$filename:$name"
+
     val callNode = NewCall()
       .name(name)
       .methodFullName(methodFullName)
@@ -1195,6 +1196,7 @@ class AstCreator(filename: String, global: Global)
       .code(code)
       .lineNumber(line)
       .columnNumber(column)
+      .code(code)
     Seq(callAst(callNode))
   }
 
@@ -1462,14 +1464,14 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForMultiplicativeExpressionContext(ctx: MultiplicativeExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForNotExpressionOrCommandContext(ctx: NotExpressionOrCommandContext): Seq[Ast] = {
     val expAsts = astForExpressionOrCommandContext(ctx.expressionOrCommand())
     val callNode = NewCall()
       .name(ctx.NOT().getText)
-      .code(ctx.NOT().getText)
+      .code(ctx.getText)
       .methodFullName(MethodFullNames.OperatorPrefix + ctx.NOT().getText)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1480,11 +1482,11 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForOperatorAndExpressionContext(ctx: OperatorAndExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForOperatorOrExpressionContext(ctx: OperatorOrExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForOrAndExpressionOrCommandContext(ctx: OrAndExpressionOrCommandContext): Seq[Ast] = {
@@ -1508,7 +1510,7 @@ class AstCreator(filename: String, global: Global)
     val exponentExpressionAsts = astForExpressionContext(expressions.get(1))
     val callNode = NewCall()
       .name(ctx.STAR2().getText)
-      .code(ctx.STAR2().getText)
+      .code(ctx.getText)
       .methodFullName(MethodFullNames.OperatorPrefix + ctx.STAR2().getText)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1520,22 +1522,27 @@ class AstCreator(filename: String, global: Global)
 
   def astForRangeExpressionContext(ctx: RangeExpressionContext): Seq[Ast] = {
     if (ctx.expression().size() == 2) {
-      astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+      astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
     } else {
       Seq(Ast())
     }
   }
 
   def astForRelationalExpressionContext(ctx: RelationalExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op)
+    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
-  def astForBinaryExpression(lhs: ExpressionContext, rhs: ExpressionContext, operatorToken: Token): Seq[Ast] = {
+  def astForBinaryExpression(
+    lhs: ExpressionContext,
+    rhs: ExpressionContext,
+    operatorToken: Token,
+    code: String
+  ): Seq[Ast] = {
     val lhsExpressionAsts = astForExpressionContext(lhs)
     val rhsExpressionAsts = astForExpressionContext(rhs)
     val callNode = NewCall()
       .name(operatorToken.getText)
-      .code(operatorToken.getText)
+      .code(code)
       .methodFullName(MethodFullNames.OperatorPrefix + operatorToken.getText)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1684,7 +1691,7 @@ class AstCreator(filename: String, global: Global)
        */
       val callNode = NewCall()
         .name(ctx.op.getText)
-        .code(ctx.op.getText)
+        .code(ctx.getText)
         .methodFullName(MethodFullNames.OperatorPrefix + ctx.op.getText)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1696,7 +1703,7 @@ class AstCreator(filename: String, global: Global)
     } else {
       val callNode = NewCall()
         .name(ctx.op.getText)
-        .code(ctx.op.getText)
+        .code(ctx.getText)
         .methodFullName(MethodFullNames.OperatorPrefix + ctx.op.getText)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1716,7 +1723,7 @@ class AstCreator(filename: String, global: Global)
        */
       val callNode = NewCall()
         .name(ctx.MINUS().getText)
-        .code(ctx.MINUS().getText)
+        .code(ctx.getText)
         .methodFullName(MethodFullNames.OperatorPrefix + ctx.MINUS().getText)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1728,7 +1735,7 @@ class AstCreator(filename: String, global: Global)
     } else {
       val callNode = NewCall()
         .name(ctx.MINUS().getText)
-        .code(ctx.MINUS().getText)
+        .code(ctx.getText)
         .methodFullName(MethodFullNames.OperatorPrefix + ctx.MINUS().getText)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
