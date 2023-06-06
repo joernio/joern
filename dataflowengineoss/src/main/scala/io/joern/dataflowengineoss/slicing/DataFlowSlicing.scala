@@ -10,8 +10,8 @@ import scala.collection.mutable.ArrayBuffer
 
 object DataFlowSlicing {
 
-  def calculateDataFlowSlice(cpg: Cpg, config: SliceConfig): ProgramDataFlowSlice = {
-    val sliceMapping = (config.sourceFile match {
+  def calculateDataFlowSlice(cpg: Cpg, config: DataFlowConfig): ProgramDataFlowSlice = {
+    val sliceMapping = (config.fileFilter match {
       case Some(fileName) => cpg.file.nameExact(fileName).ast.isCall
       case None           => cpg.call
     }).toBuffer.groupBy[Method] { _.method }.map { case (m: Method, calls: ArrayBuffer[Call]) =>
