@@ -115,20 +115,76 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
   "Code field for simple fragments" should {
 
-    "have correct structure for a single command call" in {
-      val cpg                   = code("array[n] = 10")
-      val List(indexAccessCall) = cpg.call.name("<operator>.indexAccess").l
-      indexAccessCall.code shouldBe "array[n]"
-      indexAccessCall.lineNumber shouldBe Some(1)
-      indexAccessCall.columnNumber shouldBe Some(5)
+    "have correct code for a single command call" in {
+      val cpg            = code("array[n] = 10")
+      val List(callNode) = cpg.call.name("<operator>.indexAccess").l
+      callNode.code shouldBe "array[n]"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(5)
     }
 
-    "have correct structure for a binary expression" in {
-      val cpg = code("x+y")
-      val List(additionCall) = cpg.call.l
-      additionCall.code shouldBe "x+y"
-      additionCall.lineNumber shouldBe Some(1)
-      additionCall.columnNumber shouldBe Some(1)
+    "have correct code for a binary expression" in {
+      val cpg            = code("x+y")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "x+y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(1)
+    }
+
+    "have correct code for a not expression" in {
+      val cpg            = code("not y")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "not y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct code for a power expression" in {
+      val cpg            = code("x**y")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "x**y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(1)
+    }
+
+    "have correct code for a unary exclamation expression" in {
+      val cpg            = code("!y")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "!y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct code for a unary tilde expression" in {
+      val cpg            = code("~y")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "~y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct code for a unary plus expression" in {
+      val cpg            = code("+y")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "+y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct code for a unary minus expression" in {
+      val cpg            = code("-y")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "-y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct code for a call node" in {
+      val cpg            = code("puts \"something\"")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "puts \"something\""
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
     }
   }
 }
