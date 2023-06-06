@@ -147,6 +147,30 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.columnNumber shouldBe Some(1)
     }
 
+    "have correct code for a inclusive range expression" in {
+      val cpg            = code("1..10")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "1..10"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(1)
+    }
+
+    "have correct code for a non-inclusive range expression" in {
+      val cpg            = code("1...10")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "1...10"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(1)
+    }
+
+    "have correct code for a relational expression" in {
+      val cpg            = code("x<y")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "x<y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(1)
+    }
+
     "have correct code for a unary exclamation expression" in {
       val cpg            = code("!y")
       val List(callNode) = cpg.call.l
