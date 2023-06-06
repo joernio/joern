@@ -49,11 +49,47 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.columnNumber shouldBe Some(1)
     }
 
-    "have correct structure for an unsigned, hexadecimal integer literal" in {
-      val cpg = code("0xabc")
+    "have correct structure for an unsigned, decimal float literal" in {
+      val cpg = code("3.14")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
-      literal.code shouldBe "0xabc"
+      literal.typeFullName shouldBe Defines.Float
+      literal.code shouldBe "3.14"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a +float, decimal literal" in {
+      val cpg = code("+3.14")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Float
+      literal.code shouldBe "+3.14"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a -float, decimal literal" in {
+      val cpg = code("-3.14")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Float
+      literal.code shouldBe "-3.14"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an unsigned, decimal float literal with unsigned exponent" in {
+      val cpg = code("3e10")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Float
+      literal.code shouldBe "3e10"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an unsigned, decimal float literal with -exponent" in {
+      val cpg = code("12e-10")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Float
+      literal.code shouldBe "12e-10"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
     }
@@ -81,6 +117,15 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "+0b01"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an unsigned, hexadecimal integer literal" in {
+      val cpg = code("0xabc")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "0xabc"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
     }
