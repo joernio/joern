@@ -1,7 +1,7 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.dataflowengineoss.slicing.{SliceConfig, DefComponent, ProgramUsageSlice, UsageSlicing}
+import io.joern.dataflowengineoss.slicing._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{Languages, Operators}
 import org.scalatest.matchers.should.Matchers
@@ -15,7 +15,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
   ) { case (cpg: Cpg, _) =>
     val programSlice =
       UsageSlicing
-        .calculateUsageSlice(cpg, SliceConfig(excludeOperatorCalls = true))
+        .calculateUsageSlice(cpg, UsagesConfig(excludeOperatorCalls = true))
         .asInstanceOf[ProgramUsageSlice]
 
     "extract 'express.js' slice" in {
@@ -78,7 +78,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
   ) { case (cpg: Cpg, _) =>
     val programSlice =
       UsageSlicing
-        .calculateUsageSlice(cpg, SliceConfig())
+        .calculateUsageSlice(cpg, UsagesConfig())
         .asInstanceOf[ProgramUsageSlice]
 
     "extract 'name' parameter slice from 'startScene'" in {

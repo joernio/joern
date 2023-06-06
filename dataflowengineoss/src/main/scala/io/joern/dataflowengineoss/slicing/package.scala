@@ -2,7 +2,6 @@ package io.joern.dataflowengineoss
 
 import better.files.File
 import io.circe.{Decoder, Encoder, HCursor, Json}
-import io.joern.dataflowengineoss.slicing.SliceMode.SliceModes
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 
@@ -11,23 +10,39 @@ package object slicing {
   import io.circe.generic.auto._
   import io.circe.syntax.EncoderOps
 
-  /** The kind of mode to use for slicing.
-    */
-  object SliceMode extends Enumeration {
-    type SliceModes = Value
-    val DataFlow, Usages = Value
+  sealed trait BaseConfig {
+    def inputPath: File = File("cpg.bin")
+
+    def outFile: File = File("slices")
+
+    def dummyTypesEnabled: Boolean = false
+
+    def fileFilter: Option[String] = None
   }
 
   case class SliceConfig(
-    inputPath: File = File("cpg.bin"),
-    outFile: File = File("slices"),
-    sliceMode: SliceModes = SliceMode.DataFlow,
-    sourceFile: Option[String] = None,
-    sliceDepth: Int = 20,
+    override val inputPath: File = File("cpg.bin"),
+    override val outFile: File = File("slices"),
+    override val dummyTypesEnabled: Boolean = false,
+    override val fileFilter: Option[String] = None
+  ) extends BaseConfig
+
+  case class DataFlowConfig(
+    override val inputPath: File = File("cpg.bin"),
+    override val outFile: File = File("slices"),
+    override val dummyTypesEnabled: Boolean = false,
+    override val fileFilter: Option[String] = None,
+    sliceDepth: Int = 20
+  ) extends BaseConfig
+
+  case class UsagesConfig(
+    override val inputPath: File = File("cpg.bin"),
+    override val outFile: File = File("slices"),
+    override val dummyTypesEnabled: Boolean = false,
+    override val fileFilter: Option[String] = None,
     minNumCalls: Int = 1,
-    typeRecoveryDummyTypes: Boolean = false,
     excludeOperatorCalls: Boolean = false
-  )
+  ) extends BaseConfig
 
   /** A trait for all objects that represent a 1:1 relationship between the CPG and all the slices extracted.
     */
