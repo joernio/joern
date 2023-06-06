@@ -159,6 +159,7 @@ class AstCreator(filename: String, global: Global)
     case STAR                => Operators.multiplication
     case TILDE               => Operators.not
     case NOT                 => Operators.not
+    case STAR2               => Operators.exponentiation
     case _                   => Operators.arrayInitializer
   }
 
@@ -1741,7 +1742,15 @@ class AstCreator(filename: String, global: Global)
       val lhsAst = methodNameAsIdentiferQ.dequeue()
       Seq(callAst(callNode, Seq(lhsAst) ++ expressionAst))
     } else {
-      val operatorName = Operators.plus
+      val operatorName =
+        if (
+          ctx.op.getType == TILDE ||
+          ctx.op.getType == EMARK
+        ) {
+          getOperatorName(ctx.op)
+        } else {
+          Operators.plus
+        }
       val callNode = NewCall()
         .name(operatorName)
         .code(ctx.getText)
