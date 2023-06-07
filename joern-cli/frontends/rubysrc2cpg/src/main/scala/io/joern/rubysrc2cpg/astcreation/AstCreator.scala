@@ -1028,9 +1028,9 @@ class AstCreator(filename: String, global: Global)
     val lhsExpressionAst = astForPrimaryContext(ctx.primary())
     val rhsExpressionAst = astForIndexingArgumentsContext(ctx.indexingArguments())
     val callNode = NewCall()
-      .name(ctx.LBRACK().getText + ctx.RBRACK().getText)
+      .name(Operators.indexAccess)
       .code(ctx.getText)
-      .methodFullName(MethodFullNames.OperatorPrefix + ctx.LBRACK().getText + ctx.RBRACK().getText)
+      .methodFullName(Operators.indexAccess)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
@@ -1250,13 +1250,19 @@ class AstCreator(filename: String, global: Global)
 
   def astForOperatorMethodNameContext(ctx: OperatorMethodNameContext): Seq[Ast] = {
 
+    /*
+     * This is for operator overloading for the class
+     */
     val terminalNode = ctx.children.asScala.head
       .asInstanceOf[TerminalNode]
 
+    val name           = ctx.getText
+    val methodFullName = s"$filename:$name"
+
     val callNode = NewCall()
-      .name(ctx.getText)
+      .name(name)
       .code(ctx.getText)
-      .methodFullName(MethodFullNames.OperatorPrefix + ctx.getText)
+      .methodFullName(methodFullName)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
@@ -1280,7 +1286,7 @@ class AstCreator(filename: String, global: Global)
       val callNode = NewCall()
         .name(terminalNode.getText)
         .code(ctx.getText)
-        .methodFullName(MethodFullNames.OperatorPrefix + terminalNode.getText)
+        .methodFullName(terminalNode.getText)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
