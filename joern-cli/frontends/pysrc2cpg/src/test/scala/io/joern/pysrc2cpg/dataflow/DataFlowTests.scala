@@ -460,4 +460,18 @@ class RegexDefinedFlowsDataFlowTests
     }
   }
 
+  "flows from receivers directly" should {
+    val cpg = code("""
+        |class Foo:
+        |   def func():
+        |      return "x"
+        |print(Foo.func())
+        |""".stripMargin)
+    "be found" in {
+      val src = cpg.identifier("Foo").l
+      val snk = cpg.call("print").l
+      snk.reachableByFlows(src).size shouldBe 2
+    }
+  }
+
 }
