@@ -28,7 +28,14 @@ object AstGenRunner {
   private val MinifiedPathRegex: Regex = ".*([.-]min\\..*js|bundle\\.js)".r
 
   private val IgnoredTestsRegex: Seq[Regex] =
-    List(".*[.-]spec\\.js".r, ".*[.-]mock\\.js".r, ".*[.-]e2e\\.js".r, ".*[.-]test\\.js".r)
+    List(
+      ".*[.-]spec\\.js".r,
+      ".*[.-]mock\\.js".r,
+      ".*[.-]e2e\\.js".r,
+      ".*[.-]test\\.js".r,
+      ".*cypress\\.json".r,
+      ".*test.*\\.json".r
+    )
 
   private val IgnoredFilesRegex: Seq[Regex] = List(
     ".*jest\\.config.*".r,
@@ -45,7 +52,10 @@ object AstGenRunner {
     ".*rollup\\.config.*".r,
     ".*\\.types\\.js".r,
     ".*\\.cjs\\.js".r,
-    ".*eslint-local-rules\\.js".r
+    ".*eslint-local-rules\\.js".r,
+    ".*\\.devcontainer\\.json".r,
+    ".*Gruntfile\\.js".r,
+    ".*i18n.*\\.json".r
   )
 
   case class AstGenRunnerResult(

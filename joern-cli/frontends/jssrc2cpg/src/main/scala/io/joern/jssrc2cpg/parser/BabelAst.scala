@@ -234,6 +234,7 @@ object BabelAst {
   object TSTypeAliasDeclaration          extends BabelNode
   object TSTypeAnnotation                extends FlowType
   object TSTypeAssertion                 extends BabelNode
+  object TSTypeExpression                extends TSType
   object TSTypeLiteral                   extends TSType
   object TSTypeOperator                  extends TSType
   object TSTypeParameter                 extends TSType
