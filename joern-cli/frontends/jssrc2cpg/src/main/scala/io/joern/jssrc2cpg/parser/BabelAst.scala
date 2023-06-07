@@ -259,6 +259,7 @@ object BabelAst {
   object TypeAlias                       extends BabelNode
   object TypeAnnotation                  extends FlowType
   object TypeCastExpression              extends BabelNode
+  object TSTypeCastExpression            extends BabelNode
   object TypeParameter                   extends BabelNode
   object TypeParameterDeclaration        extends BabelNode
   object TypeParameterInstantiation      extends BabelNode
