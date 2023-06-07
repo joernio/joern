@@ -53,8 +53,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
   }
 
   "Return via call" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |def add(p)
         |return p+9
         |end
@@ -65,7 +64,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "be found" in {
-      val src = cpg.identifier.name("n").l
+      val src  = cpg.identifier.name("n").l
       val sink = cpg.call.name("puts").l
       sink.reachableByFlows(src).l.size shouldBe 2
     }
