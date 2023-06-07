@@ -2998,7 +2998,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def targetTypeForCall(callExpr: MethodCallExpr, resolveFromException: Boolean = false): Option[String] = {
+  private def targetTypeForCall(callExpr: MethodCallExpr): Option[String] = {
     val maybeType = callExpr.getScope.toScala match {
       case Some(scope: ThisExpr) =>
         expressionReturnTypeFullName(scope)
