@@ -441,7 +441,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.columnNumber shouldBe Some(9)
     }
 
-    "have correct code for overloaded index operator" in {
+    "have correct code for overloaded index operator method" in {
       val cpg = code("""
           |class MyClass
           |def [](key)
@@ -450,10 +450,42 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |end
           |""".stripMargin)
 
-      val List(callNode) = cpg.call.name(Operators.indexAccess).l
-      callNode.code shouldBe "@member_hash[key]"
-      callNode.lineNumber shouldBe Some(4)
-      callNode.columnNumber shouldBe Some(14)
+      val List(methodNode) = cpg.method.name("\\[]").l
+      methodNode.code shouldBe "def [](key)\n  @member_hash[key]\nend"
+      methodNode.lineNumber shouldBe Some(3)
+      methodNode.lineNumberEnd shouldBe Some(5)
+      methodNode.columnNumber shouldBe Some(4)
+    }
+
+    "have correct code for overloaded equality operator method" in {
+      val cpg = code("""
+          |class MyClass
+          |def ==(other)
+          |  @my_member==other
+          |end
+          |end
+          |""".stripMargin)
+
+      val List(methodNode) = cpg.method.name("==").l
+      methodNode.code shouldBe "def ==(other)\n  @my_member==other\nend"
+      methodNode.lineNumber shouldBe Some(3)
+      methodNode.lineNumberEnd shouldBe Some(5)
+      methodNode.columnNumber shouldBe Some(4)
+    }
+
+    "have correct code for class method" in {
+      val cpg = code("""
+          |class MyClass
+          |def some_method(param)
+          |end
+          |end
+          |""".stripMargin)
+
+      val List(methodNode) = cpg.method.name("some_method").l
+      methodNode.code shouldBe "def some_method(param)\nend"
+      methodNode.lineNumber shouldBe Some(3)
+      methodNode.lineNumberEnd shouldBe Some(4)
+      methodNode.columnNumber shouldBe Some(4)
     }
   }
 }
