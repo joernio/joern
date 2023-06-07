@@ -112,12 +112,12 @@ object JoernSlice {
           checkAndApplyOverlays(cpg)
           // Slice the CPG
           (config match {
-            case x: DataFlowConfig => Option(DataFlowSlicing.calculateDataFlowSlice(cpg, x))
+            case x: DataFlowConfig => DataFlowSlicing.calculateDataFlowSlice(cpg, x)
             case x: UsagesConfig   => Option(UsageSlicing.calculateUsageSlice(cpg, x))
             case _                 => None
           }) match {
             case Some(programSlice: ProgramSlice) => saveSlice(config.outFile, programSlice)
-            case None                             =>
+            case None                             => println("Empty slice, no file generated.")
           }
         }
       }

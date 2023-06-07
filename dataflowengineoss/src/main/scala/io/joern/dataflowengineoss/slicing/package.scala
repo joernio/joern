@@ -64,6 +64,11 @@ package object slicing {
     *   a mapping between method names and which nodes fall under them.
     */
   case class DataFlowSlice(nodes: Set[SliceNode], edges: Set[SliceEdge], methodToChildNode: Map[String, Set[Long]])
+      extends ProgramSlice {
+    def toJson: String = this.asJson.toString()
+
+    def toJsonPretty: String = this.asJson.spaces2
+  }
 
   implicit val encodeDataFlowSlice: Encoder[DataFlowSlice] = Encoder.instance {
     case DataFlowSlice(nodes, edges, methodToChildNode) =>
@@ -97,19 +102,6 @@ package object slicing {
 
   implicit val encodeSliceEdge: Encoder[SliceEdge] = Encoder.instance { case SliceEdge(src, dst, label) =>
     Json.obj("src" -> src.asJson, "dst" -> dst.asJson, "label" -> label.asJson)
-  }
-
-  /** The data-flow slices for the program grouped by procedure.
-    *
-    * @param dataFlowSlices
-    *   the mapped slices.
-    */
-  case class ProgramDataFlowSlice(dataFlowSlices: Map[String, Set[DataFlowSlice]]) extends ProgramSlice {
-
-    def toJson: String = this.asJson.toString()
-
-    def toJsonPretty: String = this.asJson.spaces2
-
   }
 
   /** A usage slice of an object at the start of its definition until its final usage.
