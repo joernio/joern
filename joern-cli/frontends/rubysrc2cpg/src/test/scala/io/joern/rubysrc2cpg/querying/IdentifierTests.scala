@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
 class IdentifierTests extends RubyCode2CpgFixture {
@@ -67,7 +68,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name("initialize").size shouldBe 1
       cpg.method
         .name("greet")
-        .size shouldBe 2 // FIXME the second node is coming in without adding it. Need to check this
+        .size shouldBe 1
       cpg.call.name("puts").size shouldBe 2
       cpg.method.name("have_birthday").size shouldBe 1
       cpg.identifier.size shouldBe 11
@@ -299,9 +300,9 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
     "recognise all identifier and call nodes" in {
-      cpg.method.name("\\[]").size shouldBe 2
+      cpg.method.name("\\[]").size shouldBe 1
       cpg.method.name("\\[]=").size shouldBe 1
-      cpg.call.name("=").size shouldBe 3
+      cpg.call.name(Operators.assignment).size shouldBe 3
       cpg.method.name("initialize").size shouldBe 1
       cpg.call.name("to_s").size shouldBe 2
       cpg.call.name("new").size shouldBe 1
@@ -413,12 +414,12 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.literal.code("1").l.size shouldBe 1
       cpg.literal.code("2").l.size shouldBe 1
       cpg.literal.code("3").l.size shouldBe 1
-      cpg.literal.code("hello").l.size shouldBe 1
-      cpg.literal.code("world").l.size shouldBe 1
+      cpg.literal.code("\"hello\"").l.size shouldBe 1
+      cpg.literal.code("\"world\"").l.size shouldBe 1
     }
 
     "recognise all call nodes" in {
-      cpg.call.name("=").l.size shouldBe 3
+      cpg.call.name(Operators.assignment).l.size shouldBe 3
     }
 
     "successfully plot ASTs" in {
@@ -468,7 +469,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all method nodes" in {
-      cpg.method.name("yield_with_args_method").l.size shouldBe 2
+      cpg.method.name("yield_with_args_method").l.size shouldBe 1
       // TODO need to figure out how yield block should be connected to the method
     }
 
@@ -496,8 +497,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.literal.code("1").l.size shouldBe 1
       cpg.literal.code("2").l.size shouldBe 2
       cpg.literal.code("0").l.size shouldBe 1
-      cpg.literal.code("x is 1").l.size shouldBe 1
-      cpg.literal.code("I can't guess the number").l.size shouldBe 1
+      cpg.literal.code("\"x is 1\"").l.size shouldBe 1
+      cpg.literal.code("\"I can't guess the number\"").l.size shouldBe 1
     }
   }
 
@@ -531,8 +532,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
     "recognise all literal nodes" in {
       cpg.identifier.name("x").l.size shouldBe 2
       cpg.literal.code("2").l.size shouldBe 1
-      cpg.literal.code("x is less than or equal to 2").l.size shouldBe 1
-      cpg.literal.code("x is greater than 2").l.size shouldBe 1
+      cpg.literal.code("\"x is less than or equal to 2\"").l.size shouldBe 1
+      cpg.literal.code("\"x is greater than 2\"").l.size shouldBe 1
     }
 
     "recognise all call nodes" in {
@@ -564,18 +565,18 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
     "recognise all literal nodes" in {
       cpg.identifier.name("choice").l.size shouldBe 2
-      cpg.literal.code("1").l.size shouldBe 1
-      cpg.literal.code("2").l.size shouldBe 1
-      cpg.literal.code("3").l.size shouldBe 1
-      cpg.literal.code("4").l.size shouldBe 1
-      cpg.literal.code("5").l.size shouldBe 2
-      cpg.literal.code("6").l.size shouldBe 1
-      cpg.literal.code("7").l.size shouldBe 1
-      cpg.literal.code("8").l.size shouldBe 1
-      cpg.literal.code("1 or 2").l.size shouldBe 1
-      cpg.literal.code("3 or 4").l.size shouldBe 1
-      cpg.literal.code("5 or 6").l.size shouldBe 1
-      cpg.literal.code("7 or 8").l.size shouldBe 1
+      cpg.literal.code("\"1\"").l.size shouldBe 1
+      cpg.literal.code("\"2\"").l.size shouldBe 1
+      cpg.literal.code("\"3\"").l.size shouldBe 1
+      cpg.literal.code("\"4\"").l.size shouldBe 1
+      cpg.literal.code("\"5\"").l.size shouldBe 2
+      cpg.literal.code("\"6\"").l.size shouldBe 1
+      cpg.literal.code("\"7\"").l.size shouldBe 1
+      cpg.literal.code("\"8\"").l.size shouldBe 1
+      cpg.literal.code("\"1 or 2\"").l.size shouldBe 1
+      cpg.literal.code("\"3 or 4\"").l.size shouldBe 1
+      cpg.literal.code("\"5 or 6\"").l.size shouldBe 1
+      cpg.literal.code("\"7 or 8\"").l.size shouldBe 1
     }
 
     "recognise all call nodes" in {
@@ -604,7 +605,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
     "recognise all literal nodes" in {
       cpg.identifier.name("str").l.size shouldBe 3
-      cpg.literal.code("some_string").l.size shouldBe 1
+      cpg.literal.code("\"some_string\"").l.size shouldBe 1
       cpg.literal.code("'String contains numbers'").l.size shouldBe 1
       cpg.literal.code("'String contains letters'").l.size shouldBe 1
       cpg.literal.code("'String does not contain numbers & letters'").l.size shouldBe 1
@@ -633,7 +634,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         .name("x")
         .l
         .size shouldBe 4 // FIXME this shows as 3 when the puts is the first loop statemnt. Find why
-      cpg.literal.code("In the loop").l.size shouldBe 1
+      cpg.literal.code("\"In the loop\"").l.size shouldBe 1
     }
 
     "recognise all call nodes" in {
@@ -659,7 +660,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
         .name("x")
         .l
         .size shouldBe 4 // FIXME this shows as 3 when the puts is the first loop statemnt. Find why
-      cpg.literal.code("In the loop").l.size shouldBe 1
+      cpg.literal.code("\"In the loop\"").l.size shouldBe 1
     }
 
     "recognise all call nodes" in {
@@ -758,11 +759,11 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
     "recognise all literal nodes" in {
       cpg.literal
-        .code("team_id")
+        .code("\"team_id\"")
         .l
         .size shouldBe 1
       cpg.literal
-        .code("location_id")
+        .code("\"location_id\"")
         .l
         .size shouldBe 1
     }
@@ -813,7 +814,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
     "recognise all literal nodes" in {
       cpg.literal
-        .code("Inside the method")
+        .code("\"Inside the method\"")
         .l
         .size shouldBe 1
     }

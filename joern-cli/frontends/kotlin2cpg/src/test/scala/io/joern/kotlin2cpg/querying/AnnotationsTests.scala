@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.Annotation
+import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, AnnotationLiteral}
 import io.shiftleft.semanticcpg.language._
 
 class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
@@ -74,6 +74,9 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       annotation.code shouldBe "@RequestParam(\"username\")"
       annotation.name shouldBe "RequestParam"
       annotation.fullName shouldBe "mypkg.RequestParam"
+
+      val List(annotationLiteral) = annotation.astChildren.collectAll[AnnotationLiteral].l
+      annotationLiteral.code shouldBe "\"username\""
     }
   }
 }

@@ -19,6 +19,8 @@ import io.joern.x2cpg.utils.NodeBuilders.{
   newLocalNode,
   newMethodReturnNode
 }
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 
 import java.util.UUID.randomUUID
 import org.jetbrains.kotlin.psi._
@@ -357,7 +359,20 @@ trait KtPsiToAst {
         .lineNumber(line(entry))
         .columnNumber(column(entry))
         .fullName(typeFullName)
-    annotationAst(node, List())
+
+    val children =
+      entry.getValueArguments.asScala.flatMap { varg =>
+        varg.getArgumentExpression match {
+          case ste: KtStringTemplateExpression if ste.getEntries.size == 1 =>
+            val node = NewAnnotationLiteral().code(ste.getText)
+            Some(Ast(node))
+          case ce: KtConstantExpression =>
+            val node = NewAnnotationLiteral().code(ce.getText)
+            Some(Ast(node))
+          case _ => None
+        }
+      }.toList
+    annotationAst(node, children)
   }
 
   def astsForMethod(ktFn: KtNamedFunction, needsThisParameter: Boolean = false, withVirtualModifier: Boolean = false)(
@@ -401,16 +416,39 @@ trait KtPsiToAst {
     val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
     val _methodReturnNode = newMethodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
 
+    val visibility = typeInfoProvider.visibility(ktFn)
+    val visibilityModifierType =
+      modifierTypeForVisibility(visibility.getOrElse(DescriptorVisibilities.UNKNOWN))
+    val visibilityModifier = modifierNode(visibilityModifierType)
+
     val modifierNodes =
       if (withVirtualModifier) Seq(modifierNode(ModifierTypes.VIRTUAL))
       else Seq()
 
     val annotationEntries = ktFn.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
     Seq(
-      methodAst(_methodNode, thisParameterAsts ++ methodParametersAsts, bodyAst, _methodReturnNode, modifierNodes)
+      methodAst(
+        _methodNode,
+        thisParameterAsts ++ methodParametersAsts,
+        bodyAst,
+        _methodReturnNode,
+        List(visibilityModifier) ++ modifierNodes
+      )
         .withChildren(otherBodyAsts)
         .withChildren(annotationEntries)
     )
+  }
+
+  private def modifierTypeForVisibility(visibility: DescriptorVisibility): String = {
+    if (visibility.toString == DescriptorVisibilities.PUBLIC.toString)
+      ModifierTypes.PUBLIC
+    else if (visibility.toString == DescriptorVisibilities.PRIVATE.toString)
+      ModifierTypes.PRIVATE
+    else if (visibility.toString == DescriptorVisibilities.PROTECTED.toString)
+      ModifierTypes.PROTECTED
+    else if (visibility.toString == DescriptorVisibilities.INTERNAL.toString)
+      ModifierTypes.INTERNAL
+    else "UNKNOWN"
   }
 
   def astsForBlock(

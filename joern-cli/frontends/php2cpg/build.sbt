@@ -25,7 +25,7 @@ scalacOptions ++= Seq(
 
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
 phpParseInstallTask := {
-  val phpBinDir   = baseDirectory.value / "bin"
+  val phpBinDir = baseDirectory.value / "bin"
   if (!(phpBinDir / phpParserBinName).exists) {
     IO.createDirectory(phpBinDir)
     val downloadedFile = SimpleCache.downloadMaybe(phpParserDlUrl)

@@ -1,11 +1,6 @@
 name := "joern-cli"
 
-dependsOn(
-  Projects.console,
-  Projects.console % "test->test",
-  Projects.dataflowengineoss,
-  Projects.x2cpg
-)
+dependsOn(Projects.console, Projects.console % "test->test", Projects.dataflowengineoss, Projects.x2cpg)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"     %% "codepropertygraph" % Versions.cpg,

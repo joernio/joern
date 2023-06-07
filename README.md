@@ -23,7 +23,7 @@ Specification: https://cpg.joern.io
 
 ## News / Changelog
 
-- Joern v2.0.0 removes the `overflowdb.traversal.Traversal` class. This change is not completely backwards compatible. See [here](changelog/traversal_removal.md) for a detailed writeup.
+- Joern v1.2.0 removes the `overflowdb.traversal.Traversal` class. This change is not completely backwards compatible. See [here](changelog/traversal_removal.md) for a detailed writeup.
 
 ## Requirements
 

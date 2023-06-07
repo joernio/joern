@@ -330,6 +330,35 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       superReceiver.columnNumber shouldBe Some(12)
     }
   }
+
+  "call to method in derived class using external package" should {
+    lazy val cpg = code("""
+        |import org.hibernate.Query;
+        |import org.hibernate.Session;
+        |import org.hibernate.SessionFactory;
+        |
+        |class Base {
+        |  Session getCurrentSession() {
+        |		return this.sessionFactory.getCurrentSession();
+        |	}
+        |}
+        |
+        |class Derived extends Base{
+        | void foo() {
+        |		Query q = getCurrentSession().createQuery("FROM User");
+        |		return;
+        |	}
+        |}
+        |""".stripMargin)
+
+    "have correct methodFullName" in {
+      cpg.call.nameExact("createQuery").methodFullName.head.split(":").head shouldBe "org.hibernate.Session.createQuery"
+      cpg.call
+        .nameExact("getCurrentSession")
+        .methodFullName
+        .last shouldBe "Derived.getCurrentSession:org.hibernate.Session()"
+    }
+  }
 }
 
 class CallTests extends JavaSrcCode2CpgFixture {

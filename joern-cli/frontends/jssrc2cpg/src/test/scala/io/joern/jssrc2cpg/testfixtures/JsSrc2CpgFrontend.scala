@@ -13,7 +13,7 @@ trait JsSrc2CpgFrontend extends LanguageFrontend {
     cpgOutFile.deleteOnExit()
     val jssrc2cpg = new JsSrc2Cpg()
     val config =
-      Config(inputPath = sourceCodePath.getAbsolutePath, outputPath = cpgOutFile.pathAsString, tsTypes = false)
+      Config(tsTypes = false).withInputPath(sourceCodePath.getAbsolutePath).withOutputPath(cpgOutFile.pathAsString)
     jssrc2cpg.createCpg(config).get
   }
 }

@@ -44,12 +44,14 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
     File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
-      val cpg    = newEmptyCpg()
-      val config = Config(inputPath = projectUnderTest.toString, outputPath = tmpDir.toString, tsTypes = false)
-      val finalConfig =
-        config.copy(ignoredFiles = exclude.map(config.createPathForIgnore), ignoredFilesRegex = excludeRegex.r)
-      val astgenResult = new AstGenRunner(finalConfig).execute(tmpDir)
-      new AstCreationPass(cpg, astgenResult, finalConfig).createAndApply()
+      val cpg = newEmptyCpg()
+      val config = Config(tsTypes = false)
+        .withInputPath(projectUnderTest.toString)
+        .withOutputPath(tmpDir.toString)
+        .withIgnoredFiles(exclude)
+        .withIgnoredFilesRegex(excludeRegex)
+      val astGenResult = new AstGenRunner(config).execute(tmpDir)
+      new AstCreationPass(cpg, astGenResult, config).createAndApply()
       cpg.file.name.l should contain theSameElementsAs expectedFiles.map(_.replace("/", java.io.File.separator))
     }
   }
@@ -123,7 +125,7 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
       (
         "exclude a complete folder with --exclude-regex",
         Seq.empty,
-        s".*${Pattern.quote(java.io.File.separator)}folder${Pattern.quote(java.io.File.separator)}.*",
+        s".*${Pattern.quote(java.io.File.separator)}?folder${Pattern.quote(java.io.File.separator)}.*",
         Set("index.js", "a.js", "foo.bar/d.js")
       ),
       // --
