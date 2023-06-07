@@ -61,7 +61,7 @@ class AstCreator(filename: String, global: Global)
     val programCtx  = parser.program()
 
     val statementCtx = programCtx.compoundStatement().statements()
-    scope.pushNewScope()
+    scope.pushNewScope(())
     val statementAsts = if (statementCtx != null) {
       astForStatementsContext(statementCtx)
     } else {
@@ -1375,7 +1375,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Seq[Ast] = {
-    scope.pushNewScope()
+    scope.pushNewScope(())
     val astMethodParam = astForMethodParameterPartContext(ctx.methodParameterPart())
     val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
     val callNode       = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
