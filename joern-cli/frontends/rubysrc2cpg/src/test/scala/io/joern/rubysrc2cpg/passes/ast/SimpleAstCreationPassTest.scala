@@ -434,11 +434,26 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct code for a indexing expression" in {
-      val cpg = code("def some_method(index)\n some_map[index]\nend")
+      val cpg            = code("def some_method(index)\n some_map[index]\nend")
       val List(callNode) = cpg.call.name(Operators.indexAccess).l
       callNode.code shouldBe "some_map[index]"
       callNode.lineNumber shouldBe Some(2)
       callNode.columnNumber shouldBe Some(9)
+    }
+
+    "have correct code for overloaded index operator" in {
+      val cpg = code("""
+          |class MyClass
+          |def [](key)
+          |  @member_hash[key]
+          |end
+          |end
+          |""".stripMargin)
+
+      val List(callNode) = cpg.call.name(Operators.indexAccess).l
+      callNode.code shouldBe "@member_hash[key]"
+      callNode.lineNumber shouldBe Some(4)
+      callNode.columnNumber shouldBe Some(14)
     }
   }
 }
