@@ -432,5 +432,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.lineNumber shouldBe Some(1)
       callNode.columnNumber shouldBe Some(2)
     }
+
+    "have correct code for a indexing expression" in {
+      val cpg = code("def some_method(index)\n some_map[index]\nend")
+      val List(callNode) = cpg.call.name(Operators.indexAccess).l
+      callNode.code shouldBe "some_map[index]"
+      callNode.lineNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(9)
+    }
   }
 }
