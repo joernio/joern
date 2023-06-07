@@ -300,7 +300,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
     "recognise all identifier and call nodes" in {
-      cpg.method.name("\\[]").size shouldBe 2
+      cpg.method.name("\\[]").size shouldBe 1
       cpg.method.name("\\[]=").size shouldBe 1
       cpg.call.name(Operators.assignment).size shouldBe 3
       cpg.method.name("initialize").size shouldBe 1
