@@ -6,7 +6,7 @@ import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack._
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newLocalNode}
+import io.joern.x2cpg.utils.NodeBuilders.newLocalNode
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier => _, _}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import ujson.Value
@@ -65,7 +65,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
             val localNode = newLocalNode(paramName, tpe).order(0)
             diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
           }
-          parameterInNode(nodeInfo, paramName, nodeInfo.code, index, true, EvaluationStrategies.BY_VALUE, Option(tpe))
+          parameterInNode(
+            nodeInfo,
+            paramName,
+            nodeInfo.code,
+            index,
+            isVariadic = true,
+            EvaluationStrategies.BY_VALUE,
+            Option(tpe)
+          )
         case AssignmentPattern =>
           val lhsElement  = nodeInfo.json("left")
           val rhsElement  = nodeInfo.json("right")
@@ -96,7 +104,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
                 lhsNodeInfo.code,
                 nodeInfo.code,
                 index,
-                false,
+                isVariadic = false,
                 EvaluationStrategies.BY_VALUE,
                 Option(tpe)
               )
@@ -202,7 +210,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
           val tpe  = typeFor(nodeInfo)
           val name = nodeInfo.json("name").str
           val node =
-            parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))
+            parameterInNode(
+              nodeInfo,
+              name,
+              nodeInfo.code,
+              index,
+              isVariadic = false,
+              EvaluationStrategies.BY_VALUE,
+              Option(tpe)
+            )
           scope.addVariable(name, node, MethodScope)
           node
         case TSParameterProperty =>
@@ -210,7 +226,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
           val tpe           = typeFor(unpackedParam)
           val name          = unpackedParam.json("name").str
           val node =
-            parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))
+            parameterInNode(
+              nodeInfo,
+              name,
+              nodeInfo.code,
+              index,
+              isVariadic = false,
+              EvaluationStrategies.BY_VALUE,
+              Option(tpe)
+            )
           scope.addVariable(name, node, MethodScope)
           node
         case _ =>
@@ -268,7 +292,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   protected def astForTSDeclareFunction(func: BabelNodeInfo): Ast = {
     val functionNode = createMethodDefinitionNode(func)
-    val bindingNode  = newBindingNode("", "", "")
+    val bindingNode  = NewBinding().name(functionNode.name).signature(functionNode.signature)
     diffGraph.addEdge(getParentTypeDecl, bindingNode, EdgeTypes.BINDS)
     diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
     addModifier(functionNode, func.json)
@@ -285,7 +309,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     methodAstParentStack.push(methodNode_)
 
     val thisNode =
-      parameterInNode(func, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
+      parameterInNode(func, "this", "this", 0, isVariadic = false, EvaluationStrategies.BY_VALUE)
         .dynamicTypeHintFullName(typeHintForThisExpression())
     scope.addVariable("this", thisNode, MethodScope)
 
@@ -303,6 +327,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       createFunctionTypeAndTypeDeclAst(
         func,
         methodNode_,
+        paramNodes,
         methodAstParentStack.head,
         methodName,
         methodFullName,
@@ -374,7 +399,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     localAstParentStack.push(blockNode)
 
     val thisNode =
-      parameterInNode(func, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
+      parameterInNode(func, "this", "this", 0, isVariadic = false, EvaluationStrategies.BY_VALUE)
         .dynamicTypeHintFullName(typeHintForThisExpression())
     scope.addVariable("this", thisNode, MethodScope)
 
@@ -406,6 +431,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       createFunctionTypeAndTypeDeclAst(
         func,
         methodNode_,
+        paramNodes,
         methodAstParentStack.head,
         methodName,
         methodFullName,

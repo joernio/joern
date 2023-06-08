@@ -260,6 +260,7 @@ trait AstNodeBuilder { this: AstCreator =>
   protected def createFunctionTypeAndTypeDeclAst(
     node: BabelNodeInfo,
     methodNode: NewMethod,
+    params: Seq[NewMethodParameterIn],
     parentNode: NewNode,
     methodName: String,
     methodFullName: String,
@@ -281,10 +282,9 @@ trait AstNodeBuilder { this: AstCreator =>
         List(Defines.Any)
       )
 
-    // Problem for https://github.com/ShiftLeftSecurity/codescience/issues/3626 here.
-    // As the type (thus, the signature) of the function node is unknown (i.e., ANY*)
-    // we can't generate the correct binding with signature.
-    val bindingNode = NewBinding().name("").signature("")
+    val signature = s"${params.map(p => s"${p.name}: ${p.typeFullName}").mkString("(", ", ", ")")} => ${typeFor(node)}"
+    methodNode.signature(signature)
+    val bindingNode = NewBinding().name(methodName).signature(signature)
     Ast(functionTypeDeclNode).withBindsEdge(functionTypeDeclNode, bindingNode).withRefEdge(bindingNode, methodNode)
   }
 

@@ -98,7 +98,15 @@ class AstCreator(
         .astParentFullName(fullName)
 
     val functionTypeAndTypeDeclAst =
-      createFunctionTypeAndTypeDeclAst(astNodeInfo, programMethod, methodAstParentStack.head, name, fullName, path)
+      createFunctionTypeAndTypeDeclAst(
+        astNodeInfo,
+        programMethod,
+        Seq.empty,
+        methodAstParentStack.head,
+        name,
+        fullName,
+        path
+      )
     rootTypeDecl.push(functionTypeAndTypeDeclAst.nodes.head.asInstanceOf[NewTypeDecl])
 
     methodAstParentStack.push(programMethod)
@@ -109,7 +117,7 @@ class AstCreator(
     localAstParentStack.push(blockNode)
 
     val thisParam =
-      parameterInNode(astNodeInfo, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
+      parameterInNode(astNodeInfo, "this", "this", 0, isVariadic = false, EvaluationStrategies.BY_VALUE)
         .dynamicTypeHintFullName(typeHintForThisExpression())
     scope.addVariable("this", thisParam, MethodScope)
 
