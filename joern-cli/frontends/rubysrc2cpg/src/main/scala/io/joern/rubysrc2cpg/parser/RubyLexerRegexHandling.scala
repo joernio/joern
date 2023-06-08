@@ -17,6 +17,8 @@ trait RubyLexerRegexHandling { this: RubyLexerBase =>
     LBRACK,
     // When '/' occurs after a NL.
     NL,
+    // When '/' occurs after a ','.
+    COMMA,
     // When '/' occurs after an operator.
     EMARK,
     EMARKEQ,
