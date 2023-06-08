@@ -14,6 +14,7 @@ trait TypeHelper { this: AstCreator =>
 
   private val ArrayReplacements = Map(
     "any[]"     -> s"${Defines.Any}[]",
+    "unknown[]" -> s"${Defines.Unknown}[]",
     "number[]"  -> s"${Defines.Number}[]",
     "string[]"  -> s"${Defines.String}[]",
     "boolean[]" -> s"${Defines.Boolean}[]"
@@ -21,10 +22,12 @@ trait TypeHelper { this: AstCreator =>
 
   private val TypeReplacements = Map(
     " any"     -> s" ${Defines.Any}",
+    " unknown" -> s" ${Defines.Unknown}",
     " number"  -> s" ${Defines.Number}",
     " null"    -> s" ${Defines.Null}",
     " string"  -> s" ${Defines.String}",
     " boolean" -> s" ${Defines.Boolean}",
+    " bigint"  -> s" ${Defines.BigInt}",
     "{}"       -> Defines.Object,
     "typeof "  -> ""
   )
@@ -60,6 +63,10 @@ trait TypeHelper { this: AstCreator =>
     case TSObjectKeyword     => Defines.Object
     case TSStringKeyword     => Defines.String
     case TSSymbolKeyword     => Defines.Symbol
+    case TSUnknownKeyword    => Defines.Unknown
+    case TSVoidKeyword       => Defines.Void
+    case TSUndefinedKeyword  => Defines.Undefined
+    case TSNeverKeyword      => Defines.Never
     case TSIntrinsicKeyword  => code(tsType.json)
     case TSTypeReference     => code(tsType.json)
     case TSArrayType         => code(tsType.json)
