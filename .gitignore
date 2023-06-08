@@ -33,3 +33,4 @@ null
 /foo.c
 /woo.c
 /cpg_*.bin.zip
+.DS_Store
