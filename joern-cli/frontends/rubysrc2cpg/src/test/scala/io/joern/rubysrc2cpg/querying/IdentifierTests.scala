@@ -907,4 +907,23 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name("method3").dotAst.l
     }
   }
+
+  "CPG for code with rescue clause" should {
+    val cpg = code("""
+        |begin
+        |  puts "begin"
+        |rescue SomeException
+        |  puts "SomeException occurred"
+        |rescue => SomeOtherException
+        |  puts "SomeOtherException occurred"
+        |rescue
+        |  puts "Catch-all block"
+        |end
+        |
+        |""".stripMargin)
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
 }

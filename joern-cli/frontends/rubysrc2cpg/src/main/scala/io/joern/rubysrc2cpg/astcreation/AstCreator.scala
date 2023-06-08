@@ -1386,32 +1386,49 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForRescueClauseContext(ctx: RescueClauseContext): Ast = {
-    Ast()
+    val asts = ListBuffer[Ast]()
+
+    if (ctx.exceptionClass() != null) {
+      val exceptionClass = ctx.exceptionClass()
+
+      if (exceptionClass.expression() != null) {
+        asts.addAll(astForExpressionContext(exceptionClass.expression()))
+      } else {
+        asts.addAll(astForMultipleRightHandSideContext(exceptionClass.multipleRightHandSide()))
+      }
+    }
+
+    if (ctx.exceptionVariableAssignment() != null) {
+      asts.addAll(astForSingleLeftHandSideContext(ctx.exceptionVariableAssignment().singleLeftHandSide()))
+    }
+
+    asts.addAll(astForThenClauseContext(ctx.thenClause()))
+    val blockNode = NewBlock()
+      .code(ctx.getText)
+      .lineNumber(ctx.RESCUE().getSymbol.getLine)
+      .columnNumber(ctx.RESCUE().getSymbol.getCharPositionInLine)
+    blockAst(blockNode, asts.toList)
   }
 
   def astForBodyStatementContext(ctx: BodyStatementContext): Seq[Ast] = {
     val compoundStatementAsts = astForStatementsContext(ctx.compoundStatement().statements())
-    val mainBodyAsts = if(ctx.ensureClause()!= null) {
+    val mainBodyAsts = if (ctx.ensureClause() != null) {
       val ensureAsts = astForStatementsContext(ctx.ensureClause().compoundStatement().statements())
       compoundStatementAsts ++ ensureAsts
-    } else{
+    } else {
       compoundStatementAsts
     }
-
 
     val rescueAsts = ctx
       .rescueClause()
       .asScala
-      .map(
-        rC =>
-          astForRescueClauseContext(rC)
-      ).toSeq
+      .map(astForRescueClauseContext(_))
+      .toSeq
 
-    if(ctx.elseClause()!= null) {
+    if (ctx.elseClause() != null) {
       val elseClauseAsts = astForElseClauseContext(ctx.elseClause())
       mainBodyAsts ++ rescueAsts ++ elseClauseAsts
-    }
-    else{
+    } else {
       mainBodyAsts ++ rescueAsts
     }
   }
