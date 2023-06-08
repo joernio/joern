@@ -106,6 +106,7 @@ class AstCreator(filename: String, global: Global)
     val none            = "<operator>.none"
     val patternMatch    = "<operator>.patternMatch"
     val notPatternMatch = "<operator>.notPatternMatch"
+    val scopeResolution = "<operator>.scopeResolution"
   }
   private def getOperatorName(token: Token): String = token.getType match {
     case AMP                 => Operators.logicalAnd
@@ -138,6 +139,7 @@ class AstCreator(filename: String, global: Global)
     case TILDE               => Operators.not
     case NOT                 => Operators.not
     case STAR2               => Operators.exponentiation
+    case COLON2              => RubyOperators.scopeResolution
     case _                   => RubyOperators.none
   }
 
@@ -204,8 +206,21 @@ class AstCreator(filename: String, global: Global)
         .columnNumber(localVar.getSymbol.getCharPositionInLine())
       Seq(callAst(callNode, xAsts ++ Seq(yAst)))
     case ctx: ScopedConstantAccessSingleLeftHandSideContext =>
-      // TODO to be implemented
-      Seq(Ast())
+      val localVar  = ctx.CONSTANT_IDENTIFIER()
+      val varSymbol = localVar.getSymbol()
+      val node = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+      val constAst     = Ast(node)
+      val operatorName = getOperatorName(ctx.COLON2().getSymbol)
+      val callNode = NewCall()
+        .name(operatorName)
+        .code(ctx.getText)
+        .methodFullName(operatorName)
+        .signature("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(ctx.COLON2().getSymbol().getLine())
+        .columnNumber(ctx.COLON2().getSymbol().getCharPositionInLine())
+      Seq(callAst(callNode, Seq(constAst)))
     case _ =>
       logger.error("astForSingleLeftHandSideContext() All contexts mismatched.")
       Seq(Ast())
@@ -746,10 +761,11 @@ class AstCreator(filename: String, global: Global)
     val node     = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
     val constAst = Ast(node)
 
+    val operatorName = getOperatorName(ctx.COLON2().getSymbol)
     val callNode = NewCall()
-      .name(ctx.COLON2().getText)
-      .code(ctx.COLON2().getText)
-      .methodFullName(MethodFullNames.OperatorPrefix + ctx.COLON2().getText)
+      .name(operatorName)
+      .code(ctx.getText)
+      .methodFullName(operatorName)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
@@ -1369,9 +1385,52 @@ class AstCreator(filename: String, global: Global)
       .toSeq
   }
 
+  def astForRescueClauseContext(ctx: RescueClauseContext): Ast = {
+    val asts = ListBuffer[Ast]()
+
+    if (ctx.exceptionClass() != null) {
+      val exceptionClass = ctx.exceptionClass()
+
+      if (exceptionClass.expression() != null) {
+        asts.addAll(astForExpressionContext(exceptionClass.expression()))
+      } else {
+        asts.addAll(astForMultipleRightHandSideContext(exceptionClass.multipleRightHandSide()))
+      }
+    }
+
+    if (ctx.exceptionVariableAssignment() != null) {
+      asts.addAll(astForSingleLeftHandSideContext(ctx.exceptionVariableAssignment().singleLeftHandSide()))
+    }
+
+    asts.addAll(astForThenClauseContext(ctx.thenClause()))
+    val blockNode = NewBlock()
+      .code(ctx.getText)
+      .lineNumber(ctx.RESCUE().getSymbol.getLine)
+      .columnNumber(ctx.RESCUE().getSymbol.getCharPositionInLine)
+    blockAst(blockNode, asts.toList)
+  }
+
   def astForBodyStatementContext(ctx: BodyStatementContext): Seq[Ast] = {
-    astForStatementsContext(ctx.compoundStatement().statements())
-    // TODO rescue else and ensure to be implemented
+    val compoundStatementAsts = astForStatementsContext(ctx.compoundStatement().statements())
+    val mainBodyAsts = if (ctx.ensureClause() != null) {
+      val ensureAsts = astForStatementsContext(ctx.ensureClause().compoundStatement().statements())
+      compoundStatementAsts ++ ensureAsts
+    } else {
+      compoundStatementAsts
+    }
+
+    val rescueAsts = ctx
+      .rescueClause()
+      .asScala
+      .map(astForRescueClauseContext(_))
+      .toSeq
+
+    if (ctx.elseClause() != null) {
+      val elseClauseAsts = astForElseClauseContext(ctx.elseClause())
+      mainBodyAsts ++ rescueAsts ++ elseClauseAsts
+    } else {
+      mainBodyAsts ++ rescueAsts
+    }
   }
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Seq[Ast] = {
@@ -1557,10 +1616,11 @@ class AstCreator(filename: String, global: Global)
     val varSymbol = localVar.getSymbol()
     val node      = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
 
+    val operatorName = getOperatorName(ctx.COLON2().getSymbol)
     val callNode = NewCall()
-      .name(ctx.COLON2().getText)
+      .name(operatorName)
       .code(ctx.getText)
-      .methodFullName(MethodFullNames.OperatorPrefix + ctx.COLON2().getText)
+      .methodFullName(operatorName)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)

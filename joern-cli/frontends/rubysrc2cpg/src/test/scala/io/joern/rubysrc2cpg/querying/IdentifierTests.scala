@@ -266,6 +266,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.call.name("application").size shouldBe 1
       cpg.call.name("configure").size shouldBe 1
       cpg.call.name("new").size shouldBe 1
+      cpg.call.name("<operator>.scopeResolution").size shouldBe 2
       cpg.identifier.name("Rails").l.size shouldBe 1
       cpg.identifier.name("config").l.size shouldBe 1
       cpg.identifier.name("Formatter").l.size shouldBe 1
@@ -905,6 +906,51 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name("method1").dotAst.l
       cpg.method.name("method2").dotAst.l
       cpg.method.name("method3").dotAst.l
+    }
+  }
+
+  "CPG for code with rescue clause" should {
+    val cpg = code("""
+        |begin
+        |  puts "In begin"
+        |rescue SomeException
+        |  puts "SomeException occurred"
+        |rescue => SomeOtherException
+        |  puts "SomeOtherException occurred"
+        |rescue
+        |  puts "Catch-all block"
+        |end
+        |
+        |""".stripMargin)
+
+    "recognise all literal nodes" in {
+      cpg.literal
+        .code("\"In begin\"")
+        .l
+        .size shouldBe 1
+      cpg.literal
+        .code("\"SomeException occurred\"")
+        .l
+        .size shouldBe 1
+      cpg.literal
+        .code("\"SomeOtherException occurred\"")
+        .l
+        .size shouldBe 1
+      cpg.literal
+        .code("\"Catch-all block\"")
+        .l
+        .size shouldBe 1
+    }
+
+    "recognise all call nodes" in {
+      cpg.call
+        .name("puts")
+        .l
+        .size shouldBe 4
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
     }
   }
 }
