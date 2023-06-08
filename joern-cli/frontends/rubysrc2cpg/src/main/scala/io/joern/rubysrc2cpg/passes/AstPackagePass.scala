@@ -12,18 +12,22 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable.ListBuffer
 
-class AstPackagePass(cpg: Cpg, gemPaths: List[String], global: Global, packageTable: PackageTable)
+class AstPackagePass(cpg: Cpg, gemPaths: List[String], global: Global, packageTable: PackageTable, inputPath: String)
     extends ConcurrentWriterCpgPass[String](cpg) {
   override def generateParts(): Array[String] = getAllPackage(cpg)
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, module: String): Unit = {
+  override def runOnPart(diffGraph: DiffGraphBuilder, modulePart: String): Unit = {
+
+    val module = PackageTable.resolveImportPath(modulePart)
 
     val packageFiles = ListBuffer[String]()
 
     if (Files.isRegularFile(Paths.get(module))) {
       packageFiles.addOne(module)
-    } else {
-      val importFile = gemPaths.flatMap(path => {
+    }
+
+    gemPaths
+      .flatMap(path => {
         val fullDirectoryName = Paths.get(getDependencyPath(path, module).getOrElse(""))
 
         if (Files.isDirectory(fullDirectoryName)) {
@@ -32,11 +36,12 @@ class AstPackagePass(cpg: Cpg, gemPaths: List[String], global: Global, packageTa
           Array.empty[String]
         }
       })
-      importFile.foreach(file => packageFiles += (file.toString))
-    }
+      .foreach(file => packageFiles += (file.toString))
 
-    packageFiles.foreach(i => {
-      new AstCreator(i.toString, global, PackageContext(i.toString, packageTable)).createAst()
+    packageFiles.foreach(filePath => {
+      if (!filePath.matches(s".*${inputPath}.*")) {
+        new AstCreator(filePath, global, PackageContext(module, packageTable)).createAst()
+      }
     })
   }
 

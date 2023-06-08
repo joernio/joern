@@ -27,7 +27,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, packageTableInfo)
       astCreationPass.createAndApply()
       val gemPaths = getGemEnv()
-      new AstPackagePass(cpg, gemPaths, global, packageTableInfo).createAndApply()
+      new AstPackagePass(cpg, gemPaths, global, packageTableInfo, config.inputPath).createAndApply()
       new PackageResolverPass(cpg, packageTableInfo).createAndApply()
       new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
     }

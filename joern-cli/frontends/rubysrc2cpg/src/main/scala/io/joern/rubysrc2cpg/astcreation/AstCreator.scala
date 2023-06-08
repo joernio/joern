@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.utils.PackageContext
+import io.joern.rubysrc2cpg.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.Global
@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, 
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
+import java.nio.file.{Files, Paths}
 import java.util
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -1186,7 +1187,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     val column         = localIdentifier.getSymbol().getCharPositionInLine()
     val line           = localIdentifier.getSymbol().getLine()
     val name           = getActualMethodName(localIdentifier.getText)
-    val methodFullName = s"$filename:$name"
+    val methodFullName = "<unknownfullname>"
     val callNode = NewCall()
       .name(name)
       .methodFullName(methodFullName)
@@ -1404,8 +1405,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
       .lineNumber(callNode.lineNumber)
       .filename(filename)
     callNode.methodFullName(classPath + callNode.name)
-
-    packageContext.packageTable.add(packageContext.moduleName, callNode.name, classPath)
+    packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath)
 
     val methodRetNode = NewMethodReturn()
       .lineNumber(None)
@@ -1909,6 +1909,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
           val importedNode =
             argsAsts.head.nodes.filter(node => node.isInstanceOf[NewLiteral]).head.asInstanceOf[NewLiteral]
           println(s"AST to be created for imported file ${importedNode.code}")
+          packageContext.packageTable.addPackageCall(filename, PackageTable.resolveImportPath(importedNode.code))
           Seq(callAst(callNode.code(importedNode.code), Seq(Ast(importedNode))))
         } else {
           Seq(callAst(callNode, argsAsts))

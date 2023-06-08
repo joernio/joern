@@ -45,7 +45,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture {
     }
 
     "recognise methodFullName for call node" in {
-    //  cpg.call.name("printValue").head.methodFullName should equal("Help.InnerHelp.printValue:<unresolvedSignature>")
+      //  cpg.call.name("printValue").head.methodFullName should equal("Help.InnerHelp.printValue:<unresolvedSignature>")
     }
   }
 }

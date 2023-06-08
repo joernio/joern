@@ -9,7 +9,8 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
-class AstCreationPass(inputPath: String, cpg: Cpg, global: Global, packageTable: PackageTable) extends ConcurrentWriterCpgPass[String](cpg) {
+class AstCreationPass(inputPath: String, cpg: Cpg, global: Global, packageTable: PackageTable)
+    extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger                        = LoggerFactory.getLogger(this.getClass)
   val RubySourceFileExtensions: Set[String] = Set(".rb")
