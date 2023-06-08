@@ -487,5 +487,23 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       methodNode.lineNumberEnd shouldBe Some(4)
       methodNode.columnNumber shouldBe Some(4)
     }
+
+    "have correct structure for scope resolution operator method" in {
+      val cpg = code("""
+          |def foo(param)
+          |::SomeConstant = param
+          |end
+          |""".stripMargin)
+
+      val List(callNode) = cpg.call.name("<operator>.scopeResolution").l
+      callNode.code shouldBe "::SomeConstant"
+      callNode.lineNumber shouldBe Some(3)
+      callNode.columnNumber shouldBe Some(0)
+
+      val List(identifierNode) = cpg.identifier.name("SomeConstant").l
+      identifierNode.code shouldBe "SomeConstant"
+      identifierNode.lineNumber shouldBe Some(3)
+      identifierNode.columnNumber shouldBe Some(0)
+    }
   }
 }
