@@ -333,4 +333,9 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
+
+  "Division operator between identifiers" should "not be confused with regex start" in {
+    val code = "x / y"
+    tokenize(code) shouldBe Seq(LOCAL_VARIABLE_IDENTIFIER, WS, SLASH, WS, LOCAL_VARIABLE_IDENTIFIER, EOF)
+  }
 }

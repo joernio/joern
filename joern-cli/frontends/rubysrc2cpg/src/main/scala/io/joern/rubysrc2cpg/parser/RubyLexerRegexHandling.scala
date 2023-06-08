@@ -51,9 +51,8 @@ trait RubyLexerRegexHandling { this: RubyLexerBase =>
   )
 
   /** To be invoked when encountering `/`, deciding if it should emit a `REGULAR_EXPRESSION_START` token. */
-  protected def isStartOfRegex: Boolean = {
-    regexTogglingTokens.contains(Option(previousNonWsToken).map(_.getType).orNull)
-  }
+  protected def isStartOfRegex: Boolean =
+    regexTogglingTokens.contains(previousNonWsToken.map(_.getType).orNull)
 
   /** To be invoked when in `DEFAULT_MODE`, to check if we are in the context of a regular expression interpolation. */
   protected def isInRegularExpressionInterpolationMode: Boolean =
