@@ -1385,9 +1385,35 @@ class AstCreator(filename: String, global: Global)
       .toSeq
   }
 
+  def astForRescueClauseContext(ctx: RescueClauseContext): Ast = {
+    Ast()
+  }
+
   def astForBodyStatementContext(ctx: BodyStatementContext): Seq[Ast] = {
-    astForStatementsContext(ctx.compoundStatement().statements())
-    // TODO rescue else and ensure to be implemented
+    val compoundStatementAsts = astForStatementsContext(ctx.compoundStatement().statements())
+    val mainBodyAsts = if(ctx.ensureClause()!= null) {
+      val ensureAsts = astForStatementsContext(ctx.ensureClause().compoundStatement().statements())
+      compoundStatementAsts ++ ensureAsts
+    } else{
+      compoundStatementAsts
+    }
+
+
+    val rescueAsts = ctx
+      .rescueClause()
+      .asScala
+      .map(
+        rC =>
+          astForRescueClauseContext(rC)
+      ).toSeq
+
+    if(ctx.elseClause()!= null) {
+      val elseClauseAsts = astForElseClauseContext(ctx.elseClause())
+      mainBodyAsts ++ rescueAsts ++ elseClauseAsts
+    }
+    else{
+      mainBodyAsts ++ rescueAsts
+    }
   }
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Seq[Ast] = {
