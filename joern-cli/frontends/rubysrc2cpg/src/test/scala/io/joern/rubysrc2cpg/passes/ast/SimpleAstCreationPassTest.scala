@@ -257,6 +257,15 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.columnNumber shouldBe Some(0)
     }
 
+    "have correct structure for an empty regular expression literal used as the second argument to a call" in {
+      val cpg           = code("puts(x, //)")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Regexp
+      literal.code shouldBe "//"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(8)
+    }
+
     "have correct structure for a single left had side call" in {
       val cpg            = code("array[n] = 10")
       val List(callNode) = cpg.call.name(Operators.indexAccess).l
