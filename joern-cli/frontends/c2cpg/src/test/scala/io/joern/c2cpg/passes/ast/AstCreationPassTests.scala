@@ -11,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import overflowdb.traversal.NodeOps
 import overflowdb.traversal.toNodeTraversal
 
 class AstCreationPassTests extends AbstractPassTest {
