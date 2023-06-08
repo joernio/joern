@@ -6,9 +6,23 @@ import scopt.OParser
 
 /** Command line configuration parameters
   */
-final case class Config(android: Option[String] = None) extends X2CpgConfig[Config] {
+final case class Config(
+  android: Option[String] = None,
+  dynamicDirs: Option[Seq[String]] = None,
+  dynamicPkgs: Option[Seq[String]] = None,
+  fullResolver: Boolean = false
+) extends X2CpgConfig[Config] {
   def withAndroid(android: String): Config = {
     copy(android = Some(android)).withInheritedFields(this)
+  }
+  def withDynamicDirs(dynamicDirs: Seq[String]): Config = {
+    copy(dynamicDirs = Some(dynamicDirs)).withInheritedFields(this)
+  }
+  def withDynamicPkgs(dynamicPkgs: Seq[String]): Config = {
+    copy(dynamicPkgs = Some(dynamicPkgs)).withInheritedFields(this)
+  }
+  def withFullResolver(value: Boolean): Config = {
+    copy(fullResolver = value).withInheritedFields(this)
   }
 }
 
@@ -23,7 +37,22 @@ private object Frontend {
       programName("jimple2cpg"),
       opt[String]("android")
         .text("Optional path to android.jar while processing apk file.")
-        .action((android, config) => config.withAndroid(android))
+        .action((android, config) => config.withAndroid(android)),
+      opt[Unit]("full-resolver")
+        .text("enables full transitive resolution of all references found in all classes that are resolved")
+        .action((_, c) => c.withFullResolver(true)),
+      opt[Seq[String]]("dynamic-dirs")
+        .valueName("<dir1>,<dir2>,...")
+        .text(
+          "Mark all class files in dirs as classes that may be loaded dynamically. Comma separated values for multiple directories."
+        )
+        .action((dynamicDirs, config) => config.withDynamicDirs(dynamicDirs)),
+      opt[Seq[String]]("dynamic-pkgs")
+        .valueName("<pkg1>,<pkg2>,...")
+        .text(
+          "Marks all class files belonging to the package pkg or any of its subpackages as classes which the application may load dynamically. Comma separated values for multiple packages."
+        )
+        .action((dynamicPkgs, config) => config.withDynamicPkgs(dynamicPkgs))
     )
   }
 }
