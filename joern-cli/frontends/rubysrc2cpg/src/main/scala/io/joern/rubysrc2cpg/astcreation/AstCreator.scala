@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
-import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
@@ -23,6 +23,8 @@ class AstCreator(filename: String, global: Global)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator {
 
+  protected val scope: Scope[String, NewIdentifier, Unit] = new Scope()
+
   object MethodFullNames {
     val OperatorPrefix = "<operator>."
   }
@@ -36,35 +38,6 @@ class AstCreator(filename: String, global: Global)
 
   private val methodAliases = mutable.HashMap[String, String]()
 
-  class ScopeIdentifiers {
-    val varToIdentiferMap             = mutable.HashMap[String, NewIdentifier]()
-    var parentScope: ScopeIdentifiers = null
-  }
-
-  private val scopeStack = mutable.Stack[ScopeIdentifiers]()
-
-  private def pushScope(isParentAccesible: Boolean = false): ScopeIdentifiers = {
-    val scope = new ScopeIdentifiers()
-
-    if (isParentAccesible) {
-      scope.parentScope = scopeStack.top
-    }
-    scopeStack.push(scope)
-    scope
-  }
-
-  private def popScope(): Unit = {
-    scopeStack.pop()
-  }
-
-  private def setIdentiferInScope(node: NewIdentifier): Unit = {
-    scopeStack.top.varToIdentiferMap.getOrElseUpdate(node.name, node)
-  }
-
-  private def lookupIdentiferInScope(name: String): Boolean = {
-    scopeStack.top.varToIdentiferMap.contains(name)
-  }
-
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
     name: String,
@@ -73,7 +46,7 @@ class AstCreator(filename: String, global: Global)
     dynamicTypeHints: Seq[String] = Seq()
   ): NewIdentifier = {
     val newNode = identifierNode(ctx, name, code, typeFullName, dynamicTypeHints)
-    setIdentiferInScope(newNode)
+    scope.addToScope(name, newNode)
     newNode
   }
 
@@ -88,13 +61,13 @@ class AstCreator(filename: String, global: Global)
     val programCtx  = parser.program()
 
     val statementCtx = programCtx.compoundStatement().statements()
-    pushScope()
+    scope.pushNewScope(())
     val statementAsts = if (statementCtx != null) {
       astForStatementsContext(statementCtx)
     } else {
       List[Ast](Ast())
     }
-    popScope()
+    scope.popScope()
 
     val name = ":program"
     val programMethod =
@@ -184,7 +157,7 @@ class AstCreator(filename: String, global: Global)
     val token        = terminalNode.getSymbol
     val variableName = token.getText
     val node         = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
-    setIdentiferInScope(node)
+    scope.addToScope(node.name, node)
     Seq(Ast(node))
   }
 
@@ -1226,7 +1199,7 @@ class AstCreator(filename: String, global: Global)
     } else if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
-      if (lookupIdentiferInScope(varSymbol.getText)) {
+      if (scope.lookupVariable(varSymbol.getText).isDefined) {
         val node =
           createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
@@ -1236,7 +1209,7 @@ class AstCreator(filename: String, global: Global)
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localVar  = ctx.CONSTANT_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
-      if (lookupIdentiferInScope(varSymbol.getText)) {
+      if (scope.lookupVariable(varSymbol.getText).isDefined) {
         val node =
           createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
@@ -1402,13 +1375,13 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Seq[Ast] = {
-    pushScope()
+    scope.pushNewScope(())
     val astMethodParam = astForMethodParameterPartContext(ctx.methodParameterPart())
     val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
     val callNode       = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     // there can be only one call node
     val astBody = astForBodyStatementContext(ctx.bodyStatement())
-    popScope()
+    scope.popScope()
 
     /*
      * The method astForMethodNamePartContext() returns a call node in the AST.
