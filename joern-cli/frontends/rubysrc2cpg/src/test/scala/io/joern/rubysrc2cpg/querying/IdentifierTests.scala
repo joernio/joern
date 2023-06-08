@@ -911,7 +911,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
   "CPG for code with rescue clause" should {
     val cpg = code("""
         |begin
-        |  puts "begin"
+        |  puts "In begin"
         |rescue SomeException
         |  puts "SomeException occurred"
         |rescue => SomeOtherException
@@ -921,6 +921,32 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |end
         |
         |""".stripMargin)
+
+    "recognise all literal nodes" in {
+      cpg.literal
+        .code("\"In begin\"")
+        .l
+        .size shouldBe 1
+      cpg.literal
+        .code("\"SomeException occurred\"")
+        .l
+        .size shouldBe 1
+      cpg.literal
+        .code("\"SomeOtherException occurred\"")
+        .l
+        .size shouldBe 1
+      cpg.literal
+        .code("\"Catch-all block\"")
+        .l
+        .size shouldBe 1
+    }
+
+    "recognise all call nodes" in {
+      cpg.call
+        .name("puts")
+        .l
+        .size shouldBe 4
+    }
 
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
