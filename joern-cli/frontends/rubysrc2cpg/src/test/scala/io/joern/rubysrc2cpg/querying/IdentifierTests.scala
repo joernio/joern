@@ -266,6 +266,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.call.name("application").size shouldBe 1
       cpg.call.name("configure").size shouldBe 1
       cpg.call.name("new").size shouldBe 1
+      cpg.call.name("<operator>.scopeResolution").size shouldBe 2
       cpg.identifier.name("Rails").l.size shouldBe 1
       cpg.identifier.name("config").l.size shouldBe 1
       cpg.identifier.name("Formatter").l.size shouldBe 1
