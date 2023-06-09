@@ -958,7 +958,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             builder.addNode(mRef)
             builder.addEdge(mRef, m, EdgeTypes.REF)
             builder.addEdge(inCall, mRef, EdgeTypes.AST)
-            builder.addEdge(mRef, funcPtr.method, EdgeTypes.CONTAINS)
+            builder.addEdge(funcPtr.method, mRef, EdgeTypes.CONTAINS)
             inCall match {
               case x: Call =>
                 builder.addEdge(x, mRef, EdgeTypes.ARGUMENT)
