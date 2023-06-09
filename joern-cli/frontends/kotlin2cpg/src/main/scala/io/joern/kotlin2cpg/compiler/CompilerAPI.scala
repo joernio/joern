@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.config.{CommonConfigurationKeys, CompilerConfigurati
 import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmProtoBufUtil
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
-import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.cli.common.messages.{
   CompilerMessageSeverity,
   CompilerMessageSourceLocation,
@@ -23,7 +23,7 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 case class CompilerPluginInfo(
   registrarName: String,
-  registrar: ComponentRegistrar,
+  registrar: CompilerPluginRegistrar,
   configOptions: Map[CompilerConfigurationKey[java.util.List[String]], String]
 ) {}
 
@@ -87,7 +87,7 @@ object CompilerAPI {
 
     val registrarKeys =
       compilerPlugins.map { plugin =>
-        plugin.registrarName -> CompilerConfigurationKey.create[java.util.List[ComponentRegistrar]](
+        plugin.registrarName -> CompilerConfigurationKey.create[java.util.List[CompilerPluginRegistrar]](
           plugin.registrarName
         )
       }.toMap
@@ -98,12 +98,6 @@ object CompilerAPI {
       config.add(registrarKeys(plugin.registrarName), plugin.registrar)
     }
     val environment = KotlinCoreEnvironment.createForProduction(disposable, config, configFiles)
-    compilerPlugins.foreach { plugin =>
-      config.getList(registrarKeys(plugin.registrarName)).asScala.foreach { r =>
-        r.registerProjectComponents(environment.getProject.asInstanceOf[MockProject], config)
-      }
-    }
-
     environment
   }
 }
