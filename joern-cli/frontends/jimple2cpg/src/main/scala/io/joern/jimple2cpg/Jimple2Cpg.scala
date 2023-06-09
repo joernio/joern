@@ -96,19 +96,15 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
       configureSoot()
       new MetaDataPass(cpg, language, config.inputPath).createAndApply()
       config.dynamicDirs match {
+        case Nil => // Just carry on as usual
         case Some(value) if value.nonEmpty => {
           Options.v().set_dynamic_dir(config.dynamicDirs.getOrElse(List.empty).toList.asJava)
         }
-        case _ => {
-          throw new RuntimeException(s"Unsupported input at ${config.dynamicDirs}")
-        }
       }
       config.dynamicPkgs match {
+        case Nil => // Just carry on as usual
         case Some(value) if value.nonEmpty => {
           Options.v().set_dynamic_package(config.dynamicPkgs.getOrElse(List.empty).toList.asJava)
-        }
-        case _ => {
-          throw new RuntimeException(s"Unsupported input at ${config.dynamicPkgs}")
         }
       }
       if (config.fullResolver) {
