@@ -1095,13 +1095,13 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForInvocationWithBlockOnlyPrimaryContext(ctx: InvocationWithBlockOnlyPrimaryContext): Seq[Ast] = {
-    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
     val blockAst    = astForBlockContext(ctx.block())
     blockAst ++ methodIdAst
   }
 
   def astForInvocationWithParenthesesPrimaryContext(ctx: InvocationWithParenthesesPrimaryContext): Seq[Ast] = {
-    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
     val parenAst    = astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
     val callNode    = methodIdAst.head.nodes.filter(_.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     callNode.name(getActualMethodName(callNode.name))
@@ -1214,13 +1214,13 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForMethodIdentifierContext(ctx: MethodIdentifierContext, code: String): Seq[Ast] = {
+  def astForMethodIdentifierContext(ctx: MethodIdentifierContext, code: String, definitelyMethod: Boolean = false): Seq[Ast] = {
     if (ctx.methodOnlyIdentifier() != null) {
       astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     } else if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
-      if (scope.lookupVariable(varSymbol.getText).isDefined) {
+      if (scope.lookupVariable(varSymbol.getText).isDefined && !definitelyMethod) {
         val node =
           createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
@@ -1267,7 +1267,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForMethodNameContext(ctx: MethodNameContext): Seq[Ast] = {
     if (ctx.methodIdentifier() != null) {
-      astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+      astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
     } else if (ctx.operatorMethodName() != null) {
       astForOperatorMethodNameContext(ctx.operatorMethodName())
     } else if (ctx.keyword() != null) {
@@ -1653,7 +1653,7 @@ class AstCreator(filename: String, global: Global)
     case ctx: RubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
       val argsAsts     = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       val doBlockAsts  = astForDoBlockContext(ctx.doBlock())
-      val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+      val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
       methodIdAsts ++ argsAsts ++ doBlockAsts
     case ctx: RubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
       val argsAsts       = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
