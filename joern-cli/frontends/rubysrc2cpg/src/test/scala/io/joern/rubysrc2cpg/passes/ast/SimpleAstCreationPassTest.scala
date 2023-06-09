@@ -509,7 +509,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a addition expression with space before addition" in {
       val cpg            = code("x + y")
       val List(callNode) = cpg.call.name(Operators.addition).l
-      callNode.code shouldBe "+ y"
+      callNode.code shouldBe "x+y"
       callNode.lineNumber shouldBe Some(1)
       callNode.columnNumber shouldBe Some(2)
     }
@@ -517,7 +517,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a addition expression with space before subtraction" in {
       val cpg            = code("x - y")
       val List(callNode) = cpg.call.name(Operators.subtraction).l
-      callNode.code shouldBe "- y"
+      callNode.code shouldBe "x-y"
       callNode.lineNumber shouldBe Some(1)
       callNode.columnNumber shouldBe Some(2)
     }

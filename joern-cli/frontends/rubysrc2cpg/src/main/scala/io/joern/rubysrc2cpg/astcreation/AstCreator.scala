@@ -1773,10 +1773,16 @@ class AstCreator(filename: String, global: Global)
             queuedAst
         }
 
+      val lhsCode = lhsAst.nodes
+        .filter(node => node.isInstanceOf[NewIdentifier])
+        .head
+        .asInstanceOf[NewIdentifier]
+        .code
+
       val operatorName = getOperatorName(ctx.op)
       val callNode = NewCall()
         .name(operatorName)
-        .code(ctx.getText)
+        .code(lhsCode + ctx.getText.filterNot(_.isWhitespace))
         .methodFullName(operatorName)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1834,10 +1840,16 @@ class AstCreator(filename: String, global: Global)
             queuedAst
         }
 
+      val lhsCode = lhsAst.nodes
+        .filter(node => node.isInstanceOf[NewIdentifier])
+        .head
+        .asInstanceOf[NewIdentifier]
+        .code
+
       val operatorName = Operators.subtraction
       val callNode = NewCall()
         .name(operatorName)
-        .code(ctx.getText)
+        .code(lhsCode + ctx.getText.filterNot(_.isWhitespace))
         .methodFullName(operatorName)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
