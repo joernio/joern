@@ -324,7 +324,8 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   override protected def visitIdentifierAssignedToTypeRef(i: Identifier, t: TypeRef, rec: Option[String]): Set[String] =
     t.typ.referencedTypeDecl.astSiblings
       .collectFirst { case td: TypeDecl => td }
-      .map(td => symbolTable.append(CallAlias(i.name, rec), Set(td.fullName)))
+      .map(_.fullName.stripSuffix("<meta>"))
+      .map(td => symbolTable.append(CallAlias(i.name, rec), Set(td)))
       .getOrElse(super.visitIdentifierAssignedToTypeRef(i, t, rec))
 
 }
