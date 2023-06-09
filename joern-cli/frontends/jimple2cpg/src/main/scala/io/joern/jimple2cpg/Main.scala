@@ -8,18 +8,18 @@ import scopt.OParser
   */
 final case class Config(
   android: Option[String] = None,
-  dynamicDirs: Option[Seq[String]] = None,
-  dynamicPkgs: Option[Seq[String]] = None,
+  dynamicDirs: Seq[String] = Seq.empty,
+  dynamicPkgs: Seq[String] = Seq.empty,
   fullResolver: Boolean = false
 ) extends X2CpgConfig[Config] {
   def withAndroid(android: String): Config = {
     copy(android = Some(android)).withInheritedFields(this)
   }
-  def withDynamicDirs(dynamicDirs: Seq[String]): Config = {
-    copy(dynamicDirs = Some(dynamicDirs)).withInheritedFields(this)
+  def withDynamicDirs(value: Seq[String]): Config = {
+    copy(dynamicDirs = value).withInheritedFields(this)
   }
-  def withDynamicPkgs(dynamicPkgs: Seq[String]): Config = {
-    copy(dynamicPkgs = Some(dynamicPkgs)).withInheritedFields(this)
+  def withDynamicPkgs(value: Seq[String]): Config = {
+    copy(dynamicPkgs = value).withInheritedFields(this)
   }
   def withFullResolver(value: Boolean): Config = {
     copy(fullResolver = value).withInheritedFields(this)
@@ -40,7 +40,7 @@ private object Frontend {
         .action((android, config) => config.withAndroid(android)),
       opt[Unit]("full-resolver")
         .text("enables full transitive resolution of all references found in all classes that are resolved")
-        .action((_, c) => c.withFullResolver(true)),
+        .action((_, config) => config.withFullResolver(true)),
       opt[Seq[String]]("dynamic-dirs")
         .valueName("<dir1>,<dir2>,...")
         .text(
