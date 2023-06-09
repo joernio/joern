@@ -738,15 +738,16 @@ class AstCreator(filename: String, global: Global)
       argList.addAll(astForBlockContext(ctx.block()))
     }
 
+    val terminalNode = if (ctx.COLON2() != null) {
+      ctx.COLON2()
+    } else {
+      ctx.DOT()
+    }
+
     val identifierNodes = methodNameAst.head.nodes
       .filter(node => node.isInstanceOf[NewIdentifier])
     if (identifierNodes.size > 0) {
       // this is a object.member access. The methodNameAst contains the object whose member is being accessed
-      val terminalNode = if (ctx.COLON2() != null) {
-        ctx.COLON2()
-      } else {
-        ctx.DOT()
-      }
       val operatorName = getOperatorName(terminalNode.getSymbol)
       val callNode = NewCall()
         .name(operatorName)
@@ -760,7 +761,12 @@ class AstCreator(filename: String, global: Global)
       Seq(callAst(callNode, methodNameAst ++ argList))
     } else {
       // this is a object.method(args) access
+      // cann node is for the method. arguments are the passed arguments + the object itself
       val callNode = methodNameAst.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+      callNode
+        .code(ctx.getText)
+        .lineNumber(terminalNode.getSymbol().getLine())
+        .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
       Seq(callAst(callNode, argList.toSeq))
     }
   }
