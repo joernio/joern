@@ -955,8 +955,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
   }
 
   "CPG for code with identifier and method name conflicts" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |def create_conflict(id)
         |    puts id
         |end
@@ -993,9 +992,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
     }
   }
 
-  "CPG for code with addition of method returns" ignore  { //failing test case
-    val cpg = code(
-      """
+  "CPG for code with addition of method returns" should {
+    val cpg = code("""
         |def num1; 1; end
         |def num2; 2; end
         |def num3; 3; end

@@ -40,6 +40,7 @@ class AstCreator(filename: String, global: Global)
   private val methodNameAsIdentiferStack = mutable.Stack[Ast]()
 
   private val methodAliases = mutable.HashMap[String, String]()
+  private val methodNames   = mutable.HashSet[String]()
 
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
@@ -158,18 +159,37 @@ class AstCreator(filename: String, global: Global)
     }
     typ
   }
-  def astForVariableIdentifierContext(ctx: VariableIdentifierContext): Seq[Ast] = {
+  def astForVariableIdentifierContext(
+    ctx: VariableIdentifierContext,
+    definitelyIdentifier: Boolean = false
+  ): Seq[Ast] = {
     val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
     val token        = terminalNode.getSymbol
     val variableName = token.getText
-    val node         = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
-    scope.addToScope(node.name, node)
-    Seq(Ast(node))
+    /*
+     * Preferences
+     * 1. If definitelyIdentifier is SET, create a identifier node
+     * 2. If an identifier with the variable name exists within the scope, create a identifier node
+     * 3. If a method with the variable name exists, create a method node
+     * 4. Otherwise default to identifier node creation since there is no reason (point 2) to create a call node
+     */
+
+    if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
+      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
+      scope.addToScope(node.name, node)
+      Seq(Ast(node))
+    } else if (methodNames.contains(variableName)) {
+      astForCallNode(terminalNode, ctx.getText)
+    } else {
+      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
+      scope.addToScope(node.name, node)
+      Seq(Ast(node))
+    }
   }
 
   def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext): Seq[Ast] = ctx match {
     case ctx: VariableIdentifierOnlySingleLeftHandSideContext =>
-      astForVariableIdentifierContext(ctx.variableIdentifier())
+      astForVariableIdentifierContext(ctx.variableIdentifier(), true)
     case ctx: PrimaryInsideBracketsSingleLeftHandSideContext =>
       val primaryAsts = astForPrimaryContext(ctx.primary())
       val argsAsts    = astForArgumentsContext(ctx.arguments())
@@ -1214,12 +1234,25 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForMethodIdentifierContext(ctx: MethodIdentifierContext, code: String, definitelyMethod: Boolean = false): Seq[Ast] = {
+  def astForMethodIdentifierContext(
+    ctx: MethodIdentifierContext,
+    code: String,
+    definitelyMethod: Boolean = false
+  ): Seq[Ast] = {
     if (ctx.methodOnlyIdentifier() != null) {
       astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     } else if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
+
+      /*
+       * Preferences
+       * 1. If definitelyMethod is SET, we are in the context of processing a method or call
+       * node wrt the statement being processed. Create a call node
+       * 2. If an identifier with the variable name exists within the scope, create a identifier node
+       * 3. Otherwise default to call node creation since there is no reason (point 2) to create a identifier node
+       */
+
       if (scope.lookupVariable(varSymbol.getText).isDefined && !definitelyMethod) {
         val node =
           createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
@@ -1319,7 +1352,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForSingletonObjextContext(ctx: SingletonObjectContext): Seq[Ast] = {
     if (ctx.variableIdentifier() != null) {
-      astForVariableIdentifierContext(ctx.variableIdentifier())
+      astForVariableIdentifierContext(ctx.variableIdentifier(), true)
     } else if (ctx.pseudoVariableIdentifier() != null) {
       Seq(Ast())
     } else if (ctx.expressionOrCommand() != null) {
@@ -1482,6 +1515,7 @@ class AstCreator(filename: String, global: Global)
       })
       .toSeq
 
+    methodNames.add(methodNode.name)
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Seq(
       methodAst(
