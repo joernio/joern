@@ -29,17 +29,22 @@ class PackageTable() {
   def getPackageCallInFile(fileName: String): Set[String] = {
     packageCallMap.getOrElse(fileName, Set.empty[String]).toSet
   }
+
+  def checkIfInternalDependency(fileName: String, methodName: String): Boolean = {
+    (!packageCallMap.contains(fileName) || !packageCallMap(fileName).contains(methodName)) && methodTableMap.contains(fileName) && methodTableMap(fileName).exists(_.methodName == methodName)
+  }
 }
 
 object PackageTable {
   def resolveImportPath(modulePath: String): String = {
-    val result = modulePath match {
+    val pathValue = modulePath.replaceAll("'", "").replaceAll("\"", "")
+    val result = pathValue match {
       case path if Files.isRegularFile(Paths.get(path)) =>
         path
       case path if Files.isRegularFile(Paths.get(path + ".rb")) =>
         s"${path}.rb"
       case _ =>
-        modulePath
+        pathValue
     }
     result
   }

@@ -15,6 +15,12 @@ class PackageResolverPass(cpg: Cpg, packageTable: PackageTable) extends ForkJoin
 
   override def runOnPart(builder: DiffGraphBuilder, call: Call): Unit = {
     val sourceFile = call.file.head.name
+    if (packageTable.checkIfInternalDependency(sourceFile, call.name)) {
+      packageTable.getPackageMethod(sourceFile, call.name).foreach(method => {
+        updateCallNode(builder, call, s"${method.parentClassPath}${call.name}:<unresolvedSignature>")
+      })
+    }
+
     packageTable
       .getPackageCallInFile(sourceFile)
       .foreach(module => {
