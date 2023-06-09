@@ -47,7 +47,7 @@ class TSTypesTest extends AbstractPassTest {
     args.name shouldBe "args"
     args.code shouldBe "...args"
     args.isVariadic shouldBe true
-    args.typeFullName shouldBe s"${Defines.Any}[]"
+    args.typeFullName shouldBe Defines.Any
   }
 
   "have return types for arrow functions" in AstFixture("const foo = () => 42;", tsTypes = true) { cpg =>

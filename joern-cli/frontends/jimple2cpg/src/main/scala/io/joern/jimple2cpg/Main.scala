@@ -6,15 +6,10 @@ import scopt.OParser
 
 /** Command line configuration parameters
   */
-final case class Config(
-  inputPath: String = "",
-  outputPath: String = X2CpgConfig.defaultOutputPath,
-  android: Option[String] = None
-) extends X2CpgConfig[Config] {
-
-  override def withInputPath(inputPath: String): Config =
-    copy(inputPath = inputPath)
-  override def withOutputPath(x: String): Config = copy(outputPath = x)
+final case class Config(android: Option[String] = None) extends X2CpgConfig[Config] {
+  def withAndroid(android: String): Config = {
+    copy(android = Some(android)).withInheritedFields(this)
+  }
 }
 
 private object Frontend {
@@ -28,7 +23,7 @@ private object Frontend {
       programName("jimple2cpg"),
       opt[String]("android")
         .text("Optional path to android.jar while processing apk file.")
-        .action((android, config) => config.copy(android = Option(android)))
+        .action((android, config) => config.withAndroid(android))
     )
   }
 }

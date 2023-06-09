@@ -23,10 +23,10 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
-        val astgenResult = new AstGenRunner(config).execute(tmpDir)
-        val hash         = HashUtil.sha256(astgenResult.parsedFiles.map { case (_, file) => File(file).path })
+        val astGenResult = new AstGenRunner(config).execute(tmpDir)
+        val hash         = HashUtil.sha256(astGenResult.parsedFiles.map { case (_, file) => File(file).path })
 
-        val astCreationPass = new AstCreationPass(cpg, astgenResult, config, report)
+        val astCreationPass = new AstCreationPass(cpg, astGenResult, config, report)
         astCreationPass.createAndApply()
 
         new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()

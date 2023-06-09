@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
@@ -22,31 +23,130 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       arg.columnNumber shouldBe Some(5)
     }
 
-    "have correct structure for an unsigned, decimal integer literal" ignore {
+    "have correct structure for an unsigned, decimal integer literal" in {
       val cpg           = code("123")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "123"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
     }
 
-    "have correct structure for a +integer, decimal literal" ignore {
+    "have correct structure for a +integer, decimal literal" in {
       val cpg           = code("+1")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "+1"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
     }
 
-    "have correct structure for a -integer, decimal literal" ignore {
+    "have correct structure for a -integer, decimal literal" in {
       val cpg           = code("-1")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "-1"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an unsigned, decimal float literal" in {
+      val cpg           = code("3.14")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Float
+      literal.code shouldBe "3.14"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a +float, decimal literal" in {
+      val cpg           = code("+3.14")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Float
+      literal.code shouldBe "+3.14"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a -float, decimal literal" in {
+      val cpg           = code("-3.14")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Float
+      literal.code shouldBe "-3.14"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an unsigned, decimal float literal with unsigned exponent" in {
+      val cpg           = code("3e10")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Float
+      literal.code shouldBe "3e10"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an unsigned, decimal float literal with -exponent" in {
+      val cpg           = code("12e-10")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Float
+      literal.code shouldBe "12e-10"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an unsigned, binary integer literal" in {
+      val cpg           = code("0b01")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "0b01"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a -integer, binary literal" in {
+      val cpg           = code("-0b01")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "-0b01"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a +integer, binary literal" in {
+      val cpg           = code("+0b01")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "+0b01"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an unsigned, hexadecimal integer literal" in {
+      val cpg           = code("0xabc")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "0xabc"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a -integer, hexadecimal literal" in {
+      val cpg           = code("-0xa")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "-0xa"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a +integer, hexadecimal literal" in {
+      val cpg           = code("+0xa")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Integer
+      literal.code shouldBe "+0xa"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for `nil` literal" in {
@@ -110,6 +210,300 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       encoding.code shouldBe "__ENCODING__"
       encoding.lineNumber shouldBe Some(1)
       encoding.columnNumber shouldBe Some(5)
+    }
+
+    "have correct structure for a single-line double-quoted string literal" in {
+      val cpg           = code("\"hello\"")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.String
+      literal.code shouldBe "\"hello\""
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a single-line single-quoted string literal" in {
+      val cpg           = code("'hello'")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.String
+      literal.code shouldBe "'hello'"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an identifier symbol literal" in {
+      val cpg           = code(":someSymbolName")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Symbol
+      literal.code shouldBe ":someSymbolName"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a single-quoted-string symbol literal" in {
+      val cpg           = code(":'someSymbolName'")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Symbol
+      literal.code shouldBe ":'someSymbolName'"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a single-line regular expression literal" in {
+      val cpg           = code("/(eu|us)/")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Regexp
+      literal.code shouldBe "/(eu|us)/"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a single left had side call" in {
+      val cpg            = code("array[n] = 10")
+      val List(callNode) = cpg.call.name(Operators.indexAccess).l
+      callNode.code shouldBe "array[n]"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(5)
+    }
+
+    "have correct structure for a binary expression" in {
+      val cpg            = code("x+y")
+      val List(callNode) = cpg.call.name(Operators.addition).l
+      callNode.code shouldBe "x+y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(1)
+    }
+
+    "have correct structure for a not expression" in {
+      val cpg            = code("not y")
+      val List(callNode) = cpg.call.name(Operators.not).l
+      callNode.code shouldBe "not y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a power expression" in {
+      val cpg            = code("x**y")
+      val List(callNode) = cpg.call.name(Operators.exponentiation).l
+      callNode.code shouldBe "x**y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(1)
+    }
+
+    "have correct structure for a inclusive range expression" in {
+      val cpg            = code("1..10")
+      val List(callNode) = cpg.call.name(Operators.range).l
+      callNode.code shouldBe "1..10"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(1)
+    }
+
+    "have correct structure for a non-inclusive range expression" in {
+      val cpg            = code("1...10")
+      val List(callNode) = cpg.call.name(Operators.range).l
+      callNode.code shouldBe "1...10"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(1)
+    }
+
+    "have correct structure for a relational expression" in {
+      val cpg            = code("x<y")
+      val List(callNode) = cpg.call.name(Operators.lessThan).l
+      callNode.code shouldBe "x<y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(1)
+    }
+
+    "have correct structure for a unary exclamation expression" in {
+      val cpg            = code("!y")
+      val List(callNode) = cpg.call.name(Operators.not).l
+      callNode.code shouldBe "!y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a unary tilde expression" in {
+      val cpg            = code("~y")
+      val List(callNode) = cpg.call.name(Operators.not).l
+      callNode.code shouldBe "~y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a unary plus expression" in {
+      val cpg            = code("+y")
+      val List(callNode) = cpg.call.name(Operators.plus).l
+      callNode.code shouldBe "+y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a unary minus expression" in {
+      val cpg            = code("-y")
+      val List(callNode) = cpg.call.name(Operators.minus).l
+      callNode.code shouldBe "-y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a call node" in {
+      val cpg            = code("puts \"something\"")
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "puts \"something\""
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a logical and expression" in {
+      val cpg            = code("x & y")
+      val List(callNode) = cpg.call.name(Operators.logicalAnd).l
+      callNode.code shouldBe "x & y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for a logical or with bar expression" in {
+      val cpg            = code("x | y")
+      val List(callNode) = cpg.call.name(Operators.logicalOr).l
+      callNode.code shouldBe "x | y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for a logical or with carat expression" in {
+      val cpg            = code("x ^ y")
+      val List(callNode) = cpg.call.name(Operators.logicalOr).l
+      callNode.code shouldBe "x ^ y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for a assignment expression" in {
+      val cpg            = code("x = y")
+      val List(callNode) = cpg.call.name(Operators.assignment).l
+      callNode.code shouldBe "="
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for a equals expression" in {
+      val cpg            = code("x == y")
+      val List(callNode) = cpg.call.name(Operators.equals).l
+      callNode.code shouldBe "x == y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for a division expression" in {
+      val cpg            = code("x / y")
+      val List(callNode) = cpg.call.name(Operators.division).l
+      callNode.code shouldBe "x / y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for a modulo expression" in {
+      val cpg            = code("x % y")
+      val List(callNode) = cpg.call.name(Operators.modulo).l
+      callNode.code shouldBe "x % y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for a shift right expression" in {
+      val cpg            = code("x >> y")
+      val List(callNode) = cpg.call.name(Operators.logicalShiftRight).l
+      callNode.code shouldBe "x >> y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for a shift left expression" in {
+      val cpg            = code("x << y")
+      val List(callNode) = cpg.call.name(Operators.shiftLeft).l
+      callNode.code shouldBe "x << y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for a compare expression" in {
+      val cpg            = code("x <=> y")
+      val List(callNode) = cpg.call.name(Operators.compare).l
+      callNode.code shouldBe "x <=> y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for a indexing expression" in {
+      val cpg            = code("def some_method(index)\n some_map[index]\nend")
+      val List(callNode) = cpg.call.name(Operators.indexAccess).l
+      callNode.code shouldBe "some_map[index]"
+      callNode.lineNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(9)
+    }
+
+    "have correct structure for overloaded index operator method" in {
+      val cpg = code("""
+          |class MyClass
+          |def [](key)
+          |  @member_hash[key]
+          |end
+          |end
+          |""".stripMargin)
+
+      val List(methodNode) = cpg.method.name("\\[]").l
+      methodNode.code shouldBe "def [](key)\n  @member_hash[key]\nend"
+      methodNode.lineNumber shouldBe Some(3)
+      methodNode.lineNumberEnd shouldBe Some(5)
+      methodNode.columnNumber shouldBe Some(4)
+    }
+
+    "have correct structure for overloaded equality operator method" in {
+      val cpg = code("""
+          |class MyClass
+          |def ==(other)
+          |  @my_member==other
+          |end
+          |end
+          |""".stripMargin)
+
+      val List(methodNode) = cpg.method.name("==").l
+      methodNode.code shouldBe "def ==(other)\n  @my_member==other\nend"
+      methodNode.lineNumber shouldBe Some(3)
+      methodNode.lineNumberEnd shouldBe Some(5)
+      methodNode.columnNumber shouldBe Some(4)
+    }
+
+    "have correct structure for class method" in {
+      val cpg = code("""
+          |class MyClass
+          |def some_method(param)
+          |end
+          |end
+          |""".stripMargin)
+
+      val List(methodNode) = cpg.method.name("some_method").l
+      methodNode.code shouldBe "def some_method(param)\nend"
+      methodNode.lineNumber shouldBe Some(3)
+      methodNode.lineNumberEnd shouldBe Some(4)
+      methodNode.columnNumber shouldBe Some(4)
+    }
+
+    "have correct structure for scope resolution operator call" in {
+      val cpg = code("""
+          |def foo(param)
+          |::SomeConstant = param
+          |end
+          |""".stripMargin)
+
+      val List(callNode) = cpg.call.name("<operator>.scopeResolution").l
+      callNode.code shouldBe "::SomeConstant"
+      callNode.lineNumber shouldBe Some(3)
+      callNode.columnNumber shouldBe Some(0)
+
+      val List(identifierNode) = cpg.identifier.name("SomeConstant").l
+      identifierNode.code shouldBe "SomeConstant"
+      identifierNode.lineNumber shouldBe Some(3)
+      identifierNode.columnNumber shouldBe Some(0)
     }
   }
 }
