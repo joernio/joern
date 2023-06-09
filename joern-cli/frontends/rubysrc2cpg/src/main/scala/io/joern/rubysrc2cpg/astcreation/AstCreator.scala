@@ -140,6 +140,7 @@ class AstCreator(filename: String, global: Global)
     case NOT                 => Operators.not
     case STAR2               => Operators.exponentiation
     case COLON2              => RubyOperators.scopeResolution
+    case DOT                 => Operators.fieldAccess
     case _                   => RubyOperators.none
   }
 
@@ -723,10 +724,11 @@ class AstCreator(filename: String, global: Global)
       } else {
         ctx.DOT()
       }
+      val operatorName = getOperatorName(terminalNode.getSymbol)
       val callNode = NewCall()
-        .name(terminalNode.getText)
-        .code(terminalNode.getText)
-        .methodFullName(MethodFullNames.OperatorPrefix + terminalNode.getText)
+        .name(operatorName)
+        .code(ctx.getText)
+        .methodFullName(operatorName)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
