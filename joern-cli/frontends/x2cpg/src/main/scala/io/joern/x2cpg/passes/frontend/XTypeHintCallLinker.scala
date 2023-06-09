@@ -168,6 +168,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
     builder.addNode(speculativeNamespace)
     newMethods
+      .iterator
       .filter(_.astParentFullName == XTypeHintCallLinker.namespace)
       .foreach(m => builder.addEdge(speculativeNamespace, m, EdgeTypes.AST))
   }
