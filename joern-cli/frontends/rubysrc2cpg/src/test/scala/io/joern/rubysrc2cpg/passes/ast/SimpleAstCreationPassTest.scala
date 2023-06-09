@@ -505,5 +505,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       identifierNode.lineNumber shouldBe Some(3)
       identifierNode.columnNumber shouldBe Some(0)
     }
+
+    "have correct structure for a addition expression with space before addition" in {
+      val cpg = code("x + y")
+      val List(callNode) = cpg.call.name(Operators.addition).l
+      callNode.code shouldBe "x + y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(1)
+    }
   }
 }
