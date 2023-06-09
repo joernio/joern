@@ -33,8 +33,11 @@ class AstCreator(filename: String, global: Global)
 
   private val classStack = mutable.Stack[String]()
 
-  // Queue of variable identifiers incorrectly identified as method identifiers
-  private val methodNameAsIdentiferQ = mutable.Queue[Ast]()
+  /*
+   * Stack of variable identifiers incorrectly identified as method identifiers
+   * Each AST contains exactly one call or identifier node
+   */
+  private val methodNameAsIdentiferStack = mutable.Stack[Ast]()
 
   private val methodAliases = mutable.HashMap[String, String]()
 
@@ -1746,11 +1749,30 @@ class AstCreator(filename: String, global: Global)
   }
   def astForUnaryExpressionContext(ctx: UnaryExpressionContext): Seq[Ast] = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    if (ctx.op.getText == "+" && methodNameAsIdentiferQ.size > 0) {
+    if (ctx.op.getText == "+" && methodNameAsIdentiferStack.size > 0) {
       /*
        * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
        * PLUS is to be interpreted as a binary operator
        */
+
+      val queuedAst = methodNameAsIdentiferStack.pop()
+      val lhsAst =
+        queuedAst.nodes
+          .filter(node => node.isInstanceOf[NewCall])
+          .headOption match {
+          case Some(node) =>
+            /*
+             * IDENTIFIER node incorrectly created as a call node since a binary addition operation
+             * was identifier as unary + due to parser limitations
+             */
+            val incorrectCallNode = node.asInstanceOf[NewCall]
+            val identifierNode =
+              createIdentifierWithScope(ctx, incorrectCallNode.name, incorrectCallNode.name, Defines.Any, Seq())
+            Ast(identifierNode)
+          case None =>
+            queuedAst
+        }
+
       val operatorName = getOperatorName(ctx.op)
       val callNode = NewCall()
         .name(operatorName)
@@ -1761,7 +1783,7 @@ class AstCreator(filename: String, global: Global)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.op.getLine())
         .columnNumber(ctx.op.getCharPositionInLine())
-      val lhsAst = methodNameAsIdentiferQ.dequeue()
+
       Seq(callAst(callNode, Seq(lhsAst) ++ expressionAst))
     } else {
       val operatorName =
@@ -1788,11 +1810,30 @@ class AstCreator(filename: String, global: Global)
 
   def astForUnaryMinusExpressionContext(ctx: UnaryMinusExpressionContext): Seq[Ast] = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    if (methodNameAsIdentiferQ.size > 0) {
+    if (methodNameAsIdentiferStack.size > 0) {
       /*
        * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
-       * PLUS is to be interpreted as a binary operator
+       * MINUS is to be interpreted as a binary operator
        */
+
+      val queuedAst = methodNameAsIdentiferStack.pop()
+      val lhsAst =
+        queuedAst.nodes
+          .filter(node => node.isInstanceOf[NewCall])
+          .headOption match {
+          case Some(node) =>
+            /*
+             * IDENTIFIER node incorrectly created as a call node since a binary subtraction operation
+             * was identifier as unary - due to parser limitations
+             */
+            val incorrectCallNode = node.asInstanceOf[NewCall]
+            val identifierNode =
+              createIdentifierWithScope(ctx, incorrectCallNode.name, incorrectCallNode.name, Defines.Any, Seq())
+            Ast(identifierNode)
+          case None =>
+            queuedAst
+        }
+
       val operatorName = Operators.subtraction
       val callNode = NewCall()
         .name(operatorName)
@@ -1803,7 +1844,7 @@ class AstCreator(filename: String, global: Global)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.MINUS().getSymbol.getLine())
         .columnNumber(ctx.MINUS().getSymbol.getCharPositionInLine())
-      val lhsAst = methodNameAsIdentiferQ.dequeue()
+
       Seq(callAst(callNode, Seq(lhsAst) ++ expressionAst))
     } else {
       val operatorName = Operators.minus
@@ -1973,7 +2014,7 @@ class AstCreator(filename: String, global: Global)
       astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
     } else if (ctx.methodIdentifier() != null) {
       val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
-      methodNameAsIdentiferQ.enqueue(methodIdentifierAsts.head)
+      methodNameAsIdentiferStack.push(methodIdentifierAsts.head)
       val argsAsts = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
 
       val callNodes = methodIdentifierAsts.head.nodes.filter(node => node.isInstanceOf[NewCall])
