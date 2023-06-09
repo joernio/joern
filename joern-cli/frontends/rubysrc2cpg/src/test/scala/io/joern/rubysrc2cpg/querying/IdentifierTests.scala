@@ -953,4 +953,87 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.method.name(":program").dotAst.l
     }
   }
+
+  "CPG for code with identifier and method name conflicts" ignore { //failing test case
+    val cpg = code(
+      """
+        |def create_conflict(id)
+        |    puts id
+        |end
+        |
+        |create_conflict = 123
+        |
+        |puts create_conflict
+        |puts create_conflict + 1
+        |puts create_conflict(1)
+        |
+        |""".stripMargin)
+
+    "recognise all identifier nodes" in {
+      cpg.identifier
+        .name("create_conflict")
+        .l
+        .size shouldBe 2
+    }
+
+    "recognise all call nodes" in {
+      cpg.call
+        .name("puts")
+        .l
+        .size shouldBe 3
+
+      cpg.call
+        .name("create_conflict")
+        .l
+        .size shouldBe 1
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
+
+  "CPG for code with addition of method returns" should { //failing test case
+    val cpg = code(
+      """
+        |def num1; 1; end
+        |def num2; 2; end
+        |def num3; 3; end
+        |x = num1 + num2 + num3
+        |puts x
+        |""".stripMargin)
+
+    "recognise all identifier nodes" in {
+      cpg.identifier
+        .name("x")
+        .l
+        .size shouldBe 2
+    }
+
+    "recognise all call nodes" in {
+      cpg.call
+        .name("puts")
+        .l
+        .size shouldBe 1
+
+      cpg.call
+        .name("num1")
+        .l
+        .size shouldBe 1
+
+      cpg.call
+        .name("num2")
+        .l
+        .size shouldBe 1
+
+      cpg.call
+        .name("num3")
+        .l
+        .size shouldBe 1
+    }
+
+    "successfully plot ASTs" in {
+      cpg.method.name(":program").dotAst.l
+    }
+  }
 }
