@@ -37,7 +37,7 @@ class AstCreator(filename: String, global: Global)
    * Stack of variable identifiers incorrectly identified as method identifiers
    * Each AST contains exactly one call or identifier node
    */
-  private val methodNameAsIdentiferStack = mutable.Stack[Ast]()
+  private val methodNameAsIdentifierStack = mutable.Stack[Ast]()
 
   private val methodAliases = mutable.HashMap[String, String]()
   private val methodNames   = mutable.HashSet[String]()
@@ -1783,13 +1783,13 @@ class AstCreator(filename: String, global: Global)
   }
   def astForUnaryExpressionContext(ctx: UnaryExpressionContext): Seq[Ast] = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    if (ctx.op.getText == "+" && methodNameAsIdentiferStack.size > 0) {
+    if (ctx.op.getText == "+" && methodNameAsIdentifierStack.size > 0) {
       /*
        * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
        * PLUS is to be interpreted as a binary operator
        */
 
-      val queuedAst = methodNameAsIdentiferStack.pop()
+      val queuedAst = methodNameAsIdentifierStack.pop()
       val lhsAst =
         queuedAst.nodes
           .filter(node => node.isInstanceOf[NewCall])
@@ -1850,13 +1850,13 @@ class AstCreator(filename: String, global: Global)
 
   def astForUnaryMinusExpressionContext(ctx: UnaryMinusExpressionContext): Seq[Ast] = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    if (methodNameAsIdentiferStack.size > 0) {
+    if (methodNameAsIdentifierStack.size > 0) {
       /*
        * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
        * MINUS is to be interpreted as a binary operator
        */
 
-      val queuedAst = methodNameAsIdentiferStack.pop()
+      val queuedAst = methodNameAsIdentifierStack.pop()
       val lhsAst =
         queuedAst.nodes
           .filter(node => node.isInstanceOf[NewCall])
@@ -2060,7 +2060,7 @@ class AstCreator(filename: String, global: Global)
       astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
     } else if (ctx.methodIdentifier() != null) {
       val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
-      methodNameAsIdentiferStack.push(methodIdentifierAsts.head)
+      methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
       val argsAsts = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
 
       val callNodes = methodIdentifierAsts.head.nodes.filter(node => node.isInstanceOf[NewCall])
