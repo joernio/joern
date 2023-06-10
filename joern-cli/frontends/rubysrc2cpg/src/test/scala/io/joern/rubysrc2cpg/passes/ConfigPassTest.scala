@@ -12,22 +12,19 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
 
     "generate a ConfigFile accordingly" in {
       File.usingTemporaryDirectory(prefix = "rubysrc2cpgTest") { dir =>
-        val gemfile = dir / "Gemfile"
-
+        val gemFileName = dir / "Gemfile"
         val gemfileContents =
           """
             |source 'https://rubygems.org'
             |gem 'json'
             |""".stripMargin
-
-        gemfile.write(gemfileContents)
+        gemFileName.write(gemfileContents)
 
         val cpg = Cpg.emptyCpg
         new ConfigPass(cpg, dir.pathAsString).createAndApply()
-
-        val List(configGemfile) = cpg.configFile.l
-        configGemfile.name shouldBe "Gemfile"
-        configGemfile.content shouldBe gemfileContents
+        val List(configFile) = cpg.configFile.l
+        configFile.name shouldBe "Gemfile"
+        configFile.content shouldBe gemfileContents
       }
     }
 
@@ -35,16 +32,13 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
       File.usingTemporaryDirectory(prefix = "rubysrc2cpgTest") { dir =>
         val subdir = dir / "subdir"
         subdir.createDirectory()
-
-        val gemfile = subdir / "Gemfile"
-        val gemfileContents = "# ignore me"
-
-        gemfile.write(gemfileContents)
+        val gemFileName     = subdir / "Gemfile"
+        val gemFileContents = "# ignore me"
+        gemFileName.write(gemFileContents)
 
         val cpg = Cpg.emptyCpg
         new ConfigPass(cpg, dir.pathAsString).createAndApply()
-
-        cpg.configFile.l shouldBe Seq()
+        cpg.configFile.size shouldBe 0
       }
     }
   }
@@ -53,9 +47,8 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
 
     "generate a ConfigFile accordingly" in {
       File.usingTemporaryDirectory(prefix = "rubysrc2cpgTest") { dir =>
-        val gemfilelock = dir / "Gemfile.lock"
-
-        val gemfilelockContents =
+        val gemFileName = dir / "Gemfile.lock"
+        val gemFileContents =
           """
             |GEM
             |  remote: https://rubygems.org/
@@ -68,15 +61,13 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
             |BUNDLED WITH
             |   2.1.4
             |""".stripMargin
-
-        gemfilelock.write(gemfilelockContents)
+        gemFileName.write(gemFileContents)
 
         val cpg = Cpg.emptyCpg
         new ConfigPass(cpg, dir.pathAsString).createAndApply()
-
-        val List(configGemfilelock) = cpg.configFile.l
-        configGemfilelock.name shouldBe "Gemfile.lock"
-        configGemfilelock.content shouldBe gemfilelockContents
+        val List(configFile) = cpg.configFile.l
+        configFile.name shouldBe "Gemfile.lock"
+        configFile.content shouldBe gemFileContents
       }
     }
 
@@ -84,16 +75,13 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
       File.usingTemporaryDirectory(prefix = "rubysrc2cpgTest") { dir =>
         val subdir = dir / "subdir"
         subdir.createDirectory()
+        val gemFileName     = subdir / "Gemfile.lock"
+        val gemFileContents = "# ignore me"
 
-        val gemfilelock = subdir / "Gemfile.lock"
-        val gemfilelockContents = "# ignore me"
-
-        gemfilelock.write(gemfilelockContents)
-
+        gemFileName.write(gemFileContents)
         val cpg = Cpg.emptyCpg
         new ConfigPass(cpg, dir.pathAsString).createAndApply()
-
-        cpg.configFile.l shouldBe Seq()
+        cpg.configFile.size shouldBe 0
       }
     }
   }
