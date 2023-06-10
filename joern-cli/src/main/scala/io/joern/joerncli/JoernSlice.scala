@@ -16,7 +16,7 @@ object JoernSlice {
   import io.joern.dataflowengineoss.slicing._
 
   private val configParser = new scopt.OptionParser[BaseConfig]("joern-slice") {
-    head("Extract intra-procedural slices from the CPG.")
+    head("Extract various slices from the CPG.")
     help("help")
     arg[String]("cpg")
       .text("input CPG file name - defaults to `cpg.bin`")
@@ -91,6 +91,14 @@ object JoernSlice {
               case c: UsagesConfig => c.copy(excludeOperatorCalls = true)
               case _               => c
             }
+          ),
+        opt[Unit]("exclude-source")
+          .text(s"excludes method source code in the slices - defaults to false.")
+          .action((_, c) =>
+            c match {
+              case c: UsagesConfig => c.copy(excludeMethodSource = true)
+              case _               => c
+            }
           )
       )
   }
@@ -114,12 +122,12 @@ object JoernSlice {
           checkAndApplyOverlays(cpg)
           // Slice the CPG
           (config match {
-            case x: DataFlowConfig => Option(DataFlowSlicing.calculateDataFlowSlice(cpg, x))
+            case x: DataFlowConfig => DataFlowSlicing.calculateDataFlowSlice(cpg, x)
             case x: UsagesConfig   => Option(UsageSlicing.calculateUsageSlice(cpg, x))
             case _                 => None
           }) match {
             case Some(programSlice: ProgramSlice) => saveSlice(config.outFile, programSlice)
-            case None                             =>
+            case None                             => println("Empty slice, no file generated.")
           }
         }
       }

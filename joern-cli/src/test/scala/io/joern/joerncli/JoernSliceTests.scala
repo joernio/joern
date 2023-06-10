@@ -19,7 +19,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
         .asInstanceOf[ProgramUsageSlice]
 
     "extract 'express.js' slice" in {
-      val Some(slice) = programSlice.objectSlices.get("main.js::program").flatMap(_.headOption)
+      val Some(slice) = programSlice.objectSlices.get("main.js::program").flatMap(_.slices.headOption)
       slice.definedBy shouldBe Some(DefComponent("express", "ANY"))
       slice.targetObj shouldBe DefComponent("app", "ANY")
 
@@ -54,7 +54,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
     }
 
     "extract 'Car' object instantiation" in {
-      val Some(slice) = programSlice.objectSlices.get("main.js::program:carTest").flatMap(_.headOption)
+      val Some(slice) = programSlice.objectSlices.get("main.js::program:carTest").flatMap(_.slices.headOption)
       slice.definedBy shouldBe Some(DefComponent("new Car", "ANY"))
       slice.targetObj shouldBe DefComponent("c", "main.js::program:Car")
 
@@ -82,7 +82,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
         .asInstanceOf[ProgramUsageSlice]
 
     "extract 'name' parameter slice from 'startScene'" in {
-      val Some(slice) = programSlice.objectSlices.get("main.ts::program:Game:startScene").flatMap(_.headOption)
+      val Some(slice) = programSlice.objectSlices.get("main.ts::program:Game:startScene").flatMap(_.slices.headOption)
       slice.definedBy shouldBe Some(DefComponent("name", "__ecma.String"))
       slice.targetObj shouldBe DefComponent("name", "__ecma.String")
 
@@ -95,7 +95,7 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
     }
 
     "extract 'loader' object slice from the main program" in {
-      val Some(slice) = programSlice.objectSlices.get("main.ts::program").flatMap(_.headOption)
+      val Some(slice) = programSlice.objectSlices.get("main.ts::program").flatMap(_.slices.headOption)
       slice.definedBy shouldBe Some(DefComponent("new Loader", "ANY"))
       slice.targetObj shouldBe DefComponent("loader", "ANY")
 
@@ -107,7 +107,8 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
     }
 
     "extract 'time' parameter slice from the lambda in 'loop'" in {
-      val Some(slice) = programSlice.objectSlices.get("main.ts::program:Game:loop:anonymous").flatMap(_.headOption)
+      val Some(slice) =
+        programSlice.objectSlices.get("main.ts::program:Game:loop:anonymous").flatMap(_.slices.headOption)
       slice.definedBy shouldBe Some(DefComponent("time", "__ecma.Number"))
       slice.targetObj shouldBe DefComponent("time", "__ecma.Number")
 
