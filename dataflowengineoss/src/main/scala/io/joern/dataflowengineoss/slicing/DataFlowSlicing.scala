@@ -13,7 +13,7 @@ object DataFlowSlicing {
       case Some(fileName) => cpg.file.nameExact(fileName).ast.isCall
       case None           => cpg.call
     }).toBuffer
-      .map { c: Call =>
+      .map { (c: Call) =>
         val sinks = c.argument.l
 
         val sliceNodes = sinks.iterator.repeat(_.ddgIn)(_.maxDepth(config.sliceDepth).emit).dedup.l
