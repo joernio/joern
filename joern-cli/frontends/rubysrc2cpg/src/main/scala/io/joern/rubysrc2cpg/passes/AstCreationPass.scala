@@ -18,10 +18,12 @@ class AstCreationPass(cpg: Cpg, config: Config) extends ConcurrentWriterCpgPass[
 
   def allUsedTypes(): List[String] = global.usedTypes.keys().asScala.toList
 
-  override def generateParts(): Array[String] = SourceFiles.determine(config.inputPath, RubySourceFileExtensions).toArray
+  override def generateParts(): Array[String] =
+    SourceFiles.determine(config.inputPath, RubySourceFileExtensions).toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
-    val astCreator = if (config.useJRuby) new JRubyBasedAstCreator(fileName) else new AntlrBasedAstCreator(fileName, global)
+    val astCreator =
+      if (config.useJRuby) new JRubyBasedAstCreator(fileName) else new AntlrBasedAstCreator(fileName, global)
     diffGraph.absorb(astCreator.createAst())
   }
 }

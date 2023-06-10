@@ -15,10 +15,12 @@ private object Frontend {
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder._
-    OParser.sequence(programName("rubysrc2cpg"),
+    OParser.sequence(
+      programName("rubysrc2cpg"),
       opt[Unit]("jruby")
         .action((_, c) => c.withJrubyParser(true))
-        .text("use jRuby to parse source-code"))
+        .text("use jRuby to parse source-code")
+    )
   }
 }
 
