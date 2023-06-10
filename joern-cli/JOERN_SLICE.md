@@ -4,49 +4,42 @@
 CPG. Two modes are available:
 
 * **Data-flow**: This is a pretty standard backwards data-flow slicing command that starts at call arguments and slices 
-backwards to create a graph of slices. This is interprocedural and the paths are only limited by a depth argument with a
-default of 20.
+backwards to create a graph of slices.
 * **Usages**: This targets locals and parameters and traces what calls they make and in which calls they are used. This is
 useful for describing how a variable interacts in a procedure.
-
-## Schemas
 
 Each slicer outputs JSON, which allows the result to be ingested by other processes or libraries e.g. NetworkX.
 
 ### Data-Flow
 
-This creates a graph with an additional mapping to denote the methods under which each node belongs:
+This is interprocedural and the paths are only limited by a depth argument with a default of 20. Note this is expensive
+so note the filter options. This creates a graph with an additional mapping to denote the methods under which each node
+belongs:
 
-```json
-{
-  "nodes": [
-    {
-      "id": "number",
-      "label": "string",
-      "name": "string",
-      "code": "string",
-      "typeFullName": "string",
-      "lineNumber": "number",
-      "columnNumber": "number"
-    },
-    ...
-  ],
-  "edges": [
-    {
-      "src": "number",
-      "dst": "number",
-      "label": "string"
-    }
-  ],
-  "methodToChildNode": {
-    "<method_name_a>": [
-      "node_id_1",
-      "node_id_2"
-    ],
-    "<method_name_b>": [],
-    ...
-  }
-}
+```
+Command: data-flow [options]
+
+  --slice-depth <value>    the max depth to traverse the DDG for the data-flow slice - defaults to 20.
+```
+
+*TODO*: Add more filter options
+
+#### Schema
+
+```scala
+case class DataFlowSlice(nodes: Set[SliceNode], edges: Set[SliceEdge], methodToChildNode: Map[String, Set[Long]])
+
+case class SliceNode(
+    id: Long,
+    label: String,
+    name: String = "",
+    code: String,
+    typeFullName: String = "",
+    lineNumber: Integer = -1,
+    columnNumber: Integer = -1
+)
+
+case class SliceEdge(src: Long, dst: Long, label: String)
 ```
 
 ### Usages
@@ -55,76 +48,36 @@ The usages slice describes how a variable interacts within its procedure. This i
 in some ways. The variables are locals and parameters and the referencing identifiers are tracked to find what the
 variable calls and what calls it forms an argument of.
 
-```json
-{
-  "objectSlices": {
-    "<method_name_a>": [
-      {
-        "targetObj": {
-          "name": "identifier_name",
-          "typeFullName": "identifier_type",
-          "literal": "boolean"
-        },
-        "definedBy": {
-          "name": "identifier_name",
-          "typeFullName": "identifier_type",
-          "literal": "boolean"
-        },
-        "invokedCalls": [
-          {
-            "callName": "name_of_call",
-            "paramTypes": [
-              "type_of_param1",
-              "type_of_param2",
-              "type_of_paramN"
-            ],
-            "returnType": "return_type"
-          }
-        ],
-        "argToCalls": [
-          [
-            {
-              "callName": "name_of_call",
-              "paramTypes": [
-                "type_of_param1",
-                "type_of_param2",
-                "type_of_paramN"
-              ],
-              "returnType": "return_type"
-            },
-            "number_of_argument_targetObj_is_in"
-          ]
-        ]
-      }, 
-      ...
-    ],
-    "<method_name_b>": [
-      ...
-    ],
-    ...
-  },
-  "userDefinedTypes": [
-    {
-      "name": "type_name",
-      "fields": [
-        {
-          "name": "field_name",
-          "typeFullName": "type of the field",
-          "literal": "boolean"
-        }
-      ],
-      "procedures": [
-        {
-          "callName": "name_of_call",
-          "paramTypes": [
-            "type_of_param1",
-            "type_of_param2",
-            "type_of_paramN"
-          ],
-          "returnType": "return_type"
-        }
-      ]
-    }
-  ]
-}
+Accompanying this slice, there is an optional source code property. With these details one can generate a useful LLM
+prompts, for example.
+
+*TODO*: Clean up schema
+
+```
+Command: usages [options]
+
+  --min-num-calls <value>  the minimum number of calls required for a usage slice - defaults to 1.
+  --exclude-operators      excludes operator calls in the slices - defaults to false.
+  --exclude-source         excludes method source code in the slices - defaults to false.
+```
+
+#### Schema
+
+```scala
+case class ProgramUsageSlice(objectSlices: Map[String, MethodUsageSlice], userDefinedTypes: List[UserDefinedType])
+
+case class MethodUsageSlice(source: String, slices: Set[ObjectUsageSlice])
+
+case class ObjectUsageSlice(
+                             targetObj: DefComponent,
+                             definedBy: Option[DefComponent],
+                             invokedCalls: List[ObservedCall],
+                             argToCalls: List[(ObservedCall, Int)]
+                           )
+
+case class DefComponent(name: String, typeFullName: String, literal: Boolean = false)
+
+case class ObservedCall(callName: String, paramTypes: List[String], returnType: String)
+
+case class UserDefinedType(name: String, fields: List[DefComponent], procedures: List[ObservedCall])
 ```
