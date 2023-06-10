@@ -33,7 +33,7 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPas
     if (resolvedTypeDecls.nonEmpty) {
       val fullNames = resolvedTypeDecls.map(_.fullName)
       builder.setNodeProperty(source, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, fullNames)
-      cpg.typ.fullName(fullNames: _*).foreach(tgt => builder.addEdge(source, tgt, EdgeTypes.INHERITS_FROM))
+      cpg.typ.fullNameExact(fullNames: _*).foreach(tgt => builder.addEdge(source, tgt, EdgeTypes.INHERITS_FROM))
     }
   }
 
