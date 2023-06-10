@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import scala.language.postfixOps
-import scala.util.Using
+import scala.util.{Try, Using}
 
 object JoernSlice {
 
@@ -105,9 +105,11 @@ object JoernSlice {
             config.inputPath.isDirectory || !config.inputPath
               .extension(includeDot = false)
               .exists(_.matches("(bin|cpg)"))
-          )
-            generateTempCpg(config)
-          else config.inputPath.pathAsString
+          ) {
+            generateTempCpg(config).get
+          } else {
+            config.inputPath.pathAsString
+          }
         Using.resource(CpgBasedTool.loadFromOdb(inputCpgPath)) { cpg =>
           checkAndApplyOverlays(cpg)
           // Slice the CPG
@@ -139,21 +141,19 @@ object JoernSlice {
     }
   }
 
-  private def generateTempCpg(config: BaseConfig): String = {
+  private def generateTempCpg(config: BaseConfig): Try[String] = {
     val tmpFile = File.newTemporaryFile("joern-slice", ".bin")
     println(s"Generating CPG from code at ${config.inputPath.pathAsString}")
-    (JoernParse.run(
-      ParserConfig(config.inputPath.pathAsString, outputCpgFile = tmpFile.pathAsString),
-      if (config.dummyTypesEnabled) List.empty else List("--no-dummyTypes")
-    ) match {
-      case Right(_) =>
+
+    JoernParse
+      .run(
+        ParserConfig(config.inputPath.pathAsString, outputCpgFile = tmpFile.pathAsString),
+        if (config.dummyTypesEnabled) List.empty else List("--no-dummyTypes")
+      )
+      .map { _ =>
         println(s"Temporary CPG has been successfully generated at ${tmpFile.pathAsString}")
-        Right(tmpFile.deleteOnExit(swallowIOExceptions = true).pathAsString)
-      case x => x
-    }) match {
-      case Left(err)   => throw new RuntimeException(err)
-      case Right(path) => path
-    }
+        tmpFile.deleteOnExit(swallowIOExceptions = true).pathAsString
+      }
   }
 
   private def parseConfig(args: Array[String]): Option[BaseConfig] =
