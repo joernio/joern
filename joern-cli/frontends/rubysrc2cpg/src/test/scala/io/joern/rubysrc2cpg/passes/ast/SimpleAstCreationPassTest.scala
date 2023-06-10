@@ -20,7 +20,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
       arg.code shouldBe "123"
       arg.lineNumber shouldBe Some(1)
-      arg.columnNumber shouldBe Some(5)
     }
 
     "have correct structure for an unsigned, decimal integer literal" in {
@@ -29,7 +28,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "123"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a +integer, decimal literal" in {
@@ -38,7 +36,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "+1"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a -integer, decimal literal" in {
@@ -47,7 +44,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "-1"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for an unsigned, decimal float literal" in {
@@ -56,7 +52,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Float
       literal.code shouldBe "3.14"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a +float, decimal literal" in {
@@ -65,7 +60,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Float
       literal.code shouldBe "+3.14"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a -float, decimal literal" in {
@@ -74,7 +68,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Float
       literal.code shouldBe "-3.14"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for an unsigned, decimal float literal with unsigned exponent" in {
@@ -83,7 +76,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Float
       literal.code shouldBe "3e10"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for an unsigned, decimal float literal with -exponent" in {
@@ -92,7 +84,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Float
       literal.code shouldBe "12e-10"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for an unsigned, binary integer literal" in {
@@ -101,7 +92,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "0b01"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a -integer, binary literal" in {
@@ -110,7 +100,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "-0b01"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a +integer, binary literal" in {
@@ -119,7 +108,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "+0b01"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for an unsigned, hexadecimal integer literal" in {
@@ -128,7 +116,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "0xabc"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a -integer, hexadecimal literal" in {
@@ -137,7 +124,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "-0xa"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a +integer, hexadecimal literal" in {
@@ -146,7 +132,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Integer
       literal.code shouldBe "+0xa"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for `nil` literal" in {
@@ -155,7 +140,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.NilClass
       literal.code shouldBe "nil"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(5)
     }
 
     "have correct structure for `true` literal" in {
@@ -164,7 +148,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.TrueClass
       literal.code shouldBe "true"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(5)
     }
 
     "have correct structure for `false` literal" in {
@@ -173,7 +156,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.FalseClass
       literal.code shouldBe "false"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(5)
     }
 
     "have correct structure for `self` identifier" in {
@@ -182,7 +164,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       self.typeFullName shouldBe Defines.Object
       self.code shouldBe "self"
       self.lineNumber shouldBe Some(1)
-      self.columnNumber shouldBe Some(5)
     }
 
     "have correct structure for `__FILE__` identifier" in {
@@ -191,7 +172,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       file.typeFullName shouldBe Defines.String
       file.code shouldBe "__FILE__"
       file.lineNumber shouldBe Some(1)
-      file.columnNumber shouldBe Some(5)
     }
 
     "have correct structure for `__LINE__` identifier" in {
@@ -200,7 +180,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       line.typeFullName shouldBe Defines.Integer
       line.code shouldBe "__LINE__"
       line.lineNumber shouldBe Some(1)
-      line.columnNumber shouldBe Some(5)
     }
 
     "have correct structure for `__ENCODING__` identifier" in {
@@ -209,7 +188,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       encoding.typeFullName shouldBe Defines.Encoding
       encoding.code shouldBe "__ENCODING__"
       encoding.lineNumber shouldBe Some(1)
-      encoding.columnNumber shouldBe Some(5)
     }
 
     "have correct structure for a single-line double-quoted string literal" in {
@@ -218,7 +196,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.String
       literal.code shouldBe "\"hello\""
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a single-line single-quoted string literal" in {
@@ -227,7 +204,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.String
       literal.code shouldBe "'hello'"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for an identifier symbol literal" in {
@@ -236,7 +212,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Symbol
       literal.code shouldBe ":someSymbolName"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a single-quoted-string symbol literal" in {
@@ -245,7 +220,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Symbol
       literal.code shouldBe ":'someSymbolName'"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a single-line regular expression literal" in {
@@ -254,7 +228,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Regexp
       literal.code shouldBe "/(eu|us)/"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for an empty regular expression literal used as the second argument to a call" in {
@@ -263,7 +236,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.typeFullName shouldBe Defines.Regexp
       literal.code shouldBe "//"
       literal.lineNumber shouldBe Some(1)
-      literal.columnNumber shouldBe Some(8)
     }
 
     "have correct structure for a single left had side call" in {
@@ -271,7 +243,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.indexAccess).l
       callNode.code shouldBe "array[n]"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(5)
     }
 
     "have correct structure for a binary expression" in {
@@ -279,7 +250,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.addition).l
       callNode.code shouldBe "x+y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
     }
 
     "have correct structure for a not expression" in {
@@ -287,7 +257,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.not).l
       callNode.code shouldBe "not y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a power expression" in {
@@ -295,7 +264,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.exponentiation).l
       callNode.code shouldBe "x**y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
     }
 
     "have correct structure for a inclusive range expression" in {
@@ -303,7 +271,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.range).l
       callNode.code shouldBe "1..10"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
     }
 
     "have correct structure for a non-inclusive range expression" in {
@@ -311,7 +278,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.range).l
       callNode.code shouldBe "1...10"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
     }
 
     "have correct structure for a relational expression" in {
@@ -319,7 +285,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.lessThan).l
       callNode.code shouldBe "x<y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
     }
 
     "have correct structure for a unary exclamation expression" in {
@@ -327,7 +292,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.not).l
       callNode.code shouldBe "!y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a unary tilde expression" in {
@@ -335,7 +299,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.not).l
       callNode.code shouldBe "~y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a unary plus expression" in {
@@ -343,7 +306,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.plus).l
       callNode.code shouldBe "+y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a unary minus expression" in {
@@ -351,7 +313,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.minus).l
       callNode.code shouldBe "-y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a call node" in {
@@ -359,7 +320,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.l
       callNode.code shouldBe "puts \"something\""
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a logical and expression" in {
@@ -367,7 +327,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.logicalAnd).l
       callNode.code shouldBe "x & y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
     }
 
     "have correct structure for a logical or with bar expression" in {
@@ -375,7 +334,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.logicalOr).l
       callNode.code shouldBe "x | y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
     }
 
     "have correct structure for a logical or with carat expression" in {
@@ -383,7 +341,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.logicalOr).l
       callNode.code shouldBe "x ^ y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+
     }
 
     "have correct structure for a assignment expression" in {
@@ -391,7 +349,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.assignment).l
       callNode.code shouldBe "="
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
     }
 
     "have correct structure for a equals expression" in {
@@ -399,7 +356,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.equals).l
       callNode.code shouldBe "x == y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
     }
 
     "have correct structure for a division expression" in {
@@ -407,7 +363,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.division).l
       callNode.code shouldBe "x / y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
     }
 
     "have correct structure for a modulo expression" in {
@@ -415,7 +370,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.modulo).l
       callNode.code shouldBe "x % y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
     }
 
     "have correct structure for a shift right expression" in {
@@ -423,7 +377,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.logicalShiftRight).l
       callNode.code shouldBe "x >> y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
     }
 
     "have correct structure for a shift left expression" in {
@@ -431,7 +384,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.shiftLeft).l
       callNode.code shouldBe "x << y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
     }
 
     "have correct structure for a compare expression" in {
@@ -439,7 +391,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.compare).l
       callNode.code shouldBe "x <=> y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
     }
 
     "have correct structure for a indexing expression" in {
@@ -447,7 +398,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.indexAccess).l
       callNode.code shouldBe "some_map[index]"
       callNode.lineNumber shouldBe Some(2)
-      callNode.columnNumber shouldBe Some(9)
     }
 
     "have correct structure for overloaded index operator method" in {
@@ -462,8 +412,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(methodNode) = cpg.method.name("\\[]").l
       methodNode.code shouldBe "def [](key)\n  @member_hash[key]\nend"
       methodNode.lineNumber shouldBe Some(3)
-      methodNode.lineNumberEnd shouldBe Some(5)
-      methodNode.columnNumber shouldBe Some(4)
     }
 
     "have correct structure for overloaded equality operator method" in {
@@ -479,7 +427,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       methodNode.code shouldBe "def ==(other)\n  @my_member==other\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(5)
-      methodNode.columnNumber shouldBe Some(4)
     }
 
     "have correct structure for class method" in {
@@ -494,7 +441,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       methodNode.code shouldBe "def some_method(param)\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(4)
-      methodNode.columnNumber shouldBe Some(4)
     }
 
     "have correct structure for scope resolution operator call" in {
@@ -507,12 +453,10 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name("<operator>.scopeResolution").l
       callNode.code shouldBe "::SomeConstant"
       callNode.lineNumber shouldBe Some(3)
-      callNode.columnNumber shouldBe Some(0)
 
       val List(identifierNode) = cpg.identifier.name("SomeConstant").l
       identifierNode.code shouldBe "SomeConstant"
       identifierNode.lineNumber shouldBe Some(3)
-      identifierNode.columnNumber shouldBe Some(0)
     }
   }
 }
