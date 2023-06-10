@@ -1,13 +1,14 @@
-package io.joern.rubysrc2cpg.astcreation
-import io.joern.rubysrc2cpg.parser.RubyParser._
-import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
+package io.joern.rubysrc2cpg.astcreation.antlr
+
+import io.joern.rubysrc2cpg.parser.antlr.RubyParser._
+import io.joern.rubysrc2cpg.parser.antlr.{RubyLexer, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, Token}
 import org.slf4j.LoggerFactory
@@ -18,9 +19,9 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
-class AstCreator(filename: String, global: Global)
+class AntlrBasedAstCreator(filename: String, global: Global)
     extends AstCreatorBase(filename)
-    with AstNodeBuilder[ParserRuleContext, AstCreator]
+    with AstNodeBuilder[ParserRuleContext, AntlrBasedAstCreator]
     with AstForPrimitivesCreator {
 
   protected val scope: Scope[String, NewIdentifier, Unit] = new Scope()

@@ -1,4 +1,4 @@
-package io.joern.rubysrc2cpg.parser
+package io.joern.rubysrc2cpg.parser.antlr
 
 class MethodDefinitionTests extends RubyParserAbstractTest {
 

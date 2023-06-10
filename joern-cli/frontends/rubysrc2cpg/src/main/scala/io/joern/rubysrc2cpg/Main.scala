@@ -4,7 +4,9 @@ import io.joern.rubysrc2cpg.Frontend._
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-final case class Config() extends X2CpgConfig[Config]
+final case class Config(useJRuby: Boolean = false) extends X2CpgConfig[Config] {
+  def withJrubyParser(value: Boolean): Config = copy(useJRuby = value)
+}
 
 private object Frontend {
 
@@ -12,8 +14,11 @@ private object Frontend {
 
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
-    import builder.programName
-    OParser.sequence(programName("rubysrc2cpg"))
+    import builder._
+    OParser.sequence(programName("rubysrc2cpg"),
+      opt[Unit]("jruby")
+        .action((_, c) => c.withJrubyParser(true))
+        .text("use jRuby to parse source-code"))
   }
 }
 

@@ -1,8 +1,9 @@
-package io.joern.rubysrc2cpg.parser
+package io.joern.rubysrc2cpg.parser.antlr
 
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import java.util.stream.Collectors
 
 abstract class RubyParserAbstractTest extends AnyWordSpec with Matchers {

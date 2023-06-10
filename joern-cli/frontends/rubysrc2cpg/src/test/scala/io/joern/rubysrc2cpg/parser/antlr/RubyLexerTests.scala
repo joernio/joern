@@ -1,6 +1,6 @@
-package io.joern.rubysrc2cpg.parser
+package io.joern.rubysrc2cpg.parser.antlr
 
-import io.joern.rubysrc2cpg.parser.RubyLexer._
+import io.joern.rubysrc2cpg.parser.antlr.RubyLexer._
 import org.antlr.v4.runtime.Token.EOF
 import org.antlr.v4.runtime._
 import org.scalatest.flatspec.AnyFlatSpec

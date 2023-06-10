@@ -1,4 +1,4 @@
-package io.joern.rubysrc2cpg.parser
+package io.joern.rubysrc2cpg.parser.antlr
 
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.TerminalNode

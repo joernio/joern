@@ -1,10 +1,10 @@
-package io.joern.rubysrc2cpg.astcreation
+package io.joern.rubysrc2cpg.astcreation.antlr
 
-import io.joern.rubysrc2cpg.parser.RubyParser
+import io.joern.rubysrc2cpg.parser.antlr.RubyParser
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 
-trait AstForPrimitivesCreator { this: AstCreator =>
+trait AstForPrimitivesCreator { this: AntlrBasedAstCreator =>
 
   protected def astForNilLiteral(ctx: RubyParser.NilPseudoVariableIdentifierContext): Ast =
     Ast(literalNode(ctx, ctx.getText, Defines.NilClass))

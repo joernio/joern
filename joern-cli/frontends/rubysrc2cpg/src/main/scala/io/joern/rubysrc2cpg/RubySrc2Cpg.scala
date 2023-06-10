@@ -17,7 +17,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
-      val astCreationPass = new AstCreationPass(config.inputPath, cpg)
+      val astCreationPass = new AstCreationPass(cpg, config)
       astCreationPass.createAndApply()
       new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
     }

@@ -1,6 +1,6 @@
-package io.joern.rubysrc2cpg.parser
+package io.joern.rubysrc2cpg.parser.antlr
 
-import io.joern.rubysrc2cpg.parser.RubyLexer._
+import io.joern.rubysrc2cpg.parser.antlr.RubyLexer._
 
 trait RubyLexerStringInterpolationHandling { this: RubyLexerBase =>
 
