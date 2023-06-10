@@ -3,8 +3,8 @@ import scala.util.Properties.isWin
 
 name := "php2cpg"
 
-scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.3.0")
+scalaVersion       := "2.13.11"
+crossScalaVersions := Seq("2.13.11", "3.3.0")
 
 val phpParserVersion = "4.15.6"
 val phpParserBinName = "php-parser.phar"
