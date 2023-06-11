@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg
 
-import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigPass}
+import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigPass, DependenciesPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
@@ -18,6 +18,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigPass(cpg, config.inputPath).createAndApply()
+      new DependenciesPass(cpg).createAndApply()
       val astCreationPass = new AstCreationPass(cpg, config)
       astCreationPass.createAndApply()
       new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
