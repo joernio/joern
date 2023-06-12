@@ -176,13 +176,11 @@ class AstCreator(filename: String, global: Global)
 
     if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
       val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
-      scope.addToScope(node.name, node)
       Seq(Ast(node))
     } else if (methodNames.contains(variableName)) {
       astForCallNode(terminalNode, ctx.getText)
     } else {
       val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
-      scope.addToScope(node.name, node)
       Seq(Ast(node))
     }
   }
@@ -761,7 +759,7 @@ class AstCreator(filename: String, global: Global)
       Seq(callAst(callNode, methodNameAst ++ argList))
     } else {
       // this is a object.method(args) access
-      // cann node is for the method. arguments are the passed arguments + the object itself
+      // call node is for the method. arguments are the passed arguments + the object itself
       val callNode = methodNameAst.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
       callNode
         .code(ctx.getText)
@@ -781,6 +779,7 @@ class AstCreator(filename: String, global: Global)
     } else {
       primaryAst ++ methodNameAst
     }
+    // TODO IMPLEMENT THIS
   }
 
   def astForChainedScopedConstantReferencePrimaryContext(
