@@ -25,10 +25,6 @@ class AstCreator(filename: String, global: Global)
 
   protected val scope: Scope[String, NewIdentifier, Unit] = new Scope()
 
-  object MethodFullNames {
-    val OperatorPrefix = "<operator>."
-  }
-
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private val classStack = mutable.Stack[String]()
@@ -107,10 +103,13 @@ class AstCreator(filename: String, global: Global)
   }
 
   object RubyOperators {
-    val none            = "<operator>.none"
-    val patternMatch    = "<operator>.patternMatch"
-    val notPatternMatch = "<operator>.notPatternMatch"
-    val scopeResolution = "<operator>.scopeResolution"
+    val none                    = "<operator>.none"
+    val patternMatch            = "<operator>.patternMatch"
+    val notPatternMatch         = "<operator>.notPatternMatch"
+    val scopeResolution         = "<operator>.scopeResolution"
+    val defined                 = "<operator>.defined"
+    val keyValueAssociation     = "<operator>.keyValueAssociation"
+    val activeRecordAssociation = "<operator>.activeRecordAssociation"
   }
   private def getOperatorName(token: Token): String = token.getType match {
     case AMP                 => Operators.logicalAnd
@@ -145,6 +144,8 @@ class AstCreator(filename: String, global: Global)
     case STAR2               => Operators.exponentiation
     case COLON2              => RubyOperators.scopeResolution
     case DOT                 => Operators.fieldAccess
+    case EQGT                => RubyOperators.keyValueAssociation
+    case COLON               => RubyOperators.activeRecordAssociation
     case _                   => RubyOperators.none
   }
 
@@ -1073,10 +1074,11 @@ class AstCreator(filename: String, global: Global)
   def astForInvocationExpressionOrCommandContext(ctx: InvocationExpressionOrCommandContext): Seq[Ast] = {
     if (ctx.EMARK() != null) {
       val invocWOParenAsts = astForInvocationWithoutParenthesesContext(ctx.invocationWithoutParentheses())
+      val operatorName     = getOperatorName(ctx.EMARK().getSymbol)
       val callNode = NewCall()
-        .name(ctx.EMARK().getText)
-        .code(ctx.EMARK().getText)
-        .methodFullName(MethodFullNames.OperatorPrefix + ctx.EMARK().getText)
+        .name(operatorName)
+        .code(ctx.getText)
+        .methodFullName(operatorName)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
@@ -1153,9 +1155,9 @@ class AstCreator(filename: String, global: Global)
   def astForIsDefinedExpressionContext(ctx: IsDefinedExpressionContext): Seq[Ast] = {
     val exprAst = astForExpressionContext(ctx.expression())
     val callNode = NewCall()
-      .name(ctx.IS_DEFINED().getText)
-      .code(ctx.IS_DEFINED().getText)
-      .methodFullName(MethodFullNames.OperatorPrefix + ctx.IS_DEFINED().getText)
+      .name(RubyOperators.defined)
+      .code(ctx.getText)
+      .methodFullName(RubyOperators.defined)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
@@ -2020,10 +2022,11 @@ class AstCreator(filename: String, global: Global)
       if (ctx.COLON() != null) ctx.COLON()
       else ctx.EQGT()
 
+    val operatorText = getOperatorName(terminalNode.getSymbol)
     val callNode = NewCall()
-      .name(terminalNode.getText)
+      .name(operatorText)
       .code(ctx.getText)
-      .methodFullName(MethodFullNames.OperatorPrefix + terminalNode.getText)
+      .methodFullName(operatorText)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
