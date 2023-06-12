@@ -434,96 +434,12 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForModifierStatementContext(ctx: ModifierStatementContext): Seq[Ast] = {
-    if (ctx.statement().size() != 2) {
-      // unsupported or invalid modifier statement
-      return Seq(Ast())
-    }
-
-    val rightAst        = astForStatementContext(ctx.statement(1))
-    val leftAst         = astForStatementContext(ctx.statement(0))
-    val ctrlStructNodes = leftAst.head.nodes.filter(node => node.isInstanceOf[NewControlStructure])
-
-    if (ctrlStructNodes.size > 1) {
-      return Seq(Ast()) // there cannot be multiple of these. some issue with the code or the parser
-    }
-
-    if (ctrlStructNodes.size == 1) {
-      /*
-       * This is
-       * next <stmt> OR
-       * redo <stmt> OR
-       * retry <stmt>
-       * These control structures came from the LHS
-       * Left is keyword and right is the expression.
-       * Right depends on left and so right is a child of the left
-       * Left AST already has a control structure
-       */
-
-      val ctrlContinue = ctrlStructNodes.head.asInstanceOf[NewControlStructure]
-      val node = NewControlStructure()
-        .controlStructureType(ControlStructureTypes.IF)
-        .lineNumber(ctrlContinue.lineNumber)
-        .columnNumber(ctrlContinue.columnNumber)
-        .code(ctx.getText)
-      Seq(controlStructureAst(node, rightAst.headOption, Seq()))
-    } else {
-      /*
-       * This is <stmt> if/unless/while/until/rescue <stmt>
-       * Left is evaluated on the basic of the right and so left
-       * depends on the right
-       * Thus, left is a child of the right
-       *
-       */
-      val ast = ctx.mod.getType() match {
-        case IF =>
-          val ifNode = NewControlStructure()
-            .controlStructureType(ControlStructureTypes.IF)
-            .code(ctx.getText)
-            .lineNumber(ctx.IF().getSymbol.getLine)
-            .columnNumber(ctx.IF().getSymbol.getCharPositionInLine)
-          controlStructureAst(ifNode, rightAst.headOption, leftAst.toList)
-        case UNLESS =>
-          val ifNode = NewControlStructure()
-            .controlStructureType(ControlStructureTypes.IF)
-            .code(ctx.getText)
-            .lineNumber(ctx.UNLESS().getSymbol.getLine)
-            .columnNumber(ctx.UNLESS().getSymbol.getCharPositionInLine)
-          controlStructureAst(ifNode, rightAst.headOption, leftAst.toList)
-        case WHILE =>
-          whileAst(
-            rightAst.headOption,
-            leftAst,
-            Some(ctx.getText),
-            Some(ctx.WHILE().getSymbol.getLine),
-            Some(ctx.WHILE().getSymbol.getCharPositionInLine)
-          )
-        case UNTIL =>
-          whileAst(
-            rightAst.headOption,
-            leftAst,
-            Some(ctx.getText),
-            Some(ctx.UNTIL().getSymbol.getLine),
-            Some(ctx.UNTIL().getSymbol.getCharPositionInLine)
-          )
-        case RESCUE =>
-          val node = NewControlStructure()
-            .controlStructureType(ControlStructureTypes.THROW)
-            .lineNumber(ctx.mod.getLine)
-            .columnNumber(ctx.mod.getCharPositionInLine)
-            .code(ctx.getText)
-          controlStructureAst(node, rightAst.headOption, leftAst)
-      }
-      Seq(ast)
-    }
-  }
-
   def astForStatementContext(ctx: StatementContext): Seq[Ast] = ctx match {
     case ctx: AliasStatementContext               => Seq(astForAliasStatement(ctx))
     case ctx: UndefStatementContext               => Seq(astForUndefStatement(ctx))
     case ctx: BeginStatementContext               => Seq(astForBeginStatement(ctx))
     case ctx: EndStatementContext                 => Seq(astForEndStatement(ctx))
-    case ctx: ModifierStatementContext            => astForModifierStatementContext(ctx)
+    case ctx: ModifierStatementContext            => Seq(astForModifierStatement(ctx))
     case ctx: ExpressionOrCommandStatementContext => astForExpressionOrCommandContext(ctx.expressionOrCommand())
     case _ =>
       logger.error("astForStatementContext() All contexts mismatched.")

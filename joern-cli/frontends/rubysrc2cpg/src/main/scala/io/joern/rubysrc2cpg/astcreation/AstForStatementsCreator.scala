@@ -1,14 +1,10 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.parser.RubyParser.{
-  AliasStatementContext,
-  BeginStatementContext,
-  EndStatementContext,
-  UndefStatementContext
-}
+import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure}
 
 trait AstForStatementsCreator { this: AstCreator =>
 
@@ -34,6 +30,53 @@ trait AstForStatementsCreator { this: AstCreator =>
     val stmts     = astForStatementsContext(ctx.statements())
     val blockNode = NewBlock().typeFullName(Defines.Any)
     blockAst(blockNode, stmts.toList)
+  }
+
+  protected def astForModifierStatement(ctx: ModifierStatementContext): Ast = ctx.mod.getType match {
+    case IF     => astForIfModifierStatement(ctx)
+    case UNLESS => astForUnlessModifierStatement(ctx)
+    case WHILE  => astForWhileModifierStatement(ctx)
+    case UNTIL  => astForUntilModifierStatement(ctx)
+    case RESCUE => astForRescueModifierStatement(ctx)
+  }
+
+  protected def astForIfModifierStatement(ctx: ModifierStatementContext): Ast = {
+    val lhs = astForStatementContext(ctx.statement(0))
+    val rhs = astForStatementContext(ctx.statement(1)).headOption
+    val ifNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.IF)
+      .code(ctx.getText)
+    controlStructureAst(ifNode, rhs, lhs)
+  }
+
+  protected def astForUnlessModifierStatement(ctx: ModifierStatementContext): Ast = {
+    val lhs = astForStatementContext(ctx.statement(0))
+    val rhs = astForStatementContext(ctx.statement(1))
+    val ifNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.IF)
+      .code(ctx.getText)
+    controlStructureAst(ifNode, lhs.headOption, rhs)
+  }
+
+  protected def astForWhileModifierStatement(ctx: ModifierStatementContext): Ast = {
+    val lhs = astForStatementContext(ctx.statement(0))
+    val rhs = astForStatementContext(ctx.statement(1))
+    whileAst(rhs.headOption, lhs, Some(ctx.getText))
+  }
+
+  protected def astForUntilModifierStatement(ctx: ModifierStatementContext): Ast = {
+    val lhs = astForStatementContext(ctx.statement(0))
+    val rhs = astForStatementContext(ctx.statement(1))
+    whileAst(rhs.headOption, lhs, Some(ctx.getText))
+  }
+
+  protected def astForRescueModifierStatement(ctx: ModifierStatementContext): Ast = {
+    val lhs = astForStatementContext(ctx.statement(0))
+    val rhs = astForStatementContext(ctx.statement(1))
+    val throwNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.THROW)
+      .code(ctx.getText)
+    controlStructureAst(throwNode, rhs.headOption, lhs)
   }
 
 }
