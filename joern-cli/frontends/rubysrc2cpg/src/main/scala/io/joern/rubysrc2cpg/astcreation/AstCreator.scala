@@ -434,26 +434,6 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForAliasStatementContext(ctx: AliasStatementContext): Seq[Ast] =
-    Seq(astForAliasStatement(ctx))
-
-  def astForUndefStatementContext(ctx: UndefStatementContext): Seq[Ast] = {
-    // TODO to be implemented
-    Seq(Ast())
-  }
-
-  def astForBeginStatementContext(ctx: BeginStatementContext): Seq[Ast] = {
-    val astStmts  = astForStatementsContext(ctx.statements())
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    Seq(blockAst(blockNode, astStmts.toList))
-  }
-
-  def astForEndStatementContext(ctx: EndStatementContext): Seq[Ast] = {
-    val astStmts  = astForStatementsContext(ctx.statements())
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    Seq(blockAst(blockNode, astStmts.toList))
-  }
-
   def astForModifierStatementContext(ctx: ModifierStatementContext): Seq[Ast] = {
     if (ctx.statement().size() != 2) {
       // unsupported or invalid modifier statement
@@ -539,10 +519,10 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForStatementContext(ctx: StatementContext): Seq[Ast] = ctx match {
-    case ctx: AliasStatementContext               => astForAliasStatementContext(ctx)
-    case ctx: UndefStatementContext               => astForUndefStatementContext(ctx)
-    case ctx: BeginStatementContext               => astForBeginStatementContext(ctx)
-    case ctx: EndStatementContext                 => astForEndStatementContext(ctx)
+    case ctx: AliasStatementContext               => Seq(astForAliasStatement(ctx))
+    case ctx: UndefStatementContext               => Seq(astForUndefStatement(ctx))
+    case ctx: BeginStatementContext               => Seq(astForBeginStatement(ctx))
+    case ctx: EndStatementContext                 => Seq(astForEndStatement(ctx))
     case ctx: ModifierStatementContext            => astForModifierStatementContext(ctx)
     case ctx: ExpressionOrCommandStatementContext => astForExpressionOrCommandContext(ctx.expressionOrCommand())
     case _ =>

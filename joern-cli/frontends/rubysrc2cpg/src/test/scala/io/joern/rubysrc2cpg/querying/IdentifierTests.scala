@@ -194,10 +194,10 @@ class IdentifierTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
     "recognise all identifier and call nodes" in {
-      cpg.identifier.name("beginvar").l.size shouldBe 2
-      cpg.identifier.name("endvar").l.size shouldBe 2
-      cpg.identifier.name("beginbool").l.size shouldBe 1
-      cpg.identifier.name("endbool").l.size shouldBe 1
+      cpg.identifier.name("beginvar").size shouldBe 2
+      cpg.identifier.name("endvar").size shouldBe 2
+      cpg.identifier.name("beginbool").size shouldBe 1
+      cpg.identifier.name("endbool").size shouldBe 1
       cpg.call.name("puts").size shouldBe 1
       cpg.identifier.size shouldBe 6
     }
@@ -925,29 +925,14 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all literal nodes" in {
-      cpg.literal
-        .code("\"In begin\"")
-        .l
-        .size shouldBe 1
-      cpg.literal
-        .code("\"SomeException occurred\"")
-        .l
-        .size shouldBe 1
-      cpg.literal
-        .code("\"SomeOtherException occurred\"")
-        .l
-        .size shouldBe 1
-      cpg.literal
-        .code("\"Catch-all block\"")
-        .l
-        .size shouldBe 1
+      cpg.literal.code("\"In begin\"").size shouldBe 1
+      cpg.literal.code("\"SomeException occurred\"").size shouldBe 1
+      cpg.literal.code("\"SomeOtherException occurred\"").size shouldBe 1
+      cpg.literal.code("\"Catch-all block\"").size shouldBe 1
     }
 
     "recognise all call nodes" in {
-      cpg.call
-        .name("puts")
-        .l
-        .size shouldBe 4
+      cpg.call.name("puts").size shouldBe 4
     }
 
     "successfully plot ASTs" in {
