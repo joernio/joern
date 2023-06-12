@@ -556,5 +556,53 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       identifierNode.lineNumber shouldBe Some(1)
       identifierNode.columnNumber shouldBe Some(0)
     }
+
+    "have correct structure for negation before block (invocationExpressionOrCommand)" in {
+      val cpg = code("!foo arg do\nputs arg\nend")
+
+      val List(callNode1) = cpg.call.name(Operators.not).l
+      callNode1.code shouldBe "!foo arg do\nputs arg\nend"
+      callNode1.lineNumber shouldBe Some(1)
+      callNode1.columnNumber shouldBe Some(0)
+
+      val List(callNode2) = cpg.call.name("foo").l
+      callNode2.code shouldBe "foo arg do\nputs arg\nend"
+      callNode2.lineNumber shouldBe Some(1)
+      callNode2.columnNumber shouldBe Some(1)
+
+      val List(callNode3) = cpg.call.name("puts").l
+      callNode3.code shouldBe "puts arg"
+      callNode3.lineNumber shouldBe Some(2)
+      callNode3.columnNumber shouldBe Some(0)
+
+      val List(identifierNode) = cpg.identifier.name("arg").l
+      identifierNode.code shouldBe "arg"
+      identifierNode.lineNumber shouldBe Some(2)
+      identifierNode.columnNumber shouldBe Some(5)
+    }
+
+    "have correct structure for a hash initialisation" in {
+      val cpg       = code("hashMap = {\"k1\" => 1, \"k2\" => 2}")
+      val callNodes = cpg.call.name("<operator>.keyValueAssociation").l
+      callNodes.size shouldBe 2
+      callNodes.head.code shouldBe "\"k1\" => 1"
+      callNodes.head.lineNumber shouldBe Some(1)
+      callNodes.head.columnNumber shouldBe Some(16)
+    }
+
+    "have correct structure for defined expression" in {
+      val cpg = code("defined? x")
+
+      val List(callNode) = cpg.call.name("<operator>.defined").l
+      callNode.code shouldBe "defined? x"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+
+      val List(identifierNode) = cpg.identifier.name("x").l
+      identifierNode.code shouldBe "x"
+      identifierNode.lineNumber shouldBe Some(1)
+      identifierNode.columnNumber shouldBe Some(9)
+    }
   }
+
 }

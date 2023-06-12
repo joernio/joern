@@ -769,6 +769,13 @@ class IdentifierTests extends RubyCode2CpgFixture {
         .size shouldBe 1
     }
 
+    "recognise all call nodes" in {
+      cpg.call
+        .name("<operator>.activeRecordAssociation")
+        .l
+        .size shouldBe 4
+    }
+
     "successfully plot ASTs" in {
       cpg.method.name(":program").dotAst.l
     }
