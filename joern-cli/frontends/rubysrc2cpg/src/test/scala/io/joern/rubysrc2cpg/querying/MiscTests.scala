@@ -213,8 +213,7 @@ class MiscTests extends RubyCode2CpgFixture {
   }
 
   "CPG for code with addition of method returns" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |def num1; 1; end
         |def num2; 2; end
         |def num3; 3; end

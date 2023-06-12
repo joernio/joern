@@ -90,8 +90,7 @@ class IdentifierTests extends RubyCode2CpgFixture {
   }
 
   "CPG for code with identifier and method name conflicts" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |def create_conflict(id)
         |    puts id
         |end
