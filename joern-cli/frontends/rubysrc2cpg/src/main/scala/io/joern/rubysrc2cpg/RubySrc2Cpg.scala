@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg
 
-import io.joern.rubysrc2cpg.passes.{AstCreationPass, AstPackagePass, PackageResolverPass}
+import io.joern.rubysrc2cpg.passes.{AstCreationPass, AstPackagePass, PackageResolverPass, ConfigPass}
 import io.joern.rubysrc2cpg.utils.PackageTable
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
@@ -24,6 +24,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       val packageTableInfo = new PackageTable()
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
+      new ConfigPass(cpg, config.inputPath).createAndApply()
       val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, packageTableInfo)
       astCreationPass.createAndApply()
       downloadDependency(config.inputPath)

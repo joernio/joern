@@ -937,16 +937,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     baseTypes
       .map(t => if (t.endsWith(funcName)) t else s"$t$pathSep$funcName")
       .flatMap(p => cpg.method.fullNameExact(p))
-      .map { m =>
-        (
-          m,
-          NewMethodRef()
-            .code(s"${baseName.map(_.appended(pathSep)).getOrElse("")}$funcName")
-            .methodFullName(m.fullName)
-            .lineNumber(funcPtr.lineNumber)
-            .columnNumber(funcPtr.columnNumber)
-        )
-      }
+      .map(m => m -> createMethodRef(baseName, funcName, m.fullName, funcPtr.lineNumber, funcPtr.columnNumber))
       .filterNot { case (_, mRef) =>
         addedNodes.contains((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
       }
@@ -955,19 +946,40 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           .filterNot(_.astChildren.isMethodRef.methodFullNameExact(mRef.methodFullName).nonEmpty)
           .foreach { inCall =>
             state.changesWereMade.compareAndSet(false, true)
-            builder.addNode(mRef)
-            builder.addEdge(mRef, m, EdgeTypes.REF)
-            builder.addEdge(inCall, mRef, EdgeTypes.AST)
-            inCall match {
-              case x: Call =>
-                builder.addEdge(x, mRef, EdgeTypes.ARGUMENT)
-                mRef.argumentIndex(x.argumentOut.size + 1)
-              case x =>
-                mRef.argumentIndex(x.astChildren.size + 1)
-            }
+            integrateMethodRef(funcPtr, m, mRef, inCall)
           }
-        addedNodes.add((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
       }
+  }
+
+  private def createMethodRef(
+    baseName: Option[String],
+    funcName: String,
+    methodFullName: String,
+    lineNo: Option[Integer],
+    columnNo: Option[Integer]
+  ): NewMethodRef =
+    NewMethodRef()
+      .code(s"${baseName.map(_.appended(pathSep)).getOrElse("")}$funcName")
+      .methodFullName(methodFullName)
+      .lineNumber(lineNo)
+      .columnNumber(columnNo)
+
+  /** Integrate this method ref node into the CPG according to schema rules. Since we're adding this after the base
+    * passes, we need to add the necessary linking manually.
+    */
+  private def integrateMethodRef(funcPtr: Expression, m: Method, mRef: NewMethodRef, inCall: AstNode) = {
+    builder.addNode(mRef)
+    builder.addEdge(mRef, m, EdgeTypes.REF)
+    builder.addEdge(inCall, mRef, EdgeTypes.AST)
+    builder.addEdge(funcPtr.method, mRef, EdgeTypes.CONTAINS)
+    inCall match {
+      case x: Call =>
+        builder.addEdge(x, mRef, EdgeTypes.ARGUMENT)
+        mRef.argumentIndex(x.argumentOut.size + 1)
+      case x =>
+        mRef.argumentIndex(x.astChildren.size + 1)
+    }
+    addedNodes.add((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
   }
 
   protected def persistType(x: StoredNode, types: Set[String]): Unit = {
