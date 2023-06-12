@@ -33,10 +33,14 @@ class AstCreator(filename: String, global: Global)
 
   private val classStack = mutable.Stack[String]()
 
-  // Queue of variable identifiers incorrectly identified as method identifiers
-  private val methodNameAsIdentiferQ = mutable.Queue[Ast]()
+  /*
+   * Stack of variable identifiers incorrectly identified as method identifiers
+   * Each AST contains exactly one call or identifier node
+   */
+  private val methodNameAsIdentifierStack = mutable.Stack[Ast]()
 
   private val methodAliases = mutable.HashMap[String, String]()
+  private val methodNames   = mutable.HashSet[String]()
 
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
@@ -140,6 +144,7 @@ class AstCreator(filename: String, global: Global)
     case NOT                 => Operators.not
     case STAR2               => Operators.exponentiation
     case COLON2              => RubyOperators.scopeResolution
+    case DOT                 => Operators.fieldAccess
     case _                   => RubyOperators.none
   }
 
@@ -154,18 +159,35 @@ class AstCreator(filename: String, global: Global)
     }
     typ
   }
-  def astForVariableIdentifierContext(ctx: VariableIdentifierContext): Seq[Ast] = {
+  def astForVariableIdentifierContext(
+    ctx: VariableIdentifierContext,
+    definitelyIdentifier: Boolean = false
+  ): Seq[Ast] = {
     val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
     val token        = terminalNode.getSymbol
     val variableName = token.getText
-    val node         = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
-    scope.addToScope(node.name, node)
-    Seq(Ast(node))
+    /*
+     * Preferences
+     * 1. If definitelyIdentifier is SET, create a identifier node
+     * 2. If an identifier with the variable name exists within the scope, create a identifier node
+     * 3. If a method with the variable name exists, create a method node
+     * 4. Otherwise default to identifier node creation since there is no reason (point 2) to create a call node
+     */
+
+    if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
+      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
+      Seq(Ast(node))
+    } else if (methodNames.contains(variableName)) {
+      astForCallNode(terminalNode, ctx.getText)
+    } else {
+      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
+      Seq(Ast(node))
+    }
   }
 
   def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext): Seq[Ast] = ctx match {
     case ctx: VariableIdentifierOnlySingleLeftHandSideContext =>
-      astForVariableIdentifierContext(ctx.variableIdentifier())
+      astForVariableIdentifierContext(ctx.variableIdentifier(), true)
     case ctx: PrimaryInsideBracketsSingleLeftHandSideContext =>
       val primaryAsts = astForPrimaryContext(ctx.primary())
       val argsAsts    = astForArgumentsContext(ctx.arguments())
@@ -703,40 +725,58 @@ class AstCreator(filename: String, global: Global)
   def astForChainedInvocationPrimaryContext(ctx: ChainedInvocationPrimaryContext): Seq[Ast] = {
     val methodNameAst = astForMethodNameContext(ctx.methodName())
 
-    val argList = ListBuffer[Ast]()
-    argList.addAll(astForPrimaryContext(ctx.primary()))
+    val baseAst = astForPrimaryContext(ctx.primary())
 
-    if (ctx.argumentsWithParentheses() != null) {
-      argList.addAll(astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses()))
-    }
-
-    if (ctx.block() != null) {
-      argList.addAll(astForBlockContext(ctx.block()))
+    val terminalNode = if (ctx.COLON2() != null) {
+      ctx.COLON2()
+    } else {
+      ctx.DOT()
     }
 
     val identifierNodes = methodNameAst.head.nodes
       .filter(node => node.isInstanceOf[NewIdentifier])
     if (identifierNodes.size > 0) {
-      // this is a object.member access. The methodNameAst contains the object whose member is being accessed
-      val terminalNode = if (ctx.COLON2() != null) {
-        ctx.COLON2()
-      } else {
-        ctx.DOT()
-      }
+      /*
+       This is a object.member access. baseAst contains the object whose member is being accessed
+       methodNameAst is the member
+       TODO this does not cover the case in which the member could be correctly recognised as a identifier
+       This will be covered once class and method information is made available to this pass with a
+       preprocessing pass for imports before this pass
+       */
+
+      val operatorName = getOperatorName(terminalNode.getSymbol)
       val callNode = NewCall()
-        .name(terminalNode.getText)
-        .code(terminalNode.getText)
-        .methodFullName(MethodFullNames.OperatorPrefix + terminalNode.getText)
+        .name(operatorName)
+        .code(ctx.getText)
+        .methodFullName(operatorName)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
         .lineNumber(terminalNode.getSymbol().getLine())
         .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
-      Seq(callAst(callNode, methodNameAst ++ argList))
+      Seq(callAst(callNode, baseAst ++ methodNameAst))
     } else {
       // this is a object.method(args) access
+      // baseAst contains the object whose member is being accessed
+      // call node is for the method. arguments are the passed arguments + the object itself
+      val argsAst = if (ctx.argumentsWithParentheses() != null) {
+        astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
+      } else {
+        Seq()
+      }
+
+      val blocksAst = if (ctx.block() != null) {
+        astForBlockContext(ctx.block())
+      } else {
+        Seq()
+      }
+
       val callNode = methodNameAst.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
-      Seq(callAst(callNode, argList.toSeq))
+      callNode
+        .code(ctx.getText)
+        .lineNumber(terminalNode.getSymbol().getLine())
+        .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
+      Seq(callAst(callNode, baseAst ++ argsAst ++ blocksAst))
     }
   }
 
@@ -750,6 +790,7 @@ class AstCreator(filename: String, global: Global)
     } else {
       primaryAst ++ methodNameAst
     }
+    // TODO IMPLEMENT THIS
   }
 
   def astForChainedScopedConstantReferencePrimaryContext(
@@ -1090,13 +1131,13 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForInvocationWithBlockOnlyPrimaryContext(ctx: InvocationWithBlockOnlyPrimaryContext): Seq[Ast] = {
-    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
     val blockAst    = astForBlockContext(ctx.block())
     blockAst ++ methodIdAst
   }
 
   def astForInvocationWithParenthesesPrimaryContext(ctx: InvocationWithParenthesesPrimaryContext): Seq[Ast] = {
-    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
     val parenAst    = astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
     val callNode    = methodIdAst.head.nodes.filter(_.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     callNode.name(getActualMethodName(callNode.name))
@@ -1209,13 +1250,26 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForMethodIdentifierContext(ctx: MethodIdentifierContext, code: String): Seq[Ast] = {
+  def astForMethodIdentifierContext(
+    ctx: MethodIdentifierContext,
+    code: String,
+    definitelyMethod: Boolean = false
+  ): Seq[Ast] = {
     if (ctx.methodOnlyIdentifier() != null) {
       astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     } else if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
-      if (scope.lookupVariable(varSymbol.getText).isDefined) {
+
+      /*
+       * Preferences
+       * 1. If definitelyMethod is SET, we are in the context of processing a method or call
+       * node wrt the statement being processed. Create a call node
+       * 2. If an identifier with the variable name exists within the scope, create a identifier node
+       * 3. Otherwise default to call node creation since there is no reason (point 2) to create a identifier node
+       */
+
+      if (scope.lookupVariable(varSymbol.getText).isDefined && !definitelyMethod) {
         val node =
           createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
@@ -1262,7 +1316,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForMethodNameContext(ctx: MethodNameContext): Seq[Ast] = {
     if (ctx.methodIdentifier() != null) {
-      astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+      astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
     } else if (ctx.operatorMethodName() != null) {
       astForOperatorMethodNameContext(ctx.operatorMethodName())
     } else if (ctx.keyword() != null) {
@@ -1314,7 +1368,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForSingletonObjextContext(ctx: SingletonObjectContext): Seq[Ast] = {
     if (ctx.variableIdentifier() != null) {
-      astForVariableIdentifierContext(ctx.variableIdentifier())
+      astForVariableIdentifierContext(ctx.variableIdentifier(), true)
     } else if (ctx.pseudoVariableIdentifier() != null) {
       Seq(Ast())
     } else if (ctx.expressionOrCommand() != null) {
@@ -1477,6 +1531,7 @@ class AstCreator(filename: String, global: Global)
       })
       .toSeq
 
+    methodNames.add(methodNode.name)
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Seq(
       methodAst(
@@ -1648,7 +1703,7 @@ class AstCreator(filename: String, global: Global)
     case ctx: RubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
       val argsAsts     = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
       val doBlockAsts  = astForDoBlockContext(ctx.doBlock())
-      val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+      val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
       methodIdAsts ++ argsAsts ++ doBlockAsts
     case ctx: RubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
       val argsAsts       = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
@@ -1744,22 +1799,47 @@ class AstCreator(filename: String, global: Global)
   }
   def astForUnaryExpressionContext(ctx: UnaryExpressionContext): Seq[Ast] = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    if (ctx.op.getText == "+" && methodNameAsIdentiferQ.size > 0) {
+    if (ctx.op.getText == "+" && methodNameAsIdentifierStack.size > 0) {
       /*
        * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
        * PLUS is to be interpreted as a binary operator
        */
+
+      val queuedAst = methodNameAsIdentifierStack.pop()
+      val lhsAst =
+        queuedAst.nodes
+          .filter(node => node.isInstanceOf[NewCall])
+          .headOption match {
+          case Some(node) =>
+            /*
+             * IDENTIFIER node incorrectly created as a call node since a binary addition operation
+             * was identifier as unary + due to parser limitations
+             */
+            val incorrectCallNode = node.asInstanceOf[NewCall]
+            val identifierNode =
+              createIdentifierWithScope(ctx, incorrectCallNode.name, incorrectCallNode.name, Defines.Any, Seq())
+            Ast(identifierNode)
+          case None =>
+            queuedAst
+        }
+
+      val lhsCode = lhsAst.nodes
+        .filter(node => node.isInstanceOf[NewIdentifier])
+        .head
+        .asInstanceOf[NewIdentifier]
+        .code
+
       val operatorName = getOperatorName(ctx.op)
       val callNode = NewCall()
         .name(operatorName)
-        .code(ctx.getText)
+        .code(lhsCode + ctx.getText.filterNot(_.isWhitespace))
         .methodFullName(operatorName)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.op.getLine())
         .columnNumber(ctx.op.getCharPositionInLine())
-      val lhsAst = methodNameAsIdentiferQ.dequeue()
+
       Seq(callAst(callNode, Seq(lhsAst) ++ expressionAst))
     } else {
       val operatorName =
@@ -1786,22 +1866,47 @@ class AstCreator(filename: String, global: Global)
 
   def astForUnaryMinusExpressionContext(ctx: UnaryMinusExpressionContext): Seq[Ast] = {
     val expressionAst = astForExpressionContext(ctx.expression())
-    if (methodNameAsIdentiferQ.size > 0) {
+    if (methodNameAsIdentifierStack.size > 0) {
       /*
        * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
-       * PLUS is to be interpreted as a binary operator
+       * MINUS is to be interpreted as a binary operator
        */
+
+      val queuedAst = methodNameAsIdentifierStack.pop()
+      val lhsAst =
+        queuedAst.nodes
+          .filter(node => node.isInstanceOf[NewCall])
+          .headOption match {
+          case Some(node) =>
+            /*
+             * IDENTIFIER node incorrectly created as a call node since a binary subtraction operation
+             * was identifier as unary - due to parser limitations
+             */
+            val incorrectCallNode = node.asInstanceOf[NewCall]
+            val identifierNode =
+              createIdentifierWithScope(ctx, incorrectCallNode.name, incorrectCallNode.name, Defines.Any, Seq())
+            Ast(identifierNode)
+          case None =>
+            queuedAst
+        }
+
+      val lhsCode = lhsAst.nodes
+        .filter(node => node.isInstanceOf[NewIdentifier])
+        .head
+        .asInstanceOf[NewIdentifier]
+        .code
+
       val operatorName = Operators.subtraction
       val callNode = NewCall()
         .name(operatorName)
-        .code(ctx.getText)
+        .code(lhsCode + ctx.getText.filterNot(_.isWhitespace))
         .methodFullName(operatorName)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.MINUS().getSymbol.getLine())
         .columnNumber(ctx.MINUS().getSymbol.getCharPositionInLine())
-      val lhsAst = methodNameAsIdentiferQ.dequeue()
+
       Seq(callAst(callNode, Seq(lhsAst) ++ expressionAst))
     } else {
       val operatorName = Operators.minus
@@ -1971,7 +2076,7 @@ class AstCreator(filename: String, global: Global)
       astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
     } else if (ctx.methodIdentifier() != null) {
       val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
-      methodNameAsIdentiferQ.enqueue(methodIdentifierAsts.head)
+      methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
       val argsAsts = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
 
       val callNodes = methodIdentifierAsts.head.nodes.filter(node => node.isInstanceOf[NewCall])

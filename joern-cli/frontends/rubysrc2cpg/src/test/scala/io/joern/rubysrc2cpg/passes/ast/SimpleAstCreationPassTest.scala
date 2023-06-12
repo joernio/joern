@@ -514,5 +514,47 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       identifierNode.lineNumber shouldBe Some(3)
       identifierNode.columnNumber shouldBe Some(0)
     }
+
+    "have correct structure for a addition expression with space before addition" in {
+      val cpg            = code("x + y")
+      val List(callNode) = cpg.call.name(Operators.addition).l
+      callNode.code shouldBe "x+y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for a addition expression with space before subtraction" in {
+      val cpg            = code("x - y")
+      val List(callNode) = cpg.call.name(Operators.subtraction).l
+      callNode.code shouldBe "x-y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(2)
+    }
+
+    "have correct structure for object's method access (chainedInvocationPrimary)" in {
+      val cpg            = code("object.some_method(arg1,arg2)")
+      val List(callNode) = cpg.call.name("some_method").l
+      callNode.code shouldBe "object.some_method(arg1,arg2)"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(6)
+
+      val List(identifierNode1) = cpg.identifier.name("arg1").l
+      identifierNode1.code shouldBe "arg1"
+      identifierNode1.lineNumber shouldBe Some(1)
+      identifierNode1.columnNumber shouldBe Some(19)
+
+      val List(identifierNode2) = cpg.identifier.name("arg2").l
+      identifierNode2.code shouldBe "arg2"
+      identifierNode2.lineNumber shouldBe Some(1)
+      identifierNode2.columnNumber shouldBe Some(24)
+    }
+
+    "have correct structure for object's method.member access (chainedInvocationPrimary)" ignore {
+      val cpg                  = code("object.some_member")
+      val List(identifierNode) = cpg.identifier.name("some_member").l
+      identifierNode.code shouldBe "some_member"
+      identifierNode.lineNumber shouldBe Some(1)
+      identifierNode.columnNumber shouldBe Some(0)
+    }
   }
 }
