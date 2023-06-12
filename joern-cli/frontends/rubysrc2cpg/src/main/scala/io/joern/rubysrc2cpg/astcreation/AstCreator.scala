@@ -725,16 +725,7 @@ class AstCreator(filename: String, global: Global)
   def astForChainedInvocationPrimaryContext(ctx: ChainedInvocationPrimaryContext): Seq[Ast] = {
     val methodNameAst = astForMethodNameContext(ctx.methodName())
 
-    val argList = ListBuffer[Ast]()
-    argList.addAll(astForPrimaryContext(ctx.primary()))
-
-    if (ctx.argumentsWithParentheses() != null) {
-      argList.addAll(astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses()))
-    }
-
-    if (ctx.block() != null) {
-      argList.addAll(astForBlockContext(ctx.block()))
-    }
+    val baseAst = astForPrimaryContext(ctx.primary())
 
     val terminalNode = if (ctx.COLON2() != null) {
       ctx.COLON2()
@@ -745,7 +736,8 @@ class AstCreator(filename: String, global: Global)
     val identifierNodes = methodNameAst.head.nodes
       .filter(node => node.isInstanceOf[NewIdentifier])
     if (identifierNodes.size > 0) {
-      // this is a object.member access. The methodNameAst contains the object whose member is being accessed
+      // this is a object.member access. baseAst contains the object whose member is being accessed
+      // methodNameAst is the member
       val operatorName = getOperatorName(terminalNode.getSymbol)
       val callNode = NewCall()
         .name(operatorName)
@@ -756,16 +748,29 @@ class AstCreator(filename: String, global: Global)
         .typeFullName(Defines.Any)
         .lineNumber(terminalNode.getSymbol().getLine())
         .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
-      Seq(callAst(callNode, methodNameAst ++ argList))
+      Seq(callAst(callNode, baseAst ++ methodNameAst))
     } else {
       // this is a object.method(args) access
+      // baseAst contains the object whose member is being accessed
       // call node is for the method. arguments are the passed arguments + the object itself
+      val argsAst = if (ctx.argumentsWithParentheses() != null) {
+        astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
+      } else {
+        Seq()
+      }
+
+      val blocksAst = if (ctx.block() != null) {
+        astForBlockContext(ctx.block())
+      } else {
+        Seq()
+      }
+
       val callNode = methodNameAst.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
       callNode
         .code(ctx.getText)
         .lineNumber(terminalNode.getSymbol().getLine())
         .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
-      Seq(callAst(callNode, argList.toSeq))
+      Seq(callAst(callNode, baseAst ++ argsAst ++ blocksAst))
     }
   }
 
