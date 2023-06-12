@@ -85,9 +85,6 @@ ThisBuild / resolvers ++= Seq(
 )
 
 ThisBuild / Test / fork := true
-Global / concurrentRestrictions := Seq(
-  Tags.limit(Tags.Test, java.lang.Runtime.getRuntime.availableProcessors() * 2),
-)
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
