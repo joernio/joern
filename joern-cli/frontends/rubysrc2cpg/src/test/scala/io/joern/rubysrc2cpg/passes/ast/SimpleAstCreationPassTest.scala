@@ -528,6 +528,16 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.code shouldBe "object.some_method(arg1,arg2)"
       callNode.lineNumber shouldBe Some(1)
       callNode.columnNumber shouldBe Some(6)
+
+      val List(identifierNode1) = cpg.identifier.name("arg1").l
+      identifierNode1.code shouldBe "arg1"
+      identifierNode1.lineNumber shouldBe Some(1)
+      identifierNode1.columnNumber shouldBe Some(19)
+
+      val List(identifierNode2) = cpg.identifier.name("arg2").l
+      identifierNode2.code shouldBe "arg2"
+      identifierNode2.lineNumber shouldBe Some(1)
+      identifierNode2.columnNumber shouldBe Some(24)
     }
 
     "have correct structure for object's method.member access (chainedInvocationPrimary)" ignore {

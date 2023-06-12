@@ -738,6 +738,7 @@ class AstCreator(filename: String, global: Global)
     if (identifierNodes.size > 0) {
       // this is a object.member access. baseAst contains the object whose member is being accessed
       // methodNameAst is the member
+      // TODO this does not cover the case in which the member could be correctly recognised as a identifier
       val operatorName = getOperatorName(terminalNode.getSymbol)
       val callNode = NewCall()
         .name(operatorName)
