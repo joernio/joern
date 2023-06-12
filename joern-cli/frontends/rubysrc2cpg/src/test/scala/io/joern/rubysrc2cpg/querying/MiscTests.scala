@@ -26,10 +26,10 @@ class MiscTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
     "recognise all identifier and call nodes" in {
-      cpg.identifier.name("beginvar").l.size shouldBe 2
-      cpg.identifier.name("endvar").l.size shouldBe 2
-      cpg.identifier.name("beginbool").l.size shouldBe 1
-      cpg.identifier.name("endbool").l.size shouldBe 1
+      cpg.identifier.name("beginvar").size shouldBe 2
+      cpg.identifier.name("endvar").size shouldBe 2
+      cpg.identifier.name("beginbool").size shouldBe 1
+      cpg.identifier.name("endbool").size shouldBe 1
       cpg.call.name("puts").size shouldBe 1
       cpg.identifier.size shouldBe 6
     }
@@ -48,11 +48,11 @@ class MiscTests extends RubyCode2CpgFixture {
       cpg.call.name("configure").size shouldBe 1
       cpg.call.name("new").size shouldBe 1
       cpg.call.name("<operator>.scopeResolution").size shouldBe 2
-      cpg.identifier.name("Rails").l.size shouldBe 1
-      cpg.identifier.name("config").l.size shouldBe 1
-      cpg.identifier.name("Formatter").l.size shouldBe 1
-      cpg.identifier.name("Logger").l.size shouldBe 1
-      cpg.identifier.name("log_formatter").l.size shouldBe 1
+      cpg.identifier.name("Rails").size shouldBe 1
+      cpg.identifier.name("config").size shouldBe 1
+      cpg.identifier.name("Formatter").size shouldBe 1
+      cpg.identifier.name("Logger").size shouldBe 1
+      cpg.identifier.name("log_formatter").size shouldBe 1
       cpg.identifier.size shouldBe 5
     }
   }
@@ -78,24 +78,24 @@ class MiscTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all identifier nodes" in {
-      cpg.identifier.name("radius").l.size shouldBe 4
-      cpg.identifier.name("area").l.size shouldBe 2
-      cpg.identifier.name("height").l.size shouldBe 1
-      cpg.identifier.name("res1").l.size shouldBe 2
-      cpg.identifier.name("res2").l.size shouldBe 2
-      cpg.identifier.name("res3").l.size shouldBe 2
-      cpg.identifier.name("res4").l.size shouldBe 2
-      cpg.identifier.name("Math").l.size shouldBe 1
-      cpg.identifier.name("PI").l.size shouldBe 1
+      cpg.identifier.name("radius").size shouldBe 4
+      cpg.identifier.name("area").size shouldBe 2
+      cpg.identifier.name("height").size shouldBe 1
+      cpg.identifier.name("res1").size shouldBe 2
+      cpg.identifier.name("res2").size shouldBe 2
+      cpg.identifier.name("res3").size shouldBe 2
+      cpg.identifier.name("res4").size shouldBe 2
+      cpg.identifier.name("Math").size shouldBe 1
+      cpg.identifier.name("PI").size shouldBe 1
     }
 
     "recognise all literal nodes" in {
-      cpg.literal.code("3.14").l.size shouldBe 1
-      cpg.literal.code("2").l.size shouldBe 1
-      cpg.literal.code("Result 1: ").l.size shouldBe 1
-      cpg.literal.code("Result 2: ").l.size shouldBe 1
-      cpg.literal.code("Result 3: ").l.size shouldBe 1
-      cpg.literal.code("Result 4: ").l.size shouldBe 1
+      cpg.literal.code("3.14").size shouldBe 1
+      cpg.literal.code("2").size shouldBe 1
+      cpg.literal.code("Result 1: ").size shouldBe 1
+      cpg.literal.code("Result 2: ").size shouldBe 1
+      cpg.literal.code("Result 3: ").size shouldBe 1
+      cpg.literal.code("Result 4: ").size shouldBe 1
     }
   }
 
@@ -110,18 +110,15 @@ class MiscTests extends RubyCode2CpgFixture {
     "recognise all literal nodes" in {
       cpg.literal
         .code("\"team_id\"")
-        .l
         .size shouldBe 1
       cpg.literal
         .code("\"location_id\"")
-        .l
         .size shouldBe 1
     }
 
     "recognise all activeRecordAssociation operator calls" in {
       cpg.call
         .name("<operator>.activeRecordAssociation")
-        .l
         .size shouldBe 4
     }
   }
@@ -138,14 +135,12 @@ class MiscTests extends RubyCode2CpgFixture {
     "recognise all literal nodes" in {
       cpg.literal
         .code("\"Inside the method\"")
-        .l
         .size shouldBe 1
     }
 
     "recognise all method nodes" in {
       cpg.method
         .name("some_method")
-        .l
         .size shouldBe 1
     }
   }
@@ -162,11 +157,9 @@ class MiscTests extends RubyCode2CpgFixture {
     "recognise all call nodes" in {
       cpg.call
         .name("puts")
-        .l
         .size shouldBe 1
       cpg.call
         .name("some_method")
-        .l
         .size shouldBe 1
     }
   }
@@ -188,26 +181,21 @@ class MiscTests extends RubyCode2CpgFixture {
     "recognise all literal nodes" in {
       cpg.literal
         .code("\"In begin\"")
-        .l
         .size shouldBe 1
       cpg.literal
         .code("\"SomeException occurred\"")
-        .l
         .size shouldBe 1
       cpg.literal
         .code("\"SomeOtherException occurred\"")
-        .l
         .size shouldBe 1
       cpg.literal
         .code("\"Catch-all block\"")
-        .l
         .size shouldBe 1
     }
 
     "recognise all call nodes" in {
       cpg.call
         .name("puts")
-        .l
         .size shouldBe 4
     }
   }
@@ -224,24 +212,20 @@ class MiscTests extends RubyCode2CpgFixture {
     "recognise all identifier nodes" in {
       cpg.identifier
         .name("x")
-        .l
         .size shouldBe 2
     }
 
     "recognise all call nodes" in {
       cpg.call
         .name("num1")
-        .l
         .size shouldBe 1
 
       cpg.call
         .name("num2")
-        .l
         .size shouldBe 1
 
       cpg.call
         .name("num3")
-        .l
         .size shouldBe 1
     }
   }

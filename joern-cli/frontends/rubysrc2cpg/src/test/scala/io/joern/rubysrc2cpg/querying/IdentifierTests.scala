@@ -26,15 +26,15 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all identifier nodes" in {
-      cpg.identifier.name("a").l.size shouldBe 2
-      cpg.identifier.name("b").l.size shouldBe 2
-      cpg.identifier.name("c").l.size shouldBe 2
-      cpg.identifier.name("sumOfThree").l.size shouldBe 1
-      cpg.identifier.name("num1").l.size shouldBe 1
-      cpg.identifier.name("num2").l.size shouldBe 1
-      cpg.identifier.name("num3").l.size shouldBe 1
-      cpg.identifier.name("sum").l.size shouldBe 2
-      cpg.identifier.name("ret").l.size shouldBe 2
+      cpg.identifier.name("a").size shouldBe 2
+      cpg.identifier.name("b").size shouldBe 2
+      cpg.identifier.name("c").size shouldBe 2
+      cpg.identifier.name("sumOfThree").size shouldBe 1
+      cpg.identifier.name("num1").size shouldBe 1
+      cpg.identifier.name("num2").size shouldBe 1
+      cpg.identifier.name("num3").size shouldBe 1
+      cpg.identifier.name("sum").size shouldBe 2
+      cpg.identifier.name("ret").size shouldBe 2
       cpg.identifier.size shouldBe 14
     }
 
@@ -67,24 +67,24 @@ class IdentifierTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all identifier nodes" in {
-      cpg.identifier.name("a").l.size shouldBe 16
-      cpg.identifier.name("b").l.size shouldBe 13 // unaryExpression
-      cpg.identifier.name("c").l.size shouldBe 2  // unaryExpression
-      cpg.identifier.name("e").l.size shouldBe 2  // unaryExpression
-      cpg.identifier.name("f").l.size shouldBe 1  // powerExpression
-      cpg.identifier.name("g").l.size shouldBe 1  // multiplicative Expression
-      cpg.identifier.name("h").l.size shouldBe 1  // additive Expression
-      cpg.identifier.name("i").l.size shouldBe 1  // bitwise shift Expression
-      cpg.identifier.name("j").l.size shouldBe 1  // bitwise or Expression
-      cpg.identifier.name("k").l.size shouldBe 1  // bitwise and Expression
-      cpg.identifier.name("l").l.size shouldBe 1  // operator and Expression
-      cpg.identifier.name("m").l.size shouldBe 1  // operator or Expression
-      cpg.identifier.name("n").l.size shouldBe 1  // inclusive range Expression
-      cpg.identifier.name("o").l.size shouldBe 1  // exclusive range Expression
-      cpg.identifier.name("p").l.size shouldBe 4  // conditionalOperatorExpression
-      cpg.identifier.name("q").l.size shouldBe 3  // notExpressionOrCommand
-      cpg.identifier.name("r").l.size shouldBe 1  // orAndExpressionOrCommand and part
-      cpg.identifier.name("s").l.size shouldBe 1  // orAndExpressionOrCommand or part
+      cpg.identifier.name("a").size shouldBe 16
+      cpg.identifier.name("b").size shouldBe 13 // unaryExpression
+      cpg.identifier.name("c").size shouldBe 2  // unaryExpression
+      cpg.identifier.name("e").size shouldBe 2  // unaryExpression
+      cpg.identifier.name("f").size shouldBe 1  // powerExpression
+      cpg.identifier.name("g").size shouldBe 1  // multiplicative Expression
+      cpg.identifier.name("h").size shouldBe 1  // additive Expression
+      cpg.identifier.name("i").size shouldBe 1  // bitwise shift Expression
+      cpg.identifier.name("j").size shouldBe 1  // bitwise or Expression
+      cpg.identifier.name("k").size shouldBe 1  // bitwise and Expression
+      cpg.identifier.name("l").size shouldBe 1  // operator and Expression
+      cpg.identifier.name("m").size shouldBe 1  // operator or Expression
+      cpg.identifier.name("n").size shouldBe 1  // inclusive range Expression
+      cpg.identifier.name("o").size shouldBe 1  // exclusive range Expression
+      cpg.identifier.name("p").size shouldBe 4  // conditionalOperatorExpression
+      cpg.identifier.name("q").size shouldBe 3  // notExpressionOrCommand
+      cpg.identifier.name("r").size shouldBe 1  // orAndExpressionOrCommand and part
+      cpg.identifier.name("s").size shouldBe 1  // orAndExpressionOrCommand or part
       cpg.identifier.size shouldBe 52
     }
   }
@@ -106,19 +106,16 @@ class IdentifierTests extends RubyCode2CpgFixture {
     "recognise all identifier nodes" in {
       cpg.identifier
         .name("create_conflict")
-        .l
         .size shouldBe 3
     }
 
     "recognise all call nodes" in {
       cpg.call
         .name("puts")
-        .l
         .size shouldBe 4
 
       cpg.call
         .name("create_conflict")
-        .l
         .size shouldBe 1
     }
   }

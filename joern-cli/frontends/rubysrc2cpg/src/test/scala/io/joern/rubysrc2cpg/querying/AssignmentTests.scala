@@ -19,7 +19,7 @@ class AssignmentTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognize all assignment nodes" in {
-      cpg.assignment.l.size shouldBe 5
+      cpg.assignment.size shouldBe 5
     }
 
     "have call nodes for <operator>.assignment as method name" in {
@@ -36,16 +36,16 @@ class AssignmentTests extends RubyCode2CpgFixture {
     }
 
     "recognise all identifier nodes" in {
-      cpg.identifier.name("a").l.size shouldBe 3
-      cpg.identifier.name("b").l.size shouldBe 3
-      cpg.identifier.name("c").l.size shouldBe 2
+      cpg.identifier.name("a").size shouldBe 3
+      cpg.identifier.name("b").size shouldBe 3
+      cpg.identifier.name("c").size shouldBe 2
     }
 
     "recognise all literal nodes" in {
-      cpg.literal.code("1").l.size shouldBe 1
-      cpg.literal.code("2").l.size shouldBe 1
-      cpg.literal.code("3").l.size shouldBe 1
-      cpg.literal.code("4").l.size shouldBe 1
+      cpg.literal.code("1").size shouldBe 1
+      cpg.literal.code("2").size shouldBe 1
+      cpg.literal.code("3").size shouldBe 1
+      cpg.literal.code("4").size shouldBe 1
     }
   }
 
@@ -57,23 +57,23 @@ class AssignmentTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all identifier nodes" in {
-      cpg.identifier.name("a").l.size shouldBe 3
-      cpg.identifier.name("b").l.size shouldBe 3
-      cpg.identifier.name("c").l.size shouldBe 3
-      cpg.identifier.name("str1").l.size shouldBe 1
-      cpg.identifier.name("str2").l.size shouldBe 1
+      cpg.identifier.name("a").size shouldBe 3
+      cpg.identifier.name("b").size shouldBe 3
+      cpg.identifier.name("c").size shouldBe 3
+      cpg.identifier.name("str1").size shouldBe 1
+      cpg.identifier.name("str2").size shouldBe 1
     }
 
     "recognise all literal nodes" in {
-      cpg.literal.code("1").l.size shouldBe 1
-      cpg.literal.code("2").l.size shouldBe 1
-      cpg.literal.code("3").l.size shouldBe 1
-      cpg.literal.code("\"hello\"").l.size shouldBe 1
-      cpg.literal.code("\"world\"").l.size shouldBe 1
+      cpg.literal.code("1").size shouldBe 1
+      cpg.literal.code("2").size shouldBe 1
+      cpg.literal.code("3").size shouldBe 1
+      cpg.literal.code("\"hello\"").size shouldBe 1
+      cpg.literal.code("\"world\"").size shouldBe 1
     }
 
     "recognise all call nodes" in {
-      cpg.call.name(Operators.assignment).l.size shouldBe 3
+      cpg.call.name(Operators.assignment).size shouldBe 3
     }
   }
 }

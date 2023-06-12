@@ -144,15 +144,12 @@ class FunctionTests extends RubyCode2CpgFixture {
     "recognise all method nodes" in {
       cpg.method
         .name("method1")
-        .l
         .size shouldBe 1
       cpg.method
         .name("method1")
-        .l
         .size shouldBe 1
       cpg.method
         .name("method3")
-        .l
         .size shouldBe 1
 
     }

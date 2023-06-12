@@ -1,7 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
 class ControlStructureTests extends RubyCode2CpgFixture {
@@ -14,7 +13,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
     "recognise all identifier nodes" in {
-      cpg.identifier.name("n").l.size shouldBe 2
+      cpg.identifier.name("n").size shouldBe 2
       cpg.identifier.size shouldBe 2
     }
 
@@ -36,8 +35,8 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
     "recognise all identifier nodes" in {
-      cpg.identifier.name("n").l.size shouldBe 3
-      cpg.identifier.name("m").l.size shouldBe 2
+      cpg.identifier.name("n").size shouldBe 3
+      cpg.identifier.name("m").size shouldBe 2
       cpg.identifier.size shouldBe 7
     }
 
@@ -84,7 +83,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all method nodes" in {
-      cpg.method.name("yield_with_args_method").l.size shouldBe 1
+      cpg.method.name("yield_with_args_method").size shouldBe 1
       // TODO need to figure out how yield block should be connected to the method
     }
   }
@@ -103,15 +102,15 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all identifier nodes" in {
-      cpg.identifier.name("x").l.size shouldBe 4
+      cpg.identifier.name("x").size shouldBe 4
     }
 
     "recognize all literal nodes" in {
-      cpg.literal.code("1").l.size shouldBe 1
-      cpg.literal.code("2").l.size shouldBe 2
-      cpg.literal.code("0").l.size shouldBe 1
-      cpg.literal.code("\"x is 1\"").l.size shouldBe 1
-      cpg.literal.code("\"I can't guess the number\"").l.size shouldBe 1
+      cpg.literal.code("1").size shouldBe 1
+      cpg.literal.code("2").size shouldBe 2
+      cpg.literal.code("0").size shouldBe 1
+      cpg.literal.code("\"x is 1\"").size shouldBe 1
+      cpg.literal.code("\"I can't guess the number\"").size shouldBe 1
     }
   }
 
@@ -121,9 +120,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
     "recognise all literal and identifier nodes" in {
-      cpg.identifier.name("x").l.size shouldBe 3
-      cpg.identifier.name("y").l.size shouldBe 1
-      cpg.literal.code("1").l.size shouldBe 1
+      cpg.identifier.name("x").size shouldBe 3
+      cpg.identifier.name("y").size shouldBe 1
+      cpg.literal.code("1").size shouldBe 1
     }
   }
 
@@ -139,14 +138,14 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all literal nodes" in {
-      cpg.identifier.name("x").l.size shouldBe 2
-      cpg.literal.code("2").l.size shouldBe 1
-      cpg.literal.code("\"x is less than or equal to 2\"").l.size shouldBe 1
-      cpg.literal.code("\"x is greater than 2\"").l.size shouldBe 1
+      cpg.identifier.name("x").size shouldBe 2
+      cpg.literal.code("2").size shouldBe 1
+      cpg.literal.code("\"x is less than or equal to 2\"").size shouldBe 1
+      cpg.literal.code("\"x is greater than 2\"").size shouldBe 1
     }
 
     "recognise all call nodes" in {
-      cpg.call.name("puts").l.size shouldBe 2
+      cpg.call.name("puts").size shouldBe 2
     }
   }
 
@@ -169,23 +168,23 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all literal nodes" in {
-      cpg.identifier.name("choice").l.size shouldBe 2
-      cpg.literal.code("\"1\"").l.size shouldBe 1
-      cpg.literal.code("\"2\"").l.size shouldBe 1
-      cpg.literal.code("\"3\"").l.size shouldBe 1
-      cpg.literal.code("\"4\"").l.size shouldBe 1
-      cpg.literal.code("\"5\"").l.size shouldBe 2
-      cpg.literal.code("\"6\"").l.size shouldBe 1
-      cpg.literal.code("\"7\"").l.size shouldBe 1
-      cpg.literal.code("\"8\"").l.size shouldBe 1
-      cpg.literal.code("\"1 or 2\"").l.size shouldBe 1
-      cpg.literal.code("\"3 or 4\"").l.size shouldBe 1
-      cpg.literal.code("\"5 or 6\"").l.size shouldBe 1
-      cpg.literal.code("\"7 or 8\"").l.size shouldBe 1
+      cpg.identifier.name("choice").size shouldBe 2
+      cpg.literal.code("\"1\"").size shouldBe 1
+      cpg.literal.code("\"2\"").size shouldBe 1
+      cpg.literal.code("\"3\"").size shouldBe 1
+      cpg.literal.code("\"4\"").size shouldBe 1
+      cpg.literal.code("\"5\"").size shouldBe 2
+      cpg.literal.code("\"6\"").size shouldBe 1
+      cpg.literal.code("\"7\"").size shouldBe 1
+      cpg.literal.code("\"8\"").size shouldBe 1
+      cpg.literal.code("\"1 or 2\"").size shouldBe 1
+      cpg.literal.code("\"3 or 4\"").size shouldBe 1
+      cpg.literal.code("\"5 or 6\"").size shouldBe 1
+      cpg.literal.code("\"7 or 8\"").size shouldBe 1
     }
 
     "recognise all call nodes" in {
-      cpg.call.name("puts").l.size shouldBe 4
+      cpg.call.name("puts").size shouldBe 4
     }
   }
 
@@ -205,15 +204,15 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all literal nodes" in {
-      cpg.identifier.name("str").l.size shouldBe 3
-      cpg.literal.code("\"some_string\"").l.size shouldBe 1
-      cpg.literal.code("'String contains numbers'").l.size shouldBe 1
-      cpg.literal.code("'String contains letters'").l.size shouldBe 1
-      cpg.literal.code("'String does not contain numbers & letters'").l.size shouldBe 1
+      cpg.identifier.name("str").size shouldBe 3
+      cpg.literal.code("\"some_string\"").size shouldBe 1
+      cpg.literal.code("'String contains numbers'").size shouldBe 1
+      cpg.literal.code("'String contains letters'").size shouldBe 1
+      cpg.literal.code("'String does not contain numbers & letters'").size shouldBe 1
     }
 
     "recognise all call nodes" in {
-      cpg.call.name("puts").l.size shouldBe 3
+      cpg.call.name("puts").size shouldBe 3
     }
   }
 
@@ -229,13 +228,12 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     "recognise all method nodes" in {
       cpg.identifier
         .name("x")
-        .l
         .size shouldBe 4 // FIXME this shows as 3 when the puts is the first loop statemnt. Find why
-      cpg.literal.code("\"In the loop\"").l.size shouldBe 1
+      cpg.literal.code("\"In the loop\"").size shouldBe 1
     }
 
     "recognise all call nodes" in {
-      cpg.call.name("puts").l.size shouldBe 1
+      cpg.call.name("puts").size shouldBe 1
     }
   }
 
@@ -251,13 +249,12 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     "recognise all method nodes" in {
       cpg.identifier
         .name("x")
-        .l
         .size shouldBe 4 // FIXME this shows as 3 when the puts is the first loop statemnt. Find why
-      cpg.literal.code("\"In the loop\"").l.size shouldBe 1
+      cpg.literal.code("\"In the loop\"").size shouldBe 1
     }
 
     "recognise all call nodes" in {
-      cpg.call.name("puts").l.size shouldBe 1
+      cpg.call.name("puts").size shouldBe 1
     }
   }
 
@@ -271,15 +268,14 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     "recognise all literal nodes" in {
       cpg.identifier
         .name("x")
-        .l
         .size shouldBe 2
-      cpg.literal.code("1").l.size shouldBe 1
-      cpg.literal.code("10").l.size shouldBe 1
+      cpg.literal.code("1").size shouldBe 1
+      cpg.literal.code("10").size shouldBe 1
 
     }
 
     "recognise all call nodes" in {
-      cpg.call.name("puts").l.size shouldBe 1
+      cpg.call.name("puts").size shouldBe 1
     }
   }
 
@@ -303,33 +299,30 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     "recognise all identifier nodes" in {
       cpg.identifier
         .name("i")
-        .l
         .size shouldBe 8
       cpg.identifier
         .name("value1")
-        .l
         .size shouldBe 3
       cpg.identifier
         .name("value2")
-        .l
         .size shouldBe 3
     }
 
     "recognize all literal nodes" in {
-      cpg.literal.code("1").l.size shouldBe 3
-      cpg.literal.code("2").l.size shouldBe 1
-      cpg.literal.code("8").l.size shouldBe 1
-      cpg.literal.code("7").l.size shouldBe 1
-      cpg.literal.code("9").l.size shouldBe 1
-      cpg.literal.code("5").l.size shouldBe 1
-      cpg.literal.code("0").l.size shouldBe 3
-      cpg.literal.code("1").l.size shouldBe 3
-      cpg.literal.code("10").l.size shouldBe 1
-      cpg.literal.code("100").l.size shouldBe 2
+      cpg.literal.code("1").size shouldBe 3
+      cpg.literal.code("2").size shouldBe 1
+      cpg.literal.code("8").size shouldBe 1
+      cpg.literal.code("7").size shouldBe 1
+      cpg.literal.code("9").size shouldBe 1
+      cpg.literal.code("5").size shouldBe 1
+      cpg.literal.code("0").size shouldBe 3
+      cpg.literal.code("1").size shouldBe 3
+      cpg.literal.code("10").size shouldBe 1
+      cpg.literal.code("100").size shouldBe 2
     }
 
     "recognise all call nodes" in {
-      cpg.call.name("puts").l.size shouldBe 1
+      cpg.call.name("puts").size shouldBe 1
     }
   }
 }
