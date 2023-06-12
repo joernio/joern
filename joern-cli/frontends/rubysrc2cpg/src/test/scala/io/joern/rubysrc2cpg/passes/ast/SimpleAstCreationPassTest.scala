@@ -604,5 +604,5 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       identifierNode.columnNumber shouldBe Some(9)
     }
   }
-  
+
 }
