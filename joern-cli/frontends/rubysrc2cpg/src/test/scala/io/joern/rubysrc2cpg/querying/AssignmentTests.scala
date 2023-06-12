@@ -19,7 +19,7 @@ class AssignmentTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognize all assignment nodes" in {
-      cpg.assignment.l.size shouldBe 4
+      cpg.assignment.l.size shouldBe 5
     }
 
     "have call nodes for <operator>.assignment as method name" in {
