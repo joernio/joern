@@ -15,4 +15,3 @@ object JRubyBasedParser {
     jruby.parse(code, filename, jruby.getCurrentContext.getCurrentScope, 1, true)
   }
 }
-
