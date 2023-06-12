@@ -13,7 +13,6 @@ import org.jetbrains.kotlin.cli.jvm.compiler.{
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.{
   DeclarationDescriptor,
-  DescriptorVisibilities,
   DescriptorVisibility,
   FunctionDescriptor,
   ValueDescriptor
@@ -741,6 +740,38 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val signature = s"${TypeConstants.void}$paramListSignature"
     val fullname  = s"$methodName:$signature"
     (fullname, signature)
+  }
+
+  def fullNameWithSignatureAsLambda(expr: KtNamedFunction, keyPool: KeyPool): (String, String) = {
+    val containingFile      = expr.getContainingKtFile
+    val fileName            = containingFile.getName
+    val packageName         = containingFile.getPackageFqName.toString
+    val lambdaNum           = keyPool.next
+    val astDerivedFullName  = s"$packageName:<lambda><f_${fileName}_no$lambdaNum>()"
+    val astDerivedSignature = anySignature(expr.getValueParameters.asScala.toList)
+
+    val render = for {
+      mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
+      typeInfo     <- Option(mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey))
+      theType = typeInfo.getType
+    } yield {
+      val constructorDesc = theType.getConstructor.getDeclarationDescriptor
+      val constructorType = constructorDesc.getDefaultType
+      val args            = constructorType.getArguments.asScala.drop(1)
+
+      val renderedRetType =
+        args.lastOption
+          .map { t => TypeRenderer.render(t.getType) }
+          .getOrElse(TypeConstants.any)
+      val renderedArgs =
+        if (args.isEmpty) ""
+        else if (args.size == 1) TypeConstants.javaLangObject
+        else s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (args.size - 1)}"
+      val signature = s"${renderedRetType}($renderedArgs)"
+      val fullName  = s"$packageName.<lambda><f_${fileName}_no${lambdaNum.toString}>:$signature"
+      (fullName, signature)
+    }
+    render.getOrElse((astDerivedFullName, astDerivedSignature))
   }
 
   def fullNameWithSignature(expr: KtNamedFunction, defaultValue: (String, String)): (String, String) = {

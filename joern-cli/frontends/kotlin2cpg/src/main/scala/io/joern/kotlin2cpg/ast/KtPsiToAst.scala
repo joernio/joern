@@ -561,6 +561,91 @@ trait KtPsiToAst {
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
   }
 
+  def astForAnonymousFunction(fn: KtNamedFunction, argIdx: Option[Int])(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
+    val (fullName, signature) = typeInfoProvider.fullNameWithSignatureAsLambda(fn, lambdaKeyPool)
+    val lambdaMethodNode      = methodNode(fn, Constants.lambdaName, fullName, signature, relativizedPath)
+
+    case class NodeContext(node: NewNode, name: String, typeFullName: String)
+    val closureBindingEntriesForCaptured = scope
+      .pushClosureScope(lambdaMethodNode)
+      .collect {
+        case node: NewMethodParameterIn => NodeContext(node, node.name, node.typeFullName)
+        case node: NewLocal             => NodeContext(node, node.name, node.typeFullName)
+        case node: NewMember            => NodeContext(node, node.name, node.typeFullName)
+      }
+      .map { capturedNodeContext =>
+        // TODO: remove the randomness here, two CPGs created from the same codebase should be the same
+        val closureBindingId = randomUUID().toString
+        val closureBindingNode =
+          newClosureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
+        (closureBindingNode, capturedNodeContext)
+      }
+
+    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
+      val node =
+        newLocalNode(capturedNodeContext.name, capturedNodeContext.typeFullName, closureBindingNode.closureBindingId)
+      scope.addToScope(capturedNodeContext.name, node)
+      node
+    }
+    val parametersAsts =
+      withIndex(fn.getValueParameters.asScala.toSeq) { (p, idx) =>
+        astForParameter(p, idx)
+      }
+    val bodyAsts = Option(fn.getBodyBlockExpression) match {
+      case Some(bodyBlockExpression) => astsForBlock(bodyBlockExpression, None)
+      case None =>
+        Option(fn.getBodyExpression)
+          .map { expr =>
+            val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.any)
+            val returnAst_ = returnAst(returnNode(expr, Constants.retCode), astsForExpression(expr, Some(1)))
+            Seq(blockAst(bodyBlock, List(returnAst_)))
+          }
+          .getOrElse {
+            val bodyBlock = blockNode(fn, "<empty>", TypeConstants.any)
+            Seq(blockAst(bodyBlock, List[Ast]()))
+          }
+    }
+
+    val returnTypeFullName     = TypeConstants.javaLangObject
+    val lambdaTypeDeclFullName = fullName.split(":").head
+
+    val bodyAst = bodyAsts.head
+    val lambdaMethodAst = methodAst(
+      lambdaMethodNode,
+      parametersAsts,
+      bodyAst,
+      newMethodReturnNode(returnTypeFullName, None, line(fn), column(fn))
+    ).withChild(Ast(modifierNode(ModifierTypes.VIRTUAL)))
+
+    val _methodRefNode =
+      withArgumentIndex(methodRefNode(fn, fn.getText, fullName, lambdaTypeDeclFullName), argIdx)
+
+    val lambdaTypeDecl = typeDeclNode(
+      fn,
+      Constants.lambdaTypeDeclName,
+      lambdaTypeDeclFullName,
+      relativizedPath,
+      Seq(registerType(s"${TypeConstants.kotlinFunctionXPrefix}${fn.getValueParameters.size}")),
+      None
+    )
+
+    val lambdaBinding = newBindingNode(Constants.lambdaBindingName, signature, lambdaMethodNode.fullName)
+    val bindingInfo = BindingInfo(
+      lambdaBinding,
+      Seq((lambdaTypeDecl, lambdaBinding, EdgeTypes.BINDS), (lambdaBinding, lambdaMethodNode, EdgeTypes.REF))
+    )
+    scope.popScope()
+    val closureBindingDefs = closureBindingEntriesForCaptured.collect { case (closureBinding, node) =>
+      ClosureBindingDef(closureBinding, _methodRefNode, node.node)
+    }
+    closureBindingDefs.foreach(closureBindingDefQueue.prepend)
+    lambdaBindingInfoQueue.prepend(bindingInfo)
+    lambdaAstQueue.prepend(lambdaMethodAst)
+    Ast(_methodRefNode)
+  }
+
   def astForLambda(expr: KtLambdaExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, lambdaKeyPool)
     val lambdaMethodNode      = methodNode(expr, Constants.lambdaName, fullName, signature, relativizedPath)

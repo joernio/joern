@@ -198,6 +198,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtTryExpression                 => Seq(astForTry(typedExpr, argIdxOpt))
       case typedExpr: KtWhenExpression                => Seq(astForWhen(typedExpr, argIdxOpt))
       case typedExpr: KtWhileExpression               => Seq(astForWhile(typedExpr))
+      case typedExpr: KtNamedFunction if Option(typedExpr.getName).isEmpty =>
+        Seq(astForAnonymousFunction(typedExpr, argIdxOpt))
       case typedExpr: KtNamedFunction =>
         logger.debug(
           s"Creating empty AST node for unknown expression `${typedExpr.getClass}` with text `${typedExpr.getText}`."
