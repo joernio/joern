@@ -2,11 +2,12 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
 
 class AssignmentTests extends RubyCode2CpgFixture {
 
-  "CPG for code with method identifiers and literals in simple assignments" should {
+  "CPG for code with identifiers and literals in simple assignments" should {
     val cpg = code("""
         |# call instance methods
         |a = 1
@@ -16,6 +17,23 @@ class AssignmentTests extends RubyCode2CpgFixture {
         |c = a*b
         |puts "Multiplication is : #{c}"
         |""".stripMargin)
+
+    "recognize all assignment nodes" in {
+      cpg.assignment.l.size shouldBe 4
+    }
+
+    "have call nodes for <operator>.assignment as method name" in {
+      cpg.assignment.foreach { assignment =>
+        assignment.name shouldBe Operators.assignment
+        assignment.methodFullName shouldBe Operators.assignment
+      }
+    }
+
+    "should have identifiers as LHS for each assignment node" in {
+      cpg.call.nameExact(Operators.assignment).argument.where(_.argumentIndex(1)).foreach { idx =>
+        idx.isIdentifier shouldBe true
+      }
+    }
 
     "recognise all identifier nodes" in {
       cpg.identifier.name("a").l.size shouldBe 3

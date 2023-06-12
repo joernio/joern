@@ -45,26 +45,26 @@ class IdentifierTests extends RubyCode2CpgFixture {
 
   "CPG for code with expressions of various types" should {
     val cpg = code("""
-          |a = 1
-          |b = 2 if a > 1
-          |b = !a
-          |c = ~a
-          |e = +a
-          |f = b**a
-          |g = a*b
-          |h = a+b
-          |i = a >> b
-          |j = a | b
-          |k = a & b
-          |l = a && b
-          |m = a || b
-          |n = a .. b
-          |o = a ... b
-          |p = ( a > b ) ? c : e
-          |q = not p
-          |r = p and q
-          |s = p or q
-          |""".stripMargin)
+        |a = 1
+        |b = 2 if a > 1
+        |b = !a
+        |c = ~a
+        |e = +a
+        |f = b**a
+        |g = a*b
+        |h = a+b
+        |i = a >> b
+        |j = a | b
+        |k = a & b
+        |l = a && b
+        |m = a || b
+        |n = a .. b
+        |o = a ... b
+        |p = ( a > b ) ? c : e
+        |q = not p
+        |r = p and q
+        |s = p or q
+        |""".stripMargin)
 
     "recognise all identifier nodes" in {
       cpg.identifier.name("a").l.size shouldBe 16
