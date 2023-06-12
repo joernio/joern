@@ -21,7 +21,8 @@ import scala.jdk.CollectionConverters._
 class AstCreator(filename: String, global: Global)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
-    with AstForPrimitivesCreator {
+    with AstForPrimitivesCreator
+    with AstForStatementsCreator {
 
   protected val scope: Scope[String, NewIdentifier, Unit] = new Scope()
 
@@ -35,8 +36,8 @@ class AstCreator(filename: String, global: Global)
    */
   private val methodNameAsIdentifierStack = mutable.Stack[Ast]()
 
-  private val methodAliases = mutable.HashMap[String, String]()
-  private val methodNames   = mutable.HashSet[String]()
+  protected val methodAliases = mutable.HashMap[String, String]()
+  private val methodNames     = mutable.HashSet[String]()
 
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
@@ -433,28 +434,8 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForAliasStatementContext(ctx: AliasStatementContext): Seq[Ast] = {
-    val aliasName = astForDefinedMethodNameOrSymbolContext(
-      ctx
-        .definedMethodNameOrSymbol()
-        .get(0)
-    ).head.nodes.head
-      .asInstanceOf[NewLiteral]
-      .code
-      .substring(1)
-
-    val methodName = astForDefinedMethodNameOrSymbolContext(
-      ctx
-        .definedMethodNameOrSymbol()
-        .get(1)
-    ).head.nodes.head
-      .asInstanceOf[NewLiteral]
-      .code
-      .substring(1)
-
-    methodAliases.addOne(aliasName, methodName)
-    Seq(Ast())
-  }
+  def astForAliasStatementContext(ctx: AliasStatementContext): Seq[Ast] =
+    Seq(astForAliasStatement(ctx))
 
   def astForUndefStatementContext(ctx: UndefStatementContext): Seq[Ast] = {
     // TODO to be implemented
