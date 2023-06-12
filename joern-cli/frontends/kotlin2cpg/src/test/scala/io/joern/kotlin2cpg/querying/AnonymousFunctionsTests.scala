@@ -7,7 +7,6 @@ import org.scalatest.Ignore
 
 import scala.annotation.unused
 
-//@Ignore
 class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   implicit val resolver: ICallResolver = NoResolve
