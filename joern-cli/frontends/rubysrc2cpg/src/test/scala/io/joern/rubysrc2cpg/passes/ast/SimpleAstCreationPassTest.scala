@@ -580,5 +580,14 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       identifierNode.lineNumber shouldBe Some(2)
       identifierNode.columnNumber shouldBe Some(5)
     }
+
+    "have correct structure for a hash initialisation" in {
+      val cpg       = code("hashMap = {\"k1\" => 1, \"k2\" => 2}")
+      val callNodes = cpg.call.name("<operator>.keyValueAssociation").l
+      callNodes.size shouldBe 2
+      callNodes.head.code shouldBe "\"k1\" => 1"
+      callNodes.head.lineNumber shouldBe Some(1)
+      callNodes.head.columnNumber shouldBe Some(16)
+    }
   }
 }

@@ -2030,6 +2030,8 @@ class AstCreator(filename: String, global: Global)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
+      .lineNumber(terminalNode.getSymbol.getLine)
+      .columnNumber(terminalNode.getSymbol.getCharPositionInLine)
     Seq(callAst(callNode, expr1Asts ++ expr2Asts))
   }
 
