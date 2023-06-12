@@ -736,9 +736,14 @@ class AstCreator(filename: String, global: Global)
     val identifierNodes = methodNameAst.head.nodes
       .filter(node => node.isInstanceOf[NewIdentifier])
     if (identifierNodes.size > 0) {
-      // this is a object.member access. baseAst contains the object whose member is being accessed
-      // methodNameAst is the member
-      // TODO this does not cover the case in which the member could be correctly recognised as a identifier
+      /*
+       This is a object.member access. baseAst contains the object whose member is being accessed
+       methodNameAst is the member
+       TODO this does not cover the case in which the member could be correctly recognised as a identifier
+       This will be covered once class and method information is made available to this pass with a
+       preprocessing pass for imports before this pass
+       */
+
       val operatorName = getOperatorName(terminalNode.getSymbol)
       val callNode = NewCall()
         .name(operatorName)
