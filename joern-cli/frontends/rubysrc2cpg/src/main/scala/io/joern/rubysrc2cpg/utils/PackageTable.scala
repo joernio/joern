@@ -31,7 +31,9 @@ class PackageTable() {
   }
 
   def checkIfInternalDependency(fileName: String, methodName: String): Boolean = {
-    (!packageCallMap.contains(fileName) || !packageCallMap(fileName).contains(methodName)) && methodTableMap.contains(fileName) && methodTableMap(fileName).exists(_.methodName == methodName)
+    (!packageCallMap.contains(fileName) || !packageCallMap(fileName).contains(methodName)) && methodTableMap.contains(
+      fileName
+    ) && methodTableMap(fileName).exists(_.methodName == methodName)
   }
 }
 

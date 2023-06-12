@@ -1986,9 +1986,10 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
         ) {
           val importedNode =
             argsAsts.head.nodes.filter(node => node.isInstanceOf[NewLiteral]).head.asInstanceOf[NewLiteral]
-          println(s"AST to be created for imported file ${importedNode.code}")
           packageContext.packageTable.addPackageCall(filename, PackageTable.resolveImportPath(importedNode.code))
-          Seq(callAst(callNode.code(importedNode.code), Seq(Ast(importedNode))))
+          val importNode = NewImport()
+            .code(importedNode.code)
+          Seq(Ast(importNode))
         } else {
           Seq(callAst(callNode, argsAsts))
         }

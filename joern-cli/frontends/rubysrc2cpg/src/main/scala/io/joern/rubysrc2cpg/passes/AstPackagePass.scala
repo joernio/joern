@@ -4,13 +4,13 @@ import io.joern.rubysrc2cpg.astcreation.AstCreator
 import io.joern.rubysrc2cpg.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable.ListBuffer
+import scala.util.Try
 
 class AstPackagePass(cpg: Cpg, gemPaths: List[String], global: Global, packageTable: PackageTable, inputPath: String)
     extends ConcurrentWriterCpgPass[String](cpg) {
@@ -36,25 +36,17 @@ class AstPackagePass(cpg: Cpg, gemPaths: List[String], global: Global, packageTa
           Array.empty[String]
         }
       })
-      .foreach(file => packageFiles += (file.toString))
+      .foreach(file => packageFiles += file.toString)
 
     packageFiles.foreach(filePath => {
       if (!filePath.matches(s".*${inputPath}.*")) {
-        new AstCreator(filePath, global, PackageContext(module, packageTable)).createAst()
+        Try(new AstCreator(filePath, global, PackageContext(module, packageTable)).createAst())
       }
     })
   }
 
   private def getAllPackage(cpg: Cpg): Array[String] = {
-    cpg.call
-      .filter { c => c.name.matches("^(require|load).*") }
-      .l
-      .collect(
-        _.astChildren.head
-          .asInstanceOf[Literal]
-          .code
-      )
-      .toArray
+    cpg.imports.code.l.toArray
   }
 
   private def getDependencyPath(directoryPath: String, dependencyName: String): Option[String] = {
