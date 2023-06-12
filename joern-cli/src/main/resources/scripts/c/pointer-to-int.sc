@@ -6,9 +6,9 @@ private def expressionIsPointer(argument: Expression, isSubExpression: Boolean =
       identifier.typeFullName.endsWith("*") ||
       identifier.typeFullName.endsWith("]") ||
       cpg.local(identifier.name).l.headOption.exists(_.code.contains("*"))
-    case call: Call if call.name == Operators.indirectFieldAccess => // On '->', only check the selected field.
+    case call: nodes.Call if call.name == Operators.indirectFieldAccess => // On '->', only check the selected field.
       expressionIsPointer(call.start.argument.l.last, isSubExpression = true)
-    case call: Call => // On normal nested call, check all arguments are also pointers.
+    case call: nodes.Call => // On normal nested call, check all arguments are also pointers.
       call.name == Operators.addressOf ||
       call.start.argument.l.exists(expressionIsPointer(_, isSubExpression = true))
     case _ => false
@@ -18,10 +18,10 @@ private def expressionIsPointer(argument: Expression, isSubExpression: Boolean =
 @main def main(inputPath: String) = {
   importCode(inputPath)
   val calls = cpg.assignment
-    .filter(assign => assign.source.isInstanceOf[Call] && assign.target.isInstanceOf[Identifier])
+    .filter(assign => assign.source.isInstanceOf[nodes.Call] && assign.target.isInstanceOf[Identifier])
     .filter { assignment =>
       val target = assignment.target.asInstanceOf[Identifier]
-      val source = assignment.source.asInstanceOf[Call]
+      val source = assignment.source.asInstanceOf[nodes.Call]
 
       source.name.contains(Operators.subtraction) &&
       target.typeFullName == "int" &&
