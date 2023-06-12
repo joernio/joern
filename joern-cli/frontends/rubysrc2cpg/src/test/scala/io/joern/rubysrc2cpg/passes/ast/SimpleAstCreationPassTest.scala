@@ -557,7 +557,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       identifierNode.columnNumber shouldBe Some(0)
     }
 
-    "have correct structure for negatation before block (invocationExpressionOrCommand)" in {
+    "have correct structure for negation before block (invocationExpressionOrCommand)" in {
       val cpg = code("!foo arg do\nputs arg\nend")
 
       val List(callNode1) = cpg.call.name(Operators.not).l
