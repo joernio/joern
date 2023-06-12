@@ -661,14 +661,20 @@ class AstCreator(filename: String, global: Global)
   def astForChainedInvocationWithoutArgumentsPrimaryContext(
     ctx: ChainedInvocationWithoutArgumentsPrimaryContext
   ): Seq[Ast] = {
-    val primaryAst    = astForPrimaryContext(ctx.primary())
     val methodNameAst = astForMethodNameContext(ctx.methodName())
-    if (ctx.block() != null) {
-      primaryAst ++ methodNameAst ++ astForBlockContext(ctx.block())
+    val baseAst       = astForPrimaryContext(ctx.primary())
+
+    val blocksAst = if (ctx.block() != null) {
+      astForBlockContext(ctx.block())
     } else {
-      primaryAst ++ methodNameAst
+      Seq()
     }
-    // TODO IMPLEMENT THIS
+    val callNode = methodNameAst.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+    callNode
+      .code(ctx.getText)
+      .lineNumber(ctx.COLON2().getSymbol().getLine())
+      .columnNumber(ctx.COLON2().getSymbol().getCharPositionInLine())
+    Seq(callAst(callNode, baseAst ++ blocksAst))
   }
 
   def astForChainedScopedConstantReferencePrimaryContext(
