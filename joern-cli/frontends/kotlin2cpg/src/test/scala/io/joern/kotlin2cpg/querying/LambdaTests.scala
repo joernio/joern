@@ -490,4 +490,25 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cpg.method.fullName(".*lambda.*").l should not be empty
     }
   }
+
+  "CPG for code with `lazy` lambda call" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f1(p: String) {
+        |    val l1 = lazy { p }
+        |    println(l1.value)
+        |}
+        |""".stripMargin)
+
+    "contain a METHOD node for the lambda with the correct signature" in {
+      val List(m) = cpg.method.fullName(".*lambda.*").l
+      m.signature shouldBe "java.lang.Object()"
+    }
+
+    "contain a BINDING node for the lambda with the correct signature" in {
+      val List(b) = cpg.all.collect { case b: Binding => b }.l
+      b.signature shouldBe "java.lang.Object()"
+    }
+  }
+
 }
