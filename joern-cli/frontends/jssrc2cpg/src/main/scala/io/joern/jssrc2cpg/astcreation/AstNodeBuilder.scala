@@ -284,6 +284,7 @@ trait AstNodeBuilder { this: AstCreator =>
 
     val signature = s"${typeFor(node)}${params.map(_.typeFullName).mkString("(", ",", ")")}"
     methodNode.signature(signature)
+
     val bindingNode = NewBinding().name("").signature("")
     Ast(functionTypeDeclNode).withBindsEdge(functionTypeDeclNode, bindingNode).withRefEdge(bindingNode, methodNode)
   }
