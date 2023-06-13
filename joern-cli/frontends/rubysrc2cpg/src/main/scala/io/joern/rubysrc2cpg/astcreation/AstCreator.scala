@@ -256,13 +256,13 @@ class AstCreator(filename: String, global: Global)
     ctx
       .expressionOrCommand()
       .asScala
-      .flatMap(ec => astForExpressionOrCommandContext(ec))
+      .flatMap(ec => astForExpressionOrCommand(ec))
       .toSeq
   }
 
   def astForSplattingArgumentContext(ctx: SplattingArgumentContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
-    astForExpressionOrCommandContext(ctx.expressionOrCommand())
+    astForExpressionOrCommand(ctx.expressionOrCommand())
   }
 
   def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Seq[Ast] = {
@@ -394,20 +394,6 @@ class AstCreator(filename: String, global: Global)
       Seq(Ast())
   }
 
-  def astForExpressionOrCommandContext(ctx: ExpressionOrCommandContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-
-    ctx match {
-      case ctx: InvocationExpressionOrCommandContext => astForInvocationExpressionOrCommandContext(ctx)
-      case ctx: NotExpressionOrCommandContext        => astForNotExpressionOrCommandContext(ctx)
-      case ctx: OrAndExpressionOrCommandContext      => astForOrAndExpressionOrCommandContext(ctx)
-      case ctx: ExpressionExpressionOrCommandContext => astForExpressionContext(ctx.expression())
-      case _ =>
-        logger.error("astForExpressionOrCommandContext() All contexts mismatched.")
-        Seq(Ast())
-    }
-  }
-
   def astForSymbolContext(ctx: SymbolContext): Seq[Ast] = {
     val text =
       if (ctx.SYMBOL_LITERAL() != null) {
@@ -435,25 +421,13 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForStatementContext(ctx: StatementContext): Seq[Ast] = ctx match {
-    case ctx: AliasStatementContext               => Seq(astForAliasStatement(ctx))
-    case ctx: UndefStatementContext               => Seq(astForUndefStatement(ctx))
-    case ctx: BeginStatementContext               => Seq(astForBeginStatement(ctx))
-    case ctx: EndStatementContext                 => Seq(astForEndStatement(ctx))
-    case ctx: ModifierStatementContext            => Seq(astForModifierStatement(ctx))
-    case ctx: ExpressionOrCommandStatementContext => astForExpressionOrCommandContext(ctx.expressionOrCommand())
-    case _ =>
-      logger.error("astForStatementContext() All contexts mismatched.")
-      Seq(Ast())
-  }
-
   def astForStatementsContext(ctx: StatementsContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
     ctx
       .statement()
       .asScala
       .flatMap(st => {
-        val asts = astForStatementContext(st)
+        val asts = astForStatement(st)
         asts
       })
       .toSeq
@@ -584,7 +558,7 @@ class AstCreator(filename: String, global: Global)
 
     val condAst = {
       if (ctx.caseExpression().expressionOrCommand() != null) {
-        astForExpressionOrCommandContext(ctx.caseExpression().expressionOrCommand()).headOption
+        astForExpressionOrCommand(ctx.caseExpression().expressionOrCommand()).headOption
       } else {
         None
       }
@@ -740,7 +714,7 @@ class AstCreator(filename: String, global: Global)
   def astForClassDefinitionPrimaryContext(ctx: ClassDefinitionPrimaryContext): Seq[Ast] = {
     if (ctx.classDefinition().classOrModuleReference() != null) {
       val baseClassName = if (ctx.classDefinition().expressionOrCommand() != null) {
-        val parentClassNameAst = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
+        val parentClassNameAst = astForExpressionOrCommand(ctx.classDefinition().expressionOrCommand())
         val nameNode = parentClassNameAst.head.nodes
           .filter(node => node.isInstanceOf[NewIdentifier])
           .head
@@ -777,7 +751,7 @@ class AstCreator(filename: String, global: Global)
       Seq(classOrModuleRefAst.head.withChild(bodyBlockAst))
     } else {
       // TODO test for this is pending due to lack of understanding to generate an example
-      val astExprOfCommand = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
+      val astExprOfCommand = astForExpressionOrCommand(ctx.classDefinition().expressionOrCommand())
       val astBodyStatement = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
       val blockNode = NewBlock()
         .code(ctx.getText)
@@ -868,7 +842,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForForExpressionContext(ctx: ForExpressionContext): Seq[Ast] = {
     val forVarAst  = astForForVariableContext(ctx.forVariable())
-    val forCondAst = astForExpressionOrCommandContext(ctx.expressionOrCommand())
+    val forCondAst = astForExpressionOrCommand(ctx.expressionOrCommand())
 
     val forNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.FOR)
@@ -905,7 +879,7 @@ class AstCreator(filename: String, global: Global)
           .lineNumber(elif.ELSIF().getSymbol.getLine)
           .columnNumber(elif.ELSIF().getSymbol.getCharPositionInLine)
 
-        val conditionAst = astForExpressionOrCommandContext(elif.expressionOrCommand())
+        val conditionAst = astForExpressionOrCommand(elif.expressionOrCommand())
         val thenAsts     = astForThenClauseContext(elif.thenClause())
         controlStructureAst(elifNode, conditionAst.headOption, thenAsts)
       })
@@ -927,7 +901,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForIfExpressionContext(ctx: IfExpressionContext): Seq[Ast] = {
-    val conditionAsts = astForExpressionOrCommandContext(ctx.expressionOrCommand())
+    val conditionAsts = astForExpressionOrCommand(ctx.expressionOrCommand())
     val thenAsts      = astForThenClauseContext(ctx.thenClause())
     val elseifAsts    = astForElsifClauseContext(ctx.elsifClause())
     val elseAst       = astForElseClauseContext(ctx.elseClause())
@@ -1057,7 +1031,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForIsDefinedPrimaryContext(ctx: IsDefinedPrimaryContext): Seq[Ast] = {
-    astForExpressionOrCommandContext(ctx.expressionOrCommand())
+    astForExpressionOrCommand(ctx.expressionOrCommand())
   }
 
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Seq[Ast] = {
@@ -1264,7 +1238,7 @@ class AstCreator(filename: String, global: Global)
     } else if (ctx.pseudoVariableIdentifier() != null) {
       Seq(Ast())
     } else if (ctx.expressionOrCommand() != null) {
-      astForExpressionOrCommandContext(ctx.expressionOrCommand())
+      astForExpressionOrCommand(ctx.expressionOrCommand())
     } else {
       Seq(Ast())
     }
@@ -1483,43 +1457,12 @@ class AstCreator(filename: String, global: Global)
     astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
-  def astForNotExpressionOrCommandContext(ctx: NotExpressionOrCommandContext): Seq[Ast] = {
-    val expAsts      = astForExpressionOrCommandContext(ctx.expressionOrCommand())
-    val operatorName = getOperatorName(ctx.NOT().getSymbol)
-    val callNode = NewCall()
-      .name(operatorName)
-      .code(ctx.getText)
-      .methodFullName(operatorName)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(ctx.NOT().getSymbol().getLine())
-      .columnNumber(ctx.NOT().getSymbol().getCharPositionInLine())
-    Seq(callAst(callNode, expAsts))
-  }
-
   def astForOperatorAndExpressionContext(ctx: OperatorAndExpressionContext): Seq[Ast] = {
     astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForOperatorOrExpressionContext(ctx: OperatorOrExpressionContext): Seq[Ast] = {
     astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
-  }
-
-  def astForOrAndExpressionOrCommandContext(ctx: OrAndExpressionOrCommandContext): Seq[Ast] = {
-    val lhsAsts      = astForExpressionOrCommandContext(ctx.expressionOrCommand().get(0))
-    val rhsAsts      = astForExpressionOrCommandContext(ctx.expressionOrCommand().get(1))
-    val operatorName = getOperatorName(ctx.op)
-    val callNode = NewCall()
-      .name(operatorName)
-      .code(ctx.getText)
-      .methodFullName(operatorName)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(ctx.op.getLine())
-      .columnNumber(ctx.op.getCharPositionInLine())
-    Seq(callAst(callNode, lhsAsts ++ rhsAsts))
   }
 
   def astForPowerExpressionContext(ctx: PowerExpressionContext): Seq[Ast] = {
@@ -1830,7 +1773,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
-    val conditionAsts = astForExpressionOrCommandContext(ctx.unlessExpression().expressionOrCommand())
+    val conditionAsts = astForExpressionOrCommand(ctx.unlessExpression().expressionOrCommand())
     val thenAsts      = astForThenClauseContext(ctx.unlessExpression().thenClause())
     val elseAsts      = astForElseClauseContext(ctx.unlessExpression().elseClause())
 
@@ -1846,7 +1789,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForUntilExpressionContext(ctx: UntilExpressionContext): Seq[Ast] = {
     // until will be modelled as a while
-    val untilCondAst = astForExpressionOrCommandContext(ctx.expressionOrCommand()).headOption
+    val untilCondAst = astForExpressionOrCommand(ctx.expressionOrCommand()).headOption
     val doClauseAsts = astForDoClauseContext(ctx.doClause())
 
     val ast = whileAst(
@@ -1886,7 +1829,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForWhileExpressionContext(ctx: WhileExpressionContext): Seq[Ast] = {
-    val whileCondAst = astForExpressionOrCommandContext(ctx.expressionOrCommand()).headOption
+    val whileCondAst = astForExpressionOrCommand(ctx.expressionOrCommand()).headOption
     val doClauseAsts = astForDoClauseContext(ctx.doClause())
 
     val ast = whileAst(
