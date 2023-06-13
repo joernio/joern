@@ -72,7 +72,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Return via call w/o initialization" ignore {
+  "Return via call w/o initialization" should {
     val cpg = code("""
         |def add(p)
         |q = p
