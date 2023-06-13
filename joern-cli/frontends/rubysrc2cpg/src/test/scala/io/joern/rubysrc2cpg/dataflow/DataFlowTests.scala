@@ -91,4 +91,21 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Data flow in a while loop" should {
+    val cpg = code("""
+        |i = 0
+        |num = 5
+        |
+        |while i < num  do
+        |   num = i + 3
+        |end
+        |puts num
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("i").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 3
+    }
+  }
 }
