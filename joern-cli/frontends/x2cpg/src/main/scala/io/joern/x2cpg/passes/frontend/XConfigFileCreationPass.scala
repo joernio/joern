@@ -41,10 +41,9 @@ abstract class XConfigFileCreationPass(cpg: Cpg) extends ConcurrentWriterCpgPass
     }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, file: File): Unit = {
-    Try(IOUtils.readLinesInFile(file.path)) match {
-      case Success(fileContentsLines) =>
+    Try(IOUtils.readEntireFile(file.path)) match {
+      case Success(content) =>
         val name       = configFileName(file)
-        val content    = fileContentsLines.mkString("\n")
         val configNode = NewConfigFile().name(name).content(content)
         logger.debug(s"Adding config file $name")
         diffGraph.addNode(configNode)
