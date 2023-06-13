@@ -238,7 +238,7 @@ object JoernScan extends BridgeBase {
   }
 
   override protected def predefLines = ReplBridge.predefLines
-  override protected def promptStr = ReplBridge.promptStr
+  override protected def promptStr   = ReplBridge.promptStr
 
   override protected def greeting = ReplBridge.greeting
 

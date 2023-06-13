@@ -20,7 +20,7 @@ object Predefined {
       "import overflowdb.traversal.{`package` => _, help => _, _}",
       "import scala.jdk.CollectionConverters._",
       "implicit val resolver: ICallResolver = NoResolve",
-      "implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder",
+      "implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder"
     )
 
   val forInteractiveShell: Seq[String] = {
