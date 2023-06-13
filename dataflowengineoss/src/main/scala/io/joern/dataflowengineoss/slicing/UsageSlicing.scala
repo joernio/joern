@@ -3,6 +3,7 @@ package io.joern.dataflowengineoss.slicing
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.semanticcpg.codedumper.CodeDumper
 import io.shiftleft.semanticcpg.language._
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -44,30 +45,57 @@ object UsageSlicing {
 
     def typeMap = TrieMap.from(cpg.typeDecl.map(f => (f.name, f.fullName)).toMap)
 
-    def usageSlices(fjp: ForkJoinPool) = getDeclIdentifiers
-      .to(LazyList)
-      .filter(a => atLeastNCalls(a, config.minNumCalls) && !a.name.startsWith("_tmp_"))
-      .map(a => fjp.submit(new TrackUsageTask(a, typeMap)))
-      .flatMap(_.get())
-      .groupBy { case (scope, _) => scope }
-      .view
-      .mapValues(_.l.map { case (_, slice) => slice }.toSet)
-      .toMap
-      .l
-      .toMap
-
     val fjp = ForkJoinPool.commonPool()
 
     try {
-      ProgramUsageSlice(usageSlices(fjp), userDefinedTypes(cpg))
+      val slices = usageSlices(
+        fjp,
+        cpg.metaData.root.headOption,
+        cpg.metaData.language.headOption,
+        config.excludeMethodSource,
+        () => getDeclIdentifiers,
+        typeMap,
+        config.minNumCalls
+      )
+      val userDefTypes = userDefinedTypes(cpg)
+      ProgramUsageSlice(slices, userDefTypes)
     } finally {
       fjp.shutdown()
     }
   }
 
+  import io.shiftleft.semanticcpg.codedumper.CodeDumper.dump
+
+  private def usageSlices(
+    fjp: ForkJoinPool,
+    root: Option[String],
+    language: Option[String],
+    excludeMethodSource: Boolean,
+    getDeclIdentifiers: () => Traversal[Declaration],
+    typeMap: TrieMap[String, String],
+    minNumCalls: Int = 1
+  ): Map[String, MethodUsageSlice] = getDeclIdentifiers()
+    .to(LazyList)
+    .filter(a => atLeastNCalls(a, minNumCalls) && !a.name.startsWith("_tmp_"))
+    .map(a => fjp.submit(new TrackUsageTask(a, typeMap)))
+    .flatMap(_.get())
+    .groupBy { case (scope, _) => scope }
+    .view
+    .map { case (method, slices) =>
+      method.fullName -> MethodUsageSlice(
+        source =
+          if (excludeMethodSource) ""
+          else dump(method.location, language, root, highlight = false).replaceFirst(" +/\\* <=== \\*/", ""),
+        slices = slices.iterator.map(_._2).toSet
+      )
+    }
+    .toMap
+    .iterator
+    .toMap
+
   private class TrackUsageTask(tgt: Declaration, typeMap: TrieMap[String, String])
-      extends RecursiveTask[Option[(String, ObjectUsageSlice)]] {
-    override def compute(): Option[(String, ObjectUsageSlice)] = {
+      extends RecursiveTask[Option[(Method, ObjectUsageSlice)]] {
+    override def compute(): Option[(Method, ObjectUsageSlice)] = {
 
       /** Will attempt to get the API call from the expression if this is a procedure call.
         *
@@ -171,7 +199,7 @@ object UsageSlicing {
             if !genCall.name.matches("(require|import)") =>
           Option(
             (
-              local.method.fullName.head,
+              local.method.head,
               ObjectUsageSlice(
                 targetObj = createDefComponent(local),
                 definedBy = Option(createDefComponent(genCall)),
@@ -184,7 +212,7 @@ object UsageSlicing {
         case (param: MethodParameterIn, _, (invokedCalls, argToCalls)) if !param.name.matches("(this|self)") =>
           Option(
             (
-              param.method.fullName,
+              param.method,
               ObjectUsageSlice(
                 targetObj = createDefComponent(param),
                 definedBy = Option(createDefComponent(param)),
