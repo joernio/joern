@@ -14,29 +14,25 @@ object Py2Cpg {
   *
   * @param inputProviders
   *   Set of functions which provide InputPairs. The functions must be safe to call from different threads.
-  * @param configInputProviders
-  *   Set of functions which provide InputPairs representing configuration files. The functions must be safe to call
-  *   from different threads.
   * @param outputCpg
   *   Empty target cpg which will be populated.
+  * @param inputPath
+  *   The project root.
+  * @param requirementsTxt
+  *   The configured name of the requirements txt file.
   */
 class Py2Cpg(
   inputProviders: Iterable[Py2Cpg.InputProvider],
-  configInputProviders: Iterable[Py2Cpg.InputProvider],
-  outputCpg: Cpg
+  outputCpg: Cpg,
+  inputPath: String,
+  requirementsTxt: String = "requirements.txt"
 ) {
   private val diffGraph   = new DiffGraphBuilder()
   private val nodeBuilder = new NodeBuilder(diffGraph)
   private val edgeBuilder = new EdgeBuilder(diffGraph)
 
   def buildCpg(): Unit = {
-    val metaData = nodeBuilder.metaNode(Languages.PYTHONSRC, version = "")
-    inputProviders.headOption match {
-      case Some(headInput: Py2Cpg.InputProvider) =>
-        val inputFile = headInput()
-        metaData.root(inputFile.absFileName.stripSuffix(inputFile.relFileName))
-      case _ =>
-    }
+    nodeBuilder.metaNode(Languages.PYTHONSRC, version = "").root(inputPath + java.io.File.separator)
     val globalNamespaceBlock =
       nodeBuilder.namespaceBlockNode(Constants.GLOBAL_NAMESPACE, Constants.GLOBAL_NAMESPACE, "N/A")
     nodeBuilder.typeNode(Constants.ANY, Constants.ANY)
@@ -44,7 +40,7 @@ class Py2Cpg(
     edgeBuilder.astEdge(anyTypeDecl, globalNamespaceBlock, 0)
     BatchedUpdate.applyDiff(outputCpg.graph, diffGraph)
     new CodeToCpg(outputCpg, inputProviders).createAndApply()
-    new ConfigPass(outputCpg, configInputProviders).createAndApply()
+    new ConfigFileCreationPass(outputCpg, requirementsTxt).createAndApply()
     new DependenciesFromRequirementsTxtPass(outputCpg).createAndApply()
   }
 }
