@@ -150,4 +150,20 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       sink.reachableByFlows(src).l.size shouldBe 2
     }
   }
+
+  "Data flow through multiple assignments" ignore {
+    // TODO test a lot more multiple assignments
+    val cpg = code("""
+        |a = 1
+        |b = 2
+        |c,d=a,b
+        |puts c
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("a").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
 }
