@@ -91,4 +91,79 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Data flow in a while loop" should {
+    val cpg = code("""
+        |i = 0
+        |num = 5
+        |
+        |while i < num  do
+        |   num = i + 3
+        |end
+        |puts num
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("i").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 3
+    }
+  }
+
+  "Data flow in a while modifier" should {
+    val cpg = code("""
+        |i = 0
+        |num = 5
+        |begin
+        |   num = i + 3
+        |end while i < num
+        |puts num
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("i").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 3
+    }
+  }
+
+  "Data flow through expressions" should {
+    val cpg = code("""
+        |a = 1
+        |b = a+3
+        |c = 2 + b%6
+        |d = c + b & !c + -b
+        |e = c/d + b || d
+        |f = c - d & ~e
+        |g = f-c%d - +d
+        |h = g**5 << b*g
+        |i = b && c || e > g
+        |j = b>c ? (e+-6) : (f +5)
+        |k = i..h
+        |l = j...g
+        |
+        |puts l
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("a").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
+
+  "Data flow through multiple assignments" ignore {
+    // TODO test a lot more multiple assignments
+    val cpg = code("""
+        |a = 1
+        |b = 2
+        |c,d=a,b
+        |puts c
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("a").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
 }
