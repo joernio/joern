@@ -37,7 +37,7 @@ class AstCreator(filename: String, global: Global)
   private val methodNameAsIdentifierStack = mutable.Stack[Ast]()
 
   protected val methodAliases = mutable.HashMap[String, String]()
-  private val methodNames     = mutable.HashSet[String]()
+  protected val methodNames   = mutable.HashSet[String]()
 
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
@@ -111,6 +111,7 @@ class AstCreator(filename: String, global: Global)
     val defined                 = "<operator>.defined"
     val keyValueAssociation     = "<operator>.keyValueAssociation"
     val activeRecordAssociation = "<operator>.activeRecordAssociation"
+    val undef                   = "<operator>.undef"
   }
   private def getOperatorName(token: Token): String = token.getType match {
     case AMP                 => Operators.logicalAnd
@@ -770,12 +771,18 @@ class AstCreator(filename: String, global: Global)
       if (classStack.size > 0) {
         classStack.pop()
       }
-      Seq(classOrModuleRefAst.head.withChildren(bodyAstSansModifiers))
+      val blockNode = NewBlock()
+        .code(ctx.getText)
+      val bodyBlockAst = blockAst(blockNode, bodyAstSansModifiers.toList)
+      Seq(classOrModuleRefAst.head.withChild(bodyBlockAst))
     } else {
       // TODO test for this is pending due to lack of understanding to generate an example
       val astExprOfCommand = astForExpressionOrCommandContext(ctx.classDefinition().expressionOrCommand())
       val astBodyStatement = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
-      astExprOfCommand ++ astBodyStatement
+      val blockNode = NewBlock()
+        .code(ctx.getText)
+      val bodyBlockAst = blockAst(blockNode, astBodyStatement.toList)
+      astExprOfCommand ++ Seq(bodyBlockAst)
     }
   }
 
@@ -1439,7 +1446,21 @@ class AstCreator(filename: String, global: Global)
     if (classStack.size > 0) {
       classStack.pop()
     }
-    Seq(referenceAsts.head.withChildren(bodyStmtAsts))
+    val bodyAstSansModifiers = bodyStmtAsts
+      .filterNot(ast => {
+        val nodes = ast.nodes
+          .filter(_.isInstanceOf[NewIdentifier])
+
+        if (nodes.size == 1) {
+          val varName = nodes
+            .map(_.asInstanceOf[NewIdentifier].name)
+            .head
+          varName == "public" || varName == "protected" || varName == "private"
+        } else {
+          false
+        }
+      })
+    Seq(referenceAsts.head.withChildren(bodyAstSansModifiers))
   }
 
   def astForMultipleAssignmentExpressionContext(ctx: MultipleAssignmentExpressionContext): Seq[Ast] = {
@@ -1975,14 +1996,21 @@ class AstCreator(filename: String, global: Global)
           callNode.name == "require_once" ||
           callNode.name == "load"
         ) {
-          val importedFile =
-            argsAsts.head.nodes
-              .filter(node => node.isInstanceOf[NewLiteral])
-              .head
-              .asInstanceOf[NewLiteral]
-              .code
-          println(s"AST to be created for imported file ${importedFile}")
+          val literalImports = argsAsts.head.nodes
+            .filter(node => node.isInstanceOf[NewLiteral])
 
+          if (literalImports.size == 1) {
+            val importedFile =
+              literalImports.head
+                .asInstanceOf[NewLiteral]
+                .code
+            println(s"AST to be created for imported file ${importedFile}")
+          } else {
+            println(
+              s"Cannot process import since it is determined on the fly. Just creating a call node for later processing"
+            )
+            Seq(callAst(callNode, argsAsts))
+          }
         }
         Seq(callAst(callNode, argsAsts))
       } else {

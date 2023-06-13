@@ -617,6 +617,48 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode2.lineNumber shouldBe Some(2)
       callNode2.columnNumber shouldBe Some(0)
     }
-  }
 
+    "have correct structure for require with an expression" in {
+      val cpg = code("Dir[Rails.root.join('a', 'b', '**', '*.rb')].each { |f| require f }")
+
+      val List(callNode) = cpg.call.name("require").l
+      callNode.code shouldBe "require f"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(56)
+    }
+
+    "have correct structure in the body of module definition" in {
+      val cpg = code("module MyModule\ndef some_method\nend\nprivate\nend")
+
+      val List(callNode) = cpg.method.name("some_method").l
+      callNode.code shouldBe "def some_method\nend"
+      callNode.lineNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(4)
+
+      cpg.identifier.name("private").l.size shouldBe 0
+    }
+
+    "have correct structure for undef" in {
+      val cpg = code("undef method1,method2")
+
+      val List(callNode) = cpg.call.name("<operator>.undef").l
+      callNode.code shouldBe "undef method1,method2"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for class definition with body having only identifiers" in {
+      val cpg = code("class MyClass\nidentifier1\nidentifier2\nend")
+
+      val List(identifierNode1) = cpg.identifier.name("identifier1").l
+      identifierNode1.code shouldBe "identifier1"
+      identifierNode1.lineNumber shouldBe Some(2)
+      identifierNode1.columnNumber shouldBe Some(0)
+
+      val List(identifierNode2) = cpg.identifier.name("identifier2").l
+      identifierNode2.code shouldBe "identifier2"
+      identifierNode2.lineNumber shouldBe Some(3)
+      identifierNode2.columnNumber shouldBe Some(0)
+    }
+  }
 }
