@@ -59,29 +59,15 @@ class TSTypesTest extends AbstractPassTest {
 
   "have correct signature for arrow functions" in AstFixture(
     """
-      |const func1 = (a:number) => 42
-      |const func2 = (a:number,b:string) => a + b
+      |const func1 = (a: number) => 42
+      |const func2 = (a: number, b: string) => a + b
       |""".stripMargin,
     tsTypes = true
   ) { cpg =>
     val List(func1) = cpg.method("anonymous").l
-    func1.signature shouldBe "(a: __ecma.Number) => __ecma.Number"
+    func1.signature shouldBe "__ecma.Number(__ecma.Number)"
     val List(func2) = cpg.method("anonymous1").l
-    func2.signature shouldBe "(a: __ecma.Number, b: __ecma.String) => __ecma.String"
-
-    val List(typeDecl1) = cpg.typeDecl.nameExact("anonymous").l
-    val List(binding1)  = typeDecl1.bindsOut.l
-    binding1.name shouldBe "anonymous"
-    binding1.signature shouldBe "(a: __ecma.Number) => __ecma.Number"
-    val List(boundMethod1) = binding1.refOut.l
-    boundMethod1 shouldBe func1
-
-    val List(typeDecl2) = cpg.typeDecl.nameExact("anonymous1").l
-    val List(binding2)  = typeDecl2.bindsOut.l
-    binding2.name shouldBe "anonymous1"
-    binding2.signature shouldBe "(a: __ecma.Number, b: __ecma.String) => __ecma.String"
-    val List(boundMethod2) = binding2.refOut.l
-    boundMethod2 shouldBe func2
+    func2.signature shouldBe "__ecma.String(__ecma.Number,__ecma.String)"
   }
 
   "have correct types for empty method" in AstFixture("function method(x) {}", tsTypes = true) { cpg =>

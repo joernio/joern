@@ -729,8 +729,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       typeDecl.fullName should endWith("code.js::program:method")
 
       val List(binding) = typeDecl.bindsOut.l
-      binding.name shouldBe "method"
-      binding.signature shouldBe "(x: ANY) => ANY"
+      binding.name shouldBe ""
+      binding.signature shouldBe ""
 
       val List(boundMethod) = binding.refOut.l
       boundMethod shouldBe cpg.method.nameExact("method").head

@@ -282,9 +282,9 @@ trait AstNodeBuilder { this: AstCreator =>
         List(Defines.Any)
       )
 
-    val signature = s"${params.map(p => s"${p.name}: ${p.typeFullName}").mkString("(", ", ", ")")} => ${typeFor(node)}"
+    val signature = s"${typeFor(node)}${params.map(_.typeFullName).mkString("(", ",", ")")}"
     methodNode.signature(signature)
-    val bindingNode = NewBinding().name(methodName).signature(signature)
+    val bindingNode = NewBinding().name("").signature("")
     Ast(functionTypeDeclNode).withBindsEdge(functionTypeDeclNode, bindingNode).withRefEdge(bindingNode, methodNode)
   }
 
