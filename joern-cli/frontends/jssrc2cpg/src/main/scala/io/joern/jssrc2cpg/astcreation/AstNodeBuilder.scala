@@ -284,6 +284,10 @@ trait AstNodeBuilder { this: AstCreator =>
 
     val signature = s"${typeFor(node)}${params.map(_.typeFullName).mkString("(", ",", ")")}"
     methodNode.signature(signature)
+    
+    // Problem for https://github.com/ShiftLeftSecurity/codescience/issues/3626 here.
+    // As the type (thus, the signature) of the function node is unknown (i.e., ANY*)
+    // we can't generate the correct binding with signature.
     val bindingNode = NewBinding().name("").signature("")
     Ast(functionTypeDeclNode).withBindsEdge(functionTypeDeclNode, bindingNode).withRefEdge(bindingNode, methodNode)
   }
