@@ -16,8 +16,8 @@ object Py2CpgTestContext {
 
 class Py2CpgTestContext {
 
-  private val codeAndFile = mutable.ArrayBuffer.empty[Py2Cpg.InputPair]
-  private var buildResult = Option.empty[Cpg]
+  private val codeAndFile     = mutable.ArrayBuffer.empty[Py2Cpg.InputPair]
+  private var buildResult     = Option.empty[Cpg]
   private val absTestFilePath = "<absoluteTestPath>/"
 
   def addSource(code: String, file: String = "test.py"): Py2CpgTestContext = {
