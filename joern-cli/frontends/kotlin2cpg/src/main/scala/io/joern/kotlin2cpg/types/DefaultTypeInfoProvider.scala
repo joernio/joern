@@ -666,7 +666,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       val renderedRetType =
         args.lastOption
           .map { t => TypeRenderer.render(t.getType) }
-          .getOrElse(TypeConstants.any)
+          .getOrElse(TypeConstants.javaLangObject)
       val renderedArgs =
         if (args.isEmpty) ""
         else if (args.size == 1) TypeConstants.javaLangObject
@@ -762,7 +762,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       val renderedRetType =
         args.lastOption
           .map { t => TypeRenderer.render(t.getType) }
-          .getOrElse(TypeConstants.any)
+          .getOrElse(TypeConstants.javaLangObject)
       val renderedArgs =
         if (args.isEmpty) ""
         else if (args.size == 1) TypeConstants.javaLangObject
