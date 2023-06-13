@@ -60,11 +60,10 @@ trait AstForTypesCreator { this: AstCreator =>
           .getOrElse(Ast())
       }
 
-    val allClassMembers = classMembersForTypeAlias(alias).toList
     // adding all class methods / functions and uninitialized, non-static members
-    allClassMembers
+    classMembersForTypeAlias(alias)
       .filter(member => isClassMethodOrUninitializedMember(member) && !isStaticMember(member))
-      .map(m => astForClassMember(m, aliasTypeDeclNode))
+      .foreach(m => astForClassMember(m, aliasTypeDeclNode))
     typeDeclNodeAst.root.foreach(diffGraph.addEdge(methodAstParentStack.head, _, EdgeTypes.AST))
     Ast(aliasTypeDeclNode)
   }
