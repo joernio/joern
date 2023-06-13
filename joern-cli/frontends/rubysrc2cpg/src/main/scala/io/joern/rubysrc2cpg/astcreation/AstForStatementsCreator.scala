@@ -3,8 +3,10 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewIdentifier}
+
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait AstForStatementsCreator { this: AstCreator =>
 
@@ -16,8 +18,24 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForUndefStatement(ctx: UndefStatementContext): Ast = {
-    // TODO to be implemented
-    Ast()
+    val undefMethods =
+      ctx
+        .definedMethodNameOrSymbol()
+        .asScala
+        .flatMap(astForDefinedMethodNameOrSymbolContext(_))
+        .toSeq
+
+    val operatorName = RubyOperators.undef
+    val callNode = NewCall()
+      .name(operatorName)
+      .code(ctx.getText)
+      .methodFullName(operatorName)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.UNDEF().getSymbol().getLine())
+      .columnNumber(ctx.UNDEF().getSymbol().getCharPositionInLine())
+    callAst(callNode, undefMethods)
   }
 
   protected def astForBeginStatement(ctx: BeginStatementContext): Ast = {
