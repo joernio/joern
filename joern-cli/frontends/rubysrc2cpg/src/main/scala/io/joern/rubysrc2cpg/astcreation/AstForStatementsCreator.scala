@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewIdentifier}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -59,8 +59,8 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForIfModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatementContext(ctx.statement(0))
-    val rhs = astForStatementContext(ctx.statement(1)).headOption
+    val lhs = astForStatement(ctx.statement(0))
+    val rhs = astForStatement(ctx.statement(1)).headOption
     val ifNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.IF)
       .code(ctx.getText)
@@ -68,8 +68,8 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForUnlessModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatementContext(ctx.statement(0))
-    val rhs = astForStatementContext(ctx.statement(1))
+    val lhs = astForStatement(ctx.statement(0))
+    val rhs = astForStatement(ctx.statement(1))
     val ifNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.IF)
       .code(ctx.getText)
@@ -77,24 +77,65 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForWhileModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatementContext(ctx.statement(0))
-    val rhs = astForStatementContext(ctx.statement(1))
+    val lhs = astForStatement(ctx.statement(0))
+    val rhs = astForStatement(ctx.statement(1))
     whileAst(rhs.headOption, lhs, Some(ctx.getText))
   }
 
   protected def astForUntilModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatementContext(ctx.statement(0))
-    val rhs = astForStatementContext(ctx.statement(1))
+    val lhs = astForStatement(ctx.statement(0))
+    val rhs = astForStatement(ctx.statement(1))
     whileAst(rhs.headOption, lhs, Some(ctx.getText))
   }
 
   protected def astForRescueModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatementContext(ctx.statement(0))
-    val rhs = astForStatementContext(ctx.statement(1))
+    val lhs = astForStatement(ctx.statement(0))
+    val rhs = astForStatement(ctx.statement(1))
     val throwNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.THROW)
       .code(ctx.getText)
     controlStructureAst(throwNode, rhs.headOption, lhs)
+  }
+
+  // TODO: return Ast instead of Seq[Ast].
+  protected def astForStatement(ctx: StatementContext): Seq[Ast] = ctx match {
+    case ctx: AliasStatementContext               => Seq(astForAliasStatement(ctx))
+    case ctx: UndefStatementContext               => Seq(astForUndefStatement(ctx))
+    case ctx: BeginStatementContext               => Seq(astForBeginStatement(ctx))
+    case ctx: EndStatementContext                 => Seq(astForEndStatement(ctx))
+    case ctx: ModifierStatementContext            => Seq(astForModifierStatement(ctx))
+    case ctx: ExpressionOrCommandStatementContext => astForExpressionOrCommand(ctx.expressionOrCommand())
+  }
+
+  // TODO: return Ast instead of Seq[Ast]
+  protected def astForExpressionOrCommand(ctx: ExpressionOrCommandContext): Seq[Ast] = ctx match {
+    case ctx: InvocationExpressionOrCommandContext => astForInvocationExpressionOrCommandContext(ctx)
+    case ctx: NotExpressionOrCommandContext        => Seq(astForNotKeywordExpressionOrCommand(ctx))
+    case ctx: OrAndExpressionOrCommandContext      => Seq(astForOrAndExpressionOrCommand(ctx))
+    case ctx: ExpressionExpressionOrCommandContext => astForExpressionContext(ctx.expression())
+  }
+
+  protected def astForNotKeywordExpressionOrCommand(ctx: NotExpressionOrCommandContext): Ast = {
+    val exprOrCommandAst = astForExpressionOrCommand(ctx.expressionOrCommand())
+    val call             = callNode(ctx, ctx.getText, Operators.not, Operators.not, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, exprOrCommandAst)
+  }
+
+  protected def astForOrAndExpressionOrCommand(ctx: OrAndExpressionOrCommandContext): Ast = ctx.op.getType match {
+    case OR  => astForOrExpressionOrCommand(ctx)
+    case AND => astForAndExpressionOrCommand(ctx)
+  }
+
+  protected def astForOrExpressionOrCommand(ctx: OrAndExpressionOrCommandContext): Ast = {
+    val argsAst = ctx.expressionOrCommand().asScala.flatMap(astForExpressionOrCommand)
+    val call    = callNode(ctx, ctx.getText, Operators.or, Operators.or, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argsAst.toList)
+  }
+
+  protected def astForAndExpressionOrCommand(ctx: OrAndExpressionOrCommandContext): Ast = {
+    val argsAst = ctx.expressionOrCommand().asScala.flatMap(astForExpressionOrCommand)
+    val call    = callNode(ctx, ctx.getText, Operators.and, Operators.and, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argsAst.toList)
   }
 
 }
