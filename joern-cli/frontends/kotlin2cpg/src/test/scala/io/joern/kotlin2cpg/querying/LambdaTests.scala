@@ -511,4 +511,20 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
+  "CPG for code with non-scope-function single-parameter lambda call" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f1(p: String) {
+        |    val r = Result.success(p)
+        |    r.onSuccess { println(it) }
+        |}
+        |""".stripMargin)
+
+    "contain a METHOD node for the lambda with a PARAMETER with implicit parameter name" in {
+      val List(m) = cpg.method.fullName(".*lambda.*").l
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+      val List(p) = m.parameter.l
+      p.name shouldBe "it"
+    }
+  }
 }
