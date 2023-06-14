@@ -1,12 +1,11 @@
 package io.joern.pysrc2cpg
 
-import io.joern.x2cpg.{X2Cpg, X2CpgConfig, X2CpgFrontend}
+import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
-import scala.collection.mutable
+
+import java.nio.file._
 import scala.util.Try
 
 case class Py2CpgOnFileSystemConfig(
@@ -49,69 +48,22 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
         } else {
           Nil
         }
-      val inputFiles = collectInputFiles(Paths.get(config.inputPath), ignorePrefixes, config.requirementsTxt)
-      val inputProviders = inputFiles._1.map { inputFile => () =>
+      val inputFiles = SourceFiles
+        .determine(config.inputPath, Set(".py"), config)
+        .map(x => Path.of(x))
+        .filterNot { file =>
+          val relativeFile = Path.of(config.inputPath).relativize(file)
+          ignorePrefixes.exists(prefix => relativeFile.startsWith(prefix))
+        }
+      val inputProviders = inputFiles.map { inputFile => () =>
         {
           val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
           Py2Cpg.InputPair(content, inputFile.toString, Paths.get(config.inputPath).relativize(inputFile).toString)
         }
       }
-      val configInputProviders =
-        inputFiles._2.map { inputFile => () =>
-          {
-            val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
-            Py2Cpg.InputPair(content, inputFile.toString, Paths.get(config.inputPath).relativize(inputFile).toString)
-          }
-        }
-      val py2Cpg = new Py2Cpg(inputProviders, configInputProviders, cpg)
+      val py2Cpg = new Py2Cpg(inputProviders, cpg, config.inputPath, config.requirementsTxt)
       py2Cpg.buildCpg()
     }
-  }
-
-  private def collectInputFiles(
-    inputDir: Path,
-    ignorePrefixes: Iterable[Path],
-    requirementsTxtFileName: String
-  ): (Iterable[Path], Option[Path]) = {
-    if (!Files.exists(inputDir)) {
-      logger.error(s"Cannot find $inputDir")
-      return (Iterable.empty, None)
-    }
-
-    val inputFiles = mutable.ArrayBuffer.empty[Path]
-
-    Files.walkFileTree(
-      inputDir,
-      new SimpleFileVisitor[Path] {
-        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-          val relativeFile    = inputDir.relativize(file)
-          val relativeFileStr = relativeFile.toString
-          if (
-            relativeFileStr.endsWith(".py") &&
-            !ignorePrefixes.exists(prefix => relativeFile.startsWith(prefix))
-          ) {
-            inputFiles.append(file)
-          }
-          FileVisitResult.CONTINUE
-        }
-      }
-    )
-
-    var requirementsTxtMaybe: Option[Path] = None
-    Files.walkFileTree(
-      inputDir,
-      new SimpleFileVisitor[Path] {
-        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-          val relativeFile    = inputDir.relativize(file)
-          val relativeFileStr = relativeFile.toString
-          if (relativeFileStr.endsWith(requirementsTxtFileName)) {
-            requirementsTxtMaybe = Some(file)
-          }
-          FileVisitResult.CONTINUE
-        }
-      }
-    )
-    (inputFiles, requirementsTxtMaybe)
   }
 
   private def logConfiguration(config: Py2CpgOnFileSystemConfig): Unit = {
