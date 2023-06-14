@@ -898,6 +898,15 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     if (!expr.getValueParameters.isEmpty) {
       return None
     }
+
+    val hasSingleImplicitParameter =
+      Option(bindingContext.get(BindingContext.EXPECTED_EXPRESSION_TYPE, expr))
+        .map { desc =>
+          // 1 for the parameter + 1 for the return type == 2
+          desc.getConstructor.getParameters.size() == 2
+        }
+        .getOrElse(false)
+
     val containingQualifiedExpression = Option(expr.getParent)
       .map(_.getParent)
       .flatMap(_.getParent match {
@@ -909,22 +918,18 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         resolvedCallDescriptor(qualifiedExpression) match {
           case Some(fnDescriptor) =>
             val originalDesc   = fnDescriptor.getOriginal
+            val vps            = originalDesc.getValueParameters
             val renderedFqName = TypeRenderer.renderFqNameForDesc(originalDesc)
             if (
-              renderedFqName.startsWith(TypeConstants.kotlinLetPrefix) ||
-              renderedFqName.startsWith(TypeConstants.kotlinAlsoPrefix) ||
-              renderedFqName.startsWith(TypeConstants.kotlinTakeIfPrefix) ||
-              renderedFqName.startsWith(TypeConstants.kotlinTakeUnlessPrefix)
-            ) {
-              Some(TypeConstants.scopeFunctionItParameterName)
-            } else if (
-              renderedFqName.startsWith(TypeConstants.kotlinRunPrefix) ||
-              renderedFqName.startsWith(TypeConstants.kotlinApplyPrefix)
+              hasSingleImplicitParameter &&
+              (renderedFqName.startsWith(TypeConstants.kotlinRunPrefix) ||
+                renderedFqName.startsWith(TypeConstants.kotlinApplyPrefix))
             ) {
               Some(TypeConstants.scopeFunctionThisParameterName)
-            } else {
-              None
-            }
+              // https://kotlinlang.org/docs/lambdas.html#it-implicit-name-of-a-single-parameter
+            } else if (hasSingleImplicitParameter) {
+              Some(TypeConstants.lambdaImplicitParameterName)
+            } else None
           case None => None
         }
       case None => None
