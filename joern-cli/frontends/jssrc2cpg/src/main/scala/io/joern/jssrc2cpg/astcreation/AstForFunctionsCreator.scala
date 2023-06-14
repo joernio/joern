@@ -1,7 +1,6 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.BlockScope
-import io.joern.jssrc2cpg.datastructures.MethodScope
+import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope}
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
@@ -12,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Evalu
 import ujson.Value
 
 import scala.collection.mutable
+import scala.util.Try
 
 trait AstForFunctionsCreator { this: AstCreator =>
 
@@ -199,7 +199,17 @@ trait AstForFunctionsCreator { this: AstCreator =>
           })
           param
         case Identifier =>
-          val tpe  = typeFor(nodeInfo)
+          // Handle types declared as `credentials: { username: string; password: string; }`
+          val tpe = Try(createBabelNodeInfo(nodeInfo.json("typeAnnotation")("typeAnnotation")))
+            .map(x =>
+              x.node match {
+                case TSTypeLiteral =>
+                  astForTypeAlias(x).root.collect { case t: NewTypeDecl => t.fullName }.getOrElse(typeFor(nodeInfo))
+                case _ => typeFor(nodeInfo)
+              }
+            )
+            .getOrElse(typeFor(nodeInfo))
+
           val name = nodeInfo.json("name").str
           val node =
             parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))

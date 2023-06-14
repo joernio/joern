@@ -295,6 +295,22 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
       userType.member.typeFullName.toSet shouldBe Set("__ecma.String", "string[]")
     }
 
+    "AST generation for dynamically defined type in a parameter" in TsAstFixture("""
+        |class Test {
+        |    run(credentials: { username: string; password: string; }): string {
+        |        console.log(credentials);
+        |        return ``;
+        |    }
+        |}
+        |""".stripMargin) { cpg =>
+      val Some(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").headOption
+      credentialsType.fullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
+      credentialsType.member.name.l shouldBe List("username", "password")
+      credentialsType.member.typeFullName.toSet shouldBe Set("__ecma.String")
+      val Some(credentialsParam) = cpg.parameter.nameExact("credentials").headOption
+      credentialsParam.typeFullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
+    }
+
   }
 
 }
