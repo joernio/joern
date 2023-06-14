@@ -18,7 +18,7 @@ lazy val astGenVersion = settingKey[String]("astgen version")
 astGenVersion := appProperties.value.getString("jssrc2cpg.astgen_version")
 
 libraryDependencies ++= Seq(
-  "com.michaelpollmeier"              %% "codepropertygraph" % Versions.cpg,
+  "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"               %% "upickle"           % "2.0.0",
   "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.2",
   "com.typesafe"               % "config"            % "1.4.2",

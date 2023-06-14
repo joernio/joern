@@ -3,7 +3,7 @@ name := "pysrc2cpg"
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "com.michaelpollmeier"           %% "codepropertygraph"          % Versions.cpg,
+  "io.shiftleft"           %% "codepropertygraph"          % Versions.cpg,
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
   "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
 )

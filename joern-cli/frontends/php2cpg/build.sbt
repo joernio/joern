@@ -14,7 +14,7 @@ dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->t
 libraryDependencies ++= Seq(
   "com.lihaoyi"   %% "ujson"             % "2.0.0",
   "com.lihaoyi"   %% "upickle"           % "2.0.0",
-  "com.michaelpollmeier"  %% "codepropertygraph" % Versions.cpg,
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
   "io.circe"      %% "circe-core"        % "0.15.0-M1"
 )
