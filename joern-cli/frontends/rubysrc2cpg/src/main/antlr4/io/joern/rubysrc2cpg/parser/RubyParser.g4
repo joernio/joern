@@ -47,10 +47,10 @@ statement
 // --------------------------------------------------------
 
 expressionOrCommand
-    :   (EMARK wsOrNl*)? invocationWithoutParentheses                                                               # invocationExpressionOrCommand
+    :   expression                                                                                                  # expressionExpressionOrCommand
+    |   (EMARK wsOrNl*)? invocationWithoutParentheses                                                               # invocationExpressionOrCommand
     |   NOT wsOrNl* expressionOrCommand                                                                             # notExpressionOrCommand
     |   <assoc=right> expressionOrCommand WS* op=(OR | AND) wsOrNl* expressionOrCommand                             # orAndExpressionOrCommand
-    |   expression                                                                                                  # expressionExpressionOrCommand
     ;
 
 expression
