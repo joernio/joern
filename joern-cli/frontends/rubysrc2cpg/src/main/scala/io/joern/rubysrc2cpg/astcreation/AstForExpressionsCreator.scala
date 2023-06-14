@@ -69,26 +69,27 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForMultiplicativeExpression(ctx: MultiplicativeExpressionContext): Ast = ctx.op.getType match {
-    case STAR => astForMultiplicativeStarExpression(ctx)
-    case SLASH => astForMultiplicativeSlashExpression(ctx)
+    case STAR    => astForMultiplicativeStarExpression(ctx)
+    case SLASH   => astForMultiplicativeSlashExpression(ctx)
     case PERCENT => astForMultiplicativePercentExpression(ctx)
   }
 
   protected def astForMultiplicativeStarExpression(ctx: MultiplicativeExpressionContext): Ast = {
     val argsAst = ctx.expression().asScala.flatMap(astForExpressionContext)
-    val call = callNode(ctx, ctx.getText, Operators.multiplication, Operators.multiplication, DispatchTypes.STATIC_DISPATCH)
+    val call =
+      callNode(ctx, ctx.getText, Operators.multiplication, Operators.multiplication, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
 
   protected def astForMultiplicativeSlashExpression(ctx: MultiplicativeExpressionContext): Ast = {
     val argsAst = ctx.expression().asScala.flatMap(astForExpressionContext)
-    val call = callNode(ctx, ctx.getText, Operators.division, Operators.division, DispatchTypes.STATIC_DISPATCH)
+    val call    = callNode(ctx, ctx.getText, Operators.division, Operators.division, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
 
   protected def astForMultiplicativePercentExpression(ctx: MultiplicativeExpressionContext): Ast = {
     val argsAst = ctx.expression().asScala.flatMap(astForExpressionContext)
-    val call = callNode(ctx, ctx.getText, Operators.modulo, Operators.modulo, DispatchTypes.STATIC_DISPATCH)
+    val call    = callNode(ctx, ctx.getText, Operators.modulo, Operators.modulo, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
 
