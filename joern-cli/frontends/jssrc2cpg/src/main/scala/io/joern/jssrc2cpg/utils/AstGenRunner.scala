@@ -93,7 +93,8 @@ object AstGenRunner {
   }
 
   private def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-    Try("astgen --version".!!).toOption.map(_.strip()) match {
+    val astgenPrefix = if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) "cmd /C " else ""
+    Try(astgenPrefix + "astgen --version".!!).toOption.map(_.strip()) match {
       case Some(installedVersion)
           if installedVersion != "unknown" && VersionHelper.compare(installedVersion, astGenVersion) >= 0 =>
         logger.debug(s"Using local astgen v$installedVersion from systems PATH")
