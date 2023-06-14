@@ -60,6 +60,10 @@ trait AstForTypesCreator { this: AstCreator =>
           .getOrElse(Ast())
       }
 
+    // adding all class methods / functions and uninitialized, non-static members
+    classMembersForTypeAlias(alias)
+      .filter(member => isClassMethodOrUninitializedMember(member) && !isStaticMember(member))
+      .foreach(m => astForClassMember(m, aliasTypeDeclNode))
     typeDeclNodeAst.root.foreach(diffGraph.addEdge(methodAstParentStack.head, _, EdgeTypes.AST))
     Ast(aliasTypeDeclNode)
   }
@@ -84,6 +88,9 @@ trait AstForTypesCreator { this: AstCreator =>
       allMembers.filterNot(isConstructor) ++ dynamicallyDeclaredMembers
     }
   }
+
+  private def classMembersForTypeAlias(alias: BabelNodeInfo): Seq[Value] =
+    Try(alias.json("typeAnnotation")("members").arr).toOption.toSeq.flatten
 
   private def createFakeConstructor(
     code: String,
@@ -183,6 +190,10 @@ trait AstForTypesCreator { this: AstCreator =>
       case ExpressionStatement if isInitializedMember(classElement) =>
         val memberNodeInfo = createBabelNodeInfo(nodeInfo.json("expression")("left")("property"))
         val name           = memberNodeInfo.code
+        memberNode(nodeInfo, name, nodeInfo.code, typeFullName)
+      case TSPropertySignature =>
+        val memberNodeInfo = createBabelNodeInfo(nodeInfo.json("key"))
+        val name           = memberNodeInfo.json("name").str
         memberNode(nodeInfo, name, nodeInfo.code, typeFullName)
       case _ =>
         val name = nodeInfo.node match {

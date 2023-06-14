@@ -1,7 +1,6 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.passes.AbstractPassTest
-import io.joern.jssrc2cpg.passes.Defines
+import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines}
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 
@@ -280,6 +279,20 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         c.fullName shouldBe "code.ts::program:A:B:C"
         c.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
       }
+    }
+
+    "AST generation for dynamically exported and defined class" in TsAstFixture("""
+        |export type User = {
+        |    email: string;
+        |    organizationIds: string[];
+        |    username: string;
+        |    name: string;
+        |    gender: string;
+        |}
+        |""".stripMargin) { cpg =>
+      val Some(userType) = cpg.typeDecl.name("User").headOption
+      userType.member.name.l shouldBe List("email", "organizationIds", "username", "name", "gender")
+      userType.member.typeFullName.toSet shouldBe Set("__ecma.String", "string[]")
     }
 
   }
