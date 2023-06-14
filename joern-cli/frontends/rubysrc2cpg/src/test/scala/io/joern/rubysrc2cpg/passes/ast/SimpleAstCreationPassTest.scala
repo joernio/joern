@@ -407,7 +407,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.division).l
       callNode.code shouldBe "x / y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a modulo expression" in {
@@ -415,7 +415,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.modulo).l
       callNode.code shouldBe "x % y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a shift right expression" in {
