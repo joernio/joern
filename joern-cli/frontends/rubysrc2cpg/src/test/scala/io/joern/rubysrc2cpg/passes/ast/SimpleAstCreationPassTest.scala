@@ -279,7 +279,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.addition).l
       callNode.code shouldBe "x+y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a not expression" in {
@@ -295,7 +295,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.exponentiation).l
       callNode.code shouldBe "x**y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a inclusive range expression" in {
@@ -518,17 +518,17 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a addition expression with space before addition" in {
       val cpg            = code("x + y")
       val List(callNode) = cpg.call.name(Operators.addition).l
-      callNode.code shouldBe "x+y"
+      callNode.code shouldBe "x + y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a addition expression with space before subtraction" in {
       val cpg            = code("x - y")
       val List(callNode) = cpg.call.name(Operators.subtraction).l
-      callNode.code shouldBe "x-y"
+      callNode.code shouldBe "x - y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for object's method access (chainedInvocationPrimary)" in {
