@@ -376,7 +376,7 @@ class AstCreator(filename: String, global: Global)
     case ctx: UnaryExpressionContext               => Seq(astForUnaryExpression(ctx))
     case ctx: PowerExpressionContext               => Seq(astForPowerExpression(ctx))
     case ctx: UnaryMinusExpressionContext          => astForUnaryMinusExpressionContext(ctx)
-    case ctx: MultiplicativeExpressionContext      => astForMultiplicativeExpressionContext(ctx)
+    case ctx: MultiplicativeExpressionContext      => Seq(astForMultiplicativeExpression(ctx))
     case ctx: AdditiveExpressionContext            => Seq(astForAdditiveExpression(ctx))
     case ctx: BitwiseShiftExpressionContext        => astForBitwiseShiftExpressionContext(ctx)
     case ctx: BitwiseAndExpressionContext          => astForBitwiseAndExpressionContext(ctx)
@@ -1448,10 +1448,6 @@ class AstCreator(filename: String, global: Global)
       .lineNumber(ctx.EQ().getSymbol().getLine())
       .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
     Seq(callAst(callNode, lhsAsts ++ rhsAsts))
-  }
-
-  def astForMultiplicativeExpressionContext(ctx: MultiplicativeExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForRangeExpressionContext(ctx: RangeExpressionContext): Seq[Ast] = {
