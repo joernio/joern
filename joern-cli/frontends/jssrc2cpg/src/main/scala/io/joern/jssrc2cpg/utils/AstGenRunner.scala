@@ -28,7 +28,14 @@ object AstGenRunner {
   private val MinifiedPathRegex: Regex = ".*([.-]min\\..*js|bundle\\.js)".r
 
   private val IgnoredTestsRegex: Seq[Regex] =
-    List(".*[.-]spec\\.js".r, ".*[.-]mock\\.js".r, ".*[.-]e2e\\.js".r, ".*[.-]test\\.js".r)
+    List(
+      ".*[.-]spec\\.js".r,
+      ".*[.-]mock\\.js".r,
+      ".*[.-]e2e\\.js".r,
+      ".*[.-]test\\.js".r,
+      ".*cypress\\.json".r,
+      ".*test.*\\.json".r
+    )
 
   private val IgnoredFilesRegex: Seq[Regex] = List(
     ".*jest\\.config.*".r,
@@ -45,7 +52,10 @@ object AstGenRunner {
     ".*rollup\\.config.*".r,
     ".*\\.types\\.js".r,
     ".*\\.cjs\\.js".r,
-    ".*eslint-local-rules\\.js".r
+    ".*eslint-local-rules\\.js".r,
+    ".*\\.devcontainer\\.json".r,
+    ".*Gruntfile\\.js".r,
+    ".*i18n.*\\.json".r
   )
 
   case class AstGenRunnerResult(
@@ -83,9 +93,10 @@ object AstGenRunner {
   }
 
   private def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-    Try("astgen --version".!!).toOption.map(_.strip()) match {
+    ExternalCommand.run("astgen --version", ".").toOption.map(_.mkString.strip()) match {
       case Some(installedVersion)
-          if installedVersion != "unknown" && VersionHelper.compare(installedVersion, astGenVersion) >= 0 =>
+          if installedVersion != "unknown" &&
+            Try(VersionHelper.compare(installedVersion, astGenVersion)).toOption.getOrElse(-1) >= 0 =>
         logger.debug(s"Using local astgen v$installedVersion from systems PATH")
         true
       case Some(installedVersion) =>

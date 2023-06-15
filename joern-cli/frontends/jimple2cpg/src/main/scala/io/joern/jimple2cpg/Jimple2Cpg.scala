@@ -95,7 +95,12 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
 
       configureSoot()
       new MetaDataPass(cpg, language, config.inputPath).createAndApply()
-
+      Options.v().set_dynamic_dir(config.dynamicDirs.toList.asJava)
+      Options.v().set_dynamic_package(config.dynamicPkgs.toList.asJava)
+      if (config.fullResolver) {
+        // full transitive resolution of all references
+        Options.v().set_full_resolver(true)
+      }
       if (inputPath.isDirectory()) {
         // make sure classpath is configured correctly
         Options.v().set_soot_classpath(ProgramHandlingUtil.getUnpackingDir.toString)

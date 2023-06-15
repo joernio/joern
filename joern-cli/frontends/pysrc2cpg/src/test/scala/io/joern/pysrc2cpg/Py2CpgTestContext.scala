@@ -15,8 +15,10 @@ object Py2CpgTestContext {
 }
 
 class Py2CpgTestContext {
-  private val codeAndFile = mutable.ArrayBuffer.empty[Py2Cpg.InputPair]
-  private var buildResult = Option.empty[Cpg]
+
+  private val codeAndFile     = mutable.ArrayBuffer.empty[Py2Cpg.InputPair]
+  private var buildResult     = Option.empty[Cpg]
+  private val absTestFilePath = "<absoluteTestPath>/"
 
   def addSource(code: String, file: String = "test.py"): Py2CpgTestContext = {
     if (buildResult.nonEmpty) {
@@ -25,14 +27,14 @@ class Py2CpgTestContext {
     if (codeAndFile.exists(_.absFileName == file)) {
       throw new RuntimeException(s"Add more than one source under file name $file.")
     }
-    codeAndFile.append(Py2Cpg.InputPair(code, "<absoluteTestPath>/" + file, file))
+    codeAndFile.append(Py2Cpg.InputPair(code, absTestFilePath + file, file))
     this
   }
 
   def buildCpg: Cpg = {
     if (buildResult.isEmpty) {
       val cpg    = new Cpg()
-      val py2Cpg = new Py2Cpg(codeAndFile.map(inputPair => () => inputPair), Seq(), cpg)
+      val py2Cpg = new Py2Cpg(codeAndFile.map(inputPair => () => inputPair), cpg, absTestFilePath)
       py2Cpg.buildCpg()
 
       val context = new LayerCreatorContext(cpg)

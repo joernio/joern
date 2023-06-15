@@ -9,7 +9,6 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 
 import java.util.concurrent.{ForkJoinPool, ForkJoinTask, RecursiveTask, RejectedExecutionException}
 import scala.util.{Failure, Success, Try}
@@ -157,10 +156,11 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
     val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+    val thisRefs         = Seq("this", "self") ++ m.typeDecl.name.headOption.toList
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
       .inFieldAccess
-      .where(_.argument(1).codeExact("this", "self", m.typeDecl.name.head))
+      .where(_.argument(1).codeExact(thisRefs: _*))
       .takeWhile(notLeftHandOfAssignment)
       .l
     (identifierUsages ++ fieldAccessUsages).headOption.toList

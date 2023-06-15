@@ -62,7 +62,7 @@ class RegexTests extends RubyParserAbstractTest {
       }
     }
 
-    "as the argument to an parenthesized invocation" should {
+    "as the sole argument to a parenthesized invocation" should {
       val code = "puts(//)"
 
       "be parsed as such" in {
@@ -76,6 +76,37 @@ class RegexTests extends RubyParserAbstractTest {
             |    (
             |    BlockExprAssocTypeArguments
             |     Expressions
+            |      PrimaryExpression
+            |       LiteralPrimary
+            |        RegularExpressionLiteral
+            |         /
+            |         /
+            |    )""".stripMargin
+      }
+    }
+
+    "as the second argument to a parenthesized invocation" should {
+      val code = "puts(1, //)"
+
+      "be parsed as such" in {
+        printAst(_.expressionOrCommand(), code) shouldEqual
+          """ExpressionExpressionOrCommand
+            | PrimaryExpression
+            |  InvocationWithParenthesesPrimary
+            |   MethodIdentifier
+            |    puts
+            |   ArgsOnlyArgumentsWithParentheses
+            |    (
+            |    BlockExprAssocTypeArguments
+            |     Expressions
+            |      PrimaryExpression
+            |       LiteralPrimary
+            |        NumericLiteralLiteral
+            |         NumericLiteral
+            |          UnsignedNumericLiteral
+            |           1
+            |      ,
+            |      WsOrNl
             |      PrimaryExpression
             |       LiteralPrimary
             |        RegularExpressionLiteral
