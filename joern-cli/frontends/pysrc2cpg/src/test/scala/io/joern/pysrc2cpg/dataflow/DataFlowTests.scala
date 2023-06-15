@@ -336,9 +336,9 @@ class RegexDefinedFlowsDataFlowTests
         FlowSemantic
           .from(
             "requests.py:<module>.post",
-            List((0, 0), (1, 1), ("url", -1), ("body", -1), ("url", "url"), ("body", "body"))
+            List((0, 0), (1, "url", -1), (2, "body", -1), (1, "url", 1, "url"), (2, "body", 2, "body"))
           ),
-        FlowSemantic.from("cross_taint.py:<module>.go", List((0, 0), (1, 1), ("a", "b")))
+        FlowSemantic.from("cross_taint.py:<module>.go", List((0, 0), (1, 1), (1, "a", 2, "b")))
       )
     ) {
 
@@ -471,6 +471,30 @@ class RegexDefinedFlowsDataFlowTests
       val src = cpg.identifier("Foo").l
       val snk = cpg.call("print").l
       snk.reachableByFlows(src).size shouldBe 2
+    }
+  }
+
+  "flows via tuple literal" should {
+    val cpg = code("""
+        |a = 1
+        |b = 2
+        |c = 3
+        |
+        |x = (a, b, c)
+        |
+        |sink1(b)
+        |sink2(x)
+        |""".stripMargin)
+    "not cross-taint due to 'pass through' semantics" in {
+      val src = cpg.literal("1").l
+      val snk = cpg.call("sink1").l
+      snk.reachableByFlows(src).size shouldBe 0
+    }
+
+    "taint the return value due to 'pass through' semantics" in {
+      val src = cpg.call.nameExact("<operator>.tupleLiteral").l
+      val snk = cpg.call("sink2").l
+      snk.reachableByFlows(src).size shouldBe 1
     }
   }
 
