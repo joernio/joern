@@ -311,6 +311,19 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
       credentialsParam.typeFullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
     }
 
+    "AST generation for destructured type in a parameter" in TsAstFixture("""
+        |function apiCall({ username, password }) {
+        |    log(`${username}: ${password}`);
+        |}
+        |""".stripMargin) { cpg =>
+      val Some(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").headOption
+      credentialsType.fullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
+      credentialsType.member.name.l shouldBe List("username", "password")
+      credentialsType.member.typeFullName.toSet shouldBe Set(Defines.Any)
+      val Some(credentialsParam) = cpg.parameter.nameExact("param1_0").headOption
+      credentialsParam.typeFullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
+    }
+
   }
 
 }
