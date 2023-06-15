@@ -1342,7 +1342,10 @@ class AstCreator(filename: String, global: Global)
           case None        => false
         }
 
-        if (!lastStmtIsAlreadyReturn) {
+        if (
+          !lastStmtIsAlreadyReturn &&
+          ctx.compoundStatement().statements() != null
+        ) {
           val len  = ctx.compoundStatement().statements().statement().size()
           val code = ctx.compoundStatement().statements().statement().get(len - 1).getText
           val retNode = NewReturn()
