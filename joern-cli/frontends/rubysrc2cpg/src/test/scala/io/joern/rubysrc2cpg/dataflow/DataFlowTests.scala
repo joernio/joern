@@ -52,7 +52,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Return via call with initialization" should {
+  "Explicit return via call with initialization" should {
     val cpg = code("""
         |def add(p)
         |q = 5
@@ -72,7 +72,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Default Return via call with initialization" should {
+  "Implicit return via call with initialization" should {
     val cpg = code("""
         |def add(p)
         |q = 5
