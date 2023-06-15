@@ -113,6 +113,7 @@ class AstCreator(filename: String, global: Global)
     val keyValueAssociation     = "<operator>.keyValueAssociation"
     val activeRecordAssociation = "<operator>.activeRecordAssociation"
     val undef                   = "<operator>.undef"
+    val yieldOp                 = "<operator>.yield"
   }
   private def getOperatorName(token: Token): String = token.getType match {
     case AMP                 => Operators.logicalAnd
@@ -1898,7 +1899,18 @@ class AstCreator(filename: String, global: Global)
 
   def astForYieldWithOptionalArgumentContext(ctx: YieldWithOptionalArgumentContext): Seq[Ast] = {
     if (ctx.arguments() == null) return Seq(Ast())
-    astForArgumentsContext(ctx.arguments())
+    val argsAst      = astForArgumentsContext(ctx.arguments())
+    val operatorName = RubyOperators.yieldOp
+    val callNode = NewCall()
+      .name(operatorName)
+      .code(ctx.getText)
+      .methodFullName(operatorName)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.YIELD().getSymbol().getLine())
+      .columnNumber(ctx.YIELD().getSymbol().getCharPositionInLine())
+    Seq(callAst(callNode, argsAst))
   }
 
   def astForYieldWithOptionalArgumentPrimaryContext(ctx: YieldWithOptionalArgumentPrimaryContext): Seq[Ast] = {
