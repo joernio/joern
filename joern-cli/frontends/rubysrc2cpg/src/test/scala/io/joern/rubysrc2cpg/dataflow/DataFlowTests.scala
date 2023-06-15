@@ -52,12 +52,32 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Return via call with initialization" should {
+  "Explicit return via call with initialization" should {
     val cpg = code("""
         |def add(p)
         |q = 5
         |q = p
         |return q
+        |end
+        |
+        |n = 1
+        |ret = add(n)
+        |puts ret
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("n").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
+
+  "Implicit return via call with initialization" should {
+    val cpg = code("""
+        |def add(p)
+        |q = 5
+        |q = p
+        |q
         |end
         |
         |n = 1
