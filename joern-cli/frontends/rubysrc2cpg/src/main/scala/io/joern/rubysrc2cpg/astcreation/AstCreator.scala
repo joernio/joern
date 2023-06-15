@@ -1331,8 +1331,12 @@ class AstCreator(filename: String, global: Global)
   def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
     val compoundStatementAsts = astForStatementsContext(ctx.compoundStatement().statements())
 
-    val lastStmtReturnAst =
+    val compoundStatementAstsWithReturn =
       if (addReturnNode) {
+        /*
+         * Convert the last statement to a return AST if it is not already a return AST.
+         * If it is a return ASt leave it untouched.
+         */
         val lastStmtIsAlreadyReturn = compoundStatementAsts.last.root match {
           case Some(value) => value.isInstanceOf[NewReturn]
           case None        => false
@@ -1341,19 +1345,20 @@ class AstCreator(filename: String, global: Global)
         if (!lastStmtIsAlreadyReturn) {
           val retNode = NewReturn()
             .code(ctx.getText)
-          Seq(returnAst(retNode, Seq[Ast](compoundStatementAsts.last)))
+          val returnReplaced = returnAst(retNode, Seq[Ast](compoundStatementAsts.last))
+          compoundStatementAsts.updated(compoundStatementAsts.size - 1, returnReplaced)
         } else {
-          Seq()
+          compoundStatementAsts
         }
       } else {
-        Seq()
+        compoundStatementAsts
       }
 
     val mainBodyAsts = if (ctx.ensureClause() != null) {
       val ensureAsts = astForStatementsContext(ctx.ensureClause().compoundStatement().statements())
-      compoundStatementAsts ++ lastStmtReturnAst ++ ensureAsts
+      compoundStatementAstsWithReturn ++ ensureAsts
     } else {
-      compoundStatementAsts ++ lastStmtReturnAst
+      compoundStatementAstsWithReturn
     }
 
     val rescueAsts = ctx
