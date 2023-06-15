@@ -29,8 +29,6 @@ object ExternalCommand {
 
   private val COMMAND_AND: String = " && "
 
-  def toOSCommand(command: String): String = if (IS_WIN) command + ".cmd" else command
-
   def runMultiple(command: String, inDir: String = ".", extraEnv: Map[String, String] = Map.empty): Try[String] = {
     val dir           = new java.io.File(inDir)
     val stdOutOutput  = new ConcurrentLinkedQueue[String]
