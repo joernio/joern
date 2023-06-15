@@ -1328,13 +1328,32 @@ class AstCreator(filename: String, global: Global)
     blockAst(blockNode, asts.toList)
   }
 
-  def astForBodyStatementContext(ctx: BodyStatementContext): Seq[Ast] = {
+  def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
     val compoundStatementAsts = astForStatementsContext(ctx.compoundStatement().statements())
+
+    val lastStmtReturnAst =
+      if (addReturnNode) {
+        val lastStmtIsAlreadyReturn = compoundStatementAsts.last.root match {
+          case Some(value) => value.isInstanceOf[NewReturn]
+          case None        => false
+        }
+
+        if (!lastStmtIsAlreadyReturn) {
+          val retNode = NewReturn()
+            .code(ctx.getText)
+          Seq(returnAst(retNode, Seq[Ast](compoundStatementAsts.last)))
+        } else {
+          Seq()
+        }
+      } else {
+        Seq()
+      }
+
     val mainBodyAsts = if (ctx.ensureClause() != null) {
       val ensureAsts = astForStatementsContext(ctx.ensureClause().compoundStatement().statements())
-      compoundStatementAsts ++ ensureAsts
+      compoundStatementAsts ++ lastStmtReturnAst ++ ensureAsts
     } else {
-      compoundStatementAsts
+      compoundStatementAsts ++ lastStmtReturnAst
     }
 
     val rescueAsts = ctx
@@ -1357,7 +1376,7 @@ class AstCreator(filename: String, global: Global)
     val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
     val callNode       = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     // there can be only one call node
-    val astBody = astForBodyStatementContext(ctx.bodyStatement())
+    val astBody = astForBodyStatementContext(ctx.bodyStatement(), true)
     scope.popScope()
 
     /*
