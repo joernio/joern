@@ -57,7 +57,7 @@ object DefaultSemantics {
     F(Operators.postDecrement, List((1, 1), (1, -1))),
     F(Operators.postIncrement, List((1, 1), (1, -1))),
     F(Operators.preDecrement, List((1, 1), (1, -1))),
-    PTF(Operators.preIncrement, List((1, 1), (1, -1))),
+    F(Operators.preIncrement, List((1, 1), (1, -1))),
     F(Operators.sizeOf, List.empty[(Int, Int)]),
 
     //  some of those operators have duplicate mappings due to a typo
