@@ -279,7 +279,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.addition).l
       callNode.code shouldBe "x+y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a not expression" in {
@@ -295,7 +295,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.exponentiation).l
       callNode.code shouldBe "x**y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a inclusive range expression" in {
@@ -407,7 +407,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.division).l
       callNode.code shouldBe "x / y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a modulo expression" in {
@@ -415,7 +415,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.modulo).l
       callNode.code shouldBe "x % y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a shift right expression" in {
@@ -513,6 +513,152 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       identifierNode.code shouldBe "SomeConstant"
       identifierNode.lineNumber shouldBe Some(3)
       identifierNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a addition expression with space before addition" in {
+      val cpg            = code("x + y")
+      val List(callNode) = cpg.call.name(Operators.addition).l
+      callNode.code shouldBe "x + y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for a addition expression with space before subtraction" in {
+      val cpg            = code("x - y")
+      val List(callNode) = cpg.call.name(Operators.subtraction).l
+      callNode.code shouldBe "x - y"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for object's method access (chainedInvocationPrimary)" in {
+      val cpg            = code("object.some_method(arg1,arg2)")
+      val List(callNode) = cpg.call.name("some_method").l
+      callNode.code shouldBe "object.some_method(arg1,arg2)"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(6)
+
+      val List(identifierNode1) = cpg.identifier.name("arg1").l
+      identifierNode1.code shouldBe "arg1"
+      identifierNode1.lineNumber shouldBe Some(1)
+      identifierNode1.columnNumber shouldBe Some(19)
+
+      val List(identifierNode2) = cpg.identifier.name("arg2").l
+      identifierNode2.code shouldBe "arg2"
+      identifierNode2.lineNumber shouldBe Some(1)
+      identifierNode2.columnNumber shouldBe Some(24)
+    }
+
+    "have correct structure for object's method.member access (chainedInvocationPrimary)" ignore {
+      val cpg                  = code("object.some_member")
+      val List(identifierNode) = cpg.identifier.name("some_member").l
+      identifierNode.code shouldBe "some_member"
+      identifierNode.lineNumber shouldBe Some(1)
+      identifierNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for negation before block (invocationExpressionOrCommand)" in {
+      val cpg = code("!foo arg do\nputs arg\nend")
+
+      val List(callNode1) = cpg.call.name(Operators.not).l
+      callNode1.code shouldBe "!foo arg do\nputs arg\nend"
+      callNode1.lineNumber shouldBe Some(1)
+      callNode1.columnNumber shouldBe Some(0)
+
+      val List(callNode2) = cpg.call.name("foo").l
+      callNode2.code shouldBe "foo arg do\nputs arg\nend"
+      callNode2.lineNumber shouldBe Some(1)
+      callNode2.columnNumber shouldBe Some(1)
+
+      val List(callNode3) = cpg.call.name("puts").l
+      callNode3.code shouldBe "puts arg"
+      callNode3.lineNumber shouldBe Some(2)
+      callNode3.columnNumber shouldBe Some(0)
+
+      val List(identifierNode) = cpg.identifier.name("arg").l
+      identifierNode.code shouldBe "arg"
+      identifierNode.lineNumber shouldBe Some(2)
+      identifierNode.columnNumber shouldBe Some(5)
+    }
+
+    "have correct structure for a hash initialisation" in {
+      val cpg       = code("hashMap = {\"k1\" => 1, \"k2\" => 2}")
+      val callNodes = cpg.call.name("<operator>.keyValueAssociation").l
+      callNodes.size shouldBe 2
+      callNodes.head.code shouldBe "\"k1\" => 1"
+      callNodes.head.lineNumber shouldBe Some(1)
+      callNodes.head.columnNumber shouldBe Some(16)
+    }
+
+    "have correct structure for defined expression" in {
+      val cpg = code("defined? x")
+
+      val List(callNode) = cpg.call.name("<operator>.defined").l
+      callNode.code shouldBe "defined? x"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+
+      val List(identifierNode) = cpg.identifier.name("x").l
+      identifierNode.code shouldBe "x"
+      identifierNode.lineNumber shouldBe Some(1)
+      identifierNode.columnNumber shouldBe Some(9)
+    }
+
+    "have correct structure for chainedInvocationWithoutArgumentsPrimary" in {
+      val cpg = code("object::foo do\nputs \"right here\"\nend")
+
+      val List(callNode1) = cpg.call.name("foo").l
+      callNode1.code shouldBe "object::foo do\nputs \"right here\"\nend"
+      callNode1.lineNumber shouldBe Some(1)
+      callNode1.columnNumber shouldBe Some(6)
+
+      val List(callNode2) = cpg.call.name("puts").l
+      callNode2.code shouldBe "puts \"right here\""
+      callNode2.lineNumber shouldBe Some(2)
+      callNode2.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for require with an expression" in {
+      val cpg = code("Dir[Rails.root.join('a', 'b', '**', '*.rb')].each { |f| require f }")
+
+      val List(callNode) = cpg.call.name("require").l
+      callNode.code shouldBe "require f"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(56)
+    }
+
+    "have correct structure in the body of module definition" in {
+      val cpg = code("module MyModule\ndef some_method\nend\nprivate\nend")
+
+      val List(callNode) = cpg.method.name("some_method").l
+      callNode.code shouldBe "def some_method\nend"
+      callNode.lineNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(4)
+
+      cpg.identifier.name("private").l.size shouldBe 0
+    }
+
+    "have correct structure for undef" in {
+      val cpg = code("undef method1,method2")
+
+      val List(callNode) = cpg.call.name("<operator>.undef").l
+      callNode.code shouldBe "undef method1,method2"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for class definition with body having only identifiers" in {
+      val cpg = code("class MyClass\nidentifier1\nidentifier2\nend")
+
+      val List(identifierNode1) = cpg.identifier.name("identifier1").l
+      identifierNode1.code shouldBe "identifier1"
+      identifierNode1.lineNumber shouldBe Some(2)
+      identifierNode1.columnNumber shouldBe Some(0)
+
+      val List(identifierNode2) = cpg.identifier.name("identifier2").l
+      identifierNode2.code shouldBe "identifier2"
+      identifierNode2.lineNumber shouldBe Some(3)
+      identifierNode2.columnNumber shouldBe Some(0)
     }
   }
 }

@@ -84,7 +84,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
 
       val astCreationPass = new AstCreationPass(javaparserAsts.analysisAsts, config, cpg, symbolSolver)
       astCreationPass.createAndApply()
-      new ConfigFileCreationPass(config.inputPath, cpg).createAndApply()
+      new ConfigFileCreationPass(cpg).createAndApply()
       new TypeNodePass(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
       new TypeInferencePass(cpg).createAndApply()
     }

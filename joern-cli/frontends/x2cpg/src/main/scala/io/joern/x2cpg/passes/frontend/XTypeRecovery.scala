@@ -258,8 +258,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   private def debugLocation(n: AstNode): String = {
-    val rootPath = cpg.metaData.root.headOption.getOrElse("")
-    val fileName = n.file.name.headOption.getOrElse("<unknown>").stripPrefix(rootPath)
+    val fileName = n.file.name.headOption.getOrElse("<unknown>").stripPrefix(codeRoot)
     val lineNo   = n.lineNumber.getOrElse("<unknown>")
     s"$fileName#L$lineNo"
   }

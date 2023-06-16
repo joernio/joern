@@ -1,7 +1,6 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.passes.AbstractPassTest
-import io.joern.jssrc2cpg.passes.Defines
+import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines}
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 
@@ -280,6 +279,49 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         c.fullName shouldBe "code.ts::program:A:B:C"
         c.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
       }
+    }
+
+    "AST generation for dynamically exported and defined class" in TsAstFixture("""
+        |export type User = {
+        |    email: string;
+        |    organizationIds: string[];
+        |    username: string;
+        |    name: string;
+        |    gender: string;
+        |}
+        |""".stripMargin) { cpg =>
+      val Some(userType) = cpg.typeDecl.name("User").headOption
+      userType.member.name.l shouldBe List("email", "organizationIds", "username", "name", "gender")
+      userType.member.typeFullName.toSet shouldBe Set("__ecma.String", "string[]")
+    }
+
+    "AST generation for dynamically defined type in a parameter" in TsAstFixture("""
+        |class Test {
+        |    run(credentials: { username: string; password: string; }): string {
+        |        console.log(credentials);
+        |        return ``;
+        |    }
+        |}
+        |""".stripMargin) { cpg =>
+      val Some(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").headOption
+      credentialsType.fullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
+      credentialsType.member.name.l shouldBe List("username", "password")
+      credentialsType.member.typeFullName.toSet shouldBe Set("__ecma.String")
+      val Some(credentialsParam) = cpg.parameter.nameExact("credentials").headOption
+      credentialsParam.typeFullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
+    }
+
+    "AST generation for destructured type in a parameter" in TsAstFixture("""
+        |function apiCall({ username, password }) {
+        |    log(`${username}: ${password}`);
+        |}
+        |""".stripMargin) { cpg =>
+      val Some(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").headOption
+      credentialsType.fullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
+      credentialsType.member.name.l shouldBe List("username", "password")
+      credentialsType.member.typeFullName.toSet shouldBe Set(Defines.Any)
+      val Some(credentialsParam) = cpg.parameter.nameExact("param1_0").headOption
+      credentialsParam.typeFullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
     }
 
   }
