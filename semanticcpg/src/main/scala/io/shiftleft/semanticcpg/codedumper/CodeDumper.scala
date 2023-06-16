@@ -13,7 +13,7 @@ object CodeDumper {
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  val arrow: CharSequence = "/* <=== */ "
+  def arrow(locationFullName: Option[String] = None): CharSequence = s"/* <=== ${locationFullName.getOrElse("")} */ "
 
   private val supportedLanguages =
     Set(Languages.C, Languages.NEWC, Languages.GHIDRA, Languages.JAVA, Languages.JAVASRC, Languages.JSSRC)
@@ -50,10 +50,19 @@ object CodeDumper {
         method
           .collect {
             case m: Method if m.lineNumber.isDefined && m.lineNumberEnd.isDefined =>
-              val rawCode = if (lang == Languages.GHIDRA || lang == Languages.JAVA) { m.code }
-              else {
+              val rawCode = if (lang == Languages.GHIDRA || lang == Languages.JAVA) {
+                val lines = m.code.split("\n")
+                lines.zipWithIndex
+                  .map { case (line, lineNo) =>
+                    if (lineNo == 0)
+                      s"$line ${arrow(Option(m.fullName))}"
+                    else
+                      line
+                  }
+                  .mkString("\n")
+              } else {
                 val filename = rootPath.map(toAbsolutePath(location.filename, _)).getOrElse(location.filename)
-                code(filename, m.lineNumber.get, m.lineNumberEnd.get, location.lineNumber)
+                code(filename, m.lineNumber.get, m.lineNumberEnd.get, location.lineNumber, Option(m.fullName))
               }
               if (highlight) {
                 SourceHighlighter.highlight(Source(rawCode, lang))
@@ -70,7 +79,13 @@ object CodeDumper {
     * `lineToHighlight` is defined, then a line containing an arrow (as a source code comment) is included right before
     * that line.
     */
-  def code(filename: String, startLine: Integer, endLine: Integer, lineToHighlight: Option[Integer] = None): String = {
+  def code(
+    filename: String,
+    startLine: Integer,
+    endLine: Integer,
+    lineToHighlight: Option[Integer] = None,
+    locationFullName: Option[String] = None
+  ): String = {
     Try(IOUtils.readLinesInFile(Paths.get(filename))) match {
       case Failure(exception) =>
         logger.warn(s"error reading from: '$filename'", exception)
@@ -81,7 +96,7 @@ object CodeDumper {
           .zipWithIndex
           .map { case (line, lineNo) =>
             if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
-              line + " " + arrow
+              s"$line ${arrow(locationFullName)}"
             } else {
               line
             }
