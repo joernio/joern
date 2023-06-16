@@ -1596,17 +1596,45 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForDoBlockContext(ctx: DoBlockContext, blockMethodName: Option[String] = None): Seq[Ast] = {
-    astForBlock(ctx.compoundStatement().statements(), ctx.blockParameter(), blockMethodName)
+    val lineStart = ctx.DO().getSymbol.getLine
+    val lineEnd   = ctx.DO().getSymbol.getCharPositionInLine
+    val colStart  = ctx.END().getSymbol.getLine
+    val colEnd    = ctx.END().getSymbol.getCharPositionInLine
+    astForBlock(
+      ctx.compoundStatement().statements(),
+      ctx.blockParameter(),
+      blockMethodName,
+      lineStart,
+      lineEnd,
+      colStart,
+      colEnd
+    )
   }
 
   def astForBraceBlockContext(ctx: BraceBlockContext, blockMethodName: Option[String] = None): Seq[Ast] = {
-    astForBlock(ctx.compoundStatement().statements(), ctx.blockParameter(), blockMethodName)
+    val lineStart = ctx.LCURLY().getSymbol.getLine
+    val lineEnd   = ctx.LCURLY().getSymbol.getCharPositionInLine
+    val colStart  = ctx.RCURLY().getSymbol.getLine
+    val colEnd    = ctx.RCURLY().getSymbol.getCharPositionInLine
+    astForBlock(
+      ctx.compoundStatement().statements(),
+      ctx.blockParameter(),
+      blockMethodName,
+      lineStart,
+      lineEnd,
+      colStart,
+      colEnd
+    )
   }
 
   def astForBlockMethod(
     ctxStmt: StatementsContext,
     ctxParam: BlockParameterContext,
-    blockMethodName: String
+    blockMethodName: String,
+    lineStart: Int,
+    lineEnd: Int,
+    colStart: Int,
+    colEnd: Int
   ): Seq[Ast] = {
     /*
      * Model a block as a method
@@ -1627,7 +1655,10 @@ class AstCreator(filename: String, global: Global)
       .name(blockMethodName)
       .fullName(s"$filename:${blockMethodName}")
       .filename(filename)
-    // no line and column number is being set here since this is a fake method
+      .lineNumber(lineStart)
+      .lineNumberEnd(lineEnd)
+      .columnNumber(colStart)
+      .columnNumberEnd(colEnd)
 
     val methodRetNode = NewMethodReturn()
       .typeFullName(Defines.Any)
@@ -1674,10 +1705,15 @@ class AstCreator(filename: String, global: Global)
   def astForBlock(
     ctxStmt: StatementsContext,
     ctxParam: BlockParameterContext,
-    blockMethodName: Option[String] = None
+    blockMethodName: Option[String] = None,
+    lineStart: Int,
+    lineEnd: Int,
+    colStart: Int,
+    colEnd: Int
   ): Seq[Ast] = {
     blockMethodName match {
-      case Some(blockMethodName) => astForBlockMethod(ctxStmt, ctxParam, blockMethodName)
+      case Some(blockMethodName) =>
+        astForBlockMethod(ctxStmt, ctxParam, blockMethodName, lineStart, lineEnd, colStart, colEnd)
       case None =>
         val stmtAsts  = astForStatementsContext(ctxStmt)
         val blockNode = NewBlock().typeFullName(Defines.Any)
