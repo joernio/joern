@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import java.util
-import scala.collection.mutable
+import scala.collection.{AbstractSeq, LinearSeq, mutable}
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
@@ -1445,20 +1445,21 @@ class AstCreator(filename: String, global: Global)
      */
     val assigns = lhsAsts.zip(rhsAsts)
     assigns.map { argPair =>
+      val lhsCode = argPair._1.nodes.headOption match {
+        case Some(id: NewIdentifier) => id.code
+        case Some(lit: NewLiteral)   => lit.code
+        case _                       => ""
+      }
+
+      val rhsCode = argPair._2.nodes.headOption match {
+        case Some(id: NewIdentifier) => id.code
+        case Some(lit: NewLiteral)   => lit.code
+        case _                       => ""
+      }
+
       val syntheticCallNode = NewCall()
         .name(operatorName)
-        .code(
-          argPair._1.nodes
-            .filter(_.isInstanceOf[NewIdentifier])
-            .head
-            .asInstanceOf[NewIdentifier]
-            .code + " = " +
-            argPair._2.nodes
-              .filter(_.isInstanceOf[NewIdentifier])
-              .head
-              .asInstanceOf[NewIdentifier]
-              .code
-        )
+        .code(lhsCode + " = " + rhsCode)
         .methodFullName(operatorName)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
