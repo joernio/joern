@@ -1,9 +1,9 @@
 package io.joern.rubysrc2cpg.utils
 
-import java.nio.file.{Files, Paths}
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
-case class MethodTableModel(methodName: String, parentClassPath: String)
+case class MethodTableModel(methodName: String, parentClassPath: String, classType: String)
 
 case class PackageContext(moduleName: String, packageTable: PackageTable)
 
@@ -11,43 +11,24 @@ class PackageTable() {
 
   private val methodTableMap = mutable.HashMap[String, mutable.HashSet[MethodTableModel]]()
 
-  private val packageCallMap = mutable.HashMap[String, mutable.HashSet[String]]()
-
-  def addPackageMethod(moduleName: String, methodName: String, parentClassPath: String): Unit = {
-    val packageMethod = MethodTableModel(methodName, parentClassPath)
+  def addPackageMethod(moduleName: String, methodName: String, parentClassPath: String, classType: String): Unit = {
+    val packageMethod = MethodTableModel(methodName, parentClassPath, classType)
     methodTableMap.getOrElseUpdate(moduleName, mutable.HashSet.empty[MethodTableModel]) += packageMethod
   }
 
-  def getPackageMethod(moduleName: String, methodName: String): Set[MethodTableModel] = {
-    methodTableMap.getOrElse(moduleName, Set.empty[MethodTableModel]).toSet.filter(_.methodName == methodName)
-  }
-
-  def addPackageCall(sourceFileName: String, moduleName: String): Unit = {
-    packageCallMap.getOrElseUpdate(sourceFileName, mutable.HashSet.empty[String]) += moduleName
-  }
-
-  def getPackageCallInFile(fileName: String): Set[String] = {
-    packageCallMap.getOrElse(fileName, Set.empty[String]).toSet
-  }
-
-  def checkIfInternalDependency(fileName: String, methodName: String): Boolean = {
-    (!packageCallMap.contains(fileName) || !packageCallMap(fileName).contains(methodName)) && methodTableMap.contains(
-      fileName
-    ) && methodTableMap(fileName).exists(_.methodName == methodName)
-  }
-}
-
-object PackageTable {
-  def resolveImportPath(modulePath: String): String = {
-    val pathValue = modulePath.replaceAll("'", "").replaceAll("\"", "")
-    val result = pathValue match {
-      case path if Files.isRegularFile(Paths.get(path)) =>
-        path
-      case path if Files.isRegularFile(Paths.get(path + ".rb")) =>
-        s"${path}.rb"
-      case _ =>
-        pathValue
+  def getMethodFullNameUsingName(packageUsed: List[String], methodName: String): List[String] = {
+    val finalMethodName = ListBuffer[String]()
+    packageUsed.foreach(module => {
+      if (methodTableMap.contains(module)) {
+        methodTableMap(module).filter(_.methodName == methodName).foreach(method => {
+          finalMethodName.addOne(s"$module.${method.parentClassPath}$methodName:<unresolvedSignature>")
+        })
+      }
+    })
+    if (finalMethodName.isEmpty) {
+      List("<unknowfullname>")
+    } else {
+      finalMethodName.toList
     }
-    result
   }
 }

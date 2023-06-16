@@ -35,6 +35,8 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
 
   private val classStack = mutable.Stack[String]()
 
+  private val packageStack = mutable.Stack[String]()
+
   // Queue of variable identifiers incorrectly identified as method identifiers
   private val methodNameAsIdentiferQ = mutable.Queue[Ast]()
 
@@ -1186,7 +1188,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     val column         = localIdentifier.getSymbol().getCharPositionInLine()
     val line           = localIdentifier.getSymbol().getLine()
     val name           = getActualMethodName(localIdentifier.getText)
-    val methodFullName = "<unknownfullname>"
+    val methodFullName = packageContext.packageTable.getMethodFullNameUsingName(packageStack.toList, code).head
     val callNode = NewCall()
       .name(name)
       .methodFullName(methodFullName)
@@ -1450,7 +1452,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
      * we will discard the call node since it is of no further use to us
      */
 
-    val classPath = classStack.toList.mkString(".") + "."
+    val classPath = classStack.reverse.toList.mkString(".") + "."
     val methodNode = NewMethod()
       .code(ctx.getText)
       .name(callNode.name)
@@ -1460,7 +1462,9 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
       .lineNumberEnd(ctx.END().getSymbol.getLine)
       .filename(filename)
     callNode.methodFullName(classPath + callNode.name)
-    packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath)
+
+    val classType = if (classStack.isEmpty) "Standalone" else classStack.head
+    packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
 
     val methodRetNode = NewMethodReturn()
       .lineNumber(None)
@@ -1979,17 +1983,10 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
       val callNodes = methodIdentifierAsts.head.nodes.filter(node => node.isInstanceOf[NewCall])
       if (callNodes.size == 1) {
         val callNode = callNodes.head.asInstanceOf[NewCall]
-        if (
-          callNode.name == "require" ||
-          callNode.name == "require_once" ||
-          callNode.name == "load"
-        ) {
-          val importedNode =
-            argsAsts.head.nodes.filter(node => node.isInstanceOf[NewLiteral]).head.asInstanceOf[NewLiteral]
-          packageContext.packageTable.addPackageCall(filename, PackageTable.resolveImportPath(importedNode.code))
-          val importNode = NewImport()
-            .code(importedNode.code)
-          Seq(Ast(importNode))
+        if (callNode.name == "require" ||  callNode.name == "load") {
+          resolveRequireOrLoadPath(argsAsts)
+        } else if (callNode.name == "require_relative") {
+          resolveRelativePath(filename, argsAsts)
         } else {
           Seq(callAst(callNode, argsAsts))
         }
@@ -2038,5 +2035,38 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
 
   def astForYieldWithOptionalArgumentPrimaryContext(ctx: YieldWithOptionalArgumentPrimaryContext): Seq[Ast] = {
     astForYieldWithOptionalArgumentContext(ctx.yieldWithOptionalArgument())
+  }
+
+  def resolveRequireOrLoadPath(argsAst: Seq[Ast]): Seq[Ast] = {
+    val importedNode =
+      argsAst.head.nodes.filter(node => node.isInstanceOf[NewLiteral]).head.asInstanceOf[NewLiteral]
+    val pathValue = importedNode.code.replaceAll("'", "").replaceAll("\"", "")
+    val result = pathValue match {
+      case path if Files.isRegularFile(Paths.get(path)) =>
+        path
+      case path if Files.isRegularFile(Paths.get(path + ".rb")) =>
+        s"${path}.rb"
+      case _ =>
+        pathValue
+    }
+    packageStack.append(result)
+    astForImportNode(importedNode.code)
+  }
+
+  def resolveRelativePath(currentFile: String, argsAst: Seq[Ast]): Seq[Ast] = {
+    val importedNode =
+      argsAst.head.nodes.filter(node => node.isInstanceOf[NewLiteral]).head.asInstanceOf[NewLiteral]
+    val pathValue = importedNode.code.replaceAll("'", "").replaceAll("\"", "")
+    val updatedPath = if (pathValue.endsWith(".rb")) pathValue else s"$pathValue.rb"
+    val currentDirectory = new java.io.File(currentFile).getParentFile
+    val file = new java.io.File(currentDirectory, updatedPath)
+    packageStack.append(file.getAbsolutePath)
+    astForImportNode(importedNode.code)
+  }
+
+  def astForImportNode(code: String): Seq[Ast] = {
+    val importNode = NewImport()
+      .code(code)
+    Seq(Ast(importNode))
   }
 }

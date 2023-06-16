@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
-class AstCreationPass(inputPath: String, cpg: Cpg, global: Global, packageTable: PackageTable)
+class AstCreationPass(inputPath: String, cpg: Cpg, global: Global, packageTable: PackageTable, tempDir: String)
     extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger                        = LoggerFactory.getLogger(this.getClass)
@@ -21,6 +21,8 @@ class AstCreationPass(inputPath: String, cpg: Cpg, global: Global, packageTable:
   override def generateParts(): Array[String] = SourceFiles.determine(inputPath, RubySourceFileExtensions).toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
-    diffGraph.absorb(new AstCreator(fileName, global, PackageContext(fileName, packageTable)).createAst())
+    if (!fileName.contains(tempDir)) {
+      diffGraph.absorb(new AstCreator(fileName, global, PackageContext(fileName, packageTable)).createAst())
+    }
   }
 }

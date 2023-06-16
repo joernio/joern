@@ -12,7 +12,7 @@ trait RubyFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    implicit val defaultConfig: Config = Config()
+    implicit val defaultConfig: Config = Config(true)
     new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 }
