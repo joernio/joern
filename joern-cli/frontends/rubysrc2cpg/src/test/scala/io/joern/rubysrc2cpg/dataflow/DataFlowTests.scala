@@ -348,7 +348,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through for loop" ignore {
+  "Data flow through for loop" should {
     val cpg = code("""
           |x = 0
           |arr = [1,2,3,4,5]
@@ -404,7 +404,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through for and next BEFORE statement" ignore {
+  "Data flow through for and next BEFORE statement" should {
     val cpg = code("""
         |x = 0
         |arr = [1,2,3,4,5]
@@ -442,7 +442,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through for and redo BEFORE statement" ignore {
+  "Data flow through for and redo BEFORE statement" should {
     val cpg = code("""
         |x = 0
         |arr = [1,2,3,4,5]
@@ -480,7 +480,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through for and retry BEFORE statement" ignore {
+  "Data flow through for and retry BEFORE statement" should {
     val cpg = code("""
         |x = 0
         |arr = [1,2,3,4,5]
@@ -712,6 +712,23 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |[1,2,3].each do
         |  puts "Right here #{x}"
         |end
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 2
+    }
+  }
+
+  "Data flow through invocationWithBlockOnlyPrimary usage" should {
+    val cpg = code("""
+        |def hello(&block)
+        |  block.call
+        |end
+        |
+        |x = "hello"
+        |hello { puts x }
         |""".stripMargin)
 
     "find flows to the sink" in {

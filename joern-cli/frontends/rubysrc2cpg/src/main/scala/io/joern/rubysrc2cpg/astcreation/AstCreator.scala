@@ -839,17 +839,17 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForForExpressionContext(ctx: ForExpressionContext): Seq[Ast] = {
-    val forVarAst  = astForForVariableContext(ctx.forVariable())
+    val initAst    = astForForVariableContext(ctx.forVariable())
     val forCondAst = astForExpressionOrCommand(ctx.expressionOrCommand())
+    val bodyAsts   = astForDoClauseContext(ctx.doClause())
 
-    val forNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.FOR)
-      .code(ctx.getText)
-      .lineNumber(ctx.FOR().getSymbol.getLine)
-      .columnNumber(ctx.FOR().getSymbol.getCharPositionInLine)
-    val doClauseAst = astForDoClauseContext(ctx.doClause())
-
-    val ast = forAst(forNode, Seq(), forVarAst, forCondAst, Seq(), doClauseAst)
+    val ast = whileAst(
+      Some(forCondAst.head),
+      bodyAsts,
+      Some(ctx.getText),
+      Some(ctx.FOR().getSymbol.getLine),
+      Some(ctx.FOR().getSymbol.getCharPositionInLine)
+    ).withChild(initAst.head)
     Seq(ast)
   }
 
