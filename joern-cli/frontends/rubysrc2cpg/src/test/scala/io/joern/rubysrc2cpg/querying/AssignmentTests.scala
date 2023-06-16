@@ -72,8 +72,9 @@ class AssignmentTests extends RubyCode2CpgFixture {
       cpg.literal.code("\"world\"").size shouldBe 1
     }
 
-    "recognise all call nodes" in {
-      cpg.call.name(Operators.assignment).size shouldBe 3
+    "recognise all assignment call nodes" in {
+      /* here we are also checking the synthetic assignment nodes for each element on both sides */
+      cpg.call.name(Operators.assignment).size shouldBe 8
     }
   }
 }
