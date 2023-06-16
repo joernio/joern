@@ -528,16 +528,11 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForCaseExpressionPrimaryContext(ctx: CaseExpressionPrimaryContext): Seq[Ast] = {
-
-    val caseNode = controlStructureNode(ctx, ControlStructureTypes.SWITCH, ctx.getText)
-
-    val condAst = {
-      if (ctx.caseExpression().expressionOrCommand() != null) {
-        astForExpressionOrCommand(ctx.caseExpression().expressionOrCommand()).headOption
-      } else {
-        None
-      }
-    }
+    val code       = ctx.caseExpression().CASE().getText
+    val switchNode = controlStructureNode(ctx, ControlStructureTypes.SWITCH, code)
+    val conditionAst = Option(ctx.caseExpression().expressionOrCommand()).toList
+      .flatMap(astForExpressionOrCommand)
+      .headOption
 
     val whenThenAstsList = ctx
       .caseExpression()
@@ -557,7 +552,7 @@ class AstCreator(filename: String, global: Global)
       })
       .toList
 
-    val caseAsts =
+    val stmtAsts =
       if (ctx.caseExpression().elseClause() != null) {
         val elseAst = astForElseClauseContext(ctx.caseExpression().elseClause())
         whenThenAstsList ++ elseAst
@@ -565,7 +560,8 @@ class AstCreator(filename: String, global: Global)
         whenThenAstsList
       }
 
-    Seq(controlStructureAst(caseNode, condAst, caseAsts))
+    val block = blockNode(ctx.caseExpression())
+    Seq(controlStructureAst(switchNode, conditionAst, Seq(Ast(block).withChildren(stmtAsts))))
   }
 
   def astForChainedInvocationPrimaryContext(ctx: ChainedInvocationPrimaryContext): Seq[Ast] = {
@@ -884,7 +880,7 @@ class AstCreator(filename: String, global: Global)
     val elseNode =
       NewJumpTarget()
         .parserTypeName(ctx.getClass.getSimpleName)
-        .name(ctx.getText)
+        .name("default")
         .code(ctx.getText)
         .lineNumber(ctx.ELSE().getSymbol.getLine)
         .columnNumber(ctx.ELSE().getSymbol.getCharPositionInLine)

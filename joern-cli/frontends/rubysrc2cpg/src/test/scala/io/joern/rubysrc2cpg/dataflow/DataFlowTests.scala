@@ -306,7 +306,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through case statement" ignore {
+  "Data flow through case statement" should {
     val cpg = code("""
         |x = 2
         |b = x
@@ -325,6 +325,14 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "find flows to the sink" in {
+
+      implicit val viewer: ImageViewer = (pathStr: String) =>
+        Try {
+          Process(Seq("xdg-open", pathStr)).!!
+        }
+
+      cpg.method.name(":program").plotDotCfg
+
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
       sink.reachableByFlows(source).l.size shouldBe 2
