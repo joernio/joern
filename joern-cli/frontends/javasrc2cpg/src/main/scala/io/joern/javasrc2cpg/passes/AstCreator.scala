@@ -917,9 +917,27 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   }
 
   private def expressionReturnTypeFullName(expr: Expression): Option[String] = {
-    tryWithSafeStackOverflow(expr.calculateResolvedType()).toOption
-      .flatMap(typeInfoCalc.fullName)
-      .orElse(exprNameFromStack(expr))
+
+    val resolvedTypeOption = tryWithSafeStackOverflow(expr.calculateResolvedType()) match {
+      case Failure(ex) =>
+        ex match {
+          // If ast parser fails to resolve type, try resolving locally by using name
+          // Precaution when resolving by name, we only want to resolve for case when the expr is solely a MethodCallExpr
+          // and doesn't have a scope to it
+          case symbolException: UnsolvedSymbolException =>
+            expr match {
+              case callExpr: MethodCallExpr =>
+                callExpr.getScope.toScala match {
+                  case Some(_: Expression) => None
+                  case _                   => scopeStack.lookupVariableType(symbolException.getName)
+                }
+              case _ => None
+            }
+          case _ => None
+        }
+      case Success(resolvedType) => typeInfoCalc.fullName(resolvedType)
+    }
+    resolvedTypeOption.orElse(exprNameFromStack(expr))
   }
 
   private def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {

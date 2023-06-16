@@ -1,5 +1,6 @@
 package io.joern.pysrc2cpg
 
+import better.files.{File => BFile}
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -10,7 +11,6 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import java.io.{File => JFile}
-import java.nio.file.Paths
 import java.util.regex.{Matcher, Pattern}
 
 class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
@@ -54,8 +54,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
     def relativizeNamespace(path: String) = if (path.startsWith(".")) {
       // TODO: pysrc2cpg does not link files to the correct namespace nodes
-      val root     = cpg.metaData.root.headOption.getOrElse("")
-      val fileName = i.file.name.headOption.getOrElse("").stripPrefix(root)
+      val fileName = i.file.name.headOption.getOrElse("").stripPrefix(codeRoot)
       val sep      = Matcher.quoteReplacement(JFile.separator)
       // The below gives us the full path of the relative "."
       val relativeNamespace =
@@ -130,14 +129,12 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
         methodsWithExportEntityAsIdentifier.map(f => s"$f<var>$expEntity").head
       case _ =>
         // Case 4:  Import from module using alias, e.g. import bar from foo as faz
-        val rootDirectory = cpg.metaData.root.headOption
-        val absPath       = rootDirectory.map(r => Paths.get(r, path))
-        val fileOrDir     = absPath.map(a => better.files.File(a))
-        val pyFile        = absPath.map(a => Paths.get(a.toString + ".py"))
+        val fileOrDir = BFile(codeRoot) / path
+        val pyFile    = BFile(codeRoot) / s"$path.py"
         fileOrDir match {
-          case Some(f) if f.isDirectory && !pyFile.exists { p => better.files.File(p).exists } =>
+          case f if f.isDirectory && !pyFile.exists =>
             s"${path.replaceAll("\\.", sep)}${java.io.File.separator}$expEntity.py:<module>"
-          case Some(f) if f.isDirectory && (f / s"$expEntity.py").exists =>
+          case f if f.isDirectory && (f / s"$expEntity.py").exists =>
             s"${(f / s"$expEntity.py").pathAsString}:<module>"
           case _ =>
             s"${path.replaceAll("\\.", sep)}.py:<module>$pathSep$expEntity"

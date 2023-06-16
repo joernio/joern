@@ -3,20 +3,12 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.x2cpg.datastructures.Stack._
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.datastructures.Stack._
 import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newLocalNode}
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 import ujson.Value
 
 import scala.util.Try
@@ -60,6 +52,13 @@ trait AstForTypesCreator { this: AstCreator =>
           .getOrElse(Ast())
       }
 
+    // adding all class methods / functions and uninitialized, non-static members
+    (alias.node match {
+      case TSTypeLiteral => classMembersForTypeAlias(alias)
+      case ObjectPattern => Try(alias.json("properties").arr).toOption.toSeq.flatten
+      case _             => classMembersForTypeAlias(createBabelNodeInfo(alias.json("typeAnnotation")))
+    }).filter(member => isClassMethodOrUninitializedMemberOrObjectProperty(member) && !isStaticMember(member))
+      .foreach(m => astForClassMember(m, aliasTypeDeclNode))
     typeDeclNodeAst.root.foreach(diffGraph.addEdge(methodAstParentStack.head, _, EdgeTypes.AST))
     Ast(aliasTypeDeclNode)
   }
@@ -84,6 +83,9 @@ trait AstForTypesCreator { this: AstCreator =>
       allMembers.filterNot(isConstructor) ++ dynamicallyDeclaredMembers
     }
   }
+
+  private def classMembersForTypeAlias(alias: BabelNodeInfo): Seq[Value] =
+    Try(alias.json("members").arr).toOption.toSeq.flatten
 
   private def createFakeConstructor(
     code: String,
@@ -183,6 +185,10 @@ trait AstForTypesCreator { this: AstCreator =>
       case ExpressionStatement if isInitializedMember(classElement) =>
         val memberNodeInfo = createBabelNodeInfo(nodeInfo.json("expression")("left")("property"))
         val name           = memberNodeInfo.code
+        memberNode(nodeInfo, name, nodeInfo.code, typeFullName)
+      case TSPropertySignature | ObjectProperty =>
+        val memberNodeInfo = createBabelNodeInfo(nodeInfo.json("key"))
+        val name           = memberNodeInfo.json("name").str
         memberNode(nodeInfo, name, nodeInfo.code, typeFullName)
       case _ =>
         val name = nodeInfo.node match {
@@ -285,6 +291,14 @@ trait AstForTypesCreator { this: AstCreator =>
     val nodeInfo = createBabelNodeInfo(json).node
     !isStaticInitBlock(json) &&
     (nodeInfo == ClassMethod || nodeInfo == ClassPrivateMethod || !isInitializedMember(json))
+  }
+
+  private def isClassMethodOrUninitializedMemberOrObjectProperty(json: Value): Boolean = {
+    val nodeInfo = createBabelNodeInfo(json).node
+    !isStaticInitBlock(json) &&
+    (nodeInfo == ObjectProperty || nodeInfo == ClassMethod || nodeInfo == ClassPrivateMethod || !isInitializedMember(
+      json
+    ))
   }
 
   protected def astForClass(clazz: BabelNodeInfo, shouldCreateAssignmentCall: Boolean = false): Ast = {

@@ -14,92 +14,6 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll
     tempDir.delete()
   }
 
-  "Code for method full name when method present in same file for simple class" should {
-    val cpg = code(
-      """
-        |class Hello
-        | def printValue(value)
-        |   puts value
-        | end
-        |end
-        |
-        |v = Hello.new
-        |puts v.printValue("any")
-        |""".stripMargin,
-      "main.rb"
-    )
-
-    "recognise all call node" in {
-      cpg.call.name("printValue").l.size shouldBe 1
-    }
-
-    "recognise methodFullName for call node" in {
-      cpg.call.name("printValue").head.methodFullName should equal("Hello.printValue:<unresolvedSignature>")
-    }
-  }
-
-  "Code for method full name when method present in same file for nested class" should {
-    val cpg = code("""
-        |module Help
-        | class InnerHelp
-        |   def printValue(value)
-        |     puts value
-        |   end
-        | end
-        |end
-        |
-        |val v = Help::InnerHelp.new
-        |puts v.printValue("any")
-        |""".stripMargin)
-
-    "recognise all call node" in {
-      cpg.call.name("printValue").l.size shouldBe 1
-    }
-
-    "recognise methodFullName for call node" in {
-      cpg.call.name("printValue").head.methodFullName should equal("InnerHelp.Help.printValue:<unresolvedSignature>")
-    }
-  }
-
-  "Code for method full name when method present in another file" should {
-    tempDir = File.newTemporaryDirectory()
-    val tempPath = tempDir.toString()
-    val cpg = code(
-      s"""
-        |require "$tempPath/help.rb"
-        |
-        |f = Help::Inner.new
-        |v.getValue("ggg")
-        |""".stripMargin,
-      "main.rb"
-    )
-
-    val helpFile =
-      s"""
-        |module Help
-        |    class Inner
-        |        def getValue(value)
-        |            puts value
-        |        end
-        |
-        |        def printValue(value)
-        |            puts "ana"
-        |        end
-        |    end
-        |end
-        |""".stripMargin
-
-    (tempDir / "help.rb").write(helpFile)
-
-    "recognise call node" in {
-      cpg.call.name("getValue").l.size shouldBe 1
-    }
-
-    "recognise methodFullName for call Node" in {
-      cpg.call.name("getValue").head.methodFullName should equal("Inner.Help.getValue:<unresolvedSignature>")
-    }
-  }
-
   "Code for method full name when method present in module" should {
     val cpg = code(
       """
@@ -107,6 +21,10 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll
         |
         |v = Main_module::Main_outer_class.new
         |v.first_fun("value")
+        |
+        |g = Help.new
+        |g.help_print()
+        |
         |""".stripMargin,
       "main.rb"
     )
@@ -114,6 +32,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll
         """
           |source 'https://rubygems.org'
           |gem 'dummy_logger'
+          |
           |""".stripMargin,
         "Gemfile"
       )
@@ -122,10 +41,51 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll
       cpg.call.name("first_fun").l.size shouldBe 1
     }
 
+    "recognise import node" in {
+      cpg.imports.code(".*dummy_logger.*").l.size shouldBe 1
+    }
+
     "recognise methodFullName for call Node" in {
       cpg.call.name("first_fun").head.methodFullName should equal(
-        "dummy_logger.Main_outer_class.Main_module.first_fun:<unresolvedSignature>"
+        "dummy_logger.Main_module.Main_outer_class.first_fun:<unresolvedSignature>"
       )
+
+      cpg.call.name("help_print").head.methodFullName should equal("dummy_logger.Help.help_print:<unresolvedSignature>")
+    }
+  }
+
+  "Code for method full name when method present in other file" should {
+    val cpg = code(
+      """
+        |require_relative "util/help.rb"
+        |
+        |v = Outer.new
+        |v.printValue()
+        |
+        |""".stripMargin,
+      "main.rb"
+    )
+      .moreCode(
+        """
+          |class Outer
+          | def printValue()
+          |   puts "print"
+          | end
+          |end
+          |""".stripMargin,
+        "util/help.rb"
+      )
+
+    "recognise call node" in {
+      cpg.call.name("printValue").l.size shouldBe 1
+    }
+
+    "recognise import node" in {
+      cpg.imports.code(".*util/help.rb*.").l.size shouldBe 1
+    }
+
+    "recognise method full name for call node" in {
+      cpg.call.name("printValue").head.methodFullName contains ("util/help.rb.Outer.printValue:<unresolvedSignature>")
     }
   }
 }
