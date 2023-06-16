@@ -50,9 +50,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll
         "dummy_logger.Main_module.Main_outer_class.first_fun:<unresolvedSignature>"
       )
 
-      cpg.call.name("help_print").head.methodFullName should equal(
-        "dummy_logger.Help.help_print:<unresolvedSignature>"
-      )
+      cpg.call.name("help_print").head.methodFullName should equal("dummy_logger.Help.help_print:<unresolvedSignature>")
     }
   }
 
@@ -64,7 +62,9 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll
         |v = Outer.new
         |v.printValue()
         |
-        |""".stripMargin, "main.rb")
+        |""".stripMargin,
+      "main.rb"
+    )
       .moreCode(
         """
           |class Outer
@@ -72,7 +72,8 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll
           |   puts "print"
           | end
           |end
-          |""".stripMargin, "util/help.rb"
+          |""".stripMargin,
+        "util/help.rb"
       )
 
     "recognise call node" in {

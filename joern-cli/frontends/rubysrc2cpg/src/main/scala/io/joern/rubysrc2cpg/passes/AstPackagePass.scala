@@ -21,7 +21,12 @@ class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable:
   }
 
   private def getRubyDependenciesFile(inputPath: String): Array[String] = {
-    Files.walk(Paths.get(inputPath)).filter(_.toString.endsWith(".rb")).map(_.toString).toArray.map(_.asInstanceOf[String])
+    Files
+      .walk(Paths.get(inputPath))
+      .filter(_.toString.endsWith(".rb"))
+      .map(_.toString)
+      .toArray
+      .map(_.asInstanceOf[String])
   }
 
   private def resolveModuleNameFromPath(path: String): String = {

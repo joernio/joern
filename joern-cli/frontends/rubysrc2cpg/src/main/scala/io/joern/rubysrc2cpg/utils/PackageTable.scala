@@ -20,9 +20,11 @@ class PackageTable() {
     val finalMethodName = ListBuffer[String]()
     packageUsed.foreach(module => {
       if (methodTableMap.contains(module)) {
-        methodTableMap(module).filter(_.methodName == methodName).foreach(method => {
-          finalMethodName.addOne(s"$module.${method.parentClassPath}$methodName:<unresolvedSignature>")
-        })
+        methodTableMap(module)
+          .filter(_.methodName == methodName)
+          .foreach(method => {
+            finalMethodName.addOne(s"$module.${method.parentClassPath}$methodName:<unresolvedSignature>")
+          })
       }
     })
     if (finalMethodName.isEmpty) {

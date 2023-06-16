@@ -1872,7 +1872,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
       val callNodes = methodIdentifierAsts.head.nodes.filter(node => node.isInstanceOf[NewCall])
       if (callNodes.size == 1) {
         val callNode = callNodes.head.asInstanceOf[NewCall]
-        if (callNode.name == "require" ||  callNode.name == "load") {
+        if (callNode.name == "require" || callNode.name == "load") {
           resolveRequireOrLoadPath(argsAsts)
         } else if (callNode.name == "require_relative") {
           resolveRelativePath(filename, argsAsts)
@@ -1956,10 +1956,10 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
   def resolveRelativePath(currentFile: String, argsAst: Seq[Ast]): Seq[Ast] = {
     val importedNode =
       argsAst.head.nodes.filter(node => node.isInstanceOf[NewLiteral]).head.asInstanceOf[NewLiteral]
-    val pathValue = importedNode.code.replaceAll("'", "").replaceAll("\"", "")
-    val updatedPath = if (pathValue.endsWith(".rb")) pathValue else s"$pathValue.rb"
+    val pathValue        = importedNode.code.replaceAll("'", "").replaceAll("\"", "")
+    val updatedPath      = if (pathValue.endsWith(".rb")) pathValue else s"$pathValue.rb"
     val currentDirectory = new java.io.File(currentFile).getParentFile
-    val file = new java.io.File(currentDirectory, updatedPath)
+    val file             = new java.io.File(currentDirectory, updatedPath)
     packageStack.append(file.getAbsolutePath)
     astForImportNode(importedNode.code)
   }
