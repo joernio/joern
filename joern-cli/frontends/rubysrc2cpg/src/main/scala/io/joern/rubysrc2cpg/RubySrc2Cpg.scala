@@ -31,8 +31,8 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       if (config.enableDependencyDownload) {
         downloadDependency(config.inputPath)
         new AstPackagePass(cpg, tempDependencyDir, global, packageTableInfo, config.inputPath).createAndApply()
+        deleteRecursively(new File(s"${config.inputPath}/$tempDependencyDir"))
       }
-      deleteRecursively(new File(s"${config.inputPath}/$tempDependencyDir"))
       val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, packageTableInfo, tempDependencyDir)
       astCreationPass.createAndApply()
       new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
@@ -50,7 +50,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
     }
   }
 
-  def deleteRecursively(file: File): Unit = {
+  private def deleteRecursively(file: File): Unit = {
     if (file.isDirectory) {
       file.listFiles.foreach(deleteRecursively)
     }
