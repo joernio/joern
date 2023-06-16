@@ -541,13 +541,15 @@ class AstCreator(filename: String, global: Global)
       .flatMap(wh => {
         val whenNode = NewJumpTarget()
           .parserTypeName(wh.getClass.getSimpleName)
-          .name(wh.getText)
+          .name("case " + wh.getText)
           .code(wh.getText)
           .lineNumber(wh.WHEN().getSymbol.getLine)
           .columnNumber(wh.WHEN().getSymbol.getCharPositionInLine)
 
         val whenACondAsts = astForWhenArgumentContext(wh.whenArgument())
-        val thenAsts      = astForThenClauseContext(wh.thenClause())
+        val thenAsts = astForThenClauseContext(wh.thenClause()) ++ Seq(
+          Ast(NewControlStructure().controlStructureType(ControlStructureTypes.BREAK))
+        )
         Seq(Ast(whenNode)) ++ whenACondAsts ++ thenAsts
       })
       .toList

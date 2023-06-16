@@ -4,10 +4,6 @@ import io.joern.c2cpg.testfixtures.C2CpgFrontend
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
 import io.joern.x2cpg.testfixtures.{CfgTestCpg, CfgTestFixture}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
-
-import scala.sys.process.Process
-import scala.util.Try
 
 class CCfgTestCpg(override val fileSuffix: String) extends CfgTestCpg with C2CpgFrontend
 
@@ -399,11 +395,6 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(".c")) {
       succOf("case 2:") shouldBe expected(("2", AlwaysEdge))
       succOf("2") shouldBe expected(("z", AlwaysEdge))
       succOf("z") shouldBe expected(("RET", AlwaysEdge))
-
-      implicit val viewer: ImageViewer = (pathStr: String) =>
-        Try {
-          Process(Seq("xdg-open", pathStr)).!!
-        }
     }
 
     "be correct with multiple cases on same spot" in {
