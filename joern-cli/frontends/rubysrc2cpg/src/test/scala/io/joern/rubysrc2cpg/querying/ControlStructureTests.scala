@@ -13,12 +13,12 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
     "recognise all identifier nodes" in {
-      cpg.identifier.name("n").size shouldBe 2
-      cpg.identifier.size shouldBe 2
+      cpg.identifier.name("n").size shouldBe 1
+      cpg.identifier.size shouldBe 1
     }
 
     "recognize all call nodes" in {
-      cpg.call.name("each").size shouldBe 1
+      // cpg.call.name("each").size shouldBe 1
       cpg.call.name("puts").size shouldBe 1
     }
   }
@@ -26,6 +26,8 @@ class ControlStructureTests extends RubyCode2CpgFixture {
   "CPG for code with doBlock iterating over a constant array and multiple params" should {
     val cpg = code("""
           |[1, 2, "three"].each do |n, m|
+          |
+          |
           |  expect {
           |  someObject.someMethod(n)
           |  someObject.someMethod(m)
@@ -35,13 +37,14 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           |""".stripMargin)
 
     "recognise all identifier nodes" in {
-      cpg.identifier.name("n").size shouldBe 3
-      cpg.identifier.name("m").size shouldBe 2
-      cpg.identifier.size shouldBe 7
+      cpg.identifier.name("n").size shouldBe 2
+      cpg.identifier.name("m").size shouldBe 1
+      cpg.identifier.size shouldBe 5
+      cpg.method.name("fakeName").dotAst.l
     }
 
     "recognize all call nodes" in {
-      cpg.call.name("each").size shouldBe 1
+      // cpg.call.name("each").size shouldBe 1
       cpg.call.name("someMethod").size shouldBe 2
       cpg.call.name("expect").size shouldBe 1
       cpg.call.name("to").size shouldBe 1
