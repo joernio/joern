@@ -7,10 +7,10 @@ import io.shiftleft.codepropertygraph.generated.{Languages, Operators}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTest {
+class JoernSliceJS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest {
 
   "extracting a usage slice from JavaScript code" should withTestCpg(
-    File(getClass.getClassLoader.getResource("testcode/jssrc-slice")),
+    File(getClass.getClassLoader.getResource("testcode/jssrc-slice-1")),
     Languages.JSSRC
   ) { case (cpg: Cpg, _) =>
     val programSlice =
@@ -20,8 +20,8 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
 
     "extract 'express.js' slice" in {
       val Some(slice) = programSlice.objectSlices.get("main.js::program").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(DefComponent("express", "ANY"))
-      slice.targetObj shouldBe DefComponent("app", "ANY")
+      slice.definedBy shouldBe Some(CallDef("express", "ANY", Option("express")))
+      slice.targetObj shouldBe LocalDef("app", "ANY")
 
       val List(inv1, inv2) = slice.invokedCalls
       inv1.callName shouldBe "get"
@@ -32,14 +32,14 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
       inv2.paramTypes shouldBe List("__ecma.Number", "LAMBDA")
       inv2.returnType shouldBe "ANY"
 
-      val List((arg1, pos1), (arg2, pos2)) = slice.argToCalls
+      val List(arg1, arg2) = slice.argToCalls
 
-      pos1 shouldBe 1
+      arg1.position shouldBe Left(1)
       arg1.callName shouldBe "log"
       arg1.paramTypes shouldBe List("ANY")
       arg1.returnType shouldBe "ANY"
 
-      pos2 shouldBe 1
+      arg2.position shouldBe Left(1)
       arg2.callName shouldBe "debug"
       arg2.paramTypes shouldBe List("ANY")
       arg2.returnType shouldBe "ANY"
@@ -50,28 +50,47 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
       carUdt.name shouldBe "main.js::program:Car"
       val Some(carInit) = carUdt.procedures.headOption
       carInit.callName shouldBe "<init>"
-      carInit.returnType shouldBe "Car"
+      carInit.returnType shouldBe "main.js::program:Car:<init>"
     }
 
     "extract 'Car' object instantiation" in {
       val Some(slice) = programSlice.objectSlices.get("main.js::program:carTest").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(DefComponent("new Car", "ANY"))
-      slice.targetObj shouldBe DefComponent("c", "main.js::program:Car")
+      slice.definedBy shouldBe Some(CallDef("new Car", "ANY"))
+      slice.targetObj shouldBe LocalDef("c", "main.js::program:Car")
 
       val List(inv1) = slice.invokedCalls
       inv1.callName shouldBe "rev"
       inv1.paramTypes shouldBe List.empty
       inv1.returnType shouldBe "ANY"
 
-      val List((arg1, pos1)) = slice.argToCalls
+      val List(arg1: ObservedCallWithArgPos) = slice.argToCalls
 
-      pos1 shouldBe 1
+      arg1.position shouldBe Left(1)
       arg1.callName shouldBe "Car"
       arg1.paramTypes shouldBe List("__ecma.String", "__ecma.Number")
       arg1.returnType shouldBe "ANY"
     }
   }
+}
+class JoernSliceJS2 extends AnyWordSpec with Matchers with AbstractJoernCliTest {
+  "extracting an interprocedural usage slice from JavaScript code 2" should withTestCpg(
+    File(getClass.getClassLoader.getResource("testcode/jssrc-slice-2")),
+    Languages.JSSRC
+  ) { case (cpg: Cpg, _) =>
+    val programSlice =
+      UsageSlicing
+        .calculateUsageSlice(cpg, UsagesConfig(excludeOperatorCalls = true))
+        .asInstanceOf[ProgramUsageSlice]
 
+    "blah" in {
+      val slices = programSlice.objectSlices
+      slices.size shouldBe 2
+    }
+  }
+
+}
+
+class JoernSliceTS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest {
   "extracting a usage slice from TypeScript code" should withTestCpg(
     File(getClass.getClassLoader.getResource("testcode/tssrc-slice")),
     Languages.JSSRC
@@ -83,12 +102,12 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
 
     "extract 'name' parameter slice from 'startScene'" in {
       val Some(slice) = programSlice.objectSlices.get("main.ts::program:Game:startScene").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(DefComponent("name", "__ecma.String"))
-      slice.targetObj shouldBe DefComponent("name", "__ecma.String")
+      slice.definedBy shouldBe Some(ParamDef("name", "__ecma.String", 1))
+      slice.targetObj shouldBe ParamDef("name", "__ecma.String", 1)
 
-      val List(_, _, (arg1, pos1)) = slice.argToCalls
+      val List(_, _, arg1) = slice.argToCalls
 
-      pos1 shouldBe 2
+      arg1.position shouldBe Left(2)
       arg1.callName shouldBe Operators.formatString
       arg1.paramTypes shouldBe List("__ecma.String", "__ecma.String", "__ecma.String")
       arg1.returnType shouldBe "ANY"
@@ -96,12 +115,12 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
 
     "extract 'loader' object slice from the main program" in {
       val Some(slice) = programSlice.objectSlices.get("main.ts::program").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(DefComponent("new Loader", "ANY"))
-      slice.targetObj shouldBe DefComponent("loader", "ANY")
+      slice.definedBy shouldBe Some(CallDef("new Loader", "ANY"))
+      slice.targetObj shouldBe LocalDef("loader", "loader:Loader")
 
-      val List((arg1, pos1)) = slice.argToCalls
+      val List(arg1) = slice.argToCalls
 
-      pos1 shouldBe 1
+      arg1.position shouldBe Left(1)
       arg1.callName shouldBe "Loader"
       arg1.returnType shouldBe "ANY"
     }
@@ -109,14 +128,14 @@ class JoernSliceTests extends AnyWordSpec with Matchers with AbstractJoernCliTes
     "extract 'time' parameter slice from the lambda in 'loop'" in {
       val Some(slice) =
         programSlice.objectSlices.get("main.ts::program:Game:loop:anonymous").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(DefComponent("time", "__ecma.Number"))
-      slice.targetObj shouldBe DefComponent("time", "__ecma.Number")
+      slice.definedBy shouldBe Some(ParamDef("time", "__ecma.Number", 1))
+      slice.targetObj shouldBe ParamDef("time", "__ecma.Number", 1)
 
-      val List((arg1, pos1)) = slice.argToCalls
+      val List(arg1) = slice.argToCalls
 
-      pos1 shouldBe 1
+      arg1.position shouldBe Left(1)
       arg1.callName shouldBe "loop"
-      arg1.paramTypes shouldBe List("__ecma.Number")
+      arg1.paramTypes shouldBe List("DOMHighResTimeStamp")
       arg1.returnType shouldBe "ANY"
     }
   }
