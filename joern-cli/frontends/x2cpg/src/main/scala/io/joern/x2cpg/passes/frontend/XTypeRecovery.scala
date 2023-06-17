@@ -783,7 +783,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           .member
           .nameExact(sym.identifier)
           .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
-          .filterNot(_ == "ANY")
+          .filterNot { x => x == "ANY" || x == "this" }
           .toSet
         if (cpgTypes.nonEmpty) cpgTypes
         else symbolTable.get(sym)

@@ -1,14 +1,15 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.console.cpgcreation.{CCpgGenerator, JsSrcCpgGenerator}
 import io.joern.console.FrontendConfig
+import io.joern.console.cpgcreation.{CCpgGenerator, JsSrcCpgGenerator}
+import io.joern.jssrc2cpg.{JsSrc2Cpg, Config => JsConfig}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.ProjectRoot
 
 import java.nio.file.Path
-import scala.util.{Failure, Success}
+import scala.util.Failure
 
 trait AbstractJoernCliTest {
 
@@ -32,6 +33,11 @@ trait AbstractJoernCliTest {
 
     // Link CPG fragments and enhance to create semantic CPG
     val cpg = DefaultOverlays.create(cpgOutFileName)
+    language match {
+      case Languages.JSSRC | Languages.JAVASCRIPT =>
+        JsSrc2Cpg.postProcessingPasses(cpg, Option(JsConfig(disableDummyTypes = true))).foreach(_.createAndApply())
+      case _ =>
+    }
     (cpg, cpgOutFileName)
   }
 

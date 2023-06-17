@@ -3,14 +3,12 @@ package io.joern.dataflowengineoss.slicing
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
-import io.shiftleft.semanticcpg.codedumper.CodeDumper
 import io.shiftleft.semanticcpg.language._
 
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{ForkJoinPool, RecursiveTask}
 import java.util.regex.Pattern
 import scala.collection.concurrent.TrieMap
-import scala.util.Try
 
 /** A utility for slicing based off of usage references for identifiers and parameters. This is mainly tested around
   * JavaScript CPGs.
@@ -50,6 +48,7 @@ object UsageSlicing {
     try {
       val slices = usageSlices(
         fjp,
+        cpg,
         cpg.metaData.root.headOption,
         cpg.metaData.language.headOption,
         config.excludeMethodSource,
@@ -68,6 +67,7 @@ object UsageSlicing {
 
   private def usageSlices(
     fjp: ForkJoinPool,
+    cpg: Cpg,
     root: Option[String],
     language: Option[String],
     excludeMethodSource: Boolean,
@@ -77,7 +77,7 @@ object UsageSlicing {
   ): Map[String, MethodUsageSlice] = getDeclIdentifiers()
     .to(LazyList)
     .filter(a => atLeastNCalls(a, minNumCalls) && !a.name.startsWith("_tmp_"))
-    .map(a => fjp.submit(new TrackUsageTask(a, typeMap)))
+    .map(a => fjp.submit(new TrackUsageTask(cpg, a, typeMap)))
     .flatMap(_.get())
     .groupBy { case (scope, _) => scope }
     .view
@@ -93,85 +93,10 @@ object UsageSlicing {
     .iterator
     .toMap
 
-  private class TrackUsageTask(tgt: Declaration, typeMap: TrieMap[String, String])
+  private class TrackUsageTask(cpg: Cpg, tgt: Declaration, typeMap: TrieMap[String, String])
       extends RecursiveTask[Option[(Method, ObjectUsageSlice)]] {
+
     override def compute(): Option[(Method, ObjectUsageSlice)] = {
-
-      /** Will attempt to get the API call from the expression if this is a procedure call.
-        *
-        * @param baseCall
-        *   the expression to extract the API call from.
-        * @return
-        *   an API call if present.
-        */
-      def exprToObservedCall(baseCall: Call): Option[ObservedCall] = {
-        val isMemberInvocation = baseCall.name.equals(Operators.fieldAccess)
-        val isConstructor =
-          baseCall.name.equals(Operators.alloc) || baseCall.ast.isCall.nameExact(Operators.alloc).nonEmpty
-        // Handle the case where a call is an invocation of a field member (lambda) or function/method call
-        val callName: Option[String] =
-          if (isMemberInvocation)
-            baseCall.argumentOut.flatMap {
-              case x: FieldIdentifier => Option(x.code)
-              case x: Call            => Option(x.name)
-              case _                  => None
-            }.headOption
-          else if (isConstructor) {
-            val m = constructorTypeMatcher.matcher(baseCall.code)
-            if (m.find()) Option(m.group(1))
-            else Option(baseCall.code.stripPrefix("new ").takeWhile(!_.equals('(')))
-          } else
-            Option(baseCall.name)
-
-        if (callName.isEmpty) return None
-
-        val params = (if (isMemberInvocation) baseCall.inCall.argument
-                      else if (isConstructor)
-                        baseCall.ast.isCall
-                          .nameExact("<operator>.new")
-                          .lastOption
-                          .map(_.argument)
-                          .getOrElse(Iterator.empty)
-                      else baseCall.argument)
-          .collect { case n: Expression if n.argumentIndex > 0 => n }
-          .flatMap {
-            case _: MethodRef => Option("LAMBDA")
-            case x =>
-              Option(
-                x.property(
-                  PropertyNames.TYPE_FULL_NAME,
-                  x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq("ANY")).headOption
-                )
-              )
-          }
-          .collect { case x: String => x }
-          .toList
-        // Not sure how we can get the return type unless it's typescript or we can resolve the callee?
-        val returnType = baseCall.argumentOut
-          .flatMap {
-            case x: Call =>
-              Try(x.callee(resolver).methodReturn.typeFullName.head).toOption
-            case _ => None
-          }
-          .headOption
-          .getOrElse("ANY")
-
-        Option(ObservedCall(callName.get, params, returnType))
-      }
-
-      def partitionInvolvementInCalls: (List[ObservedCall], List[(ObservedCall, Int)]) = {
-        val (invokedCalls, argToCalls) = getInCallsForReferencedIdentifiers(tgt)
-          .sortBy(f => (f.lineNumber, f.columnNumber))
-          .flatMap(c => c.argument.find(p => p.code.equals(tgt.name)).map(x => (c, x.argumentIndex)))
-          .partition { case (_, argIdx) => argIdx == 0 }
-        (
-          invokedCalls.map(_._1).isCall.flatMap(exprToObservedCall).toList,
-          argToCalls.flatMap { case (c: Call, argAt: Int) =>
-            exprToObservedCall(c).map(oc => (oc, argAt))
-          }
-        )
-      }
-
       val defNode = tgt match {
         case local: Local =>
           local.referencingIdentifiers.inCall.astParent.assignment
@@ -184,13 +109,6 @@ object UsageSlicing {
             case x => x
           }
         case x => Some(x)
-      }
-
-      /** Creates a def component with the workaround of correcting the type full name if it is only a type name.
-        */
-      def createDefComponent(node: StoredNode) = {
-        val df = DefComponent.fromNode(node)
-        df.copy(typeFullName = typeMap.getOrElse(df.typeFullName, df.typeFullName))
       }
 
       (tgt, defNode, partitionInvolvementInCalls) match {
@@ -224,25 +142,188 @@ object UsageSlicing {
         case _ => None
       }
     }
-  }
 
-  private def getInCallsForReferencedIdentifiers(decl: Declaration): List[Call] = {
-    // Cross closure boundaries
-    val capturedVars = decl.capturedByMethodRef.referencedMethod.ast.isIdentifier.nameExact(decl.name)
-    decl
-      .flatMap {
-        case local: Local             => local.referencingIdentifiers ++ capturedVars
-        case param: MethodParameterIn => param.referencingIdentifiers ++ capturedVars
-        case _                        => Seq()
+    /** Will attempt to get the API call from the expression if this is a procedure call.
+      *
+      * @param baseCall
+      *   the expression to extract the API call from.
+      * @return
+      *   an API call if present.
+      */
+    private def exprToObservedCall(baseCall: Call): Option[ObservedCall] = {
+      val isMemberInvocation = baseCall.name.equals(Operators.fieldAccess)
+      val isConstructor =
+        baseCall.name.equals(Operators.alloc) || baseCall.ast.isCall.nameExact(Operators.alloc).nonEmpty
+
+      def getResolvedMethod(x: Call): Option[String] = if (
+        DefComponent.unresolvedCallPattern.matcher(x.methodFullName).matches()
+      ) None
+      else Option(x.methodFullName)
+
+      // Handle the case where a call is an invocation of a field member (lambda) or function/method call
+      val (callName, resolvedMethod): (Option[String], Option[String]) =
+        if (isMemberInvocation)
+          baseCall.argumentOut
+            .flatMap {
+              case x: FieldIdentifier =>
+                Option(Option(x.code) -> None)
+              case x: Call => Option(Option(x.name) -> getResolvedMethod(x))
+              case _       => None
+            }
+            .headOption
+            .getOrElse((None, None))
+        else if (isConstructor) {
+          val m = constructorTypeMatcher.matcher(baseCall.code)
+          val typeName =
+            if (m.find()) m.group(1)
+            else baseCall.code.stripPrefix("new ").takeWhile(!_.equals('('))
+          Option(typeName) -> typeMap.get(typeName)
+        } else
+          Option(baseCall.name) -> getResolvedMethod(baseCall)
+
+      if (callName.isEmpty) return None
+
+      val params = (if (isMemberInvocation) baseCall.inCall.argument
+                    else if (isConstructor)
+                      baseCall.ast.isCall
+                        .nameExact("<operator>.new")
+                        .lastOption
+                        .map(_.argument)
+                        .getOrElse(Iterator.empty)
+                    else baseCall.argument)
+        .collect { case n: Expression if n.argumentIndex > 0 => n }
+        .flatMap {
+          case _: MethodRef => Option("LAMBDA")
+          case x =>
+            Option(
+              x.property(
+                PropertyNames.TYPE_FULL_NAME,
+                x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq("ANY")).headOption
+              )
+            )
+        }
+        .collect { case x: String => x }
+        .toList
+      // Not sure how we can get the return type unless it's typescript or we can resolve the callee?
+      val returnType = if (isConstructor) {
+        resolvedMethod match {
+          case Some(methodFullName) => methodFullName
+          case None                 => "ANY"
+        }
+      } else {
+        baseCall.argumentOut
+          .flatMap {
+            case x: Call if !DefComponent.unresolvedCallPattern.matcher(x.methodFullName).matches() =>
+              cpg.method.fullNameExact(x.methodFullName).methodReturn.typeFullName.headOption
+            case x: Call =>
+              x.callee(resolver).methodReturn.typeFullName.headOption
+            case _ => None
+          }
+          .headOption
+          .getOrElse("ANY")
       }
-      .inCall
-      .flatMap {
-        case c if c.name.startsWith(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
-        case c if excludeOperatorCalls.get() && c.name.startsWith("<operator>")                          => None
-        case c                                                                                           => Some(c)
+
+      Option(ObservedCall(callName.get, resolvedMethod, params, returnType))
+    }
+
+    private def partitionInvolvementInCalls: (List[ObservedCall], List[ObservedCallWithArgPos]) = {
+      val (invokedCalls, argToCalls) = getInCallsForReferencedIdentifiers(tgt)
+        .sortBy(f => (f.lineNumber, f.columnNumber))
+        .flatMap(c => c.argument.find(p => p.code.equals(tgt.name)))
+        .map { x =>
+          if (x.argumentIndex == -1 && x.argumentName.isDefined) (x, Left(x.argumentName.get))
+          else (x, Right(x.argumentIndex))
+        //          x.argumentName match {
+        //            case Some(argName) => (x, Left(argName))
+        //            case None          => (x, Right(x.argumentIndex))
+        //          }
+        }
+        .partition { case (_, argIdx) =>
+          argIdx match {
+            case Left(_)       => false // receivers/bases are never named
+            case Right(argIdx) => argIdx == 0
+          }
+        }
+      (
+        invokedCalls.map(_._1).isCall.flatMap(exprToObservedCall).toList,
+        argToCalls
+          .collect {
+            case (i: Identifier, argAt) => (i.inCall, argAt)
+            case (c: Call, argAt)       => (c, argAt)
+          }
+          .flatMap {
+            case (c: Call, argAt: Either[String, Int]) =>
+              exprToObservedCall(c).map(oc => ObservedCallWithArgPos.fromObservedCall(oc, argAt))
+            case (i: Identifier, argArt: Either[String, Int]) =>
+              Set()
+          }
+      )
+    }
+
+    /** Creates a def component with the workaround of correcting the type full name if it is only a type name.
+      */
+    private def createDefComponent(node: AstNode) = DefComponent.fromNode(node, typeMap.toMap)
+
+    private def linkSlices(slices: Map[String, Set[ObjectUsageSlice]]): Unit = {
+      slices.foreach { case (_, usageSlices) =>
+        usageSlices.foreach { slice =>
+          slice.definedBy match {
+            case Some(CallDef(name, typeFullName, Some(resolvedMethod), label)) =>
+              slices.get(resolvedMethod) match {
+                case Some(value) => println(s"Backward $value matched!") // todo traverse slice map for param defs
+                case None        =>                                      // println("No match for backward slice")
+              }
+            case _ =>
+          }
+          slice.argToCalls
+            .flatMap {
+              case ObservedCallWithArgPos(_, Some(resolvedMethod), _, _, Left(argName)) =>
+                slices.get(resolvedMethod).flatMap { calleeSlices =>
+                  calleeSlices.find { s =>
+                    s.targetObj match {
+                      case p: ParamDef => p.name == argName
+                      case _           => false
+                    }
+                  }
+                }
+              case ObservedCallWithArgPos(_, Some(resolvedMethod), _, _, Right(argIdx)) =>
+                slices.get(resolvedMethod).flatMap { calleeSlices =>
+                  calleeSlices.find { s =>
+                    s.targetObj match {
+                      case p: ParamDef => p.position == argIdx
+                      case _           => false
+                    }
+                  }
+                }
+              case _ => None
+            }
+            .foreach { s =>
+              println(
+                s"${slice.targetObj} is the same as ${s.targetObj}. Total invoked calls is ${slice.invokedCalls.size + s.invokedCalls.size}"
+              )
+            }
+        }
       }
-      .dedup
-      .toList
+    }
+
+    private def getInCallsForReferencedIdentifiers(decl: Declaration): List[Call] = {
+      // Cross closure boundaries
+      val capturedVars = decl.capturedByMethodRef.referencedMethod.ast.isIdentifier.nameExact(decl.name)
+      decl
+        .flatMap {
+          case local: Local             => local.referencingIdentifiers ++ capturedVars
+          case param: MethodParameterIn => param.referencingIdentifiers ++ capturedVars
+          case _                        => Seq()
+        }
+        .inCall
+        .flatMap {
+          case c if c.name.startsWith(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
+          case c if excludeOperatorCalls.get() && c.name.startsWith("<operator>")                          => None
+          case c                                                                                           => Some(c)
+        }
+        .dedup
+        .toList
+    }
   }
 
   /** Returns true if the given declaration is found to have at least n non-operator calls within its referenced
@@ -270,12 +351,20 @@ object UsageSlicing {
     def generateUDT(typeDecl: TypeDecl): UserDefinedType = {
       UserDefinedType(
         typeDecl.fullName,
-        typeDecl.member.map(DefComponent.fromNode).l,
+        typeDecl.member.map(m => DefComponent.fromNode(m)).collectAll[LocalDef].l,
         typeDecl.method
-          .map(m => ObservedCall(m.name, m.parameter.map(_.typeFullName).toList, m.methodReturn.typeFullName))
+          .map(m =>
+            ObservedCall(
+              m.name,
+              Option(m.fullName),
+              m.parameter.map(_.typeFullName).toList,
+              m.methodReturn.typeFullName
+            )
+          )
           .l
       )
     }
+
     cpg.typeDecl
       .filterNot(t => t.isExternal || t.name.matches("(:program|<module>|<init>|<meta>|<body>)"))
       .map(generateUDT)
