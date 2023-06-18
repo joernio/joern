@@ -8,7 +8,9 @@ import org.scalatest.wordspec.AnyWordSpec
 class ConsoleTests extends AnyWordSpec with Matchers {
 
   if (scala.util.Properties.isWin) {
-    info("console tests don't work on windows - not sure why... running the console manually works though: try the `run` and `help.cpg` commands in joern")
+    info(
+      "console tests don't work on windows - not sure why... running the console manually works though: try the `run` and `help.cpg` commands in joern"
+    )
   } else {
     "run" should {
       "provide a human readable overview of overlay creators" in withTestCode { codeDir =>

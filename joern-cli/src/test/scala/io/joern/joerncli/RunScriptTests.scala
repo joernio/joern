@@ -10,7 +10,9 @@ class RunScriptTests extends AnyWordSpec with Matchers {
   import RunScriptTests._
 
   if (scala.util.Properties.isWin) {
-    info("scripting tests don't work on windows - not sure why... running them manually works though, e.g. `joern --script joern-cli/src/main/resources/scripts/c/pointer-to-int.sc --param \"\"\"inputPath=joern-cli/src/test/resources/testcode/unsafe-ptr/unsafe-ptr.c\"\"\"`")
+    info(
+      "scripting tests don't work on windows - not sure why... running them manually works though, e.g. `joern --script joern-cli/src/main/resources/scripts/c/pointer-to-int.sc --param \"\"\"inputPath=joern-cli/src/test/resources/testcode/unsafe-ptr/unsafe-ptr.c\"\"\"`"
+    )
   } else {
     Seq(
       ("c/pointer-to-int.sc", "unsafe-ptr"),
