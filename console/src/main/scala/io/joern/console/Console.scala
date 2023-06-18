@@ -316,8 +316,8 @@ class Console[T <: Project](
                  |projectName: name of the new project. If this parameter
                  |is omitted, the path is derived from `inputPath`
                  |
-                 |enhance: cpg would be enhanced by default with overlays and post-processing passes.
-                 |Pass false to disable the enhancements
+                 |enhance: run default overlays and post-processing passes. Defaults to `true`.
+                 |Pass `enhance=false` to disable the enhancements.
                  |""",
     example = """importCpg("cpg.bin.zip")"""
   )
