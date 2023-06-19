@@ -187,7 +187,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through class method" ignore {
+  "Data flow through class method" should {
     val cpg = code("""
         |class MyClass
         |  def print(text)
@@ -202,13 +202,13 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "be found" in {
-      val src  = cpg.identifier.name("a").l
+      val src  = cpg.identifier.name("x").l
       val sink = cpg.call.name("puts").l
       sink.reachableByFlows(src).l.size shouldBe 2
     }
   }
 
-  "Data flow through module method" ignore {
+  "Data flow through module method" should {
     val cpg = code("""
         |module MyModule
         |  def MyModule.print(text)
@@ -222,7 +222,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "be found" in {
-      val src  = cpg.identifier.name("a").l
+      val src  = cpg.identifier.name("x").l
       val sink = cpg.call.name("puts").l
       sink.reachableByFlows(src).l.size shouldBe 2
     }
