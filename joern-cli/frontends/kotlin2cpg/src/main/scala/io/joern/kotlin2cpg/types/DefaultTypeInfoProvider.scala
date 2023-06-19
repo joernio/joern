@@ -404,7 +404,17 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val renderedParameterTypes =
           relevantDesc.getValueParameters.asScala.toSeq
             .map { valueParam =>
-              TypeRenderer.render(valueParam.getOriginal.getType)
+              val typeUpperBounds =
+                Option(TypeUtils.getTypeParameterDescriptorOrNull(valueParam.getType))
+                  .map(_.getUpperBounds)
+                  .map(_.asScala)
+                  .map(_.toList)
+                  .getOrElse(List())
+
+              if (typeUpperBounds.nonEmpty) {
+                TypeRenderer.render(typeUpperBounds(0))
+              } else
+                TypeRenderer.render(valueParam.getOriginal.getType)
             }
             .mkString(",")
         val signature = s"$returnTypeFullName($renderedParameterTypes)"
@@ -614,7 +624,17 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val render = for {
       mapForEntity <- Option(bindingsForEntity(bindingContext, parameter))
       variableDesc <- Option(mapForEntity.get(BindingContext.VALUE_PARAMETER.getKey))
-      render = TypeRenderer.render(variableDesc.getType)
+      typeUpperBounds =
+        Option(TypeUtils.getTypeParameterDescriptorOrNull(variableDesc.getType))
+          .map(_.getUpperBounds)
+          .map(_.asScala)
+          .map(_.toList)
+          .getOrElse(List())
+      render =
+        if (typeUpperBounds.nonEmpty)
+          TypeRenderer.render(typeUpperBounds(0))
+        else
+          TypeRenderer.render(variableDesc.getType)
       if isValidRender(render) && !variableDesc.getType.isInstanceOf[ErrorType]
     } yield render
 
