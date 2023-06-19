@@ -15,6 +15,7 @@ import scala.jdk.CollectionConverters._
 class AstCreationPass(config: Config, cpg: Cpg) extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
+  private val parser = new PhpParser(config)
   val global         = new Global()
 
   val PhpSourceFileExtensions: Set[String] = Set(".php")
@@ -23,7 +24,7 @@ class AstCreationPass(config: Config, cpg: Cpg) extends ConcurrentWriterCpgPass[
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val relativeFilename = File(config.inputPath).relativize(File(filename)).toString
-    PhpParser.parseFile(filename, config.phpIni) match {
+    parser.parseFile(filename, config.phpIni) match {
       case Some(parseResult) =>
         diffGraph.absorb(new AstCreator(relativeFilename, parseResult, global).createAst())
 
