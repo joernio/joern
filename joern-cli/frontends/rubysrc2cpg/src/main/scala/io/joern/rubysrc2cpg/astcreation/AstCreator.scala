@@ -521,41 +521,33 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForCaseExpressionPrimaryContext(ctx: CaseExpressionPrimaryContext): Seq[Ast] = {
+    val code       = ctx.caseExpression().CASE().getText
+    val switchNode = controlStructureNode(ctx, ControlStructureTypes.SWITCH, code)
+    val conditionAst = Option(ctx.caseExpression().expressionOrCommand()).toList
+      .flatMap(astForExpressionOrCommand)
+      .headOption
+
     val whenThenAstsList = ctx
       .caseExpression()
       .whenClause()
       .asScala
-      .map(wh => {
-        val whenNode = NewControlStructure()
-          .controlStructureType(ControlStructureTypes.IF)
-          .code(wh.getText())
+      .flatMap(wh => {
+        val whenNode = NewJumpTarget()
+          .parserTypeName(wh.getClass.getSimpleName)
+          .name("case " + wh.getText)
+          .code(wh.getText)
           .lineNumber(wh.WHEN().getSymbol.getLine)
           .columnNumber(wh.WHEN().getSymbol.getCharPositionInLine)
 
         val whenACondAsts = astForWhenArgumentContext(wh.whenArgument())
-        val thenAsts      = astForThenClauseContext(wh.thenClause())
-        Ast(whenNode)
-          .withChildren(whenACondAsts)
-          .withConditionEdge(whenNode, whenACondAsts.head.nodes.head)
-          .withChildren(thenAsts)
+        val thenAsts = astForThenClauseContext(wh.thenClause()) ++ Seq(
+          Ast(NewControlStructure().controlStructureType(ControlStructureTypes.BREAK))
+        )
+        Seq(Ast(whenNode)) ++ whenACondAsts ++ thenAsts
       })
       .toList
 
-    val caseNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.SWITCH)
-      .code(ctx.getText)
-      .lineNumber(ctx.caseExpression().CASE().getSymbol.getLine)
-      .columnNumber(ctx.caseExpression().CASE().getSymbol.getCharPositionInLine)
-
-    val condAst = {
-      if (ctx.caseExpression().expressionOrCommand() != null) {
-        astForExpressionOrCommand(ctx.caseExpression().expressionOrCommand()).headOption
-      } else {
-        None
-      }
-    }
-
-    val caseAsts =
+    val stmtAsts =
       if (ctx.caseExpression().elseClause() != null) {
         val elseAst = astForElseClauseContext(ctx.caseExpression().elseClause())
         whenThenAstsList ++ elseAst
@@ -563,7 +555,8 @@ class AstCreator(filename: String, global: Global)
         whenThenAstsList
       }
 
-    Seq(controlStructureAst(caseNode, condAst, caseAsts))
+    val block = blockNode(ctx.caseExpression())
+    Seq(controlStructureAst(switchNode, conditionAst, Seq(Ast(block).withChildren(stmtAsts))))
   }
 
   def astForChainedInvocationPrimaryContext(ctx: ChainedInvocationPrimaryContext): Seq[Ast] = {
@@ -866,16 +859,16 @@ class AstCreator(filename: String, global: Global)
 
   def astForElseClauseContext(ctx: ElseClauseContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
-    val elseNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.ELSE)
-      .code(ctx.getText())
-      .lineNumber(ctx.ELSE().getSymbol.getLine)
-      .columnNumber(ctx.ELSE().getSymbol.getCharPositionInLine)
+    val elseNode =
+      NewJumpTarget()
+        .parserTypeName(ctx.getClass.getSimpleName)
+        .name("default")
+        .code(ctx.getText)
+        .lineNumber(ctx.ELSE().getSymbol.getLine)
+        .columnNumber(ctx.ELSE().getSymbol.getCharPositionInLine)
+
     val stmtsAsts = astForStatementsContext(ctx.compoundStatement().statements())
-    Seq(
-      Ast(elseNode)
-        .withChildren(stmtsAsts)
-    )
+    Seq(Ast(elseNode)) ++ stmtsAsts
   }
 
   def astForIfExpressionContext(ctx: IfExpressionContext): Seq[Ast] = {
