@@ -12,10 +12,9 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
 
-class AstCreationPass(config: Config, cpg: Cpg) extends ConcurrentWriterCpgPass[String](cpg) {
+class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser) extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
-  private val parser = new PhpParser(config)
   val global         = new Global()
 
   val PhpSourceFileExtensions: Set[String] = Set(".php")

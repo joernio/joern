@@ -6,7 +6,8 @@ import scopt.OParser
 
 /** Command line configuration parameters
   */
-final case class Config(phpIni: Option[String] = None, phpParserBin: Option[String] = None) extends X2CpgConfig[Config] {
+final case class Config(phpIni: Option[String] = None, phpParserBin: Option[String] = None)
+    extends X2CpgConfig[Config] {
   def withPhpIni(phpIni: String): Config = {
     copy(phpIni = Some(phpIni)).withInheritedFields(this)
   }
