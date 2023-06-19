@@ -36,6 +36,7 @@ lazy val php2cpg     = project.in(file("frontends/php2cpg"))
 lazy val jimple2cpg  = project.in(file("frontends/jimple2cpg"))
 lazy val jssrc2cpg   = project.in(file("frontends/jssrc2cpg"))
 lazy val rubysrc2cpg = project.in(file("frontends/rubysrc2cpg"))
+lazy val gosrc2cpg   = project.in(file("frontends/gosrc2cpg"))
 
 Universal / mappings ++= frontendMappings("kotlin2cpg", (kotlin2cpg / stage).value)
 Universal / mappings ++= frontendMappings("javasrc2cpg", (javasrc2cpg / stage).value)
@@ -46,6 +47,7 @@ Universal / mappings ++= frontendMappings("jimple2cpg", (jimple2cpg / stage).val
 Universal / mappings ++= frontendMappings("pysrc2cpg", (pysrc2cpg / stage).value)
 Universal / mappings ++= frontendMappings("php2cpg", (php2cpg / stage).value)
 Universal / mappings ++= frontendMappings("rubysrc2cpg", (rubysrc2cpg / stage).value)
+Universal / mappings ++= frontendMappings("gosrc2cpg", (gosrc2cpg / stage).value)
 
 lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
 cpgVersionFile := {
