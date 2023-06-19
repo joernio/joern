@@ -5,10 +5,11 @@ crossScalaVersions := Seq("2.13.8", "3.3.0")
 dependsOn(Projects.semanticcpg, Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
-  "com.diffplug.spotless"   % "spotless-eclipse-cdt"       % "10.5.0",
-  "org.jline"               % "jline"                      % "3.23.0",
-  "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
+  "org.scala-lang.modules" %% "scala-parallel-collections"       % "1.0.4",
+  "org.eclipse.platform"    % "org.eclipse.equinox.common"       % "3.18.0",
+  "org.eclipse.platform"    % "org.eclipse.core.resources"       % "3.19.0",
+  "org.jline"               % "jline"                            % "3.23.0",
+  "org.scalatest"          %% "scalatest"                        % Versions.scalatest % Test
 )
 
 dependencyOverrides ++= Seq(
