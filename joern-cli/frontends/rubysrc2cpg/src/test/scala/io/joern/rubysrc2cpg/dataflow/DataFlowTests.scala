@@ -208,6 +208,33 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Data flow through class member" ignore {
+    val cpg = code("""
+        |class MyClass
+        | @instanceVariable
+        |
+        | def initialize(value)
+        |        @instanceVariable = value
+        | end
+        |
+        | def getValue()
+        |        @instanceVariable
+        | end
+        |end
+        |
+        |x = 12345
+        |inst = MyClass.new(x)
+        |y = inst.getValue
+        |puts y
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
+
   "Data flow through module method" should {
     val cpg = code("""
         |module MyModule
