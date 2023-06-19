@@ -41,7 +41,6 @@ object PhpParser {
   }
 
   private def phpParseCommand(filename: String, phpIniPath: String, phpParserBin: Option[String]): String = {
-    println(s"php --php-ini $phpIniPath ${phpParserBin.getOrElse(getExecutablePath)} --with-recovery --resolve-names --json-dump $filename")
     s"php --php-ini $phpIniPath ${phpParserBin.getOrElse(getExecutablePath)} --with-recovery --resolve-names --json-dump $filename"
   }
 
