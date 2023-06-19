@@ -49,9 +49,8 @@ class Php2Cpg extends X2CpgFrontend[Config] {
     if (errorMessages.isEmpty) {
       withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
         new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
-        val astCreationPass = new AstCreationPass(config, cpg, parser.get)
-        astCreationPass.createAndApply()
-        new TypeNodePass(astCreationPass.allUsedTypes, cpg).createAndApply()
+        new AstCreationPass(config, cpg, parser.get).createAndApply()
+        new TypeNodePass(Nil, cpg, getTypesFromCpg = true).createAndApply()
         LocalCreationPass.allLocalCreationPasses(cpg).foreach(_.createAndApply())
         new ClosureRefPass(cpg).createAndApply()
       }
