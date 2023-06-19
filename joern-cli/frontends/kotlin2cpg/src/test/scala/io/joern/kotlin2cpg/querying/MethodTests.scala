@@ -133,4 +133,19 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(_: Block)  = r.astChildren.l
     }
   }
+
+  "CPG for code with call with argument with type with upper bound" should {
+    val cpg = code("""
+      |package mypkg
+      |open class Base
+      |fun <S:Base>doSomething(one: S) {
+      |    println(one)
+      |}
+      |""".stripMargin)
+
+    "should contain a METHOD node with correct FULL_NAME set" in {
+      val List(m) = cpg.method.nameExact("doSomething").l
+      m.fullName shouldBe "mypkg.doSomething:void(mypkg.Base)"
+    }
+  }
 }
