@@ -23,7 +23,7 @@ class AstCreationPass(config: Config, cpg: Cpg) extends ConcurrentWriterCpgPass[
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val relativeFilename = File(config.inputPath).relativize(File(filename)).toString
-    PhpParser.parseFile(filename, config.phpIni) match {
+    PhpParser.parseFile(filename, config) match {
       case Some(parseResult) =>
         diffGraph.absorb(new AstCreator(relativeFilename, parseResult, global).createAst())
 

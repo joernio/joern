@@ -1,6 +1,7 @@
 package io.joern.php2cpg.parser
 
 import better.files.File
+import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpFile
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
@@ -14,7 +15,7 @@ object PhpParser {
   private val PhpParserBinEnvVar = "PHP_PARSER_BIN"
   private val logger             = LoggerFactory.getLogger(this.getClass)
 
-  private val ExecutablePath: String = {
+  private val getExecutablePath: String = {
     Option(System.getenv(PhpParserBinEnvVar)) match {
       case Some(phpParserPath) if phpParserPath.nonEmpty =>
         logger.debug(s"Using php-parser path from $PhpParserBinEnvVar envvar: ${phpParserPath}")
@@ -39,8 +40,9 @@ object PhpParser {
     tmpIni.canonicalPath
   }
 
-  private def phpParseCommand(filename: String, phpIniPath: String): String = {
-    s"php --php-ini $phpIniPath $ExecutablePath --with-recovery --resolve-names --json-dump $filename"
+  private def phpParseCommand(filename: String, phpIniPath: String, phpParserBin: Option[String]): String = {
+    println(s"php --php-ini $phpIniPath ${phpParserBin.getOrElse(getExecutablePath)} --with-recovery --resolve-names --json-dump $filename")
+    s"php --php-ini $phpIniPath ${phpParserBin.getOrElse(getExecutablePath)} --with-recovery --resolve-names --json-dump $filename"
   }
 
   private def getPhpIniPath(phpIniOverride: Option[String]): String = {
@@ -63,13 +65,17 @@ object PhpParser {
     }
   }
 
-  def parseFile(inputPath: String, phpIniOverride: Option[String]): Option[PhpFile] = {
+  def parseFile(inputPath: String, config: Config): Option[PhpFile] = {
     val inputFile      = File(inputPath)
     val inputFilePath  = inputFile.canonicalPath
     val inputDirectory = inputFile.parent.canonicalPath
-    val phpIniPath     = getPhpIniPath(phpIniOverride)
+    val phpIniPath     = getPhpIniPath(config.phpIni)
 
-    ExternalCommand.run(phpParseCommand(inputFilePath, phpIniPath), inputDirectory, separateStdErr = true) match {
+    ExternalCommand.run(
+      phpParseCommand(inputFilePath, phpIniPath, config.phpParserBin),
+      inputDirectory,
+      separateStdErr = true
+    ) match {
       case Success(outputLines) => processParserOutput(outputLines, inputFilePath)
 
       case Failure(exception) =>
