@@ -1,5 +1,7 @@
 package io.joern.rubysrc2cpg.utils
 
+import io.joern.x2cpg.Defines
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -23,12 +25,12 @@ class PackageTable() {
         methodTableMap(module)
           .filter(_.methodName == methodName)
           .foreach(method => {
-            finalMethodName.addOne(s"$module.${method.parentClassPath}$methodName:<unresolvedSignature>")
+            finalMethodName.addOne(s"$module.${method.parentClassPath}$methodName:${Defines.UnresolvedSignature}")
           })
       }
     })
     if (finalMethodName.isEmpty) {
-      List("<unknowfullname>")
+      List.empty
     } else {
       finalMethodName.toList
     }

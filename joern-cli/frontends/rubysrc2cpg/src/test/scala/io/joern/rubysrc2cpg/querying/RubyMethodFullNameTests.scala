@@ -73,7 +73,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll
           | end
           |end
           |""".stripMargin,
-        "util/help.rb"
+        Seq("util", "help.rb").mkString(java.io.File.separator)
       )
 
     "recognise call node" in {
