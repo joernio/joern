@@ -74,7 +74,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
              |      =
              |      PrimaryExpression
              |       LiteralPrimary
-             |        Literal
+             |        NumericLiteralLiteral
              |         NumericLiteral
              |          UnsignedNumericLiteral
              |           1

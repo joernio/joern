@@ -7,6 +7,8 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
 import io.shiftleft.semanticcpg.language._
 
+import java.io.File
+
 class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
   "intra-procedural" in {
@@ -336,9 +338,9 @@ class RegexDefinedFlowsDataFlowTests
         FlowSemantic
           .from(
             "requests.py:<module>.post",
-            List((0, 0), (1, 1), ("url", -1), ("body", -1), ("url", "url"), ("body", "body"))
+            List((0, 0), (1, "url", -1), (2, "body", -1), (1, "url", 1, "url"), (2, "body", 2, "body"))
           ),
-        FlowSemantic.from("cross_taint.py:<module>.go", List((0, 0), (1, 1), ("a", "b")))
+        FlowSemantic.from("cross_taint.py:<module>.go", List((0, 0), (1, 1), (1, "a", 2, "b")))
       )
     ) {
 
@@ -457,6 +459,91 @@ class RegexDefinedFlowsDataFlowTests
       val src = cpg.call.code("Foo.func").l
       val snk = cpg.call("print").l
       snk.argument.reachableByFlows(src).size shouldBe 1
+    }
+  }
+
+  "flows from receivers directly" should {
+    val cpg = code("""
+        |class Foo:
+        |   def func():
+        |      return "x"
+        |print(Foo.func())
+        |""".stripMargin)
+    "be found" in {
+      val src = cpg.identifier("Foo").l
+      val snk = cpg.call("print").l
+      snk.reachableByFlows(src).size shouldBe 2
+    }
+  }
+  "Import statement with method ref sample four" in {
+    val controller =
+      """
+        |from django.contrib import admin
+        |from django.urls import path
+        |from django.conf.urls import url
+        |from .views import all_page
+        |
+        |urlpatterns = [
+        |    url(r'allPage', all_page)
+        |]
+        |""".stripMargin
+    val views =
+      """
+        |def all_page(request):
+        |	print("All pages")
+        |""".stripMargin
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
+      .moreCode(views, Seq("controller", "views.py").mkString(File.separator))
+
+    val args = cpg.call.methodFullName("django.*[.](path|url)").l.head.argument.l
+    args.size shouldBe 3
+  }
+
+  "Import statement with method ref sample five" in {
+    val controller =
+      """
+        |from django.contrib import admin
+        |from django.urls import path
+        |from django.conf.urls import url
+        |from student.views import all_page
+        |
+        |urlpatterns = [
+        |    url(r'allPage', all_page)
+        |]
+        |""".stripMargin
+    val views =
+      """
+        |def all_page(request):
+        |	print("All pages")
+        |""".stripMargin
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
+      .moreCode(views, Seq("student", "views.py").mkString(File.separator))
+
+    val args = cpg.call.methodFullName("django.*[.](path|url)").l.head.argument.l
+    args.size shouldBe 3
+  }
+
+  "flows via tuple literal" should {
+    val cpg = code("""
+        |a = 1
+        |b = 2
+        |c = 3
+        |
+        |x = (a, b, c)
+        |
+        |sink1(b)
+        |sink2(x)
+        |""".stripMargin)
+    "not cross-taint due to 'pass through' semantics" in {
+      val src = cpg.literal("1").l
+      val snk = cpg.call("sink1").l
+      snk.reachableByFlows(src).size shouldBe 0
+    }
+
+    "taint the return value due to 'pass through' semantics" in {
+      val src = cpg.call.nameExact("<operator>.tupleLiteral").l
+      val snk = cpg.call("sink2").l
+      snk.reachableByFlows(src).size shouldBe 1
     }
   }
 

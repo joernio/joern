@@ -2,7 +2,6 @@ package io.joern.dataflowengineoss
 
 import better.files.File
 import io.circe.{Decoder, Encoder, HCursor, Json}
-import io.joern.dataflowengineoss.slicing.SliceMode.SliceModes
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 
@@ -11,23 +10,40 @@ package object slicing {
   import io.circe.generic.auto._
   import io.circe.syntax.EncoderOps
 
-  /** The kind of mode to use for slicing.
-    */
-  object SliceMode extends Enumeration {
-    type SliceModes = Value
-    val DataFlow, Usages = Value
+  sealed trait BaseConfig {
+    def inputPath: File = File("cpg.bin")
+
+    def outFile: File = File("slices")
+
+    def dummyTypesEnabled: Boolean = false
+
+    def fileFilter: Option[String] = None
   }
 
   case class SliceConfig(
-    inputPath: File = File("cpg.bin"),
-    outFile: File = File("slices"),
-    sliceMode: SliceModes = SliceMode.DataFlow,
-    sourceFile: Option[String] = None,
-    sliceDepth: Int = 20,
+    override val inputPath: File = File("cpg.bin"),
+    override val outFile: File = File("slices"),
+    override val dummyTypesEnabled: Boolean = false,
+    override val fileFilter: Option[String] = None
+  ) extends BaseConfig
+
+  case class DataFlowConfig(
+    override val inputPath: File = File("cpg.bin"),
+    override val outFile: File = File("slices"),
+    override val dummyTypesEnabled: Boolean = false,
+    override val fileFilter: Option[String] = None,
+    sliceDepth: Int = 20
+  ) extends BaseConfig
+
+  case class UsagesConfig(
+    override val inputPath: File = File("cpg.bin"),
+    override val outFile: File = File("slices"),
+    override val dummyTypesEnabled: Boolean = false,
+    override val fileFilter: Option[String] = None,
     minNumCalls: Int = 1,
-    typeRecoveryDummyTypes: Boolean = false,
-    excludeOperatorCalls: Boolean = false
-  )
+    excludeOperatorCalls: Boolean = false,
+    excludeMethodSource: Boolean = false
+  ) extends BaseConfig
 
   /** A trait for all objects that represent a 1:1 relationship between the CPG and all the slices extracted.
     */
@@ -49,6 +65,11 @@ package object slicing {
     *   a mapping between method names and which nodes fall under them.
     */
   case class DataFlowSlice(nodes: Set[SliceNode], edges: Set[SliceEdge], methodToChildNode: Map[String, Set[Long]])
+      extends ProgramSlice {
+    def toJson: String = this.asJson.toString()
+
+    def toJsonPretty: String = this.asJson.spaces2
+  }
 
   implicit val encodeDataFlowSlice: Encoder[DataFlowSlice] = Encoder.instance {
     case DataFlowSlice(nodes, edges, methodToChildNode) =>
@@ -82,19 +103,6 @@ package object slicing {
 
   implicit val encodeSliceEdge: Encoder[SliceEdge] = Encoder.instance { case SliceEdge(src, dst, label) =>
     Json.obj("src" -> src.asJson, "dst" -> dst.asJson, "label" -> label.asJson)
-  }
-
-  /** The data-flow slices for the program grouped by procedure.
-    *
-    * @param dataFlowSlices
-    *   the mapped slices.
-    */
-  case class ProgramDataFlowSlice(dataFlowSlices: Map[String, Set[DataFlowSlice]]) extends ProgramSlice {
-
-    def toJson: String = this.asJson.toString()
-
-    def toJsonPretty: String = this.asJson.spaces2
-
   }
 
   /** A usage slice of an object at the start of its definition until its final usage.
@@ -134,6 +142,28 @@ package object slicing {
   implicit val encodeObjectUsageSlice: Encoder[ObjectUsageSlice] =
     Encoder.instance { case ObjectUsageSlice(c, p, r, a) =>
       Json.obj("targetObj" -> c.asJson, "definedBy" -> p.asJson, "invokedCalls" -> r.asJson, "argToCalls" -> a.asJson)
+    }
+
+  /** Packages the object usage slices along with the method source code.
+    *
+    * @param source
+    *   source code.
+    * @param slices
+    *   the object usage slices.
+    */
+  case class MethodUsageSlice(source: String, slices: Set[ObjectUsageSlice])
+
+  implicit val decodeMethodUsageSlice: Decoder[MethodUsageSlice] =
+    (c: HCursor) =>
+      for {
+        x <- c.downField("source").as[String]
+        y <- c.downField("slices").as[Set[ObjectUsageSlice]]
+      } yield {
+        MethodUsageSlice(x, y)
+      }
+  implicit val encodeMethodUsageSlice: Encoder[MethodUsageSlice] =
+    Encoder.instance { case MethodUsageSlice(x, y) =>
+      Json.obj("source" -> x.asJson, "slices" -> y.asJson)
     }
 
   /** Represents a component that carries data. This could be an identifier of a variable or method and supplementary
@@ -258,10 +288,8 @@ package object slicing {
     * @param userDefinedTypes
     *   the UDTs.
     */
-  case class ProgramUsageSlice(
-    objectSlices: Map[String, Set[ObjectUsageSlice]],
-    userDefinedTypes: List[UserDefinedType]
-  ) extends ProgramSlice {
+  case class ProgramUsageSlice(objectSlices: Map[String, MethodUsageSlice], userDefinedTypes: List[UserDefinedType])
+      extends ProgramSlice {
 
     def toJson: String = this.asJson.toString()
 
@@ -271,7 +299,7 @@ package object slicing {
   implicit val decodeProgramUsageSlice: Decoder[ProgramUsageSlice] =
     (c: HCursor) =>
       for {
-        o <- c.downField("objectSlices").as[Map[String, Set[ObjectUsageSlice]]]
+        o <- c.downField("objectSlices").as[Map[String, MethodUsageSlice]]
         u <- c.downField("userDefinedTypes").as[List[UserDefinedType]]
       } yield {
         ProgramUsageSlice(o, u)

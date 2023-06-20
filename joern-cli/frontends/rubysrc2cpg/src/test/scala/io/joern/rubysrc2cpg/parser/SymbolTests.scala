@@ -8,7 +8,7 @@ class SymbolTests extends RubyParserAbstractTest {
 
       def symbolLiteralParseTreeText(symbolName: String): String =
         s"""LiteralPrimary
-           | Literal
+           | SymbolLiteral
            |  Symbol
            |   $symbolName""".stripMargin
 

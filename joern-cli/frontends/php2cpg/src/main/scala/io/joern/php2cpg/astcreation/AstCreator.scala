@@ -1112,21 +1112,22 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
     }
   }
 
+  private def astForEncapsed(encapsed: PhpEncapsed): Ast = {
+    val args = encapsed.parts.map(astForExpr)
+    val code = args.map(_.rootCodeOrEmpty).mkString(" . ")
+
+    args match {
+      case singleArg :: Nil => singleArg
+      case _ =>
+        val callNode = newOperatorCallNode(PhpOperators.encaps, code, Some(TypeConstants.String), line(encapsed))
+        callAst(callNode, args)
+    }
+  }
+
   private def astForScalar(scalar: PhpScalar): Ast = {
     scalar match {
-      case PhpString(value, _) =>
-        Ast(NewLiteral().code(value).typeFullName(registerType(TypeConstants.String)).lineNumber(line(scalar)))
-      case PhpInt(value, _) =>
-        Ast(NewLiteral().code(value).typeFullName(registerType(TypeConstants.Int)).lineNumber(line(scalar)))
-      case PhpFloat(value, _) =>
-        Ast(NewLiteral().code(value).typeFullName(registerType(TypeConstants.Float)).lineNumber(line(scalar)))
-      case PhpEncapsed(parts, _) =>
-        val callNode =
-          newOperatorCallNode(PhpOperators.encaps, code = /* TODO */ PhpOperators.encaps, line = line(scalar))
-        val args = parts.map(astForExpr)
-        callAst(callNode, args)
-      case PhpEncapsedPart(value, _) =>
-        Ast(NewLiteral().code(value).typeFullName(registerType(TypeConstants.String)).lineNumber(line(scalar)))
+      case encapsed: PhpEncapsed         => astForEncapsed(encapsed)
+      case simpleScalar: PhpSimpleScalar => Ast(literalNode(scalar, simpleScalar.value, simpleScalar.typeFullName))
       case null =>
         logger.warn("scalar was null")
         ???
@@ -1668,13 +1669,12 @@ class AstCreator(filename: String, phpAst: PhpFile, global: Global)
   }
 
   private def astForShellExecExpr(expr: PhpShellExecExpr): Ast = {
-    val args = expr.parts.map(astForExpr)
-    val code = s"`${args.map(_.rootCodeOrEmpty).mkString("").replaceAll("\"", "")}`"
+    val args = astForEncapsed(expr.parts)
+    val code = "`" + args.rootCodeOrEmpty + "`"
 
     val callNode = newOperatorCallNode(PhpOperators.shellExec, code, line = line(expr))
-      .methodFullName(PhpOperators.shellExec)
 
-    callAst(callNode, args)
+    callAst(callNode, args :: Nil)
   }
 
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {

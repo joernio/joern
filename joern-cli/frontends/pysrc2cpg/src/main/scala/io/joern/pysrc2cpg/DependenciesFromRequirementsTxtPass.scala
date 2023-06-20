@@ -20,8 +20,8 @@ MarkupSafe==1.1.1
 Werkzeug==1.0.1
 ```
  */
-class DendenciesFromRequirementsTxtPass(cpg: Cpg) extends CpgPass(cpg) {
-  private val logger: Logger = LoggerFactory.getLogger(classOf[DendenciesFromRequirementsTxtPass])
+class DependenciesFromRequirementsTxtPass(cpg: Cpg) extends CpgPass(cpg) {
+  private val logger: Logger = LoggerFactory.getLogger(classOf[DependenciesFromRequirementsTxtPass])
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     cpg.configFile.filter(_.name.endsWith("requirements.txt")).foreach { node =>
       val lines = node.content.split("\n")

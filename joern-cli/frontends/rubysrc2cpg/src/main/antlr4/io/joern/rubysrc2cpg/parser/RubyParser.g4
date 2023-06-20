@@ -47,10 +47,10 @@ statement
 // --------------------------------------------------------
 
 expressionOrCommand
-    :   (EMARK wsOrNl*)? invocationWithoutParentheses                                                               # invocationExpressionOrCommand
+    :   expression                                                                                                  # expressionExpressionOrCommand
+    |   (EMARK wsOrNl*)? invocationWithoutParentheses                                                               # invocationExpressionOrCommand
     |   NOT wsOrNl* expressionOrCommand                                                                             # notExpressionOrCommand
     |   <assoc=right> expressionOrCommand WS* op=(OR | AND) wsOrNl* expressionOrCommand                             # orAndExpressionOrCommand
-    |   expression                                                                                                  # expressionExpressionOrCommand
     ;
 
 expression
@@ -497,13 +497,13 @@ variableIdentifier
     ;
 
 pseudoVariableIdentifier
-    :   NIL
-    |   TRUE
-    |   FALSE
-    |   SELF
-    |   FILE__
-    |   LINE__
-    |   ENCODING__
+    :   NIL                                                                                                         # nilPseudoVariableIdentifier
+    |   TRUE                                                                                                        # truePseudoVariableIdentifier
+    |   FALSE                                                                                                       # falsePseudoVariableIdentifier
+    |   SELF                                                                                                        # selfPseudoVariableIdentifier
+    |   FILE__                                                                                                      # filePseudoVariableIdentifier
+    |   LINE__                                                                                                      # linePseudoVariableIdentifier
+    |   ENCODING__                                                                                                  # encodingPseudoVariableIdentifier
     ;
 
 scopedConstantReference
@@ -516,11 +516,11 @@ scopedConstantReference
 // --------------------------------------------------------
 
 literal
-    :   numericLiteral
-    |   symbol
-    |   SINGLE_QUOTED_STRING_LITERAL
-    |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END
-    |   REGULAR_EXPRESSION_START REGULAR_EXPRESSION_BODY? REGULAR_EXPRESSION_END
+    :   numericLiteral                                                                                              # numericLiteralLiteral
+    |   symbol                                                                                                      # symbolLiteral
+    |   SINGLE_QUOTED_STRING_LITERAL                                                                                # singleQuotedStringLiteral
+    |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END                # doubleQuotedStringLiteral
+    |   REGULAR_EXPRESSION_START REGULAR_EXPRESSION_BODY? REGULAR_EXPRESSION_END                                    # regularExpressionLiteral
     ;
 
 symbol

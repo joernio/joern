@@ -11,10 +11,11 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
   def isUsed(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg
     s.isEmpty || s.exists(_.mappings.exists {
-      case ParamMapping(NamedArg(srcName), _) if node.argumentName.isDefined =>
+      case FlowMapping(ParameterNode(_, Some(srcName)), _) if node.argumentName.isDefined =>
         srcName == node.argumentName.get
-      case ParamMapping(PosArg(srcIndex), _) => srcIndex == node.argumentIndex
-      case _                                 => false
+      case FlowMapping(ParameterNode(srcIndex, _), _)    => srcIndex == node.argumentIndex
+      case PassThroughMapping if node.argumentIndex != 0 => true
+      case _                                             => false
     })
   }
 
@@ -24,10 +25,11 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     val s = semanticsForCallByArg.l
     s.isEmpty || s.exists { semantic =>
       semantic.mappings.exists {
-        case ParamMapping(_, NamedArg(dstName)) if node.argumentName.isDefined =>
+        case FlowMapping(_, ParameterNode(_, Some(dstName))) if node.argumentName.isDefined =>
           dstName == node.argumentName.get
-        case ParamMapping(_, PosArg(dstIndex)) => dstIndex == node.argumentIndex
-        case _                                 => false
+        case FlowMapping(_, ParameterNode(dstIndex, _))    => dstIndex == node.argumentIndex
+        case PassThroughMapping if node.argumentIndex != 0 => true
+        case _                                             => false
       }
     }
   }
@@ -53,16 +55,17 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     val s = semanticsForCallByArg.l
     s.isEmpty || s.exists { semantic =>
       semantic.mappings.exists {
-        case ParamMapping(NamedArg(srcName), NamedArg(dstName))
+        case FlowMapping(ParameterNode(_, Some(srcName)), ParameterNode(_, Some(dstName)))
             if node.argumentName.isDefined && tgt.argumentName.isDefined =>
           srcName == node.argumentName.get && dstName == tgt.argumentName.get
-        case ParamMapping(NamedArg(srcName), PosArg(dstIndex)) if node.argumentName.isDefined =>
+        case FlowMapping(ParameterNode(_, Some(srcName)), ParameterNode(dstIndex, _)) if node.argumentName.isDefined =>
           srcName == node.argumentName.get && dstIndex == tgt.argumentIndex
-        case ParamMapping(PosArg(srcIndex), NamedArg(dstName)) if tgt.argumentName.isDefined =>
+        case FlowMapping(ParameterNode(srcIndex, _), ParameterNode(_, Some(dstName))) if tgt.argumentName.isDefined =>
           srcIndex == node.argumentIndex && dstName == tgt.argumentName.get
-        case ParamMapping(PosArg(srcIndex), PosArg(dstIndex)) =>
+        case FlowMapping(ParameterNode(srcIndex, _), ParameterNode(dstIndex, _)) =>
           srcIndex == node.argumentIndex && dstIndex == tgt.argumentIndex
-        case _ => false
+        case PassThroughMapping if tgt.argumentIndex == node.argumentIndex || tgt.argumentIndex == -1 => true
+        case _                                                                                        => false
       }
     }
   }

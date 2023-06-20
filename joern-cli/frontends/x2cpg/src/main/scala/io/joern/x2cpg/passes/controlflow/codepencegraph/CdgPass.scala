@@ -42,7 +42,7 @@ class CdgPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
           if (containsIn == null || !containsIn.hasNext) {
             logger.warn(s"Found CDG edge starting at $nodeLabel node. This is most likely caused by an invalid CFG.")
           } else {
-            val method = containsIn.next
+            val method = containsIn.next()
             logger.warn(
               s"Found CDG edge starting at $nodeLabel node. This is most likely caused by an invalid CFG." +
                 s" Method: ${method match {

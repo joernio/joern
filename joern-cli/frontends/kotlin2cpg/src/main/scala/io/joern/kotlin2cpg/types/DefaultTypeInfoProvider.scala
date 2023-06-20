@@ -13,7 +13,6 @@ import org.jetbrains.kotlin.cli.jvm.compiler.{
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.{
   DeclarationDescriptor,
-  DescriptorVisibilities,
   DescriptorVisibility,
   FunctionDescriptor,
   ValueDescriptor
@@ -57,7 +56,7 @@ import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorToSourceUtils, De
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
-import org.jetbrains.kotlin.types.ErrorType
+import org.jetbrains.kotlin.types.{ErrorType, TypeUtils}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -405,7 +404,17 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val renderedParameterTypes =
           relevantDesc.getValueParameters.asScala.toSeq
             .map { valueParam =>
-              TypeRenderer.render(valueParam.getOriginal.getType)
+              val typeUpperBounds =
+                Option(TypeUtils.getTypeParameterDescriptorOrNull(valueParam.getType))
+                  .map(_.getUpperBounds)
+                  .map(_.asScala)
+                  .map(_.toList)
+                  .getOrElse(List())
+
+              if (typeUpperBounds.nonEmpty) {
+                TypeRenderer.render(typeUpperBounds(0))
+              } else
+                TypeRenderer.render(valueParam.getOriginal.getType)
             }
             .mkString(",")
         val signature = s"$returnTypeFullName($renderedParameterTypes)"
@@ -517,17 +526,25 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       case Some(fnDescriptor) =>
         val originalDesc = fnDescriptor.getOriginal
 
-        val renderedFqNameForDesc = TypeRenderer.renderFqNameForDesc(originalDesc)
+        val renderedFqNameForDesc = TypeRenderer.renderFqNameForDesc(fnDescriptor)
         val renderedFqNameMaybe = for {
           extensionReceiverParam <- Option(originalDesc.getExtensionReceiverParameter)
           erpType = extensionReceiverParam.getType
         } yield {
+          val typeUpperBounds =
+            Option(TypeUtils.getTypeParameterDescriptorOrNull(erpType))
+              .map(_.getUpperBounds)
+              .map(_.asScala)
+              .map(_.toList)
+              .getOrElse(List())
           if (erpType.isInstanceOf[ErrorType]) {
             s"${Defines.UnresolvedNamespace}.${expr.getName}"
           } else {
             val rendered =
               if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) TypeConstants.javaLangObject
-              else TypeRenderer.render(erpType, shouldMapPrimitiveArrayTypes = false, unwrapPrimitives = false)
+              else if (typeUpperBounds.size == 1) {
+                TypeRenderer.render(typeUpperBounds(0), shouldMapPrimitiveArrayTypes = false, unwrapPrimitives = false)
+              } else TypeRenderer.render(erpType, shouldMapPrimitiveArrayTypes = false, unwrapPrimitives = false)
             s"$rendered.${originalDesc.getName}"
           }
         }
@@ -607,7 +624,17 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val render = for {
       mapForEntity <- Option(bindingsForEntity(bindingContext, parameter))
       variableDesc <- Option(mapForEntity.get(BindingContext.VALUE_PARAMETER.getKey))
-      render = TypeRenderer.render(variableDesc.getType)
+      typeUpperBounds =
+        Option(TypeUtils.getTypeParameterDescriptorOrNull(variableDesc.getType))
+          .map(_.getUpperBounds)
+          .map(_.asScala)
+          .map(_.toList)
+          .getOrElse(List())
+      render =
+        if (typeUpperBounds.nonEmpty)
+          TypeRenderer.render(typeUpperBounds(0))
+        else
+          TypeRenderer.render(variableDesc.getType)
       if isValidRender(render) && !variableDesc.getType.isInstanceOf[ErrorType]
     } yield render
 
@@ -667,7 +694,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       val renderedRetType =
         args.lastOption
           .map { t => TypeRenderer.render(t.getType) }
-          .getOrElse(TypeConstants.any)
+          .getOrElse(TypeConstants.javaLangObject)
       val renderedArgs =
         if (args.isEmpty) ""
         else if (args.size == 1) TypeConstants.javaLangObject
@@ -741,6 +768,38 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val signature = s"${TypeConstants.void}$paramListSignature"
     val fullname  = s"$methodName:$signature"
     (fullname, signature)
+  }
+
+  def fullNameWithSignatureAsLambda(expr: KtNamedFunction, keyPool: KeyPool): (String, String) = {
+    val containingFile      = expr.getContainingKtFile
+    val fileName            = containingFile.getName
+    val packageName         = containingFile.getPackageFqName.toString
+    val lambdaNum           = keyPool.next
+    val astDerivedFullName  = s"$packageName:<lambda><f_${fileName}_no$lambdaNum>()"
+    val astDerivedSignature = anySignature(expr.getValueParameters.asScala.toList)
+
+    val render = for {
+      mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
+      typeInfo     <- Option(mapForEntity.get(BindingContext.EXPRESSION_TYPE_INFO.getKey))
+      theType = typeInfo.getType
+    } yield {
+      val constructorDesc = theType.getConstructor.getDeclarationDescriptor
+      val constructorType = constructorDesc.getDefaultType
+      val args            = constructorType.getArguments.asScala.drop(1)
+
+      val renderedRetType =
+        args.lastOption
+          .map { t => TypeRenderer.render(t.getType) }
+          .getOrElse(TypeConstants.javaLangObject)
+      val renderedArgs =
+        if (args.isEmpty) ""
+        else if (args.size == 1) TypeConstants.javaLangObject
+        else s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (args.size - 1)}"
+      val signature = s"${renderedRetType}($renderedArgs)"
+      val fullName  = s"$packageName.<lambda><f_${fileName}_no${lambdaNum.toString}>:$signature"
+      (fullName, signature)
+    }
+    render.getOrElse((astDerivedFullName, astDerivedSignature))
   }
 
   def fullNameWithSignature(expr: KtNamedFunction, defaultValue: (String, String)): (String, String) = {
@@ -867,6 +926,15 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     if (!expr.getValueParameters.isEmpty) {
       return None
     }
+
+    val hasSingleImplicitParameter =
+      Option(bindingContext.get(BindingContext.EXPECTED_EXPRESSION_TYPE, expr))
+        .map { desc =>
+          // 1 for the parameter + 1 for the return type == 2
+          desc.getConstructor.getParameters.size() == 2
+        }
+        .getOrElse(false)
+
     val containingQualifiedExpression = Option(expr.getParent)
       .map(_.getParent)
       .flatMap(_.getParent match {
@@ -878,22 +946,18 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         resolvedCallDescriptor(qualifiedExpression) match {
           case Some(fnDescriptor) =>
             val originalDesc   = fnDescriptor.getOriginal
+            val vps            = originalDesc.getValueParameters
             val renderedFqName = TypeRenderer.renderFqNameForDesc(originalDesc)
             if (
-              renderedFqName.startsWith(TypeConstants.kotlinLetPrefix) ||
-              renderedFqName.startsWith(TypeConstants.kotlinAlsoPrefix) ||
-              renderedFqName.startsWith(TypeConstants.kotlinTakeIfPrefix) ||
-              renderedFqName.startsWith(TypeConstants.kotlinTakeUnlessPrefix)
-            ) {
-              Some(TypeConstants.scopeFunctionItParameterName)
-            } else if (
-              renderedFqName.startsWith(TypeConstants.kotlinRunPrefix) ||
-              renderedFqName.startsWith(TypeConstants.kotlinApplyPrefix)
+              hasSingleImplicitParameter &&
+              (renderedFqName.startsWith(TypeConstants.kotlinRunPrefix) ||
+                renderedFqName.startsWith(TypeConstants.kotlinApplyPrefix))
             ) {
               Some(TypeConstants.scopeFunctionThisParameterName)
-            } else {
-              None
-            }
+              // https://kotlinlang.org/docs/lambdas.html#it-implicit-name-of-a-single-parameter
+            } else if (hasSingleImplicitParameter) {
+              Some(TypeConstants.lambdaImplicitParameterName)
+            } else None
           case None => None
         }
       case None => None

@@ -9,7 +9,6 @@ import io.joern.x2cpg.datastructures.Stack._
 import io.joern.x2cpg.utils.NodeBuilders.{newDependencyNode, newLocalNode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
-import io.shiftleft.semanticcpg.language._
 import ujson.Value
 
 import scala.util.Try

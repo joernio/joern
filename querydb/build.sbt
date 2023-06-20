@@ -12,9 +12,7 @@ dependsOn(
   Projects.kotlin2cpg  % "test->test"
 )
 
-libraryDependencies ++= Seq(
-  "org.scalatest"    %% "scalatest"  % Versions.scalatest % Test
-)
+libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % Versions.scalatest % Test)
 
 topLevelDirectory := Some(name.value)
 
