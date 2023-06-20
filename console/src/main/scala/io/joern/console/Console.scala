@@ -301,7 +301,7 @@ class Console[T <: Project](
   @Doc(
     info = "Create new project from existing CPG",
     longInfo = """
-                 |importCpg(<inputPath>, [projectName])
+                 |importCpg(<inputPath>, [projectName], [enhance])
                  |
                  |Import an existing CPG. The CPG is stored as part
                  |of a new project and blanks are filled in by analyzing the CPG.
@@ -315,10 +315,13 @@ class Console[T <: Project](
                  |
                  |projectName: name of the new project. If this parameter
                  |is omitted, the path is derived from `inputPath`
+                 |
+                 |enhance: run default overlays and post-processing passes. Defaults to `true`.
+                 |Pass `enhance=false` to disable the enhancements.
                  |""",
     example = """importCpg("cpg.bin.zip")"""
   )
-  def importCpg(inputPath: String, projectName: String = ""): Option[Cpg] = {
+  def importCpg(inputPath: String, projectName: String = "", enhance: Boolean = true): Option[Cpg] = {
     val name =
       Option(projectName).filter(_.nonEmpty).getOrElse(deriveNameFromInputPath(inputPath, workspace))
     val cpgFile = File(inputPath)
@@ -358,13 +361,14 @@ class Console[T <: Project](
       workspace.deleteProject(name)
     }
 
-    cpgOpt
-      .filter(_.metaData.hasNext)
-      .foreach { cpg =>
-        applyDefaultOverlays(cpg)
-        applyPostProcessingPasses(cpg)
-      }
-
+    if (enhance) {
+      cpgOpt
+        .filter(_.metaData.hasNext)
+        .foreach { cpg =>
+          applyDefaultOverlays(cpg)
+          applyPostProcessingPasses(cpg)
+        }
+    }
     cpgOpt
   }
 
