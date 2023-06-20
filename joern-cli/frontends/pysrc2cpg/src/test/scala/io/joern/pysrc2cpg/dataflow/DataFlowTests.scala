@@ -492,7 +492,7 @@ class RegexDefinedFlowsDataFlowTests
         |def all_page(request):
         |	print("All pages")
         |""".stripMargin
-    val cpg = code("print('Hello, world!')")
+    val cpg = code("")
       .moreCode(controller, Seq("controller", "urls.py").mkString(File.separator))
       .moreCode(views, Seq("controller", "views.py").mkString(File.separator))
 
@@ -517,7 +517,7 @@ class RegexDefinedFlowsDataFlowTests
         |def all_page(request):
         |	print("All pages")
         |""".stripMargin
-    val cpg = code("print('Hello, world!')")
+    val cpg = code("")
       .moreCode(controller, Seq("controller", "urls.py").mkString(File.separator))
       .moreCode(views, Seq("student", "views.py").mkString(File.separator))
 
