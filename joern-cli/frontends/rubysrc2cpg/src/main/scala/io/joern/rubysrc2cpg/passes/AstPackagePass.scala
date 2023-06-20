@@ -28,7 +28,7 @@ class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable:
 
   private def resolveModuleNameFromPath(path: String): String = {
     if (path.contains(tempExtDir)) {
-      val moduleNameRegex = s"${java.io.File.separator}gems${java.io.File.separator}([^${java.io.File.separator}]+)${java.io.File.separator}lib${java.io.File.separator}.*".r
+      val moduleNameRegex = Seq("gems", "([^", "]+)", "lib", ".*").mkString(java.io.File.separator).r
       moduleNameRegex.findFirstMatchIn(path).map(_.group(1)).getOrElse("").split("/").last.split("-").head
     } else {
       path

@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
+import io.joern.x2cpg.Defines.{DynamicCallUnknownFullName, UnresolvedSignature}
 import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -1093,7 +1093,13 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     val column         = localIdentifier.getSymbol().getCharPositionInLine()
     val line           = localIdentifier.getSymbol().getLine()
     val name           = getActualMethodName(localIdentifier.getText)
-    val methodFullName = packageContext.packageTable.getMethodFullNameUsingName(packageStack.toList, name).headOption.getOrElse(s"$filename.$name:${DynamicCallUnknownFullName}")
+    var methodFullName = s"$filename.$name:${UnresolvedSignature}"
+    val externalDependencyResolution = packageContext.packageTable.getMethodFullNameUsingName(packageStack.toList, name)
+
+    if (externalDependencyResolution.nonEmpty) {
+      methodFullName = externalDependencyResolution.head
+    }
+
     val callNode = NewCall()
       .name(name)
       .methodFullName(methodFullName)
@@ -1869,7 +1875,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
       methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
       val argsAsts = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
 
-      val callNodes = methodIdentifierAsts.head.nodes.collect(_.asInstanceOf[NewCall])
+      val callNodes = methodIdentifierAsts.head.nodes.collect{case x: NewCall => x}
       if (callNodes.size == 1) {
         val callNode = callNodes.head
         if (callNode.name == "require" || callNode.name == "load") {
@@ -1937,34 +1943,43 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     astForYieldWithOptionalArgumentContext(ctx.yieldWithOptionalArgument())
   }
 
-  def resolveRequireOrLoadPath(argsAst: Seq[Ast]): Seq[Ast] = {
-    val importedNode = argsAst.head.nodes.collectFirst(_.asInstanceOf[NewLiteral]).get
-    val pathValue = importedNode.code.replaceAll("'", "").replaceAll("\"", "")
-    val result = pathValue match {
-
-      case path if File(path).exists =>
-        path
-      case path if File(s"$path.rb").exists =>
-        s"${path}.rb"
-      case _ =>
-        pathValue
+  private def resolveRequireOrLoadPath(argsAst: Seq[Ast]): Seq[Ast] = {
+    val importedNode = argsAst.head.nodes.collect{case x : NewLiteral => x}
+    if (importedNode.size == 1) {
+      val node = importedNode.head
+      val pathValue = node.code.replaceAll("'", "").replaceAll("\"", "")
+      val result = pathValue match {
+        case path if File(path).exists =>
+          path
+        case path if File(s"$path.rb").exists =>
+          s"${path}.rb"
+        case _ =>
+          pathValue
+      }
+      packageStack.append(result)
+      astForImportNode(node.code)
+    } else {
+      Seq(Ast())
     }
-    packageStack.append(result)
-    astForImportNode(importedNode.code)
   }
 
-  def resolveRelativePath(currentFile: String, argsAst: Seq[Ast]): Seq[Ast] = {
-    val importedNode = argsAst.head.nodes.collectFirst(_.asInstanceOf[NewLiteral]).get
-    val pathValue        = importedNode.code.replaceAll("'", "").replaceAll("\"", "")
-    val updatedPath      = if (pathValue.endsWith(".rb")) pathValue else s"$pathValue.rb"
+  private def resolveRelativePath(currentFile: String, argsAst: Seq[Ast]): Seq[Ast] = {
+    val importedNode = argsAst.head.nodes.collect{ case x: NewLiteral => x }
+    if (importedNode.size == 1) {
+      val node = importedNode.head
+      val pathValue = node.code.replaceAll("'", "").replaceAll("\"", "")
+      val updatedPath = if (pathValue.endsWith(".rb")) pathValue else s"$pathValue.rb"
 
-    val currentDirectory = File(currentFile).parent
-    val file             = File(currentDirectory, updatedPath)
-    packageStack.append(file.pathAsString)
-    astForImportNode(importedNode.code)
+      val currentDirectory = File(currentFile).parent
+      val file = File(currentDirectory, updatedPath)
+      packageStack.append(file.pathAsString)
+      astForImportNode(node.code)
+    } else {
+      Seq(Ast())
+    }
   }
 
-  def astForImportNode(code: String): Seq[Ast] = {
+  private def astForImportNode(code: String): Seq[Ast] = {
     // fully implemented later
     val importNode = NewImport()
       .code(code)

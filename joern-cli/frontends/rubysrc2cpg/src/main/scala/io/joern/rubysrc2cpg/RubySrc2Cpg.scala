@@ -27,9 +27,12 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       new ConfigPass(cpg, config.inputPath).createAndApply()
       if (config.enableDependencyDownload) {
         val tempDir = File.newTemporaryDirectory()
-        downloadDependency(config.inputPath, tempDir.toString())
-        new AstPackagePass(cpg, tempDir.toString(), global, packageTableInfo, config.inputPath).createAndApply()
-        tempDir.delete()
+        try {
+          downloadDependency(config.inputPath, tempDir.toString())
+          new AstPackagePass(cpg, tempDir.toString(), global, packageTableInfo, config.inputPath).createAndApply()
+        } finally {
+          tempDir.delete()
+        }
       }
       val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, packageTableInfo)
       astCreationPass.createAndApply()
@@ -38,10 +41,9 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   }
 
   private def downloadDependency(inputPath: String, tempDir: String): Unit = {
-    if (File(s"$inputPath/Gemfile").exists) {
+    if ((File(inputPath) / "Gemfile").exists) {
       Try(s"bundle install --gemfile=$inputPath/Gemfile --path=$tempDir".!!) match {
         case Success(bundleOutput) =>
-          println("lolo " + bundleOutput)
           logger.info(s"Dependency installed successfully: $bundleOutput")
         case Failure(exception) =>
           logger.error(s"Error while downloading dependency: ${exception.getMessage}")
