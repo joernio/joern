@@ -1,6 +1,6 @@
 package io.joern.x2cpg.passes.callgraph
 
-import io.joern.x2cpg.Defines.DynamicCallUnknownFallName
+import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, PropertyNames}
@@ -168,7 +168,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   private def linkDynamicCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
     // This call linker requires a method full name entry
-    if (call.methodFullName.equals("<empty>") || call.methodFullName.equals(DynamicCallUnknownFallName)) return
+    if (call.methodFullName.equals("<empty>") || call.methodFullName.equals(DynamicCallUnknownFullName)) return
     // Support for overriding
     resolveCallInSuperClasses(call)
 

@@ -1,9 +1,8 @@
 package io.joern.dataflowengineoss.language.nodemethods
 
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
+import io.joern.dataflowengineoss.semanticsloader._
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, Method}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
 
 class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyVal {
 
@@ -11,7 +10,13 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     */
   def isUsed(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg
-    s.isEmpty || s.exists(_.mappings.exists { case (srcIndex, _) => srcIndex == node.argumentIndex })
+    s.isEmpty || s.exists(_.mappings.exists {
+      case FlowMapping(ParameterNode(_, Some(srcName)), _) if node.argumentName.isDefined =>
+        srcName == node.argumentName.get
+      case FlowMapping(ParameterNode(srcIndex, _), _)    => srcIndex == node.argumentIndex
+      case PassThroughMapping if node.argumentIndex != 0 => true
+      case _                                             => false
+    })
   }
 
   /** Determine whether evaluation of the call this argument is a part of results in definition of this argument.
@@ -19,8 +24,12 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
   def isDefined(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg.l
     s.isEmpty || s.exists { semantic =>
-      semantic.mappings.exists { case (_, dstIndex) =>
-        dstIndex == node.argumentIndex
+      semantic.mappings.exists {
+        case FlowMapping(_, ParameterNode(_, Some(dstName))) if node.argumentName.isDefined =>
+          dstName == node.argumentName.get
+        case FlowMapping(_, ParameterNode(dstIndex, _))    => dstIndex == node.argumentIndex
+        case PassThroughMapping if node.argumentIndex != 0 => true
+        case _                                             => false
       }
     }
   }
@@ -32,7 +41,7 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     *   true if these nodes are arguments to the same call, false if otherwise.
     */
   def isArgToSameCallWith(other: Expression): Boolean =
-    node.astParent.collectAll[Call].headOption.equals(other.astParent.collectAll[Call].headOption)
+    node.astParent.start.collectAll[Call].headOption.equals(other.astParent.start.collectAll[Call].headOption)
 
   /** Determines if this node has a flow to the given target node in the defined semantics.
     * @param tgt
@@ -45,8 +54,18 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
   def hasDefinedFlowTo(tgt: Expression)(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg.l
     s.isEmpty || s.exists { semantic =>
-      semantic.mappings.exists { case (srcIndex, dstIndex) =>
-        srcIndex == node.argumentIndex && dstIndex == tgt.argumentIndex
+      semantic.mappings.exists {
+        case FlowMapping(ParameterNode(_, Some(srcName)), ParameterNode(_, Some(dstName)))
+            if node.argumentName.isDefined && tgt.argumentName.isDefined =>
+          srcName == node.argumentName.get && dstName == tgt.argumentName.get
+        case FlowMapping(ParameterNode(_, Some(srcName)), ParameterNode(dstIndex, _)) if node.argumentName.isDefined =>
+          srcName == node.argumentName.get && dstIndex == tgt.argumentIndex
+        case FlowMapping(ParameterNode(srcIndex, _), ParameterNode(_, Some(dstName))) if tgt.argumentName.isDefined =>
+          srcIndex == node.argumentIndex && dstName == tgt.argumentName.get
+        case FlowMapping(ParameterNode(srcIndex, _), ParameterNode(dstIndex, _)) =>
+          srcIndex == node.argumentIndex && dstIndex == tgt.argumentIndex
+        case PassThroughMapping if tgt.argumentIndex == node.argumentIndex || tgt.argumentIndex == -1 => true
+        case _                                                                                        => false
       }
     }
   }

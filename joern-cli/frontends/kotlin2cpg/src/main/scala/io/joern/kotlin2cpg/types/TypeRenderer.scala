@@ -1,20 +1,20 @@
 package io.joern.kotlin2cpg.types
 
+import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.x2cpg.Defines
 import org.jetbrains.kotlin.descriptors.{ClassDescriptor, DeclarationDescriptor, SimpleFunctionDescriptor}
-import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.types.{ErrorType, ErrorUtils, KotlinType, TypeUtils, UnresolvedType}
+import org.jetbrains.kotlin.resolve.{DescriptorToSourceUtils, DescriptorUtils}
+import org.jetbrains.kotlin.types.{ErrorUtils, ErrorType, KotlinType, TypeProjection, TypeUtils}
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
 import org.jetbrains.kotlin.types.typeUtil.TypeUtilsKt
 import org.jetbrains.kotlin.resolve.jvm.JvmPrimitiveType
 
-import scala.jdk.CollectionConverters._
-
 object TypeRenderer {
 
-  private val cpgUnresolvedType = ErrorUtils.createUnresolvedType(Defines.UnresolvedNamespace, List().asJava)
+  private val cpgUnresolvedType =
+    ErrorUtils.createUnresolvedType(Defines.UnresolvedNamespace, new java.util.ArrayList[TypeProjection]())
 
   val primitiveArrayMappings: Map[String, String] = Map[String, String](
     "kotlin.BooleanArray" -> "boolean[]",
@@ -32,9 +32,8 @@ object TypeRenderer {
     opts.setParameterNamesInFunctionalTypes(false)
     opts.setInformativeErrorType(false)
     opts.setTypeNormalizer {
-      case _: UnresolvedType => cpgUnresolvedType
-      case _: ErrorType      => cpgUnresolvedType
-      case t                 => t
+      case _: ErrorType => cpgUnresolvedType
+      case t            => t
     }
     new DescriptorRendererImpl(opts)
   }
@@ -43,11 +42,24 @@ object TypeRenderer {
     val renderer     = descriptorRenderer()
     val fqName       = DescriptorUtils.getFqName(desc)
     val simpleRender = stripped(renderer.renderFqName(fqName))
-    def maybeReplacedOrTake(c: ClassDescriptor, or: String): String = {
-      if (DescriptorUtils.isCompanionObject(c) || c.isInner) {
-        val rendered = stripped(renderer.renderFqName(fqName))
-        rendered.replaceFirst("\\." + c.getName, "\\$" + c.getName)
-      } else or
+    def maybeReplacedOrTake(c: DeclarationDescriptor, or: String): String = {
+      c match {
+        case tc: ClassDescriptor if DescriptorUtils.isCompanionObject(tc) || tc.isInner =>
+          val rendered = stripped(renderer.renderFqName(fqName))
+          rendered.replaceFirst("\\." + c.getName, "\\$" + c.getName)
+        case tc: ClassDescriptor if DescriptorUtils.isAnonymousObject(tc) =>
+          val rendered = stripped(renderer.renderFqName(fqName))
+
+          val psiElement        = DescriptorToSourceUtils.getSourceFromDescriptor(tc)
+          val psiContainingDecl = DescriptorToSourceUtils.getSourceFromDescriptor(tc.getContainingDeclaration)
+          val objectIdx =
+            PsiUtils
+              .objectIdxMaybe(psiElement, psiContainingDecl)
+              .getOrElse("nan")
+          val out = rendered.replaceFirst("\\.$", "\\$object\\$" + s"$objectIdx")
+          out
+        case _ => or
+      }
     }
     val strippedOfContainingDeclarationIfNeeded =
       Option(desc.getContainingDeclaration)

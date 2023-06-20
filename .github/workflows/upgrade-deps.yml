@@ -9,7 +9,7 @@ on:
     - cron: '0 2 * * *'
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
@@ -19,9 +19,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
-      - name: Install php deps for php2cpg
-        run: joern-cli/frontends/php2cpg/bin/installdeps.sh
+          java-version: '19'
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
       - run: sbt clean +test

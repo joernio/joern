@@ -4,7 +4,7 @@ import io.joern.jssrc2cpg.testfixtures.JsCfgTestCpg
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.{AlwaysEdge, CaseEdge, FalseEdge, TrueEdge}
 import io.joern.x2cpg.testfixtures.CfgTestFixture
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators}
 
 class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg()) {
 
@@ -63,8 +63,8 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
       succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("\"Hello \"", AlwaysEdge))
       succOf("\"Hello \"") shouldBe expected(("world", AlwaysEdge))
       succOf("world") shouldBe expected(("\"!\"", AlwaysEdge))
-      succOf("\"!\"") shouldBe expected(("__Runtime.TO_STRING(\"Hello \", world, \"!\")", AlwaysEdge))
-      succOf("__Runtime.TO_STRING(\"Hello \", world, \"!\")") shouldBe expected(
+      succOf("\"!\"") shouldBe expected((Operators.formatString + "(\"Hello \", world, \"!\")", AlwaysEdge))
+      succOf(Operators.formatString + "(\"Hello \", world, \"!\")") shouldBe expected(
         (s"foo(`Hello $${world}!`)", AlwaysEdge)
       )
       succOf(s"foo(`Hello $${world}!`)") shouldBe expected(("RET", AlwaysEdge))
@@ -77,8 +77,8 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
       succOf("x") shouldBe expected(("1", AlwaysEdge))
       succOf("1") shouldBe expected(("x + 1", AlwaysEdge))
       succOf("x + 1") shouldBe expected(("\"\"", 1, AlwaysEdge))
-      succOf("\"\"", 1) shouldBe expected(("__Runtime.TO_STRING(\"\", x + 1, \"\")", AlwaysEdge))
-      succOf("__Runtime.TO_STRING(\"\", x + 1, \"\")") shouldBe expected(("RET", AlwaysEdge))
+      succOf("\"\"", 1) shouldBe expected((Operators.formatString + "(\"\", x + 1, \"\")", AlwaysEdge))
+      succOf(Operators.formatString + "(\"\", x + 1, \"\")") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "have correct structure for tagged runtime node" in {
@@ -86,11 +86,11 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new JsCfgTestCpg())
       succOf(":program") shouldBe expected(("\"../\"", AlwaysEdge))
       succOf("\"../\"") shouldBe expected(("42", AlwaysEdge))
       succOf("42") shouldBe expected(("\"\\..\"", AlwaysEdge))
-      succOf("\"\\..\"") shouldBe expected(("__Runtime.TO_STRING(\"../\", 42, \"\\..\")", AlwaysEdge))
-      succOf("__Runtime.TO_STRING(\"../\", 42, \"\\..\")") shouldBe expected(
-        ("String.raw(__Runtime.TO_STRING(\"../\", 42, \"\\..\"))", AlwaysEdge)
+      succOf("\"\\..\"") shouldBe expected((Operators.formatString + "(\"../\", 42, \"\\..\")", AlwaysEdge))
+      succOf(Operators.formatString + "(\"../\", 42, \"\\..\")") shouldBe expected(
+        ("String.raw(" + Operators.formatString + "(\"../\", 42, \"\\..\"))", AlwaysEdge)
       )
-      succOf("String.raw(__Runtime.TO_STRING(\"../\", 42, \"\\..\"))") shouldBe expected(("RET", AlwaysEdge))
+      succOf("String.raw(" + Operators.formatString + "(\"../\", 42, \"\\..\"))") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for try" in {

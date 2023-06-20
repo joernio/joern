@@ -14,7 +14,7 @@ class FieldAccessMethods(val arrayAccess: OpNodes.FieldAccess) extends AnyVal {
       case x: Identifier => x.typ.referencedTypeDecl
       case x: Literal    => x.typ.referencedTypeDecl
       case x: Call       => x.fieldAccess.member.typ.referencedTypeDecl
-      case _             => Traversal()
+      case _             => Iterator.empty
     }
   }
 

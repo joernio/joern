@@ -1,11 +1,9 @@
 package io.joern.pysrc2cpg
 
-import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodBase}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
@@ -15,29 +13,18 @@ class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
 
   override def calleeNames(c: Call): Seq[String] = super.calleeNames(c).map {
     // Python call from  a type
-    case typ if typ.split("\\.").lastOption.exists(_.charAt(0).isUpper) => s"$typ.${Defines.ConstructorMethodName}"
+    case typ if typ.split("\\.").lastOption.exists(_.charAt(0).isUpper) => s"$typ.__init__"
     // Python call from a function pointer
     case typ => typ
   }
 
-  override protected def linkCallsToCallees(
-    callerAndCallees: List[(Call, Seq[String])],
-    methodMap: Map[String, MethodBase],
-    builder: DiffGraphBuilder
-  ): Unit = {
-    // Link edges to method nodes
-    callerAndCallees.foreach { case (call, methodNames) =>
-      methodNames
-        .flatMap(methodMap.get)
-        .foreach { m => builder.addEdge(call, m, EdgeTypes.CALL) }
-      if (methodNames.size == 1) {
-        builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
-      } else if (methodNames.size > 1) {
-        val nonDummyMethodNames = methodNames.filterNot(isDummyType)
-        if (nonDummyMethodNames.nonEmpty) {
-          builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, nonDummyMethodNames.minBy(_.length))
-        }
-      }
+  override def setCallees(call: Call, methodNames: Seq[String], builder: DiffGraphBuilder): Unit = {
+    if (methodNames.sizeIs == 1) {
+      super.setCallees(call, methodNames, builder)
+    } else if (methodNames.sizeIs > 1) {
+      val nonDummyMethodNames =
+        methodNames.filterNot(x => isDummyType(x) || x.startsWith(PythonAstVisitor.builtinPrefix + "None"))
+      super.setCallees(call, nonDummyMethodNames, builder)
     }
   }
 

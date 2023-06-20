@@ -226,6 +226,7 @@ object BabelAst {
   object TSPropertySignature             extends BabelNode
   object TSQualifiedName                 extends BabelNode
   object TSRestType                      extends TSType
+  object TSSatisfiesExpression           extends BabelNode
   object TSStringKeyword                 extends TSType
   object TSSymbolKeyword                 extends TSType
   object TSThisType                      extends TSType
@@ -233,6 +234,7 @@ object BabelAst {
   object TSTypeAliasDeclaration          extends BabelNode
   object TSTypeAnnotation                extends FlowType
   object TSTypeAssertion                 extends BabelNode
+  object TSTypeExpression                extends TSType
   object TSTypeLiteral                   extends TSType
   object TSTypeOperator                  extends TSType
   object TSTypeParameter                 extends TSType
@@ -258,6 +260,7 @@ object BabelAst {
   object TypeAlias                       extends BabelNode
   object TypeAnnotation                  extends FlowType
   object TypeCastExpression              extends BabelNode
+  object TSTypeCastExpression            extends BabelNode
   object TypeParameter                   extends BabelNode
   object TypeParameterDeclaration        extends BabelNode
   object TypeParameterInstantiation      extends BabelNode

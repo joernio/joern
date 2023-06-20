@@ -4,8 +4,11 @@ import scala.util.Properties.isWin
 name := "php2cpg"
 
 scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.2.2")
+crossScalaVersions := Seq("2.13.8", "3.3.0")
 
+val phpParserVersion = "4.15.6"
+val phpParserBinName = "php-parser.phar"
+val phpParserDlUrl   = s"https://github.com/joernio/PHP-Parser/releases/download/v$phpParserVersion/$phpParserBinName"
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
@@ -22,21 +25,25 @@ scalacOptions ++= Seq(
 
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
 phpParseInstallTask := {
-  val phpBinDir      = baseDirectory.value / "bin"
-  val phpParseBinary = phpBinDir / "vendor" / "bin" / "php-parse"
-  if (!phpParseBinary.exists) {
-    val installSciptPath =
-      if (isWin)
-        (phpBinDir / "installdeps.bat").getPath
-      else
-        (phpBinDir / "installdeps.sh").getPath
-    Process(installSciptPath, phpBinDir) !
+  val phpBinDir = baseDirectory.value / "bin"
+  if (!(phpBinDir / phpParserBinName).exists) {
+    IO.createDirectory(phpBinDir)
+    val downloadedFile = SimpleCache.downloadMaybe(phpParserDlUrl)
+    IO.copyFile(downloadedFile, phpBinDir / phpParserBinName)
   }
 
   val distDir = (Universal / stagingDirectory).value / "bin"
   distDir.mkdirs()
   IO.copyDirectory(phpBinDir, distDir)
 }
+
+cleanFiles ++= Seq(
+  // left to clean legacy representation
+  baseDirectory.value / "bin" / "PHP-Parser",
+  baseDirectory.value / "bin" / phpParserBinName,
+  (Universal / stagingDirectory).value / "bin" / "PHP-Parser",
+  (Universal / stagingDirectory).value / "bin" / phpParserBinName
+)
 
 Compile / compile := ((Compile / compile) dependsOn phpParseInstallTask).value
 

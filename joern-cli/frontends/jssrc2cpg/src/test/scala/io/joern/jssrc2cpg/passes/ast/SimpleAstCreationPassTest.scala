@@ -151,8 +151,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       fooCall.code shouldBe s"foo(`Hello $${world}!`)"
 
       val List(templateCall) = fooCall.astChildren.isCall.l
-      templateCall.name shouldBe "__Runtime.TO_STRING"
-      templateCall.code shouldBe """__Runtime.TO_STRING("Hello ", world, "!")"""
+      templateCall.name shouldBe Operators.formatString
+      templateCall.code shouldBe Operators.formatString + "(\"Hello \", world, \"!\")"
 
       val List(argument1) = templateCall.astChildren.isLiteral.order(1).l
       argument1.argumentIndex shouldBe 1
@@ -173,8 +173,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodBlock) = method.astChildren.isBlock.l
 
       val List(call) = methodBlock.astChildren.isCall.l
-      call.name shouldBe "__Runtime.TO_STRING"
-      call.code shouldBe "__Runtime.TO_STRING(\"\", x + 1, \"\")"
+      call.name shouldBe Operators.formatString
+      call.code shouldBe Operators.formatString + "(\"\", x + 1, \"\")"
 
       val List(argument1) = call.astChildren.isLiteral.order(1).l
       argument1.argumentIndex shouldBe 1
@@ -194,12 +194,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodBlock) = method.astChildren.isBlock.l
 
       val List(rawCall) = methodBlock.astChildren.isCall.l
-      rawCall.code shouldBe """String.raw(__Runtime.TO_STRING("../", 42, "\.."))"""
+      rawCall.code shouldBe "String.raw(" + Operators.formatString + """("../", 42, "\.."))"""
 
-      val List(runtimeCall) = rawCall.astChildren.isCall.nameExact("__Runtime.TO_STRING").l
+      val List(runtimeCall) = rawCall.astChildren.isCall.nameExact(Operators.formatString).l
       runtimeCall.order shouldBe 1
       runtimeCall.argumentIndex shouldBe 1
-      runtimeCall.code shouldBe """__Runtime.TO_STRING("../", 42, "\..")"""
+      runtimeCall.code shouldBe Operators.formatString + """("../", 42, "\..")"""
 
       val List(argument1) = runtimeCall.astChildren.isLiteral.codeExact("\"../\"").l
       argument1.order shouldBe 1
@@ -488,6 +488,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       param1.index shouldBe 0
       param1.name shouldBe "this"
       param1.code shouldBe "this"
+      param1.typeFullName shouldBe Defines.Any
+      param1.dynamicTypeHintFullName shouldBe Seq("code.js::program")
 
       param2.index shouldBe 1
       param2.name shouldBe "param1_0"
@@ -509,6 +511,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       param1.index shouldBe 0
       param1.name shouldBe "this"
       param1.code shouldBe "this"
+      param1.typeFullName shouldBe Defines.Any
+      param1.dynamicTypeHintFullName shouldBe Seq("code.js::program")
 
       param2.index shouldBe 1
       param2.name shouldBe "param1_0"
@@ -561,6 +565,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       thisIdentifier.name shouldBe "this"
       thisIdentifier.code shouldBe "this"
       thisIdentifier.argumentIndex shouldBe 1
+      thisIdentifier.typeFullName shouldBe Defines.Any
+      thisIdentifier.dynamicTypeHintFullName shouldBe Seq("code.js::program")
 
       val List(thisParameter) = cpg.method.name("foo").parameter.l
       thisParameter.name shouldBe "this"
@@ -744,6 +750,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         t.index shouldBe 0
         t.name shouldBe "this"
         t.typeFullName shouldBe Defines.Any
+        t.dynamicTypeHintFullName shouldBe Seq("code.js::program")
         x.index shouldBe 1
         x.name shouldBe "x"
         x.typeFullName shouldBe Defines.Any
@@ -762,6 +769,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       t.index shouldBe 0
       t.name shouldBe "this"
       t.typeFullName shouldBe Defines.Any
+      t.dynamicTypeHintFullName shouldBe Seq("code.js::program")
       x.index shouldBe 1
       x.name shouldBe "x"
       x.typeFullName shouldBe Defines.Any
@@ -784,6 +792,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       t.index shouldBe 0
       t.name shouldBe "this"
       t.typeFullName shouldBe Defines.Any
+      t.dynamicTypeHintFullName shouldBe Seq("code.js::program")
       x.index shouldBe 1
       x.name shouldBe "x"
       x.typeFullName shouldBe Defines.Any
@@ -807,6 +816,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       t.index shouldBe 0
       t.name shouldBe "this"
       t.typeFullName shouldBe Defines.Any
+      t.dynamicTypeHintFullName shouldBe Seq("code.js::program")
       x.index shouldBe 1
       x.name shouldBe "x"
       x.typeFullName shouldBe Defines.Any
@@ -942,6 +952,50 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       elseBlockAssign.order shouldBe 1
     }
 
+    "be correct for for-loop with for-of with object destruction" in AstFixture("""
+        |for(var {a, b, c} of obj) {
+        |   foo(a, b, c)
+        |}
+        """.stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOfObject(loopBlock)
+    }
+
+    "be correct for for-loop with for-of with object destruction without declaration" in AstFixture("""
+        |for({a, b, c} of obj) {
+        |   foo(a, b, c)
+        |}
+        """.stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOfObject(loopBlock)
+    }
+
+    "be correct for for-loop with for-of with array destruction" in AstFixture("""
+        |for(var [a, b, c] of arr) {
+        |   foo(a, b, c)
+        |}
+        """.stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOfArray(loopBlock)
+    }
+
+    "be correct for for-loop with for-of with array destruction without declaration" in AstFixture("""
+        |for([a, b, c] of arr) {
+        |   foo(a, b, c)
+        |}
+        """.stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOfArray(loopBlock)
+    }
+
     "be correct for for-loop with for-in" in AstFixture("""
         |for (var i in arr) {
         |   foo(i)
@@ -953,8 +1007,30 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       checkForInOrOf(loopBlock)
     }
 
+    "be correct for for-loop with for-in  without declaration" in AstFixture("""
+        |for (i in arr) {
+        |   foo(i)
+        |}
+        """.stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOf(loopBlock)
+    }
+
     "be correct for for-loop with for-of" in AstFixture("""
         |for (var i of arr) {
+        |   foo(i)
+        |}
+        """.stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOf(loopBlock)
+    }
+
+    "be correct for for-loop with for-of without declaration" in AstFixture("""
+        |for (i of arr) {
         |   foo(i)
         |}
         """.stripMargin) { cpg =>
@@ -1462,11 +1538,11 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     val List(call) = node.astChildren.isCall.codeExact(s"_tmp_0.$keyName = $assignedValue").l
     call.methodFullName shouldBe Operators.assignment
 
-    val List(tmpAccess) = call.argument(1).l.isCall.l
+    val List(tmpAccess) = call.argument(1).start.isCall.l
     tmpAccess.code shouldBe s"_tmp_0.$keyName"
     tmpAccess.methodFullName shouldBe Operators.fieldAccess
     tmpAccess.argumentIndex shouldBe 1
-    val List(value) = call.argument(2).l
+    val List(value) = call.argument(2).start.l
     value.code shouldBe assignedValue
 
     val List(leftHandSideTmpId) = tmpAccess.astChildren.isIdentifier.nameExact("_tmp_0").l
@@ -1474,6 +1550,184 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     val List(key) = tmpAccess.astChildren.isFieldIdentifier.l
     key.canonicalName shouldBe keyName
+  }
+
+  private def checkForInOrOfObject(node: Block): Unit = {
+    val List(localIterator) = node.astChildren.isLocal.nameExact("_iterator_0").l
+    localIterator.code shouldBe "_iterator_0"
+
+    val List(localResult) = node.astChildren.isLocal.nameExact("_result_0").l
+    localResult.code shouldBe "_result_0"
+
+    val List(localA) = node.astChildren.isLocal.nameExact("a").l
+    localA.code shouldBe "a"
+    val List(localB) = node.astChildren.isLocal.nameExact("b").l
+    localB.code shouldBe "b"
+    val List(localC) = node.astChildren.isLocal.nameExact("c").l
+    localC.code shouldBe "c"
+
+    val List(iteratorAssignment) =
+      node.astChildren.isCall.codeExact("_iterator_0 = <operator>.iterator(obj)").l
+    iteratorAssignment.name shouldBe Operators.assignment
+
+    val List(iteratorAssignmentLhs) = iteratorAssignment.astChildren.isIdentifier.l
+    iteratorAssignmentLhs.name shouldBe "_iterator_0"
+    iteratorAssignmentLhs.order shouldBe 1
+    iteratorAssignmentLhs.argumentIndex shouldBe 1
+
+    val List(iteratorAssignmentRhs) = iteratorAssignment.astChildren.isCall.l
+    iteratorAssignmentRhs.code shouldBe "<operator>.iterator(obj)"
+    iteratorAssignmentRhs.order shouldBe 2
+    iteratorAssignmentRhs.argumentIndex shouldBe 2
+    iteratorAssignmentRhs.name shouldBe "<operator>.iterator"
+    iteratorAssignmentRhs.methodFullName shouldBe "<operator>.iterator"
+    iteratorAssignmentRhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+    val objectKeysCallArg = iteratorAssignmentRhs.argument(1).asInstanceOf[Identifier]
+    objectKeysCallArg.name shouldBe "obj"
+    objectKeysCallArg.order shouldBe 1
+
+    val List(varResult) = node.astChildren.isIdentifier.nameExact("_result_0").l
+    varResult.code shouldBe "_result_0"
+
+    val List(varA) = node.astChildren.isIdentifier.nameExact("a").l
+    varA.code shouldBe "a"
+    val List(varB) = node.astChildren.isIdentifier.nameExact("b").l
+    varB.code shouldBe "b"
+    val List(varC) = node.astChildren.isIdentifier.nameExact("c").l
+    varC.code shouldBe "c"
+
+    val List(loop) = node.astChildren.isControlStructure.l
+    loop.controlStructureType shouldBe ControlStructureTypes.WHILE
+
+    val List(loopTestCall) = loop.astChildren.isCall.codeExact("!(_result_0 = _iterator_0.next()).done").l
+    loopTestCall.name shouldBe Operators.not
+    loopTestCall.order shouldBe 1
+
+    val List(doneMaCall) = loopTestCall.astChildren.isCall.codeExact("(_result_0 = _iterator_0.next()).done").l
+    doneMaCall.name shouldBe Operators.fieldAccess
+
+    val List(doneMaBase) = doneMaCall.astChildren.isCall.codeExact("(_result_0 = _iterator_0.next())").l
+    doneMaBase.name shouldBe Operators.assignment
+    doneMaBase.order shouldBe 1
+    doneMaBase.argumentIndex shouldBe 1
+
+    val List(doneMaBaseLhs) = doneMaBase.astChildren.isIdentifier.order(1).l
+    doneMaBaseLhs.name shouldBe "_result_0"
+    doneMaBaseLhs.argumentIndex shouldBe 1
+
+    val List(doneMaBaseRhs) = doneMaBase.astChildren.isCall.order(2).l
+    doneMaBaseRhs.code shouldBe "_iterator_0.next()"
+    doneMaBaseRhs.argumentIndex shouldBe 2
+
+    val List(doneMember) = doneMaCall.astChildren.isFieldIdentifier.canonicalNameExact("done").l
+    doneMember.order shouldBe 2
+    doneMember.argumentIndex shouldBe 2
+
+    val List(whileLoopBlock) = loop.astChildren.isBlock.l
+    whileLoopBlock.order shouldBe 2
+
+    val List(loopVarAssignmentCallA) = whileLoopBlock.astChildren.isCall.codeExact("a = _result_0.value.a").l
+    loopVarAssignmentCallA.name shouldBe Operators.assignment
+    loopVarAssignmentCallA.order shouldBe 1
+    val List(loopVarAssignmentCallB) = whileLoopBlock.astChildren.isCall.codeExact("b = _result_0.value.b").l
+    loopVarAssignmentCallB.name shouldBe Operators.assignment
+    loopVarAssignmentCallB.order shouldBe 2
+    val List(loopVarAssignmentCallC) = whileLoopBlock.astChildren.isCall.codeExact("c = _result_0.value.c").l
+    loopVarAssignmentCallC.name shouldBe Operators.assignment
+    loopVarAssignmentCallC.order shouldBe 3
+
+    val List(fooCall) = whileLoopBlock.astChildren.isBlock.astChildren.isCall.codeExact("foo(a, b, c)").l
+    fooCall.name shouldBe "foo"
+  }
+
+  private def checkForInOrOfArray(node: Block): Unit = {
+    val List(localIterator) = node.astChildren.isLocal.nameExact("_iterator_0").l
+    localIterator.code shouldBe "_iterator_0"
+
+    val List(localResult) = node.astChildren.isLocal.nameExact("_result_0").l
+    localResult.code shouldBe "_result_0"
+
+    val List(localA) = node.astChildren.isLocal.nameExact("a").l
+    localA.code shouldBe "a"
+    val List(localB) = node.astChildren.isLocal.nameExact("b").l
+    localB.code shouldBe "b"
+    val List(localC) = node.astChildren.isLocal.nameExact("c").l
+    localC.code shouldBe "c"
+
+    val List(iteratorAssignment) =
+      node.astChildren.isCall.codeExact("_iterator_0 = <operator>.iterator(arr)").l
+    iteratorAssignment.name shouldBe Operators.assignment
+
+    val List(iteratorAssignmentLhs) = iteratorAssignment.astChildren.isIdentifier.l
+    iteratorAssignmentLhs.name shouldBe "_iterator_0"
+    iteratorAssignmentLhs.order shouldBe 1
+    iteratorAssignmentLhs.argumentIndex shouldBe 1
+
+    val List(iteratorAssignmentRhs) = iteratorAssignment.astChildren.isCall.l
+    iteratorAssignmentRhs.code shouldBe "<operator>.iterator(arr)"
+    iteratorAssignmentRhs.order shouldBe 2
+    iteratorAssignmentRhs.argumentIndex shouldBe 2
+    iteratorAssignmentRhs.name shouldBe "<operator>.iterator"
+    iteratorAssignmentRhs.methodFullName shouldBe "<operator>.iterator"
+    iteratorAssignmentRhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+    val objectKeysCallArg = iteratorAssignmentRhs.argument(1).asInstanceOf[Identifier]
+    objectKeysCallArg.name shouldBe "arr"
+    objectKeysCallArg.order shouldBe 1
+
+    val List(varResult) = node.astChildren.isIdentifier.nameExact("_result_0").l
+    varResult.code shouldBe "_result_0"
+
+    val List(varA) = node.astChildren.isIdentifier.nameExact("a").l
+    varA.code shouldBe "a"
+    val List(varB) = node.astChildren.isIdentifier.nameExact("b").l
+    varB.code shouldBe "b"
+    val List(varC) = node.astChildren.isIdentifier.nameExact("c").l
+    varC.code shouldBe "c"
+
+    val List(loop) = node.astChildren.isControlStructure.l
+    loop.controlStructureType shouldBe ControlStructureTypes.WHILE
+
+    val List(loopTestCall) = loop.astChildren.isCall.codeExact("!(_result_0 = _iterator_0.next()).done").l
+    loopTestCall.name shouldBe Operators.not
+    loopTestCall.order shouldBe 1
+
+    val List(doneMaCall) = loopTestCall.astChildren.isCall.codeExact("(_result_0 = _iterator_0.next()).done").l
+    doneMaCall.name shouldBe Operators.fieldAccess
+
+    val List(doneMaBase) = doneMaCall.astChildren.isCall.codeExact("(_result_0 = _iterator_0.next())").l
+    doneMaBase.name shouldBe Operators.assignment
+    doneMaBase.order shouldBe 1
+    doneMaBase.argumentIndex shouldBe 1
+
+    val List(doneMaBaseLhs) = doneMaBase.astChildren.isIdentifier.order(1).l
+    doneMaBaseLhs.name shouldBe "_result_0"
+    doneMaBaseLhs.argumentIndex shouldBe 1
+
+    val List(doneMaBaseRhs) = doneMaBase.astChildren.isCall.order(2).l
+    doneMaBaseRhs.code shouldBe "_iterator_0.next()"
+    doneMaBaseRhs.argumentIndex shouldBe 2
+
+    val List(doneMember) = doneMaCall.astChildren.isFieldIdentifier.canonicalNameExact("done").l
+    doneMember.order shouldBe 2
+    doneMember.argumentIndex shouldBe 2
+
+    val List(whileLoopBlock) = loop.astChildren.isBlock.l
+    whileLoopBlock.order shouldBe 2
+
+    val List(loopVarAssignmentCallA) = whileLoopBlock.astChildren.isCall.codeExact("a = _result_0.value[0]").l
+    loopVarAssignmentCallA.name shouldBe Operators.assignment
+    loopVarAssignmentCallA.order shouldBe 1
+    val List(loopVarAssignmentCallB) = whileLoopBlock.astChildren.isCall.codeExact("b = _result_0.value[1]").l
+    loopVarAssignmentCallB.name shouldBe Operators.assignment
+    loopVarAssignmentCallB.order shouldBe 2
+    val List(loopVarAssignmentCallC) = whileLoopBlock.astChildren.isCall.codeExact("c = _result_0.value[2]").l
+    loopVarAssignmentCallC.name shouldBe Operators.assignment
+    loopVarAssignmentCallC.order shouldBe 3
+
+    val List(fooCall) = whileLoopBlock.astChildren.isBlock.astChildren.isCall.codeExact("foo(a, b, c)").l
+    fooCall.name shouldBe "foo"
   }
 
   private def checkForInOrOf(node: Block): Unit = {

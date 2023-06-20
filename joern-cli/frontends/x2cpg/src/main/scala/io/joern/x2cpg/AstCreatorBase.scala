@@ -1,7 +1,7 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -15,13 +15,12 @@ abstract class AstCreatorBase(filename: String) {
   /** Create a global namespace block for the given `filename`
     */
   def globalNamespaceBlock(): NewNamespaceBlock = {
-    val absPath  = absolutePath(filename)
     val name     = NamespaceTraversal.globalNamespaceName
-    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absPath))
+    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
     NewNamespaceBlock()
       .name(name)
       .fullName(fullName)
-      .filename(absPath)
+      .filename(filename)
       .order(1)
   }
 
@@ -49,12 +48,12 @@ abstract class AstCreatorBase(filename: String) {
     */
   def methodAst(
     method: NewMethod,
-    parameters: Seq[NewMethodParameterIn],
+    parameters: Seq[Ast],
     body: Ast,
     methodReturn: NewMethodReturn,
     modifiers: Seq[NewModifier] = Nil
   ): Ast =
-    methodAstWithAnnotations(method, parameters.map(Ast(_)), body, methodReturn, modifiers, annotations = Nil)
+    methodAstWithAnnotations(method, parameters, body, methodReturn, modifiers, annotations = Nil)
 
   /** Creates an AST that represents an entire method, including its content and with support for both method and
     * parameter annotations.
@@ -89,16 +88,29 @@ abstract class AstCreatorBase(filename: String) {
       .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))
 
-  def staticInitMethodAst(initAsts: List[Ast], fullName: String, signature: Option[String], returnType: String): Ast = {
+  def staticInitMethodAst(
+    initAsts: List[Ast],
+    fullName: String,
+    signature: Option[String],
+    returnType: String,
+    fileName: Option[String] = None,
+    lineNumber: Option[Integer] = None,
+    columnNumber: Option[Integer] = None
+  ): Ast = {
     val methodNode = NewMethod()
       .name(Defines.StaticInitMethodName)
       .fullName(fullName)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
     if (signature.isDefined) {
       methodNode.signature(signature.get)
     }
+    if (fileName.isDefined) {
+      methodNode.filename(fileName.get)
+    }
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
     val body           = blockAst(NewBlock(), initAsts)
-    val methodReturn   = methodReturnNode(returnType, None, None, None)
+    val methodReturn   = newMethodReturnNode(returnType, None, None, None)
     methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
   }
 

@@ -1,7 +1,6 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.passes.AbstractPassTest
-import io.joern.jssrc2cpg.passes.Defines
+import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines}
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 
@@ -160,6 +159,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |  [propName: string]: any;
         |  "foo": string;
         |  (source: string, subString: string): boolean;
+        |  toString(): string;
         |}
         |""".stripMargin) { cpg =>
       inside(cpg.typeDecl("Greeter").l) { case List(greeter) =>
@@ -168,7 +168,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         greeter.fullName shouldBe "code.ts::program:Greeter"
         greeter.filename shouldBe "code.ts"
         greeter.file.name.head shouldBe "code.ts"
-        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo, anon) =>
+        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo, anon, toString) =>
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
           name.name shouldBe "name"
@@ -180,8 +180,10 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
           anon.name shouldBe "anonymous"
           anon.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Greeter:anonymous")
           anon.code shouldBe "(source: string, subString: string): boolean;"
+          toString.name shouldBe "toString"
+          toString.code shouldBe "toString(): string;"
         }
-        inside(cpg.typeDecl("Greeter").method.l) { case List(constructor, anon) =>
+        inside(cpg.typeDecl("Greeter").method.l) { case List(constructor, anon, toString) =>
           constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
           constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
           constructor.code shouldBe "new: Greeter"
@@ -191,6 +193,8 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
           anon.code shouldBe "(source: string, subString: string): boolean;"
           anon.parameter.name.l shouldBe List("this", "source", "subString")
           anon.parameter.code.l shouldBe List("this", "source: string", "subString: string")
+          toString.name shouldBe "toString"
+          toString.code shouldBe "toString(): string;"
         }
       }
     }
@@ -275,6 +279,49 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         c.fullName shouldBe "code.ts::program:A:B:C"
         c.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
       }
+    }
+
+    "AST generation for dynamically exported and defined class" in TsAstFixture("""
+        |export type User = {
+        |    email: string;
+        |    organizationIds: string[];
+        |    username: string;
+        |    name: string;
+        |    gender: string;
+        |}
+        |""".stripMargin) { cpg =>
+      val Some(userType) = cpg.typeDecl.name("User").headOption
+      userType.member.name.l shouldBe List("email", "organizationIds", "username", "name", "gender")
+      userType.member.typeFullName.toSet shouldBe Set("__ecma.String", "string[]")
+    }
+
+    "AST generation for dynamically defined type in a parameter" in TsAstFixture("""
+        |class Test {
+        |    run(credentials: { username: string; password: string; }): string {
+        |        console.log(credentials);
+        |        return ``;
+        |    }
+        |}
+        |""".stripMargin) { cpg =>
+      val Some(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").headOption
+      credentialsType.fullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
+      credentialsType.member.name.l shouldBe List("username", "password")
+      credentialsType.member.typeFullName.toSet shouldBe Set("__ecma.String")
+      val Some(credentialsParam) = cpg.parameter.nameExact("credentials").headOption
+      credentialsParam.typeFullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
+    }
+
+    "AST generation for destructured type in a parameter" in TsAstFixture("""
+        |function apiCall({ username, password }) {
+        |    log(`${username}: ${password}`);
+        |}
+        |""".stripMargin) { cpg =>
+      val Some(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").headOption
+      credentialsType.fullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
+      credentialsType.member.name.l shouldBe List("username", "password")
+      credentialsType.member.typeFullName.toSet shouldBe Set(Defines.Any)
+      val Some(credentialsParam) = cpg.parameter.nameExact("param1_0").headOption
+      credentialsParam.typeFullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
     }
 
   }

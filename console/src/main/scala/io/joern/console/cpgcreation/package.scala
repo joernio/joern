@@ -28,11 +28,13 @@ package object cpgcreation {
         val jssrc = JsSrcCpgGenerator(conf, rootPath)
         if (jssrc.isAvailable) Some(jssrc)
         else Some(JsCpgGenerator(conf, rootPath))
-      case Languages.PYTHONSRC | Languages.PYTHON => Some(PythonSrcCpgGenerator(conf, rootPath))
-      case Languages.PHP                          => Some(PhpCpgGenerator(conf, rootPath))
-      case Languages.GHIDRA                       => Some(GhidraCpgGenerator(conf, rootPath))
-      case Languages.KOTLIN                       => Some(KotlinCpgGenerator(conf, rootPath))
-      case _                                      => None
+      case Languages.PYTHONSRC => Some(PythonSrcCpgGenerator(conf, rootPath))
+      case Languages.PYTHON    => Some(PyCpgGenerator(conf, rootPath))
+      case Languages.PHP       => Some(PhpCpgGenerator(conf, rootPath))
+      case Languages.GHIDRA    => Some(GhidraCpgGenerator(conf, rootPath))
+      case Languages.KOTLIN    => Some(KotlinCpgGenerator(conf, rootPath))
+      case Languages.RUBYSRC   => Some(RubyCpgGenerator(conf, rootPath))
+      case _                   => None
     }
   }
 
@@ -99,6 +101,7 @@ package object cpgcreation {
       case f if f.endsWith(".kt")    => Some(Languages.KOTLIN)
       case f if f.endsWith(".php")   => Some(Languages.PHP)
       case f if f.endsWith(".py")    => Some(Languages.PYTHONSRC)
+      case f if f.endsWith(".rb")    => Some(Languages.RUBYSRC)
       case f if isLlvmFile(f)        => Some(Languages.LLVM)
       case f if isCFile(f)           => Some(Languages.NEWC)
       case _                         => None

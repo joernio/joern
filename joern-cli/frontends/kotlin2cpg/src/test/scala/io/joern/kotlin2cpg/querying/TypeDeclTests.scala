@@ -36,6 +36,10 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       cpg.typeDecl.name("CustomReceiver").method.nameExact("onReceive").parameter.typeFullName.l shouldBe
         List("no.such.pkg.CustomReceiver", "android.content.Context", "android.content.Intent")
     }
+
+    "should contain a TYPE node for the superclass" in {
+      cpg.typ.typeDeclFullNameExact("android.content.BroadcastReceiver").size shouldBe 1
+    }
   }
 
   "CPG for code with class declaration with two init blocks" should {

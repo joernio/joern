@@ -116,7 +116,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.signature shouldBe "void()"
       c.code shouldBe "Foo()"
-      c.columnNumber shouldBe Some(6)
+      c.columnNumber shouldBe Some(10)
       c.lineNumber shouldBe Some(12)
     }
 
@@ -319,4 +319,28 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "CPG for code with call with argument with type with upper bound" should {
+    val cpg = code("""
+      |package mypkg
+      |open class Base
+      |class Second : Base()
+      |class Third : Base()
+      |
+      |fun <S:Base>doSomething(one: S) {
+      |    println(one)
+      |}
+      |fun f1() {
+      |    val s = Second()
+      |    val t = Third()
+      |    doSomething(s)
+      |    doSomething(t)
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments that have the argument name set" in {
+      val List(c1, c2) = cpg.call.code("doSomething.*").l
+      c1.methodFullName shouldBe "mypkg.doSomething:void(mypkg.Base)"
+      c2.methodFullName shouldBe "mypkg.doSomething:void(mypkg.Base)"
+    }
+  }
 }

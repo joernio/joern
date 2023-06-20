@@ -11,6 +11,7 @@ import io.shiftleft.semanticcpg.language._
   * pass checks whether `parameterIndex` is not set, in which case the value of `order` is copied over.
   */
 class ParameterIndexCompatPass(cpg: Cpg) extends CpgPass(cpg) {
+
   override def run(diffGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
     cpg.parameter.foreach { param =>
       if (param.index == PropertyDefaults.Index) {
@@ -18,4 +19,5 @@ class ParameterIndexCompatPass(cpg: Cpg) extends CpgPass(cpg) {
       }
     }
   }
+
 }

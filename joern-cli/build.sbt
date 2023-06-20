@@ -6,17 +6,15 @@ libraryDependencies ++= Seq(
   "io.shiftleft"     %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"      %% "requests"          % "0.7.1",
   "com.github.scopt" %% "scopt"             % "4.1.0",
-  "io.circe"         %% "circe-core"        % "0.14.5",
-  "io.circe"         %% "circe-generic"     % "0.14.5",
   "org.reflections"   % "reflections"       % "0.10.2",
   "org.scalatest"    %% "scalatest"         % Versions.scalatest % Test
 )
 
-Test / compile := (Test/compile).dependsOn((Projects.c2cpg/stage), (Projects.jssrc2cpg/stage)).value
-Test / fork := false
+Test / compile := (Test / compile).dependsOn((Projects.c2cpg / stage), (Projects.jssrc2cpg / stage)).value
+Test / fork    := false
 
-enablePlugins(UniversalPlugin)
-enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging, UniversalPlugin)
+
 //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
 scriptClasspath := Seq("*")
 

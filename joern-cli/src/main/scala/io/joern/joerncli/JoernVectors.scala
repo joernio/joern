@@ -17,7 +17,7 @@ import scala.util.hashing.MurmurHash3
 
 class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, String)] {
   override def structureToString(pair: (String, String)): String = pair._1 + ":" + pair._2
-  override def extractObjects(cpg: Cpg): Traversal[AstNode] = Traversal(cpg.graph.V.collect { case x: AstNode => x })
+  override def extractObjects(cpg: Cpg): Traversal[AstNode]      = cpg.graph.V.collect { case x: AstNode => x }
   override def enumerateSubStructures(obj: AstNode): List[(String, String)] = {
     val relevantFieldTypes = Set(PropertyNames.NAME, PropertyNames.FULL_NAME, PropertyNames.CODE)
     val relevantFields = obj

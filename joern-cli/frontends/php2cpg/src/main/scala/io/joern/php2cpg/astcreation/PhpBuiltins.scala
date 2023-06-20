@@ -8,6 +8,4 @@ object PhpBuiltins {
   lazy val FuncNames: Set[String] = {
     Source.fromResource("builtin_functions.txt").getLines().toSet
   }
-
-  val Prefix: String = "__builtin"
 }

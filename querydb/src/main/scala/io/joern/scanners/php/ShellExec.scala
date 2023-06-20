@@ -32,7 +32,7 @@ object ShellExec extends QueryBundle {
 
         def sink = cpg.call.name("shell_exec").argument
 
-        sink.reachableBy(source).l
+        sink.reachableBy(source).l.iterator
       }),
       tags = List(QueryTags.remoteCodeExecution, QueryTags.default)
     )

@@ -1,29 +1,27 @@
 package io.joern.kotlin2cpg
 
 import better.files.File
-import io.joern.kotlin2cpg.files.SourceFilesPicker
+import java.nio.file.{Files, Paths}
 import org.jetbrains.kotlin.psi.KtFile
-
+import org.slf4j.LoggerFactory
+import scala.util.Try
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
-import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 
+import io.joern.kotlin2cpg.files.SourceFilesPicker
+import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
 import io.joern.kotlin2cpg.compiler.{CompilerAPI, ErrorLoggingMessageCollector}
 import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider}
 import io.joern.kotlin2cpg.utils.PathUtils
-import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.utils.dependency.{DependencyResolver, DependencyResolverParams, GradleConfigKeys}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
-import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.utils.IOUtils
-import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language._
-import com.squareup.tools.maven.resolution.ArtifactResolver
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.utils.dependency.{DependencyResolver, DependencyResolverParams, GradleConfigKeys}
 import io.joern.kotlin2cpg.interop.JavasrcInterop
-import java.net.{MalformedURLException, URL}
-import java.nio.file.{Files, Paths}
-import scala.util.Try
+import io.joern.kotlin2cpg.jar4import.UsesService
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.semanticcpg.language._
+import io.shiftleft.utils.IOUtils
 
 object Kotlin2Cpg {
   val language = "KOTLIN"
@@ -34,9 +32,9 @@ object Kotlin2Cpg {
 case class KtFileWithMeta(f: KtFile, relativizedPath: String, filename: String)
 case class FileContentAtPath(content: String, relativizedPath: String, filename: String)
 
-class Kotlin2Cpg extends X2CpgFrontend[Config] {
-  private val logger = LoggerFactory.getLogger(getClass)
-  val parsingError   = "KOTLIN2CPG_PARSING_ERROR"
+class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
+  protected val logger = LoggerFactory.getLogger(getClass)
+  val parsingError     = "KOTLIN2CPG_PARSING_ERROR"
   private val defaultKotlinStdlibContentRootJarPaths = Seq(
     DefaultContentRootJarPath("jars/kotlin-stdlib-1.6.0.jar", isResource = true),
     DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.6.0.jar", isResource = true),
@@ -60,7 +58,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       logger.info(s"Max heap size currently set to `${formattedMaxHeapSize}GB`.")
 
       val jar4ImportServiceOpt = config.jar4importServiceUrl match {
-        case Some(serviceUrl) => reachableJar4ImportService(serviceUrl)
+        case Some(serviceUrl) => reachableServiceMaybe(serviceUrl)
         case None             => None
       }
 
@@ -79,7 +77,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
       val dependenciesPaths = if (jar4ImportServiceOpt.isDefined) {
         val importNames = importNamesForFilesAtPaths(filesWithKtExtension ++ filesWithJavaExtension)
         logger.trace(s"Found imports: `$importNames`")
-        dependenciesFromJar4ImportService(jar4ImportServiceOpt.get, importNames)
+        dependenciesFromService(jar4ImportServiceOpt.get, importNames)
       } else if (config.downloadDependencies) {
         downloadDependencies(sourceDir, config)
       } else {
@@ -120,7 +118,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
 
       val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
       val sources = sourceEntries.filterNot { entry =>
-        config.ignorePaths.exists { pathToIgnore =>
+        config.ignoredFiles.exists { pathToIgnore =>
           val parent = Paths.get(pathToIgnore).toAbsolutePath
           val child  = Paths.get(entry.filename)
           child.startsWith(parent)
@@ -152,29 +150,6 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
     }
   }
 
-  private def dependenciesFromJar4ImportService(service: Jar4ImportService, importNames: Seq[String]): Seq[String] = {
-    try {
-      val coordinates = service.fetchDependencyCoordinates(importNames)
-      logger.debug(s"Found coordinates `$coordinates`.")
-
-      val resolver = new ArtifactResolver()
-      val artifacts = coordinates.map { coordinate =>
-        val strippedCoord = coordinate.stripPrefix("\"").stripSuffix("\"")
-        val result        = resolver.download(strippedCoord, true)
-        logger.debug(s"Downloaded artifact for coordinate `$strippedCoord`.")
-        result.component2().toAbsolutePath.toString
-      }
-      logger.info(s"Using `${artifacts.size}` dependencies.")
-
-      artifacts
-    } catch {
-      case e: Throwable =>
-        logger.info("Caught exception while downloading dependencies", e)
-        System.exit(1)
-        Seq()
-    }
-  }
-
   private def importNamesForFilesAtPaths(paths: Seq[String]): Seq[String] = {
     paths
       .flatMap { filePath =>
@@ -185,31 +160,6 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
         val r = ".*import([^;]*).*".r
         r.replaceAllIn(line, "$1").trim
       }
-  }
-
-  private def reachableJar4ImportService(serviceUrl: String): Option[Jar4ImportService] = {
-    try {
-      val url            = new URL(serviceUrl)
-      val healthResponse = requests.get(url.toString + "/health")
-      if (healthResponse.statusCode != 200) {
-        println(s"The jar4import service at `${url.toString}` did not respond with 200 on the `/health` endpoint.")
-        System.exit(1)
-      }
-      Some(new Jar4ImportService(url.toString))
-    } catch {
-      case _: MalformedURLException =>
-        println(s"The specified jar4import service url parameter `$serviceUrl` is not a valid URL. Exiting.")
-        System.exit(1)
-        None
-      case _: java.net.ConnectException =>
-        println(s"Could not connect to service at url `$serviceUrl`. Exiting.")
-        System.exit(1)
-        None
-      case _: requests.RequestFailedException =>
-        println(s"Request to `$serviceUrl` failed. Exiting.")
-        System.exit(1)
-        None
-    }
   }
 
   private def downloadDependencies(sourceDir: String, config: Config): scala.collection.Seq[String] = {
@@ -285,31 +235,5 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] {
           }
         FileContentAtPath(fileContents, fnm._2, fnm._1)
       }
-  }
-}
-
-class Jar4ImportService(url: String) {
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  val findUrl: String   = url + "/find"
-  val healthUrl: String = url + "/health"
-
-  def fetchDependencyCoordinates(imports: Seq[String]): Seq[String] = {
-    try {
-      val resp = requests.get(findUrl, params = Map("names" -> imports.mkString(",")))
-      if (resp.statusCode == 200) {
-        val got = ujson.read(resp.bytes)
-        got("matches") match {
-          case arr: ujson.Arr =>
-            val out = arr.value.collect { case s: ujson.Str => s.toString() }
-            logger.debug(s"Found `${out.size}` matches for provided imports `$imports`.")
-            out.toSeq
-          case _ =>
-            Seq()
-        }
-      } else Seq()
-    } catch {
-      case _: Throwable => Seq()
-    }
   }
 }

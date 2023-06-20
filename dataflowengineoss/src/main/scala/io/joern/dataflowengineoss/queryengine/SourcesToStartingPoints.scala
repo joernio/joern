@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages, identifiersFromCapturedScopes}
+import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -9,7 +9,6 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 
 import java.util.concurrent.{ForkJoinPool, ForkJoinTask, RecursiveTask, RejectedExecutionException}
 import scala.util.{Failure, Success, Try}
@@ -20,7 +19,7 @@ object SourcesToStartingPoints {
 
   private val log = LoggerFactory.getLogger(SourcesToStartingPoints.getClass)
 
-  def sourceTravsToStartingPoints[NodeType](sourceTravs: Traversal[NodeType]*): List[StartingPointWithSource] = {
+  def sourceTravsToStartingPoints[NodeType](sourceTravs: IterableOnce[NodeType]*): List[StartingPointWithSource] = {
     val fjp = ForkJoinPool.commonPool()
     try {
       fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*)).distinct
@@ -34,14 +33,14 @@ object SourcesToStartingPoints {
 
 }
 
-class SourceTravsToStartingPointsTask[NodeType](sourceTravs: Traversal[NodeType]*)
+class SourceTravsToStartingPointsTask[NodeType](sourceTravs: IterableOnce[NodeType]*)
     extends RecursiveTask[List[StartingPointWithSource]] {
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
   override def compute(): List[StartingPointWithSource] = {
     val sources: List[StoredNode] = sourceTravs
-      .flatMap(_.toList)
+      .flatMap(_.iterator.toList)
       .collect { case n: StoredNode => n }
       .dedup
       .toList
@@ -78,9 +77,14 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case x: Declaration =>
         List(x).collectAll[CfgNode].toList
       case x: Identifier =>
-        withFieldAndIndexAccesses(
+        (withFieldAndIndexAccesses(
           List(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
-        )
+        ) ++ x.refsTo.capturedByMethodRef.referencedMethod.flatMap(m => usagesForName(x.name, m))).flatMap {
+          case x: Call => sourceToStartingPoints(x)
+          case x       => List(x)
+        }
+      case x: Call =>
+        (x._receiverIn.l :+ x).collect { case y: CfgNode => y }
       case x => List(x).collect { case y: CfgNode => y }
     }
   }
@@ -101,12 +105,8 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   private def usages(pairs: List[(TypeDecl, AstNode)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, astNode) =>
-      val nonConstructorMethods = methodsRecursively(typeDecl)
-        .and(
-          _.whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName)),
-          // handle Python
-          _.whereNot(_.name(".*<body>$"))
-        )
+      val nonConstructorMethods = methodsRecursively(typeDecl).iterator
+        .whereNot(_.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"))
         .l
 
       val usagesInSameClass =
@@ -121,7 +121,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
                 x.argument(2).isFieldIdentifier.canonicalNameExact(identifier.name)
               case fieldIdentifier: FieldIdentifier =>
                 x.argument(2).isFieldIdentifier.canonicalNameExact(fieldIdentifier.canonicalName)
-              case _ => List()
+              case _ => Iterator.empty
             }
           }
           .takeWhile(notLeftHandOfAssignment)
@@ -156,10 +156,11 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
     val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+    val thisRefs         = Seq("this", "self") ++ m.typeDecl.name.headOption.toList
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
       .inFieldAccess
-      .where(_.argument(1).codeExact("this", "self", m.typeDecl.name.head))
+      .where(_.argument(1).codeExact(thisRefs: _*))
       .takeWhile(notLeftHandOfAssignment)
       .l
     (identifierUsages ++ fieldAccessUsages).headOption.toList
@@ -168,21 +169,25 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   /** For a literal, determine if it is used in the initialization of any member variables. Return list of initialized
     * members. An initialized member is either an identifier or a field-identifier.
     */
-  private def literalToInitializedMembers(lit: Literal): List[Expression] = {
+  private def literalToInitializedMembers(lit: Literal): List[Expression] =
     lit.inAssignment
       .or(
         _.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"),
-        _.method.name(".*<body>.*")
+        // in language such as Python, where assignments for members can be directly under a type decl
+        _.method.typeDecl
       )
       .target
       .flatMap {
-        case identifier: Identifier => List(identifier)
-        case call: Call if call.name == Operators.fieldAccess =>
-          call.ast.isFieldIdentifier.l
-        case _ => List[Expression]()
+        case identifier: Identifier
+            // If these are the same, then the parent method is the module-level type
+            if Option(identifier.method.fullName) == identifier.method.typeDecl.fullName.headOption ||
+              // If a member shares the name of the identifier then we consider this as a member
+              lit.method.typeDecl.member.name.toSet.contains(identifier.name) =>
+          List(identifier)
+        case call: Call if call.name == Operators.fieldAccess => call.ast.isFieldIdentifier.l
+        case _                                                => List[Expression]()
       }
       .l
-  }
 
   private def methodsRecursively(typeDecl: TypeDecl): List[Method] = {
     def methods(x: AstNode): List[Method] = {
@@ -195,7 +200,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   private def isTargetInAssignment(identifier: Identifier): List[Identifier] = {
-    Traversal(identifier).argumentIndex(1).where(_.inAssignment).l
+    identifier.start.argumentIndex(1).where(_.inAssignment).l
   }
 
   private def notLeftHandOfAssignment(x: Expression): Boolean = {

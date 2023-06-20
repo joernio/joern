@@ -7,6 +7,63 @@ import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
 
 class NewMemberTests extends JavaSrcCode2CpgFixture {
+  "members with anonymous classes should not result in subtrees to the member node" in {
+    val cpg = code("""
+        |class Foo {
+        |  Foo x = new Foo() {
+        |    @Override
+        |    void foo() {}
+        |  }
+        |
+        |  void foo() {}
+        |}""".stripMargin)
+    cpg.member.name("x").astChildren.size shouldBe 0
+  }
+
+  "member with generic class" should {
+    val cpg = code("""
+        |import org.apache.kafka.clients.consumer.Consumer;
+        |public class CountryPopulationConsumer {
+        |
+        | private Consumer<String, Integer> consumer;
+        |
+        |  void foo() {
+        |   consumer.poll(1000);
+        |  }
+        |}""".stripMargin)
+
+    "have a resolved typeFullName" in {
+      cpg.member
+        .name("consumer")
+        .typeFullName
+        .head shouldBe "org.apache.kafka.clients.consumer.Consumer<String,Integer>"
+    }
+
+    "have a resolved package name in methodFullName" in {
+      cpg
+        .call("poll")
+        .methodFullName
+        .head
+        .split(":")
+        .head shouldBe "org.apache.kafka.clients.consumer.Consumer<String,Integer>.poll"
+    }
+  }
+
+  "enum entries with anonymous classes should not result in subtrees to the member node" in {
+    val cpg = code("""
+        |enum Foo {
+        |  X(12) {
+        |    @Override
+        |    void foo() {}
+        |  }
+        |
+        |  private Foo(int x) {}
+        |
+        |  void foo() {}
+        |}""".stripMargin)
+    cpg.member.name("x").astChildren.size shouldBe 0
+  }
+
   "non-static member initializers" should {
     "only be added once per constructor" in {
       val cpg = code("""

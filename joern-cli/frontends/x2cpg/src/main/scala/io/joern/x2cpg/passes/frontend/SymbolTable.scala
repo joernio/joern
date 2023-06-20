@@ -81,12 +81,13 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
     table.addAll(sb); this
   }
 
-  def put(sbKey: K, typeFullNames: Set[String]): Set[String] = {
-    if (typeFullNames.nonEmpty)
-      table.put(sbKey, typeFullNames).getOrElse(Set.empty)
-    else
+  def put(sbKey: K, typeFullNames: Set[String]): Set[String] =
+    if (typeFullNames.nonEmpty) {
+      table.put(sbKey, typeFullNames)
+      typeFullNames
+    } else {
       Set.empty
-  }
+    }
 
   def put(sbKey: K, typeFullName: String): Set[String] =
     put(sbKey, Set(typeFullName))
@@ -124,6 +125,13 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   def get(node: AstNode): Set[String] = keyFromNode(node) match {
     case Some(key) => get(key)
+    case None      => Set.empty
+  }
+
+  def remove(sbKey: K): Set[String] = table.remove(sbKey).getOrElse(Set.empty)
+
+  def remove(node: AstNode): Set[String] = keyFromNode(node) match {
+    case Some(key) => remove(key)
     case None      => Set.empty
   }
 

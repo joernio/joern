@@ -188,7 +188,11 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
           Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++ withOrder(methodBody.getParameterLocals) {
             (p, order) => astForParameter(p, order, methodDeclaration, parameterAnnotations)
           }
-        Ast(methodNode.lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length))
+        Ast(
+          methodNode
+            .lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length)
+            .code(methodBody.toString)
+        )
           .withChildren(astsForModifiers(methodDeclaration))
           .withChildren(parameterAsts)
           .withChildren(astsForHostTags(methodDeclaration))
@@ -711,7 +715,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
 
   private def createThisNode(method: SootMethodRef, builder: NewNode): Ast = {
     if (!method.isStatic || method.isConstructor) {
-      val parentType = registerType(method.getDeclaringClass.getType.toQuotedString)
+      val parentType = registerType(Try(method.getDeclaringClass.getType.toQuotedString).getOrElse("ANY"))
       Ast(builder match {
         case x: NewIdentifier =>
           x.name("this")
@@ -720,8 +724,8 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
             .order(0)
             .argumentIndex(0)
             .dynamicTypeHintFullName(Seq(parentType))
-        case x: NewMethodParameterIn =>
-          NodeBuilders.thisParameterNode(parentType, Seq(parentType), line(method.tryResolve()))
+        case _: NewMethodParameterIn =>
+          NodeBuilders.newThisParameterNode(parentType, Seq(parentType), line(Try(method.tryResolve()).getOrElse(null)))
         case x => x
       })
     } else {
@@ -1085,7 +1089,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   private def astForMethodReturn(methodDeclaration: SootMethod): Ast = {
     val typeFullName = registerType(methodDeclaration.getReturnType.toQuotedString)
     val methodReturnNode = NodeBuilders
-      .methodReturnNode(typeFullName, None, line(methodDeclaration), None)
+      .newMethodReturnNode(typeFullName, None, line(methodDeclaration), None)
       .order(methodDeclaration.getParameterCount + 2)
     Ast(methodReturnNode)
   }

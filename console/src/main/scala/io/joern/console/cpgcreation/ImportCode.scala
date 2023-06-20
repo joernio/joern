@@ -45,24 +45,28 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
   def c: SourceBasedFrontend    = new CFrontend("c")
   def cpp: SourceBasedFrontend  = new CFrontend("cpp", extension = "cpp")
   def java: SourceBasedFrontend = new SourceBasedFrontend("java", Languages.JAVASRC, "Java Source Frontend", "java")
-
-  def jvm: Frontend    = new Frontend("jvm", Languages.JAVA, "Java/Dalvik Bytecode Frontend (based on SOOT's jimple)")
-  def ghidra: Frontend = new Frontend("ghidra", Languages.GHIDRA, "ghidra reverse engineering frontend")
+  def jvm: Frontend =
+    new BinaryFrontend("jvm", Languages.JAVA, "Java/Dalvik Bytecode Frontend (based on SOOT's jimple)")
+  def ghidra: Frontend = new BinaryFrontend("ghidra", Languages.GHIDRA, "ghidra reverse engineering frontend")
   def kotlin: SourceBasedFrontend =
     new SourceBasedFrontend("kotlin", Languages.KOTLIN, "Kotlin Source Frontend", "kotlin")
-
-  def python: SourceBasedFrontend = new SourceBasedFrontend("python", Languages.PYTHON, "Python Source Frontend", "py")
+  def python: SourceBasedFrontend =
+    new SourceBasedFrontend("python", Languages.PYTHONSRC, "Python Source Frontend", "py")
   def golang: SourceBasedFrontend = new SourceBasedFrontend("golang", Languages.GOLANG, "Golang Source Frontend", "go")
   def javascript: SourceBasedFrontend =
     new SourceBasedFrontend("javascript", Languages.JAVASCRIPT, "Javascript Source Frontend", "js")
   def jssrc: SourceBasedFrontend =
     new SourceBasedFrontend("jssrc", Languages.JSSRC, "Javascript/Typescript Source Frontend based on astgen", "js")
-  def csharp: Frontend = new Frontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
+  def csharp: Frontend          = new BinaryFrontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
+  def llvm: Frontend            = new BinaryFrontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
+  def php: SourceBasedFrontend  = new SourceBasedFrontend("php", Languages.PHP, "PHP source frontend", "php")
+  def ruby: SourceBasedFrontend = new SourceBasedFrontend("ruby", Languages.RUBYSRC, "Ruby source frontend", "rb")
 
-  def llvm: Frontend = new Frontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
-  def php: Frontend  = new Frontend("php", Languages.PHP, "PHP bytecode frontend")
+  private def allFrontends: List[Frontend] =
+    List(c, cpp, ghidra, kotlin, java, jvm, javascript, jssrc, golang, llvm, php, python, csharp, ruby)
 
-  class Frontend(val name: String, val language: String, val description: String = "") {
+  // this is only abstract to force people adding frontends to make a decision whether the frontend consumes binaries or source
+  abstract class Frontend(val name: String, val language: String, val description: String = "") {
     def cpgGeneratorForLanguage(
       language: String,
       config: FrontendConfig,
@@ -80,6 +84,9 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
       new ImportCode(console)(frontend, inputPath, projectName)
     }
   }
+
+  private class BinaryFrontend(name: String, language: String, description: String = "")
+      extends Frontend(name, language, description)
 
   class SourceBasedFrontend(name: String, language: String, description: String, extension: String)
       extends Frontend(name, language, description) {
@@ -105,9 +112,6 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
     dir.deleteOnExit(swallowIOExceptions = true)
     result
   }
-
-  private def allFrontends: List[Frontend] =
-    List(c, cpp, ghidra, kotlin, java, jvm, javascript, golang, llvm, php, python, csharp)
 
   /** Provide an overview of the available CPG generators (frontends)
     */

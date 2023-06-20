@@ -39,7 +39,7 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
         m shouldBe "Q.V.C.m"
       }
 
-      inside(cpg.namespaceBlock.l) { case List(_, _, q, v) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(q, v) =>
         q.fullName shouldBe "Q"
         v.fullName shouldBe "Q.V"
 
@@ -77,7 +77,7 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
         |              // enclosing namespaces are the global namespace, Q, and Q::V
         |{ return 0; }
         |""".stripMargin)
-      inside(cpg.method.fullName.l) { case List(_, m1, f1, f2, h, m2) =>
+      inside(cpg.method.nameNot("<global>").fullName.l) { case List(m1, f1, f2, h, m2) =>
         // TODO: this looks strange too it first glance. But as Eclipse CDT does not provide any
         //  mapping from definitions outside of namespace into them we cant reconstruct proper full-names.
         m1 shouldBe "Q.V.C.m"
@@ -87,7 +87,7 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
         m2 shouldBe "V.C.m"
       }
 
-      inside(cpg.namespaceBlock.l) { case List(_, _, q, v) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(q, v) =>
         q.fullName shouldBe "Q"
         v.fullName shouldBe "Q.V"
 
@@ -122,13 +122,13 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
         |  A::i++; // ok, increments ::A::(unique)::i
         |  j++;    // ok, increments ::A::(unique)::j
         |}""".stripMargin)
-      inside(cpg.namespaceBlock.l) { case List(_, _, unnamed1, a, unnamed2) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(unnamed1, a, unnamed2) =>
         unnamed1.fullName shouldBe "anonymous_namespace_0"
         a.fullName shouldBe "A"
         unnamed2.fullName shouldBe "A.anonymous_namespace_1"
       }
 
-      inside(cpg.method.internal.fullName.l) { case List(_, f, g, h) =>
+      inside(cpg.method.internal.nameNot("<global>").fullName.l) { case List(f, g, h) =>
         f shouldBe "f"
         g shouldBe "A.g"
         h shouldBe "h"
@@ -159,22 +159,22 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
         |  X::f(); // calls ::f
         |  X::g(); // calls A::g
         |}""".stripMargin)
-      inside(cpg.namespaceBlock.l) { case List(_, _, a, x) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(a, x) =>
         a.fullName shouldBe "A"
         x.fullName shouldBe "X"
       }
 
-      inside(cpg.method.internal.fullName.l) { case List(_, f, g, h) =>
+      inside(cpg.method.internal.nameNot("<global>").fullName.l) { case List(f, g, h) =>
         f shouldBe "f"
         g shouldBe "A.g"
         h shouldBe "h"
       }
 
       inside(cpg.call.filterNot(_.name == Operators.fieldAccess).l) { case List(f, g) =>
-        f.name shouldBe "X::f"
-        f.methodFullName shouldBe "X::f"
-        g.name shouldBe "X::g"
-        g.methodFullName shouldBe "X::g"
+        f.name shouldBe "X.f"
+        f.methodFullName shouldBe "X.f"
+        g.name shouldBe "X.g"
+        g.methodFullName shouldBe "X.g"
       }
     }
 
@@ -197,13 +197,13 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
         |  using A::f; // this f is a synonym for both A::f(int) and A::f(char)
         |  f('a');     // calls f(char)
         |}""".stripMargin)
-      inside(cpg.namespaceBlock.l) { case List(_, _, a1, a2) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(a1, a2) =>
         // TODO: how to handle namespace extension?
         a1.fullName shouldBe "A"
         a2.fullName shouldBe "A"
       }
 
-      inside(cpg.method.internal.l) { case List(_, f1, f2, foo, bar) =>
+      inside(cpg.method.internal.nameNot("<global>").l) { case List(f1, f2, foo, bar) =>
         f1.fullName shouldBe "A.f"
         f1.signature shouldBe "void A.f (int)"
         f2.fullName shouldBe "A.f"
@@ -235,7 +235,7 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
         |int main() {
         |  int x = fbz::qux;
         |}""".stripMargin)
-      inside(cpg.namespaceBlock.l) { case List(_, _, foo, bar, baz, fbz) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(foo, bar, baz, fbz) =>
         foo.name shouldBe "foo"
         foo.fullName shouldBe "foo"
         bar.name shouldBe "bar"
@@ -275,7 +275,7 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
        |int main() {
        |  namespace x = foo::bar;
        |};""".stripMargin)
-      inside(cpg.namespaceBlock.l) { case List(_, _, foo, bar, x) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(foo, bar, x) =>
         foo.name shouldBe "foo"
         foo.fullName shouldBe "foo"
         bar.name shouldBe "bar"
@@ -294,7 +294,7 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
        |int main() {
        |  using namespace foo::bar;
        |};""".stripMargin)
-      inside(cpg.namespaceBlock.l) { case List(_, _, foo, bar) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(foo, bar) =>
         foo.name shouldBe "foo"
         foo.fullName shouldBe "foo"
         bar.name shouldBe "bar"

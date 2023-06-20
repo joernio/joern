@@ -32,6 +32,7 @@ object UnprotectedAppParts extends QueryBundle {
             sink.reachableByFlows(c).nonEmpty
           }
           .l
+          .iterator
       }),
       tags = List(QueryTags.android),
       codeExamples = CodeExamples(

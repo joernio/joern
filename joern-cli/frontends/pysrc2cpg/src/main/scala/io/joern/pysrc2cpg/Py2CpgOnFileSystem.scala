@@ -1,27 +1,33 @@
 package io.joern.pysrc2cpg
 
-import io.joern.x2cpg.{X2Cpg, X2CpgConfig, X2CpgFrontend}
+import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
-import scala.collection.mutable
+
+import java.nio.file._
 import scala.util.Try
 
 case class Py2CpgOnFileSystemConfig(
-  outputFile: Path = Paths.get(X2CpgConfig.defaultOutputPath),
-  inputDir: Path = null,
   venvDir: Path = Paths.get(".venv"),
   ignoreVenvDir: Boolean = true,
-  disableDummyTypes: Boolean = false
+  disableDummyTypes: Boolean = false,
+  requirementsTxt: String = "requirements.txt"
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig] {
-  override def withInputPath(inputPath: String): Py2CpgOnFileSystemConfig = {
-    copy(inputDir = Paths.get(inputPath))
+  def withVenvDir(venvDir: Path): Py2CpgOnFileSystemConfig = {
+    copy(venvDir = venvDir).withInheritedFields(this)
   }
 
-  override def withOutputPath(x: String): Py2CpgOnFileSystemConfig = {
-    copy(outputFile = Paths.get(x))
+  def withIgnoreVenvDir(value: Boolean): Py2CpgOnFileSystemConfig = {
+    copy(ignoreVenvDir = value).withInheritedFields(this)
+  }
+
+  def withDisableDummyTypes(value: Boolean): Py2CpgOnFileSystemConfig = {
+    copy(disableDummyTypes = value).withInheritedFields(this)
+  }
+
+  def withRequirementsTxt(text: String): Py2CpgOnFileSystemConfig = {
+    copy(requirementsTxt = text).withInheritedFields(this)
   }
 }
 
@@ -35,57 +41,34 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
   override def createCpg(config: Py2CpgOnFileSystemConfig): Try[Cpg] = {
     logConfiguration(config)
 
-    X2Cpg.withNewEmptyCpg(config.outputFile.toString, config) { (cpg, _) =>
+    X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
       val ignorePrefixes =
         if (config.ignoreVenvDir) {
           config.venvDir :: Nil
         } else {
           Nil
         }
-      val inputFiles = collectInputFiles(config.inputDir, ignorePrefixes)
+      val inputFiles = SourceFiles
+        .determine(config.inputPath, Set(".py"), config)
+        .map(x => Path.of(x))
+        .filterNot { file =>
+          val relativeFile = Path.of(config.inputPath).relativize(file)
+          ignorePrefixes.exists(prefix => relativeFile.startsWith(prefix))
+        }
       val inputProviders = inputFiles.map { inputFile => () =>
         {
           val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
-          Py2Cpg.InputPair(content, inputFile.toString, config.inputDir.relativize(inputFile).toString)
+          Py2Cpg.InputPair(content, inputFile.toString, Paths.get(config.inputPath).relativize(inputFile).toString)
         }
       }
-
-      val py2Cpg = new Py2Cpg(inputProviders, cpg)
+      val py2Cpg = new Py2Cpg(inputProviders, cpg, config.inputPath, config.requirementsTxt)
       py2Cpg.buildCpg()
     }
   }
 
-  private def collectInputFiles(inputDir: Path, ignorePrefixes: Iterable[Path]): Iterable[Path] = {
-    if (!Files.exists(inputDir)) {
-      logger.error(s"Cannot find $inputDir")
-      return Iterable.empty
-    }
-
-    val inputFiles = mutable.ArrayBuffer.empty[Path]
-
-    Files.walkFileTree(
-      inputDir,
-      new SimpleFileVisitor[Path] {
-        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-          val relativeFile    = inputDir.relativize(file)
-          val relativeFileStr = relativeFile.toString
-          if (
-            relativeFileStr.endsWith(".py") &&
-            !ignorePrefixes.exists(prefix => relativeFile.startsWith(prefix))
-          ) {
-            inputFiles.append(file)
-          }
-          FileVisitResult.CONTINUE
-        }
-      }
-    )
-
-    inputFiles
-  }
-
   private def logConfiguration(config: Py2CpgOnFileSystemConfig): Unit = {
-    logger.info(s"Output file: ${config.outputFile}")
-    logger.info(s"Input directory: ${config.inputDir}")
+    logger.info(s"Output file: ${config.outputPath}")
+    logger.info(s"Input directory: ${config.inputPath}")
     logger.info(s"Venv directory: ${config.venvDir}")
     logger.info(s"IgnoreVenvDir: ${config.ignoreVenvDir}")
     logger.info(s"No dummy types: ${config.disableDummyTypes}")

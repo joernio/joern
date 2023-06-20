@@ -99,7 +99,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         .argument(0)
         .l match {
         case List(thisNode: Identifier) =>
-          thisNode.outE.collectAll[Ref].map(_.inNode).l match {
+          thisNode._refOut.l match {
             case List(paramNode: MethodParameterIn) =>
               paramNode.name shouldBe "this"
               paramNode.method.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
@@ -328,6 +328,35 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       superReceiver.argumentIndex shouldBe 0
       superReceiver.lineNumber shouldBe Some(5)
       superReceiver.columnNumber shouldBe Some(12)
+    }
+  }
+
+  "call to method in derived class using external package" should {
+    lazy val cpg = code("""
+        |import org.hibernate.Query;
+        |import org.hibernate.Session;
+        |import org.hibernate.SessionFactory;
+        |
+        |class Base {
+        |  Session getCurrentSession() {
+        |		return this.sessionFactory.getCurrentSession();
+        |	}
+        |}
+        |
+        |class Derived extends Base{
+        | void foo() {
+        |		Query q = getCurrentSession().createQuery("FROM User");
+        |		return;
+        |	}
+        |}
+        |""".stripMargin)
+
+    "have correct methodFullName" in {
+      cpg.call.nameExact("createQuery").methodFullName.head.split(":").head shouldBe "org.hibernate.Session.createQuery"
+      cpg.call
+        .nameExact("getCurrentSession")
+        .methodFullName
+        .last shouldBe "Derived.getCurrentSession:org.hibernate.Session()"
     }
   }
 }

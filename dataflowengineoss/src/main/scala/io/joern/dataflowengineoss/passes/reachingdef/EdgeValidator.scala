@@ -2,10 +2,9 @@ package io.joern.dataflowengineoss.passes.reachingdef
 
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.Engine.isOutputArgOfInternalMethod
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.{FlowMapping, ParameterNode, PassThroughMapping, Semantics}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, StoredNode}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 
 object EdgeValidator {
 
@@ -39,7 +38,11 @@ object EdgeValidator {
     parentNode match {
       case call: Call =>
         val sem = semantics.forMethod(call.methodFullName)
-        sem.isDefined && !sem.get.mappings.map(_._2).contains(-1)
+        sem.isDefined && !sem.get.mappings.exists {
+          case FlowMapping(_, ParameterNode(dst, _)) => dst == -1
+          case PassThroughMapping                    => true
+          case _                                     => false
+        }
       case _ =>
         false
     }

@@ -29,7 +29,7 @@ object Intents extends QueryBundle {
           exportedActivities.method.call.name("getIntent").typeFullName("android.content.Intent")
         def runtimeExecCalls =
           cpg.call.name("exec").typeFullName("java.lang.Process")
-        runtimeExecCalls.where(_.argument.reachableBy(getIntentCalls)).l
+        runtimeExecCalls.where(_.argument.reachableBy(getIntentCalls)).l.iterator
       }),
       tags = List(QueryTags.android),
       multiFileCodeExamples = MultiFileCodeExamples(

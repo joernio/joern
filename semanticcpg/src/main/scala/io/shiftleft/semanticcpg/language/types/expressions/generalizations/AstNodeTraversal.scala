@@ -43,7 +43,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
   /** Direct children of node in the AST. Siblings are ordered by their `order` fields
     */
   def astChildren: Traversal[AstNode] =
-    traversal.flatMap(_.astChildren).sortBy(_.order)
+    traversal.flatMap(_.astChildren).sortBy(_.order).iterator
 
   /** Parent AST node
     */

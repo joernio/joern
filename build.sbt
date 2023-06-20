@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "2.13.8"
 
-val cpgVersion = "1.3.598"
+val cpgVersion = "1.3.612"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -20,6 +20,7 @@ lazy val jssrc2cpg         = Projects.jssrc2cpg
 lazy val javasrc2cpg       = Projects.javasrc2cpg
 lazy val jimple2cpg        = Projects.jimple2cpg
 lazy val kotlin2cpg        = Projects.kotlin2cpg
+lazy val rubysrc2cpg       = Projects.rubysrc2cpg
 
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   joerncli,
@@ -36,7 +37,8 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   jssrc2cpg,
   javasrc2cpg,
   jimple2cpg,
-  kotlin2cpg
+  kotlin2cpg,
+  rubysrc2cpg
 )
 
 ThisBuild / libraryDependencies ++= Seq(
@@ -102,6 +104,6 @@ publish / skip := true // don't publish the root project
 // Avoids running root tasks on the benchmarks project
 lazy val root = project
   .in(file("."))
-  .aggregate(aggregatedProjects: _*)
+  .aggregate(aggregatedProjects *)
 
 ThisBuild / Test / packageBin / publishArtifact := true

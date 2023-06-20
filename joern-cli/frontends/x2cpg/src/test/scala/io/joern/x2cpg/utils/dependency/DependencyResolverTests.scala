@@ -1,30 +1,13 @@
 package io.joern.x2cpg.utils.dependency
 
 import io.joern.x2cpg.utils.ExternalCommand
-import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.file.{Path, Paths}
 import better.files.File
+import scala.annotation.nowarn
 
 class DependencyResolverTests extends AnyWordSpec with Matchers {
-  private class FixtureWithCopyDir(srcDir: Path, runningOnWindowsGitHubAction: Boolean = false) {
-    def test(
-      testFunc: Option[collection.Seq[String]] => Unit,
-      params: DependencyResolverParams = new DependencyResolverParams
-    ): Unit = {
-      if (runningOnWindowsGitHubAction) {
-        info("tests were cancelled because github actions windows doesn't support them for some unknown reason...")
-      } else {
-        File.usingTemporaryDirectory("DependencyResolverTests") { tmpDir =>
-          File(srcDir).copyTo(tmpDir, true)
-          val dependenciesResult = DependencyResolver.getDependencies(tmpDir.path, params)
-          testFunc(dependenciesResult)
-        }
-      }
-    }
-  }
 
   private class Fixture(content: String, fileName: String, runningOnWindowsGitHubAction: Boolean = false) {
     def test(
@@ -51,6 +34,7 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       ExternalCommand.run("mvn --version", ".").get.exists(_.contains("Apache Maven")) shouldBe true
     }
 
+    @nowarn // otherwise scalac warns that this might be an interpolated expression
     val fixture = new Fixture(
       """
         |<project xmlns="http://maven.apache.org/POM/4.0.0"

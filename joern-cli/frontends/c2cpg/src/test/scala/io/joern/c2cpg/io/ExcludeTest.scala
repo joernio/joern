@@ -27,7 +27,10 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
       "folder/c.c",
       "foo.bar/d.c",
       "a.c",
-      "index.c"
+      "index.c",
+      "sub/CMakeFiles/foo.c",
+      "CMakeFiles/foo.c",
+      "CMakeFiles/sub/foo.c"
     )
 
   private val projectUnderTest: File = {
@@ -45,15 +48,16 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
     val cpgOutFile = File.newTemporaryFile("c2cpg.bin")
     cpgOutFile.deleteOnExit()
 
-    val config = Config(inputPath = projectUnderTest.toString, outputPath = cpgOutFile.toString)
-    val finalConfig =
-      config.copy(ignoredFiles = exclude.map(config.createPathForIgnore), ignoredFilesRegex = excludeRegex.r)
-
+    val config = Config()
+      .withInputPath(projectUnderTest.toString)
+      .withOutputPath(cpgOutFile.toString)
+      .withIgnoredFiles(exclude)
+      .withIgnoredFilesRegex(excludeRegex)
     val c2cpg = new C2Cpg()
-    val cpg   = c2cpg.createCpg(finalConfig).get
+    val cpg   = c2cpg.createCpg(config).get
 
     X2Cpg.applyDefaultOverlays(cpg)
-    cpg.file.nameNot(FileTraversal.UNKNOWN).name.l should contain theSameElementsAs expectedFiles.map(
+    cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.l should contain theSameElementsAs expectedFiles.map(
       _.replace("/", java.io.File.separator)
     )
   }
@@ -122,7 +126,7 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
       (
         "exclude a complete folder with --exclude-regex",
         Seq.empty,
-        s".*${Pattern.quote(java.io.File.separator)}folder${Pattern.quote(java.io.File.separator)}.*",
+        s".*${Pattern.quote(java.io.File.separator)}?folder${Pattern.quote(java.io.File.separator)}.*",
         Set("index.c", "a.c", "foo.bar/d.c")
       ),
       // --

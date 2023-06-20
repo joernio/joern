@@ -7,6 +7,7 @@ import io.joern.jssrc2cpg.passes._
 import io.joern.jssrc2cpg.utils.{AstGenRunner, Report}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
+import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.HashUtil
 import io.shiftleft.codepropertygraph.Cpg
@@ -22,10 +23,10 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
-        val astgenResult = new AstGenRunner(config).execute(tmpDir)
-        val hash         = HashUtil.sha256(astgenResult.parsedFiles.map { case (_, file) => File(file).path })
+        val astGenResult = new AstGenRunner(config).execute(tmpDir)
+        val hash         = HashUtil.sha256(astGenResult.parsedFiles.map { case (_, file) => File(file).path })
 
-        val astCreationPass = new AstCreationPass(cpg, astgenResult, config, report)
+        val astCreationPass = new AstCreationPass(cpg, astGenResult, config, report)
         astCreationPass.createAndApply()
 
         new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
@@ -57,9 +58,11 @@ object JsSrc2Cpg {
 
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
     List(
+      new JavaScriptInheritanceNamePass(cpg),
       new ConstClosurePass(cpg),
       new JavaScriptTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes))),
-      new JavaScriptTypeHintCallLinker(cpg)
+      new JavaScriptTypeHintCallLinker(cpg),
+      new NaiveCallLinker(cpg)
     )
   }
 
