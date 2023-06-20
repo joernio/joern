@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import java.util
-import scala.collection.{mutable}
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
@@ -279,16 +279,7 @@ class AstCreator(filename: String, global: Global)
       exprAsts
     }
 
-    /* If we get anything else than Identifier or Literal, we should ignore and
-     * rebuild  the ASTs
-     * TODO: Model function calls also so we can capture their return in this
-     */
-    val reshapedRhsAsts = paramAsts
-      .map(x => x.nodes.filter(n => n.isInstanceOf[NewIdentifier] || n.isInstanceOf[NewLiteral]))
-      .filter(_.nonEmpty)
-      .flatMap(nodes => nodes.map(n => Ast(n)))
-
-    reshapedRhsAsts
+    paramAsts
   }
 
   def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Seq[Ast] = {
@@ -1449,11 +1440,20 @@ class AstCreator(filename: String, global: Global)
     val rhsAsts      = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     val operatorName = getOperatorName(ctx.EQ().getSymbol)
 
+    /* If we get anything else than Identifier or Literal, we should ignore and
+     * rebuild  the ASTs
+     * TODO: Model function calls also so we can capture their return in this
+     */
+    val reshapedRhsAsts = rhsAsts
+      .map(x => x.nodes.filter(n => n.isInstanceOf[NewIdentifier] || n.isInstanceOf[NewLiteral]))
+      .filter(_.nonEmpty)
+      .flatMap(nodes => nodes.map(n => Ast(n)))
+
     /* Since we have multiple LHS and RHS elements here, we will now create synthetic assignment
      * call nodes to model how ruby assigns values from RHS elements to LHS elements. We create
      * tuples for each assignment and then pass them to the assignment calls nodes
      */
-    val assigns = lhsAsts.zip(rhsAsts)
+    val assigns = lhsAsts.zip(reshapedRhsAsts)
     assigns.map { argPair =>
       val lhsCode = argPair._1.nodes.headOption match {
         case Some(id: NewIdentifier) => id.code
