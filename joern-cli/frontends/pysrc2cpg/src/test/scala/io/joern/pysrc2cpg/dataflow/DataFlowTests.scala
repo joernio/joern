@@ -495,7 +495,7 @@ class RegexDefinedFlowsDataFlowTests
     flows.size shouldBe 2
   }
 
-  // TODO: Need to fix this scenario
+  // TODO: Need to fix this scenario. This use case is not working across the frontend. Had tested it for Java as well.
   "Exception block flow sample two" ignore {
     val cpg: Cpg = code("""
         |import logging
