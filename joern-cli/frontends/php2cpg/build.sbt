@@ -12,8 +12,8 @@ val phpParserDlUrl   = s"https://github.com/joernio/PHP-Parser/releases/download
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "com.lihaoyi"   %% "ujson"             % "2.0.0",
-  "com.lihaoyi"   %% "upickle"           % "2.0.0",
+  "com.lihaoyi"   %% "ujson"             % "3.1.0",
+  "com.lihaoyi"   %% "upickle"           % "3.1.0",
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
   "io.circe"      %% "circe-core"        % "0.15.0-M1"
