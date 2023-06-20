@@ -8,6 +8,7 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 
 import scala.collection.mutable
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 /** Creates a `TYPE` node for each type in `usedTypes` as well as all inheritsFrom type names in the CPG
   *
@@ -47,7 +48,7 @@ class TypeNodePass(
 
     val usedTypesSet = getTypeDeclTypes() ++ typeFullNameValues
     usedTypesSet.remove("<empty>")
-    val usedTypes = usedTypesSet.toArray.sorted
+    val usedTypes = usedTypesSet.filterInPlace(!_.endsWith(NamespaceTraversal.globalNamespaceName)).toArray.sorted
 
     diffGraph.addNode(
       NewType()

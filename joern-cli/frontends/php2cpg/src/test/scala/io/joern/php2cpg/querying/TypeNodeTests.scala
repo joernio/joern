@@ -8,11 +8,6 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.nodes.Block
 
 class TypeNodeTests extends PhpCode2CpgFixture {
-
-  private def isArtificialType(typeFullName: String): Boolean = {
-    typeFullName == "ANY" || typeFullName.endsWith(".php:<global>")
-  }
-
   "TypeDecls with inheritsFrom types" should {
     val cpg = code("""<?php
      |namespace foo;
@@ -20,11 +15,11 @@ class TypeNodeTests extends PhpCode2CpgFixture {
      |""".stripMargin)
 
     "have type nodes created for the TypeDecl and inherited types" in {
-      cpg.typ.fullName.filterNot(isArtificialType).toSet shouldEqual Set("foo\\A", "foo\\B", "foo\\C", "foo\\D")
+      cpg.typ.fullName.toSet shouldEqual Set("ANY", "foo\\A", "foo\\B", "foo\\C", "foo\\D")
     }
 
     "have TypeDecl stubs created for inherited types" in {
-      cpg.typeDecl.external.fullName.filterNot(isArtificialType).toSet shouldEqual Set("foo\\B", "foo\\C", "foo\\D")
+      cpg.typeDecl.external.fullName.toSet shouldEqual Set("ANY", "foo\\B", "foo\\C", "foo\\D")
     }
   }
 
@@ -33,11 +28,11 @@ class TypeNodeTests extends PhpCode2CpgFixture {
 
     "have corresponding type nodes created" in {
       println(cpg.literal.toList)
-      cpg.typ.fullName.filterNot(isArtificialType).toSet shouldEqual Set("int")
+      cpg.typ.fullName.toSet shouldEqual Set("ANY", "int")
     }
 
     "have corresponding type decls created" in {
-      cpg.typeDecl.external.fullName.filterNot(isArtificialType).toSet shouldEqual Set("int")
+      cpg.typeDecl.external.fullName.toSet shouldEqual Set("ANY", "int")
     }
   }
 }
