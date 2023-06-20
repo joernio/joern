@@ -15,7 +15,6 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.matching.Regex
 import scala.util.Try
-import scala.sys.process.stringToProcess
 
 object AstGenRunner {
 
