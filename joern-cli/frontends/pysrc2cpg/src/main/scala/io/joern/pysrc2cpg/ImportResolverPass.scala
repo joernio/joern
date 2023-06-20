@@ -60,7 +60,7 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       def toResolvedImport(cpg: Cpg): Seq[ResolvedImport] = {
         val resolvedEntities =
           traversal.flatMap(x => cpg.typeDecl.fullNameExact(x) ++ cpg.method.fullNameExact(x)).collect {
-            case x: Method   => ResolvedMethod(x.fullName, alias, Some("self"))
+            case x: Method   => ResolvedMethod(x.fullName, alias)
             case x: TypeDecl => ResolvedTypeDecl(x.fullName)
           }
         if (resolvedEntities.isEmpty) {
@@ -129,7 +129,7 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       case x: ResolvedMethod if isMaybeConstructor =>
         Seq(ResolvedMethod(Seq(x.fullName, "__init__").mkString(pathSep), alias), ResolvedTypeDecl(x.fullName))
       // If we import the type, we also import the constructor
-      case x: ResolvedTypeDecl if !x.fullName.endsWith("<module>") =>
+      case x: ResolvedTypeDecl if isMaybeConstructor =>
         Seq(x, ResolvedMethod(Seq(x.fullName, "__init__").mkString(pathSep), alias))
       // If we can determine the import is a constructor, then it is likely not a member
       case x: UnknownImport if isMaybeConstructor =>

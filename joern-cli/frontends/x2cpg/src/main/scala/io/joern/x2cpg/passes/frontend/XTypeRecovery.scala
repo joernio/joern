@@ -273,9 +273,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
     ResolvedImport.tagToResolvedImport(resolvedImport).foreach {
       case ResolvedMethod(fullName, alias, receiver, _) =>
-        symbolTable.put(CallAlias(alias, receiver), fullName)
+        symbolTable.append(CallAlias(alias, receiver), fullName)
       case ResolvedTypeDecl(fullName, _) =>
-        symbolTable.put(LocalVar(alias), fullName)
+        symbolTable.append(LocalVar(alias), fullName)
       case ResolvedMember(basePath, memberName, _) =>
         val matchingIdentifiers = cpg.method.fullNameExact(basePath).local
         val matchingMembers     = cpg.typeDecl.fullNameExact(basePath).member
@@ -287,14 +287,14 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           )
           .filterNot(_ == "ANY")
           .toSet
-        symbolTable.put(LocalVar(alias), memberTypes)
+        symbolTable.append(LocalVar(alias), memberTypes)
       case UnknownMethod(fullName, alias, receiver, _) =>
-        symbolTable.put(CallAlias(alias, receiver), fullName)
+        symbolTable.append(CallAlias(alias, receiver), fullName)
       case UnknownTypeDecl(fullName, _) =>
-        symbolTable.put(LocalVar(alias), fullName)
+        symbolTable.append(LocalVar(alias), fullName)
       case UnknownImport(path, _) =>
-        symbolTable.put(CallAlias(alias), path)
-        symbolTable.put(LocalVar(alias), path)
+        symbolTable.append(CallAlias(alias), path)
+        symbolTable.append(LocalVar(alias), path)
     }
   }
 
