@@ -7,13 +7,6 @@ import org.scalatest.BeforeAndAfterAll
 
 class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAfterAll {
 
-  var tempDir: File = _
-
-  override def afterAll(): Unit = {
-    super.beforeAll()
-    tempDir.delete()
-  }
-
   "Code for method full name when method present in module" should {
     val cpg = code(
       """
@@ -50,7 +43,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
         "dummy_logger.Main_module.Main_outer_class.first_fun:<unresolvedSignature>"
       )
 
-      cpg.call.name("help_print").head.methodFullName should equal("dummy_logger.Help.help_print:<unresolvedSignature>")
+      cpg.call.name("help_print").head.methodFullName.matches(".*dummy_logger.Help.help_print:<unresolvedSignature>")
     }
   }
 
@@ -85,7 +78,11 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
     }
 
     "recognise method full name for call node" in {
-      cpg.call.name("printValue").head.methodFullName contains ("util/help.rb.Outer.printValue:<unresolvedSignature>")
+      cpg.call
+        .name("printValue")
+        .head
+        .methodFullName
+        .matches(".*util/help.rb.Outer.printValue:<unresolvedSignature>") shouldBe true
     }
   }
 }

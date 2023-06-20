@@ -1093,7 +1093,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     val column                       = localIdentifier.getSymbol().getCharPositionInLine()
     val line                         = localIdentifier.getSymbol().getLine()
     val name                         = getActualMethodName(localIdentifier.getText)
-    var methodFullName               = s"$filename.$name:${UnresolvedSignature}"
+    var methodFullName               = s"$filename:$name"
     val externalDependencyResolution = packageContext.packageTable.getMethodFullNameUsingName(packageStack.toList, name)
 
     if (externalDependencyResolution.nonEmpty) {
