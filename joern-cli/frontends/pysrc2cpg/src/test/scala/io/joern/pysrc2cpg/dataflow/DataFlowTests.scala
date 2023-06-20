@@ -492,8 +492,7 @@ class RegexDefinedFlowsDataFlowTests
         |def all_page(request):
         |	print("All pages")
         |""".stripMargin
-    val cpg = code("")
-      .moreCode(controller, Seq("controller", "urls.py").mkString(File.separator))
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
       .moreCode(views, Seq("controller", "views.py").mkString(File.separator))
 
     val args = cpg.call.methodFullName("django.*[.](path|url)").l.head.argument.l
@@ -517,8 +516,7 @@ class RegexDefinedFlowsDataFlowTests
         |def all_page(request):
         |	print("All pages")
         |""".stripMargin
-    val cpg = code("")
-      .moreCode(controller, Seq("controller", "urls.py").mkString(File.separator))
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
       .moreCode(views, Seq("student", "views.py").mkString(File.separator))
 
     val args = cpg.call.methodFullName("django.*[.](path|url)").l.head.argument.l
