@@ -1440,7 +1440,7 @@ class AstCreator(filename: String, global: Global)
     val rhsAsts      = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     val operatorName = getOperatorName(ctx.EQ().getSymbol)
 
-    /* If we get anything else than Identifier or Literal, we should ignore and
+    /* If we get anything other than Identifier or Literal, we should ignore and
      * rebuild  the ASTs
      * TODO: Model function calls also so we can capture their return in this
      */
@@ -1471,7 +1471,6 @@ class AstCreator(filename: String, global: Global)
         .name(operatorName)
         .code(lhsCode + " = " + rhsCode)
         .methodFullName(operatorName)
-        .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.EQ().getSymbol().getLine())
