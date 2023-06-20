@@ -130,33 +130,38 @@ class TaskCreator(context: EngineContext) {
     }
 
     val forArgs = outArgsAndCalls.flatMap { case (result, args, path, callDepth) =>
-      args.toList.flatMap { case arg: Expression =>
-        val outParams = if (result.callSiteStack.nonEmpty) {
-          List[MethodParameterOut]()
-        } else {
-          argToOutputParams(arg).l
-        }
-        outParams
-          .filterNot(_.method.isExternal)
-          .map { p =>
-            val newStack = arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
-            ReachableByTask(result.taskStack :+ TaskFingerprint(p, newStack, callDepth + 1), path)
+      args.toList.flatMap {
+        case arg: Expression =>
+          val outParams = if (result.callSiteStack.nonEmpty) {
+            List[MethodParameterOut]()
+          } else {
+            argToOutputParams(arg).l
           }
+          outParams
+            .filterNot(_.method.isExternal)
+            .map { p =>
+              val newStack =
+                arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
+              ReachableByTask(result.taskStack :+ TaskFingerprint(p, newStack, callDepth + 1), path)
+            }
+        case _ => Vector.empty
       }
     }
 
     val forMethodRefs = outArgsAndCalls.flatMap { case (result, outArg, path, callDepth) =>
-      outArg.toList.flatMap { case methodRef: MethodRef =>
-        val methodReturns = methodRef._refOut.collectAll[Method].methodReturn
-        methodReturns.flatMap { methodReturn =>
-          val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
-          returnStatements.map { returnStatement =>
-            val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
-            val taskStack =
-              result.taskStack :+ TaskFingerprint(returnStatement, result.callSiteStack, callDepth + 1)
-            ReachableByTask(taskStack, newPath)
+      outArg.toList.flatMap {
+        case methodRef: MethodRef =>
+          val methodReturns = methodRef._refOut.collectAll[Method].methodReturn
+          methodReturns.flatMap { methodReturn =>
+            val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
+            returnStatements.map { returnStatement =>
+              val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
+              val taskStack =
+                result.taskStack :+ TaskFingerprint(returnStatement, result.callSiteStack, callDepth + 1)
+              ReachableByTask(taskStack, newPath)
+            }
           }
-        }
+        case _ => Vector.empty
       }
     }
 
