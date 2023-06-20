@@ -1,6 +1,5 @@
 package io.joern.pysrc2cpg
 
-import better.files.{File => BFile}
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -9,9 +8,6 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-
-import java.io.{File => JFile}
-import java.util.regex.{Matcher, Pattern}
 
 class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[File](cpg, config) {
@@ -56,8 +52,8 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
       val entityName = i.importedAs.get
       i.call.tag.flatMap(ResolvedImport.tagToResolvedImport).foreach {
-        case ResolvedMethod(fullName, _)   => symbolTable.put(CallAlias(entityName), fullName)
-        case ResolvedTypeDecl(fullName, _) => symbolTable.put(LocalVar(entityName), fullName)
+        case ResolvedMethod(fullName, alias, receiver, _) => symbolTable.put(CallAlias(alias, receiver), fullName)
+        case ResolvedTypeDecl(fullName, _)                => symbolTable.put(LocalVar(entityName), fullName)
         case ResolvedMember(basePath, memberName, _) =>
           val memberTypes = cpg.typeDecl
             .fullNameExact(basePath)
@@ -67,8 +63,8 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
             .filterNot(_ == "ANY")
             .toSet
           symbolTable.put(LocalVar(entityName), memberTypes)
-        case UnknownMethod(fullName, _) =>
-          symbolTable.put(CallAlias(entityName), fullName)
+        case UnknownMethod(fullName, alias, receiver, _) =>
+          symbolTable.put(CallAlias(alias, receiver), fullName)
         case UnknownTypeDecl(fullName, _) =>
           symbolTable.put(LocalVar(entityName), fullName)
         case UnknownImport(path, _) =>
