@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.semanticsloader
 
-import io.joern.dataflowengineoss.SemanticsParser.{MappingContext, SrcContext}
+import io.joern.dataflowengineoss.SemanticsParser.MappingContext
 import io.joern.dataflowengineoss.{SemanticsBaseListener, SemanticsLexer, SemanticsParser}
 import io.shiftleft.codepropertygraph.Cpg
 import org.antlr.v4.runtime.tree.ParseTreeWalker
@@ -8,7 +8,6 @@ import org.antlr.v4.runtime.{CharStream, CharStreams, CommonTokenStream}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
-import scala.util.Try
 
 object Semantics {
 
@@ -58,14 +57,14 @@ class Semantics private (methodToSemantic: mutable.Map[String, FlowSemantic]) {
       .sortBy(_.methodFullName)
       .map { elem =>
         s"\"${elem.methodFullName}\" " + elem.mappings
-          .collect { case ParamMapping(x, y) => s"$x -> $y" }
+          .collect { case FlowMapping(x, y) => s"$x -> $y" }
           .mkString(" ")
       }
       .mkString("\n")
   }
 
 }
-case class FlowSemantic(methodFullName: String, mappings: List[FlowMapping], regex: Boolean = false)
+case class FlowSemantic(methodFullName: String, mappings: List[FlowPath] = List.empty, regex: Boolean = false)
 
 object FlowSemantic {
 
@@ -73,11 +72,11 @@ object FlowSemantic {
     FlowSemantic(
       methodFullName,
       mappings.map {
-        case (src: Int, dst: Int)       => ParamMapping(src, dst)
-        case (src: String, dst: Int)    => ParamMapping(src, dst)
-        case (src: Int, dst: String)    => ParamMapping(src, dst)
-        case (src: String, dst: String) => ParamMapping(src, dst)
-        case x: ParamMapping            => x
+        case (src: Int, dst: Int)                                 => FlowMapping(src, dst)
+        case (srcIdx: Int, src: String, dst: Int)                 => FlowMapping(srcIdx, src, dst)
+        case (src: Int, dstIdx: Int, dst: String)                 => FlowMapping(src, dstIdx, dst)
+        case (srcIdx: Int, src: String, dstIdx: Int, dst: String) => FlowMapping(srcIdx, src, dstIdx, dst)
+        case x: FlowMapping                                       => x
       },
       regex
     )
@@ -85,29 +84,38 @@ object FlowSemantic {
 
 }
 
-/** Represents how arguments are identified to their respective parameters at a call site.
-  * @tparam P
-  *   a positional argument.
-  * @tparam N
-  *   a named argument.
-  */
-sealed trait FlowArgument[P, N]
+abstract class FlowNode
 
-/** A positional argument where the index of the argument matches the position of the parameter at the callee.
-  * @param idx
+/** Collects parameters and return nodes under a common trait. This trait acknowledges their argument index which is
+  * relevant when a caller wants to coordinate relevant tainted flows through specific arguments and the return flow.
+  */
+trait ParamOrRetNode extends FlowNode {
+
+  /** Temporary backward compatible idx field.
+    *
+    * @return
+    *   the argument index.
+    */
+  def index: Int
+}
+
+/** A parameter where the index of the argument matches the position of the parameter at the callee. The name is used to
+  * match named arguments if used instead of positional arguments.
+  *
+  * @param index
   *   the position or argument index.
-  */
-case class PosArg(idx: Int) extends FlowArgument[PosArg, NamedArg]
-
-/** A named argument where the name corresponds to the name of the parameter at the callee.
   * @param name
   *   the name of the parameter.
   */
-case class NamedArg(name: String) extends FlowArgument[PosArg, NamedArg]
+case class ParameterNode(index: Int, name: Option[String] = None) extends ParamOrRetNode
+
+object ParameterNode {
+  def apply(index: Int, name: String): ParameterNode = ParameterNode(index, Option(name))
+}
 
 /** Represents explicit mappings or special cases.
   */
-sealed trait FlowMapping
+sealed trait FlowPath
 
 /** Maps flow between arguments based on how they interact as parameters at the callee.
   *
@@ -116,23 +124,27 @@ sealed trait FlowMapping
   * @param dst
   *   destination of the flow.
   */
-case class ParamMapping(src: FlowArgument[PosArg, NamedArg], dst: FlowArgument[PosArg, NamedArg]) extends FlowMapping
-object ParamMapping {
-  def apply(from: Int, to: Int): ParamMapping = ParamMapping(PosArg(from), PosArg(to))
+case class FlowMapping(src: FlowNode, dst: FlowNode) extends FlowPath
 
-  def apply(from: String, to: String): ParamMapping = ParamMapping(NamedArg(from), NamedArg(to))
+object FlowMapping {
+  def apply(from: Int, to: Int): FlowMapping = FlowMapping(ParameterNode(from), ParameterNode(to))
 
-  def apply(from: String, to: Int): ParamMapping = ParamMapping(NamedArg(from), PosArg(to))
+  def apply(fromIdx: Int, from: String, toIdx: Int, to: String): FlowMapping =
+    FlowMapping(ParameterNode(fromIdx, from), ParameterNode(toIdx, to))
 
-  def apply(from: Int, to: String): ParamMapping = ParamMapping(PosArg(from), NamedArg(to))
+  def apply(fromIdx: Int, from: String, toIdx: Int): FlowMapping =
+    FlowMapping(ParameterNode(fromIdx, from), ParameterNode(toIdx))
+
+  def apply(from: Int, toIdx: Int, to: String): FlowMapping = FlowMapping(ParameterNode(from), ParameterNode(toIdx, to))
 
 }
 
-/** Represents an instance where parameters are not sanitized, may affect the return value, and do not cross-taint.
+/** Represents an instance where parameters are not sanitized, may affect the return value, and do not cross-taint. e.g.
+  * foo(1, 2) = 1 -> 1, 2 -> 2, 1 -> -1, 2 -> -1
   *
-  * TODO: Implement this for varargs operations such as <operators>.tupleLiteral
+  * The main benefit is that this works for unbounded parameters e.g. VARARGS. Note this does not taint 0 -> 0.
   */
-object PassThroughMapping extends FlowMapping
+object PassThroughMapping extends FlowPath
 
 class Parser() {
 
@@ -158,6 +170,20 @@ class Parser() {
     listener.result.toList
   }
 
+  implicit class AntlrFlowExtensions(val ctx: MappingContext) {
+
+    def isPassThrough: Boolean = Option(ctx.PASSTHROUGH()).isDefined
+
+    def srcIdx: Int = ctx.src().argIdx().NUMBER().getText.toInt
+
+    def srcArgName: Option[String] = Option(ctx.src().argName()).map(_.name().getText)
+
+    def dstIdx: Int = ctx.dst().argIdx().NUMBER().getText.toInt
+
+    def dstArgName: Option[String] = Option(ctx.dst().argName()).map(_.name().getText)
+
+  }
+
   private class Listener extends SemanticsBaseListener {
 
     val result: mutable.ListBuffer[FlowSemantic] = mutable.ListBuffer[FlowSemantic]()
@@ -170,16 +196,15 @@ class Parser() {
       }
     }
 
-    private def ctxToParamMapping(ctx: MappingContext): FlowMapping = {
-      val src =
-        if (ctx.src().argName() != null) NamedArg(ctx.src().argName().name().getText)
-        else PosArg(ctx.src().argIdx().NUMBER().getText.toInt)
-      val dst =
-        if (ctx.dst().argName() != null) NamedArg(ctx.dst().argName().name().getText)
-        else PosArg(ctx.dst().argIdx().NUMBER().getText.toInt)
+    private def ctxToParamMapping(ctx: MappingContext): FlowPath =
+      if (ctx.isPassThrough) {
+        PassThroughMapping
+      } else {
+        val src = ParameterNode(ctx.srcIdx, ctx.srcArgName)
+        val dst = ParameterNode(ctx.dstIdx, ctx.dstArgName)
 
-      ParamMapping(src, dst)
-    }
+        FlowMapping(src, dst)
+      }
 
   }
 
