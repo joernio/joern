@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.BeforeAndAfterAll
 
-class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll {
+class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAfterAll {
 
   var tempDir: File = _
 
