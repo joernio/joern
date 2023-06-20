@@ -476,8 +476,7 @@ class RegexDefinedFlowsDataFlowTests
   }
 
   "Exception block flow sample one" in {
-    val cpg: Cpg = code(
-      """
+    val cpg: Cpg = code("""
         |import logging
         |tmp = logging.getLogger(__name__)
         |
@@ -491,15 +490,14 @@ class RegexDefinedFlowsDataFlowTests
         |            return None
         |""".stripMargin)
     val sources = cpg.identifier(".*account.*").lineNumber(6).l
-    val sinks = cpg.call.methodFullName(".*log.*(debug|info|error).*").l
-    val flows = sinks.reachableByFlows(sources).l
+    val sinks   = cpg.call.methodFullName(".*log.*(debug|info|error).*").l
+    val flows   = sinks.reachableByFlows(sources).l
     flows.size shouldBe 2
   }
 
-  //TODO: Need to fix this scenario 
+  // TODO: Need to fix this scenario
   "Exception block flow sample two" ignore {
-    val cpg: Cpg = code(
-      """
+    val cpg: Cpg = code("""
         |import logging
         |tmp = logging.getLogger(__name__)
         |
@@ -513,8 +511,8 @@ class RegexDefinedFlowsDataFlowTests
         |            return None
         |""".stripMargin)
     val sources = cpg.identifier(".*account.*").lineNumber(6).l
-    val sinks = cpg.call.methodFullName(".*log.*(debug|info|error).*").l
-    val flows = sinks.reachableByFlows(sources).l
+    val sinks   = cpg.call.methodFullName(".*log.*(debug|info|error).*").l
+    val flows   = sinks.reachableByFlows(sources).l
     flows.size shouldBe 2
   }
 
