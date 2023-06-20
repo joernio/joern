@@ -354,9 +354,8 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |""".stripMargin).cpg
 
     "resolve correct imports via tag nodes" in {
-      val List(logging) = cpg.call.where(_.referencedImports).tag.toList
-      logging.name shouldBe "UNKNOWN_IMPORT"
-      logging.value shouldBe "logging.py:<module>"
+      val List(logging: UnknownImport) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+      logging.path shouldBe "logging.py:<module>"
     }
 
     "provide a dummy type" in {
@@ -378,11 +377,10 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |""".stripMargin).cpg
 
     "resolve correct imports via tag nodes" in {
-      val List(error, request) = cpg.call.where(_.referencedImports).tag.toList
-      error.name shouldBe "UNKNOWN_IMPORT"
-      error.value shouldBe "urllib.py:<module>.error"
-      request.name shouldBe "UNKNOWN_IMPORT"
-      request.value shouldBe "urllib.py:<module>.request"
+      val List(error: UnknownImport, request: UnknownImport) =
+        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+      error.path shouldBe "urllib.py:<module>.error"
+      request.path shouldBe "urllib.py:<module>.request"
     }
 
     "reasonably determine the constructor type" in {
@@ -446,7 +444,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       b.fullName shouldBe "MongoConnection.py:<module>.MongoConnection.__init__"
       c.fullName shouldBe "pymongo.py:<module>.MongoClient.__init__"
       d.fullName shouldBe "pymongo.py:<module>.MongoClient"
-      e.path shouldBe "django/conf.py:<module>.settings"
+      e.path shouldBe Seq("django", "conf.py:<module>.settings").mkString(File.separator)
     }
 
     "recover a potential type for `self.collection` using the assignment at `get_collection` as a type hint" in {
