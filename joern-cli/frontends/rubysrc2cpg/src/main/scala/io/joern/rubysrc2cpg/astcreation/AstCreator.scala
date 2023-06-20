@@ -1090,10 +1090,10 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
   }
 
   def astForCallNode(localIdentifier: TerminalNode, code: String): Seq[Ast] = {
-    val column         = localIdentifier.getSymbol().getCharPositionInLine()
-    val line           = localIdentifier.getSymbol().getLine()
-    val name           = getActualMethodName(localIdentifier.getText)
-    var methodFullName = s"$filename.$name:${UnresolvedSignature}"
+    val column                       = localIdentifier.getSymbol().getCharPositionInLine()
+    val line                         = localIdentifier.getSymbol().getLine()
+    val name                         = getActualMethodName(localIdentifier.getText)
+    var methodFullName               = s"$filename.$name:${UnresolvedSignature}"
     val externalDependencyResolution = packageContext.packageTable.getMethodFullNameUsingName(packageStack.toList, name)
 
     if (externalDependencyResolution.nonEmpty) {
@@ -1875,7 +1875,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
       methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
       val argsAsts = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
 
-      val callNodes = methodIdentifierAsts.head.nodes.collect{case x: NewCall => x}
+      val callNodes = methodIdentifierAsts.head.nodes.collect { case x: NewCall => x }
       if (callNodes.size == 1) {
         val callNode = callNodes.head
         if (callNode.name == "require" || callNode.name == "load") {
@@ -1944,9 +1944,9 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
   }
 
   private def resolveRequireOrLoadPath(argsAst: Seq[Ast]): Seq[Ast] = {
-    val importedNode = argsAst.head.nodes.collect{case x : NewLiteral => x}
+    val importedNode = argsAst.head.nodes.collect { case x: NewLiteral => x }
     if (importedNode.size == 1) {
-      val node = importedNode.head
+      val node      = importedNode.head
       val pathValue = node.code.replaceAll("'", "").replaceAll("\"", "")
       val result = pathValue match {
         case path if File(path).exists =>
@@ -1964,14 +1964,14 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
   }
 
   private def resolveRelativePath(currentFile: String, argsAst: Seq[Ast]): Seq[Ast] = {
-    val importedNode = argsAst.head.nodes.collect{ case x: NewLiteral => x }
+    val importedNode = argsAst.head.nodes.collect { case x: NewLiteral => x }
     if (importedNode.size == 1) {
-      val node = importedNode.head
-      val pathValue = node.code.replaceAll("'", "").replaceAll("\"", "")
+      val node        = importedNode.head
+      val pathValue   = node.code.replaceAll("'", "").replaceAll("\"", "")
       val updatedPath = if (pathValue.endsWith(".rb")) pathValue else s"$pathValue.rb"
 
       val currentDirectory = File(currentFile).parent
-      val file = File(currentDirectory, updatedPath)
+      val file             = File(currentDirectory, updatedPath)
       packageStack.append(file.pathAsString)
       astForImportNode(node.code)
     } else {

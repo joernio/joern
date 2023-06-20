@@ -11,7 +11,8 @@ import scala.util.Try
 
 class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable: PackageTable, inputPath: String)
     extends ConcurrentWriterCpgPass[String](cpg) {
-  override def generateParts(): Array[String] = getRubyDependenciesFile(inputPath) ++ getRubyDependenciesFile(tempExtDir)
+  override def generateParts(): Array[String] =
+    getRubyDependenciesFile(inputPath) ++ getRubyDependenciesFile(tempExtDir)
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filePath: String): Unit = {
     Try(new AstCreator(filePath, global, PackageContext(resolveModuleNameFromPath(filePath), packageTable)).createAst())
