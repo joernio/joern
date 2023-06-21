@@ -266,11 +266,36 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
   protected def visitImport(i: Import): Unit = for {
-    entity <- i.importedEntity
-    alias  <- i.importedAs
+    resolvedImport <- i.call.tag
+    alias          <- i.importedAs
   } {
-    symbolTable.append(LocalVar(alias), Set(entity))
-    symbolTable.append(CallAlias(alias), Set(entity))
+    import io.joern.x2cpg.passes.frontend.ImportsPass._
+
+    ResolvedImport.tagToResolvedImport(resolvedImport).foreach {
+      case ResolvedMethod(fullName, alias, receiver, _) =>
+        symbolTable.append(CallAlias(alias, receiver), fullName)
+      case ResolvedTypeDecl(fullName, _) =>
+        symbolTable.append(LocalVar(alias), fullName)
+      case ResolvedMember(basePath, memberName, _) =>
+        val matchingIdentifiers = cpg.method.fullNameExact(basePath).local
+        val matchingMembers     = cpg.typeDecl.fullNameExact(basePath).member
+        val memberTypes = (matchingMembers ++ matchingIdentifiers)
+          .nameExact(memberName)
+          .flatMap(x =>
+            x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +:
+              x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
+          )
+          .filterNot(_ == "ANY")
+          .toSet
+        symbolTable.append(LocalVar(alias), memberTypes)
+      case UnknownMethod(fullName, alias, receiver, _) =>
+        symbolTable.append(CallAlias(alias, receiver), fullName)
+      case UnknownTypeDecl(fullName, _) =>
+        symbolTable.append(LocalVar(alias), fullName)
+      case UnknownImport(path, _) =>
+        symbolTable.append(CallAlias(alias), path)
+        symbolTable.append(LocalVar(alias), path)
+    }
   }
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against

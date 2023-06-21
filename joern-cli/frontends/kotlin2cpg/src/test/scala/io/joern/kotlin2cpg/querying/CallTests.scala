@@ -319,4 +319,44 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "CPG for code with call with argument with type with upper bound" should {
+    val cpg = code("""
+      |package mypkg
+      |open class Base
+      |class Second : Base()
+      |class Third : Base()
+      |
+      |fun <S:Base>doSomething(one: S) {
+      |    println(one)
+      |}
+      |fun f1() {
+      |    val s = Second()
+      |    val t = Third()
+      |    doSomething(s)
+      |    doSomething(t)
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments that have the argument name set" in {
+      val List(c1, c2) = cpg.call.code("doSomething.*").l
+      c1.methodFullName shouldBe "mypkg.doSomething:void(mypkg.Base)"
+      c2.methodFullName shouldBe "mypkg.doSomething:void(mypkg.Base)"
+    }
+  }
+
+  "CPG for code with qualified-expression call with argument with type with upper bound" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f1() {
+        |    val ns = sequenceOf("four", "three", "two", "one")
+        |    val ml = mutableListOf<String>()
+        |    ns.mapIndexedNotNullTo(ml, { i, s -> s })
+        |}
+        |""".stripMargin)
+
+    "should contain a METHOD node with correct METHOD_FULL_NAME set" in {
+      val List(c) = cpg.method.nameExact("mapIndexedNotNullTo").callIn.l
+      c.methodFullName shouldBe "kotlin.sequences.Sequence.mapIndexedNotNullTo:java.lang.Object(java.util.Collection,kotlin.Function2)"
+    }
+  }
 }
