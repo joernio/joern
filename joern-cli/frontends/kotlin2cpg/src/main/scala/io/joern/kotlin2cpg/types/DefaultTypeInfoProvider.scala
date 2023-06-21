@@ -4,7 +4,6 @@ import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.passes.KeyPool
-import kotlin.reflect.jvm.internal.impl.load.java.descriptors.JavaClassConstructorDescriptor
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,
   KotlinToJVMBytecodeCompiler,
@@ -15,8 +14,10 @@ import org.jetbrains.kotlin.descriptors.{
   DeclarationDescriptor,
   DescriptorVisibility,
   FunctionDescriptor,
-  ValueDescriptor
+  ValueDescriptor,
+  ValueParameterDescriptor
 }
+import kotlin.reflect.jvm.internal.impl.load.java.descriptors.JavaClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.impl.{
   ClassConstructorDescriptorImpl,
   EnumEntrySyntheticClassDescriptor,
@@ -144,7 +145,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
         val renderedParameterTypes =
           relevantDesc.getValueParameters.asScala.toSeq
-            .map { valueParam => TypeRenderer.render(valueParam.getOriginal.getType) }
+            .map(renderTypeForParameterDesc(_))
             .mkString(",")
         val signature = s"$returnTypeFullName($renderedParameterTypes)"
         val fullName  = s"$renderedFqName:$signature"
@@ -403,19 +404,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
           else renderedReturnType(relevantDesc.getOriginal)
         val renderedParameterTypes =
           relevantDesc.getValueParameters.asScala.toSeq
-            .map { valueParam =>
-              val typeUpperBounds =
-                Option(TypeUtils.getTypeParameterDescriptorOrNull(valueParam.getType))
-                  .map(_.getUpperBounds)
-                  .map(_.asScala)
-                  .map(_.toList)
-                  .getOrElse(List())
-
-              if (typeUpperBounds.nonEmpty) {
-                TypeRenderer.render(typeUpperBounds(0))
-              } else
-                TypeRenderer.render(valueParam.getOriginal.getType)
-            }
+            .map(renderTypeForParameterDesc(_))
             .mkString(",")
         val signature = s"$returnTypeFullName($renderedParameterTypes)"
 
@@ -521,6 +510,19 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(CallKinds.Unknown)
   }
 
+  private def renderTypeForParameterDesc(p: ValueParameterDescriptor): String = {
+    val typeUpperBounds =
+      Option(TypeUtils.getTypeParameterDescriptorOrNull(p.getType))
+        .map(_.getUpperBounds)
+        .map(_.asScala)
+        .map(_.toList)
+        .getOrElse(List())
+    if (typeUpperBounds.nonEmpty)
+      TypeRenderer.render(typeUpperBounds(0))
+    else
+      TypeRenderer.render(p.getOriginal.getType)
+  }
+
   def fullNameWithSignature(expr: KtQualifiedExpression, defaultValue: (String, String)): (String, String) = {
     resolvedCallDescriptor(expr) match {
       case Some(fnDescriptor) =>
@@ -560,9 +562,10 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
             }
             .getOrElse(renderedFqNameMaybe.getOrElse(renderedFqNameForDesc))
 
-        val renderedParameterTypes = originalDesc.getValueParameters.asScala.toSeq
-          .map { valueParam => TypeRenderer.render(valueParam.getType) }
-          .mkString(",")
+        val renderedParameterTypes =
+          originalDesc.getValueParameters.asScala.toSeq
+            .map(renderTypeForParameterDesc(_))
+            .mkString(",")
         val renderedReturnType =
           if (isConstructorDescriptor(originalDesc)) TypeConstants.void
           else if (renderedFqNameForDesc.startsWith(TypeConstants.kotlinApplyPrefix)) TypeConstants.javaLangObject
