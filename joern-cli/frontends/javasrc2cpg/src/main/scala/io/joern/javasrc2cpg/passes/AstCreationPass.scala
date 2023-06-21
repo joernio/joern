@@ -54,7 +54,7 @@ class AstCreationPass(config: Config, cpg: Cpg, preCreatedAsts: Option[SplitJpAs
   override def generateParts(): Array[JpAstWithMeta] = {
     val asts = javaparserAsts.analysisAsts.toArray
     if (asts.isEmpty) {
-      throw new RuntimeException(s"Could not find any Java files at input path ${config.inputPath}")
+      throw new RuntimeException(s"Could not find any parseable Java files at input path ${config.inputPath}")
     }
     logger.info(s"Found ${asts.size} files.")
     asts.toArray
