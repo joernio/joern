@@ -13,8 +13,8 @@ libraryDependencies ++= Seq(
 Test / compile := (Test / compile).dependsOn((Projects.c2cpg / stage), (Projects.jssrc2cpg / stage)).value
 Test / fork    := false
 
-enablePlugins(UniversalPlugin)
-enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging, UniversalPlugin)
+
 //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
 scriptClasspath := Seq("*")
 
