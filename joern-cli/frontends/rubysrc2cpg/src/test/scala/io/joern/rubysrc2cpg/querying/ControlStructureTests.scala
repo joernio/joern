@@ -18,7 +18,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
 
     "recognize all call nodes" in {
-      cpg.call.name("each2").size shouldBe 1
+      cpg.call.name("each").size shouldBe 1
       cpg.call.name("puts").size shouldBe 1
     }
   }
@@ -44,7 +44,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
 
     "recognize all call nodes" in {
-      cpg.call.name("each2").size shouldBe 1
+      cpg.call.name("each").size shouldBe 1
       cpg.call.name("someMethod").size shouldBe 2
       cpg.call.name("expect").size shouldBe 1
       cpg.call.name("to").size shouldBe 1

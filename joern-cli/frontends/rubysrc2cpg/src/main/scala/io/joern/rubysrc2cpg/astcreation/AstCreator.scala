@@ -565,21 +565,30 @@ class AstCreator(filename: String, global: Global)
     }
 
     if (ctx.block() != null) {
-      val blockMethodName = methodNameAst.head.nodes.head
+      val blockName = methodNameAst.head.nodes.head
         .asInstanceOf[NewCall]
-        .name + terminalNode.getSymbol.getLine
+        .name
+      val blockMethodName = blockName + terminalNode.getSymbol.getLine
       val blockMethodNode =
         astForBlockContext(ctx.block(), Some(blockMethodName)).head.nodes.head
           .asInstanceOf[NewMethod]
+
       val callNode = NewCall()
-        .name(blockMethodNode.name)
+        .name(blockName)
         .methodFullName(blockMethodNode.fullName)
         .typeFullName(DynamicCallUnknownFullName)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .code(blockMethodNode.code)
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
-      Seq(callAst(callNode, baseAst))
+
+      val methodRefNode = NewMethodRef()
+        .methodFullName(blockMethodNode.fullName)
+        .typeFullName(DynamicCallUnknownFullName)
+        .code(blockMethodNode.code)
+        .lineNumber(blockMethodNode.lineNumber)
+        .columnNumber(blockMethodNode.columnNumber)
+
+      Seq(callAst(callNode, Seq(Ast(methodRefNode)), baseAst.headOption))
     } else {
       val callNode = methodNameAst.head.nodes
         .filter(node => node.isInstanceOf[NewCall])
