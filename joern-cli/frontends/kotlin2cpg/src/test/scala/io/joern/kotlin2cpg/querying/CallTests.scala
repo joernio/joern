@@ -343,4 +343,20 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       c2.methodFullName shouldBe "mypkg.doSomething:void(mypkg.Base)"
     }
   }
+
+  "CPG for code with qualified-expression call with argument with type with upper bound" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f1() {
+        |    val ns = sequenceOf("four", "three", "two", "one")
+        |    val ml = mutableListOf<String>()
+        |    ns.mapIndexedNotNullTo(ml, { i, s -> s })
+        |}
+        |""".stripMargin)
+
+    "should contain a METHOD node with correct METHOD_FULL_NAME set" in {
+      val List(c) = cpg.method.nameExact("mapIndexedNotNullTo").callIn.l
+      c.methodFullName shouldBe "kotlin.sequences.Sequence.mapIndexedNotNullTo:java.lang.Object(java.util.Collection,kotlin.Function2)"
+    }
+  }
 }

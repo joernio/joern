@@ -80,7 +80,7 @@ class FunctionTests extends RubyCode2CpgFixture {
       cpg.call.name(Operators.assignment).size shouldBe 3
       cpg.call.name("to_s").size shouldBe 2
       cpg.call.name("new").size shouldBe 1
-      cpg.call.size shouldBe 9
+      cpg.call.size shouldBe 8
     }
 
     "recognize all identifier nodes" in {
