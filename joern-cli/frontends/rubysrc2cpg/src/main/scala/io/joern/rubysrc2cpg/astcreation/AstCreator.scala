@@ -1879,9 +1879,9 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
       if (callNodes.size == 1) {
         val callNode = callNodes.head
         if (callNode.name == "require" || callNode.name == "load") {
-          resolveRequireOrLoadPath(argsAsts)
+          resolveRequireOrLoadPath(argsAsts, callNode)
         } else if (callNode.name == "require_relative") {
-          resolveRelativePath(filename, argsAsts)
+          resolveRelativePath(filename, argsAsts, callNode)
         } else {
           Seq(callAst(callNode, argsAsts))
         }
@@ -1943,7 +1943,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     astForYieldWithOptionalArgumentContext(ctx.yieldWithOptionalArgument())
   }
 
-  private def resolveRequireOrLoadPath(argsAst: Seq[Ast]): Seq[Ast] = {
+  private def resolveRequireOrLoadPath(argsAst: Seq[Ast], callNode: NewCall): Seq[Ast] = {
     val importedNode = argsAst.head.nodes.collect { case x: NewLiteral => x }
     if (importedNode.size == 1) {
       val node      = importedNode.head
@@ -1959,11 +1959,11 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
       packageStack.append(result)
       astForImportNode(node.code)
     } else {
-      Seq(Ast())
+      Seq(callAst(callNode, argsAst))
     }
   }
 
-  private def resolveRelativePath(currentFile: String, argsAst: Seq[Ast]): Seq[Ast] = {
+  private def resolveRelativePath(currentFile: String, argsAst: Seq[Ast], callNode: NewCall): Seq[Ast] = {
     val importedNode = argsAst.head.nodes.collect { case x: NewLiteral => x }
     if (importedNode.size == 1) {
       val node        = importedNode.head
@@ -1975,7 +1975,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
       packageStack.append(file.pathAsString)
       astForImportNode(node.code)
     } else {
-      Seq(Ast())
+      Seq(callAst(callNode, argsAst))
     }
   }
 
