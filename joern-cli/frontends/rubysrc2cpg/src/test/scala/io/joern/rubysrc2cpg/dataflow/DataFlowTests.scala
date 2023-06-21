@@ -732,7 +732,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow coming out of chainedInvocationPrimary usage" ignore   {
+  "Data flow coming out of chainedInvocationPrimary usage" ignore {
     val cpg = code("""
         |x = 1
         |y = 10
