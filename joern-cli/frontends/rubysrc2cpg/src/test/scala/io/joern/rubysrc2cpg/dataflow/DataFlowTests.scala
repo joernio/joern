@@ -732,6 +732,23 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Data flow coming out of chainedInvocationPrimary usage" ignore   {
+    val cpg = code("""
+        |x = 1
+        |y = 10
+        |[x, x+1].each do |number|
+        |  y += x
+        |end
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 2
+    }
+  }
+
   "Data flow through chainedInvocationWithoutArgumentsPrimary usage" should {
     val cpg = code("""
         |x = 1
