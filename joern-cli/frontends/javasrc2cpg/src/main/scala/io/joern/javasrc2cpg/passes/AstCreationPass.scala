@@ -1,37 +1,30 @@
 package io.joern.javasrc2cpg.passes
 
+import better.files.File
+import com.github.javaparser.{JavaParser, ParserConfiguration}
+import com.github.javaparser.ParserConfiguration.LanguageLevel
+import com.github.javaparser.ast.CompilationUnit
+import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
-import io.joern.javasrc2cpg.Config
+import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver
+import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
+import io.joern.javasrc2cpg.passes.AstCreationPass.getSplitJavaparserAsts
+import io.joern.javasrc2cpg.typesolvers.{CachingReflectionTypeSolver, EagerSourceTypeSolver, SimpleCombinedTypeSolver}
+import io.joern.javasrc2cpg.util.{Delombok, SourceRootFinder}
+import io.joern.javasrc2cpg.util.Delombok.DelombokMode
+import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
-import org.slf4j.LoggerFactory
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.dependency.DependencyResolver
-import java.nio.file.Paths
-import io.joern.javasrc2cpg.typesolvers.CachingReflectionTypeSolver
-import better.files.File
-import java.net.URLClassLoader
-import io.joern.javasrc2cpg.typesolvers.SimpleCombinedTypeSolver
-import io.joern.javasrc2cpg.typesolvers.EagerSourceTypeSolver
-import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver
-import scala.util.Try
-import scala.util.Success
-import io.joern.javasrc2cpg.util.SourceRootFinder
-import io.joern.javasrc2cpg.JavaSrc2Cpg
-import com.github.javaparser.ast.CompilationUnit
-import com.github.javaparser.ParserConfiguration
-import com.github.javaparser.ParserConfiguration.LanguageLevel
-import com.github.javaparser.JavaParser
-import io.joern.x2cpg.SourceFiles
-import io.joern.javasrc2cpg.passes.AstCreationPass.getSplitJavaparserAsts
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.passes.ConcurrentWriterCpgPass
+import org.slf4j.LoggerFactory
 
-import scala.jdk.OptionConverters.RichOptional
-import scala.jdk.CollectionConverters._
+import java.nio.file.Paths
 import scala.collection.parallel.CollectionConverters._
-import io.joern.javasrc2cpg.util.Delombok
-import io.joern.javasrc2cpg.util.Delombok.DelombokMode
-import com.github.javaparser.ast.Node.Parsedness
+import scala.jdk.CollectionConverters._
+import scala.jdk.OptionConverters.RichOptional
+import scala.util.{Success, Try}
 
 case class SourceDirectoryInfo(typeSolverSourceDirs: List[String], sourceFiles: List[SourceFileInfo])
 case class SplitDirectories(analysisSourceDir: String, typesSourceDir: String)
