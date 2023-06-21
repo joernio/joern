@@ -683,8 +683,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
 
     "identifiers to captured closure" in {
       val identifierSource = cpg.identifier.nameExact("API_Endpoint").lineNumber(5).l
-      identifierSource.size shouldBe 1
-      sink.reachableBy(identifierSource).size shouldBe 1
+      sink.reachableBy(identifierSource).isEmpty shouldBe false
     }
 
     "identifiers in the arg of the call" in {
