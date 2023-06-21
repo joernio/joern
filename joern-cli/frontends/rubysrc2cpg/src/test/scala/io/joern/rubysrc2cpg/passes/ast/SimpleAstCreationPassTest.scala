@@ -607,7 +607,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for chainedInvocationWithoutArgumentsPrimary" in {
       val cpg = code("object::foo do\nputs \"right here\"\nend")
 
-      val List(callNode1) = cpg.call.name("foo1").l
+      val List(callNode1) = cpg.call.name("foo").l
       callNode1.code shouldBe "puts \"right here\""
       callNode1.lineNumber shouldBe Some(1)
       callNode1.columnNumber shouldBe Some(3)
