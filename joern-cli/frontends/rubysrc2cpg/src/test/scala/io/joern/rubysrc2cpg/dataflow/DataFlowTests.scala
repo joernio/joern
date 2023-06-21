@@ -171,12 +171,12 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through multiple assignments" ignore {
+  "Data flow through multiple assignments" should {
     // TODO test a lot more multiple assignments
     val cpg = code("""
         |a = 1
         |b = 2
-        |c,d=a,b
+        |c, d = a, b
         |puts c
         |""".stripMargin)
 

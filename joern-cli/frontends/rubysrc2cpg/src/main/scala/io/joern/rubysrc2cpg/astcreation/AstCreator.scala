@@ -279,18 +279,7 @@ class AstCreator(filename: String, global: Global)
       exprAsts
     }
 
-    if (paramAsts.size > 1) {
-      val callNode = NewCall()
-        .name(Operators.arrayInitializer)
-        .code(ctx.getText)
-        .methodFullName(Operators.arrayInitializer)
-        .signature("")
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-      Seq(callAst(callNode, paramAsts))
-    } else {
-      paramAsts
-    }
+    paramAsts
   }
 
   def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Seq[Ast] = {
@@ -799,18 +788,7 @@ class AstCreator(filename: String, global: Global)
           multipleLHSAsts
         }
 
-      if (paramAsts.size > 1) {
-        val callNode = NewCall()
-          .name(Operators.arrayInitializer)
-          .code(ctx.getText)
-          .methodFullName(Operators.arrayInitializer)
-          .signature("")
-          .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          .typeFullName(Defines.Any)
-        Seq(callAst(callNode, paramAsts))
-      } else {
-        paramAsts
-      }
+      paramAsts
 
     case ctx: PackingLeftHandSideOnlyMultipleLeftHandSideContext =>
       astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
@@ -1461,16 +1439,45 @@ class AstCreator(filename: String, global: Global)
     val lhsAsts      = astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
     val rhsAsts      = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     val operatorName = getOperatorName(ctx.EQ().getSymbol)
-    val callNode = NewCall()
-      .name(operatorName)
-      .code(ctx.getText)
-      .methodFullName(operatorName)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(ctx.EQ().getSymbol().getLine())
-      .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
-    Seq(callAst(callNode, lhsAsts ++ rhsAsts))
+
+    /* If we get anything other than Identifier or Literal, we should ignore and
+     * rebuild  the ASTs
+     * TODO: Model function calls also so we can capture their return in this
+     */
+    val reshapedRhsAsts = rhsAsts
+      .map(x => x.nodes.filter(n => n.isInstanceOf[NewIdentifier] || n.isInstanceOf[NewLiteral]))
+      .filter(_.nonEmpty)
+      .flatMap(nodes => nodes.map(n => Ast(n)))
+
+    /* Since we have multiple LHS and RHS elements here, we will now create synthetic assignment
+     * call nodes to model how ruby assigns values from RHS elements to LHS elements. We create
+     * tuples for each assignment and then pass them to the assignment calls nodes
+     */
+    val assigns = lhsAsts.zip(reshapedRhsAsts)
+    assigns.map { argPair =>
+      val lhsCode = argPair._1.nodes.headOption match {
+        case Some(id: NewIdentifier) => id.code
+        case Some(lit: NewLiteral)   => lit.code
+        case _                       => ""
+      }
+
+      val rhsCode = argPair._2.nodes.headOption match {
+        case Some(id: NewIdentifier) => id.code
+        case Some(lit: NewLiteral)   => lit.code
+        case _                       => ""
+      }
+
+      val syntheticCallNode = NewCall()
+        .name(operatorName)
+        .code(lhsCode + " = " + rhsCode)
+        .methodFullName(operatorName)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(ctx.EQ().getSymbol().getLine())
+        .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
+
+      callAst(syntheticCallNode, Seq(argPair._1, argPair._2))
+    }
   }
 
   def astForRangeExpressionContext(ctx: RangeExpressionContext): Seq[Ast] = {
