@@ -54,7 +54,9 @@ class CodeDumperTest extends JsSrc2CpgSuite {
       val code = cpg.call.name("foo").dumpRaw.mkString("\n")
       code should (
         startWith("function")
-          and include regex (".*" + "var x = foo" + ".*" + Pattern.quote(CodeDumper.arrow.toString) + ".*")
+          and include regex (".*" + "var x = foo" + ".*" + Pattern.quote(
+            CodeDumper.arrow(Option("index.js::program:my_func")).toString
+          ) + ".*")
           and endWith("}")
       )
     }

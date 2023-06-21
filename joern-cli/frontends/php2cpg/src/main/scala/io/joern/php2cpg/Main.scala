@@ -6,9 +6,14 @@ import scopt.OParser
 
 /** Command line configuration parameters
   */
-final case class Config(phpIni: Option[String] = None) extends X2CpgConfig[Config] {
+final case class Config(phpIni: Option[String] = None, phpParserBin: Option[String] = None)
+    extends X2CpgConfig[Config] {
   def withPhpIni(phpIni: String): Config = {
     copy(phpIni = Some(phpIni)).withInheritedFields(this)
+  }
+
+  def withPhpParserBin(phpParserBin: String): Config = {
+    copy(phpParserBin = Some(phpParserBin)).withInheritedFields(this)
   }
 }
 
@@ -23,7 +28,10 @@ private object Frontend {
       programName("php2cpg"),
       opt[String]("php-ini")
         .action((x, c) => c.withPhpIni(x))
-        .text("php.ini path used by php-parser. Defaults to php.ini shipped with Joern.")
+        .text("php.ini path used by php-parser. Defaults to php.ini shipped with Joern."),
+      opt[String]("php-parser-bin")
+        .action((x, c) => c.withPhpParserBin(x))
+        .text("path to php-parser.phar binary. Defaults to php-parser shipped with Joern.")
     )
   }
 }
