@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -112,6 +112,14 @@ trait AstForExpressionsCreator { this: AstCreator =>
     case ctx: SingleQuotedStringLiteralContext => astForSingleQuotedStringLiteral(ctx)
     case ctx: DoubleQuotedStringLiteralContext => astForDoubleQuotedStringLiteral(ctx)
     case ctx: RegularExpressionLiteralContext  => astForRegularExpressionLiteral(ctx)
+  }
+
+  protected def astForTernaryConditionalOperator(ctx: ConditionalOperatorExpressionContext): Ast = {
+    val testAst = astForExpressionContext(ctx.expression(0))
+    val thenAst = astForExpressionContext(ctx.expression(1))
+    val elseAst = astForExpressionContext(ctx.expression(2))
+    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
+    controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
   }
 
 }
