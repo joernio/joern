@@ -590,11 +590,25 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNodes.head.columnNumber shouldBe Some(16)
     }
 
-    "have correct structure for defined expression" in {
+    "have correct structure for defined? command" in {
       val cpg = code("defined? x")
 
       val List(callNode) = cpg.call.name("<operator>.defined").l
       callNode.code shouldBe "defined? x"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+
+      val List(identifierNode) = cpg.identifier.name("x").l
+      identifierNode.code shouldBe "x"
+      identifierNode.lineNumber shouldBe Some(1)
+      identifierNode.columnNumber shouldBe Some(9)
+    }
+
+    "have correct structure for defined? call" in {
+      val cpg = code("defined?(x)")
+
+      val List(callNode) = cpg.call.name("<operator>.defined").l
+      callNode.code shouldBe "defined?(x)"
       callNode.lineNumber shouldBe Some(1)
       callNode.columnNumber shouldBe Some(0)
 
