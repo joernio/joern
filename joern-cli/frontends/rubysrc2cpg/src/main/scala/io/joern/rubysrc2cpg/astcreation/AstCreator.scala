@@ -378,7 +378,7 @@ class AstCreator(filename: String, global: Global)
     case ctx: OperatorAndExpressionContext         => Seq(astForAndExpression(ctx))
     case ctx: OperatorOrExpressionContext          => Seq(astForOrExpression(ctx))
     case ctx: RangeExpressionContext               => astForRangeExpressionContext(ctx)
-    case ctx: ConditionalOperatorExpressionContext => astForConditionalOperatorExpressionContext(ctx)
+    case ctx: ConditionalOperatorExpressionContext => Seq(astForTernaryConditionalOperator(ctx))
     case ctx: SingleAssignmentExpressionContext    => astForSingleAssignmentExpressionContext(ctx)
     case ctx: MultipleAssignmentExpressionContext  => astForMultipleAssignmentExpressionContext(ctx)
     case ctx: IsDefinedExpressionContext           => Seq(astForIsDefinedExpression(ctx))
@@ -698,20 +698,6 @@ class AstCreator(filename: String, global: Global)
       val bodyBlockAst = blockAst(blockNode, astBodyStatement.toList)
       astExprOfCommand ++ Seq(bodyBlockAst)
     }
-  }
-
-  def astForConditionalOperatorExpressionContext(ctx: ConditionalOperatorExpressionContext): Seq[Ast] = {
-    val conditionAst = astForExpressionContext(ctx.expression().get(0))
-    val thenAst      = astForExpressionContext(ctx.expression().get(1))
-    val elseAst      = astForExpressionContext(ctx.expression().get(2))
-
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
-      .lineNumber(ctx.QMARK().getSymbol.getLine)
-      .columnNumber(ctx.QMARK().getSymbol.getCharPositionInLine)
-
-    Seq(controlStructureAst(ifNode, conditionAst.headOption, List(thenAst ++ elseAst).flatten))
   }
 
   def astForEqualityExpressionContext(ctx: EqualityExpressionContext): Seq[Ast] = {
