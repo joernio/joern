@@ -394,6 +394,51 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.columnNumber shouldBe Some(2)
     }
 
+    "have correct structure for a multiple assignment expression" in {
+      val cpg      = code("x, y, z = a, b, c")
+      val callNode = cpg.call.name(Operators.assignment).l
+      callNode.size shouldBe 3
+      callNode.argument
+        .where(_.argumentIndex(1))
+        .code
+        .l shouldBe List("x", "y", "z")
+      callNode.argument
+        .where(_.argumentIndex(2))
+        .code
+        .l shouldBe List("a", "b", "c")
+      callNode.lineNumber.l shouldBe List(1, 1, 1)
+    }
+
+    "have correct structure for a multiple assignment expression with calls in RHS" ignore {
+      val cpg      = code("x, y = [ foo(), bar() ]")
+      val callNode = cpg.call.name(Operators.assignment).l
+      callNode.size shouldBe 2
+      callNode.argument
+        .where(_.argumentIndex(1))
+        .code
+        .l shouldBe List("x", "y")
+      callNode.argument
+        .where(_.argumentIndex(2))
+        .code
+        .l shouldBe List("foo()", "bar()")
+      callNode.lineNumber.l shouldBe List(1, 1)
+    }
+
+    "have correct structure for a single assignment expression with array in RHS" in {
+      val cpg            = code("x = [a, b, c]")
+      val List(callNode) = cpg.call.name(Operators.assignment).l
+      callNode.size shouldBe 1
+      callNode.argument
+        .where(_.argumentIndex(1))
+        .code
+        .l shouldBe List("x")
+      callNode.argument
+        .whereNot(_.argumentIndex(1))
+        .code
+        .l shouldBe List("a", "b", "c")
+      callNode.lineNumber.l shouldBe List(1)
+    }
+
     "have correct structure for a equals expression" in {
       val cpg            = code("x == y")
       val List(callNode) = cpg.call.name(Operators.equals).l
