@@ -349,7 +349,7 @@ class AstCreator(filename: String, global: Global)
     case ctx: HashConstructorPrimaryContext           => astForHashConstructorPrimaryContext(ctx)
     case ctx: LiteralPrimaryContext                   => Seq(astForLiteralPrimaryContext(ctx))
     case ctx: StringInterpolationPrimaryContext       => astForStringInterpolationPrimaryContext(ctx)
-    case ctx: IsDefinedPrimaryContext                 => astForIsDefinedPrimaryContext(ctx)
+    case ctx: IsDefinedPrimaryContext                 => Seq(astForIsDefinedPrimaryExpression(ctx))
     case ctx: SuperExpressionPrimaryContext           => astForSuperExpressionPrimaryContext(ctx)
     case ctx: IndexingExpressionPrimaryContext        => astForIndexingExpressionPrimaryContext(ctx)
     case ctx: MethodOnlyIdentifierPrimaryContext      => astForMethodOnlyIdentifierPrimaryContext(ctx)
@@ -381,7 +381,7 @@ class AstCreator(filename: String, global: Global)
     case ctx: ConditionalOperatorExpressionContext => astForConditionalOperatorExpressionContext(ctx)
     case ctx: SingleAssignmentExpressionContext    => astForSingleAssignmentExpressionContext(ctx)
     case ctx: MultipleAssignmentExpressionContext  => astForMultipleAssignmentExpressionContext(ctx)
-    case ctx: IsDefinedExpressionContext           => astForIsDefinedExpressionContext(ctx)
+    case ctx: IsDefinedExpressionContext           => Seq(astForIsDefinedExpression(ctx))
     case _ =>
       logger.error("astForExpressionContext() All contexts mismatched.")
       Seq(Ast())
@@ -972,24 +972,6 @@ class AstCreator(filename: String, global: Global)
     } else {
       Seq(callAst(callNode, parenAst))
     }
-  }
-
-  def astForIsDefinedExpressionContext(ctx: IsDefinedExpressionContext): Seq[Ast] = {
-    val exprAst = astForExpressionContext(ctx.expression())
-    val callNode = NewCall()
-      .name(RubyOperators.defined)
-      .code(ctx.getText)
-      .methodFullName(RubyOperators.defined)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(ctx.IS_DEFINED().getSymbol().getLine())
-      .columnNumber(ctx.IS_DEFINED().getSymbol().getCharPositionInLine())
-    Seq(callAst(callNode, exprAst))
-  }
-
-  def astForIsDefinedPrimaryContext(ctx: IsDefinedPrimaryContext): Seq[Ast] = {
-    astForExpressionOrCommand(ctx.expressionOrCommand())
   }
 
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Seq[Ast] = {
