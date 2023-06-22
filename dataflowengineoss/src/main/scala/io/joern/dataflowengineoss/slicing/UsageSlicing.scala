@@ -262,7 +262,7 @@ object UsageSlicing {
             case Some(CallDef(_, _, Some(resolvedMethod), _)) =>
               slices.get(resolvedMethod) match {
                 case Some(_) => // TODO: Handle match
-                case None        => // No match
+                case None    => // No match
               }
             case _ =>
           }
