@@ -22,7 +22,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       ctx
         .definedMethodNameOrSymbol()
         .asScala
-        .flatMap(astForDefinedMethodNameOrSymbolContext(_))
+        .flatMap(astForDefinedMethodNameOrSymbolContext)
         .toSeq
 
     val operatorName = RubyOperators.undef
@@ -39,13 +39,13 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForBeginStatement(ctx: BeginStatementContext): Ast = {
-    val stmts     = astForStatementsContext(ctx.statements())
+    val stmts     = astForStatements(ctx.statements())
     val blockNode = NewBlock().typeFullName(Defines.Any)
     blockAst(blockNode, stmts.toList)
   }
 
   protected def astForEndStatement(ctx: EndStatementContext): Ast = {
-    val stmts     = astForStatementsContext(ctx.statements())
+    val stmts     = astForStatements(ctx.statements())
     val blockNode = NewBlock().typeFullName(Defines.Any)
     blockAst(blockNode, stmts.toList)
   }
@@ -96,6 +96,12 @@ trait AstForStatementsCreator { this: AstCreator =>
       .code(ctx.getText)
     controlStructureAst(throwNode, rhs.headOption, lhs)
   }
+
+  protected def astForCompoundStatement(ctx: CompoundStatementContext): Seq[Ast] =
+    Option(ctx.statements()).map(astForStatements).getOrElse(Seq())
+
+  protected def astForStatements(ctx: StatementsContext): Seq[Ast] =
+    Option(ctx.statement()).map(_.asScala).getOrElse(Seq()).flatMap(astForStatement).toSeq
 
   // TODO: return Ast instead of Seq[Ast].
   protected def astForStatement(ctx: StatementContext): Seq[Ast] = ctx match {

@@ -248,6 +248,15 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.columnNumber shouldBe Some(0)
     }
 
+    "have correct structure for an identifier symbol literal used in an `undef` statement" in {
+      val cpg = code("undef :symbolName")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Symbol
+      literal.code shouldBe ":symbolName"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(6)
+    }
+
     "have correct structure for a single-line regular expression literal" in {
       val cpg           = code("/(eu|us)/")
       val List(literal) = cpg.literal.l
