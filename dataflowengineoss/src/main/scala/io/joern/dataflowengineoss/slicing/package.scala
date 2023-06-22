@@ -12,7 +12,7 @@ package object slicing {
 
   import cats.syntax.functor._
   import io.circe.generic.auto._
-  import io.circe.generic.semiauto._
+  import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
   import io.circe.syntax.EncoderOps
 
   sealed trait BaseConfig {
@@ -375,9 +375,20 @@ package object slicing {
         m <- c.downField("resolvedMethod").as[Option[String]]
         p <- c.downField("paramTypes").as[List[String]]
         r <- c.downField("returnType").as[String]
-        a <- c.downField("position").as[Either[String, Int]]
       } yield {
-        ObservedCallWithArgPos(x, m, p, r, a)
+        val pos = c.downField("position").as[Int] match {
+          case Left(_) =>
+            c.downField("position").as[String] match {
+              case Left(err) =>
+                throw new RuntimeException(
+                  "Unable to decode `position` as the field is neither a string nor an integer",
+                  err
+                )
+              case Right(argName) => Left(argName)
+            }
+          case Right(argIdx) => Right(argIdx)
+        }
+        ObservedCallWithArgPos(x, m, p, r, pos)
       }
   implicit val encodeObservedCallWithArgPos: Encoder[ObservedCallWithArgPos] =
     Encoder.instance { case ObservedCallWithArgPos(c, m, p, r, a) =>
@@ -386,7 +397,10 @@ package object slicing {
         "resolvedMethod" -> m.asJson,
         "paramTypes"     -> p.asJson,
         "returnType"     -> r.asJson,
-        "position"       -> a.asJson
+        "position" -> (a match {
+          case Left(argName) => argName.asJson
+          case Right(argIdx) => argIdx.asJson
+        })
       )
     }
 
@@ -422,14 +436,6 @@ package object slicing {
     Encoder.instance { case UserDefinedType(n, f, p) =>
       Json.obj("name" -> n.asJson, "fields" -> f.asJson, "procedures" -> p.asJson)
     }
-
-  /** The program usage slices and UDTs.
-    *
-    * @param objectSlices
-    *   the object slices under each procedure
-    * @param userDefinedTypes
-    *   the UDTs.
-    */
 
   /** The program usage slices and UDTs.
     *
