@@ -43,8 +43,17 @@ class AstCreator(filename: String, global: Global)
   protected val blockMethods  = ListBuffer[Ast]()
 
   protected val methodNamesWithYield = mutable.HashSet[String]()
-  private val YIELD_SUFFIX           = "_yield"
-  private val UNRESOLVED_YIELD       = "unresolved_yield"
+
+  /*
+   *Fake methods created from yield blocks and their yield calls will have this suffix in their names
+   */
+  private val YIELD_SUFFIX = "_yield"
+
+  /*
+   * This is used to mark call nodes created due to yield calls. This is set in their names at creation.
+   * The appropriate name wrt the names of their actual methods is set later in them.
+   */
+  private val UNRESOLVED_YIELD = "unresolved_yield"
 
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
@@ -972,7 +981,7 @@ class AstCreator(filename: String, global: Global)
 
     if (isYieldMethod) {
       /*
-       * This is a yield block
+       * This is a yield block. Create a fake method out of it. The yield call will be a call to the yield block
        */
       astForBlockContext(ctx.block(), Some(blockName))
       Seq(Ast())
@@ -1409,6 +1418,13 @@ class AstCreator(filename: String, global: Global)
         yieldCallNode.name(name + YIELD_SUFFIX)
         yieldCallNode.methodFullName(methodFullName + YIELD_SUFFIX)
         methodNamesWithYield.add(methodNode.name)
+        /*
+         * These are calls to the yield block of this method.
+         * Add this method to the list of yield blocks.
+         * The add() is idempotent and so adding the same method multiple times makes no difference.
+         * It just needs to be added at this place so that it gets added iff it has a yield block
+         */
+
       })
 
     val methodRetNode = NewMethodReturn()
